@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Field } from '@formily/core';
 import { useField, useFieldSchema } from '@formily/react';
 import { useTranslation } from 'react-i18next';
@@ -6,7 +15,7 @@ import { useFieldComponentName } from '../../../../common/useFieldComponentName'
 import { useDesignable, useFieldModeOptions, useIsAddNewForm } from '../../../../schema-component';
 import { isSubMode } from '../../../../schema-component/antd/association-field/util';
 import { useIsFieldReadPretty } from '../../../../schema-component/antd/form-item/FormItem.Settings';
-import { useCollectionField } from '../utils';
+import { useCollectionField } from '../../../../data-source';
 import { useColumnSchema } from '../../../../schema-component/antd/table-v2/Table.Column.Decorator';
 import { titleField } from '../Picker/recordPickerComponentFieldSettings';
 

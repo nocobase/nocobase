@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Form } from '@formily/core';
 
 export interface DataScopeProps {
@@ -29,4 +38,6 @@ export interface DataScopeProps {
    * 当前表单区块中的表单实例
    */
   form: Form;
+  /** 上下文中不需要当前记录 */
+  noRecord?: boolean;
 }

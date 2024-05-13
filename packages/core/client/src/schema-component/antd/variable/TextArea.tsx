@@ -1,12 +1,22 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { css, cx } from '@emotion/css';
 import { useForm } from '@formily/react';
-import { Input, Space } from 'antd';
-import { cloneDeep } from 'lodash';
+import { Space } from 'antd';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { renderToString } from 'react-dom/server';
 import sanitizeHTML from 'sanitize-html';
 
 import { error } from '@nocobase/utils/client';
 
+import { isReactElement } from '@formily/shared';
 import { EllipsisWithTooltip } from '../..';
 import { VariableSelect } from './VariableSelect';
 import { useStyles } from './style';
@@ -114,7 +124,17 @@ function createOptionsValueLabelMap(options: any[]) {
 }
 
 function createVariableTagHTML(variable, keyLabelMap) {
-  const labels = keyLabelMap.get(variable);
+  let labels = keyLabelMap.get(variable);
+
+  if (labels) {
+    labels = labels.map((label) => {
+      if (isReactElement(label)) {
+        return renderToString(label);
+      }
+      return label;
+    });
+  }
+
   return `<span class="ant-tag ant-tag-blue" contentEditable="false" data-variable="${variable}">${
     labels ? labels.join(' / ') : '...'
   }</span>`;
@@ -205,7 +225,7 @@ export function TextArea(props) {
       .then((preloaded) => {
         setOptions(preloaded);
       })
-      .catch((err) => console.error);
+      .catch(console.error);
   }, [scope, value]);
 
   useEffect(() => {
@@ -365,17 +385,15 @@ export function TextArea(props) {
         componentCls,
         hashId,
         css`
-          &.ant-input-group.ant-input-group-compact {
-            display: flex;
-            .ant-input {
-              flex-grow: 1;
-              min-width: 200px;
-            }
-            .ant-input-disabled {
-              .ant-tag {
-                color: #bfbfbf;
-                border-color: #d9d9d9;
-              }
+          display: flex;
+          .ant-input {
+            flex-grow: 1;
+            min-width: 200px;
+          }
+          .ant-input-disabled {
+            .ant-tag {
+              color: #bfbfbf;
+              border-color: #d9d9d9;
             }
           }
 
@@ -428,8 +446,12 @@ export function TextArea(props) {
   );
 }
 
-async function preloadOptions(scope, value) {
-  const options = cloneDeep(scope ?? []);
+async function preloadOptions(scope, value: string) {
+  let options = [...(scope ?? [])];
+
+  options = options.filter((item) => {
+    return !item.deprecated || value?.includes(item.value);
+  });
 
   // 重置正则的匹配位置
   VARIABLE_RE.lastIndex = 0;

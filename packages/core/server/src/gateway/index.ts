@@ -1,4 +1,13 @@
-import { SystemLogger, createSystemLogger, getLoggerFilePath } from '@nocobase/logger';
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+import { createSystemLogger, getLoggerFilePath, SystemLogger } from '@nocobase/logger';
 import { Registry, Toposort, ToposortOptions, uid } from '@nocobase/utils';
 import { createStoragePluginsSymlink } from '@nocobase/utils/plugin-symlink';
 import { Command } from 'commander';
@@ -15,7 +24,7 @@ import handler from 'serve-handler';
 import { parse } from 'url';
 import { AppSupervisor } from '../app-supervisor';
 import { ApplicationOptions } from '../application';
-import { PLUGIN_STATICS_PATH, getPackageDirByExposeUrl, getPackageNameByExposeUrl } from '../plugin-manager';
+import { getPackageDirByExposeUrl, getPackageNameByExposeUrl } from '../plugin-manager';
 import { applyErrorWithArgs, getErrorWithCode } from './errors';
 import { IPCSocketClient } from './ipc-socket-client';
 import { IPCSocketServer } from './ipc-socket-server';
@@ -55,12 +64,11 @@ export class Gateway extends EventEmitter {
 
   public server: http.Server | null = null;
   public ipcSocketServer: IPCSocketServer | null = null;
+  loggers = new Registry<SystemLogger>();
   private port: number = process.env.APP_PORT ? parseInt(process.env.APP_PORT) : null;
   private host = '0.0.0.0';
   private wsServer: WSServer;
   private socketPath = resolve(process.cwd(), 'storage', 'gateway.sock');
-
-  loggers = new Registry<SystemLogger>();
 
   private constructor() {
     super();
@@ -76,6 +84,15 @@ export class Gateway extends EventEmitter {
     }
 
     return Gateway.instance;
+  }
+
+  static async getIPCSocketClient() {
+    const socketPath = resolve(process.cwd(), process.env.SOCKET_PATH || 'storage/gateway.sock');
+    try {
+      return await IPCSocketClient.getConnection(socketPath);
+    } catch (error) {
+      return false;
+    }
   }
 
   destroy() {
@@ -142,6 +159,7 @@ export class Gateway extends EventEmitter {
         module: 'gateway',
       },
     });
+    this.loggers.register(appName, logger);
     return logger.child({ reqId });
   }
 
@@ -168,14 +186,16 @@ export class Gateway extends EventEmitter {
 
   async requestHandler(req: IncomingMessage, res: ServerResponse) {
     const { pathname } = parse(req.url);
+    const { PLUGIN_STATICS_PATH, APP_PUBLIC_PATH } = process.env;
 
-    if (pathname === '/__umi/api/bundle-status') {
+    if (pathname.endsWith('/__umi/api/bundle-status')) {
       res.statusCode = 200;
       res.end('ok');
       return;
     }
 
-    if (pathname.startsWith('/storage/uploads/')) {
+    if (pathname.startsWith(APP_PUBLIC_PATH + 'storage/uploads/')) {
+      req.url = req.url.substring(APP_PUBLIC_PATH.length - 1);
       await compress(req, res);
       return handler(req, res, {
         public: resolve(process.cwd()),
@@ -203,7 +223,8 @@ export class Gateway extends EventEmitter {
       });
     }
 
-    if (!pathname.startsWith('/api')) {
+    if (!pathname.startsWith(process.env.API_BASE_PATH)) {
+      req.url = req.url.substring(APP_PUBLIC_PATH.length - 1);
       await compress(req, res);
       return handler(req, res, {
         public: `${process.env.APP_PACKAGE_ROOT}/dist/client`,
@@ -281,6 +302,7 @@ export class Gateway extends EventEmitter {
     return this.requestHandler.bind(this);
   }
 
+  /* istanbul ignore next -- @preserve */
   async watch() {
     if (!process.env.IS_DEV_CMD) {
       return;
@@ -292,6 +314,7 @@ export class Gateway extends EventEmitter {
     require(file);
   }
 
+  /* istanbul ignore next -- @preserve */
   async run(options: RunOptions) {
     const isStart = this.isStart();
     let ipcClient: IPCSocketClient | false;
@@ -331,7 +354,7 @@ export class Gateway extends EventEmitter {
         from: 'node',
       })
       .then(async () => {
-        if (!(await mainApp.isStarted())) {
+        if (!isStart && !(await mainApp.isStarted())) {
           await mainApp.stop({ logging: false });
         }
       })
@@ -339,7 +362,7 @@ export class Gateway extends EventEmitter {
         if (e.code !== 'commander.helpDisplayed') {
           mainApp.log.error(e);
         }
-        if (!(await mainApp.isStarted())) {
+        if (!isStart && !(await mainApp.isStarted())) {
           await mainApp.stop({ logging: false });
         }
       });
@@ -356,7 +379,6 @@ export class Gateway extends EventEmitter {
   }
 
   getStartOptions() {
-    const argv = process.argv;
     const program = new Command();
 
     program
@@ -366,9 +388,7 @@ export class Gateway extends EventEmitter {
       .option('-h, --host [host]')
       .option('--db-sync')
       .parse(process.argv);
-    const options = program.opts();
-
-    return options;
+    return program.opts();
   }
 
   start(options: StartHttpServerOptions) {
@@ -435,14 +455,5 @@ export class Gateway extends EventEmitter {
   close() {
     this.server?.close();
     this.wsServer?.close();
-  }
-
-  static async getIPCSocketClient() {
-    const socketPath = resolve(process.cwd(), process.env.SOCKET_PATH || 'storage/gateway.sock');
-    try {
-      return await IPCSocketClient.getConnection(socketPath);
-    } catch (error) {
-      return false;
-    }
   }
 }

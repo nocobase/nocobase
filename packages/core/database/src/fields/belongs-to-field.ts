@@ -1,6 +1,15 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import lodash, { omit } from 'lodash';
 import { BelongsToOptions as SequelizeBelongsToOptions, Utils } from 'sequelize';
-import { Reference } from '../features/ReferencesMap';
+import { buildReference, Reference, ReferencePriority } from '../features/references-map';
 import { checkIdentifier } from '../utils';
 import { BaseRelationFieldOptions, RelationField } from './relation-field';
 
@@ -16,20 +25,26 @@ export class BelongsToField extends RelationField {
     return target || Utils.pluralize(name);
   }
 
-  static toReference(db, association, onDelete) {
+  static toReference(db, association, onDelete, priority: ReferencePriority = 'default'): Reference {
     const targetKey = association.targetKey;
 
-    return {
+    return buildReference({
       sourceCollectionName: db.modelCollection.get(association.source).name,
       sourceField: association.foreignKey,
       targetField: targetKey,
       targetCollectionName: db.modelCollection.get(association.target).name,
       onDelete: onDelete,
-    };
+      priority: priority,
+    });
   }
 
   reference(association): Reference {
-    return BelongsToField.toReference(this.database, association, this.options.onDelete);
+    return BelongsToField.toReference(
+      this.database,
+      association,
+      this.options.onDelete,
+      this.options.onDelete ? 'user' : 'default',
+    );
   }
 
   checkAssociationKeys() {

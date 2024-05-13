@@ -1,9 +1,18 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { expect, formBlockDefaultValueTemplate, test } from '@nocobase/test/e2e';
 
 test.describe('variables with default value', () => {
   test('current form', async ({ page, mockPage, mockRecord }) => {
     const nocoPage = await mockPage(formBlockDefaultValueTemplate).waitForInit();
-    await mockRecord('general');
+    await mockRecord('general', 2);
     await nocoPage.goto();
 
     await page.getByRole('button', { name: 'Add new' }).click();

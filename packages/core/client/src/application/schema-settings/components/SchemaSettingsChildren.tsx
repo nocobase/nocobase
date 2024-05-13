@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import React, { FC, memo, useEffect, useMemo, useRef } from 'react';
 
 import { useFindComponent } from '../../../schema-component';
@@ -78,13 +87,16 @@ export const SchemaSettingsChild: FC<SchemaSettingsItemType> = memo((props) => {
     type,
     Component,
     children,
-    hideIfNoChildren = true,
+    hideIfNoChildren,
     componentProps,
   } = props as any;
   const useChildrenRes = useChildren();
   const useComponentPropsRes = useComponentProps();
   const findComponent = useFindComponent();
-  const componentChildren = useChildrenRes || children;
+  const componentChildren = useMemo(() => {
+    const res = [...(useChildrenRes || []), ...(children || [])];
+    return res.length === 0 ? undefined : res;
+  }, [useChildrenRes, children]);
   const visibleResult = useVisible();
   const ComponentValue = useMemo(() => {
     return !Component && type && typeComponentMap[type] ? typeComponentMap[type] : Component;
@@ -97,7 +109,7 @@ export const SchemaSettingsChild: FC<SchemaSettingsItemType> = memo((props) => {
   if (!C) {
     return null;
   }
-  if (hideIfNoChildren && Array.isArray(componentChildren) && componentChildren.length === 0) {
+  if (hideIfNoChildren && !componentChildren) {
     return null;
   }
 

@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import * as antdCssinjs from '@ant-design/cssinjs';
 import * as antdIcons from '@ant-design/icons';
 import * as dndKitAccessibility from '@dnd-kit/accessibility';
@@ -35,6 +44,9 @@ import * as nocobaseClient from '../../index';
 
 import type { RequireJS } from './requirejs';
 
+/**
+ * @internal
+ */
 export function defineGlobalDeps(requirejs: RequireJS) {
   // react
   requirejs.define('react', () => React);

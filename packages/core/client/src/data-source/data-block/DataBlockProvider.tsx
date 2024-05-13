@@ -1,10 +1,24 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import React, { FC, ReactNode, createContext, useContext, useMemo } from 'react';
 
 import { ACLCollectionProvider } from '../../acl/ACLProvider';
 import { UseRequestOptions, UseRequestService } from '../../api-client';
 import { withDynamicSchemaProps } from '../../application/hoc';
 import { Designable, useDesignable } from '../../schema-component';
-import { AssociationProvider, CollectionManagerProvider, CollectionOptions, CollectionProvider } from '../collection';
+import {
+  AssociationProvider,
+  CollectionManagerProvider,
+  CollectionOptions,
+  SanitizedCollectionProvider,
+} from '../collection';
 import { CollectionRecord } from '../collection-record';
 import { BlockRequestProvider } from './DataBlockRequestProvider';
 import { DataBlockResourceProvider } from './DataBlockResourceProvider';
@@ -24,6 +38,7 @@ export interface AllDataBlockProps {
   parentRecord?: CollectionRecord;
   requestService?: UseRequestService<any>;
   requestOptions?: UseRequestOptions;
+  dataLoadingMode?: 'auto' | 'manual';
   [index: string]: any;
 }
 
@@ -102,6 +117,9 @@ export interface DataBlockContextValue<T extends {} = {}> {
 export const DataBlockContext = createContext<DataBlockContextValue<any>>({} as any);
 DataBlockContext.displayName = 'DataBlockContext';
 
+/**
+ * @internal
+ */
 export const AssociationOrCollectionProvider = (props: {
   collection: string | CollectionOptions;
   association: string;
@@ -117,7 +135,7 @@ export const AssociationOrCollectionProvider = (props: {
       };
     }
     return {
-      Component: CollectionProvider,
+      Component: SanitizedCollectionProvider,
       name: collection,
     };
   }, [collection, association]);

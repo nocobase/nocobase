@@ -1,14 +1,42 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Repository } from '@nocobase/database';
 import lodash from 'lodash';
 import { PluginManager } from './plugin-manager';
 
 export class PluginManagerRepository extends Repository {
+  /**
+   * @internal
+   */
   pm: PluginManager;
 
+  /**
+   * @internal
+   */
   setPluginManager(pm: PluginManager) {
     this.pm = pm;
   }
 
+  async has(nameOrPkg: string) {
+    const { name } = await PluginManager.parseName(nameOrPkg);
+    const instance = await this.findOne({
+      filter: {
+        name,
+      },
+    });
+    return !!instance;
+  }
+
+  /**
+   * @deprecated
+   */
   async remove(name: string | string[]) {
     await this.destroy({
       filter: {
@@ -17,6 +45,9 @@ export class PluginManagerRepository extends Repository {
     });
   }
 
+  /**
+   * @deprecated
+   */
   async enable(name: string | string[]) {
     const pluginNames = lodash.castArray(name);
     const plugins = pluginNames.map((name) => this.pm.get(name));
@@ -56,6 +87,9 @@ export class PluginManagerRepository extends Repository {
     }
   }
 
+  /**
+   * @deprecated
+   */
   async disable(name: string | string[]) {
     name = lodash.cloneDeep(name);
 

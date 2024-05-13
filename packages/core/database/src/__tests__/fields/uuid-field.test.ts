@@ -1,7 +1,16 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { mockDatabase } from '../';
 import { Database } from '../../database';
 
-describe('string field', () => {
+describe('uuid field', () => {
   let db: Database;
 
   beforeEach(async () => {
@@ -13,19 +22,38 @@ describe('string field', () => {
     await db.close();
   });
 
-  it('define', async () => {
+  it('should create uuid field', async () => {
     const Test = db.collection({
       name: 'tests',
-      autoGenId: false,
       fields: [
         {
+          name: 'uuid',
           type: 'uuid',
-          name: 'id',
-          primaryKey: true,
+          allowNull: false,
         },
       ],
     });
+
     await Test.sync();
-    await Test.model.create();
+    const item = await Test.model.create();
+
+    expect(item['uuid']).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
+  });
+
+  it('should set autofill attribute', async () => {
+    const Test = db.collection({
+      name: 'tests',
+      fields: [
+        {
+          name: 'uuid',
+          type: 'uuid',
+          autoFill: false,
+        },
+      ],
+    });
+
+    await Test.sync();
+    const item = await Test.model.create();
+    expect(item['uuid']).toBeFalsy();
   });
 });

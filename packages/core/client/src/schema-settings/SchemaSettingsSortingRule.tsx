@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { ISchema, useField, useFieldSchema } from '@formily/react';
 import _ from 'lodash';
 import React from 'react';
@@ -108,13 +117,17 @@ export const SchemaSettingsSortingRule = function SortRuleConfigure(props) {
         const sortArr = sort.map((item) => {
           return item.direction === 'desc' ? `-${item.field}` : item.field;
         });
-        _.set(field.componentProps, 'service.params.sort', sortArr);
+
+        // 把列中的所有 field 实例找出来，进行更新
+        field.query(new RegExp(`[0-9]+\\.${fieldSchema.name}$`)).forEach((item) => {
+          _.set(item, 'componentProps.service.params.sort', sortArr);
+        });
+        _.set(fieldSchema, 'x-component-props.service.params.sort', sortArr);
         props?.onSubmitCallBack?.(sortArr);
-        fieldSchema['x-component-props'] = field.componentProps;
         dn.emit('patch', {
           schema: {
             ['x-uid']: fieldSchema['x-uid'],
-            'x-component-props': field.componentProps,
+            'x-component-props': fieldSchema['x-component-props'],
           },
         });
       }}

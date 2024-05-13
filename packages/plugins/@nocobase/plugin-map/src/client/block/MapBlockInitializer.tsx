@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { TableOutlined } from '@ant-design/icons';
 import { FormLayout } from '@formily/antd-v5';
 import { SchemaOptionsContext } from '@formily/react';
@@ -13,7 +22,8 @@ import {
 } from '@nocobase/client';
 import React, { useContext } from 'react';
 import { useMapTranslation } from '../locale';
-import { createMapBlockSchema, findNestedOption } from './utils';
+import { findNestedOption } from './utils';
+import { createMapBlockUISchema } from './createMapBlockUISchema';
 
 export const MapBlockInitializer = () => {
   const itemConfig = useSchemaInitializerItem();
@@ -84,13 +94,12 @@ export const MapBlockInitializer = () => {
           initialValues: {},
         });
         insert(
-          createMapBlockSchema({
-            collection: item.name,
+          createMapBlockUISchema({
+            collectionName: item.name,
             dataSource: item.dataSource,
             fieldNames: {
               ...values,
             },
-            settings: 'blockSettings:map',
           }),
         );
       }}

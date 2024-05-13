@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { render, screen, sleep, userEvent, waitFor } from '@nocobase/test/client';
 import axios from 'axios';
 import MockAdapter from 'axios-mock-adapter';
@@ -6,6 +15,7 @@ import { Link, Outlet } from 'react-router-dom';
 import { describe } from 'vitest';
 import { Application } from '../Application';
 import { Plugin } from '../Plugin';
+import { useApp } from '../hooks';
 
 describe('Application', () => {
   beforeAll(() => {
@@ -18,7 +28,9 @@ describe('Application', () => {
   const router: any = { type: 'memory', initialEntries: ['/'] };
   const initialProvidersLength = 7;
   it('basic', () => {
-    const app = new Application({ router });
+    const options = { router };
+    const app = new Application(options);
+    expect(app.getOptions()).toEqual(options);
     expect(app.i18n).toBeDefined();
     expect(app.apiClient).toBeDefined();
     expect(app.components).toBeDefined();
@@ -28,6 +40,69 @@ describe('Application', () => {
     expect(app.scopes).toBeDefined();
     expect(app.providers.length).toBeGreaterThan(1);
     expect(Object.keys(app.components).length).toBeGreaterThan(1);
+  });
+
+  describe('getApiUrl', () => {
+    it('api path', () => {
+      const app = new Application({
+        apiClient: {
+          baseURL: '/api/',
+        },
+      });
+      const { protocol, host } = window.location;
+      const baseURL = `${protocol}//${host}/api/`;
+      expect(app.getApiUrl()).toBe(baseURL);
+    });
+
+    it('api url', () => {
+      const app = new Application({
+        apiClient: {
+          baseURL: 'http://localhost:13000/foo/api/',
+        },
+      });
+      expect(app.getApiUrl()).toBe('http://localhost:13000/foo/api/');
+    });
+
+    it('api url', () => {
+      const app = new Application({
+        apiClient: {
+          baseURL: 'https://123.1.2.3:13000/foo/api/',
+        },
+      });
+      expect(app.getApiUrl()).toBe('https://123.1.2.3:13000/foo/api/');
+    });
+
+    it('api url', () => {
+      const app = new Application({
+        apiClient: {
+          baseURL: 'https://123.1.2.3:13000/foo/api',
+        },
+      });
+      expect(app.getApiUrl('/test/bar')).toBe('https://123.1.2.3:13000/foo/api/test/bar');
+      expect(app.getApiUrl('test/bar')).toBe('https://123.1.2.3:13000/foo/api/test/bar');
+    });
+  });
+
+  describe('publicPath', () => {
+    it('default', () => {
+      const app = new Application({});
+      expect(app.getPublicPath()).toBe('/');
+      expect(app.getRouteUrl('/test')).toBe('/test');
+    });
+
+    it('custom', () => {
+      const app = new Application({ publicPath: '/admin' });
+      expect(app.getPublicPath()).toBe('/admin/');
+      expect(app.getRouteUrl('/test')).toBe('/admin/test');
+      expect(app.getRouteUrl('test')).toBe('/admin/test');
+    });
+
+    it('custom end with /', () => {
+      const app = new Application({ publicPath: '/admin/' });
+      expect(app.getPublicPath()).toBe('/admin/');
+      expect(app.getRouteUrl('/test/foo')).toBe('/admin/test/foo');
+      expect(app.getRouteUrl('test/foo/')).toBe('/admin/test/foo/');
+    });
   });
 
   describe('components', () => {
@@ -242,6 +317,30 @@ describe('Application', () => {
       expect(screen.getByText('AboutComponent')).toBeInTheDocument();
     });
 
+    it('Root with children', async () => {
+      const app = new Application({ name: 'test' });
+
+      const Demo = () => {
+        const app = useApp();
+        return <div>{app.name}</div>;
+      };
+
+      const Root = app.getRootComponent();
+      render(
+        <Root>
+          <Demo />
+        </Root>,
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText('Loading...')).toBeInTheDocument();
+      });
+
+      await waitFor(() => {
+        expect(screen.getByText('test')).toBeInTheDocument();
+      });
+    });
+
     it('mount', async () => {
       const Hello = () => <div>Hello</div>;
       const app = new Application({
@@ -287,7 +386,7 @@ describe('Application', () => {
       render(<Root />);
 
       await sleep(10);
-      expect(screen.getByText('Load Plugin Error')).toBeInTheDocument();
+      expect(screen.getByText('App Error')).toBeInTheDocument();
     });
 
     it('replace Component', async () => {

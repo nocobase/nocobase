@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { FactoryStore, Store, caching, Cache as BasicCache } from 'cache-manager';
 import { Cache } from './cache';
 import lodash from 'lodash';
@@ -30,7 +39,13 @@ export class CacheManager {
       close?: (store: Store) => Promise<void>;
     }
   >();
+  /**
+   * @internal
+   */
   storeTypes = new Map<string, StoreOptions>();
+  /**
+   * @internal
+   */
   caches = new Map<string, Cache>();
 
   constructor(options?: CacheManagerOptions) {
@@ -122,6 +137,9 @@ export class CacheManager {
     await Promise.all(promises);
   }
 
+  /**
+   * @experimental
+   */
   async createBloomFilter(options?: { store?: string }): Promise<BloomFilter> {
     const name = 'bloom-filter';
     const { store = this.defaultStore } = options || {};

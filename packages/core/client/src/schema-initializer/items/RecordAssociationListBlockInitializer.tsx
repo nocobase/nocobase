@@ -1,10 +1,20 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { TableOutlined } from '@ant-design/icons';
-import React from 'react';
+import React, { useCallback } from 'react';
 
 import { SchemaInitializerItem, useSchemaInitializer, useSchemaInitializerItem } from '../../application';
 import { useCollectionManager_deprecated } from '../../collection-manager';
+import { createListBlockUISchema } from '../../modules/blocks/data-blocks/list/createListBlockUISchema';
 import { useSchemaTemplateManager } from '../../schema-templates';
-import { createListBlockSchema, useRecordCollectionDataSourceItems } from '../utils';
+import { useRecordCollectionDataSourceItems } from '../utils';
 
 export const RecordAssociationListBlockInitializer = () => {
   const itemConfig = useSchemaInitializerItem();
@@ -26,13 +36,10 @@ export const RecordAssociationListBlockInitializer = () => {
           insert(s);
         } else {
           insert(
-            createListBlockSchema({
+            createListBlockUISchema({
               rowKey: collection.filterTargetKey,
-              collection: field.target,
-              resource,
               dataSource: collection.dataSource,
               association: resource,
-              settings: 'blockSettings:list',
             }),
           );
         }
@@ -41,3 +48,26 @@ export const RecordAssociationListBlockInitializer = () => {
     />
   );
 };
+
+export function useCreateAssociationListBlock() {
+  const { insert } = useSchemaInitializer();
+  const { getCollection } = useCollectionManager_deprecated();
+
+  const createAssociationListBlock = useCallback(
+    ({ item }) => {
+      const field = item.associationField;
+      const collection = getCollection(field.target);
+
+      insert(
+        createListBlockUISchema({
+          rowKey: collection.filterTargetKey,
+          dataSource: collection.dataSource,
+          association: `${field.collectionName}.${field.name}`,
+        }),
+      );
+    },
+    [getCollection, insert],
+  );
+
+  return { createAssociationListBlock };
+}

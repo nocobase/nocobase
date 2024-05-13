@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Form } from '@formily/core';
 import { Schema } from '@formily/json-schema';
 import { useTranslation } from 'react-i18next';
@@ -57,7 +66,6 @@ export const useFormVariable = ({ collectionName, collectionField, schema, noDis
  * @returns
  */
 export const useCurrentFormVariable = ({
-  collectionName,
   collectionField,
   schema,
   noDisabled,
@@ -66,7 +74,7 @@ export const useCurrentFormVariable = ({
 }: Props = {}) => {
   // const { getActiveFieldsName } = useFormActiveFields() || {};
   const { t } = useTranslation();
-  const { form } = useFormBlockContext();
+  const { form, collectionName, service } = useFormBlockContext();
   const currentFormSettings = useBaseVariable({
     collectionField,
     uiSchema: schema,
@@ -90,13 +98,15 @@ export const useCurrentFormVariable = ({
   });
 
   const formInstance = _form || form;
-
   return {
     /** 变量配置 */
     currentFormSettings,
     /** 变量值 */
-    currentFormCtx: formInstance?.values,
+    currentFormCtx:
+      formInstance?.values && Object.keys(formInstance?.values)?.length
+        ? formInstance?.values
+        : service?.data?.data || formInstance?.values,
     /** 用来判断是否可以显示`当前表单`变量 */
-    shouldDisplayCurrentForm: !!formInstance && !formInstance.readPretty,
+    shouldDisplayCurrentForm: formInstance && !formInstance.readPretty,
   };
 };

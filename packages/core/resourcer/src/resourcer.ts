@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { importModule, Toposort, ToposortOptions } from '@nocobase/utils';
 import glob from 'glob';
 import compose from 'koa-compose';
@@ -67,7 +76,7 @@ export interface KoaMiddlewareOptions {
   };
 }
 
-export interface ResourcerOptions {
+export interface ResourceManagerOptions {
   /**
    * 前缀
    */
@@ -149,8 +158,11 @@ export interface ImportOptions {
   extensions?: string[];
 }
 
-export class Resourcer {
-  public readonly options: ResourcerOptions;
+export class ResourceManager {
+  /**
+   * @internal
+   */
+  public readonly options: ResourceManagerOptions;
   protected resources = new Map<string, Resource>();
   /**
    * 全局定义的 action handlers
@@ -160,7 +172,7 @@ export class Resourcer {
   protected middlewareHandlers = new Map<string, any>();
   protected middlewares: Toposort<any>;
 
-  constructor(options: ResourcerOptions = {}) {
+  constructor(options: ResourceManagerOptions = {}) {
     this.options = options;
     this.middlewares = new Toposort<any>();
   }
@@ -173,6 +185,7 @@ export class Resourcer {
    * @param {object}   [options]
    * @param {string}   [options.directory] 指定配置所在路径
    * @param {array}    [options.extensions = ['js', 'ts', 'json']] 文件后缀
+   *
    */
   public async import(options: ImportOptions): Promise<Map<string, Resource>> {
     const { extensions = ['js', 'ts', 'json'], directory } = options;
@@ -206,14 +219,27 @@ export class Resourcer {
     return this.resources.has(name);
   }
 
+  /**
+   * @internal
+   */
   removeResource(name) {
     return this.resources.delete(name);
   }
 
+  /**
+   * This method is deprecated and should not be used.
+   * Use {@link ResourceManager#registerActionHandler} instead.
+   * @deprecated
+   */
   registerAction(name: ActionName, handler: HandlerType) {
     this.registerActionHandler(name, handler);
   }
 
+  /**
+   * This method is deprecated and should not be used.
+   * Use {@link ResourceManager#registerActionHandlers} instead.
+   * @deprecated
+   */
   registerActions(handlers: Handlers) {
     this.registerActionHandlers(handlers);
   }
@@ -233,14 +259,23 @@ export class Resourcer {
     this.actionHandlers.set(name, handler);
   }
 
+  /**
+   * @internal
+   */
   getRegisteredHandler(name: ActionName) {
     return this.actionHandlers.get(name);
   }
 
+  /**
+   * @internal
+   */
   getRegisteredHandlers() {
     return this.actionHandlers;
   }
 
+  /**
+   * @internal
+   */
   getResource(name: string): Resource {
     if (!this.resources.has(name)) {
       throw new Error(`${name} resource does not exist`);
@@ -248,6 +283,9 @@ export class Resourcer {
     return this.resources.get(name);
   }
 
+  /**
+   * @internal
+   */
   getAction(name: string, action: ActionName): Action {
     // 支持注册局部 action
     if (this.actionHandlers.has(`${name}:${action}`)) {
@@ -256,6 +294,9 @@ export class Resourcer {
     return this.getResource(name).getAction(action);
   }
 
+  /**
+   * @internal
+   */
   getMiddlewares() {
     return this.middlewares.nodes;
   }
@@ -264,7 +305,7 @@ export class Resourcer {
     this.middlewares.add(middlewares, options);
   }
 
-  restApiMiddleware({ prefix, accessors, skipIfDataSourceExists = false }: KoaMiddlewareOptions = {}) {
+  middleware({ prefix, accessors, skipIfDataSourceExists = false }: KoaMiddlewareOptions = {}) {
     return async (ctx: ResourcerContext, next: () => Promise<any>) => {
       if (skipIfDataSourceExists) {
         const dataSource = ctx.get('x-data-source');
@@ -317,6 +358,7 @@ export class Resourcer {
 
         ctx.action.setContext(ctx);
         ctx.action.actionName = params.actionName;
+        ctx.action.sourceId = params.associatedIndex;
         ctx.action.resourceOf = params.associatedIndex;
         ctx.action.resourceName = params.associatedName
           ? `${params.associatedName}.${params.resourceName}`
@@ -344,16 +386,17 @@ export class Resourcer {
     };
   }
 
-  middleware(options: KoaMiddlewareOptions = {}) {
-    return this.restApiMiddleware(options);
+  /**
+   * This method is deprecated and should not be used.
+   * Use {@link ResourceManager#middleware} instead.
+   * @deprecated
+   */
+  restApiMiddleware(options: KoaMiddlewareOptions = {}) {
+    return this.middleware(options);
   }
 
   /**
-   * 实验性 API
-   *
-   * @param options
-   * @param context
-   * @param next
+   * @internal
    */
   async execute(options: ExecuteOptions, context: ResourcerContext = {}, next?: any) {
     const { resource, action } = options;
@@ -363,4 +406,19 @@ export class Resourcer {
   }
 }
 
-export default Resourcer;
+/**
+ * This interface is deprecated and should not be used.
+ * Use {@link ResourceManagerOptions} instead.
+ * @deprecated
+ */
+// eslint-disable-next-line @typescript-eslint/no-empty-interface
+export interface ResourcerOptions extends ResourceManagerOptions {}
+
+/**
+ * This class is deprecated and should not be used.
+ * Use {@link ResourceManager} instead.
+ * @deprecated
+ */
+export class Resourcer extends ResourceManager {}
+
+export default ResourceManager;

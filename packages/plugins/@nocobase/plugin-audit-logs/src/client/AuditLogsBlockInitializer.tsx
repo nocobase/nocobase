@@ -1,28 +1,25 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { TableOutlined } from '@ant-design/icons';
 import { ISchema } from '@formily/react';
-import {
-  createTableBlockSchema,
-  SchemaInitializerItem,
-  useSchemaInitializer,
-  useSchemaInitializerItem,
-} from '@nocobase/client';
+import { SchemaInitializerItem, useSchemaInitializer, useSchemaInitializerItem } from '@nocobase/client';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { createAuditLogsBlockSchema } from './createAuditLogsBlockSchema';
 
 export const AuditLogsBlockInitializer = () => {
   const { insert } = useSchemaInitializer();
   const { t } = useTranslation();
   const itemConfig = useSchemaInitializerItem();
 
-  const schema = createTableBlockSchema({
-    collection: 'auditLogs',
-    rowKey: 'id',
-    tableActionInitializers: 'AuditLogsTableActionInitializers',
-    tableColumnInitializers: 'AuditLogsTableColumnInitializers',
-    tableActionColumnInitializers: 'AuditLogsTableActionColumnInitializers',
-    tableBlockProvider: 'AuditLogsBlockProvider',
-    disableTemplate: true,
-  });
+  const schema = createAuditLogsBlockSchema();
 
   return (
     <SchemaInitializerItem

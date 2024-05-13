@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Collection, Database } from '@nocobase/database';
 import { MockServer, createMockServer } from '@nocobase/test';
 import { SchemaNode } from '../dao/ui_schema_node_dao';
@@ -366,6 +375,48 @@ describe('ui_schema repository', () => {
       });
     });
 
+    it('should get parent json schema', async () => {
+      await repository.insert({
+        'x-uid': 'n1',
+        name: 'a',
+        type: 'object',
+        properties: {
+          b: {
+            'x-uid': 'n2',
+            type: 'object',
+            properties: {
+              c: { 'x-uid': 'n3' },
+            },
+          },
+          d: { 'x-uid': 'n4' },
+        },
+      });
+
+      const parentSchema = await repository.getParentJsonSchema('n2');
+      expect(parentSchema['x-uid']).toBe('n1');
+    });
+
+    it('should get parent property', async () => {
+      await repository.insert({
+        'x-uid': 'n1',
+        name: 'a',
+        type: 'object',
+        properties: {
+          b: {
+            'x-uid': 'n2',
+            type: 'object',
+            properties: {
+              c: { 'x-uid': 'n3' },
+            },
+          },
+          d: { 'x-uid': 'n4' },
+        },
+      });
+
+      const parentProperty = await repository.getParentProperty('n2');
+      expect(parentProperty['x-uid']).toBe('n1');
+    });
+
     it('should getJsonSchema by subTree', async () => {
       await repository.insert({
         'x-uid': 'n1',
@@ -384,6 +435,28 @@ describe('ui_schema repository', () => {
       });
 
       const schema = await repository.getJsonSchema('n2');
+      expect(schema).toBeDefined();
+    });
+
+    it('should get root async json schema', async () => {
+      await repository.insert({
+        'x-uid': 'n1',
+        async: true,
+        name: 'a',
+        type: 'object',
+        properties: {
+          b: {
+            'x-uid': 'n2',
+            type: 'object',
+            properties: {
+              c: { 'x-uid': 'n3' },
+            },
+          },
+          d: { 'x-uid': 'n4' },
+        },
+      });
+
+      const schema = await repository.getJsonSchema('n1');
       expect(schema).toBeDefined();
     });
 

@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { observer } from '@formily/react';
 import { Input } from 'antd';
 import { debounce } from 'lodash';
@@ -38,7 +47,9 @@ export const FieldTitleInput = observer(
     useEffect(() => {
       setTitleValue(value);
     }, [value]);
-    return <Input value={titleValue} onChange={handleChange} />;
+    return (
+      <Input value={titleValue} onChange={handleChange} style={{ minWidth: '100px' }} aria-label="field-title-input" />
+    );
   },
   { displayName: 'FieldTitleInput' },
 );

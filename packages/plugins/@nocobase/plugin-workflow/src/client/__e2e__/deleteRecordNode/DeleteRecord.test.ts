@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { faker } from '@faker-js/faker';
 import {
   CollectionTriggerNode,
@@ -78,7 +87,8 @@ test('Collection event add data trigger, filter single line text field not null,
   const deleteRecordNode = new DeleteRecordNode(page, deleteRecordNodeName);
   await deleteRecordNode.nodeConfigure.click();
   await deleteRecordNode.collectionDropDown.click();
-  await page.getByText(deleteNodeCollectionDisplayName).click();
+  await page.getByRole('menuitemcheckbox', { name: 'Main right' }).click();
+  await page.getByRole('menuitemcheckbox', { name: deleteNodeCollectionDisplayName }).click();
   // 设置过滤条件
   await page.getByText('Add condition', { exact: true }).click();
   await page.getByLabel('block-item-Filter-workflows-Filter').getByRole('button', { name: 'Select field' }).click();
@@ -172,7 +182,8 @@ test('Collection event add data trigger, filter single line text field is trigge
   const deleteRecordNode = new DeleteRecordNode(page, deleteRecordNodeName);
   await deleteRecordNode.nodeConfigure.click();
   await deleteRecordNode.collectionDropDown.click();
-  await page.getByText(deleteNodeCollectionDisplayName).click();
+  await page.getByRole('menuitemcheckbox', { name: 'Main right' }).click();
+  await page.getByRole('menuitemcheckbox', { name: deleteNodeCollectionDisplayName }).click();
   // 设置过滤条件
   await page.getByText('Add condition', { exact: true }).click();
   await page.getByLabel('block-item-Filter-workflows-Filter').getByRole('button', { name: 'Select field' }).click();

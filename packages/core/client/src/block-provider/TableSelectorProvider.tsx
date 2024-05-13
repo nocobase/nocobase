@@ -1,15 +1,25 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { ArrayField } from '@formily/core';
 import { Schema, useField, useFieldSchema } from '@formily/react';
 import _ from 'lodash';
 import uniq from 'lodash/uniq';
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { withDynamicSchemaProps } from '../application/hoc/withDynamicSchemaProps';
 import { useCollectionManager_deprecated } from '../collection-manager';
 import { useCollectionParentRecordData } from '../data-source/collection-record/CollectionRecordProvider';
 import { isInFilterFormBlock } from '../filter-provider';
 import { mergeFilter } from '../filter-provider/utils';
 import { RecordProvider, useRecord } from '../record-provider';
 import { SchemaComponentOptions } from '../schema-component';
-import { BlockProvider, RenderChildrenWithAssociationFilter, useBlockRequestContext } from './BlockProvider';
+import { BlockProvider, useBlockRequestContext } from './BlockProvider';
 import { useParsedFilter } from './hooks';
 
 type Params = {
@@ -19,6 +29,9 @@ type Params = {
   sort?: any;
 };
 
+/**
+ * @internal
+ */
 export const TableSelectorContext = createContext<any>({});
 TableSelectorContext.displayName = 'TableSelectorContext';
 const TableSelectorParamsContext = createContext<Params>({}); // 用于传递参数
@@ -72,7 +85,7 @@ const InternalTableSelectorProvider = (props) => {
           },
         }}
       >
-        <RenderChildrenWithAssociationFilter {...props} />
+        {props.children}
       </TableSelectorContext.Provider>
     </RecordProvider>
   );
@@ -141,7 +154,7 @@ const useAssociationNames = (collection) => {
   );
 };
 
-export const TableSelectorProvider = (props: TableSelectorProviderProps) => {
+export const TableSelectorProvider = withDynamicSchemaProps((props: TableSelectorProviderProps) => {
   const parentParams = useTableSelectorParams();
   const fieldSchema = useFieldSchema();
   const { getCollectionJoinField, getCollectionFields } = useCollectionManager_deprecated();
@@ -157,7 +170,7 @@ export const TableSelectorProvider = (props: TableSelectorProviderProps) => {
   if (props.dragSort) {
     params['sort'] = ['sort'];
   }
-  if (collectionField?.target === collectionField?.collectionName && collection?.tree && treeTable !== false) {
+  if (collectionField?.target === collectionField?.collectionName && collection?.tree && treeTable) {
     params['tree'] = true;
     if (collectionFieldSchema.name === 'parent') {
       params.filter = {
@@ -263,7 +276,7 @@ export const TableSelectorProvider = (props: TableSelectorProviderProps) => {
       </BlockProvider>
     </SchemaComponentOptions>
   );
-};
+});
 
 export const useTableSelectorContext = () => {
   return useContext(TableSelectorContext);
@@ -290,19 +303,22 @@ export const useTableSelectorProps = () => {
       field.componentProps.pagination.total = ctx?.service?.data?.meta?.count;
       field.componentProps.pagination.current = ctx?.service?.data?.meta?.page;
     }
-  }, [ctx?.service?.loading]);
+  }, [
+    collectionField?.foreignKey,
+    ctx?.field?.data?.selectedRowKeys,
+    ctx?.service?.data?.data,
+    ctx?.service?.data?.meta?.count,
+    ctx?.service?.data?.meta?.page,
+    ctx?.service?.data?.meta?.pageSize,
+    ctx?.service?.loading,
+    field,
+  ]);
   return {
     loading: ctx?.service?.loading,
     showIndex: false,
     dragSort: false,
     rowKey: ctx.rowKey || 'id',
-    pagination:
-      ctx?.params?.paginate !== false
-        ? {
-            defaultCurrent: ctx?.params?.page || 1,
-            defaultPageSize: ctx?.params?.pageSize,
-          }
-        : false,
+    pagination: fieldSchema?.['x-component-props']?.pagination === false ? false : field.componentProps.pagination,
     onRowSelectionChange(selectedRowKeys, selectedRows) {
       ctx.field.data = ctx?.field?.data || {};
       ctx.field.data.selectedRowKeys = selectedRowKeys;

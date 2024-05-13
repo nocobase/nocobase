@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { useNavigate } from 'react-router-dom';
 import { App, message } from 'antd';
 import { useField, useFieldSchema, useForm } from '@formily/react';
@@ -12,6 +21,9 @@ import {
 } from '@nocobase/client';
 import { isURL } from '@nocobase/utils/client';
 
+/**
+ * @deprecated
+ */
 export function useTriggerWorkflowsActionProps() {
   const api = useAPIClient();
   const form = useForm();
@@ -75,6 +87,9 @@ export function useTriggerWorkflowsActionProps() {
   };
 }
 
+/**
+ * @deprecated
+ */
 export function useRecordTriggerWorkflowsActionProps() {
   const compile = useCompile();
   const api = useAPIClient();
@@ -82,13 +97,13 @@ export function useRecordTriggerWorkflowsActionProps() {
   const actionField = useField();
   const actionSchema = useFieldSchema();
   const { field, __parent } = useBlockRequestContext();
-  const { setVisible } = useActionContext();
+  const { setVisible, setSubmitted } = useActionContext();
   const { modal } = App.useApp();
   const navigate = useNavigate();
   const { onSuccess, triggerWorkflows } = actionSchema?.['x-action-settings'] ?? {};
 
   return {
-    async onClick() {
+    async onClick(e?, callBack?) {
       actionField.data = field.data || {};
       actionField.data.loading = true;
 
@@ -100,8 +115,12 @@ export function useRecordTriggerWorkflowsActionProps() {
             ? triggerWorkflows.map((row) => [row.workflowKey, row.context].filter(Boolean).join('!')).join(',')
             : undefined,
         });
-        __parent?.service?.refresh?.();
+        // __parent?.service?.refresh?.();
+        if (callBack) {
+          callBack();
+        }
         setVisible?.(false);
+        setSubmitted?.(true);
         if (!onSuccess?.successMessage) {
           return;
         }

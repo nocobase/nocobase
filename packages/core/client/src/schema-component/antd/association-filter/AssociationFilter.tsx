@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { css } from '@emotion/css';
 import { useFieldSchema } from '@formily/react';
 import cls from 'classnames';
@@ -15,6 +24,7 @@ import { Plugin } from '../../../application/Plugin';
 import {
   associationFilterFilterBlockInitializer,
   filterCollapseItemInitializer,
+  filterCollapseItemInitializer_deprecated,
 } from '../../../modules/blocks/filter-blocks/collapse/filterCollapseItemInitializer';
 import { associationFilterInitializer } from './AssociationFilter.Initializer';
 
@@ -104,6 +114,7 @@ AssociationFilter.useAssociationField = () => {
 export class AssociationFilterPlugin extends Plugin {
   async load() {
     this.app.schemaInitializerManager.add(associationFilterFilterBlockInitializer);
+    this.app.schemaInitializerManager.add(filterCollapseItemInitializer_deprecated);
     this.app.schemaInitializerManager.add(filterCollapseItemInitializer);
     this.app.schemaInitializerManager.add(associationFilterInitializer);
   }

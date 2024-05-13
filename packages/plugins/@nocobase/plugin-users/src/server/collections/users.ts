@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { defineCollection } from '@nocobase/database';
 
 export default defineCollection({
@@ -60,7 +69,7 @@ export default defineCollection({
       },
     },
     {
-      interface: 'phone',
+      interface: 'input',
       type: 'string',
       name: 'phone',
       unique: true,
@@ -68,7 +77,6 @@ export default defineCollection({
         type: 'string',
         title: '{{t("Phone")}}',
         'x-component': 'Input',
-        'x-validator': 'phone',
         required: true,
       },
     },
@@ -97,6 +105,36 @@ export default defineCollection({
       type: 'json',
       name: 'systemSettings',
       defaultValue: {},
+    },
+    {
+      uiSchema: {
+        'x-component-props': {
+          dateFormat: 'YYYY-MM-DD',
+        },
+        type: 'datetime',
+        title: '{{t("Created at")}}',
+        'x-component': 'DatePicker',
+        'x-read-pretty': true,
+      },
+      name: 'createdAt',
+      type: 'date',
+      field: 'createdAt',
+      interface: 'createdAt',
+    },
+    {
+      uiSchema: {
+        'x-component-props': {
+          dateFormat: 'YYYY-MM-DD',
+        },
+        type: 'datetime',
+        title: '{{t("Last updated at")}}',
+        'x-component': 'DatePicker',
+        'x-read-pretty': true,
+      },
+      name: 'updatedAt',
+      type: 'date',
+      field: 'updatedAt',
+      interface: 'updatedAt',
     },
   ],
 });

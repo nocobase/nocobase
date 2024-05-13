@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { GeneralField } from '@formily/core';
 import { useField, useFieldSchema } from '@formily/react';
 import { reaction } from '@formily/reactive';
@@ -16,6 +25,7 @@ import { getVariableName } from '../../../variables/utils/getVariableName';
 import { isVariable } from '../../../variables/utils/isVariable';
 import { useDesignable } from '../../hooks';
 import { AssociationFieldContext } from './context';
+import { Collection } from '../../../data-source';
 
 export const useInsertSchema = (component) => {
   const fieldSchema = useFieldSchema();
@@ -178,7 +188,10 @@ export const useFieldNames = (props) => {
   return { label: 'label', value: 'value', ...fieldNames };
 };
 
-const SubFormContext = createContext<Record<string, any>>(null);
+const SubFormContext = createContext<{
+  value: any;
+  collection: Collection;
+}>(null);
 SubFormContext.displayName = 'SubFormContext';
 export const SubFormProvider = SubFormContext.Provider;
 
@@ -192,8 +205,9 @@ export const SubFormProvider = SubFormContext.Provider;
  * @returns
  */
 export const useSubFormValue = () => {
-  const context = useContext(SubFormContext);
+  const { value, collection } = useContext(SubFormContext) || {};
   return {
-    formValue: context,
+    formValue: value,
+    collection,
   };
 };

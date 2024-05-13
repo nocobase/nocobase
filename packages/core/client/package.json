@@ -1,7 +1,7 @@
 {
   "name": "@nocobase/client",
-  "version": "0.20.0-alpha.7",
-  "license": "Apache-2.0",
+  "version": "1.0.0-alpha.12",
+  "license": "AGPL-3.0",
   "main": "lib/index.js",
   "module": "es/index.mjs",
   "types": "es/index.d.ts",
@@ -26,13 +26,14 @@
     "@formily/reactive-react": "^2.2.27",
     "@formily/shared": "^2.2.27",
     "@formily/validator": "^2.2.27",
-    "@nocobase/evaluators": "0.20.0-alpha.7",
-    "@nocobase/sdk": "0.20.0-alpha.7",
-    "@nocobase/utils": "0.20.0-alpha.7",
+    "@nocobase/evaluators": "1.0.0-alpha.12",
+    "@nocobase/sdk": "1.0.0-alpha.12",
+    "@nocobase/utils": "1.0.0-alpha.12",
     "ahooks": "^3.7.2",
     "antd": "^5.12.8",
     "antd-style": "3.4.5",
     "axios": "^0.26.1",
+    "bignumber.js": "^9.1.2",
     "classnames": "^2.3.1",
     "cronstrue": "^2.11.0",
     "file-saver": "^2.0.5",
@@ -52,6 +53,7 @@
     "react-i18next": "^11.15.1",
     "react-iframe": "~1.8.5",
     "react-image-lightbox": "^5.1.4",
+    "react-intersection-observer": "9.8.1",
     "react-js-cron": "^3.1.0",
     "react-quill": "^2.0.0",
     "react-router-dom": "^6.11.2",
@@ -70,8 +72,8 @@
     "@types/markdown-it-highlightjs": "3.3.1",
     "@types/react-big-calendar": "^1.6.4",
     "axios-mock-adapter": "^1.20.0",
-    "dumi": "^2.2.0",
-    "dumi-theme-nocobase": "^0.2.19"
+    "dumi": "2.2.14",
+    "dumi-theme-nocobase": "^0.2.28"
   },
   "gitHead": "d0b4efe4be55f8c79a98a331d99d9f8cf99021a1"
 }

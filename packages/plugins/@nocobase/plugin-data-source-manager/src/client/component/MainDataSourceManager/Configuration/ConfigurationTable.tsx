@@ -1,9 +1,18 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { useForm } from '@formily/react';
 import { action } from '@formily/reactive';
 import { uid } from '@formily/shared';
 import React, { useContext, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { CollectionFieldsTable } from '.';
+// import { CollectionFieldsTable } from '.';
 import {
   useAPIClient,
   useCurrentAppInfo,
@@ -19,6 +28,7 @@ import {
   CollectionCategroriesContext,
   FieldSummary,
   TemplateSummary,
+  useRequest,
 } from '@nocobase/client';
 import { CollectionFields } from './CollectionFields';
 import { collectionSchema } from './schemas/collections';
@@ -100,6 +110,7 @@ export const ConfigurationTable = () => {
   const api = useAPIClient();
   const resource = api.resource('dbViews');
   const compile = useCompile();
+  const form = useForm();
 
   /**
    *
@@ -131,6 +142,7 @@ export const ConfigurationTable = () => {
       value: item.name,
     }));
   };
+
   const loadCategories = async () => {
     return data.data.map((item: any) => ({
       label: compile(item.name),
@@ -145,6 +157,20 @@ export const ConfigurationTable = () => {
         return {
           label: schema ? `${schema}.${compile(item.name)}` : item.name,
           value: schema ? `${schema}_${item.name}` : item.name,
+        };
+      });
+    });
+  };
+
+  const loadFilterTargetKeys = async (field) => {
+    const { fields } = field.form.values;
+    return Promise.resolve({
+      data: fields,
+    }).then(({ data }) => {
+      return data?.map((item: any) => {
+        return {
+          label: compile(item.uiSchema?.title) || item.name,
+          value: item.name,
         };
       });
     });
@@ -174,10 +200,10 @@ export const ConfigurationTable = () => {
           EditSubFieldAction,
           FieldSummary,
           TemplateSummay: TemplateSummary,
-          CollectionFieldsTable,
           CollectionFields,
         }}
         scope={{
+          loadFilterTargetKeys,
           useDestroySubField,
           useBulkDestroySubField,
           useSelectedRowKeys,

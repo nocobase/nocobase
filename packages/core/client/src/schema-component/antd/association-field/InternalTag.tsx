@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { observer, RecursionField, useField, useFieldSchema } from '@formily/react';
 import { toArr } from '@formily/shared';
 import React, { Fragment, useRef, useState } from 'react';
@@ -45,6 +54,7 @@ export const ReadPrettyInternalTag: React.FC = observer(
     const { getCollection } = useCollectionManager_deprecated();
     const targetCollection = getCollection(collectionField?.target);
     const isTreeCollection = targetCollection?.template === 'tree';
+    const [btnHover, setBtnHover] = useState(false);
 
     const renderRecords = () =>
       toArr(props.value).map((record, index, arr) => {
@@ -65,7 +75,11 @@ export const ReadPrettyInternalTag: React.FC = observer(
                 text
               ) : enableLink !== false ? (
                 <a
+                  onMouseEnter={() => {
+                    setBtnHover(true);
+                  }}
                   onClick={(e) => {
+                    setBtnHover(true);
                     e.stopPropagation();
                     e.preventDefault();
                     if (designable) {
@@ -86,6 +100,16 @@ export const ReadPrettyInternalTag: React.FC = observer(
           </Fragment>
         );
       });
+
+    const btnElement = (
+      <EllipsisWithTooltip ellipsis={true} ref={ellipsisWithTooltipRef}>
+        {renderRecords()}
+      </EllipsisWithTooltip>
+    );
+
+    if (enableLink === false || !btnHover) {
+      return btnElement;
+    }
 
     const renderWithoutTableFieldResourceProvider = () => (
       <WithoutTableFieldResource.Provider value={true}>
@@ -120,9 +144,7 @@ export const ReadPrettyInternalTag: React.FC = observer(
       <div>
         <BlockAssociationContext.Provider value={`${collectionField?.collectionName}.${collectionField?.name}`}>
           <CollectionProvider_deprecated name={collectionField?.target ?? collectionField?.targetCollection}>
-            <EllipsisWithTooltip ellipsis={true} ref={ellipsisWithTooltipRef}>
-              {renderRecords()}
-            </EllipsisWithTooltip>
+            {btnElement}
             <ActionContextProvider
               value={{ visible, setVisible, openMode: 'drawer', snapshot: collectionField?.interface === 'snapshot' }}
             >

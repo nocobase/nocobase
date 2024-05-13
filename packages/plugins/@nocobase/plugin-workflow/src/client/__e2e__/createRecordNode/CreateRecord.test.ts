@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { faker } from '@faker-js/faker';
 import {
   CollectionTriggerNode,
@@ -73,7 +82,8 @@ test('Collection event add data trigger, single row text fields for common table
   const createRecordNodeId = await createRecordNode.node.locator('.workflow-node-id').innerText();
   await createRecordNode.nodeConfigure.click();
   await createRecordNode.collectionDropDown.click();
-  await page.getByText(createNodeCollectionDisplayName).click();
+  await page.getByRole('menuitemcheckbox', { name: 'Main right' }).click();
+  await page.getByRole('menuitemcheckbox', { name: createNodeCollectionDisplayName }).click();
   // 设置字段
   await createRecordNode.addFieldsButton.click();
   await page.getByRole('menuitem', { name: createNodeFieldDisplayName }).click();
@@ -172,7 +182,8 @@ test('Collection event add data trigger, normal table single line text field, se
   const createRecordNodeId = await createRecordNode.node.locator('.workflow-node-id').innerText();
   await createRecordNode.nodeConfigure.click();
   await createRecordNode.collectionDropDown.click();
-  await page.getByText(createNodeCollectionDisplayName).click();
+  await page.getByRole('menuitemcheckbox', { name: 'Main right' }).click();
+  await page.getByRole('menuitemcheckbox', { name: createNodeCollectionDisplayName }).click();
   // 设置字段
   await createRecordNode.addFieldsButton.click();
   await page.getByRole('menuitem', { name: createNodeFieldDisplayName }).click();
@@ -273,7 +284,8 @@ test('Collection event add data trigger, normal table integer field, set constan
   const createRecordNodeId = await createRecordNode.node.locator('.workflow-node-id').innerText();
   await createRecordNode.nodeConfigure.click();
   await createRecordNode.collectionDropDown.click();
-  await page.getByText(createNodeCollectionDisplayName).click();
+  await page.getByRole('menuitemcheckbox', { name: 'Main right' }).click();
+  await page.getByRole('menuitemcheckbox', { name: createNodeCollectionDisplayName }).click();
   // 设置字段
   await createRecordNode.addFieldsButton.click();
   await page.getByRole('menuitem', { name: createNodeFieldDisplayName }).click();
@@ -372,7 +384,8 @@ test('Collection event add data trigger, normal table integer field, set trigger
   const createRecordNodeId = await createRecordNode.node.locator('.workflow-node-id').innerText();
   await createRecordNode.nodeConfigure.click();
   await createRecordNode.collectionDropDown.click();
-  await page.getByText(createNodeCollectionDisplayName).click();
+  await page.getByRole('menuitemcheckbox', { name: 'Main right' }).click();
+  await page.getByRole('menuitemcheckbox', { name: createNodeCollectionDisplayName }).click();
   // 设置字段
   await createRecordNode.addFieldsButton.click();
   await page.getByRole('menuitem', { name: createNodeFieldDisplayName }).click();
@@ -473,7 +486,8 @@ test('Collection event add data trigger, normal table numeric field, set constan
   const createRecordNodeId = await createRecordNode.node.locator('.workflow-node-id').innerText();
   await createRecordNode.nodeConfigure.click();
   await createRecordNode.collectionDropDown.click();
-  await page.getByText(createNodeCollectionDisplayName).click();
+  await page.getByRole('menuitemcheckbox', { name: 'Main right' }).click();
+  await page.getByRole('menuitemcheckbox', { name: createNodeCollectionDisplayName }).click();
   // 设置字段
   await createRecordNode.addFieldsButton.click();
   await page.getByRole('menuitem', { name: createNodeFieldDisplayName }).click();
@@ -572,7 +586,8 @@ test('Collection event add data trigger, normal table numeric field, set trigger
   const createRecordNodeId = await createRecordNode.node.locator('.workflow-node-id').innerText();
   await createRecordNode.nodeConfigure.click();
   await createRecordNode.collectionDropDown.click();
-  await page.getByText(createNodeCollectionDisplayName).click();
+  await page.getByRole('menuitemcheckbox', { name: 'Main right' }).click();
+  await page.getByRole('menuitemcheckbox', { name: createNodeCollectionDisplayName }).click();
   // 设置字段
   await createRecordNode.addFieldsButton.click();
   await page.getByRole('menuitem', { name: createNodeFieldDisplayName }).click();
@@ -673,7 +688,8 @@ test('Collection event add data trigger, normal table dropdown radio field, set 
   const createRecordNodeId = await createRecordNode.node.locator('.workflow-node-id').innerText();
   await createRecordNode.nodeConfigure.click();
   await createRecordNode.collectionDropDown.click();
-  await page.getByText(createNodeCollectionDisplayName).click();
+  await page.getByRole('menuitemcheckbox', { name: 'Main right' }).click();
+  await page.getByRole('menuitemcheckbox', { name: createNodeCollectionDisplayName }).click();
   // 设置字段
   await createRecordNode.addFieldsButton.click();
   await page.getByRole('menuitem', { name: createNodeFieldDisplayName }).click();
@@ -769,7 +785,8 @@ test('Collection event add data trigger, normal table dropdown radio field, set 
   const createRecordNodeId = await createRecordNode.node.locator('.workflow-node-id').innerText();
   await createRecordNode.nodeConfigure.click();
   await createRecordNode.collectionDropDown.click();
-  await page.getByText(createNodeCollectionDisplayName).click();
+  await page.getByRole('menuitemcheckbox', { name: 'Main right' }).click();
+  await page.getByRole('menuitemcheckbox', { name: createNodeCollectionDisplayName }).click();
   // 设置字段
   await createRecordNode.addFieldsButton.click();
   await page.getByRole('menuitem', { name: createNodeFieldDisplayName }).click();
@@ -870,7 +887,8 @@ test('Collection event add data trigger, normal table dropdown radio fields, set
   const createRecordNodeId = await createRecordNode.node.locator('.workflow-node-id').innerText();
   await createRecordNode.nodeConfigure.click();
   await createRecordNode.collectionDropDown.click();
-  await page.getByText(createNodeCollectionDisplayName).click();
+  await page.getByRole('menuitemcheckbox', { name: 'Main right' }).click();
+  await page.getByRole('menuitemcheckbox', { name: createNodeCollectionDisplayName }).click();
   // 设置字段
   await createRecordNode.addFieldsButton.click();
   await page.getByRole('menuitem', { name: createNodeFieldDisplayName }).click();
@@ -967,7 +985,8 @@ test('Collection event add data trigger, normal table dropdown radio fields, set
   const createRecordNodeId = await createRecordNode.node.locator('.workflow-node-id').innerText();
   await createRecordNode.nodeConfigure.click();
   await createRecordNode.collectionDropDown.click();
-  await page.getByText(createNodeCollectionDisplayName).click();
+  await page.getByRole('menuitemcheckbox', { name: 'Main right' }).click();
+  await page.getByRole('menuitemcheckbox', { name: createNodeCollectionDisplayName }).click();
   // 设置字段
   await createRecordNode.addFieldsButton.click();
   await page.getByRole('menuitem', { name: createNodeFieldDisplayName }).click();
@@ -1068,7 +1087,8 @@ test('Collection event add data trigger, normal table date field, set constant d
   const createRecordNodeId = await createRecordNode.node.locator('.workflow-node-id').innerText();
   await createRecordNode.nodeConfigure.click();
   await createRecordNode.collectionDropDown.click();
-  await page.getByText(createNodeCollectionDisplayName).click();
+  await page.getByRole('menuitemcheckbox', { name: 'Main right' }).click();
+  await page.getByRole('menuitemcheckbox', { name: createNodeCollectionDisplayName }).click();
   // 设置字段
   await createRecordNode.addFieldsButton.click();
   await page.getByRole('menuitem', { name: createNodeFieldDisplayName }).click();
@@ -1169,7 +1189,8 @@ test('Collection event add data trigger, normal table date field, set trigger no
   const createRecordNodeId = await createRecordNode.node.locator('.workflow-node-id').innerText();
   await createRecordNode.nodeConfigure.click();
   await createRecordNode.collectionDropDown.click();
-  await page.getByText(createNodeCollectionDisplayName).click();
+  await page.getByRole('menuitemcheckbox', { name: 'Main right' }).click();
+  await page.getByRole('menuitemcheckbox', { name: createNodeCollectionDisplayName }).click();
   // 设置字段
   await createRecordNode.addFieldsButton.click();
   await page.getByRole('menuitem', { name: createNodeFieldDisplayName }).click();

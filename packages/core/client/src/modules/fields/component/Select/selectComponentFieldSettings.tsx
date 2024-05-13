@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Field } from '@formily/core';
 import { useField, useFieldSchema } from '@formily/react';
 import _ from 'lodash';
@@ -7,6 +16,7 @@ import { SchemaSettings } from '../../../../application/schema-settings/SchemaSe
 import { useFormBlockContext } from '../../../../block-provider';
 import { useCollectionManager_deprecated, useCollection_deprecated } from '../../../../collection-manager';
 import { useFieldComponentName } from '../../../../common/useFieldComponentName';
+import { useCollectionField } from '../../../../data-source';
 import { useRecord } from '../../../../record-provider';
 import { removeNullCondition, useDesignable, useFieldModeOptions, useIsAddNewForm } from '../../../../schema-component';
 import { isSubMode } from '../../../../schema-component/antd/association-field/util';
@@ -23,7 +33,6 @@ import { SchemaSettingsDataScope } from '../../../../schema-settings/SchemaSetti
 import { SchemaSettingsSortingRule } from '../../../../schema-settings/SchemaSettingsSortingRule';
 import { useIsShowMultipleSwitch } from '../../../../schema-settings/hooks/useIsShowMultipleSwitch';
 import { useLocalVariables, useVariables } from '../../../../variables';
-import { useCollectionField } from '../utils';
 
 const enableLink = {
   name: 'enableLink',
@@ -254,12 +263,12 @@ const setTheDataScope: any = {
       },
       onSubmit: ({ filter }) => {
         filter = removeNullCondition(filter);
+        _.set(fieldSchema['x-component-props'], 'service.params.filter', filter);
         _.set(field.componentProps, 'service.params.filter', filter);
-        fieldSchema['x-component-props'] = field.componentProps;
         dn.emit('patch', {
           schema: {
             ['x-uid']: fieldSchema['x-uid'],
-            'x-component-props': field.componentProps,
+            'x-component-props': fieldSchema['x-component-props'],
           },
         });
       },

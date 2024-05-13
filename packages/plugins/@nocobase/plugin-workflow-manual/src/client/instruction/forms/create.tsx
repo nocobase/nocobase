@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import React, { useMemo, useState } from 'react';
 
 import {
@@ -65,7 +74,7 @@ export default {
         [allCollections],
       );
       const [openMenuKeys, setOpenMenuKeys] = useState([]);
-      const searchedChildren = useMenuSearch(childItems, openMenuKeys);
+      const searchedChildren = useMenuSearch({ data: childItems, openKeys: openMenuKeys });
 
       return {
         name: 'createRecordForm',

@@ -1,4 +1,13 @@
-import { set, get } from 'lodash';
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+import { get, set } from 'lodash';
 import React, { ComponentType } from 'react';
 import {
   BrowserRouter,
@@ -10,8 +19,8 @@ import {
   RouteObject,
   useRoutes,
 } from 'react-router-dom';
-import { BlankComponent, RouterContextCleaner } from './components';
 import { Application } from './Application';
+import { BlankComponent, RouterContextCleaner } from './components';
 
 export interface BrowserRouterOptions extends Omit<BrowserRouterProps, 'children'> {
   type?: 'browser';
@@ -24,6 +33,7 @@ export interface MemoryRouterOptions extends Omit<MemoryRouterProps, 'children'>
 }
 export type RouterOptions = (HashRouterOptions | BrowserRouterOptions | MemoryRouterOptions) & {
   renderComponent?: RenderComponentType;
+  routes?: Record<string, RouteType>;
 };
 export type ComponentTypeAndString<T = any> = ComponentType<T> | string;
 export interface RouteType extends Omit<RouteObject, 'children' | 'Component'> {
@@ -39,8 +49,12 @@ export class RouterManager {
   constructor(options: RouterOptions = {}, app: Application) {
     this.options = options;
     this.app = app;
+    this.routes = options.routes || {};
   }
 
+  /**
+   * @internal
+   */
   getRoutesTree(): RouteObject[] {
     type RouteTypeWithChildren = RouteType & { children?: RouteTypeWithChildren };
     const routes: Record<string, RouteTypeWithChildren> = {};
@@ -98,11 +112,18 @@ export class RouterManager {
     this.options.type = type;
   }
 
+  getBasename() {
+    return this.options.basename;
+  }
+
   setBasename(basename: string) {
     this.options.basename = basename;
   }
 
-  getRouterComponent() {
+  /**
+   * @internal
+   */
+  getRouterComponent(children?: React.ReactNode) {
     const { type = 'browser', ...opts } = this.options;
     const Routers = {
       hash: HashRouter,
@@ -111,9 +132,9 @@ export class RouterManager {
     };
 
     const ReactRouter = Routers[type];
+    const routes = this.getRoutesTree();
 
     const RenderRoutes = () => {
-      const routes = this.getRoutesTree();
       const element = useRoutes(routes);
       return element;
     };
@@ -124,6 +145,7 @@ export class RouterManager {
           <ReactRouter {...opts}>
             <BaseLayout>
               <RenderRoutes />
+              {children}
             </BaseLayout>
           </ReactRouter>
         </RouterContextCleaner>

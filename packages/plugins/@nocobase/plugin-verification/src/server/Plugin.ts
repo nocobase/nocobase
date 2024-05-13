@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import path from 'path';
 
 import { Context } from '@nocobase/actions';
@@ -23,7 +32,7 @@ export interface Interceptor {
   validate?(ctx: Context, receiver: string): boolean | Promise<boolean>;
 }
 
-export default class VerificationPlugin extends Plugin {
+export default class PluginVerficationServer extends Plugin {
   providers: Registry<typeof Provider> = new Registry();
   interceptors: Registry<Interceptor> = new Registry();
 

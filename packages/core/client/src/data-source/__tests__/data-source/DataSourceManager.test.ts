@@ -1,4 +1,20 @@
-import { Application, Collection, DEFAULT_DATA_SOURCE_KEY, LocalDataSource, Plugin } from '@nocobase/client';
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+import {
+  Application,
+  Collection,
+  DEFAULT_DATA_SOURCE_KEY,
+  DataSourceOptions,
+  LocalDataSource,
+  Plugin,
+} from '@nocobase/client';
 import collections from '../collections.json';
 
 describe('DataSourceManager', () => {
@@ -119,6 +135,24 @@ describe('DataSourceManager', () => {
     });
   });
 
+  describe('getDataSources', () => {
+    test('filter', () => {
+      const app = new Application({
+        dataSourceManager: {
+          dataSources: [
+            {
+              key: 'a',
+              displayName: 'a',
+            },
+          ],
+        },
+      });
+
+      expect(app.dataSourceManager.getDataSources()).toHaveLength(2);
+      expect(app.dataSourceManager.getDataSources((dataSource) => dataSource.key === 'a')).toHaveLength(1);
+    });
+  });
+
   describe('addDataSource', () => {
     test('should add a data source', () => {
       const app = new Application();
@@ -183,6 +217,33 @@ describe('DataSourceManager', () => {
 
       expect(reloadSpy1).toHaveBeenCalledTimes(1);
       expect(reloadSpy2).toHaveBeenCalledTimes(1);
+    });
+
+    test('multi data sources', async () => {
+      const app = new Application();
+      const dataSourceManager = app.dataSourceManager;
+      const getThirdDataSource = (): Promise<DataSourceOptions[]> => {
+        return new Promise((resolve) => {
+          setTimeout(() => {
+            resolve([
+              {
+                key: 'a',
+                displayName: 'a',
+              },
+              {
+                key: 'b',
+                displayName: 'b',
+              },
+            ]);
+          });
+        });
+      };
+
+      dataSourceManager.addDataSources(getThirdDataSource, LocalDataSource);
+
+      await dataSourceManager.reload();
+
+      expect(dataSourceManager.getDataSources()).toHaveLength(3);
     });
   });
 });

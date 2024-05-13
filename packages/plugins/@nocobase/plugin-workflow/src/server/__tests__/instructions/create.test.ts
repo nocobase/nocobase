@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Application } from '@nocobase/server';
 import Database from '@nocobase/database';
 import { getApp, sleep } from '@nocobase/plugin-workflow-test';
@@ -124,6 +133,37 @@ describe('workflow > instructions > create', () => {
       const [job] = await execution.getJobs();
       expect(job.result.posts.length).toBe(1);
       expect(job.result.posts[0].id).toBe(post.id);
+    });
+  });
+
+  describe('multiple data source', () => {
+    it('create one', async () => {
+      const n1 = await workflow.createNode({
+        type: 'create',
+        config: {
+          collection: 'another:posts',
+          params: {
+            values: {
+              title: '{{$context.data.title}}',
+              published: true,
+            },
+          },
+        },
+      });
+
+      const post = await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
+
+      const [execution] = await workflow.getExecutions();
+      const [job] = await execution.getJobs();
+      expect(job.result.title).toBe(post.title);
+
+      const AnotherPostRepo = app.dataSourceManager.dataSources.get('another').collectionManager.getRepository('posts');
+      const p2s = await AnotherPostRepo.find();
+      expect(p2s.length).toBe(1);
+      expect(p2s[0].title).toBe(post.title);
+      expect(p2s[0].published).toBe(true);
     });
   });
 });

@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { getLoggerFilePath } from './config';
 import { LoggerOptions, createLogger } from './logger';
 import { pick } from 'lodash';
@@ -7,6 +16,8 @@ const defaultRequestWhitelist = [
   'header.x-hostname',
   'header.x-timezone',
   'header.x-locale',
+  'header.x-authenticator',
+  'header.x-data-source',
   'referer',
 ];
 const defaultResponseWhitelist = ['status'];

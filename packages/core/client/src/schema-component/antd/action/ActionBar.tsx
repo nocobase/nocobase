@@ -1,16 +1,27 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { cx } from '@emotion/css';
 import { RecursionField, observer, useFieldSchema } from '@formily/react';
-import { Space } from 'antd';
+import { Space, SpaceProps } from 'antd';
 import React, { CSSProperties, useContext } from 'react';
 import { createPortal } from 'react-dom';
 import { DndContext } from '../../common';
 import { useDesignable, useProps } from '../../hooks';
 import { useSchemaInitializerRender } from '../../../application';
+import { withDynamicSchemaProps } from '../../../application/hoc/withDynamicSchemaProps';
 
-interface ActionBarContextForceProps {
-  layout?: 'one-column' | 'tow-columns';
+export interface ActionBarProps {
+  layout?: 'one-column' | 'two-columns';
   style?: CSSProperties;
   className?: string;
+  spaceProps?: SpaceProps;
 }
 
 export interface ActionBarContextValue {
@@ -18,7 +29,7 @@ export interface ActionBarContextValue {
   /**
    * override props
    */
-  forceProps?: ActionBarContextForceProps;
+  forceProps?: ActionBarProps;
   parentComponents?: string[];
 }
 
@@ -46,10 +57,13 @@ const Portal: React.FC = (props) => {
   );
 };
 
-export const ActionBar = observer(
-  (props: any) => {
+export const ActionBar = withDynamicSchemaProps(
+  observer((props: any) => {
     const { forceProps = {} } = useActionBarContext();
-    const { layout = 'tow-columns', style, spaceProps, ...others } = { ...useProps(props), ...forceProps } as any;
+
+    // 新版 UISchema（1.0 之后）中已经废弃了 useProps，这里之所以继续保留是为了兼容旧版的 UISchema
+    const { layout = 'two-columns', style, spaceProps, ...others } = { ...useProps(props), ...forceProps } as any;
+
     const fieldSchema = useFieldSchema();
     const { render } = useSchemaInitializerRender(fieldSchema['x-initializer'], fieldSchema['x-initializer-props']);
     const { designable } = useDesignable();
@@ -115,7 +129,7 @@ export const ActionBar = observer(
                 return <RecursionField key={key} name={key} schema={schema} />;
               })}
             </Space>
-            <Space {...spaceProps}>
+            <Space {...spaceProps} style={{ flexWrap: 'wrap' }}>
               {fieldSchema.mapProperties((schema, key) => {
                 if (schema['x-align'] === 'left') {
                   return null;
@@ -128,6 +142,6 @@ export const ActionBar = observer(
         {render()}
       </div>
     );
-  },
+  }),
   { displayName: 'ActionBar' },
 );

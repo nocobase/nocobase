@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { css } from '@emotion/css';
 import {
   FieldContext,
@@ -558,13 +567,20 @@ Menu.URL = observer(
         key: schema.name,
         eventKey: schema.name,
         schema,
-        onClick: () => {
-          window.open(props.href, '_blank');
-        },
+        onClick: () => {},
         label: (
           <SchemaContext.Provider value={schema}>
             <FieldContext.Provider value={field}>
-              <SortableItem className={designerCss} removeParentsIfNoChildren={false} aria-label={t(field.title)}>
+              <SortableItem
+                className={designerCss}
+                onClick={(event) => {
+                  window.open(props.href, '_blank');
+                  event.preventDefault();
+                  event.stopPropagation();
+                }}
+                removeParentsIfNoChildren={false}
+                aria-label={t(field.title)}
+              >
                 <Icon type={icon} />
                 <span
                   style={{

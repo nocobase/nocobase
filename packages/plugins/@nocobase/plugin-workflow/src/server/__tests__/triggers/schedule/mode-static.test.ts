@@ -1,7 +1,18 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { scryptSync } from 'crypto';
 import { MockServer } from '@nocobase/test';
 import Database from '@nocobase/database';
 import { getApp, sleep } from '@nocobase/plugin-workflow-test';
+
+import Plugin from '../../..';
 
 async function sleepToEvenSecond() {
   const now = new Date();
@@ -23,7 +34,6 @@ describe('workflow > triggers > schedule > static mode', () => {
   let db: Database;
   let PostRepo;
   let CategoryRepo;
-  let WorkflowModel;
   let WorkflowRepo;
 
   beforeEach(async () => {
@@ -31,7 +41,6 @@ describe('workflow > triggers > schedule > static mode', () => {
 
     db = app.db;
     const workflow = db.getCollection('workflows');
-    WorkflowModel = workflow.model;
     WorkflowRepo = workflow.repository;
     PostRepo = db.getCollection('posts').repository;
     CategoryRepo = db.getCollection('categories').repository;
@@ -41,11 +50,13 @@ describe('workflow > triggers > schedule > static mode', () => {
 
   describe('configuration', () => {
     it('neither startsOn nor repeat configurated', async () => {
-      const workflow = await WorkflowModel.create({
-        enabled: true,
-        type: 'schedule',
-        config: {
-          mode: 0,
+      const workflow = await WorkflowRepo.create({
+        values: {
+          enabled: true,
+          type: 'schedule',
+          config: {
+            mode: 0,
+          },
         },
       });
 
@@ -62,12 +73,14 @@ describe('workflow > triggers > schedule > static mode', () => {
       start.setMilliseconds(0);
       start.setSeconds(start.getSeconds() + 2);
 
-      const workflow = await WorkflowModel.create({
-        enabled: true,
-        type: 'schedule',
-        config: {
-          mode: 0,
-          startsOn: start.toISOString(),
+      const workflow = await WorkflowRepo.create({
+        values: {
+          enabled: true,
+          type: 'schedule',
+          config: {
+            mode: 0,
+            startsOn: start.toISOString(),
+          },
         },
       });
 
@@ -80,13 +93,15 @@ describe('workflow > triggers > schedule > static mode', () => {
     it('on every 2 seconds', async () => {
       const start = await sleepToEvenSecond();
 
-      const workflow = await WorkflowModel.create({
-        enabled: true,
-        type: 'schedule',
-        config: {
-          mode: 0,
-          startsOn: start.toISOString(),
-          repeat: '*/2 * * * * *',
+      const workflow = await WorkflowRepo.create({
+        values: {
+          enabled: true,
+          type: 'schedule',
+          config: {
+            mode: 0,
+            startsOn: start.toISOString(),
+            repeat: '*/2 * * * * *',
+          },
         },
       });
 
@@ -101,14 +116,16 @@ describe('workflow > triggers > schedule > static mode', () => {
     it('on every even seconds and limit 1', async () => {
       const start = await sleepToEvenSecond();
 
-      const workflow = await WorkflowModel.create({
-        enabled: true,
-        type: 'schedule',
-        config: {
-          mode: 0,
-          startsOn: start.toISOString(),
-          repeat: '*/2 * * * * *',
-          limit: 1,
+      const workflow = await WorkflowRepo.create({
+        values: {
+          enabled: true,
+          type: 'schedule',
+          config: {
+            mode: 0,
+            startsOn: start.toISOString(),
+            repeat: '*/2 * * * * *',
+            limit: 1,
+          },
         },
       });
 
@@ -123,14 +140,16 @@ describe('workflow > triggers > schedule > static mode', () => {
       const start = new Date();
       start.setMilliseconds(0);
 
-      const workflow = await WorkflowModel.create({
-        enabled: true,
-        type: 'schedule',
-        config: {
-          mode: 0,
-          startsOn: start.toISOString(),
-          repeat: 2000,
-          limit: 1,
+      const workflow = await WorkflowRepo.create({
+        values: {
+          enabled: true,
+          type: 'schedule',
+          config: {
+            mode: 0,
+            startsOn: start.toISOString(),
+            repeat: 2000,
+            limit: 1,
+          },
         },
       });
 
@@ -149,13 +168,15 @@ describe('workflow > triggers > schedule > static mode', () => {
 
       await sleep(1500);
 
-      const workflow = await WorkflowModel.create({
-        enabled: true,
-        type: 'schedule',
-        config: {
-          mode: 0,
-          startsOn,
-          repeat: `${now.getSeconds()} * * * * *`,
+      const workflow = await WorkflowRepo.create({
+        values: {
+          enabled: true,
+          type: 'schedule',
+          config: {
+            mode: 0,
+            startsOn,
+            repeat: `${now.getSeconds()} * * * * *`,
+          },
         },
       });
 
@@ -170,12 +191,14 @@ describe('workflow > triggers > schedule > static mode', () => {
     it('no repeat triggered then update to repeat', async () => {
       const start = await sleepToEvenSecond();
 
-      const workflow = await WorkflowModel.create({
-        enabled: true,
-        type: 'schedule',
-        config: {
-          mode: 0,
-          startsOn: start.toISOString(),
+      const workflow = await WorkflowRepo.create({
+        values: {
+          enabled: true,
+          type: 'schedule',
+          config: {
+            mode: 0,
+            startsOn: start.toISOString(),
+          },
         },
       });
 
@@ -207,13 +230,15 @@ describe('workflow > triggers > schedule > static mode', () => {
       const future = new Date();
       future.setSeconds(future.getSeconds() + 2);
 
-      const workflow = await WorkflowModel.create({
-        enabled: true,
-        type: 'schedule',
-        config: {
-          mode: 0,
-          startsOn: future.toISOString(),
-          repeat: 1000,
+      const workflow = await WorkflowRepo.create({
+        values: {
+          enabled: true,
+          type: 'schedule',
+          config: {
+            mode: 0,
+            startsOn: future.toISOString(),
+            repeat: 1000,
+          },
         },
       });
 
@@ -265,7 +290,10 @@ describe('workflow > triggers > schedule > static mode', () => {
       });
 
       await sleep(3000);
-      await WorkflowModel.update({ enabled: false }, { where: { enabled: true } });
+      await WorkflowRepo.update({
+        values: { enabled: false },
+        filter: { enabled: true },
+      });
 
       const [e1] = await w1.getExecutions();
       expect(e1).toBeDefined();
@@ -287,12 +315,14 @@ describe('workflow > triggers > schedule > static mode', () => {
       start.setMilliseconds(0);
       start.setSeconds(start.getSeconds() + 2);
 
-      const workflow = await WorkflowModel.create({
-        enabled: true,
-        type: 'schedule',
-        config: {
-          mode: 0,
-          startsOn: start.toISOString(),
+      const workflow = await WorkflowRepo.create({
+        values: {
+          enabled: true,
+          type: 'schedule',
+          config: {
+            mode: 0,
+            startsOn: start.toISOString(),
+          },
         },
       });
 
@@ -315,12 +345,14 @@ describe('workflow > triggers > schedule > static mode', () => {
       start.setMilliseconds(0);
       start.setSeconds(start.getSeconds() + 2);
 
-      const workflow = await WorkflowModel.create({
-        enabled: true,
-        type: 'schedule',
-        config: {
-          mode: 0,
-          startsOn: start.toISOString(),
+      const workflow = await WorkflowRepo.create({
+        values: {
+          enabled: true,
+          type: 'schedule',
+          config: {
+            mode: 0,
+            startsOn: start.toISOString(),
+          },
         },
       });
 
@@ -335,6 +367,38 @@ describe('workflow > triggers > schedule > static mode', () => {
 
       const c2 = await workflow.countExecutions();
       expect(c2).toBe(1);
+    });
+  });
+
+  describe('duplications', () => {
+    it('same workflow should not be triggered in same time more than once', async () => {
+      await sleepToEvenSecond();
+
+      const start = new Date();
+      start.setMilliseconds(0);
+      start.setSeconds(start.getSeconds() + 2);
+
+      const workflow = await WorkflowRepo.create({
+        values: {
+          enabled: true,
+          type: 'schedule',
+          config: {
+            mode: 0,
+            startsOn: start.toISOString(),
+          },
+        },
+      });
+
+      (app.pm.get('workflow') as Plugin).trigger(
+        workflow,
+        { date: start },
+        { eventKey: `${workflow.id}@${start.getTime()}` },
+      );
+
+      await sleep(3000);
+
+      const e1s = await workflow.getExecutions();
+      expect(e1s.length).toBe(1);
     });
   });
 });

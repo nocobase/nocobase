@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import React, { useContext } from 'react';
 import { FilterOutlined } from '@ant-design/icons';
 import {
@@ -31,12 +40,12 @@ const createFilterSchema = () => {
           grid: {
             type: 'void',
             'x-component': 'ChartFilterGrid',
-            'x-initializer': 'ChartFilterItemInitializers',
+            'x-initializer': 'chartFilterForm:configureFields',
             properties: {},
           },
           actions: {
             type: 'void',
-            'x-initializer': 'ChartFilterActionInitializers',
+            'x-initializer': 'chartFilterForm:configureActions',
             'x-component': 'ActionBar',
             'x-component-props': {
               layout: 'one-column',

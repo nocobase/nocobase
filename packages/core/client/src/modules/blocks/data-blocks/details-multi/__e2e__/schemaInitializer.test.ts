@@ -1,19 +1,59 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { createBlockInPage, expect, oneEmptyDetailsBlock, test } from '@nocobase/test/e2e';
+import { oneEmptyTableWithUsers } from './templatesOfBug';
 
 test.describe('where multi data details block can be added', () => {
   test('page', async ({ page, mockPage }) => {
     await mockPage().goto();
-    await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
+    await page.getByLabel('schema-initializer-Grid-page:addBlock').hover();
     await createBlockInPage(page, 'Details');
     await expect(page.getByLabel('block-item-CardItem-users-details')).toBeVisible();
+  });
+
+  test('popup', async ({ page, mockPage }) => {
+    await mockPage(oneEmptyTableWithUsers).goto();
+
+    // 1. 打开弹窗，通过 Associated records 添加一个详情区块
+    await page.getByLabel('action-Action.Link-View').click();
+    await page.getByLabel('schema-initializer-Grid-popup').hover();
+    await page.getByRole('menuitem', { name: 'table Details right' }).hover();
+    await page.getByRole('menuitem', { name: 'Associated records right' }).hover();
+    await page.getByRole('menuitem', { name: 'Roles' }).click();
+    await page.mouse.move(300, 0);
+    await page.getByLabel('schema-initializer-Grid-details:configureFields-roles').hover();
+    await page.getByRole('menuitem', { name: 'Role UID' }).click();
+    await page.mouse.move(300, 0);
+    await expect(page.getByLabel('block-item-CollectionField-').getByText('admin')).toBeVisible();
+
+    // 2. 打开弹窗，通过 Other records 添加一个详情区块
+    await page.getByLabel('schema-initializer-Grid-popup').hover();
+    await page.getByRole('menuitem', { name: 'table Details right' }).hover();
+    await page.getByRole('menuitem', { name: 'Other records right' }).hover();
+    await page.getByRole('menuitem', { name: 'Users' }).click();
+    await page.mouse.move(300, 0);
+    await page.getByLabel('schema-initializer-Grid-details:configureFields-users').click();
+    await page.getByRole('menuitem', { name: 'Nickname' }).click();
+    await page.mouse.move(300, 0);
+    await expect(
+      page.getByLabel('block-item-CollectionField-users-details-users.nickname-Nickname').getByText('Super Admin'),
+    ).toBeVisible();
   });
 });
 
 test.describe('configure fields', () => {
-  test('display collection fields & display association fields & add text', async ({ page, mockPage }) => {
+  test('display collection fields & display association fields & add text', async ({ page, mockPage, mockRecord }) => {
     await mockPage(oneEmptyDetailsBlock).goto();
+    await mockRecord('general');
 
-    const formItemInitializer = page.getByLabel('schema-initializer-Grid-ReadPrettyFormItemInitializers-general');
+    const formItemInitializer = page.getByLabel('schema-initializer-Grid-details:configureFields-general');
 
     // add fields
     await formItemInitializer.hover();
@@ -60,10 +100,12 @@ test.describe('configure fields', () => {
 });
 
 test.describe('configure actions', () => {
-  test('edit & delete & duplicate', async ({ page, mockPage }) => {
-    await mockPage(oneEmptyDetailsBlock).goto();
+  test('edit & delete & duplicate', async ({ page, mockPage, mockRecord }) => {
+    const nocoPage = await mockPage(oneEmptyDetailsBlock).waitForInit();
+    await mockRecord('general');
+    await nocoPage.goto();
 
-    await page.getByLabel('schema-initializer-ActionBar-DetailsActionInitializers-general').hover();
+    await page.getByLabel('schema-initializer-ActionBar-detailsWithPaging:configureActions-general').hover();
     await page.getByRole('menuitem', { name: 'Edit' }).click();
     await page.getByRole('menuitem', { name: 'Delete' }).click();
 
@@ -75,7 +117,7 @@ test.describe('configure actions', () => {
     await expect(page.getByRole('button', { name: 'Delete' })).toBeVisible();
 
     // delete buttons
-    await page.getByLabel('schema-initializer-ActionBar-DetailsActionInitializers-general').hover();
+    await page.getByLabel('schema-initializer-ActionBar-detailsWithPaging:configureActions-general').hover();
     await page.getByRole('menuitem', { name: 'Edit' }).click();
     await page.getByRole('menuitem', { name: 'Delete' }).click();
 

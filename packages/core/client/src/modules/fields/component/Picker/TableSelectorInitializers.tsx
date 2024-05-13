@@ -1,9 +1,17 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { useCollection_deprecated } from '../../../..';
-import { SchemaInitializer } from '../../../../application/schema-initializer/SchemaInitializer';
+import { CompatibleSchemaInitializer } from '../../../../application/schema-initializer/CompatibleSchemaInitializer';
 import { gridRowColWrap } from '../../../../schema-initializer/utils';
 
-export const tableSelectorInitializers = new SchemaInitializer({
-  name: 'TableSelectorInitializers',
+const commonOptions = {
   wrap: gridRowColWrap,
   title: '{{t("Add block")}}',
   icon: 'PlusOutlined',
@@ -32,7 +40,7 @@ export const tableSelectorInitializers = new SchemaInitializer({
             title: '{{t("Form")}}',
             Component: 'FilterFormBlockInitializer',
             componentProps: {
-              filterMenuItemChildren() {
+              filterCollections() {
                 return false;
               },
               onlyCurrentDataSource: true,
@@ -45,7 +53,7 @@ export const tableSelectorInitializers = new SchemaInitializer({
             title: '{{t("Collapse")}}',
             Component: 'FilterCollapseBlockInitializer',
             componentProps: {
-              filterMenuItemChildren() {
+              filterCollections() {
                 return false;
               },
               onlyCurrentDataSource: true,
@@ -81,4 +89,21 @@ export const tableSelectorInitializers = new SchemaInitializer({
       ],
     },
   ],
+};
+
+/**
+ * @deprecated
+ * use `tableSelectorInitializers` instead
+ */
+export const tableSelectorInitializers_deprecated = new CompatibleSchemaInitializer({
+  name: 'TableSelectorInitializers',
+  ...commonOptions,
 });
+
+export const tableSelectorInitializers = new CompatibleSchemaInitializer(
+  {
+    name: 'popup:tableSelector:addBlock',
+    ...commonOptions,
+  },
+  tableSelectorInitializers_deprecated,
+);

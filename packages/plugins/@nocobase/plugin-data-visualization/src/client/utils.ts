@@ -1,12 +1,22 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Schema } from '@formily/react';
 import { uid } from '@formily/shared';
+import lodash from 'lodash';
 import { SelectedField } from './configure';
 import { FieldOption } from './hooks';
 import { QueryProps } from './renderer';
-import lodash from 'lodash';
 
 export const createRendererSchema = (decoratorProps: any, componentProps = {}) => {
-  const { collection } = decoratorProps;
+  const { collection, config } = decoratorProps;
+  const { title, bordered } = config || {};
   return {
     type: 'void',
     'x-decorator': 'ChartRendererProvider',
@@ -16,8 +26,10 @@ export const createRendererSchema = (decoratorProps: any, componentProps = {}) =
     'x-component': 'CardItem',
     'x-component-props': {
       size: 'small',
+      title,
+      bordered,
     },
-    'x-initializer': 'ChartInitializers',
+    'x-initializer': 'charts:addBlock',
     properties: {
       [uid()]: {
         type: 'void',

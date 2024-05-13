@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { isValid } from '@formily/shared';
 import { useFieldSchema } from '@formily/react';
 import { useSchemaToolbar } from '../../../application';
@@ -10,6 +19,7 @@ import {
   RemoveButton,
   SecondConFirm,
   WorkflowConfig,
+  RefreshDataBlockRequest,
 } from '../../../schema-component/antd/action/Action.Designer';
 import { SchemaSettingsLinkageRules } from '../../../schema-settings';
 
@@ -54,6 +64,15 @@ export const customizeUpdateRecordActionSettings = new SchemaSettings({
       useVisible() {
         const fieldSchema = useFieldSchema();
         return isValid(fieldSchema?.['x-action-settings']?.triggerWorkflows);
+      },
+    },
+    {
+      name: 'refreshDataBlockRequest',
+      Component: RefreshDataBlockRequest,
+      useComponentProps() {
+        return {
+          isPopupAction: false,
+        };
       },
     },
     {

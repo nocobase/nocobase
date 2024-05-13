@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { expect, test } from '@nocobase/test/e2e';
 import { oneTableBlock } from './utils';
 
@@ -70,7 +79,7 @@ test('allows to confgiure plugins ', async ({ page, mockPage, mockRole, updateRo
     .locator('span')
     .nth(1)
     .click();
-  await expect(page.getByRole('tab').getByText('Plugin settings')).toBeVisible();
+  await expect(page.getByText('Plugin settings')).toBeVisible();
   await updateRole({
     name: roleData.name,
     snippets: ['!pm.*'],

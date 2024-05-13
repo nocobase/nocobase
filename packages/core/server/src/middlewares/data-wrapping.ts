@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Context, Next } from '@nocobase/actions';
 import stream from 'stream';
 
@@ -8,10 +17,6 @@ export function dataWrapping() {
     if (ctx.withoutDataWrapping) {
       return;
     }
-
-    // if (!ctx?.action?.params) {
-    //   return;
-    // }
 
     if (ctx.body instanceof stream.Readable) {
       return;
@@ -59,6 +64,8 @@ export function dataWrapping() {
     if (ctx.body && ctx.state.messages?.length) {
       ctx.body.messages = ctx.state.messages;
     }
+
+    ctx.dataWrapped = true;
   };
 }
 

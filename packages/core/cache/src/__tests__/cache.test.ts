@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Cache } from '../cache';
 import { CacheManager } from '../cache-manager';
 import lodash from 'lodash';
@@ -21,7 +30,44 @@ describe('cache', () => {
     expect(value).toBe('value');
   });
 
-  it('set and get value in object', async () => {
+  it('should del value', async () => {
+    await cache.set('key', 'value');
+    await cache.del('key');
+    const value = await cache.get('key');
+    expect(value).toBeUndefined();
+  });
+
+  it('should mset and mget values', async () => {
+    await cache.mset([
+      ['key1', 'value1'],
+      ['key2', 'value2'],
+    ]);
+    const values = await cache.mget('key1', 'key2');
+    expect(values).toMatchObject(['value1', 'value2']);
+  });
+
+  it('should mdel values', async () => {
+    await cache.mset([
+      ['key1', 'value1'],
+      ['key2', 'value2'],
+    ]);
+    await cache.mdel('key1', 'key2');
+    const values = await cache.mget('key1', 'key2');
+    expect(values).toMatchObject([undefined, undefined]);
+  });
+
+  it('should get all keys', async () => {
+    await cache.mset([
+      [`key1`, 'value1'],
+      [`key2`, 'value2'],
+    ]);
+    const keys = await cache.keys();
+    expect(keys.length).toBe(2);
+    expect(keys).toContain('key1');
+    expect(keys).toContain('key2');
+  });
+
+  it('should set and get value in object', async () => {
     const value = { a: 1 };
     await cache.set('key', value);
     const cacheA = await cache.getValueInObject('key', 'a');
@@ -30,6 +76,16 @@ describe('cache', () => {
     await cache.setValueInObject('key', 'a', 2);
     const cacheVal2 = await cache.getValueInObject('key', 'a');
     expect(cacheVal2).toEqual(2);
+  });
+
+  it('should del value in object', async () => {
+    const value = { a: 1, b: 2 };
+    await cache.set('key', value);
+    await cache.delValueInObject('key', 'a');
+    const cacheA = await cache.getValueInObject('key', 'a');
+    expect(cacheA).toBeUndefined();
+    const cacheB = await cache.getValueInObject('key', 'b');
+    expect(cacheB).toEqual(2);
   });
 
   it('wrap with condition, useCache', async () => {

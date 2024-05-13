@@ -1,5 +1,14 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { observer, RecursionField, useField, useFieldSchema } from '@formily/react';
-import { Input, Select } from 'antd';
+import { Input, Select, Space } from 'antd';
 import { differenceBy, unionBy } from 'lodash';
 import React, { useContext, useMemo, useState } from 'react';
 import {
@@ -9,7 +18,13 @@ import {
   SchemaComponentOptions,
   useActionContext,
 } from '../..';
-import { CollectionProvider_deprecated, RecordProvider, useFormBlockContext, useCollectionRecordData } from '../../../';
+import {
+  ClearCollectionFieldContext,
+  CollectionProvider_deprecated,
+  RecordProvider,
+  useCollectionRecordData,
+  useFormBlockContext,
+} from '../../../';
 import {
   TableSelectorParamsProvider,
   useTableSelectorProps as useTsp,
@@ -133,7 +148,7 @@ export const InternalPicker = observer(
     };
     return (
       <>
-        <Input.Group compact style={{ display: 'flex', lineHeight: '32px' }}>
+        <Space.Compact style={{ display: 'flex', lineHeight: '32px' }}>
           <div style={{ width: '100%' }}>
             <Select
               role="button"
@@ -171,17 +186,20 @@ export const InternalPicker = observer(
           </div>
           {isAllowAddNew && (
             <RecordProvider isNew record={null} parent={recordData}>
-              <RecursionField
-                onlyRenderProperties
-                basePath={field.address}
-                schema={fieldSchema}
-                filterProperties={(s) => {
-                  return s['x-component'] === 'Action';
-                }}
-              />
+              {/* 快捷添加按钮添加的添加的是一个普通的 form 区块（非关系区块），不应该与任何字段有关联，所以在这里把字段相关的上下文给清除掉 */}
+              <ClearCollectionFieldContext>
+                <RecursionField
+                  onlyRenderProperties
+                  basePath={field.address}
+                  schema={fieldSchema}
+                  filterProperties={(s) => {
+                    return s['x-component'] === 'Action';
+                  }}
+                />
+              </ClearCollectionFieldContext>
             </RecordProvider>
           )}
-        </Input.Group>
+        </Space.Compact>
         <ActionContextProvider
           value={{
             openSize: fieldSchema['x-component-props']?.['openSize'] || openSize,

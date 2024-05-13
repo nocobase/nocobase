@@ -1,3 +1,5 @@
+
+
 import {
   Application,
   CollectionFieldInitializer,
@@ -67,7 +69,7 @@ const TextInitializer: FC = () => {
 };
 
 const addFormItemInitializer = new SchemaInitializer({
-  name: 'AddFormItem',
+  name: 'addFormItem',
   title: 'Configure actions',
   insertPosition: 'beforeEnd',
   items: [
@@ -91,7 +93,7 @@ const addFormItemInitializer = new SchemaInitializer({
 });
 
 const Page = (props) => {
-  const { render } = useSchemaInitializerRender('AddFormItem');
+  const { render } = useSchemaInitializerRender('addFormItem');
   return (
     <div>
       {props.children}

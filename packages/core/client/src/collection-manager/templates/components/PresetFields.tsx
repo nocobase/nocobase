@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { observer, useForm } from '@formily/react';
 import { Table, Tag } from 'antd';
 import React, { useEffect, useState } from 'react';
@@ -193,6 +202,10 @@ export const PresetFields = observer(
         rowSelection={{
           type: 'checkbox',
           selectedRowKeys,
+          getCheckboxProps: (record) => ({
+            name: record.name,
+            disabled: props?.disabled,
+          }),
           onChange: (_, selectedRows) => {
             const fields = getDefaultCollectionFields(selectedRows, form.values);
             const config = {

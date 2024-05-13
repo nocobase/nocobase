@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { ISchema, Schema } from '@formily/react';
 import { uid } from '@formily/shared';
 import { message } from 'antd';
@@ -137,9 +146,9 @@ export const collectionTableSchema: ISchema = {
           },
           'x-action': 'filter',
           'x-component': 'Filter.Action',
+          'x-use-component-props': 'cm.useFilterActionProps',
           'x-component-props': {
             icon: 'FilterOutlined',
-            useProps: '{{ cm.useFilterActionProps }}',
           },
           'x-align': 'left',
         },

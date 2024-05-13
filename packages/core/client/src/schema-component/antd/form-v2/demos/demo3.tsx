@@ -1,3 +1,5 @@
+
+
 import { ISchema } from '@formily/react';
 import {
   Action,
@@ -50,10 +52,8 @@ const schema: ISchema = {
         form: {
           type: 'void',
           'x-component': 'FormV2',
+          'x-use-component-props': 'useFormBlockProps',
           'x-read-pretty': true,
-          'x-component-props': {
-            useProps: '{{ useFormBlockProps }}',
-          },
           properties: {
             grid: {
               type: 'void',

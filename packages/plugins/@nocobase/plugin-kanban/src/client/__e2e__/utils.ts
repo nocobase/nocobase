@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { CollectionSetting, PageConfig } from '@nocobase/test/e2e';
 
 /**
@@ -96,7 +105,7 @@ export const oneEmptyKanbanBlock: PageConfig = {
         version: '2.0',
         type: 'void',
         'x-component': 'Grid',
-        'x-initializer': 'BlockInitializers',
+        'x-initializer': 'page:addBlock',
         properties: {
           '4io56n1mje4': {
             _isJSONSchemaObject: true,
@@ -133,7 +142,7 @@ export const oneEmptyKanbanBlock: PageConfig = {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'void',
-                        'x-initializer': 'KanbanActionInitializers',
+                        'x-initializer': 'kanban:configureActions',
                         'x-component': 'ActionBar',
                         'x-component-props': {
                           style: {
@@ -227,7 +236,7 @@ export const oneEmptyKanbanBlock: PageConfig = {
                                             version: '2.0',
                                             type: 'void',
                                             'x-component': 'Grid',
-                                            'x-initializer': 'RecordBlockInitializers',
+                                            'x-initializer': 'popup:common:addBlock',
                                             'x-uid': '2hsi7zy93g6',
                                             'x-async': false,
                                             'x-index': 1,

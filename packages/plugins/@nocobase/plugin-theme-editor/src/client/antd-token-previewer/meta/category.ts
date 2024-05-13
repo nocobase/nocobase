@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import type { AliasToken } from '../interface';
 import type { TokenTree } from './interface';
 import { seedRelatedAlias, seedRelatedMap } from './TokenRelation';
@@ -185,7 +194,17 @@ const category: TokenTree<keyof AliasToken | string> = [
             nameEn: 'Margin',
             desc: '',
             descEn: '',
-            mapToken: ['marginXXS', 'marginXS', 'marginSM', 'margin', 'marginMD', 'marginLG', 'marginXL', 'marginXXL'],
+            mapToken: [
+              'marginXXS',
+              'marginXS',
+              'marginSM',
+              'margin',
+              'marginMD',
+              'marginLG',
+              'marginXL',
+              'marginXXL',
+              'marginBlock',
+            ],
           },
           {
             key: 'padding',
@@ -194,7 +213,19 @@ const category: TokenTree<keyof AliasToken | string> = [
             nameEn: 'Padding',
             desc: '',
             descEn: '',
-            mapToken: ['paddingXXS', 'paddingXS', 'paddingSM', 'padding', 'paddingMD', 'paddingLG', 'paddingXL'],
+            mapToken: [
+              'paddingXXS',
+              'paddingXS',
+              'paddingSM',
+              'padding',
+              'paddingMD',
+              'paddingLG',
+              'paddingXL',
+              'paddingPageHorizontal',
+              'paddingPageVertical',
+              'paddingPopupHorizontal',
+              'paddingPopupVertical',
+            ],
             aliasToken: [
               'paddingContentHorizontal',
               'paddingContentVertical',
@@ -222,7 +253,7 @@ const category: TokenTree<keyof AliasToken | string> = [
         desc: '',
         descEn: '',
         seedToken: ['borderRadius'],
-        mapToken: ['borderRadius', 'borderRadiusSM', 'borderRadiusLG', 'borderRadiusXS'],
+        mapToken: ['borderRadius', 'borderRadiusSM', 'borderRadiusLG', 'borderRadiusXS', 'borderRadiusBlock'],
       },
       {
         key: 'boxShadow',

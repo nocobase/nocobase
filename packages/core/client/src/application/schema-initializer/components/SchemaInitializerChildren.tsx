@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import React, { FC, memo, useMemo } from 'react';
 
 import { useFindComponent } from '../../../schema-component';
@@ -21,6 +30,7 @@ const typeComponentMap: Record<string, string> = {
   item: 'SchemaInitializerItemInternal',
   itemGroup: 'SchemaInitializerItemGroupInternal',
   divider: 'SchemaInitializerDivider',
+  switch: 'SchemaInitializerSwitchInternal',
   subMenu: 'SchemaInitializerSubMenuInternal',
   actionModal: 'SchemaInitializerActionModalInternal',
 };
@@ -49,7 +59,10 @@ export const SchemaInitializerChild: FC<SchemaInitializerItemType> = memo((props
   const componentVal = Component || component;
   const isBuiltType = !componentVal && type && typeComponentMap[type];
 
-  const componentChildren = useChildrenRes || children;
+  const componentChildren = useMemo(() => {
+    const res = [...(useChildrenRes || []), ...(children || [])];
+    return res.length === 0 ? undefined : res;
+  }, [useChildrenRes, children]);
   const contextValue = useMemo(() => {
     return {
       ...others,
@@ -67,7 +80,7 @@ export const SchemaInitializerChild: FC<SchemaInitializerItemType> = memo((props
   if (!C) {
     return null;
   }
-  if (hideIfNoChildren && Array.isArray(componentChildren) && componentChildren.length === 0) {
+  if (hideIfNoChildren && !componentChildren) {
     return null;
   }
 

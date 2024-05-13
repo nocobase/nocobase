@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { ArrayItems } from '@formily/antd-v5';
 import { ISchema, useField, useFieldSchema } from '@formily/react';
 import { useTranslation } from 'react-i18next';
@@ -16,7 +25,11 @@ import {
 import { SchemaSettingsDataScope } from '../../../schema-settings/SchemaSettingsDataScope';
 import { useDesignable } from '../../hooks';
 import { removeNullCondition } from '../filter';
+import { setDataLoadingModeSettingsItem } from '../../../modules/blocks/data-blocks/details-multi/setDataLoadingModeSettingsItem';
 
+/**
+ * @deprecated
+ */
 export const formSettings = new SchemaSettings({
   name: 'FormSettings',
   items: [
@@ -58,7 +71,8 @@ export const formSettings = new SchemaSettings({
       useComponentProps() {
         const { name } = useCollection_deprecated();
         const fieldSchema = useFieldSchema();
-        const defaultResource = fieldSchema?.['x-decorator-props']?.resource;
+        const defaultResource =
+          fieldSchema?.['x-decorator-props']?.resource || fieldSchema?.['x-decorator-props']?.association;
         return {
           componentName: 'FormItem',
           collectionName: name,
@@ -83,6 +97,9 @@ export const formSettings = new SchemaSettings({
   ],
 });
 
+/**
+ * @deprecated
+ */
 export const readPrettyFormSettings = new SchemaSettings({
   name: 'ReadPrettyFormSettings',
   items: [
@@ -91,12 +108,24 @@ export const readPrettyFormSettings = new SchemaSettings({
       Component: SchemaSettingsBlockTitleItem,
     },
     {
+      name: 'linkageRules',
+      Component: SchemaSettingsLinkageRules,
+      useComponentProps() {
+        const { name } = useCollection_deprecated();
+        return {
+          collectionName: name,
+          readPretty: true,
+        };
+      },
+    },
+    {
       name: 'formItemTemplate',
       Component: SchemaSettingsFormItemTemplate,
       useComponentProps() {
         const { name } = useCollection_deprecated();
         const fieldSchema = useFieldSchema();
-        const defaultResource = fieldSchema?.['x-decorator-props']?.resource;
+        const defaultResource =
+          fieldSchema?.['x-decorator-props']?.resource || fieldSchema?.['x-decorator-props']?.association;
         return {
           insertAdjacentPosition: 'beforeEnd',
           componentName: 'ReadPrettyFormItem',
@@ -122,12 +151,26 @@ export const readPrettyFormSettings = new SchemaSettings({
   ],
 });
 
+/**
+ * @deprecated
+ */
 export const formDetailsSettings = new SchemaSettings({
   name: 'FormDetailsSettings',
   items: [
     {
       name: 'title',
       Component: SchemaSettingsBlockTitleItem,
+    },
+    {
+      name: 'linkageRules',
+      Component: SchemaSettingsLinkageRules,
+      useComponentProps() {
+        const { name } = useCollection_deprecated();
+        return {
+          collectionName: name,
+          readPretty: true,
+        };
+      },
     },
     {
       name: 'dataScope',
@@ -160,6 +203,7 @@ export const formDetailsSettings = new SchemaSettings({
         };
       },
     },
+    setDataLoadingModeSettingsItem,
     {
       name: 'sortingRules',
       type: 'modal',
@@ -283,7 +327,8 @@ export const formDetailsSettings = new SchemaSettings({
       useComponentProps() {
         const { name } = useCollection_deprecated();
         const fieldSchema = useFieldSchema();
-        const defaultResource = fieldSchema?.['x-decorator-props']?.resource;
+        const defaultResource =
+          fieldSchema?.['x-decorator-props']?.resource || fieldSchema?.['x-decorator-props']?.association;
         return {
           componentName: 'Details',
           collectionName: name,

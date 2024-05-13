@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { useField, useForm } from '@formily/react';
 import { message } from 'antd';
 import _ from 'lodash';
@@ -132,10 +141,10 @@ export const useSelfAndChildrenCollections = (collectionName: string) => {
   return options;
 };
 
-export const useCollectionFilterOptions = (collection: any) => {
+export const useCollectionFilterOptions = (collection: any, dataSource?: string) => {
   const { getCollectionFields, getInterface } = useCollectionManager_deprecated();
   return useMemo(() => {
-    const fields = getCollectionFields(collection);
+    const fields = getCollectionFields(collection, dataSource);
     const field2option = (field, depth) => {
       if (!field.interface) {
         return;
@@ -165,7 +174,7 @@ export const useCollectionFilterOptions = (collection: any) => {
         option['children'] = children;
       }
       if (nested) {
-        const targetFields = getCollectionFields(field.target);
+        const targetFields = getCollectionFields(field.target, dataSource);
         const options = getOptions(targetFields, depth + 1).filter(Boolean);
         option['children'] = option['children'] || [];
         option['children'].push(...options);
@@ -184,7 +193,7 @@ export const useCollectionFilterOptions = (collection: any) => {
     };
     const options = getOptions(fields, 1);
     return options;
-  }, [_.isString(collection) ? collection : collection?.name]);
+  }, [_.isString(collection) ? collection : collection?.name, dataSource]);
 };
 
 export const useCollectionFilterOptionsV2 = (collection: any) => {

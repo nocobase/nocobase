@@ -1,3 +1,5 @@
+
+
 import { FormItem } from '@formily/antd-v5';
 import { Details, FormProvider, Input, SchemaComponent } from '@nocobase/client';
 import React from 'react';

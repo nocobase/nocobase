@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Context, Next } from '@nocobase/actions';
 import { Field, FilterParser, snakeCase } from '@nocobase/database';
 import { formatter } from './formatter';
@@ -27,6 +36,7 @@ type OrderProps = {
 
 type QueryParams = Partial<{
   uid: string;
+  dataSource: string;
   collection: string;
   measures: MeasureProps[];
   dimensions: DimensionProps[];
@@ -44,6 +54,11 @@ type QueryParams = Partial<{
   // Get the latest data from the database
   refresh: boolean;
 }>;
+
+const getDB = (ctx: Context, dataSource: string) => {
+  const ds = ctx.app.dataSourceManager.dataSources.get(dataSource);
+  return ds?.collectionManager.db;
+};
 
 export const postProcess = async (ctx: Context, next: Next) => {
   const { data, fieldMap } = ctx.action.params.values as {
@@ -71,8 +86,9 @@ export const postProcess = async (ctx: Context, next: Next) => {
 };
 
 export const queryData = async (ctx: Context, next: Next) => {
-  const { collection, queryParams, fieldMap } = ctx.action.params.values;
-  const model = ctx.db.getModel(collection);
+  const { dataSource, collection, queryParams, fieldMap } = ctx.action.params.values;
+  const db = getDB(ctx, dataSource) || ctx.db;
+  const model = db.getModel(collection);
   const data = await model.findAll(queryParams);
   ctx.action.params.values = {
     data,
@@ -89,8 +105,9 @@ export const queryData = async (ctx: Context, next: Next) => {
 };
 
 export const parseBuilder = async (ctx: Context, next: Next) => {
-  const { sequelize } = ctx.db;
-  const { measures, dimensions, orders, include, where, limit } = ctx.action.params.values;
+  const { dataSource, measures, dimensions, orders, include, where, limit } = ctx.action.params.values;
+  const db = getDB(ctx, dataSource) || ctx.db;
+  const { sequelize } = db;
   const attributes = [];
   const group = [];
   const order = [];
@@ -157,8 +174,16 @@ export const parseBuilder = async (ctx: Context, next: Next) => {
 };
 
 export const parseFieldAndAssociations = async (ctx: Context, next: Next) => {
-  const { collection: collectionName, measures, dimensions, orders, filter } = ctx.action.params.values as QueryParams;
-  const collection = ctx.db.getCollection(collectionName);
+  const {
+    dataSource,
+    collection: collectionName,
+    measures,
+    dimensions,
+    orders,
+    filter,
+  } = ctx.action.params.values as QueryParams;
+  const db = getDB(ctx, dataSource) || ctx.db;
+  const collection = db.getCollection(collectionName);
   const fields = collection.fields;
   const models: {
     [target: string]: {
@@ -180,7 +205,7 @@ export const parseFieldAndAssociations = async (ctx: Context, next: Next) => {
     let fieldType = fields.get(name)?.type;
     if (target) {
       const targetField = fields.get(target) as Field;
-      const targetCollection = ctx.db.getCollection(targetField.target);
+      const targetCollection = db.getCollection(targetField.target);
       const targetFields = targetCollection.fields;
       fieldType = targetFields.get(name)?.type;
       field = `${target}.${field}`;
@@ -300,7 +325,7 @@ export const cacheMiddleware = async (ctx: Context, next: Next) => {
   }
 };
 
-const checkPermission = (ctx: Context, next: Next) => {
+export const checkPermission = (ctx: Context, next: Next) => {
   const { collection } = ctx.action.params.values as QueryParams;
   const roleName = ctx.state.currentRole || 'anonymous';
   const can = ctx.app.acl.can({ role: roleName, resource: collection, action: 'list' });

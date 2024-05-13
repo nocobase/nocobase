@@ -1,10 +1,12 @@
+
+
 import React from 'react';
 import { Application, Plugin, SchemaInitializer, useSchemaInitializerRender } from '@nocobase/client';
 import { PlusOutlined } from '@ant-design/icons';
 import { Divider, Avatar, AvatarProps } from 'antd';
 
 const myInitializer = new SchemaInitializer<AvatarProps>({
-  name: 'MyInitializer',
+  name: 'myInitializer',
   designable: true,
   // 使用自定义组件代替默认的 Button
   Component: (props) => (
@@ -25,7 +27,7 @@ const myInitializer = new SchemaInitializer<AvatarProps>({
 });
 
 const Root = () => {
-  const { exists, render } = useSchemaInitializerRender('MyInitializer');
+  const { exists, render } = useSchemaInitializerRender('myInitializer');
   if (!exists) return null;
   return (
     <div>

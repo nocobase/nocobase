@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { PageConfig } from './e2eUtils';
 import {
   generalWithAdvanced,
@@ -56,7 +65,7 @@ export const tabPageEmpty: PageConfig = {
         version: '2.0',
         type: 'void',
         'x-component': 'Grid',
-        'x-initializer': 'BlockInitializers',
+        'x-initializer': 'page:addBlock',
         'x-uid': 'ir8tvhr1xqi',
         'x-async': false,
         'x-index': 1,
@@ -153,7 +162,7 @@ export const oneEmptyTable: PageConfig = {
         version: '2.0',
         type: 'void',
         'x-component': 'Grid',
-        'x-initializer': 'BlockInitializers',
+        'x-initializer': 'page:addBlock',
         properties: {
           fdkznek8n9o: {
             _isJSONSchemaObject: true,
@@ -193,7 +202,7 @@ export const oneEmptyTable: PageConfig = {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'void',
-                        'x-initializer': 'TableActionInitializers',
+                        'x-initializer': 'table:configureActions',
                         'x-component': 'ActionBar',
                         'x-component-props': {
                           style: {
@@ -208,7 +217,7 @@ export const oneEmptyTable: PageConfig = {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'array',
-                        'x-initializer': 'TableColumnInitializers',
+                        'x-initializer': 'table:configureColumns',
                         'x-component': 'TableV2',
                         'x-component-props': {
                           rowKey: 'id',
@@ -227,7 +236,7 @@ export const oneEmptyTable: PageConfig = {
                             'x-decorator': 'TableV2.Column.ActionBar',
                             'x-component': 'TableV2.Column',
                             'x-designer': 'TableV2.ActionColumnDesigner',
-                            'x-initializer': 'TableActionColumnInitializers',
+                            'x-initializer': 'table:configureItemActions',
                             properties: {
                               actions: {
                                 _isJSONSchemaObject: true,
@@ -295,7 +304,7 @@ export const oneEmptyForm: PageConfig = {
         version: '2.0',
         type: 'void',
         'x-component': 'Grid',
-        'x-initializer': 'BlockInitializers',
+        'x-initializer': 'page:addBlock',
         properties: {
           cxk2aa058lc: {
             _isJSONSchemaObject: true,
@@ -340,7 +349,7 @@ export const oneEmptyForm: PageConfig = {
                             version: '2.0',
                             type: 'void',
                             'x-component': 'Grid',
-                            'x-initializer': 'FormItemInitializers',
+                            'x-initializer': 'form:configureFields',
                             'x-uid': 'y6qzidbf0lm',
                             'x-async': false,
                             'x-index': 1,
@@ -349,7 +358,7 @@ export const oneEmptyForm: PageConfig = {
                             _isJSONSchemaObject: true,
                             version: '2.0',
                             type: 'void',
-                            'x-initializer': 'FormActionInitializers',
+                            'x-initializer': 'createForm:configureActions',
                             'x-component': 'ActionBar',
                             'x-component-props': {
                               layout: 'one-column',
@@ -405,7 +414,7 @@ export const oneEmptyFormWithActions: PageConfig = {
         version: '2.0',
         type: 'void',
         'x-component': 'Grid',
-        'x-initializer': 'BlockInitializers',
+        'x-initializer': 'page:addBlock',
         properties: {
           ybhtsluv6ay: {
             _isJSONSchemaObject: true,
@@ -450,7 +459,7 @@ export const oneEmptyFormWithActions: PageConfig = {
                             version: '2.0',
                             type: 'void',
                             'x-component': 'Grid',
-                            'x-initializer': 'FormItemInitializers',
+                            'x-initializer': 'form:configureFields',
                             'x-uid': '9gcg27ewld4',
                             'x-async': false,
                             'x-index': 1,
@@ -459,7 +468,7 @@ export const oneEmptyFormWithActions: PageConfig = {
                             _isJSONSchemaObject: true,
                             version: '2.0',
                             type: 'void',
-                            'x-initializer': 'FormActionInitializers',
+                            'x-initializer': 'createForm:configureActions',
                             'x-component': 'ActionBar',
                             'x-component-props': {
                               layout: 'one-column',
@@ -571,7 +580,7 @@ export const oneEmptyDetailsBlock: PageConfig = {
         version: '2.0',
         type: 'void',
         'x-component': 'Grid',
-        'x-initializer': 'BlockInitializers',
+        'x-initializer': 'page:addBlock',
         'x-index': 1,
         properties: {
           cnp4fnntodr: {
@@ -619,7 +628,7 @@ export const oneEmptyDetailsBlock: PageConfig = {
                             _isJSONSchemaObject: true,
                             version: '2.0',
                             type: 'void',
-                            'x-initializer': 'DetailsActionInitializers',
+                            'x-initializer': 'detailsWithPaging:configureActions',
                             'x-component': 'ActionBar',
                             'x-component-props': {
                               style: {
@@ -635,7 +644,7 @@ export const oneEmptyDetailsBlock: PageConfig = {
                             version: '2.0',
                             type: 'void',
                             'x-component': 'Grid',
-                            'x-initializer': 'ReadPrettyFormItemInitializers',
+                            'x-initializer': 'details:configureFields',
                             'x-uid': 'sldwwd6jq6g',
                             'x-async': false,
                             'x-index': 2,
@@ -699,7 +708,7 @@ export const oneEmptyListBlock: PageConfig = {
         version: '2.0',
         type: 'void',
         'x-component': 'Grid',
-        'x-initializer': 'BlockInitializers',
+        'x-initializer': 'page:addBlock',
         'x-index': 1,
         properties: {
           wpm7v8svnpo: {
@@ -738,7 +747,7 @@ export const oneEmptyListBlock: PageConfig = {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'void',
-                        'x-initializer': 'ListActionInitializers',
+                        'x-initializer': 'list:configureActions',
                         'x-component': 'ActionBar',
                         'x-component-props': {
                           style: {
@@ -773,7 +782,7 @@ export const oneEmptyListBlock: PageConfig = {
                                 version: '2.0',
                                 type: 'void',
                                 'x-component': 'Grid',
-                                'x-initializer': 'ReadPrettyFormItemInitializers',
+                                'x-initializer': 'details:configureFields',
                                 'x-initializer-props': {
                                   useProps: '{{ useListItemInitializerProps }}',
                                 },
@@ -786,7 +795,7 @@ export const oneEmptyListBlock: PageConfig = {
                                 version: '2.0',
                                 type: 'void',
                                 'x-align': 'left',
-                                'x-initializer': 'ListItemActionInitializers',
+                                'x-initializer': 'list:configureItemActions',
                                 'x-component': 'ActionBar',
                                 'x-component-props': {
                                   useProps: '{{ useListActionBarProps }}',
@@ -848,7 +857,7 @@ export const oneEmptyGridCardBlock: PageConfig = {
         version: '2.0',
         type: 'void',
         'x-component': 'Grid',
-        'x-initializer': 'BlockInitializers',
+        'x-initializer': 'page:addBlock',
         'x-index': 1,
         properties: {
           x22u60kld4t: {
@@ -890,7 +899,7 @@ export const oneEmptyGridCardBlock: PageConfig = {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'void',
-                        'x-initializer': 'GridCardActionInitializers',
+                        'x-initializer': 'gridCard:configureActions',
                         'x-component': 'ActionBar',
                         'x-component-props': {
                           style: {
@@ -925,7 +934,7 @@ export const oneEmptyGridCardBlock: PageConfig = {
                                 version: '2.0',
                                 type: 'void',
                                 'x-component': 'Grid',
-                                'x-initializer': 'ReadPrettyFormItemInitializers',
+                                'x-initializer': 'details:configureFields',
                                 'x-initializer-props': {
                                   useProps: '{{ useGridCardItemInitializerProps }}',
                                 },
@@ -938,7 +947,7 @@ export const oneEmptyGridCardBlock: PageConfig = {
                                 version: '2.0',
                                 type: 'void',
                                 'x-align': 'left',
-                                'x-initializer': 'GridCardItemActionInitializers',
+                                'x-initializer': 'gridCard:configureItemActions',
                                 'x-component': 'ActionBar',
                                 'x-component-props': {
                                   useProps: '{{ useGridCardActionBarProps }}',
@@ -1000,7 +1009,7 @@ export const oneEmptyFilterFormBlock: PageConfig = {
         version: '2.0',
         type: 'void',
         'x-component': 'Grid',
-        'x-initializer': 'BlockInitializers',
+        'x-initializer': 'page:addBlock',
         'x-index': 1,
         properties: {
           mk7wdkfacfo: {
@@ -1043,7 +1052,7 @@ export const oneEmptyFilterFormBlock: PageConfig = {
                             version: '2.0',
                             type: 'void',
                             'x-component': 'Grid',
-                            'x-initializer': 'FilterFormItemInitializers',
+                            'x-initializer': 'filterForm:configureFields',
                             'x-uid': 'yls3c6j92ex',
                             'x-async': false,
                             'x-index': 1,
@@ -1052,7 +1061,7 @@ export const oneEmptyFilterFormBlock: PageConfig = {
                             _isJSONSchemaObject: true,
                             version: '2.0',
                             type: 'void',
-                            'x-initializer': 'FilterFormActionInitializers',
+                            'x-initializer': 'filterForm:configureActions',
                             'x-component': 'ActionBar',
                             'x-component-props': {
                               layout: 'one-column',
@@ -1111,7 +1120,7 @@ export const oneEmptyFilterCollapseBlock: PageConfig = {
         version: '2.0',
         type: 'void',
         'x-component': 'Grid',
-        'x-initializer': 'BlockInitializers',
+        'x-initializer': 'page:addBlock',
         'x-index': 1,
         properties: {
           vnikc8bt477: {
@@ -1196,7 +1205,7 @@ export const oneEmptyTableBlockWithActions: PageConfig = {
         version: '2.0',
         type: 'void',
         'x-component': 'Grid',
-        'x-initializer': 'BlockInitializers',
+        'x-initializer': 'page:addBlock',
         'x-index': 1,
         properties: {
           '1m4gz110aaw': {
@@ -1237,7 +1246,7 @@ export const oneEmptyTableBlockWithActions: PageConfig = {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'void',
-                        'x-initializer': 'TableActionInitializers',
+                        'x-initializer': 'table:configureActions',
                         'x-component': 'ActionBar',
                         'x-component-props': {
                           style: {
@@ -1315,7 +1324,7 @@ export const oneEmptyTableBlockWithActions: PageConfig = {
                                             version: '2.0',
                                             type: 'void',
                                             'x-component': 'Grid',
-                                            'x-initializer': 'CreateFormBlockInitializers',
+                                            'x-initializer': 'popup:addNew:addBlock',
                                             'x-uid': 'k0zm3uifn6v',
                                             'x-async': false,
                                             'x-index': 1,
@@ -1434,7 +1443,7 @@ export const oneEmptyTableBlockWithActions: PageConfig = {
                                             version: '2.0',
                                             type: 'void',
                                             'x-component': 'Grid',
-                                            'x-initializer': 'CusomeizeCreateFormBlockInitializers',
+                                            'x-initializer': 'popup:addRecord:addBlock',
                                             'x-uid': '60wmk833o7b',
                                             'x-async': false,
                                             'x-index': 1,
@@ -1468,7 +1477,7 @@ export const oneEmptyTableBlockWithActions: PageConfig = {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'array',
-                        'x-initializer': 'TableColumnInitializers',
+                        'x-initializer': 'table:configureColumns',
                         'x-component': 'TableV2',
                         'x-component-props': {
                           rowKey: 'id',
@@ -1487,7 +1496,7 @@ export const oneEmptyTableBlockWithActions: PageConfig = {
                             'x-decorator': 'TableV2.Column.ActionBar',
                             'x-component': 'TableV2.Column',
                             'x-designer': 'TableV2.ActionColumnDesigner',
-                            'x-initializer': 'TableActionColumnInitializers',
+                            'x-initializer': 'table:configureItemActions',
                             properties: {
                               actions: {
                                 _isJSONSchemaObject: true,
@@ -1547,7 +1556,7 @@ export const oneEmptyTableBlockWithActions: PageConfig = {
                                                     version: '2.0',
                                                     type: 'void',
                                                     'x-component': 'Grid',
-                                                    'x-initializer': 'RecordBlockInitializers',
+                                                    'x-initializer': 'popup:common:addBlock',
                                                     'x-uid': '1m4fg88bmp6',
                                                     'x-async': false,
                                                     'x-index': 1,
@@ -1621,7 +1630,7 @@ export const oneEmptyTableBlockWithActions: PageConfig = {
                                                     version: '2.0',
                                                     type: 'void',
                                                     'x-component': 'Grid',
-                                                    'x-initializer': 'RecordBlockInitializers',
+                                                    'x-initializer': 'popup:common:addBlock',
                                                     'x-uid': 'zjv8mf85knj',
                                                     'x-async': false,
                                                     'x-index': 1,
@@ -1720,7 +1729,7 @@ export const oneEmptyTableBlockWithActions: PageConfig = {
                                                     version: '2.0',
                                                     type: 'void',
                                                     'x-component': 'Grid',
-                                                    'x-initializer': 'CreateFormBlockInitializers',
+                                                    'x-initializer': 'popup:addNew:addBlock',
                                                     'x-uid': 'vtcnkzcaeec',
                                                     'x-async': false,
                                                     'x-index': 1,
@@ -1804,7 +1813,7 @@ export const oneTableBlockWithActionsAndFormBlocks: PageConfig = {
         version: '2.0',
         type: 'void',
         'x-component': 'Grid',
-        'x-initializer': 'BlockInitializers',
+        'x-initializer': 'page:addBlock',
         properties: {
           n6xy1x7hh3l: {
             _isJSONSchemaObject: true,
@@ -1844,7 +1853,7 @@ export const oneTableBlockWithActionsAndFormBlocks: PageConfig = {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'void',
-                        'x-initializer': 'TableActionInitializers',
+                        'x-initializer': 'table:configureActions',
                         'x-component': 'ActionBar',
                         'x-component-props': {
                           style: {
@@ -1922,7 +1931,7 @@ export const oneTableBlockWithActionsAndFormBlocks: PageConfig = {
                                             version: '2.0',
                                             type: 'void',
                                             'x-component': 'Grid',
-                                            'x-initializer': 'CreateFormBlockInitializers',
+                                            'x-initializer': 'popup:addNew:addBlock',
                                             properties: {
                                               '7tcjyx5gipn': {
                                                 _isJSONSchemaObject: true,
@@ -1967,7 +1976,7 @@ export const oneTableBlockWithActionsAndFormBlocks: PageConfig = {
                                                                 version: '2.0',
                                                                 type: 'void',
                                                                 'x-component': 'Grid',
-                                                                'x-initializer': 'FormItemInitializers',
+                                                                'x-initializer': 'form:configureFields',
                                                                 'x-uid': '3h8z0005y9o',
                                                                 'x-async': false,
                                                                 'x-index': 1,
@@ -1976,7 +1985,7 @@ export const oneTableBlockWithActionsAndFormBlocks: PageConfig = {
                                                                 _isJSONSchemaObject: true,
                                                                 version: '2.0',
                                                                 type: 'void',
-                                                                'x-initializer': 'CreateFormActionInitializers',
+                                                                'x-initializer': 'createForm:configureActions',
                                                                 'x-component': 'ActionBar',
                                                                 'x-component-props': {
                                                                   layout: 'one-column',
@@ -2127,7 +2136,7 @@ export const oneTableBlockWithActionsAndFormBlocks: PageConfig = {
                                             version: '2.0',
                                             type: 'void',
                                             'x-component': 'Grid',
-                                            'x-initializer': 'CusomeizeCreateFormBlockInitializers',
+                                            'x-initializer': 'popup:addRecord:addBlock',
                                             properties: {
                                               vdhd3r5uw3r: {
                                                 _isJSONSchemaObject: true,
@@ -2173,7 +2182,7 @@ export const oneTableBlockWithActionsAndFormBlocks: PageConfig = {
                                                                 version: '2.0',
                                                                 type: 'void',
                                                                 'x-component': 'Grid',
-                                                                'x-initializer': 'FormItemInitializers',
+                                                                'x-initializer': 'form:configureFields',
                                                                 'x-uid': 'kin1do2rmxl',
                                                                 'x-async': false,
                                                                 'x-index': 1,
@@ -2182,7 +2191,7 @@ export const oneTableBlockWithActionsAndFormBlocks: PageConfig = {
                                                                 _isJSONSchemaObject: true,
                                                                 version: '2.0',
                                                                 type: 'void',
-                                                                'x-initializer': 'FormActionInitializers',
+                                                                'x-initializer': 'createForm:configureActions',
                                                                 'x-component': 'ActionBar',
                                                                 'x-component-props': {
                                                                   layout: 'one-column',
@@ -2248,7 +2257,7 @@ export const oneTableBlockWithActionsAndFormBlocks: PageConfig = {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'array',
-                        'x-initializer': 'TableColumnInitializers',
+                        'x-initializer': 'table:configureColumns',
                         'x-component': 'TableV2',
                         'x-component-props': {
                           rowKey: 'id',
@@ -2267,7 +2276,7 @@ export const oneTableBlockWithActionsAndFormBlocks: PageConfig = {
                             'x-decorator': 'TableV2.Column.ActionBar',
                             'x-component': 'TableV2.Column',
                             'x-designer': 'TableV2.ActionColumnDesigner',
-                            'x-initializer': 'TableActionColumnInitializers',
+                            'x-initializer': 'table:configureItemActions',
                             properties: {
                               actions: {
                                 _isJSONSchemaObject: true,
@@ -2327,7 +2336,7 @@ export const oneTableBlockWithActionsAndFormBlocks: PageConfig = {
                                                     version: '2.0',
                                                     type: 'void',
                                                     'x-component': 'Grid',
-                                                    'x-initializer': 'RecordBlockInitializers',
+                                                    'x-initializer': 'popup:common:addBlock',
                                                     properties: {
                                                       tg0zrjeg91v: {
                                                         _isJSONSchemaObject: true,
@@ -2372,8 +2381,7 @@ export const oneTableBlockWithActionsAndFormBlocks: PageConfig = {
                                                                         _isJSONSchemaObject: true,
                                                                         version: '2.0',
                                                                         type: 'void',
-                                                                        'x-initializer':
-                                                                          'ReadPrettyFormActionInitializers',
+                                                                        'x-initializer': 'details:configureActions',
                                                                         'x-component': 'ActionBar',
                                                                         'x-component-props': {
                                                                           style: {
@@ -2389,8 +2397,7 @@ export const oneTableBlockWithActionsAndFormBlocks: PageConfig = {
                                                                         version: '2.0',
                                                                         type: 'void',
                                                                         'x-component': 'Grid',
-                                                                        'x-initializer':
-                                                                          'ReadPrettyFormItemInitializers',
+                                                                        'x-initializer': 'details:configureFields',
                                                                         'x-uid': 'cbavg5h8yd3',
                                                                         'x-async': false,
                                                                         'x-index': 2,
@@ -2489,7 +2496,7 @@ export const oneTableBlockWithActionsAndFormBlocks: PageConfig = {
                                                     version: '2.0',
                                                     type: 'void',
                                                     'x-component': 'Grid',
-                                                    'x-initializer': 'RecordBlockInitializers',
+                                                    'x-initializer': 'popup:common:addBlock',
                                                     properties: {
                                                       kvt96oyiaij: {
                                                         _isJSONSchemaObject: true,
@@ -2537,7 +2544,7 @@ export const oneTableBlockWithActionsAndFormBlocks: PageConfig = {
                                                                         version: '2.0',
                                                                         type: 'void',
                                                                         'x-component': 'Grid',
-                                                                        'x-initializer': 'FormItemInitializers',
+                                                                        'x-initializer': 'form:configureFields',
                                                                         'x-uid': 'mlnbbyffhjc',
                                                                         'x-async': false,
                                                                         'x-index': 1,
@@ -2546,7 +2553,7 @@ export const oneTableBlockWithActionsAndFormBlocks: PageConfig = {
                                                                         _isJSONSchemaObject: true,
                                                                         version: '2.0',
                                                                         type: 'void',
-                                                                        'x-initializer': 'UpdateFormActionInitializers',
+                                                                        'x-initializer': 'editForm:configureActions',
                                                                         'x-component': 'ActionBar',
                                                                         'x-component-props': {
                                                                           layout: 'one-column',
@@ -2662,7 +2669,7 @@ export const oneEmptyTableBlockWithCustomizeActions: PageConfig = {
         version: '2.0',
         type: 'void',
         'x-component': 'Grid',
-        'x-initializer': 'BlockInitializers',
+        'x-initializer': 'page:addBlock',
         'x-index': 1,
         properties: {
           '1m4gz110aaw': {
@@ -2703,7 +2710,7 @@ export const oneEmptyTableBlockWithCustomizeActions: PageConfig = {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'void',
-                        'x-initializer': 'TableActionInitializers',
+                        'x-initializer': 'table:configureActions',
                         'x-component': 'ActionBar',
                         'x-component-props': {
                           style: {
@@ -2765,7 +2772,7 @@ export const oneEmptyTableBlockWithCustomizeActions: PageConfig = {
                                             version: '2.0',
                                             type: 'void',
                                             'x-component': 'Grid',
-                                            'x-initializer': 'BulkEditBlockInitializers',
+                                            'x-initializer': 'popup:bulkEdit:addBlock',
                                             'x-uid': '3gjmo60w4de',
                                             'x-async': false,
                                             'x-index': 1,
@@ -2799,7 +2806,7 @@ export const oneEmptyTableBlockWithCustomizeActions: PageConfig = {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'array',
-                        'x-initializer': 'TableColumnInitializers',
+                        'x-initializer': 'table:configureColumns',
                         'x-component': 'TableV2',
                         'x-component-props': {
                           rowKey: 'id',
@@ -2818,7 +2825,7 @@ export const oneEmptyTableBlockWithCustomizeActions: PageConfig = {
                             'x-decorator': 'TableV2.Column.ActionBar',
                             'x-component': 'TableV2.Column',
                             'x-designer': 'TableV2.ActionColumnDesigner',
-                            'x-initializer': 'TableActionColumnInitializers',
+                            'x-initializer': 'table:configureItemActions',
                             properties: {
                               actions: {
                                 _isJSONSchemaObject: true,
@@ -2884,7 +2891,7 @@ export const oneFormBlockWithRolesFieldBasedUsers: PageConfig = {
         version: '2.0',
         type: 'void',
         'x-component': 'Grid',
-        'x-initializer': 'BlockInitializers',
+        'x-initializer': 'page:addBlock',
         'x-index': 1,
         properties: {
           f998lh2qg2h: {
@@ -2930,7 +2937,7 @@ export const oneFormBlockWithRolesFieldBasedUsers: PageConfig = {
                             version: '2.0',
                             type: 'void',
                             'x-component': 'Grid',
-                            'x-initializer': 'FormItemInitializers',
+                            'x-initializer': 'form:configureFields',
                             properties: {
                               '91d8jzkh9r5': {
                                 _isJSONSchemaObject: true,
@@ -2973,7 +2980,7 @@ export const oneFormBlockWithRolesFieldBasedUsers: PageConfig = {
                                                 version: '2.0',
                                                 type: 'void',
                                                 'x-component': 'Grid',
-                                                'x-initializer': 'TableSelectorInitializers',
+                                                'x-initializer': 'popup:tableSelector:addBlock',
                                                 'x-uid': 'lzt548tlewj',
                                                 'x-async': false,
                                                 'x-index': 1,
@@ -3044,7 +3051,7 @@ export const oneFormBlockWithRolesFieldBasedUsers: PageConfig = {
                             _isJSONSchemaObject: true,
                             version: '2.0',
                             type: 'void',
-                            'x-initializer': 'FormActionInitializers',
+                            'x-initializer': 'createForm:configureActions',
                             'x-component': 'ActionBar',
                             'x-component-props': {
                               layout: 'one-column',
@@ -3102,7 +3109,7 @@ export const oneFormBlockWithAllAssociationFieldsAndSelectorMode: PageConfig = {
         version: '2.0',
         type: 'void',
         'x-component': 'Grid',
-        'x-initializer': 'BlockInitializers',
+        'x-initializer': 'page:addBlock',
         properties: {
           f3fq1mwccgr: {
             _isJSONSchemaObject: true,
@@ -3147,7 +3154,7 @@ export const oneFormBlockWithAllAssociationFieldsAndSelectorMode: PageConfig = {
                             version: '2.0',
                             type: 'void',
                             'x-component': 'Grid',
-                            'x-initializer': 'FormItemInitializers',
+                            'x-initializer': 'form:configureFields',
                             properties: {
                               '7dnk9dcjavn': {
                                 _isJSONSchemaObject: true,
@@ -3190,7 +3197,7 @@ export const oneFormBlockWithAllAssociationFieldsAndSelectorMode: PageConfig = {
                                                 version: '2.0',
                                                 type: 'void',
                                                 'x-component': 'Grid',
-                                                'x-initializer': 'TableSelectorInitializers',
+                                                'x-initializer': 'popup:tableSelector:addBlock',
                                                 'x-uid': 'dge1apckyd3',
                                                 'x-async': false,
                                                 'x-index': 1,
@@ -3293,7 +3300,7 @@ export const oneFormBlockWithAllAssociationFieldsAndSelectorMode: PageConfig = {
                                                 version: '2.0',
                                                 type: 'void',
                                                 'x-component': 'Grid',
-                                                'x-initializer': 'TableSelectorInitializers',
+                                                'x-initializer': 'popup:tableSelector:addBlock',
                                                 'x-uid': 'k6nd50abevi',
                                                 'x-async': false,
                                                 'x-index': 1,
@@ -3396,7 +3403,7 @@ export const oneFormBlockWithAllAssociationFieldsAndSelectorMode: PageConfig = {
                                                 version: '2.0',
                                                 type: 'void',
                                                 'x-component': 'Grid',
-                                                'x-initializer': 'TableSelectorInitializers',
+                                                'x-initializer': 'popup:tableSelector:addBlock',
                                                 'x-uid': '2i6td26ppt2',
                                                 'x-async': false,
                                                 'x-index': 1,
@@ -3499,7 +3506,7 @@ export const oneFormBlockWithAllAssociationFieldsAndSelectorMode: PageConfig = {
                                                 version: '2.0',
                                                 type: 'void',
                                                 'x-component': 'Grid',
-                                                'x-initializer': 'TableSelectorInitializers',
+                                                'x-initializer': 'popup:tableSelector:addBlock',
                                                 'x-uid': 'zlj99lap4yq',
                                                 'x-async': false,
                                                 'x-index': 1,
@@ -3602,7 +3609,7 @@ export const oneFormBlockWithAllAssociationFieldsAndSelectorMode: PageConfig = {
                                                 version: '2.0',
                                                 type: 'void',
                                                 'x-component': 'Grid',
-                                                'x-initializer': 'TableSelectorInitializers',
+                                                'x-initializer': 'popup:tableSelector:addBlock',
                                                 'x-uid': 'ssclmlysxxl',
                                                 'x-async': false,
                                                 'x-index': 1,
@@ -3673,7 +3680,7 @@ export const oneFormBlockWithAllAssociationFieldsAndSelectorMode: PageConfig = {
                             _isJSONSchemaObject: true,
                             version: '2.0',
                             type: 'void',
-                            'x-initializer': 'FormActionInitializers',
+                            'x-initializer': 'createForm:configureActions',
                             'x-component': 'ActionBar',
                             'x-component-props': {
                               layout: 'one-column',
@@ -3733,7 +3740,7 @@ export const oneDetailBlockWithM2oFieldToGeneral: PageConfig = {
         version: '2.0',
         type: 'void',
         'x-component': 'Grid',
-        'x-initializer': 'BlockInitializers',
+        'x-initializer': 'page:addBlock',
         properties: {
           '40g1gedv1hg': {
             _isJSONSchemaObject: true,
@@ -3780,7 +3787,7 @@ export const oneDetailBlockWithM2oFieldToGeneral: PageConfig = {
                             _isJSONSchemaObject: true,
                             version: '2.0',
                             type: 'void',
-                            'x-initializer': 'DetailsActionInitializers',
+                            'x-initializer': 'detailsWithPaging:configureActions',
                             'x-component': 'ActionBar',
                             'x-component-props': {
                               style: {
@@ -3796,7 +3803,7 @@ export const oneDetailBlockWithM2oFieldToGeneral: PageConfig = {
                             version: '2.0',
                             type: 'void',
                             'x-component': 'Grid',
-                            'x-initializer': 'ReadPrettyFormItemInitializers',
+                            'x-initializer': 'details:configureFields',
                             properties: {
                               rp7rbwiym41: {
                                 _isJSONSchemaObject: true,
@@ -3902,7 +3909,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndBasicFields: PageConfig = {
         version: '2.0',
         type: 'void',
         'x-component': 'Grid',
-        'x-initializer': 'BlockInitializers',
+        'x-initializer': 'page:addBlock',
         properties: {
           '2i2th7yfrlz': {
             _isJSONSchemaObject: true,
@@ -3942,7 +3949,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndBasicFields: PageConfig = {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'void',
-                        'x-initializer': 'TableActionInitializers',
+                        'x-initializer': 'table:configureActions',
                         'x-component': 'ActionBar',
                         'x-component-props': {
                           style: {
@@ -4003,7 +4010,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndBasicFields: PageConfig = {
                                             version: '2.0',
                                             type: 'void',
                                             'x-component': 'Grid',
-                                            'x-initializer': 'CreateFormBlockInitializers',
+                                            'x-initializer': 'popup:addNew:addBlock',
                                             properties: {
                                               '7soqvrflnps': {
                                                 _isJSONSchemaObject: true,
@@ -4048,7 +4055,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndBasicFields: PageConfig = {
                                                                 version: '2.0',
                                                                 type: 'void',
                                                                 'x-component': 'Grid',
-                                                                'x-initializer': 'FormItemInitializers',
+                                                                'x-initializer': 'form:configureFields',
                                                                 properties: {
                                                                   s251k4sz6zy: {
                                                                     _isJSONSchemaObject: true,
@@ -4449,7 +4456,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndBasicFields: PageConfig = {
                                                                 _isJSONSchemaObject: true,
                                                                 version: '2.0',
                                                                 type: 'void',
-                                                                'x-initializer': 'CreateFormActionInitializers',
+                                                                'x-initializer': 'createForm:configureActions',
                                                                 'x-component': 'ActionBar',
                                                                 'x-component-props': {
                                                                   layout: 'one-column',
@@ -4537,7 +4544,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndBasicFields: PageConfig = {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'array',
-                        'x-initializer': 'TableColumnInitializers',
+                        'x-initializer': 'table:configureColumns',
                         'x-component': 'TableV2',
                         'x-component-props': {
                           rowKey: 'id',
@@ -4556,7 +4563,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndBasicFields: PageConfig = {
                             'x-decorator': 'TableV2.Column.ActionBar',
                             'x-component': 'TableV2.Column',
                             'x-designer': 'TableV2.ActionColumnDesigner',
-                            'x-initializer': 'TableActionColumnInitializers',
+                            'x-initializer': 'table:configureItemActions',
                             properties: {
                               actions: {
                                 _isJSONSchemaObject: true,
@@ -4616,7 +4623,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndBasicFields: PageConfig = {
                                                     version: '2.0',
                                                     type: 'void',
                                                     'x-component': 'Grid',
-                                                    'x-initializer': 'RecordBlockInitializers',
+                                                    'x-initializer': 'popup:common:addBlock',
                                                     properties: {
                                                       '1yv7y62q3u0': {
                                                         _isJSONSchemaObject: true,
@@ -4661,8 +4668,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndBasicFields: PageConfig = {
                                                                         _isJSONSchemaObject: true,
                                                                         version: '2.0',
                                                                         type: 'void',
-                                                                        'x-initializer':
-                                                                          'ReadPrettyFormActionInitializers',
+                                                                        'x-initializer': 'details:configureActions',
                                                                         'x-component': 'ActionBar',
                                                                         'x-component-props': {
                                                                           style: {
@@ -4719,7 +4725,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndBasicFields: PageConfig = {
                                                                                             type: 'void',
                                                                                             'x-component': 'Grid',
                                                                                             'x-initializer':
-                                                                                              'RecordBlockInitializers',
+                                                                                              'popup:common:addBlock',
                                                                                             'x-uid': 'dz4i8jw4kqz',
                                                                                             'x-async': false,
                                                                                             'x-index': 1,
@@ -4754,8 +4760,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndBasicFields: PageConfig = {
                                                                         version: '2.0',
                                                                         type: 'void',
                                                                         'x-component': 'Grid',
-                                                                        'x-initializer':
-                                                                          'ReadPrettyFormItemInitializers',
+                                                                        'x-initializer': 'details:configureFields',
                                                                         properties: {
                                                                           kdxsyya4m45: {
                                                                             _isJSONSchemaObject: true,
@@ -5255,7 +5260,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndBasicFields: PageConfig = {
                                                     version: '2.0',
                                                     type: 'void',
                                                     'x-component': 'Grid',
-                                                    'x-initializer': 'RecordBlockInitializers',
+                                                    'x-initializer': 'popup:common:addBlock',
                                                     properties: {
                                                       cw6dlprjcwy: {
                                                         _isJSONSchemaObject: true,
@@ -5303,7 +5308,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndBasicFields: PageConfig = {
                                                                         version: '2.0',
                                                                         type: 'void',
                                                                         'x-component': 'Grid',
-                                                                        'x-initializer': 'FormItemInitializers',
+                                                                        'x-initializer': 'form:configureFields',
                                                                         properties: {
                                                                           '9uqlmdu75wk': {
                                                                             _isJSONSchemaObject: true,
@@ -5713,7 +5718,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndBasicFields: PageConfig = {
                                                                         _isJSONSchemaObject: true,
                                                                         version: '2.0',
                                                                         type: 'void',
-                                                                        'x-initializer': 'UpdateFormActionInitializers',
+                                                                        'x-initializer': 'editForm:configureActions',
                                                                         'x-component': 'ActionBar',
                                                                         'x-component-props': {
                                                                           layout: 'one-column',
@@ -5871,7 +5876,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndBasicFieldsAndSubTable: Pag
         version: '2.0',
         type: 'void',
         'x-component': 'Grid',
-        'x-initializer': 'BlockInitializers',
+        'x-initializer': 'page:addBlock',
         properties: {
           mbtse8e9kap: {
             _isJSONSchemaObject: true,
@@ -5911,7 +5916,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndBasicFieldsAndSubTable: Pag
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'void',
-                        'x-initializer': 'TableActionInitializers',
+                        'x-initializer': 'table:configureActions',
                         'x-component': 'ActionBar',
                         'x-component-props': {
                           style: {
@@ -5926,7 +5931,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndBasicFieldsAndSubTable: Pag
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'array',
-                        'x-initializer': 'TableColumnInitializers',
+                        'x-initializer': 'table:configureColumns',
                         'x-component': 'TableV2',
                         'x-component-props': {
                           rowKey: 'id',
@@ -5945,7 +5950,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndBasicFieldsAndSubTable: Pag
                             'x-decorator': 'TableV2.Column.ActionBar',
                             'x-component': 'TableV2.Column',
                             'x-designer': 'TableV2.ActionColumnDesigner',
-                            'x-initializer': 'TableActionColumnInitializers',
+                            'x-initializer': 'table:configureItemActions',
                             properties: {
                               actions: {
                                 _isJSONSchemaObject: true,
@@ -6007,7 +6012,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndBasicFieldsAndSubTable: Pag
                                                     version: '2.0',
                                                     type: 'void',
                                                     'x-component': 'Grid',
-                                                    'x-initializer': 'RecordBlockInitializers',
+                                                    'x-initializer': 'popup:common:addBlock',
                                                     properties: {
                                                       trny88kf0bk: {
                                                         _isJSONSchemaObject: true,
@@ -6055,7 +6060,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndBasicFieldsAndSubTable: Pag
                                                                         version: '2.0',
                                                                         type: 'void',
                                                                         'x-component': 'Grid',
-                                                                        'x-initializer': 'FormItemInitializers',
+                                                                        'x-initializer': 'form:configureFields',
                                                                         properties: {
                                                                           '7mwkv9h74ki': {
                                                                             _isJSONSchemaObject: true,
@@ -6090,7 +6095,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndBasicFieldsAndSubTable: Pag
                                                                                         'x-component':
                                                                                           'AssociationField.SubTable',
                                                                                         'x-initializer':
-                                                                                          'TableColumnInitializers',
+                                                                                          'table:configureColumns',
                                                                                         'x-initializer-props': {
                                                                                           action: false,
                                                                                         },
@@ -6162,7 +6167,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndBasicFieldsAndSubTable: Pag
                                                                         _isJSONSchemaObject: true,
                                                                         version: '2.0',
                                                                         type: 'void',
-                                                                        'x-initializer': 'UpdateFormActionInitializers',
+                                                                        'x-initializer': 'editForm:configureActions',
                                                                         'x-component': 'ActionBar',
                                                                         'x-component-props': {
                                                                           layout: 'one-column',
@@ -6261,6 +6266,475 @@ export const oneTableBlockWithAddNewAndViewAndEditAndBasicFieldsAndSubTable: Pag
 };
 
 /**
+ * 页面中有一个表格，点击行编辑按钮，弹出一个表单，表单中有一个子表单
+ */
+export const oneTableBlockWithEditAndSubForm: PageConfig = {
+  collections: [
+    ...generalWithBasic,
+    {
+      name: 'subform',
+      fields: [
+        {
+          name: 'manyToMany',
+          interface: 'm2m',
+          target: 'general',
+        },
+      ],
+    },
+  ],
+  pageSchema: {
+    _isJSONSchemaObject: true,
+    version: '2.0',
+    type: 'void',
+    'x-component': 'Page',
+    properties: {
+      ikn7a785yxy: {
+        _isJSONSchemaObject: true,
+        version: '2.0',
+        type: 'void',
+        'x-component': 'Grid',
+        'x-initializer': 'page:addBlock',
+        properties: {
+          ymhggvoaw7g: {
+            _isJSONSchemaObject: true,
+            version: '2.0',
+            type: 'void',
+            'x-component': 'Grid.Row',
+            'x-app-version': '0.21.0-alpha.15',
+            properties: {
+              itbsbwvloui: {
+                _isJSONSchemaObject: true,
+                version: '2.0',
+                type: 'void',
+                'x-component': 'Grid.Col',
+                'x-app-version': '0.21.0-alpha.15',
+                properties: {
+                  '0ynnfgfjgl9': {
+                    _isJSONSchemaObject: true,
+                    version: '2.0',
+                    type: 'void',
+                    'x-decorator': 'TableBlockProvider',
+                    'x-acl-action': 'subform:list',
+                    'x-use-decorator-props': 'useTableBlockDecoratorProps',
+                    'x-decorator-props': {
+                      collection: 'subform',
+                      dataSource: 'main',
+                      action: 'list',
+                      params: {
+                        pageSize: 20,
+                      },
+                      rowKey: 'id',
+                      showIndex: true,
+                      dragSort: false,
+                    },
+                    'x-toolbar': 'BlockSchemaToolbar',
+                    'x-settings': 'blockSettings:table',
+                    'x-component': 'CardItem',
+                    'x-filter-targets': [],
+                    'x-app-version': '0.21.0-alpha.15',
+                    properties: {
+                      actions: {
+                        _isJSONSchemaObject: true,
+                        version: '2.0',
+                        type: 'void',
+                        'x-initializer': 'table:configureActions',
+                        'x-component': 'ActionBar',
+                        'x-component-props': {
+                          style: {
+                            marginBottom: 'var(--nb-spacing)',
+                          },
+                        },
+                        'x-app-version': '0.21.0-alpha.15',
+                        'x-uid': 'wvkrzc4gbed',
+                        'x-async': false,
+                        'x-index': 1,
+                      },
+                      c458tgnk7e1: {
+                        _isJSONSchemaObject: true,
+                        version: '2.0',
+                        type: 'array',
+                        'x-initializer': 'table:configureColumns',
+                        'x-component': 'TableV2',
+                        'x-use-component-props': 'useTableBlockProps',
+                        'x-component-props': {
+                          rowKey: 'id',
+                          rowSelection: {
+                            type: 'checkbox',
+                          },
+                        },
+                        'x-app-version': '0.21.0-alpha.15',
+                        properties: {
+                          actions: {
+                            _isJSONSchemaObject: true,
+                            version: '2.0',
+                            type: 'void',
+                            title: '{{ t("Actions") }}',
+                            'x-action-column': 'actions',
+                            'x-decorator': 'TableV2.Column.ActionBar',
+                            'x-component': 'TableV2.Column',
+                            'x-designer': 'TableV2.ActionColumnDesigner',
+                            'x-initializer': 'table:configureItemActions',
+                            'x-app-version': '0.21.0-alpha.15',
+                            properties: {
+                              g3whb78e8by: {
+                                _isJSONSchemaObject: true,
+                                version: '2.0',
+                                type: 'void',
+                                'x-decorator': 'DndContext',
+                                'x-component': 'Space',
+                                'x-component-props': {
+                                  split: '|',
+                                },
+                                'x-app-version': '0.21.0-alpha.15',
+                                properties: {
+                                  '96j8pfb73nd': {
+                                    'x-uid': 'jbq7qw7iuht',
+                                    _isJSONSchemaObject: true,
+                                    version: '2.0',
+                                    type: 'void',
+                                    title: 'Edit record',
+                                    'x-action': 'update',
+                                    'x-toolbar': 'ActionSchemaToolbar',
+                                    'x-settings': 'actionSettings:edit',
+                                    'x-component': 'Action.Link',
+                                    'x-component-props': {
+                                      openMode: 'drawer',
+                                      danger: false,
+                                    },
+                                    'x-decorator': 'ACLActionProvider',
+                                    'x-designer-props': {
+                                      linkageAction: true,
+                                    },
+                                    properties: {
+                                      drawer: {
+                                        _isJSONSchemaObject: true,
+                                        version: '2.0',
+                                        type: 'void',
+                                        title: '{{ t("Edit record") }}',
+                                        'x-component': 'Action.Container',
+                                        'x-component-props': {
+                                          className: 'nb-action-popup',
+                                        },
+                                        properties: {
+                                          tabs: {
+                                            _isJSONSchemaObject: true,
+                                            version: '2.0',
+                                            type: 'void',
+                                            'x-component': 'Tabs',
+                                            'x-component-props': {},
+                                            'x-initializer': 'popup:addTab',
+                                            properties: {
+                                              tab1: {
+                                                _isJSONSchemaObject: true,
+                                                version: '2.0',
+                                                type: 'void',
+                                                title: '{{t("Edit")}}',
+                                                'x-component': 'Tabs.TabPane',
+                                                'x-designer': 'Tabs.Designer',
+                                                'x-component-props': {},
+                                                properties: {
+                                                  grid: {
+                                                    _isJSONSchemaObject: true,
+                                                    version: '2.0',
+                                                    type: 'void',
+                                                    'x-component': 'Grid',
+                                                    'x-initializer': 'popup:common:addBlock',
+                                                    properties: {
+                                                      lg7f1thob6s: {
+                                                        _isJSONSchemaObject: true,
+                                                        version: '2.0',
+                                                        type: 'void',
+                                                        'x-component': 'Grid.Row',
+                                                        'x-app-version': '0.21.0-alpha.15',
+                                                        properties: {
+                                                          njdmuxui5o9: {
+                                                            _isJSONSchemaObject: true,
+                                                            version: '2.0',
+                                                            type: 'void',
+                                                            'x-component': 'Grid.Col',
+                                                            'x-app-version': '0.21.0-alpha.15',
+                                                            properties: {
+                                                              '1wruwk2ymiy': {
+                                                                _isJSONSchemaObject: true,
+                                                                version: '2.0',
+                                                                type: 'void',
+                                                                'x-acl-action-props': {
+                                                                  skipScopeCheck: false,
+                                                                },
+                                                                'x-acl-action': 'subform:update',
+                                                                'x-decorator': 'FormBlockProvider',
+                                                                'x-use-decorator-props':
+                                                                  'useEditFormBlockDecoratorProps',
+                                                                'x-decorator-props': {
+                                                                  action: 'get',
+                                                                  dataSource: 'main',
+                                                                  collection: 'subform',
+                                                                },
+                                                                'x-toolbar': 'BlockSchemaToolbar',
+                                                                'x-settings': 'blockSettings:editForm',
+                                                                'x-component': 'CardItem',
+                                                                'x-app-version': '0.21.0-alpha.15',
+                                                                properties: {
+                                                                  '1r4nw0s9i1w': {
+                                                                    _isJSONSchemaObject: true,
+                                                                    version: '2.0',
+                                                                    type: 'void',
+                                                                    'x-component': 'FormV2',
+                                                                    'x-use-component-props': 'useEditFormBlockProps',
+                                                                    'x-app-version': '0.21.0-alpha.15',
+                                                                    properties: {
+                                                                      grid: {
+                                                                        _isJSONSchemaObject: true,
+                                                                        version: '2.0',
+                                                                        type: 'void',
+                                                                        'x-component': 'Grid',
+                                                                        'x-initializer': 'form:configureFields',
+                                                                        'x-app-version': '0.21.0-alpha.15',
+                                                                        properties: {
+                                                                          '4j2zyvo135s': {
+                                                                            _isJSONSchemaObject: true,
+                                                                            version: '2.0',
+                                                                            type: 'void',
+                                                                            'x-component': 'Grid.Row',
+                                                                            'x-app-version': '0.21.0-alpha.15',
+                                                                            properties: {
+                                                                              '5zclzus2agg': {
+                                                                                _isJSONSchemaObject: true,
+                                                                                version: '2.0',
+                                                                                type: 'void',
+                                                                                'x-component': 'Grid.Col',
+                                                                                'x-app-version': '0.21.0-alpha.15',
+                                                                                properties: {
+                                                                                  manyToMany: {
+                                                                                    'x-uid': 'hs5l8xki08o',
+                                                                                    _isJSONSchemaObject: true,
+                                                                                    version: '2.0',
+                                                                                    type: 'string',
+                                                                                    'x-toolbar':
+                                                                                      'FormItemSchemaToolbar',
+                                                                                    'x-settings':
+                                                                                      'fieldSettings:FormItem',
+                                                                                    'x-component': 'CollectionField',
+                                                                                    'x-decorator': 'FormItem',
+                                                                                    'x-collection-field':
+                                                                                      'subform.manyToMany',
+                                                                                    'x-component-props': {
+                                                                                      fieldNames: {
+                                                                                        label: 'id',
+                                                                                        value: 'id',
+                                                                                      },
+                                                                                      mode: 'Nester',
+                                                                                    },
+                                                                                    'x-app-version': '0.21.0-alpha.15',
+                                                                                    properties: {
+                                                                                      w16ui5so6ug: {
+                                                                                        _isJSONSchemaObject: true,
+                                                                                        version: '2.0',
+                                                                                        type: 'void',
+                                                                                        'x-component':
+                                                                                          'AssociationField.Nester',
+                                                                                        'x-index': 1,
+                                                                                        'x-app-version':
+                                                                                          '0.21.0-alpha.15',
+                                                                                        properties: {
+                                                                                          grid: {
+                                                                                            _isJSONSchemaObject: true,
+                                                                                            version: '2.0',
+                                                                                            type: 'void',
+                                                                                            'x-component': 'Grid',
+                                                                                            'x-initializer':
+                                                                                              'form:configureFields',
+                                                                                            'x-app-version':
+                                                                                              '0.21.0-alpha.15',
+                                                                                            properties: {
+                                                                                              '52v5gjhuhil': {
+                                                                                                _isJSONSchemaObject:
+                                                                                                  true,
+                                                                                                version: '2.0',
+                                                                                                type: 'void',
+                                                                                                'x-component':
+                                                                                                  'Grid.Row',
+                                                                                                'x-app-version':
+                                                                                                  '0.21.0-alpha.15',
+                                                                                                properties: {
+                                                                                                  '4j9cytzhwjt': {
+                                                                                                    _isJSONSchemaObject:
+                                                                                                      true,
+                                                                                                    version: '2.0',
+                                                                                                    type: 'void',
+                                                                                                    'x-component':
+                                                                                                      'Grid.Col',
+                                                                                                    'x-app-version':
+                                                                                                      '0.21.0-alpha.15',
+                                                                                                    properties: {
+                                                                                                      singleLineText: {
+                                                                                                        _isJSONSchemaObject:
+                                                                                                          true,
+                                                                                                        version: '2.0',
+                                                                                                        type: 'string',
+                                                                                                        'x-toolbar':
+                                                                                                          'FormItemSchemaToolbar',
+                                                                                                        'x-settings':
+                                                                                                          'fieldSettings:FormItem',
+                                                                                                        'x-component':
+                                                                                                          'CollectionField',
+                                                                                                        'x-decorator':
+                                                                                                          'FormItem',
+                                                                                                        'x-collection-field':
+                                                                                                          'general.singleLineText',
+                                                                                                        'x-component-props':
+                                                                                                          {},
+                                                                                                        'x-app-version':
+                                                                                                          '0.21.0-alpha.15',
+                                                                                                        'x-uid':
+                                                                                                          'heu3ssj95k4',
+                                                                                                        'x-async':
+                                                                                                          false,
+                                                                                                        'x-index': 1,
+                                                                                                      },
+                                                                                                    },
+                                                                                                    'x-uid':
+                                                                                                      '24aob2c29am',
+                                                                                                    'x-async': false,
+                                                                                                    'x-index': 1,
+                                                                                                  },
+                                                                                                },
+                                                                                                'x-uid': 'e9z1vk94wzt',
+                                                                                                'x-async': false,
+                                                                                                'x-index': 1,
+                                                                                              },
+                                                                                            },
+                                                                                            'x-uid': 'xv2tx1i3asd',
+                                                                                            'x-async': false,
+                                                                                            'x-index': 1,
+                                                                                          },
+                                                                                        },
+                                                                                        'x-uid': 'f8ww2djzw4s',
+                                                                                        'x-async': false,
+                                                                                      },
+                                                                                    },
+                                                                                    'x-async': false,
+                                                                                    'x-index': 1,
+                                                                                  },
+                                                                                },
+                                                                                'x-uid': 'uw8v7gpncme',
+                                                                                'x-async': false,
+                                                                                'x-index': 1,
+                                                                              },
+                                                                            },
+                                                                            'x-uid': 'y36de9c1w1q',
+                                                                            'x-async': false,
+                                                                            'x-index': 1,
+                                                                          },
+                                                                        },
+                                                                        'x-uid': 'cd8hid8sd8p',
+                                                                        'x-async': false,
+                                                                        'x-index': 1,
+                                                                      },
+                                                                      lbqqyqmfn58: {
+                                                                        _isJSONSchemaObject: true,
+                                                                        version: '2.0',
+                                                                        type: 'void',
+                                                                        'x-initializer': 'editForm:configureActions',
+                                                                        'x-component': 'ActionBar',
+                                                                        'x-component-props': {
+                                                                          layout: 'one-column',
+                                                                          style: {
+                                                                            marginTop: 24,
+                                                                          },
+                                                                        },
+                                                                        'x-app-version': '0.21.0-alpha.15',
+                                                                        'x-uid': 'd7ou1l2pame',
+                                                                        'x-async': false,
+                                                                        'x-index': 2,
+                                                                      },
+                                                                    },
+                                                                    'x-uid': '378pyhe1ouc',
+                                                                    'x-async': false,
+                                                                    'x-index': 1,
+                                                                  },
+                                                                },
+                                                                'x-uid': 'kqrgr76mqyd',
+                                                                'x-async': false,
+                                                                'x-index': 1,
+                                                              },
+                                                            },
+                                                            'x-uid': 'tfxy8lqeyzf',
+                                                            'x-async': false,
+                                                            'x-index': 1,
+                                                          },
+                                                        },
+                                                        'x-uid': 'skx1ugoefxd',
+                                                        'x-async': false,
+                                                        'x-index': 1,
+                                                      },
+                                                    },
+                                                    'x-uid': 't24v0l6iv9b',
+                                                    'x-async': false,
+                                                    'x-index': 1,
+                                                  },
+                                                },
+                                                'x-uid': 'ant817mjpxd',
+                                                'x-async': false,
+                                                'x-index': 1,
+                                              },
+                                            },
+                                            'x-uid': '6ozc65lhnk0',
+                                            'x-async': false,
+                                            'x-index': 1,
+                                          },
+                                        },
+                                        'x-uid': 'lwk8hqr8p79',
+                                        'x-async': false,
+                                        'x-index': 1,
+                                      },
+                                    },
+                                    'x-async': false,
+                                    'x-index': 1,
+                                  },
+                                },
+                                'x-uid': '3gzaswo60as',
+                                'x-async': false,
+                                'x-index': 1,
+                              },
+                            },
+                            'x-uid': 'gh0ea7odopi',
+                            'x-async': false,
+                            'x-index': 1,
+                          },
+                        },
+                        'x-uid': 'u541j0zmw63',
+                        'x-async': false,
+                        'x-index': 2,
+                      },
+                    },
+                    'x-uid': 'gdpm3ailyz7',
+                    'x-async': false,
+                    'x-index': 1,
+                  },
+                },
+                'x-uid': 'gkc72ed4e3h',
+                'x-async': false,
+                'x-index': 1,
+              },
+            },
+            'x-uid': '93cyoyerj1s',
+            'x-async': false,
+            'x-index': 1,
+          },
+        },
+        'x-uid': 'bykp472klg9',
+        'x-async': false,
+        'x-index': 1,
+      },
+    },
+    'x-uid': 'fdlzfzi31ux',
+    'x-async': true,
+    'x-index': 1,
+  },
+};
+
+/**
  * 1. 一个 Table 区块
  * 2. 点击 Add new 有一个 Form 区块
  * 3. 点击 View 有一个 Details 区块
@@ -6280,7 +6754,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndChoicesFields: PageConfig =
         version: '2.0',
         type: 'void',
         'x-component': 'Grid',
-        'x-initializer': 'BlockInitializers',
+        'x-initializer': 'page:addBlock',
         properties: {
           bjxj2sjr36f: {
             _isJSONSchemaObject: true,
@@ -6320,7 +6794,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndChoicesFields: PageConfig =
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'void',
-                        'x-initializer': 'TableActionInitializers',
+                        'x-initializer': 'table:configureActions',
                         'x-component': 'ActionBar',
                         'x-component-props': {
                           style: {
@@ -6381,7 +6855,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndChoicesFields: PageConfig =
                                             version: '2.0',
                                             type: 'void',
                                             'x-component': 'Grid',
-                                            'x-initializer': 'CreateFormBlockInitializers',
+                                            'x-initializer': 'popup:addNew:addBlock',
                                             properties: {
                                               xgwlijx7tl0: {
                                                 _isJSONSchemaObject: true,
@@ -6426,7 +6900,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndChoicesFields: PageConfig =
                                                                 version: '2.0',
                                                                 type: 'void',
                                                                 'x-component': 'Grid',
-                                                                'x-initializer': 'FormItemInitializers',
+                                                                'x-initializer': 'form:configureFields',
                                                                 properties: {
                                                                   '0k83zkmy257': {
                                                                     _isJSONSchemaObject: true,
@@ -6661,7 +7135,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndChoicesFields: PageConfig =
                                                                 _isJSONSchemaObject: true,
                                                                 version: '2.0',
                                                                 type: 'void',
-                                                                'x-initializer': 'CreateFormActionInitializers',
+                                                                'x-initializer': 'createForm:configureActions',
                                                                 'x-component': 'ActionBar',
                                                                 'x-component-props': {
                                                                   layout: 'one-column',
@@ -6749,7 +7223,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndChoicesFields: PageConfig =
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'array',
-                        'x-initializer': 'TableColumnInitializers',
+                        'x-initializer': 'table:configureColumns',
                         'x-component': 'TableV2',
                         'x-component-props': {
                           rowKey: 'id',
@@ -6768,7 +7242,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndChoicesFields: PageConfig =
                             'x-decorator': 'TableV2.Column.ActionBar',
                             'x-component': 'TableV2.Column',
                             'x-designer': 'TableV2.ActionColumnDesigner',
-                            'x-initializer': 'TableActionColumnInitializers',
+                            'x-initializer': 'table:configureItemActions',
                             properties: {
                               actions: {
                                 _isJSONSchemaObject: true,
@@ -6830,7 +7304,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndChoicesFields: PageConfig =
                                                     version: '2.0',
                                                     type: 'void',
                                                     'x-component': 'Grid',
-                                                    'x-initializer': 'RecordBlockInitializers',
+                                                    'x-initializer': 'popup:common:addBlock',
                                                     properties: {
                                                       '1xwjbso8iwl': {
                                                         _isJSONSchemaObject: true,
@@ -6875,8 +7349,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndChoicesFields: PageConfig =
                                                                         _isJSONSchemaObject: true,
                                                                         version: '2.0',
                                                                         type: 'void',
-                                                                        'x-initializer':
-                                                                          'ReadPrettyFormActionInitializers',
+                                                                        'x-initializer': 'details:configureActions',
                                                                         'x-component': 'ActionBar',
                                                                         'x-component-props': {
                                                                           style: {
@@ -6933,7 +7406,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndChoicesFields: PageConfig =
                                                                                             type: 'void',
                                                                                             'x-component': 'Grid',
                                                                                             'x-initializer':
-                                                                                              'RecordBlockInitializers',
+                                                                                              'popup:common:addBlock',
                                                                                             'x-uid': 'wbrtmx39s4q',
                                                                                             'x-async': false,
                                                                                             'x-index': 1,
@@ -6968,8 +7441,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndChoicesFields: PageConfig =
                                                                         version: '2.0',
                                                                         type: 'void',
                                                                         'x-component': 'Grid',
-                                                                        'x-initializer':
-                                                                          'ReadPrettyFormItemInitializers',
+                                                                        'x-initializer': 'details:configureFields',
                                                                         properties: {
                                                                           u1uz4vfwcd7: {
                                                                             _isJSONSchemaObject: true,
@@ -7294,7 +7766,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndChoicesFields: PageConfig =
                                                     version: '2.0',
                                                     type: 'void',
                                                     'x-component': 'Grid',
-                                                    'x-initializer': 'RecordBlockInitializers',
+                                                    'x-initializer': 'popup:common:addBlock',
                                                     properties: {
                                                       t2x4eztgl9z: {
                                                         _isJSONSchemaObject: true,
@@ -7342,7 +7814,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndChoicesFields: PageConfig =
                                                                         version: '2.0',
                                                                         type: 'void',
                                                                         'x-component': 'Grid',
-                                                                        'x-initializer': 'FormItemInitializers',
+                                                                        'x-initializer': 'form:configureFields',
                                                                         properties: {
                                                                           lq1mdgniw87: {
                                                                             _isJSONSchemaObject: true,
@@ -7577,7 +8049,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndChoicesFields: PageConfig =
                                                                         _isJSONSchemaObject: true,
                                                                         version: '2.0',
                                                                         type: 'void',
-                                                                        'x-initializer': 'UpdateFormActionInitializers',
+                                                                        'x-initializer': 'editForm:configureActions',
                                                                         'x-component': 'ActionBar',
                                                                         'x-component-props': {
                                                                           layout: 'one-column',
@@ -7717,7 +8189,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndMediaFields: PageConfig = {
         version: '2.0',
         type: 'void',
         'x-component': 'Grid',
-        'x-initializer': 'BlockInitializers',
+        'x-initializer': 'page:addBlock',
         properties: {
           kworhysix0k: {
             _isJSONSchemaObject: true,
@@ -7757,7 +8229,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndMediaFields: PageConfig = {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'void',
-                        'x-initializer': 'TableActionInitializers',
+                        'x-initializer': 'table:configureActions',
                         'x-component': 'ActionBar',
                         'x-component-props': {
                           style: {
@@ -7818,7 +8290,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndMediaFields: PageConfig = {
                                             version: '2.0',
                                             type: 'void',
                                             'x-component': 'Grid',
-                                            'x-initializer': 'CreateFormBlockInitializers',
+                                            'x-initializer': 'popup:addNew:addBlock',
                                             properties: {
                                               q5fy0fkcotq: {
                                                 _isJSONSchemaObject: true,
@@ -7863,7 +8335,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndMediaFields: PageConfig = {
                                                                 version: '2.0',
                                                                 type: 'void',
                                                                 'x-component': 'Grid',
-                                                                'x-initializer': 'FormItemInitializers',
+                                                                'x-initializer': 'form:configureFields',
                                                                 properties: {
                                                                   j8pqhlswvky: {
                                                                     _isJSONSchemaObject: true,
@@ -7981,7 +8453,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndMediaFields: PageConfig = {
                                                                 _isJSONSchemaObject: true,
                                                                 version: '2.0',
                                                                 type: 'void',
-                                                                'x-initializer': 'CreateFormActionInitializers',
+                                                                'x-initializer': 'createForm:configureActions',
                                                                 'x-component': 'ActionBar',
                                                                 'x-component-props': {
                                                                   layout: 'one-column',
@@ -8069,7 +8541,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndMediaFields: PageConfig = {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'array',
-                        'x-initializer': 'TableColumnInitializers',
+                        'x-initializer': 'table:configureColumns',
                         'x-component': 'TableV2',
                         'x-component-props': {
                           rowKey: 'id',
@@ -8088,7 +8560,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndMediaFields: PageConfig = {
                             'x-decorator': 'TableV2.Column.ActionBar',
                             'x-component': 'TableV2.Column',
                             'x-designer': 'TableV2.ActionColumnDesigner',
-                            'x-initializer': 'TableActionColumnInitializers',
+                            'x-initializer': 'table:configureItemActions',
                             properties: {
                               actions: {
                                 _isJSONSchemaObject: true,
@@ -8150,7 +8622,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndMediaFields: PageConfig = {
                                                     version: '2.0',
                                                     type: 'void',
                                                     'x-component': 'Grid',
-                                                    'x-initializer': 'RecordBlockInitializers',
+                                                    'x-initializer': 'popup:common:addBlock',
                                                     properties: {
                                                       rqr8ymho8qk: {
                                                         _isJSONSchemaObject: true,
@@ -8195,8 +8667,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndMediaFields: PageConfig = {
                                                                         _isJSONSchemaObject: true,
                                                                         version: '2.0',
                                                                         type: 'void',
-                                                                        'x-initializer':
-                                                                          'ReadPrettyFormActionInitializers',
+                                                                        'x-initializer': 'details:configureActions',
                                                                         'x-component': 'ActionBar',
                                                                         'x-component-props': {
                                                                           style: {
@@ -8253,7 +8724,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndMediaFields: PageConfig = {
                                                                                             type: 'void',
                                                                                             'x-component': 'Grid',
                                                                                             'x-initializer':
-                                                                                              'RecordBlockInitializers',
+                                                                                              'popup:common:addBlock',
                                                                                             'x-uid': 'nzgpjel7gnt',
                                                                                             'x-async': false,
                                                                                             'x-index': 1,
@@ -8288,8 +8759,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndMediaFields: PageConfig = {
                                                                         version: '2.0',
                                                                         type: 'void',
                                                                         'x-component': 'Grid',
-                                                                        'x-initializer':
-                                                                          'ReadPrettyFormItemInitializers',
+                                                                        'x-initializer': 'details:configureFields',
                                                                         properties: {
                                                                           gm9h65g0rrf: {
                                                                             _isJSONSchemaObject: true,
@@ -8500,7 +8970,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndMediaFields: PageConfig = {
                                                     version: '2.0',
                                                     type: 'void',
                                                     'x-component': 'Grid',
-                                                    'x-initializer': 'RecordBlockInitializers',
+                                                    'x-initializer': 'popup:common:addBlock',
                                                     properties: {
                                                       i0qbr8outk2: {
                                                         _isJSONSchemaObject: true,
@@ -8548,7 +9018,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndMediaFields: PageConfig = {
                                                                         version: '2.0',
                                                                         type: 'void',
                                                                         'x-component': 'Grid',
-                                                                        'x-initializer': 'FormItemInitializers',
+                                                                        'x-initializer': 'form:configureFields',
                                                                         properties: {
                                                                           dho8aesxv5r: {
                                                                             _isJSONSchemaObject: true,
@@ -8669,7 +9139,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndMediaFields: PageConfig = {
                                                                         _isJSONSchemaObject: true,
                                                                         version: '2.0',
                                                                         type: 'void',
-                                                                        'x-initializer': 'UpdateFormActionInitializers',
+                                                                        'x-initializer': 'editForm:configureActions',
                                                                         'x-component': 'ActionBar',
                                                                         'x-component-props': {
                                                                           layout: 'one-column',
@@ -8809,7 +9279,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndDatetimeFields: PageConfig 
         version: '2.0',
         type: 'void',
         'x-component': 'Grid',
-        'x-initializer': 'BlockInitializers',
+        'x-initializer': 'page:addBlock',
         properties: {
           '0wtvsmu7fgy': {
             _isJSONSchemaObject: true,
@@ -8849,7 +9319,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndDatetimeFields: PageConfig 
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'void',
-                        'x-initializer': 'TableActionInitializers',
+                        'x-initializer': 'table:configureActions',
                         'x-component': 'ActionBar',
                         'x-component-props': {
                           style: {
@@ -8910,7 +9380,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndDatetimeFields: PageConfig 
                                             version: '2.0',
                                             type: 'void',
                                             'x-component': 'Grid',
-                                            'x-initializer': 'CreateFormBlockInitializers',
+                                            'x-initializer': 'popup:addNew:addBlock',
                                             properties: {
                                               '54z7u3t354f': {
                                                 _isJSONSchemaObject: true,
@@ -8955,7 +9425,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndDatetimeFields: PageConfig 
                                                                 version: '2.0',
                                                                 type: 'void',
                                                                 'x-component': 'Grid',
-                                                                'x-initializer': 'FormItemInitializers',
+                                                                'x-initializer': 'form:configureFields',
                                                                 properties: {
                                                                   '9tn7mmv6q2j': {
                                                                     _isJSONSchemaObject: true,
@@ -9036,7 +9506,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndDatetimeFields: PageConfig 
                                                                 _isJSONSchemaObject: true,
                                                                 version: '2.0',
                                                                 type: 'void',
-                                                                'x-initializer': 'CreateFormActionInitializers',
+                                                                'x-initializer': 'createForm:configureActions',
                                                                 'x-component': 'ActionBar',
                                                                 'x-component-props': {
                                                                   layout: 'one-column',
@@ -9124,7 +9594,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndDatetimeFields: PageConfig 
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'array',
-                        'x-initializer': 'TableColumnInitializers',
+                        'x-initializer': 'table:configureColumns',
                         'x-component': 'TableV2',
                         'x-component-props': {
                           rowKey: 'id',
@@ -9143,7 +9613,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndDatetimeFields: PageConfig 
                             'x-decorator': 'TableV2.Column.ActionBar',
                             'x-component': 'TableV2.Column',
                             'x-designer': 'TableV2.ActionColumnDesigner',
-                            'x-initializer': 'TableActionColumnInitializers',
+                            'x-initializer': 'table:configureItemActions',
                             properties: {
                               actions: {
                                 _isJSONSchemaObject: true,
@@ -9205,7 +9675,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndDatetimeFields: PageConfig 
                                                     version: '2.0',
                                                     type: 'void',
                                                     'x-component': 'Grid',
-                                                    'x-initializer': 'RecordBlockInitializers',
+                                                    'x-initializer': 'popup:common:addBlock',
                                                     properties: {
                                                       '5oesm2w11p1': {
                                                         _isJSONSchemaObject: true,
@@ -9250,8 +9720,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndDatetimeFields: PageConfig 
                                                                         _isJSONSchemaObject: true,
                                                                         version: '2.0',
                                                                         type: 'void',
-                                                                        'x-initializer':
-                                                                          'ReadPrettyFormActionInitializers',
+                                                                        'x-initializer': 'details:configureActions',
                                                                         'x-component': 'ActionBar',
                                                                         'x-component-props': {
                                                                           style: {
@@ -9308,7 +9777,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndDatetimeFields: PageConfig 
                                                                                             type: 'void',
                                                                                             'x-component': 'Grid',
                                                                                             'x-initializer':
-                                                                                              'RecordBlockInitializers',
+                                                                                              'popup:common:addBlock',
                                                                                             'x-uid': 'o61euxh6r2l',
                                                                                             'x-async': false,
                                                                                             'x-index': 1,
@@ -9343,8 +9812,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndDatetimeFields: PageConfig 
                                                                         version: '2.0',
                                                                         type: 'void',
                                                                         'x-component': 'Grid',
-                                                                        'x-initializer':
-                                                                          'ReadPrettyFormItemInitializers',
+                                                                        'x-initializer': 'details:configureFields',
                                                                         properties: {
                                                                           f88bpjnnp8b: {
                                                                             _isJSONSchemaObject: true,
@@ -9517,7 +9985,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndDatetimeFields: PageConfig 
                                                     version: '2.0',
                                                     type: 'void',
                                                     'x-component': 'Grid',
-                                                    'x-initializer': 'RecordBlockInitializers',
+                                                    'x-initializer': 'popup:common:addBlock',
                                                     properties: {
                                                       itbs2k3vnwh: {
                                                         _isJSONSchemaObject: true,
@@ -9565,7 +10033,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndDatetimeFields: PageConfig 
                                                                         version: '2.0',
                                                                         type: 'void',
                                                                         'x-component': 'Grid',
-                                                                        'x-initializer': 'FormItemInitializers',
+                                                                        'x-initializer': 'form:configureFields',
                                                                         properties: {
                                                                           nx1dw628ww8: {
                                                                             _isJSONSchemaObject: true,
@@ -9648,7 +10116,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndDatetimeFields: PageConfig 
                                                                         _isJSONSchemaObject: true,
                                                                         version: '2.0',
                                                                         type: 'void',
-                                                                        'x-initializer': 'UpdateFormActionInitializers',
+                                                                        'x-initializer': 'editForm:configureActions',
                                                                         'x-component': 'ActionBar',
                                                                         'x-component-props': {
                                                                           layout: 'one-column',
@@ -9788,7 +10256,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndAssociationFields: PageConf
         version: '2.0',
         type: 'void',
         'x-component': 'Grid',
-        'x-initializer': 'BlockInitializers',
+        'x-initializer': 'page:addBlock',
         properties: {
           '31trec6eh60': {
             _isJSONSchemaObject: true,
@@ -9828,7 +10296,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndAssociationFields: PageConf
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'void',
-                        'x-initializer': 'TableActionInitializers',
+                        'x-initializer': 'table:configureActions',
                         'x-component': 'ActionBar',
                         'x-component-props': {
                           style: {
@@ -9889,7 +10357,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndAssociationFields: PageConf
                                             version: '2.0',
                                             type: 'void',
                                             'x-component': 'Grid',
-                                            'x-initializer': 'CreateFormBlockInitializers',
+                                            'x-initializer': 'popup:addNew:addBlock',
                                             properties: {
                                               '8yo09nilrra': {
                                                 _isJSONSchemaObject: true,
@@ -9934,7 +10402,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndAssociationFields: PageConf
                                                                 version: '2.0',
                                                                 type: 'void',
                                                                 'x-component': 'Grid',
-                                                                'x-initializer': 'FormItemInitializers',
+                                                                'x-initializer': 'form:configureFields',
                                                                 properties: {
                                                                   '08iltavqcsw': {
                                                                     _isJSONSchemaObject: true,
@@ -10122,7 +10590,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndAssociationFields: PageConf
                                                                 _isJSONSchemaObject: true,
                                                                 version: '2.0',
                                                                 type: 'void',
-                                                                'x-initializer': 'CreateFormActionInitializers',
+                                                                'x-initializer': 'createForm:configureActions',
                                                                 'x-component': 'ActionBar',
                                                                 'x-component-props': {
                                                                   layout: 'one-column',
@@ -10210,7 +10678,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndAssociationFields: PageConf
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'array',
-                        'x-initializer': 'TableColumnInitializers',
+                        'x-initializer': 'table:configureColumns',
                         'x-component': 'TableV2',
                         'x-component-props': {
                           rowKey: 'id',
@@ -10229,7 +10697,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndAssociationFields: PageConf
                             'x-decorator': 'TableV2.Column.ActionBar',
                             'x-component': 'TableV2.Column',
                             'x-designer': 'TableV2.ActionColumnDesigner',
-                            'x-initializer': 'TableActionColumnInitializers',
+                            'x-initializer': 'table:configureItemActions',
                             properties: {
                               actions: {
                                 _isJSONSchemaObject: true,
@@ -10291,7 +10759,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndAssociationFields: PageConf
                                                     version: '2.0',
                                                     type: 'void',
                                                     'x-component': 'Grid',
-                                                    'x-initializer': 'RecordBlockInitializers',
+                                                    'x-initializer': 'popup:common:addBlock',
                                                     properties: {
                                                       '53lam282m0w': {
                                                         _isJSONSchemaObject: true,
@@ -10336,8 +10804,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndAssociationFields: PageConf
                                                                         _isJSONSchemaObject: true,
                                                                         version: '2.0',
                                                                         type: 'void',
-                                                                        'x-initializer':
-                                                                          'ReadPrettyFormActionInitializers',
+                                                                        'x-initializer': 'details:configureActions',
                                                                         'x-component': 'ActionBar',
                                                                         'x-component-props': {
                                                                           style: {
@@ -10394,7 +10861,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndAssociationFields: PageConf
                                                                                             type: 'void',
                                                                                             'x-component': 'Grid',
                                                                                             'x-initializer':
-                                                                                              'RecordBlockInitializers',
+                                                                                              'popup:common:addBlock',
                                                                                             'x-uid': 'vgnlbwsjqbx',
                                                                                             'x-async': false,
                                                                                             'x-index': 1,
@@ -10429,8 +10896,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndAssociationFields: PageConf
                                                                         version: '2.0',
                                                                         type: 'void',
                                                                         'x-component': 'Grid',
-                                                                        'x-initializer':
-                                                                          'ReadPrettyFormItemInitializers',
+                                                                        'x-initializer': 'details:configureFields',
                                                                         properties: {
                                                                           ee8my5o19ku: {
                                                                             _isJSONSchemaObject: true,
@@ -10711,7 +11177,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndAssociationFields: PageConf
                                                     version: '2.0',
                                                     type: 'void',
                                                     'x-component': 'Grid',
-                                                    'x-initializer': 'RecordBlockInitializers',
+                                                    'x-initializer': 'popup:common:addBlock',
                                                     properties: {
                                                       ik4xkal0fk3: {
                                                         _isJSONSchemaObject: true,
@@ -10759,7 +11225,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndAssociationFields: PageConf
                                                                         version: '2.0',
                                                                         type: 'void',
                                                                         'x-component': 'Grid',
-                                                                        'x-initializer': 'FormItemInitializers',
+                                                                        'x-initializer': 'form:configureFields',
                                                                         properties: {
                                                                           '5rcq2dnzpvl': {
                                                                             _isJSONSchemaObject: true,
@@ -10950,7 +11416,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndAssociationFields: PageConf
                                                                         _isJSONSchemaObject: true,
                                                                         version: '2.0',
                                                                         type: 'void',
-                                                                        'x-initializer': 'UpdateFormActionInitializers',
+                                                                        'x-initializer': 'editForm:configureActions',
                                                                         'x-component': 'ActionBar',
                                                                         'x-component-props': {
                                                                           layout: 'one-column',
@@ -11086,7 +11552,7 @@ export const oneFilterFormBlockWithAllAssociationFields: PageConfig = {
         version: '2.0',
         type: 'void',
         'x-component': 'Grid',
-        'x-initializer': 'BlockInitializers',
+        'x-initializer': 'page:addBlock',
         properties: {
           oogm3hoka7c: {
             _isJSONSchemaObject: true,
@@ -11128,7 +11594,7 @@ export const oneFilterFormBlockWithAllAssociationFields: PageConfig = {
                             version: '2.0',
                             type: 'void',
                             'x-component': 'Grid',
-                            'x-initializer': 'FilterFormItemInitializers',
+                            'x-initializer': 'filterForm:configureFields',
                             properties: {
                               y5gw4zxp20e: {
                                 _isJSONSchemaObject: true,
@@ -11349,7 +11815,7 @@ export const oneFilterFormBlockWithAllAssociationFields: PageConfig = {
                             _isJSONSchemaObject: true,
                             version: '2.0',
                             type: 'void',
-                            'x-initializer': 'FilterFormActionInitializers',
+                            'x-initializer': 'filterForm:configureActions',
                             'x-component': 'ActionBar',
                             'x-component-props': {
                               layout: 'one-column',
@@ -11413,7 +11879,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndAdvancedFields: PageConfig 
         version: '2.0',
         type: 'void',
         'x-component': 'Grid',
-        'x-initializer': 'BlockInitializers',
+        'x-initializer': 'page:addBlock',
         properties: {
           jp9qjk95sgp: {
             _isJSONSchemaObject: true,
@@ -11453,7 +11919,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndAdvancedFields: PageConfig 
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'void',
-                        'x-initializer': 'TableActionInitializers',
+                        'x-initializer': 'table:configureActions',
                         'x-component': 'ActionBar',
                         'x-component-props': {
                           style: {
@@ -11514,7 +11980,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndAdvancedFields: PageConfig 
                                             version: '2.0',
                                             type: 'void',
                                             'x-component': 'Grid',
-                                            'x-initializer': 'CreateFormBlockInitializers',
+                                            'x-initializer': 'popup:addNew:addBlock',
                                             properties: {
                                               jykx4mc4tan: {
                                                 _isJSONSchemaObject: true,
@@ -11559,7 +12025,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndAdvancedFields: PageConfig 
                                                                 version: '2.0',
                                                                 type: 'void',
                                                                 'x-component': 'Grid',
-                                                                'x-initializer': 'FormItemInitializers',
+                                                                'x-initializer': 'form:configureFields',
                                                                 properties: {
                                                                   o59i5tuhrf9: {
                                                                     _isJSONSchemaObject: true,
@@ -11717,7 +12183,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndAdvancedFields: PageConfig 
                                                                 _isJSONSchemaObject: true,
                                                                 version: '2.0',
                                                                 type: 'void',
-                                                                'x-initializer': 'CreateFormActionInitializers',
+                                                                'x-initializer': 'createForm:configureActions',
                                                                 'x-component': 'ActionBar',
                                                                 'x-component-props': {
                                                                   layout: 'one-column',
@@ -11805,7 +12271,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndAdvancedFields: PageConfig 
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'array',
-                        'x-initializer': 'TableColumnInitializers',
+                        'x-initializer': 'table:configureColumns',
                         'x-component': 'TableV2',
                         'x-component-props': {
                           rowKey: 'id',
@@ -11824,7 +12290,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndAdvancedFields: PageConfig 
                             'x-decorator': 'TableV2.Column.ActionBar',
                             'x-component': 'TableV2.Column',
                             'x-designer': 'TableV2.ActionColumnDesigner',
-                            'x-initializer': 'TableActionColumnInitializers',
+                            'x-initializer': 'table:configureItemActions',
                             properties: {
                               actions: {
                                 _isJSONSchemaObject: true,
@@ -11886,7 +12352,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndAdvancedFields: PageConfig 
                                                     version: '2.0',
                                                     type: 'void',
                                                     'x-component': 'Grid',
-                                                    'x-initializer': 'RecordBlockInitializers',
+                                                    'x-initializer': 'popup:common:addBlock',
                                                     properties: {
                                                       '1sdc9mt382r': {
                                                         _isJSONSchemaObject: true,
@@ -11931,8 +12397,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndAdvancedFields: PageConfig 
                                                                         _isJSONSchemaObject: true,
                                                                         version: '2.0',
                                                                         type: 'void',
-                                                                        'x-initializer':
-                                                                          'ReadPrettyFormActionInitializers',
+                                                                        'x-initializer': 'details:configureActions',
                                                                         'x-component': 'ActionBar',
                                                                         'x-component-props': {
                                                                           style: {
@@ -11989,7 +12454,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndAdvancedFields: PageConfig 
                                                                                             type: 'void',
                                                                                             'x-component': 'Grid',
                                                                                             'x-initializer':
-                                                                                              'RecordBlockInitializers',
+                                                                                              'popup:common:addBlock',
                                                                                             'x-uid': 'hku8pm0hkmc',
                                                                                             'x-async': false,
                                                                                             'x-index': 1,
@@ -12024,8 +12489,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndAdvancedFields: PageConfig 
                                                                         version: '2.0',
                                                                         type: 'void',
                                                                         'x-component': 'Grid',
-                                                                        'x-initializer':
-                                                                          'ReadPrettyFormItemInitializers',
+                                                                        'x-initializer': 'details:configureFields',
                                                                         properties: {
                                                                           '7243zv6k16f': {
                                                                             _isJSONSchemaObject: true,
@@ -12277,7 +12741,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndAdvancedFields: PageConfig 
                                                     version: '2.0',
                                                     type: 'void',
                                                     'x-component': 'Grid',
-                                                    'x-initializer': 'RecordBlockInitializers',
+                                                    'x-initializer': 'popup:common:addBlock',
                                                     properties: {
                                                       '873tavkmkob': {
                                                         _isJSONSchemaObject: true,
@@ -12325,7 +12789,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndAdvancedFields: PageConfig 
                                                                         version: '2.0',
                                                                         type: 'void',
                                                                         'x-component': 'Grid',
-                                                                        'x-initializer': 'FormItemInitializers',
+                                                                        'x-initializer': 'form:configureFields',
                                                                         properties: {
                                                                           q4u8z9fymes: {
                                                                             _isJSONSchemaObject: true,
@@ -12487,7 +12951,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndAdvancedFields: PageConfig 
                                                                         _isJSONSchemaObject: true,
                                                                         version: '2.0',
                                                                         type: 'void',
-                                                                        'x-initializer': 'UpdateFormActionInitializers',
+                                                                        'x-initializer': 'editForm:configureActions',
                                                                         'x-component': 'ActionBar',
                                                                         'x-component-props': {
                                                                           layout: 'one-column',
@@ -12627,7 +13091,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndSystemInfoFields: PageConfi
         version: '2.0',
         type: 'void',
         'x-component': 'Grid',
-        'x-initializer': 'BlockInitializers',
+        'x-initializer': 'page:addBlock',
         properties: {
           epqxqgug6qx: {
             _isJSONSchemaObject: true,
@@ -12667,7 +13131,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndSystemInfoFields: PageConfi
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'void',
-                        'x-initializer': 'TableActionInitializers',
+                        'x-initializer': 'table:configureActions',
                         'x-component': 'ActionBar',
                         'x-component-props': {
                           style: {
@@ -12728,7 +13192,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndSystemInfoFields: PageConfi
                                             version: '2.0',
                                             type: 'void',
                                             'x-component': 'Grid',
-                                            'x-initializer': 'CreateFormBlockInitializers',
+                                            'x-initializer': 'popup:addNew:addBlock',
                                             properties: {
                                               zmbofsdker4: {
                                                 _isJSONSchemaObject: true,
@@ -12773,7 +13237,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndSystemInfoFields: PageConfi
                                                                 version: '2.0',
                                                                 type: 'void',
                                                                 'x-component': 'Grid',
-                                                                'x-initializer': 'FormItemInitializers',
+                                                                'x-initializer': 'form:configureFields',
                                                                 properties: {
                                                                   f6yjc0sfg5k: {
                                                                     _isJSONSchemaObject: true,
@@ -12905,7 +13369,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndSystemInfoFields: PageConfi
                                                                                             type: 'void',
                                                                                             'x-component': 'Grid',
                                                                                             'x-initializer':
-                                                                                              'RecordBlockInitializers',
+                                                                                              'popup:common:addBlock',
                                                                                             'x-uid': 'i4pbty5jkhr',
                                                                                             'x-async': false,
                                                                                             'x-index': 1,
@@ -12997,7 +13461,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndSystemInfoFields: PageConfi
                                                                                             type: 'void',
                                                                                             'x-component': 'Grid',
                                                                                             'x-initializer':
-                                                                                              'RecordBlockInitializers',
+                                                                                              'popup:common:addBlock',
                                                                                             'x-uid': 'ofz5idx9716',
                                                                                             'x-async': false,
                                                                                             'x-index': 1,
@@ -13113,7 +13577,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndSystemInfoFields: PageConfi
                                                                 _isJSONSchemaObject: true,
                                                                 version: '2.0',
                                                                 type: 'void',
-                                                                'x-initializer': 'CreateFormActionInitializers',
+                                                                'x-initializer': 'createForm:configureActions',
                                                                 'x-component': 'ActionBar',
                                                                 'x-component-props': {
                                                                   layout: 'one-column',
@@ -13201,7 +13665,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndSystemInfoFields: PageConfi
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'array',
-                        'x-initializer': 'TableColumnInitializers',
+                        'x-initializer': 'table:configureColumns',
                         'x-component': 'TableV2',
                         'x-component-props': {
                           rowKey: 'id',
@@ -13220,7 +13684,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndSystemInfoFields: PageConfi
                             'x-decorator': 'TableV2.Column.ActionBar',
                             'x-component': 'TableV2.Column',
                             'x-designer': 'TableV2.ActionColumnDesigner',
-                            'x-initializer': 'TableActionColumnInitializers',
+                            'x-initializer': 'table:configureItemActions',
                             properties: {
                               actions: {
                                 _isJSONSchemaObject: true,
@@ -13282,7 +13746,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndSystemInfoFields: PageConfi
                                                     version: '2.0',
                                                     type: 'void',
                                                     'x-component': 'Grid',
-                                                    'x-initializer': 'RecordBlockInitializers',
+                                                    'x-initializer': 'popup:common:addBlock',
                                                     properties: {
                                                       '5g4hlzrrkbh': {
                                                         _isJSONSchemaObject: true,
@@ -13327,8 +13791,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndSystemInfoFields: PageConfi
                                                                         _isJSONSchemaObject: true,
                                                                         version: '2.0',
                                                                         type: 'void',
-                                                                        'x-initializer':
-                                                                          'ReadPrettyFormActionInitializers',
+                                                                        'x-initializer': 'details:configureActions',
                                                                         'x-component': 'ActionBar',
                                                                         'x-component-props': {
                                                                           style: {
@@ -13385,7 +13848,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndSystemInfoFields: PageConfi
                                                                                             type: 'void',
                                                                                             'x-component': 'Grid',
                                                                                             'x-initializer':
-                                                                                              'RecordBlockInitializers',
+                                                                                              'popup:common:addBlock',
                                                                                             'x-uid': '5v2mpey52su',
                                                                                             'x-async': false,
                                                                                             'x-index': 1,
@@ -13420,8 +13883,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndSystemInfoFields: PageConfi
                                                                         version: '2.0',
                                                                         type: 'void',
                                                                         'x-component': 'Grid',
-                                                                        'x-initializer':
-                                                                          'ReadPrettyFormItemInitializers',
+                                                                        'x-initializer': 'details:configureFields',
                                                                         properties: {
                                                                           qe2nm5ot23c: {
                                                                             _isJSONSchemaObject: true,
@@ -13562,7 +14024,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndSystemInfoFields: PageConfi
                                                                                                     'x-component':
                                                                                                       'Grid',
                                                                                                     'x-initializer':
-                                                                                                      'RecordBlockInitializers',
+                                                                                                      'popup:common:addBlock',
                                                                                                     'x-uid':
                                                                                                       'eno5ymv0s21',
                                                                                                     'x-async': false,
@@ -13663,7 +14125,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndSystemInfoFields: PageConfi
                                                                                                     'x-component':
                                                                                                       'Grid',
                                                                                                     'x-initializer':
-                                                                                                      'RecordBlockInitializers',
+                                                                                                      'popup:common:addBlock',
                                                                                                     'x-uid':
                                                                                                       'cpoo628xa2y',
                                                                                                     'x-async': false,
@@ -13871,7 +14333,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndSystemInfoFields: PageConfi
                                                     version: '2.0',
                                                     type: 'void',
                                                     'x-component': 'Grid',
-                                                    'x-initializer': 'RecordBlockInitializers',
+                                                    'x-initializer': 'popup:common:addBlock',
                                                     properties: {
                                                       f4262c4203q: {
                                                         _isJSONSchemaObject: true,
@@ -13919,7 +14381,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndSystemInfoFields: PageConfi
                                                                         version: '2.0',
                                                                         type: 'void',
                                                                         'x-component': 'Grid',
-                                                                        'x-initializer': 'FormItemInitializers',
+                                                                        'x-initializer': 'form:configureFields',
                                                                         properties: {
                                                                           fr6gmmxwxm6: {
                                                                             _isJSONSchemaObject: true,
@@ -14060,7 +14522,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndSystemInfoFields: PageConfi
                                                                                                     'x-component':
                                                                                                       'Grid',
                                                                                                     'x-initializer':
-                                                                                                      'RecordBlockInitializers',
+                                                                                                      'popup:common:addBlock',
                                                                                                     'x-uid':
                                                                                                       'y3qxvvkexzc',
                                                                                                     'x-async': false,
@@ -14161,7 +14623,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndSystemInfoFields: PageConfi
                                                                                                     'x-component':
                                                                                                       'Grid',
                                                                                                     'x-initializer':
-                                                                                                      'RecordBlockInitializers',
+                                                                                                      'popup:common:addBlock',
                                                                                                     'x-uid':
                                                                                                       '8voz33qzsh8',
                                                                                                     'x-async': false,
@@ -14279,7 +14741,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndSystemInfoFields: PageConfi
                                                                         _isJSONSchemaObject: true,
                                                                         version: '2.0',
                                                                         type: 'void',
-                                                                        'x-initializer': 'UpdateFormActionInitializers',
+                                                                        'x-initializer': 'editForm:configureActions',
                                                                         'x-component': 'ActionBar',
                                                                         'x-component-props': {
                                                                           layout: 'one-column',
@@ -14412,7 +14874,7 @@ export const oneEmptyTableWithTreeCollection: PageConfig = {
         version: '2.0',
         type: 'void',
         'x-component': 'Grid',
-        'x-initializer': 'BlockInitializers',
+        'x-initializer': 'page:addBlock',
         properties: {
           tt9ipsm1wb7: {
             _isJSONSchemaObject: true,
@@ -14452,7 +14914,7 @@ export const oneEmptyTableWithTreeCollection: PageConfig = {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'void',
-                        'x-initializer': 'TableActionInitializers',
+                        'x-initializer': 'table:configureActions',
                         'x-component': 'ActionBar',
                         'x-component-props': {
                           style: {
@@ -14467,7 +14929,7 @@ export const oneEmptyTableWithTreeCollection: PageConfig = {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'array',
-                        'x-initializer': 'TableColumnInitializers',
+                        'x-initializer': 'table:configureColumns',
                         'x-component': 'TableV2',
                         'x-component-props': {
                           rowKey: 'id',
@@ -14486,7 +14948,7 @@ export const oneEmptyTableWithTreeCollection: PageConfig = {
                             'x-decorator': 'TableV2.Column.ActionBar',
                             'x-component': 'TableV2.Column',
                             'x-designer': 'TableV2.ActionColumnDesigner',
-                            'x-initializer': 'TableActionColumnInitializers',
+                            'x-initializer': 'table:configureItemActions',
                             properties: {
                               actions: {
                                 _isJSONSchemaObject: true,
@@ -14550,7 +15012,7 @@ export const oneEmptyMarkdown: PageConfig = {
         version: '2.0',
         type: 'void',
         'x-component': 'Grid',
-        'x-initializer': 'BlockInitializers',
+        'x-initializer': 'page:addBlock',
         properties: {
           eocwxdkmped: {
             _isJSONSchemaObject: true,
@@ -14620,7 +15082,7 @@ export const oneCollapseAndOneTableWithSameCollection: PageConfig = {
         version: '2.0',
         type: 'void',
         'x-component': 'Grid',
-        'x-initializer': 'BlockInitializers',
+        'x-initializer': 'page:addBlock',
         properties: {
           xxnsq3r1w5u: {
             _isJSONSchemaObject: true,
@@ -14735,7 +15197,7 @@ export const oneCollapseAndOneTableWithSameCollection: PageConfig = {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'void',
-                        'x-initializer': 'TableActionInitializers',
+                        'x-initializer': 'table:configureActions',
                         'x-component': 'ActionBar',
                         'x-component-props': {
                           style: {
@@ -14750,7 +15212,7 @@ export const oneCollapseAndOneTableWithSameCollection: PageConfig = {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'array',
-                        'x-initializer': 'TableColumnInitializers',
+                        'x-initializer': 'table:configureColumns',
                         'x-component': 'TableV2',
                         'x-component-props': {
                           rowKey: 'id',
@@ -14844,7 +15306,7 @@ export const oneFormWithMultiLevelAssociationFields: PageConfig = {
         version: '2.0',
         type: 'void',
         'x-component': 'Grid',
-        'x-initializer': 'BlockInitializers',
+        'x-initializer': 'page:addBlock',
         properties: {
           djjvozyzzha: {
             _isJSONSchemaObject: true,
@@ -14889,7 +15351,7 @@ export const oneFormWithMultiLevelAssociationFields: PageConfig = {
                             version: '2.0',
                             type: 'void',
                             'x-component': 'Grid',
-                            'x-initializer': 'FormItemInitializers',
+                            'x-initializer': 'form:configureFields',
                             properties: {
                               grgso6wba2b: {
                                 _isJSONSchemaObject: true,
@@ -15015,7 +15477,7 @@ export const oneFormWithMultiLevelAssociationFields: PageConfig = {
                             _isJSONSchemaObject: true,
                             version: '2.0',
                             type: 'void',
-                            'x-initializer': 'FormActionInitializers',
+                            'x-initializer': 'createForm:configureActions',
                             'x-component': 'ActionBar',
                             'x-component-props': {
                               layout: 'one-column',
@@ -15098,7 +15560,7 @@ export const oneSubformWithMultiLevelAssociationFields: PageConfig = {
         version: '2.0',
         type: 'void',
         'x-component': 'Grid',
-        'x-initializer': 'BlockInitializers',
+        'x-initializer': 'page:addBlock',
         properties: {
           mxqswxl18hb: {
             _isJSONSchemaObject: true,
@@ -15143,7 +15605,7 @@ export const oneSubformWithMultiLevelAssociationFields: PageConfig = {
                             version: '2.0',
                             type: 'void',
                             'x-component': 'Grid',
-                            'x-initializer': 'FormItemInitializers',
+                            'x-initializer': 'form:configureFields',
                             properties: {
                               '6k12v33b6j3': {
                                 _isJSONSchemaObject: true,
@@ -15183,7 +15645,7 @@ export const oneSubformWithMultiLevelAssociationFields: PageConfig = {
                                                 version: '2.0',
                                                 type: 'void',
                                                 'x-component': 'Grid',
-                                                'x-initializer': 'FormItemInitializers',
+                                                'x-initializer': 'form:configureFields',
                                                 properties: {
                                                   '9c4mwdnt1kf': {
                                                     _isJSONSchemaObject: true,
@@ -15332,7 +15794,7 @@ export const oneSubformWithMultiLevelAssociationFields: PageConfig = {
                             _isJSONSchemaObject: true,
                             version: '2.0',
                             type: 'void',
-                            'x-initializer': 'FormActionInitializers',
+                            'x-initializer': 'createForm:configureActions',
                             'x-component': 'ActionBar',
                             'x-component-props': {
                               layout: 'one-column',
@@ -15415,7 +15877,7 @@ export const oneTableSubformWithMultiLevelAssociationFields: PageConfig = {
         version: '2.0',
         type: 'void',
         'x-component': 'Grid',
-        'x-initializer': 'BlockInitializers',
+        'x-initializer': 'page:addBlock',
         properties: {
           spt3dncqt6g: {
             _isJSONSchemaObject: true,
@@ -15455,7 +15917,7 @@ export const oneTableSubformWithMultiLevelAssociationFields: PageConfig = {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'void',
-                        'x-initializer': 'TableActionInitializers',
+                        'x-initializer': 'table:configureActions',
                         'x-component': 'ActionBar',
                         'x-component-props': {
                           style: {
@@ -15516,7 +15978,7 @@ export const oneTableSubformWithMultiLevelAssociationFields: PageConfig = {
                                             version: '2.0',
                                             type: 'void',
                                             'x-component': 'Grid',
-                                            'x-initializer': 'CreateFormBlockInitializers',
+                                            'x-initializer': 'popup:addNew:addBlock',
                                             'x-uid': 'ezrqm7whaxk',
                                             'x-async': false,
                                             'x-index': 1,
@@ -15550,7 +16012,7 @@ export const oneTableSubformWithMultiLevelAssociationFields: PageConfig = {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'array',
-                        'x-initializer': 'TableColumnInitializers',
+                        'x-initializer': 'table:configureColumns',
                         'x-component': 'TableV2',
                         'x-component-props': {
                           rowKey: 'id',
@@ -15569,7 +16031,7 @@ export const oneTableSubformWithMultiLevelAssociationFields: PageConfig = {
                             'x-decorator': 'TableV2.Column.ActionBar',
                             'x-component': 'TableV2.Column',
                             'x-designer': 'TableV2.ActionColumnDesigner',
-                            'x-initializer': 'TableActionColumnInitializers',
+                            'x-initializer': 'table:configureItemActions',
                             properties: {
                               actions: {
                                 _isJSONSchemaObject: true,
@@ -15631,7 +16093,7 @@ export const oneTableSubformWithMultiLevelAssociationFields: PageConfig = {
                                                     version: '2.0',
                                                     type: 'void',
                                                     'x-component': 'Grid',
-                                                    'x-initializer': 'RecordBlockInitializers',
+                                                    'x-initializer': 'popup:common:addBlock',
                                                     properties: {
                                                       rxh2yo159ct: {
                                                         _isJSONSchemaObject: true,
@@ -15676,8 +16138,7 @@ export const oneTableSubformWithMultiLevelAssociationFields: PageConfig = {
                                                                         _isJSONSchemaObject: true,
                                                                         version: '2.0',
                                                                         type: 'void',
-                                                                        'x-initializer':
-                                                                          'ReadPrettyFormActionInitializers',
+                                                                        'x-initializer': 'details:configureActions',
                                                                         'x-component': 'ActionBar',
                                                                         'x-component-props': {
                                                                           style: {
@@ -15693,8 +16154,7 @@ export const oneTableSubformWithMultiLevelAssociationFields: PageConfig = {
                                                                         version: '2.0',
                                                                         type: 'void',
                                                                         'x-component': 'Grid',
-                                                                        'x-initializer':
-                                                                          'ReadPrettyFormItemInitializers',
+                                                                        'x-initializer': 'details:configureFields',
                                                                         properties: {
                                                                           h091lw5s3ot: {
                                                                             _isJSONSchemaObject: true,
@@ -15772,7 +16232,7 @@ export const oneTableSubformWithMultiLevelAssociationFields: PageConfig = {
                                                                                             type: 'void',
                                                                                             'x-component': 'Grid',
                                                                                             'x-initializer':
-                                                                                              'FormItemInitializers',
+                                                                                              'form:configureFields',
                                                                                             properties: {
                                                                                               '7gni7kgrxc6': {
                                                                                                 _isJSONSchemaObject:
@@ -15880,7 +16340,7 @@ export const oneTableSubformWithMultiLevelAssociationFields: PageConfig = {
                                                                                                                   'x-component':
                                                                                                                     'Grid',
                                                                                                                   'x-initializer':
-                                                                                                                    'FormItemInitializers',
+                                                                                                                    'form:configureFields',
                                                                                                                   properties:
                                                                                                                     {
                                                                                                                       wfis8uozy45:
@@ -16009,7 +16469,7 @@ export const oneTableSubformWithMultiLevelAssociationFields: PageConfig = {
                                                                                                                                                         'x-component':
                                                                                                                                                           'Grid',
                                                                                                                                                         'x-initializer':
-                                                                                                                                                          'FormItemInitializers',
+                                                                                                                                                          'form:configureFields',
                                                                                                                                                         properties:
                                                                                                                                                           {
                                                                                                                                                             '8ga4k036hkh':
@@ -16314,7 +16774,7 @@ export const oneTableSubformWithMultiLevelAssociationFields: PageConfig = {
                                                     version: '2.0',
                                                     type: 'void',
                                                     'x-component': 'Grid',
-                                                    'x-initializer': 'RecordBlockInitializers',
+                                                    'x-initializer': 'popup:common:addBlock',
                                                     properties: {
                                                       scqusdl60dp: {
                                                         _isJSONSchemaObject: true,
@@ -16362,7 +16822,7 @@ export const oneTableSubformWithMultiLevelAssociationFields: PageConfig = {
                                                                         version: '2.0',
                                                                         type: 'void',
                                                                         'x-component': 'Grid',
-                                                                        'x-initializer': 'FormItemInitializers',
+                                                                        'x-initializer': 'form:configureFields',
                                                                         properties: {
                                                                           row_x1kzwaop93e: {
                                                                             _isJSONSchemaObject: true,
@@ -16440,7 +16900,7 @@ export const oneTableSubformWithMultiLevelAssociationFields: PageConfig = {
                                                                                             type: 'void',
                                                                                             'x-component': 'Grid',
                                                                                             'x-initializer':
-                                                                                              'FormItemInitializers',
+                                                                                              'form:configureFields',
                                                                                             properties: {
                                                                                               '0o134mwdmzm': {
                                                                                                 _isJSONSchemaObject:
@@ -16548,7 +17008,7 @@ export const oneTableSubformWithMultiLevelAssociationFields: PageConfig = {
                                                                                                                   'x-component':
                                                                                                                     'Grid',
                                                                                                                   'x-initializer':
-                                                                                                                    'FormItemInitializers',
+                                                                                                                    'form:configureFields',
                                                                                                                   properties:
                                                                                                                     {
                                                                                                                       '2eg7xlliyk0':
@@ -16677,7 +17137,7 @@ export const oneTableSubformWithMultiLevelAssociationFields: PageConfig = {
                                                                                                                                                         'x-component':
                                                                                                                                                           'Grid',
                                                                                                                                                         'x-initializer':
-                                                                                                                                                          'FormItemInitializers',
+                                                                                                                                                          'form:configureFields',
                                                                                                                                                         properties:
                                                                                                                                                           {
                                                                                                                                                             wca260ji2ih:
@@ -16806,7 +17266,7 @@ export const oneTableSubformWithMultiLevelAssociationFields: PageConfig = {
                                                                                                                                                                                               'x-component':
                                                                                                                                                                                                 'Grid',
                                                                                                                                                                                               'x-initializer':
-                                                                                                                                                                                                'FormItemInitializers',
+                                                                                                                                                                                                'form:configureFields',
                                                                                                                                                                                               properties:
                                                                                                                                                                                                 {
                                                                                                                                                                                                   '9xq8mnnzyrw':
@@ -16994,7 +17454,7 @@ export const oneTableSubformWithMultiLevelAssociationFields: PageConfig = {
                                                                         _isJSONSchemaObject: true,
                                                                         version: '2.0',
                                                                         type: 'void',
-                                                                        'x-initializer': 'UpdateFormActionInitializers',
+                                                                        'x-initializer': 'editForm:configureActions',
                                                                         'x-component': 'ActionBar',
                                                                         'x-component-props': {
                                                                           layout: 'one-column',
@@ -17131,7 +17591,7 @@ export const oneTableSubtableWithMultiLevelAssociationFields: PageConfig = {
         version: '2.0',
         type: 'void',
         'x-component': 'Grid',
-        'x-initializer': 'BlockInitializers',
+        'x-initializer': 'page:addBlock',
         properties: {
           vp7c9oaymjr: {
             _isJSONSchemaObject: true,
@@ -17171,7 +17631,7 @@ export const oneTableSubtableWithMultiLevelAssociationFields: PageConfig = {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'void',
-                        'x-initializer': 'TableActionInitializers',
+                        'x-initializer': 'table:configureActions',
                         'x-component': 'ActionBar',
                         'x-component-props': {
                           style: {
@@ -17232,7 +17692,7 @@ export const oneTableSubtableWithMultiLevelAssociationFields: PageConfig = {
                                             version: '2.0',
                                             type: 'void',
                                             'x-component': 'Grid',
-                                            'x-initializer': 'CreateFormBlockInitializers',
+                                            'x-initializer': 'popup:addNew:addBlock',
                                             'x-uid': 'hhhjt2axsd2',
                                             'x-async': false,
                                             'x-index': 1,
@@ -17266,7 +17726,7 @@ export const oneTableSubtableWithMultiLevelAssociationFields: PageConfig = {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'array',
-                        'x-initializer': 'TableColumnInitializers',
+                        'x-initializer': 'table:configureColumns',
                         'x-component': 'TableV2',
                         'x-component-props': {
                           rowKey: 'id',
@@ -17285,7 +17745,7 @@ export const oneTableSubtableWithMultiLevelAssociationFields: PageConfig = {
                             'x-decorator': 'TableV2.Column.ActionBar',
                             'x-component': 'TableV2.Column',
                             'x-designer': 'TableV2.ActionColumnDesigner',
-                            'x-initializer': 'TableActionColumnInitializers',
+                            'x-initializer': 'table:configureItemActions',
                             properties: {
                               actions: {
                                 _isJSONSchemaObject: true,
@@ -17347,7 +17807,7 @@ export const oneTableSubtableWithMultiLevelAssociationFields: PageConfig = {
                                                     version: '2.0',
                                                     type: 'void',
                                                     'x-component': 'Grid',
-                                                    'x-initializer': 'RecordBlockInitializers',
+                                                    'x-initializer': 'popup:common:addBlock',
                                                     properties: {
                                                       qd1exa12t8i: {
                                                         _isJSONSchemaObject: true,
@@ -17392,8 +17852,7 @@ export const oneTableSubtableWithMultiLevelAssociationFields: PageConfig = {
                                                                         _isJSONSchemaObject: true,
                                                                         version: '2.0',
                                                                         type: 'void',
-                                                                        'x-initializer':
-                                                                          'ReadPrettyFormActionInitializers',
+                                                                        'x-initializer': 'details:configureActions',
                                                                         'x-component': 'ActionBar',
                                                                         'x-component-props': {
                                                                           style: {
@@ -17450,7 +17909,7 @@ export const oneTableSubtableWithMultiLevelAssociationFields: PageConfig = {
                                                                                             type: 'void',
                                                                                             'x-component': 'Grid',
                                                                                             'x-initializer':
-                                                                                              'RecordBlockInitializers',
+                                                                                              'popup:common:addBlock',
                                                                                             'x-uid': 'y94je87dtvs',
                                                                                             'x-async': false,
                                                                                             'x-index': 1,
@@ -17485,8 +17944,7 @@ export const oneTableSubtableWithMultiLevelAssociationFields: PageConfig = {
                                                                         version: '2.0',
                                                                         type: 'void',
                                                                         'x-component': 'Grid',
-                                                                        'x-initializer':
-                                                                          'ReadPrettyFormItemInitializers',
+                                                                        'x-initializer': 'details:configureFields',
                                                                         properties: {
                                                                           czwqhu0r4kn: {
                                                                             _isJSONSchemaObject: true,
@@ -17557,7 +18015,7 @@ export const oneTableSubtableWithMultiLevelAssociationFields: PageConfig = {
                                                                                         'x-component':
                                                                                           'AssociationField.SubTable',
                                                                                         'x-initializer':
-                                                                                          'TableColumnInitializers',
+                                                                                          'table:configureColumns',
                                                                                         'x-initializer-props': {
                                                                                           action: false,
                                                                                         },
@@ -17658,7 +18116,7 @@ export const oneTableSubtableWithMultiLevelAssociationFields: PageConfig = {
                                                                                             type: 'void',
                                                                                             'x-component': 'Grid',
                                                                                             'x-initializer':
-                                                                                              'FormItemInitializers',
+                                                                                              'form:configureFields',
                                                                                             'x-uid': 'gf8iixoigrh',
                                                                                             'x-async': false,
                                                                                             'x-index': 1,
@@ -17780,7 +18238,7 @@ export const oneTableSubtableWithMultiLevelAssociationFields: PageConfig = {
                                                     version: '2.0',
                                                     type: 'void',
                                                     'x-component': 'Grid',
-                                                    'x-initializer': 'RecordBlockInitializers',
+                                                    'x-initializer': 'popup:common:addBlock',
                                                     properties: {
                                                       a7fabwj9osd: {
                                                         _isJSONSchemaObject: true,
@@ -17828,7 +18286,7 @@ export const oneTableSubtableWithMultiLevelAssociationFields: PageConfig = {
                                                                         version: '2.0',
                                                                         type: 'void',
                                                                         'x-component': 'Grid',
-                                                                        'x-initializer': 'FormItemInitializers',
+                                                                        'x-initializer': 'form:configureFields',
                                                                         properties: {
                                                                           beh7yt0xrkh: {
                                                                             _isJSONSchemaObject: true,
@@ -17899,7 +18357,7 @@ export const oneTableSubtableWithMultiLevelAssociationFields: PageConfig = {
                                                                                         'x-component':
                                                                                           'AssociationField.SubTable',
                                                                                         'x-initializer':
-                                                                                          'TableColumnInitializers',
+                                                                                          'table:configureColumns',
                                                                                         'x-initializer-props': {
                                                                                           action: false,
                                                                                         },
@@ -18008,7 +18466,7 @@ export const oneTableSubtableWithMultiLevelAssociationFields: PageConfig = {
                                                                         _isJSONSchemaObject: true,
                                                                         version: '2.0',
                                                                         type: 'void',
-                                                                        'x-initializer': 'UpdateFormActionInitializers',
+                                                                        'x-initializer': 'editForm:configureActions',
                                                                         'x-component': 'ActionBar',
                                                                         'x-component-props': {
                                                                           layout: 'one-column',
@@ -18145,7 +18603,7 @@ export const formBlockDefaultValueTemplate: PageConfig = {
         version: '2.0',
         type: 'void',
         'x-component': 'Grid',
-        'x-initializer': 'BlockInitializers',
+        'x-initializer': 'page:addBlock',
         properties: {
           i7hhy9qt3vm: {
             _isJSONSchemaObject: true,
@@ -18185,7 +18643,7 @@ export const formBlockDefaultValueTemplate: PageConfig = {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'void',
-                        'x-initializer': 'TableActionInitializers',
+                        'x-initializer': 'table:configureActions',
                         'x-component': 'ActionBar',
                         'x-component-props': {
                           style: {
@@ -18246,7 +18704,7 @@ export const formBlockDefaultValueTemplate: PageConfig = {
                                             version: '2.0',
                                             type: 'void',
                                             'x-component': 'Grid',
-                                            'x-initializer': 'CreateFormBlockInitializers',
+                                            'x-initializer': 'popup:addNew:addBlock',
                                             properties: {
                                               ec8k6t8hyfd: {
                                                 _isJSONSchemaObject: true,
@@ -18291,7 +18749,7 @@ export const formBlockDefaultValueTemplate: PageConfig = {
                                                                 version: '2.0',
                                                                 type: 'void',
                                                                 'x-component': 'Grid',
-                                                                'x-initializer': 'FormItemInitializers',
+                                                                'x-initializer': 'form:configureFields',
                                                                 properties: {
                                                                   '11k61q066eh': {
                                                                     _isJSONSchemaObject: true,
@@ -18375,7 +18833,7 @@ export const formBlockDefaultValueTemplate: PageConfig = {
                                                                 _isJSONSchemaObject: true,
                                                                 version: '2.0',
                                                                 type: 'void',
-                                                                'x-initializer': 'CreateFormActionInitializers',
+                                                                'x-initializer': 'createForm:configureActions',
                                                                 'x-component': 'ActionBar',
                                                                 'x-component-props': {
                                                                   layout: 'one-column',
@@ -18441,7 +18899,7 @@ export const formBlockDefaultValueTemplate: PageConfig = {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'array',
-                        'x-initializer': 'TableColumnInitializers',
+                        'x-initializer': 'table:configureColumns',
                         'x-component': 'TableV2',
                         'x-component-props': {
                           rowKey: 'id',
@@ -18460,7 +18918,7 @@ export const formBlockDefaultValueTemplate: PageConfig = {
                             'x-decorator': 'TableV2.Column.ActionBar',
                             'x-component': 'TableV2.Column',
                             'x-designer': 'TableV2.ActionColumnDesigner',
-                            'x-initializer': 'TableActionColumnInitializers',
+                            'x-initializer': 'table:configureItemActions',
                             properties: {
                               actions: {
                                 _isJSONSchemaObject: true,
@@ -18522,7 +18980,7 @@ export const formBlockDefaultValueTemplate: PageConfig = {
                                                     version: '2.0',
                                                     type: 'void',
                                                     'x-component': 'Grid',
-                                                    'x-initializer': 'RecordBlockInitializers',
+                                                    'x-initializer': 'popup:common:addBlock',
                                                     'x-uid': '6k8q5pvnbjg',
                                                     'x-async': false,
                                                     'x-index': 1,
@@ -18596,7 +19054,7 @@ export const formBlockDefaultValueTemplate: PageConfig = {
                                                     version: '2.0',
                                                     type: 'void',
                                                     'x-component': 'Grid',
-                                                    'x-initializer': 'RecordBlockInitializers',
+                                                    'x-initializer': 'popup:common:addBlock',
                                                     'x-uid': 'yqsyvw7utn4',
                                                     'x-async': false,
                                                     'x-index': 1,
@@ -18678,7 +19136,7 @@ export const oneFormBlockBasedOnUsers: PageConfig = {
         version: '2.0',
         type: 'void',
         'x-component': 'Grid',
-        'x-initializer': 'BlockInitializers',
+        'x-initializer': 'page:addBlock',
         properties: {
           skmxkfr67em: {
             _isJSONSchemaObject: true,
@@ -18723,7 +19181,7 @@ export const oneFormBlockBasedOnUsers: PageConfig = {
                             version: '2.0',
                             type: 'void',
                             'x-component': 'Grid',
-                            'x-initializer': 'FormItemInitializers',
+                            'x-initializer': 'form:configureFields',
                             'x-uid': '66dozhzo5ld',
                             'x-async': false,
                             'x-index': 1,
@@ -18732,7 +19190,7 @@ export const oneFormBlockBasedOnUsers: PageConfig = {
                             _isJSONSchemaObject: true,
                             version: '2.0',
                             type: 'void',
-                            'x-initializer': 'FormActionInitializers',
+                            'x-initializer': 'createForm:configureActions',
                             'x-component': 'ActionBar',
                             'x-component-props': {
                               layout: 'one-column',
@@ -18793,7 +19251,7 @@ export const oneFormAndOneTableWithSameCollection: PageConfig = {
         version: '2.0',
         type: 'void',
         'x-component': 'Grid',
-        'x-initializer': 'BlockInitializers',
+        'x-initializer': 'page:addBlock',
         properties: {
           '0qplm51g52v': {
             _isJSONSchemaObject: true,
@@ -18835,7 +19293,7 @@ export const oneFormAndOneTableWithSameCollection: PageConfig = {
                             version: '2.0',
                             type: 'void',
                             'x-component': 'Grid',
-                            'x-initializer': 'FilterFormItemInitializers',
+                            'x-initializer': 'filterForm:configureFields',
                             properties: {
                               '0k8y0nlffht': {
                                 _isJSONSchemaObject: true,
@@ -18882,7 +19340,7 @@ export const oneFormAndOneTableWithSameCollection: PageConfig = {
                             _isJSONSchemaObject: true,
                             version: '2.0',
                             type: 'void',
-                            'x-initializer': 'FilterFormActionInitializers',
+                            'x-initializer': 'filterForm:configureActions',
                             'x-component': 'ActionBar',
                             'x-component-props': {
                               layout: 'one-column',
@@ -18986,7 +19444,7 @@ export const oneFormAndOneTableWithSameCollection: PageConfig = {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'void',
-                        'x-initializer': 'TableActionInitializers',
+                        'x-initializer': 'table:configureActions',
                         'x-component': 'ActionBar',
                         'x-component-props': {
                           style: {
@@ -19001,7 +19459,7 @@ export const oneFormAndOneTableWithSameCollection: PageConfig = {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'array',
-                        'x-initializer': 'TableColumnInitializers',
+                        'x-initializer': 'table:configureColumns',
                         'x-component': 'TableV2',
                         'x-component-props': {
                           rowKey: 'id',
@@ -19095,7 +19553,7 @@ export const twoTabsPage = {
         version: '2.0',
         type: 'void',
         'x-component': 'Grid',
-        'x-initializer': 'BlockInitializers',
+        'x-initializer': 'page:addBlock',
         title: 'tab 1',
         'x-async': false,
         'x-index': 1,
@@ -19106,7 +19564,7 @@ export const twoTabsPage = {
         type: 'void',
         title: 'tab 2',
         'x-component': 'Grid',
-        'x-initializer': 'BlockInitializers',
+        'x-initializer': 'page:addBlock',
         'x-uid': 'o5vp90rqsjx',
         'x-async': false,
         'x-index': 2,
@@ -19133,7 +19591,7 @@ export const twoTableWithSameCollection: PageConfig = {
         version: '2.0',
         type: 'void',
         'x-component': 'Grid',
-        'x-initializer': 'BlockInitializers',
+        'x-initializer': 'page:addBlock',
         properties: {
           jkcte869qpa: {
             _isJSONSchemaObject: true,
@@ -19177,7 +19635,7 @@ export const twoTableWithSameCollection: PageConfig = {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'void',
-                        'x-initializer': 'TableActionInitializers',
+                        'x-initializer': 'table:configureActions',
                         'x-component': 'ActionBar',
                         'x-component-props': {
                           style: {
@@ -19192,7 +19650,7 @@ export const twoTableWithSameCollection: PageConfig = {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'array',
-                        'x-initializer': 'TableColumnInitializers',
+                        'x-initializer': 'table:configureColumns',
                         'x-component': 'TableV2',
                         'x-component-props': {
                           rowKey: 'id',
@@ -19285,7 +19743,7 @@ export const twoTableWithSameCollection: PageConfig = {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'void',
-                        'x-initializer': 'TableActionInitializers',
+                        'x-initializer': 'table:configureActions',
                         'x-component': 'ActionBar',
                         'x-component-props': {
                           style: {
@@ -19300,7 +19758,7 @@ export const twoTableWithSameCollection: PageConfig = {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'array',
-                        'x-initializer': 'TableColumnInitializers',
+                        'x-initializer': 'table:configureColumns',
                         'x-component': 'TableV2',
                         'x-component-props': {
                           rowKey: 'id',
@@ -19397,7 +19855,7 @@ export const twoTableWithAssociationFields: PageConfig = {
         version: '2.0',
         type: 'void',
         'x-component': 'Grid',
-        'x-initializer': 'BlockInitializers',
+        'x-initializer': 'page:addBlock',
         properties: {
           qtp19qlje2y: {
             _isJSONSchemaObject: true,
@@ -19442,7 +19900,7 @@ export const twoTableWithAssociationFields: PageConfig = {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'void',
-                        'x-initializer': 'TableActionInitializers',
+                        'x-initializer': 'table:configureActions',
                         'x-component': 'ActionBar',
                         'x-component-props': {
                           style: {
@@ -19457,7 +19915,7 @@ export const twoTableWithAssociationFields: PageConfig = {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'array',
-                        'x-initializer': 'TableColumnInitializers',
+                        'x-initializer': 'table:configureColumns',
                         'x-component': 'TableV2',
                         'x-component-props': {
                           rowKey: 'id',
@@ -19549,7 +20007,7 @@ export const twoTableWithAssociationFields: PageConfig = {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'void',
-                        'x-initializer': 'TableActionInitializers',
+                        'x-initializer': 'table:configureActions',
                         'x-component': 'ActionBar',
                         'x-component-props': {
                           style: {
@@ -19564,7 +20022,7 @@ export const twoTableWithAssociationFields: PageConfig = {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'array',
-                        'x-initializer': 'TableColumnInitializers',
+                        'x-initializer': 'table:configureColumns',
                         'x-component': 'TableV2',
                         'x-component-props': {
                           rowKey: 'id',
@@ -19667,7 +20125,7 @@ export const oneEmptyTableBlockBasedOnUsers = {
         version: '2.0',
         type: 'void',
         'x-component': 'Grid',
-        'x-initializer': 'BlockInitializers',
+        'x-initializer': 'page:addBlock',
         properties: {
           vduni5v1u2v: {
             _isJSONSchemaObject: true,
@@ -19707,7 +20165,7 @@ export const oneEmptyTableBlockBasedOnUsers = {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'void',
-                        'x-initializer': 'TableActionInitializers',
+                        'x-initializer': 'table:configureActions',
                         'x-component': 'ActionBar',
                         'x-component-props': {
                           style: {
@@ -19722,7 +20180,7 @@ export const oneEmptyTableBlockBasedOnUsers = {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'array',
-                        'x-initializer': 'TableColumnInitializers',
+                        'x-initializer': 'table:configureColumns',
                         'x-component': 'TableV2',
                         'x-component-props': {
                           rowKey: 'id',
@@ -19741,7 +20199,7 @@ export const oneEmptyTableBlockBasedOnUsers = {
                             'x-decorator': 'TableV2.Column.ActionBar',
                             'x-component': 'TableV2.Column',
                             'x-designer': 'TableV2.ActionColumnDesigner',
-                            'x-initializer': 'TableActionColumnInitializers',
+                            'x-initializer': 'table:configureItemActions',
                             properties: {
                               actions: {
                                 _isJSONSchemaObject: true,
@@ -19820,7 +20278,7 @@ export const checkboxForTableRow = {
         version: '2.0',
         type: 'void',
         'x-component': 'Grid',
-        'x-initializer': 'BlockInitializers',
+        'x-initializer': 'page:addBlock',
         properties: {
           w85tu6tnlfp: {
             _isJSONSchemaObject: true,
@@ -19860,7 +20318,7 @@ export const checkboxForTableRow = {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'void',
-                        'x-initializer': 'TableActionInitializers',
+                        'x-initializer': 'table:configureActions',
                         'x-component': 'ActionBar',
                         'x-component-props': {
                           style: {
@@ -19903,7 +20361,7 @@ export const checkboxForTableRow = {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'array',
-                        'x-initializer': 'TableColumnInitializers',
+                        'x-initializer': 'table:configureColumns',
                         'x-component': 'TableV2',
                         'x-component-props': {
                           rowKey: 'id',
@@ -19922,7 +20380,7 @@ export const checkboxForTableRow = {
                             'x-decorator': 'TableV2.Column.ActionBar',
                             'x-component': 'TableV2.Column',
                             'x-designer': 'TableV2.ActionColumnDesigner',
-                            'x-initializer': 'TableActionColumnInitializers',
+                            'x-initializer': 'table:configureItemActions',
                             properties: {
                               actions: {
                                 _isJSONSchemaObject: true,

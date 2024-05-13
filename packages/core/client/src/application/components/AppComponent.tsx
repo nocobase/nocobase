@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { observer } from '@formily/reactive-react';
 import React, { FC, useCallback, useEffect } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
@@ -9,7 +18,7 @@ export interface AppComponentProps {
 }
 
 export const AppComponent: FC<AppComponentProps> = observer(
-  (props) => {
+  ({ children, ...props }) => {
     const { app } = props;
     const handleErrors = useCallback((error: Error, info: { componentStack: string }) => {
       console.error(error);
@@ -33,7 +42,7 @@ export const AppComponent: FC<AppComponentProps> = observer(
       >
         <ApplicationContext.Provider value={app}>
           {app.maintained && app.maintaining && app.renderComponent('AppMaintainingDialog', { app })}
-          {app.renderComponent('AppMain')}
+          {app.renderComponent('AppMain', undefined, children)}
         </ApplicationContext.Provider>
       </ErrorBoundary>
     );

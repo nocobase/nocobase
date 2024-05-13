@@ -1,17 +1,26 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import React, { useContext, useMemo, useState } from 'react';
 
 import { ArrayTable } from '@formily/antd-v5';
 import { Field, createForm } from '@formily/core';
 import { useField, useFieldSchema, useForm } from '@formily/react';
-import lodash from 'lodash';
+import { cloneDeep, pick, set } from 'lodash';
 
 import {
   ActionContextProvider,
   CollectionProvider_deprecated,
+  CompatibleSchemaInitializer,
   FormBlockContext,
   RecordProvider,
   SchemaComponent,
-  SchemaInitializer,
   SchemaInitializerItem,
   SchemaInitializerItemType,
   SchemaInitializerItems,
@@ -95,15 +104,12 @@ function CustomFormBlockInitializer() {
             [uid()]: {
               type: 'void',
               'x-component': 'FormV2',
-              'x-component-props': {
-                // disabled / read-pretty / initialValues
-                useProps: '{{ useFormBlockProps }}',
-              },
+              'x-use-component-props': 'useFormBlockProps',
               properties: {
                 grid: {
                   type: 'void',
                   'x-component': 'Grid',
-                  'x-initializer': 'AddCustomFormField',
+                  'x-initializer': 'workflowManual:customForm:configureFields',
                 },
                 actions: {
                   type: 'void',
@@ -116,7 +122,7 @@ function CustomFormBlockInitializer() {
                       flexWrap: 'wrap',
                     },
                   },
-                  'x-initializer': 'AddActionButton',
+                  'x-initializer': 'workflowManual:form:configureActions',
                   properties: {
                     resolve: {
                       type: 'void',
@@ -161,7 +167,7 @@ function getOptions(interfaces) {
     const schema = interfaces[type];
     const { group = 'others' } = schema;
     fields[group] = fields[group] || {};
-    lodash.set(fields, [group, type], schema);
+    set(fields, [group, type], schema);
   });
 
   return Object.keys(GroupLabels)
@@ -208,33 +214,51 @@ const CustomItemsComponent = (props) => {
   const items = useCommonInterfaceInitializers();
   const collection = useCollection_deprecated();
   const { setCollectionFields } = useContext(FormBlockContext);
+  const form = useMemo(() => createForm(), [interfaceOptions]);
 
   return (
     <AddCustomFormFieldButtonContext.Provider
       value={{
         onAddField(item) {
+          const fieldInterface: Record<string, any> = pick(item, [
+            'name',
+            'group',
+            'title',
+            'default',
+            'validateSchema',
+          ]);
           const {
-            properties: { unique, type, ...properties },
-            ...options
-          } = lodash.cloneDeep(item);
-          delete properties.name['x-disabled'];
-          setInterface({
-            ...options,
-            properties,
-          });
+            properties: { unique, type, layout, autoIncrement, ...properties },
+          } = item;
+          fieldInterface.properties = properties;
+          const result = cloneDeep(fieldInterface);
+          delete result.properties.name['x-disabled'];
+          setInterface(result);
         },
         setCallback,
       }}
     >
       <SchemaInitializerItems {...props} items={items} />
-      <ActionContextProvider value={{ visible: Boolean(interfaceOptions) }}>
+      <ActionContextProvider
+        value={{
+          visible: Boolean(interfaceOptions),
+          setVisible(v) {
+            if (!v) {
+              setInterface(null);
+            }
+          },
+        }}
+      >
         {interfaceOptions ? (
           <SchemaComponent
             schema={{
               type: 'void',
               name: 'drawer',
               title: '{{t("Configure field")}}',
-              'x-decorator': 'Form',
+              'x-decorator': 'FormV2',
+              'x-decorator-props': {
+                form,
+              },
               'x-component': 'Action.Drawer',
               properties: {
                 ...interfaceOptions.properties,
@@ -266,7 +290,7 @@ const CustomItemsComponent = (props) => {
                       'x-component-props': {
                         type: 'primary',
                         useAction() {
-                          const { values, query } = useForm();
+                          const { values, query, reset } = useForm();
                           const messages = [useLang('Field name existed in form')];
                           return {
                             async run() {
@@ -301,6 +325,7 @@ const CustomItemsComponent = (props) => {
                                 'x-toolbar': 'FormItemSchemaToolbar',
                                 'x-settings': 'fieldSettings:FormItem',
                               });
+                              reset();
                               setCallback(null);
                               setInterface(null);
                             },
@@ -322,13 +347,28 @@ const CustomItemsComponent = (props) => {
   );
 };
 
-export const addCustomFormField: SchemaInitializer = new SchemaInitializer({
+/**
+ * @deprecated
+ * use `addCustomFormField` instead
+ */
+export const addCustomFormField_deprecated = new CompatibleSchemaInitializer({
   name: 'AddCustomFormField',
   wrap: gridRowColWrap,
   insertPosition: 'beforeEnd',
   title: "{{t('Configure fields')}}",
   ItemsComponent: CustomItemsComponent,
 });
+
+export const addCustomFormField = new CompatibleSchemaInitializer(
+  {
+    name: 'workflowManual:customForm:configureFields',
+    wrap: gridRowColWrap,
+    insertPosition: 'beforeEnd',
+    title: "{{t('Configure fields')}}",
+    ItemsComponent: CustomItemsComponent,
+  },
+  addCustomFormField_deprecated,
+);
 
 function CustomFormFieldInitializer() {
   const itemConfig = useSchemaInitializerItem();

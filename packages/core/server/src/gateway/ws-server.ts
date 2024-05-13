@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Gateway, IncomingRequest } from '../gateway';
 import WebSocket, { WebSocketServer } from 'ws';
 import { nanoid } from 'nanoid';
@@ -62,10 +71,16 @@ export class WSServer {
     });
 
     AppSupervisor.getInstance().on('appError', async ({ appName, error }) => {
+      let message = error.message;
+
+      if (error.cause) {
+        message = `${message}: ${error.cause.message}`;
+      }
+
       this.sendToConnectionsByTag('app', appName, {
         type: 'notification',
         payload: {
-          message: error.message,
+          message,
           type: 'error',
         },
       });

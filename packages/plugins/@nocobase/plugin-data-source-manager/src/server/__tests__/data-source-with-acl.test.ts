@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { createMockServer, MockServer } from '@nocobase/test';
 import { CollectionManager, DataSource, IRepository } from '@nocobase/data-source-manager';
 import { SuperAgentTest } from 'supertest';
@@ -123,6 +132,33 @@ describe('data source with acl', () => {
     const adminAgent: any = app.agent().login(adminUser).set('x-data-source', 'mockInstance1');
     const postRes = await adminAgent.resource('api/posts').list({});
     expect(postRes.status).toBe(200);
+  });
+
+  it('should update roles resources', async () => {
+    const adminUser = await app.db.getRepository('users').create({
+      values: {
+        roles: ['root'],
+      },
+    });
+
+    const adminAgent: any = app.agent().login(adminUser);
+
+    await adminAgent.resource('dataSources.roles', 'mockInstance1').update({
+      filterByTk: 'member',
+      values: {
+        resources: [
+          {
+            posts: {
+              actions: {
+                view: {
+                  fields: ['title'],
+                },
+              },
+            },
+          },
+        ],
+      },
+    });
   });
 
   it('should set main data source strategy', async () => {
@@ -371,5 +407,55 @@ describe('data source with acl', () => {
 
     expect(checkData.meta.dataSources.mockInstance1).toBeDefined();
     console.log(JSON.stringify(checkData, null, 2));
+  });
+
+  it('should update roles strategy', async () => {
+    const adminUser = await app.db.getRepository('users').create({
+      values: {
+        roles: ['root'],
+      },
+    });
+
+    // update strategy
+    const updateRes = await app
+      .agent()
+      .login(adminUser)
+      .resource('dataSources.roles', 'main')
+      .update({
+        filterByTk: 'admin',
+        values: {
+          strategy: {
+            actions: [],
+          },
+        },
+      });
+
+    // get role
+    const adminRoleResp = await app.agent().login(adminUser).resource('dataSources.roles', 'main').get({
+      filterByTk: 'admin',
+    });
+
+    const data = adminRoleResp.body;
+    expect(data.data.strategy.actions).toHaveLength(0);
+
+    // update role
+    const updateRoleRes = await app
+      .agent()
+      .login(adminUser)
+      .resource('roles')
+      .update({
+        filterByTk: 'admin',
+        values: {
+          snippets: ['pm.*'],
+        },
+      });
+
+    expect(updateRoleRes.status).toBe(200);
+
+    const adminRoleResp2 = await app.agent().login(adminUser).resource('dataSources.roles', 'main').get({
+      filterByTk: 'admin',
+    });
+
+    expect(adminRoleResp2.body.data.strategy.actions).toHaveLength(0);
   });
 });

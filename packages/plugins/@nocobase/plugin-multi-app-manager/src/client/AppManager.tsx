@@ -1,4 +1,13 @@
-import { SchemaComponent, useRecord } from '@nocobase/client';
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+import { SchemaComponent, useApp, useRecord } from '@nocobase/client';
 import { Card } from 'antd';
 import React from 'react';
 import { schema } from './settings/schemas/applications';
@@ -6,10 +15,11 @@ import { usePluginUtils } from './utils';
 
 const useLink = () => {
   const record = useRecord();
-  if (record.options?.standaloneDeployment && record.cname) {
+  const app = useApp();
+  if (record.cname) {
     return `//${record.cname}`;
   }
-  return `/apps/${record.name}/admin/`;
+  return app.getRouteUrl(`/apps/${record.name}/admin/`);
 };
 
 const AppVisitor = () => {

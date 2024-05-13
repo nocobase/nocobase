@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import React, { ComponentType } from 'react';
 import { render, screen } from '@nocobase/test/client';
 import {
@@ -94,6 +103,9 @@ describe('AssociationProvider', () => {
     };
     renderApp(Demo, { name: 'users.not-exists' });
 
-    expect(document.body.innerHTML).toContain('ant-result');
+    expect(screen.getByText('Delete')).toBeInTheDocument();
+    expect(
+      screen.getByText('The collection "users.not-exists" may have been deleted. Please remove this block.'),
+    ).toBeInTheDocument();
   });
 });

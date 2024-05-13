@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { useField, useFieldSchema, useForm } from '@formily/react';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -47,6 +56,8 @@ export const useFieldModeOptions = (props?) => {
         ? [
             { label: t('Title'), value: 'Select' },
             { label: t('Tag'), value: 'Tag' },
+            !isTableField && { label: t('Sub-details'), value: 'Nester' },
+            !isTableField && { label: t('Sub-table'), value: 'SubTable' },
           ]
         : [
             { label: t('Select'), value: 'Select' },

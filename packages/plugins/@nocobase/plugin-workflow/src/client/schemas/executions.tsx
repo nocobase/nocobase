@@ -1,12 +1,23 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import React from 'react';
 import { ISchema } from '@formily/react';
 import { Link } from 'react-router-dom';
-import { useActionContext, useRecord, useResourceActionContext, useResourceContext } from '@nocobase/client';
-import { ExecutionStatusOptions } from '../constants';
-import { NAMESPACE } from '../locale';
 import { useTranslation } from 'react-i18next';
 import { message } from 'antd';
-import { getWorkflowDetailPath } from '../constant';
+
+import { useActionContext, useRecord, useResourceActionContext, useResourceContext } from '@nocobase/client';
+
+import { ExecutionStatusOptions } from '../constants';
+import { NAMESPACE } from '../locale';
+import { getWorkflowDetailPath } from '../utils';
 
 export const executionCollection = {
   name: 'execution-executions',
@@ -96,6 +107,15 @@ export const executionSchema = {
             },
           },
           properties: {
+            refresher: {
+              type: 'void',
+              title: '{{ t("Refresh") }}',
+              'x-component': 'Action',
+              'x-use-component-props': 'useRefreshActionProps',
+              'x-component-props': {
+                icon: 'ReloadOutlined',
+              },
+            },
             clear: {
               type: 'void',
               title: '{{t("Clear")}}',

@@ -1,19 +1,28 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { CloseOutlined, PlusOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { ArrayField } from '@formily/core';
-import { spliceArrayState } from '@formily/core/esm/shared/internals';
 import { RecursionField, observer, useFieldSchema } from '@formily/react';
 import { action } from '@formily/reactive';
 import { each } from '@formily/shared';
 import { Button, Card, Divider, Tooltip } from 'antd';
-import _ from 'lodash';
 import React, { useCallback, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FormActiveFieldsProvider } from '../../../block-provider';
+import { FormActiveFieldsProvider } from '../../../block-provider/hooks/useFormActiveFields';
+import { useCollection } from '../../../data-source';
 import {
   useCollectionRecord,
   useCollectionRecordData,
 } from '../../../data-source/collection-record/CollectionRecordProvider';
+import { isNewRecord, markRecordAsNew } from '../../../data-source/collection-record/isNewRecord';
 import { FlagProvider } from '../../../flag-provider';
 import { RecordIndexProvider, RecordProvider } from '../../../record-provider';
 import { isPatternDisabled, isSystemField } from '../../../schema-settings';
@@ -24,7 +33,6 @@ import {
 } from '../../../schema-settings/hooks/useIsAllowToSetDefaultValue';
 import { AssociationFieldContext } from './context';
 import { SubFormProvider, useAssociationFieldContext } from './hooks';
-import { isNewRecord, markRecordAsNew } from '../../../data-source/collection-record/isNewRecord';
 
 export const Nester = (props) => {
   const { options } = useContext(AssociationFieldContext);
@@ -48,6 +56,7 @@ export const Nester = (props) => {
 const ToOneNester = (props) => {
   const { field } = useAssociationFieldContext<ArrayField>();
   const recordV2 = useCollectionRecord();
+  const collection = useCollection();
 
   const isAllowToSetDefaultValue = useCallback(
     ({ form, fieldSchema, collectionField, getInterface, formBlockType }: IsAllowToSetDefaultValueParams) => {
@@ -84,7 +93,7 @@ const ToOneNester = (props) => {
 
   return (
     <FormActiveFieldsProvider name="nester">
-      <SubFormProvider value={field.value}>
+      <SubFormProvider value={{ value: field.value, collection }}>
         <RecordProvider isNew={recordV2?.isNew} record={field.value} parent={recordV2?.data}>
           <DefaultValueProvider isAllowToSetDefaultValue={isAllowToSetDefaultValue}>
             <Card bordered={true}>{props.children}</Card>
@@ -101,6 +110,7 @@ const ToManyNester = observer(
     const { options, field, allowMultiple, allowDissociate } = useAssociationFieldContext<ArrayField>();
     const { t } = useTranslation();
     const recordData = useCollectionRecordData();
+    const collection = useCollection();
 
     if (!Array.isArray(field.value)) {
       field.value = [];
@@ -154,14 +164,10 @@ const ToManyNester = observer(
                     <PlusOutlined
                       style={{ zIndex: 1000, marginRight: '10px', color: '#a8a3a3' }}
                       onClick={() => {
-                        void action(() => {
+                        action(() => {
                           if (!Array.isArray(field.value)) {
                             field.value = [];
                           }
-                          spliceArrayState(field as any, {
-                            startIndex: index + 1,
-                            insertCount: 1,
-                          });
                           field.value.splice(index + 1, 0, markRecordAsNew({}));
                           each(field.form.fields, (targetField, key) => {
                             if (!targetField) {
@@ -179,11 +185,7 @@ const ToManyNester = observer(
                     <CloseOutlined
                       style={{ zIndex: 1000, color: '#a8a3a3' }}
                       onClick={() => {
-                        void action(() => {
-                          spliceArrayState(field as any, {
-                            startIndex: index,
-                            deleteCount: 1,
-                          });
+                        action(() => {
                           field.value.splice(index, 1);
                           return field.onInput(field.value);
                         });
@@ -193,7 +195,7 @@ const ToManyNester = observer(
                 )}
               </div>
               <FormActiveFieldsProvider name="nester">
-                <SubFormProvider value={value}>
+                <SubFormProvider value={{ value, collection }}>
                   <RecordProvider isNew={isNewRecord(value)} record={value} parent={recordData}>
                     <RecordIndexProvider index={index}>
                       <DefaultValueProvider isAllowToSetDefaultValue={isAllowToSetDefaultValue}>

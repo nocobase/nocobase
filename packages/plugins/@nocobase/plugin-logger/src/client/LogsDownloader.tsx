@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { useAPIClient, useRequest } from '@nocobase/client';
 import React, { useCallback, useMemo } from 'react';
 import { Tree, Card, Alert, Typography, Input, Button, theme, Empty } from 'antd';
@@ -18,16 +27,15 @@ const Tips = React.memo(() => {
   return (
     <Typography>
       <Paragraph>
-        <Text code>[app]/request_*.log</Text> - {t('API request and response logs')}
+        <Text code>request_*.log</Text> - {t('API request and response logs')}
       </Paragraph>
       <Paragraph>
-        <Text code>[app]/system_*.log</Text> -{' '}
+        <Text code>system_*.log</Text> -{' '}
         {t('Application, database, plugins and other system logs, the error level logs will be sent to')}{' '}
-        <Text code>[app]/system_error_*.log</Text>
+        <Text code>system_error_*.log</Text>
       </Paragraph>
       <Paragraph>
-        <Text code>[app]/sql_*.log</Text> -{' '}
-        {t('SQL execution logs, printed by Sequelize when the db logging is enabled')}
+        <Text code>sql_*.log</Text> - {t('SQL execution logs, printed by Sequelize when the db logging is enabled')}
       </Paragraph>
     </Typography>
   );

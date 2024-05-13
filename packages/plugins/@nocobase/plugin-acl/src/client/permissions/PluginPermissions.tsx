@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { useAPIClient, useApp, useCompile, useCollectionRecord, useRequest } from '@nocobase/client';
 import { Checkbox, message, Table } from 'antd';
 import React, { useContext, useMemo, useState } from 'react';
@@ -38,7 +47,7 @@ export const PluginPermissions: React.FC<{
   const compile = useCompile();
   const settings = app.pluginSettingsManager.getList(false);
   const allAclSnippets = app.pluginSettingsManager.getAclSnippets();
-  const [snippets, setSnippets] = useState<string[]>([]);
+  const [snippets, setSnippets] = useState<string[]>(role?.snippets || []);
   const flatPlugins = useMemo(() => {
     return flatMap(settings, (item) => {
       if (item.children) {
@@ -52,12 +61,11 @@ export const PluginPermissions: React.FC<{
     () => snippets.includes('pm.*') && snippets.every((item) => !item.startsWith('!pm.')),
     [snippets],
   );
-
   const { t } = useTranslation();
   const { loading, refresh } = useRequest(
     {
       resource: 'roles.snippets',
-      resourceOf: role.name,
+      resourceOf: role?.name,
       action: 'list',
       params: {
         paginate: false,
@@ -66,6 +74,7 @@ export const PluginPermissions: React.FC<{
     {
       ready: !!role && active,
       refreshDeps: [role?.name],
+      manual: true,
       onSuccess(data) {
         setSnippets(
           data?.data.filter((v) => {
@@ -75,7 +84,10 @@ export const PluginPermissions: React.FC<{
       },
     },
   );
-  const resource = api.resource('roles.snippets', role.name);
+  if (!role) {
+    return;
+  }
+  const resource = api.resource('roles.snippets', role?.name);
   const handleChange = async (checked, record) => {
     const childrenKeys = getChildrenKeys(record?.children, []);
     const totalKeys = childrenKeys.concat(record.aclSnippet);
@@ -129,7 +141,7 @@ export const PluginPermissions: React.FC<{
                   refresh();
                   message.success(t('Saved successfully'));
                 }}
-              />{' '}
+              />
               {t('Accessible')}
             </>
           ),

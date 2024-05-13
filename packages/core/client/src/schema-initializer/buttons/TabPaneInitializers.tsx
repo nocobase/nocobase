@@ -1,10 +1,19 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { useForm } from '@formily/react';
 import React, { useMemo } from 'react';
 import { SchemaComponent, useActionContext, useDesignable, useRecord } from '../..';
 import { SchemaInitializer } from '../../application/schema-initializer/SchemaInitializer';
 import { useGetAriaLabelOfSchemaInitializer } from '../hooks/useGetAriaLabelOfSchemaInitializer';
 
-export const TabPaneInitializers = (props?: any) => {
+const TabPaneInitializers = (props?: any) => {
   const { designable, insertBeforeEnd } = useDesignable();
   const { isCreate, isBulkEdit, options } = props;
   const { gridInitializer } = options;
@@ -16,11 +25,11 @@ export const TabPaneInitializers = (props?: any) => {
     const ctx = useActionContext();
     let initializer = gridInitializer;
     if (!initializer) {
-      initializer = 'RecordBlockInitializers';
+      initializer = 'popup:common:addBlock';
       if (isCreate || !record) {
-        initializer = 'CreateFormBlockInitializers';
+        initializer = 'popup:addNew:addBlock';
       } else if (isBulkEdit) {
-        initializer = 'BulkEditBlockInitializers';
+        initializer = 'popup:bulkEdit:addBlock';
       }
     }
     return {
@@ -130,26 +139,47 @@ export const TabPaneInitializers = (props?: any) => {
   return <SchemaComponent schema={schema} />;
 };
 
-export const TabPaneInitializersForCreateFormBlock = (props) => {
+const TabPaneInitializersForCreateFormBlock = (props) => {
   return <TabPaneInitializers {...props} isCreate />;
 };
 
-export const TabPaneInitializersForBulkEditFormBlock = (props) => {
+const TabPaneInitializersForBulkEditFormBlock = (props) => {
   return <TabPaneInitializers {...props} isBulkEdit />;
 };
 
-export const tabPaneInitializers = new SchemaInitializer({
-  name: 'TabPaneInitializers',
+const commonOptions = {
   Component: TabPaneInitializers,
   popover: false,
+};
+
+/**
+ * @deprecated
+ * use `tabPaneInitializers` instead
+ */
+export const tabPaneInitializers_deprecated = new SchemaInitializer({
+  name: 'TabPaneInitializers',
+  ...commonOptions,
 });
 
+export const tabPaneInitializers = new SchemaInitializer({
+  name: 'popup:addTab',
+  ...commonOptions,
+});
+
+/**
+ * @deprecated
+ * use `tabPaneInitializers` instead
+ */
 export const tabPaneInitializersForRecordBlock = new SchemaInitializer({
   name: 'TabPaneInitializersForCreateFormBlock',
   Component: TabPaneInitializersForCreateFormBlock,
   popover: false,
 });
 
+/**
+ * @deprecated
+ * use `tabPaneInitializers` instead
+ */
 export const tabPaneInitializersForBulkEditFormBlock = new SchemaInitializer({
   name: 'TabPaneInitializersForBulkEditFormBlock',
   Component: TabPaneInitializersForBulkEditFormBlock,

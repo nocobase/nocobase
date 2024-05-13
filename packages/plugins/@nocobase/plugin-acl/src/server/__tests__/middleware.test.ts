@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { ACL } from '@nocobase/acl';
 import { Database, Model } from '@nocobase/database';
 import UsersPlugin from '@nocobase/plugin-users';
@@ -67,6 +76,46 @@ describe('middleware', () => {
 
   afterEach(async () => {
     await app.destroy();
+  });
+
+  it('should no permission when createdById field not exists in collection', async () => {
+    await db.getRepository('collections').create({
+      values: {
+        name: 'foos',
+        autoGenId: false,
+        fields: [
+          {
+            type: 'string',
+            name: 'name',
+            primaryKey: true,
+          },
+        ],
+      },
+      context: {},
+    });
+
+    await db.getRepository('roles').update({
+      filterByTk: 'admin',
+      values: {
+        strategy: {
+          actions: ['create', 'update:own'],
+        },
+      },
+    });
+
+    const response = await adminAgent.resource('foos').create({
+      values: {
+        name: 'foo-name',
+      },
+    });
+
+    expect(response.statusCode).toEqual(200);
+
+    const updateRes = await adminAgent.resource('foos').update({
+      filterByTk: response.body.data.name,
+    });
+
+    expect(updateRes.statusCode).toEqual(403);
   });
 
   it('should throw 403 when no permission', async () => {

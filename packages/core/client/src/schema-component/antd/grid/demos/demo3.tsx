@@ -1,3 +1,5 @@
+
+
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import {
@@ -30,7 +32,7 @@ const gridRowColWrap = (schema) => {
 };
 
 export const addBlockButton = new SchemaInitializer({
-  name: 'AddBlockButton',
+  name: 'addBlockButton',
   title: 'Add block',
   wrap: gridRowColWrap,
   items: [
@@ -55,7 +57,7 @@ const schema: ISchema = {
     grid: {
       type: 'void',
       'x-component': 'Grid',
-      'x-initializer': 'AddBlockButton',
+      'x-initializer': 'addBlockButton',
       'x-uid': uid(),
       properties: {},
     },

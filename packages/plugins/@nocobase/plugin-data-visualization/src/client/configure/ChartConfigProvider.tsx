@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { ISchema } from '@formily/react';
 import React, { createContext, useState } from 'react';
 import { ChartRendererProvider } from '../renderer';
@@ -30,18 +39,9 @@ export const ChartConfigProvider: React.FC = (props) => {
   const { insertAdjacent } = useDesignable();
   const [visible, setVisible] = useState(false);
   const [current, setCurrent] = useState<ChartConfigCurrent>({} as any);
-  const { token } = theme.useToken();
   return (
     <ChartConfigContext.Provider value={{ visible, setVisible, current, setCurrent }}>
-      <div
-        className={css`
-          .ant-card {
-            border: ${token.lineWidth}px ${token.lineType} ${token.colorBorderSecondary};
-          }
-        `}
-      >
-        {props.children}
-      </div>
+      {props.children}
       <ChartRendererProvider {...current.field?.decoratorProps}>
         <ChartConfigure insert={(schema, options) => insertAdjacent('beforeEnd', schema, options)} />
       </ChartRendererProvider>

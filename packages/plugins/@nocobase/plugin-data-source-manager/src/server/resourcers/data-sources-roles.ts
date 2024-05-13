@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 export default {
   name: 'dataSources.roles',
   actions: {
@@ -24,6 +33,25 @@ export default {
         await connectionRoleRecord.update({
           ...params.values,
         });
+      }
+
+      if (params.values.resources) {
+        await ctx.db.getRepository('dataSourcesRolesResources').destroy({
+          filter: {
+            roleName: name,
+            dataSourceKey,
+          },
+        });
+
+        for (const resource of params.values.resources) {
+          await ctx.db.getRepository('dataSourcesRolesResources').create({
+            values: {
+              ...resource,
+              roleName: name,
+              dataSourceKey,
+            },
+          });
+        }
       }
 
       ctx.body = connectionRoleRecord.toJSON();

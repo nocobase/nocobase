@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { faker } from '@faker-js/faker';
 import {
   CreateWorkFlow,
@@ -56,7 +65,7 @@ test.describe('Add new', () => {
     const workFlowName = faker.string.alphanumeric(5);
     await createWorkFlow.name.fill(workFlowName);
     await createWorkFlow.triggerType.click();
-    await page.getByRole('option', { name: 'Action event' }).click();
+    await page.getByTitle('Post-action event').click();
     await page.getByLabel('action-Action-Submit-workflows').click();
 
     // 3、预期结果：列表中出现新建的工作流

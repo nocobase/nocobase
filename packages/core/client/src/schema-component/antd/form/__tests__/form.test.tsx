@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { render, screen, sleep, userEvent, waitFor } from '@nocobase/test/client';
 import React from 'react';
 import App1 from '../demos/demo1';
@@ -8,6 +17,7 @@ import App5 from '../demos/demo5';
 import App6 from '../demos/demo6';
 import App7 from '../demos/demo7';
 import App8 from '../demos/demo8';
+import { renderDemo9 } from '../demos/demo9';
 
 describe('Form', () => {
   it('basic', async () => {
@@ -60,9 +70,10 @@ describe('Form', () => {
   it('Form & Drawer', async () => {
     render(<App1 />);
 
-    const openBtn = screen.getByText('Open');
-    await userEvent.click(openBtn);
-    expect(screen.getByText(/drawer title/i)).toBeInTheDocument();
+    await waitFor(async () => {
+      await userEvent.click(screen.getByText('Open'));
+      expect(screen.getByText(/drawer title/i)).toBeInTheDocument();
+    });
   });
 
   it('initialValue', async () => {
@@ -83,12 +94,13 @@ describe('Form', () => {
   it('initialValue of decorator', async () => {
     render(<App4 />);
 
-    const openBtn = screen.getByText('Open');
-    await userEvent.click(openBtn);
+    await waitFor(async () => {
+      await userEvent.click(screen.getByText('Open'));
+      expect(screen.getByText(/drawer title/i)).toBeInTheDocument();
+    });
 
     const input = document.querySelector('.ant-input') as HTMLInputElement;
 
-    expect(screen.getByText(/drawer title/i)).toBeInTheDocument();
     expect(input).toBeInTheDocument();
     expect(input).toHaveValue('aaa');
     expect(screen.getByText(/\{ "field1": "aaa" \}/i)).toBeInTheDocument();
@@ -148,5 +160,24 @@ describe('Form', () => {
     expect(input).toHaveValue('hello nocobase');
     expect(closeBtn).toBeInTheDocument();
     expect(screen.getByText(/drawer title/i)).toBeInTheDocument();
+  });
+
+  it('linkage', async () => {
+    await renderDemo9();
+
+    await waitFor(() => {
+      expect(document.querySelector('.ant-input')).toBeInTheDocument();
+      expect(document.querySelectorAll('.ant-input')).toHaveLength(2);
+    });
+
+    await userEvent.type(document.querySelector('.ant-input'), 'test');
+
+    await waitFor(() => {
+      const element = document.querySelector(
+        '[data-label="block-item-CollectionField-users-form-users.nickname-Nickname"]',
+      );
+
+      expect(element).toBeNull();
+    });
   });
 });

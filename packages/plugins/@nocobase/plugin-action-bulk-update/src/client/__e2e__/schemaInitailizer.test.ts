@@ -1,10 +1,19 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { expect, oneEmptyTableBlockWithCustomizeActions, test } from '@nocobase/test/e2e';
 import { oneEmptyGantt } from './utils';
 
 test.describe('TableActionInitializers & GanttActionInitializers & MapActionInitializers ', () => {
   test('TableActionInitializers should add bulk update', async ({ page, mockPage }) => {
     await mockPage(oneEmptyTableBlockWithCustomizeActions).goto();
-    await page.getByLabel('schema-initializer-ActionBar-TableActionInitializers-general').hover();
+    await page.getByLabel('schema-initializer-ActionBar-table:configureActions-general').hover();
     await page.getByRole('menuitem', { name: 'Customize right' }).click();
     await page.getByRole('menuitem', { name: 'Bulk update' }).click();
     await expect(page.getByLabel('action-Action-Bulk update-customize:bulkUpdate-general-table')).toBeVisible();
@@ -13,7 +22,7 @@ test.describe('TableActionInitializers & GanttActionInitializers & MapActionInit
     const nocoPage = await mockPage(oneEmptyGantt).waitForInit();
     await mockRecords('general', 3);
     await nocoPage.goto();
-    await page.getByLabel('schema-initializer-ActionBar-GanttActionInitializers-general').hover();
+    await page.getByLabel('schema-initializer-ActionBar-gantt:configureActions-general').hover();
     await page.getByRole('menuitem', { name: 'Customize right' }).click();
     await page.getByRole('menuitem', { name: 'Bulk update' }).click();
     await page.mouse.move(300, 0);

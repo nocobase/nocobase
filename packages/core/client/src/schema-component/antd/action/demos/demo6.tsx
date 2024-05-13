@@ -1,3 +1,5 @@
+
+
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import {
@@ -13,7 +15,7 @@ import {
 import React from 'react';
 
 const addActionButton = new SchemaInitializer({
-  name: 'AddActionButton',
+  name: 'addActionButton',
   designable: true,
   title: 'Configure actions',
   style: {
@@ -58,7 +60,7 @@ const schema: ISchema = {
     actions: {
       type: 'void',
       'x-component': 'ActionBar',
-      'x-initializer': 'AddActionButton',
+      'x-initializer': 'addActionButton',
       'x-uid': uid(),
       properties: {
         a1: {

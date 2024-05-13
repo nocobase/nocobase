@@ -1,16 +1,30 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { css, cx } from '@emotion/css';
 import { RecursionField, Schema, useFieldSchema } from '@formily/react';
 import {
   ActionContextProvider,
+  DeclareVariable,
   RecordProvider,
   useAPIClient,
   useBlockRequestContext,
-  useCurrentAppInfo,
+  useCollection,
   useCollectionParentRecordData,
+  useCurrentAppInfo,
+  useProps,
   useTableBlockContext,
   useToken,
+  withDynamicSchemaProps,
+  useDesignable,
 } from '@nocobase/client';
-import { message } from 'antd';
+import { message, Spin } from 'antd';
 import { debounce } from 'lodash';
 import React, { SyntheticEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -40,6 +54,8 @@ export const DeleteEventContext = React.createContext({
 });
 const GanttRecordViewer = (props) => {
   const { visible, setVisible, record } = props;
+  const { t } = useTranslation();
+  const collection = useCollection();
   const parentRecordData = useCollectionParentRecordData();
   const fieldSchema = useFieldSchema();
   const eventSchema: Schema = fieldSchema.properties.detail;
@@ -52,7 +68,14 @@ const GanttRecordViewer = (props) => {
       <DeleteEventContext.Provider value={{ close }}>
         <ActionContextProvider value={{ visible, setVisible }}>
           <RecordProvider record={record} parent={parentRecordData}>
-            <RecursionField schema={eventSchema} name={eventSchema.name} />
+            <DeclareVariable
+              name="$nPopupRecord"
+              title={t('Current popup record')}
+              value={record}
+              collection={collection}
+            >
+              <RecursionField schema={eventSchema} name={eventSchema.name} />
+            </DeclareVariable>
           </RecordProvider>
         </ActionContextProvider>
       </DeleteEventContext.Provider>
@@ -81,16 +104,14 @@ const debounceHandleProcessChange = debounce(async (task: Task, resource, fieldN
   message.success(t('Saved successfully'));
   await service?.refresh();
 }, 300);
-export const Gantt: any = (props: any) => {
+
+export const Gantt: any = withDynamicSchemaProps((props: any) => {
   const { styles } = useStyles();
   const { token } = useToken();
   const api = useAPIClient();
-  const currentTheme = api.auth.getOption('theme');
-  const tableRowHeight = currentTheme === 'compact' ? 45 : 55.56;
+  const currentTheme = JSON.parse(api.auth.getOption('theme'))?.uid;
   const {
-    headerHeight = document.querySelector('.ant-table-thead')?.clientHeight || 0, // 与 antd 表格头部高度一致
     listCellWidth = '155px',
-    rowHeight = tableRowHeight,
     ganttHeight = 0,
     preStepsCount = 1,
     barFill = 60,
@@ -116,12 +137,17 @@ export const Gantt: any = (props: any) => {
     viewDate,
     TooltipContent = StandardTooltipContent,
     onDoubleClick,
-    onClick,
     onDelete,
     onSelect,
-    useProps,
-  } = props;
-  const { onExpanderClick, tasks, expandAndCollapseAll } = useProps();
+    onExpanderClick,
+    tasks,
+    expandAndCollapseAll,
+    fieldNames,
+    loading,
+  } = useProps(props); // 新版 UISchema（1.0 之后）中已经废弃了 useProps，这里之所以继续保留是为了兼容旧版的 UISchema
+  const { designable } = useDesignable();
+  const headerHeight = currentTheme?.includes('compact') ? 45 : designable ? 65 : 55;
+  const rowHeight = currentTheme?.includes('compact') ? 45 : 65;
   const ctx = useGanttBlockContext();
   const appInfo = useCurrentAppInfo();
   const { t } = useTranslation();
@@ -129,11 +155,11 @@ export const Gantt: any = (props: any) => {
   const tableCtx = useTableBlockContext();
   const { resource, service } = useBlockRequestContext();
   const fieldSchema = useFieldSchema();
-  const { fieldNames } = useProps(props);
   const viewMode = fieldNames.range || 'day';
   const wrapperRef = useRef<HTMLDivElement>(null);
   const taskListRef = useRef<HTMLDivElement>(null);
   const verticalGanttContainerRef = useRef<HTMLDivElement>(null);
+  const ganttRef = useRef<HTMLDivElement>(null);
   const [dateSetup, setDateSetup] = useState<DateSetup>(() => {
     const [startDate, endDate] = ganttDateRange(tasks, viewMode, preStepsCount);
     return { viewMode, dates: seedDates(startDate, endDate, viewMode) };
@@ -497,6 +523,7 @@ export const Gantt: any = (props: any) => {
     onDoubleClick,
     onClick: handleBarClick,
     onDelete,
+    loading,
   };
 
   return (
@@ -506,9 +533,13 @@ export const Gantt: any = (props: any) => {
           box-shadow: none !important;
         }
         .ant-table-row {
-          height: ${tableRowHeight}px;
+          height: ${rowHeight}px;
+        }
+        .ant-table-thead {
+          height: ${headerHeight}px;
         }
       `)}
+      ref={ganttRef}
     >
       <GanttRecordViewer visible={visible} setVisible={setVisible} record={record} />
       <RecursionField name={'anctionBar'} schema={fieldSchema.properties.toolBar} />
@@ -549,14 +580,16 @@ export const Gantt: any = (props: any) => {
           onScroll={handleScrollY}
           rtl={rtl}
         />
-        <HorizontalScroll
-          svgWidth={svgWidth}
-          taskListWidth={taskListWidth}
-          scroll={scrollX}
-          rtl={rtl}
-          onScroll={handleScrollX}
-        />
+        <Spin spinning={loading} style={{ visibility: 'hidden' }}>
+          <HorizontalScroll
+            svgWidth={svgWidth}
+            taskListWidth={taskListWidth}
+            scroll={scrollX}
+            rtl={rtl}
+            onScroll={handleScrollX}
+          />
+        </Spin>
       </div>
     </div>
   );
-};
+});

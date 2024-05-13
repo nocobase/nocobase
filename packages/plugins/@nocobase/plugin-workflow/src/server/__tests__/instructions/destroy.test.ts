@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Application } from '@nocobase/server';
 import Database from '@nocobase/database';
 import { getApp, sleep } from '@nocobase/plugin-workflow-test';
@@ -53,6 +62,39 @@ describe('workflow > instructions > destroy', () => {
 
       const count = await PostRepo.count();
       expect(count).toBe(0);
+    });
+  });
+
+  describe('multiple data source', () => {
+    it('destroy one', async () => {
+      const AnotherPostRepo = app.dataSourceManager.dataSources.get('another').collectionManager.getRepository('posts');
+      const post = await AnotherPostRepo.create({ values: { title: 't1' } });
+      const p1s = await AnotherPostRepo.find();
+      expect(p1s.length).toBe(1);
+
+      const n1 = await workflow.createNode({
+        type: 'destroy',
+        config: {
+          collection: 'another:posts',
+          params: {
+            filter: {
+              // @ts-ignore
+              id: post.id,
+            },
+          },
+        },
+      });
+
+      await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
+
+      const [execution] = await workflow.getExecutions();
+      const [job] = await execution.getJobs();
+      expect(job.result).toBe(1);
+
+      const p2s = await AnotherPostRepo.find();
+      expect(p2s.length).toBe(0);
     });
   });
 });

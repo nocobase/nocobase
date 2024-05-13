@@ -1,4 +1,13 @@
-/* istanbul ignore file */
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+/* istanbul ignore file -- @preserve */
 // @ts-nocheck
 /* eslint-disable */
 /* prettier-ignore */
@@ -10,6 +19,9 @@ export interface RequireJS {
   define: RequireDefine
 }
 
+/**
+ * @internal
+ */
 export function getRequireJs(): RequireJS {
   var requirejs, require, define;
   var req, s, head, baseElement, dataMain, src,

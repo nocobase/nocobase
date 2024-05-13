@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { SQLModel } from '../../sql-collection/sql-model';
 import { Sequelize } from 'sequelize';
 
@@ -37,8 +46,10 @@ describe('select query', () => {
   });
 
   test('group', () => {
-    const query = queryGenerator.selectQuery('users', { group: 'id' }, model);
-    expect(query).toBe('SELECT * FROM (SELECT * FROM "users") AS "users" GROUP BY "id";');
+    const query1 = queryGenerator.selectQuery('users', { group: 'id' }, model);
+    expect(query1).toBe('SELECT * FROM (SELECT * FROM "users") AS "users" GROUP BY "id";');
+    const query2 = queryGenerator.selectQuery('users', { group: ['id', 'name'] }, model);
+    expect(query2).toBe('SELECT * FROM (SELECT * FROM "users") AS "users" GROUP BY "id", "name";');
   });
 
   test('order', () => {

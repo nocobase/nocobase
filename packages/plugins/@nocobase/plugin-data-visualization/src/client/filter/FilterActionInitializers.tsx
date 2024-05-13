@@ -1,10 +1,19 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { DownOutlined } from '@ant-design/icons';
 import { useForm } from '@formily/react';
 import {
   Action,
   ActionInitializer,
+  CompatibleSchemaInitializer,
   GeneralSchemaDesigner,
-  SchemaInitializer,
   SchemaSettingsDivider,
   SchemaSettingsRemove,
 } from '@nocobase/client';
@@ -88,11 +97,11 @@ const ChartFilterActionInitializer = (props) => {
     title: '{{ t("Filter") }}',
     'x-action': 'submit',
     'x-component': 'Action',
+    'x-use-component-props': 'useChartFilterActionProps',
     'x-designer': 'ChartFilterActionDesigner',
     'x-component-props': {
       htmlType: 'submit',
       type: 'primary',
-      useProps: '{{ useChartFilterActionProps }}',
     },
   };
   return <ActionInitializer {...props} schema={schema} />;
@@ -103,10 +112,8 @@ const ChartFilterResetInitializer = (props) => {
     title: '{{ t("Reset") }}',
     'x-action': 'reset',
     'x-component': 'Action',
+    'x-use-component-props': 'useChartFilterResetProps',
     'x-designer': 'ChartFilterActionDesigner',
-    'x-component-props': {
-      useProps: '{{ useChartFilterResetProps }}',
-    },
   };
   return <ActionInitializer {...props} schema={schema} />;
 };
@@ -116,16 +123,20 @@ const ChartFilterCollapseInitializer = (props) => {
     title: `{{ t("Collapse") }}`,
     'x-action': 'collapse',
     'x-component': 'Action',
+    'x-use-component-props': 'useChartFilterCollapseProps',
     'x-component-props': {
       type: 'link',
-      useProps: '{{ useChartFilterCollapseProps }}',
     },
     'x-designer': 'ChartFilterCollapseDesigner',
   };
   return <ActionInitializer {...props} schema={schema} />;
 };
 
-export const chartFilterActionInitializers: SchemaInitializer = new SchemaInitializer({
+/**
+ * @deprecated
+ * use `chartFilterActionInitializers` instead
+ */
+export const chartFilterActionInitializers_deprecated = new CompatibleSchemaInitializer({
   name: 'ChartFilterActionInitializers',
   'data-testid': 'configure-actions-button-of-chart-filter',
   title: '{{t("Configure actions")}}',
@@ -167,3 +178,49 @@ export const chartFilterActionInitializers: SchemaInitializer = new SchemaInitia
     },
   ],
 });
+
+export const chartFilterActionInitializers = new CompatibleSchemaInitializer(
+  {
+    name: 'chartFilterForm:configureActions',
+    'data-testid': 'configure-actions-button-of-chart-filter',
+    title: '{{t("Configure actions")}}',
+    icon: 'SettingOutlined',
+    items: [
+      {
+        name: 'enbaleActions',
+        type: 'itemGroup',
+        title: '{{t("Enable actions")}}',
+        children: [
+          {
+            name: 'filter',
+            type: 'item',
+            title: '{{t("Filter")}}',
+            component: ChartFilterActionInitializer,
+            schema: {
+              'x-action-settings': {},
+            },
+          },
+          {
+            name: 'reset',
+            type: 'item',
+            title: '{{t("Reset")}}',
+            component: ChartFilterResetInitializer,
+            schema: {
+              'x-action-settings': {},
+            },
+          },
+          {
+            name: 'collapse',
+            type: 'item',
+            title: '{{t("Collapse")}}',
+            component: ChartFilterCollapseInitializer,
+            schema: {
+              'x-action-settings': {},
+            },
+          },
+        ],
+      },
+    ],
+  },
+  chartFilterActionInitializers_deprecated,
+);

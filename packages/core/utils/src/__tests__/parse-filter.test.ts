@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { getDateVars, getDayRange, parseFilter, utc2unit, Utc2unitOptions } from '../parse-filter';
 
 describe('utc to unit', () => {
@@ -80,8 +89,7 @@ describe('utc to unit', () => {
       unit: 'week',
     }).toBe('2023w01+00:00');
   });
-  // TODO: 本地运行没问题，但是在 github action 上跑不过
-  it.skip('should be iso week', async () => {
+  it('should be iso week', async () => {
     expectUtc2unit({
       now: '2023-01-08T00:00:00.000Z',
       timezone: '+00:00',
@@ -96,6 +104,16 @@ describe('utc to unit', () => {
       now: '2023-01-01T00:00:00.000Z',
       unit: 'isoWeek',
     }).toBe('2022W52+00:00');
+    expectUtc2unit({
+      now: '2024-04-17T03:06:46.754Z',
+      unit: 'isoWeek',
+      offset: 1,
+    }).toBe('2024W17+00:00');
+    expectUtc2unit({
+      now: '2024-04-17T03:06:46.754Z',
+      unit: 'isoWeek',
+      offset: -1,
+    }).toBe('2024W15+00:00');
   });
   it('should be day', async () => {
     expectUtc2unit({

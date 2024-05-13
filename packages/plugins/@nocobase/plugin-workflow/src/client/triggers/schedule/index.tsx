@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import {
   SchemaInitializerItemType,
   useCollectionDataSource,
@@ -15,7 +24,7 @@ import { SCHEDULE_MODE } from './constants';
 export default class extends Trigger {
   sync = false;
   title = `{{t("Schedule event", { ns: "${NAMESPACE}" })}}`;
-  description = `{{t("Event will be scheduled and triggered base on time conditions.", { ns: "${NAMESPACE}" })}}`;
+  description = `{{t("Triggered according to preset time conditions. Suitable for one-time or periodic tasks, such as sending notifications and cleaning data on a schedule.", { ns: "${NAMESPACE}" })}}`;
   fieldset = {
     config: {
       type: 'void',
@@ -79,7 +88,7 @@ export default class extends Trigger {
       title: `{{t("Trigger data", { ns: "${NAMESPACE}" })}}`,
       Component: CollectionBlockInitializer,
       collection: config.collection,
-      dataSource: '{{$context.data}}',
+      dataPath: '$context.data',
     };
   }
 }

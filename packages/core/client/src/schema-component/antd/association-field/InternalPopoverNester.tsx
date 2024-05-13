@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { EditOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { observer, useFieldSchema } from '@formily/react';
@@ -10,6 +19,15 @@ import { StablePopover } from '../popover';
 import { InternalNester } from './InternalNester';
 import { ReadPrettyInternalViewer } from './InternalViewer';
 import { useAssociationFieldContext } from './hooks';
+
+const InternaPopoverNesterContentCss = css`
+  min-width: 600px;
+  max-height: 440px;
+  overflow: auto;
+  .ant-card {
+    border: 0px;
+  }
+`;
 
 export const InternaPopoverNester = observer(
   (props) => {
@@ -27,14 +45,7 @@ export const InternaPopoverNester = observer(
       <div
         ref={ref}
         style={{ minWidth: '600px', maxWidth: '800px', maxHeight: '440px', overflow: 'auto' }}
-        className={css`
-          min-width: 600px;
-          max-height: 440px;
-          overflow: auto;
-          .ant-card {
-            border: 0px;
-          }
-        `}
+        className={InternaPopoverNesterContentCss}
       >
         <InternalNester {...nesterProps} />
       </div>
@@ -63,9 +74,9 @@ export const InternaPopoverNester = observer(
         >
           <span style={{ cursor: 'pointer', display: 'flex' }}>
             <div
-              className={css`
-                max-width: 95%;
-              `}
+              style={{
+                maxWidth: '95%',
+              }}
             >
               <ReadPrettyInternalViewer {...props} />
             </div>
@@ -77,15 +88,15 @@ export const InternaPopoverNester = observer(
             role="button"
             aria-label={getAriaLabel('mask')}
             onClick={() => setVisible(false)}
-            className={css`
-              position: fixed;
-              top: 0;
-              left: 0;
-              width: 100%;
-              height: 100%;
-              background-color: transparent;
-              z-index: 9999;
-            `}
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: '100%',
+              backgroundColor: 'transparent',
+              zIndex: 9999,
+            }}
           />
         )}
       </ActionContextProvider>

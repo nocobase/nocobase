@@ -1,5 +1,11 @@
-import { Context } from '@nocobase/actions';
-import { DataSource, IRepository } from '../';
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
 
 export function pageArgsToLimitArgs(
   page: number,
@@ -12,16 +18,4 @@ export function pageArgsToLimitArgs(
     offset: (page - 1) * pageSize,
     limit: pageSize,
   };
-}
-
-export function getRepositoryFromParams(ctx: Context): IRepository {
-  const { resourceName, resourceOf } = ctx.action;
-
-  const dataSource: DataSource = ctx.dataSource;
-
-  if (resourceOf) {
-    return dataSource.collectionManager.getRepository(resourceName, resourceOf);
-  }
-
-  return dataSource.collectionManager.getRepository(resourceName);
 }

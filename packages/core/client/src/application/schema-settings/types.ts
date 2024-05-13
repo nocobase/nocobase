@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { ComponentType } from 'react';
 import {
   SchemaSettingsCascaderItemProps,
@@ -40,10 +49,6 @@ export interface SchemaSettingItemGroupType extends SchemaSettingsItemCommon<Sch
   type: 'itemGroup';
 }
 
-export interface SchemaSettingItemSubMenuType extends SchemaSettingsItemCommon<SchemaSettingsSubMenuProps> {
-  type: 'subMenu';
-}
-
 export interface SchemaSettingItemDividerProps extends SchemaSettingsItemCommon {
   type: 'divider';
 }
@@ -76,6 +81,10 @@ export type SchemaSettingItemActionModalType = SchemaSettingsItemCommon<SchemaSe
   type: 'actionModal';
 };
 
+export interface SchemaSettingItemSubMenuType extends SchemaSettingsItemCommon<SchemaSettingsSubMenuProps> {
+  type: 'subMenu';
+}
+
 export interface SchemaSettingItemComponentType<T = {}> extends SchemaSettingsItemCommon<T> {
   Component: string | ComponentType<T>;
 }
@@ -90,6 +99,7 @@ export type SchemaSettingItemAllBuiltType =
   | SchemaSettingItemModalType
   | SchemaSettingItemItemType
   | SchemaSettingItemSelectType
+  | SchemaSettingItemSubMenuType
   | SchemaSettingItemGroupType;
 
 export type SchemaSettingsItemType = SchemaSettingItemComponentType | SchemaSettingItemAllBuiltType;

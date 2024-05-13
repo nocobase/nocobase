@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { useTranslation } from 'react-i18next';
 import { useAsyncData } from '../../../../async-data-provider';
 import React, { useContext, useEffect, useMemo, useRef, useState } from 'react';
@@ -89,12 +98,12 @@ export const FieldsConfigure = observer(
       () =>
         options
           .filter((v) => !['relation'].includes(v.key))
-          .map((options, index) => ({
-            ...options,
-            key: index,
+          .map((options, index1) => ({
+            key: index1,
             label: compile(options.label),
-            options: options.children.map((option) => ({
-              ...option,
+            options: options.children.map((option, index2) => ({
+              value: option.name,
+              key: `${index1}-${index2}`,
               label: compile(option.label),
             })),
           })),

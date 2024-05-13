@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { SchemaKey } from '@formily/react';
 import { filter } from 'lodash';
 
@@ -234,7 +243,8 @@ export class Collection {
   getFields(predicate?: GetCollectionFieldPredicate) {
     return predicate ? filter(this.fields, predicate) : this.fields;
   }
-  getFieldsMap() {
+
+  protected getFieldsMap() {
     if (!this.fieldsMap) {
       this.fieldsMap = this.getFields().reduce((memo, field) => {
         memo[field.name] = field;

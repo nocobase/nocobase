@@ -1,85 +1,33 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { ArrayItems } from '@formily/antd-v5';
 import { ISchema } from '@formily/json-schema';
 import { useField, useFieldSchema } from '@formily/react';
 import _ from 'lodash';
-import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SchemaSettings } from '../../../../application/schema-settings/SchemaSettings';
 import { useFormBlockContext } from '../../../../block-provider';
 import { useCollection_deprecated, useSortFields } from '../../../../collection-manager';
 import { removeNullCondition, useDesignable } from '../../../../schema-component';
-import {
-  defaultColumnCount,
-  gridSizes,
-  pageSizeOptions,
-  screenSizeMaps,
-  screenSizeTitleMaps,
-} from '../../../../schema-component/antd/grid-card/options';
+import { pageSizeOptions } from '../../../../schema-component/antd/grid-card/options';
 import { SchemaSettingsTemplate } from '../../../../schema-settings';
-import { columnCountMarks } from './utils';
 import { SchemaSettingsDataScope } from '../../../../schema-settings/SchemaSettingsDataScope';
+import { setDataLoadingModeSettingsItem } from '../details-multi/setDataLoadingModeSettingsItem';
+import { SetTheCountOfColumnsDisplayedInARow } from './SetTheCountOfColumnsDisplayedInARow';
 
 export const gridCardBlockSettings = new SchemaSettings({
   name: 'blockSettings:gridCard',
   items: [
     {
       name: 'SetTheCountOfColumnsDisplayedInARow',
-      type: 'modal',
-      useComponentProps() {
-        const { t } = useTranslation();
-        const fieldSchema = useFieldSchema();
-        const field = useField();
-        const { dn } = useDesignable();
-        const columnCount = field.decoratorProps.columnCount || defaultColumnCount;
-
-        const columnCountSchema = useMemo(() => {
-          return {
-            'x-component': 'Slider',
-            'x-decorator': 'FormItem',
-            'x-component-props': {
-              min: 1,
-              max: 24,
-              marks: columnCountMarks,
-              tooltip: {
-                formatter: (value) => `${value}${t('Column')}`,
-              },
-              step: null,
-            },
-          };
-        }, [t]);
-
-        const columnCountProperties = useMemo(() => {
-          return gridSizes.reduce((o, k) => {
-            o[k] = {
-              ...columnCountSchema,
-              title: t(screenSizeTitleMaps[k]),
-              description: `${t('Screen size')} ${screenSizeMaps[k]} ${t('pixels')}`,
-            };
-            return o;
-          }, {});
-        }, [columnCountSchema, t]);
-
-        return {
-          title: t('Set the count of columns displayed in a row'),
-          initialValues: columnCount,
-          schema: {
-            type: 'object',
-            title: t('Set the count of columns displayed in a row'),
-            properties: columnCountProperties,
-          } as ISchema,
-
-          onSubmit: (columnCount) => {
-            _.set(fieldSchema, 'x-decorator-props.columnCount', columnCount);
-            field.decoratorProps.columnCount = columnCount;
-            dn.emit('patch', {
-              schema: {
-                ['x-uid']: fieldSchema['x-uid'],
-                'x-decorator-props': fieldSchema['x-decorator-props'],
-              },
-            });
-          },
-        };
-      },
+      Component: SetTheCountOfColumnsDisplayedInARow,
     },
     {
       name: 'SetTheDataScope',
@@ -90,7 +38,6 @@ export const gridCardBlockSettings = new SchemaSettings({
         const { form } = useFormBlockContext();
         const field = useField();
         const { dn } = useDesignable();
-        const defaultSort = fieldSchema?.['x-decorator-props']?.params?.sort || [];
 
         return {
           collectionName: name,
@@ -224,6 +171,7 @@ export const gridCardBlockSettings = new SchemaSettings({
         };
       },
     },
+    setDataLoadingModeSettingsItem,
     {
       name: 'RecordsPerPage',
       type: 'select',
@@ -256,7 +204,8 @@ export const gridCardBlockSettings = new SchemaSettings({
       useComponentProps() {
         const { name } = useCollection_deprecated();
         const fieldSchema = useFieldSchema();
-        const defaultResource = fieldSchema?.['x-decorator-props']?.resource;
+        const defaultResource =
+          fieldSchema?.['x-decorator-props']?.resource || fieldSchema?.['x-decorator-props']?.association;
 
         return {
           componentName: 'GridCard',

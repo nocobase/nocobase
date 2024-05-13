@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 const net = require('net');
 const chalk = require('chalk');
 const execa = require('execa');
@@ -180,6 +189,7 @@ exports.generateAppDir = function generateAppDir() {
   } else {
     process.env.APP_PACKAGE_ROOT = appPkgPath;
   }
+  buildIndexHtml();
 };
 
 exports.genTsConfigPaths = function genTsConfigPaths() {
@@ -216,6 +226,10 @@ exports.genTsConfigPaths = function genTsConfigPaths() {
     if (packageJsonName === '@nocobase/test') {
       paths[`${packageJsonName}/server`] = [`${relativePath}/src/server`];
       paths[`${packageJsonName}/e2e`] = [`${relativePath}/src/e2e`];
+      paths[`${packageJsonName}/web`] = [`${relativePath}/src/web`];
+    }
+    if (packageJsonName === '@nocobase/client') {
+      paths[`${packageJsonName}/demo-utils`] = [`${relativePath}/src/demo-utils`];
     }
     if (packageJsonName === '@nocobase/plugin-workflow-test') {
       paths[`${packageJsonName}/e2e`] = [`${relativePath}/src/e2e`];
@@ -257,6 +271,30 @@ function parseEnv(name) {
   }
 }
 
+function buildIndexHtml(force = false) {
+  const file = `${process.env.APP_PACKAGE_ROOT}/dist/client/index.html`;
+  if (!fs.existsSync(file)) {
+    return;
+  }
+  const tpl = `${process.env.APP_PACKAGE_ROOT}/dist/client/index.html.tpl`;
+  if (force && fs.existsSync(tpl)) {
+    fs.rmSync(tpl);
+  }
+  if (!fs.existsSync(tpl)) {
+    fs.copyFileSync(file, tpl);
+  }
+  const data = fs.readFileSync(tpl, 'utf-8');
+  const replacedData = data
+    .replace(/\{\{env.APP_PUBLIC_PATH\}\}/g, process.env.APP_PUBLIC_PATH)
+    .replace(/\{\{env.API_BASE_URL\}\}/g, process.env.API_BASE_URL || process.env.API_BASE_PATH)
+    .replace(/\{\{env.WS_URL\}\}/g, process.env.WEBSOCKET_URL || '')
+    .replace(/\{\{env.WS_PATH\}\}/g, process.env.WS_PATH)
+    .replace('src="/umi.', `src="${process.env.APP_PUBLIC_PATH}umi.`);
+  fs.writeFileSync(file, replacedData, 'utf-8');
+}
+
+exports.buildIndexHtml = buildIndexHtml;
+
 exports.initEnv = function initEnv() {
   const env = {
     APP_ENV: 'development',
@@ -280,7 +318,10 @@ exports.initEnv = function initEnv() {
     PLAYWRIGHT_AUTH_FILE: resolve(process.cwd(), 'storage/playwright/.auth/admin.json'),
     CACHE_DEFAULT_STORE: 'memory',
     CACHE_MEMORY_MAX: 2000,
+    PLUGIN_STATICS_PATH: '/static/plugins/',
     LOGGER_BASE_PATH: 'storage/logs',
+    APP_SERVER_BASE_URL: '',
+    APP_PUBLIC_PATH: '/',
   };
 
   if (
@@ -318,5 +359,19 @@ exports.initEnv = function initEnv() {
     if (!process.env[key]) {
       process.env[key] = env[key];
     }
+  }
+
+  if (!process.env.__env_modified__ && process.env.APP_PUBLIC_PATH) {
+    const publicPath = process.env.APP_PUBLIC_PATH.replace(/\/$/g, '');
+    const keys = ['API_BASE_PATH', 'WS_PATH', 'PLUGIN_STATICS_PATH'];
+    for (const key of keys) {
+      process.env[key] = publicPath + process.env[key];
+    }
+    process.env.__env_modified__ = true;
+  }
+
+  if (!process.env.__env_modified__ && process.env.APP_SERVER_BASE_URL && !process.env.API_BASE_URL) {
+    process.env.API_BASE_URL = process.env.APP_SERVER_BASE_URL + process.env.API_BASE_PATH;
+    process.env.__env_modified__ = true;
   }
 };

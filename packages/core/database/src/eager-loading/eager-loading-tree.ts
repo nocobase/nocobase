@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import lodash from 'lodash';
 import { Association, HasOne, HasOneOptions, Includeable, Model, ModelStatic, Op, Transaction } from 'sequelize';
 import Database from '../database';
@@ -257,11 +266,26 @@ export class EagerLoadingTree {
         const association = node.association;
         const associationType = association.associationType;
 
+        let params: any = {};
+
+        const otherFindOptions = lodash.pick(node.includeOption, ['sort']) || {};
+
+        const collection = this.db.modelCollection.get(node.model);
+
+        if (collection && !lodash.isEmpty(otherFindOptions)) {
+          const parser = new OptionsParser(otherFindOptions, {
+            collection,
+          });
+
+          params = parser.toSequelizeParams();
+        }
+
         if (associationType == 'HasOne' || associationType == 'HasMany') {
           const foreignKey = association.foreignKey;
           const foreignKeyValues = node.parent.instances.map((instance) => instance.get(association.sourceKey));
 
           let where: any = { [foreignKey]: foreignKeyValues };
+
           if (node.where) {
             where = {
               [Op.and]: [where, node.where],
@@ -271,7 +295,7 @@ export class EagerLoadingTree {
           const findOptions = {
             where,
             attributes: node.attributes,
-            order: orderOption(association),
+            order: params.order || orderOption(association),
             transaction,
           };
 
@@ -358,7 +382,7 @@ export class EagerLoadingTree {
                 },
               },
             ],
-            order: orderOption(association),
+            order: params.order || orderOption(association),
           });
         }
       }

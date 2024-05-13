@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Context, Next } from '@nocobase/actions';
 import { Registry } from '@nocobase/utils';
 import { Auth, AuthExtend } from './auth';
@@ -26,6 +35,9 @@ type AuthConfig = {
 };
 
 export class AuthManager {
+  /**
+   * @internal
+   */
   jwt: JwtService;
   protected options: AuthManagerOptions;
   protected authTypes: Registry<AuthConfig> = new Registry();
@@ -82,9 +94,9 @@ export class AuthManager {
     if (!authenticator) {
       throw new Error(`Authenticator [${name}] is not found.`);
     }
-    const { auth } = this.authTypes.get(authenticator.authType);
+    const { auth } = this.authTypes.get(authenticator.authType) || {};
     if (!auth) {
-      throw new Error(`AuthType [${name}] is not found.`);
+      throw new Error(`AuthType [${authenticator.authType}] is not found.`);
     }
     return new auth({ authenticator, options: authenticator.options, ctx });
   }

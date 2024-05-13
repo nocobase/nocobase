@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { css } from '@nocobase/client';
 import { InputNumber, Select } from 'antd';
 import React, { useState } from 'react';
@@ -10,7 +19,8 @@ function dateFieldFilter(field) {
   return !field.hidden && (field.uiSchema ? field.type === 'date' : false);
 }
 
-export function OnField({ value, onChange }) {
+export function OnField({ value: propsValue, onChange }) {
+  const value = propsValue ?? {};
   const { t } = useTranslation();
   const [dir, setDir] = useState(value.offset ? value.offset / Math.abs(value.offset) : 0);
 

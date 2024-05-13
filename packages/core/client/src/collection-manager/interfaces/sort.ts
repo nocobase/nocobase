@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { CollectionFieldInterface } from '../../data-source/collection-field-interface/CollectionFieldInterface';
 import { i18n } from '../../i18n';
 import { defaultProps, operators } from './properties';
@@ -22,14 +31,14 @@ export class SortFieldInterface extends CollectionFieldInterface {
       'x-validator': 'integer',
     },
   };
-  availableTypes = ['bigInt', 'integer', 'sort'];
-  hasDefaultValue = true;
+  availableTypes = ['sort'];
+  hasDefaultValue = false;
   properties = {
     ...defaultProps,
     scopeKey: {
       type: 'string',
       title: '{{t("Grouped sorting")}}',
-      'x-disabled': '{{ !createOnly }}',
+      'x-disabled': '{{ !editMainOnly}}',
       'x-decorator': 'FormItem',
       'x-component': 'Select',
       enum: '{{scopeKeyOptions}}',

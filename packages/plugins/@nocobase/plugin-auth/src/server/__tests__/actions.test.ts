@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import Database, { Repository } from '@nocobase/database';
 import { createMockServer, MockServer } from '@nocobase/test';
 
@@ -97,6 +106,29 @@ describe('actions', () => {
       await app.destroy();
     });
 
+    it('should check parameters when signing in', async () => {
+      const res = await agent.post('/auth:signIn').set({ 'X-Authenticator': 'basic' }).send({});
+      expect(res.statusCode).toEqual(400);
+      expect(res.error.text).toBe('Please enter your username or email');
+    });
+
+    it('should check user when signing in', async () => {
+      const res = await agent.post('/auth:signIn').set({ 'X-Authenticator': 'basic' }).send({
+        email: 'no-exists@nocobase.com',
+      });
+      expect(res.statusCode).toEqual(401);
+      expect(res.error.text).toBe('The username or email is incorrect, please re-enter');
+    });
+
+    it('should check password when signing in', async () => {
+      const res = await agent.post('/auth:signIn').set({ 'X-Authenticator': 'basic' }).send({
+        email: process.env.INIT_ROOT_EMAIL,
+        password: 'incorrect',
+      });
+      expect(res.statusCode).toEqual(401);
+      expect(res.error.text).toBe('The password is incorrect, please re-enter');
+    });
+
     it('should sign in with password', async () => {
       let res = await agent.resource('auth').check();
       expect(res.body.data.id).toBeUndefined();
@@ -175,35 +207,72 @@ describe('actions', () => {
           password: '12345',
         },
       });
-      const res = await agent.login(user).post('/auth:changePassword').set({ 'X-Authenticator': 'basic' }).send({
+      const userAgent = await agent.login(user);
+
+      // Should check password consistency
+      const res = await userAgent.post('/auth:changePassword').set({ 'X-Authenticator': 'basic' }).send({
         oldPassword: '12345',
+        newPassword: '123456',
+        confirmPassword: '1234567',
+      });
+      expect(res.statusCode).toEqual(400);
+      expect(res.error.text).toBe('The password is inconsistent, please re-enter');
+
+      // Should check old password
+      const res1 = await userAgent.post('/auth:changePassword').set({ 'X-Authenticator': 'basic' }).send({
+        oldPassword: '1',
         newPassword: '123456',
         confirmPassword: '123456',
       });
-      expect(res.statusCode).toEqual(200);
+      expect(res1.statusCode).toEqual(401);
+      expect(res1.error.text).toBe('The password is incorrect, please re-enter');
 
-      // Create a user without username
-      const user1 = await userRepo.create({
-        values: {
-          username: 'test2',
-          password: '12345',
-        },
-      });
-      const res2 = await agent.login(user1).post('/auth:changePassword').set({ 'X-Authenticator': 'basic' }).send({
+      const res2 = await userAgent.post('/auth:changePassword').set({ 'X-Authenticator': 'basic' }).send({
         oldPassword: '12345',
         newPassword: '123456',
         confirmPassword: '123456',
       });
       expect(res2.statusCode).toEqual(200);
+
+      // Create a user without username
+      const user1 = await userRepo.create({
+        values: {
+          email: 'test3@nocobase.com',
+          password: '12345',
+        },
+      });
+      const res3 = await agent.login(user1).post('/auth:changePassword').set({ 'X-Authenticator': 'basic' }).send({
+        oldPassword: '12345',
+        newPassword: '123456',
+        confirmPassword: '123456',
+      });
+      expect(res3.statusCode).toEqual(200);
     });
 
-    it('should check confirm password', async () => {
+    it('should check confirm password when signing up', async () => {
       const res = await agent.post('/auth:signUp').set({ 'X-Authenticator': 'basic' }).send({
         username: 'new',
         password: 'new',
         confirm_password: 'new1',
       });
       expect(res.statusCode).toEqual(400);
+      expect(res.error.text).toBe('The password is inconsistent, please re-enter');
+    });
+
+    it('should check username when signing up', async () => {
+      const res = await agent.post('/auth:signUp').set({ 'X-Authenticator': 'basic' }).send({
+        username: '@@',
+      });
+      expect(res.statusCode).toEqual(400);
+      expect(res.error.text).toBe('Please enter a valid username');
+    });
+
+    it('should check password when signing up', async () => {
+      const res = await agent.post('/auth:signUp').set({ 'X-Authenticator': 'basic' }).send({
+        username: 'new',
+      });
+      expect(res.statusCode).toEqual(400);
+      expect(res.error.text).toBe('Please enter a password');
     });
   });
 });

@@ -1,8 +1,17 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { useFieldSchema } from '@formily/react';
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { SchemaInitializerChildren } from '../../../../application';
-import { SchemaInitializer } from '../../../../application/schema-initializer/SchemaInitializer';
+import { CompatibleSchemaInitializer } from '../../../../application/schema-initializer/CompatibleSchemaInitializer';
+import { SchemaInitializerChildren } from '../../../../application/schema-initializer/components/SchemaInitializerChildren';
 import { useCompile } from '../../../../schema-component';
 import {
   useAssociatedTableColumnInitializerFields,
@@ -47,8 +56,7 @@ const AssociatedFields = () => {
   return <SchemaInitializerChildren>{schema}</SchemaInitializerChildren>;
 };
 
-export const tableColumnInitializers = new SchemaInitializer({
-  name: 'TableColumnInitializers',
+const commonOptions = {
   insertPosition: 'beforeEnd',
   icon: 'SettingOutlined',
   title: '{{t("Configure columns")}}',
@@ -105,4 +113,21 @@ export const tableColumnInitializers = new SchemaInitializer({
       },
     },
   ],
+};
+
+/**
+ * @deprecated
+ * use `tableColumnInitializers` instead
+ */
+export const tableColumnInitializers_deprecated = new CompatibleSchemaInitializer({
+  name: 'TableColumnInitializers',
+  ...commonOptions,
 });
+
+export const tableColumnInitializers = new CompatibleSchemaInitializer(
+  {
+    name: 'table:configureColumns',
+    ...commonOptions,
+  },
+  tableColumnInitializers_deprecated,
+);

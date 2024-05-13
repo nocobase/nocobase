@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { ACL, DefineOptions } from './acl';
 import { ACLAvailableStrategy, AvailableStrategyOptions } from './acl-available-strategy';
 import { ACLResource } from './acl-resource';
@@ -18,6 +27,9 @@ export interface ResourceActionsOptions {
   [actionName: string]: RoleActionParams;
 }
 
+/**
+ * @internal
+ */
 export class ACLRole {
   strategy: string | AvailableStrategyOptions;
   resources = new Map<string, ACLResource>();
@@ -95,6 +107,7 @@ export class ACLRole {
 
   public effectiveSnippets(): { allowed: Array<string>; rejected: Array<string> } {
     const currentParams = this._serializeSet(this.snippets);
+
     if (this._snippetCache.params === currentParams) {
       return this._snippetCache.result;
     }

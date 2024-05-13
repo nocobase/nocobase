@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { DeleteOutlined, DownloadOutlined, InboxOutlined, LoadingOutlined, PlusOutlined } from '@ant-design/icons';
 import { connect, mapProps, mapReadPretty } from '@formily/react';
 import { Upload as AntdUpload, Button, Modal, Progress, Space, UploadFile } from 'antd';
@@ -7,6 +16,8 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import LightBox from 'react-image-lightbox';
 import 'react-image-lightbox/style.css'; // This only needs to be imported once in your app
+import { withDynamicSchemaProps } from '../../../application/hoc/withDynamicSchemaProps';
+import { useProps } from '../../hooks/useProps';
 import { ReadPretty } from './ReadPretty';
 import { isImage, isPdf, toArr, toFileList, toItem, toValue, useUploadProps } from './shared';
 import { useStyles } from './style';
@@ -299,42 +310,48 @@ Upload.Dragger = connect(
   }),
 );
 
-Upload.DraggerV2 = connect(
-  (props: DraggerV2Props) => {
-    const { t } = useTranslation();
-    const defaultTitle = t('Click or drag file to this area to upload');
-    const defaultSubTitle = t('Support for a single or bulk upload, file size should not exceed') + ` 10MB`;
-    const { title = defaultTitle, subTitle = defaultSubTitle, useProps } = props;
-    const extraProps: Record<string, any> = useProps?.() || {};
-    const [loading, setLoading] = useState(false);
-    const { wrapSSR, hashId, componentCls: prefixCls } = useStyles();
+Upload.DraggerV2 = withDynamicSchemaProps(
+  connect(
+    (props: DraggerV2Props) => {
+      const { t } = useTranslation();
+      const defaultTitle = t('Click or drag file to this area to upload');
+      const defaultSubTitle = t('Support for a single or bulk upload');
 
-    const handleChange = (fileList: any[] = []) => {
-      const { onChange } = extraProps;
-      onChange?.(fileList);
+      // 新版 UISchema（1.0 之后）中已经废弃了 useProps，这里之所以继续保留是为了兼容旧版的 UISchema
+      const { title = defaultTitle, subTitle = defaultSubTitle, ...extraProps } = useProps(props);
 
-      if (fileList.some((file) => file.status === 'uploading')) {
-        setLoading(true);
-      } else {
-        setLoading(false);
-      }
-    };
+      const [loading, setLoading] = useState(false);
+      const { wrapSSR, hashId, componentCls: prefixCls } = useStyles();
 
-    return wrapSSR(
-      <div className={cls(`${prefixCls}-dragger`, hashId)}>
-        <AntdUpload.Dragger {...useUploadProps({ ...props, ...extraProps, onChange: handleChange })}>
-          <p className={`${prefixCls}-drag-icon`}>
-            {loading ? <LoadingOutlined style={{ fontSize: 36 }} spin /> : <InboxOutlined />}
-          </p>
-          <p className={`${prefixCls}-text`}>{title}</p>
-          <p className={`${prefixCls}-hint`}>{subTitle}</p>
-        </AntdUpload.Dragger>
-      </div>,
-    );
-  },
-  mapProps({
-    value: 'fileList',
-  }),
+      const handleChange = (fileList: any[] = []) => {
+        const { onChange } = extraProps;
+        onChange?.(fileList);
+
+        if (fileList.some((file) => file.status === 'uploading')) {
+          setLoading(true);
+        } else {
+          setLoading(false);
+        }
+      };
+
+      return wrapSSR(
+        <div className={cls(`${prefixCls}-dragger`, hashId)}>
+          {/* @ts-ignore */}
+          <AntdUpload.Dragger {...useUploadProps({ ...props, ...extraProps, onChange: handleChange })}>
+            <p className={`${prefixCls}-drag-icon`}>
+              {loading ? <LoadingOutlined style={{ fontSize: 36 }} spin /> : <InboxOutlined />}
+            </p>
+            <p className={`${prefixCls}-text`}>{title}</p>
+            <p className={`${prefixCls}-hint`}>{subTitle}</p>
+          </AntdUpload.Dragger>
+        </div>,
+      );
+    },
+    mapProps({
+      value: 'fileList',
+    }),
+  ),
+  { displayName: 'Upload.DraggerV2' },
 );
 
 export default Upload;

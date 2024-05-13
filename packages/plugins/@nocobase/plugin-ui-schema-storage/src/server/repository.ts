@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Cache } from '@nocobase/cache';
 import { Repository, Transaction, Transactionable } from '@nocobase/database';
 import { uid } from '@nocobase/utils';
@@ -187,6 +196,26 @@ export class UiSchemaRepository extends Repository {
       });
     }
     return this.doGetProperties(uid, options);
+  }
+
+  async getParentJsonSchema(uid: string, options: GetJsonSchemaOptions = {}) {
+    const parentUid = await this.findParentUid(uid, options.transaction);
+
+    if (!parentUid) {
+      return null;
+    }
+
+    return this.getJsonSchema(parentUid, options);
+  }
+
+  async getParentProperty(uid: string, options: GetPropertiesOptions = {}) {
+    const parentUid = await this.findParentUid(uid, options.transaction);
+
+    if (!parentUid) {
+      return null;
+    }
+
+    return this.getJsonSchema(parentUid, options);
   }
 
   async getJsonSchema(uid: string, options?: GetJsonSchemaOptions): Promise<any> {
@@ -1013,7 +1042,7 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
                  LEFT JOIN ${this.uiSchemasTableName} as "SchemaTable" ON "SchemaTable"."x-uid" =  TreePath.descendant
                  LEFT JOIN ${this.uiSchemaTreePathTableName} as NodeInfo ON NodeInfo.descendant = "SchemaTable"."x-uid" and NodeInfo.descendant = NodeInfo.ancestor and NodeInfo.depth = 0
                  LEFT JOIN ${this.uiSchemaTreePathTableName} as ParentPath ON (ParentPath.descendant = "SchemaTable"."x-uid" AND ParentPath.depth = 1)
-        WHERE TreePath.ancestor = :ancestor  AND (NodeInfo.async  = false or TreePath.depth = 1)`;
+        WHERE TreePath.ancestor = :ancestor  AND (NodeInfo.async = false or TreePath.depth <= 1)`;
 
     const nodes = await db.sequelize.query(this.sqlAdapter(rawSql), {
       replacements: {
@@ -1043,7 +1072,9 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
                  LEFT JOIN ${this.uiSchemasTableName} as "SchemaTable" ON "SchemaTable"."x-uid" =  TreePath.descendant
                  LEFT JOIN ${treeTable} as NodeInfo ON NodeInfo.descendant = "SchemaTable"."x-uid" and NodeInfo.descendant = NodeInfo.ancestor and NodeInfo.depth = 0
                  LEFT JOIN ${treeTable} as ParentPath ON (ParentPath.descendant = "SchemaTable"."x-uid" AND ParentPath.depth = 1)
-        WHERE TreePath.ancestor = :ancestor  ${options?.includeAsyncNode ? '' : 'AND (NodeInfo.async != true )'}
+        WHERE TreePath.ancestor = :ancestor  ${
+          options?.includeAsyncNode ? '' : 'AND (NodeInfo.async != true or TreePath.depth = 0)'
+        }
     `;
 
     const nodes = await db.sequelize.query(this.sqlAdapter(rawSql), {

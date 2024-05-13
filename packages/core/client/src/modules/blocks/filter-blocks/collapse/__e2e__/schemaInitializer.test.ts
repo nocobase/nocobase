@@ -1,10 +1,19 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { createBlockInPage, expect, oneEmptyFilterCollapseBlock, test } from '@nocobase/test/e2e';
 
 test.describe('where collapse block can be added', () => {
   test('page', async ({ page, mockPage }) => {
     await mockPage().goto();
 
-    await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
+    await page.getByLabel('schema-initializer-Grid-page:addBlock').hover();
     await createBlockInPage(page, 'Collapse');
     await expect(page.getByLabel('block-item-CardItem-users-filter-collapse')).toBeVisible();
   });

@@ -1,11 +1,20 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { IResource } from '@nocobase/sdk';
 import React, { FC, ReactNode, createContext, useContext, useMemo } from 'react';
 
-import { useCollectionManager } from '../collection';
-import { useDataBlockProps } from './DataBlockProvider';
 import { useAPIClient } from '../../api-client';
+import { useCollectionManager } from '../collection';
 import { CollectionRecord } from '../collection-record';
 import { useDataSourceHeaders } from '../utils';
+import { useDataBlockProps } from './DataBlockProvider';
 
 export const DataBlockResourceContext = createContext<IResource>(null);
 DataBlockResourceContext.displayName = 'DataBlockResourceContext';
@@ -23,13 +32,11 @@ export const DataBlockResourceProvider: FC<{ children?: ReactNode }> = ({ childr
       return sourceId;
     }
     if (association && parentRecord) {
-      const associationCollection = cm.getCollection(association);
-      if (associationCollection) {
-        const parentRecordData = parentRecord instanceof CollectionRecord ? parentRecord.data : parentRecord;
-        return parentRecordData[associationCollection.sourceKey || 'id'];
-      }
+      const sourceKey = cm.getSourceKeyByAssociation(association);
+      const parentRecordData = parentRecord instanceof CollectionRecord ? parentRecord.data : parentRecord;
+      return parentRecordData[sourceKey];
     }
-  }, [sourceId, parentRecord]);
+  }, [association, sourceId, parentRecord]);
 
   const resource = useMemo(() => {
     if (association) {

@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { createForm, onFieldValueChange } from '@formily/core';
 import { FieldContext, FormContext } from '@formily/react';
 import { merge } from '@formily/shared';
@@ -56,11 +65,12 @@ export const DynamicComponent = (props: Props) => {
             'x-read-pretty': false,
             'x-validator': undefined,
             'x-decorator': undefined,
+            'x-disabled': disabled,
           }}
         />
       </FieldContext.Provider>
     );
-  }, [props.schema]);
+  }, [props.schema, disabled]);
   return (
     <FormContext.Provider value={form}>
       {component

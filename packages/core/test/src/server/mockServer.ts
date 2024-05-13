@@ -1,5 +1,14 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { mockDatabase } from '@nocobase/database';
-import Application, { ApplicationOptions, AppSupervisor, Gateway, PluginManager } from '@nocobase/server';
+import { Application, ApplicationOptions, AppSupervisor, Gateway, PluginManager } from '@nocobase/server';
 import jwt from 'jsonwebtoken';
 import qs from 'qs';
 import supertest, { SuperAgentTest } from 'supertest';
@@ -58,6 +67,12 @@ interface Resource {
   [name: string]: (params?: ActionParams) => Promise<supertest.Response>;
 }
 
+interface ExtendedAgent extends SuperAgentTest {
+  login: (user: any) => ExtendedAgent;
+  loginUsingId: (userId: number) => ExtendedAgent;
+  resource: (name: string, resourceOf?: any) => Resource;
+}
+
 export class MockServer extends Application {
   async loadAndInstall(options: any = {}) {
     await this.load({ method: 'install' });
@@ -96,11 +111,7 @@ export class MockServer extends Application {
     await AppSupervisor.getInstance().destroy();
   }
 
-  agent(): SuperAgentTest & {
-    login: (user: any) => SuperAgentTest;
-    loginUsingId: (userId: number) => SuperAgentTest;
-    resource: (name: string, resourceOf?: any) => Resource;
-  } {
+  agent(): ExtendedAgent {
     const agent = supertest.agent(this.callback());
     const prefix = this.resourcer.options.prefix;
     const proxy = new Proxy(agent, {
@@ -148,6 +159,10 @@ export class MockServer extends Application {
                     url += `:${method as string}`;
                     if (filterByTk) {
                       url += `/${filterByTk}`;
+                    }
+
+                    if (restParams.filter) {
+                      restParams.filter = JSON.stringify(restParams.filter);
                     }
 
                     const queryString = qs.stringify(restParams, { arrayFormat: 'brackets' });
@@ -238,7 +253,7 @@ export async function createMockServer(
   } = {},
 ) {
   const { version, beforeInstall, skipInstall, skipStart, ...others } = options;
-  const app = mockServer(others);
+  const app: any = mockServer(others);
   if (!skipInstall) {
     if (beforeInstall) {
       await beforeInstall(app);

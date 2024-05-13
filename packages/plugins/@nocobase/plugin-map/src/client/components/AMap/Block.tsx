@@ -1,14 +1,25 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { CheckOutlined, EnvironmentOutlined, ExpandOutlined } from '@ant-design/icons';
 import { RecursionField, useFieldSchema } from '@formily/react';
 import {
   ActionContextProvider,
+  DeclareVariable,
   RecordProvider,
   css,
+  useCollection,
   useCollectionManager_deprecated,
+  useCollectionParentRecordData,
   useCollection_deprecated,
   useCompile,
   useFilterAPI,
-  useCollectionParentRecordData,
   useProps,
 } from '@nocobase/client';
 import { useMemoizedFn } from 'ahooks';
@@ -20,6 +31,7 @@ import { getSource } from '../../utils';
 import { AMapComponent, AMapForwardedRefProps } from './Map';
 
 export const AMapBlock = (props) => {
+  // 新版 UISchema（1.0 之后）中已经废弃了 useProps，这里之所以继续保留是为了兼容旧版的 UISchema
   const { collectionField, fieldNames, dataSource, fixedBlock, zoom, setSelectedRecordKeys, lineSort } =
     useProps(props);
   const { name, getPrimaryKey } = useCollection_deprecated();
@@ -311,6 +323,8 @@ export const AMapBlock = (props) => {
 
 const MapBlockDrawer = (props) => {
   const { setVisible, record } = props;
+  const { t } = useMapTranslation();
+  const collection = useCollection();
   const parentRecordData = useCollectionParentRecordData();
   const fieldSchema = useFieldSchema();
   const schema = useMemo(
@@ -328,7 +342,14 @@ const MapBlockDrawer = (props) => {
     schema && (
       <ActionContextProvider value={{ visible: !!record, setVisible }}>
         <RecordProvider record={record} parent={parentRecordData}>
-          <RecursionField schema={schema} name={schema.name} />
+          <DeclareVariable
+            name="$nPopupRecord"
+            title={t('Current popup record')}
+            value={record}
+            collection={collection}
+          >
+            <RecursionField schema={schema} name={schema.name} />
+          </DeclareVariable>
         </RecordProvider>
       </ActionContextProvider>
     )

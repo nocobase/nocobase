@@ -1,10 +1,23 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+/* istanbul ignore file -- @preserve */
+
 import { Schema } from '@formily/json-schema';
 import { Migration } from '@nocobase/server';
 import { uid } from '@nocobase/utils';
 import UiSchemaRepository from '../repository';
+import _ from 'lodash';
 
 export default class extends Migration {
   appVersion = '<0.9.3-alpha.1';
+
   async up() {
     const result = await this.app.version.satisfies('<0.9.2-alpha.5');
     if (!result) {
@@ -23,7 +36,7 @@ export default class extends Migration {
         const schema = item.schema;
         schema['type'] = 'object';
         schema['x-component'] = 'CollectionField';
-        schema['x-component-props']['mode'] = 'Nester';
+        _.set(schema, 'x-component-props.mode', 'Nester');
         item.set('schema', schema);
         await item.save({ transaction });
         const s = await r.getProperties(item['x-uid'], { transaction });

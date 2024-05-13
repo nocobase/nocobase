@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { render, screen, userEvent, waitFor, within } from '@nocobase/test/client';
 import React from 'react';
 import App2 from '../demos/demo2';
@@ -10,11 +19,12 @@ describe('Filter', () => {
   it('Filter & Action', async () => {
     render(<App3 />);
 
+    let tooltip;
     await waitFor(async () => {
       await userEvent.click(screen.getByText(/open/i));
+      tooltip = screen.getByRole('tooltip');
+      expect(tooltip).toBeInTheDocument();
     });
-    const tooltip = screen.getByRole('tooltip');
-    expect(tooltip).toBeInTheDocument();
 
     // 弹窗中显示的内容
     expect(within(tooltip).getByText(/name/i)).toBeInTheDocument();
@@ -78,9 +88,12 @@ describe('Filter', () => {
   it('FilterAction', async () => {
     render(<App5 />);
 
-    await waitFor(() => userEvent.click(screen.getByText(/filter/i)));
-    const tooltip = screen.getByRole('tooltip');
-    expect(tooltip).toBeInTheDocument();
+    let tooltip;
+    await waitFor(async () => {
+      await userEvent.click(screen.getByText(/filter/i));
+      tooltip = screen.getByRole('tooltip');
+      expect(tooltip).toBeInTheDocument();
+    });
 
     // 弹窗中显示的内容
     expect(within(tooltip).getByText(/name/i)).toBeInTheDocument();

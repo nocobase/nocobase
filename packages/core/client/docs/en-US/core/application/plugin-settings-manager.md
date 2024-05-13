@@ -2,7 +2,7 @@
 
 ![](../static/plugin-settings.jpg)
 
-用于管理插件配置页面，其底层对应着 [RouterManager](/core/application/router-manager)。
+Used to manage plugin configuration pages, which correspond to [RouterManager](/core/application/router-manager) at the underlying level.
 
 ```tsx | pure
 interface PluginSettingOptionsType {
@@ -46,13 +46,13 @@ class PluginSettingsManager {
 }
 ```
 
-## 实例方法
+## Instance Methods
 
 ### pluginSettingsManager.add()
 
-添加插件配置页。
+Add plugin configuration pages.
 
-- 类型
+- Type
 
 ```tsx | pure
 class PluginSettingsManager {
@@ -60,15 +60,15 @@ class PluginSettingsManager {
 }
 ```
 
-- 详细解释
+- Details
 
-第一个参数 `name`，是路由唯一标识，用于后续的删改查，并且 `name` 支持 `.` 用于分割层级，不过需要注意当使用 `.` 分层的时候，父级要使用 [Outlet](https://reactrouter.com/en/main/components/outlet)，让子元素能正常渲染。
+The first parameter `name` is the unique identifier for the route, used for subsequent operations such as deletion and modification. The `name` also supports using `.` to separate hierarchical levels. However, when using `.` for hierarchy, the parent level should use [Outlet](https://reactrouter.com/en/main/components/outlet) to ensure proper rendering of child elements.
 
-第二个参数中 `Component` 支持组件形式和字符串形式，如果是字符串组件，要先通过 [app.addComponents](/core/application/application#appaddcomponents) 进行注册，具体参考 [RouterManager](/core/application/router-manager)。
+In the second parameter, the `Component` supports both component form and string form. If it is a string component, it needs to be registered through [app.addComponents](/core/application/application#appaddcomponents) first, please refer to [RouterManager](/core/application/router-manager) for more details.
 
-- 示例
+- Example
 
-单层级配置。
+Single-level configuration.
 
 ```tsx | pure
 const HelloSettingPage = () => {
@@ -86,7 +86,7 @@ class MyPlugin extends Plugin {
 }
 ```
 
-多层级配置。
+Multi-level configuration.
 
 ```tsx | pure
 // 多层级配置页
@@ -114,9 +114,9 @@ class MyPlugin extends Plugin {
 
 ### pluginSettingsManager.get()
 
-获取配置信息。
+Get configuration information.
 
-- 类型
+- Type
 
 ```tsx | pure
 class PluginSettingsManager {
@@ -124,13 +124,13 @@ class PluginSettingsManager {
 }
 ```
 
-- 详细解释
+- Details
 
-第一个是在添加时的 name 参数，第二个参数是是否在获取的时候进行权限过滤。
+The first parameter is the `name` parameter when adding, and the second parameter is whether to filter permissions when getting.
 
-- 示例
+- Example
 
-在组件中获取。
+Get in the component.
 
 ```tsx | pure
 const Demo = () => {
@@ -139,7 +139,7 @@ const Demo = () => {
 }
 ```
 
-在插件中获取。
+Get in the plugin.
 
 ```tsx | pure
 class MyPlugin extends Plugin {
@@ -154,9 +154,9 @@ class MyPlugin extends Plugin {
 
 ### pluginSettingsManager.getList()
 
-获取插件配置页列表。
+Get the list of plugin settings pages.
 
-- 类型
+- Type
 
 ```tsx | pure
 class PluginSettingsManager {
@@ -164,11 +164,11 @@ class PluginSettingsManager {
 }
 ```
 
-- 详细解释
+- Details
 
-`filterAuth` 默认值为 `true`，即进行权限过滤。
+The default value of `filterAuth` is `true`, which means it performs permission filtering.
 
-- 示例
+- Example
 
 ```tsx | pure
 const Demo = () => {
@@ -180,9 +180,9 @@ const Demo = () => {
 
 ### pluginSettingsManager.has()
 
-判断是否存在，内部已进行权限过滤。
+Check if it exists, with internal permission filtering.
 
-- 类型
+- Type
 
 ```tsx | pure
 class PluginSettingsManager {
@@ -190,7 +190,7 @@ class PluginSettingsManager {
 }
 ```
 
-- 示例
+- Example
 
 ```tsx | pure
 class MyPlugin extends Plugin {
@@ -202,7 +202,7 @@ class MyPlugin extends Plugin {
 
 ### pluginSettingsManager.remove()
 
-移除配置。
+Remove configuration.
 
 ```tsx | pure
 class PluginSettingsManager {
@@ -212,9 +212,9 @@ class PluginSettingsManager {
 
 ### pluginSettingsManager.getRouteName()
 
-获取对应路由的名称。
+Get the name of the corresponding route.
 
-- 类型
+- Type
 
 ```tsx | pure
 class PluginSettingsManager {
@@ -222,7 +222,7 @@ class PluginSettingsManager {
 }
 ```
 
-- 示例
+- Example
 
 ```tsx | pure
 class MyPlugin extends Plugin {
@@ -234,9 +234,9 @@ class MyPlugin extends Plugin {
 
 ### pluginSettingsManager.getRoutePath()
 
-获取插件配置对应的页面路径。
+Get the page path corresponding to the plugin configuration.
 
-- 类型
+- Type
 
 ```tsx | pure
 class PluginSettingsManager {
@@ -244,7 +244,7 @@ class PluginSettingsManager {
 }
 ```
 
-- 示例
+- Example
 
 ```tsx | pure
 const Demo = () => {
@@ -260,7 +260,7 @@ const Demo = () => {
 
 ### pluginSettingsManager.hasAuth()
 
-单独判断是否权限。
+Check the permission separately.
 
 ```tsx | pure
 class PluginSettingsManager {

@@ -1,11 +1,21 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { createForm } from '@formily/core';
 import { FormProvider, Schema } from '@formily/react';
 import { uid } from '@formily/shared';
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useContext, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useUpdate } from 'ahooks';
 import { SchemaComponentContext } from '../context';
 import { ISchemaComponentProvider } from '../types';
-import { SchemaComponentOptions } from './SchemaComponentOptions';
+import { SchemaComponentOptions, useSchemaOptionsContext } from './SchemaComponentOptions';
 
 const randomString = (prefix = '') => {
   return `${prefix}${uid()}`;
@@ -44,36 +54,47 @@ Schema.registerCompiler(Registry.compile);
 
 export const SchemaComponentProvider: React.FC<ISchemaComponentProvider> = (props) => {
   const { designable, onDesignableChange, components, children } = props;
-  const [uidValue, setUid] = useState(uid());
+  const ctx = useContext(SchemaComponentContext);
+  const ctxOptions = useSchemaOptionsContext();
+  const refresh = useUpdate();
   const [formId, setFormId] = useState(uid());
   const form = useMemo(() => props.form || createForm(), [formId]);
   const { t } = useTranslation();
+
   const scope = useMemo(() => {
     return { ...props.scope, t, randomString };
-  }, [props.scope, t]);
+  }, [props.scope, t, ctxOptions?.scope]);
+
   const [active, setActive] = useState(designable);
 
-  const schemaComponentContextValue = useMemo(
-    () => ({
-      scope,
-      components,
-      reset: () => setFormId(uid()),
-      refresh: () => {
-        setUid(uid());
-      },
-      designable: typeof designable === 'boolean' ? designable : active,
-      setDesignable: (value) => {
-        if (typeof designable !== 'boolean') {
-          setActive(value);
-        }
-        onDesignableChange?.(value);
-      },
-    }),
-    [uidValue, scope, components, designable, active],
-  );
+  const designableValue = useMemo(() => {
+    return typeof designable === 'boolean' ? designable : active;
+  }, [designable, active, ctx.designable]);
+
+  const setDesignable = useMemo(() => {
+    return (value) => {
+      if (typeof designableValue !== 'boolean') {
+        setActive(value);
+      }
+      onDesignableChange?.(value);
+    };
+  }, [designableValue, onDesignableChange]);
+
+  const reset = useCallback(() => {
+    setFormId(uid());
+  }, []);
 
   return (
-    <SchemaComponentContext.Provider value={schemaComponentContextValue}>
+    <SchemaComponentContext.Provider
+      value={{
+        scope,
+        components,
+        reset,
+        refresh,
+        designable: designableValue,
+        setDesignable,
+      }}
+    >
       <FormProvider form={form}>
         <SchemaComponentOptions inherit scope={scope} components={components}>
           {children}

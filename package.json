@@ -5,19 +5,20 @@
     "packages/*/*",
     "packages/*/*/*"
   ],
-  "license": "Apache-2.0",
+  "license": "AGPL-3.0",
   "engines": {
     "node": ">=18"
   },
   "licenses": [
     {
-      "type": "Apache-2.0",
-      "url": "https://www.apache.org/licenses/LICENSE-2.0"
+      "type": "AGPL-3.0",
+      "url": "https://www.gnu.org/licenses/agpl-3.0.html"
     }
   ],
   "scripts": {
     "nocobase": "nocobase",
     "pm": "nocobase pm",
+    "pm2": "nocobase pm2",
     "dev": "nocobase dev",
     "dev-server": "nocobase dev --server",
     "start": "nocobase start",
@@ -25,7 +26,9 @@
     "tar": "nocobase tar",
     "test": "nocobase test",
     "test:server": "nocobase test:server",
+    "test:server-coverage": "nocobase test-coverage:server",
     "test:client": "nocobase test:client",
+    "test:client-coverage": "nocobase test-coverage:client",
     "e2e": "nocobase e2e",
     "ts": "nocobase test:server",
     "tc": "nocobase test:client",
@@ -36,7 +39,7 @@
     "clean": "nocobase clean",
     "changelog": "auto-changelog -p -t keepachangelog",
     "version:alpha": "lerna version prerelease --preid alpha --force-publish=* --no-git-tag-version -m \"chore(versions): publish packages %s\"",
-    "release:force": "lerna publish from-package --yes",
+    "release:force": "lerna publish from-package --yes --no-git-tag-version",
     "release": "lerna publish",
     "run:example": "tsx -r dotenv/config -r tsconfig-paths/register ./examples/index.ts"
   },
@@ -53,7 +56,7 @@
   },
   "config": {
     "ghooks": {
-      "pre-commit": "yarn lint-staged",
+      "pre-commit": "yarn lint-staged && node addLicense.js",
       "commit-msg": "commitlint --edit"
     }
   },

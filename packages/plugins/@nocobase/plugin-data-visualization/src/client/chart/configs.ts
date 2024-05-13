@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { SchemaProperties } from '@formily/react';
 import { lang } from '../locale';
 
@@ -49,4 +58,5 @@ export default {
   xField: (props: FieldConfigProps) => selectField({ name: 'xField', title: 'xField', required: true, ...props }),
   yField: (props: FieldConfigProps) => selectField({ name: 'yField', title: 'yField', required: true, ...props }),
   seriesField: (props: FieldConfigProps) => selectField({ name: 'seriesField', title: 'seriesField', ...props }),
+  colorField: (props: FieldConfigProps) => selectField({ name: 'colorField', title: 'colorField', ...props }),
 };

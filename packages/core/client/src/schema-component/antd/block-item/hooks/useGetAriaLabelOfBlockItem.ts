@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { useFieldSchema } from '@formily/react';
 import _ from 'lodash';
 import { useCallback } from 'react';
@@ -12,9 +21,8 @@ import { useCompile } from '../../../hooks';
 export const useGetAriaLabelOfBlockItem = (name?: string) => {
   const fieldSchema = useFieldSchema();
   const compile = useCompile();
-  const component = _.isString(fieldSchema['x-component'])
-    ? fieldSchema['x-component']
-    : fieldSchema['x-component']?.displayName;
+  const component = fieldSchema['x-component'];
+  const componentName = typeof component === 'string' ? component : component?.displayName;
   const collectionField = compile(fieldSchema['x-collection-field']);
   let { name: blockName } = useBlockContext() || {};
   // eslint-disable-next-line prefer-const
@@ -26,11 +34,11 @@ export const useGetAriaLabelOfBlockItem = (name?: string) => {
   const getAriaLabel = useCallback(
     (postfix?: string) => {
       postfix = postfix ? `-${postfix}` : '';
-      return ['block-item', component, collectionName, blockName, collectionField, title, postfix]
+      return ['block-item', componentName, collectionName, blockName, collectionField, title, postfix]
         .filter(Boolean)
         .join('-');
     },
-    [component, collectionName, blockName, collectionField, title],
+    [componentName, collectionName, blockName, collectionField, title],
   );
 
   return {

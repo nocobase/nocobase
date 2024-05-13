@@ -1,23 +1,29 @@
-import {
-  useCollection_deprecated,
-  useCollectionManager_deprecated,
-  useRemoveGridFormItem,
-  SchemaInitializerItemType,
-  useBlockRequestContext,
-  useActionContext,
-  useCompile,
-  useTableBlockContext,
-  TableFieldResource,
-} from '@nocobase/client';
-import React, { useContext } from 'react';
-import { App, message } from 'antd';
-import { useNavigate } from 'react-router-dom';
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { SchemaExpressionScopeContext, useField, useForm } from '@formily/react';
-import { cloneDeep } from 'lodash';
+import {
+  SchemaInitializerItemType,
+  TableFieldResource,
+  useActionContext,
+  useBlockRequestContext,
+  useCollectionManager_deprecated,
+  useCollection_deprecated,
+  useCompile,
+  useRemoveGridFormItem,
+  useTableBlockContext,
+} from '@nocobase/client';
 import { isURL } from '@nocobase/utils/client';
-import { useMemo } from 'react';
+import { App, message } from 'antd';
+import { useContext, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { BulkEditFormItemValueType } from './component/BulkEditField';
+import { useNavigate } from 'react-router-dom';
 
 export const useCustomBulkEditFormItemInitializerFields = (options?: any) => {
   const { name, fields } = useCollection_deprecated();
@@ -86,32 +92,21 @@ export const useCustomizeBulkEditActionProps = () => {
   const { rowKey } = tableBlockContext;
   const selectedRecordKeys =
     tableBlockContext.field?.data?.selectedRowKeys ?? expressionScope?.selectedRecordKeys ?? {};
-  const { setVisible, fieldSchema: actionSchema } = actionContext;
+  const { setVisible, fieldSchema: actionSchema, setSubmitted } = actionContext;
   return {
     async onClick() {
       const { onSuccess, skipValidator, updateMode } = actionSchema?.['x-action-settings'] ?? {};
       const { filter } = __parent.service.params?.[0] ?? {};
+
       if (!skipValidator) {
         await form.submit();
       }
-      const values = cloneDeep(form.values);
+
       actionField.data = field.data || {};
       actionField.data.loading = true;
-      for (const key in values) {
-        if (Object.prototype.hasOwnProperty.call(values, key)) {
-          const value = values[key];
-          if (BulkEditFormItemValueType.Clear in value) {
-            values[key] = null;
-          } else if (BulkEditFormItemValueType.ChangedTo in value) {
-            values[key] = value[BulkEditFormItemValueType.ChangedTo];
-          } else if (BulkEditFormItemValueType.RemainsTheSame in value) {
-            delete values[key];
-          }
-        }
-      }
       try {
         const updateData: { filter?: any; values: any; forceUpdate: boolean } = {
-          values,
+          values: form.values,
           filter,
           forceUpdate: false,
         };
@@ -130,8 +125,9 @@ export const useCustomizeBulkEditActionProps = () => {
         if (!(resource instanceof TableFieldResource)) {
           __parent?.__parent?.service?.refresh?.();
         }
-        __parent?.service?.refresh?.();
+        // __parent?.service?.refresh?.();
         setVisible?.(false);
+        setSubmitted(true);
         if (!onSuccess?.successMessage) {
           return;
         }

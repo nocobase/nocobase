@@ -14,3 +14,4 @@ esm
 doc-site
 public
 package
+packages/**/client.d.ts

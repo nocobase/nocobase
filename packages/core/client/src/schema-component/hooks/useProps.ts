@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 interface Options {
   arrayMerge?(target: any[], source: any[], options?: Options): any[];
   clone?: boolean;
@@ -8,6 +17,12 @@ interface Options {
 }
 
 const useDef = () => ({});
+
+/**
+ * 新版 UISchema（1.0 之后）中已经废弃了 useProps，这里之所以继续保留是为了兼容旧版的 UISchema
+ * @param originalProps
+ * @returns
+ */
 export const useProps = (originalProps: any = {}) => {
   const { useProps: useDynamicHook = useDef, ...others } = originalProps;
   let useDynamicProps = useDynamicHook;

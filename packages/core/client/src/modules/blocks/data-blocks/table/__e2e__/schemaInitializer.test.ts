@@ -1,76 +1,26 @@
-import { createBlockInPage, expect, oneEmptyTable, test } from '@nocobase/test/e2e';
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
 
-test.describe('where table block can be added', () => {
-  test('page', async ({ page, mockPage }) => {
-    await mockPage().goto();
-
-    await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
-    await createBlockInPage(page, 'Table');
-    await expect(page.getByLabel('block-item-CardItem-users-table')).toBeVisible();
-  });
-
-  test('popup', async () => {});
-});
-
-test.describe('configure actions', () => {
-  test('filter & add new & delete & refresh', async ({ page, mockPage }) => {
-    await mockPage(oneEmptyTable).goto();
-
-    // add buttons
-    await page.getByLabel('schema-initializer-ActionBar-TableActionInitializers-t_unp4scqamw9').hover();
-    await page.getByRole('menuitem', { name: 'Filter' }).click();
-    await page.getByRole('menuitem', { name: 'Add new' }).click();
-    await page.getByRole('menuitem', { name: 'Delete' }).click();
-    await page.getByRole('menuitem', { name: 'Refresh' }).click();
-
-    await expect(page.getByRole('menuitem', { name: 'Filter' }).getByRole('switch')).toBeChecked();
-    await expect(page.getByRole('menuitem', { name: 'Add new' }).getByRole('switch')).toBeChecked();
-    await expect(page.getByRole('menuitem', { name: 'Delete' }).getByRole('switch')).toBeChecked();
-    await expect(page.getByRole('menuitem', { name: 'Refresh' }).getByRole('switch')).toBeChecked();
-
-    await page.mouse.move(300, 0);
-    await expect(page.getByRole('button', { name: 'Filter' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Add new' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Delete' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Refresh' })).toBeVisible();
-
-    // delete buttons
-    await page.getByLabel('schema-initializer-ActionBar-TableActionInitializers-t_unp4scqamw9').hover();
-    await page.getByRole('menuitem', { name: 'Filter' }).click();
-    await page.getByRole('menuitem', { name: 'Add new' }).click();
-    await page.getByRole('menuitem', { name: 'Delete' }).click();
-    await page.getByRole('menuitem', { name: 'Refresh' }).click();
-
-    await expect(page.getByRole('menuitem', { name: 'Filter' }).getByRole('switch')).not.toBeChecked();
-    await expect(page.getByRole('menuitem', { name: 'Add new' }).getByRole('switch')).not.toBeChecked();
-    await expect(page.getByRole('menuitem', { name: 'Delete' }).getByRole('switch')).not.toBeChecked();
-    await expect(page.getByRole('menuitem', { name: 'Refresh' }).getByRole('switch')).not.toBeChecked();
-
-    await page.mouse.move(300, 0);
-    await expect(page.getByRole('button', { name: 'Filter' })).not.toBeVisible();
-    await expect(page.getByRole('button', { name: 'Add new' })).not.toBeVisible();
-    await expect(page.getByRole('button', { name: 'Delete' })).not.toBeVisible();
-    await expect(page.getByRole('button', { name: 'Refresh' })).not.toBeVisible();
-  });
-
-  test('customize: add record', async ({ page, mockPage }) => {
-    await mockPage(oneEmptyTable).goto();
-
-    await page.getByLabel('schema-initializer-ActionBar-TableActionInitializers-t_unp4scqamw9').hover();
-    await page.getByRole('menuitem', { name: 'Customize' }).hover();
-    await page.getByRole('menuitem', { name: 'add record' }).click();
-
-    await page.mouse.move(300, 0);
-    await expect(page.getByRole('button', { name: 'Add record' })).toBeVisible();
-  });
-});
+import { expect, oneEmptyTable, test } from '@nocobase/test/e2e';
+import { oneTableWithInheritFields } from './templatesOfBug';
 
 test.describe('configure columns', () => {
   // 该用例在 CI 并发环境下容易报错，原因未知，通过增加重试次数可以解决
   test.describe.configure({ retries: process.env.CI ? 4 : 0 });
-  test('action column & display collection fields & display association fields', async ({ page, mockPage }) => {
+  test('action column & display collection fields & display association fields', async ({
+    page,
+    mockPage,
+    mockRecord,
+  }) => {
     await mockPage(oneEmptyTable).goto();
-    const configureColumnButton = page.getByLabel('schema-initializer-TableV2-TableColumnInitializers-t_unp4scqamw9');
+    const record = await mockRecord('t_unp4scqamw9');
+    const configureColumnButton = page.getByLabel('schema-initializer-TableV2-table:configureColumns-t_unp4scqamw9');
 
     // Action column -------------------------------------------------------------
     // 1. 点击开关，可以开启和关闭 Action column
@@ -115,7 +65,12 @@ test.describe('configure columns', () => {
 
     // 点击开关，删除创建的字段
     await configureColumnButton.hover();
-    await page.getByRole('menuitem', { name: 'ID', exact: true }).click();
+    await page.getByRole('menuitem', { name: 'ID', exact: true }).click({
+      position: {
+        x: 30,
+        y: 10,
+      },
+    });
     await page.getByRole('menuitem', { name: 'One to one (belongs to)' }).first().click();
     await page.getByRole('menuitem', { name: 'One to one (has one)' }).first().click();
     await page.getByRole('menuitem', { name: 'Many to one' }).first().click();
@@ -140,6 +95,7 @@ test.describe('configure columns', () => {
     await expect(page.getByRole('menuitem', { name: 'Nickname' }).getByRole('switch')).toBeChecked();
     await page.mouse.move(300, 0);
     await expect(page.getByRole('button', { name: 'Nickname', exact: true })).toBeVisible();
+    await expect(page.getByLabel('block-item-CardItem-').getByText(record.f_pw7uiecc8uc.nickname)).toBeVisible();
 
     // 点击开关，删除创建的字段
     await configureColumnButton.hover();
@@ -150,7 +106,19 @@ test.describe('configure columns', () => {
     await expect(page.getByRole('button', { name: 'Nickname', exact: true })).not.toBeVisible();
   });
 
-  test.pgOnly('display inherit fields', async ({ page, mockPage }) => {});
+  test.pgOnly('display inherit fields', async ({ page, mockPage, mockRecord }) => {
+    const nocoPage = await mockPage(oneTableWithInheritFields).waitForInit();
+    const record = await mockRecord('child');
+    await nocoPage.goto();
+
+    // 选择继承字段
+    await page.getByLabel('schema-initializer-TableV2-').hover();
+    await page.getByRole('menuitem', { name: 'parentField1' }).click();
+    await page.getByRole('menuitem', { name: 'parentField2' }).click();
+    await page.mouse.move(300, 0);
+    await expect(page.getByLabel('block-item-CardItem-child-').getByText(record.parentField1)).toBeVisible();
+    await expect(page.getByLabel('block-item-CardItem-child-').getByText(record.parentField2)).toBeVisible();
+  });
 });
 
 test.describe('configure actions column', () => {

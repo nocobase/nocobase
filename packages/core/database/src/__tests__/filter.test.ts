@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import Database from '../database';
 import { mockDatabase } from '../mock-database';
 
@@ -12,6 +21,27 @@ describe('filter', () => {
 
   afterEach(async () => {
     await db.close();
+  });
+
+  it('should filter by field in camel case', async () => {
+    const UserCollection = db.collection({
+      name: 'users',
+      fields: [{ type: 'array', name: 'referralSource' }],
+    });
+
+    await db.sync();
+
+    await UserCollection.repository.create({
+      values: {
+        referralSource: ['a', 'b'],
+      },
+    });
+
+    const usersCount = await UserCollection.repository.count({
+      filter: { $and: [{ referralSource: { $notEmpty: true } }] },
+    });
+
+    expect(usersCount).toBe(1);
   });
 
   it('should filter by belongs to many association', async () => {

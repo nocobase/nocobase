@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 const execa = require('execa');
 const { resolve } = require('path');
 const pAll = require('p-all');
@@ -34,7 +43,7 @@ async function runApp(dir, index = 0) {
   await client.query(`DROP DATABASE IF EXISTS "${database}"`);
   await client.query(`CREATE DATABASE "${database}";`);
   await client.end();
-  return execa('yarn', ['nocobase', 'e2e', 'test', dir, '--skip-reporter'], {
+  return execa('yarn', ['nocobase', 'e2e', 'test', dir], {
     shell: true,
     stdio: 'inherit',
     env: {
@@ -49,6 +58,7 @@ async function runApp(dir, index = 0) {
       SOCKET_PATH: `storage/e2e/gateway-e2e-${index}.sock`,
       PM2_HOME: resolve(process.cwd(), `storage/e2e/.pm2-${index}`),
       PLAYWRIGHT_AUTH_FILE: resolve(process.cwd(), `storage/playwright/.auth/admin-${index}.json`),
+      E2E_JOB_ID: index,
     },
   });
 }
@@ -60,7 +70,8 @@ exports.pTest = async (options) => {
     fs.mkdirSync(dir, { recursive: true });
   }
 
-  const files = glob.sync('packages/**/__e2e__/**/*.test.ts', {
+  const files = glob.sync(options.match, {
+    ignore: options.ignore,
     root: process.cwd(),
   });
 

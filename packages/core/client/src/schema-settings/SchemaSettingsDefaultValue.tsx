@@ -1,3 +1,13 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+import { ArrayCollapse, FormLayout } from '@formily/antd-v5';
 import { Field } from '@formily/core';
 import { ISchema, Schema, useField, useFieldSchema } from '@formily/react';
 import _ from 'lodash';
@@ -17,16 +27,15 @@ import { useCollectionFilterOptionsV2 } from '../collection-manager/action-hooks
 import { FlagProvider, useFlag } from '../flag-provider';
 import { useLocalVariables, useVariables } from '../variables';
 import { isVariable } from '../variables/utils/isVariable';
+import {
+  SchemaSettingsModalItem,
+  defaultInputStyle,
+  findParentFieldSchema,
+  getFieldDefaultValue,
+} from './SchemaSettings';
 import { VariableInput, getShouldChange } from './VariableInput/VariableInput';
 import { Option } from './VariableInput/type';
 import { formatVariableScop } from './VariableInput/utils/formatVariableScop';
-import {
-  findParentFieldSchema,
-  defaultInputStyle,
-  getFieldDefaultValue,
-  SchemaSettingsModalItem,
-} from './SchemaSettings';
-import { ArrayCollapse, FormLayout } from '@formily/antd-v5';
 
 export const SchemaSettingsDefaultValue = function DefaultValueConfigure(props: { fieldSchema?: Schema }) {
   const currentSchema = useFieldSchema();
@@ -140,7 +149,7 @@ export const SchemaSettingsDefaultValue = function DefaultValueConfigure(props: 
               }
 
               if (collectionField?.uiSchema['x-component'] === 'Checkbox') {
-                s['x-component-props'].defaultChecked = defaultValue;
+                _.set(s, 'x-component-props.defaultChecked', defaultValue);
 
                 // 在这里如果不设置 type 为 void，会导致设置的默认值不生效
                 // 但是我不知道为什么必须要设置为 void ？
@@ -199,8 +208,8 @@ export const SchemaSettingsDefaultValue = function DefaultValueConfigure(props: 
         ['x-uid']: fieldSchema['x-uid'],
       };
       fieldSchema.default = v.default;
-      if (!v.default && v.default !== 0) {
-        field.value = null;
+      if (!isVariable(v.default)) {
+        field.setInitialValue?.(v.default);
       }
       schema.default = v.default;
       dn.emit('patch', {

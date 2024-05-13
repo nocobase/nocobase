@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Application } from '../Application';
 import axios from 'axios';
 import MockAdapter from 'axios-mock-adapter';
@@ -86,6 +95,32 @@ describe('PluginSettingsManager', () => {
     expect(app.pluginSettingsManager.get('test1').children[0]).toMatchObject(test2);
   });
 
+  it('children should be sorted in asc order', () => {
+    const test3 = {
+      title: 'test3 title',
+      sort: 2,
+      Component: () => null,
+    };
+
+    const test4 = {
+      title: 'test4 title',
+      sort: 1,
+      Component: () => null,
+    };
+
+    app.pluginSettingsManager.add('test1', test1);
+    app.pluginSettingsManager.add('test1.test2', test2);
+    app.pluginSettingsManager.add('test1.test3', test3);
+    app.pluginSettingsManager.add('test1.test4', test4);
+
+    expect(app.pluginSettingsManager.get('test1').children.length).toBe(3);
+    expect(app.pluginSettingsManager.get('test1').children.map((item) => item.name)).toEqual([
+      'test1.test2',
+      'test1.test4',
+      'test1.test3',
+    ]);
+  });
+
   it('remove', () => {
     app.pluginSettingsManager.add('test1', test1);
     app.pluginSettingsManager.add('test1.test2', test2);
@@ -119,6 +154,15 @@ describe('PluginSettingsManager', () => {
       ...test,
       isAllow: false,
     });
+  });
+
+  it('no acl', () => {
+    app.pluginSettingsManager.setAclSnippets(['!pm.*']);
+
+    app.pluginSettingsManager.add('test', test);
+    expect(app.pluginSettingsManager.get('test')).toBeFalsy();
+    expect(app.pluginSettingsManager.hasAuth('test')).toBeFalsy();
+    expect(app.pluginSettingsManager.has('test')).toBeFalsy();
   });
 
   it('getAclSnippet()', () => {

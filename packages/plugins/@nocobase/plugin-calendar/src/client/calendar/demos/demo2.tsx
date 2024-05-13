@@ -1,3 +1,5 @@
+
+
 import { ISchema } from '@formily/react';
 import {
   AntdSchemaComponentProvider,
@@ -39,9 +41,7 @@ const schema: ISchema = {
           type: 'array',
           name: 'calendar1',
           'x-component': 'CalendarV2',
-          'x-component-props': {
-            useProps: '{{ useCalendarBlockProps }}',
-          },
+          'x-use-component-props': 'useCalendarBlockProps',
           properties: {
             toolBar: {
               type: 'void',

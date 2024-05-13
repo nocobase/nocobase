@@ -1,11 +1,19 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import Database from '@nocobase/database';
 import PluginMultiAppManager from '@nocobase/plugin-multi-app-manager';
 import { Application, AppSupervisor, Plugin } from '@nocobase/server';
 import lodash from 'lodash';
-import { resolve } from 'path';
 
 const subAppFilteredPlugins = ['multi-app-share-collection', 'multi-app-manager'];
-const unSyncPlugins = ['localization-management'];
+const unSyncPlugins = ['localization'];
 
 class SubAppPlugin extends Plugin {
   beforeLoad() {
@@ -21,7 +29,7 @@ class SubAppPlugin extends Plugin {
     }
 
     subApp.on('beforeLoadPlugin', (plugin) => {
-      if (plugin.name === 'collection-manager') {
+      if (plugin.name === 'data-source-main') {
         plugin.setLoadFilter({
           'name.$ne': 'roles',
         });
@@ -235,13 +243,6 @@ export class MultiAppShareCollectionPlugin extends Plugin {
       return;
     }
 
-    await this.importCollections(resolve(__dirname, 'collections'));
-
-    // this.db.addMigrations({
-    //   namespace: 'multi-app-share-collection',
-    //   directory: resolve(__dirname, './migrations'),
-    // });
-
     this.app.resourcer.registerActionHandlers({
       'applications:shareCollections': async (ctx, next) => {
         const { filterByTk, values } = ctx.action.params;
@@ -262,9 +263,13 @@ export class MultiAppShareCollectionPlugin extends Plugin {
         schema: appName,
       };
 
-      const plugins = [...mainApp.pm.getAliases()].filter(
-        (name) => name !== 'multi-app-manager' && name !== 'multi-app-share-collection',
-      );
+      const plugins = [...mainApp.pm.getPlugins().values()]
+        .filter(
+          (plugin) =>
+            plugin?.options?.packageName !== '@nocobase/plugin-multi-app-manager' &&
+            plugin?.options?.packageName !== '@nocobase/plugin-multi-app-share-collection',
+        )
+        .map((plugin) => plugin.name);
 
       return {
         database: lodash.merge(databaseOptions, {
@@ -274,7 +279,7 @@ export class MultiAppShareCollectionPlugin extends Plugin {
         }),
         plugins: plugins.includes('nocobase') ? ['nocobase'] : plugins,
         resourcer: {
-          prefix: '/api',
+          prefix: process.env.API_BASE_PATH,
         },
         logger: {
           ...mainApp.options.logger,

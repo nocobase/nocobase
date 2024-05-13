@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import { lang } from '../../locale';
@@ -44,48 +53,98 @@ export const getConfigSchema = (general: any): ISchema => ({
     config: {
       type: 'object',
       properties: {
-        chartType: {
-          type: 'string',
-          title: '{{t("Chart type")}}',
-          'x-decorator': 'FormItem',
-          'x-component': 'Select',
+        collapse: {
+          type: 'void',
+          'x-component': 'FormCollapse',
           'x-component-props': {
-            placeholder: '{{t("Please select a chart type.")}}',
+            formCollapse: '{{formCollapse}}',
+            size: 'small',
+            style: {
+              border: 'none',
+              boxShadow: 'none',
+            },
           },
-          enum: '{{ chartTypes }}',
-        },
-        [uid()]: {
-          type: 'void',
           properties: {
-            general,
-          },
-        },
-        [uid()]: {
-          type: 'void',
-          properties: {
-            advanced: {
-              type: 'json',
-              title: '{{t("JSON config")}}',
-              'x-decorator': 'FormItem',
-              'x-decorator-props': {
-                extra: lang('Same properties set in the form above will be overwritten by this JSON config.'),
-              },
-              'x-component': 'Input.JSON',
+            pane1: {
+              type: 'void',
+              'x-component': 'FormCollapse.CollapsePanel',
               'x-component-props': {
-                autoSize: {
-                  minRows: 3,
+                header: lang('Container'),
+                key: 'card',
+              },
+              properties: {
+                title: {
+                  type: 'string',
+                  title: '{{t("Title")}}',
+                  'x-decorator': 'FormItem',
+                  'x-component': 'Input',
+                },
+                bordered: {
+                  type: 'boolean',
+                  'x-content': lang('Show border'),
+                  'x-decorator': 'FormItem',
+                  'x-component': 'Checkbox',
+                  default: false,
                 },
               },
             },
-          },
-        },
-        reference: {
-          type: 'string',
-          'x-reactions': {
-            dependencies: ['.chartType'],
-            fulfill: {
-              schema: {
-                'x-content': '{{ getReference($deps[0]) }}',
+            pane2: {
+              type: 'void',
+              'x-component': 'FormCollapse.CollapsePanel',
+              'x-component-props': {
+                header: lang('Chart'),
+                key: 'basic',
+                style: {
+                  border: 'none',
+                },
+              },
+              properties: {
+                chartType: {
+                  type: 'string',
+                  title: '{{t("Chart type")}}',
+                  'x-decorator': 'FormItem',
+                  'x-component': 'Select',
+                  'x-component-props': {
+                    placeholder: '{{t("Please select a chart type.")}}',
+                  },
+                  enum: '{{ chartTypes }}',
+                },
+                [uid()]: {
+                  type: 'void',
+                  properties: {
+                    general,
+                  },
+                },
+                [uid()]: {
+                  type: 'void',
+                  properties: {
+                    advanced: {
+                      type: 'json',
+                      title: '{{t("JSON config")}}',
+                      'x-decorator': 'FormItem',
+                      'x-decorator-props': {
+                        extra: lang('Same properties set in the form above will be overwritten by this JSON config.'),
+                      },
+                      'x-component': 'Input.JSON',
+                      'x-component-props': {
+                        autoSize: {
+                          minRows: 3,
+                        },
+                      },
+                    },
+                  },
+                },
+                reference: {
+                  type: 'string',
+                  'x-reactions': {
+                    dependencies: ['.chartType'],
+                    fulfill: {
+                      schema: {
+                        'x-content': '{{ getReference($deps[0]) }}',
+                      },
+                    },
+                  },
+                },
               },
             },
           },
@@ -150,9 +209,9 @@ export const querySchema: ISchema = {
           title: '{{t("Collection")}}',
           type: 'string',
           'x-decorator': 'FormItem',
-          'x-component': 'Select',
+          'x-component': 'Cascader',
+          enum: '{{ collectionOptions }}',
           'x-component-props': {
-            options: '{{ collectionOptions }}',
             onChange: '{{ onCollectionChange }}',
             placeholder: '{{t("Collection")}}',
           },
@@ -171,6 +230,11 @@ export const querySchema: ISchema = {
               'x-component': 'FormCollapse',
               'x-component-props': {
                 formCollapse: '{{formCollapse}}',
+                size: 'small',
+                style: {
+                  border: 'none',
+                  boxShadow: 'none',
+                },
               },
               properties: {
                 pane1: {
@@ -326,6 +390,9 @@ export const querySchema: ISchema = {
                   'x-component-props': {
                     header: lang('Sort'),
                     key: 'sort',
+                    style: {
+                      border: 'none',
+                    },
                   },
                   properties: {
                     orders: getArraySchema(
@@ -457,47 +524,80 @@ export const querySchema: ISchema = {
 export const transformSchema: ISchema = {
   type: 'void',
   properties: {
-    transform: getArraySchema(
-      {
-        field: {
-          type: 'string',
-          'x-decorator': 'FormItem',
-          'x-component': 'Select',
-          'x-component-props': {
-            placeholder: '{{t("Field")}}',
-            style: {
-              maxWidth: '100px',
+    transform: {
+      type: 'array',
+      'x-decorator': 'FormItem',
+      'x-component': 'ArrayItems',
+      items: {
+        type: 'object',
+        properties: {
+          space: {
+            type: 'void',
+            'x-component': 'Space',
+            'x-component-props': {
+              wrap: true,
+            },
+            properties: {
+              sort: {
+                type: 'void',
+                'x-decorator': 'FormItem',
+                'x-component': 'ArrayItems.SortHandle',
+              },
+              field: {
+                type: 'string',
+                'x-decorator': 'FormItem',
+                'x-component': 'Select',
+                'x-component-props': {
+                  placeholder: '{{t("Field")}}',
+                },
+                'x-use-component-props': 'useFieldSelectProps',
+                'x-reactions': '{{ useChartFields }}',
+              },
+              type: {
+                type: 'string',
+                'x-decorator': 'FormItem',
+                'x-component': 'Select',
+                'x-component-props': {
+                  placeholder: '{{t("Type")}}',
+                },
+                'x-use-component-props': 'useFieldTypeSelectProps',
+              },
+              format: {
+                type: 'string',
+                'x-decorator': 'FormItem',
+                'x-component': 'Select',
+                'x-component-props': {
+                  placeholder: '{{t("Transformer")}}',
+                  style: {
+                    maxWidth: '200px',
+                  },
+                },
+                'x-use-component-props': 'useTransformerSelectProps',
+                'x-reactions': '{{ useTransformers }}',
+                'x-visible': '{{ $self.dataSource && $self.dataSource.length }}',
+              },
+              argument: {
+                type: 'string',
+                'x-decorator': 'FormItem',
+                'x-component': 'TransformerDynamicComponent',
+                'x-reactions': '{{ useArgument }}',
+              },
+              remove: {
+                type: 'void',
+                'x-decorator': 'FormItem',
+                'x-component': 'ArrayItems.Remove',
+              },
             },
           },
-          'x-reactions': '{{ useChartFields }}',
-        },
-        type: {
-          type: 'string',
-          'x-decorator': 'FormItem',
-          'x-component': 'Select',
-          'x-component-props': {
-            placeholder: '{{t("Type")}}',
-          },
-          'x-reactions': '{{ useFieldTypeOptions }}',
-        },
-        format: {
-          type: 'string',
-          'x-decorator': 'FormItem',
-          'x-component': 'Select',
-          'x-component-props': {
-            placeholder: '{{t("Format")}}',
-          },
-          'x-reactions': '{{ useTransformers }}',
-          'x-visible': '{{ $self.dataSource && $self.dataSource.length }}',
         },
       },
-      {
-        'x-decorator-props': {
-          style: {
-            width: '50%',
-          },
+      properties: {
+        add: {
+          type: 'void',
+          title: '{{t("Add transformation")}}',
+          'x-component': 'ArrayItems.Addition',
         },
       },
-    ),
+    },
   },
 };

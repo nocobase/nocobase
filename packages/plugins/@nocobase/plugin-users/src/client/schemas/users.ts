@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { ISchema } from '@formily/react';
 import { useActionContext, useCollectionRecord, useRecord, useRequest } from '@nocobase/client';
 import { useEffect } from 'react';
@@ -152,9 +161,9 @@ export const usersSchema: ISchema = {
               title: '{{ t("Filter") }}',
               'x-action': 'filter',
               'x-component': 'Filter.Action',
+              'x-use-component-props': 'useFilterActionProps',
               'x-component-props': {
                 icon: 'FilterOutlined',
-                useProps: '{{ useFilterActionProps }}',
               },
               'x-align': 'left',
             },
@@ -493,9 +502,9 @@ export const getRoleUsersSchema = (): ISchema => ({
           title: '{{ t("Filter") }}',
           'x-action': 'filter',
           'x-component': 'Filter.Action',
+          'x-use-component-props': 'useFilterActionProps',
           'x-component-props': {
             icon: 'FilterOutlined',
-            useProps: '{{ useFilterActionProps }}',
           },
           'x-align': 'left',
         },
@@ -556,9 +565,9 @@ export const getRoleUsersSchema = (): ISchema => ({
                               },
                               'x-action': 'filter',
                               'x-component': 'Filter.Action',
+                              'x-use-component-props': 'useFilterActionProps',
                               'x-component-props': {
                                 icon: 'FilterOutlined',
-                                useProps: '{{ useFilterActionProps }}',
                               },
                               'x-align': 'left',
                             },

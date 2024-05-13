@@ -1,11 +1,20 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { css } from '@emotion/css';
 import { Field } from '@formily/core';
 import { connect, useField, useFieldSchema } from '@formily/react';
 import { merge } from '@formily/shared';
 import {
   CollectionFieldProvider,
-  useCollection_deprecated,
   useCollectionField_deprecated,
+  useCollection_deprecated,
   useCompile,
   useComponent,
   useFormBlockContext,
@@ -21,16 +30,11 @@ export const DeletedField = () => {
 const InternalField: React.FC = (props) => {
   const field = useField<Field>();
   const fieldSchema = useFieldSchema();
-  const { name, interface: interfaceType, uiSchema } = useCollectionField_deprecated();
+  const { uiSchema } = useCollectionField_deprecated();
   const component = useComponent(uiSchema?.['x-component']);
   const compile = useCompile();
   const setFieldProps = (key, value) => {
     field[key] = typeof field[key] === 'undefined' ? value : field[key];
-  };
-  const setRequired = () => {
-    if (typeof fieldSchema['required'] === 'undefined') {
-      field.required = !!uiSchema['required'];
-    }
   };
   const ctx = useFormBlockContext();
 
@@ -57,7 +61,7 @@ const InternalField: React.FC = (props) => {
     if (fieldSchema['x-read-pretty'] === true) {
       field.readPretty = true;
     }
-    setRequired();
+    field.required = true;
     // @ts-ignore
     field.dataSource = uiSchema.enum;
     const originalProps = compile(uiSchema['x-component-props']) || {};
@@ -97,11 +101,20 @@ export const BulkEditField = (props: any) => {
   const collectionField = getField(fieldSchema.name) || {};
 
   useEffect(() => {
-    field.value = { [type]: value };
-  }, [type, value]);
+    field.value = toFormFieldValue({ [type]: value });
+    if (field.required) {
+      if (field.value) {
+        field.modify();
+        field.form.clearErrors(field.address);
+      } else if (field.modified) {
+        field.form.validate(field.address);
+      }
+    }
+  }, [field, type, value]);
 
   const typeChangeHandler = (val) => {
     setType(val);
+    field.required = val === BulkEditFormItemValueType.ChangedTo;
   };
 
   const valueChangeHandler = (val) => {
@@ -121,9 +134,9 @@ export const BulkEditField = (props: any) => {
         <Select.Option value={BulkEditFormItemValueType.RemainsTheSame}>{t('Remains the same')}</Select.Option>
         <Select.Option value={BulkEditFormItemValueType.ChangedTo}>{t('Changed to')}</Select.Option>
         <Select.Option value={BulkEditFormItemValueType.Clear}>{t('Clear')}</Select.Option>
-        {['subTable', 'linkTo', 'm2m', 'o2m', 'o2o', 'oho', 'obo', 'm2o'].includes(collectionField?.interface) && (
-          <Select.Option value={BulkEditFormItemValueType.AddAttach}>{t('Add attach')}</Select.Option>
-        )}
+        {/* {['subTable', 'linkTo', 'm2m', 'o2m', 'o2o', 'oho', 'obo', 'm2o'].includes(collectionField?.interface) && ( */}
+        {/*   <Select.Option value={BulkEditFormItemValueType.AddAttach}>{t('Add attach')}</Select.Option> */}
+        {/* )} */}
       </Select>
       {[BulkEditFormItemValueType.ChangedTo, BulkEditFormItemValueType.AddAttach].includes(type) &&
         collectionField?.interface !== 'checkbox' && (
@@ -134,3 +147,13 @@ export const BulkEditField = (props: any) => {
     </Space>
   );
 };
+
+function toFormFieldValue(value: any) {
+  if (BulkEditFormItemValueType.Clear in value) {
+    return null;
+  } else if (BulkEditFormItemValueType.ChangedTo in value) {
+    return value[BulkEditFormItemValueType.ChangedTo];
+  } else if (BulkEditFormItemValueType.RemainsTheSame in value) {
+    return;
+  }
+}

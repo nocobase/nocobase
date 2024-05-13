@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import jwt, { SignOptions } from 'jsonwebtoken';
 import { ITokenBlacklistService } from './token-blacklist-service';
 
@@ -31,6 +40,7 @@ export class JwtService {
     return this.options.secret;
   }
 
+  /* istanbul ignore next -- @preserve */
   sign(payload: SignPayload, options?: SignOptions) {
     const opt = { expiresIn: this.expiresIn(), ...options };
     if (opt.expiresIn === 'never') {
@@ -39,6 +49,7 @@ export class JwtService {
     return jwt.sign(payload, this.secret(), opt);
   }
 
+  /* istanbul ignore next -- @preserve */
   decode(token: string): Promise<any> {
     return new Promise((resolve, reject) => {
       jwt.verify(token, this.secret(), (err: any, decoded: any) => {

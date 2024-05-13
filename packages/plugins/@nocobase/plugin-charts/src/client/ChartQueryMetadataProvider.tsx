@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { useAPIClient, useRequest } from '@nocobase/client';
 import { Spin } from 'antd';
 import React, { createContext, useContext, useEffect } from 'react';
@@ -23,20 +32,15 @@ export const ChartQueryMetadataProvider: React.FC = (props) => {
 
   const location = useLocation();
 
-  const service = useRequest<{
-    data: any;
-  }>(options, {
-    manual: true,
-  });
-
   const isAdminPage = location.pathname.startsWith('/admin');
   const token = api.auth.getToken() || '';
 
-  useEffect(() => {
-    if (isAdminPage && token) {
-      service.run();
-    }
-  }, [isAdminPage, token]);
+  const service = useRequest<{
+    data: any;
+  }>(options, {
+    refreshDeps: [isAdminPage, token],
+    ready: !!(isAdminPage && token),
+  });
 
   const refresh = async () => {
     const { data } = await api.request(options);

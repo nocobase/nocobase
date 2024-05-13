@@ -1,7 +1,18 @@
-import { SchemaInitializerItemType } from '../../../../application';
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { SchemaInitializer } from '../../../../application/schema-initializer/SchemaInitializer';
 
-// 表单的操作配置
+/**
+ * @deprecated
+ * 表单的操作配置
+ */
 export const formActionInitializers = new SchemaInitializer({
   name: 'FormActionInitializers',
   title: '{{t("Configure actions")}}',
@@ -27,7 +38,7 @@ export const formActionInitializers = new SchemaInitializer({
       type: 'divider',
     },
     {
-      name: 'custom',
+      name: 'customize',
       type: 'subMenu',
       title: '{{t("Customize")}}',
       children: [

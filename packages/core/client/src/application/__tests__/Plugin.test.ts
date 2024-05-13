@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import axios from 'axios';
 import MockAdapter from 'axios-mock-adapter';
 import { Application } from '../Application';
@@ -158,5 +167,22 @@ describe('PluginManager', () => {
     const app = new Application({ plugins: [[DemoPlugin, { name: 'demo' }]] });
     await app.load();
     expect(app.pm.get('demo')).toBeInstanceOf(DemoPlugin);
+  });
+
+  it('i18n', async () => {
+    class DemoPlugin extends Plugin {
+      async load() {
+        expect(this.t('test', { lng: 'zh-CN' })).toBe('测试');
+        expect(this.t('test', { lng: 'en' })).toBe('test');
+      }
+    }
+    const app = new Application({ plugins: [[DemoPlugin, { packageName: 'plugin-demo' }]] });
+    app.i18n.addResourceBundle('zh-CN', 'plugin-demo', {
+      test: '测试',
+    });
+    app.i18n.addResourceBundle('en', 'plugin-demo', {
+      test: 'test',
+    });
+    await app.load();
   });
 });

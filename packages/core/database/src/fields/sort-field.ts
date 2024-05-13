@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Mutex } from 'async-mutex';
 import { isNumber } from 'lodash';
 import { DataTypes } from 'sequelize';
@@ -99,11 +108,19 @@ export class SortField extends Field {
 
       const whereClause =
         scopeKey && scopeValue
-          ? `
-  WHERE ${queryInterface.quoteIdentifier(scopeKey)} IN (${scopeValue
-    .filter((v) => v !== null)
-    .map((v) => `'${v}'`)
-    .join(', ')})${scopeValue.includes(null) ? ` OR ${queryInterface.quoteIdentifier(scopeKey)} IS NULL` : ''}`
+          ? (() => {
+              const filteredScopeValue = scopeValue.filter((v) => v !== null);
+              if (filteredScopeValue.length === 0) {
+                return '';
+              }
+              const initialClause = `
+  WHERE ${queryInterface.quoteIdentifier(scopeKey)} IN (${filteredScopeValue.map((v) => `'${v}'`).join(', ')})`;
+
+              const nullCheck = scopeValue.includes(null)
+                ? ` OR ${queryInterface.quoteIdentifier(scopeKey)} IS NULL`
+                : '';
+              return initialClause + nullCheck;
+            })()
           : '';
 
       if (this.collection.db.inDialect('postgres')) {

@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { ArrayFieldOptions } from './array-field';
 import { BelongsToFieldOptions } from './belongs-to-field';
 import { BelongsToManyFieldOptions } from './belongs-to-many-field';
@@ -25,6 +34,7 @@ import { TimeFieldOptions } from './time-field';
 import { UidFieldOptions } from './uid-field';
 import { UUIDFieldOptions } from './uuid-field';
 import { VirtualFieldOptions } from './virtual-field';
+import { NanoidFieldOptions } from './nanoid-field';
 
 export * from './array-field';
 export * from './belongs-to-field';
@@ -48,6 +58,7 @@ export * from './time-field';
 export * from './uid-field';
 export * from './uuid-field';
 export * from './virtual-field';
+export * from './nanoid-field';
 
 export type FieldOptions =
   | BaseFieldOptions
@@ -70,6 +81,7 @@ export type FieldOptions =
   | DateFieldOptions
   | UidFieldOptions
   | UUIDFieldOptions
+  | NanoidFieldOptions
   | PasswordFieldOptions
   | ContextFieldOptions
   | BelongsToFieldOptions

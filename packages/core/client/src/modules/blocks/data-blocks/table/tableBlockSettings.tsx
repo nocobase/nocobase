@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { ISchema } from '@formily/json-schema';
 import { useField, useFieldSchema } from '@formily/react';
 import { useAPIClient } from '../../../../api-client';
@@ -7,20 +16,21 @@ import {
   useCollection_deprecated,
   useSortFields,
 } from '../../../../collection-manager';
-import { mergeFilter, FilterBlockType } from '../../../../filter-provider';
+import { FilterBlockType } from '../../../../filter-provider/utils';
 import { useDesignable, removeNullCondition } from '../../../../schema-component';
 import {
   SchemaSettingsBlockTitleItem,
   SchemaSettingsSortField,
-  SchemaSettingsDataScope,
   SchemaSettingsConnectDataBlocks,
   SchemaSettingsTemplate,
-} from '../../../../schema-settings';
+} from '../../../../schema-settings/SchemaSettings';
+import { SchemaSettingsDataScope } from '../../../../schema-settings/SchemaSettingsDataScope';
 import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ArrayItems } from '@formily/antd-v5';
 import { FixedBlockDesignerItem } from '../../../../schema-component/antd/page/FixedBlockDesignerItem';
 import { SchemaSettings } from '../../../../application/schema-settings/SchemaSettings';
+import { setDataLoadingModeSettingsItem } from '../details-multi/setDataLoadingModeSettingsItem';
 
 export const tableBlockSettings = new SchemaSettings({
   name: 'blockSettings:table',
@@ -49,7 +59,7 @@ export const tableBlockSettings = new SchemaSettings({
         return {
           title: t('Tree table'),
           defaultChecked: true,
-          checked: treeCollection ? field.decoratorProps.treeTable !== false : false,
+          checked: treeCollection ? field.decoratorProps.treeTable : false,
           onChange: (flag) => {
             field.decoratorProps.treeTable = flag;
             fieldSchema['x-decorator-props'].treeTable = flag;
@@ -145,17 +155,14 @@ export const tableBlockSettings = new SchemaSettings({
             params.filter = filter;
             field.decoratorProps.params = params;
             fieldSchema['x-decorator-props']['params'] = params;
-            const filters = service.params?.[1]?.filters || {};
-            service.run(
-              { ...service.params?.[0], filter: mergeFilter([...Object.values(filters), filter]), page: 1 },
-              { filters },
-            );
+
             dn.emit('patch', {
               schema: {
                 ['x-uid']: fieldSchema['x-uid'],
                 'x-decorator-props': fieldSchema['x-decorator-props'],
               },
             });
+            service.params[0].page = 1;
           },
           [dn, field.decoratorProps, fieldSchema, service],
         );
@@ -290,6 +297,7 @@ export const tableBlockSettings = new SchemaSettings({
         return !dragSort;
       },
     },
+    setDataLoadingModeSettingsItem,
     {
       name: 'RecordsPerPage',
       type: 'select',
@@ -352,7 +360,8 @@ export const tableBlockSettings = new SchemaSettings({
       useComponentProps() {
         const { name } = useCollection_deprecated();
         const fieldSchema = useFieldSchema();
-        const defaultResource = fieldSchema?.['x-decorator-props']?.resource;
+        const defaultResource =
+          fieldSchema?.['x-decorator-props']?.resource || fieldSchema?.['x-decorator-props']?.association;
         return {
           componentName: 'Table',
           collectionName: name,

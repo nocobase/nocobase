@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Schema } from '@formily/json-schema';
 import { BaseError } from '@nocobase/database';
 import { Plugin } from '@nocobase/server';
@@ -6,7 +15,7 @@ import { ErrorHandler } from './error-handler';
 import enUS from './locale/en_US';
 import zhCN from './locale/zh_CN';
 
-export class PluginErrorHandler extends Plugin {
+export class PluginErrorHandlerServer extends Plugin {
   errorHandler: ErrorHandler = new ErrorHandler();
   i18nNs = 'error-handler';
 
@@ -26,6 +35,10 @@ export class PluginErrorHandler extends Plugin {
       const database = dataSource ? dataSource.collectionManager.db : ctx.db;
 
       const collection = database.modelCollection.get(model);
+
+      if (!collection) {
+        return path;
+      }
 
       const field = collection.getField(path);
       const fieldOptions = Schema.compile(field?.options, { t: tFunc });

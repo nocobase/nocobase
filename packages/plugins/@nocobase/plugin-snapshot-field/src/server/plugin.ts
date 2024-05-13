@@ -1,9 +1,18 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Model } from '@nocobase/database';
 import { InstallOptions, Plugin } from '@nocobase/server';
 import { resolve } from 'path';
 import { SnapshotField } from './fields/snapshot-field';
 
-export class SnapshotFieldPlugin extends Plugin {
+export class PluginSnapshotFieldServer extends Plugin {
   afterAdd() {}
 
   async beforeLoad() {
@@ -130,4 +139,4 @@ export class SnapshotFieldPlugin extends Plugin {
   async remove() {}
 }
 
-export default SnapshotFieldPlugin;
+export default PluginSnapshotFieldServer;

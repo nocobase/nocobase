@@ -1,10 +1,18 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { vi } from 'vitest';
 import { uid } from '@nocobase/utils';
 import { Database, mockDatabase } from '../../index';
 import { ViewCollection } from '../../view-collection';
-import pgOnly from '../inhertits/helper';
 
-pgOnly()('', () => {
+describe.runIf(process.env['DB_DIALECT'] === 'postgres')('pg only view', () => {
   let db: Database;
 
   beforeEach(async () => {
@@ -453,5 +461,91 @@ describe('create view', () => {
 
     const viewNameField = ViewCollection.getField('name');
     expect(viewNameField.options.patterns).toEqual(UserCollection.getField('name').options.patterns);
+  });
+
+  it('should set belongs to field via source', async () => {
+    const User = db.collection({
+      name: 'users',
+      fields: [
+        {
+          type: 'string',
+          name: 'name',
+        },
+        {
+          type: 'hasMany',
+          name: 'posts',
+          target: 'posts',
+          foreignKey: 'userId',
+        },
+      ],
+    });
+
+    const Post = db.collection({
+      name: 'posts',
+      fields: [
+        {
+          type: 'string',
+          name: 'title',
+        },
+        {
+          type: 'belongsTo',
+          name: 'user',
+          foreignKey: 'userId',
+          target: 'users',
+        },
+      ],
+    });
+
+    await db.sync();
+
+    await User.repository.create({
+      values: {
+        name: 'foo',
+        posts: [
+          {
+            title: 'bar',
+          },
+          {
+            title: 'baz',
+          },
+        ],
+      },
+    });
+
+    const viewName = 'posts_view';
+
+    const dropViewSQL = `DROP VIEW IF EXISTS ${viewName}`;
+    await db.sequelize.query(dropViewSQL);
+
+    const viewSQL = `
+       CREATE VIEW ${viewName} as SELECT users.* FROM ${Post.quotedTableName()} as users
+    `;
+
+    await db.sequelize.query(viewSQL);
+
+    // create view collection
+    const ViewCollection = db.collection({
+      name: viewName,
+      view: true,
+      fields: [
+        {
+          name: 'title',
+          type: 'string',
+          source: 'posts.name',
+        },
+        {
+          name: 'user',
+          type: 'belongsTo',
+          source: 'posts.user',
+        },
+      ],
+      schema: db.inDialect('postgres') ? 'public' : undefined,
+    });
+
+    const post = await ViewCollection.repository.findOne({
+      appends: ['user'],
+    });
+
+    expect(post['user']['name']).toBe('foo');
   });
 });

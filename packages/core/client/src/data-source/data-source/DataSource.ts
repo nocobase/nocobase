@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import type { CollectionOptions } from '../collection';
 import type { DataSourceManager } from './DataSourceManager';
 
@@ -11,6 +20,7 @@ export interface DataSourceOptions {
   collections?: CollectionOptions[];
   errorMessage?: string;
   status?: 'loaded' | 'loading-failed' | 'loading' | 'reloading';
+  isDBInstance?: boolean;
 }
 
 export type DataSourceFactory = new (options: DataSourceOptions, dataSourceManager: DataSourceManager) => DataSource;
@@ -82,6 +92,9 @@ export abstract class DataSource {
   }
 }
 
+/**
+ * @internal
+ */
 export class LocalDataSource extends DataSource {
   getDataSource() {
     return {

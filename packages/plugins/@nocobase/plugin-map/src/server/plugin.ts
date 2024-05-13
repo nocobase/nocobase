@@ -1,10 +1,19 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { InstallOptions, Plugin } from '@nocobase/server';
 import path from 'path';
 import { getConfiguration, setConfiguration } from './actions';
 import { CircleField, LineStringField, PointField, PolygonField } from './fields';
 import { CircleValueParser, LineStringValueParser, PointValueParser, PolygonValueParser } from './value-parsers';
 
-export class MapPlugin extends Plugin {
+export class PluginMapServer extends Plugin {
   afterAdd() {}
 
   beforeLoad() {
@@ -52,4 +61,4 @@ export class MapPlugin extends Plugin {
   async remove() {}
 }
 
-export default MapPlugin;
+export default PluginMapServer;

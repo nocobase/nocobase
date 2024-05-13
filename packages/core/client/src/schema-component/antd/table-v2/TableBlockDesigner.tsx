@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { ArrayItems } from '@formily/antd-v5';
 import { ISchema, useField, useFieldSchema } from '@formily/react';
 import { Field } from '@formily/core';
@@ -26,6 +35,7 @@ import { removeNullCondition } from '../filter';
 import { useCompile } from '../../';
 import { SchemaSettingsDataScope } from '../../../schema-settings/SchemaSettingsDataScope';
 import { FixedBlockDesignerItem } from '../page/FixedBlockDesignerItem';
+import { SetDataLoadingMode } from '../../../modules/blocks/data-blocks/details-multi/setDataLoadingModeSettingsItem';
 
 export const EditSortField = () => {
   const { fields } = useCollection_deprecated();
@@ -66,7 +76,7 @@ export const EditSortField = () => {
 };
 
 export const TableBlockDesigner = () => {
-  const { name, title, sortable } = useCollection_deprecated();
+  const { name, title } = useCollection_deprecated();
   const { getCollectionField, getCollection } = useCollectionManager_deprecated();
   const field = useField();
   const fieldSchema = useFieldSchema();
@@ -75,10 +85,10 @@ export const TableBlockDesigner = () => {
   const { service } = useTableBlockContext();
   const { t } = useTranslation();
   const { dn } = useDesignable();
-  const record = useRecord();
 
   const defaultSort = fieldSchema?.['x-decorator-props']?.params?.sort || [];
-  const defaultResource = fieldSchema?.['x-decorator-props']?.resource;
+  const defaultResource =
+    fieldSchema?.['x-decorator-props']?.resource || fieldSchema?.['x-decorator-props']?.association;
   const supportTemplate = !fieldSchema?.['x-decorator-props']?.disableTemplate;
   const sort = defaultSort?.map((item: string) => {
     return item?.startsWith('-')
@@ -125,7 +135,7 @@ export const TableBlockDesigner = () => {
         <SchemaSettingsSwitchItem
           title={t('Tree table')}
           defaultChecked={true}
-          checked={treeCollection ? field.decoratorProps.treeTable !== false : false}
+          checked={treeCollection ? field.decoratorProps.treeTable : false}
           onChange={(flag) => {
             field.decoratorProps.treeTable = flag;
             fieldSchema['x-decorator-props'].treeTable = flag;
@@ -268,6 +278,7 @@ export const TableBlockDesigner = () => {
           }}
         />
       )}
+      <SetDataLoadingMode />
       <SchemaSettingsSelectItem
         title={t('Records per page')}
         value={field.decoratorProps?.params?.pageSize || 20}

@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Field } from '@formily/core';
 import { useField, useFieldSchema, useForm } from '@formily/react';
 import { nextTick } from '@nocobase/utils/client';
@@ -11,6 +20,7 @@ import { useVariables } from '../../../../variables';
 import { transformVariableValue } from '../../../../variables/utils/transformVariableValue';
 import { useSubFormValue } from '../../association-field/hooks';
 import { isDisplayField } from '../utils';
+import { untracked } from '@formily/reactive';
 
 /**
  * 用于懒加载 Form 区块中只用于展示的关联字段的值
@@ -31,12 +41,12 @@ const useLazyLoadDisplayAssociationFieldsOfForm = () => {
   const { getAssociationAppends } = useAssociationNames();
 
   const schemaName = fieldSchema.name.toString();
-  const formValue = _.cloneDeep(isInSubForm || isInSubTable ? subFormValue : form.values);
-  const collectionFieldRef = useRef(null);
-  const sourceCollectionFieldRef = useRef(null);
 
   // 是否已经预加载了数据（通过 appends 的形式）
   const hasPreloadData = useMemo(() => hasPreload(recordData, schemaName), [recordData, schemaName]);
+
+  const collectionFieldRef = useRef(null);
+  const sourceCollectionFieldRef = useRef(null);
 
   if (collectionFieldRef.current == null && isDisplayField(schemaName)) {
     collectionFieldRef.current = getCollectionJoinField(`${name}.${schemaName}`);
@@ -44,6 +54,16 @@ const useLazyLoadDisplayAssociationFieldsOfForm = () => {
   if (sourceCollectionFieldRef.current == null && isDisplayField(schemaName)) {
     sourceCollectionFieldRef.current = getCollectionJoinField(`${name}.${schemaName.split('.')[0]}`);
   }
+
+  const shouldNotLazyLoad = useMemo(() => {
+    return (
+      !isDisplayField(schemaName) || !variables || name === 'fields' || !collectionFieldRef.current || hasPreloadData
+    );
+  }, [schemaName, variables, name, collectionFieldRef.current, hasPreloadData]);
+
+  const formValue = shouldNotLazyLoad
+    ? {}
+    : untracked(() => _.cloneDeep(isInSubForm || isInSubTable ? subFormValue : form.values));
 
   const sourceKeyValue =
     isDisplayField(schemaName) && sourceCollectionFieldRef.current
@@ -53,13 +73,7 @@ const useLazyLoadDisplayAssociationFieldsOfForm = () => {
   useEffect(() => {
     // 如果 schemaName 中是以 `.` 分割的，说明是一个关联字段，需要去获取关联字段的值；
     // 在数据表管理页面，也存在 `a.b` 之类的 schema name，其 collectionName 为 fields，所以在这里排除一下 `name === 'fields'` 的情况
-    if (
-      !isDisplayField(schemaName) ||
-      !variables ||
-      name === 'fields' ||
-      !collectionFieldRef.current ||
-      hasPreloadData
-    ) {
+    if (shouldNotLazyLoad) {
       return;
     }
 
@@ -97,7 +111,7 @@ const useLazyLoadDisplayAssociationFieldsOfForm = () => {
       .catch((err) => {
         console.error(err);
       });
-  }, [sourceKeyValue]);
+  }, [sourceKeyValue, shouldNotLazyLoad]);
 };
 
 export default useLazyLoadDisplayAssociationFieldsOfForm;

@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { get, cloneDeep } from 'lodash';
 
 export type Scope = { [key: string]: any };
@@ -11,7 +20,7 @@ export function appendArrayColumn(scope, key) {
     const path = paths[p];
     const isIndex = path.match(/^\d+$/);
     if (Array.isArray(data) && !isIndex && !data[path]) {
-      data[path] = data.map((item) => item[path]);
+      data[path] = data.map((item) => item[path]).flat();
     }
     data = data?.[path];
   }

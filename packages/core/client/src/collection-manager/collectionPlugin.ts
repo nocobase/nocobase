@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Plugin } from '../application/Plugin';
 
 import { InheritanceCollectionMixin } from './mixins/InheritanceCollectionMixin';
@@ -40,6 +49,9 @@ import {
   UpdatedByFieldInterface,
   UrlFieldInterface,
   SortFieldInterface,
+  UUIDFieldInterface,
+  NanoidFieldInterface,
+  UnixTimestampFieldInterface,
 } from './interfaces';
 import {
   GeneralCollectionTemplate,
@@ -79,7 +91,11 @@ export class CollectionPlugin extends Plugin {
     this.addCollectionTemplates();
     this.addFieldInterfaces();
     this.addFieldInterfaceGroups();
+    this.addMainDataSource();
+  }
 
+  addMainDataSource() {
+    if (this.options?.config?.enableRemoteDataSource === false) return;
     this.dataSourceManager.addDataSource(MainDataSource, {
       key: DEFAULT_DATA_SOURCE_KEY,
       displayName: DEFAULT_DATA_SOURCE_TITLE,
@@ -155,6 +171,9 @@ export class CollectionPlugin extends Plugin {
       UpdatedByFieldInterface,
       UrlFieldInterface,
       SortFieldInterface,
+      UUIDFieldInterface,
+      NanoidFieldInterface,
+      UnixTimestampFieldInterface,
     ]);
   }
 

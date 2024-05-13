@@ -1,5 +1,14 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Database } from '@nocobase/database';
-import { MockServer, createMockServer } from '@nocobase/test';
+import { createMockServer, MockServer } from '@nocobase/test';
 
 describe('action test', () => {
   let app: MockServer;
@@ -15,6 +24,35 @@ describe('action test', () => {
 
   afterEach(async () => {
     await app.destroy();
+  });
+
+  test('get parent property', async () => {
+    await app
+      .agent()
+      .resource('uiSchemas')
+      .insert({
+        values: {
+          'x-uid': 'n1',
+          name: 'a',
+          type: 'object',
+          properties: {
+            b: {
+              'x-uid': 'n2',
+              type: 'object',
+              properties: {
+                c: { 'x-uid': 'n3' },
+              },
+            },
+            d: { 'x-uid': 'n4' },
+          },
+        },
+      });
+
+    const response = await app.agent().resource('uiSchemas').getParentProperty({
+      filterByTk: 'n2',
+    });
+
+    expect(response.body.data['x-uid']).toEqual('n1');
   });
 
   test('insert action', async () => {
@@ -280,5 +318,46 @@ describe('action test', () => {
     });
 
     expect(response.statusCode).toEqual(200);
+  });
+
+  test('save as template', async () => {
+    await app
+      .agent()
+      .resource('uiSchemas')
+      .insert({
+        values: {
+          'x-uid': 'n1',
+          name: 'a',
+          type: 'object',
+          properties: {
+            b: {
+              'x-uid': 'n2',
+              type: 'object',
+              properties: {
+                c: { 'x-uid': 'n3' },
+              },
+            },
+            d: { 'x-uid': 'n4' },
+          },
+        },
+      });
+
+    const response = await app
+      .agent()
+      .resource('uiSchemas')
+      .saveAsTemplate({
+        filterByTk: 'n1',
+        values: {
+          key: 'yiod22qkyhl',
+          dataSourceKey: 'main',
+          name: 'test',
+          uid: 'n1',
+        },
+      });
+
+    expect(response.statusCode).toEqual(200);
+
+    const template = await app.db.getRepository('uiSchemaTemplates').findOne({});
+    expect(template.uid).toEqual('n1');
   });
 });

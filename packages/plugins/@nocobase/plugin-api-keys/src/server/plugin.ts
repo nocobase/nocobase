@@ -1,24 +1,20 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Plugin } from '@nocobase/server';
-import { resolve } from 'path';
-import { NAMESPACE } from '../constants';
 import { create, destroy } from './actions/api-keys';
-import { enUS, zhCN } from './locale';
 
-export interface ApiKeysPluginConfig {
-  name?: string;
-}
-
-export default class ApiKeysPlugin extends Plugin<ApiKeysPluginConfig> {
+export class PluginAPIKeysServer extends Plugin {
   resourceName = 'apiKeys';
-  constructor(app, options) {
-    super(app, options);
-  }
 
   async beforeLoad() {
-    this.app.i18n.addResources('zh-CN', NAMESPACE, zhCN);
-    this.app.i18n.addResources('en-US', NAMESPACE, enUS);
-
-    await this.app.resourcer.define({
+    this.app.resourcer.define({
       name: this.resourceName,
       actions: {
         create,
@@ -34,18 +30,25 @@ export default class ApiKeysPlugin extends Plugin<ApiKeysPluginConfig> {
   }
 
   async load() {
-    await this.importCollections(resolve(__dirname, '../collections'));
-
-    this.app.resourcer.use(async (ctx, next) => {
-      const { resourceName, actionName } = ctx.action.params;
-      if (resourceName == this.resourceName && ['list', 'destroy'].includes(actionName)) {
-        ctx.action.mergeParams({
-          filter: {
-            createdById: ctx.auth.user.id,
-          },
-        });
-      }
-      await next();
-    });
+    this.app.resourcer.use(
+      async (ctx, next) => {
+        const { resourceName, actionName } = ctx.action;
+        if (resourceName === this.resourceName && ['list', 'destroy'].includes(actionName)) {
+          ctx.action.mergeParams({
+            filter: {
+              createdById: ctx.auth.user.id,
+            },
+          });
+        }
+        await next();
+      },
+      {
+        group: 'apiKeys',
+        before: 'acl',
+        after: 'auth',
+      },
+    );
   }
 }
+
+export default PluginAPIKeysServer;

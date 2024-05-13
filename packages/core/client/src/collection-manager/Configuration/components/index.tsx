@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Field } from '@formily/core';
 import { observer, useField, useForm } from '@formily/react';
 import { Select, AutoComplete } from 'antd';
@@ -221,11 +230,11 @@ export const ForeignKey = observer(
     const { getCollection } = useCollectionManager_deprecated();
     const record = useRecord();
     const field: any = useField();
-    const { collectionName, target, type, through, name } = record;
+    const { collectionName, target, type, through, name, template } = record;
     const value = record[field.props.name];
     const compile = useCompile();
     const form = useForm();
-    const [initialValue, setInitialValue] = useState(value || field.initialValue);
+    const [initialValue, setInitialValue] = useState(value || (template === 'view' ? null : field.initialValue));
     useEffect(() => {
       const effectField = ['belongsTo'].includes(type)
         ? collectionName
@@ -251,9 +260,10 @@ export const ForeignKey = observer(
         }
       }
     }, [type]);
+    const Compoent = template === 'view' ? Select : AutoComplete;
     return (
       <div>
-        <AutoComplete
+        <Compoent
           disabled={disabled}
           value={initialValue}
           options={options}
@@ -283,7 +293,7 @@ export const ForeignKey = observer(
           }}
           onChange={(value, option) => {
             props?.onChange?.(value);
-            setInitialValue(option.label);
+            setInitialValue(option.label || value);
           }}
         />
       </div>
@@ -324,6 +334,17 @@ export const ThroughCollection = observer(
         setInitialValue(option?.label || value);
       }
     }, []);
+    const handleSearch = (value: string) => {
+      const data = loadCollections();
+      if (value) {
+        const filteredOptions = data.filter((option) => {
+          return option.label.toLowerCase().includes(value.toLowerCase());
+        });
+        setOptions(filteredOptions);
+      } else {
+        setOptions(data);
+      }
+    };
     return (
       <div>
         <AutoComplete
@@ -332,9 +353,10 @@ export const ThroughCollection = observer(
           popupMatchSelectWidth={false}
           value={initialValue}
           options={options}
+          onSearch={handleSearch}
           onChange={(value, option) => {
             props?.onChange?.(value);
-            setInitialValue(option.label);
+            setInitialValue(option.label || value);
           }}
         />
       </div>

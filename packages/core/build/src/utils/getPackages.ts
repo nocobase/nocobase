@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import Topo from '@hapi/topo';
 import fg from 'fast-glob';
 import path from 'path';
@@ -10,6 +19,7 @@ import { toUnixPath } from './utils';
  * 获取构建包的绝对路径，支持项目路径和 npm 两种形式
  * @example
  * yarn build packages/core/client @nocobase/acl => ['/home/xx/packages/core/client', '/home/xx/packages/core/acl']
+ * yarn build packages/plugins/* => ['/home/xx/packages/plugins/a', '/home/xx/packages/plugins/b']
  * yarn build => all packages
  */
 function getPackagesPath(pkgs: string[]) {
@@ -24,7 +34,6 @@ function getPackagesPath(pkgs: string[]) {
     return allPackageJson
       .map(toUnixPath).map(item => path.dirname(item));
   }
-
   const allPackageInfo = allPackageJson
     .map(packageJsonPath => ({ name: require(packageJsonPath).name, path: path.dirname(toUnixPath(packageJsonPath)) }))
     .reduce((acc, cur) => {
@@ -37,7 +46,9 @@ function getPackagesPath(pkgs: string[]) {
   const relativePaths = pkgNames.length ? pkgs.filter(item => !pkgNames.includes(item)) : pkgs;
   const pkgPaths = pkgs.map(item => allPackageInfo[item])
   const absPaths = allPackagePaths.filter(absPath => relativePaths.some((relativePath) => absPath.endsWith(relativePath)));
-  return [...pkgPaths, ...absPaths];
+  const dirPaths = fg.sync(pkgs, { onlyDirectories: true, absolute: true, cwd: ROOT_PATH });
+  const dirMatchPaths = allPackagePaths.filter(pkgPath => dirPaths.some(dirPath => pkgPath.startsWith(dirPath)));
+  return [...new Set([...pkgPaths, ...absPaths, ...dirMatchPaths])];
 }
 
 export function getPackages(pkgs: string[]) {

@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Alert, Slider } from 'antd';
 import React from 'react';
 
@@ -29,7 +38,7 @@ export function CanvasContent({ entry }) {
             {workflow?.executed ? (
               <Alert
                 type="warning"
-                message={lang('Executed workflow cannot be modified')}
+                message={lang('Executed workflow cannot be modified. Could be copied to a new version to modify.')}
                 showIcon
                 className={css`
                   margin-bottom: 1em;

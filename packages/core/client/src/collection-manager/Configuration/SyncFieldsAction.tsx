@@ -1,9 +1,18 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { PlusOutlined } from '@ant-design/icons';
 import { ArrayTable } from '@formily/antd-v5';
 import { useField, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
 import { Button } from 'antd';
-import { cloneDeep } from 'lodash';
+import { cloneDeep, omit } from 'lodash';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient, useRequest } from '../../api-client';
@@ -138,7 +147,7 @@ const useSyncFromDatabase = () => {
       try {
         await api.resource(`collections`).setFields({
           filterByTk,
-          values: form.values,
+          values: omit(form.values, 'preview'),
         });
         ctx.setVisible(false);
         await form.reset();

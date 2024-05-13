@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { observer, useField, useFieldSchema, useForm } from '@formily/react';
 import { Space, Spin, Tag } from 'antd';
 import dayjs from 'dayjs';
@@ -24,10 +33,10 @@ import WorkflowPlugin, {
   linkNodes,
   useAvailableUpstreams,
   useFlowContext,
+  DetailsBlockProvider,
 } from '@nocobase/plugin-workflow/client';
 
 import { NAMESPACE, useLang } from '../locale';
-import { DetailsBlockProvider } from './instruction/DetailsBlockProvider';
 import { FormBlockProvider } from './instruction/FormBlockProvider';
 import { ManualFormType, manualFormTypes } from './instruction/SchemaConfig';
 
@@ -245,9 +254,9 @@ export const WorkflowTodo: React.FC & { Drawer: React.FC; Decorator: React.FC } 
                 'x-action': 'filter',
                 'x-designer': 'Filter.Action.Designer',
                 'x-component': 'Filter.Action',
+                'x-use-component-props': 'useFilterActionProps',
                 'x-component-props': {
                   icon: 'FilterOutlined',
-                  useProps: '{{ useFilterActionProps }}',
                 },
                 'x-align': 'left',
               },
@@ -256,12 +265,12 @@ export const WorkflowTodo: React.FC & { Drawer: React.FC; Decorator: React.FC } 
                 title: '{{ t("Refresh") }}',
                 'x-action': 'refresh',
                 'x-component': 'Action',
+                'x-use-component-props': 'useRefreshActionProps',
                 // 'x-designer': 'Action.Designer',
                 'x-toolbar': 'ActionSchemaToolbar',
                 'x-settings': 'actionSettings:refresh',
                 'x-component-props': {
                   icon: 'ReloadOutlined',
-                  useProps: '{{ useRefreshActionProps }}',
                 },
                 'x-align': 'right',
               },
@@ -270,9 +279,9 @@ export const WorkflowTodo: React.FC & { Drawer: React.FC; Decorator: React.FC } 
           table: {
             type: 'array',
             'x-component': 'TableV2',
+            'x-use-component-props': 'useTableBlockProps',
             'x-component-props': {
               rowKey: 'id',
-              useProps: '{{ useTableBlockProps }}',
             },
             properties: {
               actions: {

@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { ISchema, useField, useFieldSchema, useForm } from '@formily/react';
 import React from 'react';
 import { useCollectionManager_deprecated } from '../../../collection-manager';
@@ -10,6 +19,7 @@ import {
 } from '../../../schema-settings';
 import { useCompile, useDesignable } from '../../hooks';
 import { useActionContext } from '../action';
+import _ from 'lodash';
 
 const useLabelFields = (collectionName?: any) => {
   const compile = useCompile();
@@ -122,10 +132,10 @@ export const TableColumnDesigner = (props) => {
           value={fieldSchema?.['x-component-props']?.['fieldNames']?.['label']}
           onChange={(label) => {
             const fieldNames = {
-              ...fieldSchema['x-component-props']['fieldNames'],
+              ...fieldSchema['x-component-props']?.['fieldNames'],
               label,
             };
-            fieldSchema['x-component-props']['fieldNames'] = fieldNames;
+            _.set(fieldSchema, 'x-component-props.fieldNames', fieldNames);
             field.query(`.*.${fieldSchema.name}`).take((f) => {
               f.componentProps.fieldNames = fieldNames;
             });

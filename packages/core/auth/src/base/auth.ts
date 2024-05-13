@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Collection, Model } from '@nocobase/database';
 import { Auth, AuthConfig } from '../auth';
 import { JwtService } from './jwt-service';
@@ -24,6 +33,9 @@ export class BaseAuth extends Auth {
     return this.userCollection.repository;
   }
 
+  /**
+   * @internal
+   */
   get jwt(): JwtService {
     return this.ctx.app.authManager.jwt;
   }
@@ -36,10 +48,17 @@ export class BaseAuth extends Auth {
     return this.ctx.state.currentUser;
   }
 
+  /**
+   * @internal
+   */
+
   getCacheKey(userId: number) {
     return `auth:${userId}`;
   }
 
+  /**
+   * @internal
+   */
   validateUsername(username: string) {
     return /^[^@.<>"'/]{2,16}$/.test(username);
   }
@@ -80,7 +99,7 @@ export class BaseAuth extends Auth {
     try {
       user = await this.validate();
     } catch (err) {
-      this.ctx.throw(401, err.message);
+      this.ctx.throw(err.status || 401, err.message);
     }
     if (!user) {
       this.ctx.throw(401, 'Unauthorized');

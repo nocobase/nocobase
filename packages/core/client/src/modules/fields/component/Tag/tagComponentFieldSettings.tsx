@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Field } from '@formily/core';
 import { useField, useFieldSchema } from '@formily/react';
 import { useTranslation } from 'react-i18next';
@@ -8,7 +17,7 @@ import { isSubMode } from '../../../../schema-component/antd/association-field/u
 import { useTitleFieldOptions } from '../../../../schema-component/antd/form-item/FormItem.Settings';
 import { useColorFields } from '../../../../schema-component/antd/table-v2/Table.Column.Designer';
 import { useColumnSchema } from '../../../../schema-component/antd/table-v2/Table.Column.Decorator';
-import { useCollectionField } from '../utils';
+import { useCollectionField } from '../../../../data-source';
 
 const enableLink = {
   name: 'enableLink',
@@ -61,7 +70,7 @@ const titleField: any = {
     return {
       title: t('Title field'),
       options,
-      value: field?.componentProps?.fieldNames?.label,
+      value: fieldSchema?.['x-component-props']?.['fieldNames']?.label,
       onChange(label) {
         const schema = {
           ['x-uid']: fieldSchema['x-uid'],
@@ -140,14 +149,17 @@ export const tagComponentFieldSettings = new SchemaSettings({
       useComponentProps() {
         const { t } = useTranslation();
         const field = useField<Field>();
-        const fieldSchema = useFieldSchema();
+        const schema = useFieldSchema();
+        const targetCollectionField = useCollectionField();
+        const { fieldSchema: tableColumnSchema, collectionField: tableColumnField } = useColumnSchema();
+        const fieldSchema = tableColumnSchema || schema;
+        const collectionField = tableColumnField || targetCollectionField;
         const { dn } = useDesignable();
-        const collectionField = useCollectionField();
         const colorFieldOptions = useColorFields(collectionField?.target ?? collectionField?.targetCollection);
         return {
           title: t('Tag color field'),
           options: colorFieldOptions,
-          value: field?.componentProps?.tagColorField,
+          value: fieldSchema?.['x-component-props']?.['tagColorField'],
           onChange(tagColorField) {
             const schema = {
               ['x-uid']: fieldSchema['x-uid'],

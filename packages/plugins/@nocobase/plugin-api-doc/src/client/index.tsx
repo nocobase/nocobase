@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { RightOutlined } from '@ant-design/icons';
 import { Plugin } from '@nocobase/client';
 import { Button, Tooltip } from 'antd';
@@ -37,7 +46,7 @@ const SCDocumentation = () => {
   );
 };
 
-export class APIDocumentationPlugin extends Plugin {
+export class PluginAPIDocClient extends Plugin {
   async load() {
     this.app.pluginSettingsManager.add(NAMESPACE, {
       title: `{{t("API documentation", { ns: "${NAMESPACE}" })}}`,
@@ -53,4 +62,4 @@ export class APIDocumentationPlugin extends Plugin {
   }
 }
 
-export default APIDocumentationPlugin;
+export default PluginAPIDocClient;

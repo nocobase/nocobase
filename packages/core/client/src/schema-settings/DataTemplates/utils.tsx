@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { ArrayBase } from '@formily/antd-v5';
 import { useForm } from '@formily/react';
 import { message } from 'antd';
@@ -184,7 +193,7 @@ export const useSyncFromForm = (fieldSchema, collection?, callBack?) => {
             selectFields.add(path);
           }
           if (collectionfield && (isAssociationField || isAssociationSubfield) && s['x-component'] !== 'TableField') {
-            formData.add({ name: path, fieldMode: s['x-component-props']['mode'] || 'Select' });
+            formData.add({ name: path, fieldMode: s['x-component-props']?.['mode'] || 'Select' });
             if (['Nester', 'SubTable'].includes(s['x-component-props']?.mode)) {
               const bufPrefix = prefix && prefix !== '' ? prefix + '.' + s.name : s.name;
               getAssociationAppends(s, bufPrefix);

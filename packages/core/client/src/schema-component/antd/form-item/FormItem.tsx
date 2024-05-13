@@ -1,12 +1,22 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { css, cx } from '@emotion/css';
-import { FormItem as Item } from '@formily/antd-v5';
+import { IFormItemProps, FormItem as Item } from '@formily/antd-v5';
 import { Field } from '@formily/core';
 import { observer, useField, useFieldSchema } from '@formily/react';
-import React, { useEffect, useMemo } from 'react';
+import React, { FC, useEffect, useMemo } from 'react';
 import { ACLCollectionFieldProvider } from '../../../acl/ACLProvider';
 import { useApp } from '../../../application';
 import { useFormActiveFields } from '../../../block-provider/hooks/useFormActiveFields';
 import { Collection_deprecated } from '../../../collection-manager';
+import { CollectionFieldProvider } from '../../../data-source/collection-field/CollectionFieldProvider';
 import { GeneralSchemaDesigner } from '../../../schema-settings';
 import { useVariables } from '../../../variables';
 import useContextVariable from '../../../variables/hooks/useContextVariable';
@@ -16,10 +26,23 @@ import { FilterFormDesigner } from './FormItem.FilterFormDesigner';
 import { useEnsureOperatorsValid } from './SchemaSettingOptions';
 import useLazyLoadDisplayAssociationFieldsOfForm from './hooks/useLazyLoadDisplayAssociationFieldsOfForm';
 import useParseDefaultValue from './hooks/useParseDefaultValue';
-import { CollectionFieldProvider } from '../../../data-source';
+
+Item.displayName = 'FormilyFormItem';
+
+const formItemWrapCss = css`
+  & .ant-space {
+    flex-wrap: wrap;
+  }
+`;
+
+const formItemLabelCss = css`
+  > .ant-formily-item-label {
+    display: none;
+  }
+`;
 
 export const FormItem: any = observer(
-  (props: any) => {
+  (props: IFormItemProps) => {
     useEnsureOperatorsValid();
     const field = useField<Field>();
     const schema = useFieldSchema();
@@ -52,31 +75,19 @@ export const FormItem: any = observer(
       );
     }, [field.description]);
     const className = useMemo(() => {
-      return cx(
-        css`
-          & .ant-space {
-            flex-wrap: wrap;
-          }
-        `,
-        {
-          [css`
-            > .ant-formily-item-label {
-              display: none;
-            }
-          `]: showTitle === false,
-        },
-      );
+      return cx(formItemWrapCss, {
+        [formItemLabelCss]: showTitle === false,
+      });
     }, [showTitle]);
-    const fieldSchema = useFieldSchema();
 
     return (
-      <BlockItem className={'nb-form-item'}>
-        <CollectionFieldProvider name={fieldSchema.name} allowNull={!fieldSchema['x-collection-field']}>
+      <CollectionFieldProvider allowNull={true}>
+        <BlockItem className={'nb-form-item'}>
           <ACLCollectionFieldProvider>
             <Item className={className} {...props} extra={extra} />
           </ACLCollectionFieldProvider>
-        </CollectionFieldProvider>
-      </BlockItem>
+        </BlockItem>
+      </CollectionFieldProvider>
     );
   },
   { displayName: 'FormItem' },

@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import type { Field } from '@formily/core';
 import { ISchema, useForm } from '@formily/react';
 import {
@@ -78,7 +87,7 @@ const recordPickerViewer = {
       type: 'void',
       'x-component': 'Tabs',
       'x-component-props': {},
-      // 'x-initializer': 'TabPaneInitializers',
+      // 'x-initializer': 'popup:addTab',
       properties: {
         tab1: {
           type: 'void',
@@ -90,7 +99,7 @@ const recordPickerViewer = {
             grid: {
               type: 'void',
               'x-component': 'Grid',
-              'x-initializer': 'SnapshotBlockInitializers',
+              'x-initializer': 'popup:snapshot:addBlock',
               properties: {},
             },
           },

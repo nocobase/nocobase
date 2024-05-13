@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { expect, test } from '@nocobase/test/e2e';
 import { getYmd } from '../helpers/other-helper';
 import { oneEmptyGantt } from './utils';
@@ -43,7 +52,7 @@ test.describe('configure params in gantt block', () => {
     await page.getByLabel('designer-schema-settings-CardItem-Gantt.Designer-general').hover();
     await page.getByRole('menuitem', { name: 'Title field' }).click();
     await page.getByRole('option', { name: 'Single line text2' }).locator('div').click();
-    await page.getByRole('button', { name: 'Actions' }).click();
+    await page.getByRole('button', { name: 'Actions', exact: true }).click();
     await page.mouse.move(300, 0);
     const barLabel = page.getByLabel('block-item-gantt').locator('.barLabel');
     await barLabel.hover();
@@ -57,7 +66,7 @@ test.describe('configure params in gantt block', () => {
     await page.getByRole('menuitem', { name: 'Start date field' }).click();
     await page.getByRole('option', { name: 'Start date time2' }).locator('div').click();
     await page.mouse.move(300, 0);
-    await page.getByRole('button', { name: 'Actions' }).click();
+    await page.getByRole('button', { name: 'Actions', exact: true }).click();
     await page.locator('.bar').hover({ position: { x: 20, y: 10 } });
     await expect(page.getByLabel('nb-gantt-tooltip')).toHaveText(
       new RegExp(String(getYmd(new Date(mockData['startDatetime2'])))),
@@ -72,7 +81,7 @@ test.describe('configure params in gantt block', () => {
     await page.getByRole('menuitem', { name: 'End date field' }).click();
     await page.getByRole('option', { name: 'End date time2' }).locator('div').click();
     await page.mouse.move(300, 0);
-    await page.getByRole('button', { name: 'Actions' }).click();
+    await page.getByRole('button', { name: 'Actions', exact: true }).click();
     await page.locator('.bar').hover({ position: { x: 20, y: 10 } });
     await expect(page.getByLabel('nb-gantt-tooltip')).toHaveText(
       new RegExp(String(getYmd(new Date(mockData['endDatetime2'])))),
@@ -88,7 +97,7 @@ test.describe('configure params in gantt block', () => {
     await page.getByRole('option', { name: 'Week' }).click();
     await page.getByRole('menuitem', { name: 'Time scale' }).hover();
     await page.mouse.move(300, 0);
-    await page.getByRole('button', { name: 'Actions' }).click();
+    await page.getByRole('button', { name: 'Actions', exact: true }).click();
     await page.locator('.bar').hover({ position: { x: 20, y: 10 } });
     await expect(page.locator('.calendarBottomText').first()).toHaveText(/W/);
   });

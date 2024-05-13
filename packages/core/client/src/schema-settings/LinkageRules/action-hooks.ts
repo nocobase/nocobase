@@ -1,8 +1,17 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { useTranslation } from 'react-i18next';
 import { useCollectionManager_deprecated } from '../../collection-manager';
 import { ActionType } from './type';
 
-export const useLinkageCollectionFieldOptions = (collectionName: string) => {
+export const useLinkageCollectionFieldOptions = (collectionName: string, readPretty: boolean) => {
   const { getCollectionFields, getInterface } = useCollectionManager_deprecated();
   const fields = getCollectionFields(collectionName).filter((v) => {
     return !['id', 'createdAt', 'createdBy', 'updatedAt', 'updatedBy'].includes(v.name);
@@ -18,7 +27,12 @@ export const useLinkageCollectionFieldOptions = (collectionName: string) => {
     { label: t('Required'), value: ActionType.Required, selected: false, schema: {} },
     { label: t('Not required'), value: ActionType.InRequired, selected: false, schema: {} },
     { label: t('Value'), value: ActionType.Value, selected: false, schema: {} },
-  ];
+  ].filter((v) => {
+    if (readPretty) {
+      return [ActionType.Visible, ActionType.None].includes(v.value);
+    }
+    return v;
+  });
   const field2option = (field, depth) => {
     const fieldInterface = getInterface(field.interface);
     if (!fieldInterface) {

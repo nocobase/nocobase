@@ -1,3 +1,16 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { Link, useNavigate } from 'react-router-dom';
+import { App, Breadcrumb, Button, Dropdown, Result, Spin, Switch, Tooltip, message } from 'antd';
 import { DownOutlined, EllipsisOutlined, RightOutlined } from '@ant-design/icons';
 import {
   ActionContextProvider,
@@ -10,10 +23,6 @@ import {
   useResourceContext,
 } from '@nocobase/client';
 import { str2moment } from '@nocobase/utils/client';
-import { App, Breadcrumb, Button, Dropdown, Result, Spin, Switch, message } from 'antd';
-import React, { useEffect, useState } from 'react';
-import { useTranslation } from 'react-i18next';
-import { Link, useNavigate } from 'react-router-dom';
 
 import { CanvasContent } from './CanvasContent';
 import { ExecutionLink } from './ExecutionLink';
@@ -21,9 +30,9 @@ import { FlowContext, useFlowContext } from './FlowContext';
 import { lang } from './locale';
 import { executionSchema } from './schemas/executions';
 import useStyles from './style';
-import { linkNodes } from './utils';
-import { getWorkflowDetailPath } from './constant';
+import { linkNodes, getWorkflowDetailPath } from './utils';
 import { ExecutionStatusColumn } from './components/ExecutionStatus';
+import { useRefreshActionProps } from './hooks/useRefreshActionProps';
 
 function ExecutionResourceProvider({ request, filter = {}, ...others }) {
   const { workflow } = useFlowContext();
@@ -64,7 +73,9 @@ export function WorkflowCanvas() {
     if (loading) {
       return <Spin />;
     }
-    return <Result status="404" title="Not found" />;
+    return (
+      <Result status="404" title="Not found" extra={<Button onClick={() => navigate(-1)}>{lang('Go back')}</Button>} />
+    );
   }
 
   const { nodes = [], revisions = [], ...workflow } = data?.data ?? {};
@@ -155,7 +166,13 @@ export function WorkflowCanvas() {
           <Breadcrumb
             items={[
               { title: <Link to={app.pluginSettingsManager.getRoutePath('workflow')}>{lang('Workflow')}</Link> },
-              { title: <strong>{workflow.title}</strong> },
+              {
+                title: (
+                  <Tooltip title={`Key: ${workflow.key}`}>
+                    <strong>{workflow.title}</strong>
+                  </Tooltip>
+                ),
+              },
             ]}
           />
         </header>
@@ -232,6 +249,9 @@ export function WorkflowCanvas() {
                 ExecutionResourceProvider,
                 ExecutionLink,
                 ExecutionStatusColumn,
+              }}
+              scope={{
+                useRefreshActionProps,
               }}
             />
           </ActionContextProvider>

@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import type { CollectionOptions, Collection } from '../collection';
 import type { ISchema } from '@formily/react';
 import type { CollectionTemplateManager } from './CollectionTemplateManager';
@@ -13,29 +22,28 @@ interface AvailableFieldInterfacesExclude {
 
 interface CollectionTemplateDefaultOptions {
   /**
-   * 自动生成 id
+   * Auto-generate id
    * @default true
    * */
   autoGenId?: boolean;
-  /** 创建人 */
+  /** Created by */
   createdBy?: boolean;
-  /** 最后更新人 */
+  /** Updated by */
   updatedBy?: boolean;
-  /** 创建日期 */
+  /** Created at */
   createdAt?: boolean;
-  /** 更新日期 */
+  /** Updated at */
   updatedAt?: boolean;
-  /** 可排序 */
+  /** Sortable */
   sortable?: boolean;
-  /* 树结构 */
+  /* Tree structure */
   tree?: string;
-  /* 日志 */
+  /* Logging */
   logging?: boolean;
-  /** 继承 */
+  /** Inherits */
   inherits?: string | string[];
-  /* 字段列表 */
+  /* Field list */
   fields?: CollectionOptions['fields'];
-  [key: string]: any;
 }
 
 export type CollectionTemplateFactory = new (
@@ -47,22 +55,22 @@ export abstract class CollectionTemplate {
   Collection?: typeof Collection;
   title?: string;
   color?: string;
-  /** 排序 */
+  /** Sorting */
   order?: number;
-  /** 默认配置 */
+  /** Default configuration */
   default?: CollectionTemplateDefaultOptions;
   events?: any;
-  /** UI 可配置的 CollectionOptions 参数（添加或编辑的 Collection 表单的字段） */
+  /** UI configurable CollectionOptions parameters (fields for adding or editing Collection forms) */
   configurableProperties?: Record<string, ISchema>;
-  /** 当前模板可用的字段类型 */
+  /** Available field types for the current template */
   availableFieldInterfaces?: AvailableFieldInterfacesInclude | AvailableFieldInterfacesExclude;
-  /** 是否分割线 */
+  /** Whether it is a divider */
   divider?: boolean;
-  /** 模板描述 */
+  /** Template description */
   description?: string;
-  /**配置字段中的操作按钮 */
+  /** Configure buttons in the configuration fields */
   configureActions?: Record<string, ISchema>;
-  //是否禁止删除字段
+  // Whether to prohibit deleting fields
   forbidDeletion?: boolean;
 
   supportDataSourceType?: string[];

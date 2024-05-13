@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import minimatch from 'minimatch';
 
 export type SnippetOptions = {
@@ -21,6 +30,12 @@ class SnippetManager {
   public snippets: Map<string, Snippet> = new Map();
 
   register(snippet: SnippetOptions) {
+    const name = snippet.name;
+    // throw error if name include * or end with dot
+    if (name.includes('*') || name.endsWith('.')) {
+      throw new Error(`Invalid snippet name: ${name}, name should not include * or end with dot.`);
+    }
+
     this.snippets.set(snippet.name, snippet);
   }
 
@@ -31,7 +46,7 @@ class SnippetManager {
     const snippet = this.snippets.get(snippetName);
 
     if (!snippet) {
-      throw new Error(`Snippet ${snippetName} not found`);
+      return null;
     }
 
     const matched = snippet.actions.some((action) => minimatch(actionPath, action));

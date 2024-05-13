@@ -1,9 +1,19 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { ISchema, useField, useFieldSchema } from '@formily/react';
 import _ from 'lodash';
 import { useTranslation } from 'react-i18next';
 import { SchemaSettings } from '../../../../application/schema-settings/SchemaSettings';
 import { useFormBlockContext } from '../../../../block-provider';
 import { useCollectionManager_deprecated, useCollection_deprecated } from '../../../../collection-manager';
+import { useCollectionManager } from '../../../../data-source/collection/CollectionManagerProvider';
 import { useCompile, useDesignable } from '../../../../schema-component';
 import { SchemaSettingsDefaultSortingRules } from '../../../../schema-settings';
 import { SchemaSettingsDataScope } from '../../../../schema-settings/SchemaSettingsDataScope';
@@ -80,7 +90,7 @@ export const filterCollapseItemFieldSettings = new SchemaSettings({
                 checked: field.componentProps.defaultCollapse,
                 onChange: (v) => {
                   field.componentProps.defaultCollapse = v;
-                  fieldSchema['x-component-props']['defaultCollapse'] = v;
+                  _.set(fieldSchema, 'x-component-props.defaultCollapse', v);
                   dn.emit('patch', {
                     schema: {
                       ['x-uid']: fieldSchema['x-uid'],
@@ -150,10 +160,10 @@ export const filterCollapseItemFieldSettings = new SchemaSettings({
               const { getField } = useCollection_deprecated();
               const collectionField =
                 getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field']);
-              const { getCollectionFields } = useCollectionManager_deprecated();
+              const cm = useCollectionManager();
               const compile = useCompile();
               const { dn } = useDesignable();
-              const targetFields = collectionField?.target ? getCollectionFields(collectionField?.target) : [];
+              const targetFields = collectionField?.target ? cm.getCollectionFields(collectionField?.target) : [];
               const options = targetFields
                 .filter((field) => !field?.target && field.type !== 'boolean')
                 .map((field) => ({

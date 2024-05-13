@@ -1,23 +1,33 @@
-import { useDeepCompareEffect, useUpdateEffect } from 'ahooks';
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import React, { FC, createContext, useContext, useMemo } from 'react';
 
+import _ from 'lodash';
 import { UseRequestResult, useAPIClient, useRequest } from '../../api-client';
-import { CollectionRecordProvider, CollectionRecord } from '../collection-record';
+import { useDataLoadingMode } from '../../modules/blocks/data-blocks/details-multi/setDataLoadingModeSettingsItem';
+import { useSourceKey } from '../../modules/blocks/useSourceKey';
+import { CollectionRecord, CollectionRecordProvider } from '../collection-record';
+import { useDataSourceHeaders } from '../utils';
 import { AllDataBlockProps, useDataBlockProps } from './DataBlockProvider';
 import { useDataBlockResource } from './DataBlockResourceProvider';
-import { useDataSourceHeaders } from '../utils';
 
 export const BlockRequestContext = createContext<UseRequestResult<any>>(null);
 BlockRequestContext.displayName = 'BlockRequestContext';
 
 function useCurrentRequest<T>(options: Omit<AllDataBlockProps, 'type'>) {
+  const dataLoadingMode = useDataLoadingMode();
   const resource = useDataBlockResource();
   const { action, params = {}, record, requestService, requestOptions } = options;
-  if (params.filterByTk === undefined) {
-    delete params.filterByTk;
-  }
-  const request = useRequest<T>(
-    requestService
+
+  const service = useMemo(() => {
+    return requestService
       ? requestService
       : (customParams) => {
           if (record) return Promise.resolve({ data: record });
@@ -26,28 +36,45 @@ function useCurrentRequest<T>(options: Omit<AllDataBlockProps, 'type'>) {
               `[nocobase]: The 'action' parameter is missing in the 'DataBlockRequestProvider' component`,
             );
           }
-          return resource[action]({ ...params, ...customParams }).then((res) => res.data);
-        },
-    {
-      ...requestOptions,
-      manual: true,
-    },
-  );
+          const paramsValue = params.filterByTk === undefined ? _.omit(params, 'filterByTk') : params;
 
-  // 因为修改 Schema 会导致 params 对象发生变化，所以这里使用 `DeepCompare`
-  useDeepCompareEffect(() => {
-    if (action) {
-      request.run();
-    }
-  }, [params, action, record]);
+          return resource[action]({ ...paramsValue, ...customParams }).then((res) => res.data);
+        };
+  }, [resource, action, JSON.stringify(params), JSON.stringify(record), requestService]);
 
-  useUpdateEffect(() => {
-    if (action) {
-      request.run();
-    }
-  }, [resource]);
+  const request = useRequest<T>(service, {
+    ...requestOptions,
+    manual: dataLoadingMode === 'manual',
+    ready: !!action,
+    refreshDeps: [action, JSON.stringify(params), JSON.stringify(record), resource],
+  });
 
   return request;
+}
+
+export async function requestParentRecordData({
+  sourceId,
+  association,
+  parentRecord,
+  api,
+  headers,
+  sourceKey,
+}: {
+  sourceId?: number;
+  association?: string;
+  parentRecord?: any;
+  api?: any;
+  headers?: any;
+  sourceKey?: string;
+}) {
+  if (parentRecord) return Promise.resolve({ data: parentRecord });
+  if (!association || !sourceKey || !sourceId) return Promise.resolve({ data: undefined });
+  // "association": "Collection.Field"
+  const arr = association.split('.');
+  // <collection>:get?filter[filterKey]=sourceId
+  const url = `${arr[0]}:get?filter[${sourceKey}]=${sourceId}`;
+  const res = await api.request({ url, headers });
+  return res.data;
 }
 
 function useParentRequest<T>(options: Omit<AllDataBlockProps, 'type'>) {
@@ -55,16 +82,10 @@ function useParentRequest<T>(options: Omit<AllDataBlockProps, 'type'>) {
   const api = useAPIClient();
   const dataBlockProps = useDataBlockProps();
   const headers = useDataSourceHeaders(dataBlockProps.dataSource);
+  const sourceKey = useSourceKey(association);
   return useRequest<T>(
-    async () => {
-      if (parentRecord) return Promise.resolve({ data: parentRecord });
-      if (!association) return Promise.resolve({ data: undefined });
-      // "association": "Collection.Field"
-      const arr = association.split('.');
-      // <collection>:get/<filterByTk>
-      const url = `${arr[0]}:get/${sourceId}`;
-      const res = await api.request({ url, headers });
-      return res.data;
+    () => {
+      return requestParentRecordData({ sourceId, association, parentRecord, api, headers, sourceKey });
     },
     {
       refreshDeps: [association, parentRecord, sourceId],
@@ -86,6 +107,7 @@ export const BlockRequestProvider: FC = ({ children }) => {
     requestOptions,
     requestService,
   } = props;
+
   const currentRequest = useCurrentRequest<{ data: any }>({
     action,
     sourceId,
@@ -114,7 +136,7 @@ export const BlockRequestProvider: FC = ({ children }) => {
     <BlockRequestContext.Provider value={currentRequest}>
       {action !== 'list' ? (
         <CollectionRecordProvider
-          isNew={action === undefined}
+          isNew={action == null}
           record={currentRequest.data?.data}
           parentRecord={memoizedParentRecord}
         >
@@ -131,9 +153,5 @@ export const BlockRequestProvider: FC = ({ children }) => {
 
 export const useDataBlockRequest = <T extends {}>(): UseRequestResult<{ data: T }> => {
   const context = useContext(BlockRequestContext);
-  if (!context) {
-    throw new Error('useDataBlockRequest() must be used within a DataBlockRequestProvider');
-  }
-
   return context;
 };

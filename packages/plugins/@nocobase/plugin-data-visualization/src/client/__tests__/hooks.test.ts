@@ -1,13 +1,21 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import * as client from '@nocobase/client';
 import { renderHook } from '@testing-library/react';
 import { vi } from 'vitest';
-import formatters from '../block/formatters';
-import transformers from '../block/transformers';
+import formatters from '../configure/formatters';
+import transformers from '../transformers';
 import {
   useChartFields,
   useFieldsWithAssociation,
   useFieldTransformer,
-  useFieldTypes,
   useFormatters,
   useOrderFieldsOptions,
   useTransformers,
@@ -15,66 +23,72 @@ import {
 
 describe('hooks', () => {
   beforeEach(() => {
-    vi.spyOn(client, 'useCollectionManager_deprecated').mockReturnValue({
-      getCollectionFields: (name: string) =>
-        ({
-          orders: [
-            {
-              interface: 'string',
-              name: 'name',
-              uiSchema: {
-                title: '{{t("Name")}}',
-              },
-              type: 'string',
-            },
-            {
-              interface: 'number',
-              name: 'price',
-              uiSchema: {
-                title: '{{t("Price")}}',
-              },
-              type: 'double',
-            },
-            {
-              interface: 'createdAt',
-              name: 'createdAt',
-              uiSchema: {
-                title: '{{t("Created At")}}',
-              },
-              type: 'date',
-            },
-            {
-              interface: 'm2o',
-              name: 'user',
-              uiSchema: {
-                title: '{{t("User")}}',
-              },
-              target: 'users',
-              type: 'belongsTo',
-            },
-          ],
-          users: [
-            {
-              interface: 'string',
-              name: 'name',
-              uiSchema: {
-                title: '{{t("Name")}}',
-              },
-              type: 'string',
-            },
-          ],
-        })[name],
-      getInterface: (i: string) => {
-        switch (i) {
-          case 'm2o':
-            return {
-              filterable: {
-                nested: true,
-              },
-            };
-          default:
-            return {};
-        }
+    vi.spyOn(client, 'useDataSourceManager').mockReturnValue({
+      getDataSource: () => ({
+        collectionManager: {
+          getCollectionFields: (name: string) =>
+            ({
+              orders: [
+                {
+                  interface: 'string',
+                  name: 'name',
+                  uiSchema: {
+                    title: '{{t("Name")}}',
+                  },
+                  type: 'string',
+                },
+                {
+                  interface: 'number',
+                  name: 'price',
+                  uiSchema: {
+                    title: '{{t("Price")}}',
+                  },
+                  type: 'double',
+                },
+                {
+                  interface: 'createdAt',
+                  name: 'createdAt',
+                  uiSchema: {
+                    title: '{{t("Created At")}}',
+                  },
+                  type: 'date',
+                },
+                {
+                  interface: 'm2o',
+                  name: 'user',
+                  uiSchema: {
+                    title: '{{t("User")}}',
+                  },
+                  target: 'users',
+                  type: 'belongsTo',
+                },
+              ],
+              users: [
+                {
+                  interface: 'string',
+                  name: 'name',
+                  uiSchema: {
+                    title: '{{t("Name")}}',
+                  },
+                  type: 'string',
+                },
+              ],
+            })[name],
+        },
+      }),
+      collectionFieldInterfaceManager: {
+        getFieldInterface: (i: string) => {
+          switch (i) {
+            case 'm2o':
+              return {
+                filterable: {
+                  nested: true,
+                },
+              };
+            default:
+              return {};
+          }
+        },
       },
     } as any);
   });
@@ -84,7 +98,7 @@ describe('hooks', () => {
   });
 
   test('useFieldsWithAssociation', () => {
-    const { result } = renderHook(() => useFieldsWithAssociation('orders'));
+    const { result } = renderHook(() => useFieldsWithAssociation('main', 'orders'));
     expect(result.current).toMatchObject([
       {
         key: 'name',
@@ -118,7 +132,7 @@ describe('hooks', () => {
   });
 
   test('useChartFields', () => {
-    const fields = renderHook(() => useFieldsWithAssociation('orders')).result.current;
+    const fields = renderHook(() => useFieldsWithAssociation('main', 'orders')).result.current;
     const { result } = renderHook(() => useChartFields(fields));
     const func = result.current;
     const field = {
@@ -155,7 +169,7 @@ describe('hooks', () => {
   });
 
   test('useFormatters', () => {
-    const fields = renderHook(() => useFieldsWithAssociation('orders')).result.current;
+    const fields = renderHook(() => useFieldsWithAssociation('main', 'orders')).result.current;
     const { result } = renderHook(() => useFormatters(fields));
     const func = result.current;
     const field = {
@@ -168,41 +182,6 @@ describe('hooks', () => {
     expect(field.dataSource).toEqual(formatters.datetime);
   });
 
-  test('useFieldTypes', () => {
-    const fields = renderHook(() => useFieldsWithAssociation('orders')).result.current;
-    const { result } = renderHook(() => useFieldTypes(fields));
-    const func = result.current;
-    let state1 = {};
-    let state2 = {};
-    const field = {
-      dataSource: [],
-      state: {},
-    };
-    const query = (path: string, val: string) => ({
-      get: () => {
-        if (path === 'query') {
-          return { measures: [{ field: ['price'] }, { field: ['name'] }] };
-        }
-        return val;
-      },
-    });
-    const field1 = {
-      query: (path: string) => query(path, 'price'),
-      setState: (state) => (state1 = state),
-      ...field,
-    };
-    const field2 = {
-      query: (path: string) => query(path, 'name'),
-      setState: (state) => (state2 = state),
-      ...field,
-    };
-    func(field1);
-    func(field2);
-    expect(field1.dataSource.map((item) => item.value)).toEqual(Object.keys(transformers));
-    expect(state1).toEqual({ value: 'number', disabled: true });
-    expect(state2).toEqual({ value: null, disabled: false });
-  });
-
   test('useTransformers', () => {
     const field = {
       query: () => ({
@@ -211,7 +190,9 @@ describe('hooks', () => {
       dataSource: [],
     };
     renderHook(() => useTransformers(field));
-    expect(field.dataSource.map((item) => item.value)).toEqual(Object.keys(transformers['datetime']));
+    expect(field.dataSource.map((item) => item.value)).toEqual(
+      Object.keys({ ...transformers['general'], ...transformers['datetime'] }),
+    );
   });
 
   test('useFieldTransformers', () => {
@@ -234,7 +215,7 @@ describe('hooks', () => {
   });
 
   test('useOrderFieldsOptions', () => {
-    const fields = renderHook(() => useFieldsWithAssociation('orders')).result.current;
+    const fields = renderHook(() => useFieldsWithAssociation('main', 'orders')).result.current;
     const { result } = renderHook(() => useOrderFieldsOptions([], fields));
     const func = result.current;
     const field1 = {

@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { CollectionSetting, PageConfig } from '@nocobase/test/e2e';
 
 /**
@@ -96,7 +105,7 @@ export const oneTableWithViewAction: PageConfig = {
         type: 'void',
         version: '2.0',
         'x-component': 'Grid',
-        'x-initializer': 'BlockInitializers',
+        'x-initializer': 'page:addBlock',
         _isJSONSchemaObject: true,
         properties: {
           '8xj4v8eg792': {
@@ -137,7 +146,7 @@ export const oneTableWithViewAction: PageConfig = {
                         type: 'void',
                         version: '2.0',
                         'x-component': 'ActionBar',
-                        'x-initializer': 'TableActionInitializers',
+                        'x-initializer': 'table:configureActions',
                         'x-component-props': {
                           style: {
                             marginBottom: 'var(--nb-spacing)',
@@ -152,7 +161,7 @@ export const oneTableWithViewAction: PageConfig = {
                         type: 'array',
                         version: '2.0',
                         'x-component': 'TableV2',
-                        'x-initializer': 'TableColumnInitializers',
+                        'x-initializer': 'table:configureColumns',
                         'x-component-props': {
                           rowKey: 'id',
                           useProps: '{{ useTableBlockProps }}',
@@ -169,7 +178,7 @@ export const oneTableWithViewAction: PageConfig = {
                             'x-designer': 'TableV2.ActionColumnDesigner',
                             'x-component': 'TableV2.Column',
                             'x-decorator': 'TableV2.Column.ActionBar',
-                            'x-initializer': 'TableActionColumnInitializers',
+                            'x-initializer': 'table:configureItemActions',
                             'x-action-column': 'actions',
                             _isJSONSchemaObject: true,
                             properties: {
@@ -230,7 +239,7 @@ export const oneTableWithViewAction: PageConfig = {
                                                     type: 'void',
                                                     version: '2.0',
                                                     'x-component': 'Grid',
-                                                    'x-initializer': 'RecordBlockInitializers',
+                                                    'x-initializer': 'popup:common:addBlock',
                                                     _isJSONSchemaObject: true,
                                                     properties: {
                                                       v9jpx7749ok: {
@@ -276,8 +285,7 @@ export const oneTableWithViewAction: PageConfig = {
                                                                         type: 'void',
                                                                         version: '2.0',
                                                                         'x-component': 'ActionBar',
-                                                                        'x-initializer':
-                                                                          'ReadPrettyFormActionInitializers',
+                                                                        'x-initializer': 'details:configureActions',
                                                                         'x-component-props': {
                                                                           style: {
                                                                             marginBottom: 24,
@@ -292,8 +300,7 @@ export const oneTableWithViewAction: PageConfig = {
                                                                         type: 'void',
                                                                         version: '2.0',
                                                                         'x-component': 'Grid',
-                                                                        'x-initializer':
-                                                                          'ReadPrettyFormItemInitializers',
+                                                                        'x-initializer': 'details:configureFields',
                                                                         _isJSONSchemaObject: true,
                                                                         'x-uid': 'kum0xpsh9se',
                                                                         'x-async': false,
@@ -392,7 +399,7 @@ export const oneCalenderWithViewAction: PageConfig = {
         type: 'void',
         version: '2.0',
         'x-component': 'Grid',
-        'x-initializer': 'BlockInitializers',
+        'x-initializer': 'page:addBlock',
         _isJSONSchemaObject: true,
         properties: {
           '8er4x7qwc0p': {
@@ -443,7 +450,7 @@ export const oneCalenderWithViewAction: PageConfig = {
                             type: 'void',
                             version: '2.0',
                             'x-component': 'CalendarV2.ActionBar',
-                            'x-initializer': 'CalendarActionInitializers',
+                            'x-initializer': 'calendar:configureActions',
                             'x-component-props': {
                               style: {
                                 marginBottom: 24,
@@ -503,7 +510,7 @@ export const oneCalenderWithViewAction: PageConfig = {
                                                 type: 'void',
                                                 version: '2.0',
                                                 'x-component': 'Grid',
-                                                'x-initializer': 'CreateFormBlockInitializers',
+                                                'x-initializer': 'popup:addNew:addBlock',
                                                 _isJSONSchemaObject: true,
                                                 properties: {
                                                   '7e9xtqdm96x': {
@@ -548,7 +555,7 @@ export const oneCalenderWithViewAction: PageConfig = {
                                                                     type: 'void',
                                                                     version: '2.0',
                                                                     'x-component': 'Grid',
-                                                                    'x-initializer': 'FormItemInitializers',
+                                                                    'x-initializer': 'form:configureFields',
                                                                     _isJSONSchemaObject: true,
                                                                     properties: {
                                                                       ikh538659hb: {
@@ -668,7 +675,7 @@ export const oneCalenderWithViewAction: PageConfig = {
                                                                     type: 'void',
                                                                     version: '2.0',
                                                                     'x-component': 'ActionBar',
-                                                                    'x-initializer': 'CreateFormActionInitializers',
+                                                                    'x-initializer': 'createForm:configureActions',
                                                                     'x-component-props': {
                                                                       style: {
                                                                         marginTop: 24,
@@ -776,7 +783,7 @@ export const oneCalenderWithViewAction: PageConfig = {
                                     'x-component-props': {},
                                     _isJSONSchemaObject: true,
                                     'x-initializer-props': {
-                                      gridInitializer: 'RecordBlockInitializers',
+                                      gridInitializer: 'popup:common:addBlock',
                                     },
                                     properties: {
                                       tab1: {
@@ -792,10 +799,10 @@ export const oneCalenderWithViewAction: PageConfig = {
                                             type: 'void',
                                             version: '2.0',
                                             'x-component': 'Grid',
-                                            'x-initializer': 'RecordBlockInitializers',
+                                            'x-initializer': 'popup:common:addBlock',
                                             _isJSONSchemaObject: true,
                                             'x-initializer-props': {
-                                              actionInitializers: 'CalendarFormActionInitializers',
+                                              actionInitializers: 'details:configureActions',
                                             },
                                             properties: {
                                               '0j7rb0bivys': {
@@ -841,7 +848,7 @@ export const oneCalenderWithViewAction: PageConfig = {
                                                                 type: 'void',
                                                                 version: '2.0',
                                                                 'x-component': 'ActionBar',
-                                                                'x-initializer': 'CalendarFormActionInitializers',
+                                                                'x-initializer': 'details:configureActions',
                                                                 'x-component-props': {
                                                                   style: {
                                                                     marginBottom: 24,
@@ -856,7 +863,7 @@ export const oneCalenderWithViewAction: PageConfig = {
                                                                 type: 'void',
                                                                 version: '2.0',
                                                                 'x-component': 'Grid',
-                                                                'x-initializer': 'ReadPrettyFormItemInitializers',
+                                                                'x-initializer': 'details:configureFields',
                                                                 _isJSONSchemaObject: true,
                                                                 'x-uid': 'br7bq2ddccy',
                                                                 'x-async': false,

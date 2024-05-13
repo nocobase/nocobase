@@ -1,7 +1,20 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { useSchemaToolbar } from '../../../application';
 import { SchemaSettings } from '../../../application/schema-settings/SchemaSettings';
 import { useCollection_deprecated } from '../../../collection-manager';
-import { ButtonEditor, SecondConFirm } from '../../../schema-component/antd/action/Action.Designer';
+import {
+  ButtonEditor,
+  SecondConFirm,
+  RefreshDataBlockRequest,
+} from '../../../schema-component/antd/action/Action.Designer';
 import { SchemaSettingsLinkageRules } from '../../../schema-settings';
 
 export const deleteActionSettings = new SchemaSettings({
@@ -30,6 +43,15 @@ export const deleteActionSettings = new SchemaSettings({
     {
       name: 'secondConFirm',
       Component: SecondConFirm,
+    },
+    {
+      name: 'refreshDataBlockRequest',
+      Component: RefreshDataBlockRequest,
+      useComponentProps() {
+        return {
+          isPopupAction: false,
+        };
+      },
     },
     {
       name: 'delete',

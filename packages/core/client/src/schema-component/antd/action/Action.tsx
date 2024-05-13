@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { observer, RecursionField, useField, useFieldSchema, useForm } from '@formily/react';
 import { isPortalInBody } from '@nocobase/utils/client';
 import { App, Button } from 'antd';
@@ -8,8 +17,17 @@ import { useTranslation } from 'react-i18next';
 import { StablePopover, useActionContext } from '../..';
 import { useDesignable } from '../../';
 import { useACLActionParamsContext } from '../../../acl';
+import { withDynamicSchemaProps } from '../../../application/hoc/withDynamicSchemaProps';
+import {
+  useCollection,
+  useCollectionParentRecordData,
+  useCollectionRecordData,
+  useDataBlockRequest,
+} from '../../../data-source';
 import { Icon } from '../../../icon';
-import { RecordProvider, useRecord } from '../../../record-provider';
+import { TreeRecordProvider } from '../../../modules/blocks/data-blocks/table/TreeRecordProvider';
+import { DeclareVariable } from '../../../modules/variable/DeclareVariable';
+import { RecordProvider } from '../../../record-provider';
 import { useLocalVariables, useVariables } from '../../../variables';
 import { SortableItem } from '../../common';
 import { useCompile, useComponent, useDesigner } from '../../hooks';
@@ -24,11 +42,11 @@ import useStyles from './Action.style';
 import { ActionContextProvider } from './context';
 import { useA } from './hooks';
 import { useGetAriaLabelOfAction } from './hooks/useGetAriaLabelOfAction';
-import { ComposedAction } from './types';
-import { linkageAction } from './utils';
+import { ActionProps, ComposedAction } from './types';
+import { linkageAction, setInitialActionState } from './utils';
 
-export const Action: ComposedAction = observer(
-  (props: any) => {
+export const Action: ComposedAction = withDynamicSchemaProps(
+  observer((props: ActionProps) => {
     const {
       popover,
       confirm,
@@ -41,13 +59,15 @@ export const Action: ComposedAction = observer(
       title,
       onClick,
       style,
-      openSize,
+      loading,
+      openSize: os,
       disabled: propsDisabled,
       actionCallback,
       /** 如果为 true 则说明该按钮是树表格的 Add child 按钮 */
       addChild,
+      onMouseEnter,
       ...others
-    } = useProps(props);
+    } = useProps(props); // 新版 UISchema（1.0 之后）中已经废弃了 useProps，这里之所以继续保留是为了兼容旧版的 UISchema
     const aclCtx = useACLActionParamsContext();
     const { wrapSSR, componentCls, hashId } = useStyles();
     const { t } = useTranslation();
@@ -59,21 +79,33 @@ export const Action: ComposedAction = observer(
     const fieldSchema = useFieldSchema();
     const compile = useCompile();
     const form = useForm();
-    const record = useRecord();
-    const designerProps = fieldSchema['x-designer-props'];
+    const recordData = useCollectionRecordData();
+    const parentRecordData = useCollectionParentRecordData();
+    const collection = useCollection();
+    const designerProps = fieldSchema['x-toolbar-props'] || fieldSchema['x-designer-props'];
     const openMode = fieldSchema?.['x-component-props']?.['openMode'];
+    const openSize = fieldSchema?.['x-component-props']?.['openSize'];
+    const refreshDataBlockRequest = fieldSchema?.['x-component-props']?.['refreshDataBlockRequest'];
+
     const disabled = form.disabled || field.disabled || field.data?.disabled || propsDisabled;
-    const linkageRules = fieldSchema?.['x-linkage-rules'] || [];
+    const linkageRules = useMemo(() => fieldSchema?.['x-linkage-rules'] || [], [fieldSchema?.['x-linkage-rules']]);
     const { designable } = useDesignable();
     const tarComponent = useComponent(component) || component;
     const { modal } = App.useApp();
     const variables = useVariables();
-    const localVariables = useLocalVariables({ currentForm: { values: record } as any });
+    const localVariables = useLocalVariables({ currentForm: { values: recordData } as any });
     const { getAriaLabel } = useGetAriaLabelOfAction(title);
-    let actionTitle = title || compile(fieldSchema.title);
-    actionTitle = lodash.isString(actionTitle) ? t(actionTitle) : actionTitle;
+    const service = useDataBlockRequest();
+
+    const actionTitle = useMemo(() => {
+      const res = title || compile(fieldSchema.title);
+      return lodash.isString(res) ? t(res) : res;
+    }, [title, fieldSchema.title, t]);
 
     useEffect(() => {
+      if (field.stateOfLinkageRules) {
+        setInitialActionState(field);
+      }
       field.stateOfLinkageRules = {};
       linkageRules
         .filter((k) => !k.disabled)
@@ -88,22 +120,28 @@ export const Action: ComposedAction = observer(
             });
           });
         });
-    }, [field, linkageRules, localVariables, record, variables]);
+    }, [field, linkageRules, localVariables, variables]);
 
     const handleButtonClick = useCallback(
       (e: React.MouseEvent) => {
         if (isPortalInBody(e.target as Element)) {
           return;
         }
-
         e.preventDefault();
         e.stopPropagation();
 
         if (!disabled && aclCtx) {
           const onOk = () => {
-            onClick?.(e);
-            setVisible(true);
-            run();
+            if (onClick) {
+              onClick(e, () => {
+                if (refreshDataBlockRequest !== false) {
+                  service?.refresh?.();
+                }
+              });
+            } else {
+              setVisible(true);
+              run();
+            }
           };
           if (confirm?.content) {
             modal.confirm({
@@ -126,6 +164,12 @@ export const Action: ComposedAction = observer(
       };
     }, [designable, field?.data?.hidden, style]);
 
+    const handleMouseEnter = useCallback(
+      (e) => {
+        onMouseEnter?.(e);
+      },
+      [onMouseEnter],
+    );
     const renderButton = () => {
       if (!designable && (field?.data?.hidden || !aclCtx)) {
         return null;
@@ -136,14 +180,15 @@ export const Action: ComposedAction = observer(
           role="button"
           aria-label={getAriaLabel()}
           {...others}
-          loading={field?.data?.loading}
+          onMouseEnter={handleMouseEnter}
+          loading={field?.data?.loading || loading}
           icon={icon ? <Icon type={icon} /> : null}
           disabled={disabled}
           style={buttonStyle}
           onClick={handleButtonClick}
           component={tarComponent || Button}
           className={classnames(componentCls, hashId, className, 'nb-action')}
-          type={props.type === 'danger' ? undefined : props.type}
+          type={(props as any).type === 'danger' ? undefined : props.type}
         >
           {actionTitle}
           <Designer {...designerProps} />
@@ -151,9 +196,15 @@ export const Action: ComposedAction = observer(
       );
     };
 
+    const buttonElement = renderButton();
+
+    // if (!btnHover) {
+    //   return buttonElement;
+    // }
+
     const result = (
       <ActionContextProvider
-        button={renderButton()}
+        button={buttonElement}
         visible={visible}
         setVisible={setVisible}
         formValueChanged={formValueChanged}
@@ -165,7 +216,14 @@ export const Action: ComposedAction = observer(
       >
         {popover && <RecursionField basePath={field.address} onlyRenderProperties schema={fieldSchema} />}
         {!popover && renderButton()}
-        {!popover && props.children}
+        <DeclareVariable
+          name="$nPopupRecord"
+          title={t('Current popup record')}
+          value={recordData}
+          collection={collection}
+        >
+          {!popover && props.children}
+        </DeclareVariable>
         {element}
       </ActionContextProvider>
     );
@@ -173,14 +231,15 @@ export const Action: ComposedAction = observer(
     // fix https://nocobase.height.app/T-3235/description
     if (addChild) {
       return wrapSSR(
-        <RecordProvider record={null} parent={record}>
-          {result}
+        // fix https://nocobase.height.app/T-3966
+        <RecordProvider record={null} parent={parentRecordData}>
+          <TreeRecordProvider parent={recordData}>{result}</TreeRecordProvider>
         </RecordProvider>,
       );
     }
 
     return wrapSSR(result);
-  },
+  }),
   { displayName: 'Action' },
 );
 

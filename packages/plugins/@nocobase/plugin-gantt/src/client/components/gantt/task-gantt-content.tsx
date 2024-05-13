@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import React, { useEffect, useState } from 'react';
 import { EventOption } from '../../types/public-types';
 import { BarTask } from '../../types/bar-task';
@@ -28,6 +37,7 @@ export type TaskGanttContentProps = {
   setGanttEvent: (value: GanttEvent) => void;
   setFailedTask: (value: BarTask | null) => void;
   setSelectedTask: (taskId: string) => void;
+  loading?: boolean;
 } & EventOption;
 
 export const TaskGanttContent: React.FC<TaskGanttContentProps> = ({
@@ -221,7 +231,10 @@ export const TaskGanttContent: React.FC<TaskGanttContentProps> = ({
     } else if (action === 'dblclick') {
       !!onDoubleClick && onDoubleClick(task);
     } else if (action === 'click') {
-      !!onClick && onClick(task);
+      const targetElement = event.target as HTMLElement; // 将 event.target 转换为 HTMLElement 类型
+      if (targetElement.tagName === 'rect') {
+        !!onClick && onClick(task);
+      }
     }
     // Change task event start
     else if (action === 'move') {

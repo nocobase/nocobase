@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { CloseOutlined, DeleteOutlined } from '@ant-design/icons';
 import { createForm } from '@formily/core';
 import { ISchema, useForm } from '@formily/react';
@@ -90,6 +99,9 @@ export function useNodeContext() {
   return useContext(NodeContext);
 }
 
+/**
+ * @experimental
+ */
 export function useAvailableUpstreams(node, filter?) {
   const stack: any[] = [];
   if (!node) {
@@ -104,6 +116,9 @@ export function useAvailableUpstreams(node, filter?) {
   return stack;
 }
 
+/**
+ * @experimental
+ */
 export function useUpstreamScopes(node) {
   const stack: any[] = [];
   if (!node) {
@@ -359,6 +374,7 @@ export function NodeDefaultView(props) {
         >
           <FormProvider form={form}>
             <SchemaComponent
+              distributed={false}
               scope={{
                 ...instruction.scope,
                 useFormProviderProps,
@@ -407,10 +423,7 @@ export function NodeDefaultView(props) {
                       </div>
                     ),
                     'x-decorator': 'FormV2',
-                    'x-decorator-props': {
-                      // form,
-                      useProps: '{{ useFormProviderProps }}',
-                    },
+                    'x-use-decorator-props': 'useFormProviderProps',
                     'x-component': 'Action.Drawer',
                     properties: {
                       ...(instruction.description

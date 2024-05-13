@@ -1,3 +1,5 @@
+
+
 import React, { FC } from 'react';
 import {
   Application,
@@ -69,7 +71,7 @@ const Demo = () => {
 };
 
 const myInitializer = new SchemaInitializer({
-  name: 'MyInitializer',
+  name: 'myInitializer',
   designable: true,
   title: 'Button Text',
   items: [
@@ -99,7 +101,7 @@ const myInitializer = new SchemaInitializer({
 });
 
 const Root = () => {
-  const { render } = useSchemaInitializerRender('MyInitializer');
+  const { render } = useSchemaInitializerRender('myInitializer');
   return <div>{render()}</div>;
 };
 
@@ -115,7 +117,7 @@ class MyPlugin extends Plugin {
 
 class MyPlugin2 extends Plugin {
   async load() {
-    const myInitializer = this.app.schemaInitializerManager.get('MyInitializer');
+    const myInitializer = this.app.schemaInitializerManager.get('myInitializer');
 
     // 嵌套添加
     myInitializer.add('a.a4', {

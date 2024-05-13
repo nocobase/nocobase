@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Op } from 'sequelize';
 import { ArrayField, StringField } from '../fields';
 import arrayOperators from './array';
@@ -18,11 +27,15 @@ const findFilterFieldType = (ctx) => {
   const associationPath = path;
 
   for (const association of associationPath) {
-    if (lodash.isNumber(parseInt(association)) || association.startsWith('$')) {
+    if (lodash.isFinite(parseInt(association)) || association.startsWith('$')) {
       continue;
     }
 
-    model = model.associations[association].target;
+    const modelAssociation = model.associations[association];
+    if (!modelAssociation) {
+      break;
+    }
+    model = modelAssociation.target;
   }
 
   const collection = db.modelCollection.get(model);

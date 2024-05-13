@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Field } from '@formily/core';
 import { connect, mapProps, observer } from '@formily/react';
 import { observable } from '@formily/reactive';
@@ -7,7 +16,7 @@ import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCollectionManager_deprecated } from '../../collection-manager';
 import { mergeFilter } from '../../filter-provider/utils';
-import { SchemaComponent, SchemaComponentContext, removeNullCondition } from '../../schema-component';
+import { SchemaComponent, SchemaComponentContext, removeNullCondition, useProps } from '../../schema-component';
 import { ITemplate } from '../../schema-component/antd/form-v2/Templates';
 import { VariableInput } from '../VariableInput';
 import { AsDefaultTemplate } from './components/AsDefaultTemplate';
@@ -15,6 +24,7 @@ import { ArrayCollapse } from './components/DataTemplateTitle';
 import { getSelectedIdFilter } from './components/Designer';
 import { useCollectionState } from './hooks/useCollectionState';
 import { useSyncFromForm } from './utils';
+import { withDynamicSchemaProps } from '../../application/hoc/withDynamicSchemaProps';
 
 const Tree = connect(
   AntdTree,
@@ -38,10 +48,11 @@ export const compatibleDataId = (data, config?) => {
   });
 };
 
-export const FormDataTemplates = observer(
-  (props: any) => {
-    const { useProps, formSchema, designerCtx } = props;
-    const { defaultValues, collectionName } = useProps();
+export const FormDataTemplates = withDynamicSchemaProps(
+  observer((props: any) => {
+    // 新版 UISchema（1.0 之后）中已经废弃了 useProps，这里之所以继续保留是为了兼容旧版的 UISchema
+    const { formSchema, designerCtx, defaultValues, collectionName } = useProps(props);
+
     const {
       collectionList,
       getEnableFieldTree,
@@ -141,7 +152,7 @@ export const FormDataTemplates = observer(
                     },
                     dataScope: {
                       type: 'object',
-                      title: '{{ t("Assign  data scope for the template") }}',
+                      title: '{{ t("Filter out a single piece or a group of records as a template") }}',
                       'x-decorator': 'FormItem',
                       'x-component': 'Filter',
                       'x-component-props': {
@@ -171,6 +182,9 @@ export const FormDataTemplates = observer(
                       type: 'string',
                       'x-decorator': 'FormItem',
                       title: '{{ t("Title field") }}',
+                      'x-decorator-props': {
+                        tooltip: '{{t("The title field is used to identify the template record")}}',
+                      },
                       'x-component': 'Select',
                       required: true,
                       'x-reactions': '{{useTitleFieldDataSource}}',
@@ -187,7 +201,10 @@ export const FormDataTemplates = observer(
                     },
                     fields: {
                       type: 'array',
-                      title: '{{ t("Data fields") }}',
+                      title: '{{ t("Template fields") }}',
+                      'x-decorator-props': {
+                        tooltip: '{{t("The selected fields will automatically populate the form")}}',
+                      },
                       required: true,
                       description: t('Only the selected fields will be used as the initialization data for the form'),
                       'x-decorator': 'FormItem',
@@ -248,7 +265,7 @@ export const FormDataTemplates = observer(
           },
           display: {
             type: 'boolean',
-            'x-content': '{{ t("Display data template selector") }}',
+            'x-content': '{{ t("Enable form data template") }}',
             default: activeData?.display !== false,
             'x-decorator': 'FormItem',
             'x-component': 'Checkbox',
@@ -263,7 +280,7 @@ export const FormDataTemplates = observer(
         <SchemaComponent components={components} scope={scope} schema={schema} />
       </SchemaComponentContext.Provider>
     );
-  },
+  }),
   { displayName: 'FormDataTemplates' },
 );
 

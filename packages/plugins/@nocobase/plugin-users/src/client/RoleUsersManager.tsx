@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import React, { useContext, useEffect, useMemo, useRef } from 'react';
 import { App } from 'antd';
 import {
@@ -93,7 +102,9 @@ export const RoleUsersManager: React.FC = () => {
   const handleSelectRoleUsers = (_: number[], rows: any[]) => {
     selectedRoleUsers.current = rows;
   };
+
   const useAddRoleUsers = () => {
+    const { role } = useContext(RolesManagerContext);
     const api = useAPIClient();
     const { setVisible } = useActionContext();
     const { refresh } = useResourceActionContext();

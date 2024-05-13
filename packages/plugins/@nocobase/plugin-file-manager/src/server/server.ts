@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Plugin } from '@nocobase/server';
 import { resolve } from 'path';
 import { FileModel } from './FileModel';
@@ -6,7 +15,7 @@ import { getStorageConfig } from './storages';
 
 export { default as storageTypes } from './storages';
 
-export default class PluginFileManager extends Plugin {
+export default class PluginFileManagerServer extends Plugin {
   storageType() {
     return 'local';
   }

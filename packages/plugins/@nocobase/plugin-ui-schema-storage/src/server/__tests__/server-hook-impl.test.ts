@@ -1,6 +1,15 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { BelongsToManyRepository, Database } from '@nocobase/database';
 import UiSchemaStoragePlugin, { UiSchemaRepository } from '@nocobase/plugin-ui-schema-storage';
-import { createMockServer, MockServer } from '@nocobase/test';
+import { MockServer, createMockServer } from '@nocobase/test';
 
 describe('server hooks', () => {
   let app: MockServer;
@@ -15,7 +24,7 @@ describe('server hooks', () => {
   beforeEach(async () => {
     app = await createMockServer({
       registerActions: true,
-      plugins: ['ui-schema-storage', 'collection-manager', 'error-handler', 'users', 'acl', 'data-source-manager'],
+      plugins: ['ui-schema-storage', 'data-source-main', 'error-handler', 'users', 'acl', 'data-source-manager'],
     });
     await app.runCommand('install', '-f');
     db = app.db;

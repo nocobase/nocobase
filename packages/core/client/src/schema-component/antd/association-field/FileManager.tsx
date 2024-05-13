@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { RecursionField, connect, useField, useFieldSchema } from '@formily/react';
 import { differenceBy, unionBy } from 'lodash';
 import React, { useContext, useEffect, useState } from 'react';
@@ -145,8 +154,8 @@ const InternalFileManager = (props) => {
       <FileSelector
         value={options}
         multiple={multiple}
-        quickUpload={fieldSchema['x-component-props'].quickUpload !== false}
-        selectFile={fieldSchema['x-component-props'].selectFile !== false}
+        quickUpload={fieldSchema['x-component-props']?.quickUpload !== false}
+        selectFile={fieldSchema['x-component-props']?.selectFile !== false}
         action={`${collectionField?.target}:create`}
         onSelect={handleSelect}
         onRemove={handleRemove}

@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { registerValidateRules } from '@formily/core';
 import { BlockSchemaComponentPlugin, Plugin, SchemaComponentOptions, useAPIClient } from '@nocobase/client';
 import JSON5 from 'json5';
@@ -6,7 +15,7 @@ import { ChartBlockEngine } from './ChartBlockEngine';
 import { ChartBlockInitializer } from './ChartBlockInitializer';
 import { ChartQueryMetadataProvider } from './ChartQueryMetadataProvider';
 import './Icons';
-import { lang, NAMESPACE } from './locale';
+import { NAMESPACE, lang } from './locale';
 import { CustomSelect } from './select';
 import { QueriesTable } from './settings/QueriesTable';
 
@@ -73,7 +82,7 @@ export class ChartsPlugin extends Plugin {
   }
   async load() {
     // Chart (Old) 老的不需要了
-    // const blockInitializers = this.app.schemaInitializerManager.get('BlockInitializers');
+    // const blockInitializers = this.app.schemaInitializerManager.get('page:addBlock');
     // blockInitializers?.add('data-blocks.chart-old', {
     //   icon: 'PieChartOutlined',
     //   title: '{{t("Chart (Old)",{ns:"charts"})}}',

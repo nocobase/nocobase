@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 const { Command } = require('commander');
 const { run, isPortReachable } = require('../util');
 const { execSync } = require('node:child_process');
@@ -85,6 +94,7 @@ async function appReady() {
 async function runApp(options = {}) {
   console.log('installing...');
   await run('nocobase', ['install', '-f']);
+  await run('nocobase', ['pm', 'enable-all']);
   if (await isPortReachable(process.env.APP_PORT)) {
     console.log('app started');
     return;
@@ -138,9 +148,6 @@ const filterArgv = () => {
     if (element.startsWith('--url=')) {
       continue;
     }
-    if (element === '--skip-reporter') {
-      continue;
-    }
     if (element === '--build') {
       continue;
     }
@@ -168,7 +175,6 @@ module.exports = (cli) => {
     .command('test')
     .allowUnknownOption()
     .option('--url [url]')
-    .option('--skip-reporter')
     .option('--build')
     .option('--production')
     .action(async (options) => {
@@ -179,9 +185,6 @@ module.exports = (cli) => {
       if (options.build) {
         process.env.APP_ENV = 'production';
         await run('yarn', ['build']);
-      }
-      if (options.skipReporter) {
-        process.env.PLAYWRIGHT_SKIP_REPORTER = true;
       }
       if (options.url) {
         process.env.APP_BASE_URL = options.url.replace('localhost', '127.0.0.1');
@@ -232,6 +235,7 @@ module.exports = (cli) => {
 
   e2e.command('reinstall-app').action(async (options) => {
     await run('nocobase', ['install', '-f'], options);
+    await run('nocobase', ['pm2', 'enable-all']);
   });
 
   e2e.command('install-deps').action(async () => {
@@ -243,6 +247,12 @@ module.exports = (cli) => {
     .option('--stop-on-error')
     .option('--build')
     .option('--concurrency [concurrency]', '', os.cpus().length)
+    .option(
+      '--match [match]',
+      'Only the files matching one of these patterns are executed as test files. Matching is performed against the absolute file path. Strings are treated as glob patterns.',
+      'packages/**/__e2e__/**/*.test.ts',
+    )
+    .option('--ignore [ignore]', 'Skip tests that match the pattern. Strings are treated as glob patterns.', undefined)
     .action(async (options) => {
       process.env.__E2E__ = true;
       if (options.build) {

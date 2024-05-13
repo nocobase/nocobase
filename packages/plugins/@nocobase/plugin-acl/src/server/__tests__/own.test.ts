@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { ACL } from '@nocobase/acl';
 import { Database } from '@nocobase/database';
 import PluginUser from '@nocobase/plugin-users';
@@ -90,6 +99,7 @@ describe('own test', () => {
       })
       .set({ Authorization: 'Bearer ' + adminToken });
 
+    acl.appendStrategyResource('tests');
     const response = await userAgent.get('/tests:list');
     expect(response.statusCode).toEqual(200);
   });
@@ -104,6 +114,7 @@ describe('own test', () => {
       },
     });
 
+    acl.appendStrategyResource('posts');
     let response = await userAgent.resource('posts').create({
       values: {
         title: 't1',

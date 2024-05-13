@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { FormItem, FormLayout } from '@formily/antd-v5';
 import { ArrayField } from '@formily/core';
 import { connect, useField } from '@formily/react';
@@ -51,22 +60,20 @@ export const RolesResourcesActions = connect((props) => {
     return action?.fields?.includes(fieldName);
   };
   const availableActionsWithFields = availableActions.filter((action) => action.allowConfigureFields);
-  const fieldPermissions = collectionFields
-    ?.filter((field) => field.interface)
-    ?.map((field) => {
-      const permission = { ...field };
-      for (const action of availableActionsWithFields) {
-        permission[action.name] = inAction(action.name, field.name);
-      }
-      return permission;
-    });
+  const fieldPermissions = collectionFields?.map((field) => {
+    const permission = { ...field };
+    for (const action of availableActionsWithFields) {
+      permission[action.name] = inAction(action.name, field.name);
+    }
+    return permission;
+  });
   const toggleAction = (actionName: string) => {
     if (actionMap[actionName]) {
       delete actionMap[actionName];
     } else {
       actionMap[actionName] = {
         name: actionName,
-        fields: collectionFields?.filter((field) => field.interface)?.map?.((item) => item.name),
+        fields: collectionFields?.map?.((item) => item.name),
       };
     }
     onChange(Object.values(actionMap));
@@ -83,8 +90,7 @@ export const RolesResourcesActions = connect((props) => {
   };
   const allChecked = {};
   for (const action of availableActionsWithFields) {
-    allChecked[action.name] =
-      collectionFields?.filter((field) => field.interface)?.length === actionMap?.[action.name]?.fields?.length;
+    allChecked[action.name] = collectionFields?.length === actionMap?.[action.name]?.fields?.length;
   }
   return (
     <div>
@@ -163,7 +169,7 @@ export const RolesResourcesActions = connect((props) => {
                 {
                   dataIndex: ['uiSchema', 'title'],
                   title: t('Field display name'),
-                  render: (value) => compile(value),
+                  render: (value, record) => compile(value) || record.name,
                 },
                 ...availableActionsWithFields.map((action) => {
                   const checked = allChecked?.[action.name];
@@ -185,7 +191,7 @@ export const RolesResourcesActions = connect((props) => {
                             actionMap[action.name] = item;
                             onChange(Object.values(actionMap));
                           }}
-                        />{' '}
+                        />
                         {compile(action.displayName)}
                       </>
                     ),

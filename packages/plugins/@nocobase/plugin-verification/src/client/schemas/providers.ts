@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { uid } from '@formily/shared';
 import { useActionContext, useRequest } from '@nocobase/client';
 import { NAMESPACE } from '../locale';
@@ -91,6 +100,7 @@ export default {
           title: '{{t("Delete")}}',
           'x-component': 'Action',
           'x-component-props': {
+            icon: 'DeleteOutlined',
             useAction: '{{ cm.useBulkDestroyAction }}',
             confirm: {
               title: "{{t('Delete')}}",
@@ -104,6 +114,7 @@ export default {
           'x-component': 'Action',
           'x-component-props': {
             type: 'primary',
+            icon: 'PlusOutlined',
           },
           properties: {
             drawer: {

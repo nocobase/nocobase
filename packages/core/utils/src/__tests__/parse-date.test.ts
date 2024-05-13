@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { dayjs } from '../dayjs';
 import { parseDate } from '../parse-date';
 
@@ -32,12 +41,16 @@ describe('parse date', () => {
     expectDate('2023W01').toEqual(['2023-01-02T00:00:00.000Z', '2023-01-09T00:00:00.000Z']);
     expectDate('2023W01+08:00').toEqual(['2023-01-01T16:00:00.000Z', '2023-01-08T16:00:00.000Z']);
     expectDate('2023W01', { timezone: '+08:00' }).toEqual(['2023-01-01T16:00:00.000Z', '2023-01-08T16:00:00.000Z']);
+    expectDate('2024W16+08:00').toEqual(['2024-04-14T16:00:00.000Z', '2024-04-21T16:00:00.000Z']);
+    expectDate('2024W16').toEqual(['2024-04-15T00:00:00.000Z', '2024-04-22T00:00:00.000Z']);
   });
 
   it('should parse week', async () => {
     expectDate('2023w01').toEqual(['2023-01-01T00:00:00.000Z', '2023-01-08T00:00:00.000Z']);
     expectDate('2023w01+08:00').toEqual(['2022-12-31T16:00:00.000Z', '2023-01-07T16:00:00.000Z']);
     expectDate('2023w01', { timezone: '+08:00' }).toEqual(['2022-12-31T16:00:00.000Z', '2023-01-07T16:00:00.000Z']);
+    expectDate('2024w16+08:00').toEqual(['2024-04-13T16:00:00.000Z', '2024-04-20T16:00:00.000Z']);
+    expectDate('2024w16').toEqual(['2024-04-14T00:00:00.000Z', '2024-04-21T00:00:00.000Z']);
   });
 
   it('should parse month', () => {

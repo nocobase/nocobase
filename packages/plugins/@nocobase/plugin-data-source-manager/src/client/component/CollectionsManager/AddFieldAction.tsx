@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { PlusOutlined } from '@ant-design/icons';
 import { ArrayTable } from '@formily/antd-v5';
 import { useField, useForm } from '@formily/react';
@@ -22,6 +31,7 @@ import {
   useCurrentAppInfo,
   useAPIClient,
   useFieldInterfaceOptions,
+  useDataSourceManager,
 } from '@nocobase/client';
 import { ForeignKey } from './components';
 
@@ -157,6 +167,7 @@ const useCreateCollectionField = () => {
   const api = useAPIClient();
   const record = useRecord();
   const { name: dataSourceKey } = useParams();
+  const dm = useDataSourceManager();
   return {
     async run() {
       await form.submit();
@@ -176,6 +187,7 @@ const useCreateCollectionField = () => {
           data: values,
         });
         ctx.setVisible(false);
+        dm.getDataSource(dataSourceKey).reload();
         await form.reset();
         field.data.loading = false;
         refresh();

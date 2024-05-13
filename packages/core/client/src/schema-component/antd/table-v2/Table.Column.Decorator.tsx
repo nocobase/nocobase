@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { useField, useFieldSchema } from '@formily/react';
 import React, { useLayoutEffect } from 'react';
 import {
@@ -17,7 +26,7 @@ export const useColumnSchema = () => {
   const compile = useCompile();
   const columnSchema = useFieldSchema();
   const { getCollectionJoinField } = useCollectionManager_deprecated();
-  const fieldSchema = columnSchema.reduceProperties((buf, s) => {
+  const fieldSchema = columnSchema?.reduceProperties((buf, s) => {
     if (isCollectionFieldComponent(s)) {
       return s;
     }

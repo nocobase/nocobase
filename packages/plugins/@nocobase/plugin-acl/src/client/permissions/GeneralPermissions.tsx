@@ -1,15 +1,25 @@
-import { onFormValuesChange, createForm, Form } from '@formily/core';
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+import { onFormValuesChange, createForm, Form, onFieldChange } from '@formily/core';
 import { connect } from '@formily/react';
 import { SchemaComponent, useAPIClient, useRequest } from '@nocobase/client';
 import { Checkbox, message } from 'antd';
 import uniq from 'lodash/uniq';
 import React, { useContext, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { uid } from '@formily/shared';
+import { useMemoizedFn } from 'ahooks';
 import { RolesManagerContext } from '../RolesManagerProvider';
 import { StrategyActions } from './StrategyActions';
 import { useACLTranslation } from '../locale';
-import { uid } from '@formily/shared';
-import { useMemoizedFn } from 'ahooks';
+import { PluginPermissions } from './PluginPermissions';
 
 const SnippetCheckboxGroup = connect((props) => {
   const { t } = useTranslation();
@@ -61,66 +71,60 @@ export const GeneralPermissions: React.FC<{
   const { role, setRole } = useContext(RolesManagerContext);
   const { t } = useACLTranslation();
   const api = useAPIClient();
-  const { data } = useRequest(
-    () =>
-      api
-        .resource('roles')
-        .get({
-          filterByTk: role?.name,
-        })
-        .then((res) => {
-          const record = res?.data?.data;
-          record.snippets?.forEach((key: string) => {
-            record[key] = true;
-          });
-          return record;
-        }),
-    {
-      ready: active,
-      refreshDeps: [role?.name],
-    },
-  );
+  const pm = role?.snippets?.includes('pm.*');
+
   const update = useMemoizedFn(async (form: Form) => {
     await api.resource('roles').update({
       filterByTk: role.name,
-      values: form.values,
+      values: { snippets: form.values.snippets },
     });
     setRole({ ...role, ...form.values });
     message.success(t('Saved successfully'));
   });
   const form = useMemo(() => {
     return createForm({
-      values: data,
+      values: role,
       effects() {
         onFormValuesChange(async (form) => {
           await update(form);
         });
       },
     });
-  }, [data, update]);
+  }, [role, update]);
 
   return (
     <SchemaComponent
-      components={{ SnippetCheckboxGroup, StrategyActions }}
+      components={{ SnippetCheckboxGroup, StrategyActions, PluginPermissions }}
+      scope={{ pm }}
       schema={{
         type: 'void',
         name: uid(),
-        'x-component': 'FormV2',
-        'x-component-props': {
-          form,
-        },
+        'x-component': 'div',
         properties: {
-          snippets: {
-            title: t('Configure permissions'),
-            type: 'boolean',
-            'x-decorator': 'FormItem',
-            'x-component': 'SnippetCheckboxGroup',
+          general: {
+            'x-component': 'FormV2',
+            'x-component-props': {
+              form,
+            },
+            properties: {
+              snippets: {
+                title: t('Configure permissions'),
+                type: 'boolean',
+                'x-decorator': 'FormItem',
+                'x-component': 'SnippetCheckboxGroup',
+              },
+            },
           },
-          allowNewMenu: {
-            title: t('Menu permissions'),
-            'x-decorator': 'FormItem',
-            'x-component': 'Checkbox',
-            'x-content': t('New menu items are allowed to be accessed by default.'),
+          plugins: {
+            'x-component': 'FormV2',
+            properties: {
+              pluginSettings: {
+                title: t('Plugin settings'),
+                'x-decorator': 'FormItem',
+                'x-component': 'PluginPermissions',
+                'x-visible': '{{pm}}',
+              },
+            },
           },
         },
       }}

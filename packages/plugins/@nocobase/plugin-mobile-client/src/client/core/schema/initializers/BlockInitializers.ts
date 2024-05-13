@@ -1,8 +1,17 @@
-import { SchemaInitializer, gridRowColWrap } from '@nocobase/client';
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+import { CompatibleSchemaInitializer, gridRowColWrap } from '@nocobase/client';
 import { generateNTemplate } from '../../../locale';
 
-export const mBlockInitializers: SchemaInitializer = new SchemaInitializer({
-  name: 'MBlockInitializers',
+const mBlockInitializersOptions = {
+  name: 'mobilePage:addBlock',
   title: '{{t("Add block")}}',
   icon: 'PlusOutlined',
   wrap: gridRowColWrap,
@@ -43,6 +52,11 @@ export const mBlockInitializers: SchemaInitializer = new SchemaInitializer({
           title: generateNTemplate('Map'),
           Component: 'MapBlockInitializer',
         },
+        {
+          name: 'charts',
+          title: '{{t("Charts")}}',
+          Component: 'ChartV2BlockInitializer',
+        },
       ],
     },
     {
@@ -68,4 +82,18 @@ export const mBlockInitializers: SchemaInitializer = new SchemaInitializer({
       ],
     },
   ],
+};
+
+/**
+ * @deprecated
+ * use `mBlockInitializers` instead
+ */
+export const mBlockInitializers_deprecated = new CompatibleSchemaInitializer({
+  ...mBlockInitializersOptions,
+  name: 'MBlockInitializers',
 });
+
+export const mBlockInitializers = new CompatibleSchemaInitializer(
+  mBlockInitializersOptions,
+  mBlockInitializers_deprecated,
+);

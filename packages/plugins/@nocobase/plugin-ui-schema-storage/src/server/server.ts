@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { MagicAttributeModel } from '@nocobase/database';
 import { Plugin } from '@nocobase/server';
 import { uid } from '@nocobase/utils';
@@ -8,7 +17,7 @@ import UiSchemaRepository from './repository';
 import { ServerHooks } from './server-hooks';
 import { ServerHookModel } from './server-hooks/model';
 
-export class UiSchemaStoragePlugin extends Plugin {
+export class PluginUISchemaStorageServer extends Plugin {
   serverHooks: ServerHooks;
 
   registerRepository() {
@@ -33,20 +42,7 @@ export class UiSchemaStoragePlugin extends Plugin {
 
     this.app.acl.registerSnippet({
       name: 'ui.uiSchemas',
-      actions: [
-        'uiSchemas:insert',
-        'uiSchemas:insertNewSchema',
-        'uiSchemas:remove',
-        'uiSchemas:patch',
-        'uiSchemas:batchPatch',
-        'uiSchemas:clearAncestor',
-        'uiSchemas:insertBeforeBegin',
-        'uiSchemas:insertAfterBegin',
-        'uiSchemas:insertBeforeEnd',
-        'uiSchemas:insertAfterEnd',
-        'uiSchemas:insertAdjacent',
-        'uiSchemas:saveAsTemplate',
-      ],
+      actions: ['uiSchemas:*'],
     });
 
     db.on('uiSchemas.beforeCreate', function setUid(model) {
@@ -84,7 +80,7 @@ export class UiSchemaStoragePlugin extends Plugin {
       actions: uiSchemaActions,
     });
 
-    this.app.acl.allow('uiSchemas', ['getProperties', 'getJsonSchema'], 'loggedIn');
+    this.app.acl.allow('uiSchemas', ['getProperties', 'getJsonSchema', 'getParentJsonSchema'], 'loggedIn');
     this.app.acl.allow('uiSchemaTemplates', ['get', 'list'], 'loggedIn');
   }
 
@@ -101,4 +97,4 @@ export class UiSchemaStoragePlugin extends Plugin {
   }
 }
 
-export default UiSchemaStoragePlugin;
+export default PluginUISchemaStorageServer;

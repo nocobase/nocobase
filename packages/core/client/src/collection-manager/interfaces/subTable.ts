@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import { defaultProps } from './properties';
@@ -42,19 +51,19 @@ export class SubTableFieldInterface extends CollectionFieldInterface {
         properties: {
           actions: {
             type: 'void',
-            'x-initializer': 'SubTableActionInitializers',
+            'x-initializer': 'subTable:configureActions',
             'x-component': 'TableField.ActionBar',
             'x-component-props': {},
           },
           [field.name]: {
             type: 'array',
-            'x-initializer': 'TableColumnInitializers',
+            'x-initializer': 'table:configureColumns',
             'x-component': 'TableV2',
+            'x-use-component-props': 'useTableFieldProps',
             'x-component-props': {
               rowSelection: {
                 type: 'checkbox',
               },
-              useProps: '{{ useTableFieldProps }}',
             },
           },
         },

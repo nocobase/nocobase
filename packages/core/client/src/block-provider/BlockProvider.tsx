@@ -1,4 +1,12 @@
-import { css } from '@emotion/css';
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Field, GeneralField } from '@formily/core';
 import { RecursionField, useField, useFieldSchema } from '@formily/react';
 import { Col, Row } from 'antd';
@@ -10,14 +18,12 @@ import {
   DataBlockProvider,
   TableFieldResource,
   WithoutTableFieldResource,
-  useCollectionManager,
+  useCollectionParentRecord,
+  useCollectionRecord,
   useDataBlockProps,
   useDataBlockRequest,
   useDataBlockResource,
   useDesignable,
-  useCollectionParentRecord,
-  useCollectionParentRecordData,
-  useCollectionRecord,
   useRecord,
 } from '../';
 import { ACLCollectionProvider } from '../acl/ACLProvider';
@@ -27,9 +33,10 @@ import {
   useCollection_deprecated,
 } from '../collection-manager';
 import { DataBlockCollector } from '../filter-provider/FilterProvider';
+import { useSourceId } from '../modules/blocks/useSourceId';
 import { RecordProvider, useRecordIndex } from '../record-provider';
 import { useAssociationNames } from './hooks';
-import { useDataBlockSourceId } from './hooks/useDataBlockSourceId';
+import { useDataBlockParentRecord } from './hooks/useDataBlockParentRecord';
 
 /**
  * @deprecated
@@ -54,36 +61,21 @@ export const BlockRequestContext_deprecated = createContext<{
 }>({});
 BlockRequestContext_deprecated.displayName = 'BlockRequestContext_deprecated';
 
+/**
+ * @deprecated
+ * use `useDataBlockResource` instead
+ * @returns
+ */
 export const useBlockResource = () => {
   const resource = useDataBlockResource();
   return useContext(BlockResourceContext) || resource;
 };
 
-interface UseResourceProps {
-  resource: any;
-  association?: any;
-  useSourceId?: any;
-  collection?: any;
-  dataSource?: any;
-  block?: any;
-}
-
-const useAssociation = (props) => {
-  const { association } = props;
-  const { getCollectionField } = useCollectionManager_deprecated();
-  if (typeof association === 'string') {
-    return getCollectionField(association);
-  } else if (association?.collectionName && association?.name) {
-    return getCollectionField(`${association?.collectionName}.${association?.name}`);
-  }
-};
-
-const useActionParams = (props) => {
-  const { useParams } = props;
-  const params = useParams?.() || {};
-  return { ...props.params, ...params };
-};
-
+/**
+ * @internal
+ * @param props
+ * @returns
+ */
 export const MaybeCollectionProvider = (props) => {
   const { collection } = props;
   return collection ? (
@@ -97,6 +89,7 @@ export const MaybeCollectionProvider = (props) => {
 
 /**
  * @deprecated
+ * use `DataBlockRequestProvider` instead
  * @param props
  * @returns
  */
@@ -141,11 +134,16 @@ export const BlockRequestProvider_deprecated = (props) => {
 
 /**
  * @deprecated
+ * use `useDataBlockRequest` instead
  */
 export const useBlockRequestContext = () => {
   return useContext(BlockRequestContext_deprecated);
 };
 
+/**
+ * @deprecated
+ * 废弃组件，不建议使用
+ */
 export const RenderChildrenWithAssociationFilter: React.FC<any> = (props) => {
   const fieldSchema = useFieldSchema();
   const { findComponent } = useDesignable();
@@ -161,19 +159,13 @@ export const RenderChildrenWithAssociationFilter: React.FC<any> = (props) => {
   if (associationFilterSchema) {
     return (
       <Component {...field.componentProps}>
-        <Row
-          className={css`
-            height: 100%;
-          `}
-          gutter={16}
-          wrap={false}
-        >
+        <Row style={{ height: '100%' }} gutter={16} wrap={false}>
           <Col
-            className={css`
-              width: 200px;
-              flex: 0 0 auto;
-            `}
-            style={props.associationFilterStyle}
+            style={{
+              width: 200,
+              flex: '0 0 auto',
+              ...(props.associationFilterStyle || {}),
+            }}
           >
             <RecursionField
               schema={fieldSchema}
@@ -182,17 +174,17 @@ export const RenderChildrenWithAssociationFilter: React.FC<any> = (props) => {
             />
           </Col>
           <Col
-            className={css`
-              flex: 1 1 auto;
-              min-width: 0;
-            `}
+            style={{
+              flex: '1 1 auto',
+              minWidth: 0,
+            }}
           >
             <div
-              className={css`
-                display: flex;
-                flex-direction: column;
-                height: 100%;
-              `}
+              style={{
+                height: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+              }}
             >
               <RecursionField
                 schema={fieldSchema}
@@ -208,18 +200,42 @@ export const RenderChildrenWithAssociationFilter: React.FC<any> = (props) => {
   return props.children;
 };
 
-const BlockContext = createContext<{
+/**
+ * @internal
+ */
+export const BlockContext = createContext<{
   /** 用以区分区块的标识 */
   name: string;
 }>(null);
 BlockContext.displayName = 'BlockContext';
 
+/**
+ * @internal
+ * @returns
+ */
 export const useBlockContext = () => {
   return useContext(BlockContext);
 };
 
 /**
- * @deprecated use `DataBlockProvider` instead
+ * 用于兼容旧版本 Schema
+ */
+const useCompatDataBlockParentRecord = (props) => {
+  const fieldSchema = useFieldSchema();
+
+  // 如果存在 x-use-decorator-props，说明是新版 Schema
+  if (fieldSchema['x-use-decorator-props']) {
+    return props.parentRecord;
+  } else {
+    // 是否存在 x-use-decorator-props 是固定不变的，所以这里可以使用 hooks
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    return useDataBlockParentRecord(props);
+  }
+};
+
+/**
+ * @deprecated
+ * use `DataBlockProvider` instead
  */
 export const BlockProvider = (props: {
   name: string;
@@ -235,9 +251,12 @@ export const BlockProvider = (props: {
   /** @deprecated */
   useParams?: any;
 }) => {
-  const { name, dataSource, association, useParams, parentRecord } = props;
-  const sourceId = useDataBlockSourceId({ association });
+  const { name, dataSource, useParams, parentRecord } = props;
+  const parentRecordFromHook = useCompatDataBlockParentRecord(props);
+
+  // 新版（1.0）已弃用 useParams，这里之所以继续保留是为了兼容旧版的 UISchema
   const paramsFromHook = useParams?.();
+
   const { getAssociationAppends } = useAssociationNames(dataSource);
   const { appends, updateAssociationValues } = getAssociationAppends();
   const params = useMemo(() => {
@@ -250,15 +269,7 @@ export const BlockProvider = (props: {
 
   return (
     <BlockContext.Provider value={blockValue}>
-      <DataBlockProvider
-        {...(props as any)}
-        params={params}
-        sourceId={sourceId}
-        // 此处是针对树表格的 Add child 按钮优化的，因为点击 Add child 打开的表单中需要用到父级的数据；
-        // 但是当是关系区块时，在 DataBlockProvider 中会自动请求父级数据，所以这里不需要再传 parentRecord。
-        // 具体问题记录在这里：https://nocobase.height.app/T-3235/description
-        parentRecord={association ? undefined : parentRecord}
-      >
+      <DataBlockProvider {...(props as any)} params={params} parentRecord={parentRecord || parentRecordFromHook}>
         <BlockRequestProvider_deprecated {...props} updateAssociationValues={updateAssociationValues} params={params}>
           <DataBlockCollector {...props} params={params}>
             {props.children}
@@ -269,6 +280,11 @@ export const BlockProvider = (props: {
   );
 };
 
+/**
+ * @deprecated
+ * use `useDataBlockProps` instead
+ * @returns
+ */
 export const useBlockAssociationContext = () => {
   const { association } = useDataBlockProps();
   return useContext(BlockAssociationContext) || association;
@@ -297,8 +313,6 @@ export const useFilterByTk = () => {
 
 /**
  * @deprecated
- * 已弃用，应使用 useSourceIdFromParentRecord
- * @returns
  */
 export const useSourceIdFromRecord = () => {
   const record = useRecord();
@@ -310,27 +324,27 @@ export const useSourceIdFromRecord = () => {
   }
 };
 
+/**
+ * @deprecated
+ * use `useSourceId` instead
+ */
 export const useSourceIdFromParentRecord = () => {
-  const cm = useCollectionManager();
-  const parentRecordData = useCollectionParentRecordData();
-  const { getCollectionField } = useCollectionManager_deprecated();
-  const association = useBlockAssociationContext();
-  if (association) {
-    const collectionField = getCollectionField(association);
-    const collection = cm.getCollection(collectionField.collectionName);
-    return parentRecordData?.[
-      collectionField.sourceKey || collection.filterTargetKey || collection.getPrimaryKey() || 'id'
-    ];
-  }
+  return useSourceId();
 };
 
+/**
+ * @internal
+ * @returns
+ */
 export const useParamsFromRecord = () => {
   const filterByTk = useFilterByTk();
   const record = useRecord();
   const { fields } = useCollection_deprecated();
   const fieldSchema = useFieldSchema();
   const { getCollectionJoinField } = useCollectionManager_deprecated();
-  const collectionField = getCollectionJoinField(fieldSchema?.['x-decorator-props']?.resource);
+  const collectionField = getCollectionJoinField(
+    fieldSchema?.['x-decorator-props']?.resource || fieldSchema?.['x-decorator-props']?.association,
+  );
   const filterFields = fields
     .filter((v) => {
       return ['boolean', 'date', 'integer', 'radio', 'sort', 'string', 'time', 'uid', 'uuid'].includes(v.type);
@@ -346,10 +360,10 @@ export const useParamsFromRecord = () => {
   const obj = {
     filterByTk: filterByTk,
   };
-  if (record.__collection && !['oho', 'm2o', 'obo'].includes(collectionField?.interface)) {
+  if (record.__collection && collectionField && !['oho', 'm2o', 'obo'].includes(collectionField.interface)) {
     obj['targetCollection'] = record.__collection;
   }
-  if (!filterByTk) {
+  if (!filterByTk && Object.keys(filter).length > 0) {
     obj['filter'] = filter;
   }
   return obj;

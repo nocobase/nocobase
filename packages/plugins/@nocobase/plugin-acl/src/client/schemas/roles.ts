@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { uid } from '@formily/shared';
 import { useActionContext, useCollectionRecord, useRecord, useRequest } from '@nocobase/client';
 import { useEffect } from 'react';
@@ -43,6 +52,13 @@ export const roleEditSchema = {
           'x-component': 'CollectionField',
           'x-decorator': 'FormItem',
           'x-content': '{{t("Default role")}}',
+          'x-reactions': (field) => {
+            if (field.initialValue) {
+              field.disabled = true;
+            } else {
+              field.disabled = false;
+            }
+          },
         },
         footer: {
           type: 'void',
@@ -90,9 +106,9 @@ export const roleCollectionsSchema: ISchema = {
           },
           'x-action': 'filter',
           'x-component': 'Filter.Action',
+          'x-use-component-props': 'useFilterActionProps',
           'x-component-props': {
             icon: 'FilterOutlined',
-            useProps: '{{ useFilterActionProps }}',
           },
           'x-align': 'left',
         },

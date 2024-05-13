@@ -1,10 +1,19 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import APIDocPlugin from '../server';
 import baseSwagger from './base-swagger';
+import collectionToSwaggerObject from './collections';
 import { SchemaTypeMapping } from './constants';
 import { createDefaultActionSwagger, getInterfaceCollection } from './helpers';
 import { getPluginsSwagger, getSwaggerDocument, loadSwagger } from './loader';
 import { merge } from './merge';
-import collectionToSwaggerObject from './collections';
 
 export class SwaggerManager {
   private plugin: APIDocPlugin;
@@ -81,6 +90,10 @@ export class SwaggerManager {
     return merge(await this.getBaseSwagger(), await loadSwagger('@nocobase/server'));
   }
 
+  getURL(pathname: string) {
+    return process.env.API_BASE_PATH + pathname;
+  }
+
   async getUrls() {
     const plugins = await getPluginsSwagger(this.db)
       .then((res) => {
@@ -88,7 +101,7 @@ export class SwaggerManager {
           const schema = res[name];
           return {
             name: schema.info?.title || name,
-            url: `/api/swagger:get?ns=${encodeURIComponent(`plugins/${name}`)}`,
+            url: this.getURL(`swagger:get?ns=${encodeURIComponent(`plugins/${name}`)}`),
           };
         });
       })
@@ -102,25 +115,25 @@ export class SwaggerManager {
     return [
       {
         name: 'NocoBase API',
-        url: '/api/swagger:get',
+        url: this.getURL('swagger:get'),
       },
       {
         name: 'NocoBase API - Core',
-        url: '/api/swagger:get?ns=core',
+        url: this.getURL('swagger:get?ns=core'),
       },
       {
         name: 'NocoBase API - All plugins',
-        url: '/api/swagger:get?ns=plugins',
+        url: this.getURL('swagger:get?ns=plugins'),
       },
       {
         name: 'NocoBase API - Custom collections',
-        url: '/api/swagger:get?ns=collections',
+        url: this.getURL('swagger:get?ns=collections'),
       },
       ...plugins,
       ...collections.map((collection) => {
         return {
           name: `Collection API - ${collection.title}`,
-          url: `/api/swagger:get?ns=${encodeURIComponent('collections/' + collection.name)}`,
+          url: this.getURL(`swagger:get?ns=${encodeURIComponent('collections/' + collection.name)}`),
         };
       }),
     ];

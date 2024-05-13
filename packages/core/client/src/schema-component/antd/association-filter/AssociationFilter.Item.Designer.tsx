@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { ISchema, useField, useFieldSchema } from '@formily/react';
 import _ from 'lodash';
 import React from 'react';
@@ -95,7 +104,7 @@ export const AssociationFilterItemDesigner = (props) => {
         checked={field.componentProps.defaultCollapse}
         onChange={(v) => {
           field.componentProps.defaultCollapse = v;
-          fieldSchema['x-component-props']['defaultCollapse'] = v;
+          _.set(fieldSchema, 'x-component-props.defaultCollapse', v);
           dn.emit('patch', {
             schema: {
               ['x-uid']: fieldSchema['x-uid'],

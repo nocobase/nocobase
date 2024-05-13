@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { ArrayItems } from '@formily/antd-v5';
 
 import {
@@ -22,7 +31,22 @@ export default class extends Instruction {
   group = 'collection';
   description = `{{t("Query records from a collection. You can use variables from upstream nodes as query conditions.", { ns: "${NAMESPACE}" })}}`;
   fieldset = {
-    collection,
+    collection: {
+      ...collection,
+      'x-reactions': [
+        ...collection['x-reactions'],
+        {
+          target: 'params',
+          effects: ['onFieldValueChange'],
+          fulfill: {
+            state: {
+              visible: '{{!!$self.value}}',
+              value: '{{Object.create({})}}',
+            },
+          },
+        },
+      ],
+    },
     multiple: {
       type: 'boolean',
       'x-decorator': 'FormItem',
@@ -130,7 +154,7 @@ export default class extends Instruction {
       title: node.title ?? `#${node.id}`,
       Component: CollectionBlockInitializer,
       collection: node.config.collection,
-      dataSource: `{{$jobsMapByNodeKey.${node.key}}}`,
+      dataPath: `$jobsMapByNodeKey.${node.key}`,
     };
   }
 }

@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import React from 'react';
 
 import { ActionInitializer } from '../../../schema-initializer/items/ActionInitializer';
@@ -7,6 +16,7 @@ export const DestroyActionInitializer = (props) => {
     title: '{{ t("Delete") }}',
     'x-action': 'destroy',
     'x-component': 'Action',
+    'x-use-component-props': 'useDestroyActionProps',
     'x-toolbar': 'ActionSchemaToolbar',
     'x-settings': 'actionSettings:delete',
     'x-component-props': {
@@ -15,7 +25,7 @@ export const DestroyActionInitializer = (props) => {
         title: "{{t('Delete record')}}",
         content: "{{t('Are you sure you want to delete it?')}}",
       },
-      useProps: '{{ useDestroyActionProps }}',
+      refreshDataBlockRequest: true,
     },
     'x-action-settings': {
       triggerWorkflows: [],

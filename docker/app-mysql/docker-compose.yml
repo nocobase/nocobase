@@ -21,6 +21,7 @@ services:
       - ./storage:/app/nocobase/storage
     ports:
       - "13000:80"
+    init: true
   mysql:
     image: mysql:latest
     environment:
@@ -29,5 +30,7 @@ services:
       MYSQL_PASSWORD: nocobase
       MYSQL_ROOT_PASSWORD: nocobase
     restart: always
+    volumes:
+      - ./storage/db/mysql:/var/lib/mysql
     networks:
       - nocobase

@@ -1,3 +1,13 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+import Topo from '@hapi/topo';
 import { CleanOptions, Collection, SyncOptions } from '@nocobase/database';
 import { importModule, isURL } from '@nocobase/utils';
 import { fsExists } from '@nocobase/utils/plugin-symlink';
@@ -45,12 +55,34 @@ export interface InstallOptions {
 export class AddPresetError extends Error {}
 
 export class PluginManager {
+  /**
+   * @internal
+   */
   app: Application;
+
+  /**
+   * @internal
+   */
   collection: Collection;
+
+  /**
+   * @internal
+   */
   pluginInstances = new Map<typeof Plugin, Plugin>();
+
+  /**
+   * @internal
+   */
   pluginAliases = new Map<string, Plugin>();
+
+  /**
+   * @internal
+   */
   server: net.Server;
 
+  /**
+   * @internal
+   */
   constructor(public options: PluginManagerOptions) {
     this.app = options.app;
     this.app.db.registerRepositories({
@@ -76,18 +108,27 @@ export class PluginManager {
     this.app.resourcer.use(uploadMiddleware);
   }
 
+  /**
+   * @internal
+   */
   _repository: PluginManagerRepository;
 
   get repository() {
     return this.app.db.getRepository('applicationPlugins') as PluginManagerRepository;
   }
 
+  /**
+   * @internal
+   */
   static async getPackageJson(packageName: string) {
     const file = await fs.promises.realpath(resolve(process.env.NODE_MODULES_PATH, packageName, 'package.json'));
     const data = await fs.promises.readFile(file, { encoding: 'utf-8' });
     return JSON.parse(data);
   }
 
+  /**
+   * @internal
+   */
   static async getPackageName(name: string) {
     const prefixes = this.getPluginPkgPrefix();
     for (const prefix of prefixes) {
@@ -100,12 +141,18 @@ export class PluginManager {
     throw new Error(`${name} plugin does not exist`);
   }
 
+  /**
+   * @internal
+   */
   static getPluginPkgPrefix() {
     return (process.env.PLUGIN_PACKAGE_PREFIX || '@nocobase/plugin-,@nocobase/preset-,@nocobase/plugin-pro-').split(
       ',',
     );
   }
 
+  /**
+   * @internal
+   */
   static async findPackage(name: string) {
     try {
       const packageName = this.getPackageName(name);
@@ -130,6 +177,9 @@ export class PluginManager {
     throw new Error(`No available packages found, ${name} plugin does not exist`);
   }
 
+  /**
+   * @internal
+   */
   static clearCache(packageName: string) {
     return;
     const packageNamePath = packageName.replace('/', sep);
@@ -140,6 +190,9 @@ export class PluginManager {
     });
   }
 
+  /**
+   * @internal
+   */
   static async resolvePlugin(pluginName: string | typeof Plugin, isUpgrade = false, isPkg = false) {
     if (typeof pluginName === 'string') {
       const packageName = isPkg ? pluginName : await this.getPackageName(pluginName);
@@ -148,6 +201,41 @@ export class PluginManager {
     } else {
       return pluginName;
     }
+  }
+
+  static parsedNames = {};
+
+  static async parseName(nameOrPkg: string) {
+    if (this.parsedNames[nameOrPkg]) {
+      return this.parsedNames[nameOrPkg];
+    }
+    if (nameOrPkg.startsWith('@nocobase/plugin-')) {
+      this.parsedNames[nameOrPkg] = {
+        packageName: nameOrPkg,
+        name: nameOrPkg.replace('@nocobase/plugin-', ''),
+      };
+      return this.parsedNames[nameOrPkg];
+    }
+    if (nameOrPkg.startsWith('@nocobase/preset-')) {
+      this.parsedNames[nameOrPkg] = {
+        packageName: nameOrPkg,
+        name: nameOrPkg.replace('@nocobase/preset-', ''),
+      };
+      return this.parsedNames[nameOrPkg];
+    }
+    const exists = async (name: string, isPreset = false) => {
+      return fsExists(
+        resolve(process.env.NODE_MODULES_PATH, `@nocobase/${isPreset ? 'preset' : 'plugin'}-${name}`, 'package.json'),
+      );
+    };
+    if (await exists(nameOrPkg)) {
+      this.parsedNames[nameOrPkg] = { name: nameOrPkg, packageName: `@nocobase/plugin-${nameOrPkg}` };
+    } else if (await exists(nameOrPkg, true)) {
+      this.parsedNames[nameOrPkg] = { name: nameOrPkg, packageName: `@nocobase/preset-${nameOrPkg}` };
+    } else {
+      this.parsedNames[nameOrPkg] = { name: nameOrPkg, packageName: nameOrPkg };
+    }
+    return this.parsedNames[nameOrPkg];
   }
 
   addPreset(plugin: string | typeof Plugin, options: any = {}) {
@@ -190,6 +278,7 @@ export class PluginManager {
     }
   }
 
+  /* istanbul ignore next -- @preserve */
   async create(pluginName: string, options?: { forceRecreate?: boolean }) {
     const createPlugin = async (name) => {
       const pluginDir = resolve(process.cwd(), 'packages/plugins', name);
@@ -218,22 +307,17 @@ export class PluginManager {
       return;
     }
     this.app.log.info('attempt to add the plugin to the app');
-    let packageName: string;
-    try {
-      packageName = await PluginManager.getPackageName(pluginName);
-    } catch (error) {
-      packageName = pluginName;
-    }
+    const { name, packageName } = await PluginManager.parseName(pluginName);
     const json = await PluginManager.getPackageJson(packageName);
     this.app.log.info(`add plugin [${packageName}]`, {
-      name: pluginName,
-      packageName: packageName,
+      name,
+      packageName,
       version: json.version,
     });
     await this.repository.updateOrCreate({
       values: {
-        name: pluginName,
-        packageName: packageName,
+        name,
+        packageName,
         version: json.version,
       },
       filterKeys: ['name'],
@@ -242,7 +326,7 @@ export class PluginManager {
     await tsxRerunning();
   }
 
-  async add(plugin?: any, options: any = {}, insert = false, isUpgrade = false) {
+  async add(plugin?: string | typeof Plugin, options: any = {}, insert = false, isUpgrade = false) {
     if (!isUpgrade && this.has(plugin)) {
       const name = typeof plugin === 'string' ? plugin : plugin.name;
       this.app.log.warn(`plugin [${name}] added`);
@@ -285,6 +369,9 @@ export class PluginManager {
     if (options.name) {
       this.pluginAliases.set(options.name, instance);
     }
+    if (options.packageName) {
+      this.pluginAliases.set(options.packageName, instance);
+    }
     if (insert && options.name) {
       await this.repository.updateOrCreate({
         values: {
@@ -296,11 +383,17 @@ export class PluginManager {
     await instance.afterAdd();
   }
 
+  /**
+   * @internal
+   */
   async initPlugins() {
     await this.initPresetPlugins();
     await this.initOtherPlugins();
   }
 
+  /**
+   * @internal
+   */
   async loadCommands() {
     this.app.log.debug('load commands');
     const items = await this.repository.find({
@@ -308,19 +401,25 @@ export class PluginManager {
         enabled: true,
       },
     });
-    let sourceDir = basename(dirname(__dirname)) === 'src' ? 'src' : 'dist';
     const packageNames: string[] = items.map((item) => item.packageName);
     const source = [];
     for (const packageName of packageNames) {
-      const directory = join(packageName, sourceDir, 'server/commands/*.' + (sourceDir === 'src' ? 'ts' : 'js'));
-      source.push(directory);
+      const file = require.resolve(packageName);
+      const sourceDir = basename(dirname(file)) === 'src' ? 'src' : 'dist';
+      const directory = join(
+        packageName,
+        sourceDir,
+        'server/commands/*.' + (basename(dirname(file)) === 'src' ? 'ts' : 'js'),
+      );
+      source.push(directory.replaceAll(sep, '/'));
     }
-    sourceDir = basename(dirname(__dirname)) === 'src' ? 'src' : 'lib';
     for (const plugin of this.options.plugins || []) {
       if (typeof plugin === 'string') {
         const packageName = await PluginManager.getPackageName(plugin);
+        const file = require.resolve(packageName);
+        const sourceDir = basename(dirname(file)) === 'src' ? 'src' : 'lib';
         const directory = join(packageName, sourceDir, 'server/commands/*.' + (sourceDir === 'src' ? 'ts' : 'js'));
-        source.push(directory);
+        source.push(directory.replaceAll(sep, '/'));
       }
     }
     const files = await fg(source, {
@@ -423,12 +522,19 @@ export class PluginManager {
     });
   }
 
-  async enable(name: string | string[]) {
-    const pluginNames = _.castArray(name);
+  async enable(nameOrPkg: string | string[]) {
+    let pluginNames = nameOrPkg;
+    if (nameOrPkg === '*') {
+      const items = await this.repository.find();
+      pluginNames = items.map((item: any) => item.name);
+    }
+    pluginNames = this.sort(pluginNames);
     this.app.log.debug(`enabling plugin ${pluginNames.join(',')}`);
     this.app.setMaintainingMessage(`enabling plugin ${pluginNames.join(',')}`);
     const toBeUpdated = [];
-    for (const pluginName of pluginNames) {
+    for (const name of pluginNames) {
+      const { name: pluginName } = await PluginManager.parseName(name);
+      console.log('pluginName', pluginName);
       const plugin = this.get(pluginName);
       if (!plugin) {
         throw new Error(`${pluginName} plugin does not exist`);
@@ -437,9 +543,17 @@ export class PluginManager {
         continue;
       }
       await this.app.emitAsync('beforeEnablePlugin', pluginName);
-      await plugin.beforeEnable();
-      plugin.enabled = true;
-      toBeUpdated.push(pluginName);
+      try {
+        await plugin.beforeEnable();
+        plugin.enabled = true;
+        toBeUpdated.push(pluginName);
+      } catch (error) {
+        if (nameOrPkg === '*') {
+          this.app.log.error(error.message);
+        } else {
+          throw error;
+        }
+      }
     }
     if (toBeUpdated.length === 0) {
       return;
@@ -454,10 +568,10 @@ export class PluginManager {
     });
     try {
       await this.app.reload();
-      this.app.log.debug(`syncing database in enable plugin ${pluginNames.join(',')}...`);
-      this.app.setMaintainingMessage(`syncing database in enable plugin ${pluginNames.join(',')}...`);
+      this.app.log.debug(`syncing database in enable plugin ${toBeUpdated.join(',')}...`);
+      this.app.setMaintainingMessage(`syncing database in enable plugin ${toBeUpdated.join(',')}...`);
       await this.app.db.sync();
-      for (const pluginName of pluginNames) {
+      for (const pluginName of toBeUpdated) {
         const plugin = this.get(pluginName);
         if (!plugin.installed) {
           this.app.log.debug(`installing plugin ${pluginName}...`);
@@ -474,7 +588,7 @@ export class PluginManager {
           installed: true,
         },
       });
-      for (const pluginName of pluginNames) {
+      for (const pluginName of toBeUpdated) {
         const plugin = this.get(pluginName);
         this.app.log.debug(`emit afterEnablePlugin event...`);
         await plugin.afterEnable();
@@ -504,7 +618,8 @@ export class PluginManager {
     this.app.log.debug(`disabling plugin ${pluginNames.join(',')}`);
     this.app.setMaintainingMessage(`disabling plugin ${pluginNames.join(',')}`);
     const toBeUpdated = [];
-    for (const pluginName of pluginNames) {
+    for (const name of pluginNames) {
+      const { name: pluginName } = await PluginManager.parseName(name);
       const plugin = this.get(pluginName);
       if (!plugin) {
         throw new Error(`${pluginName} plugin does not exist`);
@@ -554,13 +669,17 @@ export class PluginManager {
   }
 
   async remove(name: string | string[], options?: { removeDir?: boolean; force?: boolean }) {
-    const pluginNames = _.castArray(name);
-    const records = pluginNames.map((name) => {
-      return {
-        name: name,
-        packageName: name,
-      };
-    });
+    const names = _.castArray(name);
+    const pluginNames = [];
+    const records = [];
+    for (const nameOrPkg of names) {
+      const { name, packageName } = await PluginManager.parseName(nameOrPkg);
+      pluginNames.push(name);
+      records.push({
+        name,
+        packageName,
+      });
+    }
     const removeDir = async () => {
       await Promise.all(
         records.map(async (plugin) => {
@@ -582,6 +701,7 @@ export class PluginManager {
           name: pluginNames,
         },
       });
+      this.app.log.warn(`force remove plugins ${pluginNames.join(',')}`);
     } else {
       await this.app.load();
       for (const pluginName of pluginNames) {
@@ -616,70 +736,73 @@ export class PluginManager {
     if (options?.removeDir) {
       await removeDir();
     }
-    await execa('yarn', ['nocobase', 'refresh']);
+    await execa('yarn', ['nocobase', 'refresh'], {
+      env: process.env,
+    });
   }
 
-  async loadOne(plugin: Plugin) {
-    this.app.setMaintainingMessage(`loading plugin ${plugin.name}...`);
-    if (plugin.state.loaded || !plugin.enabled) {
+  /**
+   * @internal
+   */
+  async addViaCLI(urlOrName: string | string[], options?: PluginData, emitStartedEvent = true) {
+    if (Array.isArray(urlOrName)) {
+      for (const packageName of urlOrName) {
+        await this.addViaCLI(packageName, _.omit(options, 'name'), false);
+      }
+      await this.app.emitStartedEvent();
+      await execa('yarn', ['nocobase', 'postinstall']);
       return;
     }
-    const name = plugin.getName();
-    await plugin.beforeLoad();
-
-    await this.app.emitAsync('beforeLoadPlugin', plugin, {});
-    this.app.logger.debug(`loading plugin...`, { submodule: 'plugin-manager', method: 'loadOne', name });
-    await plugin.load();
-    plugin.state.loaded = true;
-    await this.app.emitAsync('afterLoadPlugin', plugin, {});
-    this.app.logger.debug(`after load plugin...`, { submodule: 'plugin-manager', method: 'loadOne', name });
-
-    this.app.setMaintainingMessage(`loaded plugin ${plugin.name}`);
-  }
-
-  async addViaCLI(urlOrName: string, options?: PluginData) {
     if (isURL(urlOrName)) {
-      await this.addByCompressedFileUrl({
-        ...options,
-        compressedFileUrl: urlOrName,
-      });
+      await this.addByCompressedFileUrl(
+        {
+          ...options,
+          compressedFileUrl: urlOrName,
+        },
+        emitStartedEvent,
+      );
     } else if (await fsExists(urlOrName)) {
-      await this.addByCompressedFileUrl({
-        ...(options as any),
-        compressedFileUrl: urlOrName,
-      });
+      await this.addByCompressedFileUrl(
+        {
+          ...(options as any),
+          compressedFileUrl: urlOrName,
+        },
+        emitStartedEvent,
+      );
     } else if (options?.registry) {
-      if (!options.name) {
-        const model = await this.repository.findOne({ filter: { packageName: urlOrName } });
-        if (model) {
-          options['name'] = model?.name;
-        }
-        if (!options.name) {
-          options['name'] = urlOrName.replace('@nocobase/plugin-', '');
-        }
-      }
-      await this.addByNpm({
-        ...(options as any),
-        packageName: urlOrName,
-      });
+      const { name, packageName } = await PluginManager.parseName(urlOrName);
+      options['name'] = name;
+      await this.addByNpm(
+        {
+          ...(options as any),
+          packageName,
+        },
+        emitStartedEvent,
+      );
     } else {
+      const { name, packageName } = await PluginManager.parseName(urlOrName);
       const opts = {
         ...options,
+        name,
+        packageName,
       };
-      const model = await this.repository.findOne({ filter: { packageName: urlOrName } });
-      if (model) {
-        opts['name'] = model.name;
-      }
-      if (!opts['packageName']) {
-        opts['packageName'] = urlOrName;
-      }
-      await this.add(opts['name'] || urlOrName, opts, true);
+      // 下面这行代码删了，测试会报错 packages/core/server/src/__tests__/gateway.test.ts:407:29
+      await this.repository.findOne({ filter: { packageName } });
+      await this.add(name, opts, true);
     }
-    await this.app.emitStartedEvent();
-    await execa('yarn', ['nocobase', 'postinstall']);
+    if (emitStartedEvent) {
+      await this.app.emitStartedEvent();
+      await execa('yarn', ['nocobase', 'postinstall']);
+    }
   }
 
-  async addByNpm(options: { packageName: string; name?: string; registry: string; authToken?: string }) {
+  /**
+   * @internal
+   */
+  async addByNpm(
+    options: { packageName: string; name?: string; registry: string; authToken?: string },
+    throwError = true,
+  ) {
     let { name = '', registry, packageName, authToken } = options;
     name = name.trim();
     registry = registry.trim();
@@ -690,31 +813,48 @@ export class PluginManager {
       registry,
       authToken,
     });
-    return this.addByCompressedFileUrl({ name, compressedFileUrl, registry, authToken, type: 'npm' });
+    return this.addByCompressedFileUrl({ name, compressedFileUrl, registry, authToken, type: 'npm' }, throwError);
   }
 
-  async addByFile(options: { file: string; registry?: string; authToken?: string; type?: string; name?: string }) {
+  /**
+   * @internal
+   */
+  async addByFile(
+    options: { file: string; registry?: string; authToken?: string; type?: string; name?: string },
+    throwError = true,
+  ) {
     const { file, authToken } = options;
 
     const { packageName, tempFile, tempPackageContentDir } = await downloadAndUnzipToTempDir(file, authToken);
 
-    const name = options.name || packageName;
+    const { name } = await PluginManager.parseName(packageName);
 
     if (this.has(name)) {
       await removeTmpDir(tempFile, tempPackageContentDir);
-      throw new Error(`plugin name [${name}] already exists`);
+      if (throwError) {
+        throw new Error(`plugin name [${name}] already exists`);
+      } else {
+        this.app.log.warn(`plugin name [${name}] already exists`);
+        return;
+      }
     }
     await copyTempPackageToStorageAndLinkToNodeModules(tempFile, tempPackageContentDir, packageName);
     return this.add(name, { packageName }, true);
   }
 
-  async addByCompressedFileUrl(options: {
-    compressedFileUrl: string;
-    registry?: string;
-    authToken?: string;
-    type?: string;
-    name?: string;
-  }) {
+  /**
+   * @internal
+   */
+  async addByCompressedFileUrl(
+    options: {
+      compressedFileUrl: string;
+      registry?: string;
+      authToken?: string;
+      type?: string;
+      name?: string;
+    },
+    throwError = true,
+  ) {
     const { compressedFileUrl, authToken } = options;
 
     const { packageName, tempFile, tempPackageContentDir } = await downloadAndUnzipToTempDir(
@@ -722,64 +862,111 @@ export class PluginManager {
       authToken,
     );
 
-    const name = options.name || packageName;
+    const { name } = await PluginManager.parseName(packageName);
 
     if (this.has(name)) {
       await removeTmpDir(tempFile, tempPackageContentDir);
-      throw new Error(`plugin name [${name}] already exists`);
+      if (throwError) {
+        throw new Error(`plugin name [${name}] already exists`);
+      } else {
+        this.app.log.warn(`plugin name [${name}] already exists`);
+        return;
+      }
     }
     await copyTempPackageToStorageAndLinkToNodeModules(tempFile, tempPackageContentDir, packageName);
     return this.add(name, { packageName }, true);
   }
 
-  async update(options: PluginData) {
-    if (options['url']) {
-      options.compressedFileUrl = options['url'];
+  async update(nameOrPkg: string | string[], options: PluginData, emitStartedEvent = true) {
+    const upgrade = async () => {
+      if (!(await this.app.isStarted())) {
+        this.app.log.debug('app upgrading');
+        await this.app.runCommand('upgrade');
+        await execa('yarn', ['nocobase', 'refresh'], {
+          env: process.env,
+        });
+        return;
+      }
+      const file = resolve(process.cwd(), 'storage/app-upgrading');
+      await fs.promises.writeFile(file, '', 'utf-8');
+      // await this.app.upgrade();
+      if (process.env.IS_DEV_CMD) {
+        await tsxRerunning();
+      } else {
+        await execa('yarn', ['nocobase', 'pm2-restart'], {
+          env: process.env,
+        });
+      }
+    };
+    if (Array.isArray(nameOrPkg)) {
+      for (const name of nameOrPkg) {
+        await this.update(name, { ...options }, false);
+      }
+      return upgrade();
     }
-    if (!options.name) {
-      const model = await this.repository.findOne({ filter: { packageName: options.packageName } });
-      options['name'] = model.name;
+    const opts = { ...options };
+    if (isURL(nameOrPkg)) {
+      opts.compressedFileUrl = nameOrPkg;
+    } else if (await fsExists(nameOrPkg)) {
+      opts.compressedFileUrl = nameOrPkg;
     }
-    if (options.compressedFileUrl) {
-      await this.upgradeByCompressedFileUrl(options);
+    if (opts.compressedFileUrl) {
+      await this.upgradeByCompressedFileUrl(opts);
     } else {
-      await this.upgradeByNpm(options as any);
+      const { name, packageName } = await PluginManager.parseName(nameOrPkg);
+      await this.upgradeByNpm({ ...opts, packageName, name } as any);
     }
-    await this.app.upgrade();
+    if (emitStartedEvent) {
+      await upgrade();
+    }
   }
 
+  /**
+   * @internal
+   */
   async upgradeByNpm(values: PluginData) {
     const name = values.name;
-    const plugin = this.get(name);
-    if (!this.has(name)) {
+    if (!(await this.repository.has(name))) {
       throw new Error(`plugin name [${name}] not exists`);
     }
-    if (!plugin.options.packageName || !values.registry) {
+    if (!values.registry) {
       throw new Error(`plugin name [${name}] not installed by npm`);
     }
     const version = values.version?.trim();
-    const registry = values.registry?.trim() || plugin.options.registry;
-    const authToken = values.authToken?.trim() || plugin.options.authToken;
+    const registry = values.registry?.trim();
+    const authToken = values.authToken?.trim();
     const { compressedFileUrl } = await getPluginInfoByNpm({
-      packageName: plugin.options.packageName,
+      packageName: values.packageName,
       registry: registry,
       authToken: authToken,
       version,
     });
-    return this.upgradeByCompressedFileUrl({ compressedFileUrl, name, version, registry, authToken });
-  }
-
-  async upgradeByCompressedFileUrl(options: PluginData) {
-    const { name, compressedFileUrl, authToken } = options;
-    const data = await this.repository.findOne({ filter: { name } });
-    const { version } = await updatePluginByCompressedFileUrl({
+    return this.upgradeByCompressedFileUrl({
       compressedFileUrl,
-      packageName: data.packageName,
-      authToken: authToken,
+      name,
+      version,
+      registry,
+      authToken,
     });
-    await this.add(name, { version, packageName: data.packageName }, true, true);
   }
 
+  /**
+   * @internal
+   */
+  async upgradeByCompressedFileUrl(options: PluginData) {
+    const { compressedFileUrl, authToken } = options;
+    const { packageName, version } = await updatePluginByCompressedFileUrl({
+      compressedFileUrl,
+      authToken: authToken,
+      repository: this.repository,
+    });
+    const { name } = await PluginManager.parseName(packageName);
+    await this.add(name, { name, version, packageName }, true, true);
+  }
+
+  /**
+   * @internal
+   */
   getNameByPackageName(packageName: string) {
     const prefixes = PluginManager.getPluginPkgPrefix();
     const prefix = prefixes.find((prefix) => packageName.startsWith(prefix));
@@ -796,7 +983,7 @@ export class PluginManager {
   async list(options: any = {}) {
     const { locale = 'en-US', isPreset = false } = options;
     return Promise.all(
-      [...this.getAliases()]
+      [...this.getPlugins().keys()]
         .map((name) => {
           const plugin = this.get(name);
           if (!isPreset && plugin.options.isPreset) {
@@ -808,12 +995,18 @@ export class PluginManager {
     );
   }
 
+  /**
+   * @internal
+   */
   async getNpmVersionList(name: string) {
     const plugin = this.get(name);
     const npmInfo = await getNpmInfo(plugin.options.packageName, plugin.options.registry, plugin.options.authToken);
     return Object.keys(npmInfo.versions);
   }
 
+  /**
+   * @internal
+   */
   async loadPresetMigrations() {
     const migrations = {
       beforeLoad: [],
@@ -854,6 +1047,9 @@ export class PluginManager {
     };
   }
 
+  /**
+   * @internal
+   */
   async loadOtherMigrations() {
     const migrations = {
       beforeLoad: [],
@@ -897,6 +1093,9 @@ export class PluginManager {
     };
   }
 
+  /**
+   * @internal
+   */
   async loadPresetPlugins() {
     await this.initPresetPlugins();
     await this.load();
@@ -931,6 +1130,9 @@ export class PluginManager {
     });
   }
 
+  /**
+   * @internal
+   */
   async initOtherPlugins() {
     if (this['_initOtherPlugins']) {
       return;
@@ -939,6 +1141,9 @@ export class PluginManager {
     this['_initOtherPlugins'] = true;
   }
 
+  /**
+   * @internal
+   */
   async initPresetPlugins() {
     if (this['_initPresetPlugins']) {
       return;
@@ -948,6 +1153,20 @@ export class PluginManager {
       await this.add(p, { enabled: true, isPreset: true, ...opts });
     }
     this['_initPresetPlugins'] = true;
+  }
+
+  private sort(names: string | string[]) {
+    const pluginNames = _.castArray(names);
+    if (pluginNames.length === 1) {
+      return pluginNames;
+    }
+    const sorter = new Topo.Sorter<string>();
+    for (const pluginName of pluginNames) {
+      const plugin = this.get(pluginName);
+      const peerDependencies = Object.keys(plugin.options?.packageJson?.peerDependencies || {});
+      sorter.add(pluginName, { after: peerDependencies, group: plugin.options?.packageName || pluginName });
+    }
+    return sorter.nodes;
   }
 }
 

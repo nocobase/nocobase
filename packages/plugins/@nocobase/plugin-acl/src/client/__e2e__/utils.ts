@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { general, PageConfig } from '@nocobase/test/e2e';
 /**
  * 页面中有一个空的 Table 区块，并且配有字段:普通字段和关系字段
@@ -14,7 +23,7 @@ export const oneTableBlock: PageConfig = {
         type: 'void',
         version: '2.0',
         'x-component': 'Grid',
-        'x-initializer': 'BlockInitializers',
+        'x-initializer': 'page:addBlock',
         _isJSONSchemaObject: true,
         properties: {
           hxf5h572bwc: {
@@ -56,7 +65,7 @@ export const oneTableBlock: PageConfig = {
                         type: 'void',
                         version: '2.0',
                         'x-component': 'ActionBar',
-                        'x-initializer': 'TableActionInitializers',
+                        'x-initializer': 'table:configureActions',
                         'x-component-props': {
                           style: {
                             marginBottom: 'var(--nb-spacing)',
@@ -116,7 +125,7 @@ export const oneTableBlock: PageConfig = {
                                             type: 'void',
                                             version: '2.0',
                                             'x-component': 'Grid',
-                                            'x-initializer': 'CreateFormBlockInitializers',
+                                            'x-initializer': 'popup:addNew:addBlock',
                                             _isJSONSchemaObject: true,
                                             properties: {
                                               f3q7xmyiyl4: {
@@ -161,7 +170,7 @@ export const oneTableBlock: PageConfig = {
                                                                 type: 'void',
                                                                 version: '2.0',
                                                                 'x-component': 'Grid',
-                                                                'x-initializer': 'FormItemInitializers',
+                                                                'x-initializer': 'form:configureFields',
                                                                 _isJSONSchemaObject: true,
                                                                 properties: {
                                                                   ddz3kqt5kpf: {
@@ -240,7 +249,7 @@ export const oneTableBlock: PageConfig = {
                                                                                     version: '2.0',
                                                                                     'x-component': 'Grid',
                                                                                     'x-initializer':
-                                                                                      'FormItemInitializers',
+                                                                                      'form:configureFields',
                                                                                     _isJSONSchemaObject: true,
                                                                                     properties: {
                                                                                       yhxqnl03mak: {
@@ -435,7 +444,7 @@ export const oneTableBlock: PageConfig = {
                                                                 type: 'void',
                                                                 version: '2.0',
                                                                 'x-component': 'ActionBar',
-                                                                'x-initializer': 'CreateFormActionInitializers',
+                                                                'x-initializer': 'createForm:configureActions',
                                                                 'x-component-props': {
                                                                   style: {
                                                                     marginTop: 24,
@@ -767,7 +776,7 @@ export const oneTableBlock: PageConfig = {
                         type: 'array',
                         version: '2.0',
                         'x-component': 'TableV2',
-                        'x-initializer': 'TableColumnInitializers',
+                        'x-initializer': 'table:configureColumns',
                         'x-component-props': {
                           rowKey: 'id',
                           useProps: '{{ useTableBlockProps }}',
@@ -785,7 +794,7 @@ export const oneTableBlock: PageConfig = {
                             'x-designer': 'TableV2.ActionColumnDesigner',
                             'x-component': 'TableV2.Column',
                             'x-decorator': 'TableV2.Column.ActionBar',
-                            'x-initializer': 'TableActionColumnInitializers',
+                            'x-initializer': 'table:configureItemActions',
                             'x-action-column': 'actions',
                             'x-component-props': {
                               width: 400,
@@ -850,7 +859,7 @@ export const oneTableBlock: PageConfig = {
                                                     type: 'void',
                                                     version: '2.0',
                                                     'x-component': 'Grid',
-                                                    'x-initializer': 'RecordBlockInitializers',
+                                                    'x-initializer': 'popup:common:addBlock',
                                                     _isJSONSchemaObject: true,
                                                     properties: {
                                                       yyehsjjoo8e: {
@@ -898,7 +907,7 @@ export const oneTableBlock: PageConfig = {
                                                                         type: 'void',
                                                                         version: '2.0',
                                                                         'x-component': 'Grid',
-                                                                        'x-initializer': 'FormItemInitializers',
+                                                                        'x-initializer': 'form:configureFields',
                                                                         _isJSONSchemaObject: true,
                                                                         properties: {
                                                                           q3s02k44o3o: {
@@ -1054,7 +1063,7 @@ export const oneTableBlock: PageConfig = {
                                                                         type: 'void',
                                                                         version: '2.0',
                                                                         'x-component': 'ActionBar',
-                                                                        'x-initializer': 'UpdateFormActionInitializers',
+                                                                        'x-initializer': 'editForm:configureActions',
                                                                         'x-component-props': {
                                                                           style: {
                                                                             marginTop: 24,
@@ -1180,7 +1189,7 @@ export const oneTableBlock: PageConfig = {
                                                     type: 'void',
                                                     version: '2.0',
                                                     'x-component': 'Grid',
-                                                    'x-initializer': 'RecordBlockInitializers',
+                                                    'x-initializer': 'popup:common:addBlock',
                                                     _isJSONSchemaObject: true,
                                                     'x-uid': '9be5zlgowvl',
                                                     'x-async': false,
@@ -1254,7 +1263,7 @@ export const oneTableBlock: PageConfig = {
                                                     type: 'void',
                                                     version: '2.0',
                                                     'x-component': 'Grid',
-                                                    'x-initializer': 'RecordBlockInitializers',
+                                                    'x-initializer': 'popup:common:addBlock',
                                                     _isJSONSchemaObject: true,
                                                     properties: {
                                                       pk40wwnw0cp: {
@@ -1302,7 +1311,7 @@ export const oneTableBlock: PageConfig = {
                                                                         type: 'void',
                                                                         version: '2.0',
                                                                         'x-component': 'Grid',
-                                                                        'x-initializer': 'FormItemInitializers',
+                                                                        'x-initializer': 'form:configureFields',
                                                                         _isJSONSchemaObject: true,
                                                                         properties: {
                                                                           '7043nizntd8': {
@@ -1344,7 +1353,7 @@ export const oneTableBlock: PageConfig = {
                                                                                             version: '2.0',
                                                                                             'x-component': 'Grid',
                                                                                             'x-initializer':
-                                                                                              'FormItemInitializers',
+                                                                                              'form:configureFields',
                                                                                             _isJSONSchemaObject: true,
                                                                                             properties: {
                                                                                               dtxjb31ls31: {
@@ -1739,7 +1748,7 @@ export const oneTableBlock: PageConfig = {
                                                                         type: 'void',
                                                                         version: '2.0',
                                                                         'x-component': 'ActionBar',
-                                                                        'x-initializer': 'UpdateFormActionInitializers',
+                                                                        'x-initializer': 'editForm:configureActions',
                                                                         'x-component-props': {
                                                                           style: {
                                                                             marginTop: 24,
@@ -1843,7 +1852,7 @@ export const oneTableBlock: PageConfig = {
                                                     type: 'void',
                                                     version: '2.0',
                                                     'x-component': 'Grid',
-                                                    'x-initializer': 'RecordBlockInitializers',
+                                                    'x-initializer': 'popup:common:addBlock',
                                                     _isJSONSchemaObject: true,
                                                     properties: {
                                                       h9gq1awpz33: {
@@ -1890,8 +1899,7 @@ export const oneTableBlock: PageConfig = {
                                                                         type: 'void',
                                                                         version: '2.0',
                                                                         'x-component': 'ActionBar',
-                                                                        'x-initializer':
-                                                                          'ReadPrettyFormActionInitializers',
+                                                                        'x-initializer': 'details:configureActions',
                                                                         'x-component-props': {
                                                                           style: {
                                                                             marginBottom: 24,
@@ -1906,8 +1914,7 @@ export const oneTableBlock: PageConfig = {
                                                                         type: 'void',
                                                                         version: '2.0',
                                                                         'x-component': 'Grid',
-                                                                        'x-initializer':
-                                                                          'ReadPrettyFormItemInitializers',
+                                                                        'x-initializer': 'details:configureFields',
                                                                         _isJSONSchemaObject: true,
                                                                         properties: {
                                                                           hnzs6hajxl8: {
@@ -2183,6 +2190,34 @@ export const oneTableBlock: PageConfig = {
                                     },
                                     'x-async': false,
                                     'x-index': 4,
+                                  },
+                                  k4602nzuf6r: {
+                                    _isJSONSchemaObject: true,
+                                    version: '2.0',
+                                    title: '{{ t("Delete") }}',
+                                    'x-action': 'destroy',
+                                    'x-component': 'Action.Link',
+                                    'x-toolbar': 'ActionSchemaToolbar',
+                                    'x-settings': 'actionSettings:delete',
+                                    'x-component-props': {
+                                      icon: 'DeleteOutlined',
+                                      confirm: {
+                                        title: "{{t('Delete record')}}",
+                                        content: "{{t('Are you sure you want to delete it?')}}",
+                                      },
+                                      useProps: '{{ useDestroyActionProps }}',
+                                    },
+                                    'x-action-settings': {
+                                      triggerWorkflows: [],
+                                    },
+                                    'x-decorator': 'ACLActionProvider',
+                                    'x-designer-props': {
+                                      linkageAction: true,
+                                    },
+                                    type: 'void',
+                                    'x-uid': 'a6mt7vf9g67',
+                                    'x-async': false,
+                                    'x-index': 5,
                                   },
                                 },
                                 'x-uid': 'mi05lvz5sj2',
@@ -2546,6 +2581,1338 @@ export const oneTableBlock: PageConfig = {
       },
     },
     'x-uid': 'vq3rjplt98m',
+    'x-async': true,
+    'x-index': 1,
+  },
+};
+
+export const newTableBlock: PageConfig = {
+  collections: general,
+  pageSchema: {
+    _isJSONSchemaObject: true,
+    version: '2.0',
+    type: 'void',
+    'x-component': 'Page',
+    properties: {
+      '46txyuq0grs': {
+        _isJSONSchemaObject: true,
+        version: '2.0',
+        type: 'void',
+        'x-component': 'Grid',
+        'x-initializer': 'page:addBlock',
+        properties: {
+          zahcrjgcnp9: {
+            _isJSONSchemaObject: true,
+            version: '2.0',
+            type: 'void',
+            'x-component': 'Grid.Row',
+            properties: {
+              au2rt1euteu: {
+                _isJSONSchemaObject: true,
+                version: '2.0',
+                type: 'void',
+                'x-component': 'Grid.Col',
+                properties: {
+                  ml4odxr7n6g: {
+                    _isJSONSchemaObject: true,
+                    version: '2.0',
+                    type: 'void',
+                    'x-decorator': 'TableBlockProvider',
+                    'x-acl-action': 'general:list',
+                    'x-decorator-props': {
+                      collection: 'general',
+                      dataSource: 'main',
+                      action: 'list',
+                      params: {
+                        pageSize: 20,
+                      },
+                      rowKey: 'id',
+                      showIndex: true,
+                      dragSort: false,
+                      disableTemplate: false,
+                    },
+                    'x-toolbar': 'BlockSchemaToolbar',
+                    'x-settings': 'blockSettings:table',
+                    'x-component': 'CardItem',
+                    'x-filter-targets': [],
+                    properties: {
+                      actions: {
+                        _isJSONSchemaObject: true,
+                        version: '2.0',
+                        type: 'void',
+                        'x-initializer': 'table:configureActions',
+                        'x-component': 'ActionBar',
+                        'x-component-props': {
+                          style: {
+                            marginBottom: 'var(--nb-spacing)',
+                          },
+                        },
+                        properties: {
+                          slrfnm3niyj: {
+                            _isJSONSchemaObject: true,
+                            version: '2.0',
+                            type: 'void',
+                            title: '{{ t("Bulk update") }}',
+                            'x-component': 'Action',
+                            'x-align': 'right',
+                            'x-acl-action': 'update',
+                            'x-decorator': 'ACLActionProvider',
+                            'x-acl-action-props': {
+                              skipScopeCheck: true,
+                            },
+                            'x-action': 'customize:bulkUpdate',
+                            'x-toolbar': 'ActionSchemaToolbar',
+                            'x-settings': 'actionSettings:bulkUpdate',
+                            'x-action-settings': {
+                              assignedValues: {},
+                              updateMode: 'selected',
+                              onSuccess: {
+                                manualClose: true,
+                                redirecting: false,
+                                successMessage: '{{t("Updated successfully")}}',
+                              },
+                            },
+                            'x-component-props': {
+                              icon: 'EditOutlined',
+                              useProps: '{{ useCustomizeBulkUpdateActionProps }}',
+                            },
+                            'x-uid': 'n1qxijc21mx',
+                            'x-async': false,
+                            'x-index': 1,
+                          },
+                          '2zkhhoww1fr': {
+                            _isJSONSchemaObject: true,
+                            version: '2.0',
+                            type: 'void',
+                            title: '{{t("Bulk edit")}}',
+                            'x-component': 'Action',
+                            'x-action': 'customize:bulkEdit',
+                            'x-action-settings': {
+                              updateMode: 'selected',
+                            },
+                            'x-component-props': {
+                              openMode: 'drawer',
+                              icon: 'EditOutlined',
+                            },
+                            'x-align': 'right',
+                            'x-decorator': 'ACLActionProvider',
+                            'x-toolbar': 'ActionSchemaToolbar',
+                            'x-settings': 'actionSettings:bulkEdit',
+                            'x-acl-action': 'update',
+                            'x-acl-action-props': {
+                              skipScopeCheck: true,
+                            },
+                            properties: {
+                              drawer: {
+                                _isJSONSchemaObject: true,
+                                version: '2.0',
+                                type: 'void',
+                                title: '{{t("Bulk edit")}}',
+                                'x-component': 'Action.Container',
+                                'x-component-props': {
+                                  className: 'nb-action-popup',
+                                },
+                                properties: {
+                                  tabs: {
+                                    _isJSONSchemaObject: true,
+                                    version: '2.0',
+                                    type: 'void',
+                                    'x-component': 'Tabs',
+                                    'x-component-props': {},
+                                    'x-initializer': 'TabPaneInitializersForBulkEditFormBlock',
+                                    properties: {
+                                      tab1: {
+                                        _isJSONSchemaObject: true,
+                                        version: '2.0',
+                                        type: 'void',
+                                        title: '{{t("Bulk edit")}}',
+                                        'x-component': 'Tabs.TabPane',
+                                        'x-designer': 'Tabs.Designer',
+                                        'x-component-props': {},
+                                        properties: {
+                                          grid: {
+                                            _isJSONSchemaObject: true,
+                                            version: '2.0',
+                                            type: 'void',
+                                            'x-component': 'Grid',
+                                            'x-initializer': 'popup:bulkEdit:addBlock',
+                                            'x-uid': '8nuffbe34bb',
+                                            'x-async': false,
+                                            'x-index': 1,
+                                          },
+                                        },
+                                        'x-uid': '4oldm9wc10s',
+                                        'x-async': false,
+                                        'x-index': 1,
+                                      },
+                                    },
+                                    'x-uid': '194thgnvcpy',
+                                    'x-async': false,
+                                    'x-index': 1,
+                                  },
+                                },
+                                'x-uid': '1x3ly7atx00',
+                                'x-async': false,
+                                'x-index': 1,
+                              },
+                            },
+                            'x-uid': '75x1gquc69a',
+                            'x-async': false,
+                            'x-index': 2,
+                          },
+                          huteob4p7ua: {
+                            _isJSONSchemaObject: true,
+                            version: '2.0',
+                            type: 'void',
+                            'x-action': 'create',
+                            'x-acl-action': 'create',
+                            title: "{{t('Add new')}}",
+                            'x-toolbar': 'ActionSchemaToolbar',
+                            'x-settings': 'actionSettings:addNew',
+                            'x-component': 'Action',
+                            'x-decorator': 'ACLActionProvider',
+                            'x-component-props': {
+                              openMode: 'drawer',
+                              type: 'primary',
+                              component: 'CreateRecordAction',
+                              icon: 'PlusOutlined',
+                            },
+                            'x-align': 'right',
+                            'x-acl-action-props': {
+                              skipScopeCheck: true,
+                            },
+                            properties: {
+                              drawer: {
+                                _isJSONSchemaObject: true,
+                                version: '2.0',
+                                type: 'void',
+                                title: '{{ t("Add record") }}',
+                                'x-component': 'Action.Container',
+                                'x-component-props': {
+                                  className: 'nb-action-popup',
+                                },
+                                properties: {
+                                  tabs: {
+                                    _isJSONSchemaObject: true,
+                                    version: '2.0',
+                                    type: 'void',
+                                    'x-component': 'Tabs',
+                                    'x-component-props': {},
+                                    'x-initializer': 'TabPaneInitializersForCreateFormBlock',
+                                    properties: {
+                                      tab1: {
+                                        _isJSONSchemaObject: true,
+                                        version: '2.0',
+                                        type: 'void',
+                                        title: '{{t("Add new")}}',
+                                        'x-component': 'Tabs.TabPane',
+                                        'x-designer': 'Tabs.Designer',
+                                        'x-component-props': {},
+                                        properties: {
+                                          grid: {
+                                            _isJSONSchemaObject: true,
+                                            version: '2.0',
+                                            type: 'void',
+                                            'x-component': 'Grid',
+                                            'x-initializer': 'popup:addNew:addBlock',
+                                            'x-uid': 'yjj9tl588o1',
+                                            'x-async': false,
+                                            'x-index': 1,
+                                          },
+                                        },
+                                        'x-uid': '0zjlqupqrd0',
+                                        'x-async': false,
+                                        'x-index': 1,
+                                      },
+                                    },
+                                    'x-uid': 'sjmso5vq3bc',
+                                    'x-async': false,
+                                    'x-index': 1,
+                                  },
+                                },
+                                'x-uid': '131b76phmyr',
+                                'x-async': false,
+                                'x-index': 1,
+                              },
+                            },
+                            'x-uid': '4ekiy4xn5ip',
+                            'x-async': false,
+                            'x-index': 3,
+                          },
+                          xi969uyvexr: {
+                            _isJSONSchemaObject: true,
+                            version: '2.0',
+                            title: '{{ t("Delete") }}',
+                            'x-action': 'destroy',
+                            'x-component': 'Action',
+                            'x-toolbar': 'ActionSchemaToolbar',
+                            'x-settings': 'actionSettings:bulkDelete',
+                            'x-decorator': 'ACLActionProvider',
+                            'x-acl-action-props': {
+                              skipScopeCheck: true,
+                            },
+                            'x-component-props': {
+                              icon: 'DeleteOutlined',
+                              confirm: {
+                                title: "{{t('Delete record')}}",
+                                content: "{{t('Are you sure you want to delete it?')}}",
+                              },
+                              useProps: '{{ useBulkDestroyActionProps }}',
+                            },
+                            'x-action-settings': {
+                              triggerWorkflows: [],
+                            },
+                            'x-acl-action': 'general:destroy',
+                            'x-align': 'right',
+                            type: 'void',
+                            'x-uid': 'x5nhm8j5prk',
+                            'x-async': false,
+                            'x-index': 4,
+                          },
+                        },
+                        'x-uid': 's99upcj5h12',
+                        'x-async': false,
+                        'x-index': 1,
+                      },
+                      '1pflm3akx4z': {
+                        _isJSONSchemaObject: true,
+                        version: '2.0',
+                        type: 'array',
+                        'x-initializer': 'table:configureColumns',
+                        'x-component': 'TableV2',
+                        'x-component-props': {
+                          rowKey: 'id',
+                          rowSelection: {
+                            type: 'checkbox',
+                          },
+                          useProps: '{{ useTableBlockProps }}',
+                        },
+                        properties: {
+                          actions: {
+                            _isJSONSchemaObject: true,
+                            version: '2.0',
+                            type: 'void',
+                            title: '{{ t("Actions") }}',
+                            'x-action-column': 'actions',
+                            'x-decorator': 'TableV2.Column.ActionBar',
+                            'x-component': 'TableV2.Column',
+                            'x-designer': 'TableV2.ActionColumnDesigner',
+                            'x-initializer': 'table:configureItemActions',
+                            properties: {
+                              '0vgecinvudu': {
+                                _isJSONSchemaObject: true,
+                                version: '2.0',
+                                type: 'void',
+                                'x-decorator': 'DndContext',
+                                'x-component': 'Space',
+                                'x-component-props': {
+                                  split: '|',
+                                },
+                                properties: {
+                                  kieddfdng7p: {
+                                    _isJSONSchemaObject: true,
+                                    version: '2.0',
+                                    type: 'void',
+                                    title: '{{ t("View") }}',
+                                    'x-action': 'view',
+                                    'x-toolbar': 'ActionSchemaToolbar',
+                                    'x-settings': 'actionSettings:view',
+                                    'x-component': 'Action.Link',
+                                    'x-component-props': {
+                                      openMode: 'drawer',
+                                    },
+                                    'x-decorator': 'ACLActionProvider',
+                                    'x-designer-props': {
+                                      linkageAction: true,
+                                    },
+                                    properties: {
+                                      drawer: {
+                                        _isJSONSchemaObject: true,
+                                        version: '2.0',
+                                        type: 'void',
+                                        title: '{{ t("View record") }}',
+                                        'x-component': 'Action.Container',
+                                        'x-component-props': {
+                                          className: 'nb-action-popup',
+                                        },
+                                        properties: {
+                                          tabs: {
+                                            _isJSONSchemaObject: true,
+                                            version: '2.0',
+                                            type: 'void',
+                                            'x-component': 'Tabs',
+                                            'x-component-props': {},
+                                            'x-initializer': 'TabPaneInitializers',
+                                            properties: {
+                                              tab1: {
+                                                _isJSONSchemaObject: true,
+                                                version: '2.0',
+                                                type: 'void',
+                                                title: '{{t("Details")}}',
+                                                'x-component': 'Tabs.TabPane',
+                                                'x-designer': 'Tabs.Designer',
+                                                'x-component-props': {},
+                                                properties: {
+                                                  grid: {
+                                                    _isJSONSchemaObject: true,
+                                                    version: '2.0',
+                                                    type: 'void',
+                                                    'x-component': 'Grid',
+                                                    'x-initializer': 'popup:common:addBlock',
+                                                    'x-uid': '2k0540e57ol',
+                                                    'x-async': false,
+                                                    'x-index': 1,
+                                                  },
+                                                },
+                                                'x-uid': 's7gi356fs70',
+                                                'x-async': false,
+                                                'x-index': 1,
+                                              },
+                                            },
+                                            'x-uid': '8grec6h6mtp',
+                                            'x-async': false,
+                                            'x-index': 1,
+                                          },
+                                        },
+                                        'x-uid': 'assiov38tvg',
+                                        'x-async': false,
+                                        'x-index': 1,
+                                      },
+                                    },
+                                    'x-uid': 'utm143emmhc',
+                                    'x-async': false,
+                                    'x-index': 1,
+                                  },
+                                  is523lf1al3: {
+                                    _isJSONSchemaObject: true,
+                                    version: '2.0',
+                                    type: 'void',
+                                    title: '{{ t("Edit") }}',
+                                    'x-action': 'update',
+                                    'x-toolbar': 'ActionSchemaToolbar',
+                                    'x-settings': 'actionSettings:edit',
+                                    'x-component': 'Action.Link',
+                                    'x-component-props': {
+                                      openMode: 'drawer',
+                                      icon: 'EditOutlined',
+                                    },
+                                    'x-decorator': 'ACLActionProvider',
+                                    'x-designer-props': {
+                                      linkageAction: true,
+                                    },
+                                    properties: {
+                                      drawer: {
+                                        _isJSONSchemaObject: true,
+                                        version: '2.0',
+                                        type: 'void',
+                                        title: '{{ t("Edit record") }}',
+                                        'x-component': 'Action.Container',
+                                        'x-component-props': {
+                                          className: 'nb-action-popup',
+                                        },
+                                        properties: {
+                                          tabs: {
+                                            _isJSONSchemaObject: true,
+                                            version: '2.0',
+                                            type: 'void',
+                                            'x-component': 'Tabs',
+                                            'x-component-props': {},
+                                            'x-initializer': 'TabPaneInitializers',
+                                            properties: {
+                                              tab1: {
+                                                _isJSONSchemaObject: true,
+                                                version: '2.0',
+                                                type: 'void',
+                                                title: '{{t("Edit")}}',
+                                                'x-component': 'Tabs.TabPane',
+                                                'x-designer': 'Tabs.Designer',
+                                                'x-component-props': {},
+                                                properties: {
+                                                  grid: {
+                                                    _isJSONSchemaObject: true,
+                                                    version: '2.0',
+                                                    type: 'void',
+                                                    'x-component': 'Grid',
+                                                    'x-initializer': 'popup:common:addBlock',
+                                                    'x-uid': 'wsyp993s4e3',
+                                                    'x-async': false,
+                                                    'x-index': 1,
+                                                  },
+                                                },
+                                                'x-uid': 'cffbmo4sb6k',
+                                                'x-async': false,
+                                                'x-index': 1,
+                                              },
+                                            },
+                                            'x-uid': '9dwrb18ntjm',
+                                            'x-async': false,
+                                            'x-index': 1,
+                                          },
+                                        },
+                                        'x-uid': 'rz924lz6i2u',
+                                        'x-async': false,
+                                        'x-index': 1,
+                                      },
+                                    },
+                                    'x-uid': 'nkrdjd1jz5j',
+                                    'x-async': false,
+                                    'x-index': 2,
+                                  },
+                                  k4602nzuf6r: {
+                                    _isJSONSchemaObject: true,
+                                    version: '2.0',
+                                    title: '{{ t("Delete") }}',
+                                    'x-action': 'destroy',
+                                    'x-component': 'Action.Link',
+                                    'x-toolbar': 'ActionSchemaToolbar',
+                                    'x-settings': 'actionSettings:delete',
+                                    'x-component-props': {
+                                      icon: 'DeleteOutlined',
+                                      confirm: {
+                                        title: "{{t('Delete record')}}",
+                                        content: "{{t('Are you sure you want to delete it?')}}",
+                                      },
+                                      useProps: '{{ useDestroyActionProps }}',
+                                    },
+                                    'x-action-settings': {
+                                      triggerWorkflows: [],
+                                    },
+                                    'x-decorator': 'ACLActionProvider',
+                                    'x-designer-props': {
+                                      linkageAction: true,
+                                    },
+                                    type: 'void',
+                                    'x-uid': 'a6mt7vf9g67',
+                                    'x-async': false,
+                                    'x-index': 3,
+                                  },
+                                },
+                                'x-uid': '7q9j7135hk4',
+                                'x-async': false,
+                                'x-index': 1,
+                              },
+                            },
+                            'x-uid': 'c8iecn06wyp',
+                            'x-async': false,
+                            'x-index': 1,
+                          },
+                        },
+                        'x-uid': 'm0blrbf9bzr',
+                        'x-async': false,
+                        'x-index': 2,
+                      },
+                    },
+                    'x-uid': '63uhxny4lrn',
+                    'x-async': false,
+                    'x-index': 1,
+                  },
+                },
+                'x-uid': 'tcne2atmx0n',
+                'x-async': false,
+                'x-index': 1,
+              },
+            },
+            'x-uid': 'bk1yx2i13k8',
+            'x-async': false,
+            'x-index': 1,
+          },
+        },
+        'x-uid': 'if4rb336r5q',
+        'x-async': false,
+        'x-index': 1,
+      },
+    },
+    'x-uid': '532o6vwg8bi',
+    'x-async': true,
+    'x-index': 1,
+  },
+};
+
+//T-3950
+export const T3950: PageConfig = {
+  collections: [
+    {
+      name: 'general',
+      fields: [
+        {
+          key: 'rednse3ig65',
+          name: 'id',
+          type: 'bigInt',
+          interface: 'integer',
+          description: null,
+          collectionName: 'general',
+          parentKey: null,
+          reverseKey: null,
+          autoIncrement: true,
+          primaryKey: true,
+          allowNull: false,
+          uiSchema: {
+            type: 'number',
+            title: '{{t("ID")}}',
+            'x-component': 'InputNumber',
+            'x-read-pretty': true,
+          },
+        },
+        {
+          key: 'gav0bipnjfq',
+          name: 'createdAt',
+          type: 'date',
+          interface: 'createdAt',
+          description: null,
+          collectionName: 'general',
+          parentKey: null,
+          reverseKey: null,
+          field: 'createdAt',
+          uiSchema: {
+            type: 'datetime',
+            title: '{{t("Created at")}}',
+            'x-component': 'DatePicker',
+            'x-component-props': {},
+            'x-read-pretty': true,
+          },
+        },
+        {
+          key: '4z36i3tq78k',
+          name: 'createdBy',
+          type: 'belongsTo',
+          interface: 'createdBy',
+          description: null,
+          collectionName: 'general',
+          parentKey: null,
+          reverseKey: null,
+          target: 'users',
+          foreignKey: 'createdById',
+          uiSchema: {
+            type: 'object',
+            title: '{{t("Created by")}}',
+            'x-component': 'AssociationField',
+            'x-component-props': {
+              fieldNames: {
+                value: 'id',
+                label: 'nickname',
+              },
+            },
+            'x-read-pretty': true,
+          },
+          targetKey: 'id',
+        },
+        {
+          key: 'vtrxdhfchau',
+          name: 'updatedAt',
+          type: 'date',
+          interface: 'updatedAt',
+          description: null,
+          collectionName: 'general',
+          parentKey: null,
+          reverseKey: null,
+          field: 'updatedAt',
+          uiSchema: {
+            type: 'string',
+            title: '{{t("Last updated at")}}',
+            'x-component': 'DatePicker',
+            'x-component-props': {},
+            'x-read-pretty': true,
+          },
+        },
+        {
+          key: 'mqk7xpljqze',
+          name: 'updatedBy',
+          type: 'belongsTo',
+          interface: 'updatedBy',
+          description: null,
+          collectionName: 'general',
+          parentKey: null,
+          reverseKey: null,
+          target: 'users',
+          foreignKey: 'updatedById',
+          uiSchema: {
+            type: 'object',
+            title: '{{t("Last updated by")}}',
+            'x-component': 'AssociationField',
+            'x-component-props': {
+              fieldNames: {
+                value: 'id',
+                label: 'nickname',
+              },
+            },
+            'x-read-pretty': true,
+          },
+          targetKey: 'id',
+        },
+        {
+          key: 'eybc7t9ifwu',
+          name: 'oneToMany',
+          type: 'hasMany',
+          interface: 'o2m',
+          description: null,
+          collectionName: 'general',
+          parentKey: null,
+          reverseKey: null,
+          sourceKey: 'id',
+          foreignKey: 'f_iw9gnd2ivcd',
+          onDelete: 'SET NULL',
+          uiSchema: {
+            'x-component': 'AssociationField',
+            'x-component-props': {
+              multiple: true,
+            },
+            title: 'oneToMany',
+          },
+          target: 'users',
+          targetKey: 'id',
+        },
+      ],
+    },
+  ],
+  pageSchema: {
+    _isJSONSchemaObject: true,
+    version: '2.0',
+    type: 'void',
+    'x-component': 'Page',
+    'x-app-version': '0.21.0-alpha.6',
+    properties: {
+      qhfizzdk5jo: {
+        _isJSONSchemaObject: true,
+        version: '2.0',
+        type: 'void',
+        'x-component': 'Grid',
+        'x-initializer': 'page:addBlock',
+        'x-app-version': '0.21.0-alpha.6',
+        properties: {
+          '7z14apvqexc': {
+            _isJSONSchemaObject: true,
+            version: '2.0',
+            type: 'void',
+            'x-component': 'Grid.Row',
+            'x-app-version': '0.21.0-alpha.6',
+            properties: {
+              wmnazvitfos: {
+                _isJSONSchemaObject: true,
+                version: '2.0',
+                type: 'void',
+                'x-component': 'Grid.Col',
+                'x-app-version': '0.21.0-alpha.6',
+                properties: {
+                  x9oz9gu7q0z: {
+                    _isJSONSchemaObject: true,
+                    version: '2.0',
+                    type: 'void',
+                    'x-decorator': 'TableBlockProvider',
+                    'x-acl-action': 'general:list',
+                    'x-use-decorator-props': 'useTableBlockDecoratorProps',
+                    'x-decorator-props': {
+                      collection: 'general',
+                      dataSource: 'main',
+                      action: 'list',
+                      params: {
+                        pageSize: 20,
+                      },
+                      rowKey: 'id',
+                      showIndex: true,
+                      dragSort: false,
+                    },
+                    'x-toolbar': 'BlockSchemaToolbar',
+                    'x-settings': 'blockSettings:table',
+                    'x-component': 'CardItem',
+                    'x-filter-targets': [],
+                    'x-app-version': '0.21.0-alpha.6',
+                    properties: {
+                      actions: {
+                        _isJSONSchemaObject: true,
+                        version: '2.0',
+                        type: 'void',
+                        'x-initializer': 'table:configureActions',
+                        'x-component': 'ActionBar',
+                        'x-component-props': {
+                          style: {
+                            marginBottom: 'var(--nb-spacing)',
+                          },
+                        },
+                        'x-app-version': '0.21.0-alpha.6',
+                        'x-uid': 'nn2njfaih86',
+                        'x-async': false,
+                        'x-index': 1,
+                      },
+                      '6a5603ynwr4': {
+                        _isJSONSchemaObject: true,
+                        version: '2.0',
+                        type: 'array',
+                        'x-initializer': 'table:configureColumns',
+                        'x-component': 'TableV2',
+                        'x-use-component-props': 'useTableBlockProps',
+                        'x-component-props': {
+                          rowKey: 'id',
+                          rowSelection: {
+                            type: 'checkbox',
+                          },
+                        },
+                        'x-app-version': '0.21.0-alpha.6',
+                        properties: {
+                          actions: {
+                            _isJSONSchemaObject: true,
+                            version: '2.0',
+                            type: 'void',
+                            title: '{{ t("Actions") }}',
+                            'x-action-column': 'actions',
+                            'x-decorator': 'TableV2.Column.ActionBar',
+                            'x-component': 'TableV2.Column',
+                            'x-designer': 'TableV2.ActionColumnDesigner',
+                            'x-initializer': 'table:configureItemActions',
+                            'x-app-version': '0.21.0-alpha.6',
+                            properties: {
+                              iy4tox4zcxc: {
+                                _isJSONSchemaObject: true,
+                                version: '2.0',
+                                type: 'void',
+                                'x-decorator': 'DndContext',
+                                'x-component': 'Space',
+                                'x-component-props': {
+                                  split: '|',
+                                },
+                                'x-app-version': '0.21.0-alpha.6',
+                                properties: {
+                                  ikhm99e57nf: {
+                                    _isJSONSchemaObject: true,
+                                    version: '2.0',
+                                    type: 'void',
+                                    title: '{{ t("View") }}',
+                                    'x-action': 'view',
+                                    'x-toolbar': 'ActionSchemaToolbar',
+                                    'x-settings': 'actionSettings:view',
+                                    'x-component': 'Action.Link',
+                                    'x-component-props': {
+                                      openMode: 'drawer',
+                                    },
+                                    'x-decorator': 'ACLActionProvider',
+                                    'x-designer-props': {
+                                      linkageAction: true,
+                                    },
+                                    properties: {
+                                      drawer: {
+                                        _isJSONSchemaObject: true,
+                                        version: '2.0',
+                                        type: 'void',
+                                        title: '{{ t("View record") }}',
+                                        'x-component': 'Action.Container',
+                                        'x-component-props': {
+                                          className: 'nb-action-popup',
+                                        },
+                                        properties: {
+                                          tabs: {
+                                            _isJSONSchemaObject: true,
+                                            version: '2.0',
+                                            type: 'void',
+                                            'x-component': 'Tabs',
+                                            'x-component-props': {},
+                                            'x-initializer': 'popup:addTab',
+                                            properties: {
+                                              tab1: {
+                                                _isJSONSchemaObject: true,
+                                                version: '2.0',
+                                                type: 'void',
+                                                title: '{{t("Details")}}',
+                                                'x-component': 'Tabs.TabPane',
+                                                'x-designer': 'Tabs.Designer',
+                                                'x-component-props': {},
+                                                properties: {
+                                                  grid: {
+                                                    _isJSONSchemaObject: true,
+                                                    version: '2.0',
+                                                    type: 'void',
+                                                    'x-component': 'Grid',
+                                                    'x-initializer': 'popup:common:addBlock',
+                                                    properties: {
+                                                      hot6v7tha6h: {
+                                                        _isJSONSchemaObject: true,
+                                                        version: '2.0',
+                                                        type: 'void',
+                                                        'x-component': 'Grid.Row',
+                                                        'x-app-version': '0.21.0-alpha.6',
+                                                        properties: {
+                                                          f87i04cltpt: {
+                                                            _isJSONSchemaObject: true,
+                                                            version: '2.0',
+                                                            type: 'void',
+                                                            'x-component': 'Grid.Col',
+                                                            'x-app-version': '0.21.0-alpha.6',
+                                                            properties: {
+                                                              ojj1b5l9e8h: {
+                                                                _isJSONSchemaObject: true,
+                                                                version: '2.0',
+                                                                type: 'void',
+                                                                'x-decorator': 'TableBlockProvider',
+                                                                'x-acl-action': 'undefined:list',
+                                                                'x-use-decorator-props': 'useTableBlockDecoratorProps',
+                                                                'x-decorator-props': {
+                                                                  association: 'general.oneToMany',
+                                                                  dataSource: 'main',
+                                                                  action: 'list',
+                                                                  params: {
+                                                                    pageSize: 20,
+                                                                  },
+                                                                  rowKey: 'id',
+                                                                  showIndex: true,
+                                                                  dragSort: false,
+                                                                },
+                                                                'x-toolbar': 'BlockSchemaToolbar',
+                                                                'x-settings': 'blockSettings:table',
+                                                                'x-component': 'CardItem',
+                                                                'x-filter-targets': [],
+                                                                'x-app-version': '0.21.0-alpha.6',
+                                                                properties: {
+                                                                  actions: {
+                                                                    _isJSONSchemaObject: true,
+                                                                    version: '2.0',
+                                                                    type: 'void',
+                                                                    'x-initializer': 'table:configureActions',
+                                                                    'x-component': 'ActionBar',
+                                                                    'x-component-props': {
+                                                                      style: {
+                                                                        marginBottom: 'var(--nb-spacing)',
+                                                                      },
+                                                                    },
+                                                                    'x-app-version': '0.21.0-alpha.6',
+                                                                    'x-uid': 'zgmpgolmvn2',
+                                                                    'x-async': false,
+                                                                    'x-index': 1,
+                                                                  },
+                                                                  '31phiwi82cg': {
+                                                                    _isJSONSchemaObject: true,
+                                                                    version: '2.0',
+                                                                    type: 'array',
+                                                                    'x-initializer': 'table:configureColumns',
+                                                                    'x-component': 'TableV2',
+                                                                    'x-use-component-props': 'useTableBlockProps',
+                                                                    'x-component-props': {
+                                                                      rowKey: 'id',
+                                                                      rowSelection: {
+                                                                        type: 'checkbox',
+                                                                      },
+                                                                    },
+                                                                    'x-app-version': '0.21.0-alpha.6',
+                                                                    properties: {
+                                                                      actions: {
+                                                                        'x-uid': '0n4vabchec2',
+                                                                        _isJSONSchemaObject: true,
+                                                                        version: '2.0',
+                                                                        type: 'void',
+                                                                        title: '{{ t("Actions") }}',
+                                                                        'x-action-column': 'actions',
+                                                                        'x-decorator': 'TableV2.Column.ActionBar',
+                                                                        'x-component': 'TableV2.Column',
+                                                                        'x-designer': 'TableV2.ActionColumnDesigner',
+                                                                        'x-initializer': 'table:configureItemActions',
+                                                                        'x-app-version': '0.21.0-alpha.6',
+                                                                        'x-component-props': {
+                                                                          width: 400,
+                                                                        },
+                                                                        properties: {
+                                                                          ddp51tpewsi: {
+                                                                            _isJSONSchemaObject: true,
+                                                                            version: '2.0',
+                                                                            type: 'void',
+                                                                            'x-decorator': 'DndContext',
+                                                                            'x-component': 'Space',
+                                                                            'x-component-props': {
+                                                                              split: '|',
+                                                                            },
+                                                                            'x-app-version': '0.21.0-alpha.6',
+                                                                            properties: {
+                                                                              woj7fep0hm4: {
+                                                                                _isJSONSchemaObject: true,
+                                                                                version: '2.0',
+                                                                                type: 'void',
+                                                                                title: '{{ t("View") }}',
+                                                                                'x-action': 'view',
+                                                                                'x-toolbar': 'ActionSchemaToolbar',
+                                                                                'x-settings': 'actionSettings:view',
+                                                                                'x-component': 'Action.Link',
+                                                                                'x-component-props': {
+                                                                                  openMode: 'drawer',
+                                                                                },
+                                                                                'x-decorator': 'ACLActionProvider',
+                                                                                'x-designer-props': {
+                                                                                  linkageAction: true,
+                                                                                },
+                                                                                properties: {
+                                                                                  drawer: {
+                                                                                    _isJSONSchemaObject: true,
+                                                                                    version: '2.0',
+                                                                                    type: 'void',
+                                                                                    title: '{{ t("View record") }}',
+                                                                                    'x-component': 'Action.Container',
+                                                                                    'x-component-props': {
+                                                                                      className: 'nb-action-popup',
+                                                                                    },
+                                                                                    properties: {
+                                                                                      tabs: {
+                                                                                        _isJSONSchemaObject: true,
+                                                                                        version: '2.0',
+                                                                                        type: 'void',
+                                                                                        'x-component': 'Tabs',
+                                                                                        'x-component-props': {},
+                                                                                        'x-initializer': 'popup:addTab',
+                                                                                        properties: {
+                                                                                          tab1: {
+                                                                                            _isJSONSchemaObject: true,
+                                                                                            version: '2.0',
+                                                                                            type: 'void',
+                                                                                            title: '{{t("Details")}}',
+                                                                                            'x-component':
+                                                                                              'Tabs.TabPane',
+                                                                                            'x-designer':
+                                                                                              'Tabs.Designer',
+                                                                                            'x-component-props': {},
+                                                                                            properties: {
+                                                                                              grid: {
+                                                                                                _isJSONSchemaObject:
+                                                                                                  true,
+                                                                                                version: '2.0',
+                                                                                                type: 'void',
+                                                                                                'x-component': 'Grid',
+                                                                                                'x-initializer':
+                                                                                                  'popup:common:addBlock',
+                                                                                                'x-uid': 'yo2uv487d2i',
+                                                                                                'x-async': false,
+                                                                                                'x-index': 1,
+                                                                                              },
+                                                                                            },
+                                                                                            'x-uid': 'lgdz91veg1u',
+                                                                                            'x-async': false,
+                                                                                            'x-index': 1,
+                                                                                          },
+                                                                                        },
+                                                                                        'x-uid': 'b2vze6fnrm9',
+                                                                                        'x-async': false,
+                                                                                        'x-index': 1,
+                                                                                      },
+                                                                                    },
+                                                                                    'x-uid': 'wga6ipim0zs',
+                                                                                    'x-async': false,
+                                                                                    'x-index': 1,
+                                                                                  },
+                                                                                },
+                                                                                'x-uid': 'fp0oo6x9tk3',
+                                                                                'x-async': false,
+                                                                                'x-index': 1,
+                                                                              },
+                                                                              pbbpkoavxwf: {
+                                                                                _isJSONSchemaObject: true,
+                                                                                version: '2.0',
+                                                                                type: 'void',
+                                                                                title: '{{ t("Edit") }}',
+                                                                                'x-action': 'update',
+                                                                                'x-toolbar': 'ActionSchemaToolbar',
+                                                                                'x-settings': 'actionSettings:edit',
+                                                                                'x-component': 'Action.Link',
+                                                                                'x-component-props': {
+                                                                                  openMode: 'drawer',
+                                                                                  icon: 'EditOutlined',
+                                                                                },
+                                                                                'x-decorator': 'ACLActionProvider',
+                                                                                'x-designer-props': {
+                                                                                  linkageAction: true,
+                                                                                },
+                                                                                properties: {
+                                                                                  drawer: {
+                                                                                    _isJSONSchemaObject: true,
+                                                                                    version: '2.0',
+                                                                                    type: 'void',
+                                                                                    title: '{{ t("Edit record") }}',
+                                                                                    'x-component': 'Action.Container',
+                                                                                    'x-component-props': {
+                                                                                      className: 'nb-action-popup',
+                                                                                    },
+                                                                                    properties: {
+                                                                                      tabs: {
+                                                                                        _isJSONSchemaObject: true,
+                                                                                        version: '2.0',
+                                                                                        type: 'void',
+                                                                                        'x-component': 'Tabs',
+                                                                                        'x-component-props': {},
+                                                                                        'x-initializer': 'popup:addTab',
+                                                                                        properties: {
+                                                                                          tab1: {
+                                                                                            _isJSONSchemaObject: true,
+                                                                                            version: '2.0',
+                                                                                            type: 'void',
+                                                                                            title: '{{t("Edit")}}',
+                                                                                            'x-component':
+                                                                                              'Tabs.TabPane',
+                                                                                            'x-designer':
+                                                                                              'Tabs.Designer',
+                                                                                            'x-component-props': {},
+                                                                                            properties: {
+                                                                                              grid: {
+                                                                                                _isJSONSchemaObject:
+                                                                                                  true,
+                                                                                                version: '2.0',
+                                                                                                type: 'void',
+                                                                                                'x-component': 'Grid',
+                                                                                                'x-initializer':
+                                                                                                  'popup:common:addBlock',
+                                                                                                'x-uid': 'o3xomb2tbiq',
+                                                                                                'x-async': false,
+                                                                                                'x-index': 1,
+                                                                                              },
+                                                                                            },
+                                                                                            'x-uid': 'lwulpt4io1w',
+                                                                                            'x-async': false,
+                                                                                            'x-index': 1,
+                                                                                          },
+                                                                                        },
+                                                                                        'x-uid': '8cx8aep0zld',
+                                                                                        'x-async': false,
+                                                                                        'x-index': 1,
+                                                                                      },
+                                                                                    },
+                                                                                    'x-uid': '7wh4slzk13s',
+                                                                                    'x-async': false,
+                                                                                    'x-index': 1,
+                                                                                  },
+                                                                                },
+                                                                                'x-uid': '332wvu9s2df',
+                                                                                'x-async': false,
+                                                                                'x-index': 2,
+                                                                              },
+                                                                              yrcve881mt3: {
+                                                                                _isJSONSchemaObject: true,
+                                                                                version: '2.0',
+                                                                                title: '{{ t("Delete") }}',
+                                                                                'x-action': 'destroy',
+                                                                                'x-component': 'Action.Link',
+                                                                                'x-use-component-props':
+                                                                                  'useDestroyActionProps',
+                                                                                'x-toolbar': 'ActionSchemaToolbar',
+                                                                                'x-settings': 'actionSettings:delete',
+                                                                                'x-component-props': {
+                                                                                  icon: 'DeleteOutlined',
+                                                                                  confirm: {
+                                                                                    title: "{{t('Delete record')}}",
+                                                                                    content:
+                                                                                      "{{t('Are you sure you want to delete it?')}}",
+                                                                                  },
+                                                                                  refreshDataBlockRequest: true,
+                                                                                },
+                                                                                'x-action-settings': {
+                                                                                  triggerWorkflows: [],
+                                                                                },
+                                                                                'x-decorator': 'ACLActionProvider',
+                                                                                'x-designer-props': {
+                                                                                  linkageAction: true,
+                                                                                },
+                                                                                type: 'void',
+                                                                                'x-uid': 'mtluxghu85k',
+                                                                                'x-async': false,
+                                                                                'x-index': 3,
+                                                                              },
+                                                                              kxt91wcprep: {
+                                                                                _isJSONSchemaObject: true,
+                                                                                version: '2.0',
+                                                                                title: '{{ t("Disassociate") }}',
+                                                                                'x-action': 'disassociate',
+                                                                                'x-component': 'Action.Link',
+                                                                                'x-use-component-props':
+                                                                                  'useDisassociateActionProps',
+                                                                                'x-toolbar': 'ActionSchemaToolbar',
+                                                                                'x-settings':
+                                                                                  'actionSettings:disassociate',
+                                                                                'x-component-props': {
+                                                                                  icon: 'DeleteOutlined',
+                                                                                  confirm: {
+                                                                                    title:
+                                                                                      "{{t('Disassociate record')}}",
+                                                                                    content:
+                                                                                      "{{t('Are you sure you want to disassociate it?')}}",
+                                                                                  },
+                                                                                  refreshDataBlockRequest: true,
+                                                                                },
+                                                                                'x-action-settings': {
+                                                                                  triggerWorkflows: [],
+                                                                                },
+                                                                                'x-acl-action': 'destroy',
+                                                                                'x-decorator': 'ACLActionProvider',
+                                                                                'x-designer-props': {
+                                                                                  linkageAction: true,
+                                                                                },
+                                                                                type: 'void',
+                                                                                'x-uid': '5k40cx4ecp2',
+                                                                                'x-async': false,
+                                                                                'x-index': 4,
+                                                                              },
+                                                                              '48h9l3qoe5b': {
+                                                                                _isJSONSchemaObject: true,
+                                                                                version: '2.0',
+                                                                                type: 'void',
+                                                                                'x-action': 'duplicate',
+                                                                                'x-acl-action': 'create',
+                                                                                title: '{{ t("Duplicate") }}',
+                                                                                'x-component': 'Action.Link',
+                                                                                'x-decorator': 'ACLActionProvider',
+                                                                                'x-component-props': {
+                                                                                  openMode: 'drawer',
+                                                                                  component: 'DuplicateAction',
+                                                                                  type: 'primary',
+                                                                                },
+                                                                                'x-toolbar': 'ActionSchemaToolbar',
+                                                                                'x-settings':
+                                                                                  'actionSettings:duplicate',
+                                                                                'x-designer-props': {
+                                                                                  linkageAction: true,
+                                                                                },
+                                                                                properties: {
+                                                                                  drawer: {
+                                                                                    _isJSONSchemaObject: true,
+                                                                                    version: '2.0',
+                                                                                    type: 'void',
+                                                                                    title: '{{ t("Duplicate") }}',
+                                                                                    'x-component': 'Action.Container',
+                                                                                    'x-component-props': {
+                                                                                      className: 'nb-action-popup',
+                                                                                    },
+                                                                                    properties: {
+                                                                                      tabs: {
+                                                                                        _isJSONSchemaObject: true,
+                                                                                        version: '2.0',
+                                                                                        type: 'void',
+                                                                                        'x-component': 'Tabs',
+                                                                                        'x-component-props': {},
+                                                                                        'x-initializer': 'popup:addTab',
+                                                                                        properties: {
+                                                                                          tab1: {
+                                                                                            _isJSONSchemaObject: true,
+                                                                                            version: '2.0',
+                                                                                            type: 'void',
+                                                                                            title: '{{t("Duplicate")}}',
+                                                                                            'x-component':
+                                                                                              'Tabs.TabPane',
+                                                                                            'x-designer':
+                                                                                              'Tabs.Designer',
+                                                                                            'x-component-props': {},
+                                                                                            properties: {
+                                                                                              grid: {
+                                                                                                _isJSONSchemaObject:
+                                                                                                  true,
+                                                                                                version: '2.0',
+                                                                                                type: 'void',
+                                                                                                'x-component': 'Grid',
+                                                                                                'x-initializer':
+                                                                                                  'popup:addNew:addBlock',
+                                                                                                'x-uid': '2t4rg7k178t',
+                                                                                                'x-async': false,
+                                                                                                'x-index': 1,
+                                                                                              },
+                                                                                            },
+                                                                                            'x-uid': 'ng2y7pqaveu',
+                                                                                            'x-async': false,
+                                                                                            'x-index': 1,
+                                                                                          },
+                                                                                        },
+                                                                                        'x-uid': 'x72op1sqzff',
+                                                                                        'x-async': false,
+                                                                                        'x-index': 1,
+                                                                                      },
+                                                                                    },
+                                                                                    'x-uid': 'mzj2aawxgxz',
+                                                                                    'x-async': false,
+                                                                                    'x-index': 1,
+                                                                                  },
+                                                                                },
+                                                                                'x-uid': '763g5tj8tpv',
+                                                                                'x-async': false,
+                                                                                'x-index': 5,
+                                                                              },
+                                                                            },
+                                                                            'x-uid': 'lsdpfhk0yly',
+                                                                            'x-async': false,
+                                                                            'x-index': 1,
+                                                                          },
+                                                                        },
+                                                                        'x-async': false,
+                                                                        'x-index': 1,
+                                                                      },
+                                                                    },
+                                                                    'x-uid': 'avs8m3jirw8',
+                                                                    'x-async': false,
+                                                                    'x-index': 2,
+                                                                  },
+                                                                },
+                                                                'x-uid': 'somr5mwp4rz',
+                                                                'x-async': false,
+                                                                'x-index': 1,
+                                                              },
+                                                            },
+                                                            'x-uid': 'znf1jxx21qk',
+                                                            'x-async': false,
+                                                            'x-index': 1,
+                                                          },
+                                                        },
+                                                        'x-uid': 'lllxuunrv35',
+                                                        'x-async': false,
+                                                        'x-index': 1,
+                                                      },
+                                                    },
+                                                    'x-uid': '5eaxps0lomk',
+                                                    'x-async': false,
+                                                    'x-index': 1,
+                                                  },
+                                                },
+                                                'x-uid': 'y1hgiae4tyd',
+                                                'x-async': false,
+                                                'x-index': 1,
+                                              },
+                                            },
+                                            'x-uid': '3hheczcpfvi',
+                                            'x-async': false,
+                                            'x-index': 1,
+                                          },
+                                        },
+                                        'x-uid': 'z7x8atv4h5g',
+                                        'x-async': false,
+                                        'x-index': 1,
+                                      },
+                                    },
+                                    'x-uid': 'iqn1ziznwgo',
+                                    'x-async': false,
+                                    'x-index': 1,
+                                  },
+                                },
+                                'x-uid': '61os5ttg0l0',
+                                'x-async': false,
+                                'x-index': 1,
+                              },
+                            },
+                            'x-uid': 'f9u6co342wc',
+                            'x-async': false,
+                            'x-index': 1,
+                          },
+                        },
+                        'x-uid': '54oli77ezw1',
+                        'x-async': false,
+                        'x-index': 2,
+                      },
+                    },
+                    'x-uid': 'qqnn8vvrb67',
+                    'x-async': false,
+                    'x-index': 1,
+                  },
+                },
+                'x-uid': '438hxz838f0',
+                'x-async': false,
+                'x-index': 1,
+              },
+            },
+            'x-uid': 'jzr9yjvjjx9',
+            'x-async': false,
+            'x-index': 1,
+          },
+        },
+        'x-uid': 'l1ojfs69fw2',
+        'x-async': false,
+        'x-index': 1,
+      },
+    },
+    'x-uid': 'ld5raudf49f',
     'x-async': true,
     'x-index': 1,
   },

@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { ISchema, useField, useFieldSchema } from '@formily/react';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
@@ -9,6 +18,7 @@ import {
   SchemaSettingsRemove,
 } from '../../../schema-settings';
 import { useCompile, useDesignable } from '../../hooks';
+import _ from 'lodash';
 
 const validateJSON = {
   validator: `{{(value, rule)=> {
@@ -94,9 +104,9 @@ export const G2PlotDesigner = () => {
           } else {
             field.componentProps.config = conf;
           }
-          fieldSchema.title = title;
-          fieldSchema['x-component-props']['plot'] = plot;
-          fieldSchema['x-component-props']['config'] = JSON.parse(config);
+          _.set(fieldSchema, 'title', title);
+          _.set(fieldSchema, 'x-component-props.plot', plot);
+          _.set(fieldSchema, 'x-component-props.config', JSON.parse(config));
           dn.emit('patch', {
             schema: {
               title,

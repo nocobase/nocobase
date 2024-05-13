@@ -1,6 +1,15 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { createForm, Form, IFormProps } from '@formily/core';
 import { FormProvider, Observer, observer, ReactFC } from '@formily/react';
-import { toJS } from '@formily/reactive';
+import { untracked } from '@formily/reactive';
 import { applyMiddleware, IMiddleware, isBool, isFn, isNum, isStr } from '@formily/shared';
 import { Modal, ModalProps, ThemeConfig } from 'antd';
 import React, { Fragment, useLayoutEffect, useRef, useState } from 'react';
@@ -161,7 +170,9 @@ export function FormDialog(title: any, id: any, renderer?: any, theme?: any): IF
               env.form
                 ?.submit(async () => {
                   await applyMiddleware(env.form, env.confirmMiddlewares);
-                  resolve(toJS(env.form?.values));
+                  untracked(() => {
+                    resolve({ ...env.form?.values });
+                  });
                   formDialog.close();
                 })
                 .catch(() => {});

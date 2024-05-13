@@ -1,12 +1,24 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { FormOutlined } from '@ant-design/icons';
-import React from 'react';
+import React, { useCallback } from 'react';
 
 import { SchemaInitializerItem, useSchemaInitializer, useSchemaInitializerItem } from '../../application';
-import { useBlockRequestContext } from '../../block-provider';
 import { useSchemaTemplateManager } from '../../schema-templates';
-import { createReadPrettyFormBlockSchema, useRecordCollectionDataSourceItems } from '../utils';
+import { useRecordCollectionDataSourceItems } from '../utils';
 import { useCollectionManager_deprecated } from '../../collection-manager';
+import { createDetailsUISchema } from '../../modules/blocks/data-blocks/details-single/createDetailsUISchema';
 
+/**
+ * @deprecated
+ */
 export const RecordReadPrettyAssociationFormBlockInitializer = () => {
   const itemConfig = useSchemaInitializerItem();
   const { onCreateBlockSchema, componentType, createBlockSchema, ...others } = itemConfig;
@@ -19,8 +31,6 @@ export const RecordReadPrettyAssociationFormBlockInitializer = () => {
   const collection = getCollection(collectionName);
 
   const resource = `${field.collectionName}.${field.name}`;
-  const { block } = useBlockRequestContext();
-  const actionInitializers = block !== 'TableField' ? 'ReadPrettyFormActionInitializers' : null;
 
   return (
     <SchemaInitializerItem
@@ -30,17 +40,10 @@ export const RecordReadPrettyAssociationFormBlockInitializer = () => {
         if (item.template) {
           const s = await getTemplateSchemaByMode(item);
           if (item.template.componentName === 'ReadPrettyFormItem') {
-            const blockSchema = createReadPrettyFormBlockSchema({
-              actionInitializers,
-              collection: collectionName,
+            const blockSchema = createDetailsUISchema({
               dataSource: collection.dataSource,
-              resource,
               association: resource,
-              action: 'get',
-              useSourceId: '{{ useSourceIdFromParentRecord }}',
-              useParams: '{{ useParamsFromRecord }}',
-              template: s,
-              settings: 'blockSettings:singleDataDetails',
+              templateSchema: s,
             });
             if (item.mode === 'reference') {
               blockSchema['x-template-key'] = item.template.key;
@@ -51,16 +54,9 @@ export const RecordReadPrettyAssociationFormBlockInitializer = () => {
           }
         } else {
           insert(
-            createReadPrettyFormBlockSchema({
-              actionInitializers,
-              collection: collectionName,
-              resource,
+            createDetailsUISchema({
               association: resource,
               dataSource: collection.dataSource,
-              action: 'get',
-              useSourceId: '{{ useSourceIdFromParentRecord }}',
-              useParams: '{{ useParamsFromRecord }}',
-              settings: 'blockSettings:singleDataDetails',
             }),
           );
         }
@@ -69,3 +65,47 @@ export const RecordReadPrettyAssociationFormBlockInitializer = () => {
     />
   );
 };
+
+export function useCreateAssociationDetailsWithoutPagination() {
+  const { insert } = useSchemaInitializer();
+  const { getCollection } = useCollectionManager_deprecated();
+
+  const createAssociationDetailsWithoutPagination = useCallback(
+    ({ item }) => {
+      const field = item.associationField;
+      const collection = getCollection(field.target);
+
+      insert(
+        createDetailsUISchema({
+          dataSource: collection.dataSource,
+          association: `${field.collectionName}.${field.name}`,
+        }),
+      );
+    },
+    [getCollection, insert],
+  );
+
+  const templateWrap = useCallback(
+    (templateSchema, { item }) => {
+      const field = item.associationField;
+      const collection = getCollection(field.target);
+
+      if (item.template.componentName === 'ReadPrettyFormItem') {
+        const blockSchema = createDetailsUISchema({
+          dataSource: collection.dataSource,
+          association: `${field.collectionName}.${field.name}`,
+          templateSchema: templateSchema,
+        });
+        if (item.mode === 'reference') {
+          blockSchema['x-template-key'] = item.template.key;
+        }
+        return blockSchema;
+      } else {
+        return templateSchema;
+      }
+    },
+    [getCollection],
+  );
+
+  return { createAssociationDetailsWithoutPagination, templateWrap };
+}

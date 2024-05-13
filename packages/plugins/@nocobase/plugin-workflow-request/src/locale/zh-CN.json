@@ -9,12 +9,13 @@
   "Add parameter": "添加参数",
   "Body": "请求体",
   "Use variable": "使用变量",
+  "Add key-value pairs": "添加键值对",
   "Format": "格式化",
   "Insert": "插入",
   "Timeout config": "超时设置",
   "ms": "毫秒",
   "Input request data": "输入请求数据",
   "Only support standard JSON data": "仅支持标准 JSON 数据",
-  "\"Content-Type\" only support \"application/json\", and no need to specify": "\"Content-Type\" 请求头仅支持 \"application/json\"，无需填写",
+  "\"Content-Type\" will be ignored from headers.": "请求头中配置的 \"Content-Type\" 将被忽略。",
   "Ignore failed request and continue workflow": "忽略失败的请求并继续工作流"
 }

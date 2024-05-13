@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import Icon, { TableOutlined } from '@ant-design/icons';
 import { Divider, Empty, Input, MenuProps, Spin } from 'antd';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -8,7 +17,8 @@ import {
   useGetSchemaInitializerMenuItems,
   useSchemaInitializer,
 } from '../../application';
-import { Collection } from '../../data-source/collection/Collection';
+import { DataSource } from '../../data-source';
+import { Collection, CollectionFieldOptions } from '../../data-source/collection/Collection';
 import { useCompile } from '../../schema-component';
 import { useSchemaTemplateManager } from '../../schema-templates';
 import { useCollectionDataSourceItems } from '../utils';
@@ -109,7 +119,17 @@ const LoadingItem = ({ loadMore, maxHeight }) => {
   );
 };
 
-export function useMenuSearch(data: any[], openKeys: string[], showType?: boolean) {
+export function useMenuSearch({
+  data,
+  openKeys,
+  showType,
+  hideSearch,
+}: {
+  data: any[];
+  openKeys: string[];
+  showType?: boolean;
+  hideSearch?: boolean;
+}) {
   const [searchValue, setSearchValue] = useState('');
   const [count, setCount] = useState(STEP);
 
@@ -154,28 +174,31 @@ export function useMenuSearch(data: any[], openKeys: string[], showType?: boolea
 
   // 最终的返回结果
   const resultItems = useMemo<MenuProps['items']>(() => {
-    // isMenuType 为了 `useSchemaInitializerMenuItems()` 里面处理判断标识的
-    const res: any[] = [
+    const res = [];
+    if (!hideSearch) {
       // 开头：搜索框
-      Object.assign(
-        {
-          key: 'search',
-          label: (
-            <SearchCollections
-              value={searchValue}
-              onChange={(val: string) => {
-                setCount(STEP);
-                setSearchValue(val);
-              }}
-            />
-          ),
-          onClick({ domEvent }) {
-            domEvent.stopPropagation();
+      res.push(
+        Object.assign(
+          {
+            key: 'search',
+            label: (
+              <SearchCollections
+                value={searchValue}
+                onChange={(val: string) => {
+                  setCount(STEP);
+                  setSearchValue(val);
+                }}
+              />
+            ),
+            onClick({ domEvent }) {
+              domEvent.stopPropagation();
+            },
           },
-        },
-        showType ? { isMenuType: true } : {},
-      ),
-    ];
+          // isMenuType 为了 `useSchemaInitializerMenuItems()` 里面处理判断标识的
+          showType ? { isMenuType: true } : {},
+        ),
+      );
+    }
 
     // 中间：搜索的数据
     if (limitedSearchedItems.length > 0) {
@@ -220,7 +243,7 @@ export function useMenuSearch(data: any[], openKeys: string[], showType?: boolea
     }
 
     return res;
-  }, [limitedSearchedItems, searchValue, shouldLoadMore, showType]);
+  }, [hideSearch, limitedSearchedItems, searchValue, shouldLoadMore, showType]);
 
   const res = useMemo(() => {
     if (!isMuliSource) return resultItems;
@@ -237,7 +260,7 @@ export function useMenuSearch(data: any[], openKeys: string[], showType?: boolea
         };
       }
     });
-  }, [data, openKey, resultItems]);
+  }, [data, isMuliSource, openKey, resultItems]);
   return res;
 }
 
@@ -246,19 +269,38 @@ export interface DataBlockInitializerProps {
     templateSchema: any,
     {
       item,
+      fromOthersInPopup,
     }: {
       item: any;
+      fromOthersInPopup?: boolean;
     },
   ) => any;
   onCreateBlockSchema?: (args: any) => void;
   createBlockSchema?: (args: any) => any;
-  isCusomeizeCreate?: boolean;
   icon?: string | React.ReactNode;
   name: string;
   title: string;
-  filter?: (collection: Collection) => boolean;
+  /**
+   * 用来筛选弹窗中的 “Current record” 和 “Associated records” 选项中的数据表
+   */
+  filter?: (options: { collection: Collection; associationField: CollectionFieldOptions }) => boolean;
+  filterDataSource?: (dataSource: DataSource) => boolean;
+  /**
+   * 用来筛选弹窗中的 “Other records” 选项中的数据表
+   */
+  filterOtherRecordsCollection?: (collection: Collection) => boolean;
   componentType: string;
   onlyCurrentDataSource?: boolean;
+  hideSearch?: boolean;
+  showAssociationFields?: boolean;
+  /** 如果只有一项数据表时，不显示 children 列表 */
+  hideChildrenIfSingleCollection?: boolean;
+  items?: ReturnType<typeof useCollectionDataSourceItems>[];
+  /**
+   * 隐藏弹窗中的 Other records 选项
+   */
+  hideOtherRecordsInPopup?: boolean;
+  onClick?: (args: any) => void;
 }
 
 export const DataBlockInitializer = (props: DataBlockInitializerProps) => {
@@ -266,49 +308,72 @@ export const DataBlockInitializer = (props: DataBlockInitializerProps) => {
     templateWrap,
     onCreateBlockSchema,
     componentType,
-    createBlockSchema,
-    isCusomeizeCreate,
     icon = TableOutlined,
     name,
     title,
     filter,
     onlyCurrentDataSource,
+    hideSearch,
+    showAssociationFields,
+    hideChildrenIfSingleCollection,
+    filterDataSource,
+    items: itemsFromProps,
+    hideOtherRecordsInPopup,
+    onClick: propsOnClick,
+    filterOtherRecordsCollection,
   } = props;
   const { insert, setVisible } = useSchemaInitializer();
   const compile = useCompile();
   const { getTemplateSchemaByMode } = useSchemaTemplateManager();
   const onClick = useCallback(
-    async ({ item }) => {
+    async (options) => {
+      const { item, fromOthersInPopup } = options;
+
+      if (propsOnClick) {
+        return propsOnClick(options);
+      }
+
       if (item.template) {
         const s = await getTemplateSchemaByMode(item);
-        templateWrap ? insert(templateWrap(s, { item })) : insert(s);
+        templateWrap ? insert(templateWrap(s, { item, fromOthersInPopup })) : insert(s);
       } else {
         if (onCreateBlockSchema) {
-          onCreateBlockSchema({ item });
-        } else if (createBlockSchema) {
-          insert(
-            createBlockSchema({
-              collection: item.collectionName || item.name,
-              dataSource: item.dataSource,
-              isCusomeizeCreate,
-              settings: 'blockSettings:createForm',
-            }),
-          );
+          onCreateBlockSchema({ item, fromOthersInPopup });
         }
       }
       setVisible(false);
     },
-    [createBlockSchema, getTemplateSchemaByMode, insert, isCusomeizeCreate, onCreateBlockSchema, templateWrap],
+    [getTemplateSchemaByMode, insert, onCreateBlockSchema, propsOnClick, setVisible, templateWrap],
   );
-  const items = useCollectionDataSourceItems(componentType, filter, onlyCurrentDataSource);
+  const items =
+    itemsFromProps ||
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    useCollectionDataSourceItems({
+      componentName: componentType,
+      filter,
+      filterDataSource,
+      filterOtherRecordsCollection,
+      onlyCurrentDataSource,
+      showAssociationFields,
+      dataBlockInitializerProps: props,
+      hideOtherRecordsInPopup,
+      onClick,
+    });
   const getMenuItems = useGetSchemaInitializerMenuItems(onClick);
   const childItems = useMemo(() => {
     return getMenuItems(items, name);
   }, [getMenuItems, items, name]);
   const [openMenuKeys, setOpenMenuKeys] = useState([]);
-  const searchedChildren = useMenuSearch(childItems, openMenuKeys);
-  const compiledMenuItems = useMemo(
-    () => [
+  const searchedChildren = useMenuSearch({ data: childItems, openKeys: openMenuKeys, hideSearch });
+  const compiledMenuItems = useMemo(() => {
+    let children = searchedChildren.filter((item) => item.key !== 'search' && item.key !== 'empty');
+    if (hideChildrenIfSingleCollection && children.length === 1) {
+      // 只有一项可选时，直接展开
+      children = children[0].children;
+    } else {
+      children = searchedChildren;
+    }
+    return [
       {
         key: name,
         label: compile(title),
@@ -317,11 +382,10 @@ export const DataBlockInitializer = (props: DataBlockInitializerProps) => {
           if (info.key !== name) return;
           onClick({ ...info, item: props });
         },
-        children: searchedChildren,
+        children,
       },
-    ],
-    [name, compile, title, icon, childItems, onClick, props],
-  );
+    ];
+  }, [searchedChildren, hideChildrenIfSingleCollection, name, compile, title, icon, onClick, props]);
 
   if (childItems.length > 1 || (childItems.length === 1 && childItems[0].children?.length > 0)) {
     return (

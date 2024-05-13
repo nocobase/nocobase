@@ -1,5 +1,15 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { dayjs } from '@nocobase/utils/client';
 import { useMemo } from 'react';
+import { DEFAULT_DATA_SOURCE_KEY } from '../../data-source/data-source/DataSourceManager';
 import { useCurrentUserVariable, useDatetimeVariable } from '../../schema-settings';
 import { useCurrentRoleVariable } from '../../schema-settings/VariableInput/hooks/useRoleVariable';
 import { VariableOption } from '../types';
@@ -12,12 +22,13 @@ const useBuiltInVariables = () => {
     return [
       {
         name: '$user',
-        ctx: currentUserCtx,
+        ctx: currentUserCtx as any,
         collectionName: 'users',
+        dataSource: DEFAULT_DATA_SOURCE_KEY as string,
       },
       {
         name: '$nRole',
-        ctx: currentRoleCtx,
+        ctx: currentRoleCtx as any,
         collectionName: 'roles',
       },
       /**
@@ -28,6 +39,7 @@ const useBuiltInVariables = () => {
         name: 'currentUser',
         ctx: currentUserCtx,
         collectionName: 'users',
+        dataSource: DEFAULT_DATA_SOURCE_KEY as string,
       },
       {
         name: '$nDate',
@@ -60,7 +72,7 @@ const useBuiltInVariables = () => {
         ctx: () => dayjs().toISOString(),
       },
     ];
-  }, [currentUserCtx]);
+  }, [currentRoleCtx, currentUserCtx, datetimeCtx]);
 
   return { builtinVariables };
 };

@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { requireModule } from '@nocobase/utils';
 
 const arr2obj = (items: any[]) => {
@@ -25,7 +34,10 @@ export const getResource = (packageName: string, lang: string, isPlugin = true) 
   for (const prefix of prefixes) {
     try {
       const file = `${packageName}/${prefix}/locale/${lang}`;
-      require.resolve(file);
+      const f = require.resolve(file);
+      if (process.env.APP_ENV !== 'production') {
+        delete require.cache[f];
+      }
       const resource = requireModule(file);
       resources.push(resource);
     } catch (error) {

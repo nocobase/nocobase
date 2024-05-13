@@ -1,8 +1,27 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 const { Command } = require('commander');
 const { isDev, run, postCheck, runInstall, promptForTs } = require('../util');
-const { existsSync, unlink } = require('fs');
+const { existsSync, rmSync } = require('fs');
 const { resolve } = require('path');
 const chalk = require('chalk');
+
+function deleteSockFiles() {
+  const { SOCKET_PATH, PM2_HOME } = process.env;
+  if (existsSync(PM2_HOME)) {
+    rmSync(PM2_HOME, { recursive: true });
+  }
+  if (existsSync(SOCKET_PATH)) {
+    rmSync(SOCKET_PATH);
+  }
+}
 
 /**
  *
@@ -41,6 +60,7 @@ module.exports = (cli) => {
         return;
       }
       await postCheck(opts);
+      deleteSockFiles();
       if (opts.daemon) {
         run('pm2', ['start', `${APP_PACKAGE_ROOT}/lib/index.js`, '--', ...process.argv.slice(2)]);
       } else {

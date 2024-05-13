@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { ArrayFieldRepository, Database, Model } from '@nocobase/database';
 import UsersPlugin from '@nocobase/plugin-users';
 import { MockServer } from '@nocobase/test';
@@ -37,6 +46,28 @@ describe('role api', () => {
 
       const userPlugin = app.getPlugin('users') as UsersPlugin;
       adminAgent = app.agent().login(admin);
+    });
+
+    it('should have permission to users collection with strategy', async () => {
+      await db.getRepository('roles').create({
+        values: {
+          name: 'tests',
+          strategy: {
+            actions: ['view'],
+          },
+        },
+      });
+
+      const user1 = await db.getRepository('users').create({
+        values: {
+          roles: ['tests'],
+        },
+      });
+
+      const userAgent = app.agent().login(user1);
+
+      const response = await userAgent.resource('users').list();
+      expect(response.statusCode).toBe(200);
     });
 
     it('should list actions', async () => {

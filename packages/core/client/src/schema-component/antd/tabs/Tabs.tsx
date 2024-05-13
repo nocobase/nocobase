@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { css } from '@emotion/css';
 import { observer, RecursionField, useField, useFieldSchema } from '@formily/react';
 import { Tabs as AntdTabs, TabPaneProps, TabsProps } from 'antd';
@@ -9,6 +18,7 @@ import { useDesigner } from '../../hooks/useDesigner';
 import { useTabsContext } from './context';
 import { TabsDesigner } from './Tabs.Designer';
 import { useSchemaInitializerRender } from '../../../application';
+import { SchemaComponent } from '../../core';
 
 export const Tabs: any = observer(
   (props: TabsProps) => {
@@ -23,8 +33,8 @@ export const Tabs: any = observer(
           key,
           label: <RecursionField name={key} schema={schema} onlyRenderSelf />,
           children: (
-            <PaneRoot {...(PaneRoot !== React.Fragment ? { active: key === contextProps.activeKey } : {})}>
-              <RecursionField name={key} schema={schema} onlyRenderProperties />
+            <PaneRoot key={key} {...(PaneRoot !== React.Fragment ? { active: key === contextProps.activeKey } : {})}>
+              <SchemaComponent name={key} schema={schema} onlyRenderProperties distributed />
             </PaneRoot>
           ),
         };

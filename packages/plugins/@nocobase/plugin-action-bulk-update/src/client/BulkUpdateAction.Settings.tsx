@@ -1,22 +1,27 @@
-import { ISchema, useField, useFieldSchema } from '@formily/react';
-import { isValid, uid } from '@formily/shared';
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+import { ISchema, useFieldSchema } from '@formily/react';
+import { isValid } from '@formily/shared';
 import {
   ActionDesigner,
-  DefaultValueProvider,
-  FlagProvider,
   SchemaSettings,
-  SchemaSettingsActionModalItem,
-  SchemaSettingsItemGroup,
   SchemaSettingsItemType,
   SchemaSettingsModalItem,
   SchemaSettingsSelectItem,
   AssignedFieldValues,
-  useCompile,
   useDesignable,
   useSchemaToolbar,
+  RefreshDataBlockRequest,
 } from '@nocobase/client';
 import { useTranslation } from 'react-i18next';
-import React, { useCallback, useEffect, useState } from 'react';
+import React from 'react';
 
 function UpdateMode() {
   const { dn } = useDesignable();
@@ -135,10 +140,6 @@ const schemaSettingsItems: SchemaSettingsItemType[] = [
   {
     name: 'assignFieldValues',
     Component: AssignedFieldValues,
-    // useVisible() {
-    //   const fieldSchema = useFieldSchema();
-    //   return isValid(fieldSchema?.['x-action-settings']?.assignedValues);
-    // },
   },
   {
     name: 'afterSuccess',
@@ -146,6 +147,15 @@ const schemaSettingsItems: SchemaSettingsItemType[] = [
     useVisible() {
       const fieldSchema = useFieldSchema();
       return isValid(fieldSchema?.['x-action-settings']?.onSuccess);
+    },
+  },
+  {
+    name: 'refreshDataBlockRequest',
+    Component: RefreshDataBlockRequest,
+    useComponentProps() {
+      return {
+        isPopupAction: false,
+      };
     },
   },
   {

@@ -1,5 +1,14 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { expect, test } from '@nocobase/test/e2e';
-import { oneTableBlock } from './utils';
+import { oneTableBlock, T3950 } from './utils';
 
 test.describe('view', () => {
   //关系字段有权限，关系目标表无权限
@@ -231,4 +240,32 @@ test.describe('create', () => {
     await expect(page.getByLabel('block-item-CollectionField-users-form-users.phone')).not.toBeVisible();
     await expect(page.getByLabel('block-item-CollectionField-users-form-users.username')).not.toBeVisible();
   });
+});
+
+test('association block action permission', async ({ page, mockCollection, mockRecord, mockPage, mockRole }) => {
+  await mockPage(T3950).goto();
+  await mockRecord('general');
+  await expect(await page.getByLabel('block-item-CardItem-general-')).toBeVisible();
+  //新建角色并切换到新角色
+  const roleData = await mockRole({
+    default: true,
+    allowNewMenu: true,
+    strategy: {
+      actions: ['view', 'update', 'destroy'],
+    },
+  });
+  await mockPage(T3950).goto();
+  await page.evaluate((roleData) => {
+    window.localStorage.setItem('NOCOBASE_ROLE', roleData.name);
+  }, roleData);
+  await page.reload();
+  await expect(await page.getByLabel('block-item-CardItem-general-')).toBeVisible();
+  await page.getByLabel('action-Action.Link-View-view-').first().click();
+  await expect(await page.getByLabel('block-item-CardItem-users-')).toBeVisible();
+  await expect(await page.getByLabel('action-Action.Link-View-view-users-table-').first()).toBeVisible();
+  await expect(await page.getByLabel('action-Action.Link-Edit-').first()).toBeVisible();
+  await expect(await page.getByLabel('action-Action.Link-Delete-').first()).toBeVisible();
+  await expect(
+    await page.getByLabel('action-Action.Link-Disassociate-disassociate-users-table-').first(),
+  ).toBeVisible();
 });

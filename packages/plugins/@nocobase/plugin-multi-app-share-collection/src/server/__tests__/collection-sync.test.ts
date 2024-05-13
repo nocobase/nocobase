@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { BelongsToManyRepository, Database } from '@nocobase/database';
 import { AppSupervisor } from '@nocobase/server';
 import { MockServer, createMockServer, isPg } from '@nocobase/test';
@@ -12,6 +21,8 @@ describe.runIf(isPg())('enable plugin', () => {
       acl: false,
       plugins: ['nocobase'],
     });
+
+    await app.runCommand('pm', 'add', 'multi-app-share-collection');
 
     mainApp = app;
 
@@ -47,6 +58,7 @@ describe.runIf(isPg())('collection sync after main', () => {
         await app.db.sequelize.query(`DROP SCHEMA IF EXISTS sub2 CASCADE`);
       },
     });
+    await app.runCommand('pm', 'add', 'multi-app-share-collection');
     mainApp = app;
   });
 
@@ -109,6 +121,7 @@ describe.runIf(isPg())('collection sync', () => {
         await app.db.sequelize.query(`DROP SCHEMA IF EXISTS sub2 CASCADE`);
       },
     });
+    await app.runCommand('pm', 'add', 'multi-app-share-collection');
 
     await app.pm.enable('multi-app-manager');
     await app.pm.enable('multi-app-share-collection');

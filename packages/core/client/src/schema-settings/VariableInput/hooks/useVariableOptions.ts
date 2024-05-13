@@ -1,12 +1,22 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Form } from '@formily/core';
 import { ISchema, Schema } from '@formily/react';
 import { useMemo } from 'react';
-import { CollectionFieldOptions_deprecated, useCollection_deprecated } from '../../../collection-manager';
+import { CollectionFieldOptions_deprecated } from '../../../collection-manager';
 import { useBlockCollection } from './useBlockCollection';
 import { useDatetimeVariable } from './useDateVariable';
 import { useCurrentFormVariable } from './useFormVariable';
 import { useCurrentObjectVariable } from './useIterationVariable';
 import { useCurrentParentRecordVariable } from './useParentRecordVariable';
+import { usePopupVariable } from './usePopupVariable';
 import { useCurrentRecordVariable } from './useRecordVariable';
 import { useCurrentRoleVariable } from './useRoleVariable';
 import { useCurrentUserVariable } from './useUserVariable';
@@ -35,10 +45,6 @@ interface Props {
   noDisabled?: boolean;
   /** 消费变量值的字段 */
   targetFieldSchema?: Schema;
-  /**指定当前表单数据表 */
-  currentFormCollectionName?: string;
-  /**指定当前对象数据表 */
-  currentIterationCollectionName?: string;
 }
 
 export const useVariableOptions = ({
@@ -49,11 +55,8 @@ export const useVariableOptions = ({
   noDisabled,
   targetFieldSchema,
   record,
-  currentFormCollectionName,
-  currentIterationCollectionName,
 }: Props) => {
   const { name: blockCollectionName = record?.__collectionName } = useBlockCollection();
-  const { name } = useCollection_deprecated();
   const blockParentCollectionName = record?.__parent?.__collectionName;
   const { currentUserSettings } = useCurrentUserVariable({
     maxDepth: 3,
@@ -71,14 +74,12 @@ export const useVariableOptions = ({
   const { datetimeSettings } = useDatetimeVariable({ operator, schema: uiSchema, noDisabled });
   const { currentFormSettings, shouldDisplayCurrentForm } = useCurrentFormVariable({
     schema: uiSchema,
-    collectionName: currentFormCollectionName || blockCollectionName,
     collectionField,
     noDisabled,
     targetFieldSchema,
     form,
   });
   const { currentObjectSettings, shouldDisplayCurrentObject } = useCurrentObjectVariable({
-    currentCollection: currentIterationCollectionName || name,
     collectionField,
     schema: uiSchema,
     noDisabled,
@@ -86,7 +87,12 @@ export const useVariableOptions = ({
   });
   const { currentRecordSettings, shouldDisplayCurrentRecord } = useCurrentRecordVariable({
     schema: uiSchema,
-    collectionName: blockCollectionName,
+    collectionField,
+    noDisabled,
+    targetFieldSchema,
+  });
+  const { settings: popupRecordSettings, shouldDisplayPopupRecord } = usePopupVariable({
+    schema: uiSchema,
     collectionField,
     noDisabled,
     targetFieldSchema,
@@ -108,6 +114,7 @@ export const useVariableOptions = ({
       shouldDisplayCurrentObject && currentObjectSettings,
       shouldDisplayCurrentRecord && currentRecordSettings,
       shouldDisplayCurrentParentRecord && currentParentRecordSettings,
+      shouldDisplayPopupRecord && popupRecordSettings,
     ].filter(Boolean);
   }, [
     currentUserSettings,
@@ -121,5 +128,7 @@ export const useVariableOptions = ({
     currentRecordSettings,
     shouldDisplayCurrentParentRecord,
     currentParentRecordSettings,
+    shouldDisplayPopupRecord,
+    popupRecordSettings,
   ]);
 };

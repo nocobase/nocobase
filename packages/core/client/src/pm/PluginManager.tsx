@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 export * from './PluginManagerLink';
 import { PageHeader } from '@ant-design/pro-layout';
 import { useDebounce } from 'ahooks';
@@ -92,7 +101,7 @@ const LocalPlugins = () => {
   const keyWordsfilterList = useMemo(() => {
     const list = keyWordlists.map((i) => {
       if (i === 'Others') {
-        const result = data?.data.filter((v) => !v.keywords);
+        const result = data?.data.filter((v) => !v.keywords || !v.keywords.every((k) => keyWordlists.includes(k)));
         return {
           key: i,
           list: result,

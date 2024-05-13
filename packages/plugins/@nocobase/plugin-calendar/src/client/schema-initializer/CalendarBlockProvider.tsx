@@ -1,8 +1,17 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { ArrayField } from '@formily/core';
-import { useField } from '@formily/react';
-import { BlockProvider, FixedBlockWrapper, useBlockRequestContext, useParsedFilter } from '@nocobase/client';
-import _ from 'lodash';
-import React, { createContext, useContext, useEffect, useMemo } from 'react';
+import { useField, useFieldSchema } from '@formily/react';
+import { BlockProvider, FixedBlockWrapper, useBlockRequestContext, withDynamicSchemaProps } from '@nocobase/client';
+import React, { createContext, useContext, useEffect } from 'react';
+import { useCalendarBlockParams } from '../hooks/useCalendarBlockParams';
 
 export const CalendarBlockContext = createContext<any>({});
 CalendarBlockContext.displayName = 'CalendarBlockContext';
@@ -11,14 +20,6 @@ const InternalCalendarBlockProvider = (props) => {
   const { fieldNames, showLunar } = props;
   const field = useField();
   const { resource, service } = useBlockRequestContext();
-  const { filter } = useParsedFilter({
-    filterOption: service?.params?.[0]?.filter,
-  });
-  useEffect(() => {
-    if (!_.isEmpty(filter)) {
-      service?.run({ ...service?.params?.[0], filter });
-    }
-  }, [JSON.stringify(filter)]);
 
   return (
     <FixedBlockWrapper>
@@ -38,31 +39,29 @@ const InternalCalendarBlockProvider = (props) => {
   );
 };
 
-export const CalendarBlockProvider = (props) => {
-  const appends = useMemo(() => {
-    const arr: string[] = [];
-    const start = props.fieldNames?.start;
-    const end = props.fieldNames?.end;
+const useCompatCalendarBlockParams = (props) => {
+  const fieldSchema = useFieldSchema();
 
-    if (Array.isArray(start) && start.length >= 2) {
-      arr.push(start[0]);
-    }
-    if (Array.isArray(end) && end.length >= 2) {
-      arr.push(end[0]);
-    }
-
-    return arr;
-  }, [props.fieldNames]);
-  return (
-    <BlockProvider
-      name="calendar"
-      {...props}
-      params={{ ...props.params, appends: [...appends, ...(props.params.appends || [])], paginate: false }}
-    >
-      <InternalCalendarBlockProvider {...props} />
-    </BlockProvider>
-  );
+  // 因为 x-use-decorator-props 的值是固定不变的，所以可以在条件中使用 hooks
+  if (fieldSchema['x-use-decorator-props']) {
+    return props.params;
+  } else {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    return useCalendarBlockParams(props);
+  }
 };
+
+export const CalendarBlockProvider = withDynamicSchemaProps(
+  (props) => {
+    const params = useCompatCalendarBlockParams(props);
+    return (
+      <BlockProvider name="calendar" {...props} params={params}>
+        <InternalCalendarBlockProvider {...props} />
+      </BlockProvider>
+    );
+  },
+  { displayName: 'CalendarBlockProvider' },
+);
 
 export const useCalendarBlockContext = () => {
   return useContext(CalendarBlockContext);

@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { ISchema } from '@formily/react';
 import React, { FC, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -7,10 +16,10 @@ import { useCollectionFilterOptionsV2 } from '../collection-manager/action-hooks
 import { FlagProvider, useFlag } from '../flag-provider';
 import { DynamicComponentProps } from '../schema-component/antd/filter/DynamicComponent';
 import { useLocalVariables, useVariables } from '../variables';
+import { SchemaSettingsModalItem } from './SchemaSettings';
 import { VariableInput, getShouldChange } from './VariableInput/VariableInput';
 import { BaseVariableProvider, IsDisabledParams } from './VariableInput/hooks/useBaseVariable';
 import { DataScopeProps } from './types';
-import { SchemaSettingsModalItem } from './SchemaSettings';
 
 export const SchemaSettingsDataScope: FC<DataScopeProps> = function DataScopeConfigure(props) {
   const { t } = useTranslation();
@@ -76,6 +85,7 @@ export const SchemaSettingsDataScope: FC<DataScopeProps> = function DataScopeCon
       initialValues={{ filter: props.defaultFilter }}
       schema={getSchema as () => ISchema}
       onSubmit={props.onSubmit}
+      noRecord={props.noRecord}
     />
   );
 };

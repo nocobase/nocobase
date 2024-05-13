@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Collection, Database, mockDatabase } from '@nocobase/database';
 
 describe('update', () => {
@@ -200,6 +209,67 @@ describe('update', () => {
     });
 
     expect(p1.toJSON()['tags']).toEqual([]);
+  });
+
+  it('should not update items when filter is empty', async () => {
+    await db.getRepository('posts').create({
+      values: [
+        {
+          title: 'p1',
+        },
+        {
+          title: 'p2',
+        },
+      ],
+    });
+
+    let err;
+
+    try {
+      await db.getRepository('posts').update({
+        values: {
+          title: 'p3',
+        },
+        filter: {},
+      });
+    } catch (e) {
+      err = e;
+    }
+
+    expect(err).toBeDefined();
+    expect(err.message).toContain('must provide filter or filterByTk for update call');
+  });
+
+  it('should not update items when filter is not a valid filter object', async () => {
+    await db.getRepository('posts').create({
+      values: [
+        {
+          title: 'p1',
+        },
+        {
+          title: 'p2',
+        },
+      ],
+    });
+
+    let err;
+
+    try {
+      await db.getRepository('posts').update({
+        values: {
+          title: 'p3',
+        },
+        filter: {
+          $and: [],
+          $or: [],
+        },
+      });
+    } catch (e) {
+      err = e;
+    }
+
+    expect(err).toBeDefined();
+    expect(err.message).toContain('must provide filter or filterByTk for update call');
   });
 
   it('should not update items without filter or filterByPk', async () => {

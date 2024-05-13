@@ -1,7 +1,16 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { omit } from 'lodash';
 import { AssociationScope, BelongsToManyOptions as SequelizeBelongsToManyOptions, Utils } from 'sequelize';
 import { Collection } from '../collection';
-import { Reference } from '../features/ReferencesMap';
+import { Reference } from '../features/references-map';
 import { checkIdentifier } from '../utils';
 import { BelongsToField } from './belongs-to-field';
 import { MultipleRelationFieldOptions, RelationField } from './relation-field';
@@ -32,6 +41,8 @@ export class BelongsToManyField extends RelationField {
 
     const onDelete = this.options.onDelete || 'CASCADE';
 
+    const priority = this.options.onDelete ? 'user' : 'default';
+
     const targetAssociation = association.toTarget;
 
     if (association.targetKey) {
@@ -45,8 +56,8 @@ export class BelongsToManyField extends RelationField {
     }
 
     return [
-      BelongsToField.toReference(db, targetAssociation, onDelete),
-      BelongsToField.toReference(db, sourceAssociation, onDelete),
+      BelongsToField.toReference(db, targetAssociation, onDelete, priority),
+      BelongsToField.toReference(db, sourceAssociation, onDelete, priority),
     ];
   }
 
@@ -147,10 +158,6 @@ export class BelongsToManyField extends RelationField {
       Through = database.collection(throughCollectionOptions);
 
       Object.defineProperty(Through.model, 'isThrough', { value: true });
-    }
-
-    if (!this.options.onDelete) {
-      this.options.onDelete = 'CASCADE';
     }
 
     const belongsToManyOptions = {

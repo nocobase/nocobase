@@ -1,19 +1,29 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { createRouterManager, Plugin, RouterManager, RouteSchemaComponent } from '@nocobase/client';
 import React from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
 import { MobileClientProvider } from './MobileClientProvider';
 import MApplication from './router/Application';
-import { mBlockInitializers } from './core/schema';
+import { mBlockInitializers, mBlockInitializers_deprecated } from './core/schema';
 import { AppConfiguration, InterfaceConfiguration } from './configuration';
 import { NAMESPACE } from './locale';
 
-export class MobileClientPlugin extends Plugin {
+export class PluginMobileClient extends Plugin {
   public mobileRouter: RouterManager;
   async load() {
     this.setMobileRouter();
     this.addRoutes();
     this.addSettings();
     this.app.use(MobileClientProvider);
+    this.app.schemaInitializerManager.add(mBlockInitializers_deprecated);
     this.app.schemaInitializerManager.add(mBlockInitializers);
   }
 
@@ -68,4 +78,4 @@ export class MobileClientPlugin extends Plugin {
   }
 }
 
-export default MobileClientPlugin;
+export default PluginMobileClient;

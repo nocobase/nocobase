@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import chalk from 'chalk';
 import winston from 'winston';
 import { getLoggerFormat } from './config';
@@ -7,6 +16,10 @@ import { isEmpty } from 'lodash';
 const DEFAULT_DELIMITER = '|';
 
 const colorize = {};
+
+/**
+ * @internal
+ */
 
 export const getFormat = (format?: LoggerOptions['format']) => {
   const configFormat = format || getLoggerFormat();
@@ -30,6 +43,9 @@ export const getFormat = (format?: LoggerOptions['format']) => {
   return winston.format.combine(sortFormat, logFormat);
 };
 
+/**
+ * @internal
+ */
 export const colorFormat: winston.Logform.Format = winston.format((info) => {
   Object.entries(info).forEach(([k, v]) => {
     const level = info['level'];
@@ -45,6 +61,9 @@ export const colorFormat: winston.Logform.Format = winston.format((info) => {
   return info;
 })();
 
+/**
+ * @internal
+ */
 export const stripColorFormat: winston.Logform.Format = winston.format((info) => {
   Object.entries(info).forEach(([k, v]) => {
     if (typeof v !== 'string') {
@@ -56,7 +75,10 @@ export const stripColorFormat: winston.Logform.Format = winston.format((info) =>
   return info;
 })();
 
-// https://brandur.org/logfmt
+/**
+ * @internal
+ *https://brandur.org/logfmt
+ */
 export const logfmtFormat: winston.Logform.Format = winston.format.printf((info) =>
   Object.entries(info)
     .map(([k, v]) => {
@@ -75,6 +97,9 @@ export const logfmtFormat: winston.Logform.Format = winston.format.printf((info)
     .join(' '),
 );
 
+/**
+ * @internal
+ */
 export const consoleFormat: winston.Logform.Format = winston.format.printf((info) => {
   const keys = ['level', 'timestamp', 'message'];
   Object.entries(info).forEach(([k, v]) => {
@@ -114,6 +139,9 @@ export const consoleFormat: winston.Logform.Format = winston.format.printf((info
   return `${colorized} ${tags}`;
 });
 
+/**
+ * @internal
+ */
 export const delimiterFormat = winston.format.printf((info) =>
   Object.entries(info)
     .map(([, v]) => {
@@ -129,6 +157,9 @@ export const delimiterFormat = winston.format.printf((info) =>
     .join(DEFAULT_DELIMITER),
 );
 
+/**
+ * @internal
+ */
 export const escapeFormat: winston.Logform.Format = winston.format((info) => {
   let { message } = info;
   if (typeof message === 'string' && message.includes(DEFAULT_DELIMITER)) {
@@ -138,4 +169,7 @@ export const escapeFormat: winston.Logform.Format = winston.format((info) => {
   return { ...info, message };
 })();
 
+/**
+ * @internal
+ */
 export const sortFormat = winston.format((info) => ({ level: info.level, ...info }))();

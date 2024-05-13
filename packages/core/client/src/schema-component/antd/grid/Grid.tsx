@@ -1,12 +1,23 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { TinyColor } from '@ctrl/tinycolor';
 import { useDndContext, useDndMonitor, useDraggable, useDroppable } from '@dnd-kit/core';
 import { ISchema, RecursionField, Schema, observer, useField, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import cls from 'classnames';
-import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { useDesignable, useFormBlockContext, useSchemaInitializerRender } from '../../../';
+import _ from 'lodash';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { SchemaComponent, useDesignable, useFormBlockContext, useSchemaInitializerRender } from '../../../';
 import { useFormBlockType } from '../../../block-provider';
-import { DndContext } from '../../common/dnd-context';
+import { FilterBlockProvider } from '../../../filter-provider/FilterProvider';
+import { DndContext, DndContextProps } from '../../common/dnd-context';
 import { useToken } from '../__builtins__';
 import useStyles from './Grid.style';
 
@@ -19,6 +30,9 @@ GridContext.displayName = 'GridContext';
 
 const breakRemoveOnGrid = (s: Schema) => s['x-component'] === 'Grid';
 const breakRemoveOnRow = (s: Schema) => s['x-component'] === 'Grid.Row';
+
+const MemorizedRecursionField = React.memo(RecursionField);
+MemorizedRecursionField.displayName = 'MemorizedRecursionField';
 
 const ColDivider = (props) => {
   const { token } = useToken();
@@ -124,8 +138,8 @@ const ColDivider = (props) => {
         el.parentElement.clientWidth
       ).toFixed(2);
 
-      prevSchema['x-component-props']['width'] = preWidth;
-      nextSchema['x-component-props']['width'] = nextWidth;
+      _.set(prevSchema, 'x-component-props.width', preWidth);
+      _.set(nextSchema, 'x-component-props.width', nextWidth);
       dn.emit('batchPatch', {
         schemas: [
           {
@@ -301,66 +315,91 @@ export const useGridRowContext = () => {
   return useContext(GridRowContext);
 };
 
+export interface GridProps {
+  distributed?: boolean;
+  showDivider?: boolean;
+  dndContext?: false | DndContextProps;
+}
+
 export const Grid: any = observer(
-  (props: any) => {
-    const { showDivider = true } = props;
+  (props: GridProps) => {
+    const { distributed, showDivider = true } = props;
     const gridRef = useRef(null);
     const field = useField();
     const fieldSchema = useFieldSchema();
     const { render } = useSchemaInitializerRender(fieldSchema['x-initializer'], fieldSchema['x-initializer-props']);
-    const InitializerComponent = (props) => render(props);
+    const InitializerComponent = useCallback((props) => render(props), []);
     const addr = field.address.toString();
     const rows = useRowProperties();
     const { setPrintContent } = useFormBlockContext();
     const { wrapSSR, componentCls, hashId } = useStyles();
 
+    const distributedValue =
+      distributed === undefined
+        ? fieldSchema?.parent['x-component'] === 'Page' || fieldSchema?.parent['x-component'] === 'Tabs.TabPane'
+        : distributed;
+
     useEffect(() => {
       gridRef.current && setPrintContent?.(gridRef.current);
     }, [gridRef.current]);
 
+    const gridContextValue = useMemo(() => {
+      return {
+        ref: gridRef,
+        fieldSchema,
+        renderSchemaInitializer: render,
+        InitializerComponent,
+        showDivider,
+      };
+    }, [fieldSchema, render, InitializerComponent, showDivider]);
+
     return wrapSSR(
-      <GridContext.Provider
-        value={{ ref: gridRef, fieldSchema, renderSchemaInitializer: render, InitializerComponent, showDivider }}
-      >
-        <div className={`nb-grid ${componentCls} ${hashId}`} style={{ position: 'relative' }} ref={gridRef}>
-          <DndWrapper dndContext={props.dndContext}>
-            {showDivider ? (
-              <RowDivider
-                rows={rows}
-                first
-                id={`${addr}_0`}
-                data={{
-                  breakRemoveOn: breakRemoveOnGrid,
-                  wrapSchema: wrapRowSchema,
-                  insertAdjacent: 'afterBegin',
-                  schema: fieldSchema,
-                }}
-              />
-            ) : null}
-            {rows.map((schema, index) => {
-              return (
-                <React.Fragment key={index}>
-                  <RecursionField name={schema.name} schema={schema} />
-                  {showDivider ? (
-                    <RowDivider
-                      rows={rows}
-                      index={index}
-                      id={`${addr}_${index + 1}`}
-                      data={{
-                        breakRemoveOn: breakRemoveOnGrid,
-                        wrapSchema: wrapRowSchema,
-                        insertAdjacent: 'afterEnd',
-                        schema,
-                      }}
-                    />
-                  ) : null}
-                </React.Fragment>
-              );
-            })}
-          </DndWrapper>
-          {render()}
-        </div>
-      </GridContext.Provider>,
+      <FilterBlockProvider>
+        <GridContext.Provider value={gridContextValue}>
+          <div className={`nb-grid ${componentCls} ${hashId}`} style={{ position: 'relative' }} ref={gridRef}>
+            <DndWrapper dndContext={props.dndContext}>
+              {showDivider ? (
+                <RowDivider
+                  rows={rows}
+                  first
+                  id={`${addr}_0`}
+                  data={{
+                    breakRemoveOn: breakRemoveOnGrid,
+                    wrapSchema: wrapRowSchema,
+                    insertAdjacent: 'afterBegin',
+                    schema: fieldSchema,
+                  }}
+                />
+              ) : null}
+              {rows.map((schema, index) => {
+                return (
+                  <React.Fragment key={index}>
+                    {distributedValue ? (
+                      <SchemaComponent name={schema.name} schema={schema} distributed />
+                    ) : (
+                      <MemorizedRecursionField name={schema.name} schema={schema} />
+                    )}
+                    {showDivider ? (
+                      <RowDivider
+                        rows={rows}
+                        index={index}
+                        id={`${addr}_${index + 1}`}
+                        data={{
+                          breakRemoveOn: breakRemoveOnGrid,
+                          wrapSchema: wrapRowSchema,
+                          insertAdjacent: 'afterEnd',
+                          schema,
+                        }}
+                      />
+                    ) : null}
+                  </React.Fragment>
+                );
+              })}
+            </DndWrapper>
+            {render()}
+          </div>
+        </GridContext.Provider>
+      </FilterBlockProvider>,
     );
   },
   { displayName: 'Grid' },
@@ -375,8 +414,25 @@ Grid.Row = observer(
     const { showDivider } = useGridContext();
     const { type } = useFormBlockType();
 
+    const ctxValue = useMemo(() => {
+      return {
+        schema: fieldSchema,
+        cols,
+      };
+    }, [fieldSchema, cols]);
+
+    const mapProperties = useCallback(
+      (schema) => {
+        if (type === 'update') {
+          schema.default = null;
+        }
+        return schema;
+      },
+      [type],
+    );
+
     return (
-      <GridRowContext.Provider value={{ schema: fieldSchema, cols }}>
+      <GridRowContext.Provider value={ctxValue}>
         <div
           className={cls('nb-grid-row', 'CardRow', {
             showDivider,
@@ -398,16 +454,7 @@ Grid.Row = observer(
           {cols.map((schema, index) => {
             return (
               <React.Fragment key={index}>
-                <RecursionField
-                  name={schema.name}
-                  schema={schema}
-                  mapProperties={(schema) => {
-                    if (type === 'update') {
-                      schema.default = null;
-                    }
-                    return schema;
-                  }}
-                />
+                <MemorizedRecursionField name={schema.name} schema={schema} />
                 {showDivider && (
                   <ColDivider
                     cols={cols}
@@ -444,12 +491,11 @@ Grid.Col = observer(
       let width = '';
       if (cols?.length) {
         const w = schema?.['x-component-props']?.['width'] || 100 / cols.length;
-        width = `calc(${w}% - ${token.marginLG}px *  ${(showDivider ? cols.length + 1 : 0) / cols.length})`;
+        width = `calc(${w}% - ${token.marginBlock}px *  ${(showDivider ? cols.length + 1 : 0) / cols.length})`;
       }
       return { width };
     }, [cols?.length, schema?.['x-component-props']?.['width']]);
-
-    const { setNodeRef } = useDroppable({
+    const { isOver, setNodeRef } = useDroppable({
       id: field.address.toString(),
       data: {
         insertAdjacent: 'beforeEnd',
@@ -457,9 +503,41 @@ Grid.Col = observer(
         wrapSchema: (s) => s,
       },
     });
+    const [active, setActive] = useState(false);
+
+    const droppableStyle = useMemo(() => {
+      if (!isOver)
+        return {
+          height: '100%',
+        };
+
+      return {
+        background: `linear-gradient(to top,  ${new TinyColor(token.colorSettings)
+          .setAlpha(0.1)
+          .toHex8String()} 20%, transparent 20%)`,
+        borderTopRightRadius: '10px',
+        borderTopLeftRadius: '10px',
+        height: '100%',
+      };
+    }, [active, isOver]);
+
+    useDndMonitor({
+      onDragStart(event) {
+        setActive(true);
+      },
+      onDragMove(event) {},
+      onDragOver(event) {},
+      onDragEnd(event) {
+        setActive(false);
+      },
+      onDragCancel(event) {
+        setActive(false);
+      },
+    });
+
     return (
       <GridColContext.Provider value={{ cols, schema }}>
-        <div ref={setNodeRef} style={style} className={cls('nb-grid-col')}>
+        <div ref={setNodeRef} style={{ ...style, ...droppableStyle }} className={cls('nb-grid-col')}>
           {props.children}
         </div>
       </GridColContext.Provider>

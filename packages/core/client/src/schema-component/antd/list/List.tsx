@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { cx } from '@emotion/css';
 import { ArrayField } from '@formily/core';
 import { RecursionField, Schema, useField, useFieldSchema } from '@formily/react';
@@ -11,6 +20,7 @@ import { ListDesigner } from './List.Designer';
 import { ListItem } from './List.Item';
 import useStyles from './List.style';
 import { useListActionBarProps } from './hooks';
+import { withDynamicSchemaProps } from '../../../application/hoc/withDynamicSchemaProps';
 
 const InternalList = (props) => {
   const { service } = useListBlockContext();
@@ -93,7 +103,7 @@ const InternalList = (props) => {
   );
 };
 
-export const List = InternalList as typeof InternalList & {
+export const List = withDynamicSchemaProps(InternalList) as typeof InternalList & {
   Item: typeof ListItem;
   Designer: typeof ListDesigner;
   Decorator: typeof ListBlockProvider;

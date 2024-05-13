@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 // 解决 build 报 dayjs 相关类型错误的问题
 import 'dayjs/plugin/isBetween';
 import 'dayjs/plugin/isSameOrAfter';
@@ -25,10 +34,10 @@ export * from './collection-manager';
 
 export * from './common';
 export * from './css-variable';
+export * from './data-source';
 export * from './document-title';
 export * from './filter-provider';
 export * from './flag-provider';
-export * from './formula';
 export * from './global-theme';
 export * from './hooks';
 export * from './i18n';
@@ -50,11 +59,14 @@ export * from './system-settings';
 export * from './testUtils';
 export * from './user';
 export * from './variables';
-export * from './data-source';
 
 export { withDynamicSchemaProps } from './application/hoc/withDynamicSchemaProps';
 
 export * from './modules/blocks/BlockSchemaToolbar';
-export * from './modules/blocks/data-blocks/table';
 export * from './modules/blocks/data-blocks/form';
+export * from './modules/blocks/data-blocks/table';
 export * from './modules/blocks/data-blocks/table-selector';
+export * from './modules/blocks/useParentRecordCommon';
+export * from './modules/blocks/index';
+
+export { DeclareVariable } from './modules/variable/DeclareVariable';

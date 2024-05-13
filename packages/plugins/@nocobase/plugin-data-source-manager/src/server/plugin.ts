@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Application, Plugin } from '@nocobase/server';
 import { resolve } from 'path';
 import { DataSourcesCollectionModel } from './models/data-sources-collection-model';
@@ -130,6 +139,10 @@ export class PluginDataSourceManagerServer extends Plugin {
 
         const items = lodash.get(ctx, dataPath);
 
+        if (!Array.isArray(items)) {
+          return;
+        }
+
         lodash.set(
           ctx,
           dataPath,
@@ -159,15 +172,14 @@ export class PluginDataSourceManagerServer extends Plugin {
       const dataSource = app.dataSourceManager.dataSources.get(dataSourceModel.get('key'));
       const dataSourceStatus = plugin.dataSourceStatus[dataSourceModel.get('key')];
 
-      // @ts-ignore
-      const isDBInstance = !!dataSource.collectionManager.db;
-
       const item: any = {
         key: dataSourceModel.get('key'),
         displayName: dataSourceModel.get('displayName'),
         status: dataSourceStatus,
         type: dataSourceModel.get('type'),
-        isDBInstance,
+
+        // @ts-ignore
+        isDBInstance: !!dataSource?.collectionManager.db,
       };
 
       if (dataSourceStatus === 'loading-failed' || dataSourceStatus === 'reloading-failed') {
@@ -349,38 +361,37 @@ export class PluginDataSourceManagerServer extends Plugin {
       await Promise.all(loadPromises);
     });
 
-    this.app.db.on('dataSourcesRolesResources.afterSaveWithAssociations', async (model, options) => {
-      const { transaction } = options;
-      const pluginACL: any = this.app.pm.get('acl');
+    this.app.db.on(
+      'dataSourcesRolesResources.afterSaveWithAssociations',
+      async (model: DataSourcesRolesResourcesModel, options) => {
+        const { transaction } = options;
 
-      const dataSource = this.app.dataSourceManager.dataSources.get(model.get('dataSourceKey'));
-      await model.writeToACL({
-        acl: dataSource.acl,
-        associationFieldsActions: pluginACL.associationFieldsActions,
-        transaction: transaction,
-        grantHelper: pluginACL.grantHelper,
-      });
-    });
+        const dataSource = this.app.dataSourceManager.dataSources.get(model.get('dataSourceKey'));
+        await model.writeToACL({
+          acl: dataSource.acl,
+          transaction: transaction,
+        });
+      },
+    );
 
-    this.app.db.on('dataSourcesRolesResourcesActions.afterUpdateWithAssociations', async (model, options) => {
-      const { transaction } = options;
+    this.app.db.on(
+      'dataSourcesRolesResourcesActions.afterUpdateWithAssociations',
+      async (model: DataSourcesRolesResourcesActionModel, options) => {
+        const { transaction } = options;
 
-      const resource = await model.getResource({
-        transaction,
-      });
+        const resource: DataSourcesRolesResourcesModel = await model.getResource({
+          transaction,
+        });
 
-      const pluginACL: any = this.app.pm.get('acl');
+        const dataSource = this.app.dataSourceManager.dataSources.get(resource.get('dataSourceKey'));
+        await resource.writeToACL({
+          acl: dataSource.acl,
+          transaction: transaction,
+        });
+      },
+    );
 
-      const dataSource = this.app.dataSourceManager.dataSources.get(resource.get('dataSourceKey'));
-      await resource.writeToACL({
-        acl: dataSource.acl,
-        associationFieldsActions: pluginACL.associationFieldsActions,
-        transaction: transaction,
-        grantHelper: pluginACL.grantHelper,
-      });
-    });
-
-    this.app.db.on('dataSourcesRolesResources.afterDestroy', async (model, options) => {
+    this.app.db.on('dataSourcesRolesResources.afterDestroy', async (model: DataSourcesRolesResourcesModel, options) => {
       const dataSource = this.app.dataSourceManager.dataSources.get(model.get('dataSourceKey'));
       const roleName = model.get('roleName');
       const role = dataSource.acl.getRole(roleName);
@@ -393,23 +404,29 @@ export class PluginDataSourceManagerServer extends Plugin {
     this.app.db.on('dataSourcesRoles.afterSave', async (model: DataSourcesRolesModel, options) => {
       const { transaction } = options;
 
-      const pluginACL: any = this.app.pm.get('acl');
-
       const dataSource = this.app.dataSourceManager.dataSources.get(model.get('dataSourceKey'));
 
       await model.writeToAcl({
-        grantHelper: pluginACL.grantHelper,
-        associationFieldsActions: pluginACL.associationFieldsActions,
         acl: dataSource.acl,
+        transaction,
+      });
+
+      await this.app.db.getRepository('roles').update({
+        filter: {
+          name: model.get('roleName'),
+        },
+        values: {
+          strategy: model.get('strategy'),
+        },
+        hooks: false,
         transaction,
       });
     });
 
     this.app.on('acl:writeResources', async ({ roleName, transaction }) => {
       const dataSource = this.app.dataSourceManager.dataSources.get('main');
-      const pluginACL: any = this.app.pm.get('acl');
 
-      const dataSourceRole = await this.app.db.getRepository('dataSourcesRoles').findOne({
+      const dataSourceRole: DataSourcesRolesModel = await this.app.db.getRepository('dataSourcesRoles').findOne({
         filter: {
           dataSourceKey: 'main',
           roleName,
@@ -418,8 +435,6 @@ export class PluginDataSourceManagerServer extends Plugin {
       });
 
       await dataSourceRole.writeToAcl({
-        grantHelper: pluginACL.grantHelper,
-        associationFieldsActions: pluginACL.associationFieldsActions,
         acl: dataSource.acl,
         transaction,
       });
@@ -471,8 +486,13 @@ export class PluginDataSourceManagerServer extends Plugin {
     });
 
     this.app.acl.registerSnippet({
-      name: `pm.${this.name}`,
-      actions: ['dataSources:*', 'roles.dataSourceResources'],
+      name: `pm.data-source-manager`,
+      actions: [
+        'dataSources:*',
+        'dataSources.collections:*',
+        'dataSourcesCollections.fields:*',
+        'roles.dataSourceResources',
+      ],
     });
 
     this.app.acl.allow('dataSources', 'listEnabled', 'loggedIn');

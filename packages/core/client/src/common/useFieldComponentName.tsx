@@ -1,20 +1,17 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Field } from '@formily/core';
 import { useField, useFieldSchema } from '@formily/react';
+import { useCollectionField } from '../data-source/collection-field/CollectionFieldProvider';
 import { useIsFileField } from '../schema-component/antd/form-item/FormItem.Settings';
 import { useColumnSchema } from '../schema-component/antd/table-v2/Table.Column.Decorator';
-import { useCollectionManager_deprecated, useCollection_deprecated } from '../collection-manager';
-
-/**
- * 获取字段相关的配置信息
- * @returns
- */
-function useCollectionField() {
-  const { getCollectionJoinField } = useCollectionManager_deprecated();
-  const { getField } = useCollection_deprecated();
-  const fieldSchema = useFieldSchema();
-  const collectionField = getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field']);
-  return collectionField;
-}
 
 export function useFieldComponentName(): string {
   const { fieldSchema: tableColumnSchema, collectionField: tableColumnField } = useColumnSchema();

@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { cx } from '@emotion/css';
 import React, { useEffect, useRef, useState } from 'react';
 import { getYmd } from '../../helpers/other-helper';
@@ -100,7 +109,7 @@ export const TaskItem: React.FC<TaskItemProps> = (props) => {
       {taskItem}
       <text
         x={isProjectBar ? task.x1 : getX()}
-        y={isProjectBar ? task.y - 8 : isTextInside ? task.y + taskHeight * 0.5 : task.y + taskHeight * 0.65}
+        y={isProjectBar ? task.y - 8 : isTextInside ? task.y + taskHeight * 0.65 : task.y + taskHeight * 0.65}
         className={isProjectBar ? cx('projectLabel') : isTextInside ? cx('barLabel') : cx('barLabelOutside')}
         ref={textRef}
       >

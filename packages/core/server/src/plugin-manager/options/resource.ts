@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { uid } from '@nocobase/utils';
 import fs from 'fs';
 import path from 'path';
@@ -5,7 +14,6 @@ import Application from '../../application';
 import { getExposeUrl } from '../clientStaticUtils';
 import PluginManager from '../plugin-manager';
 //@ts-ignore
-import { version } from '../../../package.json';
 
 export default {
   name: 'pm',
@@ -54,9 +62,9 @@ export default {
       if (values.authToken) {
         args.push('--auth-token=' + values.authToken);
       }
-      if (values.compressedFileUrl) {
-        args.push('--url=' + values.compressedFileUrl);
-      }
+      // if (values.compressedFileUrl) {
+      //   args.push('--url=' + values.compressedFileUrl);
+      // }
       if (ctx.file) {
         values.packageName = ctx.request.body.packageName;
         const tmpDir = path.resolve(process.cwd(), 'storage', 'tmp');
@@ -67,9 +75,10 @@ export default {
         }
         const tempFile = path.join(process.cwd(), 'storage/tmp', uid() + path.extname(ctx.file.originalname));
         await fs.promises.writeFile(tempFile, ctx.file.buffer, 'binary');
-        args.push(`--url=${tempFile}`);
+        // args.push(`--url=${tempFile}`);
+        values.compressedFileUrl = tempFile;
       }
-      app.runAsCLI(['pm', 'update', values.packageName, ...args], { from: 'user' });
+      app.runAsCLI(['pm', 'update', values.compressedFileUrl || values.packageName, ...args], { from: 'user' });
       ctx.body = 'ok';
       await next();
     },
@@ -131,7 +140,10 @@ export default {
           try {
             return {
               ...item.toJSON(),
-              url: `${getExposeUrl(item.packageName, PLUGIN_CLIENT_ENTRY_FILE)}?version=${item.version}`,
+              url: `${process.env.APP_SERVER_BASE_URL}${getExposeUrl(
+                item.packageName,
+                PLUGIN_CLIENT_ENTRY_FILE,
+              )}?version=${item.version}`,
             };
           } catch {
             return false;

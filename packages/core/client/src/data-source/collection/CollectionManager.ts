@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import type { SchemaKey } from '@formily/json-schema';
 import type { DataSource } from '../data-source';
 import type { CollectionFieldOptions, CollectionOptions, GetCollectionFieldPredicate } from './Collection';
@@ -131,6 +140,32 @@ export class CollectionManager {
     return this.getCollection(collectionName)?.getFields(predicate) || [];
   }
 
+  getSourceKeyByAssociation(associationName: string) {
+    if (!associationName) {
+      return;
+    }
+    const field = this.getCollectionField(associationName);
+    // 字段不存在，返回空
+    if (!field) {
+      return;
+    }
+    // hasOne 和 hasMany 和 belongsToMany 的字段存在 sourceKey，所以会直接返回 sourceKey；
+    if (field.sourceKey) {
+      return field.sourceKey;
+    }
+    // belongsTo 不存在 sourceKey，所以会使用 filterTargetKey；
+    const sourceCollection = this.getCollection(associationName.split('.')[0]);
+    // source collection 不存在，返回空
+    if (!sourceCollection) {
+      return;
+    }
+    // 后面的主键和 id 是为了保险起见加上的；
+    return sourceCollection.filterTargetKey || sourceCollection.getPrimaryKey() || 'id';
+  }
+
+  /**
+   * @internal
+   */
   clone(collections: CollectionOptions[] = []) {
     const collectionManager = new CollectionManager([], this.dataSource);
 

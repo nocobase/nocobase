@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { ArrayTable } from '@formily/antd-v5';
 import { ISchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
@@ -87,7 +96,10 @@ const getSchema = ({
             return useRequest(
               () =>
                 Promise.resolve({
-                  data: cloneDeep(omit(schema.default, ['uiSchema.rawTitle'])),
+                  data: {
+                    ...cloneDeep(omit(schema.default, ['uiSchema.rawTitle'])),
+                    autoFill: schema.default?.autoFill !== false,
+                  },
                 }),
               options,
             );
@@ -188,6 +200,7 @@ const EditFieldAction = (props) => {
   const compile = useCompile();
   const { name } = useParams();
   const isDialect = (dialect: string) => currentDatabase?.dialect === dialect;
+  const fields = record?.fields || getCollection(record.collectionName, name)?.options?.fields;
   const currentCollections = useMemo(() => {
     return collections.map((v) => {
       return {
@@ -201,7 +214,7 @@ const EditFieldAction = (props) => {
       record?.fields ||
       getCollection(record.collectionName, name)
         ?.options?.fields.filter((v) => {
-          return v.interface === 'select';
+          return ['string', 'bigInt', 'integer'].includes(v.type);
         })
         .map((k) => {
           return {
@@ -210,7 +223,7 @@ const EditFieldAction = (props) => {
           };
         })
     );
-  }, [record.name]);
+  }, [record.name, fields]);
   return (
     <RecordProvider record={record} parent={parentRecord}>
       <ActionContextProvider value={{ visible, setVisible }}>
@@ -260,6 +273,7 @@ const EditFieldAction = (props) => {
             ...scope,
             createOnly: false,
             createMainOnly: false,
+            editMainOnly: true,
           }}
         />
       </ActionContextProvider>

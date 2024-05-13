@@ -1,6 +1,15 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import lodash from 'lodash';
-import { NoPermissionError } from '@nocobase/acl';
 import { snakeCase } from '@nocobase/database';
+import { NoPermissionError } from '@nocobase/acl';
 
 function createWithACLMetaMiddleware() {
   return async (ctx: any, next) => {
@@ -20,7 +29,7 @@ function createWithACLMetaMiddleware() {
       return;
     }
 
-    const { resourceName, actionName } = ctx.action;
+    const { resourceName, actionName } = ctx.permission;
 
     if (!['list', 'get'].includes(actionName)) {
       return;
@@ -37,8 +46,19 @@ function createWithACLMetaMiddleware() {
     // @ts-ignore
     const primaryKeyField = Model.primaryKeyField || Model.primaryKeyAttribute;
 
-    const dataPath = ctx.body?.rows ? 'body.rows' : 'body';
-    let listData = lodash.get(ctx, dataPath);
+    let listData;
+
+    if (ctx.body?.data) {
+      listData = ctx.data;
+    } else if (ctx.body?.rows) {
+      listData = ctx.body.rows;
+    } else if (ctx.body) {
+      listData = ctx.body;
+    }
+
+    if (!listData) {
+      return;
+    }
 
     if (actionName == 'get') {
       listData = lodash.castArray(listData);
@@ -59,6 +79,7 @@ function createWithACLMetaMiddleware() {
             return db;
           },
         },
+        getCurrentRepository: ctx.getCurrentRepository,
         action: {
           actionName: action,
           name: action,

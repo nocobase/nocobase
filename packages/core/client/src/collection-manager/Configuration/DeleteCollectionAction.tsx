@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { DeleteOutlined, ExclamationCircleFilled } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { useForm } from '@formily/react';
@@ -30,12 +39,18 @@ export const useDestroyActionAndRefreshCM = () => {
     },
   };
 };
-export const useBulkDestroyActionAndRefreshCM = () => {
+
+/**
+ * 是否关闭弹窗
+ * @param flag
+ * @returns
+ */
+export const useBulkDestroyActionAndRefreshCM = (flag?) => {
   const { run } = useBulkDestroyAction();
   const { refreshCM } = useCollectionManager_deprecated();
   return {
     async run() {
-      await run();
+      await run(flag);
       await refreshCM();
     },
   };
@@ -62,7 +77,7 @@ export const useBulkDestroyAction = () => {
   const form = useForm();
   const { cascade } = form?.values || {};
   return {
-    async run() {
+    async run(flag?) {
       if (!state?.selectedRowKeys?.length) {
         return message.error(t('Please select the records you want to delete'));
       }
@@ -71,7 +86,7 @@ export const useBulkDestroyAction = () => {
         cascade,
       });
       form.reset();
-      ctx?.setVisible?.(false);
+      !flag && ctx?.setVisible?.(false);
       setState?.({ selectedRowKeys: [] });
       refresh();
     },

@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import { CollectionOptions } from '@nocobase/client';
@@ -142,7 +151,7 @@ export const fieldsTableSchema: ISchema = {
               type: 'string',
               'x-component': 'FieldTitleInput',
               'x-component-props': {
-                handleFieldChange: '{{handleFieldChange}}',
+                handleFieldChange: '{{enqueueChange}}',
               },
             },
           },
@@ -167,7 +176,7 @@ export const fieldsTableSchema: ISchema = {
             type: {
               'x-component': 'FieldType',
               'x-component-props': {
-                handleFieldChange: '{{handleFieldChange}}',
+                handleFieldChange: '{{enqueueChange}}',
               },
             },
           },
@@ -181,7 +190,7 @@ export const fieldsTableSchema: ISchema = {
             interface: {
               'x-component': 'CollectionFieldInterfaceSelect',
               'x-component-props': {
-                handleFieldChange: '{{handleFieldChange}}',
+                handleFieldChange: '{{enqueueChange}}',
               },
             },
           },
@@ -194,10 +203,8 @@ export const fieldsTableSchema: ISchema = {
           properties: {
             titleField: {
               'x-component': 'TitleField',
+              'x-use-component-props': 'useTitleFieldProps',
               'x-read-pretty': false,
-              'x-component-props': {
-                useProps: '{{useTitleFieldProps}}',
-              },
             },
           },
         },

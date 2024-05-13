@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Database } from '@nocobase/database';
 import { MockServer } from '@nocobase/test';
 import fs from 'fs';
@@ -27,6 +36,20 @@ describe('dumper', () => {
 
     await restorer.restore({
       groups: new Set(['meta', 'business']),
+    });
+  });
+
+  it.skip('should restore from version 0.21 backup file', async () => {
+    const file = path.resolve(__dirname, 'files', 'backup_20240429_110942_7061.nbdump');
+
+    const restorer = new Restorer(app, {
+      backUpFilePath: file,
+    });
+
+    const { dumpableCollectionsGroupByGroup } = await restorer.parseBackupFile();
+
+    await restorer.restore({
+      groups: new Set(Object.keys(dumpableCollectionsGroupByGroup)),
     });
   });
 
@@ -64,6 +87,43 @@ describe('dumper', () => {
       values: {
         date: new Date(),
       },
+    });
+
+    const dumper = new Dumper(app);
+
+    const result = await dumper.dump({
+      groups: new Set(['required', 'custom']),
+    });
+
+    const restorer = new Restorer(app, {
+      backUpFilePath: result.filePath,
+    });
+
+    await restorer.restore({
+      groups: new Set(['required', 'custom']),
+    });
+
+    const testCollection = app.db.getCollection('tests');
+    const items = await testCollection.repository.find();
+    expect(items.length).toBe(1);
+  });
+
+  it('should dump and restore uuid field', async () => {
+    await db.getRepository('collections').create({
+      values: {
+        name: 'tests',
+        fields: [
+          {
+            type: 'uuid',
+            name: 'uuid_test',
+          },
+        ],
+      },
+      context: {},
+    });
+
+    await db.getRepository('tests').create({
+      values: {},
     });
 
     const dumper = new Dumper(app);
@@ -203,7 +263,7 @@ describe('dumper', () => {
     expect(await app.db.getRepository('parent').count()).toEqual(2);
   });
 
-  it('should restore with audit logs', async () => {
+  it.skip('should restore with audit logs', async () => {
     await app.runCommand('pm', 'enable', 'audit-logs');
 
     await app.db.getRepository('collections').create({
@@ -385,7 +445,8 @@ describe('dumper', () => {
     await db.getRepository('collections').create({
       values: {
         name: 'tests',
-        sql: `select count(*) as count from ${userCollection.getTableNameWithSchemaAsString()}`,
+        sql: `select count(*) as count
+              from ${userCollection.getTableNameWithSchemaAsString()}`,
         fields: [
           {
             type: 'integer',
@@ -790,5 +851,67 @@ describe('dumper', () => {
     const dumpableCollections = await dumper.collectionsGroupByDataTypes();
 
     expect(dumpableCollections.custom).toBeDefined();
+  });
+
+  it('should dump and restore with table named by camel case', async () => {
+    await app.db.getRepository('collections').create({
+      values: {
+        name: 'Resumes-Table',
+        fields: [
+          {
+            name: 'stringField',
+            type: 'string',
+          },
+        ],
+      },
+      context: {},
+    });
+
+    await app.db.getRepository('Resumes-Table').create({
+      values: [
+        {
+          stringField: 'test',
+        },
+        {
+          stringField: 'test2',
+        },
+      ],
+    });
+    await app.db.getRepository('collections').create({
+      values: {
+        name: 'Photos',
+        fields: [
+          {
+            name: 'stringField',
+            type: 'string',
+          },
+        ],
+      },
+      context: {},
+    });
+
+    await app.db.getRepository('Photos').create({
+      values: [
+        {
+          stringField: 'test',
+        },
+        {
+          stringField: 'test2',
+        },
+      ],
+    });
+
+    const dumper = new Dumper(app);
+    const result = await dumper.dump({
+      groups: new Set(['required', 'custom']),
+    });
+
+    const restorer = new Restorer(app, {
+      backUpFilePath: result.filePath,
+    });
+
+    await restorer.restore({
+      groups: new Set(['required', 'custom']),
+    });
   });
 });

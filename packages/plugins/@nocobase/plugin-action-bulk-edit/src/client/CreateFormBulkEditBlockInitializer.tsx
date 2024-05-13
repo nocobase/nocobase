@@ -1,22 +1,32 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { FormOutlined } from '@ant-design/icons';
-import React from 'react';
 import {
-  useBlockAssociationContext,
-  useCollection_deprecated,
-  useSchemaTemplateManager,
-  createFormBlockSchema,
-  useRecordCollectionDataSourceItems,
   SchemaInitializerItem,
+  createCreateFormBlockUISchema,
+  useCollection_deprecated,
+  useRecordCollectionDataSourceItems,
   useSchemaInitializer,
   useSchemaInitializerItem,
+  useSchemaTemplateManager,
+  useAssociationName,
 } from '@nocobase/client';
+import React from 'react';
+import { createBulkEditBlockUISchema } from './createBulkEditBlockUISchema';
 
 export const CreateFormBulkEditBlockInitializer = () => {
   const itemConfig = useSchemaInitializerItem();
   const { onCreateBlockSchema, componentType, createBlockSchema, ...others } = itemConfig;
   const { insert } = useSchemaInitializer();
   const { getTemplateSchemaByMode } = useSchemaTemplateManager();
-  const association = useBlockAssociationContext();
+  const association = useAssociationName();
   const collection = useCollection_deprecated();
   return (
     <SchemaInitializerItem
@@ -26,13 +36,19 @@ export const CreateFormBulkEditBlockInitializer = () => {
         if (item.template) {
           const s = await getTemplateSchemaByMode(item);
           if (item.template.componentName === 'FormItem') {
-            const blockSchema = createFormBlockSchema({
-              actionInitializers: 'CreateFormActionInitializers',
-              association,
-              collection: collection.name,
-              dataSource: collection.dataSource,
-              template: s,
-            });
+            const blockSchema = createCreateFormBlockUISchema(
+              association
+                ? {
+                    association,
+                    dataSource: collection.dataSource,
+                    templateSchema: s,
+                  }
+                : {
+                    collectionName: collection.name,
+                    dataSource: collection.dataSource,
+                    templateSchema: s,
+                  },
+            );
             if (item.mode === 'reference') {
               blockSchema['x-template-key'] = item.template.key;
             }
@@ -42,11 +58,9 @@ export const CreateFormBulkEditBlockInitializer = () => {
           }
         } else {
           insert(
-            createFormBlockSchema({
-              formItemInitializers: 'BulkEditFormItemInitializers',
-              actionInitializers: 'BulkEditFormActionInitializers',
+            createBulkEditBlockUISchema({
               association,
-              collection: collection.name,
+              collectionName: collection.name,
               dataSource: collection.dataSource,
             }),
           );

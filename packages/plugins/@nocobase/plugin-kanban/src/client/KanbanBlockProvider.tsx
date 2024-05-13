@@ -1,8 +1,17 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { ArrayField } from '@formily/core';
 import { Schema, useField, useFieldSchema } from '@formily/react';
 import { Spin } from 'antd';
 import uniq from 'lodash/uniq';
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import {
   useACLRoleContext,
   useCollection_deprecated,
@@ -10,7 +19,9 @@ import {
   FixedBlockWrapper,
   BlockProvider,
   useBlockRequestContext,
+  useCollection,
 } from '@nocobase/client';
+import { isEqual } from 'lodash';
 import { toColumns } from './Kanban';
 
 export const KanbanBlockContext = createContext<any>({});
@@ -109,7 +120,8 @@ const useAssociationNames = (collection) => {
 
 export const KanbanBlockProvider = (props) => {
   const params = { ...props.params };
-  const appends = useAssociationNames(props.collection);
+  console.log(props);
+  const appends = useAssociationNames(props.association || props.collection);
   if (!Object.keys(params).includes('appends')) {
     params['appends'] = appends;
   }
@@ -138,20 +150,21 @@ export const useKanbanBlockProps = () => {
   const field = useField<ArrayField>();
   const ctx = useKanbanBlockContext();
   const [dataSource, setDataSource] = useState([]);
-  const primaryKey = useCollection_deprecated().getPrimaryKey();
+  const primaryKey = useCollection()?.getPrimaryKey();
+
   useEffect(() => {
-    if (!ctx?.service?.loading) {
-      field.value = toColumns(ctx.groupField, ctx?.service?.data?.data, primaryKey);
-      setDataSource(toColumns(ctx.groupField, ctx?.service?.data?.data, primaryKey));
+    const data = toColumns(ctx.groupField, ctx?.service?.data?.data, primaryKey);
+    if (isEqual(field.value, data) && dataSource === field.value) {
+      return;
     }
-    // field.loading = ctx?.service?.loading;
+    field.value = data;
+    setDataSource(field.value);
   }, [ctx?.service?.loading]);
-  return {
-    setDataSource,
-    dataSource,
-    groupField: ctx.groupField,
-    disableCardDrag: useDisableCardDrag(),
-    async onCardDragEnd({ columns, groupField }, { fromColumnId, fromPosition }, { toColumnId, toPosition }) {
+
+  const disableCardDrag = useDisableCardDrag();
+
+  const onCardDragEnd = useCallback(
+    async ({ columns, groupField }, { fromColumnId, fromPosition }, { toColumnId, toPosition }) => {
       const sourceColumn = columns.find((column) => column.id === fromColumnId);
       const destinationColumn = columns.find((column) => column.id === toColumnId);
       const sourceCard = sourceColumn?.cards?.[fromPosition];
@@ -169,5 +182,14 @@ export const useKanbanBlockProps = () => {
       }
       await ctx.resource.move(values);
     },
+    [ctx?.sortField],
+  );
+
+  return {
+    setDataSource,
+    dataSource,
+    groupField: ctx.groupField,
+    disableCardDrag,
+    onCardDragEnd,
   };
 };

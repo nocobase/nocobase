@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Field } from '@formily/core';
 import { useField } from '@formily/react';
 import { Input } from 'antd';
@@ -6,6 +15,11 @@ import React, { useState, useEffect, Ref } from 'react';
 import { cx, css } from '@emotion/css';
 
 export type JSONTextAreaProps = TextAreaProps & { value?: string; space?: number };
+
+const jsonCss = css`
+  font-size: 80%;
+  font-family: Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace;
+`;
 
 export const Json = React.forwardRef<typeof Input.TextArea, JSONTextAreaProps>(
   ({ value, onChange, space = 2, ...props }: JSONTextAreaProps, ref: Ref<any>) => {
@@ -25,13 +39,7 @@ export const Json = React.forwardRef<typeof Input.TextArea, JSONTextAreaProps>(
     return (
       <Input.TextArea
         {...props}
-        className={cx(
-          css`
-            font-size: 80%;
-            font-family: Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace;
-          `,
-          props.className,
-        )}
+        className={cx(jsonCss, props.className)}
         ref={ref}
         value={text}
         onChange={(ev) => {

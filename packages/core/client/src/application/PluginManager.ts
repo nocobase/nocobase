@@ -1,8 +1,17 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import type { Application } from './Application';
 import type { Plugin } from './Plugin';
 import { getPlugins } from './utils/remotePlugins';
 
-export type PluginOptions<T = any> = { name?: string; config?: T };
+export type PluginOptions<T = any> = { name?: string; packageName?: string; config?: T };
 export type PluginType<Opts = any> = typeof Plugin | [typeof Plugin, PluginOptions<Opts>];
 export type PluginData = {
   name: string;
@@ -26,6 +35,9 @@ export class PluginManager {
     this.initPlugins = this.init(_plugins);
   }
 
+  /**
+   * @internal
+   */
   async init(_plugins: PluginType[]) {
     await this.initStaticPlugins(_plugins);
     if (this.loadRemotePlugins) {
@@ -63,6 +75,11 @@ export class PluginManager {
     if (opts.name) {
       this.pluginsAliases[opts.name] = instance;
     }
+
+    if (opts.packageName) {
+      this.pluginsAliases[opts.packageName] = instance;
+    }
+
     await instance.afterAdd();
   }
 
@@ -79,6 +96,9 @@ export class PluginManager {
     return new plugin(opts, this.app);
   }
 
+  /**
+   * @internal
+   */
   async load() {
     await this.initPlugins;
 

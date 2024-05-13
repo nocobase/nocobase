@@ -1,9 +1,21 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { observer, RecursionField, useField, useFieldSchema } from '@formily/react';
 import { toArr } from '@formily/shared';
 import React, { Fragment, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useDesignable } from '../../';
 import { BlockAssociationContext, WithoutTableFieldResource } from '../../../block-provider';
 import { CollectionProvider_deprecated, useCollectionManager_deprecated } from '../../../collection-manager';
+import { Collection } from '../../../data-source';
+import { DeclareVariable } from '../../../modules/variable/DeclareVariable';
 import { RecordProvider, useRecord } from '../../../record-provider';
 import { FormProvider } from '../../core';
 import { useCompile } from '../../hooks';
@@ -47,6 +59,9 @@ export const ReadPrettyInternalViewer: React.FC = observer(
     const isTreeCollection = targetCollection?.template === 'tree';
     const ellipsisWithTooltipRef = useRef<IEllipsisWithTooltipRef>();
     const getLabelUiSchema = useLabelUiSchemaV2();
+    const [btnHover, setBtnHover] = useState(false);
+    const { t } = useTranslation();
+
     const renderRecords = () =>
       toArr(props.value).map((record, index, arr) => {
         const value = record?.[fieldNames?.label || 'label'];
@@ -70,7 +85,11 @@ export const ReadPrettyInternalViewer: React.FC = observer(
                 text
               ) : enableLink !== false ? (
                 <a
+                  onMouseEnter={() => {
+                    setBtnHover(true);
+                  }}
                   onClick={(e) => {
+                    setBtnHover(true);
                     e.stopPropagation();
                     e.preventDefault();
                     if (designable) {
@@ -91,19 +110,36 @@ export const ReadPrettyInternalViewer: React.FC = observer(
           </Fragment>
         );
       });
+
+    const btnElement = (
+      <EllipsisWithTooltip ellipsis={true} ref={ellipsisWithTooltipRef}>
+        {renderRecords()}
+      </EllipsisWithTooltip>
+    );
+
+    if (enableLink === false || !btnHover) {
+      return btnElement;
+    }
     const renderWithoutTableFieldResourceProvider = () => (
-      <WithoutTableFieldResource.Provider value={true}>
-        <FormProvider>
-          <RecursionField
-            schema={fieldSchema}
-            onlyRenderProperties
-            basePath={field.address}
-            filterProperties={(s) => {
-              return s['x-component'] === 'AssociationField.Viewer';
-            }}
-          />
-        </FormProvider>
-      </WithoutTableFieldResource.Provider>
+      <DeclareVariable
+        name="$nPopupRecord"
+        title={t('Current popup record')}
+        value={record}
+        collection={targetCollection as Collection}
+      >
+        <WithoutTableFieldResource.Provider value={true}>
+          <FormProvider>
+            <RecursionField
+              schema={fieldSchema}
+              onlyRenderProperties
+              basePath={field.address}
+              filterProperties={(s) => {
+                return s['x-component'] === 'AssociationField.Viewer';
+              }}
+            />
+          </FormProvider>
+        </WithoutTableFieldResource.Provider>
+      </DeclareVariable>
     );
 
     const renderRecordProvider = () => {
@@ -124,9 +160,7 @@ export const ReadPrettyInternalViewer: React.FC = observer(
       <div>
         <BlockAssociationContext.Provider value={`${collectionField?.collectionName}.${collectionField?.name}`}>
           <CollectionProvider_deprecated name={collectionField?.target ?? collectionField?.targetCollection}>
-            <EllipsisWithTooltip ellipsis={true} ref={ellipsisWithTooltipRef}>
-              {renderRecords()}
-            </EllipsisWithTooltip>
+            {btnElement}
             <ActionContextProvider
               value={{
                 visible,

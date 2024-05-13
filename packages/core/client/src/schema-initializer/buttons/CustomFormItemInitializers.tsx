@@ -1,7 +1,16 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { SchemaInitializerChildren } from '../../application';
-import { SchemaInitializer } from '../../application/schema-initializer/SchemaInitializer';
+import { CompatibleSchemaInitializer } from '../../application/schema-initializer/CompatibleSchemaInitializer';
+import { SchemaInitializerChildren } from '../../application/schema-initializer/components/SchemaInitializerChildren';
 import { useCompile } from '../../schema-component';
 import { gridRowColWrap, useCustomFormItemInitializerFields, useInheritsFormItemInitializerFields } from '../utils';
 
@@ -24,7 +33,11 @@ const ParentCollectionFields = () => {
   return <SchemaInitializerChildren>{res}</SchemaInitializerChildren>;
 };
 
-export const customFormItemInitializers = new SchemaInitializer({
+/**
+ * @deprecated
+ * use `customFormItemInitializers` instead
+ */
+export const customFormItemInitializers_deprecated = new CompatibleSchemaInitializer({
   name: 'CustomFormItemInitializers',
   wrap: gridRowColWrap,
   icon: 'SettingOutlined',
@@ -42,3 +55,25 @@ export const customFormItemInitializers = new SchemaInitializer({
     },
   ],
 });
+
+export const customFormItemInitializers = new CompatibleSchemaInitializer(
+  {
+    name: 'assignFieldValuesForm:configureFields',
+    wrap: gridRowColWrap,
+    icon: 'SettingOutlined',
+    title: '{{t("Configure fields")}}',
+    items: [
+      {
+        type: 'itemGroup',
+        title: '{{t("Configure fields")}}',
+        name: 'configureFields',
+        useChildren: useCustomFormItemInitializerFields,
+      },
+      {
+        name: 'parentCollectionFields',
+        Component: ParentCollectionFields,
+      },
+    ],
+  },
+  customFormItemInitializers_deprecated,
+);

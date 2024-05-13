@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { ACL } from '@nocobase/acl';
 import { Database } from '@nocobase/database';
 import { UiSchemaRepository } from '@nocobase/plugin-ui-schema-storage';
@@ -219,7 +228,7 @@ describe('acl', () => {
         resource: 'posts.comments',
         action: 'list',
       }),
-    ).not.toBeNull();
+    ).toBeNull();
 
     expect(
       acl.can({
@@ -328,6 +337,7 @@ describe('acl', () => {
       forceUpdate: true,
     });
 
+    app.acl.appendStrategyResource('posts');
     expect(
       acl.can({
         role: 'new',
@@ -877,5 +887,28 @@ describe('acl', () => {
 
     expect(destroyResponse.statusCode).toEqual(200);
     expect(await db.getRepository('roles').findOne({ filterByTk: 'testRole' })).toBeNull();
+  });
+
+  it('should set acl strategy resources', async () => {
+    await db.getRepository('collections').create({
+      values: {
+        name: 'posts',
+        fields: [
+          {
+            name: 'title',
+            type: 'string',
+          },
+        ],
+      },
+      context: {},
+    });
+
+    expect(app.acl.getStrategyResources()).toContain('posts');
+
+    await db.getRepository('collections').destroy({
+      filterByTk: 'posts',
+    });
+
+    expect(app.acl.getStrategyResources()).not.toContain('posts');
   });
 });

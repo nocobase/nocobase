@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { expect, test } from '@nocobase/test/e2e';
 import { oneEmptyGantt } from './utils';
 
@@ -16,7 +25,7 @@ test('drag and adjust start time, end time, and progress', async ({ page, mockPa
   await page.getByRole('option', { name: 'Week' }).click();
   await page.getByRole('menuitem', { name: 'Time scale' }).hover();
   await page.mouse.move(300, 0);
-  await page.getByRole('button', { name: 'Actions' }).click();
+  await page.getByRole('button', { name: 'Actions', exact: true }).click();
   await expect(page.locator('.calendarBottomText').first()).toHaveText(/W/);
   await page.locator('.bar ').hover();
   const draggableElement = await page.getByLabel('task-bar').getByRole('button').first();

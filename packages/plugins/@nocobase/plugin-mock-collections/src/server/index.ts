@@ -1,8 +1,20 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import Database, { Collection, Repository } from '@nocobase/database';
-import { CollectionRepository } from '@nocobase/plugin-collection-manager';
-import { Plugin } from '@nocobase/server';
+import { CollectionRepository } from '@nocobase/plugin-data-source-main';
+import { InstallOptions, Plugin } from '@nocobase/server';
 import { merge, uid } from '@nocobase/utils';
+import { promises as fs } from 'fs';
 import _ from 'lodash';
+import path from 'path';
+import { Client } from 'pg';
 import collectionTemplates from './collection-templates';
 import * as fieldInterfaces from './field-interfaces';
 import { mockAttachment } from './field-interfaces';
@@ -184,10 +196,10 @@ export class PluginMockCollectionsServer extends Plugin {
       return options;
     };
 
-    this.app.resourcer.registerActions({
+    this.app.resourceManager.registerActionHandlers({
       mock: async (ctx, next) => {
         const { resourceName } = ctx.action;
-        const { values, count = 10 } = ctx.action.params;
+        const { values, count = 10, maxDepth = 4 } = ctx.action.params;
         const mockCollectionData = async (collectionName, count = 1, depth = 0, maxDepth = 4) => {
           const collection = ctx.db.getCollection(collectionName) as Collection;
           const items = await Promise.all(
@@ -216,12 +228,12 @@ export class PluginMockCollectionsServer extends Plugin {
           );
           return count == 1 ? items[0] : items;
         };
-        const repository = ctx.db.getRepository(resourceName);
+        const repository = ctx.db.getRepository(resourceName) as CollectionRepository;
         let size = count;
         if (Array.isArray(values)) {
           size = values.length;
         }
-        const data = await mockCollectionData(resourceName, size);
+        const data = await mockCollectionData(resourceName, size, 0, Number(maxDepth));
         // ctx.body = {
         //   values: (Array.isArray(data) ? data : [data]).map((item, index) => {
         //     if (Array.isArray(values)) {
@@ -290,9 +302,12 @@ export class PluginMockCollectionsServer extends Plugin {
             }
           }
         });
-
         await collectionsRepository.load();
-        await db.sync();
+
+        for (const collection of collections) {
+          await db.getRepository(collection.name).collection.sync();
+        }
+
         const records = await collectionsRepository.find({
           filter: {
             name: collections.map((c) => c.name),
@@ -303,6 +318,41 @@ export class PluginMockCollectionsServer extends Plugin {
         await next();
       },
     });
+  }
+
+  async install(options?: InstallOptions) {
+    const dbName = this.app.db.options.database;
+    const externalDB = `${dbName}_external_test`;
+
+    // create external database
+    let client = new Client({
+      user: process.env.DB_USER,
+      password: process.env.DB_PASSWORD,
+      host: process.env.DB_HOST,
+      database: process.env.DB_DATABASE,
+      port: parseInt(process.env.DB_PORT),
+    });
+
+    await client.connect();
+    await client.query(`DROP DATABASE IF EXISTS ${externalDB}`);
+    await client.query(`CREATE DATABASE ${externalDB}`);
+    await client.end();
+
+    // import sql import external database
+    client = new Client({
+      user: process.env.DB_USER,
+      password: process.env.DB_PASSWORD,
+      host: process.env.DB_HOST,
+      database: externalDB,
+      port: parseInt(process.env.DB_PORT),
+    });
+
+    await client.connect();
+
+    const sqlFile = path.resolve(__dirname, './external.sql');
+    const sql: string = await fs.readFile(sqlFile, 'utf8');
+    await client.query(sql);
+    await client.end();
   }
 }
 

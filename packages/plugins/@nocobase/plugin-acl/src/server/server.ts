@@ -1,6 +1,15 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Context, utils as actionUtils } from '@nocobase/actions';
 import { Cache } from '@nocobase/cache';
-import { Collection, RelationField } from '@nocobase/database';
+import { Collection, RelationField, Transaction } from '@nocobase/database';
 import { Plugin } from '@nocobase/server';
 import { Mutex } from 'async-mutex';
 import lodash from 'lodash';
@@ -10,117 +19,30 @@ import { checkAction } from './actions/role-check';
 import { roleCollectionsResource } from './actions/role-collections';
 import { setDefaultRole } from './actions/user-setDefaultRole';
 import { setCurrentRole } from './middlewares/setCurrentRole';
+import { createWithACLMetaMiddleware } from './middlewares/with-acl-meta';
 import { RoleModel } from './model/RoleModel';
 import { RoleResourceActionModel } from './model/RoleResourceActionModel';
 import { RoleResourceModel } from './model/RoleResourceModel';
-import { createWithACLMetaMiddleware } from './middlewares/with-acl-meta';
 
-export interface AssociationFieldAction {
-  associationActions: string[];
-  targetActions?: string[];
-}
-
-interface AssociationFieldActions {
-  [availableActionName: string]: AssociationFieldAction;
-}
-
-export interface AssociationFieldsActions {
-  [associationType: string]: AssociationFieldActions;
-}
-
-export class GrantHelper {
-  resourceTargetActionMap = new Map<string, string[]>();
-  targetActionResourceMap = new Map<string, string[]>();
-
-  constructor() {}
-}
-
-export class PluginACL extends Plugin {
-  // association field actions config
-
-  associationFieldsActions: AssociationFieldsActions = {};
-
-  grantHelper = new GrantHelper();
-
+export class PluginACLServer extends Plugin {
   get acl() {
     return this.app.acl;
   }
 
-  registerAssociationFieldAction(associationType: string, value: AssociationFieldActions) {
-    this.associationFieldsActions[associationType] = value;
-  }
-
-  registerAssociationFieldsActions() {
-    // if grant create action to role, it should
-    // also grant add action and association target's view action
-
-    this.registerAssociationFieldAction('hasOne', {
-      view: {
-        associationActions: ['list', 'get', 'view'],
-      },
-      create: {
-        associationActions: ['create', 'set'],
-      },
-      update: {
-        associationActions: ['update', 'remove', 'set'],
-      },
-    });
-
-    this.registerAssociationFieldAction('hasMany', {
-      view: {
-        associationActions: ['list', 'get', 'view'],
-      },
-      create: {
-        associationActions: ['create', 'set', 'add'],
-      },
-      update: {
-        associationActions: ['update', 'remove', 'set'],
-      },
-    });
-
-    this.registerAssociationFieldAction('belongsTo', {
-      view: {
-        associationActions: ['list', 'get', 'view'],
-      },
-      create: {
-        associationActions: ['create', 'set'],
-      },
-      update: {
-        associationActions: ['update', 'remove', 'set'],
-      },
-    });
-
-    this.registerAssociationFieldAction('belongsToMany', {
-      view: {
-        associationActions: ['list', 'get', 'view'],
-      },
-      create: {
-        associationActions: ['create', 'set', 'add'],
-      },
-      update: {
-        associationActions: ['update', 'remove', 'set', 'toggle'],
-      },
-    });
-  }
-
-  async writeResourceToACL(resourceModel: RoleResourceModel, transaction) {
+  async writeResourceToACL(resourceModel: RoleResourceModel, transaction: Transaction) {
     await resourceModel.writeToACL({
       acl: this.acl,
-      associationFieldsActions: this.associationFieldsActions,
       transaction: transaction,
-      grantHelper: this.grantHelper,
     });
   }
 
-  async writeActionToACL(actionModel: RoleResourceActionModel, transaction) {
+  async writeActionToACL(actionModel: RoleResourceActionModel, transaction: Transaction) {
     const resource = actionModel.get('resource') as RoleResourceModel;
     const role = this.acl.getRole(resource.get('roleName') as string);
     await actionModel.writeToACL({
       acl: this.acl,
       role,
       resourceName: resource.get('name') as string,
-      associationFieldsActions: this.associationFieldsActions,
-      grantHelper: this.grantHelper,
     });
   }
 
@@ -179,6 +101,13 @@ export class PluginACL extends Plugin {
         'roles.resources:*',
         'uiSchemas:getProperties',
         'roles.menuUiSchemas:*',
+        'roles.users:*',
+        'dataSources.roles:*',
+        'dataSources:list',
+        'roles.dataSourcesCollections:*',
+        'roles.dataSourceResources:*',
+        'dataSourcesRolesResourcesScopes:*',
+        'rolesResourcesScopes:*',
       ],
     });
 
@@ -210,8 +139,6 @@ export class PluginACL extends Plugin {
         };
       }
     });
-
-    this.registerAssociationFieldsActions();
 
     this.app.resourcer.define(availableActionResource);
     this.app.resourcer.define(roleCollectionsResource);
@@ -397,11 +324,12 @@ export class PluginACL extends Plugin {
     };
 
     // sync database role data to acl
-    this.app.on('afterLoad', async () => {
+    this.app.on('afterStart', async () => {
       await writeRolesToACL(this.app, {
         withOutResources: true,
       });
     });
+
     // this.app.on('afterInstall', writeRolesToACL);
 
     this.app.on('afterInstallPlugin', async (plugin) => {
@@ -604,48 +532,6 @@ export class PluginACL extends Plugin {
       }
     });
 
-    this.app.acl.use(
-      async (ctx: Context, next) => {
-        const { actionName, resourceName, resourceOf } = ctx.action;
-        // is association request
-        if (resourceName.includes('.') && resourceOf) {
-          if (!ctx?.permission?.can?.params) {
-            return next();
-          }
-          // 关联数据去掉 filter
-          delete ctx.permission.can.params.filter;
-          // 关联数据能不能处理取决于 source 是否有权限
-          const [collectionName] = resourceName.split('.');
-          const action = ctx.can({ resource: collectionName, action: actionName });
-
-          const availableAction = this.app.acl.getAvailableAction(actionName);
-          if (availableAction?.options?.onNewRecord) {
-            if (action) {
-              ctx.permission.skip = true;
-            } else {
-              ctx.permission.can = false;
-            }
-          } else {
-            const filteredParams = this.app.acl.filterParams(ctx, collectionName, action?.params || {});
-            const params = await parseJsonTemplate(filteredParams, ctx);
-
-            const sourceInstance = await ctx.db.getRepository(collectionName).findOne({
-              filterByTk: resourceOf,
-              filter: params.filter || {},
-            });
-
-            if (!sourceInstance) {
-              ctx.permission.can = false;
-            }
-          }
-        }
-        await next();
-      },
-      {
-        before: 'core',
-      },
-    );
-
     // throw error when user has no fixed params permissions
     this.app.acl.use(
       async (ctx: any, next) => {
@@ -690,8 +576,24 @@ export class PluginACL extends Plugin {
           ctx.logger.error(error);
         }
       },
-      { after: 'restApi', group: 'after' },
+      { after: 'dataSource', group: 'with-acl-meta' },
     );
+
+    this.db.on('afterUpdateCollection', async (collection) => {
+      if (collection.options.loadedFromCollectionManager) {
+        this.app.acl.appendStrategyResource(collection.name);
+      }
+    });
+
+    this.db.on('afterDefineCollection', async (collection) => {
+      if (collection.options.loadedFromCollectionManager) {
+        this.app.acl.appendStrategyResource(collection.name);
+      }
+    });
+
+    this.db.on('afterRemoveCollection', (collection) => {
+      this.app.acl.removeStrategyResource(collection.name);
+    });
   }
 
   async install() {
@@ -713,4 +615,4 @@ export class PluginACL extends Plugin {
   }
 }
 
-export default PluginACL;
+export default PluginACLServer;

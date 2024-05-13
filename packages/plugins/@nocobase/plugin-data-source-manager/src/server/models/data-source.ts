@@ -1,6 +1,14 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Model, Transaction } from '@nocobase/database';
 import { Application } from '@nocobase/server';
-import { LocalData } from '../services/database-introspector';
 import { setCurrentRole } from '@nocobase/plugin-acl';
 import { ACL, AvailableActionOptions } from '@nocobase/acl';
 import { DataSourcesRolesModel } from './data-sources-roles-model';
@@ -51,11 +59,7 @@ export class DataSourceModel extends Model {
   async loadIntoACL(options: { app: Application; acl: ACL; transaction?: Transaction }) {
     const { app, acl } = options;
     const loadRoleIntoACL = async (model: DataSourcesRolesModel) => {
-      const pluginACL: any = app.pm.get('acl');
-
       await model.writeToAcl({
-        grantHelper: pluginACL.grantHelper,
-        associationFieldsActions: pluginACL.associationFieldsActions,
         acl,
       });
     };
@@ -90,7 +94,8 @@ export class DataSourceModel extends Model {
 
     const dataSource = app.dataSourceManager.factory.create(type, {
       ...createOptions,
-      name: this.get('key'),
+      name: dataSourceKey,
+      logger: app.logger.child({ dataSourceKey }),
     });
 
     if (loadAtAfterStart) {
@@ -135,7 +140,7 @@ export class DataSourceModel extends Model {
     pluginDataSourceManagerServer.dataSourceStatus[dataSourceKey] = 'loaded';
   }
 
-  private async loadLocalData(): Promise<LocalData> {
+  private async loadLocalData() {
     const dataSourceKey = this.get('key');
 
     const remoteCollections = await this.db.getRepository('dataSourcesCollections').find({

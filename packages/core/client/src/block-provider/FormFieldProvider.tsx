@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { createForm, onFormValuesChange } from '@formily/core';
 import { useField } from '@formily/react';
 import { autorun } from '@formily/reactive';
@@ -9,6 +18,9 @@ import { RecordProvider } from '../record-provider';
 import { BlockProvider, useBlockRequestContext } from './BlockProvider';
 import { useFormBlockContext } from './FormBlockProvider';
 
+/**
+ * @internal
+ */
 export const FormFieldContext = createContext<any>({});
 FormFieldContext.displayName = 'FormFieldContext';
 
@@ -75,9 +87,15 @@ const InternalFormFieldProvider = (props) => {
   );
 };
 
+/**
+ * @internal
+ */
 export const WithoutFormFieldResource = createContext(null);
 WithoutFormFieldResource.displayName = 'WithoutFormFieldResource';
 
+/**
+ * @internal
+ */
 export const FormFieldProvider = (props) => {
   return (
     <WithoutFormFieldResource.Provider value={false}>
@@ -88,10 +106,16 @@ export const FormFieldProvider = (props) => {
   );
 };
 
+/**
+ * @internal
+ */
 export const useFormFieldContext = () => {
   return useContext(FormFieldContext);
 };
 
+/**
+ * @internal
+ */
 export const useFormFieldProps = () => {
   const ctx = useFormFieldContext();
   useEffect(() => {

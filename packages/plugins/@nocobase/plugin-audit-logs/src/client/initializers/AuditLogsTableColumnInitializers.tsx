@@ -1,5 +1,14 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import {
-  SchemaInitializer,
+  CompatibleSchemaInitializer,
   SchemaInitializerChildren,
   useAssociatedTableColumnInitializerFields,
   useCompile,
@@ -44,7 +53,11 @@ const AssociatedFields = () => {
   return <SchemaInitializerChildren>{schema}</SchemaInitializerChildren>;
 };
 
-export const auditLogsTableColumnInitializers: SchemaInitializer = new SchemaInitializer({
+/**
+ * @deprecated
+ * use `auditLogsTableColumnInitializers` instead
+ */
+export const auditLogsTableColumnInitializers_deprecated = new CompatibleSchemaInitializer({
   name: 'AuditLogsTableColumnInitializers',
   insertPosition: 'beforeEnd',
   icon: 'SettingOutlined',
@@ -87,3 +100,50 @@ export const auditLogsTableColumnInitializers: SchemaInitializer = new SchemaIni
     },
   ],
 });
+
+export const auditLogsTableColumnInitializers = new CompatibleSchemaInitializer(
+  {
+    name: 'auditLogsTable:configureColumns',
+    insertPosition: 'beforeEnd',
+    icon: 'SettingOutlined',
+    title: '{{t("Configure columns")}}',
+    wrap(s) {
+      if (s['x-action-column']) {
+        return s;
+      }
+      return {
+        type: 'void',
+        'x-decorator': 'TableV2.Column.Decorator',
+        'x-designer': 'TableV2.Column.Designer',
+        'x-component': 'TableV2.Column',
+        properties: {
+          [s.name]: {
+            ...s,
+          },
+        },
+      };
+    },
+    items: [
+      {
+        name: 'displayFields',
+        type: 'itemGroup',
+        title: '{{t("Display fields")}}',
+        useChildren: useTableColumnInitializerFields,
+      },
+      {
+        name: 'parentCollectionFields',
+        Component: ParentCollectionFields,
+      },
+      {
+        name: 'associationFields',
+        Component: AssociatedFields,
+      },
+      {
+        name: 'actionColumn',
+        title: '{{t("Action column")}}',
+        Component: 'AuditLogsTableActionColumnInitializer',
+      },
+    ],
+  },
+  auditLogsTableColumnInitializers_deprecated,
+);

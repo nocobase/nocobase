@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { App } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { ISchema } from '@formily/json-schema';
@@ -5,6 +14,9 @@ import { useDesignable } from '../../hooks';
 import { useSchemaToolbar } from '../../../application/schema-toolbar';
 import { SchemaSettings } from '../../../application/schema-settings/SchemaSettings';
 
+/**
+ * @deprecated
+ */
 export const pageTabSettings = new SchemaSettings({
   name: 'PageTabSettings',
   items: [

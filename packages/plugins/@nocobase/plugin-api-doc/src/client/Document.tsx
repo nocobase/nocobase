@@ -1,4 +1,14 @@
-import { css, useAPIClient, useRequest } from '@nocobase/client';
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+import { css, useAPIClient, useApp, useRequest } from '@nocobase/client';
+import { getSubAppName } from '@nocobase/sdk';
 import { Select, Space, Spin, Typography } from 'antd';
 import React, { useEffect, useRef, useState } from 'react';
 import SwaggerUIBundle from 'swagger-ui-dist/swagger-ui-bundle';
@@ -13,11 +23,12 @@ const Documentation = () => {
   const { t } = useTranslation();
   const swaggerUIRef = useRef();
   const { data: urls } = useRequest<{ data: { name: string; url: string }[] }>({ url: 'swagger:getUrls' });
+  const app = useApp();
   const requestInterceptor = (req) => {
     if (!req.headers['Authorization']) {
-      const match = location.pathname.match(/^\/apps\/([^/]*)\//);
-      if (match?.[1]) {
-        req.headers['X-App'] = match?.[1];
+      const appName = getSubAppName(app.getPublicPath());
+      if (appName) {
+        req.headers['X-App'] = appName;
       }
       req.headers['Authorization'] = `Bearer ${apiClient.auth.getToken()}`;
     }

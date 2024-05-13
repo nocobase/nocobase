@@ -1,13 +1,44 @@
-import { createBlockInPage, expect, oneEmptyForm, test } from '@nocobase/test/e2e';
-import { T3106, T3469 } from './templatesOfBug';
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { uid } from '@formily/shared';
+import { createBlockInPage, expect, oneEmptyForm, test } from '@nocobase/test/e2e';
+import { oneEmptyTableWithUsers } from '../../../details-multi/__e2e__/templatesOfBug';
+import { T3106, T3469, oneFormWithInheritFields } from './templatesOfBug';
 
 test.describe('where creation form block can be added', () => {
   test('page', async ({ page, mockPage }) => {
     await mockPage().goto();
 
-    await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
+    await page.getByLabel('schema-initializer-Grid-page:addBlock').hover();
     await createBlockInPage(page, 'Form');
+    await expect(page.getByLabel('block-item-CardItem-users-form')).toBeVisible();
+  });
+
+  test('popup', async ({ page, mockPage }) => {
+    await mockPage(oneEmptyTableWithUsers).goto();
+
+    // 1. 打开弹窗，通过 Associated records 创建一个创建表单区块
+    await page.getByLabel('action-Action.Link-View').click();
+    await page.getByLabel('schema-initializer-Grid-popup').hover();
+    await page.getByRole('menuitem', { name: 'form Form (Add new) right' }).hover();
+    await page.getByRole('menuitem', { name: 'Associated records right' }).hover();
+    await page.getByRole('menuitem', { name: 'Roles' }).click();
+    await page.mouse.move(300, 0);
+    await expect(page.getByLabel('block-item-CardItem-roles-form')).toBeVisible();
+
+    // 2. 通过 Other records 创建一个创建表单区块
+    await page.getByLabel('schema-initializer-Grid-popup').hover();
+    await page.getByRole('menuitem', { name: 'form Form (Add new) right' }).hover();
+    await page.getByRole('menuitem', { name: 'Other records right' }).hover();
+    await page.getByRole('menuitem', { name: 'Users' }).click();
+    await page.mouse.move(300, 0);
     await expect(page.getByLabel('block-item-CardItem-users-form')).toBeVisible();
   });
 });
@@ -17,7 +48,7 @@ test.describe('configure fields', () => {
     await mockPage(oneEmptyForm).goto();
 
     // collection fields
-    await page.getByLabel('schema-initializer-Grid-FormItemInitializers-general').hover();
+    await page.getByLabel('schema-initializer-Grid-form:configureFields-general').hover();
     await page.getByRole('menuitem', { name: 'ID', exact: true }).click();
     await expect(page.getByRole('menuitem', { name: 'ID', exact: true }).getByRole('switch')).toBeChecked();
 
@@ -33,7 +64,7 @@ test.describe('configure fields', () => {
     await expect(page.getByLabel('block-item-CollectionField-general-form-general.manyToOne.nickname')).toBeVisible();
 
     // delete fields
-    await page.getByLabel('schema-initializer-Grid-FormItemInitializers-general').hover();
+    await page.getByLabel('schema-initializer-Grid-form:configureFields-general').hover();
     await page.getByRole('menuitem', { name: 'ID', exact: true }).click();
     await expect(page.getByRole('menuitem', { name: 'ID', exact: true }).getByRole('switch')).not.toBeChecked();
 
@@ -50,19 +81,33 @@ test.describe('configure fields', () => {
     ).not.toBeVisible();
 
     // add text
-    await page.getByLabel('schema-initializer-Grid-FormItemInitializers-general').hover();
+    await page.getByLabel('schema-initializer-Grid-form:configureFields-general').hover();
     await page.getByRole('menuitem', { name: 'Text' }).click();
     await expect(page.getByLabel('block-item-Markdown.Void-general-form')).toBeVisible();
   });
 
-  test.pgOnly('display inherit fields', async ({ page, mockPage }) => {});
+  test.pgOnly('display inherit fields', async ({ page, mockPage }) => {
+    await mockPage(oneFormWithInheritFields).goto();
+
+    // 在表单中选择继承的字段
+    await page.getByLabel('schema-initializer-Grid-form:').hover();
+    await page.getByRole('menuitem', { name: 'parentField1' }).click();
+    await page.getByRole('menuitem', { name: 'parentField2' }).click();
+    await page.mouse.move(300, 0);
+    await expect(
+      page.getByLabel('block-item-CollectionField-child-form-child.parentField1-parentField1').getByRole('textbox'),
+    ).toBeVisible();
+    await expect(
+      page.getByLabel('block-item-CollectionField-child-form-child.parentField2-parentField2').getByRole('textbox'),
+    ).toBeVisible();
+  });
 });
 
 test.describe('configure actions', () => {
   test('submit', async ({ page, mockPage }) => {
     await mockPage(oneEmptyForm).goto();
 
-    await page.getByLabel('schema-initializer-ActionBar-FormActionInitializers-general').hover();
+    await page.getByLabel('schema-initializer-ActionBar-createForm:configureActions-general').hover();
 
     // add button
     await page.getByRole('menuitem', { name: 'Submit' }).click();
@@ -72,7 +117,7 @@ test.describe('configure actions', () => {
     await expect(page.getByRole('button', { name: 'Submit' })).toBeVisible();
 
     // delete button
-    await page.getByLabel('schema-initializer-ActionBar-FormActionInitializers-general').hover();
+    await page.getByLabel('schema-initializer-ActionBar-createForm:configureActions-general').hover();
     await page.getByRole('menuitem', { name: 'Submit' }).click();
     await expect(page.getByRole('menuitem', { name: 'Submit' }).getByRole('switch')).not.toBeChecked();
 
@@ -137,7 +182,7 @@ test.describe('configure actions', () => {
   test('customize: save record', async ({ page, mockPage }) => {
     await mockPage(oneEmptyForm).goto();
 
-    await page.getByLabel('schema-initializer-ActionBar-FormActionInitializers-general').hover();
+    await page.getByLabel('schema-initializer-ActionBar-createForm:configureActions-general').hover();
     await page.getByRole('menuitem', { name: 'Customize' }).hover();
     await page.getByRole('menuitem', { name: 'Save record' }).click();
 

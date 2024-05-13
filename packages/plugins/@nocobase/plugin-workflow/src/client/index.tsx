@@ -1,15 +1,11 @@
-export * from './Branch';
-export * from './FlowContext';
-export * from './constants';
-export * from './nodes';
-export { Trigger, useTrigger } from './triggers';
-export * from './variable';
-export * from './components';
-export * from './utils';
-export * from './hooks/useGetAriaLabelOfAddButton';
-export { default as useStyles } from './style';
-export * from './variable';
-export * from './hooks/useTriggerWorkflowActionProps';
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
 
 import React from 'react';
 
@@ -30,7 +26,7 @@ import QueryInstruction from './nodes/query';
 import CreateInstruction from './nodes/create';
 import UpdateInstruction from './nodes/update';
 import DestroyInstruction from './nodes/destroy';
-import { getWorkflowDetailPath, getWorkflowExecutionsPath } from './constant';
+import { getWorkflowDetailPath, getWorkflowExecutionsPath } from './utils';
 import { NAMESPACE } from './locale';
 import { customizeSubmitToWorkflowActionSettings } from './settings/customizeSubmitToWorkflowActionSettings';
 
@@ -71,8 +67,20 @@ export default class PluginWorkflowClient extends Plugin {
   }
 
   async load() {
-    this.addRoutes();
-    this.addComponents();
+    this.app.router.add('admin.workflow.workflows.id', {
+      path: getWorkflowDetailPath(':id'),
+      element: <WorkflowPage />,
+    });
+
+    this.app.router.add('admin.workflow.executions.id', {
+      path: getWorkflowExecutionsPath(':id'),
+      element: <ExecutionPage />,
+    });
+
+    this.app.addComponents({
+      WorkflowPage,
+      ExecutionPage,
+    });
 
     this.app.pluginSettingsManager.add(NAMESPACE, {
       icon: 'PartitionOutlined',
@@ -95,22 +103,17 @@ export default class PluginWorkflowClient extends Plugin {
     this.registerInstruction('update', UpdateInstruction);
     this.registerInstruction('destroy', DestroyInstruction);
   }
-
-  addComponents() {
-    this.app.addComponents({
-      WorkflowPage,
-      ExecutionPage,
-    });
-  }
-
-  addRoutes() {
-    this.app.router.add('admin.workflow.workflows.id', {
-      path: getWorkflowDetailPath(':id'),
-      element: <WorkflowPage />,
-    });
-    this.app.router.add('admin.workflow.executions.id', {
-      path: getWorkflowExecutionsPath(':id'),
-      element: <ExecutionPage />,
-    });
-  }
 }
+
+export * from './Branch';
+export * from './FlowContext';
+export * from './constants';
+export * from './nodes';
+export { Trigger, useTrigger } from './triggers';
+export * from './variable';
+export * from './components';
+export * from './utils';
+export * from './hooks';
+export { default as useStyles } from './style';
+export * from './variable';
+export * from './ExecutionContextProvider';

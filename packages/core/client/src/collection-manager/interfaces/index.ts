@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 export * from './checkbox';
 export * from './checkboxGroup';
 export * from './chinaRegion';
@@ -34,3 +43,6 @@ export * from './updatedAt';
 export * from './updatedBy';
 export * from './url';
 export * from './sort';
+export * from './uuid';
+export * from './nanoid';
+export * from './unixTimestamp';

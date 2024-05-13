@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { offsetFromString } from './date';
 import { dayjs } from './dayjs';
 
@@ -35,18 +44,34 @@ function parseQuarter(value) {
   }
 }
 
-function parseWeek(value) {
+export function parseWeek(value) {
   if (/^\d\d\d\d[W]\d\d$/.test(value)) {
     const arr = value.split('W');
-    // dayjs 还不支持 dayjs("2019W19","gggg[W]ww") 这种语法
-    // 参见：https://github.com/iamkun/dayjs/issues/784
+    const year = dayjs(arr[0], 'YYYY').format('GGGG');
+    if (year !== arr[0]) {
+      return {
+        unit: 'isoWeek',
+        start: dayjs(arr[0], 'YYYY')
+          .add(1, 'week')
+          .startOf('isoWeek')
+          .isoWeek(Number(arr[1]))
+          .format('YYYY-MM-DD HH:mm:ss'),
+      };
+    }
     return {
       unit: 'isoWeek',
-      start: dayjs(arr[0], 'YYYY').add(Number(arr[1]), 'weeks').format('YYYY-MM-DD HH:mm:ss'),
+      start: dayjs(arr[0], 'YYYY').isoWeek(Number(arr[1])).format('YYYY-MM-DD HH:mm:ss'),
     };
   }
   if (/^\d\d\d\d[w]\d\d$/.test(value)) {
     const arr = value.split('w');
+    const year = dayjs(arr[0], 'YYYY').format('gggg');
+    if (year !== arr[0]) {
+      return {
+        unit: 'week',
+        start: dayjs(arr[0], 'YYYY').add(1, 'week').startOf('week').week(Number(arr[1])).format('YYYY-MM-DD HH:mm:ss'),
+      };
+    }
     return {
       unit: 'week',
       start: dayjs(arr[0], 'YYYY').week(Number(arr[1])).format('YYYY-MM-DD HH:mm:ss'),

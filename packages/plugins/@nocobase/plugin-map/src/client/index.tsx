@@ -1,24 +1,31 @@
-import { CurrentAppInfoProvider, Plugin, SchemaComponentOptions } from '@nocobase/client';
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+import { Plugin, SchemaComponentOptions } from '@nocobase/client';
 import React from 'react';
 import { MapBlockOptions } from './block';
-import { mapActionInitializers } from './block/MapActionInitializers';
+import { mapActionInitializers, mapActionInitializers_deprecated } from './block/MapActionInitializers';
+import { mapBlockSettings } from './block/MapBlock.Settings';
 import { Configuration, Map } from './components';
 import { fields } from './fields';
-import { generateNTemplate } from './locale';
-import { NAMESPACE } from './locale';
-import { mapBlockSettings } from './block/MapBlock.Settings';
+import { NAMESPACE, generateNTemplate } from './locale';
+import { useMapBlockProps } from './block/MapBlockProvider';
 const MapProvider = React.memo((props) => {
   return (
-    <CurrentAppInfoProvider>
-      <SchemaComponentOptions components={{ Map }}>
-        <MapBlockOptions>{props.children}</MapBlockOptions>
-      </SchemaComponentOptions>
-    </CurrentAppInfoProvider>
+    <SchemaComponentOptions components={{ Map }}>
+      <MapBlockOptions>{props.children}</MapBlockOptions>
+    </SchemaComponentOptions>
   );
 });
 MapProvider.displayName = 'MapProvider';
 
-export class MapPlugin extends Plugin {
+export class PluginMapClient extends Plugin {
   async load() {
     this.app.use(MapProvider);
 
@@ -29,10 +36,11 @@ export class MapPlugin extends Plugin {
         order: 51,
       },
     });
+    this.app.schemaInitializerManager.add(mapActionInitializers_deprecated);
     this.app.schemaInitializerManager.add(mapActionInitializers);
     this.schemaSettingsManager.add(mapBlockSettings);
 
-    const blockInitializers = this.app.schemaInitializerManager.get('BlockInitializers');
+    const blockInitializers = this.app.schemaInitializerManager.get('page:addBlock');
     blockInitializers?.add('dataBlocks.map', {
       title: generateNTemplate('Map'),
       Component: 'MapBlockInitializer',
@@ -44,7 +52,11 @@ export class MapPlugin extends Plugin {
       Component: Configuration,
       aclSnippet: 'pm.map.configuration',
     });
+
+    this.app.addScopes({
+      useMapBlockProps,
+    });
   }
 }
 
-export default MapPlugin;
+export default PluginMapClient;

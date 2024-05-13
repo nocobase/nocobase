@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Plugin } from '@nocobase/server';
 import { resolve } from 'path';
 import { getAntdLocale } from './antd';
@@ -19,7 +28,7 @@ async function getLang(ctx) {
   return lang;
 }
 
-export class ClientPlugin extends Plugin {
+export class PluginClientServer extends Plugin {
   async beforeLoad() {}
 
   async install() {
@@ -54,7 +63,6 @@ export class ClientPlugin extends Plugin {
     });
     this.app.acl.allow('app', 'getLang');
     this.app.acl.allow('app', 'getInfo');
-    this.app.acl.allow('plugins', '*', 'public');
     this.app.acl.registerSnippet({
       name: 'app',
       actions: ['app:restart', 'app:clearCache'],
@@ -106,4 +114,4 @@ export class ClientPlugin extends Plugin {
   }
 }
 
-export default ClientPlugin;
+export default PluginClientServer;

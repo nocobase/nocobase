@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { evaluate } from '../../utils';
 import evaluators from '..';
 
@@ -144,6 +153,16 @@ describe('evaluate', () => {
     it('number lead string path to object member (formula.js)', () => {
       const result = formulaEval('{{a.1a}}', { a: { '1a': 1 } });
       expect(result).toBe(1);
+    });
+
+    it('number greater than 32bit integer', () => {
+      const result = formulaEval('{{a}}', { a: 1609459200000 });
+      expect(result).toBe(1609459200000);
+    });
+
+    it('ISO date string parsing by Date.parse', () => {
+      const result = formulaEval('Date.parse({{a}})', { a: '2021-01-01T00:00:00.000Z' });
+      expect(result).toBe(1609459200000);
     });
   });
 

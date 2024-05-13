@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Collection, CollectionGroupManager as DBCollectionGroupManager, DumpRulesGroupType } from '@nocobase/database';
 import archiver from 'archiver';
 import dayjs from 'dayjs';
@@ -412,12 +421,18 @@ export class Dumper extends AppMigrator {
 
       if (collectionField) {
         // is a field
-        return {
+        const fieldAttributes: any = {
           field: attr.field,
           isCollectionField: true,
           type: collectionField.type,
           typeOptions: collectionField.options,
         };
+
+        if (fieldAttributes.typeOptions?.defaultValue?.constructor?.name === 'UUIDV4') {
+          delete fieldAttributes.typeOptions.defaultValue;
+        }
+
+        return fieldAttributes;
       }
 
       return {

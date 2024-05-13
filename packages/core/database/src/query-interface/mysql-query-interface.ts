@@ -1,3 +1,14 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+/* istanbul ignore file -- @preserve */
+
 import { Transaction, Transactionable } from 'sequelize';
 import { Collection } from '../collection';
 import sqlParser from '../sql-parser';
@@ -124,7 +135,7 @@ export default class MysqlQueryInterface extends QueryInterface {
   }): Promise<void> {
     const { tableInfo, columnName, seqName, currentVal, transaction } = options;
 
-    const sql = `ALTER TABLE ${tableInfo.tableName} AUTO_INCREMENT = ${currentVal};`;
+    const sql = `ALTER TABLE ${this.quoteIdentifier(tableInfo.tableName)} AUTO_INCREMENT = ${currentVal};`;
     await this.db.sequelize.query(sql, { transaction });
   }
 }

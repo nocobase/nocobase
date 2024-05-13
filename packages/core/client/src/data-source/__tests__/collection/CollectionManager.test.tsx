@@ -1,6 +1,14 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Application, CollectionManager, CollectionTemplate, Collection } from '@nocobase/client';
 import collections from '../collections.json';
-import { app } from '../../../application/demos/demo3';
 
 describe('CollectionManager', () => {
   let collectionManager: CollectionManager;
@@ -225,6 +233,73 @@ describe('CollectionManager', () => {
       expect(clone.collectionInstancesArr).toEqual(collectionManager.collectionInstancesArr);
       expect(clone.collectionInstancesMap).toEqual(collectionManager.collectionInstancesMap);
       expect(clone.dataSource).toBe(collectionManager.dataSource);
+    });
+  });
+
+  describe('getSourceKeyByAssociation', () => {
+    let collectionManager: CollectionManager;
+
+    beforeEach(() => {
+      const app = new Application({
+        dataSourceManager: {
+          collections: collections as any,
+        },
+      });
+      collectionManager = app.getCollectionManager();
+    });
+
+    describe('getSourceKeyByAssociation', () => {
+      it('should return undefined when associationName is not provided', () => {
+        const result = collectionManager.getSourceKeyByAssociation('');
+        expect(result).toBeUndefined();
+      });
+
+      it('should return undefined when field is not found', () => {
+        const result = collectionManager.getSourceKeyByAssociation('not-exist');
+        expect(result).toBeUndefined();
+
+        const result2 = collectionManager.getSourceKeyByAssociation('users.not-exist');
+        expect(result2).toBeUndefined();
+      });
+
+      it('should return field sourceKey when it exists', () => {
+        const result = collectionManager.getSourceKeyByAssociation('users.roles');
+        expect(result).toBe('id');
+      });
+
+      it('should return source collection filterTargetKey when field sourceKey does not exist', () => {
+        const field = collectionManager.getCollectionField('users.roles');
+        const users = collectionManager.getCollection('users');
+
+        delete field.sourceKey;
+        const options = users.getOptions();
+        options.filterTargetKey = 'filterTargetKey';
+
+        const result = collectionManager.getSourceKeyByAssociation('users.roles');
+        expect(result).toBe('filterTargetKey');
+      });
+
+      it('should return source collection primary key when field sourceKey and filterTargetKey do not exist', () => {
+        const field = collectionManager.getCollectionField('users.roles');
+
+        delete field.sourceKey;
+
+        const result = collectionManager.getSourceKeyByAssociation('users.roles');
+        expect(result).toBe('id');
+      });
+
+      it('should return "id" when field sourceKey, filterTargetKey, and primary key do not exist', () => {
+        const field = collectionManager.getCollectionField('users.roles');
+        const collection = collectionManager.getCollection('roles');
+        const roleName = collectionManager.getCollectionField('roles.name');
+
+        delete field.sourceKey;
+        delete roleName.primaryKey;
+        delete collection.getOptions().filterTargetKey;
+
+        const result = collectionManager.getSourceKeyByAssociation('users.roles');
+        expect(result).toBe('id');
+      });
     });
   });
 });

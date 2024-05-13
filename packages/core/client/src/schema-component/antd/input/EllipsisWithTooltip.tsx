@@ -1,5 +1,14 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Popover } from 'antd';
-import React, { CSSProperties, forwardRef, useImperativeHandle, useRef, useState } from 'react';
+import React, { CSSProperties, forwardRef, useCallback, useImperativeHandle, useMemo, useRef, useState } from 'react';
 
 const getContentWidth = (element) => {
   if (element) {
@@ -32,16 +41,40 @@ export const EllipsisWithTooltip = forwardRef((props: Partial<IEllipsisWithToolt
       setPopoverVisible: setVisible,
     };
   });
-  if (!props.ellipsis) {
-    return <>{props.children}</>;
-  }
-  const { popoverContent } = props;
 
-  const isOverflowTooltip = () => {
+  const isOverflowTooltip = useCallback(() => {
+    if (!elRef.current) return false;
     const contentWidth = getContentWidth(elRef.current);
     const offsetWidth = elRef.current?.offsetWidth;
     return contentWidth > offsetWidth;
-  };
+  }, [elRef.current]);
+
+  const divContent = useMemo(
+    () =>
+      props.ellipsis ? (
+        <div
+          ref={elRef}
+          style={{ ...ellipsisDefaultStyle }}
+          onMouseEnter={(e) => {
+            const el = e.target as any;
+            const isShowTooltips = isOverflowTooltip();
+            if (isShowTooltips) {
+              setEllipsis(el.scrollWidth >= el.clientWidth);
+            }
+          }}
+        >
+          {props.children}
+        </div>
+      ) : (
+        props.children
+      ),
+    [props.children, props.ellipsis],
+  );
+
+  if (!props.ellipsis || !ellipsis) {
+    return divContent;
+  }
+  const { popoverContent } = props;
 
   return (
     <Popover
@@ -61,19 +94,7 @@ export const EllipsisWithTooltip = forwardRef((props: Partial<IEllipsisWithToolt
         </div>
       }
     >
-      <div
-        ref={elRef}
-        style={{ ...ellipsisDefaultStyle }}
-        onMouseEnter={(e) => {
-          const el = e.target as any;
-          const isShowTooltips = isOverflowTooltip();
-          if (isShowTooltips) {
-            setEllipsis(el.scrollWidth >= el.clientWidth);
-          }
-        }}
-      >
-        {props.children}
-      </div>
+      {divContent}
     </Popover>
   );
 });

@@ -1,8 +1,17 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { css } from '@emotion/css';
 import { createForm, Field } from '@formily/core';
 import { FieldContext, FormContext, useField } from '@formily/react';
-import { Space, Switch, Table, TableColumnProps, Tag, Tooltip } from 'antd';
-import React, { useContext, useMemo } from 'react';
+import { Space, Switch, Table, TableColumnProps, Tag, Tooltip, message } from 'antd';
+import React, { useContext, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Action,
@@ -27,9 +36,32 @@ import {
   useResourceActionContext,
   useResourceContext,
   ViewCollectionField,
+  useAPIClient,
 } from '@nocobase/client';
 
 import { collection } from './schemas/collectionFields';
+const resourceActionProps = {
+  association: {
+    sourceKey: 'name',
+    targetKey: 'name',
+  },
+  collection,
+  request: {
+    resource: 'collections.fields',
+    action: 'list',
+    params: {
+      paginate: false,
+      filter: {
+        $or: [{ 'interface.$not': null }, { 'options.source.$notEmpty': true }],
+      },
+      sort: ['sort'],
+    },
+  },
+};
+
+const CollectionFieldsProvider = (props) => {
+  return <ResourceActionProvider {...resourceActionProps}>{props.children}</ResourceActionProvider>;
+};
 
 const indentStyle = css`
   .ant-table {
@@ -60,21 +92,24 @@ const tableContainer = css`
 `;
 
 const titlePrompt = 'Default title for each record';
-
 const CurrentFields = (props) => {
   const compile = useCompile();
   const { getInterface } = useCollectionManager_deprecated();
   const { t } = useTranslation();
   const { setState } = useResourceActionContext();
-  const { resource, targetKey } = props.collectionResource || {};
+  const { targetKey } = props.collectionResource || {};
   const parentRecordData = useRecord();
   const [loadingRecord, setLoadingRecord] = React.useState<any>(null);
   const { refreshCM, isTitleField, getTemplate } = useCollectionManager_deprecated();
-  const { [targetKey]: filterByTk, titleField, template } = parentRecordData;
+  const { [targetKey]: filterByTk, titleField: targetTitleField, template } = parentRecordData;
+  const [titleField, setTitleField] = useState(targetTitleField);
+
   const targetTemplate = getTemplate(template);
+  const api = useAPIClient();
+
   const columns: TableColumnProps<any>[] = [
     {
-      dataIndex: ['uiSchema', 'rawTitle'],
+      dataIndex: ['uiSchema', 'title'],
       title: t('Field display name'),
       render: (value) => <div style={{ marginLeft: 7 }}>{compile(value)}</div>,
     },
@@ -91,19 +126,18 @@ const CurrentFields = (props) => {
       dataIndex: 'titleField',
       title: t('Title field'),
       render: function Render(_, record) {
-        const handleChange = (checked) => {
+        const handleChange = async (checked) => {
           setLoadingRecord(record);
-          resource
-            .update({ filterByTk, values: { titleField: checked ? record.name : 'id' } })
-            .then(async () => {
-              await props.refreshAsync();
-              setLoadingRecord(null);
-              refreshCM();
-            })
-            .catch((err) => {
-              setLoadingRecord(null);
-              console.error(err);
-            });
+          await api.request({
+            url: `collections:update?filterByTk=${filterByTk}`,
+            method: 'post',
+            data: { titleField: checked ? record.name : 'id' },
+          });
+          message.success(t('Saved successfully'));
+          setTitleField(checked ? record.name : 'id');
+          await props.refreshAsync();
+          setLoadingRecord(null);
+          refreshCM();
         };
 
         return isTitleField(record) ? (
@@ -268,20 +302,19 @@ const InheritFields = (props) => {
   );
 };
 
-export const CollectionFields = () => {
+const CollectionFieldsInternal = () => {
   const compile = useCompile();
   const field = useField<Field>();
   const { name, template } = useRecord();
   const {
     data: { database },
   } = useCurrentAppInfo();
-  const { getInterface, getInheritCollections, getCollection, getCurrentCollectionFields, getTemplate } =
-    useCollectionManager_deprecated();
+  const { getInterface, getInheritCollections, getCollection, getTemplate } = useCollectionManager_deprecated();
   const form = useMemo(() => createForm(), []);
   const f = useAttach(form.createArrayField({ ...field.props, basePath: '' }));
   const { t } = useTranslation();
   const collectionResource = useResourceContext();
-  const { refreshAsync } = useContext(ResourceActionContext);
+  const { refreshAsync, data } = useContext(ResourceActionContext);
   const targetTemplate = getTemplate(template);
   const inherits = getInheritCollections(name);
 
@@ -320,8 +353,7 @@ export const CollectionFields = () => {
       title: t('Actions'),
     },
   ];
-
-  const fields = getCurrentCollectionFields(name);
+  const fields = data?.data || [];
   const groups = {
     pf: [],
     association: [],
@@ -383,28 +415,9 @@ export const CollectionFields = () => {
       .filter(Boolean),
   );
 
-  const resourceActionProps = {
-    association: {
-      sourceKey: 'name',
-      targetKey: 'name',
-    },
-    collection,
-    request: {
-      resource: 'collections.fields',
-      action: 'list',
-      params: {
-        paginate: false,
-        filter: {
-          $or: [{ 'interface.$not': null }, { 'options.source.$notEmpty': true }],
-        },
-        sort: ['sort'],
-      },
-    },
-  };
-
   const deleteProps = useMemo(
     () => ({
-      useAction: useBulkDestroyActionAndRefreshCM,
+      useAction: () => useBulkDestroyActionAndRefreshCM(true),
       title: t('Delete'),
       icon: 'DeleteOutlined',
       disabled: targetTemplate?.forbidDeletion,
@@ -418,57 +431,63 @@ export const CollectionFields = () => {
   const addProps = { type: 'primary', database };
   const syncProps = { type: 'primary' };
   return (
-    <ResourceActionProvider {...resourceActionProps}>
-      <FormContext.Provider value={form}>
-        <FieldContext.Provider value={f}>
-          <Space
-            align={'end'}
-            className={css`
-              justify-content: flex-end;
-              display: flex;
-              margin-bottom: 16px;
-            `}
-          >
-            <Action {...deleteProps} />
-            <SyncFieldsAction {...syncProps} />
-            <SyncSQLFieldsAction refreshCMList={refreshAsync} />
-            <SchemaComponent
-              schema={{
-                type: 'object',
-                properties: {
-                  ...targetTemplate.configureActions,
-                },
-              }}
-            />
-            <AddCollectionField {...addProps} />
-          </Space>
-          <Table
-            rowKey={'key'}
-            columns={columns}
-            dataSource={dataSource.filter((d) => d.fields.length)}
-            pagination={false}
-            className={tableContainer}
-            expandable={{
-              defaultExpandAllRows: true,
-              defaultExpandedRowKeys: dataSource.map((d) => d.key),
-              expandedRowRender: (record) =>
-                record.inherit ? (
-                  <InheritFields
-                    fields={record.fields}
-                    collectionResource={collectionResource}
-                    refreshAsync={refreshAsync}
-                  />
-                ) : (
-                  <CurrentFields
-                    fields={record.fields}
-                    collectionResource={collectionResource}
-                    refreshAsync={refreshAsync}
-                  />
-                ),
+    <FormContext.Provider value={form}>
+      <FieldContext.Provider value={f}>
+        <Space
+          align={'end'}
+          className={css`
+            justify-content: flex-end;
+            display: flex;
+            margin-bottom: 16px;
+          `}
+        >
+          <Action {...deleteProps} />
+          <SyncFieldsAction {...syncProps} />
+          <SyncSQLFieldsAction refreshCMList={refreshAsync} />
+          <SchemaComponent
+            schema={{
+              type: 'object',
+              properties: {
+                ...targetTemplate.configureActions,
+              },
             }}
           />
-        </FieldContext.Provider>
-      </FormContext.Provider>
-    </ResourceActionProvider>
+          <AddCollectionField {...addProps} />
+        </Space>
+        <Table
+          rowKey={'key'}
+          columns={columns}
+          dataSource={dataSource.filter((d) => d.fields.length)}
+          pagination={false}
+          className={tableContainer}
+          expandable={{
+            defaultExpandAllRows: true,
+            defaultExpandedRowKeys: dataSource.map((d) => d.key),
+            expandedRowRender: (record) =>
+              record.inherit ? (
+                <InheritFields
+                  fields={record.fields}
+                  collectionResource={collectionResource}
+                  refreshAsync={refreshAsync}
+                />
+              ) : (
+                <CurrentFields
+                  fields={record.fields}
+                  collectionResource={collectionResource}
+                  refreshAsync={refreshAsync}
+                />
+              ),
+          }}
+        />
+      </FieldContext.Provider>
+    </FormContext.Provider>
+  );
+};
+
+export const CollectionFields = () => {
+  return (
+    <CollectionFieldsProvider>
+      <CollectionFieldsInternal />
+    </CollectionFieldsProvider>
   );
 };

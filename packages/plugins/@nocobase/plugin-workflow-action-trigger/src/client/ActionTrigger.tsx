@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { useForm } from '@formily/react';
 
 import {
@@ -6,23 +15,37 @@ import {
   useCollectionManager_deprecated,
   useCompile,
 } from '@nocobase/client';
-import { Trigger, CollectionBlockInitializer, getCollectionFieldOptions } from '@nocobase/plugin-workflow/client';
+import {
+  Trigger,
+  CollectionBlockInitializer,
+  getCollectionFieldOptions,
+  useWorkflowAnyExecuted,
+  CheckboxGroupWithTooltip,
+  RadioWithTooltip,
+} from '@nocobase/plugin-workflow/client';
 import { NAMESPACE, useLang } from '../locale';
 
+const COLLECTION_TRIGGER_ACTION = {
+  CREATE: 'create',
+  UPDATE: 'update',
+  UPSERT: 'updateOrCreate',
+  DESTROY: 'destroy',
+};
+
 export default class extends Trigger {
-  title = `{{t("Action event", { ns: "${NAMESPACE}" })}}`;
-  description = `{{t("Triggers after specific operations on data are submitted, such as create, update, delete, etc., or directly submitting a record to the workflow.", { ns: "${NAMESPACE}" })}}`;
+  title = `{{t("Post-action event", { ns: "${NAMESPACE}" })}}`;
+  description = `{{t('Triggered after the completion of a request initiated through an action button or API, such as after adding, updating, or deleting data. Suitable for data processing, sending notifications, etc., after actions are completed.', { ns: "${NAMESPACE}" })}}`;
   fieldset = {
     collection: {
       type: 'string',
       required: true,
       'x-decorator': 'FormItem',
-      'x-component': 'CollectionSelect',
-      'x-component-props': {
-        className: 'auto-width',
+      'x-decorator-props': {
+        tooltip: `{{t("The collection to which the triggered data belongs.", { ns: "${NAMESPACE}" })}}`,
       },
+      'x-component': 'DataSourceCollectionCascader',
+      'x-disabled': '{{ useWorkflowAnyExecuted() }}',
       title: `{{t("Collection", { ns: "${NAMESPACE}" })}}`,
-      description: `{{t("Which collection record belongs to.", { ns: "${NAMESPACE}" })}}`,
       'x-reactions': [
         {
           target: 'appends',
@@ -35,6 +58,65 @@ export default class extends Trigger {
         },
       ],
     },
+    global: {
+      type: 'boolean',
+      title: `{{t("Trigger mode", { ns: "${NAMESPACE}" })}}`,
+      'x-decorator': 'FormItem',
+      'x-component': 'RadioWithTooltip',
+      'x-component-props': {
+        direction: 'vertical',
+        options: [
+          {
+            label: `{{t("Local mode, triggered after the completion of actions bound to this workflow", { ns: "${NAMESPACE}" })}}`,
+            value: false,
+          },
+          {
+            label: `{{t("Global mode, triggered after the completion of the following actions", { ns: "${NAMESPACE}" })}}`,
+            value: true,
+          },
+        ],
+      },
+      default: false,
+      'x-reactions': [
+        {
+          dependencies: ['collection'],
+          fulfill: {
+            state: {
+              visible: '{{!!$deps[0]}}',
+            },
+          },
+        },
+      ],
+    },
+    actions: {
+      type: 'number',
+      title: `{{t("Select actions", { ns: "${NAMESPACE}" })}}`,
+      'x-decorator': 'FormItem',
+      'x-component': 'CheckboxGroupWithTooltip',
+      'x-component-props': {
+        direction: 'vertical',
+        options: [
+          { label: `{{t("Create record action", { ns: "${NAMESPACE}" })}}`, value: COLLECTION_TRIGGER_ACTION.CREATE },
+          { label: `{{t("Update record action", { ns: "${NAMESPACE}" })}}`, value: COLLECTION_TRIGGER_ACTION.UPDATE },
+          // { label: `{{t("upsert", { ns: "${NAMESPACE}" })}}`, value: COLLECTION_TRIGGER_ACTION.UPSERT },
+          // {
+          //   label: `{{t("Delete single or many records", { ns: "${NAMESPACE}" })}}`,
+          //   value: COLLECTION_TRIGGER_ACTION.DESTROY,
+          // },
+        ],
+      },
+      required: true,
+      'x-reactions': [
+        {
+          dependencies: ['collection', 'global'],
+          fulfill: {
+            state: {
+              visible: '{{!!$deps[0] && !!$deps[1]}}',
+            },
+          },
+        },
+      ],
+    },
     appends: {
       type: 'array',
       title: `{{t("Associations to use", { ns: "${NAMESPACE}" })}}`,
@@ -42,7 +124,6 @@ export default class extends Trigger {
       'x-decorator': 'FormItem',
       'x-component': 'AppendsTreeSelect',
       'x-component-props': {
-        title: 'Preload associations',
         multiple: true,
         useCollection() {
           const { values } = useForm();
@@ -63,9 +144,18 @@ export default class extends Trigger {
   };
   scope = {
     useCollectionDataSource,
+    useWorkflowAnyExecuted,
+  };
+  components = {
+    RadioWithTooltip,
+    CheckboxGroupWithTooltip,
   };
   isActionTriggerable = (config, context) => {
-    return ['create', 'update', 'customize:update', 'customize:triggerWorkflows'].includes(context.action);
+    return (
+      ['create', 'update'].includes(context.formAction) &&
+      ['submit', 'customize:save'].includes(context.buttonAction) &&
+      !config.global
+    );
   };
   useVariables(config, options) {
     // eslint-disable-next-line react-hooks/rules-of-hooks
@@ -126,7 +216,7 @@ export default class extends Trigger {
       title: `{{t("Trigger data", { ns: "${NAMESPACE}" })}}`,
       Component: CollectionBlockInitializer,
       collection: config.collection,
-      dataSource: '{{$context.data}}',
+      dataPath: '$context.data',
     };
   }
 }

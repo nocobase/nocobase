@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import React, { useEffect, useState } from 'react';
 import { Select } from 'antd';
 import { observer, useForm, useField } from '@formily/react';
@@ -63,7 +72,7 @@ export const ForeignKey = observer(
         : ['belongsToMany'].includes(type)
           ? through
           : target;
-      const fields = getCollection(effectField || name, dataSourceKey)?.fields;
+      const fields = getCollection(effectField, dataSourceKey)?.fields;
       if (fields) {
         const sourceOptions = fields
           ?.filter((v) => {
@@ -95,7 +104,7 @@ export const ForeignKey = observer(
           onDropdownVisibleChange={async (open) => {
             const { target, type, through } = form.values;
             const effectField = ['belongsTo'].includes(type)
-              ? collectionName
+              ? collectionName || name
               : ['belongsToMany'].includes(type)
                 ? through
                 : target;

@@ -1,20 +1,33 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { App, Button, Result, Typography } from 'antd';
 import React, { FC, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { CardItem, useCompile, useDesignable } from '../../schema-component';
+import { EllipsisWithTooltip, useCompile, useDesignable } from '../../schema-component';
 import { useDataSource } from '../data-source/DataSourceProvider';
 import { useDataSourceManager } from '../data-source';
 import { DEFAULT_DATA_SOURCE_KEY } from '../../data-source/data-source/DataSourceManager';
 import { useCollection } from '../collection';
+import { BlockItemCard } from '../../schema-component/antd/block-item/BlockItemCard';
 
 export interface CollectionDeletedPlaceholderProps {
-  type: 'Collection' | 'Field' | 'DataSource';
+  type: 'Collection' | 'Field' | 'Data Source' | 'Block template';
   name?: string | number;
   message?: string;
 }
 
 const { Text } = Typography;
 
+/**
+ * @internal
+ */
 export const CollectionDeletedPlaceholder: FC<CollectionDeletedPlaceholderProps> = ({ type, name, message }) => {
   const { designable, dn } = useDesignable();
   const { modal } = App.useApp();
@@ -24,7 +37,7 @@ export const CollectionDeletedPlaceholder: FC<CollectionDeletedPlaceholderProps>
   const collection = useCollection();
   const dataSourceManager = useDataSourceManager();
   const nameValue = useMemo(() => {
-    if (type === 'DataSource') {
+    if (type === 'Data Source') {
       return name;
     }
     const dataSourcePrefix =
@@ -57,17 +70,21 @@ export const CollectionDeletedPlaceholder: FC<CollectionDeletedPlaceholderProps>
     return t(`The {{type}} "{{name}}" may have been deleted. Please remove this {{blockType}}.`, {
       type: t(type).toLocaleLowerCase(),
       name: nameValue,
-      blockType: t(blockType),
+      blockType: t(blockType).toLocaleLowerCase(),
     }).replaceAll('&gt;', '>');
   }, [message, nameValue, type, t, blockType]);
 
-  if (designable || process.env.NODE_ENV === 'development') {
+  if (designable) {
     if (type === 'Field') {
-      return <Text type="secondary">{messageValue}</Text>;
+      return (
+        <EllipsisWithTooltip ellipsis>
+          <Text type="secondary">{messageValue}</Text>
+        </EllipsisWithTooltip>
+      );
     }
 
     return (
-      <CardItem>
+      <BlockItemCard>
         <Result
           status="404"
           subTitle={messageValue}
@@ -89,7 +106,7 @@ export const CollectionDeletedPlaceholder: FC<CollectionDeletedPlaceholderProps>
             </Button>
           }
         />
-      </CardItem>
+      </BlockItemCard>
     );
   }
 

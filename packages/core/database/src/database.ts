@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { createConsoleLogger, createLogger, Logger, LoggerOptions } from '@nocobase/logger';
 import { applyMixins, AsyncEmitter } from '@nocobase/utils';
 import chalk from 'chalk';
@@ -6,6 +15,7 @@ import { EventEmitter } from 'events';
 import { backOff } from 'exponential-backoff';
 import glob from 'glob';
 import lodash from 'lodash';
+import safeJsonStringify from 'safe-json-stringify';
 import { nanoid } from 'nanoid';
 import { basename, isAbsolute, resolve } from 'path';
 import semver from 'semver';
@@ -27,7 +37,7 @@ import { CollectionFactory } from './collection-factory';
 import { CollectionGroupManager } from './collection-group-manager';
 import { ImporterReader, ImportFileExtension } from './collection-importer';
 import DatabaseUtils from './database-utils';
-import ReferencesMap from './features/ReferencesMap';
+import ReferencesMap from './features/references-map';
 import { referentialIntegrityCheck } from './features/referential-integrity-check';
 import { ArrayFieldRepository } from './field-repository/array-field-repository';
 import * as FieldTypes from './fields';
@@ -146,34 +156,6 @@ export const DialectVersionAccessors = {
   },
 };
 
-class DatabaseVersion {
-  db: Database;
-
-  constructor(db: Database) {
-    this.db = db;
-  }
-
-  async satisfies(versions) {
-    const accessors = DialectVersionAccessors;
-    for (const dialect of Object.keys(accessors)) {
-      if (this.db.inDialect(dialect)) {
-        if (!versions?.[dialect]) {
-          return false;
-        }
-        const [result] = (await this.db.sequelize.query(accessors[dialect].sql)) as any;
-        const versionResult = accessors[dialect].get(result?.[0]?.version);
-
-        if (lodash.isPlainObject(versionResult) && versionResult.dialect) {
-          return semver.satisfies(versionResult.version, versions[versionResult.dialect]);
-        }
-
-        return semver.satisfies(versionResult, versions[dialect]);
-      }
-    }
-    return false;
-  }
-}
-
 export class Database extends EventEmitter implements AsyncEmitter {
   sequelize: Sequelize;
   migrator: Umzug;
@@ -191,11 +173,10 @@ export class Database extends EventEmitter implements AsyncEmitter {
   context: any = {};
   queryInterface: QueryInterface;
   utils = new DatabaseUtils(this);
-  referenceMap = new ReferencesMap();
+  referenceMap = new ReferencesMap(this);
   inheritanceMap = new InheritanceMap();
   importedFrom = new Map<string, Set<string>>();
   modelHook: ModelHook;
-  version: DatabaseVersion;
   delayCollectionExtend = new Map<string, { collectionOptions: CollectionOptions; mergeOptions?: any }[]>();
   logger: Logger;
   collectionGroupManager = new CollectionGroupManager(this);
@@ -205,8 +186,6 @@ export class Database extends EventEmitter implements AsyncEmitter {
 
   constructor(options: DatabaseOptions) {
     super();
-
-    this.version = new DatabaseVersion(this);
 
     const opts = {
       sync: {
@@ -247,11 +226,21 @@ export class Database extends EventEmitter implements AsyncEmitter {
     }
 
     if (options.dialect === 'postgres') {
-      // https://github.com/sequelize/sequelize/issues/1774
-      require('pg').defaults.parseInt8 = true;
+      const types = require('pg').types;
+
+      types.setTypeParser(types.builtins.INT8, function (val) {
+        if (val <= Number.MAX_SAFE_INTEGER) {
+          return Number(val);
+        }
+
+        return val;
+      });
     }
 
     this.options = opts;
+    this.logger.debug(`create database instance: ${safeJsonStringify(this.options)}`, {
+      databaseInstanceId: this.instanceId,
+    });
 
     const sequelizeOptions = this.sequelizeOptions(this.options);
     this.sequelize = new Sequelize(sequelizeOptions);
@@ -338,6 +327,9 @@ export class Database extends EventEmitter implements AsyncEmitter {
     return this._instanceId;
   }
 
+  /**
+   * @internal
+   */
   createMigrator({ migrations }) {
     const migratorOptions: any = this.options.migrator || {};
     const context = {
@@ -359,10 +351,16 @@ export class Database extends EventEmitter implements AsyncEmitter {
     });
   }
 
+  /**
+   * @internal
+   */
   setContext(context: any) {
     this.context = context;
   }
 
+  /**
+   * @internal
+   */
   sequelizeOptions(options) {
     if (options.dialect === 'postgres') {
       if (!options.hooks) {
@@ -381,6 +379,9 @@ export class Database extends EventEmitter implements AsyncEmitter {
     return options;
   }
 
+  /**
+   * @internal
+   */
   initListener() {
     this.on('afterConnect', async (client) => {
       if (this.inDialect('postgres')) {
@@ -396,6 +397,17 @@ export class Database extends EventEmitter implements AsyncEmitter {
 
     this.on('afterCreate', async (instance) => {
       instance?.toChangedWithAssociations?.();
+    });
+
+    this.on('beforeValidate', async (instance) => {
+      for (const [key, attribute] of Object.entries(instance.constructor.rawAttributes)) {
+        // @ts-ignore
+        if (attribute.unique && instance.changed(key)) {
+          if (instance.get(key) === '') {
+            instance.set(key, null);
+          }
+        }
+      }
     });
 
     this.on('afterUpdate', async (instance) => {
@@ -518,6 +530,10 @@ export class Database extends EventEmitter implements AsyncEmitter {
       options.underscored = true;
     }
 
+    this.logger.debug(`beforeDefineCollection: ${safeJsonStringify(options)}`, {
+      databaseInstanceId: this.instanceId,
+    });
+
     this.emit('beforeDefineCollection', options);
 
     const collection = this.collectionFactory.createCollection(options);
@@ -617,6 +633,9 @@ export class Database extends EventEmitter implements AsyncEmitter {
     return this.getCollection(name)?.repository;
   }
 
+  /**
+   * @internal
+   */
   addPendingField(field: RelationField) {
     const associating = this.pendingFields;
     const items = this.pendingFields.get(field.target) || [];
@@ -624,6 +643,9 @@ export class Database extends EventEmitter implements AsyncEmitter {
     associating.set(field.target, items);
   }
 
+  /**
+   * @internal
+   */
   removePendingField(field: RelationField) {
     const items = this.pendingFields.get(field.target) || [];
     const index = items.indexOf(field);
@@ -666,6 +688,9 @@ export class Database extends EventEmitter implements AsyncEmitter {
     }
   }
 
+  /**
+   * @internal
+   */
   initOperators() {
     const operators = new Map();
 
@@ -690,6 +715,9 @@ export class Database extends EventEmitter implements AsyncEmitter {
     }
   }
 
+  /**
+   * @internal
+   */
   buildField(options, context: FieldContext) {
     const { type } = options;
 
@@ -767,10 +795,11 @@ export class Database extends EventEmitter implements AsyncEmitter {
     return await this.queryInterface.collectionTableExists(collection, options);
   }
 
-  public isSqliteMemory() {
+  isSqliteMemory() {
     return this.sequelize.getDialect() === 'sqlite' && lodash.get(this.options, 'storage') == ':memory:';
   }
 
+  /* istanbul ignore next -- @preserve */
   async auth(options: Omit<QueryOptions, 'retry'> & { retry?: number | Pick<QueryOptions, 'retry'> } = {}) {
     const { retry = 10, ...others } = options;
     const startingDelay = 50;
@@ -806,10 +835,16 @@ export class Database extends EventEmitter implements AsyncEmitter {
     }
   }
 
+  /**
+   * @internal
+   */
   async checkVersion() {
     return await checkDatabaseVersion(this);
   }
 
+  /**
+   * @internal
+   */
   async prepare() {
     if (this.isMySQLCompatibleDialect()) {
       const result = await this.sequelize.query(`SHOW VARIABLES LIKE 'lower_case_table_names'`, { plain: true });

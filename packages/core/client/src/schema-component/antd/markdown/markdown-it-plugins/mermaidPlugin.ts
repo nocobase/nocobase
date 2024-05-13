@@ -1,3 +1,15 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+/* istanbul ignore file -- @preserve */
+// 因为这里有 commonjs，在 vitest 下会报错，所以忽略这个文件
+
 import MarkdownIt from 'markdown-it';
 import Mermaid from 'mermaid';
 

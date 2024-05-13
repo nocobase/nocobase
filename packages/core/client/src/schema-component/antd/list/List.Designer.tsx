@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { ArrayItems } from '@formily/antd-v5';
 import { ISchema, useField, useFieldSchema } from '@formily/react';
 import _ from 'lodash';
@@ -19,6 +28,7 @@ import { useSchemaTemplate } from '../../../schema-templates';
 import { useDesignable } from '../../hooks';
 import { removeNullCondition } from '../filter';
 import { SchemaSettingsDataScope } from '../../../schema-settings/SchemaSettingsDataScope';
+import { SetDataLoadingMode } from '../../../modules/blocks/data-blocks/details-multi/setDataLoadingModeSettingsItem';
 
 /**
  * @deprecated - 已使用 SchemaSettings 替代
@@ -34,7 +44,8 @@ export const ListDesigner = () => {
   const sortFields = useSortFields(name);
   const record = useRecord();
   const defaultSort = fieldSchema?.['x-decorator-props']?.params?.sort || [];
-  const defaultResource = fieldSchema?.['x-decorator-props']?.resource;
+  const defaultResource =
+    fieldSchema?.['x-decorator-props']?.resource || fieldSchema?.['x-decorator-props']?.association;
   const sort = defaultSort?.map((item: string) => {
     return item.startsWith('-')
       ? {
@@ -154,6 +165,7 @@ export const ListDesigner = () => {
           });
         }}
       />
+      <SetDataLoadingMode />
       <SchemaSettingsSelectItem
         title={t('Records per page')}
         value={field.decoratorProps?.params?.pageSize || 20}

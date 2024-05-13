@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import _ from 'lodash';
 // @ts-ignore
 import { pathToRegexp } from 'path-to-regexp';
@@ -189,6 +198,10 @@ export function parseRequest(request: ParseRequest, options: ParseOptions = {}):
     }
   }
 
+  if (params.associatedIndex) {
+    params.associatedIndex = decodeURIComponent(params.associatedIndex);
+  }
+
   return params;
 }
 
@@ -200,6 +213,7 @@ export function parseQuery(input: string): any {
     // 逗号分隔转换为数组
     // comma: true,
   });
+
   // filter 支持 json string
   if (typeof query.filter === 'string') {
     query.filter = JSON.parse(query.filter);

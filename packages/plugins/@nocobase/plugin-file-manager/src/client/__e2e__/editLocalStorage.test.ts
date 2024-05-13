@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { expect, test } from '@nocobase/test/e2e';
 import { dayjs } from '@nocobase/utils';
 import { CreateLocalStorage, EditLocalStorage } from './pageobject/localStorage';
@@ -28,7 +37,7 @@ test.describe('File manager', () => {
     await expect(page.getByText(storageName)).toBeVisible();
 
     // 2、测试步骤：点击“文件管理器”-“编辑”按钮，编辑标题，点击“确定”按钮
-    await page.getByText('Edit').nth(2).click();
+    await page.getByText('Edit', { exact: true }).nth(1).click();
     const editLocalStorage = new EditLocalStorage(page);
     caseTitle = caseTitle + dayjs().format('YYYYMMDDHHmmssSSS').toString();
     await editLocalStorage.title.fill(caseTitle);

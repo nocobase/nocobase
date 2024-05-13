@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import {
   Page,
   expect,
@@ -6,7 +15,7 @@ import {
   oneTableBlockWithActionsAndFormBlocks,
   test,
 } from '@nocobase/test/e2e';
-
+import { T3825 } from './templatesOfBug';
 const clickOption = async (page: Page, optionName: string) => {
   await page.getByLabel('block-item-CardItem-general-form').hover();
   await page.getByLabel('designer-schema-settings-CardItem-FormV2.Designer-general').hover();
@@ -146,6 +155,28 @@ test.describe('edit form block schema settings', () => {
     await page.getByText('Edit', { exact: true }).click();
     await expect(page.getByLabel('block-item-CardItem-general-form')).not.toBeVisible();
   });
+  // https://nocobase.height.app/T-3825
+  test('Unsaved changes warning display', async ({ page, mockPage, mockRecord }) => {
+    await mockPage(T3825).goto();
+    await mockRecord('general', { number: 9, formula: 10 });
+    await expect(await page.getByLabel('block-item-CardItem-general-')).toBeVisible();
+    //没有改动时不显示提示
+    await page.getByLabel('action-Action.Link-Edit-').click();
+    await page.getByLabel('drawer-Action.Container-general-Edit record-mask').click();
+    await expect(await page.getByLabel('action-Action-Add new-create-')).toBeVisible();
+    //有改动时显示提示
+    await page.getByLabel('action-Action.Link-Edit-').click();
+    await page.getByRole('spinbutton').fill('');
+    await page.getByRole('spinbutton').fill('10');
+    await expect(
+      await page
+        .getByLabel('block-item-CollectionField-general-form-general.formula-formula')
+        .locator('.nb-read-pretty-input-number')
+        .innerText(),
+    ).toBe('11');
+    await page.getByLabel('drawer-Action.Container-general-Edit record-mask').click();
+    await expect(await page.getByText('Unsaved changes')).toBeVisible();
+  });
 });
 
 test.describe('actions schema settings', () => {
@@ -158,7 +189,7 @@ test.describe('actions schema settings', () => {
         await page.getByRole('button', { name: 'Submit' }).hover();
         await page.getByRole('button', { name: 'designer-schema-settings-Action-Action.Designer-users' }).hover();
       },
-      supportedOptions: ['Edit button', 'Bind workflows', 'Delete'],
+      supportedOptions: ['Edit button', 'Delete'],
     });
   });
 
@@ -176,7 +207,6 @@ test.describe('actions schema settings', () => {
         'Assign field values',
         'Skip required validation',
         'After successful submission',
-        'Bind workflows',
         'Delete',
       ],
     });

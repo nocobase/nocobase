@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { CollectionSetting, PageConfig } from '@nocobase/test/e2e';
 
 /**
@@ -97,7 +106,7 @@ export const oneEmptyGantt: PageConfig = {
         version: '2.0',
         type: 'void',
         'x-component': 'Grid',
-        'x-initializer': 'BlockInitializers',
+        'x-initializer': 'page:addBlock',
         properties: {
           gl57m4hyewf: {
             _isJSONSchemaObject: true,
@@ -154,7 +163,7 @@ export const oneEmptyGantt: PageConfig = {
                                 marginBottom: 24,
                               },
                             },
-                            'x-initializer': 'GanttActionInitializers',
+                            'x-initializer': 'gantt:configureActions',
                             'x-uid': 'guwovmwt4c0',
                             'x-async': false,
                             'x-index': 1,
@@ -170,7 +179,7 @@ export const oneEmptyGantt: PageConfig = {
                                 maxWidth: '35%',
                               },
                             },
-                            'x-initializer': 'TableColumnInitializers',
+                            'x-initializer': 'table:configureColumns',
                             'x-component': 'TableV2',
                             'x-component-props': {
                               rowKey: 'id',
@@ -190,7 +199,7 @@ export const oneEmptyGantt: PageConfig = {
                                 'x-decorator': 'TableV2.Column.ActionBar',
                                 'x-component': 'TableV2.Column',
                                 'x-designer': 'TableV2.ActionColumnDesigner',
-                                'x-initializer': 'TableActionColumnInitializers',
+                                'x-initializer': 'table:configureItemActions',
                                 properties: {
                                   actions: {
                                     _isJSONSchemaObject: true,
@@ -253,7 +262,7 @@ export const oneEmptyGantt: PageConfig = {
                                             version: '2.0',
                                             type: 'void',
                                             'x-component': 'Grid',
-                                            'x-initializer': 'RecordBlockInitializers',
+                                            'x-initializer': 'popup:common:addBlock',
                                             'x-uid': 'gxtfjqzxbfu',
                                             'x-async': false,
                                             'x-index': 1,
@@ -327,7 +336,7 @@ export const oneEmptyTableBlockWithCustomizeActions: PageConfig = {
         version: '2.0',
         type: 'void',
         'x-component': 'Grid',
-        'x-initializer': 'BlockInitializers',
+        'x-initializer': 'page:addBlock',
         'x-index': 1,
         properties: {
           '1m4gz110aaw': {
@@ -368,7 +377,7 @@ export const oneEmptyTableBlockWithCustomizeActions: PageConfig = {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'void',
-                        'x-initializer': 'TableActionInitializers',
+                        'x-initializer': 'table:configureActions',
                         'x-component': 'ActionBar',
                         'x-component-props': {
                           style: {
@@ -430,7 +439,7 @@ export const oneEmptyTableBlockWithCustomizeActions: PageConfig = {
                                             version: '2.0',
                                             type: 'void',
                                             'x-component': 'Grid',
-                                            'x-initializer': 'BulkEditBlockInitializers',
+                                            'x-initializer': 'popup:bulkEdit:addBlock',
                                             'x-uid': '3gjmo60w4de',
                                             'x-async': false,
                                             'x-index': 1,
@@ -464,7 +473,7 @@ export const oneEmptyTableBlockWithCustomizeActions: PageConfig = {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'array',
-                        'x-initializer': 'TableColumnInitializers',
+                        'x-initializer': 'table:configureColumns',
                         'x-component': 'TableV2',
                         'x-component-props': {
                           rowKey: 'id',
@@ -483,7 +492,7 @@ export const oneEmptyTableBlockWithCustomizeActions: PageConfig = {
                             'x-decorator': 'TableV2.Column.ActionBar',
                             'x-component': 'TableV2.Column',
                             'x-designer': 'TableV2.ActionColumnDesigner',
-                            'x-initializer': 'TableActionColumnInitializers',
+                            'x-initializer': 'table:configureItemActions',
                             properties: {
                               actions: {
                                 _isJSONSchemaObject: true,

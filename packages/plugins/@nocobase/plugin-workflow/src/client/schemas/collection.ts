@@ -1,5 +1,14 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { useForm } from '@formily/react';
-import { css, useCollectionFilterOptions } from '@nocobase/client';
+import { css, parseCollectionName, useCollectionFilterOptions } from '@nocobase/client';
 import { NAMESPACE } from '../locale';
 
 export const collection = {
@@ -8,15 +17,13 @@ export const collection = {
   required: true,
   'x-reactions': [],
   'x-decorator': 'FormItem',
-  'x-component': 'CollectionSelect',
-  'x-component-props': {
-    className: 'auto-width',
-  },
+  'x-component': 'DataSourceCollectionCascader',
 };
 
 export const values = {
   type: 'object',
   title: '{{t("Fields values")}}',
+  description: `{{t("Unassigned fields will be set to default values, and those without default values will be set to null.", { ns: "${NAMESPACE}" })}}`,
   'x-decorator': 'FormItem',
   'x-decorator-props': {
     labelAlign: 'left',
@@ -25,7 +32,6 @@ export const values = {
     `,
   },
   'x-component': 'CollectionFieldset',
-  description: `{{t("Unassigned fields will be set to default values, and those without default values will be set to null.", { ns: "${NAMESPACE}" })}}`,
 };
 
 export const filter = {
@@ -33,18 +39,21 @@ export const filter = {
   title: '{{t("Filter")}}',
   'x-decorator': 'FormItem',
   'x-component': 'Filter',
+  'x-use-component-props': () => {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const { values } = useForm();
+    const [dataSourceName, collectionName] = parseCollectionName(values?.collection);
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const options = useCollectionFilterOptions(collectionName, dataSourceName);
+    return {
+      options,
+      className: css`
+        position: relative;
+        width: 100%;
+      `,
+    };
+  },
   'x-component-props': {
-    useProps() {
-      const { values } = useForm();
-      const options = useCollectionFilterOptions(values?.collection);
-      return {
-        options,
-        className: css`
-          position: relative;
-          width: 100%;
-        `,
-      };
-    },
     dynamicComponent: 'FilterDynamicComponent',
   },
 };

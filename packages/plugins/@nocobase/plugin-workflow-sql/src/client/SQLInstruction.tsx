@@ -1,4 +1,13 @@
-import { css } from '@nocobase/client';
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+import { DEFAULT_DATA_SOURCE_KEY, css } from '@nocobase/client';
 
 import { Instruction, WorkflowVariableRawTextArea, defaultFieldNames } from '@nocobase/plugin-workflow/client';
 
@@ -12,6 +21,21 @@ export default class extends Instruction {
   group = 'collection';
   description = `{{t("Execute a SQL statement in database.", { ns: "${NAMESPACE}" })}}`;
   fieldset = {
+    dataSource: {
+      type: 'string',
+      required: true,
+      title: `{{t("Data source")}}`,
+      description: `{{t("Select a data source to execute SQL.", { ns: "${NAMESPACE}" })}}`,
+      'x-decorator': 'FormItem',
+      'x-component': 'DataSourceSelect',
+      'x-component-props': {
+        className: 'auto-width',
+        filter(item) {
+          return item.options.isDBInstance || item.key === DEFAULT_DATA_SOURCE_KEY;
+        },
+      },
+      default: 'main',
+    },
     sql: {
       type: 'string',
       required: true,

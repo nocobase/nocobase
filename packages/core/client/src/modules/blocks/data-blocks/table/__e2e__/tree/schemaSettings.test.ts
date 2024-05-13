@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Page, expect, expectSettingsMenu, oneEmptyTableWithTreeCollection, test } from '@nocobase/test/e2e';
 
 test.describe('tree table block schema settings', () => {
@@ -32,9 +41,10 @@ test.describe('tree table block schema settings', () => {
     // await expect(page.getByLabel('Expand row').first()).toBeVisible({ timeout: 1000 * 60 });
 
     await showSettingsMenu(page);
-    await expect(page.getByRole('menuitem', { name: 'Tree table' }).getByRole('switch')).toBeChecked();
-    await page.getByRole('menuitem', { name: 'Tree table' }).click();
+    //默认不启用
     await expect(page.getByRole('menuitem', { name: 'Tree table' }).getByRole('switch')).not.toBeChecked();
+    await page.getByRole('menuitem', { name: 'Tree table' }).click();
+    await expect(page.getByRole('menuitem', { name: 'Tree table' }).getByRole('switch')).toBeChecked();
     // await expect(page.getByLabel('Expand row')).toBeHidden();
   });
 });

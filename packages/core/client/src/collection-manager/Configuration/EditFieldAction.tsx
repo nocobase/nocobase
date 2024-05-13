@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { ArrayTable } from '@formily/antd-v5';
 import { ISchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
@@ -175,12 +184,14 @@ export const EditFieldAction = (props) => {
   const compile = useCompile();
   const [data, setData] = useState<any>({});
   const { isDialect } = useDialect();
+  const { template } = parentRecord || {};
+
   const scopeKeyOptions = useMemo(() => {
     return (
       record?.fields ||
       getCollection(record.collectionName)
-        .options.fields.filter((v) => {
-          return v.interface === 'select';
+        ?.options.fields.filter((v) => {
+          return ['string', 'bigInt', 'integer'].includes(v.type);
         })
         .map((k) => {
           return {
@@ -236,6 +247,7 @@ export const EditFieldAction = (props) => {
         </a>
         <SchemaComponent
           schema={schema}
+          distributed={false}
           components={{ ...components, ArrayTable }}
           scope={{
             getContainer,
@@ -246,7 +258,7 @@ export const EditFieldAction = (props) => {
             isDialect,
             disabledJSONB: true,
             scopeKeyOptions,
-            createMainOnly: true,
+            createMainOnly: template !== 'foreign',
             ...scope,
           }}
         />

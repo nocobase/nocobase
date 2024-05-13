@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import {
   SchemaInitializerItemType,
   useCollectionDataSource,
@@ -9,6 +18,7 @@ import { FieldsSelect } from '../components/FieldsSelect';
 import { NAMESPACE, lang } from '../locale';
 import { appends, collection, filter } from '../schemas/collection';
 import { getCollectionFieldOptions } from '../variable';
+import { useWorkflowAnyExecuted } from '../hooks';
 import { Trigger } from '.';
 
 const COLLECTION_TRIGGER_MODE = {
@@ -27,10 +37,16 @@ const collectionModeOptions = [
 
 export default class extends Trigger {
   title = `{{t("Collection event", { ns: "${NAMESPACE}" })}}`;
-  description = `{{t("Event will be triggered on collection data row created, updated or deleted.", { ns: "${NAMESPACE}" })}}`;
+  description = `{{t('Triggered when data changes in the collection, such as after adding, updating, or deleting a record. Unlike "Post-action event", Collection event listens for data changes rather than HTTP requests. Unless you understand the exact meaning, it is recommended to use "Post-action event".', { ns: "${NAMESPACE}" })}}`;
   fieldset = {
     collection: {
       ...collection,
+      'x-disabled': '{{ useWorkflowAnyExecuted() }}',
+      'x-component-props': {
+        dataSourceFilter(item) {
+          return item.options.key === 'main' || item.options.isDBInstance;
+        },
+      },
       ['x-reactions']: [
         ...collection['x-reactions'],
         {
@@ -116,9 +132,7 @@ export default class extends Trigger {
     condition: {
       ...filter,
       title: `{{t("Only triggers when match conditions", { ns: "${NAMESPACE}" })}}`,
-      'x-component-props': {
-        useProps: filter['x-component-props'].useProps,
-      },
+      'x-component-props': {},
       'x-reactions': [
         {
           dependencies: ['collection'],
@@ -147,6 +161,7 @@ export default class extends Trigger {
   };
   scope = {
     useCollectionDataSource,
+    useWorkflowAnyExecuted,
   };
   components = {
     FieldsSelect,
@@ -192,7 +207,7 @@ export default class extends Trigger {
       title: `{{t("Trigger data", { ns: "${NAMESPACE}" })}}`,
       Component: CollectionBlockInitializer,
       collection: config.collection,
-      dataSource: '{{$context.data}}',
+      dataPath: '$context.data',
     };
   }
 }

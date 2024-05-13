@@ -1,17 +1,27 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Field } from '@formily/core';
 import { Schema, useField, useFieldSchema } from '@formily/react';
-import React, { createContext, useContext, useEffect } from 'react';
-import { Navigate } from 'react-router-dom';
 import { omit } from 'lodash';
+import React, { createContext, useCallback, useContext, useEffect, useMemo } from 'react';
+import { Navigate } from 'react-router-dom';
 import { useAPIClient, useRequest } from '../api-client';
 import { useAppSpin } from '../application/hooks/useAppSpin';
 import { useBlockRequestContext } from '../block-provider/BlockProvider';
-import { useCollection_deprecated, useCollectionManager_deprecated } from '../collection-manager';
+import { useCollectionManager_deprecated, useCollection_deprecated } from '../collection-manager';
 import { useResourceActionContext } from '../collection-manager/ResourceActionProvider';
+import { useDataSourceKey } from '../data-source/data-source/DataSourceProvider';
 import { useRecord } from '../record-provider';
 import { SchemaComponentOptions, useDesignable } from '../schema-component';
+
 import { useApp } from '../application';
-import { useDataSourceKey } from '../data-source/data-source/DataSourceProvider';
 
 export const ACLContext = createContext<any>({});
 ACLContext.displayName = 'ACLContext';
@@ -151,7 +161,12 @@ const useAllowedActions = () => {
 const useResourceName = () => {
   const service = useResourceActionContext();
   const result = useBlockRequestContext() || { service };
-  return result?.props?.resource || result?.service?.defaultRequest?.resource;
+  return (
+    result?.props?.resource ||
+    result?.props?.association ||
+    result?.props?.collection ||
+    result?.service?.defaultRequest?.resource
+  );
 };
 
 export function useACLRoleContext() {
@@ -192,11 +207,17 @@ export function useACLRoleContext() {
 
 export const ACLCollectionProvider = (props) => {
   const { allowAll, parseAction } = useACLRoleContext();
+  const app = useApp();
   const schema = useFieldSchema();
-  if (allowAll) {
+  if (allowAll || app.disableAcl) {
     return props.children;
   }
-  const actionPath = schema?.['x-acl-action'] || props.actionPath;
+  let actionPath = schema?.['x-acl-action'] || props.actionPath;
+  const resoureName = schema?.['x-decorator-props']?.['association'] || schema?.['x-decorator-props']?.['collection'];
+  // 兼容 undefined 的情况
+  if (actionPath === 'undefined:list' && resoureName && resoureName !== 'undefined') {
+    actionPath = `${resoureName}:list`;
+  }
   if (!actionPath) {
     return props.children;
   }
@@ -237,6 +258,9 @@ export const ACLActionProvider = (props) => {
   if (!actionPath) {
     return <>{props.children}</>;
   }
+  if (!resource) {
+    return <>{props.children}</>;
+  }
   const params = parseAction(actionPath, { schema, recordPkValue });
   if (!params) {
     return <ACLActionParamsContext.Provider value={params}>{props.children}</ACLActionParamsContext.Provider>;
@@ -253,28 +277,33 @@ export const ACLActionProvider = (props) => {
 
 export const useACLFieldWhitelist = () => {
   const params = useContext(ACLActionParamsContext);
-  const whitelist = []
-    .concat(params?.whitelist || [])
-    .concat(params?.fields || [])
-    .concat(params?.appends || []);
+  const whitelist = useMemo(() => {
+    return []
+      .concat(params?.whitelist || [])
+      .concat(params?.fields || [])
+      .concat(params?.appends || []);
+  }, [params?.whitelist, params?.fields, params?.appends]);
   return {
     whitelist,
-    schemaInWhitelist(fieldSchema: Schema, isSkip?) {
-      if (isSkip) {
-        return true;
-      }
-      if (whitelist.length === 0) {
-        return true;
-      }
-      if (!fieldSchema) {
-        return true;
-      }
-      if (!fieldSchema['x-collection-field']) {
-        return true;
-      }
-      const [key1, key2] = fieldSchema['x-collection-field'].split('.');
-      return whitelist?.includes(key2 || key1);
-    },
+    schemaInWhitelist: useCallback(
+      (fieldSchema: Schema, isSkip?) => {
+        if (isSkip) {
+          return true;
+        }
+        if (whitelist.length === 0) {
+          return true;
+        }
+        if (!fieldSchema) {
+          return true;
+        }
+        if (!fieldSchema['x-collection-field']) {
+          return true;
+        }
+        const [key1, key2] = fieldSchema['x-collection-field'].split('.');
+        return whitelist?.includes(key2 || key1);
+      },
+      [whitelist],
+    ),
   };
 };
 
@@ -290,7 +319,7 @@ export const ACLCollectionFieldProvider = (props) => {
       field.required = false;
       field.display = 'hidden';
     }
-  }, [allowed]);
+  }, [allowed, field]);
 
   if (allowAll) {
     return <>{props.children}</>;

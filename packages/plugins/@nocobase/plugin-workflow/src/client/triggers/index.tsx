@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Button, Input, Tag, message } from 'antd';
 import { cloneDeep } from 'lodash';
@@ -230,6 +239,7 @@ export const TriggerConfig = () => {
           onChange={(ev) => setEditingTitle(ev.target.value)}
           onBlur={(ev) => onChangeTitle(ev.target.value)}
           autoSize
+          disabled={workflow.executed}
         />
       </div>
       <TriggerExecution />
@@ -266,10 +276,7 @@ export const TriggerConfig = () => {
                   title: titleText,
                   'x-component': 'Action.Drawer',
                   'x-decorator': 'FormV2',
-                  'x-decorator-props': {
-                    // form,
-                    useProps: '{{ useFormProviderProps }}',
-                  },
+                  'x-use-decorator-props': 'useFormProviderProps',
                   properties: {
                     ...(trigger.description
                       ? {
@@ -333,6 +340,9 @@ export const TriggerConfig = () => {
   );
 };
 
+/**
+ * @experimental
+ */
 export function useTrigger() {
   const workflowPlugin = usePlugin(WorkflowPlugin);
   const { workflow } = useFlowContext();

@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import React, { createContext, useContext, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useAPIClient, useRequest } from '../api-client';
@@ -34,21 +43,16 @@ export const CollectionHistoryProvider: React.FC = (props) => {
 
   // console.log('location', location);
 
-  const service = useRequest<{
-    data: any;
-  }>(options, {
-    manual: true,
-  });
-
   const isAdminPage = location.pathname.startsWith('/admin');
   const token = api.auth.getToken() || '';
   const { render } = useAppSpin();
 
-  useEffect(() => {
-    if (isAdminPage && token) {
-      service.run();
-    }
-  }, [isAdminPage, token]);
+  const service = useRequest<{
+    data: any;
+  }>(options, {
+    refreshDeps: [isAdminPage, token],
+    ready: !!(isAdminPage && token),
+  });
 
   // 刷新 collecionHistory
   const refreshCH = async () => {

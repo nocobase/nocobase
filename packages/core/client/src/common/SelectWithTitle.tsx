@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Select } from 'antd';
 import React, { useRef, useState } from 'react';
 
@@ -28,10 +37,12 @@ export function SelectWithTitle({ title, defaultValue, onChange, options, fieldN
       {title}
       <Select
         open={open}
+        data-testid={`select-${title}`}
         popupMatchSelectWidth={false}
         bordered={false}
         defaultValue={defaultValue}
         onChange={onChange}
+        popupClassName={`select-popup-${title.replaceAll(' ', '-')}`}
         fieldNames={fieldNames}
         options={options}
         style={{ textAlign: 'right', minWidth: 100 }}

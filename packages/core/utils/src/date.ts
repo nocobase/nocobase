@@ -1,14 +1,33 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import _ from 'lodash';
 import { dayjs } from './dayjs';
 
 export interface Str2momentOptions {
   gmt?: boolean;
   picker?: 'year' | 'month' | 'week' | 'quarter';
-  utcOffset?: any;
+  utcOffset?: number;
   utc?: boolean;
 }
 
-export const getDefaultFormat = (props: any) => {
+export type Str2momentValue = string | string[] | dayjs.Dayjs | dayjs.Dayjs[];
+
+export interface GetDefaultFormatProps {
+  format?: string;
+  dateFormat?: string;
+  timeFormat?: string;
+  picker?: 'year' | 'month' | 'week' | 'quarter';
+  showTime?: boolean;
+}
+
+export const getDefaultFormat = (props: GetDefaultFormatProps) => {
   if (props.format) {
     return props.format;
   }
@@ -69,14 +88,17 @@ const toMoment = (val: any, options?: Str2momentOptions) => {
   return dayjs(val).utcOffset(offsetFromString(offset));
 };
 
-export const str2moment = (value?: string | string[], options: Str2momentOptions = {}): any => {
+export const str2moment = (
+  value?: string | string[] | dayjs.Dayjs | dayjs.Dayjs[],
+  options: Str2momentOptions = {},
+): any => {
   return Array.isArray(value)
     ? value.map((val) => {
         return toMoment(val, options);
       })
     : value
-    ? toMoment(value, options)
-    : value;
+      ? toMoment(value, options)
+      : value;
 };
 
 const toStringByPicker = (value, picker) => {

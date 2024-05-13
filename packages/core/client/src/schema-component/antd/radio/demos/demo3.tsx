@@ -1,3 +1,5 @@
+
+
 /**
  * title: Radio Group with color
  */
@@ -8,12 +10,12 @@ import React from 'react';
 const options = [
   {
     label: '男',
-    value: 1,
+    value: '1',
     color: 'blue',
   },
   {
     label: '女',
-    value: 2,
+    value: '2',
     color: 'red',
   },
 ];

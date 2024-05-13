@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { expectSettingsMenu, oneTableBlockWithAddNewAndViewAndEditAndBasicFields, test } from '@nocobase/test/e2e';
 
 test.describe('single details block schema settings', () => {
@@ -15,7 +24,7 @@ test.describe('single details block schema settings', () => {
         await page.getByLabel('block-item-CardItem-general-form').hover();
         await page.getByLabel('designer-schema-settings-CardItem-FormV2.ReadPrettyDesigner-general').hover();
       },
-      supportedOptions: ['Edit block title', 'Save as block template', 'Delete'],
+      supportedOptions: ['Edit block title', 'Linkage rules', 'Save as block template', 'Delete'],
     });
   });
 });

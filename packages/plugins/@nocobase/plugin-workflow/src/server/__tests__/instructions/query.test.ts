@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Application } from '@nocobase/server';
 import Database from '@nocobase/database';
 import { getApp, sleep } from '@nocobase/plugin-workflow-test';
@@ -379,6 +388,37 @@ describe('workflow > instructions > query', () => {
       expect(execution.status).toBe(EXECUTION_STATUS.FAILED);
       const [job] = await execution.getJobs();
       expect(job.result).toMatchObject([]);
+    });
+  });
+
+  describe('multiple data source', () => {
+    it('query on another data source', async () => {
+      const AnotherPostRepo = app.dataSourceManager.dataSources.get('another').collectionManager.getRepository('posts');
+      const post = await AnotherPostRepo.create({ values: { title: 't1' } });
+      const p1s = await AnotherPostRepo.find();
+      expect(p1s.length).toBe(1);
+
+      const n1 = await workflow.createNode({
+        type: 'query',
+        config: {
+          collection: 'another:posts',
+          params: {
+            filter: {
+              // @ts-ignore
+              id: post.id,
+            },
+          },
+        },
+      });
+
+      await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
+
+      const [execution] = await workflow.getExecutions();
+      expect(execution.status).toBe(EXECUTION_STATUS.RESOLVED);
+      const [job] = await execution.getJobs();
+      expect(job.result.title).toBe('t1');
     });
   });
 });

@@ -1,9 +1,18 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Plugin, useCollection_deprecated } from '@nocobase/client';
 import { bulkUpdateActionSettings, deprecatedBulkUpdateActionSettings } from './BulkUpdateAction.Settings';
+import { BulkUpdateActionInitializer } from './BulkUpdateActionInitializer';
 import { CustomizeActionInitializer } from './CustomizeActionInitializer';
 import { useCustomizeBulkUpdateActionProps } from './utils';
-import { BulkUpdateActionInitializer } from './BulkUpdateActionInitializer';
-export class PluginBulkUpdateClient extends Plugin {
+export class PluginActionBulkUpdateClient extends Plugin {
   async load() {
     this.app.addComponents({ CustomizeActionInitializer });
     this.app.addScopes({ useCustomizeBulkUpdateActionProps });
@@ -25,10 +34,10 @@ export class PluginBulkUpdateClient extends Plugin {
       },
     };
 
-    this.app.schemaInitializerManager.addItem('TableActionInitializers', 'customize.bulkUpdate', initializerData);
-    this.app.schemaInitializerManager.addItem('GanttActionInitializers', 'customize.bulkUpdate', initializerData);
-    this.app.schemaInitializerManager.addItem('MapActionInitializers', 'customize.bulkUpdate', initializerData);
+    this.app.schemaInitializerManager.addItem('table:configureActions', 'customize.bulkUpdate', initializerData);
+    this.app.schemaInitializerManager.addItem('gantt:configureActions', 'customize.bulkUpdate', initializerData);
+    this.app.schemaInitializerManager.addItem('map:configureActions', 'customize.bulkUpdate', initializerData);
   }
 }
 
-export default PluginBulkUpdateClient;
+export default PluginActionBulkUpdateClient;

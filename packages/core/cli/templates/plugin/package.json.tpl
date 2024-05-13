@@ -4,8 +4,8 @@
   "main": "dist/server/index.js",
   "dependencies": {},
   "peerDependencies": {
-    "@nocobase/client": "0.x",
-    "@nocobase/server": "0.x",
-    "@nocobase/test": "0.x"
+    "@nocobase/client": "1.x",
+    "@nocobase/server": "1.x",
+    "@nocobase/test": "1.x"
   }
 }

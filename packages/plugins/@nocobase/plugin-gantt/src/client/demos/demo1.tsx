@@ -1,3 +1,5 @@
+
+
 import { Gantt, SchemaComponent, SchemaComponentProvider, useGanttBlockProps } from '@nocobase/client';
 import React from 'react';
 
@@ -7,8 +9,8 @@ const schema = {
     tasks: {
       type: 'void',
       'x-component': 'Gantt',
+      'x-use-component-props': 'useGanttBlockProps',
       'x-component-props': {
-        useProps: '{{ useGanttBlockProps }}',
         tasks: [
           {
             start: new Date(2020, 0, 1),

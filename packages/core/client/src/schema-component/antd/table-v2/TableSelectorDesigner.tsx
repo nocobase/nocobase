@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { ArrayItems } from '@formily/antd-v5';
 import { ISchema, useField, useFieldSchema } from '@formily/react';
 import _ from 'lodash';
@@ -23,6 +32,7 @@ import { removeNullCondition } from '../filter';
 import { VariableInput, getShouldChange } from '../../../schema-settings/VariableInput/VariableInput';
 import { RecordPickerContext } from '../../antd/record-picker';
 import { SchemaSettingsDataScope } from '../../../schema-settings/SchemaSettingsDataScope';
+import { SetDataLoadingMode } from '../../../modules/blocks/data-blocks/details-multi/setDataLoadingModeSettingsItem';
 
 export const TableSelectorDesigner = () => {
   const { name, title } = useCollection_deprecated();
@@ -109,7 +119,7 @@ export const TableSelectorDesigner = () => {
         <SchemaSettingsSwitchItem
           title={t('Tree table')}
           defaultChecked={true}
-          checked={field.decoratorProps.treeTable !== false}
+          checked={field.decoratorProps.treeTable}
           onChange={(flag) => {
             field.form.clearFormGraph(`${field.address}.*`);
             field.decoratorProps.treeTable = flag;
@@ -126,6 +136,7 @@ export const TableSelectorDesigner = () => {
           }}
         />
       )}
+      <SetDataLoadingMode />
       {!dragSort && (
         <SchemaSettingsModalItem
           title={t('Set default sorting rules')}

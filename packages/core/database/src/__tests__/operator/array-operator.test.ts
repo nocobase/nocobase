@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import Database from '../../database';
 import { mockDatabase } from '../index';
 
@@ -44,7 +53,7 @@ describe('array field operator', function () {
   test('array field update', async () => {
     const Post = db.collection({
       name: 'posts',
-      fields: [{ type: 'array', name: 'tags' }],
+      fields: [{ type: 'array', name: 'tagsFields' }],
     });
 
     await db.sync({ force: true });
@@ -52,13 +61,13 @@ describe('array field operator', function () {
     await Post.repository.create({});
     const p1 = await Post.repository.create({
       values: {
-        tags: ['t1', 't2'],
+        tagsFields: ['t1', 't2'],
       },
     });
 
     let result = await Post.repository.findOne({
       filter: {
-        'tags.$match': ['t2', 't1'],
+        'tagsFields.$match': ['t2', 't1'],
       },
     });
 
@@ -67,13 +76,13 @@ describe('array field operator', function () {
     await Post.repository.update({
       filterByTk: <any>p1.get('id'),
       values: {
-        tags: ['t3', 't2'],
+        tagsFields: ['t3', 't2'],
       },
     });
 
     result = await Post.repository.findOne({
       filter: {
-        'tags.$match': ['t3', 't2'],
+        'tagsFields.$match': ['t3', 't2'],
       },
     });
 

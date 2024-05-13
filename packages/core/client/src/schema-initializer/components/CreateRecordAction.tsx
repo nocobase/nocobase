@@ -1,10 +1,19 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { DownOutlined } from '@ant-design/icons';
-import { css } from '@emotion/css';
 import { observer, RecursionField, useField, useFieldSchema, useForm } from '@formily/react';
 import { Button, Dropdown, MenuProps } from 'antd';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, forwardRef, createRef } from 'react';
+import { composeRef } from 'rc-util/lib/ref';
 import { useDesignable } from '../../';
-import { useACLRolesCheck, useRecordPkValue } from '../../acl/ACLProvider';
+import { useACLRolesCheck, useRecordPkValue, useACLActionParamsContext } from '../../acl/ACLProvider';
 import {
   CollectionProvider_deprecated,
   useCollection_deprecated,
@@ -15,46 +24,6 @@ import { ActionContextProvider, useActionContext, useCompile } from '../../schem
 import { linkageAction } from '../../schema-component/antd/action/utils';
 import { parseVariables } from '../../schema-component/common/utils/uitls';
 import { useLocalVariables, useVariables } from '../../variables';
-
-export const actionDesignerCss = css`
-  position: relative;
-  &:hover {
-    .general-schema-designer {
-      display: block;
-    }
-  }
-  .general-schema-designer {
-    position: absolute;
-    z-index: 999;
-    top: 0;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    display: none;
-    background: var(--colorBgSettingsHover);
-    border: 0;
-    top: 0;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    pointer-events: none;
-    > .general-schema-designer-icons {
-      position: absolute;
-      right: 2px;
-      top: 2px;
-      line-height: 16px;
-      pointer-events: all;
-      .ant-space-item {
-        background-color: var(--colorSettings);
-        color: #fff;
-        line-height: 16px;
-        width: 16px;
-        padding-left: 1px;
-        align-self: stretch;
-      }
-    }
-  }
-`;
 
 export function useAclCheck(actionPath) {
   const aclCheck = useAclCheckFn();
@@ -96,55 +65,55 @@ function useAclCheckFn() {
   return actionAclCheck;
 }
 
-export const CreateRecordAction = observer(
-  (props: any) => {
-    const [visible, setVisible] = useState(false);
-    const collection = useCollection_deprecated();
-    const fieldSchema = useFieldSchema();
-    const field: any = useField();
-    const [currentCollection, setCurrentCollection] = useState(collection.name);
-    const [currentCollectionDataSource, setCurrentCollectionDataSource] = useState(collection.dataSource);
-    const linkageRules: any[] = fieldSchema?.['x-linkage-rules'] || [];
-    const values = useRecord();
-    const ctx = useActionContext();
-    const variables = useVariables();
-    const localVariables = useLocalVariables({ currentForm: { values } as any });
-    useEffect(() => {
-      field.stateOfLinkageRules = {};
-      linkageRules
-        .filter((k) => !k.disabled)
-        .forEach((v) => {
-          v.actions?.forEach((h) => {
-            linkageAction({
-              operator: h.operator,
-              field,
-              condition: v.condition,
-              variables,
-              localVariables,
-            });
+const InternalCreateRecordAction = (props: any, ref) => {
+  const [visible, setVisible] = useState(false);
+  const collection = useCollection_deprecated();
+  const fieldSchema = useFieldSchema();
+  const field: any = useField();
+  const [currentCollection, setCurrentCollection] = useState(collection.name);
+  const [currentCollectionDataSource, setCurrentCollectionDataSource] = useState(collection.dataSource);
+  const linkageRules: any[] = fieldSchema?.['x-linkage-rules'] || [];
+  const values = useRecord();
+  const ctx = useActionContext();
+  const variables = useVariables();
+  const localVariables = useLocalVariables({ currentForm: { values } as any });
+  useEffect(() => {
+    field.stateOfLinkageRules = {};
+    linkageRules
+      .filter((k) => !k.disabled)
+      .forEach((v) => {
+        v.actions?.forEach((h) => {
+          linkageAction({
+            operator: h.operator,
+            field,
+            condition: v.condition,
+            variables,
+            localVariables,
           });
         });
-    }, [field, linkageRules, localVariables, variables]);
-    return (
-      <div className={actionDesignerCss}>
-        <ActionContextProvider value={{ ...ctx, visible, setVisible }}>
-          <CreateAction
-            {...props}
-            onClick={(collectionData) => {
-              setVisible(true);
-              setCurrentCollection(collectionData.name);
-              setCurrentCollectionDataSource(collectionData.dataSource);
-            }}
-          />
-          <CollectionProvider_deprecated name={currentCollection} dataSource={currentCollectionDataSource}>
-            <RecursionField schema={fieldSchema} basePath={field.address} onlyRenderProperties />
-          </CollectionProvider_deprecated>
-        </ActionContextProvider>
-      </div>
-    );
-  },
-  { displayName: 'CreateRecordAction' },
-);
+      });
+  }, [field, linkageRules, localVariables, variables]);
+  const internalRef = createRef<HTMLButtonElement | HTMLAnchorElement>();
+  const buttonRef = composeRef(ref, internalRef);
+  return (
+    //@ts-ignore
+    <div ref={buttonRef as React.Ref<HTMLButtonElement>}>
+      <ActionContextProvider value={{ ...ctx, fieldSchema, visible, setVisible }}>
+        <CreateAction
+          {...props}
+          onClick={(collectionData) => {
+            setVisible(true);
+            setCurrentCollection(collectionData.name);
+            setCurrentCollectionDataSource(collectionData.dataSource);
+          }}
+        />
+        <CollectionProvider_deprecated name={currentCollection} dataSource={currentCollectionDataSource}>
+          <RecursionField schema={fieldSchema} basePath={field.address} onlyRenderProperties />
+        </CollectionProvider_deprecated>
+      </ActionContextProvider>
+    </div>
+  );
+};
 
 function getLinkageCollection(str, form, field) {
   const variablesCtx = { $form: form.values, $iteration: form.values };
@@ -232,7 +201,7 @@ export const CreateAction = observer(
         });
     }, [field, linkageRules, localVariables, variables]);
     return (
-      <div className={actionDesignerCss}>
+      <div>
         <FinallyButton
           {...{
             inheritsCollections,
@@ -283,6 +252,13 @@ function FinallyButton({
   designable: boolean;
 }) {
   const { getCollection } = useCollectionManager_deprecated();
+  const aclCtx = useACLActionParamsContext();
+  const buttonStyle = useMemo(() => {
+    return {
+      opacity: designable && (field?.data?.hidden || !aclCtx) && 0.1,
+    };
+  }, [designable, field?.data?.hidden]);
+
   if (inheritsCollections?.length > 0) {
     if (!linkageFromForm) {
       return allowAddToCurrent === undefined || allowAddToCurrent ? (
@@ -291,9 +267,15 @@ function FinallyButton({
           danger={props.danger}
           type={componentType}
           icon={<DownOutlined />}
+          style={{ ...props?.style, ...buttonStyle }}
           buttonsRender={([leftButton, rightButton]) => [
-            leftButton,
-            React.cloneElement(rightButton as React.ReactElement<any, string>, { loading: false }),
+            React.cloneElement(leftButton as React.ReactElement<any, string>, {
+              style: props?.style,
+            }),
+            React.cloneElement(rightButton as React.ReactElement<any, string>, {
+              loading: false,
+              style: props?.style,
+            }),
           ]}
           menu={menu}
           onClick={(info) => {
@@ -306,7 +288,13 @@ function FinallyButton({
       ) : (
         <Dropdown menu={menu}>
           {
-            <Button aria-label={props['aria-label']} icon={icon} type={componentType} danger={props.danger}>
+            <Button
+              aria-label={props['aria-label']}
+              icon={icon}
+              type={componentType}
+              danger={props.danger}
+              style={{ ...props?.style, ...buttonStyle }}
+            >
               {props.children} <DownOutlined />
             </Button>
           }
@@ -331,15 +319,16 @@ function FinallyButton({
         style={{
           display: !designable && field?.data?.hidden && 'none',
           opacity: designable && field?.data?.hidden && 0.1,
+          ...buttonStyle,
         }}
       >
         {props.children}
       </Button>
     );
   }
-
   return (
     <Button
+      {...props}
       aria-label={props['aria-label']}
       type={componentType}
       disabled={field.disabled}
@@ -349,11 +338,15 @@ function FinallyButton({
         onClick?.(collection);
       }}
       style={{
+        ...props?.style,
         display: !designable && field?.data?.hidden && 'none',
         opacity: designable && field?.data?.hidden && 0.1,
+        ...buttonStyle,
       }}
     >
       {props.children}
     </Button>
   );
 }
+
+export const CreateRecordAction = forwardRef<HTMLButtonElement | HTMLAnchorElement, any>(InternalCreateRecordAction);

@@ -1,10 +1,19 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { TreeSelect } from '@formily/antd-v5';
 import { Field, onFieldChange } from '@formily/core';
 import { ISchema, Schema, useField, useFieldSchema } from '@formily/react';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { findByUid } from '.';
-import { createDesignable } from '../..';
+import { createDesignable, useCompile } from '../..';
 import {
   GeneralSchemaDesigner,
   SchemaSettingsDivider,
@@ -147,7 +156,7 @@ const InsertMenuItems = (props) => {
                   grid: {
                     type: 'void',
                     'x-component': 'Grid',
-                    'x-initializer': 'BlockInitializers',
+                    'x-initializer': 'page:addBlock',
                     properties: {},
                   },
                 },
@@ -208,6 +217,8 @@ export const MenuDesigner = () => {
   const { dn, refresh } = useDesignable();
   const { t } = useTranslation();
   const menuSchema = findMenuSchema(fieldSchema);
+  const compile = useCompile();
+  const onSelect = compile(menuSchema?.['x-component-props']?.['onSelect']);
   const items = toItems(menuSchema?.properties);
   const effects = (form) => {
     onFieldChange('target', (field: Field) => {
@@ -286,6 +297,7 @@ export const MenuDesigner = () => {
           fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
           fieldSchema['x-component-props']['icon'] = icon;
           fieldSchema['x-component-props']['href'] = href;
+          onSelect?.({ item: { props: { schema: fieldSchema } } });
           dn.emit('patch', {
             schema,
           });

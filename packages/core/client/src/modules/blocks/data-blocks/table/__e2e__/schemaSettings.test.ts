@@ -1,293 +1,23 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import {
   Page,
   expect,
   expectSettingsMenu,
+  expectSupportedVariables,
   oneEmptyTableBlockWithActions,
   oneEmptyTableWithTreeCollection,
-  oneTableBlockWithActionsAndFormBlocks,
   oneTableBlockWithAddNewAndViewAndEditAndBasicFields,
   test,
-  twoTableWithAssociationFields,
-  twoTableWithSameCollection,
 } from '@nocobase/test/e2e';
-
-test.describe('table block schema settings', () => {
-  test('supported options', async ({ page, mockPage }) => {
-    await mockPage(oneTableBlockWithAddNewAndViewAndEditAndBasicFields).goto();
-
-    await expectSettingsMenu({
-      page,
-      showMenu: () => showSettingsMenu(page),
-      supportedOptions: [
-        'Edit block title',
-        'Enable drag and drop sorting',
-        'Fix block',
-        'Set the data scope',
-        'Records per page',
-        'Connect data blocks',
-        'Save as template',
-        'Delete',
-      ],
-    });
-  });
-
-  test('fix block', async ({ page, mockPage }) => {
-    await mockPage(oneTableBlockWithAddNewAndViewAndEditAndBasicFields).goto();
-
-    const tableSize = await page.getByLabel('block-item-CardItem-general-table').boundingBox();
-
-    await showSettingsMenu(page);
-    await page.getByRole('menuitem', { name: 'Fix block' }).click();
-    await expect(page.getByRole('menuitem', { name: 'Fix block' }).getByRole('switch')).toBeChecked();
-
-    // 等待页面重新渲染
-    await page.waitForTimeout(1000);
-    const fixedTableSize = await page.getByLabel('block-item-CardItem-general-table').boundingBox();
-    expect(fixedTableSize.height).toBeGreaterThan(570);
-    expect(fixedTableSize.height).toBeLessThan(575);
-
-    // 取消固定
-    await page.getByRole('menuitem', { name: 'Fix block' }).click();
-    await expect(page.getByRole('menuitem', { name: 'Fix block' }).getByRole('switch')).not.toBeChecked();
-
-    // 等待页面重新渲染
-    await page.waitForTimeout(100);
-    const unfixedTableSize = await page.getByLabel('block-item-CardItem-general-table').boundingBox();
-
-    expect(unfixedTableSize.height).toBe(tableSize.height);
-  });
-
-  test('records per page', async ({ page, mockPage, mockRecords }) => {
-    const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndBasicFields).waitForInit();
-    await mockRecords('general', 40);
-    await nocoPage.goto();
-
-    // 默认每页显示 20 条（算上顶部 head 一共 21 行）
-    await expect(page.getByRole('row')).toHaveCount(21);
-    // 底部 pagination 的显示布局：[Total 40 items] [1] [2] [20 / page]
-    await expect(page.locator('.ant-pagination')).toHaveText('Total 40 items1220 / page');
-
-    await showSettingsMenu(page);
-    await page.getByRole('menuitem', { name: 'Records per page' }).click();
-    await page.getByRole('option', { name: '10', exact: true }).click();
-
-    await expect(page.getByRole('row')).toHaveCount(11);
-    // 底部 pagination 的显示布局：[Total 40 items] [1] [2] [3] [4] [10 / page]
-    await expect(page.locator('.ant-pagination')).toHaveText('Total 40 items123410 / page');
-  });
-
-  test.describe('enable drag and drop sorting', () => {
-    // 该用例在 CI 并发环境下容易报错，原因未知，通过增加重试次数可以解决
-    test.describe.configure({ retries: process.env.CI ? 4 : 0 });
-    test('enable drag and drop sorting', async ({ page, mockPage, mockRecords }) => {
-      const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndBasicFields).waitForInit();
-      const records = await mockRecords('general', 3);
-      await nocoPage.goto();
-
-      await page.getByLabel('block-item-CardItem-general-table').hover();
-      await page.getByLabel('designer-schema-settings-CardItem-TableBlockDesigner-general').hover();
-
-      // 默认是关闭状态
-      await expect(
-        page.getByRole('menuitem', { name: 'Enable drag and drop sorting' }).getByRole('switch'),
-      ).not.toBeChecked();
-
-      // 开启之后，隐藏 Set default sorting rules 选项
-      await page.getByRole('menuitem', { name: 'Enable drag and drop sorting' }).click();
-      await page.getByText('Drag and drop sorting field').click();
-      await page.getByText('sort', { exact: true }).click();
-      await expect(
-        page.getByRole('menuitem', { name: 'Enable drag and drop sorting' }).getByRole('switch'),
-      ).toBeChecked();
-      await expect(page.getByRole('menuitem', { name: 'Set default sorting rules' })).toBeHidden();
-      // 显示出来 email 和 ID
-      await page.getByLabel('schema-initializer-TableV2-TableColumnInitializers-general').hover();
-      await page.getByRole('menuitem', { name: 'email' }).click();
-      await page.getByRole('menuitem', { name: 'ID', exact: true }).click();
-      await page.getByLabel('schema-initializer-TableV2-').click();
-
-      await page.mouse.move(300, 0);
-
-      // 默认的排序
-      let email1 = await page.getByText(records[0].email).boundingBox();
-      let email2 = await page.getByText(records[1].email).boundingBox();
-      let email3 = await page.getByText(records[2].email).boundingBox();
-
-      expect(email1.y).toBeLessThan(email2.y);
-      expect(email2.y).toBeLessThan(email3.y);
-
-      // 将第二行拖动到第一行
-      await page
-        .getByLabel('table-index-2')
-        .getByRole('img', { name: 'menu' })
-        .dragTo(page.getByLabel('table-index-1').getByRole('img', { name: 'menu' }));
-
-      await page.reload();
-
-      email1 = await page.getByText(records[0].email).boundingBox();
-      email2 = await page.getByText(records[1].email).boundingBox();
-      email3 = await page.getByText(records[2].email).boundingBox();
-
-      expect(email2.y).toBeLessThan(email1.y);
-      expect(email1.y).toBeLessThan(email3.y);
-    });
-  });
-
-  test.describe('set the data scope', () => {
-    async function showDialog(page: Page) {
-      await page.getByLabel('block-item-CardItem-general-table').hover();
-      await page.getByLabel('designer-schema-settings-CardItem-TableBlockDesigner-general').hover();
-      await page.getByRole('menuitem', { name: 'Set the data scope' }).click();
-    }
-
-    async function createColumnItem(page: Page, fieldName: string) {
-      await page.getByLabel('schema-initializer-TableV2-TableColumnInitializers-general').hover();
-      await page.getByRole('menuitem', { name: fieldName, exact: true }).click();
-      await page.mouse.move(300, 0);
-    }
-
-    test('use constants', async ({ page, mockRecords, mockPage }) => {
-      const nocoPage = await mockPage(oneTableBlockWithActionsAndFormBlocks).waitForInit();
-      await mockRecords('general', 3);
-      await nocoPage.goto();
-      await createColumnItem(page, 'ID');
-
-      await showDialog(page);
-
-      // 添加一个 ID 为 1 的条件
-      await page.getByText('Add condition', { exact: true }).click();
-      await page.getByTestId('select-filter-field').click();
-      await page.getByRole('menuitemcheckbox', { name: 'ID', exact: true }).click();
-      await page.getByRole('spinbutton').click();
-      await page.getByRole('spinbutton').fill('1');
-      await page.getByRole('button', { name: 'OK', exact: true }).click();
-
-      // 被筛选之后数据只有一条（有一行是空的）
-      await expect(page.getByRole('row')).toHaveCount(2);
-      // 有一行 id 为 1 的数据
-      await expect(page.getByRole('cell', { name: '1', exact: true })).toBeVisible();
-    });
-
-    test('use variable called current user', async ({ page, mockPage, mockRecords }) => {
-      const nocoPage = await mockPage(oneTableBlockWithActionsAndFormBlocks).waitForInit();
-      // Super Admin 是当前的用户的名字
-      await mockRecords('general', [{ singleLineText: 'Super Admin' }, {}, {}]);
-      await nocoPage.goto();
-      await createColumnItem(page, 'singleLineText');
-
-      await showDialog(page);
-
-      // 添加一个 singleLineText 为 current user 的 Nickname 的条件
-      await page.getByText('Add condition', { exact: true }).click();
-      await page.getByTestId('select-filter-field').click();
-      await page.getByRole('menuitemcheckbox', { name: 'singleLineText' }).click();
-      await page.getByLabel('variable-button').click();
-      await page.getByRole('menuitemcheckbox', { name: 'Current user' }).click();
-      await page.getByRole('menuitemcheckbox', { name: 'Nickname' }).click();
-      await page.getByRole('button', { name: 'OK', exact: true }).click();
-
-      // 被筛选之后数据只有一条（有一行是空的）
-      await expect(page.getByRole('row')).toHaveCount(2);
-      await expect(page.getByRole('cell', { name: 'Super Admin', exact: true })).toBeVisible();
-    });
-  });
-
-  test.describe('set default sorting rules', () => {
-    // 该用例在 CI 并发环境下容易报错，原因未知，通过增加重试次数可以解决
-    test.describe.configure({ retries: process.env.CI ? 4 : 0 });
-    test('set default sorting rules', async ({ page, mockPage, mockRecords }) => {
-      const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndBasicFields).waitForInit();
-      const records = await mockRecords('general', 3);
-      await nocoPage.goto();
-
-      // 打开配置弹窗
-      await page.getByLabel('block-item-CardItem-general-table').hover();
-      await page.getByLabel('designer-schema-settings-CardItem-TableBlockDesigner-general').hover();
-      await page.getByRole('menuitem', { name: 'Set default sorting rules' }).click();
-
-      // 设置一个按 ID 降序的规则
-      await page.getByRole('button', { name: 'plus Add sort field' }).click();
-      await page.getByTestId('select-single').click();
-      await page.getByRole('option', { name: 'ID', exact: true }).click();
-      await page.getByText('DESC', { exact: true }).click();
-      await page.getByRole('button', { name: 'OK', exact: true }).click();
-
-      // 显示出来 email 和 ID
-      await page.getByLabel('schema-initializer-TableV2-TableColumnInitializers-general').hover();
-      await page.getByRole('menuitem', { name: 'email' }).click();
-      await page.getByRole('menuitem', { name: 'ID', exact: true }).click();
-      await page.mouse.move(300, 0);
-
-      // 规则生效后的顺序：3，2，1
-      const email1 = await page.getByText(records[0].email).boundingBox();
-      const email2 = await page.getByText(records[1].email).boundingBox();
-      const email3 = await page.getByText(records[2].email).boundingBox();
-
-      expect(email3.y).toBeLessThan(email2.y);
-      expect(email2.y).toBeLessThan(email1.y);
-    });
-  });
-
-  test.describe('connect data blocks', () => {
-    test('connecting two blocks of the same collection', async ({ page, mockPage, mockRecords }) => {
-      const nocoPage = await mockPage(twoTableWithSameCollection).waitForInit();
-      const records = await mockRecords('users', 3);
-      await nocoPage.goto();
-
-      // 将左边的 Table 连接到右边的 Table
-      await page.getByLabel('block-item-CardItem-users-table').first().hover();
-      await page.getByRole('button', { name: 'designer-schema-settings-CardItem-TableBlockDesigner-users' }).hover();
-      await page.getByRole('menuitem', { name: 'Connect data blocks' }).hover();
-      await page.getByRole('menuitem', { name: 'Users' }).click();
-
-      // 点击左边 Table 的某一行，右边 Table 的数据会被筛选为当前点中行的数据
-      await page.getByLabel('block-item-CardItem-users-table').nth(0).getByText('Super Admin').click();
-      await expect(
-        page.getByLabel('block-item-CardItem-users-table').nth(1).getByText(records[0].nickname),
-      ).toBeHidden();
-      await expect(
-        page.getByLabel('block-item-CardItem-users-table').nth(1).getByText(records[1].nickname),
-      ).toBeHidden();
-      await expect(
-        page.getByLabel('block-item-CardItem-users-table').nth(1).getByText(records[2].nickname),
-      ).toBeHidden();
-      await expect(page.getByLabel('block-item-CardItem-users-table').nth(1).getByText('Super Admin')).toBeVisible();
-    });
-
-    test('connecting two blocks connected by a relationship field', async ({ page, mockPage, mockRecords }) => {
-      const nocoPage = await mockPage(twoTableWithAssociationFields).waitForInit();
-      await mockRecords('users', 3);
-      await nocoPage.goto();
-
-      // 将左边的 Table 连接到右边的 Table
-      await page.getByLabel('block-item-CardItem-roles-table').hover();
-      await page.getByRole('button', { name: 'designer-schema-settings-CardItem-TableBlockDesigner-roles' }).hover();
-      await page.getByRole('menuitem', { name: 'Connect data blocks' }).hover();
-      await page.getByRole('menuitem', { name: 'Users' }).click();
-      await page.getByRole('option', { name: 'Roles' }).click();
-
-      // 点击左边 Table 的某一行
-      await page.getByLabel('block-item-CardItem-roles-table').getByRole('cell', { name: 'Root', exact: true }).click();
-      await expect(
-        page.getByLabel('block-item-CardItem-users-table').getByRole('row').filter({ hasNotText: 'Root' }),
-      ).toHaveCount(1, {
-        timeout: 1000 * 10,
-      });
-      await expect(page.getByLabel('block-item-CardItem-users-table').getByRole('row', { name: 'Root' })).toBeVisible();
-
-      // 再次点击，会取消筛选效果
-      await page.getByLabel('block-item-CardItem-roles-table').getByRole('cell', { name: 'Root', exact: true }).click();
-      await expect(
-        page.getByLabel('block-item-CardItem-users-table').getByRole('row').filter({ hasNotText: 'Root' }),
-      ).toHaveCount(4, {
-        timeout: 1000 * 10,
-      });
-      await expect(page.getByLabel('block-item-CardItem-users-table').getByRole('row', { name: 'Root' })).toBeVisible();
-    });
-
-    test('connecting two blocks connected by a foreign key', async ({ page, mockPage, mockRecords }) => {});
-  });
-});
+import { T3843, oneTableWithColumnFixed, oneTableWithUpdateRecord } from './templatesOfBug';
 
 test.describe('actions schema settings', () => {
   test.describe('add new', () => {
@@ -311,8 +41,8 @@ test.describe('actions schema settings', () => {
 
       await showMenu(page);
       await page.getByRole('menuitem', { name: 'Edit button' }).click();
-      await page.getByLabel('block-item-Input-general-Button title').getByRole('textbox').click();
-      await page.getByLabel('block-item-Input-general-Button title').getByRole('textbox').fill('1234');
+      await page.getByLabel('block-item-Input-general-').getByRole('textbox').click();
+      await page.getByLabel('block-item-Input-general-').getByRole('textbox').fill('1234');
       await page.getByRole('button', { name: 'OK', exact: true }).click();
 
       await expect(page.getByRole('button', { name: '1234' })).toBeVisible();
@@ -442,8 +172,8 @@ test.describe('actions schema settings', () => {
 
       await showMenu(page);
       await page.getByRole('menuitem', { name: 'Edit button' }).click();
-      await page.getByLabel('block-item-Input-general-Button title').getByRole('textbox').click();
-      await page.getByLabel('block-item-Input-general-Button title').getByRole('textbox').fill('Delete record');
+      await page.getByLabel('block-item-Input-general-').getByRole('textbox').click();
+      await page.getByLabel('block-item-Input-general-').getByRole('textbox').fill('Delete record');
       await page.getByRole('button', { name: 'OK', exact: true }).click();
 
       await expect(page.getByLabel('action-Action.Link-Delete record-destroy-general-table-0')).toBeVisible();
@@ -567,7 +297,7 @@ test.describe('actions schema settings', () => {
   test.describe('popup', () => {
     const addSomeCustomActions = async (page: Page) => {
       // 先删除掉之前的 actions
-      await page.getByRole('button', { name: 'Actions' }).hover();
+      await page.getByRole('button', { name: 'Actions', exact: true }).hover();
       await page.getByLabel('designer-schema-settings-TableV2.Column-TableV2.ActionColumnDesigner-general').hover();
       await page.getByRole('menuitem', { name: 'View' }).click();
       await page.getByRole('menuitem', { name: 'Edit' }).click();
@@ -624,7 +354,7 @@ test.describe('actions schema settings', () => {
   test.describe('update record', () => {
     const addSomeCustomActions = async (page: Page) => {
       // 先删除掉之前的 actions
-      await page.getByRole('button', { name: 'Actions' }).hover();
+      await page.getByRole('button', { name: 'Actions', exact: true }).hover();
       await page.getByLabel('designer-schema-settings-TableV2.Column-TableV2.ActionColumnDesigner-general').hover();
       await page.getByRole('menuitem', { name: 'View' }).click();
       await page.getByRole('menuitem', { name: 'Edit' }).click();
@@ -663,6 +393,67 @@ test.describe('actions schema settings', () => {
         ],
       });
     });
+
+    test('Assign field values', async ({ page, mockPage, mockRecord }) => {
+      const nocoPage = await mockPage(oneTableWithUpdateRecord).waitForInit();
+      await mockRecord('users2');
+      await nocoPage.goto();
+
+      const openPopup = async () => {
+        if (!(await page.getByLabel('action-Action.Link-Update record-customize:update-users2-table-0').isVisible())) {
+          await page.getByRole('button', { name: 'Actions', exact: true }).hover();
+          await page.getByLabel('designer-schema-settings-TableV2.Column-TableV2.ActionColumnDesigner-users2').hover();
+          await page.getByRole('menuitem', { name: 'Customize right' }).hover();
+          await page.getByRole('menuitem', { name: 'Update record' }).click();
+        }
+
+        await page.getByLabel('action-Action.Link-Update record-customize:update-users2-table-0').hover();
+        await page
+          .getByLabel('designer-schema-settings-Action.Link-actionSettings:updateRecord-users2')
+          .first()
+          .hover();
+        await page.getByRole('menuitem', { name: 'Assign field values' }).click();
+
+        if (!(await page.getByLabel('block-item-AssignedField-').getByRole('textbox').isVisible())) {
+          await page.getByLabel('schema-initializer-Grid-assignFieldValuesForm:configureFields-users').hover();
+          await page.getByRole('menuitem', { name: 'Nickname' }).click();
+        }
+      };
+
+      const expectNewValue = async (value: string) => {
+        await page.getByLabel('action-Action.Link-Update record-customize:update-users2-table-0').click();
+        await page.getByRole('button', { name: 'OK', exact: true }).click();
+        await page.getByLabel('action-Action-Refresh-refresh').click();
+        await expect(page.getByLabel('block-item-CardItem-users2-').getByText(value)).toBeVisible();
+      };
+
+      // 1. 打开 Assign field values 配置弹窗
+      await openPopup();
+
+      // 2. 将 Nickname 字段的值设置为 `123456`
+      await page.getByLabel('block-item-AssignedField-').getByRole('textbox').click();
+      await page.getByLabel('block-item-AssignedField-').getByRole('textbox').fill('123456');
+      await page.getByRole('button', { name: 'Submit' }).click();
+
+      // 3. 保存后点击 Save record 按钮，然后刷新表格，应该显示一条 Nickname 为 “123456” 的记录
+      await expectNewValue('123456');
+
+      // 4. 再次打开 Assign field values 配置弹窗，这次为 Nickname 设置一个变量值（Current role）
+      await openPopup();
+      await page.getByLabel('variable-button').click();
+      await expectSupportedVariables(page, [
+        'Constant',
+        'Current user',
+        'Current role',
+        'Date variables',
+        'Current record',
+      ]);
+      await page.getByRole('menuitemcheckbox', { name: 'Current role' }).click();
+      await page.getByRole('button', { name: 'Submit' }).click();
+
+      // 5. 保存后点击 Save record 按钮，然后刷新表格，应该显示一条 Nickname 为 “root” 的记录
+      await expectNewValue('root');
+    });
   });
 
   test.describe('add child', () => {
@@ -674,19 +465,23 @@ test.describe('actions schema settings', () => {
     test('supported options', async ({ page, mockPage, mockRecord }) => {
       const nocoPage = await mockPage(oneEmptyTableWithTreeCollection).waitForInit();
       await nocoPage.goto();
+      await page.getByLabel('block-item-CardItem-treeCollection-table').hover();
 
       // 添加一行数据
       // TODO: 使用 mockRecord 为 tree 表添加一行数据无效
-      await page.getByLabel('schema-initializer-ActionBar-TableActionInitializers-treeCollection').hover();
+      await page.getByLabel('schema-initializer-ActionBar-table:configureActions-treeCollection').hover();
       await page.getByRole('menuitem', { name: 'Add new' }).click();
       await page.getByRole('button', { name: 'Add new' }).click();
-      await page.getByLabel('schema-initializer-Grid-CreateFormBlockInitializers-treeCollection').hover();
+      await page.getByLabel('schema-initializer-Grid-popup:addNew:addBlock-treeCollection').hover();
       await page.getByRole('menuitem', { name: 'form Form' }).click();
       await page.mouse.move(300, 0);
-      await page.getByLabel('schema-initializer-ActionBar-CreateFormActionInitializers-treeCollection').hover();
+      await page.getByLabel('schema-initializer-ActionBar-createForm:configureActions-treeCollection').hover();
       await page.getByRole('menuitem', { name: 'Submit' }).click();
       await page.mouse.move(300, 0);
       await page.getByRole('button', { name: 'Submit' }).click();
+
+      await page.getByLabel('designer-schema-settings-CardItem-TableBlockDesigner-treeCollection').hover();
+      await page.getByRole('menuitem', { name: 'Tree table' }).click();
 
       // 添加 add child 按钮
       await page.getByRole('button', { name: 'Actions', exact: true }).hover();
@@ -698,6 +493,24 @@ test.describe('actions schema settings', () => {
         showMenu: () => showMenu(page),
         supportedOptions: ['Edit button', 'Linkage rules', 'Open mode', 'Popup size', 'Delete'],
       });
+
+      // https://nocobase.height.app/T-3235
+      // add child 表单中的 Parent 字段应该有数据
+      await page.getByLabel('action-Action.Link-Add child-').click({
+        position: { x: 5, y: 5 }, // 防止按钮被遮挡
+      });
+      await page.getByLabel('schema-initializer-Grid-popup').hover();
+      await page.getByRole('menuitem', { name: 'form Form' }).click();
+      await page.mouse.move(300, 0);
+      await page.getByLabel('schema-initializer-Grid-form:').hover();
+      await page.getByRole('menuitem', { name: 'Parent', exact: true }).click();
+      await page.mouse.move(300, 0);
+      await expect(
+        page
+          .getByLabel('block-item-CollectionField-')
+          .getByTestId('select-object-single')
+          .getByText('1', { exact: true }),
+      ).toBeVisible();
     });
   });
 
@@ -719,7 +532,55 @@ test.describe('actions schema settings', () => {
   });
 });
 
-async function showSettingsMenu(page) {
-  await page.getByLabel('block-item-CardItem-general-table').hover();
-  await page.getByLabel('designer-schema-settings-CardItem-TableBlockDesigner-general').hover();
-}
+test.describe('table column schema settings', () => {
+  // https://nocobase.height.app/T-3843
+  test('set data scope', async ({ page, mockPage, mockRecord }) => {
+    const nocoPage = await mockPage(T3843).waitForInit();
+    const record1 = await mockRecord('collection1');
+    await nocoPage.goto();
+
+    // 1. 关系字段下拉框中应该有数据
+    await page.getByRole('button', { name: 'Add new' }).click();
+    await page.getByTestId('select-object-multiple').click();
+    await expect(page.getByRole('option', { name: record1.singleLineText, exact: true })).toBeVisible();
+
+    // 2. 为该关系字段设置一个数据范围后，下拉框中应该有一个匹配项
+    await page.getByRole('button', { name: 'manyToMany1', exact: true }).hover();
+    await page.getByLabel('designer-schema-settings-TableV2.Column-fieldSettings:TableColumn-collection2').hover();
+    await page.getByRole('menuitem', { name: 'Set the data scope' }).click();
+    await page.getByText('Add condition', { exact: true }).click();
+    await page.getByTestId('select-filter-field').click();
+    await page.getByRole('menuitemcheckbox', { name: 'ID' }).click();
+    await page.getByRole('spinbutton').click();
+    await page.getByRole('spinbutton').fill('1');
+    await page.getByRole('button', { name: 'OK', exact: true }).click();
+    await page.reload();
+    await page.getByRole('button', { name: 'Add new' }).click();
+    await page.getByTestId('select-object-multiple').click();
+    await expect(page.getByRole('option', { name: record1.singleLineText, exact: true })).toBeVisible();
+  });
+
+  test('fixed column', async ({ page, mockPage }) => {
+    const nocoPage = await mockPage(oneTableWithColumnFixed).waitForInit();
+    await nocoPage.goto();
+    await expect(page.getByRole('button', { name: 'Roles' })).toBeVisible();
+    const element = await page.getByRole('button', { name: 'Roles' });
+    const hasClassName = await element.evaluate((el) =>
+      el.parentElement.parentElement.className.includes('ant-table-cell-fix-left'),
+    );
+
+    await expect(hasClassName).toBe(true);
+    //取消固定
+    await page.getByRole('button', { name: 'Roles' }).hover();
+    await page
+      .getByRole('button', { name: 'designer-schema-settings-TableV2.Column-fieldSettings:TableColumn-users' })
+      .hover();
+    await page.getByTestId('schema-settings-menu').getByText('FixedLeft fixed').click();
+    await page.getByText('Not fixed').click();
+    const hasClassName1 = await element.evaluate((el) =>
+      el.parentElement.parentElement.className.includes('ant-table-cell-fix-left'),
+    );
+
+    await expect(hasClassName1).toBe(false);
+  });
+});

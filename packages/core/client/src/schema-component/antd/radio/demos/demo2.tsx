@@ -1,3 +1,5 @@
+
+
 /**
  * title: Radio Group
  * desc: A group of radio components.
@@ -9,11 +11,11 @@ import React from 'react';
 const options = [
   {
     label: '男',
-    value: 1,
+    value: '1',
   },
   {
     label: '女',
-    value: 2,
+    value: '2',
   },
 ];
 

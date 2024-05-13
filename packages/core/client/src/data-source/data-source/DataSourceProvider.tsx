@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import React, { FC, ReactNode, createContext, useContext } from 'react';
 import type { DataSource } from './DataSource';
 import { useDataSourceManager } from './DataSourceManagerProvider';
@@ -20,16 +29,16 @@ export const DataSourceProvider: FC<DataSourceProviderProps> = ({ children, data
   const { t } = useTranslation();
   const { refresh } = useSchemaComponentContext();
   const [_, setRandom] = React.useState(0);
-  const dataSourceValue = dataSourceManager.getDataSource(dataSource);
+  const dataSourceValue = dataSourceManager?.getDataSource(dataSource);
 
   if (!dataSourceValue) {
-    return <CollectionDeletedPlaceholder type="DataSource" name={dataSource} />;
+    return <CollectionDeletedPlaceholder type="Data Source" name={dataSource} />;
   }
 
   if (dataSourceValue.status === 'loading-failed') {
     return (
       <CollectionDeletedPlaceholder
-        type="DataSource"
+        type="Data Source"
         name={dataSourceValue.displayName || dataSource}
         message={dataSourceValue.errorMessage || 'loading failed'}
       />

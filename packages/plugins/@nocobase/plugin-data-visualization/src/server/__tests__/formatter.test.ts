@@ -1,50 +1,56 @@
-import { vi } from 'vitest';
-import { dateFormatFn } from '../actions/formatter';
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+import { formatter } from '../actions/formatter';
 
 describe('formatter', () => {
   const field = 'field';
   const format = 'YYYY-MM-DD hh:mm:ss';
-  describe('dateFormatFn', () => {
-    it('should return correct format for sqlite', () => {
-      const sequelize = {
-        fn: vi.fn().mockImplementation((fn: string, format: string, field: string) => ({
-          fn,
-          format,
-          field,
-        })),
-        col: vi.fn().mockImplementation((field: string) => field),
-      };
-      const dialect = 'sqlite';
-      const result = dateFormatFn(sequelize, dialect, field, format);
-      expect(result.format).toEqual('%Y-%m-%d %H:%M:%S');
-    });
+  it('should return correct format for sqlite', () => {
+    const sequelize = {
+      fn: (fn: string, format: string, field: string) => ({
+        fn,
+        format,
+        field,
+      }),
+      col: (field: string) => field,
+      getDialect: () => 'sqlite',
+    };
+    const result = formatter(sequelize, 'datetime', field, format);
+    expect(result.format).toEqual('%Y-%m-%d %H:%M:%S');
+  });
 
-    it('should return correct format for mysql', () => {
-      const sequelize = {
-        fn: vi.fn().mockImplementation((fn: string, field: string, format: string) => ({
-          fn,
-          format,
-          field,
-        })),
-        col: vi.fn().mockImplementation((field: string) => field),
-      };
-      const dialect = 'mysql';
-      const result = dateFormatFn(sequelize, dialect, field, format);
-      expect(result.format).toEqual('%Y-%m-%d %H:%i:%S');
-    });
+  it('should return correct format for mysql', () => {
+    const sequelize = {
+      fn: (fn: string, field: string, format: string) => ({
+        fn,
+        format,
+        field,
+      }),
+      col: (field: string) => field,
+      getDialect: () => 'mysql',
+    };
+    const result = formatter(sequelize, 'datetime', field, format);
+    expect(result.format).toEqual('%Y-%m-%d %H:%i:%S');
+  });
 
-    it('should return correct format for postgres', () => {
-      const sequelize = {
-        fn: vi.fn().mockImplementation((fn: string, field: string, format: string) => ({
-          fn,
-          format,
-          field,
-        })),
-        col: vi.fn().mockImplementation((field: string) => field),
-      };
-      const dialect = 'postgres';
-      const result = dateFormatFn(sequelize, dialect, field, format);
-      expect(result.format).toEqual('YYYY-MM-DD HH24:MI:SS');
-    });
+  it('should return correct format for postgres', () => {
+    const sequelize = {
+      fn: (fn: string, field: string, format: string) => ({
+        fn,
+        format,
+        field,
+      }),
+      col: (field: string) => field,
+      getDialect: () => 'postgres',
+    };
+    const result = formatter(sequelize, 'datetime', field, format);
+    expect(result.format).toEqual('YYYY-MM-DD HH24:MI:SS');
   });
 });

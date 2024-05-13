@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { ArrayItems } from '@formily/antd-v5';
 import { ISchema, useField, useFieldSchema } from '@formily/react';
 import { cloneDeep } from 'lodash';
@@ -12,6 +21,7 @@ import {
 } from '../../../../collection-manager';
 import { removeNullCondition, useDesignable } from '../../../../schema-component';
 import { SchemaSettingsDataScope } from '../../../../schema-settings/SchemaSettingsDataScope';
+import { setDataLoadingModeSettingsItem, useDataLoadingMode } from '../details-multi/setDataLoadingModeSettingsItem';
 
 export const tableSelectorBlockSettings = new SchemaSettings({
   name: 'blockSettings:tableSelector',
@@ -26,6 +36,7 @@ export const tableSelectorBlockSettings = new SchemaSettings({
         const { form } = useFormBlockContext();
         const { service, extraFilter } = useTableSelectorContext();
         const { dn } = useDesignable();
+        const dataLoadingMode = useDataLoadingMode();
         const onDataScopeSubmit = useCallback(
           ({ filter }) => {
             filter = removeNullCondition(filter);
@@ -43,7 +54,7 @@ export const tableSelectorBlockSettings = new SchemaSettings({
                 serviceFilter = extraFilter;
               }
             }
-            service.run({ ...service.params?.[0], filter: serviceFilter, page: 1 });
+
             dn.emit('patch', {
               schema: {
                 ['x-uid']: fieldSchema['x-uid'],
@@ -51,7 +62,7 @@ export const tableSelectorBlockSettings = new SchemaSettings({
               },
             });
           },
-          [dn, field.decoratorProps, fieldSchema, service, extraFilter],
+          [field.decoratorProps, fieldSchema, extraFilter, dataLoadingMode, dn, service],
         );
 
         return {
@@ -75,7 +86,7 @@ export const tableSelectorBlockSettings = new SchemaSettings({
         return {
           title: t('Tree table'),
           defaultChecked: true,
-          checked: field.decoratorProps.treeTable !== false,
+          checked: field.decoratorProps.treeTable,
           onChange: (flag) => {
             field.form.clearFormGraph(`${field.address}.*`);
             field.decoratorProps.treeTable = flag;
@@ -223,6 +234,7 @@ export const tableSelectorBlockSettings = new SchemaSettings({
         return !dragSort;
       },
     },
+    setDataLoadingModeSettingsItem,
     {
       name: 'RecordsPerPage',
       type: 'select',

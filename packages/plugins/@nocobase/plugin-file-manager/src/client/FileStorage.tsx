@@ -1,4 +1,13 @@
-import { PlusOutlined } from '@ant-design/icons';
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+import { PlusOutlined, DownOutlined } from '@ant-design/icons';
 import { uid } from '@formily/shared';
 import { ActionContext, SchemaComponent, useCompile, usePlugin, useRecord } from '@nocobase/client';
 import { Button, Card, Dropdown } from 'antd';
@@ -73,7 +82,7 @@ export const CreateStorage = () => {
           }}
         >
           <Button type={'primary'} icon={<PlusOutlined />}>
-            {t('Add new')}
+            {t('Add new')} <DownOutlined />
           </Button>
         </Dropdown>
         <SchemaComponent scope={{ createOnly: true }} schema={schema} />
@@ -96,6 +105,15 @@ export const EditStorage = () => {
           onClick={() => {
             setVisible(true);
             const storageType = plugin.storageTypes.get(record.type);
+            if (storageType.properties['default']) {
+              storageType.properties['default']['x-reactions'] = (field) => {
+                if (field.initialValue) {
+                  field.disabled = true;
+                } else {
+                  field.disabled = false;
+                }
+              };
+            }
             setSchema({
               type: 'object',
               properties: {

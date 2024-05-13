@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import type { Dispatch, SetStateAction } from 'react';
 import { CollectionFieldOptions_deprecated } from '../collection-manager';
 
@@ -77,4 +86,6 @@ export interface VariableOption {
   };
   /** 变量所对应的数据表的名称 */
   collectionName?: string;
+  /** 数据表所对应的数据源 */
+  dataSource?: string;
 }

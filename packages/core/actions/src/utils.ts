@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { MultipleRelationRepository, Repository } from '@nocobase/database';
 import { Context } from '.';
 
@@ -15,10 +24,15 @@ export function pageArgsToLimitArgs(
 }
 
 export function getRepositoryFromParams(ctx: Context) {
-  const { resourceName, resourceOf } = ctx.action;
+  const { resourceName, sourceId, actionName } = ctx.action;
 
-  if (resourceOf) {
-    return ctx.db.getRepository<MultipleRelationRepository>(resourceName, resourceOf);
+  if (sourceId === '_' && ['get', 'list'].includes(actionName)) {
+    const collection = ctx.db.getCollection(resourceName);
+    return ctx.db.getRepository<Repository>(collection.name);
+  }
+
+  if (sourceId) {
+    return ctx.db.getRepository<MultipleRelationRepository>(resourceName, sourceId);
   }
 
   return ctx.db.getRepository<Repository>(resourceName);

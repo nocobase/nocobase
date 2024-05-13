@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { ISchema, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import { cloneDeep } from 'lodash';
@@ -122,7 +131,7 @@ export const useSchemaTemplateManager = () => {
   };
 };
 
-const Internal = (props) => {
+export const RemoteSchemaTemplateManagerProvider = (props) => {
   const api = useAPIClient();
   const { render } = useAppSpin();
   const options = {
@@ -153,19 +162,10 @@ const Internal = (props) => {
   );
 };
 
-export const RemoteSchemaTemplateManagerProvider: React.FC<{ children?: ReactNode }> = (props) => {
-  const location = useLocation();
-  if (location.pathname.startsWith('/admin')) {
-    return <Internal {...props} />;
-  }
-  return <>{props.children}</>;
-};
-
 export class RemoteSchemaTemplateManagerPlugin extends Plugin {
   async load() {
     this.addRoutes();
     this.addComponents();
-    this.app.use(RemoteSchemaTemplateManagerProvider);
   }
 
   addComponents() {

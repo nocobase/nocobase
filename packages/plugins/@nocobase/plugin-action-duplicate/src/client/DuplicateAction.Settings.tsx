@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { onFieldInputValueChange } from '@formily/core';
 import { ISchema, connect, mapProps, useField, useFieldSchema, useForm } from '@formily/react';
 import {
@@ -84,7 +93,7 @@ function DuplicationMode() {
   const fieldSchema = useFieldSchema();
   const { name } = useCollection_deprecated();
   const { collectionList, getEnableFieldTree, getOnLoadData, getOnCheck } = useCollectionState(name);
-  const duplicateValues = cloneDeep(fieldSchema['x-component-props'].duplicateFields || []);
+  const duplicateValues = cloneDeep(fieldSchema['x-component-props']?.duplicateFields || []);
   const record = useRecord();
   const syncCallBack = useCallback((treeData, selectFields, form) => {
     form.query('duplicateFields').take((f) => {

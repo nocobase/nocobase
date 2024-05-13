@@ -1,8 +1,18 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { BarChartOutlined, LineChartOutlined } from '@ant-design/icons';
 import { uid } from '@formily/shared';
 import {
+  CompatibleSchemaInitializer,
+  DEFAULT_DATA_SOURCE_KEY,
   DataBlockInitializer,
-  SchemaInitializer,
   SchemaInitializerItem,
   useACLRoleContext,
   useSchemaInitializer,
@@ -15,20 +25,23 @@ import { lang } from '../locale';
 
 const ChartInitializer = () => {
   const { setVisible, setCurrent } = useContext(ChartConfigContext);
-  const { allowAll, parseAction } = useACLRoleContext();
+  const { parseAction } = useACLRoleContext();
   const itemConfig = useSchemaInitializerItem();
   const filter = useCallback(
     (item) => {
       const params = parseAction(`${item.name}:list`);
       return params;
     },
-    [allowAll, parseAction],
+    [parseAction],
   );
 
   return (
     <DataBlockInitializer
       {...itemConfig}
       filter={filter}
+      filterDataSource={(ds) => {
+        return ds.key === DEFAULT_DATA_SOURCE_KEY || ds.getOptions().isDBInstance;
+      }}
       icon={<BarChartOutlined />}
       componentType={'Chart'}
       onCreateBlockSchema={async ({ item }) => {
@@ -46,7 +59,11 @@ const ChartInitializer = () => {
   );
 };
 
-export const chartInitializers: SchemaInitializer = new SchemaInitializer({
+/**
+ * @deprecated
+ * use `chartInitializers` instead
+ */
+export const chartInitializers_deprecated = new CompatibleSchemaInitializer({
   name: 'ChartInitializers',
   icon: 'PlusOutlined',
   title: '{{t("Add block")}}',
@@ -71,6 +88,34 @@ export const chartInitializers: SchemaInitializer = new SchemaInitializer({
   ],
 });
 
+export const chartInitializers = new CompatibleSchemaInitializer(
+  {
+    name: 'charts:addBlock',
+    icon: 'PlusOutlined',
+    title: '{{t("Add block")}}',
+    items: [
+      {
+        name: 'chart',
+        title: lang('Chart'),
+        Component: ChartInitializer,
+      },
+      {
+        name: 'otherBlocks',
+        type: 'itemGroup',
+        title: lang('Other blocks'),
+        children: [
+          {
+            name: 'filter',
+            title: lang('Filter'),
+            Component: FilterBlockInitializer,
+          },
+        ],
+      },
+    ],
+  },
+  chartInitializers_deprecated,
+);
+
 export const ChartV2BlockInitializer: React.FC = () => {
   const itemConfig = useSchemaInitializerItem();
   const { insert } = useSchemaInitializer();
@@ -91,7 +136,7 @@ export const ChartV2BlockInitializer: React.FC = () => {
               type: 'void',
               'x-component': 'Grid',
               'x-decorator': 'ChartV2Block',
-              'x-initializer': 'ChartInitializers',
+              'x-initializer': 'charts:addBlock',
             },
           },
         });

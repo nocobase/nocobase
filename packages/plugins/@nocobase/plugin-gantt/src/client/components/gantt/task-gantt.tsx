@@ -1,4 +1,14 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import React, { forwardRef, useEffect, useRef } from 'react';
+import { Spin } from 'antd';
 import { Calendar, CalendarProps } from '../calendar/calendar';
 import { Grid, GridProps } from '../grid/grid';
 import { TaskGanttContent, TaskGanttContentProps } from './task-gantt-content';
@@ -19,7 +29,6 @@ export const TaskGantt: React.FC<TaskGanttProps> = forwardRef(
     const horizontalContainerRef = useRef<HTMLDivElement>(null);
     const newBarProps = { ...barProps, svg: ganttSVGRef };
     const { styles } = useStyles();
-
     useEffect(() => {
       if (horizontalContainerRef.current) {
         horizontalContainerRef.current.scrollTop = scrollY;
@@ -31,7 +40,6 @@ export const TaskGantt: React.FC<TaskGanttProps> = forwardRef(
         ref.current.scrollLeft = scrollX;
       }
     }, [scrollX]);
-
     return (
       <div className={styles.ganttverticalcontainer} ref={ref} dir="ltr">
         <svg
@@ -43,23 +51,25 @@ export const TaskGantt: React.FC<TaskGanttProps> = forwardRef(
         >
           <Calendar {...calendarProps} />
         </svg>
-        <div
-          ref={horizontalContainerRef}
-          className={styles.horizontalcontainer}
-          style={ganttHeight ? { maxHeight: ganttHeight, width: gridProps.svgWidth } : { width: gridProps.svgWidth }}
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width={gridProps.svgWidth}
-            height={barProps.rowHeight * (barProps.tasks.length || 3)}
-            fontFamily={barProps.fontFamily}
-            ref={ganttSVGRef}
-            className="ganttBody"
+        <Spin spinning={barProps?.loading}>
+          <div
+            ref={horizontalContainerRef}
+            className={styles.horizontalcontainer}
+            style={ganttHeight ? { maxHeight: ganttHeight, width: gridProps.svgWidth } : { width: gridProps.svgWidth }}
           >
-            <Grid {...gridProps} />
-            <TaskGanttContent {...newBarProps} />
-          </svg>
-        </div>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width={gridProps.svgWidth}
+              height={barProps.rowHeight * barProps.tasks.length || 166}
+              fontFamily={barProps.fontFamily}
+              ref={ganttSVGRef}
+              className="ganttBody"
+            >
+              <Grid {...gridProps} />
+              <TaskGanttContent {...newBarProps} />
+            </svg>
+          </div>
+        </Spin>
       </div>
     );
   },

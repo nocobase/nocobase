@@ -1,8 +1,17 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Page, expect, test } from '@nocobase/test/e2e';
 
 test.describe('page schema settings', () => {
   const showMenu = async (page: Page) => {
-    await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
+    await page.getByLabel('schema-initializer-Grid-page:addBlock').hover();
     await page.getByLabel('designer-schema-settings-Page').hover();
   };
 
@@ -68,7 +77,7 @@ test.describe('tabs schema settings', () => {
   }
 
   async function enablePageTabs(page) {
-    await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
+    await page.getByLabel('schema-initializer-Grid-page:addBlock').hover();
     await page.getByRole('button', { name: 'designer-schema-settings-Page' }).hover();
     await page.getByRole('menuitem', { name: 'Enable page tabs' }).click();
     await page.mouse.move(300, 0);

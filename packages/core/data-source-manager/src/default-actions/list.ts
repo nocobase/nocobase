@@ -1,5 +1,14 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { assign } from '@nocobase/utils';
-import { getRepositoryFromParams, pageArgsToLimitArgs } from './utils';
+import { pageArgsToLimitArgs } from './utils';
 import { Context } from '@nocobase/actions';
 
 function totalPage(total, pageSize): number {
@@ -27,7 +36,7 @@ function findArgs(ctx: Context) {
 async function listWithPagination(ctx: Context) {
   const { page = 1, pageSize = 50 } = ctx.action.params;
 
-  const repository = getRepositoryFromParams(ctx);
+  const repository = ctx.getCurrentRepository();
 
   const options = {
     context: ctx,
@@ -53,7 +62,7 @@ async function listWithPagination(ctx: Context) {
 }
 
 async function listWithNonPaged(ctx: Context) {
-  const repository = getRepositoryFromParams(ctx);
+  const repository = ctx.getCurrentRepository();
 
   const rows = await repository.find({ context: ctx, ...findArgs(ctx) });
 

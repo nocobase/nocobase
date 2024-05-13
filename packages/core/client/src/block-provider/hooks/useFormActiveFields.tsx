@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import React, { createContext, useContext, useMemo, useRef } from 'react';
 
 interface FormActiveFieldsProviderValue {
@@ -15,6 +24,7 @@ interface ProviderProps extends Partial<FormActiveFieldsProviderValue> {
 }
 
 /**
+ * @internal
  * 用于提供获取和更新当前表单区块中已显示出来的字段
  * @param param0
  * @returns

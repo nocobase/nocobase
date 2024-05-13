@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Plugin, createStyles, defaultTheme, useCurrentUserSettingsMenu, useGlobalTheme } from '@nocobase/client';
 import { ConfigProvider } from 'antd';
 import _ from 'lodash';
@@ -75,7 +84,7 @@ const CustomThemeProvider = React.memo((props) => {
 });
 CustomThemeProvider.displayName = 'CustomThemeProvider';
 
-export class ThemeEditorPlugin extends Plugin {
+export class PluginThemeEditorClient extends Plugin {
   async load() {
     this.app.use(CustomThemeProvider);
     this.app.pluginSettingsManager.add(NAMESPACE, {
@@ -87,4 +96,4 @@ export class ThemeEditorPlugin extends Plugin {
   }
 }
 
-export default ThemeEditorPlugin;
+export default PluginThemeEditorClient;

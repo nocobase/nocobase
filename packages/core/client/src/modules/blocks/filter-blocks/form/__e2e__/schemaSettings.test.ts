@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import {
   expect,
   expectSettingsMenu,
@@ -81,7 +90,7 @@ test.describe('actions schema settings', () => {
     await mockPage(oneEmptyFilterFormBlock).goto();
 
     // 创建 Filter & Reset 两个按钮
-    await page.getByLabel('schema-initializer-ActionBar-FilterFormActionInitializers-general').hover();
+    await page.getByLabel('schema-initializer-ActionBar-filterForm:configureActions-general').hover();
     await page.getByRole('menuitem', { name: 'Filter' }).click();
     await page.getByRole('menuitem', { name: 'Reset' }).click();
 

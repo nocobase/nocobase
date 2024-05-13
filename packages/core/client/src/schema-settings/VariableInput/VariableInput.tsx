@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Form } from '@formily/core';
 // @ts-ignore
 import { Schema } from '@formily/json-schema';
@@ -41,10 +50,6 @@ type Props = {
   style?: React.CSSProperties;
   collectionField: CollectionFieldOptions_deprecated;
   contextCollectionName?: string;
-  /**指定当前表单数据表 */
-  currentFormCollectionName?: string;
-  /**指定当前对象数据表 */
-  currentIterationCollectionName?: string;
   /**
    * 根据 `onChange` 的第一个参数，判断是否需要触发 `onChange`
    * @param value `onChange` 的第一个参数
@@ -86,8 +91,6 @@ export const VariableInput = (props: Props) => {
     record,
     returnScope = _.identity,
     targetFieldSchema,
-    currentFormCollectionName,
-    currentIterationCollectionName,
   } = props;
   const { name: blockCollectionName } = useBlockCollection();
   const scope = useVariableScope();
@@ -100,8 +103,6 @@ export const VariableInput = (props: Props) => {
     operator,
     uiSchema,
     targetFieldSchema,
-    currentFormCollectionName,
-    currentIterationCollectionName,
   });
   const contextVariable = useContextAssociationFields({ schema, maxDepth: 2, contextCollectionName, collectionField });
   const { compatOldVariables } = useCompatOldVariables({
@@ -245,7 +246,6 @@ export function useCompatOldVariables(props: {
   });
   const { currentRecordSettings } = useCurrentRecordVariable({
     schema: uiSchema,
-    collectionName: blockCollectionName,
     collectionField,
     noDisabled,
     targetFieldSchema,
@@ -257,7 +257,7 @@ export function useCompatOldVariables(props: {
         return variables;
       }
 
-      variables = _.cloneDeep(variables);
+      variables = [...variables];
 
       const systemVariable: Option = {
         value: '$system',

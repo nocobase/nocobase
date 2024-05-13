@@ -1,11 +1,20 @@
-import { useFormBlockContext } from '@nocobase/client';
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+import { useDetailsBlockContext, useFormBlockContext } from '@nocobase/client';
 import { useReactToPrint } from 'react-to-print';
 
 export const useDetailPrintActionProps = () => {
-  const { formBlockRef } = useFormBlockContext();
-
+  const context = useFormBlockContext();
+  const { formBlockRef } = useDetailsBlockContext();
   const printHandler = useReactToPrint({
-    content: () => formBlockRef.current,
+    content: () => context?.formBlockRef?.current || formBlockRef?.current,
     pageStyle: `@media print {
         * {
           margin: 0;

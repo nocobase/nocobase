@@ -1,13 +1,23 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Plugin } from '@nocobase/client';
-import { AuthProvider } from './AuthProvider';
-import { NAMESPACE } from './locale';
-import { Authenticator } from './settings/Authenticator';
-import { AuthLayout, SignInPage, SignUpPage } from './pages';
-import { ComponentType } from 'react';
 import { Registry } from '@nocobase/utils/client';
+import { ComponentType } from 'react';
 import { presetAuthType } from '../preset';
-import { SignInForm, SignUpForm, Options } from './basic';
+import { AuthProvider } from './AuthProvider';
 import { Authenticator as AuthenticatorType } from './authenticator';
+import { Options, SignInForm, SignUpForm } from './basic';
+import { NAMESPACE } from './locale';
+import { AuthLayout, SignInPage, SignUpPage } from './pages';
+import { Authenticator } from './settings/Authenticator';
+export { AuthenticatorsContextProvider } from './pages/AuthLayout';
 
 export type AuthOptions = {
   components: Partial<{
@@ -18,7 +28,7 @@ export type AuthOptions = {
   }>;
 };
 
-export class AuthPlugin extends Plugin {
+export class PluginAuthClient extends Plugin {
   authTypes = new Registry<AuthOptions>();
 
   registerType(authType: string, options: AuthOptions) {
@@ -63,7 +73,8 @@ export class AuthPlugin extends Plugin {
   }
 }
 
-export default AuthPlugin;
-export { useSignIn } from './basic';
-export { useAuthenticator, AuthenticatorsContext } from './authenticator';
+export { AuthenticatorsContext, useAuthenticator } from './authenticator';
 export type { Authenticator } from './authenticator';
+export { useSignIn } from './basic';
+
+export default PluginAuthClient;

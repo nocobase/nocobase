@@ -1,8 +1,17 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Page, expect, test } from '@nocobase/test/e2e';
 import { createTable } from './utils';
 
 test.describe('where table data selector can be added', () => {
-  test('popup', async ({ page, mockPage, mockRecord }) => {
+  test('popup', async ({ page, mockPage }) => {
     await createTable({ page, mockPage, fieldName: 'manyToOne' });
 
     // 选中一行数据之后，弹窗自动关闭，且数据被填充到关联字段中
@@ -20,7 +29,7 @@ test.describe('configure actions', () => {
     await createTable({ page, mockPage, fieldName: 'manyToOne' });
 
     // add buttons
-    await page.getByLabel('schema-initializer-ActionBar-TableActionInitializers-users').hover();
+    await page.getByLabel('schema-initializer-ActionBar-table:configureActions-users').hover();
     await page.getByRole('menuitem', { name: 'Filter' }).click();
     await page.getByRole('menuitem', { name: 'Add new' }).click();
     await page.getByRole('menuitem', { name: 'Delete' }).click();
@@ -38,7 +47,7 @@ test.describe('configure actions', () => {
     await expect(page.getByRole('button', { name: 'Refresh' })).toBeVisible();
 
     // delete buttons
-    await page.getByLabel('schema-initializer-ActionBar-TableActionInitializers-users').hover();
+    await page.getByLabel('schema-initializer-ActionBar-table:configureActions-users').hover();
     await page.getByRole('menuitem', { name: 'Filter' }).click();
     await page.getByRole('menuitem', { name: 'Add new' }).click();
     await page.getByRole('menuitem', { name: 'Delete' }).click();
@@ -59,7 +68,7 @@ test.describe('configure actions', () => {
   test('customize: bulk update', async ({ page, mockPage }) => {
     await createTable({ page, mockPage, fieldName: 'manyToOne' });
 
-    await page.getByLabel('schema-initializer-ActionBar-TableActionInitializers-users').hover();
+    await page.getByLabel('schema-initializer-ActionBar-table:configureActions-users').hover();
     await page.getByRole('menuitem', { name: 'Customize' }).hover();
     await page.getByRole('menuitem', { name: 'Bulk update' }).click();
 
@@ -99,6 +108,6 @@ test.describe('configure actions column', () => {
 });
 
 async function createActionColumn(page: Page) {
-  await page.getByLabel('schema-initializer-TableV2.Selector-TableColumnInitializers-users').hover();
+  await page.getByLabel('schema-initializer-TableV2.Selector-table:configureColumns-users').hover();
   await page.getByRole('menuitem', { name: 'Action column' }).click();
 }

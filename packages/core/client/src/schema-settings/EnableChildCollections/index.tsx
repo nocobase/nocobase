@@ -1,13 +1,24 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { observer, useForm } from '@formily/react';
 import { action } from '@formily/reactive';
 import React from 'react';
 import { useCollectionManager_deprecated } from '../../collection-manager';
-import { SchemaComponent, useCompile } from '../../schema-component';
+import { SchemaComponent, useCompile, useProps } from '../../schema-component';
+import { withDynamicSchemaProps } from '../../application/hoc/withDynamicSchemaProps';
 
-export const EnableChildCollections = observer(
-  (props: any) => {
-    const { useProps } = props;
-    const { defaultValues, collectionName } = useProps();
+export const EnableChildCollections = withDynamicSchemaProps(
+  observer((props: any) => {
+    // 新版 UISchema（1.0 之后）中已经废弃了 useProps，这里之所以继续保留是为了兼容旧版的 UISchema
+    const { defaultValues, collectionName } = useProps(props);
+
     const form = useForm();
     const compile = useCompile();
     const { getChildrenCollections } = useCollectionManager_deprecated();
@@ -105,6 +116,6 @@ export const EnableChildCollections = observer(
         scope={{ useAsyncDataSource, loadData }}
       />
     );
-  },
+  }),
   { displayName: 'EnableChildCollections' },
 );

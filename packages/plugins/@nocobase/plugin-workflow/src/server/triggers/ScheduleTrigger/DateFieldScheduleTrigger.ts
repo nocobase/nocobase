@@ -1,8 +1,18 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { fn, literal, Op, Transactionable, where } from '@nocobase/database';
 import parser from 'cron-parser';
 import type Plugin from '../../Plugin';
 import type { WorkflowModel } from '../../types';
 import { parseDateWithoutMs, SCHEDULE_MODE } from './utils';
+import { parseCollectionName } from '@nocobase/data-source-manager';
 
 export type ScheduleOnField = {
   field: string;
@@ -282,8 +292,11 @@ export default class ScheduleTrigger {
   }
 
   schedule(workflow: WorkflowModel, record, nextTime, toggle = true, options = {}) {
-    const { model } = this.workflow.app.db.getCollection(workflow.config.collection);
-    const recordPk = record.get(model.primaryKeyAttribute);
+    const [dataSourceName, collectionName] = parseCollectionName(workflow.config.collection);
+    const { filterTargetKey } = this.workflow.app.dataSourceManager.dataSources
+      .get(dataSourceName)
+      .collectionManager.getCollection(collectionName);
+    const recordPk = record.get(filterTargetKey);
     if (toggle) {
       const nextInterval = Math.max(0, nextTime - Date.now());
       const key = `${workflow.id}:${recordPk}@${nextTime}`;
@@ -306,19 +319,28 @@ export default class ScheduleTrigger {
   }
 
   async trigger(workflow: WorkflowModel, record, nextTime, { transaction }: Transactionable = {}) {
-    const { repository, model } = this.workflow.app.db.getCollection(workflow.config.collection);
-    const recordPk = record.get(model.primaryKeyAttribute);
+    const [dataSourceName, collectionName] = parseCollectionName(workflow.config.collection);
+    const { repository, filterTargetKey } = this.workflow.app.dataSourceManager.dataSources
+      .get(dataSourceName)
+      .collectionManager.getCollection(collectionName);
+    const recordPk = record.get(filterTargetKey);
     const data = await repository.findOne({
       filterByTk: recordPk,
       appends: workflow.config.appends,
       transaction,
     });
-    const key = `${workflow.id}:${recordPk}@${nextTime}`;
-    this.cache.delete(key);
-    this.workflow.trigger(workflow, {
-      data: data.toJSON(),
-      date: new Date(nextTime),
-    });
+    const eventKey = `${workflow.id}:${recordPk}@${nextTime}`;
+    this.cache.delete(eventKey);
+    this.workflow.trigger(
+      workflow,
+      {
+        data: data.toJSON(),
+        date: new Date(nextTime),
+      },
+      {
+        eventKey,
+      },
+    );
 
     if (!workflow.config.repeat || (workflow.config.limit && workflow.allExecuted >= workflow.config.limit - 1)) {
       return;
@@ -334,7 +356,9 @@ export default class ScheduleTrigger {
     this.inspect([workflow]);
 
     const { collection } = workflow.config;
-    const event = `${collection}.afterSaveWithAssociations`;
+    const [dataSourceName, collectionName] = parseCollectionName(collection);
+    const event = `${collectionName}.afterSaveWithAssociations`;
+    const eventKey = `${collection}.afterSaveWithAssociations`;
     const name = getHookId(workflow, event);
     if (this.events.has(name)) {
       return;
@@ -346,7 +370,8 @@ export default class ScheduleTrigger {
     };
 
     this.events.set(name, listener);
-    this.workflow.app.db.on(event, listener);
+    // @ts-ignore
+    this.workflow.app.dataSourceManager.dataSources.get(dataSourceName).collectionManager.db.on(event, listener);
   }
 
   off(workflow: WorkflowModel) {
@@ -358,12 +383,16 @@ export default class ScheduleTrigger {
     }
 
     const { collection } = workflow.config;
-    const event = `${collection}.afterSave`;
+    const [dataSourceName, collectionName] = parseCollectionName(collection);
+    const event = `${collectionName}.afterSaveWithAssociations`;
+    const eventKey = `${collection}.afterSaveWithAssociations`;
     const name = getHookId(workflow, event);
-    if (this.events.has(name)) {
+    if (this.events.has(eventKey)) {
       const listener = this.events.get(name);
-      this.events.delete(name);
-      this.workflow.app.db.off(event, listener);
+      // @ts-ignore
+      const { db } = this.workflow.app.dataSourceManager.dataSources.get(dataSourceName).collectionManager;
+      db.off(event, listener);
+      this.events.delete(eventKey);
     }
   }
 }
