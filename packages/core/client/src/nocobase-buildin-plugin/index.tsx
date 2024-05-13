@@ -10,7 +10,6 @@
 import { DisconnectOutlined, LoadingOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { observer } from '@formily/reactive-react';
-import { getSubAppName } from '@nocobase/sdk';
 import { Button, Modal, Result, Spin } from 'antd';
 import React, { FC } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
@@ -45,7 +44,7 @@ const useErrorProps = (app: Application, error: any) => {
     return {};
   }
   const err = error?.response?.data?.errors?.[0] || error;
-  const subApp = getSubAppName(app.getPublicPath());
+  const subApp = app.getName();
   switch (err.code) {
     case 'USER_HAS_NO_ROLES_ERR':
       return {

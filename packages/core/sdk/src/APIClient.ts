@@ -9,7 +9,6 @@
 
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosRequestHeaders, AxiosResponse } from 'axios';
 import qs from 'qs';
-import getSubAppName from './getSubAppName';
 
 export interface ActionParams {
   filterByTk?: any;
@@ -57,7 +56,10 @@ export class Auth {
     if (typeof window === 'undefined') {
       return;
     }
-    const appName = getSubAppName(this.api['app'] ? this.api['app'].getPublicPath() : '/');
+    if (!this.api['app']) {
+      return;
+    }
+    const appName = this.api['app'].getName();
     if (!appName) {
       return;
     }

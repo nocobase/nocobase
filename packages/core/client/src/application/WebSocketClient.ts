@@ -8,7 +8,6 @@
  */
 
 import { define, observable } from '@formily/reactive';
-import { getSubAppName } from '@nocobase/sdk';
 import { Application } from './Application';
 
 export type WebSocketClientOptions = {
@@ -54,7 +53,7 @@ export class WebSocketClient {
     if (!apiBaseURL) {
       return;
     }
-    const subApp = getSubAppName(this.app.getPublicPath());
+    const subApp = this.app.getName();
     const queryString = subApp ? `?__appName=${subApp}` : '';
     const wsPath = this.options.basename || '/ws';
     if (this.options.url) {
