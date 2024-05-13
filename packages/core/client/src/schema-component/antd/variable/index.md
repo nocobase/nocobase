@@ -31,7 +31,7 @@ import type { DefaultOptionType } from 'antd/lib/cascader';
 
 ## `Variable.TextArea`
 
-显示变量名称
+选中时显示变量名称
 
 ```ts
 import type { DefaultOptionType } from 'antd/lib/cascader';
@@ -52,6 +52,8 @@ import type { DefaultOptionType } from 'antd/lib/cascader';
 <code src="./demos/demo2.tsx"></code>
 
 ## `Variable.RawTextArea`
+
+选中时显示变量的值
 
 ```ts
 import type { DefaultOptionType } from 'antd/lib/cascader';

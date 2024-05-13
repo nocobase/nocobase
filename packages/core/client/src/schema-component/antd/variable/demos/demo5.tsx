@@ -12,7 +12,7 @@ const schema = {
   properties: {
     input: {
       type: 'string',
-      title: `纯文本，显示具体值`,
+      title: `显示具体值`,
       'x-decorator': 'FormItem',
       'x-component': 'Variable.RawTextArea',
       'x-component-props': {
