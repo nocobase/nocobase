@@ -9,9 +9,9 @@
 
 import React, { useRef, useState } from 'react';
 import { css } from '@emotion/css';
-import { Button, Input } from 'antd';
+import { Button, Input, CascaderProps } from 'antd';
 import { cloneDeep } from 'lodash';
-
+import type { DefaultOptionType } from 'antd/lib/cascader';
 import { VariableSelect } from './VariableSelect';
 
 // NOTE: https://stackoverflow.com/questions/23892547/what-is-the-best-way-to-trigger-onchange-event-in-react-js/46012210#46012210
@@ -24,8 +24,18 @@ function setNativeInputValue(input, value) {
     }),
   );
 }
-
-export function RawTextArea(props): JSX.Element {
+export type VariableRawTextAreaProps = {
+  value?: string;
+  scope?: Partial<DefaultOptionType>[] | (() => Partial<DefaultOptionType>[]);
+  onChange: (value: string, optionPath?: any[]) => void;
+  changeOnSelect?: boolean;
+  disabled?: boolean;
+  style?: React.CSSProperties;
+  buttonClass?: string;
+  component: any;
+  fieldNames?: CascaderProps['fieldNames'];
+};
+export function RawTextArea(props: VariableRawTextAreaProps): JSX.Element {
   const inputRef = useRef<any>(null);
   const { changeOnSelect, component: Component = Input.TextArea, ...others } = props;
   const scope = typeof props.scope === 'function' ? props.scope() : props.scope;

@@ -212,7 +212,6 @@ export type VariableTextAreaProps = {
   value?: string;
   scope?: Partial<DefaultOptionType>[] | (() => Partial<DefaultOptionType>[]);
   onChange: (value: string, optionPath?: any[]) => void;
-  children?: any;
   changeOnSelect?: boolean;
   disabled?: boolean;
   style?: React.CSSProperties;

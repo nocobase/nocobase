@@ -25,17 +25,21 @@ import type { DefaultOptionType } from 'antd/lib/cascader';
 
 ### 自定义编辑组件
 
-自定义传入children
+自定义常量编辑器为日期选择器
 
 <code src="./demos/demo4.tsx"></code>
 
 ## `Variable.TextArea`
+
+显示变量名称
+
 ```ts
-export type VariableTextAreaProps = {
+import type { DefaultOptionType } from 'antd/lib/cascader';
+
+ type VariableTextAreaProps = {
   value?: string;
   scope?: Partial<DefaultOptionType>[] | (() => Partial<DefaultOptionType>[]);
   onChange: (value: string, optionPath?: any[]) => void;
-  children?: any;
   changeOnSelect?: boolean;
   disabled?: boolean;
   style?: React.CSSProperties;
@@ -46,6 +50,25 @@ export type VariableTextAreaProps = {
 ```
 
 <code src="./demos/demo2.tsx"></code>
+
+## `Variable.RawTextArea`
+
+```ts
+import type { DefaultOptionType } from 'antd/lib/cascader';
+type VariableRawTextAreaProps = {
+  value?: string;
+  scope?: Partial<DefaultOptionType>[] | (() => Partial<DefaultOptionType>[]);
+  onChange: (value: string, optionPath?: any[]) => void;
+  changeOnSelect?: boolean;
+  disabled?: boolean;
+  style?: React.CSSProperties;
+  buttonClass?: string;
+  component: any;
+  fieldNames?: CascaderProps['fieldNames'];
+};
+
+```
+<code src="./demos/demo5.tsx"></code>
 
 ## `Variable.JSON`
 
