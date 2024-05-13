@@ -8,7 +8,7 @@
  */
 
 import { Database, mockDatabase } from '@nocobase/database';
-import { SQLModel } from '../../sql-collection/sql-model';
+import { SQLModel } from '../sql-collection';
 
 describe('infer fields', () => {
   let db: Database;
@@ -51,7 +51,7 @@ describe('infer fields', () => {
   });
 
   it('should infer for select *', async () => {
-    const model = class extends SQLModel { };
+    const model = class extends SQLModel {};
     model.init(null, {
       modelName: 'users',
       tableName: 'users',
@@ -66,7 +66,7 @@ describe('infer fields', () => {
   });
 
   it('should infer fields', async () => {
-    const model = class extends SQLModel { };
+    const model = class extends SQLModel {};
     model.init(null, {
       modelName: 'roles_users',
       tableName: 'roles_users',
@@ -85,7 +85,7 @@ left join roles r on ru.role_name=r.name`;
   });
 
   it('should infer fields for with statement', async () => {
-    const model = class extends SQLModel { };
+    const model = class extends SQLModel {};
     model.init(null, {
       modelName: 'test',
       tableName: 'test',

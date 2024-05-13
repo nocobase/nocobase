@@ -292,11 +292,6 @@ export class PluginDataSourceMainServer extends Plugin {
       name: `pm.data-source-manager.collection-view `,
       actions: ['dbViews:*'],
     });
-
-    this.app.acl.registerSnippet({
-      name: `pm.data-source-manager.collection-sql `,
-      actions: ['sqlCollection:*'],
-    });
   }
 
   async load() {

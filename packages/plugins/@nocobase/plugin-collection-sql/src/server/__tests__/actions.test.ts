@@ -7,7 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Database, SQLModel } from '@nocobase/database';
+import { Database } from '@nocobase/database';
+import { SQLModel } from '../sql-collection';
 import { MockServer, createMockServer } from '@nocobase/test';
 
 describe('sql collection', () => {

@@ -8,7 +8,7 @@
   "dependencies": {
     "@nocobase/logger": "1.0.0-alpha.12",
     "@nocobase/utils": "1.0.0-alpha.12",
-    "node-sql-parser": "^4.18.0",
+    "node-sql-parser": "^5.1.0",
     "async-mutex": "^0.3.2",
     "chalk": "^4.1.1",
     "cron-parser": "4.4.0",

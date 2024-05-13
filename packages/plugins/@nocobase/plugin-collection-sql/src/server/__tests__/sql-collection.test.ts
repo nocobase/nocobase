@@ -8,7 +8,7 @@
  */
 
 import { mockDatabase } from '@nocobase/database';
-import { SqlCollection } from '../../sql-collection';
+import { SqlCollection } from '../sql-collection';
 
 test('sql-collection', async () => {
   const db = mockDatabase({ tablePrefix: '' });
