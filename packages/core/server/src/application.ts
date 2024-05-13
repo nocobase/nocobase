@@ -53,11 +53,11 @@ import { ApplicationVersion } from './helpers/application-version';
 import { Locale } from './locale';
 import { Plugin } from './plugin';
 import { InstallOptions, PluginManager } from './plugin-manager';
-
 import { DataSourceManager, SequelizeDataSource } from '@nocobase/data-source-manager';
 import packageJson from '../package.json';
 import { MainDataSource } from './main-data-source';
 import validateFilterParams from './middlewares/validate-filter-params';
+import path from 'path';
 
 export type PluginType = string | typeof Plugin;
 export type PluginConfiguration = PluginType | [PluginType, any];
@@ -999,7 +999,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     const { dirname } = options;
     return createLogger({
       ...options,
-      dirname: getLoggerFilePath(this.name || 'main', dirname || ''),
+      dirname: getLoggerFilePath(path.join(this.name || 'main', dirname || '')),
     });
   }
 
