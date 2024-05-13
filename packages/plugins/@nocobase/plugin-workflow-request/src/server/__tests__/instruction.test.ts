@@ -22,12 +22,6 @@ import { RequestConfig } from '../RequestInstruction';
 
 const HOST = 'localhost';
 
-function getRandomPort() {
-  const minPort = 1024;
-  const maxPort = 49151;
-  return Math.floor(Math.random() * (maxPort - minPort + 1)) + minPort;
-}
-
 class MockAPI {
   app: Koa;
   server: Server;
@@ -37,6 +31,9 @@ class MockAPI {
   }
   get URL_400() {
     return `http://${HOST}:${this.port}/api/400`;
+  }
+  get URL_404() {
+    return `http://${HOST}:${this.port}/api/404`;
   }
   get URL_TIMEOUT() {
     return `http://${HOST}:${this.port}/api/timeout`;
@@ -408,11 +405,16 @@ describe('workflow > instructions > request', () => {
   });
 
   describe('sync request', () => {
-    it('sync trigger', async () => {
-      const syncFlow = await WorkflowModel.create({
+    let syncFlow;
+
+    beforeEach(async () => {
+      syncFlow = await WorkflowModel.create({
         type: 'syncTrigger',
         enabled: true,
       });
+    });
+
+    it('sync trigger', async () => {
       await syncFlow.createNode({
         type: 'request',
         config: {
@@ -431,6 +433,27 @@ describe('workflow > instructions > request', () => {
       const [job] = await execution.getJobs();
       expect(job.status).toEqual(JOB_STATUS.RESOLVED);
       expect(job.result).toEqual({ meta: {}, data: {} });
+    });
+
+    it('ignoreFail', async () => {
+      await syncFlow.createNode({
+        type: 'request',
+        config: {
+          url: api.URL_404,
+          method: 'GET',
+          ignoreFail: true,
+        } as RequestConfig,
+      });
+
+      const workflowPlugin = app.pm.get(PluginWorkflow) as PluginWorkflow;
+      const processor = (await workflowPlugin.trigger(syncFlow, { data: { title: 't1' } })) as Processor;
+
+      await sleep(1000);
+
+      const [execution] = await syncFlow.getExecutions();
+      const [job] = await execution.getJobs();
+      expect(job.status).toBe(JOB_STATUS.RESOLVED);
+      expect(job.result.status).toBe(404);
     });
   });
 });
