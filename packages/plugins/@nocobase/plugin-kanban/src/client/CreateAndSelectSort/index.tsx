@@ -38,7 +38,7 @@ export const CreateAndSelectSort = (props) => {
   });
   const ScopekeyDescription = ({ scopeKey }) => {
     const field = scopeKey && collectionFields.find((v) => v.name === scopeKey);
-    const result = scopeKey && compile(field['uiSchema']?.['title']);
+    const result = scopeKey && compile(field?.['uiSchema']?.['title']);
     return (
       <span style={{ color: 'rgba(0, 0, 0, 0.25)' }}>
         (
