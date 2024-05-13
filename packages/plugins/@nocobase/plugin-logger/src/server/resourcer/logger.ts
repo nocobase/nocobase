@@ -46,7 +46,7 @@ export default {
   name: 'logger',
   actions: {
     list: async (ctx: Context, next: Next) => {
-      const path = getLoggerFilePath();
+      const path = getLoggerFilePath(ctx.app.name || 'main');
       const readDir = async (path: string) => {
         const fileTree = [];
         try {
