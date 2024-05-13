@@ -448,8 +448,6 @@ describe('workflow > instructions > request', () => {
       const workflowPlugin = app.pm.get(PluginWorkflow) as PluginWorkflow;
       const processor = (await workflowPlugin.trigger(syncFlow, { data: { title: 't1' } })) as Processor;
 
-      await sleep(1000);
-
       const [execution] = await syncFlow.getExecutions();
       const [job] = await execution.getJobs();
       expect(job.status).toBe(JOB_STATUS.RESOLVED);
