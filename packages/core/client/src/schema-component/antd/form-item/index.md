@@ -28,3 +28,9 @@ Title的默认值为当前表单Number的实时输入的值。
 日期默认值为「当前时间」
 
 <code src="./demos/new-demos/demo2.tsx"></code>
+
+- 默认值为当前对象值（适用于子表格/子表单中）
+
+每一个行中title的默认值为当前行的number值
+
+<code src="./demos/new-demos/demo3.tsx"></code>
