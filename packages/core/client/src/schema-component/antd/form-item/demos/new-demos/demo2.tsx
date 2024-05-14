@@ -23,7 +23,7 @@ const collection = {
         type: 'string',
         'x-component': 'DatePicker',
         required: true,
-        description: 'The default value is the current time',
+        description: 'The default value is current time',
         'x-component-props': {
           showTime: true,
         },
