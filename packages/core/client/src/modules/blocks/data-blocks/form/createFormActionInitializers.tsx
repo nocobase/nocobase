@@ -22,11 +22,6 @@ const commonOptions = {
       },
     },
     {
-      name: 'saveRecord',
-      title: '{{t("Save record")}}',
-      Component: 'SaveRecordActionInitializer',
-    },
-    {
       name: 'customRequest',
       title: '{{t("Custom request")}}',
       Component: 'CustomRequestInitializer',
