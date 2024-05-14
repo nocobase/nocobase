@@ -10,3 +10,11 @@ type FormItemProps = IFormItemProps
 ## Example
 
 <code src="./demos/new-demos/basic.tsx"></code>
+
+## 字段默认值
+
+### 常量
+<code src="./demos/new-demos/demo.tsx"></code>
+
+### 变量
+<code src="./demos/new-demos/demo1.tsx"></code>

@@ -89,7 +89,6 @@ const useParseDefaultValue = () => {
         const value = transformVariableValue(await variables.parseVariable(fieldSchema.default, localVariables), {
           targetCollectionField: collectionField,
         });
-
         if (value == null || value === '') {
           // fix https://nocobase.height.app/T-2805
           field.setInitialValue(null);
@@ -131,12 +130,13 @@ const useParseDefaultValue = () => {
           const obj = { [variableName]: variable?.ctx || {} };
           const path = getPath(fieldSchema.default);
           const value = getValuesByPath(obj, path);
+          console.log(value);
           // fix https://nocobase.height.app/T-2212
           if (value === undefined) {
             // 返回一个随机值，确保能触发 run 函数
             return Math.random();
           }
-
+          console.log(88989);
           return value;
         },
         () => run({ forceUpdate: true }),

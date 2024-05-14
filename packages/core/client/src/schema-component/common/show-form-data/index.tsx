@@ -16,7 +16,6 @@ import { observer, useForm } from '@formily/react';
  */
 export const ShowFormData = observer(({ children }) => {
   const form = useForm();
-  console.log(form);
   return (
     <>
       {
