@@ -90,8 +90,6 @@ export const FormBlockInitializer = ({
 
 export const useCreateFormBlock = () => {
   const { insert } = useSchemaInitializer();
-  const itemConfig = useSchemaInitializerItem();
-  const { isCusomeizeCreate: isCustomizeCreate } = itemConfig;
 
   const createFormBlock = useCallback(
     ({ item }) => {
@@ -99,28 +97,23 @@ export const useCreateFormBlock = () => {
         createCreateFormBlockUISchema({
           collectionName: item.collectionName || item.name,
           dataSource: item.dataSource,
-          isCusomeizeCreate: isCustomizeCreate,
         }),
       );
     },
-    [insert, isCustomizeCreate],
+    [insert],
   );
 
-  const templateWrap = useCallback(
-    (templateSchema, { item }) => {
-      const schema = createCreateFormBlockUISchema({
-        isCusomeizeCreate: isCustomizeCreate,
-        dataSource: item.dataSource,
-        templateSchema: templateSchema,
-        collectionName: item.name,
-      });
-      if (item.template && item.mode === 'reference') {
-        schema['x-template-key'] = item.template.key;
-      }
-      return schema;
-    },
-    [isCustomizeCreate],
-  );
+  const templateWrap = useCallback((templateSchema, { item }) => {
+    const schema = createCreateFormBlockUISchema({
+      dataSource: item.dataSource,
+      templateSchema: templateSchema,
+      collectionName: item.name,
+    });
+    if (item.template && item.mode === 'reference') {
+      schema['x-template-key'] = item.template.key;
+    }
+    return schema;
+  }, []);
 
   return {
     createFormBlock,

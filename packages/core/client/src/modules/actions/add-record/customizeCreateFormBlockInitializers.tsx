@@ -24,7 +24,6 @@ const commonOptions = {
           name: 'form',
           title: '{{t("Form")}}',
           Component: 'FormBlockInitializer',
-          isCusomeizeCreate: true,
         },
       ],
     },

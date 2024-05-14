@@ -127,7 +127,7 @@ export const useIsDetailBlock = () => {
 export const FormBlockProvider = withDynamicSchemaProps((props) => {
   const record = useRecord();
   const parentRecordData = useCollectionParentRecordData();
-  const { collection, isCusomeizeCreate, parentRecord } = props;
+  const { collection, parentRecord } = props;
   const { __collection } = record;
   const currentCollection = useCollection_deprecated();
   const { designable } = useDesignable();
@@ -143,7 +143,7 @@ export const FormBlockProvider = withDynamicSchemaProps((props) => {
     (currentCollection.name === (collection?.name || collection) && !isDetailBlock) ||
     !currentCollection.name ||
     !collection;
-  if (!detailFlag && !createFlag && !isCusomeizeCreate) {
+  if (!detailFlag && !createFlag) {
     return null;
   }
 

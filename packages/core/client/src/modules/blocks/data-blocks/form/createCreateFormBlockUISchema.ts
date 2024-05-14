@@ -16,7 +16,6 @@ export interface CreateFormBlockUISchemaOptions {
   collectionName?: string;
   association?: string;
   templateSchema?: ISchema;
-  isCusomeizeCreate?: boolean;
 }
 
 /**
@@ -24,7 +23,7 @@ export interface CreateFormBlockUISchemaOptions {
  * @returns
  */
 export function createCreateFormBlockUISchema(options: CreateFormBlockUISchemaOptions): ISchema {
-  const { collectionName, association, dataSource, templateSchema, isCusomeizeCreate } = options;
+  const { collectionName, association, dataSource, templateSchema } = options;
   const resourceName = association || collectionName;
 
   if (!dataSource) {
@@ -43,7 +42,6 @@ export function createCreateFormBlockUISchema(options: CreateFormBlockUISchemaOp
       dataSource,
       collection: collectionName,
       association,
-      isCusomeizeCreate,
     },
     'x-toolbar': 'BlockSchemaToolbar',
     'x-settings': 'blockSettings:createForm',
