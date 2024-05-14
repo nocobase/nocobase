@@ -25,6 +25,8 @@ export const FormBlockInitializer = ({
   showAssociationFields,
   hideChildrenIfSingleCollection,
   hideOtherRecordsInPopup,
+  currentText,
+  otherText,
 }: {
   filterCollections: (options: { collection?: Collection; associationField?: CollectionFieldOptions }) => boolean;
   onlyCurrentDataSource: boolean;
@@ -48,6 +50,10 @@ export const FormBlockInitializer = ({
    * 隐藏弹窗中的 Other records 选项
    */
   hideOtherRecordsInPopup?: boolean;
+  /** 用于更改 Current record 的文案 */
+  currentText?: string;
+  /** 用于更改 Other records 的文案 */
+  otherText?: string;
 }) => {
   const itemConfig = useSchemaInitializerItem();
   const { createFormBlock, templateWrap } = useCreateFormBlock();
@@ -85,6 +91,8 @@ export const FormBlockInitializer = ({
       showAssociationFields={showAssociationFields}
       hideChildrenIfSingleCollection={hideChildrenIfSingleCollection}
       hideOtherRecordsInPopup={hideOtherRecordsInPopup}
+      currentText={currentText}
+      otherText={otherText}
     />
   );
 };

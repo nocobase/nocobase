@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { useTranslation } from 'react-i18next';
 import { CompatibleSchemaInitializer } from '../../../application/schema-initializer/CompatibleSchemaInitializer';
 import { useCollection } from '../../../data-source/collection/CollectionProvider';
 import { gridRowColWrap } from '../../../schema-initializer/utils';
@@ -22,6 +23,7 @@ const commonOptions = {
       name: 'dataBlocks',
       useChildren() {
         const currentCollection = useCollection();
+        const { t } = useTranslation();
 
         return [
           {
@@ -30,21 +32,21 @@ const commonOptions = {
             Component: 'FormBlockInitializer',
             collectionName: currentCollection.name,
             dataSource: currentCollection.dataSource,
-            useComponentProps: () => {
-              return {
-                filterCollections({ collection, associationField }) {
-                  if (associationField) {
-                    return false;
-                  }
-                  if (collection.name === currentCollection.name) {
-                    return true;
-                  }
-                },
-                showAssociationFields: true,
-                onlyCurrentDataSource: true,
-                hideSearch: true,
-                componentType: 'FormItem',
-              };
+            componentProps: {
+              filterCollections({ collection, associationField }) {
+                if (associationField) {
+                  return false;
+                }
+                if (collection.name === currentCollection.name) {
+                  return true;
+                }
+              },
+              showAssociationFields: true,
+              onlyCurrentDataSource: true,
+              hideSearch: true,
+              componentType: 'FormItem',
+              currentText: t('Current collection'),
+              otherText: t('Other collections'),
             },
           },
         ];
