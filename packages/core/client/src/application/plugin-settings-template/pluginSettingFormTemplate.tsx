@@ -9,19 +9,18 @@
 
 import { createForm } from '@formily/core';
 import { ISchema } from '@formily/json-schema';
-import { useEffect, useMemo } from 'react';
+import React, { FC, useEffect, useMemo } from 'react';
 import { useForm } from '@formily/react';
 import { useTranslation } from 'react-i18next';
-import { App as AntdApp } from 'antd';
-
-import { useAPIClient, useRequest } from '../../../api-client/hooks';
-import { SchemaComponent } from '../../../schema-component';
-import React from 'react';
+import { App as AntdApp, Card } from 'antd';
 import { uid } from '@formily/shared';
 
-export function usePluginSettingData(packageName: string) {
+import { useAPIClient, useRequest } from '../../api-client';
+import { SchemaComponent } from '../../schema-component';
+
+export function usePluginSettingData<T = {}>(packageName: string) {
   const apiClient = useAPIClient();
-  const { data, loading, ...reset } = useRequest<any>(() =>
+  const { data, loading, ...reset } = useRequest<{ data: { data: { options: T } } }>(() =>
     apiClient.request({
       url: 'applicationPlugins:get',
       method: 'GET',
@@ -33,7 +32,7 @@ export function usePluginSettingData(packageName: string) {
     }),
   );
 
-  const dataValue = useMemo(() => data?.data?.data?.options || {}, [data]);
+  const dataValue = useMemo(() => data?.data?.data?.options, [data]);
 
   return {
     loading,
@@ -42,13 +41,13 @@ export function usePluginSettingData(packageName: string) {
   };
 }
 
-export function useUpdatePluginSettingData(packageName: string, onSuccess?: (values?: any) => void) {
+export function useUpdatePluginSettingData<T = {}>(packageName: string) {
   const apiClient = useAPIClient();
   const { t } = useTranslation(packageName, { nsMode: 'fallback' });
   const { message } = AntdApp.useApp();
 
   return useRequest(
-    (values) =>
+    (values: T) =>
       apiClient.request({
         url: 'applicationPlugins:update',
         method: 'post',
@@ -65,37 +64,45 @@ export function useUpdatePluginSettingData(packageName: string, onSuccess?: (val
       manual: true,
       onSuccess() {
         message.success(t('Saved successfully'));
-        onSuccess && onSuccess();
       },
     },
   );
 }
 
+const useDefaultInitialValues = () => undefined;
+
 export interface CreatePluginSettingFormOptions<T = {}> {
   packageName: string;
   fields: ISchema['properties'];
   initialValues?: T;
+  useInitialValues?: () => T;
   processValues?: (values: T) => T;
   onUpdateSuccess?: (values: T) => void;
   onGetSuccess?: (values: T) => void;
+  /**
+   * if `initialValues` is not provided, `showResetButton` will be set to false, otherwise true
+   */
+  showResetButton?: boolean;
 }
 
 export function createPluginSettingForm<T = {}>(options: CreatePluginSettingFormOptions<T>) {
   const {
     fields,
     initialValues,
+    useInitialValues = useDefaultInitialValues,
     onGetSuccess,
     onUpdateSuccess,
-    processValues = (values) => values,
+    processValues = (values: T) => values,
     packageName,
+    showResetButton,
   } = options;
   const useCustomFormProps = () => {
-    const { data, loading } = usePluginSettingData(packageName);
-
+    const { data, loading } = usePluginSettingData<T>(packageName);
+    const hookInitialValues = useInitialValues();
     const form = useMemo(
       () =>
         createForm({
-          initialValues,
+          initialValues: hookInitialValues || initialValues,
         }),
       [initialValues],
     );
@@ -124,7 +131,7 @@ export function createPluginSettingForm<T = {}>(options: CreatePluginSettingForm
 
   const useSubmitActionProps = () => {
     const form = useForm();
-    const { runAsync, loading } = useUpdatePluginSettingData(packageName, onUpdateSuccess);
+    const { runAsync, loading } = useUpdatePluginSettingData(packageName);
     return {
       type: 'primary',
       loading,
@@ -156,20 +163,23 @@ export function createPluginSettingForm<T = {}>(options: CreatePluginSettingForm
             'x-component': 'Action',
             'x-use-component-props': useSubmitActionProps,
           },
-          reset: {
-            title: '{{t("Reset")}}',
-            'x-component': 'Action',
-            'x-use-component-props': useResetActionProps,
-          },
+          reset: (showResetButton !== undefined ? showResetButton : !!initialValues)
+            ? {
+                title: '{{t("Reset")}}',
+                'x-component': 'Action',
+                'x-use-component-props': useResetActionProps,
+              }
+            : undefined,
         },
       },
     },
   };
 
-  const render = () => <SchemaComponent schema={schema} />;
+  const PluginSettingFormComponent: FC = () => (
+    <Card bordered={false}>
+      <SchemaComponent schema={schema} />
+    </Card>
+  );
 
-  return {
-    schema,
-    render,
-  };
+  return PluginSettingFormComponent;
 }

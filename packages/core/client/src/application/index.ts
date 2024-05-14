@@ -20,3 +20,4 @@ export * from './PluginSettingsManager';
 export * from './hoc';
 export { ApplicationContext } from './context';
 export * from './globalType';
+export * from './plugin-settings-template';
