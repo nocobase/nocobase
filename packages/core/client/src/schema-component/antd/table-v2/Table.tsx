@@ -157,16 +157,17 @@ const useTableColumns = (props: { showDel?: boolean; isSubTable?: boolean }) => 
     if (!exists) {
       return columns;
     }
-    const res = [...columns];
-    if (designable) {
-      res.push({
+    const res = [
+      ...columns,
+      {
         title: render(),
         dataIndex: 'TABLE_COLUMN_INITIALIZER',
         key: 'TABLE_COLUMN_INITIALIZER',
-        render: () => <div style={{ minWidth: 180 }} />,
-        fixed: 'right',
-      });
-    }
+        render: designable ? () => <div style={{ minWidth: 180 }} /> : null,
+        fixed: designable ? 'right' : 'none',
+      },
+    ];
+
     if (props.showDel) {
       res.push({
         title: '',
