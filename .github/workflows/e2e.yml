@@ -12,12 +12,14 @@ on:
     paths:
       - '.github/workflows/e2e.yml'
       - 'packages/**'
+      - '**/yarn.lock'
   pull_request:
     branches:
       - '**'
     paths:
       - '.github/workflows/e2e.yml'
       - 'packages/**'
+      - '**/yarn.lock'
 
 jobs:
   build:
