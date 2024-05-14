@@ -9,9 +9,9 @@
 
 import { dayjsable, formatDayjsValue } from '@formily/antd-v5/esm/__builtins__';
 import { connect, mapProps, mapReadPretty } from '@formily/react';
-import dayjs from 'dayjs';
 import { TimePicker as AntdTimePicker } from 'antd';
 import { TimePickerProps as AntdTimePickerProps, TimeRangePickerProps } from 'antd/es/time-picker';
+import dayjs from 'dayjs';
 import { ReadPretty } from './ReadPretty';
 
 type ComposedTimePicker = React.FC<AntdTimePickerProps> & {
@@ -39,7 +39,7 @@ export const TimePicker: ComposedTimePicker = connect(
   AntdTimePicker,
   mapProps(mapTimeFormat()),
   mapReadPretty(ReadPretty),
-);
+) as ComposedTimePicker;
 
 TimePicker.RangePicker = connect(AntdTimePicker.RangePicker, mapProps(mapTimeFormat()), mapReadPretty(ReadPretty));
 
