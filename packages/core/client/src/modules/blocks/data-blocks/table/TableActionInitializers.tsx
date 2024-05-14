@@ -81,20 +81,6 @@ const commonOptions = {
         return collection.tree && treeTable;
       },
     },
-    {
-      type: 'item',
-      title: '{{t("Add record")}}',
-      name: 'addRecord',
-      Component: 'CustomizeAddRecordActionInitializer',
-      schema: {
-        'x-align': 'right',
-        'x-decorator': 'ACLActionProvider',
-        'x-acl-action': 'create',
-        'x-acl-action-props': {
-          skipScopeCheck: true,
-        },
-      },
-    },
   ],
 };
 

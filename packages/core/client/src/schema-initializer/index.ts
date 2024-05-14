@@ -14,7 +14,6 @@ import {
   createFormBlockInitializers,
   createFormBlockInitializers_deprecated,
 } from '../modules/actions/add-new/createFormBlockInitializers';
-import { CustomizeAddRecordActionInitializer } from '../modules/actions/add-record/CustomizeAddRecordActionInitializer';
 import {
   customizeCreateFormBlockInitializers,
   customizeCreateFormBlockInitializers_deprecated,
@@ -47,7 +46,6 @@ import {
   readPrettyFormItemInitializers_deprecated,
 } from '../modules/blocks/data-blocks/details-single/ReadPrettyFormItemInitializers';
 import { RecordReadPrettyFormBlockInitializer } from '../modules/blocks/data-blocks/details-single/RecordReadPrettyFormBlockInitializer';
-import { CreateFormBlockInitializer } from '../modules/blocks/data-blocks/form/CreateFormBlockInitializer';
 import { FormBlockInitializer } from '../modules/blocks/data-blocks/form/FormBlockInitializer';
 import { RecordFormBlockInitializer } from '../modules/blocks/data-blocks/form/RecordFormBlockInitializer';
 import {
@@ -155,7 +153,6 @@ export class SchemaInitializerPlugin extends Plugin {
       ...initializerComponents,
       ...items,
       DestroyActionInitializer,
-      CreateFormBlockInitializer,
       FormBlockInitializer,
       RecordFormBlockInitializer,
       TableBlockInitializer,
@@ -171,7 +168,6 @@ export class SchemaInitializerPlugin extends Plugin {
       TableCollectionFieldInitializer,
       CollectionFieldInitializer,
       CreateActionInitializer,
-      CustomizeAddRecordActionInitializer,
       CreateChildInitializer,
       ViewActionInitializer,
       UpdateActionInitializer,

@@ -1031,6 +1031,7 @@ export const useCollectionDataSourceItems = ({
       collection.name,
       componentName,
       dataBlockInitializerProps,
+      filterOtherRecordsCollection,
       hideOtherRecordsInPopup,
       noAssociationMenu,
       onClick,

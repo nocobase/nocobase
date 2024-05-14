@@ -10,6 +10,7 @@
 import { FormOutlined } from '@ant-design/icons';
 import React, { useCallback } from 'react';
 import { useSchemaInitializer, useSchemaInitializerItem } from '../../../../application';
+import { useAssociationName } from '../../../../data-source/collection/AssociationProvider';
 import { Collection, CollectionFieldOptions } from '../../../../data-source/collection/Collection';
 import { DataBlockInitializer } from '../../../../schema-initializer/items/DataBlockInitializer';
 import { createCreateFormBlockUISchema } from './createCreateFormBlockUISchema';
@@ -90,30 +91,70 @@ export const FormBlockInitializer = ({
 
 export const useCreateFormBlock = () => {
   const { insert } = useSchemaInitializer();
+  const association = useAssociationName();
 
   const createFormBlock = useCallback(
-    ({ item }) => {
-      insert(
-        createCreateFormBlockUISchema({
-          collectionName: item.collectionName || item.name,
-          dataSource: item.dataSource,
-        }),
-      );
+    ({ item, fromOthersInPopup }) => {
+      if (fromOthersInPopup) {
+        insert(
+          createCreateFormBlockUISchema({
+            collectionName: item.collectionName || item.name,
+            dataSource: item.dataSource,
+          }),
+        );
+      } else {
+        insert(
+          createCreateFormBlockUISchema(
+            association
+              ? {
+                  association,
+                  dataSource: item.dataSource,
+                }
+              : {
+                  collectionName: item.collectionName || item.name,
+                  dataSource: item.dataSource,
+                },
+          ),
+        );
+      }
     },
-    [insert],
+    [association, insert],
   );
 
-  const templateWrap = useCallback((templateSchema, { item }) => {
-    const schema = createCreateFormBlockUISchema({
-      dataSource: item.dataSource,
-      templateSchema: templateSchema,
-      collectionName: item.name,
-    });
-    if (item.template && item.mode === 'reference') {
-      schema['x-template-key'] = item.template.key;
-    }
-    return schema;
-  }, []);
+  const templateWrap = useCallback(
+    (templateSchema, { item, fromOthersInPopup }) => {
+      let schema;
+
+      if (fromOthersInPopup) {
+        schema = createCreateFormBlockUISchema({
+          dataSource: item.dataSource,
+          templateSchema: templateSchema,
+          collectionName: item.name,
+        });
+      } else {
+        schema = createCreateFormBlockUISchema(
+          association
+            ? {
+                dataSource: item.dataSource,
+                templateSchema: templateSchema,
+                collectionName: item.name,
+                association,
+              }
+            : {
+                dataSource: item.dataSource,
+                templateSchema: templateSchema,
+                collectionName: item.name,
+              },
+        );
+      }
+
+      if (item.template && item.mode === 'reference') {
+        schema['x-template-key'] = item.template.key;
+      }
+      return schema;
+    },
+    [association],
+  );
 
   return {
     createFormBlock,

@@ -8,6 +8,7 @@
  */
 
 import { CompatibleSchemaInitializer } from '../../../application/schema-initializer/CompatibleSchemaInitializer';
+import { useCollection } from '../../../data-source/collection/CollectionProvider';
 import { gridRowColWrap } from '../../../schema-initializer/utils';
 
 const commonOptions = {
@@ -19,13 +20,35 @@ const commonOptions = {
       type: 'itemGroup',
       title: '{{t("Data blocks")}}',
       name: 'dataBlocks',
-      children: [
-        {
-          name: 'form',
-          title: '{{t("Form")}}',
-          Component: 'CreateFormBlockInitializer',
-        },
-      ],
+      useChildren() {
+        const currentCollection = useCollection();
+
+        return [
+          {
+            name: 'form',
+            title: '{{t("Form")}}',
+            Component: 'FormBlockInitializer',
+            collectionName: currentCollection.name,
+            dataSource: currentCollection.dataSource,
+            useComponentProps: () => {
+              return {
+                filterCollections({ collection, associationField }) {
+                  if (associationField) {
+                    return false;
+                  }
+                  if (collection.name === currentCollection.name) {
+                    return true;
+                  }
+                },
+                showAssociationFields: true,
+                onlyCurrentDataSource: true,
+                hideSearch: true,
+                componentType: 'FormItem',
+              };
+            },
+          },
+        ];
+      },
     },
     {
       type: 'itemGroup',
