@@ -228,7 +228,7 @@ describe('snippet manager', () => {
 
       try {
         snippetManager.register({
-          name: 'sc.collection-manager.*',
+          name: 'sc.collection-.*.manager.*',
           actions: ['collections:*'],
         });
       } catch (e) {
