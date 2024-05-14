@@ -9,13 +9,16 @@ on:
     branches:
       - 'main'
     paths:
-      - 'packages/core/client/**'
+      - 'packages/core/client/**/*.md'
+      - 'packages/core/client/**/demo/**'
       - 'packages/core/client/docs/**'
       - '.github/workflows/deploy-client-docs.yml'
   pull_request:
     branches:
       - '**'
     paths:
+      - 'packages/core/client/**/*.md'
+      - 'packages/core/client/**/demo/**'
       - 'packages/core/client/docs/**'
       - '.github/workflows/deploy-client-docs.yml'
 
