@@ -882,7 +882,8 @@ export class PluginManager {
       if (!(await this.app.isStarted())) {
         this.app.log.debug('app upgrading');
         await this.app.runCommand('upgrade');
-        await execa('yarn', ['nocobase', 'refresh'], {
+        await tsxRerunning();
+        await execa('yarn', ['nocobase', 'pm2-restart'], {
           env: process.env,
         });
         return;
@@ -890,13 +891,10 @@ export class PluginManager {
       const file = resolve(process.cwd(), 'storage/app-upgrading');
       await fs.promises.writeFile(file, '', 'utf-8');
       // await this.app.upgrade();
-      if (process.env.IS_DEV_CMD) {
-        await tsxRerunning();
-      } else {
-        await execa('yarn', ['nocobase', 'pm2-restart'], {
-          env: process.env,
-        });
-      }
+      await tsxRerunning();
+      await execa('yarn', ['nocobase', 'pm2-restart'], {
+        env: process.env,
+      });
     };
     if (Array.isArray(nameOrPkg)) {
       for (const name of nameOrPkg) {
