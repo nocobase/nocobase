@@ -51,6 +51,7 @@ export class PresetNocoBase extends Plugin {
     'kanban',
     'action-duplicate',
     'action-print',
+    'collection-sql',
   ];
 
   localPlugins = [

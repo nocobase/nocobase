@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Model, sqlParser } from '@nocobase/database';
+import { Model, sqlParser, SQLParserTypes } from '@nocobase/database';
 import { selectQuery } from './query-generator';
 
 export class SQLModel extends Model {
@@ -34,7 +34,7 @@ export class SQLModel extends Model {
     });
   }
 
-  static async sync(): Promise<any> { }
+  static async sync(): Promise<any> {}
 
   static inferFields(): {
     [field: string]: {
@@ -45,6 +45,7 @@ export class SQLModel extends Model {
     };
   } {
     const tables = this.parseTablesAndColumns();
+    console.log(tables);
     return tables.reduce((fields, { table, columns }) => {
       const tableName = this.getTableNameWithSchema(table);
       const collection = this.database.tableNameCollectionMap.get(tableName);
@@ -94,15 +95,17 @@ export class SQLModel extends Model {
     table: string;
     columns: string | { name: string; as: string }[];
   }[] {
-    let { ast } = sqlParser.parse(this.sql);
-    if (Array.isArray(ast)) {
-      ast = ast[0];
+    let { ast: _ast } = sqlParser.parse(this.sql);
+    console.log(JSON.stringify(_ast, null, 2));
+    if (Array.isArray(_ast)) {
+      _ast = _ast[0];
     }
+    const ast = _ast as SQLParserTypes.Select;
     ast.from = ast.from || [];
     ast.columns = ast.columns || [];
     if (ast.with) {
-      ast.with.forEach((withItem: any) => {
-        const as = withItem.name;
+      ast.with.forEach((withItem) => {
+        const as = withItem.name.value;
         const withAst = withItem.stmt.ast;
         ast.from.push(...withAst.from.map((f: any) => ({ ...f, as })));
         ast.columns.push(
@@ -116,47 +119,33 @@ export class SQLModel extends Model {
         );
       });
     }
-    if (ast.columns === '*') {
-      const tables = new Set<string>();
-      ast.from.forEach((fromItem: { table: string; as: string }) => {
-        tables.add(fromItem.table);
-      });
-      return Array.from(tables).map((table) => ({ table, columns: '*' }));
-    }
     const tableAliases = {};
-    ast.from.forEach((fromItem: { table: string; as: string }) => {
+    ast.from.forEach((fromItem: SQLParserTypes.BaseFrom) => {
       if (!fromItem.as) {
         return;
       }
       tableAliases[fromItem.as] = fromItem.table;
     });
-    const columns: string[] = ast.columns.reduce(
-      (
-        tableMp: { [table: string]: { name: string; as: string }[] },
-        column: {
-          as: string;
-          expr: {
-            table: string;
-            column: string;
-            type: string;
-          };
-        },
-      ) => {
-        if (column.expr.type !== 'column_ref') {
-          return tableMp;
-        }
-        const table = column.expr.table;
-        const name = tableAliases[table] || table;
-        const columnAttr = { name: column.expr.column, as: column.as };
-        if (!tableMp[name]) {
-          tableMp[name] = [columnAttr];
-        } else {
-          tableMp[name].push(columnAttr);
-        }
-        return tableMp;
-      },
-      {},
-    );
+    const columns: { [table: string]: { name: string; as: string }[] | '*' } = {};
+    ast.columns.forEach((column) => {
+      const expr = column.expr as SQLParserTypes.ColumnRef;
+      if (expr.type !== 'column_ref') {
+        return;
+      }
+      const table = expr.table;
+      const defaultTable = (ast.from[0] as SQLParserTypes.BaseFrom)?.table;
+      const name = tableAliases[table] || table || defaultTable;
+      if (expr.column === '*') {
+        columns[name] = '*';
+        return;
+      }
+      const columnAttr = { name: expr.column as string, as: column.as };
+      if (!columns[name]) {
+        columns[name] = [columnAttr];
+      } else if (columns[name] !== '*') {
+        (columns[name] as any[]).push(columnAttr);
+      }
+    });
     return Object.entries(columns)
       .filter(([_, columns]) => columns)
       .map(([table, columns]) => ({ table, columns }));

@@ -51,4 +51,4 @@ export * from './value-parsers';
 export * from './view-collection';
 export * from './view/view-inference';
 export * from './helpers';
-export { default as sqlParser } from './sql-parser';
+export { default as sqlParser, SQLParserTypes } from './sql-parser';
