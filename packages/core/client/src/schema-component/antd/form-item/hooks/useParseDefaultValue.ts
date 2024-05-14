@@ -70,7 +70,7 @@ const useParseDefaultValue = () => {
       if (
         variables &&
         field &&
-        ((isVariable(fieldSchema.default) && field.value == null) || field.value === fieldSchema.default || forceUpdate)
+        (isVariable(fieldSchema.default) || field.value === fieldSchema.default || forceUpdate)
       ) {
         // 一个变量字符串如果显示出来会比较奇怪
         if (isVariable(field.value)) {

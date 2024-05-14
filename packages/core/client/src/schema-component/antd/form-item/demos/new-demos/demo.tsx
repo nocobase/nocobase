@@ -23,7 +23,6 @@ const collection = {
         title: 'Title',
         'x-component': 'Input',
         required: true,
-        description: 'description1',
       } as ISchema,
     },
   ],

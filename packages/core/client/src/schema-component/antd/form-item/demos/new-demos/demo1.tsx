@@ -23,7 +23,6 @@ const collection = {
         type: 'string',
         'x-component': 'Input',
         required: true,
-        description: 'description1',
       } as ISchema,
     },
     {
@@ -34,7 +33,6 @@ const collection = {
         title: 'Number',
         type: 'number',
         'x-component': 'InputNumber',
-        description: 'description2',
       } as ISchema,
     },
   ],
