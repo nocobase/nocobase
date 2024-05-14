@@ -10,6 +10,7 @@ on:
       - main
     paths:
       - 'package.json'
+      - '**/yarn.lock'
       - 'packages/core/acl/**'
       - 'packages/core/actions/**'
       - 'packages/core/database/**'
@@ -22,6 +23,7 @@ on:
   pull_request:
     paths:
       - 'package.json'
+      - '**/yarn.lock'
       - 'packages/core/acl/**'
       - 'packages/core/actions/**'
       - 'packages/core/database/**'
