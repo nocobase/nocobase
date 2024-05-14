@@ -454,13 +454,13 @@ export function WorkflowConfig() {
 
   const description = {
     submit: t(
-      'Workflow will be triggered before or after submitting succeeded based on workflow type (supports pre/post action event).',
+      'Workflow will be triggered before or after submitting succeeded based on workflow type (supports pre/post action and approval event).',
       {
         ns: 'workflow',
       },
     ),
     'customize:save': t(
-      'Workflow will be triggered before or after submitting succeeded based on workflow type (supports pre/post action event).',
+      'Workflow will be triggered before or after submitting succeeded based on workflow type (supports pre/post action and approval event).',
       {
         ns: 'workflow',
       },
