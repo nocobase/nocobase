@@ -65,6 +65,15 @@ describe('acl snippet', () => {
     acl = new ACL();
   });
 
+  it('should replace invalid snippet name', () => {
+    acl.registerSnippet({
+      name: 'pm.users.*',
+      actions: ['users:list'],
+    });
+
+    expect(acl.snippetManager.snippets.get('pm.users')).toBeDefined();
+  });
+
   it('should get effective snipptes', () => {
     acl.registerSnippet({
       name: 'sc.collection-manager.fields',
@@ -219,7 +228,7 @@ describe('snippet manager', () => {
 
       try {
         snippetManager.register({
-          name: 'sc.collection-manager.*',
+          name: 'sc.collection-.*.manager.*',
           actions: ['collections:*'],
         });
       } catch (e) {
