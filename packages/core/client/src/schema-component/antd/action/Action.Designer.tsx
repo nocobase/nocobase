@@ -453,12 +453,18 @@ export function WorkflowConfig() {
   const buttonAction = fieldSchema['x-action'];
 
   const description = {
-    submit: t('Workflow will be triggered before or after submitting succeeded based on workflow type.', {
-      ns: 'workflow',
-    }),
-    'customize:save': t('Workflow will be triggered before or after submitting succeeded based on workflow type.', {
-      ns: 'workflow',
-    }),
+    submit: t(
+      'Workflow will be triggered before or after submitting succeeded based on workflow type (supports pre/post action event).',
+      {
+        ns: 'workflow',
+      },
+    ),
+    'customize:save': t(
+      'Workflow will be triggered before or after submitting succeeded based on workflow type (supports pre/post action event).',
+      {
+        ns: 'workflow',
+      },
+    ),
     'customize:triggerWorkflows': t(
       'Workflow will be triggered directly once the button clicked, without data saving. Only supports to be bound with "Custom action event".',
       { ns: '@nocobase/plugin-workflow-custom-action-trigger' },
@@ -467,7 +473,9 @@ export function WorkflowConfig() {
       '"Submit to workflow" to "Post-action event" is deprecated, please use "Custom action event" instead.',
       { ns: 'workflow' },
     ),
-    destroy: t('Workflow will be triggered before deleting succeeded.', { ns: 'workflow' }),
+    destroy: t('Workflow will be triggered before deleting succeeded (only supports pre-action event).', {
+      ns: 'workflow',
+    }),
   }[fieldSchema?.['x-action']];
 
   return (
