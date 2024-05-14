@@ -164,7 +164,7 @@ const useTableColumns = (props: { showDel?: boolean; isSubTable?: boolean }) => 
         dataIndex: 'TABLE_COLUMN_INITIALIZER',
         key: 'TABLE_COLUMN_INITIALIZER',
         render: designable ? () => <div style={{ minWidth: 180 }} /> : null,
-        fixed: 'right',
+        fixed: designable ? 'right' : 'none',
       },
     ];
 
