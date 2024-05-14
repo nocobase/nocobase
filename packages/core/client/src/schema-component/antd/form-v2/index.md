@@ -72,10 +72,15 @@ FormV2 内部封装了 FormLayout 组件，FormLayout 组件的 props 请参考 
 
 表单项之间可以通过 `x-linkage-rules` 属性进行联动。
 
-TODO:
+- 条件必填
 
-<!-- <code src="./demos/new-demos/linkage.tsx"></code> -->
+- 显示/隐藏
 
-更多联动规则的写法请参考：TODO
+<code src="./demos/new-demos/linkage.tsx"></code>
+
+- 可编辑/禁用/阅读友好
+
+- 赋值
+
 
 ## Hooks
