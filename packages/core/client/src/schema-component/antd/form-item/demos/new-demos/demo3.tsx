@@ -104,6 +104,7 @@ const schema: ISchema = {
               'x-decorator': 'FormItem',
               'x-collection-field': 'test.o2m',
               'x-component': 'CollectionField',
+              'x-settings': 'fieldSettings:FormItem',
               'x-component-props': {
                 fieldNames: {
                   value: 'id',
@@ -122,7 +123,6 @@ const schema: ISchema = {
                   properties: {
                     column1: {
                       'x-decorator': 'TableV2.Column.Decorator',
-                      'x-toolbar': 'TableColumnSchemaToolbar',
                       'x-settings': 'fieldSettings:TableColumn',
                       'x-component': 'TableV2.Column',
                       properties: {
@@ -144,7 +144,6 @@ const schema: ISchema = {
                     },
                     column2: {
                       'x-decorator': 'TableV2.Column.Decorator',
-                      'x-toolbar': 'TableColumnSchemaToolbar',
                       'x-settings': 'fieldSettings:TableColumn',
                       'x-component': 'TableV2.Column',
                       properties: {
