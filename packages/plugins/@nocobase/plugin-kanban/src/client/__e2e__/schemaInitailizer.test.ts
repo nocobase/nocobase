@@ -103,7 +103,8 @@ test.describe('configure actions', () => {
     //添加数据
     await page.getByLabel('action-Action-Add new-create-general-kanban').click();
     await page.getByLabel('schema-initializer-Grid-popup:addNew:addBlock-general').hover();
-    await page.getByRole('menuitem', { name: 'form Form' }).click();
+    await page.getByRole('menuitem', { name: 'form Form' }).hover();
+    await page.getByRole('menuitem', { name: 'Current collection' }).click();
     await page.mouse.move(300, 0);
     await page.getByLabel('schema-initializer-Grid-form:configureFields-general').hover();
     await page.getByRole('menuitem', { name: 'Single Select' }).click();

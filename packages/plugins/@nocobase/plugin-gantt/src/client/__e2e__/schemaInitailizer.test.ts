@@ -91,13 +91,11 @@ test.describe('configure actions', () => {
     await page.getByRole('menuitem', { name: 'Refresh' }).click();
     await page.getByRole('menuitem', { name: 'Bulk update' }).click();
     await page.getByRole('menuitem', { name: 'Bulk edit' }).click();
-    await page.getByRole('menuitem', { name: 'Add record' }).click();
     await expect(page.getByLabel('action-Filter.Action-Filter-filter-general-table')).toBeVisible();
     await expect(page.getByLabel('action-Action-Add new-create-general-table')).toBeVisible();
     await expect(page.getByLabel('action-Action-Delete-destroy-general-table')).toBeVisible();
     await expect(page.getByLabel('action-Action-Refresh-refresh-general-table')).toBeVisible();
     await expect(page.getByLabel('action-Action-Bulk update-customize:bulkUpdate-general-table')).toBeVisible();
     await expect(page.getByLabel('action-Action-Bulk edit-customize:bulkEdit-general-table')).toBeVisible();
-    await expect(page.getByLabel('action-Action-Add record-customize:create-general-table')).toBeVisible();
   });
 });

@@ -83,7 +83,8 @@ test.describe('Configuration page to configure the Trigger node', () => {
     await page.getByRole('menuitem', { name: 'Add new' }).click();
     await page.getByLabel(`action-Action-Add new-create-${triggerNodeCollectionName}-table`).click();
     await page.getByLabel(`schema-initializer-Grid-popup:addNew:addBlock-${triggerNodeCollectionName}`).hover();
-    await page.getByRole('menuitem', { name: 'form Form' }).click();
+    await page.getByRole('menuitem', { name: 'form Form' }).hover();
+    await page.getByRole('menuitem', { name: 'Current collection' }).click();
     // 移开鼠标，关闭菜单
     await page.mouse.move(300, 0);
     await page

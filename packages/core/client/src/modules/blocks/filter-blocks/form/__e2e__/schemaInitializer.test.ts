@@ -11,8 +11,8 @@ import { Page, createBlockInPage, expect, oneEmptyFilterFormBlock, test } from '
 import { oneFilterFormWithInherit } from './templatesOfBug';
 
 const deleteButton = async (page: Page, name: string) => {
-  await page.getByRole('button', { name }).hover();
-  await page.getByRole('button', { name }).getByLabel('designer-schema-settings-').hover();
+  await page.getByLabel(`action-Action-${name}-`).hover();
+  await page.getByLabel(`action-Action-${name}-`).getByLabel('designer-schema-settings-').hover();
   await page.getByRole('menuitem', { name: 'Delete' }).click();
   await page.getByRole('button', { name: 'OK', exact: true }).click();
 };

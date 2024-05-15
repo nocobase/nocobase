@@ -11,8 +11,8 @@ import { Page, expect, oneEmptyTable, test } from '@nocobase/test/e2e';
 import { oneTableWithInheritFields } from './templatesOfBug';
 
 const deleteButton = async (page: Page, name: string) => {
-  await page.getByRole('button', { name }).hover();
-  await page.getByRole('button', { name }).getByLabel('designer-schema-settings-').hover();
+  await page.getByLabel(`action-Action.Link-${name}-`).hover();
+  await page.getByLabel(`action-Action.Link-${name}-`).getByLabel('designer-schema-settings-').hover();
   await page.getByRole('menuitem', { name: 'Delete' }).click();
   await page.getByRole('button', { name: 'OK', exact: true }).click();
 };
