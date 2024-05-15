@@ -53,7 +53,7 @@ const schema: ISchema = {
       'x-settings': 'blockSettings:createForm',
       'x-component': 'CardItem',
       'x-component-props': {
-        title: 'When number > 10, hide title',
+        title: ' Title is always set to the value entered in the number input',
       },
       properties: {
         form: {
@@ -67,18 +67,17 @@ const schema: ISchema = {
               'x-linkage-rules': [
                 {
                   condition: {
-                    $and: [
-                      {
-                        number: {
-                          $gt: 10,
-                        },
-                      },
-                    ],
+                    $and: [],
                   },
                   actions: [
                     {
                       targetFields: ['title'],
-                      operator: 'none',
+                      operator: 'value',
+                      value: {
+                        mode: 'express',
+                        result: '{{$nForm.number}}',
+                        value: '{{$nForm.number}}',
+                      },
                     },
                   ],
                 },

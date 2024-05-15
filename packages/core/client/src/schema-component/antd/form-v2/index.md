@@ -86,5 +86,11 @@ FormV2 内部封装了 FormLayout 组件，FormLayout 组件的 props 请参考 
 
 - 赋值
 
+常量
 
+<code src="./demos/new-demos/linkageValue.tsx"></code>
+
+变量
+
+<code src="./demos/new-demos/linkageValue1.tsx"></code>
 ## Hooks
