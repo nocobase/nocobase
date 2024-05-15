@@ -9,6 +9,7 @@
 
 import { Collection, CollectionContext, CollectionOptions } from '@nocobase/database';
 import { SQLModel } from './sql-model';
+import { QueryInterfaceDropTableOptions } from 'sequelize';
 
 export class SqlCollection extends Collection {
   constructor(options: CollectionOptions, context: CollectionContext) {
@@ -41,7 +42,7 @@ export class SqlCollection extends Collection {
 
   modelInit() {
     const { autoGenId, sql } = this.options;
-    const model = class extends SQLModel { };
+    const model = class extends SQLModel {};
     model.init(null, {
       ...this.sequelizeModelOptions(),
       schema: undefined,
@@ -51,7 +52,7 @@ export class SqlCollection extends Collection {
       model.removeAttribute('id');
     }
 
-    model.sql = sql;
+    model.sql = sql.endsWith(';') ? sql.slice(0, -1) : sql;
     model.database = this.context.database;
     model.collection = this;
 
@@ -63,5 +64,11 @@ export class SqlCollection extends Collection {
         return Reflect.get(target, prop);
       },
     });
+  }
+
+  async removeFromDb(options?: QueryInterfaceDropTableOptions & { dropCollection?: boolean }) {
+    if (options?.dropCollection !== false) {
+      return this.remove();
+    }
   }
 }

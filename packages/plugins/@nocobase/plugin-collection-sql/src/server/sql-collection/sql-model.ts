@@ -36,67 +36,47 @@ export class SQLModel extends Model {
 
   static async sync(): Promise<any> {}
 
-  static inferFields(): {
-    [field: string]: {
-      type: string;
-      source: string;
-      collection: string;
-      interface: string;
-    };
-  } {
-    const tables = this.parseTablesAndColumns();
-    console.log(tables);
-    return tables.reduce((fields, { table, columns }) => {
-      const tableName = this.getTableNameWithSchema(table);
-      const collection = this.database.tableNameCollectionMap.get(tableName);
-      if (!collection) {
-        return fields;
+  private static getTableNameWithSchema(table: string) {
+    if (this.database.inDialect('postgres') && !table.includes('.')) {
+      const schema = process.env.DB_SCHEMA || 'public';
+      return `${schema}.${table}`;
+    }
+    return table;
+  }
+
+  private static parseSelectAST(ast: SQLParserTypes.Select) {
+    const tablesMap: { [table: string]: { name: string; as?: string }[] } = {}; // table => columns
+    const tableAliases = {};
+    ast.from.forEach((fromItem: SQLParserTypes.BaseFrom) => {
+      tablesMap[fromItem.table] = [];
+      if (fromItem.as) {
+        tableAliases[fromItem.as] = fromItem.table;
       }
-      const attributes = collection.model.getAttributes();
-      const sourceFields = {};
-      if (columns === '*') {
-        Object.values(attributes).forEach((attribute) => {
-          const field = collection.getField((attribute as any).fieldName);
-          if (!field?.options.interface) {
-            return;
-          }
-          sourceFields[field.name] = {
-            collection: field.collection.name,
-            type: field.type,
-            source: `${field.collection.name}.${field.name}`,
-            interface: field.options.interface,
-            uiSchema: field.options.uiSchema,
-          };
-        });
-      } else {
-        (columns as { name: string; as: string }[]).forEach((column) => {
-          const modelField = Object.values(attributes).find((attribute) => attribute.field === column.name);
-          if (!modelField) {
-            return;
-          }
-          const field = collection.getField((modelField as any).fieldName);
-          if (!field?.options.interface) {
-            return;
-          }
-          sourceFields[column.as || column.name] = {
-            collection: field.collection.name,
-            type: field.type,
-            source: `${field.collection.name}.${field.name}`,
-            interface: field.options.interface,
-            uiSchema: field.options.uiSchema,
-          };
-        });
+    });
+    ast.columns.forEach((column: SQLParserTypes.Column) => {
+      const expr = column.expr as SQLParserTypes.ColumnRef;
+      if (expr.type !== 'column_ref') {
+        return;
       }
-      return { ...fields, ...sourceFields };
-    }, {});
+      const table = expr.table;
+      const name = tableAliases[table] || table;
+      const columnAttr = { name: expr.column as string, as: column.as };
+      if (!name) {
+        Object.keys(tablesMap).forEach((n) => {
+          tablesMap[n].push(columnAttr);
+        });
+      } else if (tablesMap[name]) {
+        tablesMap[name].push(columnAttr);
+      }
+    });
+    return tablesMap;
   }
 
   private static parseTablesAndColumns(): {
     table: string;
-    columns: string | { name: string; as: string }[];
+    columns: { name: string; as?: string }[];
   }[] {
     let { ast: _ast } = sqlParser.parse(this.sql);
-    console.log(JSON.stringify(_ast, null, 2));
     if (Array.isArray(_ast)) {
       _ast = _ast[0];
     }
@@ -119,43 +99,64 @@ export class SQLModel extends Model {
         );
       });
     }
-    const tableAliases = {};
-    ast.from.forEach((fromItem: SQLParserTypes.BaseFrom) => {
-      if (!fromItem.as) {
-        return;
-      }
-      tableAliases[fromItem.as] = fromItem.table;
-    });
-    const columns: { [table: string]: { name: string; as: string }[] | '*' } = {};
-    ast.columns.forEach((column) => {
-      const expr = column.expr as SQLParserTypes.ColumnRef;
-      if (expr.type !== 'column_ref') {
-        return;
-      }
-      const table = expr.table;
-      const defaultTable = (ast.from[0] as SQLParserTypes.BaseFrom)?.table;
-      const name = tableAliases[table] || table || defaultTable;
-      if (expr.column === '*') {
-        columns[name] = '*';
-        return;
-      }
-      const columnAttr = { name: expr.column as string, as: column.as };
-      if (!columns[name]) {
-        columns[name] = [columnAttr];
-      } else if (columns[name] !== '*') {
-        (columns[name] as any[]).push(columnAttr);
-      }
-    });
-    return Object.entries(columns)
+    const tablesMap = this.parseSelectAST(ast);
+    return Object.entries(tablesMap)
       .filter(([_, columns]) => columns)
       .map(([table, columns]) => ({ table, columns }));
   }
 
-  private static getTableNameWithSchema(table: string) {
-    if (this.database.inDialect('postgres') && !table.includes('.')) {
-      const schema = process.env.DB_SCHEMA || 'public';
-      return `${schema}.${table}`;
-    }
-    return table;
+  static inferFields(): {
+    [field: string]: {
+      type: string;
+      source: string;
+      collection: string;
+      interface: string;
+    };
+  } {
+    const tables = this.parseTablesAndColumns();
+    return tables.reduce((fields, { table, columns }) => {
+      const tableName = this.getTableNameWithSchema(table);
+      const collection = this.database.tableNameCollectionMap.get(tableName);
+      if (!collection) {
+        return fields;
+      }
+      const all = columns.some((column) => column.name === '*');
+      const attributes = collection.model.getAttributes();
+      const sourceFields = {};
+      if (all) {
+        Object.values(attributes).forEach((attribute) => {
+          const field = collection.getField((attribute as any).fieldName);
+          if (!field?.options.interface) {
+            return;
+          }
+          sourceFields[field.name] = {
+            collection: field.collection.name,
+            type: field.type,
+            source: `${field.collection.name}.${field.name}`,
+            interface: field.options.interface,
+            uiSchema: field.options.uiSchema,
+          };
+        });
+      } else {
+        columns.forEach((column) => {
+          const modelField = Object.values(attributes).find((attribute) => attribute.field === column.name);
+          if (!modelField) {
+            return;
+          }
+          const field = collection.getField((modelField as any).fieldName);
+          if (!field?.options.interface) {
+            return;
+          }
+          sourceFields[column.as || column.name] = {
+            collection: field.collection.name,
+            type: field.type,
+            source: `${field.collection.name}.${field.name}`,
+            interface: field.options.interface,
+            uiSchema: field.options.uiSchema,
+          };
+        });
+      }
+      return { ...fields, ...sourceFields };
+    }, {});
   }
 }
