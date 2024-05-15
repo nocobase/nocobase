@@ -34,6 +34,7 @@ export type VariableRawTextAreaProps = {
   buttonClass?: string;
   component: any;
   fieldNames?: CascaderProps['fieldNames'];
+  placeholder?: string;
 };
 export function RawTextArea(props: VariableRawTextAreaProps): JSX.Element {
   const inputRef = useRef<any>(null);
