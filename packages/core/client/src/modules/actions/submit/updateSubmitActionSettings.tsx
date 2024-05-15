@@ -47,10 +47,6 @@ export const updateSubmitActionSettings = new SchemaSettings({
       },
     },
     {
-      name: 'secondConfirmation',
-      Component: SecondConFirm,
-    },
-    {
       name: 'assignFieldValues',
       Component: AssignedFieldValues,
     },
