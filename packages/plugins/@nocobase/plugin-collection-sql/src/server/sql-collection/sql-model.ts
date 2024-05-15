@@ -118,7 +118,7 @@ export class SQLModel extends Model {
     return tables.reduce((fields, { table, columns }) => {
       const tableName = this.getTableNameWithSchema(table);
       const collection = this.database.tableNameCollectionMap.get(tableName);
-      if (!collection || (collection as SQLCollection).isSql()) {
+      if (!collection) {
         const originFields = {};
         columns.forEach((column) => {
           originFields[column.as || column.name] = {};
@@ -144,21 +144,21 @@ export class SQLModel extends Model {
         });
       } else {
         columns.forEach((column) => {
+          let options = {};
           const modelField = Object.values(attributes).find((attribute) => attribute.field === column.name);
-          if (!modelField) {
-            return;
+          if (modelField) {
+            const field = collection.getField((modelField as any).fieldName);
+            if (field?.options.interface) {
+              options = {
+                collection: field.collection.name,
+                type: field.type,
+                source: `${field.collection.name}.${field.name}`,
+                interface: field.options.interface,
+                uiSchema: field.options.uiSchema,
+              };
+            }
           }
-          const field = collection.getField((modelField as any).fieldName);
-          if (!field?.options.interface) {
-            return;
-          }
-          sourceFields[column.as || column.name] = {
-            collection: field.collection.name,
-            type: field.type,
-            source: `${field.collection.name}.${field.name}`,
-            interface: field.options.interface,
-            uiSchema: field.options.uiSchema,
-          };
+          sourceFields[column.as || column.name] = options;
         });
       }
       return { ...fields, ...sourceFields };
