@@ -52,7 +52,7 @@ export class SQLCollection extends Collection {
       model.removeAttribute('id');
     }
 
-    model.sql = sql.endsWith(';') ? sql.slice(0, -1) : sql;
+    model.sql = sql?.endsWith(';') ? sql.slice(0, -1) : sql;
     model.database = this.context.database;
     model.collection = this;
 
