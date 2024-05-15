@@ -1,4 +1,4 @@
-import _ from 'lodash'
+import _ from 'lodash';
 import { getUmiConfig } from '@nocobase/devtools/umiConfig';
 import { defineConfig } from 'dumi';
 import { defineThemeConfig } from 'dumi-theme-nocobase';
@@ -27,7 +27,7 @@ export default defineConfig({
       { type: 'component', dir: 'src/schema-component/antd' },
     ],
   },
-  locales: lang === 'zh-CN' ? [{ id: 'zh-CN', name: '中文' },] : [{ id: 'en-US', name: 'English' }],
+  locales: lang === 'zh-CN' ? [{ id: 'zh-CN', name: '中文' }] : [{ id: 'en-US', name: 'English' }],
   themeConfig: defineThemeConfig({
     title: 'NocoBase',
     logo: 'https://www.nocobase.com/images/logo.png',
@@ -46,7 +46,7 @@ export default defineConfig({
       {
         title: 'Home site',
         link: lang === 'zh-CN' ? 'https://docs-cn.nocobase.com' : 'https://docs.nocobase.com',
-      }
+      },
       // {
       //   title: 'UI Schema',
       //   link: '/ui-schema',
@@ -186,7 +186,7 @@ export default defineConfig({
               title: 'ExtendCollectionsProvider',
               link: '/core/data-source/extend-collections-provider',
             },
-          ]
+          ],
         },
         {
           title: 'DataBlock',
@@ -212,203 +212,233 @@ export default defineConfig({
               title: 'DataBlockRequestProvider',
               link: '/core/data-block/data-block-request-provider',
             },
-          ]
-        }
+          ],
+        },
       ],
       '/components': [
         {
-          title: 'Action',
+          title: '全局',
           type: 'group',
           children: [
             {
-              "title": "Action",
-              "link": "/components/action"
+              title: 'Page',
+              link: '/components/page',
             },
             {
-              "title": "Filter",
-              "link": "/components/filter"
+              title: 'Tabs',
+              link: '/components/tabs',
             },
-          ]
+            {
+              title: 'Menu',
+              link: '/components/menu',
+            },
+          ],
+        },
+        {
+          title: '装饰器',
+          type: 'group',
+          children: [
+            {
+              title: '基础装饰器',
+              children: [
+                {
+                  title: 'BlockItem',
+                  link: '/components/block-item',
+                },
+                {
+                  title: 'CardItem',
+                  link: '/components/card-item',
+                },
+                {
+                  title: 'FormItem',
+                  link: '/components/form-item',
+                },
+              ],
+            },
+            {
+              title: '区块装饰器',
+              children: [
+                {
+                  title: 'DataBlockProvider',
+                  link: '/components/data-block',
+                },
+              ],
+            },
+          ],
         },
         {
           title: 'Field',
           type: 'group',
           children: [
             {
-              "title": "Checkbox",
-              "link": "/components/checkbox"
+              title: 'Checkbox',
+              link: '/components/checkbox',
             },
             {
-              "title": "Cascader",
-              "link": "/components/cascader"
+              title: 'Cascader',
+              link: '/components/cascader',
             },
             {
-              "title": "ColorPicker",
-              "link": "/components/color-picker"
+              title: 'ColorPicker',
+              link: '/components/color-picker',
             },
             {
-              "title": "ColorSelect",
-              "link": "/components/color-select"
+              title: 'ColorSelect',
+              link: '/components/color-select',
             },
             {
-              "title": "DatePicker",
-              "link": "/components/date-picker"
+              title: 'DatePicker',
+              link: '/components/date-picker',
             },
             {
-              "title": "UnixTimestamp",
-              "link": "/components/unix-timestamp"
+              title: 'UnixTimestamp',
+              link: '/components/unix-timestamp',
             },
             {
-              "title": "TimePicker",
-              "link": "/components/time-picker"
+              title: 'TimePicker',
+              link: '/components/time-picker',
             },
             {
-              "title": "IconPicker",
-              "link": "/components/icon-picker"
+              title: 'IconPicker',
+              link: '/components/icon-picker',
             },
             {
-              "title": "InputNumber",
-              "link": "/components/input-number"
+              title: 'InputNumber',
+              link: '/components/input-number',
             },
             {
-              "title": "Input",
-              "link": "/components/input"
+              title: 'Input',
+              link: '/components/input',
             },
             {
-              "title": "AutoComplete",
-              "link": "/components/auto-complete"
+              title: 'AutoComplete',
+              link: '/components/auto-complete',
             },
             {
-              "title": "NanoIDInput",
-              "link": "/components/nanoid-input"
+              title: 'NanoIDInput',
+              link: '/components/nanoid-input',
             },
             {
-              "title": "Password",
-              "link": "/components/password"
+              title: 'Password',
+              link: '/components/password',
             },
             {
-              "title": "Percent",
-              "link": "/components/percent"
+              title: 'Percent',
+              link: '/components/percent',
             },
             {
-              "title": "Radio",
-              "link": "/components/radio"
+              title: 'Radio',
+              link: '/components/radio',
             },
             {
-              "title": "Select",
-              "link": "/components/select"
+              title: 'Select',
+              link: '/components/select',
             },
             {
-              "title": "RemoteSelect",
-              "link": "/components/remote-select"
+              title: 'RemoteSelect',
+              link: '/components/remote-select',
             },
             {
-              "title": "TreeSelect",
-              "link": "/components/tree-select"
+              title: 'TreeSelect',
+              link: '/components/tree-select',
             },
             {
-              "title": "Upload",
-              "link": "/components/upload"
+              title: 'Upload',
+              link: '/components/upload',
             },
             {
-              "title": "CollectionSelect",
-              "link": "/components/collection-select"
+              title: 'CollectionSelect',
+              link: '/components/collection-select',
             },
             {
-              "title": "Cron",
-              "link": "/components/cron"
+              title: 'Cron',
+              link: '/components/cron',
             },
             {
-              "title": "Markdown",
-              "link": "/components/markdown"
+              title: 'Markdown',
+              link: '/components/markdown',
             },
             {
-              "title": "Variable",
-              "link": "/components/variable"
+              title: 'Variable',
+              link: '/components/variable',
             },
             {
-              "title": "QuickEdit",
-              "link": "/components/quick-edit"
+              title: 'QuickEdit',
+              link: '/components/quick-edit',
             },
             {
-              "title": "RichText",
-              "link": "/components/rich-text"
-            }
-          ]
+              title: 'RichText',
+              link: '/components/rich-text',
+            },
+          ],
         },
         {
-          title: 'Block',
+          title: '展示',
           type: 'group',
           children: [
             {
-              "title": "BlockItem",
-              "link": "/components/block-item"
+              title: 'FormV2',
+              link: '/components/form-v2',
             },
             {
-              "title": "CardItem",
-              "link": "/components/card-item"
+              title: 'TableV2',
+              link: '/components/table-v2',
             },
             {
-              "title": "FormItem",
-              "link": "/components/form-item"
+              title: 'Details',
+              link: '/components/details',
             },
             {
-              "title": "FormV2",
-              "link": "/components/form-v2"
+              title: 'GridCard',
+              link: '/components/grid-card',
             },
             {
-              "title": "TableV2",
-              "link": "/components/table-v2"
+              title: 'Grid',
+              link: '/components/grid',
             },
             {
-              "title": "Details",
-              "link": "/components/details"
+              title: 'List',
+              link: '/components/list',
             },
-            {
-              "title": "GridCard",
-              "link": "/components/grid-card"
-            },
-            {
-              "title": "Grid",
-              "link": "/components/grid"
-            },
-            {
-              "title": "List",
-              "link": "/components/list"
-            },
-          ]
+          ],
         },
         {
-          title: 'Others',
+          title: '操作',
           type: 'group',
           children: [
             {
-              "title": "Tabs",
-              "link": "/components/tabs"
+              title: 'Action',
+              link: '/components/action',
             },
             {
-              "title": "ErrorFallback",
-              "link": "/components/error-fallback"
+              title: 'Filter.Action',
+              link: '/components/filter',
             },
-            {
-              "title": "G2Plot",
-              "link": "/components/g2plot"
-            },
-            {
-              "title": "Menu",
-              "link": "/components/menu"
-            },
-            {
-              "title": "Pagination",
-              "link": "/components/pagination"
-            },
-            {
-              "title": "Preview",
-              "link": "/components/preview"
-            },
-          ]
+          ],
         },
-      ]
+        {
+          title: '其他',
+          type: 'group',
+          children: [
+            {
+              title: 'ErrorFallback',
+              link: '/components/error-fallback',
+            },
+            {
+              title: 'G2Plot',
+              link: '/components/g2plot',
+            },
+            {
+              title: 'Pagination',
+              link: '/components/pagination',
+            },
+            {
+              title: 'Preview',
+              link: '/components/preview',
+            },
+          ],
+        },
+      ],
       // '/ui-schema': [
       //   {
       //     title: 'Overview',
@@ -674,7 +704,7 @@ export default defineConfig({
     },
     localesEnhance: [
       { id: 'zh-CN', switchPrefix: '中', hostname: 'client.docs-cn.nocobase.com' },
-      { id: 'en-US', switchPrefix: 'en', hostname: 'client.docs.nocobase.com' }
+      { id: 'en-US', switchPrefix: 'en', hostname: 'client.docs.nocobase.com' },
     ],
   }),
 });
