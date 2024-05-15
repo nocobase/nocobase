@@ -25,6 +25,8 @@ export default defineConfig({
     docDirs: [`./docs/${lang}`],
     atomDirs: [
       { type: 'component', dir: 'src/schema-component/antd' },
+      { type: 'component', dir: 'src/data-source' },
+
     ],
   },
   locales: lang === 'zh-CN' ? [{ id: 'zh-CN', name: '中文' }] : [{ id: 'en-US', name: 'English' }],
@@ -413,6 +415,24 @@ export default defineConfig({
             {
               title: 'Filter.Action',
               link: '/components/filter',
+            },
+          ],
+        },
+        {
+          title: 'Schema 设计器',
+          type: 'group',
+          children: [
+            {
+              title: 'SchemaInitializer',
+              link: '/components/schemaInitializer',
+            },
+            {
+              title: 'SchemaSettings',
+              link: '/components/schemaSettings',
+            },
+            {
+              title: 'SchemaToolbar',
+              link: '/components/schemaToolbar',
             },
           ],
         },
