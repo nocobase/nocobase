@@ -337,6 +337,7 @@ describe('acl', () => {
       forceUpdate: true,
     });
 
+    app.acl.appendStrategyResource('posts');
     expect(
       acl.can({
         role: 'new',
@@ -886,5 +887,28 @@ describe('acl', () => {
 
     expect(destroyResponse.statusCode).toEqual(200);
     expect(await db.getRepository('roles').findOne({ filterByTk: 'testRole' })).toBeNull();
+  });
+
+  it('should set acl strategy resources', async () => {
+    await db.getRepository('collections').create({
+      values: {
+        name: 'posts',
+        fields: [
+          {
+            name: 'title',
+            type: 'string',
+          },
+        ],
+      },
+      context: {},
+    });
+
+    expect(app.acl.getStrategyResources()).toContain('posts');
+
+    await db.getRepository('collections').destroy({
+      filterByTk: 'posts',
+    });
+
+    expect(app.acl.getStrategyResources()).not.toContain('posts');
   });
 });

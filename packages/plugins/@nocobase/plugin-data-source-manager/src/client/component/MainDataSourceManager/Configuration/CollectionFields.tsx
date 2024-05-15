@@ -10,8 +10,8 @@
 import { css } from '@emotion/css';
 import { createForm, Field } from '@formily/core';
 import { FieldContext, FormContext, useField } from '@formily/react';
-import { Space, Switch, Table, TableColumnProps, Tag, Tooltip } from 'antd';
-import React, { useContext, useMemo, createContext, useState } from 'react';
+import { Space, Switch, Table, TableColumnProps, Tag, Tooltip, message } from 'antd';
+import React, { useContext, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Action,
@@ -36,6 +36,7 @@ import {
   useResourceActionContext,
   useResourceContext,
   ViewCollectionField,
+  useAPIClient,
 } from '@nocobase/client';
 
 import { collection } from './schemas/collectionFields';
@@ -96,12 +97,16 @@ const CurrentFields = (props) => {
   const { getInterface } = useCollectionManager_deprecated();
   const { t } = useTranslation();
   const { setState } = useResourceActionContext();
-  const { resource, targetKey } = props.collectionResource || {};
+  const { targetKey } = props.collectionResource || {};
   const parentRecordData = useRecord();
   const [loadingRecord, setLoadingRecord] = React.useState<any>(null);
   const { refreshCM, isTitleField, getTemplate } = useCollectionManager_deprecated();
-  const { [targetKey]: filterByTk, titleField, template } = parentRecordData;
+  const { [targetKey]: filterByTk, titleField: targetTitleField, template } = parentRecordData;
+  const [titleField, setTitleField] = useState(targetTitleField);
+
   const targetTemplate = getTemplate(template);
+  const api = useAPIClient();
+
   const columns: TableColumnProps<any>[] = [
     {
       dataIndex: ['uiSchema', 'title'],
@@ -121,19 +126,18 @@ const CurrentFields = (props) => {
       dataIndex: 'titleField',
       title: t('Title field'),
       render: function Render(_, record) {
-        const handleChange = (checked) => {
+        const handleChange = async (checked) => {
           setLoadingRecord(record);
-          resource
-            .update({ filterByTk, values: { titleField: checked ? record.name : 'id' } })
-            .then(async () => {
-              await props.refreshAsync();
-              setLoadingRecord(null);
-              refreshCM();
-            })
-            .catch((err) => {
-              setLoadingRecord(null);
-              console.error(err);
-            });
+          await api.request({
+            url: `collections:update?filterByTk=${filterByTk}`,
+            method: 'post',
+            data: { titleField: checked ? record.name : 'id' },
+          });
+          message.success(t('Saved successfully'));
+          setTitleField(checked ? record.name : 'id');
+          await props.refreshAsync();
+          setLoadingRecord(null);
+          refreshCM();
         };
 
         return isTitleField(record) ? (

@@ -9,8 +9,7 @@
 
 import lodash from 'lodash';
 import { snakeCase } from '@nocobase/database';
-
-class NoPermissionError extends Error {}
+import { NoPermissionError } from '@nocobase/acl';
 
 function createWithACLMetaMiddleware() {
   return async (ctx: any, next) => {

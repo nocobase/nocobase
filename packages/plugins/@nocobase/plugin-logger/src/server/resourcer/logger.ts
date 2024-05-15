@@ -15,11 +15,11 @@ import stream from 'stream';
 import { pack } from 'tar-fs';
 import zlib from 'zlib';
 
-const tarFiles = (files: string[]): Promise<any> => {
+const tarFiles = (path: string, files: string[]): Promise<any> => {
   return new Promise((resolve, reject) => {
     const passthrough = new stream.PassThrough();
     const gz = zlib.createGzip();
-    pack(getLoggerFilePath(), {
+    pack(path, {
       entries: files,
     })
       .on('data', (chunk) => {
@@ -46,7 +46,7 @@ export default {
   name: 'logger',
   actions: {
     list: async (ctx: Context, next: Next) => {
-      const path = getLoggerFilePath();
+      const path = getLoggerFilePath(ctx.app.name || 'main');
       const readDir = async (path: string) => {
         const fileTree = [];
         try {
@@ -76,6 +76,7 @@ export default {
       await next();
     },
     download: async (ctx: Context, next: Next) => {
+      const path = getLoggerFilePath(ctx.app.name || 'main');
       let { files = [] } = ctx.action.params.values || {};
       const invalid = files.some((file: string) => !file.endsWith('.log'));
       if (invalid) {
@@ -89,7 +90,7 @@ export default {
       });
       try {
         ctx.attachment('logs.tar.gz');
-        ctx.body = await tarFiles(files);
+        ctx.body = await tarFiles(path, files);
       } catch (err) {
         ctx.log.error(`download error: ${err.message}`, { files, err: err.stack });
         ctx.throw(500, ctx.t('Download logs failed.'));
