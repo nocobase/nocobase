@@ -9,7 +9,6 @@
 
 import { Model, sqlParser, SQLParserTypes } from '@nocobase/database';
 import { selectQuery } from './query-generator';
-import { SQLCollection } from './sql-collection';
 
 export class SQLModel extends Model {
   static sql: string;

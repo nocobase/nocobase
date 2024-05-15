@@ -8,12 +8,12 @@
  */
 
 import { mockDatabase } from '@nocobase/database';
-import { SqlCollection } from '../sql-collection';
+import { SQLCollection } from '../sql-collection';
 
 test('sql-collection', async () => {
   const db = mockDatabase({ tablePrefix: '' });
   await db.clean({ drop: true });
-  const collection = db.collectionFactory.createCollection<SqlCollection>({
+  const collection = db.collectionFactory.createCollection<SQLCollection>({
     name: 'test',
     sql: true,
   });
