@@ -11,13 +11,13 @@
 
 import { Model } from '@nocobase/database';
 import { LoggerOptions } from '@nocobase/logger';
-import { fsExists, requireResolve } from '@nocobase/utils';
+import { fsExists } from '@nocobase/utils';
 import fs from 'fs';
 import type { TFuncKey, TOptions } from 'i18next';
-import { dirname, resolve } from 'path';
+import { resolve } from 'path';
 import { Application } from './application';
 import { InstallOptions, getExposeChangelogUrl, getExposeReadmeUrl } from './plugin-manager';
-import { checkAndGetCompatible } from './plugin-manager/utils';
+import { checkAndGetCompatible, getPluginBasePath } from './plugin-manager/utils';
 
 export interface PluginInterface {
   beforeLoad?: () => void;
@@ -168,8 +168,7 @@ export abstract class Plugin<O = any> implements PluginInterface {
     if (!this.options.packageName) {
       return;
     }
-    const file = await requireResolve(this.options.packageName);
-    return dirname(file);
+    return getPluginBasePath(this.options.packageName);
   }
 
   /**

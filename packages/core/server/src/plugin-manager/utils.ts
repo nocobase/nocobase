@@ -9,7 +9,7 @@
 
 /* istanbul ignore next -- @preserve */
 
-import { importModule, isURL } from '@nocobase/utils';
+import { importModule, isURL, requireResolve } from '@nocobase/utils';
 import { createStoragePluginSymLink } from '@nocobase/utils/plugin-symlink';
 import axios, { AxiosRequestConfig } from 'axios';
 import decompress from 'decompress';
@@ -584,4 +584,16 @@ export async function checkAndGetCompatible(packageName: string) {
     isCompatible: compatible.every((item) => item.result),
     depsCompatible: compatible,
   };
+}
+
+export async function getPluginBasePath(packageName: string) {
+  if (!packageName) {
+    return;
+  }
+  const file = await fs.realpath(await requireResolve(packageName));
+  const basePath = await fs.realpath(path.resolve(process.env.NODE_MODULES_PATH, packageName, 'src'));
+  if (file.startsWith(basePath)) {
+    return basePath;
+  }
+  return path.dirname(path.dirname(file));
 }
