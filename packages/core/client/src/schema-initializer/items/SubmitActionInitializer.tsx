@@ -8,8 +8,7 @@
  */
 
 import React from 'react';
-
-import { ActionInitializer } from './ActionInitializer';
+import { ActionInitializerItem } from './ActionInitializerItem';
 
 export const SubmitActionInitializer = (props) => {
   const schema = {
@@ -24,5 +23,5 @@ export const SubmitActionInitializer = (props) => {
       htmlType: 'submit',
     },
   };
-  return <ActionInitializer {...props} schema={schema} />;
+  return <ActionInitializerItem {...props} schema={schema} />;
 };

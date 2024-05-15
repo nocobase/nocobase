@@ -8,8 +8,7 @@
  */
 
 import React from 'react';
-
-import { ActionInitializer } from './ActionInitializer';
+import { ActionInitializerItem } from './ActionInitializerItem';
 
 export const CreateFilterActionInitializer = (props) => {
   const schema = {
@@ -23,5 +22,5 @@ export const CreateFilterActionInitializer = (props) => {
       htmlType: 'submit',
     },
   };
-  return <ActionInitializer {...props} schema={schema} />;
+  return <ActionInitializerItem {...props} schema={schema} />;
 };

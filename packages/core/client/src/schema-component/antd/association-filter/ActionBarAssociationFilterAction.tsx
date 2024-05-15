@@ -14,7 +14,7 @@ import { SchemaComponentContext, createDesignable } from '../..';
 import { useAPIClient } from '../../../api-client';
 import { useBlockRequestContext } from '../../../block-provider';
 import { mergeFilter } from '../../../filter-provider/utils';
-import { ActionInitializer } from '../../../schema-initializer/items/ActionInitializer';
+import { ActionInitializerItem } from '../../../schema-initializer/items/ActionInitializerItem';
 
 /**
  * @deprecated
@@ -58,5 +58,5 @@ export const ActionBarAssociationFilterAction = (props) => {
     wrap: (s) => s,
   };
 
-  return <ActionInitializer {...newProps} schema={schema} />;
+  return <ActionInitializerItem {...newProps} schema={schema} />;
 };

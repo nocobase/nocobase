@@ -8,7 +8,7 @@
  */
 
 import React from 'react';
-import { ActionInitializer } from '../../../schema-initializer/items/ActionInitializer';
+import { ActionInitializerItem } from '../../../schema-initializer/items/ActionInitializerItem';
 
 export const RefreshActionInitializer = (props) => {
   const schema = {
@@ -22,5 +22,5 @@ export const RefreshActionInitializer = (props) => {
       icon: 'ReloadOutlined',
     },
   };
-  return <ActionInitializer {...props} schema={schema} />;
+  return <ActionInitializerItem {...props} schema={schema} />;
 };

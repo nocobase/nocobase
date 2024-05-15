@@ -7,9 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { ActionInitializerItem } from '@nocobase/client';
 import React from 'react';
-
-import { ActionInitializer } from '@nocobase/client';
 
 export const PrintActionInitializer = (props) => {
   const schema = {
@@ -21,5 +20,5 @@ export const PrintActionInitializer = (props) => {
       icon: 'PrinterOutlined',
     },
   };
-  return <ActionInitializer {...props} schema={schema} />;
+  return <ActionInitializerItem {...props} schema={schema} />;
 };
