@@ -82,6 +82,8 @@ FormV2 内部封装了 FormLayout 组件，FormLayout 组件的 props 请参考 
 
 - 可编辑/禁用/阅读友好
 
+<code src="./demos/new-demos/linkagePattern.tsx"></code>
+
 - 赋值
 
 
