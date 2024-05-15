@@ -9,7 +9,7 @@
 
 import Topo from '@hapi/topo';
 import { CleanOptions, Collection, SyncOptions } from '@nocobase/database';
-import { importModule, isURL } from '@nocobase/utils';
+import { importModule, isURL, requireResolve } from '@nocobase/utils';
 import { fsExists } from '@nocobase/utils/plugin-symlink';
 import execa from 'execa';
 import fg from 'fast-glob';
@@ -395,7 +395,7 @@ export class PluginManager {
    * @internal
    */
   async loadCommands() {
-    this.app.log.debug('load commands');
+    this.app.log.info('load commands');
     const items = await this.repository.find({
       filter: {
         enabled: true,
@@ -404,21 +404,15 @@ export class PluginManager {
     const packageNames: string[] = items.map((item) => item.packageName);
     const source = [];
     for (const packageName of packageNames) {
-      const file = require.resolve(packageName);
-      const sourceDir = basename(dirname(file)) === 'src' ? 'src' : 'dist';
-      const directory = join(
-        packageName,
-        sourceDir,
-        'server/commands/*.' + (basename(dirname(file)) === 'src' ? 'ts' : 'js'),
-      );
+      const file = await requireResolve(packageName);
+      const directory = join(dirname(file), 'server/commands/*.' + (basename(dirname(file)) === 'src' ? 'ts' : 'js'));
       source.push(directory.replaceAll(sep, '/'));
     }
     for (const plugin of this.options.plugins || []) {
       if (typeof plugin === 'string') {
         const packageName = await PluginManager.getPackageName(plugin);
-        const file = require.resolve(packageName);
-        const sourceDir = basename(dirname(file)) === 'src' ? 'src' : 'lib';
-        const directory = join(packageName, sourceDir, 'server/commands/*.' + (sourceDir === 'src' ? 'ts' : 'js'));
+        const file = await requireResolve(packageName);
+        const directory = join(dirname(file), 'server/commands/*.' + (basename(dirname(file)) === 'src' ? 'ts' : 'js'));
         source.push(directory.replaceAll(sep, '/'));
       }
     }
