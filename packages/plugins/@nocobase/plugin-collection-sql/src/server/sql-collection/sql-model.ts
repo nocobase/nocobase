@@ -9,6 +9,7 @@
 
 import { Model, sqlParser, SQLParserTypes } from '@nocobase/database';
 import { selectQuery } from './query-generator';
+import { SQLCollection } from './sql-collection';
 
 export class SQLModel extends Model {
   static sql: string;
@@ -117,8 +118,12 @@ export class SQLModel extends Model {
     return tables.reduce((fields, { table, columns }) => {
       const tableName = this.getTableNameWithSchema(table);
       const collection = this.database.tableNameCollectionMap.get(tableName);
-      if (!collection) {
-        return fields;
+      if (!collection || (collection as SQLCollection).isSql()) {
+        const originFields = {};
+        columns.forEach((column) => {
+          originFields[column.as || column.name] = {};
+        });
+        return { ...fields, ...originFields };
       }
       const all = columns.some((column) => column.name === '*');
       const attributes = collection.model.getAttributes();

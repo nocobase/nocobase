@@ -102,4 +102,18 @@ left join roles r on ru.role_name=r.name`;
       name: { type: 'string', source: 'roles.name' },
     });
   });
+
+  it('should infer fields for without collection', async () => {
+    const model = class extends SQLModel {};
+    model.init(null, {
+      modelName: 'test',
+      tableName: 'test',
+      sequelize: db.sequelize,
+    });
+    model.database = db;
+    model.sql = `select a from a3`;
+    expect(model.inferFields()).toMatchObject({
+      a: {},
+    });
+  });
 });

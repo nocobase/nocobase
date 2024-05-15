@@ -11,7 +11,7 @@ import { Collection, CollectionContext, CollectionOptions } from '@nocobase/data
 import { SQLModel } from './sql-model';
 import { QueryInterfaceDropTableOptions } from 'sequelize';
 
-export class SqlCollection extends Collection {
+export class SQLCollection extends Collection {
   constructor(options: CollectionOptions, context: CollectionContext) {
     options.autoGenId = false;
     options.timestamps = false;

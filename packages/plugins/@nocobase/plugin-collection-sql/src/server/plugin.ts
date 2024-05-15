@@ -9,12 +9,12 @@
 
 import { Plugin } from '@nocobase/server';
 import { Collection } from '@nocobase/database';
-import { SqlCollection } from './sql-collection';
+import { SQLCollection } from './sql-collection';
 import sqlResourcer from './resources/sql';
 
-export class PluginCollectionSqlServer extends Plugin {
+export class PluginCollectionSQLServer extends Plugin {
   async beforeLoad() {
-    this.app.db.collectionFactory.registerCollectionType(SqlCollection, {
+    this.app.db.collectionFactory.registerCollectionType(SQLCollection, {
       condition: (options) => {
         return options.sql;
       },
@@ -37,4 +37,4 @@ export class PluginCollectionSqlServer extends Plugin {
   }
 }
 
-export default PluginCollectionSqlServer;
+export default PluginCollectionSQLServer;
