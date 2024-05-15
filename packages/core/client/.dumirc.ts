@@ -26,7 +26,8 @@ export default defineConfig({
     atomDirs: [
       { type: 'component', dir: 'src/schema-component/antd' },
       { type: 'component', dir: 'src/data-source' },
-
+      { type: 'component', dir: 'src/schema-initializer' },
+      { type: 'component', dir: 'src/schema-settings' },
     ],
   },
   locales: lang === 'zh-CN' ? [{ id: 'zh-CN', name: '中文' }] : [{ id: 'en-US', name: 'English' }],
@@ -424,15 +425,15 @@ export default defineConfig({
           children: [
             {
               title: 'SchemaInitializer',
-              link: '/components/schemaInitializer',
+              link: '/components/schema-initializer',
             },
             {
               title: 'SchemaSettings',
-              link: '/components/schemaSettings',
+              link: '/components/schema-settings',
             },
             {
               title: 'SchemaToolbar',
-              link: '/components/schemaToolbar',
+              link: '/components/schema-toolbar',
             },
           ],
         },
