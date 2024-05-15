@@ -217,6 +217,7 @@ export type VariableTextAreaProps = {
   style?: React.CSSProperties;
   className?: string;
   multiline?: boolean;
+  placeholder?: string;
 };
 
 export function TextArea(props: VariableTextAreaProps) {
