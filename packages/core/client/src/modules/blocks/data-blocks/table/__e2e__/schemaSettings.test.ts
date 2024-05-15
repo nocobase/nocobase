@@ -19,6 +19,27 @@ import {
 } from '@nocobase/test/e2e';
 import { T3843, oneTableWithColumnFixed, oneTableWithUpdateRecord } from './templatesOfBug';
 
+const addSomeCustomActions = async (page: Page) => {
+  // 先删除掉之前的 actions
+  const deleteAction = async (name: string) => {
+    await page.getByLabel(`action-Action.Link-${name}-`).hover();
+    await page.getByRole('button', { name: 'designer-schema-settings-Action.Link-Action.Designer-general' }).hover();
+    await page.getByRole('menuitem', { name: 'Delete' }).click();
+    await page.getByRole('button', { name: 'OK', exact: true }).click();
+  };
+
+  await deleteAction('View');
+  await deleteAction('Edit');
+  await deleteAction('Delete');
+  await deleteAction('Duplicate');
+
+  // 再增加两个自定义的 actions
+  await page.getByRole('button', { name: 'Actions', exact: true }).hover();
+  await page.getByLabel('designer-schema-settings-TableV2.Column-TableV2.ActionColumnDesigner-general').hover();
+  await page.getByRole('menuitem', { name: 'Popup' }).click();
+  await page.getByRole('menuitem', { name: 'Update record' }).click();
+};
+
 test.describe('actions schema settings', () => {
   test.describe('add new', () => {
     const showMenu = async (page: Page) => {
@@ -295,21 +316,6 @@ test.describe('actions schema settings', () => {
   });
 
   test.describe('popup', () => {
-    const addSomeCustomActions = async (page: Page) => {
-      // 先删除掉之前的 actions
-      await page.getByRole('button', { name: 'Actions', exact: true }).hover();
-      await page.getByLabel('designer-schema-settings-TableV2.Column-TableV2.ActionColumnDesigner-general').hover();
-      await page.getByRole('menuitem', { name: 'View' }).click();
-      await page.getByRole('menuitem', { name: 'Edit' }).click();
-      await page.getByRole('menuitem', { name: 'Delete' }).click();
-      await page.getByRole('menuitem', { name: 'Duplicate' }).click();
-
-      // 再增加两个自定义的 actions
-      await page.getByRole('menuitem', { name: 'Customize' }).hover();
-      await page.getByRole('menuitem', { name: 'Popup' }).click();
-      await page.getByRole('menuitem', { name: 'Update record' }).click();
-    };
-
     const showMenu = async (page: Page) => {
       await page.getByLabel('action-Action.Link-Popup-customize:popup-general-table-0').hover();
       await page
@@ -352,21 +358,6 @@ test.describe('actions schema settings', () => {
   });
 
   test.describe('update record', () => {
-    const addSomeCustomActions = async (page: Page) => {
-      // 先删除掉之前的 actions
-      await page.getByRole('button', { name: 'Actions', exact: true }).hover();
-      await page.getByLabel('designer-schema-settings-TableV2.Column-TableV2.ActionColumnDesigner-general').hover();
-      await page.getByRole('menuitem', { name: 'View' }).click();
-      await page.getByRole('menuitem', { name: 'Edit' }).click();
-      await page.getByRole('menuitem', { name: 'Delete' }).click();
-      await page.getByRole('menuitem', { name: 'Duplicate' }).click();
-
-      // 再增加两个自定义的 actions
-      await page.getByRole('menuitem', { name: 'Customize' }).hover();
-      await page.getByRole('menuitem', { name: 'Popup' }).click();
-      await page.getByRole('menuitem', { name: 'Update record' }).click();
-    };
-
     const showMenu = async (page: Page) => {
       await page.getByLabel('action-Action.Link-Update record-customize:update-general-table-0').hover();
       await page
@@ -403,7 +394,6 @@ test.describe('actions schema settings', () => {
         if (!(await page.getByLabel('action-Action.Link-Update record-customize:update-users2-table-0').isVisible())) {
           await page.getByRole('button', { name: 'Actions', exact: true }).hover();
           await page.getByLabel('designer-schema-settings-TableV2.Column-TableV2.ActionColumnDesigner-users2').hover();
-          await page.getByRole('menuitem', { name: 'Customize right' }).hover();
           await page.getByRole('menuitem', { name: 'Update record' }).click();
         }
 
@@ -473,7 +463,8 @@ test.describe('actions schema settings', () => {
       await page.getByRole('menuitem', { name: 'Add new' }).click();
       await page.getByRole('button', { name: 'Add new' }).click();
       await page.getByLabel('schema-initializer-Grid-popup:addNew:addBlock-treeCollection').hover();
-      await page.getByRole('menuitem', { name: 'form Form' }).click();
+      await page.getByRole('menuitem', { name: 'form Form' }).hover();
+      await page.getByRole('menuitem', { name: 'Current collection' }).click();
       await page.mouse.move(300, 0);
       await page.getByLabel('schema-initializer-ActionBar-createForm:configureActions-treeCollection').hover();
       await page.getByRole('menuitem', { name: 'Submit' }).click();
@@ -500,7 +491,8 @@ test.describe('actions schema settings', () => {
         position: { x: 5, y: 5 }, // 防止按钮被遮挡
       });
       await page.getByLabel('schema-initializer-Grid-popup').hover();
-      await page.getByRole('menuitem', { name: 'form Form' }).click();
+      await page.getByRole('menuitem', { name: 'form Form' }).hover();
+      await page.getByRole('menuitem', { name: 'Current collection' }).click();
       await page.mouse.move(300, 0);
       await page.getByLabel('schema-initializer-Grid-form:').hover();
       await page.getByRole('menuitem', { name: 'Parent', exact: true }).click();

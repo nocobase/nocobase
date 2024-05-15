@@ -178,9 +178,9 @@ export class ApprovalPassthroughModeNode {
     this.actionsConfigureActionsButton = page.getByLabel(
       'schema-initializer-ActionBar-ApprovalProcessAddActionButton-approvalRecords',
     );
-    this.addApproveButton = page.getByRole('menuitem', { name: 'Approve' }).getByRole('switch');
-    this.addRejectButton = page.getByRole('menuitem', { name: 'Reject' }).getByRole('switch');
-    this.addReturnButton = page.getByRole('menuitem', { name: 'Return' }).getByRole('switch');
+    this.addApproveButton = page.getByRole('menuitem', { name: 'Approve' });
+    this.addRejectButton = page.getByRole('menuitem', { name: 'Reject' });
+    this.addReturnButton = page.getByRole('menuitem', { name: 'Return' });
     this.addNodeResult = page.getByRole('menuitem', { name: 'Node result right' });
     this.submitButton = page.getByLabel('action-Action-Submit-workflows');
     this.cancelButton = page.getByLabel('action-Action-Cancel-workflows');

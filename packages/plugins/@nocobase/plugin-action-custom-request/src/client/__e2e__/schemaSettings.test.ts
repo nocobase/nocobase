@@ -37,7 +37,6 @@ test.describe('custom request action', () => {
 
     // 1. 新建一个 custom request action
     await page.getByLabel('schema-initializer-ActionBar-').hover();
-    await page.getByRole('menuitem', { name: 'Customize' }).hover();
     await page.getByRole('menuitem', { name: 'Custom request' }).click();
 
     // 2. 打开编辑按钮弹窗
