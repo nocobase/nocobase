@@ -82,8 +82,8 @@ export default class extends Instruction {
       return null;
     }
     return {
-      [fieldNames.value]: key,
-      [fieldNames.label]: title,
+      value: key,
+      label: title,
     };
   }
   useInitializers(node): SchemaInitializerItemType {

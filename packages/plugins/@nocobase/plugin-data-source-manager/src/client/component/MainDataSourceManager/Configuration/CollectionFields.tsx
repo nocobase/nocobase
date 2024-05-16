@@ -11,7 +11,7 @@ import { css } from '@emotion/css';
 import { createForm, Field } from '@formily/core';
 import { FieldContext, FormContext, useField } from '@formily/react';
 import { Space, Switch, Table, TableColumnProps, Tag, Tooltip, message } from 'antd';
-import React, { useContext, useMemo, useState } from 'react';
+import React, { createContext, useContext, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Action,
@@ -59,8 +59,14 @@ const resourceActionProps = {
   },
 };
 
+const CollectionListContext = createContext(null);
+
 const CollectionFieldsProvider = (props) => {
-  return <ResourceActionProvider {...resourceActionProps}>{props.children}</ResourceActionProvider>;
+  return (
+    <CollectionListContext.Provider value={useResourceActionContext()}>
+      <ResourceActionProvider {...resourceActionProps}>{props.children}</ResourceActionProvider>
+    </CollectionListContext.Provider>
+  );
 };
 
 const indentStyle = css`
@@ -101,12 +107,10 @@ const CurrentFields = (props) => {
   const parentRecordData = useRecord();
   const [loadingRecord, setLoadingRecord] = React.useState<any>(null);
   const { refreshCM, isTitleField, getTemplate } = useCollectionManager_deprecated();
-  const { [targetKey]: filterByTk, titleField: targetTitleField, template } = parentRecordData;
-  const [titleField, setTitleField] = useState(targetTitleField);
-
+  const { [targetKey]: filterByTk, titleField, template } = parentRecordData;
   const targetTemplate = getTemplate(template);
   const api = useAPIClient();
-
+  const ctx = useContext(CollectionListContext);
   const columns: TableColumnProps<any>[] = [
     {
       dataIndex: ['uiSchema', 'title'],
@@ -134,10 +138,10 @@ const CurrentFields = (props) => {
             data: { titleField: checked ? record.name : 'id' },
           });
           message.success(t('Saved successfully'));
-          setTitleField(checked ? record.name : 'id');
           await props.refreshAsync();
           setLoadingRecord(null);
           refreshCM();
+          ctx?.refresh?.();
         };
 
         return isTitleField(record) ? (
@@ -221,6 +225,7 @@ const InheritFields = (props) => {
   const { t } = useTranslation();
   const { refreshCM, isTitleField } = useCollectionManager_deprecated();
   const { [targetKey]: filterByTk, titleField, name } = parentRecord;
+  const ctx = useContext(CollectionListContext);
 
   const columns: TableColumnProps<any>[] = [
     {
@@ -249,6 +254,7 @@ const InheritFields = (props) => {
               await props.refreshAsync();
               setLoadingRecord(null);
               refreshCM();
+              ctx?.refresh?.();
             })
             .catch((err) => {
               setLoadingRecord(null);
