@@ -131,12 +131,12 @@ describe('ReadPretty:MAX_SAFE_INTEGER', () => {
     const result = formatNumber({
       value: '1691195350092210177',
       formatStyle: 'normal',
-      step: '1',
+      step: 1,
     });
-    expect(result).toBe('1691195350092210177');
+    expect(result).toBe('1,691,195,350,092,210,177');
   });
   test('normal value', () => {
-    const result = formatNumber({ value: 3, formatStyle: 'normal', step: '1' });
+    const result = formatNumber({ value: 3, formatStyle: 'normal', step: 1 });
     expect(result).toBe('3');
   });
 });
