@@ -12,6 +12,7 @@ import { toFixedByStep } from '@nocobase/utils/client';
 import { format } from 'd3-format';
 import * as math from 'mathjs';
 import React, { useMemo } from 'react';
+import { toSafeNumber } from './InputNumber';
 
 function countDecimalPlaces(value) {
   const number = Number(value);
@@ -29,8 +30,9 @@ const separators = {
 //分隔符换算
 export function formatNumberWithSeparator(value, format = '0.00', step = 1, formatStyle?) {
   let number = value;
+
   if (formatStyle) {
-    number = Number(value);
+    number = toSafeNumber(value);
   }
   let formattedNumber = '';
 
