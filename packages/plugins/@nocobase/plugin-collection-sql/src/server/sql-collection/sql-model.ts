@@ -47,7 +47,7 @@ export class SQLModel extends Model {
   private static parseSelectAST(ast: SQLParserTypes.Select) {
     const tablesMap: { [table: string]: { name: string; as?: string }[] } = {}; // table => columns
     const tableAliases = {};
-    ast.from.forEach((fromItem: SQLParserTypes.BaseFrom) => {
+    ast.from.forEach((fromItem: SQLParserTypes.From) => {
       tablesMap[fromItem.table] = [];
       if (fromItem.as) {
         tableAliases[fromItem.as] = fromItem.table;
@@ -84,7 +84,10 @@ export class SQLModel extends Model {
     ast.from = ast.from || [];
     ast.columns = ast.columns || [];
     if (ast.with) {
-      ast.with.forEach((withItem) => {
+      // The type definition of the AST is not accurate in node-sql-parser 4.18.0
+      // So we need to use any here temporarily
+      const withAST = ast.with as any;
+      withAST.forEach((withItem: any) => {
         const as = withItem.name.value;
         const withAst = withItem.stmt.ast;
         ast.from.push(...withAst.from.map((f: any) => ({ ...f, as })));
