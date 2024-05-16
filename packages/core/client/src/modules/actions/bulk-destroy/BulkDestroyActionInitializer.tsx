@@ -9,7 +9,7 @@
 
 import React from 'react';
 import { useCollection_deprecated } from '../../../collection-manager';
-import { ActionInitializerItem } from '../../../schema-initializer/items/ActionInitializerItem';
+import { ActionInitializer } from '../../../schema-initializer/items/ActionInitializer';
 
 export const BulkDestroyActionInitializer = (props) => {
   const collection = useCollection_deprecated();
@@ -38,5 +38,5 @@ export const BulkDestroyActionInitializer = (props) => {
   if (collection) {
     schema['x-acl-action'] = `${collection.name}:destroy`;
   }
-  return <ActionInitializerItem {...props} schema={schema} />;
+  return <ActionInitializer {...props} schema={schema} />;
 };

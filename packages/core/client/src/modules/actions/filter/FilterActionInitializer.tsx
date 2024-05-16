@@ -8,7 +8,7 @@
  */
 
 import React from 'react';
-import { ActionInitializerItem } from '../../../schema-initializer/items/ActionInitializerItem';
+import { ActionInitializer } from '../../../schema-initializer/items/ActionInitializer';
 
 export const FilterActionInitializer = (props) => {
   const schema = {
@@ -23,5 +23,5 @@ export const FilterActionInitializer = (props) => {
       icon: 'FilterOutlined',
     },
   };
-  return <ActionInitializerItem {...props} schema={schema} />;
+  return <ActionInitializer {...props} schema={schema} />;
 };

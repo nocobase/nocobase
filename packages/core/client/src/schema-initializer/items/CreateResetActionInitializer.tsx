@@ -8,7 +8,7 @@
  */
 
 import React from 'react';
-import { ActionInitializerItem } from './ActionInitializerItem';
+import { ActionInitializer } from './ActionInitializer';
 
 export const CreateResetActionInitializer = (props) => {
   const schema = {
@@ -17,5 +17,5 @@ export const CreateResetActionInitializer = (props) => {
     'x-use-component-props': 'useResetBlockActionProps',
     'x-designer': 'Action.Designer',
   };
-  return <ActionInitializerItem {...props} schema={schema} />;
+  return <ActionInitializer {...props} schema={schema} />;
 };

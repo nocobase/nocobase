@@ -8,7 +8,7 @@
  */
 
 import React from 'react';
-import { ActionInitializerItem } from '../../../schema-initializer/items/ActionInitializerItem';
+import { ActionInitializer } from '../../../schema-initializer/items/ActionInitializer';
 
 export const ExpandableActionInitializer = (props) => {
   const schema = {
@@ -29,5 +29,5 @@ export const ExpandableActionInitializer = (props) => {
       },
     },
   };
-  return <ActionInitializerItem {...props} schema={schema} />;
+  return <ActionInitializer {...props} schema={schema} />;
 };
