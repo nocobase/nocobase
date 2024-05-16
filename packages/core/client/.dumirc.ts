@@ -220,56 +220,6 @@ export default defineConfig({
       ],
       '/components': [
         {
-          title: '全局',
-          type: 'group',
-          children: [
-            {
-              title: 'Page',
-              link: '/components/page',
-            },
-            {
-              title: 'Tabs',
-              link: '/components/tabs',
-            },
-            {
-              title: 'Menu',
-              link: '/components/menu',
-            },
-          ],
-        },
-        {
-          title: '装饰器',
-          type: 'group',
-          children: [
-            {
-              title: '基础装饰器',
-              children: [
-                {
-                  title: 'BlockItem',
-                  link: '/components/block-item',
-                },
-                {
-                  title: 'CardItem',
-                  link: '/components/card-item',
-                },
-                {
-                  title: 'FormItem',
-                  link: '/components/form-item',
-                },
-              ],
-            },
-            {
-              title: '区块装饰器',
-              children: [
-                {
-                  title: 'DataBlockProvider',
-                  link: '/components/data-block',
-                },
-              ],
-            },
-          ],
-        },
-        {
           title: 'Field',
           type: 'group',
           children: [
@@ -358,16 +308,12 @@ export default defineConfig({
               link: '/components/cron',
             },
             {
+              title: 'Preview',
+              link: '/components/preview',
+            },
+            {
               title: 'Markdown',
               link: '/components/markdown',
-            },
-            {
-              title: 'Variable',
-              link: '/components/variable',
-            },
-            {
-              title: 'QuickEdit',
-              link: '/components/quick-edit',
             },
             {
               title: 'RichText',
@@ -376,7 +322,21 @@ export default defineConfig({
           ],
         },
         {
-          title: '展示',
+          title: '操作',
+          type: 'group',
+          children: [
+            {
+              title: 'Action',
+              link: '/components/action',
+            },
+            {
+              title: 'Filter.Action',
+              link: '/components/filter',
+            },
+          ],
+        },
+        {
+          title: '区块',
           type: 'group',
           children: [
             {
@@ -406,16 +366,34 @@ export default defineConfig({
           ],
         },
         {
-          title: '操作',
+          title: '装饰器',
           type: 'group',
           children: [
             {
-              title: 'Action',
-              link: '/components/action',
+              title: '基础装饰器',
+              children: [
+                {
+                  title: 'BlockItem',
+                  link: '/components/block-item',
+                },
+                {
+                  title: 'CardItem',
+                  link: '/components/card-item',
+                },
+                {
+                  title: 'FormItem',
+                  link: '/components/form-item',
+                },
+              ],
             },
             {
-              title: 'Filter.Action',
-              link: '/components/filter',
+              title: '区块装饰器',
+              children: [
+                {
+                  title: 'DataBlockProvider',
+                  link: '/components/data-block',
+                },
+              ],
             },
           ],
         },
@@ -442,6 +420,22 @@ export default defineConfig({
           type: 'group',
           children: [
             {
+              title: 'Variable',
+              link: '/components/variable',
+            },
+            {
+              title: 'Page',
+              link: '/components/page',
+            },
+            {
+              title: 'Tabs',
+              link: '/components/tabs',
+            },
+            {
+              title: 'Menu',
+              link: '/components/menu',
+            },
+            {
               title: 'ErrorFallback',
               link: '/components/error-fallback',
             },
@@ -453,9 +447,10 @@ export default defineConfig({
               title: 'Pagination',
               link: '/components/pagination',
             },
+         
             {
-              title: 'Preview',
-              link: '/components/preview',
+              title: 'QuickEdit',
+              link: '/components/quick-edit',
             },
           ],
         },

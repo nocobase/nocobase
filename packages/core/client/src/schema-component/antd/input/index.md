@@ -2,7 +2,11 @@
 
 文本输入框。其基于 ant-design [Input](https://ant.design/components/input/) 组件进行封装。
 
-## Input
+
+Input组件是文本类型字段，如 Email、UUID、Phone 等字段的UI组件，通过 `x-validator`设置不同的验证规则。
+
+<code src="./demos/new-demos/email.tsx"></code>
+
 
 ### Basic Usage
 
