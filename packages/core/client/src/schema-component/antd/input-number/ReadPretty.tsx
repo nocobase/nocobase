@@ -12,7 +12,7 @@ import { toFixedByStep } from '@nocobase/utils/client';
 import { format } from 'd3-format';
 import * as math from 'mathjs';
 import React, { useMemo } from 'react';
-import { toSafeNumber } from './InputNumber';
+import BigNumber from 'bignumber.js';
 
 function countDecimalPlaces(value) {
   const number = Number(value);
@@ -27,12 +27,15 @@ const separators = {
   '0 0,00': { thousands: ' ', decimal: '.' },
   '0.00': { thousands: '', decimal: '.' }, // 没有千位分隔符
 };
-//分隔符换算
+
 export function formatNumberWithSeparator(value, format = '0.00', step = 1, formatStyle?) {
+  if (value > Number.MAX_SAFE_INTEGER || value < Number.MIN_SAFE_INTEGER) {
+    return formatBigNumberWithSeparator(value, format, step, formatStyle);
+  }
   let number = value;
 
   if (formatStyle) {
-    number = toSafeNumber(value);
+    number = Number(value);
   }
   let formattedNumber = '';
 
@@ -48,6 +51,33 @@ export function formatNumberWithSeparator(value, format = '0.00', step = 1, form
       .replace(/\./g, 'dot_placeholder')
       .replace(/comma_placeholder/g, thousands)
       .replace(/dot_placeholder/g, decimal);
+  } else {
+    formattedNumber = number.toString();
+  }
+  return formattedNumber;
+}
+//大字段分隔符换算
+function formatBigNumberWithSeparator(value, format = '0.00', step = 1, formatStyle?) {
+  let number = value;
+
+  if (formatStyle) {
+    number = new BigNumber(value).toString();
+  }
+
+  let formattedNumber = '';
+  if (separators[format]) {
+    const { thousands, decimal } = separators[format];
+    const [integerPart, initFractionalPart] = number.toString().split('.');
+    let fractionalPart = initFractionalPart;
+    // 格式化整数部分
+    const formattedIntegerPart = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, thousands);
+    // 处理小数部分
+    if (fractionalPart && step) {
+      fractionalPart = fractionalPart.substring(0, step);
+      formattedNumber = `${formattedIntegerPart}${decimal}${fractionalPart}`;
+    } else {
+      formattedNumber = formattedIntegerPart;
+    }
   } else {
     formattedNumber = number.toString();
   }
@@ -98,7 +128,7 @@ export function scientificNotation(number, decimalPlaces, separator = '.') {
 }
 
 export function formatNumber(props) {
-  const { step, formatStyle = 'normal', value, unitConversion, unitConversionType, separator = '0.00' } = props;
+  const { step, formatStyle = 'normal', value, unitConversion, unitConversionType, separator = '0,0.00' } = props;
 
   if (!isValid(value)) {
     return null;
@@ -136,6 +166,7 @@ export interface InputNumberReadPrettyProps {
 
 export const ReadPretty: React.FC<InputNumberReadPrettyProps> = (props) => {
   const { step, formatStyle, value, addonBefore, addonAfter, unitConversion, unitConversionType, separator } = props;
+  console.log(props);
   const result = useMemo(() => {
     return formatNumber({ step, formatStyle, value, unitConversion, unitConversionType, separator });
   }, [step, formatStyle, value, unitConversion, unitConversionType, separator]);

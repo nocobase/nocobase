@@ -18,7 +18,7 @@ type ComposedInputNumber = React.ForwardRefExoticComponent<
 > & {
   ReadPretty?: React.FC<InputNumberReadPrettyProps>;
 };
-export function toSafeNumber(value) {
+function toSafeNumber(value) {
   if (!value) {
     return value;
   }
