@@ -136,7 +136,7 @@ export const parseBuilder = async (ctx: Context, next: Next) => {
     const attribute = [];
     const col = sequelize.col(field);
     if (format) {
-      attribute.push(formatter(sequelize, type, field, format));
+      attribute.push(formatter(sequelize, type, field, format, ctx.timezone));
     } else {
       attribute.push(col);
     }
