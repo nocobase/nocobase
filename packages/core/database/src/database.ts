@@ -322,6 +322,9 @@ export class Database extends EventEmitter implements AsyncEmitter {
     this.registerCollectionType();
   }
 
+  /**
+   * @internal
+   */
   _instanceId: string;
 
   get instanceId() {
