@@ -591,9 +591,13 @@ export async function getPluginBasePath(packageName: string) {
     return;
   }
   const file = await fs.realpath(await requireResolve(packageName));
-  const basePath = await fs.realpath(path.resolve(process.env.NODE_MODULES_PATH, packageName, 'src'));
-  if (file.startsWith(basePath)) {
-    return basePath;
+  try {
+    const basePath = await fs.realpath(path.resolve(process.env.NODE_MODULES_PATH, packageName, 'src'));
+    if (file.startsWith(basePath)) {
+      return basePath;
+    }
+  } catch (error) {
+    // skip
   }
   return path.dirname(path.dirname(file));
 }
