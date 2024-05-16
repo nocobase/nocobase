@@ -166,7 +166,6 @@ export interface InputNumberReadPrettyProps {
 
 export const ReadPretty: React.FC<InputNumberReadPrettyProps> = (props) => {
   const { step, formatStyle, value, addonBefore, addonAfter, unitConversion, unitConversionType, separator } = props;
-  console.log(props);
   const result = useMemo(() => {
     return formatNumber({ step, formatStyle, value, unitConversion, unitConversionType, separator });
   }, [step, formatStyle, value, unitConversion, unitConversionType, separator]);
