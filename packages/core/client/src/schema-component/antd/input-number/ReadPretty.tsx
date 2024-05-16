@@ -27,7 +27,7 @@ const separators = {
   '0 0,00': { thousands: ' ', decimal: '.' },
   '0.00': { thousands: '', decimal: '.' }, // 没有千位分隔符
 };
-
+//分隔符换算
 export function formatNumberWithSeparator(value, format = '0.00', step = 1, formatStyle?) {
   if (value > Number.MAX_SAFE_INTEGER || value < Number.MIN_SAFE_INTEGER) {
     return formatBigNumberWithSeparator(value, format, step, formatStyle);
