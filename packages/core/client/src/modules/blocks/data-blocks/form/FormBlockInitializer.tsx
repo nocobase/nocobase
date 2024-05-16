@@ -109,7 +109,7 @@ export const useCreateFormBlock = () => {
           createCreateFormBlockUISchema({
             collectionName: item.collectionName || item.name,
             dataSource: item.dataSource,
-            isCusomeizeCreate: isCustomizeCreate,
+            isCusomeizeCreate: true,
           }),
         );
       } else {
@@ -119,10 +119,12 @@ export const useCreateFormBlock = () => {
               ? {
                   association,
                   dataSource: item.dataSource,
+                  isCusomeizeCreate: isCustomizeCreate,
                 }
               : {
                   collectionName: item.collectionName || item.name,
                   dataSource: item.dataSource,
+                  isCusomeizeCreate: isCustomizeCreate,
                 },
           ),
         );
@@ -140,7 +142,7 @@ export const useCreateFormBlock = () => {
           dataSource: item.dataSource,
           templateSchema: templateSchema,
           collectionName: item.name,
-          isCusomeizeCreate: isCustomizeCreate,
+          isCusomeizeCreate: true,
         });
       } else {
         schema = createCreateFormBlockUISchema(
@@ -150,11 +152,13 @@ export const useCreateFormBlock = () => {
                 templateSchema: templateSchema,
                 collectionName: item.name,
                 association,
+                isCusomeizeCreate: isCustomizeCreate,
               }
             : {
                 dataSource: item.dataSource,
                 templateSchema: templateSchema,
                 collectionName: item.name,
+                isCusomeizeCreate: isCustomizeCreate,
               },
         );
       }
