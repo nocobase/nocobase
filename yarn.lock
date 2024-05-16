@@ -6783,11 +6783,6 @@
   resolved "https://registry.npmmirror.com/@types/parse5/-/parse5-6.0.3.tgz#705bb349e789efa06f43f128cef51240753424cb"
   integrity sha512-SuT16Q1K51EAVPz1K29DJ/sXjhSQ0zjvsypYJ6tlwVsRV9jwW5Adq2ch8Dq8kDBCkYnELS7N7VNCSB5nC56t/g==
 
-"@types/pegjs@^0.10.0":
-  version "0.10.6"
-  resolved "https://registry.npmmirror.com/@types/pegjs/-/pegjs-0.10.6.tgz#bc20fc4809fed4cddab8d0dbee0e568803741a82"
-  integrity sha512-eLYXDbZWXh2uxf+w8sXS8d6KSoXTswfps6fvCUuVAGN8eRpfe7h9eSRydxiSJvo9Bf+GzifsDOr9TMQlmJdmkw==
-
 "@types/picomatch@*":
   version "2.3.3"
   resolved "https://registry.npmmirror.com/@types/picomatch/-/picomatch-2.3.3.tgz#be60498568c19e989e43fb39aa84be1ed3655e92"
@@ -19039,12 +19034,11 @@ node-releases@^2.0.14:
   resolved "https://registry.npmmirror.com/node-releases/-/node-releases-2.0.14.tgz#2ffb053bceb8b2be8495ece1ab6ce600c4461b0b"
   integrity sha512-y10wOWt8yZpqXmOgRo77WaHEmhYQYGNA6y421PKsKYWEK8aW+cqAphborZDhqfyKrbZEN92CN1X2KbafY2s7Yw==
 
-node-sql-parser@^5.1.0:
-  version "5.1.0"
-  resolved "https://registry.npmmirror.com/node-sql-parser/-/node-sql-parser-5.1.0.tgz#d27350e6af429c7e292e2fd37e0813f97bb1cac2"
-  integrity sha512-vrJ+Pl7fiWftEq7Tu/+kXQpDAx5c6YyQXB5/IINrjYR1we8HEkuSJtqCbsNrLwbnEVfzq4m0Nuo1CLMoeIenTA==
+node-sql-parser@^4.18.0:
+  version "4.18.0"
+  resolved "https://registry.npmmirror.com/node-sql-parser/-/node-sql-parser-4.18.0.tgz#516b6e633c55c5abbba1ca588ab372db81ae9318"
+  integrity sha512-2YEOR5qlI1zUFbGMLKNfsrR5JUvFg9LxIRVE+xJe962pfVLH0rnItqLzv96XVs1Y1UIR8FxsXAuvX/lYAWZ2BQ==
   dependencies:
-    "@types/pegjs" "^0.10.0"
     big-integer "^1.6.48"
 
 node-xlsx@^0.16.1:
