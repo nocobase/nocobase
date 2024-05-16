@@ -20,7 +20,7 @@ import {
 } from '@nocobase/plugin-workflow/client';
 
 import { NAMESPACE } from '../locale';
-import { SchemaComponent } from '@nocobase/client';
+import { SchemaComponent, css } from '@nocobase/client';
 
 const BodySchema = {
   'application/json': {
@@ -173,6 +173,18 @@ export default class extends Instruction {
           space: {
             type: 'void',
             'x-component': 'Space',
+            'x-component-props': {
+              style: {
+                flexWrap: 'nowrap',
+                maxWidth: '100%',
+              },
+              className: css`
+                & > .ant-space-item:first-child,
+                & > .ant-space-item:last-child {
+                  flex-shrink: 0;
+                }
+              `,
+            },
             properties: {
               name: {
                 type: 'string',
@@ -188,6 +200,7 @@ export default class extends Instruction {
                 'x-component': 'WorkflowVariableTextArea',
                 'x-component-props': {
                   useTypedConstant: true,
+                  placeholder: `{{t("Value")}}`,
                 },
               },
               remove: {
@@ -218,6 +231,18 @@ export default class extends Instruction {
           space: {
             type: 'void',
             'x-component': 'Space',
+            'x-component-props': {
+              style: {
+                flexWrap: 'nowrap',
+                maxWidth: '100%',
+              },
+              className: css`
+                & > .ant-space-item:first-child,
+                & > .ant-space-item:last-child {
+                  flex-shrink: 0;
+                }
+              `,
+            },
             properties: {
               name: {
                 type: 'string',
@@ -233,6 +258,7 @@ export default class extends Instruction {
                 'x-component': 'WorkflowVariableTextArea',
                 'x-component-props': {
                   useTypedConstant: true,
+                  placeholder: `{{t("Value")}}`,
                 },
               },
               remove: {
