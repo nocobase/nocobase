@@ -27,7 +27,11 @@ export default (app: Application) => {
       const upgrading = await fsExists(file);
       if (upgrading) {
         await app.upgrade();
-        await fs.promises.rm(file);
+        try {
+          await fs.promises.rm(file);
+        } catch (error) {
+          // skip
+        }
       } else if (options.quickstart) {
         if (await app.isInstalled()) {
           await app.upgrade();
