@@ -22,6 +22,7 @@ describe('createCreateFormBlockUISchema', () => {
       dataSource: 'userDataSource',
       association: 'userAssociation',
       templateSchema: { type: 'string' },
+      isCusomeizeCreate: true,
     };
 
     const result = createCreateFormBlockUISchema(options);
@@ -61,6 +62,7 @@ describe('createCreateFormBlockUISchema', () => {
           "association": "userAssociation",
           "collection": "users",
           "dataSource": "userDataSource",
+          "isCusomeizeCreate": true,
         },
         "x-settings": "blockSettings:createForm",
         "x-toolbar": "BlockSchemaToolbar",

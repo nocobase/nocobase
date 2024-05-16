@@ -100,6 +100,7 @@ export const FormBlockInitializer = ({
 export const useCreateFormBlock = () => {
   const { insert } = useSchemaInitializer();
   const association = useAssociationName();
+  const { isCusomeizeCreate: isCustomizeCreate } = useSchemaInitializerItem();
 
   const createFormBlock = useCallback(
     ({ item, fromOthersInPopup }) => {
@@ -108,6 +109,7 @@ export const useCreateFormBlock = () => {
           createCreateFormBlockUISchema({
             collectionName: item.collectionName || item.name,
             dataSource: item.dataSource,
+            isCusomeizeCreate: isCustomizeCreate,
           }),
         );
       } else {
@@ -126,7 +128,7 @@ export const useCreateFormBlock = () => {
         );
       }
     },
-    [association, insert],
+    [association, insert, isCustomizeCreate],
   );
 
   const templateWrap = useCallback(
@@ -138,6 +140,7 @@ export const useCreateFormBlock = () => {
           dataSource: item.dataSource,
           templateSchema: templateSchema,
           collectionName: item.name,
+          isCusomeizeCreate: isCustomizeCreate,
         });
       } else {
         schema = createCreateFormBlockUISchema(
@@ -161,7 +164,7 @@ export const useCreateFormBlock = () => {
       }
       return schema;
     },
-    [association],
+    [association, isCustomizeCreate],
   );
 
   return {

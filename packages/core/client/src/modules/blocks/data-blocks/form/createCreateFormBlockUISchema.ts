@@ -16,6 +16,8 @@ export interface CreateFormBlockUISchemaOptions {
   collectionName?: string;
   association?: string;
   templateSchema?: ISchema;
+  /** 表示是通过 Other collections 选项创建的区块（由于历史遗留问题，这里的命名暂不做更改） */
+  isCusomeizeCreate?: boolean;
 }
 
 /**
@@ -23,7 +25,7 @@ export interface CreateFormBlockUISchemaOptions {
  * @returns
  */
 export function createCreateFormBlockUISchema(options: CreateFormBlockUISchemaOptions): ISchema {
-  const { collectionName, association, dataSource, templateSchema } = options;
+  const { collectionName, association, dataSource, templateSchema, isCusomeizeCreate } = options;
   const resourceName = association || collectionName;
 
   if (!dataSource) {
@@ -42,6 +44,7 @@ export function createCreateFormBlockUISchema(options: CreateFormBlockUISchemaOp
       dataSource,
       collection: collectionName,
       association,
+      isCusomeizeCreate,
     },
     'x-toolbar': 'BlockSchemaToolbar',
     'x-settings': 'blockSettings:createForm',

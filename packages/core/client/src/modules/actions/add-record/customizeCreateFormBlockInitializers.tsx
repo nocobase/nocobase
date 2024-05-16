@@ -24,6 +24,8 @@ const commonOptions = {
           name: 'form',
           title: '{{t("Form")}}',
           Component: 'FormBlockInitializer',
+          /** 表示是通过 Other collections 选项创建的区块（由于历史遗留问题，这里的命名暂不做更改） */
+          isCusomeizeCreate: true,
         },
       ],
     },
