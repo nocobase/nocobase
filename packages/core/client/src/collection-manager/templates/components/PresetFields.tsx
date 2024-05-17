@@ -204,7 +204,7 @@ export const PresetFields = observer(
           selectedRowKeys,
           getCheckboxProps: (record) => ({
             name: record.name,
-            disabled: props?.disabled,
+            disabled: props?.disabled || props?.presetFieldsDisabledIncludes?.includes?.(record.name),
           }),
           onChange: (_, selectedRows) => {
             const fields = getDefaultCollectionFields(selectedRows, form.values);
