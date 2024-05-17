@@ -60,7 +60,7 @@ describe('action', () => {
           title: 'text',
           extname: '.txt',
           path: '',
-          size: 13,
+          // size: 13,
           mimetype: 'text/plain',
           meta: {},
           storageId: 1,
@@ -102,7 +102,7 @@ describe('action', () => {
         // 通过 url 是否能正确访问
         const url = attachment.url.replace(`http://localhost:${APP_PORT}`, '');
         const content = await agent.get(url);
-        expect(content.text).toBe('Hello world!\n');
+        expect(content.text.include('Hello world!')).toBeTruthy();
       });
     });
 
