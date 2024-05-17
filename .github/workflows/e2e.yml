@@ -42,7 +42,7 @@ jobs:
         with:
           node-version: 18
           cache: 'yarn'
-      - run: yarn --frozen-lockfile
+      - run: yarn
       - run: yarn build
         env:
           __E2E__: true # e2e will be reusing this workflow, so we need to set this flag to true
@@ -104,7 +104,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-yarn-
 
-      - run: yarn --frozen-lockfile
+      - run: yarn
 
       - name: Download build artifact
         uses: actions/download-artifact@v4
@@ -184,7 +184,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-yarn-
 
-      - run: yarn --frozen-lockfile
+      - run: yarn
 
       - name: Download build artifact
         uses: actions/download-artifact@v4
@@ -264,7 +264,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-yarn-
 
-      - run: yarn --frozen-lockfile
+      - run: yarn
 
       - name: Download build artifact
         uses: actions/download-artifact@v4
@@ -310,7 +310,7 @@ jobs:
         with:
           node-version: 18
           cache: 'yarn'
-      - run: yarn --frozen-lockfile
+      - run: yarn
 
       - name: Download e2e report artifact
         uses: actions/download-artifact@v4
