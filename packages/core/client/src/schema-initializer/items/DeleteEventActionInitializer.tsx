@@ -8,8 +8,7 @@
  */
 
 import React from 'react';
-
-import { ActionInitializer } from './ActionInitializer';
+import { ActionInitializerItem } from './ActionInitializerItem';
 
 export const DeleteEventActionInitializer = (props) => {
   const schema = {
@@ -26,5 +25,5 @@ export const DeleteEventActionInitializer = (props) => {
       },
     },
   };
-  return <ActionInitializer {...props} schema={schema} />;
+  return <ActionInitializerItem {...props} schema={schema} />;
 };
