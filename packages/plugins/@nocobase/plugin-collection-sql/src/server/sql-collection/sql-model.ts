@@ -123,6 +123,9 @@ export class SQLModel extends Model {
       if (!collection) {
         const originFields = {};
         columns.forEach((column) => {
+          if (column.name === '*') {
+            return;
+          }
           originFields[column.as || column.name] = {};
         });
         return { ...fields, ...originFields };
