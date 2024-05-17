@@ -47,6 +47,13 @@ export const dateFormatFn = (
         .replace(/hh/g, '%H')
         .replace(/mm/g, '%i')
         .replace(/ss/g, '%S');
+      if (timezone) {
+        return sequelize.fn(
+          'date_format',
+          sequelize.fn('convert_tz', sequelize.col(field), process.env.DB_TIMEZONE || '+00:00', timezone),
+          format,
+        );
+      }
       return sequelize.fn('date_format', sequelize.col(field), format);
     case 'postgres':
       format = format.replace(/hh/g, 'HH24').replace(/mm/g, 'MI').replace(/ss/g, 'SS');

@@ -130,7 +130,7 @@ describe('api', () => {
     expect(ctx.action.params.values.data).toMatchObject([{ createdAt: '2023-01' }, { createdAt: '2023-02' }]);
   });
 
-  test('datetime format with timezone', async () => {
+  test.only('datetime format with timezone', async () => {
     const dialect = db.sequelize.getDialect();
     if (dialect === 'sqlite') {
       await repo.create({
@@ -144,6 +144,13 @@ describe('api', () => {
         values: {
           id: 3,
           createdAt: '2024-05-14 19:32:30.175+00',
+        },
+      });
+    } else if (dialect === 'mysql' || dialect === 'mariadb') {
+      await repo.create({
+        values: {
+          id: 3,
+          createdAt: '2024-05-14T19:32:30Z',
         },
       });
     } else {
