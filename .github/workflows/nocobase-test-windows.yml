@@ -1,4 +1,4 @@
-name: NocoBase Backend Test
+name: Test on Windows
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
