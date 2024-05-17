@@ -7,11 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { createMockServer } from '@nocobase/test';
+import { Parser } from 'node-sql-parser';
+import type * as SQLParserTypes from 'node-sql-parser';
 
-export default async function createApp() {
-  const app = await createMockServer({
-    plugins: ['nocobase', 'collection-sql'],
-  });
-  return app;
-}
+export default new Parser();
+export type { SQLParserTypes };

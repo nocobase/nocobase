@@ -1,0 +1,21 @@
+{
+  "name": "@nocobase/plugin-collection-sql",
+  "displayName": "Collection: SQL",
+  "displayName.zh-CN": "数据表: SQL",
+  "description": "Provides SQL collection template",
+  "description.zh-CN": "提供 SQL 数据表模板",
+  "version": "1.0.0-alpha.14",
+  "homepage": "https://docs-cn.nocobase.com/handbook/collection-sql",
+  "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/collection-sql",
+  "main": "dist/server/index.js",
+  "license": "AGPL-3.0",
+  "dependencies": {},
+  "peerDependencies": {
+    "@nocobase/client": "0.x",
+    "@nocobase/server": "0.x",
+    "@nocobase/test": "0.x"
+  },
+  "keywords": [
+    "Collections"
+  ]
+}
