@@ -54,3 +54,8 @@ interface InputNumberReadPrettyProps {
 ## Separator
 
 <code src="./demos/new-demos/separator.tsx"></code>
+
+### 切换 Separator
+
+<code src="./demos/new-demos/changeSeparator.tsx"></code>
+
