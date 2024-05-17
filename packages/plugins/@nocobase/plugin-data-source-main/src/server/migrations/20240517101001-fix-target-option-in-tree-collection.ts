@@ -26,7 +26,7 @@ export default class extends Migration {
 
       for (const field of fields) {
         if (!['belongsTo', 'hasMany', 'belongsToMany', 'hasOne'].includes(field.get('type')) && field.get('target')) {
-          field.set('target', null);
+          field.set('target', undefined);
           await field.save();
         }
       }

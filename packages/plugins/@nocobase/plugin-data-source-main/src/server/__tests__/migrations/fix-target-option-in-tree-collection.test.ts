@@ -175,6 +175,6 @@ describe('fix target option in tree collection', () => {
       },
     });
 
-    expect(idField.get('target')).toBeFalsy();
+    expect(idField.get('target')).toBeUndefined();
   });
 });
