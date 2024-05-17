@@ -133,7 +133,7 @@ export class Application {
     this.ws.app = this;
     this.pluginSettingsManager = new PluginSettingsManager(options.pluginSettings, this);
     this.addRoutes();
-    this.name = this.getName();
+    this.name = getSubAppName(this.getPublicPath()) || this.options.name || 'main';
     if (this.name) {
       this.apiClient.auth.prefix = `${this.name}_`;
     }
@@ -184,7 +184,7 @@ export class Application {
   }
 
   getName() {
-    return this.options.name || getSubAppName(this.getPublicPath()) || 'main';
+    return this.name;
   }
 
   getPublicPath() {
