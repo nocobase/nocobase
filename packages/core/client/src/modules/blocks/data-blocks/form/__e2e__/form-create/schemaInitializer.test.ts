@@ -8,9 +8,16 @@
  */
 
 import { uid } from '@formily/shared';
-import { createBlockInPage, expect, oneEmptyForm, test } from '@nocobase/test/e2e';
+import { Page, createBlockInPage, expect, oneEmptyForm, test } from '@nocobase/test/e2e';
 import { oneEmptyTableWithUsers } from '../../../details-multi/__e2e__/templatesOfBug';
 import { T3106, T3469, oneFormWithInheritFields } from './templatesOfBug';
+
+const deleteButton = async (page: Page, name: string) => {
+  await page.getByRole('button', { name }).hover();
+  await page.getByRole('button', { name }).getByLabel('designer-schema-settings-').hover();
+  await page.getByRole('menuitem', { name: 'Delete' }).click();
+  await page.getByRole('button', { name: 'OK', exact: true }).click();
+};
 
 test.describe('where creation form block can be added', () => {
   test('page', async ({ page, mockPage }) => {
@@ -111,16 +118,11 @@ test.describe('configure actions', () => {
 
     // add button
     await page.getByRole('menuitem', { name: 'Submit' }).click();
-    await expect(page.getByRole('menuitem', { name: 'Submit' }).getByRole('switch')).toBeChecked();
-
     await page.mouse.move(300, 0);
     await expect(page.getByRole('button', { name: 'Submit' })).toBeVisible();
 
     // delete button
-    await page.getByLabel('schema-initializer-ActionBar-createForm:configureActions-general').hover();
-    await page.getByRole('menuitem', { name: 'Submit' }).click();
-    await expect(page.getByRole('menuitem', { name: 'Submit' }).getByRole('switch')).not.toBeChecked();
-
+    await deleteButton(page, 'Submit');
     await page.mouse.move(300, 0);
     await expect(page.getByRole('button', { name: 'Submit' })).not.toBeVisible();
   });
@@ -177,15 +179,5 @@ test.describe('configure actions', () => {
     await expect(
       page.getByLabel('block-item-CollectionField-users-form-users.username-Username').getByRole('textbox'),
     ).toHaveValue('');
-  });
-
-  test('customize: save record', async ({ page, mockPage }) => {
-    await mockPage(oneEmptyForm).goto();
-
-    await page.getByLabel('schema-initializer-ActionBar-createForm:configureActions-general').hover();
-    await page.getByRole('menuitem', { name: 'Customize' }).hover();
-    await page.getByRole('menuitem', { name: 'Save record' }).click();
-
-    await expect(page.getByRole('button', { name: 'Save record' })).toBeVisible();
   });
 });

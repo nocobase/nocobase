@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Database } from '@nocobase/database';
+import { Database, Repository } from '@nocobase/database';
 import { MockServer, createMockServer } from '@nocobase/test';
 import compose from 'koa-compose';
 import { parseBuilder, parseFieldAndAssociations, queryData } from '../actions/query';
@@ -15,6 +15,7 @@ import { parseBuilder, parseFieldAndAssociations, queryData } from '../actions/q
 describe('api', () => {
   let app: MockServer;
   let db: Database;
+  let repo: Repository;
 
   beforeAll(async () => {
     app = await createMockServer({
@@ -26,6 +27,10 @@ describe('api', () => {
     db.collection({
       name: 'chart_test',
       fields: [
+        {
+          type: 'bigInt',
+          name: 'id',
+        },
         {
           type: 'double',
           name: 'price',
@@ -45,11 +50,11 @@ describe('api', () => {
       ],
     });
     await db.sync();
-    const repo = db.getRepository('chart_test');
+    repo = db.getRepository('chart_test');
     await repo.create({
       values: [
-        { price: 1, count: 1, title: 'title1', createdAt: '2023-02-02' },
-        { price: 2, count: 2, title: 'title2', createdAt: '2023-01-01' },
+        { id: 1, price: 1, count: 1, title: 'title1', createdAt: '2023-02-02' },
+        { id: 2, price: 2, count: 2, title: 'title2', createdAt: '2023-01-01' },
       ],
     });
   });
@@ -123,5 +128,64 @@ describe('api', () => {
     await compose([parseFieldAndAssociations, parseBuilder, queryData])(ctx, async () => {});
     expect(ctx.action.params.values.data).toBeDefined();
     expect(ctx.action.params.values.data).toMatchObject([{ createdAt: '2023-01' }, { createdAt: '2023-02' }]);
+  });
+
+  test('datetime format with timezone', async () => {
+    const dialect = db.sequelize.getDialect();
+    if (dialect === 'sqlite') {
+      await repo.create({
+        values: {
+          id: 3,
+          createdAt: '2024-05-14 19:32:30.175 +00:00',
+        },
+      });
+    } else if (dialect === 'postgres') {
+      await repo.create({
+        values: {
+          id: 3,
+          createdAt: '2024-05-14 19:32:30.175+00',
+        },
+      });
+    } else if (dialect === 'mysql' || dialect === 'mariadb') {
+      await repo.create({
+        values: {
+          id: 3,
+          createdAt: '2024-05-14T19:32:30Z',
+        },
+      });
+    } else {
+      expect(true).toBe(true);
+      return;
+    }
+    const ctx = {
+      app,
+      db,
+      timezone: '+08:25',
+      action: {
+        params: {
+          values: {
+            collection: 'chart_test',
+            measures: [
+              {
+                field: ['id'],
+                aggregation: 'count',
+              },
+            ],
+            dimensions: [
+              {
+                field: ['createdAt'],
+                format: 'YYYY-MM-DD',
+              },
+            ],
+            filter: {
+              id: 3,
+            },
+          },
+        },
+      },
+    } as any;
+    await compose([parseFieldAndAssociations, parseBuilder, queryData])(ctx, async () => {});
+    expect(ctx.action.params.values.data).toBeDefined();
+    expect(ctx.action.params.values.data).toMatchObject([{ createdAt: '2024-05-15' }]);
   });
 });

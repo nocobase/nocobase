@@ -301,6 +301,10 @@ export interface DataBlockInitializerProps {
    */
   hideOtherRecordsInPopup?: boolean;
   onClick?: (args: any) => void;
+  /** 用于更改 Current record 的文案 */
+  currentText?: string;
+  /** 用于更改 Other records 的文案 */
+  otherText?: string;
 }
 
 export const DataBlockInitializer = (props: DataBlockInitializerProps) => {
@@ -321,6 +325,8 @@ export const DataBlockInitializer = (props: DataBlockInitializerProps) => {
     hideOtherRecordsInPopup,
     onClick: propsOnClick,
     filterOtherRecordsCollection,
+    currentText,
+    otherText,
   } = props;
   const { insert, setVisible } = useSchemaInitializer();
   const compile = useCompile();
@@ -358,6 +364,8 @@ export const DataBlockInitializer = (props: DataBlockInitializerProps) => {
       dataBlockInitializerProps: props,
       hideOtherRecordsInPopup,
       onClick,
+      currentText,
+      otherText,
     });
   const getMenuItems = useGetSchemaInitializerMenuItems(onClick);
   const childItems = useMemo(() => {

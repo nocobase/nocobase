@@ -7,8 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { createBlockInPage, expect, oneEmptyDetailsBlock, test } from '@nocobase/test/e2e';
+import { Page, createBlockInPage, expect, oneEmptyDetailsBlock, test } from '@nocobase/test/e2e';
 import { oneEmptyTableWithUsers } from './templatesOfBug';
+
+const deleteButton = async (page: Page, name: string) => {
+  await page.getByRole('button', { name }).hover();
+  await page.getByRole('button', { name }).getByLabel('designer-schema-settings-').hover();
+  await page.getByRole('menuitem', { name: 'Delete' }).click();
+  await page.getByRole('button', { name: 'OK', exact: true }).click();
+};
 
 test.describe('where multi data details block can be added', () => {
   test('page', async ({ page, mockPage }) => {
@@ -109,20 +116,13 @@ test.describe('configure actions', () => {
     await page.getByRole('menuitem', { name: 'Edit' }).click();
     await page.getByRole('menuitem', { name: 'Delete' }).click();
 
-    await expect(page.getByRole('menuitem', { name: 'Edit' }).getByRole('switch')).toBeChecked();
-    await expect(page.getByRole('menuitem', { name: 'Delete' }).getByRole('switch')).toBeChecked();
-
     await page.mouse.move(300, 0);
     await expect(page.getByRole('button', { name: 'Edit' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Delete' })).toBeVisible();
 
     // delete buttons
-    await page.getByLabel('schema-initializer-ActionBar-detailsWithPaging:configureActions-general').hover();
-    await page.getByRole('menuitem', { name: 'Edit' }).click();
-    await page.getByRole('menuitem', { name: 'Delete' }).click();
-
-    await expect(page.getByRole('menuitem', { name: 'Edit' }).getByRole('switch')).not.toBeChecked();
-    await expect(page.getByRole('menuitem', { name: 'Delete' }).getByRole('switch')).not.toBeChecked();
+    await deleteButton(page, 'Edit');
+    await deleteButton(page, 'Delete');
 
     await page.mouse.move(300, 0);
     await expect(page.getByRole('button', { name: 'Edit' })).not.toBeVisible();

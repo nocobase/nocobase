@@ -16,6 +16,7 @@ import { SchemaSettingsProps } from '../../../schema-settings';
 import { Schema } from '@formily/json-schema';
 import { GeneralField } from '@formily/core';
 import { Designable } from '../../../schema-component';
+import { SchemaSettings } from '../SchemaSettings';
 
 type UseSchemaSettingsRenderOptions<T = {}> = Omit<SchemaSettingOptions<T>, 'name' | 'items'> &
   Omit<SchemaSettingsProps, 'title' | 'children'> & {
@@ -24,9 +25,15 @@ type UseSchemaSettingsRenderOptions<T = {}> = Omit<SchemaSettingOptions<T>, 'nam
     dn?: Designable;
   };
 
-export function useSchemaSettingsRender<T = {}>(name: string, options?: UseSchemaSettingsRenderOptions<T>) {
+export function useSchemaSettingsRender<T = {}>(
+  name: string | SchemaSettings<T>,
+  options?: UseSchemaSettingsRenderOptions<T>,
+) {
   const app = useApp();
-  const schemaSetting = useMemo(() => app.schemaSettingsManager.get<T>(name), [app.schemaSettingsManager, name]);
+  const schemaSetting = useMemo(
+    () => (typeof name === 'object' ? name : app.schemaSettingsManager.get<T>(name)),
+    [app.schemaSettingsManager, name],
+  );
   if (!name) {
     return {
       exists: false,

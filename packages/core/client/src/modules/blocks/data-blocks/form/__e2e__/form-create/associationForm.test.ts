@@ -62,7 +62,8 @@ test.describe('association form block', () => {
       .getByLabel('schema-initializer-Grid-popup')
       .click();
 
-    await page.getByRole('menuitem', { name: 'form Form' }).click();
+    await page.getByRole('menuitem', { name: 'form Form' }).hover();
+    await page.getByRole('menuitem', { name: 'Current collection' }).click();
     await expect(await page.getByLabel('block-item-CardItem-roles-form')).toBeVisible();
   });
 });
