@@ -12,7 +12,7 @@ type UploadProps = Omit<AntdUploadProps, 'onChange'> & {
   size?: string;
 };
 ```
-
+Upload.Attachment 是附件字段的 UI 组件。
 <code src="./demos/new-demos/basic.tsx"></code>
 
 ## Multiple

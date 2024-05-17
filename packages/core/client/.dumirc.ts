@@ -263,10 +263,7 @@ export default defineConfig({
               title: 'Input',
               link: '/components/input',
             },
-            {
-              title: 'AutoComplete',
-              link: '/components/auto-complete',
-            },
+          
             {
               title: 'NanoIDInput',
               link: '/components/nanoid-input',
@@ -451,6 +448,10 @@ export default defineConfig({
             {
               title: 'QuickEdit',
               link: '/components/quick-edit',
+            },
+            {
+              title: 'AutoComplete',
+              link: '/components/auto-complete',
             },
           ],
         },
