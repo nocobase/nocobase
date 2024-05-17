@@ -136,6 +136,7 @@ export const FieldsConfigure = observer(
           Object.entries(sourceFields || {}).forEach(([col, val]: [string, any]) =>
             fieldsMp.set(col, {
               name: col,
+              type: 'string', // default
               ...val,
               uiSchema: {
                 title: col,
@@ -217,7 +218,7 @@ export const FieldsConfigure = observer(
               placeholder={t('Select field source')}
               onChange={(value: string[]) => {
                 let sourceField = sourceFields[value?.[1]];
-                if (!sourceField) {
+                if (!sourceField?.interface) {
                   sourceField = getCollectionField(value?.join('.') || '');
                 }
                 handleFieldChange(
