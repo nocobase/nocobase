@@ -102,7 +102,7 @@ describe('action', () => {
         // 通过 url 是否能正确访问
         const url = attachment.url.replace(`http://localhost:${APP_PORT}`, '');
         const content = await agent.get(url);
-        expect(content.text.include('Hello world!')).toBeTruthy();
+        expect(content.text.includes('Hello world!')).toBeTruthy();
       });
     });
 
@@ -203,7 +203,7 @@ describe('action', () => {
         console.log(body.data.url);
         const url = body.data.url.replace(`http://localhost:${APP_PORT}`, '');
         const content = await agent.get(url);
-        expect(content.text.include('Hello world!')).toBe(true);
+        expect(content.text.includes('Hello world!')).toBe(true);
       });
     });
   });
