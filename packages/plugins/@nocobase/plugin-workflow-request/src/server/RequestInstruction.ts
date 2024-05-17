@@ -43,10 +43,10 @@ async function request(config) {
       //   : 'application/json';
       return result;
     }
-    return Object.assign(result, { [header.name]: header.value });
+    return Object.assign(result, { [header.name]: header.value?.trim() });
   }, {});
   const params = (config.params ?? []).reduce(
-    (result, param) => Object.assign(result, { [param.name]: param.value }),
+    (result, param) => Object.assign(result, { [param.name]: param.value?.trim() }),
     {},
   );
 
@@ -110,6 +110,7 @@ export default class extends Instruction {
           status: JOB_STATUS.FAILED,
           result: error.isAxiosError ? error.toJSON() : error.message,
         });
+
         if (error.response) {
           processor.logger.info(`request (#${node.id}) response failed, status: ${error.response.status}`);
         } else {
@@ -117,7 +118,10 @@ export default class extends Instruction {
         }
       })
       .finally(() => {
-        this.workflow.resume(job);
+        processor.logger.debug(`request (#${node.id}) ended, resume workflow...`);
+        setImmediate(() => {
+          this.workflow.resume(job);
+        });
       });
 
     processor.logger.info(`request (#${node.id}) sent to "${config.url}", waiting for response...`);

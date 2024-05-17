@@ -361,6 +361,30 @@ describe('workflow > instructions > request', () => {
     });
   });
 
+  describe('invalid characters', () => {
+    it('\\n in header value should be trimed, and should not cause error', async () => {
+      const n1 = await workflow.createNode({
+        type: 'request',
+        config: {
+          url: api.URL_DATA,
+          method: 'POST',
+          data: { a: '{{$context.data.title}}' },
+          headers: [{ name: 'Authorization', value: 'abc\n' }],
+        },
+      });
+
+      await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
+
+      const [execution] = await workflow.getExecutions();
+      expect(execution.status).toEqual(EXECUTION_STATUS.RESOLVED);
+      const [job] = await execution.getJobs();
+      expect(job.status).toEqual(JOB_STATUS.RESOLVED);
+      expect(job.result.data).toEqual({ a: 't1' });
+    });
+  });
+
   describe('request db resource', () => {
     it('request db resource', async () => {
       const user = await db.getRepository('users').create({});
