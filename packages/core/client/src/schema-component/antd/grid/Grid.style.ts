@@ -7,51 +7,51 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { genStyleHook } from '../__builtins__';
+import { createStyles } from 'antd-style';
 
-const useStyles = genStyleHook('nb-grid', (token) => {
-  const { componentCls } = token;
-
+const useStyles = createStyles(({ token, css, cx }: any) => {
   return {
-    [componentCls]: {
-      '.ColDivider': {
-        flexShrink: 0,
-        width: token.marginBlock,
+    container: css`
+      .ColDivider {
+        flex-shrink: 0;
+        width: ${token.marginBlock}px;
+      }
 
-        '.DraggableNode': {
-          '&::before': {
-            content: "' '",
-            width: '100%',
-            height: '100%',
-            position: 'absolute',
-            cursor: 'col-resize',
-          },
-          '&:hover': {
-            '&::before': { background: 'var(--colorBgSettingsHover) !important' },
-          },
-          width: token.marginBlock,
-          height: '100%',
-          position: 'absolute',
-          cursor: 'col-resize',
-        },
-      },
+      .DraggableNode {
+        &::before {
+          content: ' ';
+          width: 100%;
+          height: 100%;
+          position: absolute;
+          cursor: col-resize;
+        }
+        &:hover {
+          &::before {
+            background: var(--colorBgSettingsHover) !important;
+          }
+        }
+        width: ${token.marginBlock}px;
+        height: 100%;
+        position: absolute;
+        cursor: col-resize;
+      }
 
-      '.RowDivider': {
-        height: token.marginBlock,
-        width: '100%',
-        position: 'absolute',
-        marginTop: `calc(-1 * ${token.marginBlock}px)`,
-      },
+      .RowDivider {
+        height: ${token.marginBlock}px;
+        width: 100%;
+        position: absolute;
+        margin-top: calc(-1 * ${token.marginBlock}px);
+      }
 
-      '.CardRow': {
-        display: 'flex',
-        position: 'relative',
-      },
+      .CardRow {
+        display: flex;
+        position: relative;
+      }
 
-      '.showDivider': {
-        margin: `0 calc(-1 * ${token.marginBlock}px)`,
-      },
-    },
+      .showDivider {
+        margin: 0 calc(-1 * ${token.marginBlock}px);
+      }
+    `,
   };
 });
 
