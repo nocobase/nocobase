@@ -2,9 +2,13 @@ English | [中文](./README.zh-CN.md)
 
 https://github.com/nocobase/nocobase/assets/1267426/1d6a3979-d1eb-4e50-b726-2f90c3f82eeb
 
+## We'd love your support!
+
+<a href="https://www.producthunt.com/products/nocobase" target="_blank"><img src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=456520&theme=light" alt="NocoBase - Scalability&#0045;first&#0044;&#0032;open&#0045;source&#0032;no&#0045;code&#0032;platform | Product Hunt" style="width: 250px; height: 54px;" width="250" height="54" /></a>
+
 ## Recent major updates
 
-- [v1.0：Significant Milestone - 2024/04/08](https://docs.nocobase.com/welcome/release/v1001-changelog)
+- [v1.0：Significant Milestone - 2024/04/28](https://docs.nocobase.com/welcome/release/v1001-changelog)
 - [v0.21：Block performance optimization - 2024/03/29](https://docs.nocobase.com/welcome/release/v0210-changelog)
 - [v0.20：Support for multiple data sources - 2024/03/03](https://docs.nocobase.com/welcome/release/v0200-changelog)
 - [v0.19: Application process optimization - 2024/01/08](https://docs.nocobase.com/welcome/release/v0190-changelog)

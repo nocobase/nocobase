@@ -7,8 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { ActionInitializerItem } from '@nocobase/client';
 import React from 'react';
-import { ActionInitializer } from '@nocobase/client';
 
 export const BulkEditSubmitActionInitializer = (props) => {
   const schema = {
@@ -24,5 +24,5 @@ export const BulkEditSubmitActionInitializer = (props) => {
       htmlType: 'submit',
     },
   };
-  return <ActionInitializer {...props} schema={schema} />;
+  return <ActionInitializerItem {...props} schema={schema} />;
 };

@@ -7,7 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from './CreateFormBlockInitializer';
 export * from './FormBlockInitializer';
 export * from './FormItemSchemaToolbar';
 export * from './RecordFormBlockInitializer';

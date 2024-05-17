@@ -43,6 +43,23 @@ describe('SchemaInitializer', () => {
     });
   });
 
+  // 为了能让旧版插件代码正常工作（操作按钮拍平后：https://nocobase.feishu.cn/wiki/O7pjwSbBEigpOWkY9s5c03Yenkh），需要满足下面的测试用例
+  test('add an item with nested name', () => {
+    // 等同于 initializer.add('item1', { title: 'item1 title' });
+    initializer.add('parent.item1', { title: 'item1 title' });
+
+    // 等同于 initializer.get('item1')
+    expect(initializer.get('parent.item1')).toEqual({
+      name: 'item1',
+      title: 'item1 title',
+    });
+    expect(initializer.get('item1')).toEqual({
+      name: 'item1',
+      title: 'item1 title',
+    });
+    expect(initializer.get('parent')).toBe(undefined);
+  });
+
   test('updates a nested item if it already exists', () => {
     initializer.add('parent', { title: 'parent title' });
     initializer.add('parent.item1', { title: 'title' });

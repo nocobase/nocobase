@@ -14,7 +14,6 @@ test.describe('TableActionInitializers & GanttActionInitializers & MapActionInit
   test('TableActionInitializers should add bulk update', async ({ page, mockPage }) => {
     await mockPage(oneEmptyTableBlockWithCustomizeActions).goto();
     await page.getByLabel('schema-initializer-ActionBar-table:configureActions-general').hover();
-    await page.getByRole('menuitem', { name: 'Customize right' }).click();
     await page.getByRole('menuitem', { name: 'Bulk update' }).click();
     await expect(page.getByLabel('action-Action-Bulk update-customize:bulkUpdate-general-table')).toBeVisible();
   });
@@ -23,7 +22,6 @@ test.describe('TableActionInitializers & GanttActionInitializers & MapActionInit
     await mockRecords('general', 3);
     await nocoPage.goto();
     await page.getByLabel('schema-initializer-ActionBar-gantt:configureActions-general').hover();
-    await page.getByRole('menuitem', { name: 'Customize right' }).click();
     await page.getByRole('menuitem', { name: 'Bulk update' }).click();
     await page.mouse.move(300, 0);
     await expect(page.getByRole('button', { name: 'Bulk update' })).toBeVisible();

@@ -347,25 +347,26 @@ const CustomItemsComponent = (props) => {
   );
 };
 
+const commonOptions = {
+  wrap: gridRowColWrap,
+  insertPosition: 'beforeEnd',
+  title: "{{t('Configure fields')}}",
+  ItemsComponent: CustomItemsComponent,
+};
+
 /**
  * @deprecated
  * use `addCustomFormField` instead
  */
 export const addCustomFormField_deprecated = new CompatibleSchemaInitializer({
   name: 'AddCustomFormField',
-  wrap: gridRowColWrap,
-  insertPosition: 'beforeEnd',
-  title: "{{t('Configure fields')}}",
-  ItemsComponent: CustomItemsComponent,
+  ...commonOptions,
 });
 
 export const addCustomFormField = new CompatibleSchemaInitializer(
   {
     name: 'workflowManual:customForm:configureFields',
-    wrap: gridRowColWrap,
-    insertPosition: 'beforeEnd',
-    title: "{{t('Configure fields')}}",
-    ItemsComponent: CustomItemsComponent,
+    ...commonOptions,
   },
   addCustomFormField_deprecated,
 );

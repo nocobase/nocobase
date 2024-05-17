@@ -3556,10 +3556,15 @@
   resolved "https://registry.npmmirror.com/@formily/path/-/path-2.2.27.tgz#384f207533a2bdc84d700d4b7ef46ca6d664db15"
   integrity sha512-svpYARx1N72Rzg4l9D10SpDljUjCqkFD3ogbnsLNUxO8Rh2oSmn0dw63VDYOw43RX61qHmD3VYAnGxdCv5HJ8w==
 
-"@formily/path@2.3.0", "@formily/path@^2.2.27":
+"@formily/path@2.3.0":
   version "2.3.0"
   resolved "https://registry.npmmirror.com/@formily/path/-/path-2.3.0.tgz#1cb71389ad39fd30e323b7f35f96cb35f12e304f"
   integrity sha512-LbSW50ytAH9wPlZc2VkjRjMukoYWiDAII7HfGkSnkCDQYduhWzvbqpkKOd/W8l5VFrLrl2/7yWkfp5cChv0wjA==
+
+"@formily/path@^2.2.27":
+  version "2.3.1"
+  resolved "https://registry.npmmirror.com/@formily/path/-/path-2.3.1.tgz#b7adb91f7d3bb0f2efc90672dda466a0590dcb1b"
+  integrity sha512-BVo89K5nAFntx02+EV696If1b1bVIm5I1tRPtVyCVIjBIfAgga5hK4k80GZ01Dlk3tpReHpiIbZVg2DNVfw7jA==
 
 "@formily/react@2.x", "@formily/react@^2.2.0", "@formily/react@^2.2.27":
   version "2.3.0"
