@@ -274,6 +274,10 @@ export class Gateway extends EventEmitter {
       return;
     }
 
+    if (handleApp !== 'main') {
+      AppSupervisor.getInstance().touchApp(handleApp);
+    }
+
     app.callback()(req, res);
   }
 

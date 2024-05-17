@@ -45,7 +45,8 @@ test.describe('direct duplicate & copy into the form and continue to fill in', (
     await page.getByLabel('action-Action.Link-Duplicate-duplicate-general-table-0').click();
     await page.getByLabel('schema-initializer-Grid-popup:addNew:addBlock-general').hover();
     //配置表单区块
-    await page.getByRole('menuitem', { name: 'form Form' }).click();
+    await page.getByRole('menuitem', { name: 'form Form' }).hover();
+    await page.getByRole('menuitem', { name: 'Current collection' }).click();
     await page.mouse.move(300, 0);
     await page.getByLabel('schema-initializer-Grid-form:configureFields-general').hover();
     await page.getByRole('menuitem', { name: 'singleLineText' }).click();

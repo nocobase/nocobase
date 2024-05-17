@@ -12,6 +12,7 @@ import { toFixedByStep } from '@nocobase/utils/client';
 import { format } from 'd3-format';
 import * as math from 'mathjs';
 import React, { useMemo } from 'react';
+import BigNumber from 'bignumber.js';
 
 function countDecimalPlaces(value) {
   const number = Number(value);
@@ -28,7 +29,11 @@ const separators = {
 };
 //分隔符换算
 export function formatNumberWithSeparator(value, format = '0.00', step = 1, formatStyle?) {
+  if (value > Number.MAX_SAFE_INTEGER || value < Number.MIN_SAFE_INTEGER) {
+    return formatBigNumberWithSeparator(value, format, step, formatStyle);
+  }
   let number = value;
+
   if (formatStyle) {
     number = Number(value);
   }
@@ -46,6 +51,33 @@ export function formatNumberWithSeparator(value, format = '0.00', step = 1, form
       .replace(/\./g, 'dot_placeholder')
       .replace(/comma_placeholder/g, thousands)
       .replace(/dot_placeholder/g, decimal);
+  } else {
+    formattedNumber = number.toString();
+  }
+  return formattedNumber;
+}
+//大字段分隔符换算
+function formatBigNumberWithSeparator(value, format = '0.00', step = 1, formatStyle?) {
+  let number = value;
+
+  if (formatStyle) {
+    number = new BigNumber(value).toString();
+  }
+
+  let formattedNumber = '';
+  if (separators[format]) {
+    const { thousands, decimal } = separators[format];
+    const [integerPart, initFractionalPart] = number.toString().split('.');
+    let fractionalPart = initFractionalPart;
+    // 格式化整数部分
+    const formattedIntegerPart = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, thousands);
+    // 处理小数部分
+    if (fractionalPart && step) {
+      fractionalPart = fractionalPart.substring(0, step);
+      formattedNumber = `${formattedIntegerPart}${decimal}${fractionalPart}`;
+    } else {
+      formattedNumber = formattedIntegerPart;
+    }
   } else {
     formattedNumber = number.toString();
   }
@@ -96,7 +128,7 @@ export function scientificNotation(number, decimalPlaces, separator = '.') {
 }
 
 export function formatNumber(props) {
-  const { step, formatStyle = 'normal', value, unitConversion, unitConversionType, separator = '0.00' } = props;
+  const { step, formatStyle = 'normal', value, unitConversion, unitConversionType, separator = '0,0.00' } = props;
 
   if (!isValid(value)) {
     return null;

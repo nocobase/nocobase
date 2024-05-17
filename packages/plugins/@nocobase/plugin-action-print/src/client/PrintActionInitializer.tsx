@@ -7,9 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React from 'react';
-
 import { ActionInitializer } from '@nocobase/client';
+import React from 'react';
 
 export const PrintActionInitializer = (props) => {
   const schema = {

@@ -83,7 +83,7 @@ export default class extends Instruction {
         };
       } catch (error) {
         return {
-          status: JOB_STATUS.FAILED,
+          status: config.ignoreFail ? JOB_STATUS.RESOLVED : JOB_STATUS.FAILED,
           result: error.isAxiosError ? error.toJSON() : error.message,
         };
       }

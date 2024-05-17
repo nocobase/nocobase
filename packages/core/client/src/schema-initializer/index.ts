@@ -14,7 +14,6 @@ import {
   createFormBlockInitializers,
   createFormBlockInitializers_deprecated,
 } from '../modules/actions/add-new/createFormBlockInitializers';
-import { CustomizeAddRecordActionInitializer } from '../modules/actions/add-record/CustomizeAddRecordActionInitializer';
 import {
   customizeCreateFormBlockInitializers,
   customizeCreateFormBlockInitializers_deprecated,
@@ -25,7 +24,6 @@ import { DisassociateActionInitializer } from '../modules/actions/disassociate/D
 import { ExpandableActionInitializer } from '../modules/actions/expand-collapse/ExpandableActionInitializer';
 import { FilterActionInitializer } from '../modules/actions/filter/FilterActionInitializer';
 import { RefreshActionInitializer } from '../modules/actions/refresh/RefreshActionInitializer';
-import { SaveRecordActionInitializer } from '../modules/actions/save-record/SaveRecordActionInitializer';
 import { CreateSubmitActionInitializer } from '../modules/actions/submit/CreateSubmitActionInitializer';
 import { UpdateSubmitActionInitializer } from '../modules/actions/submit/UpdateSubmitActionInitializer';
 import { UpdateRecordActionInitializer } from '../modules/actions/update-record/UpdateRecordActionInitializer';
@@ -47,7 +45,6 @@ import {
   readPrettyFormItemInitializers_deprecated,
 } from '../modules/blocks/data-blocks/details-single/ReadPrettyFormItemInitializers';
 import { RecordReadPrettyFormBlockInitializer } from '../modules/blocks/data-blocks/details-single/RecordReadPrettyFormBlockInitializer';
-import { CreateFormBlockInitializer } from '../modules/blocks/data-blocks/form/CreateFormBlockInitializer';
 import { FormBlockInitializer } from '../modules/blocks/data-blocks/form/FormBlockInitializer';
 import { RecordFormBlockInitializer } from '../modules/blocks/data-blocks/form/RecordFormBlockInitializer';
 import {
@@ -155,7 +152,6 @@ export class SchemaInitializerPlugin extends Plugin {
       ...initializerComponents,
       ...items,
       DestroyActionInitializer,
-      CreateFormBlockInitializer,
       FormBlockInitializer,
       RecordFormBlockInitializer,
       TableBlockInitializer,
@@ -171,12 +167,10 @@ export class SchemaInitializerPlugin extends Plugin {
       TableCollectionFieldInitializer,
       CollectionFieldInitializer,
       CreateActionInitializer,
-      CustomizeAddRecordActionInitializer,
       CreateChildInitializer,
       ViewActionInitializer,
       UpdateActionInitializer,
       PopupActionInitializer,
-      SaveRecordActionInitializer,
       UpdateRecordActionInitializer,
       CreateSubmitActionInitializer,
       UpdateSubmitActionInitializer,

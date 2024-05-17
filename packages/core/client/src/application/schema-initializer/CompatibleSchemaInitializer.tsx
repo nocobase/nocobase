@@ -10,7 +10,7 @@
 import { SchemaInitializer } from './SchemaInitializer';
 
 /**
- * @deprecated
+ * @deprecated - 该类仅用于兼容旧版 name，不推荐在新插件中使用
  *
  * 因为需要把 SchemaInitializer 的 name 统一为一致的命名风格，统一之后新创建的 Schema 将
  * 使用新的命名风格，而旧的 Schema 仍然使用旧的命名风格，这样会导致一些问题。所以需要有一个方法
@@ -99,7 +99,7 @@ const oldToNewNameMap = {
 
 /**
  * 由于旧版的 schema 的 x-initializer 的值是旧的命名风格，当其与新的命名比较时就存在问题，
- * 这里通过将新版命名转换为旧版命名再进行比较，已解决这个问题。
+ * 这里通过将新版命名转换为旧版命名再进行比较，以解决这个问题。
  * @param oldOrNewName x-initializer 的值
  * @param newName 新的命名
  */

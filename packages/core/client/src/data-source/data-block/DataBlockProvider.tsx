@@ -39,6 +39,8 @@ export interface AllDataBlockProps {
   requestService?: UseRequestService<any>;
   requestOptions?: UseRequestOptions;
   dataLoadingMode?: 'auto' | 'manual';
+  /** 如果为 true，则区块会被隐藏 */
+  hidden?: boolean;
   [index: string]: any;
 }
 
@@ -149,8 +151,12 @@ export const AssociationOrCollectionProvider = (props: {
 
 export const DataBlockProvider: FC<DataBlockProviderProps & { children?: ReactNode }> = withDynamicSchemaProps(
   (props) => {
-    const { collection, association, dataSource, children, ...resets } = props as Partial<AllDataBlockProps>;
+    const { collection, association, dataSource, children, hidden, ...resets } = props as Partial<AllDataBlockProps>;
     const { dn } = useDesignable();
+
+    if (hidden) {
+      return null;
+    }
 
     return (
       <DataBlockContext.Provider

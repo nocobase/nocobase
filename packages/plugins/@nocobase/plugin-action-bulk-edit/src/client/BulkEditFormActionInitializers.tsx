@@ -10,12 +10,7 @@
 import { CompatibleSchemaInitializer } from '@nocobase/client';
 import { BulkEditSubmitActionInitializer } from './BulkEditSubmitActionInitializer';
 
-/**
- * @deprecated
- * use `bulkEditFormActionInitializers` instead
- */
-export const BulkEditFormActionInitializers_deprecated = new CompatibleSchemaInitializer({
-  name: 'BulkEditFormActionInitializers',
+const commonOptions = {
   title: '{{t("Configure actions")}}',
   icon: 'SettingOutlined',
   items: [
@@ -35,30 +30,21 @@ export const BulkEditFormActionInitializers_deprecated = new CompatibleSchemaIni
       ],
     },
   ],
+};
+
+/**
+ * @deprecated
+ * use `bulkEditFormActionInitializers` instead
+ */
+export const BulkEditFormActionInitializers_deprecated = new CompatibleSchemaInitializer({
+  name: 'BulkEditFormActionInitializers',
+  ...commonOptions,
 });
 
 export const bulkEditFormActionInitializers = new CompatibleSchemaInitializer(
   {
     name: 'bulkEditForm:configureActions',
-    title: '{{t("Configure actions")}}',
-    icon: 'SettingOutlined',
-    items: [
-      {
-        type: 'itemGroup',
-        title: '{{t("Enable actions")}}',
-        name: 'enableActions',
-        children: [
-          {
-            name: 'submit',
-            title: '{{t("Submit")}}',
-            Component: BulkEditSubmitActionInitializer,
-            schema: {
-              'x-action-settings': {},
-            },
-          },
-        ],
-      },
-    ],
+    ...commonOptions,
   },
   BulkEditFormActionInitializers_deprecated,
 );
