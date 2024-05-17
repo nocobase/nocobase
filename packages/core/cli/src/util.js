@@ -297,6 +297,7 @@ exports.buildIndexHtml = buildIndexHtml;
 
 exports.initEnv = function initEnv() {
   const env = {
+    APP_NAME: '',
     APP_ENV: 'development',
     APP_KEY: 'test-jwt-secret',
     APP_PORT: 13000,

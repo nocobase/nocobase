@@ -40,8 +40,10 @@ export default defineConfig({
         window['__webpack_public_path__'] = '{{env.APP_PUBLIC_PATH}}';
         window['__nocobase_public_path__'] = '{{env.APP_PUBLIC_PATH}}';
         window['__nocobase_api_base_url__'] = '{{env.API_BASE_URL}}';
+        window['__nocobase_api_is_shared_token__'] = {{env.API_IS_SHARED_TOKEN}};
         window['__nocobase_ws_url__'] = '{{env.WS_URL}}';
         window['__nocobase_ws_path__'] = '{{env.WS_PATH}}';
+        window['__nocobase_app_name__'] = '{{env.APP_NAME}}';
       `,
     },
   ],

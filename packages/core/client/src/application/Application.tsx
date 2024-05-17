@@ -133,7 +133,14 @@ export class Application {
     this.ws.app = this;
     this.pluginSettingsManager = new PluginSettingsManager(options.pluginSettings, this);
     this.addRoutes();
-    this.name = this.options.name || getSubAppName(options.publicPath) || 'main';
+    this.name = this.getName();
+    if (this.name) {
+      this.apiClient.auth.prefix = `${this.name}_`;
+    }
+    this.i18n.changeLanguage(this.apiClient.auth.locale);
+    this.i18n.on('languageChanged', (lng) => {
+      this.apiClient.auth.locale = lng;
+    });
   }
 
   private initRequireJs() {
@@ -177,7 +184,7 @@ export class Application {
   }
 
   getName() {
-    return getSubAppName(this.getPublicPath()) || null;
+    return this.options.name || getSubAppName(this.getPublicPath()) || 'main';
   }
 
   getPublicPath() {
@@ -236,7 +243,6 @@ export class Application {
     let loadFailed = false;
     this.ws.on('message', (event) => {
       const data = JSON.parse(event.data);
-      console.log(data.payload);
       if (data?.payload?.refresh) {
         window.location.reload();
         return;

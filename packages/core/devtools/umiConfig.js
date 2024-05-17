@@ -37,6 +37,7 @@ function getUmiConfig() {
       return memo;
     }, {}),
     define: {
+      'process.env.APP_NAME': process.env.APP_NAME,
       'process.env.APP_PUBLIC_PATH': process.env.APP_PUBLIC_PATH,
       'process.env.WS_PATH': process.env.WS_PATH,
       'process.env.API_BASE_URL': API_BASE_URL || API_BASE_PATH,

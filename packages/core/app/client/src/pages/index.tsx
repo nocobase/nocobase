@@ -1,9 +1,22 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Application } from '@nocobase/client';
 import { NocoBaseClientPresetPlugin } from '@nocobase/preset-nocobase/client';
 import devDynamicImport from '../.plugins/index';
 
 export const app = new Application({
+  // @ts-ignore
+  name: window['__nocobase_app_name__'] || process.env.APP_NAME || null,
   apiClient: {
+    // @ts-ignore
+    isSharedToken: window['__nocobase_api_is_shared_token__'] || process.env.API_IS_SHARED_TOKEN === 'true' || false,
     // @ts-ignore
     baseURL: window['__nocobase_api_base_url__'] || process.env.API_BASE_URL || '/api/',
   },

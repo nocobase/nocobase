@@ -31,6 +31,8 @@ export type IResource = {
 export class Auth {
   protected api: APIClient;
 
+  isSharedToken = false;
+
   protected KEYS = {
     locale: 'NOCOBASE_LOCALE',
     role: 'NOCOBASE_ROLE',
@@ -46,25 +48,15 @@ export class Auth {
     token: null,
   };
 
-  constructor(api: APIClient) {
-    this.api = api;
-    this.initKeys();
-    this.api.axios.interceptors.request.use(this.middleware.bind(this));
+  protected _prefix = '';
+
+  set prefix(value: string) {
+    this._prefix = value.toUpperCase();
   }
 
-  initKeys() {
-    if (typeof window === 'undefined') {
-      return;
-    }
-    if (!this.api['app']) {
-      return;
-    }
-    const appName = this.api['app'].getName();
-    if (!appName) {
-      return;
-    }
-    this.KEYS['role'] = `${appName.toUpperCase()}_` + this.KEYS['role'];
-    this.KEYS['locale'] = `${appName.toUpperCase()}_` + this.KEYS['locale'];
+  constructor(api: APIClient) {
+    this.api = api;
+    this.api.axios.interceptors.request.use(this.middleware.bind(this));
   }
 
   get locale() {
@@ -106,7 +98,7 @@ export class Auth {
     if (!this.KEYS[key]) {
       return;
     }
-    return this.api.storage.getItem(this.KEYS[key]);
+    return this.api.storage.getItem(this._prefix + this.KEYS[key]);
   }
 
   /**
@@ -117,7 +109,11 @@ export class Auth {
       return;
     }
     this.options[key] = value;
-    return this.api.storage.setItem(this.KEYS[key], value || '');
+    let currentKey = this.KEYS[key];
+    if (!this.isSharedToken) {
+      currentKey = this._prefix + currentKey;
+    }
+    return this.api.storage.setItem(currentKey, value || '');
   }
 
   /**
@@ -157,7 +153,11 @@ export class Auth {
    * use {@link Auth#token} instead
    */
   getToken() {
-    return this.getOption('token');
+    let currentKey = this.KEYS.token;
+    if (!this.isSharedToken) {
+      currentKey = this._prefix + currentKey;
+    }
+    return this.api.storage.getItem(currentKey);
   }
 
   /**
@@ -165,7 +165,11 @@ export class Auth {
    * use {@link Auth#token} instead
    */
   setToken(token: string) {
-    this.setOption('token', token);
+    let currentKey = this.KEYS.token;
+    if (!this.isSharedToken) {
+      currentKey = this._prefix + currentKey;
+    }
+    return this.api.storage.setItem(currentKey, token || '');
   }
 
   /**
@@ -268,6 +272,7 @@ export class MemoryStorage extends Storage {
 interface ExtendedOptions {
   authClass?: any;
   storageClass?: any;
+  isSharedToken?: boolean;
 }
 
 export type APIClientOptions = AxiosInstance | (AxiosRequestConfig & ExtendedOptions);
@@ -295,10 +300,12 @@ export class APIClient {
   }
 
   constructor(instance?: APIClientOptions) {
+    let isShared = false;
     if (typeof instance === 'function') {
       this.axios = instance;
     } else {
-      const { authClass, storageClass, ...others } = instance || {};
+      const { isSharedToken, authClass, storageClass, ...others } = instance || {};
+      isShared = isSharedToken;
       this.axios = axios.create(others);
       this.initStorage(storageClass);
       if (authClass) {
@@ -311,6 +318,7 @@ export class APIClient {
     if (!this.auth) {
       this.auth = new Auth(this);
     }
+    this.auth.isSharedToken = isShared;
     this.interceptors();
   }
 
