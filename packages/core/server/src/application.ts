@@ -59,7 +59,7 @@ import { MainDataSource } from './main-data-source';
 import validateFilterParams from './middlewares/validate-filter-params';
 import path from 'path';
 import { parseVariables } from './middlewares';
-import { dateTemplate } from './middlewares/data-template';
+import { dataTemplate } from './middlewares/data-template';
 
 export type PluginType = string | typeof Plugin;
 export type PluginConfiguration = PluginType | [PluginType, any];
@@ -1117,7 +1117,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       group: 'parseVariables',
       after: 'acl',
     });
-    this._dataSourceManager.use(dateTemplate, { group: 'dateTemplate', after: 'acl' });
+    this._dataSourceManager.use(dataTemplate, { group: 'dataTemplate', after: 'acl' });
 
     this._locales = new Locale(createAppProxy(this));
 

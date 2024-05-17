@@ -8,8 +8,6 @@
  */
 
 import { DataSourceOptions, SequelizeDataSource } from '@nocobase/data-source-manager';
-import { parseVariables } from './middlewares';
-import { dateTemplate } from './middlewares/data-template';
 
 export class MainDataSource extends SequelizeDataSource {
   init(options: DataSourceOptions = {}) {
