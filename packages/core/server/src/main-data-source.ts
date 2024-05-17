@@ -8,8 +8,6 @@
  */
 
 import { DataSourceOptions, SequelizeDataSource } from '@nocobase/data-source-manager';
-import { parseVariables } from './middlewares';
-import { dateTemplate } from './middlewares/data-template';
 
 export class MainDataSource extends SequelizeDataSource {
   init(options: DataSourceOptions = {}) {
@@ -30,12 +28,5 @@ export class MainDataSource extends SequelizeDataSource {
     if (options.useACL !== false) {
       this.resourceManager.use(this.acl.middleware(), { group: 'acl', after: 'auth' });
     }
-
-    this.resourceManager.use(parseVariables, {
-      group: 'parseVariables',
-      after: 'acl',
-    });
-
-    this.resourceManager.use(dateTemplate, { group: 'dateTemplate', after: 'acl' });
   }
 }
