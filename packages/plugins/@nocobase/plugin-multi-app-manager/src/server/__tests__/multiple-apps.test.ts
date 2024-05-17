@@ -103,6 +103,32 @@ describe('multiple apps', () => {
     expect(subAppStatus).toEqual('running');
   });
 
+  it('should not create application named with main', async () => {
+    const name = 'main';
+
+    let err;
+
+    try {
+      await db.getRepository('applications').create({
+        values: {
+          name,
+          options: {
+            plugins: [],
+          },
+        },
+        context: {
+          waitSubAppInstall: true,
+        },
+      });
+    } catch (e) {
+      err = e;
+    }
+
+    expect(err).toBeDefined();
+
+    expect(await db.getRepository('applications').count()).toBe(0);
+  });
+
   it('should upgrade sub app', async () => {
     await db.getRepository('applications').create({
       values: {
