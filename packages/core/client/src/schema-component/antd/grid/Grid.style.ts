@@ -10,11 +10,14 @@
 import { createStyles } from 'antd-style';
 
 const useStyles = createStyles(({ token, css, cx }: any) => {
+  // 如果相等，说明当前是在 Form 区块中，会加上 !important，否则会导致字段间距收到影响
+  const important = token.marginBlock === token.marginLG ? ' !important' : '';
+
   return {
     container: css`
       .ColDivider {
         flex-shrink: 0;
-        width: ${token.marginBlock}px;
+        width: ${token.marginBlock}px${important};
       }
 
       .DraggableNode {
@@ -30,17 +33,17 @@ const useStyles = createStyles(({ token, css, cx }: any) => {
             background: var(--colorBgSettingsHover) !important;
           }
         }
-        width: ${token.marginBlock}px;
+        width: ${token.marginBlock}px${important};
         height: 100%;
         position: absolute;
         cursor: col-resize;
       }
 
       .RowDivider {
-        height: ${token.marginBlock}px;
+        height: ${token.marginBlock}px${important};
         width: 100%;
         position: absolute;
-        margin-top: calc(-1 * ${token.marginBlock}px);
+        margin-top: calc(-1 * ${token.marginBlock}px) ${important};
       }
 
       .CardRow {
@@ -49,7 +52,7 @@ const useStyles = createStyles(({ token, css, cx }: any) => {
       }
 
       .showDivider {
-        margin: 0 calc(-1 * ${token.marginBlock}px);
+        margin: 0 calc(-1 * ${token.marginBlock}px) ${important};
       }
     `,
   };
