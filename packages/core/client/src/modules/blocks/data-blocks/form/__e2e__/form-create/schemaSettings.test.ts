@@ -402,16 +402,16 @@ test.describe('actions schema settings', () => {
       await mockPage(oneFormAndOneTableWithUsers).goto();
 
       const openPopup = async () => {
-        if (!(await page.getByLabel('action-Action-Save record-').isVisible())) {
+        if (!(await page.getByLabel('action-Action-Submit-').isVisible())) {
           await page.getByLabel('schema-initializer-ActionBar-createForm:configureActions-users').hover();
-          await page.getByRole('menuitem', { name: 'Customize right' }).hover();
-          await page.getByRole('menuitem', { name: 'Save record' }).click();
+          await page.getByRole('menuitem', { name: 'Submit' }).click();
         }
 
-        await page.getByLabel('action-Action-Save record-').hover();
-        await page.getByLabel('designer-schema-settings-Action-actionSettings:saveRecord-users').hover();
+        await page.getByLabel('action-Action-Submit-').hover();
+        await page.getByLabel('designer-schema-settings-Action-actionSettings:createSubmit-users').hover();
         await page.getByRole('menuitem', { name: 'Assign field values' }).click();
 
+        await page.waitForTimeout(500);
         if (!(await page.getByLabel('block-item-AssignedField-').getByRole('textbox').isVisible())) {
           await page.getByLabel('schema-initializer-Grid-assignFieldValuesForm:configureFields-users').hover();
           await page.getByRole('menuitem', { name: 'Nickname' }).click();
@@ -419,8 +419,7 @@ test.describe('actions schema settings', () => {
       };
 
       const expectNewValue = async (value: string) => {
-        await page.getByLabel('action-Action-Save record-').click();
-        await page.getByRole('button', { name: 'OK', exact: true }).click();
+        await page.getByLabel('action-Action-Submit-').click();
         await page.getByLabel('action-Action-Refresh-refresh').click();
         await expect(page.getByLabel('block-item-CardItem-users-table').getByText(value)).toBeVisible();
       };
@@ -431,9 +430,9 @@ test.describe('actions schema settings', () => {
       // 2. 将 Nickname 字段的值设置为 `123456`
       await page.getByLabel('block-item-AssignedField-').getByRole('textbox').click();
       await page.getByLabel('block-item-AssignedField-').getByRole('textbox').fill('123456');
-      await page.getByRole('button', { name: 'Submit' }).click();
+      await page.getByRole('button', { name: 'Submit', exact: true }).click();
 
-      // 3. 保存后点击 Save record 按钮，然后刷新表格，应该显示一条 Nickname 为 “123456” 的记录
+      // 3. 保存后点击 Submit 按钮，然后刷新表格，应该显示一条 Nickname 为 “123456” 的记录
       await expectNewValue('123456');
 
       // 4. 再次打开 Assign field values 配置弹窗，这次为 Nickname 设置一个变量值（Current role）
@@ -447,9 +446,9 @@ test.describe('actions schema settings', () => {
         'Current form',
       ]);
       await page.getByRole('menuitemcheckbox', { name: 'Current role' }).click();
-      await page.getByRole('button', { name: 'Submit' }).click();
+      await page.getByRole('button', { name: 'Submit', exact: true }).click();
 
-      // 5. 保存后点击 Save record 按钮，然后刷新表格，应该显示一条 Nickname 为 “root” 的记录
+      // 5. 保存后点击 Submit 按钮，然后刷新表格，应该显示一条 Nickname 为 “root” 的记录
       await expectNewValue('root');
     });
   });
