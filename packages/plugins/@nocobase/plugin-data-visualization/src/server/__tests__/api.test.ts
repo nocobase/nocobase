@@ -130,7 +130,7 @@ describe('api', () => {
     expect(ctx.action.params.values.data).toMatchObject([{ createdAt: '2023-01' }, { createdAt: '2023-02' }]);
   });
 
-  test.only('datetime format with timezone', async () => {
+  test('datetime format with timezone', async () => {
     const dialect = db.sequelize.getDialect();
     if (dialect === 'sqlite') {
       await repo.create({
