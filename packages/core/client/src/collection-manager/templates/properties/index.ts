@@ -75,6 +75,7 @@ export const defaultConfigurableProperties = {
     'x-component': PresetFields,
     'x-component-props': {
       disabled: '{{ presetFieldsDisabled }}',
+      presetFieldsDisabledIncludes: '{{presetFieldsDisabledIncludes}}',
     },
   },
 };

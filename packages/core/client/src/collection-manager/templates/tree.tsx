@@ -72,7 +72,7 @@ export class TreeCollectionTemplate extends CollectionTemplate {
       },
     ],
   };
-  presetFieldsDisabled = true;
+  presetFieldsDisabledIncludes = ['id'];
   events = {
     beforeSubmit(values) {
       if (Array.isArray(values?.fields)) {
