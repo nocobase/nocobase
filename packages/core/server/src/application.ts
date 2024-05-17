@@ -58,6 +58,8 @@ import packageJson from '../package.json';
 import { MainDataSource } from './main-data-source';
 import validateFilterParams from './middlewares/validate-filter-params';
 import path from 'path';
+import { parseVariables } from './middlewares';
+import { dataTemplate } from './middlewares/data-template';
 
 export type PluginType = string | typeof Plugin;
 export type PluginConfiguration = PluginType | [PluginType, any];
@@ -1110,6 +1112,12 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     this._dataSourceManager.use(this._authManager.middleware(), { tag: 'auth' });
     this._dataSourceManager.use(validateFilterParams, { tag: 'validate-filter-params', before: ['auth'] });
+
+    this._dataSourceManager.use(parseVariables, {
+      group: 'parseVariables',
+      after: 'acl',
+    });
+    this._dataSourceManager.use(dataTemplate, { group: 'dataTemplate', after: 'acl' });
 
     this._locales = new Locale(createAppProxy(this));
 
