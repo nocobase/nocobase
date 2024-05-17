@@ -104,16 +104,31 @@ export default class extends Instruction {
         processor.logger.info(`request (#${node.id}) response success, status: ${response.status}`);
       })
       .catch((error) => {
+        let result = {
+          message: error.message,
+          stack: error.stack,
+        };
+        if (error.isAxiosError) {
+          if (error.response) {
+            Object.assign(result, {
+              status: error.response.status,
+              statusText: error.response.statusText,
+              headers: error.response.headers,
+              config: error.response.config,
+              data: error.response.data,
+            });
+            processor.logger.info(`request (#${node.id}) failed with response, status: ${error.response.status}`);
+          } else if (error.request) {
+            result = error.toJSON();
+            processor.logger.error(`request (#${node.id}) failed without resposne: ${error.message}`);
+          } else {
+            processor.logger.error(`request (#${node.id}) initiation failed: ${error.message}`);
+          }
+        }
         job.set({
           status: JOB_STATUS.FAILED,
-          result: error.isAxiosError ? error.toJSON() : error.message,
+          result,
         });
-
-        if (error.response) {
-          processor.logger.info(`request (#${node.id}) response failed, status: ${error.response.status}`);
-        } else {
-          processor.logger.error(`request (#${node.id}) response failed: ${error.message}`);
-        }
       })
       .finally(() => {
         processor.logger.debug(`request (#${node.id}) ended, resume workflow...`);
