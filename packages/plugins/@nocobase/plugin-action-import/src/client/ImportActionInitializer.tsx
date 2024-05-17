@@ -8,21 +8,20 @@
  */
 
 import type { ISchema } from '@formily/react';
-import { Schema, useFieldSchema } from '@formily/react';
+import { Schema } from '@formily/react';
 import { merge } from '@formily/shared';
 import {
-  SchemaInitializerSwitch,
+  SchemaInitializerItem,
   css,
   useCollection_deprecated,
-  useDesignable,
   useSchemaInitializer,
   useSchemaInitializerItem,
 } from '@nocobase/client';
+import { Alert } from 'antd';
 import React from 'react';
 import { NAMESPACE } from './constants';
-import { useFields } from './useFields';
-import { Alert } from 'antd';
 import { useImportTranslation } from './locale';
+import { useFields } from './useFields';
 
 const findSchema = (schema: Schema, key: string, action: string) => {
   return schema.reduceProperties((buf, s) => {
@@ -35,21 +34,6 @@ const findSchema = (schema: Schema, key: string, action: string) => {
     }
     return buf;
   });
-};
-const removeSchema = (schema, cb) => {
-  return cb(schema);
-};
-export const useCurrentSchema = (action: string, key: string, find = findSchema, rm = removeSchema) => {
-  const fieldSchema = useFieldSchema();
-  const { remove } = useDesignable();
-  const schema = find(fieldSchema, key, action);
-  return {
-    schema,
-    exists: !!schema,
-    remove() {
-      schema && rm(schema, remove);
-    },
-  };
 };
 
 const initImportSettings = (fields) => {
@@ -65,7 +49,6 @@ export const ImportWarning = () => {
 export const ImportActionInitializer = () => {
   const itemConfig = useSchemaInitializerItem();
   const { insert } = useSchemaInitializer();
-  const { exists, remove } = useCurrentSchema('importXlsx', 'x-action', itemConfig.find, itemConfig.remove);
   const { name } = useCollection_deprecated();
   const fields = useFields(name);
   const schema: ISchema = {
@@ -196,15 +179,11 @@ export const ImportActionInitializer = () => {
       },
     },
   };
+
   return (
-    <SchemaInitializerSwitch
-      {...itemConfig}
-      checked={exists}
+    <SchemaInitializerItem
       title={itemConfig.title}
       onClick={() => {
-        if (exists) {
-          return remove();
-        }
         schema['x-action-settings']['importSettings'] = initImportSettings(fields);
         const s = merge(schema || {}, itemConfig.schema || {});
         itemConfig?.schemaInitialize?.(s);

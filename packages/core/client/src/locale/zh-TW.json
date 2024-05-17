@@ -642,6 +642,8 @@
   "Current user": "當前使用者",
   "Current role": "當前角色",
   "Current record": "當前記錄",
+  "Current collection": "當前資料表",
+  "Other collections": "其他資料表",
   "Current popup record": "當前彈窗記錄",
   "Associated records": "關聯記錄",
   "Parent record": "上級記錄",

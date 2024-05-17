@@ -9,10 +9,13 @@
 
 import { useParamsFromRecord } from '../../../../../block-provider/BlockProvider';
 import { useDetailsParentRecord } from '../../details-single/hooks/useDetailsDecoratorProps';
+import { useHiddenForInherit } from './useHiddenForInherit';
 
 export function useEditFormBlockDecoratorProps(props) {
   const params = useFormBlockParams();
   let parentRecord;
+
+  const { hidden } = useHiddenForInherit(props);
 
   // association 的值是固定不变的，所以这里可以使用 hooks
   if (props.association) {
@@ -24,6 +27,7 @@ export function useEditFormBlockDecoratorProps(props) {
   return {
     params,
     parentRecord,
+    hidden,
   };
 }
 

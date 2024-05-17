@@ -9,7 +9,6 @@
 
 import React from 'react';
 import { useCollection_deprecated } from '../../../collection-manager';
-
 import { ActionInitializer } from '../../../schema-initializer/items/ActionInitializer';
 
 export const BulkDestroyActionInitializer = (props) => {
