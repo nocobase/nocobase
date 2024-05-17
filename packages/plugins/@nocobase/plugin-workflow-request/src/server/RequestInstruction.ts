@@ -37,13 +37,11 @@ async function request(config) {
   // default headers
   const { url, method = 'POST', contentType = 'application/json', data, timeout = 5000 } = config;
   const headers = (config.headers ?? []).reduce((result, header) => {
-    if (header.name.toLowerCase() === 'content-type') {
-      // header.value = ['application/json', 'application/x-www-form-urlencoded'].includes(header.value)
-      //   ? header.value
-      //   : 'application/json';
+    const name = header.name?.trim();
+    if (name.toLowerCase() === 'content-type') {
       return result;
     }
-    return Object.assign(result, { [header.name]: header.value?.trim() });
+    return Object.assign(result, { [name]: header.value?.trim() });
   }, {});
   const params = (config.params ?? []).reduce(
     (result, param) => Object.assign(result, { [param.name]: param.value?.trim() }),
@@ -54,7 +52,7 @@ async function request(config) {
   headers['Content-Type'] = contentType;
 
   return axios.request({
-    url,
+    url: url?.trim(),
     method,
     headers,
     params,
