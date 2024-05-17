@@ -19,7 +19,7 @@ on:
       - 'packages/core/server/**'
       - 'packages/core/utils/**'
       - 'packages/plugins/**/src/server/**'
-      - '.github/workflows/nocobase-test-backend.yml'
+      - '.github/workflows/nocobase-test-windows.yml'
   pull_request:
     paths:
       - 'package.json'
@@ -32,7 +32,7 @@ on:
       - 'packages/core/server/**'
       - 'packages/core/utils/**'
       - 'packages/plugins/**/src/server/**'
-      - '.github/workflows/nocobase-test-backend.yml'
+      - '.github/workflows/nocobase-test-windows.yml'
 
 jobs:
   build:
