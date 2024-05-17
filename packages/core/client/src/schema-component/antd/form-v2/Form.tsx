@@ -223,19 +223,19 @@ export const Form: React.FC<FormProps> & {
 
     // 新版 UISchema（1.0 之后）中已经废弃了 useProps，这里之所以继续保留是为了兼容旧版的 UISchema
     const { form, disabled, ...others } = useProps(props);
+    const theme: any = useMemo(() => {
+      return {
+        token: {
+          // 这里是为了防止区块内部也收到 marginBlock 的影响（marginBlock：区块之间的间距）
+          // @ts-ignore
+          marginBlock: token.marginLG,
+        },
+      };
+    }, [token.marginLG]);
 
     const formDisabled = disabled || field.disabled;
     return (
-      <ConfigProvider
-        componentDisabled={formDisabled}
-        theme={{
-          token: {
-            // 这里是为了防止区块内部也收到 marginBlock 的影响（marginBlock：区块之间的间距）
-            // @ts-ignore
-            marginBlock: token.marginLG,
-          },
-        }}
-      >
+      <ConfigProvider componentDisabled={formDisabled} theme={theme}>
         <form onSubmit={(e) => e.preventDefault()} className={formLayoutCss}>
           <Spin spinning={field.loading || false}>
             {form ? (
