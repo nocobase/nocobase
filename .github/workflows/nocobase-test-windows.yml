@@ -47,7 +47,7 @@ jobs:
           node-version: '18'
 
       - name: Install dependencies
-        run: yarn --prefer-offline
+        run: yarn --verbose
 
       - name: Test with Sqlite
         run: yarn test --server --single-thread=false
