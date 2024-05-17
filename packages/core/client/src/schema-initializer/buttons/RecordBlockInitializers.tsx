@@ -170,13 +170,13 @@ function useRecordBlocks() {
           componentType: 'FormItem',
           createBlockSchema: ({ item, fromOthersInPopup }) => {
             if (fromOthersInPopup) {
-              return createFormBlock({ item });
+              return createFormBlock({ item, fromOthersInPopup });
             }
             createAssociationFormBlock({ item });
           },
           templateWrap: (templateSchema, { item, fromOthersInPopup }) => {
             if (fromOthersInPopup) {
-              return templateWrapCollection(templateSchema, { item });
+              return templateWrapCollection(templateSchema, { item, fromOthersInPopup });
             }
             templateWrap(templateSchema, { item });
           },

@@ -13,6 +13,7 @@ export * from '../../schema-component/antd/association-filter/AssociationFilter'
 export * from '../../schema-component/antd/association-filter/AssociationFilterDesignerDelete';
 export * from '../../schema-component/antd/association-filter/AssociationFilterDesignerDisplayField';
 export * from './ActionInitializer';
+export * from './ActionInitializerItem';
 export * from './BlockInitializer';
 export * from './CreateFilterActionInitializer';
 export * from './CreateResetActionInitializer';

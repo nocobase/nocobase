@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ActionInitializer } from '@nocobase/client';
+import { ActionInitializerItem } from '@nocobase/client';
 import React from 'react';
 
 export const DuplicateActionInitializer = (props) => {
@@ -58,5 +58,5 @@ export const DuplicateActionInitializer = (props) => {
       },
     },
   };
-  return <ActionInitializer {...props} schema={schema} />;
+  return <ActionInitializerItem {...props} schema={schema} />;
 };

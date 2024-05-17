@@ -8,7 +8,7 @@
  */
 
 import React from 'react';
-import { ActionInitializer } from './ActionInitializer';
+import { ActionInitializerItem } from './ActionInitializerItem';
 
 export const SelectActionInitializer = (props) => {
   const schema = {
@@ -65,5 +65,5 @@ export const SelectActionInitializer = (props) => {
       },
     },
   };
-  return <ActionInitializer {...props} schema={schema} />;
+  return <ActionInitializerItem {...props} schema={schema} />;
 };

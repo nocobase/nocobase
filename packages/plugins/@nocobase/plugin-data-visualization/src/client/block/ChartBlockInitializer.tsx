@@ -59,12 +59,7 @@ const ChartInitializer = () => {
   );
 };
 
-/**
- * @deprecated
- * use `chartInitializers` instead
- */
-export const chartInitializers_deprecated = new CompatibleSchemaInitializer({
-  name: 'ChartInitializers',
+const commonOptions = {
   icon: 'PlusOutlined',
   title: '{{t("Add block")}}',
   items: [
@@ -86,32 +81,21 @@ export const chartInitializers_deprecated = new CompatibleSchemaInitializer({
       ],
     },
   ],
+};
+
+/**
+ * @deprecated
+ * use `chartInitializers` instead
+ */
+export const chartInitializers_deprecated = new CompatibleSchemaInitializer({
+  name: 'ChartInitializers',
+  ...commonOptions,
 });
 
 export const chartInitializers = new CompatibleSchemaInitializer(
   {
     name: 'charts:addBlock',
-    icon: 'PlusOutlined',
-    title: '{{t("Add block")}}',
-    items: [
-      {
-        name: 'chart',
-        title: lang('Chart'),
-        Component: ChartInitializer,
-      },
-      {
-        name: 'otherBlocks',
-        type: 'itemGroup',
-        title: lang('Other blocks'),
-        children: [
-          {
-            name: 'filter',
-            title: lang('Filter'),
-            Component: FilterBlockInitializer,
-          },
-        ],
-      },
-    ],
+    ...commonOptions,
   },
   chartInitializers_deprecated,
 );
