@@ -125,7 +125,7 @@ test.describe('form item & create form', () => {
           page.getByLabel('block-item-CollectionField-general-form-general.integer-integer').getByRole('spinbutton'),
         ).not.toBeVisible();
         await expect(page.getByLabel('block-item-CollectionField-general-form-general.integer-integer')).toHaveText(
-          'integer:112233',
+          'integer:112,233',
         );
       },
     });
@@ -223,7 +223,7 @@ test.describe('form item & edit form', () => {
           page.getByLabel('block-item-CollectionField-general-form-general.integer-integer').getByRole('spinbutton'),
         ).not.toBeVisible();
         await expect(page.getByLabel('block-item-CollectionField-general-form-general.integer-integer')).toHaveText(
-          `integer:${record.integer}`,
+          `integer:${record.integer.toLocaleString()}`,
         );
       },
     });
