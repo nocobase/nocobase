@@ -49,7 +49,7 @@ jobs:
       - run: yarn config set network-timeout 600000 -g
 
       - name: Install dependencies
-        run: yarn --verbose
+        run: yarn install
 
       - name: Test with Sqlite
         run: yarn test --server --single-thread=false
