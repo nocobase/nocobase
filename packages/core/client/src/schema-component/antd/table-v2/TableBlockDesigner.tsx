@@ -8,16 +8,17 @@
  */
 
 import { ArrayItems } from '@formily/antd-v5';
-import { ISchema, useField, useFieldSchema } from '@formily/react';
 import { Field } from '@formily/core';
+import { ISchema, useField, useFieldSchema } from '@formily/react';
 import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useCompile } from '../../';
 import { useAPIClient } from '../../../api-client';
 import { useFormBlockContext, useTableBlockContext } from '../../../block-provider';
 import { useCollectionManager_deprecated, useCollection_deprecated } from '../../../collection-manager';
 import { useSortFields } from '../../../collection-manager/action-hooks';
 import { FilterBlockType, mergeFilter } from '../../../filter-provider/utils';
-import { useRecord } from '../../../record-provider';
+import { SetDataLoadingMode } from '../../../modules/blocks/data-blocks/details-multi/setDataLoadingModeSettingsItem';
 import {
   GeneralSchemaDesigner,
   SchemaSettingsBlockTitleItem,
@@ -29,13 +30,11 @@ import {
   SchemaSettingsSwitchItem,
   SchemaSettingsTemplate,
 } from '../../../schema-settings';
+import { SchemaSettingsDataScope } from '../../../schema-settings/SchemaSettingsDataScope';
 import { useSchemaTemplate } from '../../../schema-templates';
 import { useDesignable } from '../../hooks';
 import { removeNullCondition } from '../filter';
-import { useCompile } from '../../';
-import { SchemaSettingsDataScope } from '../../../schema-settings/SchemaSettingsDataScope';
 import { FixedBlockDesignerItem } from '../page/FixedBlockDesignerItem';
-import { SetDataLoadingMode } from '../../../modules/blocks/data-blocks/details-multi/setDataLoadingModeSettingsItem';
 
 export const EditSortField = () => {
   const { fields } = useCollection_deprecated();

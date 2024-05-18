@@ -207,7 +207,7 @@ export const SchemaSettingsDropdown: React.FC<SchemaSettingsProps> = (props) => 
   );
 };
 
-export const SchemaSettingsTemplate = function Template(props) {
+export function SchemaSettingsTemplate(props) {
   const { componentName, collectionName, resourceName, needRender } = props;
   const { t } = useTranslation();
   const { getCollection } = useCollectionManager_deprecated();
@@ -302,7 +302,7 @@ export const SchemaSettingsTemplate = function Template(props) {
       {t('Save as template')}
     </SchemaSettingsItem>
   );
-};
+}
 
 const findGridSchema = (fieldSchema) => {
   return fieldSchema.reduceProperties((buf, s) => {
@@ -614,7 +614,7 @@ interface SchemaSettingsConnectDataBlocksProps {
   emptyDescription?: string;
 }
 
-export const SchemaSettingsConnectDataBlocks: FC<SchemaSettingsConnectDataBlocksProps> = (props) => {
+export function SchemaSettingsConnectDataBlocks(props) {
   const { type, emptyDescription } = props;
   const fieldSchema = useFieldSchema();
   const { dn } = useDesignable();
@@ -745,7 +745,7 @@ export const SchemaSettingsConnectDataBlocks: FC<SchemaSettingsConnectDataBlocks
       )}
     </SchemaSettingsSubMenu>
   );
-};
+}
 
 export interface SchemaSettingsSelectItemProps
   extends Omit<SchemaSettingsItemProps, 'onChange' | 'onClick'>,
@@ -1087,7 +1087,7 @@ export const SchemaSettingsModalItem: FC<SchemaSettingsModalItemProps> = (props)
   );
 };
 
-export const SchemaSettingsBlockTitleItem = function BlockTitleItem() {
+export function SchemaSettingsBlockTitleItem() {
   const field = useField();
   const fieldSchema = useFieldSchema();
   const { dn } = useDesignable();
@@ -1126,7 +1126,7 @@ export const SchemaSettingsBlockTitleItem = function BlockTitleItem() {
       }}
     />
   );
-};
+}
 
 export const SchemaSettingsDefaultSortingRules = function DefaultSortingRules(props) {
   const { path = 'x-component-props.params.sort' } = props;
@@ -1500,7 +1500,7 @@ export const findParentFieldSchema = (fieldSchema: Schema) => {
   }
 };
 
-export const SchemaSettingsSortField = () => {
+export function SchemaSettingsSortField() {
   const { fields } = useCollection_deprecated();
   const field = useField<Field>();
   const fieldSchema = useFieldSchema();
@@ -1540,7 +1540,7 @@ export const SchemaSettingsSortField = () => {
       }}
     />
   );
-};
+}
 
 // 是否是系统字段
 export const isSystemField = (collectionField: CollectionFieldOptions_deprecated, getInterface) => {
