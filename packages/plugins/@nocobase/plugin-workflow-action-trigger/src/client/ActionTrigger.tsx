@@ -151,11 +151,7 @@ export default class extends Trigger {
     CheckboxGroupWithTooltip,
   };
   isActionTriggerable = (config, context) => {
-    return (
-      ['create', 'update'].includes(context.formAction) &&
-      ['submit', 'customize:save'].includes(context.buttonAction) &&
-      !config.global
-    );
+    return !config.global && ['submit', 'customize:save', 'customize:update'].includes(context.buttonAction);
   };
   useVariables(config, options) {
     // eslint-disable-next-line react-hooks/rules-of-hooks

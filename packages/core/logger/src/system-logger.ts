@@ -86,6 +86,13 @@ class SystemLoggerTransport extends Transport {
     }
     callback(null, true);
   }
+
+  close() {
+    this.logger.close();
+    if (this.errorLogger) {
+      this.errorLogger.close();
+    }
+  }
 }
 
 function child(defaultRequestMetadata: any) {
@@ -108,8 +115,12 @@ function child(defaultRequestMetadata: any) {
 }
 
 export const createSystemLogger = (options: SystemLoggerOptions): SystemLogger => {
+  const transport = new SystemLoggerTransport(options);
+  transport.once('unpipe', () => {
+    transport.close();
+  });
   const logger = winston.createLogger({
-    transports: [new SystemLoggerTransport(options)],
+    transports: [transport],
   });
 
   // Since error.cause is not supported by child logger of winston
