@@ -6,10 +6,15 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
+import React from 'react';
+import { connect } from '@formily/react';
 
-import { connect, mapReadPretty } from '@formily/react';
+import { useCollectionRecordData } from '../../../data-source';
 import { Upload } from '../upload/Upload';
 
-export const Preview = connect(Upload.ReadPretty.File, mapReadPretty(Upload.ReadPretty.File));
+export const Preview = connect((props) => {
+  const data = useCollectionRecordData();
+  return <Upload.ReadPretty {...props} value={data} />;
+});
 
 export default Preview;

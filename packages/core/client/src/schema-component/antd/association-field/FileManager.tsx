@@ -34,7 +34,7 @@ import {
 import { useCompile } from '../../hooks';
 import { ActionContextProvider } from '../action';
 import { EllipsisWithTooltip } from '../input';
-import { Preview } from '../preview';
+import { Upload } from '../upload';
 import { useFieldNames, useInsertSchema } from './hooks';
 import schema from './schema';
 import { flatData, getLabelFormatValue, useLabelUiSchema } from './util';
@@ -82,7 +82,7 @@ const useTableSelectorProps = () => {
 };
 
 function FileSelector(props) {
-  const { disabled, multiple, value, onChange, onSelect, quickUpload, selectFile } = props;
+  const { disabled, multiple, value, onChange, action, onSelect, quickUpload, selectFile } = props;
   const { wrapSSR, hashId, componentCls: prefixCls } = useStyles();
   const { useFileCollectionStorageRules } = useExpressionScope();
   const { t } = useTranslation();
@@ -120,6 +120,7 @@ function FileSelector(props) {
             multiple={multiple}
             // onRemove={handleRemove}
             onChange={onChange}
+            action={action}
             rules={rules}
           />
         ) : null}
@@ -262,7 +263,9 @@ const FileManageReadPretty = connect((props) => {
   const { getField } = useCollection_deprecated();
   const { getCollectionJoinField } = useCollectionManager_deprecated();
   const collectionField = getField(fieldSchema.name) || getCollectionJoinField(fieldSchema['x-collection-field']);
-  return <EllipsisWithTooltip ellipsis>{collectionField ? <Preview {...props} /> : null}</EllipsisWithTooltip>;
+  return (
+    <EllipsisWithTooltip ellipsis>{collectionField ? <Upload.ReadPretty {...props} /> : null}</EllipsisWithTooltip>
+  );
 });
 
 export { FileManageReadPretty, InternalFileManager };

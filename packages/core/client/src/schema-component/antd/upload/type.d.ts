@@ -44,15 +44,10 @@ export type ComposedUpload = React.FC<UploadProps> & {
   File?: React.FC<UploadProps>;
   Attachment?: React.FC<UploadProps>;
   Selector?: React.FC<any>;
-  ReadPretty?: ComposedReadPretty;
+  ReadPretty?: React.FC<any>;
 };
 
 export type IUploadProps = {
   // serviceErrorMessage?: string;
   // onChange?: (...args: any) => void;
-};
-
-export type ComposedReadPretty = React.FC<UploadProps> & {
-  Upload?: React.FC<UploadProps>;
-  File?: React.FC<UploadProps>;
 };

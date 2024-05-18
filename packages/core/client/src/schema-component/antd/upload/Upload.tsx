@@ -32,11 +32,20 @@ import {
   useUploadProps,
 } from './shared';
 import { useStyles } from './style';
-import type { ComposedReadPretty, ComposedUpload, DraggerProps, DraggerV2Props, UploadProps } from './type';
+import type { ComposedUpload, DraggerProps, DraggerV2Props, UploadProps } from './type';
 
-const ReadPretty: ComposedReadPretty = () => null;
+function InternalUpload(props: UploadProps) {
+  const { onChange, ...rest } = props;
+  const onFileChange = useCallback(
+    (info) => {
+      onChange?.(toFileList(info.fileList));
+    },
+    [onChange],
+  );
+  return <AntdUpload {...useUploadProps(rest)} onChange={onFileChange} />;
+}
 
-ReadPretty.File = function File({ value, onChange, disabled, multiple, size }: UploadProps) {
+function ReadPretty({ value, onChange, disabled, multiple, size }: UploadProps) {
   const { wrapSSR, hashId, componentCls: prefixCls } = useStyles();
   const useUploadStyleVal = (useUploadStyle as any).default ? (useUploadStyle as any).default : useUploadStyle;
   // 加载 antd 的样式
@@ -53,42 +62,18 @@ ReadPretty.File = function File({ value, onChange, disabled, multiple, size }: U
       )}
     >
       <div className={cls(`${prefixCls}-list`, `${prefixCls}-list-picture-card`)}>
-        <AttachmentList disabled={disabled} multiple={multiple} value={value} onChange={onChange} />
+        <AttachmentList disabled={disabled} readPretty multiple={multiple} value={value} onChange={onChange} />
       </div>
     </div>,
   );
-};
-
-ReadPretty.Upload = function Upload() {
-  const field = useField<Field>();
-  return (field.value || []).map((item) => (
-    <div key={item.name}>
-      {item.url ? (
-        <a target={'_blank'} href={item.url} rel="noreferrer">
-          {item.name}
-        </a>
-      ) : (
-        <span>{item.name}</span>
-      )}
-    </div>
-  ));
-};
+}
 
 export const Upload: ComposedUpload = connect(
-  (props: UploadProps) => {
-    const { onChange, ...rest } = props;
-    const onFileChange = useCallback(
-      (info) => {
-        onChange?.(toFileList(info.fileList));
-      },
-      [onChange],
-    );
-    return <AntdUpload {...useUploadProps(rest)} onChange={onFileChange} />;
-  },
+  InternalUpload,
   mapProps({
     value: 'fileList',
   }),
-  mapReadPretty(ReadPretty.Upload),
+  mapReadPretty(ReadPretty),
 );
 
 Upload.ReadPretty = ReadPretty;
@@ -101,7 +86,7 @@ function useSizeHint(size: number) {
 }
 
 function AttachmentListItem(props) {
-  const { file, disabled, onPreview, onDelete: propsOnDelete } = props;
+  const { file, disabled, onPreview, onDelete: propsOnDelete, readPretty } = props;
   const { componentCls: prefixCls } = useStyles();
   const { t } = useTranslation();
   const handleClick = useCallback(
@@ -146,8 +131,12 @@ function AttachmentListItem(props) {
       <div className={`${prefixCls}-list-item-info`}>{wrappedItem}</div>
       <span className={`${prefixCls}-list-item-actions`}>
         <Space size={3}>
-          {file.id && <Button size={'small'} type={'text'} icon={<DownloadOutlined />} onClick={onDownload} />}
-          {!disabled && <Button size={'small'} type={'text'} icon={<DeleteOutlined />} onClick={onDelete} />}
+          {!readPretty && file.id && (
+            <Button size={'small'} type={'text'} icon={<DownloadOutlined />} onClick={onDownload} />
+          )}
+          {!readPretty && !disabled && (
+            <Button size={'small'} type={'text'} icon={<DeleteOutlined />} onClick={onDelete} />
+          )}
         </Space>
       </span>
       {file.status === 'uploading' && (
@@ -291,7 +280,7 @@ function Previewer({ index, onSwitchIndex, list }) {
 }
 
 export function AttachmentList(props) {
-  const { disabled, multiple, value, onChange } = props;
+  const { disabled, multiple, value, onChange, readPretty } = props;
   const [fileList, setFileList] = useState<any[]>([]);
   const [preview, setPreview] = useState<number>(null);
 
@@ -307,9 +296,9 @@ export function AttachmentList(props) {
       if (previewType) {
         setPreview(index);
       } else {
-        // if (file.id) {
-        //   saveAs(file.url, `${file.title}${file.extname}`);
-        // }
+        if (file.id) {
+          saveAs(file.url, `${file.title}${file.extname}`);
+        }
       }
     },
     [fileList],
@@ -336,6 +325,7 @@ export function AttachmentList(props) {
           disabled={disabled}
           onPreview={onPreview}
           onDelete={onDelete}
+          readPretty={readPretty}
         />
       ))}
       <Previewer index={preview} onSwitchIndex={setPreview} list={fileList} />
@@ -442,21 +432,24 @@ export function Uploader({ rules, ...props }: UploadProps) {
   );
 }
 
-Upload.Attachment = withDynamicSchemaProps(
-  connect((props: UploadProps) => {
-    const { wrapSSR, hashId, componentCls: prefixCls } = useStyles();
+function Attachment(props: UploadProps) {
+  const { wrapSSR, hashId, componentCls: prefixCls } = useStyles();
 
-    return wrapSSR(
-      <div className={cls(`${prefixCls}-wrapper`, `${prefixCls}-picture-card-wrapper`, 'nb-upload', hashId)}>
-        <div className={cls(`${prefixCls}-list`, `${prefixCls}-list-picture-card`)}>
-          <AttachmentList {...props} />
-          <Uploader {...props} />
-        </div>
-      </div>,
-    );
-  }, mapReadPretty(ReadPretty.File)),
-  { displayName: 'Upload.Attachment' },
-);
+  return wrapSSR(
+    <div className={cls(`${prefixCls}-wrapper`, `${prefixCls}-picture-card-wrapper`, 'nb-upload', hashId)}>
+      <div className={cls(`${prefixCls}-list`, `${prefixCls}-list-picture-card`)}>
+        <AttachmentList {...props} />
+        <Uploader {...props} />
+      </div>
+    </div>,
+  );
+}
+
+Attachment.ReadPretty = ReadPretty;
+
+Upload.Attachment = withDynamicSchemaProps(connect(Attachment, mapReadPretty(Attachment.ReadPretty)), {
+  displayName: 'Upload.Attachment',
+});
 
 Upload.Dragger = connect(
   (props: DraggerProps) => {
@@ -498,7 +491,7 @@ Upload.DraggerV2 = withDynamicSchemaProps(
       const { size, mimetype: accept } = rules ?? {};
       const sizeHint = useSizeHint(size);
       const handleChange = useCallback(
-        (fileList: any[] = []) => {
+        ({ fileList }) => {
           const { onChange } = extraProps;
           onChange?.(fileList);
 
