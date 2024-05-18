@@ -40,3 +40,10 @@ Table 会将当前行的数据通过 [CollectionRecordProvider](/core/data-block
 在编辑场景下，在通过 [useDataBlockResource()](/core/data-block/data-block-resource-provider) 和 [useDataBlockRequest()](/core/data-block/data-block-request-provider#usedatablockrequest) 对数据进行更新，以及对列表进行刷新。
 
 <code src="./demos/new-demos/record.tsx"></code>
+
+## Column generic properties
+
+通过调整`TableV2.Column`的`x-component-props`调整列宽、固定列等。
+
+<code src="./demos/new-demos/columnWidth.tsx"></code>
+

@@ -176,11 +176,7 @@ const schema: ISchema = {
 const Demo = () => {
   return (
     <VariablesProvider>
-      <SchemaComponent
-        schema={schema}
-        scope={{ useCreateFormBlockDecoratorProps, useCreateFormBlockProps }}
-        components={{ FormBlockProvider, FormItem }}
-      />
+      <SchemaComponent schema={schema} />
     </VariablesProvider>
   );
 };
@@ -197,6 +193,14 @@ const app = mockApp({
   schemaSettings: [],
   dataSourceManager: {
     collections: collections,
+  },
+  components: {
+    FormBlockProvider,
+    FormItem,
+  },
+  scopes: {
+    useCreateFormBlockDecoratorProps,
+    useCreateFormBlockProps,
   },
 });
 
