@@ -66,6 +66,39 @@ async function request(config) {
   });
 }
 
+function successResponse(response, onlyData = false) {
+  return onlyData
+    ? response.data
+    : {
+        status: response.status,
+        statusText: response.statusText,
+        headers: response.headers,
+        config: response.config,
+        data: response.data,
+      };
+}
+
+function failedResponse(error) {
+  let result = {
+    message: error.message,
+    stack: error.stack,
+  };
+  if (error.isAxiosError) {
+    if (error.response) {
+      Object.assign(result, {
+        status: error.response.status,
+        statusText: error.response.statusText,
+        headers: error.response.headers,
+        config: error.response.config,
+        data: error.response.data,
+      });
+    } else if (error.request) {
+      result = error.toJSON();
+    }
+  }
+  return result;
+}
+
 export default class extends Instruction {
   async run(node: FlowNodeModel, prevJob, processor: Processor) {
     const config = processor.getParsedValue(node.config, node.id) as RequestConfig;
@@ -78,7 +111,7 @@ export default class extends Instruction {
         const response = await request(config);
         return {
           status: JOB_STATUS.RESOLVED,
-          result: response.data,
+          result: successResponse(response, config.onlyData),
         };
       } catch (error) {
         return {
@@ -98,45 +131,29 @@ export default class extends Instruction {
     // eslint-disable-next-line promise/catch-or-return
     request(config)
       .then((response) => {
+        processor.logger.info(`request (#${node.id}) response success, status: ${response.status}`);
+
         job.set({
           status: JOB_STATUS.RESOLVED,
-          result: config.onlyData
-            ? response.data
-            : {
-                status: response.status,
-                statusText: response.statusText,
-                headers: response.headers,
-                config: response.config,
-                data: response.data,
-              },
+          result: successResponse(response, config.onlyData),
         });
-        processor.logger.info(`request (#${node.id}) response success, status: ${response.status}`);
       })
       .catch((error) => {
-        let result = {
-          message: error.message,
-          stack: error.stack,
-        };
         if (error.isAxiosError) {
           if (error.response) {
-            Object.assign(result, {
-              status: error.response.status,
-              statusText: error.response.statusText,
-              headers: error.response.headers,
-              config: error.response.config,
-              data: error.response.data,
-            });
             processor.logger.info(`request (#${node.id}) failed with response, status: ${error.response.status}`);
           } else if (error.request) {
-            result = error.toJSON();
             processor.logger.error(`request (#${node.id}) failed without resposne: ${error.message}`);
           } else {
             processor.logger.error(`request (#${node.id}) initiation failed: ${error.message}`);
           }
+        } else {
+          processor.logger.error(`request (#${node.id}) failed unexpectedly: ${error.message}`);
         }
+
         job.set({
           status: JOB_STATUS.FAILED,
-          result,
+          result: failedResponse(error),
         });
       })
       .finally(() => {

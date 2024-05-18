@@ -362,7 +362,7 @@ describe('workflow > instructions > request', () => {
       const [execution] = await workflow.getExecutions();
       const [job] = await execution.getJobs();
       expect(job.status).toBe(JOB_STATUS.RESOLVED);
-      expect(job.result.data).toEqual({ title: 't1' });
+      expect(job.result.data.data).toEqual({ title: 't1' });
     });
 
     // TODO(bug): should not use ejs
@@ -386,7 +386,7 @@ describe('workflow > instructions > request', () => {
       const [execution] = await workflow.getExecutions();
       const [job] = await execution.getJobs();
       expect(job.status).toBe(JOB_STATUS.RESOLVED);
-      expect(job.result.data).toEqual({ title });
+      expect(job.result.data.data).toEqual({ title });
     });
 
     it.skip('request inside loop', async () => {
@@ -439,7 +439,7 @@ describe('workflow > instructions > request', () => {
       expect(execution.status).toBe(EXECUTION_STATUS.RESOLVED);
       const [job] = await execution.getJobs();
       expect(job.status).toBe(JOB_STATUS.RESOLVED);
-      expect(job.result.data).toEqual({ a: 't1' });
+      expect(job.result.data.data).toEqual({ a: 't1' });
     });
 
     it('contentType as "application/x-www-form-urlencoded"', async () => {
@@ -464,7 +464,7 @@ describe('workflow > instructions > request', () => {
       expect(execution.status).toBe(EXECUTION_STATUS.RESOLVED);
       const [job] = await execution.getJobs();
       expect(job.status).toBe(JOB_STATUS.RESOLVED);
-      expect(job.result.data).toEqual({ a: ['t1', '&=1'] });
+      expect(job.result.data.data).toEqual({ a: ['t1', '&=1'] });
     });
   });
 
@@ -488,7 +488,7 @@ describe('workflow > instructions > request', () => {
       expect(execution.status).toBe(EXECUTION_STATUS.RESOLVED);
       const [job] = await execution.getJobs();
       expect(job.status).toBe(JOB_STATUS.RESOLVED);
-      expect(job.result.data).toEqual({ a: 't1' });
+      expect(job.result.data.data).toEqual({ a: 't1' });
     });
   });
 
@@ -529,7 +529,7 @@ describe('workflow > instructions > request', () => {
       expect(execution.status).toBe(EXECUTION_STATUS.RESOLVED);
       const [job] = await execution.getJobs();
       expect(job.status).toBe(JOB_STATUS.RESOLVED);
-      expect(job.result.data).toMatchObject({});
+      expect(job.result.data.data).toMatchObject({});
 
       server.close();
     });
@@ -563,7 +563,7 @@ describe('workflow > instructions > request', () => {
       expect(execution.status).toBe(EXECUTION_STATUS.RESOLVED);
       const [job] = await execution.getJobs();
       expect(job.status).toBe(JOB_STATUS.RESOLVED);
-      expect(job.result).toEqual({ meta: {}, data: {} });
+      expect(job.result.data).toEqual({ meta: {}, data: {} });
     });
 
     it('ignoreFail', async () => {
