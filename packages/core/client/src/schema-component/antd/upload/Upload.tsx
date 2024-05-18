@@ -13,7 +13,7 @@ import { Upload as AntdUpload, Button, Modal, Progress, Space, Tooltip } from 'a
 import useUploadStyle from 'antd/es/upload/style';
 import cls from 'classnames';
 import { saveAs } from 'file-saver';
-import { filesize } from 'filesize';
+import filesize from 'filesize';
 import React, { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import LightBox from 'react-image-lightbox';
