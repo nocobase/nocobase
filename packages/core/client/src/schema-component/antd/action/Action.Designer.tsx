@@ -454,16 +454,20 @@ export function WorkflowConfig() {
 
   const description = {
     submit: t(
-      'Workflow will be triggered before or after submitting succeeded based on workflow type (supports pre/post action and approval event).',
+      'Workflow will be triggered before or after submitting succeeded based on workflow type (supports pre/post action event in local mode, and approval event).',
       {
         ns: 'workflow',
       },
     ),
     'customize:save': t(
-      'Workflow will be triggered before or after submitting succeeded based on workflow type (supports pre/post action and approval event).',
+      'Workflow will be triggered before or after submitting succeeded based on workflow type (supports pre/post action event in local mode, and approval event).',
       {
         ns: 'workflow',
       },
+    ),
+    'customize:update': t(
+      'Workflow will be triggered before or after submitting succeeded based on workflow type (supports pre/post action event in local mode, and approval event).',
+      { ns: 'workflow' },
     ),
     'customize:triggerWorkflows': t(
       'Workflow will be triggered directly once the button clicked, without data saving. Only supports to be bound with "Custom action event".',
@@ -473,7 +477,7 @@ export function WorkflowConfig() {
       '"Submit to workflow" to "Post-action event" is deprecated, please use "Custom action event" instead.',
       { ns: 'workflow' },
     ),
-    destroy: t('Workflow will be triggered before deleting succeeded (only supports pre-action event).', {
+    destroy: t('Workflow will be triggered before deleting succeeded (only supports pre-action event in local mode).', {
       ns: 'workflow',
     }),
   }[fieldSchema?.['x-action']];
