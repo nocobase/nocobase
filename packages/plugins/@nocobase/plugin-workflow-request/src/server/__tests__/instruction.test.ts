@@ -143,6 +143,27 @@ describe('workflow > instructions > request', () => {
   });
 
   describe('request static app routes', () => {
+    it('get data (legacy)', async () => {
+      await workflow.createNode({
+        type: 'request',
+        config: {
+          url: api.URL_DATA,
+          method: 'GET',
+          onlyData: true,
+        } as RequestConfig,
+      });
+
+      await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
+
+      const [execution] = await workflow.getExecutions();
+      expect(execution.status).toBe(EXECUTION_STATUS.RESOLVED);
+      const [job] = await execution.getJobs();
+      expect(job.status).toBe(JOB_STATUS.RESOLVED);
+      expect(job.result).toMatchObject({ meta: {}, data: {} });
+    });
+
     it('get data', async () => {
       await workflow.createNode({
         type: 'request',
@@ -157,10 +178,12 @@ describe('workflow > instructions > request', () => {
       await sleep(500);
 
       const [execution] = await workflow.getExecutions();
-      expect(execution.status).toEqual(EXECUTION_STATUS.RESOLVED);
+      expect(execution.status).toBe(EXECUTION_STATUS.RESOLVED);
       const [job] = await execution.getJobs();
       expect(job.status).toBe(JOB_STATUS.RESOLVED);
-      expect(job.result).toEqual({ meta: {}, data: {} });
+      expect(job.result).toMatchObject({
+        data: { meta: {}, data: {} },
+      });
     });
 
     it('timeout', async () => {
@@ -389,7 +412,7 @@ describe('workflow > instructions > request', () => {
       await sleep(500);
 
       const [execution] = await workflow.getExecutions();
-      expect(execution.status).toEqual(EXECUTION_STATUS.RESOLVED);
+      expect(execution.status).toBe(EXECUTION_STATUS.RESOLVED);
       const jobs = await execution.getJobs({ order: [['id', 'ASC']] });
       expect(jobs.length).toBe(3);
       expect(jobs.map((item) => item.status)).toEqual(Array(3).fill(JOB_STATUS.RESOLVED));
@@ -413,7 +436,7 @@ describe('workflow > instructions > request', () => {
       await sleep(500);
 
       const [execution] = await workflow.getExecutions();
-      expect(execution.status).toEqual(EXECUTION_STATUS.RESOLVED);
+      expect(execution.status).toBe(EXECUTION_STATUS.RESOLVED);
       const [job] = await execution.getJobs();
       expect(job.status).toBe(JOB_STATUS.RESOLVED);
       expect(job.result.data).toEqual({ a: 't1' });
@@ -438,7 +461,7 @@ describe('workflow > instructions > request', () => {
       await sleep(500);
 
       const [execution] = await workflow.getExecutions();
-      expect(execution.status).toEqual(EXECUTION_STATUS.RESOLVED);
+      expect(execution.status).toBe(EXECUTION_STATUS.RESOLVED);
       const [job] = await execution.getJobs();
       expect(job.status).toBe(JOB_STATUS.RESOLVED);
       expect(job.result.data).toEqual({ a: ['t1', '&=1'] });
@@ -462,7 +485,7 @@ describe('workflow > instructions > request', () => {
       await sleep(500);
 
       const [execution] = await workflow.getExecutions();
-      expect(execution.status).toEqual(EXECUTION_STATUS.RESOLVED);
+      expect(execution.status).toBe(EXECUTION_STATUS.RESOLVED);
       const [job] = await execution.getJobs();
       expect(job.status).toBe(JOB_STATUS.RESOLVED);
       expect(job.result.data).toEqual({ a: 't1' });
@@ -536,8 +559,8 @@ describe('workflow > instructions > request', () => {
 
       const [execution] = await syncFlow.getExecutions();
       expect(processor.execution.id).toEqual(execution.id);
-      expect(processor.execution.status).toEqual(execution.status);
-      expect(execution.status).toEqual(EXECUTION_STATUS.RESOLVED);
+      expect(processor.execution.status).toBe(execution.status);
+      expect(execution.status).toBe(EXECUTION_STATUS.RESOLVED);
       const [job] = await execution.getJobs();
       expect(job.status).toBe(JOB_STATUS.RESOLVED);
       expect(job.result).toEqual({ meta: {}, data: {} });

@@ -20,6 +20,7 @@ export type RequestConfig = Pick<AxiosRequestConfig, 'url' | 'method' | 'params'
   headers: Array<Header>;
   contentType: string;
   ignoreFail: boolean;
+  onlyData?: boolean;
 };
 
 const ContentTypeTransformers = {
@@ -99,7 +100,15 @@ export default class extends Instruction {
       .then((response) => {
         job.set({
           status: JOB_STATUS.RESOLVED,
-          result: response.data,
+          result: config.onlyData
+            ? response.data
+            : {
+                status: response.status,
+                statusText: response.statusText,
+                headers: response.headers,
+                config: response.config,
+                data: response.data,
+              },
         });
         processor.logger.info(`request (#${node.id}) response success, status: ${response.status}`);
       })
