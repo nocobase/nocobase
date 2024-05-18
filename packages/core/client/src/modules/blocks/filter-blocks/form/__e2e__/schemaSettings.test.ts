@@ -36,7 +36,12 @@ test.describe('filter block schema settings', () => {
   });
 
   test.describe('connect data blocks', () => {
-    test('connecting two blocks of the same collection', async ({ page, mockPage, mockRecords }) => {
+    test('connecting two blocks of the same collection', async ({
+      page,
+      mockPage,
+      mockRecords,
+      clearBlockTemplates,
+    }) => {
       const nocoPage = await mockPage(oneFormAndOneTableWithSameCollection).waitForInit();
       const records = await mockRecords('general', 3);
       await nocoPage.goto();
@@ -114,7 +119,7 @@ test.describe('filter block schema settings', () => {
       // 点击重置按钮
       await page.getByLabel('action-Action-Reset records-general-filter-form').click();
 
-      // 讲筛选表单区块保存为模板
+      // 将筛选表单区块保存为模板
       await page.getByLabel('block-item-CardItem-general-filter-form').hover();
       await page.getByLabel('designer-schema-settings-CardItem-FormV2.FilterDesigner-general').hover();
       await page.getByRole('menuitem', { name: 'Save as block template' }).click();
@@ -154,6 +159,8 @@ test.describe('filter block schema settings', () => {
       await expect(
         page.getByLabel('block-item-CardItem-general-table').getByRole('row', { name: records[0].singleLineText }),
       ).toBeVisible();
+
+      await clearBlockTemplates();
     });
   });
 });

@@ -76,21 +76,22 @@ import {
 } from '..';
 import { FormBlockContext, useFormBlockContext, useFormBlockType, useTableBlockContext } from '../block-provider';
 import {
+  BlockContext,
+  BlockRequestContext_deprecated,
+  useBlockContext,
+  useBlockRequestContext,
+} from '../block-provider/BlockProvider';
+import {
   FormActiveFieldsProvider,
   findFilterTargets,
   updateFilterTargets,
   useFormActiveFields,
 } from '../block-provider/hooks';
-import {
-  useBlockRequestContext,
-  BlockRequestContext_deprecated,
-  useBlockContext,
-  BlockContext,
-} from '../block-provider/BlockProvider';
 import { SelectWithTitle, SelectWithTitleProps } from '../common/SelectWithTitle';
 import { useNiceDropdownMaxHeight } from '../common/useNiceDropdownHeight';
 import { useDataSourceManager } from '../data-source/data-source/DataSourceManagerProvider';
 import { useDataSourceKey } from '../data-source/data-source/DataSourceProvider';
+import { useFilterBlock } from '../filter-provider/FilterProvider';
 import {
   FilterBlockType,
   getSupportFieldsByAssociation,
@@ -98,7 +99,6 @@ import {
   isSameCollection,
   useSupportedBlocks,
 } from '../filter-provider/utils';
-import { useFilterBlock } from '../filter-provider/FilterProvider';
 import { FlagProvider } from '../flag-provider';
 import { useCollectMenuItem, useCollectMenuItems, useMenuItem } from '../hooks/useMenuItem';
 import { DeclareVariable } from '../modules/variable/DeclareVariable';
