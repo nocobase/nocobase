@@ -51,6 +51,7 @@ export class PresetNocoBase extends Plugin {
     'kanban',
     'action-duplicate',
     'action-print',
+    'collection-sql',
   ];
 
   localPlugins = [
@@ -87,14 +88,9 @@ export class PresetNocoBase extends Plugin {
   }
 
   async getPackageJson(name) {
-    let packageName = name;
-    try {
-      packageName = await PluginManager.getPackageName(name);
-    } catch (error) {
-      packageName = name;
-    }
+    const { packageName } = await PluginManager.parseName(name);
     const packageJson = await PluginManager.getPackageJson(packageName);
-    return packageJson;
+    return { ...packageJson, name: packageName };
   }
 
   async allPlugins() {

@@ -7,8 +7,24 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import fs from 'fs';
 import path from 'path';
 import { pathToFileURL } from 'url';
+
+export async function requireResolve(m: any) {
+  if (!process.env.VITEST) {
+    return require.resolve(m);
+  }
+  // 以下逻辑仅用于测试环境，因为 vitest 不支持对 require 调用进行别名
+  const json = JSON.parse(
+    await fs.promises.readFile(path.resolve(process.cwd(), './tsconfig.paths.json'), { encoding: 'utf8' }),
+  );
+  const paths = json.compilerOptions.paths;
+  if (paths[m]) {
+    return require.resolve(path.resolve(process.cwd(), paths[m][0], 'index.ts'));
+  }
+  return require.resolve(m);
+}
 
 export function requireModule(m: any) {
   if (typeof m === 'string') {

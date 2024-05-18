@@ -7,8 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { createBlockInPage, expect, oneEmptyTable, test } from '@nocobase/test/e2e';
+import { Page, createBlockInPage, expect, oneEmptyTable, test } from '@nocobase/test/e2e';
 import { T3686, T4005 } from './templatesOfBug';
+
+const deleteButton = async (page: Page, name: string) => {
+  await page.getByRole('button', { name }).hover();
+  await page.getByRole('button', { name }).getByLabel('designer-schema-settings-').hover();
+  await page.getByRole('menuitem', { name: 'Delete' }).click();
+  await page.getByRole('button', { name: 'OK', exact: true }).click();
+};
 
 test.describe('where table block can be added', () => {
   test('page', async ({ page, mockPage }) => {
@@ -116,11 +123,6 @@ test.describe('configure actions', () => {
     await page.getByRole('menuitem', { name: 'Delete' }).click();
     await page.getByRole('menuitem', { name: 'Refresh' }).click();
 
-    await expect(page.getByRole('menuitem', { name: 'Filter' }).getByRole('switch')).toBeChecked();
-    await expect(page.getByRole('menuitem', { name: 'Add new' }).getByRole('switch')).toBeChecked();
-    await expect(page.getByRole('menuitem', { name: 'Delete' }).getByRole('switch')).toBeChecked();
-    await expect(page.getByRole('menuitem', { name: 'Refresh' }).getByRole('switch')).toBeChecked();
-
     await page.mouse.move(300, 0);
     await expect(page.getByRole('button', { name: 'Filter' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Add new' })).toBeVisible();
@@ -128,32 +130,15 @@ test.describe('configure actions', () => {
     await expect(page.getByRole('button', { name: 'Refresh' })).toBeVisible();
 
     // delete buttons
-    await page.getByLabel('schema-initializer-ActionBar-table:configureActions-t_unp4scqamw9').hover();
-    await page.getByRole('menuitem', { name: 'Filter' }).click();
-    await page.getByRole('menuitem', { name: 'Add new' }).click();
-    await page.getByRole('menuitem', { name: 'Delete' }).click();
-    await page.getByRole('menuitem', { name: 'Refresh' }).click();
-
-    await expect(page.getByRole('menuitem', { name: 'Filter' }).getByRole('switch')).not.toBeChecked();
-    await expect(page.getByRole('menuitem', { name: 'Add new' }).getByRole('switch')).not.toBeChecked();
-    await expect(page.getByRole('menuitem', { name: 'Delete' }).getByRole('switch')).not.toBeChecked();
-    await expect(page.getByRole('menuitem', { name: 'Refresh' }).getByRole('switch')).not.toBeChecked();
+    await deleteButton(page, 'Filter');
+    await deleteButton(page, 'Add new');
+    await deleteButton(page, 'Delete');
+    await deleteButton(page, 'Refresh');
 
     await page.mouse.move(300, 0);
     await expect(page.getByRole('button', { name: 'Filter' })).not.toBeVisible();
     await expect(page.getByRole('button', { name: 'Add new' })).not.toBeVisible();
     await expect(page.getByRole('button', { name: 'Delete' })).not.toBeVisible();
     await expect(page.getByRole('button', { name: 'Refresh' })).not.toBeVisible();
-  });
-
-  test('customize: add record', async ({ page, mockPage }) => {
-    await mockPage(oneEmptyTable).goto();
-
-    await page.getByLabel('schema-initializer-ActionBar-table:configureActions-t_unp4scqamw9').hover();
-    await page.getByRole('menuitem', { name: 'Customize' }).hover();
-    await page.getByRole('menuitem', { name: 'add record' }).click();
-
-    await page.mouse.move(300, 0);
-    await expect(page.getByRole('button', { name: 'Add record' })).toBeVisible();
   });
 });

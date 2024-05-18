@@ -14,6 +14,7 @@ import { SchemaInitializerItems } from '../components';
 import { SchemaInitializerButton } from '../components/SchemaInitializerButton';
 import { withInitializer } from '../withInitializer';
 import { SchemaInitializerOptions } from '../types';
+import { SchemaInitializer } from '../SchemaInitializer';
 
 const InitializerComponent: FC<SchemaInitializerOptions<any, any>> = React.memo((options) => {
   const Component: any = options.Component || SchemaInitializerButton;
@@ -33,12 +34,12 @@ const InitializerComponent: FC<SchemaInitializerOptions<any, any>> = React.memo(
 InitializerComponent.displayName = 'InitializerComponent';
 
 export function useSchemaInitializerRender<P1 = ButtonProps, P2 = {}>(
-  name: string,
+  name: string | SchemaInitializer<P1, P2>,
   options?: Omit<SchemaInitializerOptions<P1, P2>, 'name'>,
 ) {
   const app = useApp();
   const initializer = useMemo(
-    () => app.schemaInitializerManager.get<P1, P2>(name),
+    () => (typeof name === 'object' ? name : app.schemaInitializerManager.get<P1, P2>(name)),
     [app.schemaInitializerManager, name],
   );
   const res = useMemo(() => {

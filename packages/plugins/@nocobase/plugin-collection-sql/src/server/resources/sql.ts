@@ -8,13 +8,12 @@
  */
 
 import { Context, Next } from '@nocobase/actions';
-import { SQLModel, SqlCollection } from '@nocobase/database';
-import { CollectionModel } from '../models';
+import { SQLCollection, SQLModel } from '../sql-collection';
 
 const updateCollection = async (ctx: Context, transaction: any) => {
   const { filterByTk, values } = ctx.action.params;
   const repo = ctx.db.getRepository('collections');
-  const collection: CollectionModel = await repo.findOne({
+  const collection = await repo.findOne({
     filter: {
       name: filterByTk,
     },
@@ -47,7 +46,7 @@ export default {
       if (!/^select/i.test(sql) && !/^with([\s\S]+)select([\s\S]+)/i.test(sql)) {
         ctx.throw(400, ctx.t('Only supports SELECT statements or WITH clauses'));
       }
-      const tmpCollection = new SqlCollection({ name: 'tmp', sql }, { database: ctx.db });
+      const tmpCollection = new SQLCollection({ name: 'tmp', sql }, { database: ctx.db });
       const model = tmpCollection.model as typeof SQLModel;
       // The result is for preview only, add limit clause to avoid too many results
       const data = await model.findAll({ attributes: ['*'], limit: 5, raw: true });
@@ -65,7 +64,13 @@ export default {
         ctx.logger.warn(`resource: sql-collection, action: execute, error: ${err}`);
         fields = {};
       }
-      const sources = Array.from(new Set(Object.values(fields).map((field) => field.collection)));
+      const sources = Array.from(
+        new Set(
+          Object.values(fields)
+            .map((field) => field.collection)
+            .filter((c) => c),
+        ),
+      );
       ctx.body = { data, fields, sources };
       await next();
     },
@@ -90,7 +95,7 @@ export default {
       try {
         const { upRes } = await updateCollection(ctx, transaction);
         const [collection] = upRes;
-        await (collection as CollectionModel).load({ transaction, resetFields: true });
+        await collection.load({ transaction, resetFields: true });
         await transaction.commit();
         ctx.body = upRes;
       } catch (e) {

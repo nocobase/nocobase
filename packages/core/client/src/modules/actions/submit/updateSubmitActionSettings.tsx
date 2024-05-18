@@ -12,9 +12,13 @@ import { isValid } from '@formily/shared';
 import { isInitializersSame, useSchemaToolbar } from '../../../application';
 import { SchemaSettings } from '../../../application/schema-settings/SchemaSettings';
 import {
+  AfterSuccess,
+  AssignedFieldValues,
   ButtonEditor,
+  RefreshDataBlockRequest,
   RemoveButton,
   SecondConFirm,
+  SkipValidation,
   WorkflowConfig,
 } from '../../../schema-component/antd/action/Action.Designer';
 import { SaveMode } from './createSubmitActionSettings';
@@ -40,6 +44,31 @@ export const updateSubmitActionSettings = new SchemaSettings({
       useVisible() {
         const fieldSchema = useFieldSchema();
         return isValid(fieldSchema?.['x-action-settings']?.triggerWorkflows);
+      },
+    },
+    {
+      name: 'assignFieldValues',
+      Component: AssignedFieldValues,
+    },
+    {
+      name: 'skipRequiredValidation',
+      Component: SkipValidation,
+    },
+    {
+      name: 'afterSuccessfulSubmission',
+      Component: AfterSuccess,
+      useVisible() {
+        const fieldSchema = useFieldSchema();
+        return isValid(fieldSchema?.['x-action-settings']?.onSuccess);
+      },
+    },
+    {
+      name: 'refreshDataBlockRequest',
+      Component: RefreshDataBlockRequest,
+      useComponentProps() {
+        return {
+          isPopupAction: false,
+        };
       },
     },
     {

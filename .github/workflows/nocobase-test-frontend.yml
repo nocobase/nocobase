@@ -11,6 +11,7 @@ on:
       - develop
     paths:
       - 'packages/**'
+      - '**/yarn.lock'
       - '.github/workflows/nocobase-test-frontend.yml'
       - '!packages/core/acl/**'
       - '!packages/core/actions/**'
@@ -21,6 +22,7 @@ on:
     paths:
       - '.github/workflows/nocobase-test-frontend.yml'
       - 'packages/**'
+      - '**/yarn.lock'
       - '!packages/core/acl/**'
       - '!packages/core/actions/**'
       - '!packages/core/database/**'
@@ -36,11 +38,13 @@ jobs:
     container: node:${{ matrix.node_version }}
     steps:
       - uses: actions/checkout@v2
+
       - name: Use Node.js ${{ matrix.node_version }}
         uses: actions/setup-node@v2
         with:
           node-version: ${{ matrix.node_version }}
           cache: 'yarn'
+
       - run: yarn install
       - run: yarn test:client
     timeout-minutes: 30

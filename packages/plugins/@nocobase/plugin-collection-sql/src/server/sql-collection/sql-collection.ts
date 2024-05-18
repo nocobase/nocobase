@@ -7,10 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Collection, CollectionContext, CollectionOptions } from '../collection';
+import { Collection, CollectionContext, CollectionOptions } from '@nocobase/database';
 import { SQLModel } from './sql-model';
+import { QueryInterfaceDropTableOptions } from 'sequelize';
 
-export class SqlCollection extends Collection {
+export class SQLCollection extends Collection {
   constructor(options: CollectionOptions, context: CollectionContext) {
     options.autoGenId = false;
     options.timestamps = false;
@@ -51,7 +52,7 @@ export class SqlCollection extends Collection {
       model.removeAttribute('id');
     }
 
-    model.sql = sql;
+    model.sql = sql?.endsWith(';') ? sql.slice(0, -1) : sql;
     model.database = this.context.database;
     model.collection = this;
 
@@ -63,5 +64,11 @@ export class SqlCollection extends Collection {
         return Reflect.get(target, prop);
       },
     });
+  }
+
+  async removeFromDb(options?: QueryInterfaceDropTableOptions & { dropCollection?: boolean }) {
+    if (options?.dropCollection !== false) {
+      return this.remove();
+    }
   }
 }

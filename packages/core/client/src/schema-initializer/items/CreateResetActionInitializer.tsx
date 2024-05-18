@@ -8,7 +8,6 @@
  */
 
 import React from 'react';
-
 import { ActionInitializer } from './ActionInitializer';
 
 export const CreateResetActionInitializer = (props) => {

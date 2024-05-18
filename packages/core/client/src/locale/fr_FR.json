@@ -614,6 +614,8 @@
   "Current user": "Utilisateur actuel",
   "Current role": "Rôle actuel",
   "Current record": "Enregistrement actuel",
+  "Current collection": "Collection actuelle",
+  "Other collections": "Autres collections",
   "Current popup record": "Enregistrement popup actuel",
   "Associated records": "Enregistrements associés",
   "Parent record": "Enregistrement parent",

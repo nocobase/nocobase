@@ -10,6 +10,7 @@
 import Database from '@nocobase/database';
 import { createMockServer } from '@nocobase/test';
 import nodemailerMock from 'nodemailer-mock';
+import os from 'os';
 import { Notification, NotificationService } from '../models';
 
 describe('notifications', () => {
@@ -26,7 +27,7 @@ describe('notifications', () => {
 
   afterEach(() => app.destroy());
 
-  it('create', async () => {
+  it.skipIf(os.platform() === 'win32')('create', async () => {
     const Notification = db.getCollection('notifications');
     const notification = (await Notification.repository.create({
       values: {

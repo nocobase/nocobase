@@ -741,6 +741,7 @@ test.describe('creation form block schema settings', () => {
     await page.getByLabel('action-Action-Add new-create-users-table').click();
     await page.getByLabel('schema-initializer-Grid-popup:addNew:addBlock-users').hover();
     await page.getByRole('menuitem', { name: 'form Form' }).first().hover();
+    await page.getByRole('menuitem', { name: 'Current collection' }).hover();
     await page.getByRole('menuitem', { name: 'Reference template' }).hover();
     await page.getByRole('menuitem', { name: 'Users_Form (Fields only)' }).first().click();
     await page.mouse.move(300, 0);

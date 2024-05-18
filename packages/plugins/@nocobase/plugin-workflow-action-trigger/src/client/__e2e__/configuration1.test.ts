@@ -80,11 +80,11 @@ test.describe('Configuration page to configure the Trigger node', () => {
     await page.getByText('Configure columns').hover();
     await page.getByText(triggerNodeFieldDisplayName).click();
     await page.getByText('Configure actions').hover();
-    await page.getByRole('menuitem', { name: 'Add new' }).getByRole('switch').click();
-    await expect(page.getByRole('menuitem', { name: 'Add new' }).getByRole('switch')).toBeEnabled();
+    await page.getByRole('menuitem', { name: 'Add new' }).click();
     await page.getByLabel(`action-Action-Add new-create-${triggerNodeCollectionName}-table`).click();
     await page.getByLabel(`schema-initializer-Grid-popup:addNew:addBlock-${triggerNodeCollectionName}`).hover();
-    await page.getByRole('menuitem', { name: 'form Form' }).click();
+    await page.getByRole('menuitem', { name: 'form Form' }).hover();
+    await page.getByRole('menuitem', { name: 'Current collection' }).click();
     // 移开鼠标，关闭菜单
     await page.mouse.move(300, 0);
     await page
@@ -183,8 +183,7 @@ test.describe('Configuration page to configure the Trigger node', () => {
     await page.getByText('Configure columns').hover();
     await page.getByText(triggerNodeFieldDisplayName).click();
     await page.getByText('Configure actions').hover();
-    await page.getByRole('menuitem', { name: 'Add new' }).getByRole('switch').click();
-    await expect(page.getByRole('menuitem', { name: 'Add new' }).getByRole('switch')).toBeEnabled();
+    await page.getByRole('menuitem', { name: 'Add new' }).click();
 
     await page.getByLabel(`action-Action-Add new-create-${triggerNodeCollectionName}-table`).click();
     await page.getByLabel(`schema-initializer-Grid-popup:addNew:addBlock-${triggerNodeCollectionName}`).hover();
@@ -197,7 +196,6 @@ test.describe('Configuration page to configure the Trigger node', () => {
     await page
       .getByLabel(`schema-initializer-ActionBar-createForm:configureActions-${triggerNodeCollectionName}`)
       .hover();
-    await page.getByRole('menuitem', { name: 'Customize' }).hover();
     await page.getByRole('menuitem', { name: 'Submit to workflow' }).click();
     await page.getByLabel(`schema-initializer-Grid-form:configureFields-${triggerNodeCollectionName}`).hover();
     await page.getByRole('menuitem', { name: `${triggerNodeFieldDisplayName}` }).click();
