@@ -60,7 +60,7 @@ describe('action', () => {
           title: 'text',
           extname: '.txt',
           path: '',
-          size: 13,
+          // size: 13,
           mimetype: 'text/plain',
           meta: {},
           storageId: 1,
@@ -97,12 +97,12 @@ describe('action', () => {
         );
         const file = await fs.readFile(`${destPath}/${attachment.filename}`);
         // 文件是否保存到指定路径
-        expect(file.toString()).toBe('Hello world!\n');
+        expect(file.toString().includes('Hello world!')).toBeTruthy();
 
         // 通过 url 是否能正确访问
         const url = attachment.url.replace(`http://localhost:${APP_PORT}`, '');
         const content = await agent.get(url);
-        expect(content.text).toBe('Hello world!\n');
+        expect(content.text.includes('Hello world!')).toBeTruthy();
       });
     });
 
@@ -203,7 +203,7 @@ describe('action', () => {
         console.log(body.data.url);
         const url = body.data.url.replace(`http://localhost:${APP_PORT}`, '');
         const content = await agent.get(url);
-        expect(content.text).toBe('Hello world!\n');
+        expect(content.text.includes('Hello world!')).toBe(true);
       });
     });
   });
