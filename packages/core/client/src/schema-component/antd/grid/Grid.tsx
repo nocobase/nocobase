@@ -332,7 +332,7 @@ export const Grid: any = observer(
     const addr = field.address.toString();
     const rows = useRowProperties();
     const { setPrintContent } = useFormBlockContext();
-    const { wrapSSR, componentCls, hashId } = useStyles();
+    const { styles } = useStyles();
 
     const distributedValue =
       distributed === undefined
@@ -353,10 +353,10 @@ export const Grid: any = observer(
       };
     }, [fieldSchema, render, InitializerComponent, showDivider]);
 
-    return wrapSSR(
+    return (
       <FilterBlockProvider>
         <GridContext.Provider value={gridContextValue}>
-          <div className={`nb-grid ${componentCls} ${hashId}`} style={{ position: 'relative' }} ref={gridRef}>
+          <div className={`nb-grid ${styles.container}`} style={{ position: 'relative' }} ref={gridRef}>
             <DndWrapper dndContext={props.dndContext}>
               {showDivider ? (
                 <RowDivider
@@ -399,7 +399,7 @@ export const Grid: any = observer(
             {render()}
           </div>
         </GridContext.Provider>
-      </FilterBlockProvider>,
+      </FilterBlockProvider>
     );
   },
   { displayName: 'Grid' },
