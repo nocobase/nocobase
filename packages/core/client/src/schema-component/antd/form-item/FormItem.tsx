@@ -11,9 +11,9 @@ import { css, cx } from '@emotion/css';
 import { IFormItemProps, FormItem as Item } from '@formily/antd-v5';
 import { Field } from '@formily/core';
 import { observer, useField, useFieldSchema } from '@formily/react';
-import React, { FC, useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { ACLCollectionFieldProvider } from '../../../acl/ACLProvider';
-import { useApp } from '../../../application';
+import { useApp, withDynamicSchemaProps } from '../../../application';
 import { useFormActiveFields } from '../../../block-provider/hooks/useFormActiveFields';
 import { Collection_deprecated } from '../../../collection-manager';
 import { CollectionFieldProvider } from '../../../data-source/collection-field/CollectionFieldProvider';
@@ -41,8 +41,8 @@ const formItemLabelCss = css`
   }
 `;
 
-export const FormItem: any = observer(
-  (props: IFormItemProps) => {
+export const FormItem: any = withDynamicSchemaProps(
+  observer((props: IFormItemProps) => {
     useEnsureOperatorsValid();
     const field = useField<Field>();
     const schema = useFieldSchema();
@@ -89,7 +89,7 @@ export const FormItem: any = observer(
         </BlockItem>
       </CollectionFieldProvider>
     );
-  },
+  }),
   { displayName: 'FormItem' },
 );
 

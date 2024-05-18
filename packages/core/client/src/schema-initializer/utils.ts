@@ -382,6 +382,7 @@ export const useFilterFormItemInitializerFields = (options?: any) => {
         'x-settings': 'fieldSettings:FilterFormItem',
         'x-component': 'CollectionField',
         'x-decorator': 'FormItem',
+        'x-use-decorator-props': 'useFormItemProps',
         'x-collection-field': `${name}.${field.name}`,
         'x-component-props': {},
       };
@@ -395,6 +396,7 @@ export const useFilterFormItemInitializerFields = (options?: any) => {
           'x-settings': 'fieldSettings:FilterFormItem',
           'x-component': 'CollectionField',
           'x-decorator': 'FormItem',
+          'x-use-decorator-props': 'useFormItemProps',
           'x-collection-field': `${name}.${field.name}`,
           'x-component-props': field.uiSchema?.['x-component-props'],
         };

@@ -34,8 +34,6 @@ export const createFilterFormBlockSchema = (options: {
     'x-component': 'CardItem',
     // 保存当前筛选区块所能过滤的数据区块
     'x-filter-targets': [],
-    // 用于存储用户设置的每个字段的运算符，目前仅筛选表单区块支持自定义
-    'x-filter-operators': {},
     properties: {
       [uid()]: {
         type: 'void',

@@ -40,6 +40,7 @@ import { useLocalVariables, useVariables } from '../../variables';
 import { isVariable } from '../../variables/utils/isVariable';
 import { transformVariableValue } from '../../variables/utils/transformVariableValue';
 import { useBlockRequestContext, useFilterByTk, useParamsFromRecord } from '../BlockProvider';
+import { useOperators } from '../CollectOperators';
 import { useDetailsBlockContext } from '../DetailsBlockProvider';
 import { TableFieldResource } from '../TableFieldProvider';
 
@@ -413,6 +414,7 @@ export const useFilterBlockActionProps = () => {
   const { getDataBlocks } = useFilterBlock();
   const { name } = useCollection_deprecated();
   const { getCollectionJoinField } = useCollectionManager_deprecated();
+  const { getOperators } = useOperators();
 
   actionField.data = actionField.data || {};
 
@@ -433,7 +435,7 @@ export const useFilterBlockActionProps = () => {
             const storedFilter = block.service.params?.[1]?.filters || {};
 
             storedFilter[uid] = removeNullCondition(
-              transformToFilter(form.values, fieldSchema, getCollectionJoinField, name),
+              transformToFilter(form.values, getOperators(), getCollectionJoinField, name),
             );
 
             const mergedFilter = mergeFilter([
