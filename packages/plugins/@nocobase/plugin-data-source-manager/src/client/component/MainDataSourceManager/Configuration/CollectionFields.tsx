@@ -219,13 +219,14 @@ const CurrentFields = (props) => {
 const InheritFields = (props) => {
   const compile = useCompile();
   const { getInterface } = useCollectionManager_deprecated();
-  const { resource, targetKey } = props.collectionResource || {};
+  const { targetKey } = props.collectionResource || {};
   const parentRecord = useRecord();
   const [loadingRecord, setLoadingRecord] = React.useState(null);
   const { t } = useTranslation();
   const { refreshCM, isTitleField } = useCollectionManager_deprecated();
   const { [targetKey]: filterByTk, titleField, name } = parentRecord;
   const ctx = useContext(CollectionListContext);
+  const api = useAPIClient();
 
   const columns: TableColumnProps<any>[] = [
     {
@@ -246,20 +247,19 @@ const InheritFields = (props) => {
       dataIndex: 'titleField',
       title: t('Title field'),
       render(_, record) {
-        const handleChange = (checked) => {
+        const handleChange = async (checked) => {
           setLoadingRecord(record);
-          resource
-            .update({ filterByTk, values: { titleField: checked ? record.name : 'id' } })
-            .then(async () => {
-              await props.refreshAsync();
-              setLoadingRecord(null);
-              refreshCM();
-              ctx?.refresh?.();
-            })
-            .catch((err) => {
-              setLoadingRecord(null);
-              console.error(err);
-            });
+
+          await api.request({
+            url: `collections:update?filterByTk=${filterByTk}`,
+            method: 'post',
+            data: { titleField: checked ? record.name : 'id' },
+          });
+          message.success(t('Saved successfully'));
+          await props.refreshAsync();
+          setLoadingRecord(null);
+          refreshCM();
+          ctx?.refresh?.();
         };
 
         return isTitleField(record) ? (
