@@ -10,7 +10,7 @@
 import { render } from '@nocobase/test/client';
 import React from 'react';
 import { SchemaComponent, SchemaComponentProvider } from '../../../schema-component';
-import { withDynamicSchemaProps } from '../../hoc';
+import { withDynamicSchemaProps } from '../../hoc/withDynamicSchemaProps';
 
 const HelloComponent = withDynamicSchemaProps((props: any) => (
   <pre data-testid="component">{JSON.stringify(props)}</pre>

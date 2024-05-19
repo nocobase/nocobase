@@ -14,13 +14,8 @@ import { Space } from 'antd';
 import classNames from 'classnames';
 import React, { FC, useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-  SchemaInitializer,
-  SchemaSettings,
-  SchemaToolbarProvider,
-  useSchemaInitializerRender,
-  useSchemaSettingsRender,
-} from '../application';
+import { SchemaInitializer, SchemaSettings, SchemaToolbarProvider, useSchemaInitializerRender } from '../application';
+import { useSchemaSettingsRender } from '../application/schema-settings/hooks/useSchemaSettingsRender';
 import { useDataSourceManager } from '../data-source/data-source/DataSourceManagerProvider';
 import { useDataSource } from '../data-source/data-source/DataSourceProvider';
 import { DragHandler, useCompile, useDesignable, useGridContext, useGridRowContext } from '../schema-component';
