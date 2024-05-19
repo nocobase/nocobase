@@ -43,7 +43,7 @@ Table 会将当前行的数据通过 [CollectionRecordProvider](/core/data-block
 
 ## Column generic properties
 
-通过调整`TableV2.Column`的`x-component-props`调整列宽、固定列等。
+通过调整`TableV2.Column`的`x-component-props`调整列名、列宽、固定列等。
 
-<code src="./demos/new-demos/columnWidth.tsx"></code>
+<code src="./demos/new-demos/column.tsx"></code>
 
