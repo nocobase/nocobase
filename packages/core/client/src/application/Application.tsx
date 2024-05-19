@@ -134,6 +134,9 @@ export class Application {
     this.pluginSettingsManager = new PluginSettingsManager(options.pluginSettings, this);
     this.addRoutes();
     this.name = this.options.name || getSubAppName(options.publicPath) || 'main';
+    this.i18n.on('languageChanged', (lng) => {
+      this.apiClient.auth.locale = lng;
+    });
   }
 
   private initRequireJs() {
