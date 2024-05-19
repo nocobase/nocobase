@@ -8,7 +8,6 @@
  */
 
 import { css, useAPIClient, useApp, useRequest } from '@nocobase/client';
-import { getSubAppName } from '@nocobase/sdk';
 import { Select, Space, Spin, Typography } from 'antd';
 import React, { useEffect, useRef, useState } from 'react';
 import SwaggerUIBundle from 'swagger-ui-dist/swagger-ui-bundle';
@@ -26,7 +25,7 @@ const Documentation = () => {
   const app = useApp();
   const requestInterceptor = (req) => {
     if (!req.headers['Authorization']) {
-      const appName = getSubAppName(app.getPublicPath());
+      const appName = app.getName();
       if (appName) {
         req.headers['X-App'] = appName;
       }
