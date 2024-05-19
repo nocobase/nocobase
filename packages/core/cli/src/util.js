@@ -301,6 +301,7 @@ exports.initEnv = function initEnv() {
     APP_KEY: 'test-jwt-secret',
     APP_PORT: 13000,
     API_BASE_PATH: '/api/',
+    API_CLIENT_STORAGE_PREFIX: 'NOCOBASE_',
     DB_DIALECT: 'sqlite',
     DB_STORAGE: 'storage/db/nocobase.sqlite',
     DB_TIMEZONE: '+00:00',
