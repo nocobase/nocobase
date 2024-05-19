@@ -9,8 +9,8 @@
 
 import { css } from '@emotion/css';
 import { FormLayout, IFormLayoutProps } from '@formily/antd-v5';
-import { createForm, Field, Form as FormilyForm, onFieldInit, onFormInputChange } from '@formily/core';
-import { FieldContext, FormContext, observer, RecursionField, useField, useFieldSchema } from '@formily/react';
+import { Field, Form as FormilyForm, createForm, onFieldInit, onFormInputChange } from '@formily/core';
+import { FieldContext, FormContext, RecursionField, observer, useField, useFieldSchema } from '@formily/react';
 import { reaction } from '@formily/reactive';
 import { uid } from '@formily/shared';
 import { getValuesByPath } from '@nocobase/utils/client';
@@ -18,17 +18,17 @@ import { ConfigProvider, Spin } from 'antd';
 import React, { useEffect, useMemo } from 'react';
 import { useActionContext } from '..';
 import { useAttach, useComponent } from '../..';
+import { useTemplateBlockContext } from '../../../block-provider/TemplateBlockProvider';
+import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
 import { ActionType } from '../../../schema-settings/LinkageRules/type';
 import { useLocalVariables, useVariables } from '../../../variables';
 import { VariableOption, VariablesContextType } from '../../../variables/types';
 import { getPath } from '../../../variables/utils/getPath';
 import { getVariableName } from '../../../variables/utils/getVariableName';
-import { isVariable, REGEX_OF_VARIABLE } from '../../../variables/utils/isVariable';
+import { REGEX_OF_VARIABLE, isVariable } from '../../../variables/utils/isVariable';
 import { getInnermostKeyAndValue, getTargetField } from '../../common/utils/uitls';
 import { useProps } from '../../hooks/useProps';
 import { collectFieldStateOfLinkageRules, getTempFieldState } from './utils';
-import { withDynamicSchemaProps } from '../../../application/hoc/withDynamicSchemaProps';
-import { useTemplateBlockContext } from '../../../block-provider/TemplateBlockProvider';
 
 export interface FormProps extends IFormLayoutProps {
   form?: FormilyForm;

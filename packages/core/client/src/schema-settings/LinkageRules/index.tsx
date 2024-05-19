@@ -10,10 +10,10 @@
 import { css } from '@emotion/css';
 import { observer, useFieldSchema } from '@formily/react';
 import React, { useMemo } from 'react';
-import { withDynamicSchemaProps } from '../../application/hoc/withDynamicSchemaProps';
 import { FormBlockContext } from '../../block-provider';
 import { useCollectionManager_deprecated } from '../../collection-manager';
 import { useCollectionParentRecordData } from '../../data-source/collection-record/CollectionRecordProvider';
+import { withDynamicSchemaProps } from '../../hoc/withDynamicSchemaProps';
 import { RecordProvider } from '../../record-provider';
 import { SchemaComponent, useProps } from '../../schema-component';
 import { DynamicComponentProps } from '../../schema-component/antd/filter/DynamicComponent';

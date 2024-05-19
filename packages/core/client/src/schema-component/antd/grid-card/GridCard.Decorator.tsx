@@ -12,9 +12,9 @@ import { createForm } from '@formily/core';
 import { FormContext, useField, useFieldSchema } from '@formily/react';
 import React, { createContext, useContext, useEffect, useMemo } from 'react';
 import { BlockProvider, useBlockRequestContext } from '../../../block-provider/BlockProvider';
-import useStyles from './GridCard.Decorator.style';
+import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
 import { useGridCardBlockParams } from '../../../modules/blocks/data-blocks/grid-card/hooks/useGridCardBlockParams';
-import { withDynamicSchemaProps } from '../../../application/hoc/withDynamicSchemaProps';
+import useStyles from './GridCard.Decorator.style';
 
 export const GridCardBlockContext = createContext<any>({});
 GridCardBlockContext.displayName = 'GridCardBlockContext';

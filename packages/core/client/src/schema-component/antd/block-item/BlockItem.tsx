@@ -10,7 +10,7 @@
 import { useFieldSchema } from '@formily/react';
 import cls from 'classnames';
 import React, { useMemo } from 'react';
-import { withDynamicSchemaProps } from '../../../application/hoc/withDynamicSchemaProps';
+import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
 import { CustomCreateStylesUtils, createStyles } from '../../../style';
 import { SortableItem } from '../../common';
 import { useDesigner, useProps } from '../../hooks';

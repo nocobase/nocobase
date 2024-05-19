@@ -14,7 +14,6 @@ export * from './RouterManager';
 export * from './components';
 export { ApplicationContext } from './context';
 export * from './globalType';
-export * from './hoc/withDynamicSchemaProps';
 export * from './hooks';
 export * from './schema-initializer';
 export * from './schema-settings';
