@@ -45,7 +45,7 @@ export class Auth {
     };
 
     if (this.api['app']) {
-      const appName = this.api['app'].getName();
+      const appName = this.api['app']?.getName?.();
       if (appName) {
         defaults['role'] = `${appName.toUpperCase()}_` + defaults['role'];
         defaults['locale'] = `${appName.toUpperCase()}_` + defaults['locale'];
@@ -300,7 +300,7 @@ export class APIClient {
     if (typeof instance === 'function') {
       this.axios = instance;
     } else {
-      const { authClass, storageClass, storagePrefix, ...others } = instance || {};
+      const { authClass, storageClass, storagePrefix = 'NOCOBASE_', ...others } = instance || {};
       this.storagePrefix = storagePrefix;
       this.axios = axios.create(others);
       this.initStorage(storageClass);
