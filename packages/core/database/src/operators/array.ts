@@ -35,6 +35,7 @@ const getFieldName = (ctx) => {
 
   if (model.rawAttributes[fieldName]) {
     columnName = model.rawAttributes[fieldName].field || fieldName;
+    columnName = `${model.name}.${columnName}`;
   }
 
   if (associationPath.length > 0) {
