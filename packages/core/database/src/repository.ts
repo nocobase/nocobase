@@ -7,7 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { flatten } from 'flat';
 import lodash from 'lodash';
 import {
   Association,
@@ -244,35 +243,9 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
 
   public static valuesToFilter(values: Values = {}, filterKeys: Array<string>) {
     const filterAnd = [];
-    const flattedValues = flatten(values);
-
-    const keyWithOutArrayIndex = (key) => {
-      const chunks = key.split('.');
-      return chunks
-        .filter((chunk) => {
-          return !chunk.match(/\d+/);
-        })
-        .join('.');
-    };
 
     for (const filterKey of filterKeys) {
-      let filterValue;
-
-      for (const flattedKey of Object.keys(flattedValues)) {
-        const flattedKeyWithoutIndex = keyWithOutArrayIndex(flattedKey);
-
-        if (flattedKeyWithoutIndex === filterKey) {
-          if (filterValue) {
-            if (Array.isArray(filterValue)) {
-              filterValue.push(flattedValues[flattedKey]);
-            } else {
-              filterValue = [filterValue, flattedValues[flattedKey]];
-            }
-          } else {
-            filterValue = flattedValues[flattedKey];
-          }
-        }
-      }
+      const filterValue = lodash.get(values, filterKey);
 
       if (filterValue) {
         filterAnd.push({
