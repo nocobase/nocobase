@@ -54,7 +54,6 @@ import QueryInterface from './query-interface/query-interface';
 import buildQueryInterface from './query-interface/query-interface-builder';
 import { RelationRepository } from './relation-repository/relation-repository';
 import { Repository } from './repository';
-import { SqlCollection } from './sql-collection/sql-collection';
 import {
   AfterDefineCollectionListener,
   BeforeDefineCollectionListener,
@@ -1008,20 +1007,6 @@ export class Database extends EventEmitter implements AsyncEmitter {
         } catch (e) {
           return;
         }
-        return;
-      },
-    });
-
-    this.collectionFactory.registerCollectionType(SqlCollection, {
-      condition: (options) => {
-        return options.sql;
-      },
-
-      async onSync() {
-        return;
-      },
-
-      async onDump(dumper, collection: Collection) {
         return;
       },
     });

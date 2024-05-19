@@ -7,7 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Database, SQLModel } from '@nocobase/database';
+import { Database } from '@nocobase/database';
+import { SQLModel } from '../sql-collection';
 import { MockServer, createMockServer } from '@nocobase/test';
 
 describe('sql collection', () => {
@@ -17,7 +18,7 @@ describe('sql collection', () => {
 
   beforeEach(async () => {
     app = await createMockServer({
-      plugins: ['data-source-main', 'error-handler'],
+      plugins: ['data-source-main', 'error-handler', 'collection-sql'],
     });
     db = app.db;
     db.options.underscored = false;

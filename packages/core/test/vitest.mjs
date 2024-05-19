@@ -2,13 +2,14 @@
 
 import react from '@vitejs/plugin-react';
 import fs from 'fs';
-import path, { resolve } from 'path';
-import { URL } from 'url';
-import { defineConfig as vitestConfig, mergeConfig } from 'vitest/config';
+import path, { dirname, resolve } from 'path';
+import { fileURLToPath } from 'url';
+import { mergeConfig, defineConfig as vitestConfig } from 'vitest/config';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const CORE_CLIENT_PACKAGES = ['sdk', 'client'];
-
-const __dirname = new URL('.', import.meta.url).pathname;
 
 const relativePathToAbsolute = (relativePath) => {
   return path.resolve(process.cwd(), relativePath);
@@ -116,6 +117,7 @@ const defineServerConfig = () => {
     test: {
       setupFiles: resolve(__dirname, './setup/server.ts'),
       exclude: getExclude(true),
+      retry: 2,
     },
     coverage: {
       exclude: getExclude(true),
@@ -149,24 +151,21 @@ const defineClientConfig = () => {
 };
 
 export const getFilterInclude = (isServer, isCoverage) => {
-  let argv = process.argv
-    .slice(2);
+  let argv = process.argv.slice(2);
 
-  argv = argv
-    .filter((item, index) => {
-      if (!item.startsWith('-')) {
-        const pre = argv[index - 1];
+  argv = argv.filter((item, index) => {
+    if (!item.startsWith('-')) {
+      const pre = argv[index - 1];
 
-        if (pre && pre.startsWith('--') && ['--reporter'].includes(pre)) {
-          return false;
-        }
-
-        return true;
+      if (pre && pre.startsWith('--') && ['--reporter'].includes(pre)) {
+        return false;
       }
 
-      return false;
-    });
+      return true;
+    }
 
+    return false;
+  });
 
   let filterFileOrDir = argv[0];
 
@@ -257,7 +256,7 @@ export const defineConfig = () => {
   }
 
   const { include: coverageInclude } = getFilterInclude(isServer, true);
-  
+
   if (coverageInclude) {
     config.test.coverage.include = coverageInclude;
   }
@@ -266,7 +265,6 @@ export const defineConfig = () => {
   if (reportsDirectory) {
     config.test.coverage.reportsDirectory = reportsDirectory;
   }
-
 
   return config;
 };

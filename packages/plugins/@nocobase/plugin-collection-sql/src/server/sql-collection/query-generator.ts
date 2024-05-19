@@ -10,7 +10,7 @@
 import { GroupOption, Order, ProjectionAlias, WhereOptions } from 'sequelize';
 import { SQLModel } from './sql-model';
 import { lodash } from '@nocobase/utils';
-import { Collection } from '../collection';
+import { Collection } from '@nocobase/database';
 
 export function selectQuery(
   tableName: string,

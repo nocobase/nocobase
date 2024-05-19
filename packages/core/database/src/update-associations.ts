@@ -538,9 +538,20 @@ export async function updateMultipleAssociation(
         associationContext: association,
         updateAssociationValues: keys,
       });
+
       newItems.push(instance);
     }
   }
 
-  model.setDataValue(key, setItems.concat(newItems));
+  for (const newItem of newItems) {
+    const existIndexInSetItems = setItems.findIndex((setItem) => setItem[targetKey] === newItem[targetKey]);
+
+    if (existIndexInSetItems !== -1) {
+      setItems[existIndexInSetItems] = newItem;
+    } else {
+      setItems.push(newItem);
+    }
+  }
+
+  model.setDataValue(key, setItems);
 }

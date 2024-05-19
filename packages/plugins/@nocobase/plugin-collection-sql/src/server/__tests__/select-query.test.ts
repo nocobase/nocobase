@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { SQLModel } from '../../sql-collection/sql-model';
+import { SQLModel } from '../sql-collection';
 import { Sequelize } from 'sequelize';
 
 describe('select query', () => {
