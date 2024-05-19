@@ -10,7 +10,7 @@
 import { Context } from '@nocobase/actions';
 import { Collection } from '@nocobase/database';
 
-export const dateTemplate = async (ctx: Context, next) => {
+export const dataTemplate = async (ctx: Context, next) => {
   const { resourceName, actionName } = ctx.action;
   const { isTemplate, fields } = ctx.action.params;
 

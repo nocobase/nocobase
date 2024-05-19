@@ -7,15 +7,28 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { mockDatabase } from '../../mock-database';
-import { SqlCollection } from '../../sql-collection';
+import { Collection, mockDatabase } from '@nocobase/database';
+import { SQLCollection } from '../sql-collection';
 
 test('sql-collection', async () => {
   const db = mockDatabase({ tablePrefix: '' });
   await db.clean({ drop: true });
-  const collection = db.collectionFactory.createCollection<SqlCollection>({
+  db.collectionFactory.registerCollectionType(SQLCollection, {
+    condition: (options) => {
+      return options.sql;
+    },
+
+    async onSync() {
+      return;
+    },
+
+    async onDump(dumper, collection: Collection) {
+      return;
+    },
+  });
+  const collection = db.collectionFactory.createCollection<SQLCollection>({
     name: 'test',
-    sql: true,
+    sql: 'SELECT * FROM test;',
   });
   expect(collection.isSql()).toBe(true);
   expect(collection.collectionSchema()).toBeUndefined();

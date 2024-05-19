@@ -89,7 +89,7 @@ test.describe('configure actions', () => {
     await expect(page.getByLabel('block-item-CardItem-general-kanban')).toBeVisible();
     await expect(page.getByLabel('schema-initializer-ActionBar-kanban:configureActions-general')).toBeVisible();
     await page.getByLabel('schema-initializer-ActionBar-kanban:configureActions-general').click();
-    await page.getByRole('menuitem', { name: 'Filter' }).getByRole('switch').click();
+    await page.getByRole('menuitem', { name: 'Filter' }).click();
     //按钮正常显示
     await expect(page.getByLabel('action-Filter.Action-Filter-filter-general-kanban')).toBeVisible();
   });
@@ -97,13 +97,14 @@ test.describe('configure actions', () => {
     const nocoPage = await mockPage(oneEmptyKanbanBlock).waitForInit();
     await nocoPage.goto();
     await page.getByLabel('schema-initializer-ActionBar-kanban:configureActions-general').hover();
-    await page.getByRole('menuitem', { name: 'Add new' }).getByRole('switch').click();
+    await page.getByRole('menuitem', { name: 'Add new' }).click();
     //按钮正常显示
     await expect(page.getByLabel('action-Action-Add ')).toBeVisible();
     //添加数据
     await page.getByLabel('action-Action-Add new-create-general-kanban').click();
     await page.getByLabel('schema-initializer-Grid-popup:addNew:addBlock-general').hover();
-    await page.getByRole('menuitem', { name: 'form Form' }).click();
+    await page.getByRole('menuitem', { name: 'form Form' }).hover();
+    await page.getByRole('menuitem', { name: 'Current collection' }).click();
     await page.mouse.move(300, 0);
     await page.getByLabel('schema-initializer-Grid-form:configureFields-general').hover();
     await page.getByRole('menuitem', { name: 'Single Select' }).click();

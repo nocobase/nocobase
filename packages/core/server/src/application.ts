@@ -15,6 +15,7 @@ import {
   createLogger,
   createSystemLogger,
   getLoggerFilePath,
+  Logger,
   LoggerOptions,
   RequestLoggerOptions,
   SystemLogger,
@@ -53,11 +54,13 @@ import { ApplicationVersion } from './helpers/application-version';
 import { Locale } from './locale';
 import { Plugin } from './plugin';
 import { InstallOptions, PluginManager } from './plugin-manager';
-
 import { DataSourceManager, SequelizeDataSource } from '@nocobase/data-source-manager';
 import packageJson from '../package.json';
 import { MainDataSource } from './main-data-source';
 import validateFilterParams from './middlewares/validate-filter-params';
+import path from 'path';
+import { parseVariables } from './middlewares';
+import { dataTemplate } from './middlewares/data-template';
 
 export type PluginType = string | typeof Plugin;
 export type PluginConfiguration = PluginType | [PluginType, any];
@@ -217,6 +220,13 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   private _maintainingStatusBeforeCommand: MaintainingCommandStatus | null;
   private _actionCommand: Command;
 
+  /**
+   * @internal
+   */
+  public requestLogger: Logger;
+  private sqlLogger: Logger;
+  protected _logger: SystemLogger;
+
   constructor(public options: ApplicationOptions) {
     super();
     this.context.reqId = randomUUID();
@@ -226,9 +236,11 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this._appSupervisor.addApp(this);
   }
 
-  protected _logger: SystemLogger;
-
   get logger() {
+    return this._logger;
+  }
+
+  get log() {
     return this._logger;
   }
 
@@ -354,10 +366,6 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   get version() {
     return this._version;
-  }
-
-  get log() {
-    return this._logger;
   }
 
   get name() {
@@ -501,6 +509,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     if (this.telemetry.started) {
       await this.telemetry.shutdown();
     }
+
+    this.closeLogger();
 
     const oldDb = this.db;
 
@@ -862,6 +872,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     await this.emitAsync('afterDestroy', this, options);
 
     this.log.debug('finish destroy app', { method: 'destory' });
+
+    this.closeLogger();
   }
 
   async isInstalled() {
@@ -999,7 +1011,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     const { dirname } = options;
     return createLogger({
       ...options,
-      dirname: getLoggerFilePath(this.name || 'main', dirname || ''),
+      dirname: getLoggerFilePath(path.join(this.name || 'main', dirname || '')),
     });
   }
 
@@ -1043,19 +1055,38 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     return command;
   }
 
-  protected init() {
-    const options = this.options;
-
+  protected initLogger(options: AppLoggerOptions) {
     this._logger = createSystemLogger({
       dirname: getLoggerFilePath(this.name),
       filename: 'system',
       seperateError: true,
-      ...(options.logger?.system || {}),
+      ...(options?.system || {}),
     }).child({
       reqId: this.context.reqId,
       app: this.name,
       module: 'application',
     });
+    this.requestLogger = createLogger({
+      dirname: getLoggerFilePath(this.name),
+      filename: 'request',
+      ...(options?.request || {}),
+    });
+    this.sqlLogger = this.createLogger({
+      filename: 'sql',
+      level: 'debug',
+    });
+  }
+
+  protected closeLogger() {
+    this.log?.close();
+    this.requestLogger?.close();
+    this.sqlLogger?.close();
+  }
+
+  protected init() {
+    const options = this.options;
+
+    this.initLogger(options.logger);
 
     this.reInitEvents();
 
@@ -1111,6 +1142,12 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this._dataSourceManager.use(this._authManager.middleware(), { tag: 'auth' });
     this._dataSourceManager.use(validateFilterParams, { tag: 'validate-filter-params', before: ['auth'] });
 
+    this._dataSourceManager.use(parseVariables, {
+      group: 'parseVariables',
+      after: 'acl',
+    });
+    this._dataSourceManager.use(dataTemplate, { group: 'dataTemplate', after: 'acl' });
+
     this._locales = new Locale(createAppProxy(this));
 
     if (options.perfHooks) {
@@ -1144,10 +1181,6 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   }
 
   protected createDatabase(options: ApplicationOptions) {
-    const sqlLogger = this.createLogger({
-      filename: 'sql',
-      level: 'debug',
-    });
     const logging = (msg: any) => {
       if (typeof msg === 'string') {
         msg = msg.replace(/[\r\n]/gm, '').replace(/\s+/g, ' ');
@@ -1155,7 +1188,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       if (msg.includes('INSERT INTO')) {
         msg = msg.substring(0, 2000) + '...';
       }
-      sqlLogger.debug({ message: msg, app: this.name, reqId: this.context.reqId });
+      this.sqlLogger.debug({ message: msg, app: this.name, reqId: this.context.reqId });
     };
     const dbOptions = options.database instanceof Database ? options.database.options : options.database;
     const db = new Database({

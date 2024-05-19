@@ -642,6 +642,8 @@
   "Current user": "현재 사용자",
   "Current role": "현재 역할",
   "Current record": "현재 레코드",
+  "Current collection": "현재 데이터 테이블",
+  "Other collections": "기타 데이터 테이블",
   "Current popup record": "현재 팝업 레코드",
   "Associated records": "관련 레코드",
   "Parent record": "상위 레코드",

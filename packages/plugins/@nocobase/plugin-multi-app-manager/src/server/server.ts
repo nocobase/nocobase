@@ -170,6 +170,12 @@ export class PluginMultiAppManagerServer extends Plugin {
       async (model: ApplicationModel, options: Transactionable & { context?: any }) => {
         const { transaction } = options;
 
+        const name = model.get('name') as string;
+
+        if (name === 'main') {
+          throw new Error('Application name "main" is reserved');
+        }
+
         const subApp = model.registerToSupervisor(this.app, {
           appOptionsFactory: this.appOptionsFactory,
         });

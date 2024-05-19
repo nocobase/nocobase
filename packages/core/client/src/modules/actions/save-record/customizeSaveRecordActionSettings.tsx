@@ -15,13 +15,17 @@ import {
   AfterSuccess,
   AssignedFieldValues,
   ButtonEditor,
+  RefreshDataBlockRequest,
   RemoveButton,
   SecondConFirm,
   SkipValidation,
   WorkflowConfig,
-  RefreshDataBlockRequest,
 } from '../../../schema-component/antd/action/Action.Designer';
 
+/**
+ * @deprecated
+ * 已废弃，继续保留是为了兼容旧版本的 Schema，会在后面的版本中移除
+ */
 export const customizeSaveRecordActionSettings = new SchemaSettings({
   name: 'actionSettings:saveRecord',
   items: [

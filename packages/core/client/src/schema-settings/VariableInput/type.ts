@@ -21,6 +21,7 @@ export interface Option extends DefaultOptionType {
   isLeaf?: boolean;
   /** 当开启异步加载时有效，用于加载当前 node 的 children */
   loadChildren?(option: Option): Promise<void>;
+  /** 变量中的字段 */
   field?: FieldOption;
   depth?: number;
   deprecated?: boolean;

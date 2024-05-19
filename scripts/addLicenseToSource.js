@@ -49,7 +49,7 @@ function addLicenseToFile(filePath, licenseText) {
 async function addToPackageSource(packageDir) {
   const stream = fg.globStream('**/*.{js,jsx,ts,tsx,d.ts}', {
     cwd: path.join(packageDir, 'src'),
-    ignore: ['node_modules'],
+    ignore: ['**/demos'],
     absolute: true,
     onlyFiles: true,
   });
@@ -72,10 +72,10 @@ function getPackages() {
     .map((item) => path.join(path.dirname(item)));
 }
 
-function run() {
+async function run() {
   const packages = getPackages();
   for (const package of packages) {
-    addToPackageSource(package);
+    await addToPackageSource(package);
   }
 }
 

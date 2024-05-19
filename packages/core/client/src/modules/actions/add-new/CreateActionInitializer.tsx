@@ -9,7 +9,7 @@
 
 import React from 'react';
 import { useSchemaInitializerItem } from '../../../application';
-import { ActionInitializer } from '../../../schema-initializer/items/ActionInitializer';
+import { ActionInitializerItem } from '../../../schema-initializer/items/ActionInitializerItem';
 
 export const CreateActionInitializer = () => {
   const schema = {
@@ -67,5 +67,5 @@ export const CreateActionInitializer = () => {
     },
   };
   const itemConfig = useSchemaInitializerItem();
-  return <ActionInitializer {...itemConfig} item={itemConfig} schema={schema} />;
+  return <ActionInitializerItem {...itemConfig} item={itemConfig} schema={schema} />;
 };

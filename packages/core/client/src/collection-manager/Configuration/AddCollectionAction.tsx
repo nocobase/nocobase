@@ -211,6 +211,7 @@ export const AddCollectionAction = (props) => {
             record,
             showReverseFieldConfig: true,
             presetFieldsDisabled: currentTemplate?.presetFieldsDisabled,
+            presetFieldsDisabledIncludes: currentTemplate?.presetFieldsDisabledIncludes,
             ...scope,
           }}
         />

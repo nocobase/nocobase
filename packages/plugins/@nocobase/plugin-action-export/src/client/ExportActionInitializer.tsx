@@ -7,12 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Schema, useFieldSchema } from '@formily/react';
+import { Schema } from '@formily/react';
 import { merge } from '@formily/shared';
 import {
-  SchemaInitializerSwitch,
+  SchemaInitializerItem,
   useCollection_deprecated,
-  useDesignable,
   useSchemaInitializer,
   useSchemaInitializerItem,
 } from '@nocobase/client';
@@ -31,21 +30,6 @@ const findSchema = (schema: Schema, key: string, action: string) => {
     return buf;
   });
 };
-const removeSchema = (schema, cb) => {
-  return cb(schema);
-};
-export const useCurrentSchema = (action: string, key: string, find = findSchema, rm = removeSchema) => {
-  const fieldSchema = useFieldSchema();
-  const { remove } = useDesignable();
-  const schema = find(fieldSchema, key, action);
-  return {
-    schema,
-    exists: !!schema,
-    remove() {
-      schema && rm(schema, remove);
-    },
-  };
-};
 
 const initExportSettings = (fields) => {
   const exportSettings = fields?.filter((f) => !f.children).map((f) => ({ dataIndex: [f.name] }));
@@ -55,7 +39,6 @@ const initExportSettings = (fields) => {
 export const ExportActionInitializer = () => {
   const itemConfig = useSchemaInitializerItem();
   const { insert } = useSchemaInitializer();
-  const { exists, remove } = useCurrentSchema('export', 'x-action', itemConfig.find, itemConfig.remove);
   const { name } = useCollection_deprecated();
   const fields = useFields(name);
 
@@ -75,15 +58,11 @@ export const ExportActionInitializer = () => {
       icon: 'clouddownloadoutlined',
     },
   };
+
   return (
-    <SchemaInitializerSwitch
-      {...itemConfig}
-      checked={exists}
+    <SchemaInitializerItem
       title={itemConfig.title}
       onClick={() => {
-        if (exists) {
-          return remove();
-        }
         schema['x-action-settings']['exportSettings'] = initExportSettings(fields);
         const s = merge(schema || {}, itemConfig.schema || {});
         itemConfig?.schemaInitialize?.(s);

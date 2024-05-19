@@ -7,8 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { expect, oneEmptyTable, test } from '@nocobase/test/e2e';
+import { Page, expect, oneEmptyTable, test } from '@nocobase/test/e2e';
 import { oneTableWithInheritFields } from './templatesOfBug';
+
+const deleteButton = async (page: Page, name: string) => {
+  await page.getByLabel(`action-Action.Link-${name}-`).hover();
+  await page.getByLabel(`action-Action.Link-${name}-`).getByLabel('designer-schema-settings-').hover();
+  await page.getByRole('menuitem', { name: 'Delete' }).click();
+  await page.getByRole('button', { name: 'OK', exact: true }).click();
+};
 
 test.describe('configure columns', () => {
   // 该用例在 CI 并发环境下容易报错，原因未知，通过增加重试次数可以解决
@@ -135,11 +142,6 @@ test.describe('configure actions column', () => {
     await page.getByRole('menuitem', { name: 'Delete' }).click();
     await page.getByRole('menuitem', { name: 'Duplicate' }).click();
 
-    await expect(page.getByRole('menuitem', { name: 'View' }).getByRole('switch')).toBeChecked();
-    await expect(page.getByRole('menuitem', { name: 'Edit' }).getByRole('switch')).toBeChecked();
-    await expect(page.getByRole('menuitem', { name: 'Delete' }).getByRole('switch')).toBeChecked();
-    await expect(page.getByRole('menuitem', { name: 'Duplicate' }).getByRole('switch')).toBeChecked();
-
     await page.mouse.move(300, 0);
     await expect(page.getByLabel('action-Action.Link-View-view-t_unp4scqamw9-table-0')).toBeVisible();
     await expect(page.getByLabel('action-Action.Link-Edit-update-t_unp4scqamw9-table-0')).toBeVisible();
@@ -147,17 +149,10 @@ test.describe('configure actions column', () => {
     await expect(page.getByLabel('action-Action.Link-Duplicate-duplicate-t_unp4scqamw9-table-0')).toBeVisible();
 
     // delete view & Edit & Delete & Duplicate ------------------------------------------------------------
-    await page.getByText('Actions', { exact: true }).hover();
-    await page.getByLabel('designer-schema-settings-TableV2.Column-TableV2.ActionColumnDesigner-t_unp4scqamw9').hover();
-    await page.getByRole('menuitem', { name: 'View' }).click();
-    await page.getByRole('menuitem', { name: 'Edit' }).click();
-    await page.getByRole('menuitem', { name: 'Delete' }).click();
-    await page.getByRole('menuitem', { name: 'Duplicate' }).click();
-
-    await expect(page.getByRole('menuitem', { name: 'View' }).getByRole('switch')).not.toBeChecked();
-    await expect(page.getByRole('menuitem', { name: 'Edit' }).getByRole('switch')).not.toBeChecked();
-    await expect(page.getByRole('menuitem', { name: 'Delete' }).getByRole('switch')).not.toBeChecked();
-    await expect(page.getByRole('menuitem', { name: 'Duplicate' }).getByRole('switch')).not.toBeChecked();
+    await deleteButton(page, 'View');
+    await deleteButton(page, 'Edit');
+    await deleteButton(page, 'Delete');
+    await deleteButton(page, 'Duplicate');
 
     await page.mouse.move(300, 0);
     await expect(page.getByLabel('action-Action.Link-View-view-t_unp4scqamw9-table-0')).not.toBeVisible();
@@ -168,7 +163,6 @@ test.describe('configure actions column', () => {
     // add custom action ------------------------------------------------------------
     await page.getByText('Actions', { exact: true }).hover();
     await page.getByLabel('designer-schema-settings-TableV2.Column-TableV2.ActionColumnDesigner-t_unp4scqamw9').hover();
-    await page.getByRole('menuitem', { name: 'Customize' }).hover();
 
     await page.getByRole('menuitem', { name: 'Popup' }).click();
     // 此时二级菜单，不应该关闭，可以继续点击？

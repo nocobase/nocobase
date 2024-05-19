@@ -7,9 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import Database from '../../database';
-import { mockDatabase } from '../../mock-database';
-import { SQLModel } from '../../sql-collection/sql-model';
+import { Database, mockDatabase } from '@nocobase/database';
+import { SQLModel } from '../sql-collection';
 
 describe('infer fields', () => {
   let db: Database;
@@ -101,6 +100,20 @@ left join roles r on ru.role_name=r.name`;
       nickname: { type: 'string', source: 'users.nickname' },
       title: { type: 'string', source: 'roles.title' },
       name: { type: 'string', source: 'roles.name' },
+    });
+  });
+
+  it('should infer fields for without collection', async () => {
+    const model = class extends SQLModel {};
+    model.init(null, {
+      modelName: 'test',
+      tableName: 'test',
+      sequelize: db.sequelize,
+    });
+    model.database = db;
+    model.sql = `select a from a3`;
+    expect(model.inferFields()).toMatchObject({
+      a: {},
     });
   });
 });

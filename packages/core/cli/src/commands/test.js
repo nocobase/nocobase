@@ -68,7 +68,7 @@ function addTestCommand(name, cli) {
         process.argv.splice(process.argv.indexOf('--single-thread=false'), 1);
       }
 
-      const cliArgs = ['--max_old_space_size=14096', './node_modules/.bin/vitest', ...process.argv.slice(3)];
+      const cliArgs = ['--max_old_space_size=14096', './node_modules/vitest/vitest.mjs', ...process.argv.slice(3)];
 
       if (process.argv.includes('-h') || process.argv.includes('--help')) {
         await run('node', cliArgs);

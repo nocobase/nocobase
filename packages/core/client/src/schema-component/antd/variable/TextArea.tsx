@@ -389,6 +389,7 @@ export function TextArea(props) {
           .ant-input {
             flex-grow: 1;
             min-width: 200px;
+            word-break: break-all;
           }
           .ant-input-disabled {
             .ant-tag {
@@ -412,6 +413,7 @@ export function TextArea(props) {
         onPaste={onPaste}
         onCompositionStart={onCompositionStart}
         onCompositionEnd={onCompositionEnd}
+        placeholder={props.placeholder}
         className={cx(
           hashId,
           'ant-input',
@@ -419,6 +421,11 @@ export function TextArea(props) {
           css`
             overflow: auto;
             white-space: ${multiline ? 'normal' : 'nowrap'};
+
+            &[placeholder]:empty::before {
+              content: attr(placeholder);
+              color: #ccc;
+            }
 
             .ant-tag {
               display: inline;
