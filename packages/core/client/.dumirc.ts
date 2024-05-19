@@ -398,10 +398,6 @@ export default defineConfig({
               "title": "Pagination",
               "link": "/components/pagination"
             },
-            {
-              "title": "Preview",
-              "link": "/components/preview"
-            },
           ]
         },
       ]
