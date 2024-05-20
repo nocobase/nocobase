@@ -166,16 +166,6 @@ export const pagination = {
                 max: 100,
               },
               default: 20,
-              'x-reactions': [
-                {
-                  dependencies: ['multiple'],
-                  fulfill: {
-                    state: {
-                      visible: '{{!!$deps[0]}}',
-                    },
-                  },
-                },
-              ],
             },
           },
         },
