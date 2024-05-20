@@ -19709,12 +19709,12 @@ osx-release@^1.0.0:
   dependencies:
     minimist "^1.1.0"
 
-p-all@3.0.0:
-  version "3.0.0"
-  resolved "https://registry.npmmirror.com/p-all/-/p-all-3.0.0.tgz#077c023c37e75e760193badab2bad3ccd5782bfb"
-  integrity sha512-qUZbvbBFVXm6uJ7U/WDiO0fv6waBMbjlCm4E66oZdRR+egswICarIdHyVSZZHudH8T5SF8x/JG0q0duFzPnlBw==
+p-all@5.0.0:
+  version "5.0.0"
+  resolved "https://registry.npmmirror.com/p-all/-/p-all-5.0.0.tgz#3fcbdf28177a09442fc7f4ec9e252e0eed5ecfc5"
+  integrity sha512-pofqu/1FhCVa+78xNAptCGc9V45exFz2pvBRyIvgXkNM0Rh18Py7j8pQuSjA+zpabI46v9hRjNWmL9EAFcEbpw==
   dependencies:
-    p-map "^4.0.0"
+    p-map "^6.0.0"
 
 p-cancelable@^1.0.0:
   version "1.1.0"
@@ -19793,6 +19793,11 @@ p-map@^4.0.0:
   integrity sha512-/bjOqmgETBYB5BoEeGVea8dmvHb2m9GLy1E9W43yeyfP6QQCZGFNa+XRceJEuDB6zqr+gKpIAmlLebMpykw/MQ==
   dependencies:
     aggregate-error "^3.0.0"
+
+p-map@^6.0.0:
+  version "6.0.0"
+  resolved "https://registry.npmmirror.com/p-map/-/p-map-6.0.0.tgz#4d9c40d3171632f86c47601b709f4b4acd70fed4"
+  integrity sha512-T8BatKGY+k5rU+Q/GTYgrEf2r4xRMevAN5mtXc2aPc4rS1j3s+vWTaO2Wag94neXuCAUAs8cxBL9EeB5EA6diw==
 
 p-pipe@^3.1.0:
   version "3.1.0"
