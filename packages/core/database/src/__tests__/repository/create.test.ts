@@ -191,8 +191,11 @@ describe('create', () => {
         },
       },
     });
+
     expect(u1.name).toEqual('u1');
+
     const group = await u1.get('group');
+
     expect(group.name).toEqual('g1');
 
     const u2 = await User.repository.firstOrCreate({

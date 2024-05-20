@@ -286,6 +286,7 @@ function buildIndexHtml(force = false) {
   const data = fs.readFileSync(tpl, 'utf-8');
   const replacedData = data
     .replace(/\{\{env.APP_PUBLIC_PATH\}\}/g, process.env.APP_PUBLIC_PATH)
+    .replace(/\{\{env.API_CLIENT_STORAGE_PREFIX\}\}/g, process.env.API_CLIENT_STORAGE_PREFIX)
     .replace(/\{\{env.API_BASE_URL\}\}/g, process.env.API_BASE_URL || process.env.API_BASE_PATH)
     .replace(/\{\{env.WS_URL\}\}/g, process.env.WEBSOCKET_URL || '')
     .replace(/\{\{env.WS_PATH\}\}/g, process.env.WS_PATH)
@@ -301,6 +302,7 @@ exports.initEnv = function initEnv() {
     APP_KEY: 'test-jwt-secret',
     APP_PORT: 13000,
     API_BASE_PATH: '/api/',
+    API_CLIENT_STORAGE_PREFIX: 'NOCOBASE_',
     DB_DIALECT: 'sqlite',
     DB_STORAGE: 'storage/db/nocobase.sqlite',
     DB_TIMEZONE: '+00:00',
