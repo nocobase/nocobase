@@ -16,12 +16,10 @@ import { useFormBlockContext } from '../../../../block-provider';
 import { useDetailsBlockContext } from '../../../../block-provider/DetailsBlockProvider';
 import { useCollection_deprecated, useSortFields } from '../../../../collection-manager';
 import { removeNullCondition, useDesignable } from '../../../../schema-component';
-import {
-  SchemaSettingsBlockTitleItem,
-  SchemaSettingsTemplate,
-  SchemaSettingsLinkageRules,
-} from '../../../../schema-settings';
+import { SchemaSettingsLinkageRules } from '../../../../schema-settings';
+import { SchemaSettingsBlockTitleItem } from '../../../../schema-settings/SchemaSettingsBlockTitleItem';
 import { SchemaSettingsDataScope } from '../../../../schema-settings/SchemaSettingsDataScope';
+import { SchemaSettingsTemplate } from '../../../../schema-settings/SchemaSettingsTemplate';
 import { setDataLoadingModeSettingsItem } from './setDataLoadingModeSettingsItem';
 
 const commonItems: SchemaSettingsItemType[] = [

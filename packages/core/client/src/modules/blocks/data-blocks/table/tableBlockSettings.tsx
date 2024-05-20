@@ -23,13 +23,11 @@ import {
 import { FilterBlockType } from '../../../../filter-provider/utils';
 import { removeNullCondition, useDesignable } from '../../../../schema-component';
 import { FixedBlockDesignerItem } from '../../../../schema-component/antd/page/FixedBlockDesignerItem';
-import {
-  SchemaSettingsBlockTitleItem,
-  SchemaSettingsConnectDataBlocks,
-  SchemaSettingsSortField,
-  SchemaSettingsTemplate,
-} from '../../../../schema-settings/SchemaSettings';
+import { SchemaSettingsBlockTitleItem } from '../../../../schema-settings/SchemaSettingsBlockTitleItem';
+import { SchemaSettingsConnectDataBlocks } from '../../../../schema-settings/SchemaSettingsConnectDataBlocks';
 import { SchemaSettingsDataScope } from '../../../../schema-settings/SchemaSettingsDataScope';
+import { SchemaSettingsSortField } from '../../../../schema-settings/SchemaSettingsSortField';
+import { SchemaSettingsTemplate } from '../../../../schema-settings/SchemaSettingsTemplate';
 import { setDataLoadingModeSettingsItem } from '../details-multi/setDataLoadingModeSettingsItem';
 
 export const tableBlockSettings = new SchemaSettings({
