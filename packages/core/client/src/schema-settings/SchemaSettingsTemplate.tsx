@@ -14,6 +14,8 @@ import { useAPIClient } from '../api-client/hooks/useAPIClient';
 import { useCollectionManager_deprecated } from '../collection-manager/hooks/useCollectionManager_deprecated';
 import { useGlobalTheme } from '../global-theme';
 import { FormDialog } from '../schema-component/antd/form-dialog';
+import { FormItem } from '../schema-component/antd/form-item/FormItem';
+import { Input } from '../schema-component/antd/input/Input';
 import { SchemaComponent } from '../schema-component/core/SchemaComponent';
 import { useCompile } from '../schema-component/hooks/useCompile';
 import { createDesignable } from '../schema-component/hooks/useDesignable';
