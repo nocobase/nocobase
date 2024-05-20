@@ -49,6 +49,7 @@ import { Router } from 'react-router-dom';
 import {
   APIClientProvider,
   ActionContextProvider,
+  ApplicationContext,
   AssociationOrCollectionProvider,
   CollectionFieldOptions_deprecated,
   CollectionRecordProvider,
@@ -63,6 +64,7 @@ import {
   createDesignable,
   findFormBlock,
   useAPIClient,
+  useApp,
   useCollectionManager_deprecated,
   useCollectionRecord,
   useCollection_deprecated,
@@ -980,6 +982,7 @@ export const SchemaSettingsModalItem: FC<SchemaSettingsModalItemProps> = (props)
   const options = useContext(SchemaOptionsContext);
   const collection = useCollection_deprecated();
   const apiClient = useAPIClient();
+  const app = useApp();
   const { theme } = useGlobalTheme();
   const ctx = useBlockRequestContext();
   const upLevelActiveFields = useFormActiveFields();
@@ -1048,11 +1051,13 @@ export const SchemaSettingsModalItem: FC<SchemaSettingsModalItemProps> = (props)
                                         }
                                       `}
                                     >
-                                      <APIClientProvider apiClient={apiClient}>
-                                        <ConfigProvider locale={locale}>
-                                          <SchemaComponent components={components} scope={scope} schema={schema} />
-                                        </ConfigProvider>
-                                      </APIClientProvider>
+                                      <ApplicationContext.Provider value={app}>
+                                        <APIClientProvider apiClient={apiClient}>
+                                          <ConfigProvider locale={locale}>
+                                            <SchemaComponent components={components} scope={scope} schema={schema} />
+                                          </ConfigProvider>
+                                        </APIClientProvider>
+                                      </ApplicationContext.Provider>
                                     </FormLayout>
                                   </SchemaComponentOptions>
                                 </AssociationOrCollectionProvider>
