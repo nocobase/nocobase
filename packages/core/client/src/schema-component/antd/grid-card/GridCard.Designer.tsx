@@ -24,9 +24,9 @@ import {
   SchemaSettingsModalItem,
   SchemaSettingsRemove,
   SchemaSettingsSelectItem,
-  SchemaSettingsTemplate,
 } from '../../../schema-settings';
 import { SchemaSettingsDataScope } from '../../../schema-settings/SchemaSettingsDataScope';
+import { SchemaSettingsTemplate } from '../../../schema-settings/SchemaSettingsTemplate';
 import { useSchemaTemplate } from '../../../schema-templates';
 import { SchemaComponentOptions } from '../../core';
 import { useDesignable } from '../../hooks';

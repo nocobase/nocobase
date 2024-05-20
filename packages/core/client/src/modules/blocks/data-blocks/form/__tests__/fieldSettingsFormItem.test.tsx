@@ -7,20 +7,19 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import {
-  screen,
-  checkSettings,
-  renderSingleSettings,
-  waitFor,
-  userEvent,
-  renderReadPrettySingleSettings,
-  renderSettings,
-  renderReadPrettySettings,
-  checkFieldTitle,
-} from '@nocobase/test/client';
-import { FilterFormBlockProvider, FormBlockProvider, FormItem, fieldSettingsFormItem } from '@nocobase/client';
 import { useFieldSchema } from '@formily/react';
 import { observer } from '@formily/reactive-react';
+import { FilterFormBlockProvider, FormBlockProvider, FormItem, fieldSettingsFormItem } from '@nocobase/client';
+import {
+  checkFieldTitle,
+  checkSettings,
+  renderReadPrettySettings,
+  renderSettings,
+  renderSingleSettings,
+  screen,
+  userEvent,
+  waitFor,
+} from '@nocobase/test/client';
 import React from 'react';
 
 describe('FieldSettingsFormItem', () => {

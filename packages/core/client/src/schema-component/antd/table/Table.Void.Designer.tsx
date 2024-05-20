@@ -20,8 +20,8 @@ import {
   SchemaSettingsRemove,
   SchemaSettingsSelectItem,
   SchemaSettingsSwitchItem,
-  SchemaSettingsTemplate,
 } from '../../../schema-settings';
+import { SchemaSettingsTemplate } from '../../../schema-settings/SchemaSettingsTemplate';
 import { useSchemaTemplate } from '../../../schema-templates';
 import { useDesignable } from '../../hooks';
 

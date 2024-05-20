@@ -14,8 +14,8 @@ import classnames from 'classnames';
 import React from 'react';
 import { useDesignable } from '../../hooks';
 
-import { withDynamicSchemaProps } from '../../../application/hoc/withDynamicSchemaProps';
 import { useCollectionParentRecordData } from '../../../data-source/collection-record/CollectionRecordProvider';
+import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
 import { RecordProvider } from '../../../record-provider';
 
 export const ListItem = withDynamicSchemaProps((props) => {

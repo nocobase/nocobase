@@ -12,14 +12,10 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCollection_deprecated } from '../../../collection-manager';
 import { FilterBlockType } from '../../../filter-provider/utils';
-import {
-  GeneralSchemaDesigner,
-  SchemaSettingsBlockTitleItem,
-  SchemaSettingsConnectDataBlocks,
-  SchemaSettingsDivider,
-  SchemaSettingsRemove,
-  SchemaSettingsTemplate,
-} from '../../../schema-settings';
+import { GeneralSchemaDesigner, SchemaSettingsDivider, SchemaSettingsRemove } from '../../../schema-settings';
+import { SchemaSettingsBlockTitleItem } from '../../../schema-settings/SchemaSettingsBlockTitleItem';
+import { SchemaSettingsConnectDataBlocks } from '../../../schema-settings/SchemaSettingsConnectDataBlocks';
+import { SchemaSettingsTemplate } from '../../../schema-settings/SchemaSettingsTemplate';
 import { useSchemaTemplate } from '../../../schema-templates';
 
 export const AssociationFilterBlockDesigner = () => {

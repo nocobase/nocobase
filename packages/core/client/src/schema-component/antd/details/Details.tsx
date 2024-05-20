@@ -7,12 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React from 'react';
-import { FormV2 } from '../form-v2';
-import _ from 'lodash';
 import { Empty } from 'antd';
+import _ from 'lodash';
+import React from 'react';
 import { useDataBlockRequest } from '../../../data-source';
-import { withDynamicSchemaProps } from '../../../application/hoc/withDynamicSchemaProps';
+import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
+import { FormV2 } from '../form-v2';
 import { FormProps } from '../form-v2/Form';
 
 export type DetailsProps = FormProps;
