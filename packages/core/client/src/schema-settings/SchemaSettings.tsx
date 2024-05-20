@@ -969,6 +969,8 @@ export const SchemaSettingsLinkageRules = function LinkageRules(props) {
   const { type: formBlockType } = useFormBlockType();
   const type = props?.type || fieldSchema?.['x-action'] ? 'button' : 'field';
   const gridSchema = findGridSchema(fieldSchema) || fieldSchema;
+  const options = useLinkageCollectionFilterOptions(collectionName);
+  const linkageOptions = useLinkageCollectionFieldOptions(collectionName, readPretty);
   const schema = useMemo<ISchema>(
     () => ({
       type: 'object',
@@ -977,14 +979,11 @@ export const SchemaSettingsLinkageRules = function LinkageRules(props) {
         fieldReaction: {
           'x-component': FormLinkageRules,
           'x-use-component-props': () => {
-            // eslint-disable-next-line react-hooks/rules-of-hooks
-            const options = useLinkageCollectionFilterOptions(collectionName);
             return {
               options,
               defaultValues: gridSchema?.['x-linkage-rules'] || fieldSchema?.['x-linkage-rules'],
               type,
-              // eslint-disable-next-line react-hooks/rules-of-hooks
-              linkageOptions: useLinkageCollectionFieldOptions(collectionName, readPretty),
+              linkageOptions,
               collectionName,
               form,
               variables,
