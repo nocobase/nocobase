@@ -10,7 +10,7 @@
 import { Form } from '@formily/core';
 import { Schema } from '@formily/json-schema';
 import { useTranslation } from 'react-i18next';
-import { useFormBlockContext } from '../../../block-provider';
+import { useDetailsBlockContext, useFormBlockContext } from '../../../block-provider';
 import { CollectionFieldOptions_deprecated } from '../../../collection-manager';
 import { useBaseVariable } from './useBaseVariable';
 
@@ -60,6 +60,15 @@ export const useFormVariable = ({ collectionName, collectionField, schema, noDis
   return result;
 };
 
+const useCurrentDetailData = () => {
+  const { service } = useDetailsBlockContext();
+  return service?.data?.data?.[0] || service?.data?.data;
+};
+const useCurrentFormData = () => {
+  const { service } = useFormBlockContext();
+  return service?.data?.data;
+};
+
 /**
  * 变量：`当前表单`
  * @param param0
@@ -74,7 +83,9 @@ export const useCurrentFormVariable = ({
 }: Props = {}) => {
   // const { getActiveFieldsName } = useFormActiveFields() || {};
   const { t } = useTranslation();
-  const { form, collectionName, service } = useFormBlockContext();
+  const { form, collectionName } = useFormBlockContext();
+  const detailData = useCurrentDetailData();
+  const formData = useCurrentFormData();
   const currentFormSettings = useBaseVariable({
     collectionField,
     uiSchema: schema,
@@ -103,9 +114,9 @@ export const useCurrentFormVariable = ({
     currentFormSettings,
     /** 变量值 */
     currentFormCtx:
-      formInstance?.values && Object.keys(formInstance?.values)?.length
+      formInstance?.readPretty === false && formInstance?.values && Object.keys(formInstance?.values)?.length
         ? formInstance?.values
-        : service?.data?.data || formInstance?.values,
+        : detailData || formData || formInstance?.values,
     /** 用来判断是否可以显示`当前表单`变量 */
     shouldDisplayCurrentForm: formInstance && !formInstance.readPretty,
   };

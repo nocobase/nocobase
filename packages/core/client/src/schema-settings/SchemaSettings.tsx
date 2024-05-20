@@ -979,12 +979,13 @@ export const SchemaSettingsLinkageRules = function LinkageRules(props) {
           'x-use-component-props': () => {
             // eslint-disable-next-line react-hooks/rules-of-hooks
             const options = useLinkageCollectionFilterOptions(collectionName);
+            // eslint-disable-next-line react-hooks/rules-of-hooks
+            const linkageOptions = useLinkageCollectionFieldOptions(collectionName, readPretty);
             return {
               options,
               defaultValues: gridSchema?.['x-linkage-rules'] || fieldSchema?.['x-linkage-rules'],
               type,
-              // eslint-disable-next-line react-hooks/rules-of-hooks
-              linkageOptions: useLinkageCollectionFieldOptions(collectionName, readPretty),
+              linkageOptions,
               collectionName,
               form,
               variables,
