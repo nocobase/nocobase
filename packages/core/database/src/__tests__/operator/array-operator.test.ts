@@ -204,6 +204,37 @@ describe('array field operator', function () {
     expect(filter3[0].get('name')).toEqual(t2.get('name'));
   });
 
+  test('$anyOf with association with same column name', async () => {
+    const Tag = db.collection({
+      name: 'tags',
+      fields: [
+        { type: 'array', name: 'type' },
+        { type: 'string', name: 'name' },
+      ],
+    });
+
+    const Post = db.collection({
+      name: 'posts',
+      tableName: 'posts_table',
+      fields: [
+        { type: 'array', name: 'type' },
+        {
+          type: 'hasMany',
+          name: 'tags',
+        },
+      ],
+    });
+
+    await db.sync({ force: true });
+
+    await Post.repository.find({
+      filter: {
+        'type.$anyOf': ['aa'],
+        'tags.name': 't1',
+      },
+    });
+  });
+
   // fix https://nocobase.height.app/T-2803
   test('$anyOf with string', async () => {
     const filter3 = await Test.repository.find({

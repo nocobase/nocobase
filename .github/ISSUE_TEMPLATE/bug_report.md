@@ -7,22 +7,37 @@ assignees: ''
 
 ---
 
-## Describe the bug
+<!-- Note: Please do not clear the contents of the issue template. Items marked with * are required. Issues not filled out according to the template will be closed. -->
+<!-- 注意：请不要将 issue 模板内容清空，带 * 的项目为必填项，没有按照模板填写的issue将被关闭。-->
+
+## * Describe the bug
 
 <!-- A clear and concise description of what the bug is. -->
 
-## Version
+## * Environment
 
-<!-- NocoBase version that you are using. -->
+<!-- Please view it by clicking on the ? icon in the upper right corner of the NocoBase navigation bar. -->
+- NocoBase version:
 
-## How To Reproduce
+<!-- [e.g. PostgreSQL 12, MySQL 8.x, SQLite] -->
+- Database type and version: 
+  
+<!-- [e.g. MacOS, Windows] -->
+- OS:
 
-Steps to reproduce the behavior:
+<!-- Docker, Create-nocobase-app, Git source code -->
+- Deployment Methods:
 
-1. Go to '...'
-2. Click on '....'
-3. Scroll down to '....'
-4. See error
+<!-- If using Docker for deployment, please provide. [e.g. nocobase/nocobase:latest] -->
+- Docker image version:
+
+<!-- If using Create-nocobase-app or Git source code for deployment, please provide. -->
+- NodeJS version:
+
+
+## * How To Reproduce
+
+<!-- Please describe the reproduction process in as much detail as possible. -->
 
 ## Expected behavior
 
@@ -32,18 +47,6 @@ Steps to reproduce the behavior:
 
 <!-- If applicable, add screenshots to help explain your problem. -->
 
-## Desktop (please complete the following information)
+## Logs
 
-- OS: [e.g. iOS]
-- Browser [e.g. chrome v102, safari]
-
-## Smartphone (please complete the following information)
-
-- Device: [e.g. iPhone6]
-- OS: [e.g. iOS8.1]
-- Browser [e.g. stock browser, safari]
-- Version [e.g. 22]
-
-## Additional context
-
-<!-- Add any other context about the problem here. -->
+<!-- If it's an API error, please provide the relevant server logs. -->

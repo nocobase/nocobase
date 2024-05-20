@@ -21,6 +21,7 @@ import { useAttach, useComponent } from '../..';
 import { useTemplateBlockContext } from '../../../block-provider/TemplateBlockProvider';
 import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
 import { ActionType } from '../../../schema-settings/LinkageRules/type';
+import { useToken } from '../../../style';
 import { useLocalVariables, useVariables } from '../../../variables';
 import { VariableOption, VariablesContextType } from '../../../variables/types';
 import { getPath } from '../../../variables/utils/getPath';
@@ -218,13 +219,23 @@ export const Form: React.FC<FormProps> & {
 } = withDynamicSchemaProps(
   observer((props) => {
     const field = useField<Field>();
+    const { token } = useToken();
 
     // 新版 UISchema（1.0 之后）中已经废弃了 useProps，这里之所以继续保留是为了兼容旧版的 UISchema
     const { form, disabled, ...others } = useProps(props);
+    const theme: any = useMemo(() => {
+      return {
+        token: {
+          // 这里是为了防止区块内部也收到 marginBlock 的影响（marginBlock：区块之间的间距）
+          // @ts-ignore
+          marginBlock: token.marginLG,
+        },
+      };
+    }, [token.marginLG]);
 
     const formDisabled = disabled || field.disabled;
     return (
-      <ConfigProvider componentDisabled={formDisabled}>
+      <ConfigProvider componentDisabled={formDisabled} theme={theme}>
         <form onSubmit={(e) => e.preventDefault()} className={formLayoutCss}>
           <Spin spinning={field.loading || false}>
             {form ? (
