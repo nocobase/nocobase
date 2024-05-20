@@ -67,7 +67,7 @@ const SettingsMenu: React.FC<{
     {
       key: 'license',
       label: (
-        <a href="https://github.com/nocobase/nocobase/blob/main/LICENSE-AGPL" target="__blank">
+        <a href="https://github.com/nocobase/nocobase/blob/main/LICENSE-AGPL.txt" target="__blank">
           {t('License')}
         </a>
       ),
