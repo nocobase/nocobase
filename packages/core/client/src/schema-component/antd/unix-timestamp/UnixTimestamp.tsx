@@ -42,7 +42,7 @@ interface UnixTimestampProps {
 
 export const UnixTimestamp = connect(
   (props: UnixTimestampProps) => {
-    const { value, onChange, accuracy } = props;
+    const { value, onChange, accuracy = 'second' } = props;
     const v = useMemo(() => toValue(value, accuracy), [value]);
     return (
       <DatePicker

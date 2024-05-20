@@ -23,7 +23,7 @@ export class UnixTimestampFieldInterface extends CollectionFieldInterface {
       type: 'number',
       'x-component': 'UnixTimestamp',
       'x-component-props': {
-        accuracy: 'millisecond',
+        accuracy: 'second',
         showTime: true,
       },
     },
