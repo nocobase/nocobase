@@ -171,7 +171,7 @@ export const pagination = {
                   dependencies: ['multiple'],
                   fulfill: {
                     state: {
-                      visible: '{{!$deps[0]}}',
+                      visible: '{{!!$deps[0]}}',
                     },
                   },
                 },
