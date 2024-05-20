@@ -530,7 +530,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
       options.underscored = true;
     }
 
-    this.logger.debug(`beforeDefineCollection: ${safeJsonStringify(options)}`, {
+    this.logger.trace(`beforeDefineCollection: ${safeJsonStringify(options)}`, {
       databaseInstanceId: this.instanceId,
     });
 

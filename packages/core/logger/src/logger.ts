@@ -7,11 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import winston, { Logger } from 'winston';
+import winston, { LeveledLogMethod, Logger as WinstonLogger } from 'winston';
 import 'winston-daily-rotate-file';
 import { getLoggerLevel } from './config';
 import { getTransports } from './transports';
 import { consoleFormat } from './format';
+
+interface Logger extends WinstonLogger {
+  trace: LeveledLogMethod;
+}
 
 interface LoggerOptions extends Omit<winston.LoggerOptions, 'transports' | 'format'> {
   dirname?: string;
@@ -20,17 +24,26 @@ interface LoggerOptions extends Omit<winston.LoggerOptions, 'transports' | 'form
   transports?: ('console' | 'file' | 'dailyRotateFile' | winston.transport)[];
 }
 
+export const levels = {
+  trace: 4,
+  debug: 3,
+  info: 2,
+  warn: 1,
+  error: 0,
+};
+
 export const createLogger = (options: LoggerOptions) => {
   if (process.env.GITHUB_ACTIONS) {
     return createConsoleLogger();
   }
   const { format, ...rest } = options;
   const winstonOptions = {
+    levels,
     level: getLoggerLevel(),
     ...rest,
     transports: getTransports(options),
   };
-  return winston.createLogger(winstonOptions);
+  return winston.createLogger(winstonOptions) as Logger;
 };
 
 /**
@@ -39,6 +52,7 @@ export const createLogger = (options: LoggerOptions) => {
 export const createConsoleLogger = (options?: winston.LoggerOptions) => {
   const { format, ...rest } = options || {};
   return winston.createLogger({
+    levels,
     level: getLoggerLevel(),
     format: winston.format.combine(
       winston.format.timestamp({
@@ -48,7 +62,7 @@ export const createConsoleLogger = (options?: winston.LoggerOptions) => {
     ),
     ...(rest || {}),
     transports: [new winston.transports.Console()],
-  });
+  }) as Logger;
 };
 
 export { Logger, LoggerOptions };

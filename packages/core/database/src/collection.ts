@@ -332,7 +332,7 @@ export class Collection<
 
     const { database } = this.context;
 
-    database.logger.debug(`beforeSetField: ${safeJsonStringify(options)}`, {
+    database.logger.trace(`beforeSetField: ${safeJsonStringify(options)}`, {
       databaseInstanceId: database.instanceId,
       collectionName: this.name,
       fieldName: name,
