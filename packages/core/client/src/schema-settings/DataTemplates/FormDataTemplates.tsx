@@ -16,6 +16,7 @@ import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCollectionManager_deprecated } from '../../collection-manager';
 import { mergeFilter } from '../../filter-provider/utils';
+import { withDynamicSchemaProps } from '../../hoc/withDynamicSchemaProps';
 import { SchemaComponent, SchemaComponentContext, removeNullCondition, useProps } from '../../schema-component';
 import { ITemplate } from '../../schema-component/antd/form-v2/Templates';
 import { VariableInput } from '../VariableInput';
@@ -24,7 +25,6 @@ import { ArrayCollapse } from './components/DataTemplateTitle';
 import { getSelectedIdFilter } from './components/Designer';
 import { useCollectionState } from './hooks/useCollectionState';
 import { useSyncFromForm } from './utils';
-import { withDynamicSchemaProps } from '../../application/hoc/withDynamicSchemaProps';
 
 const Tree = connect(
   AntdTree,

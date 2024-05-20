@@ -12,8 +12,8 @@ import { ObjectField } from '@formily/core';
 import { useField } from '@formily/react';
 import { Card } from 'antd';
 import React from 'react';
-import { withDynamicSchemaProps } from '../../../application/hoc/withDynamicSchemaProps';
 import { useCollectionParentRecordData } from '../../../data-source/collection-record/CollectionRecordProvider';
+import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
 import { RecordProvider } from '../../../record-provider';
 
 const itemCss = css`

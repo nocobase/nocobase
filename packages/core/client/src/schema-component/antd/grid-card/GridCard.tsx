@@ -12,6 +12,7 @@ import { ArrayField } from '@formily/core';
 import { RecursionField, Schema, useField, useFieldSchema } from '@formily/react';
 import { List as AntdList, Col, PaginationProps } from 'antd';
 import React, { useCallback, useState } from 'react';
+import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
 import { SortableItem } from '../../common';
 import { SchemaComponentOptions } from '../../core';
 import { useDesigner, useProps } from '../../hooks';
@@ -20,7 +21,6 @@ import { GridCardDesigner } from './GridCard.Designer';
 import { GridCardItem } from './GridCard.Item';
 import { useGridCardActionBarProps } from './hooks';
 import { defaultColumnCount, pageSizeOptions } from './options';
-import { withDynamicSchemaProps } from '../../../application/hoc/withDynamicSchemaProps';
 
 const rowGutter = {
   md: 12,

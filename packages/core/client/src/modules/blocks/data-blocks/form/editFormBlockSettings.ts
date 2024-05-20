@@ -12,11 +12,11 @@ import { SchemaSettings } from '../../../../application/schema-settings/SchemaSe
 import { useFormBlockContext } from '../../../../block-provider';
 import { useCollection_deprecated } from '../../../../collection-manager';
 import {
-  SchemaSettingsBlockTitleItem,
   SchemaSettingsDataTemplates,
   SchemaSettingsFormItemTemplate,
   SchemaSettingsLinkageRules,
 } from '../../../../schema-settings';
+import { SchemaSettingsBlockTitleItem } from '../../../../schema-settings/SchemaSettingsBlockTitleItem';
 
 export const editFormBlockSettings = new SchemaSettings({
   name: 'blockSettings:editForm',

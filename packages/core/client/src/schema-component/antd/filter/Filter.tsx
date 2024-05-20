@@ -11,13 +11,13 @@ import { ObjectField as ObjectFieldModel } from '@formily/core';
 import { observer, useField, useFieldSchema } from '@formily/react';
 import React, { useEffect } from 'react';
 import { UseRequestOptions, useRequest } from '../../../api-client';
+import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
 import { useProps } from '../../hooks/useProps';
 import { FilterActionDesigner } from './Filter.Action.Designer';
 import { FilterAction } from './FilterAction';
 import { FilterGroup } from './FilterGroup';
 import { SaveDefaultValue } from './SaveDefaultValue';
 import { FilterContext, FilterContextProps } from './context';
-import { withDynamicSchemaProps } from '../../../application/hoc/withDynamicSchemaProps';
 
 const useDef = (options: UseRequestOptions) => {
   const field = useField<ObjectFieldModel>();

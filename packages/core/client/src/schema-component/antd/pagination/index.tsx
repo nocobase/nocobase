@@ -10,8 +10,8 @@
 import { observer } from '@formily/react';
 import { Pagination as AntdPagination, PaginationProps as AntdPaginationProps } from 'antd';
 import React, { KeyboardEventHandler } from 'react';
+import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
 import { useProps } from '../../hooks/useProps';
-import { withDynamicSchemaProps } from '../../../application/hoc/withDynamicSchemaProps';
 
 export interface PaginationProps extends AntdPaginationProps {
   hidden?: boolean;
