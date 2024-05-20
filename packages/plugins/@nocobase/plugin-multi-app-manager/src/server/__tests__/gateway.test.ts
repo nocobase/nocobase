@@ -8,7 +8,14 @@
  */
 
 import { AppSupervisor, Gateway } from '@nocobase/server';
-import { MockServer, createMockServer, createWsClient, startServerWithRandomPort, waitSecond } from '@nocobase/test';
+import {
+  MockServer,
+  createMockServer,
+  createWsClient,
+  startServerWithRandomPort,
+  supertest,
+  waitSecond,
+} from '@nocobase/test';
 import { uid } from '@nocobase/utils';
 
 describe('gateway with multiple apps', () => {
@@ -30,6 +37,41 @@ describe('gateway with multiple apps', () => {
     }
 
     await app.destroy();
+  });
+
+  it('should not boot sub app when main app is not running', async () => {
+    app.on('beforeStart', async () => {
+      await waitSecond(5000);
+    });
+
+    const startPromise = app.runCommand('restart');
+
+    const subAppName = `td_${uid()}`;
+
+    await app.db.getRepository('applications').create({
+      values: {
+        name: subAppName,
+        options: {
+          plugins: [],
+        },
+      },
+    });
+
+    const gateway = Gateway.getInstance();
+
+    AppSupervisor.getInstance().mainAppHasBeenStarted = false;
+
+    const agent = supertest(gateway.getCallback());
+
+    const mainAppStatus = AppSupervisor.getInstance().getAppStatus('main');
+    expect(mainAppStatus).not.toEqual('running');
+
+    const res = await agent.get(`/api/app:getLang?__appName=${subAppName}`);
+    const body = res.body;
+    const error = body.error;
+    expect(error.message).toBe('app reload');
+
+    await startPromise;
   });
 
   it('should boot main app with sub apps', async () => {

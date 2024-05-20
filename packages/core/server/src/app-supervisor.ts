@@ -27,7 +27,9 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
   private static instance: AppSupervisor;
   public runningMode: 'single' | 'multiple' = 'multiple';
   public singleAppName: string | null = null;
+
   declare emitAsync: (event: string | symbol, ...args: any[]) => Promise<boolean>;
+
   public apps: {
     [appName: string]: Application;
   } = {};
@@ -49,6 +51,8 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
   public statusBeforeCommanding: {
     [appName: string]: AppStatus;
   } = {};
+
+  public mainAppHasBeenStarted = false;
 
   private appMutexes = {};
   private appBootstrapper: AppBootstrapper = null;
@@ -105,6 +109,10 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
   setAppStatus(appName: string, status: AppStatus, options = {}) {
     if (this.appStatus[appName] === status) {
       return;
+    }
+
+    if (appName === 'main' && status === 'running') {
+      this.mainAppHasBeenStarted = true;
     }
 
     this.appStatus[appName] = status;
