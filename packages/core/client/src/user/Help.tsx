@@ -9,13 +9,13 @@
 
 import { QuestionCircleOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
+import { observer } from '@formily/reactive-react';
+import { parseHTML } from '@nocobase/utils/client';
 import { Dropdown, Menu, Popover } from 'antd';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { DropdownVisibleContext, usePlugin, useToken } from '..';
 import { useCurrentAppInfo } from '../appInfo/CurrentAppInfoProvider';
-import { observer } from '@formily/reactive-react';
-import { parseHTML } from '@nocobase/utils/client';
 
 /**
  * @note If you want to change here, Note the Setting block on the mobile side
@@ -67,7 +67,14 @@ const SettingsMenu: React.FC<{
     {
       key: 'license',
       label: (
-        <a href="https://github.com/nocobase/nocobase/blob/main/LICENSE-AGPL" target="__blank">
+        <a
+          href={
+            isSimplifiedChinese
+              ? 'https://cn.nocobase.com/agreement-cn.html'
+              : 'https://www.nocobase.com/agreement.html'
+          }
+          target="__blank"
+        >
           {t('License')}
         </a>
       ),
