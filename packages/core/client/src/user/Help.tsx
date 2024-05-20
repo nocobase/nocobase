@@ -48,7 +48,11 @@ const SettingsMenu: React.FC<{
     {
       key: 'homePage',
       label: (
-        <a href={isSimplifiedChinese ? 'https://cn.nocobase.com/' : 'https://www.nocobase.com'} target="__blank">
+        <a
+          href={isSimplifiedChinese ? 'https://cn.nocobase.com/' : 'https://www.nocobase.com'}
+          target="_blank"
+          rel="noreferrer"
+        >
           {t('Home page')}
         </a>
       ),
@@ -58,7 +62,8 @@ const SettingsMenu: React.FC<{
       label: (
         <a
           href={isSimplifiedChinese ? 'https://docs-cn.nocobase.com/handbook' : 'https://docs.nocobase.com/handbook'}
-          target="__blank"
+          target="_blank"
+          rel="noreferrer"
         >
           {t('Handbook')}
         </a>
@@ -73,7 +78,8 @@ const SettingsMenu: React.FC<{
               ? 'https://cn.nocobase.com/agreement-cn.html'
               : 'https://www.nocobase.com/agreement.html'
           }
-          target="__blank"
+          target="_blank"
+          rel="noreferrer"
         >
           {t('License')}
         </a>
