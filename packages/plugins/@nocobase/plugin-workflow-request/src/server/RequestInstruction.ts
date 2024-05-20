@@ -66,7 +66,7 @@ async function request(config) {
   });
 }
 
-function successResponse(response, onlyData = false) {
+function responseSuccess(response, onlyData = false) {
   return onlyData
     ? response.data
     : {
@@ -78,7 +78,7 @@ function successResponse(response, onlyData = false) {
       };
 }
 
-function failedResponse(error) {
+function responseFailure(error) {
   let result = {
     message: error.message,
     stack: error.stack,
@@ -111,7 +111,7 @@ export default class extends Instruction {
         const response = await request(config);
         return {
           status: JOB_STATUS.RESOLVED,
-          result: successResponse(response, config.onlyData),
+          result: responseSuccess(response, config.onlyData),
         };
       } catch (error) {
         return {
@@ -135,7 +135,7 @@ export default class extends Instruction {
 
         job.set({
           status: JOB_STATUS.RESOLVED,
-          result: successResponse(response, config.onlyData),
+          result: responseSuccess(response, config.onlyData),
         });
       })
       .catch((error) => {
@@ -153,7 +153,7 @@ export default class extends Instruction {
 
         job.set({
           status: JOB_STATUS.FAILED,
-          result: failedResponse(error),
+          result: responseFailure(error),
         });
       })
       .finally(() => {
