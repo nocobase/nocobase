@@ -137,11 +137,11 @@ const CurrentFields = (props) => {
             method: 'post',
             data: { titleField: checked ? record.name : 'id' },
           });
-          message.success(t('Saved successfully'));
+          ctx?.refresh?.();
           await props.refreshAsync();
           setLoadingRecord(null);
           refreshCM();
-          ctx?.refresh?.();
+          message.success(t('Saved successfully'));
         };
 
         return isTitleField(record) ? (
@@ -255,11 +255,11 @@ const InheritFields = (props) => {
             method: 'post',
             data: { titleField: checked ? record.name : 'id' },
           });
-          message.success(t('Saved successfully'));
+          ctx?.refresh?.();
           await props.refreshAsync();
           setLoadingRecord(null);
           refreshCM();
-          ctx?.refresh?.();
+          message.success(t('Saved successfully'));
         };
 
         return isTitleField(record) ? (
