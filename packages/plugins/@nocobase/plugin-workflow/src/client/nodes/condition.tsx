@@ -12,7 +12,7 @@ import { css, cx, useCompile, Variable } from '@nocobase/client';
 import { evaluators } from '@nocobase/evaluators/client';
 import { Registry } from '@nocobase/utils/client';
 import { Button, Select } from 'antd';
-import React from 'react';
+import React, { useCallback } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 import { Instruction, NodeDefaultView } from '.';
 import { Branch } from '../Branch';
@@ -149,7 +149,18 @@ function getGroupCalculators(group) {
 
 function Calculation({ calculator, operands = [], onChange }) {
   const compile = useCompile();
-  const options = useWorkflowVariableOptions();
+  const leftOptions = useWorkflowVariableOptions();
+  const rightOptions = useWorkflowVariableOptions();
+  const leftOperandOnChange = useCallback(
+    (v) => onChange({ calculator, operands: [v, operands[1]] }),
+    [calculator, onChange, operands],
+  );
+  const rightOperandOnChange = useCallback(
+    (v) => onChange({ calculator, operands: [operands[0], v] }),
+    [calculator, onChange, operands],
+  );
+  const operatorOnChange = useCallback((v) => onChange({ operands, calculator: v }), [onChange, operands]);
+
   return (
     <fieldset
       className={css`
@@ -159,18 +170,13 @@ function Calculation({ calculator, operands = [], onChange }) {
         flex-wrap: wrap;
       `}
     >
-      <Variable.Input
-        value={operands[0]}
-        onChange={(v) => onChange({ calculator, operands: [v, operands[1]] })}
-        scope={options}
-        useTypedConstant
-      />
+      <Variable.Input value={operands[0]} onChange={leftOperandOnChange} scope={leftOptions} useTypedConstant />
       <Select
         // @ts-ignore
         role="button"
         aria-label="select-operator-calc"
         value={calculator}
-        onChange={(v) => onChange({ operands, calculator: v })}
+        onChange={operatorOnChange}
         placeholder={lang('Operator')}
         popupMatchSelectWidth={false}
         className="auto-width"
@@ -187,12 +193,7 @@ function Calculation({ calculator, operands = [], onChange }) {
             </Select.OptGroup>
           ))}
       </Select>
-      <Variable.Input
-        value={operands[1]}
-        onChange={(v) => onChange({ calculator, operands: [operands[0], v] })}
-        scope={options}
-        useTypedConstant
-      />
+      <Variable.Input value={operands[1]} onChange={rightOperandOnChange} scope={rightOptions} useTypedConstant />
     </fieldset>
   );
 }
