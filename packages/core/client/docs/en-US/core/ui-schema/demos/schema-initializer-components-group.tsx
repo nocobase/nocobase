@@ -1,9 +1,9 @@
 import { Application, SchemaInitializer, SchemaInitializerItemGroup } from '@nocobase/client';
-import { appOptions } from './schema-initializer-common';
 import React from 'react';
+import { appOptions } from './schema-initializer-common';
 
 const myInitializer = new SchemaInitializer({
-  name: 'MyInitializer',
+  name: 'myInitializer',
   title: 'Button Text',
   items: [
     {

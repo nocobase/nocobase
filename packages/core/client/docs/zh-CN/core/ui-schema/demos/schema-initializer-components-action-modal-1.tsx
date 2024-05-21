@@ -1,7 +1,7 @@
 /**
  * defaultShowCode: true
  */
-import React from 'react';
+import { useFieldSchema } from '@formily/react';
 import {
   Action,
   Application,
@@ -14,11 +14,11 @@ import {
   SchemaInitializerActionModal,
   useSchemaInitializer,
 } from '@nocobase/client';
+import React from 'react';
 import { appOptions } from './schema-initializer-common';
-import { useFieldSchema } from '@formily/react';
 
 const myInitializer = new SchemaInitializer({
-  name: 'MyInitializer',
+  name: 'myInitializer',
   wrap: Grid.wrap,
   Component: () => {
     const { insert } = useSchemaInitializer();

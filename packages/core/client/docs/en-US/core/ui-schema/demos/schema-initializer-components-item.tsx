@@ -1,17 +1,17 @@
 /**
  * defaultShowCode: true
  */
+import { useFieldSchema } from '@formily/react';
 import {
+  Application,
+  CardItem,
   Grid,
   SchemaInitializer,
-  useSchemaInitializer,
   SchemaInitializerItem,
-  CardItem,
-  Application,
+  useSchemaInitializer,
 } from '@nocobase/client';
 import React from 'react';
 import { appOptions } from './schema-initializer-common';
-import { useFieldSchema } from '@formily/react';
 
 const Demo = () => {
   const { insert } = useSchemaInitializer();
@@ -26,7 +26,7 @@ const Demo = () => {
 };
 
 const myInitializer = new SchemaInitializer({
-  name: 'MyInitializer',
+  name: 'myInitializer',
   title: 'Button Text',
   wrap: Grid.wrap,
   items: [
