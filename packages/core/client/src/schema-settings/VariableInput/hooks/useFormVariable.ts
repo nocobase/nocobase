@@ -66,7 +66,10 @@ export const useFormVariable = ({ collectionName, collectionField, schema, noDis
 };
 
 const useCurrentFormData = () => {
-  const ctx = useDataBlockRequest();
+  const ctx: any = useDataBlockRequest();
+  if (ctx?.data?.data?.length > 1) {
+    return;
+  }
   return ctx?.data?.data?.[0] || ctx?.data?.data;
 };
 
