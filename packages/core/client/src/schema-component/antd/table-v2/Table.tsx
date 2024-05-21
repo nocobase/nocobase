@@ -647,23 +647,19 @@ export const Table: any = withDynamicSchemaProps(
       },
       [field, dragSort, getRowKey],
     );
-    const fieldSchema = useFieldSchema();
-    const fixedBlock = fieldSchema?.parent?.['x-decorator-props']?.fixedBlock;
 
-    const { height: tableHeight, tableSizeRefCallback } = useTableSize(fixedBlock);
+    const { height: tableHeight, tableSizeRefCallback } = useTableSize();
     const maxContent = useMemo(() => {
       return {
         x: 'max-content',
       };
     }, []);
     const scroll = useMemo(() => {
-      return fixedBlock
-        ? {
-            x: 'max-content',
-            y: tableHeight,
-          }
-        : maxContent;
-    }, [fixedBlock, tableHeight, maxContent]);
+      return {
+        x: 'max-content',
+        y: tableHeight,
+      };
+    }, [tableHeight, maxContent]);
 
     const rowClassName = useCallback(
       (record) => (selectedRow.includes(record[rowKey]) ? highlightRow : ''),
@@ -687,7 +683,6 @@ export const Table: any = withDynamicSchemaProps(
         expandedRowKeys: expandedKeys,
       };
     }, [expandedKeys, onExpandValue]);
-
     return (
       <div
         className={css`

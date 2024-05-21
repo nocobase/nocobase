@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { useFieldSchema } from '@formily/react';
 import React, { FC, ReactNode, createContext, useContext, useMemo } from 'react';
 
 import { ACLCollectionProvider } from '../../acl/ACLProvider';
@@ -114,6 +115,7 @@ export type UseDataBlockProps<T extends keyof AllDataBlockType> = (
 export interface DataBlockContextValue<T extends {} = {}> {
   props: AllDataBlockProps & T;
   dn: Designable;
+  heightProps?: any;
 }
 
 export const DataBlockContext = createContext<DataBlockContextValue<any>>({} as any);
@@ -153,16 +155,17 @@ export const DataBlockProvider: FC<DataBlockProviderProps & { children?: ReactNo
   (props) => {
     const { collection, association, dataSource, children, hidden, ...resets } = props as Partial<AllDataBlockProps>;
     const { dn } = useDesignable();
-
+    const fieldSchema = useFieldSchema();
+    const disablePageHeader = useMemo(() => getIsdisablePageHeader(fieldSchema), []);
     if (hidden) {
       return null;
     }
-
     return (
       <DataBlockContext.Provider
         value={{
           dn,
           props: { ...resets, collection, association, dataSource } as AllDataBlockProps,
+          heightProps: { ...fieldSchema?.['x-component-props'], disablePageHeader },
         }}
       >
         <CollectionManagerProvider dataSource={dataSource}>
@@ -192,4 +195,13 @@ export const useDataBlock = <T extends {}>() => {
 export const useDataBlockProps = <T extends {}>(): DataBlockContextValue<T>['props'] => {
   const context = useDataBlock<T>();
   return context.props;
+};
+
+const getIsdisablePageHeader = (schema) => {
+  if (!schema) return null;
+
+  if (schema['x-component'] === 'Page') {
+    return schema?.['x-component-props']?.disablePageHeader;
+  }
+  return getIsdisablePageHeader(schema.parent);
 };

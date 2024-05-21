@@ -23,6 +23,7 @@ import {
   SchemaSettingsSortField,
   SchemaSettingsConnectDataBlocks,
   SchemaSettingsTemplate,
+  SchemaSettingsBlockHeightItem,
 } from '../../../../schema-settings/SchemaSettings';
 import { SchemaSettingsDataScope } from '../../../../schema-settings/SchemaSettingsDataScope';
 import { useCallback } from 'react';
@@ -38,6 +39,10 @@ export const tableBlockSettings = new SchemaSettings({
     {
       name: 'editBlockTitle',
       Component: SchemaSettingsBlockTitleItem,
+    },
+    {
+      name: 'SetTheBlockHeight',
+      Component: SchemaSettingsBlockHeightItem,
     },
     {
       name: 'treeTable',
