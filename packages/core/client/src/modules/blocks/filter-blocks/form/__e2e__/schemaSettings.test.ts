@@ -36,7 +36,12 @@ test.describe('filter block schema settings', () => {
   });
 
   test.describe('connect data blocks', () => {
-    test('connecting two blocks of the same collection', async ({ page, mockPage, mockRecords }) => {
+    test('connecting two blocks of the same collection', async ({
+      page,
+      mockPage,
+      mockRecords,
+      clearBlockTemplates,
+    }) => {
       const nocoPage = await mockPage(oneFormAndOneTableWithSameCollection).waitForInit();
       const records = await mockRecords('general', 3);
       await nocoPage.goto();
@@ -81,6 +86,81 @@ test.describe('filter block schema settings', () => {
       await expect(
         page.getByLabel('block-item-CardItem-general-table').getByRole('row', { name: records[0].singleLineText }),
       ).toBeVisible();
+
+      // 更改操作符为 “is not”
+      await page.getByLabel('block-item-CollectionField-').hover();
+      await page.getByLabel('designer-schema-settings-CollectionField-FormItem.FilterFormDesigner-general-').hover();
+      await page.getByRole('menuitem', { name: 'Operator contains' }).click();
+      await page.getByRole('option', { name: 'is not', exact: true }).click();
+
+      // 输入值，点击筛选按钮
+      await page
+        .getByLabel('block-item-CollectionField-general-filter-form-general.singleLineText-singleLineText')
+        .getByRole('textbox')
+        .click();
+      await page
+        .getByLabel('block-item-CollectionField-general-filter-form-general.singleLineText-singleLineText')
+        .getByRole('textbox')
+        .fill(records[0].singleLineText);
+
+      // 点击筛选按钮
+      await page.getByLabel('action-Action-Filter records-submit-general-filter-form').click();
+
+      await expect(
+        page.getByLabel('block-item-CardItem-general-table').getByRole('row', { name: records[1].singleLineText }),
+      ).toBeVisible();
+      await expect(
+        page.getByLabel('block-item-CardItem-general-table').getByRole('row', { name: records[2].singleLineText }),
+      ).toBeVisible();
+      await expect(
+        page.getByLabel('block-item-CardItem-general-table').getByRole('row', { name: records[0].singleLineText }),
+      ).toBeHidden();
+
+      // 点击重置按钮
+      await page.getByLabel('action-Action-Reset records-general-filter-form').click();
+
+      // 将筛选表单区块保存为模板
+      await page.getByLabel('block-item-CardItem-general-filter-form').hover();
+      await page.getByLabel('designer-schema-settings-CardItem-FormV2.FilterDesigner-general').hover();
+      await page.getByRole('menuitem', { name: 'Save as block template' }).click();
+      await page.getByRole('button', { name: 'OK', exact: true }).click();
+
+      // 输入值，点击筛选按钮
+      await page
+        .getByLabel('block-item-CollectionField-general-filter-form-general.singleLineText-singleLineText')
+        .getByRole('textbox')
+        .click();
+      await page
+        .getByLabel('block-item-CollectionField-general-filter-form-general.singleLineText-singleLineText')
+        .getByRole('textbox')
+        .fill(records[0].singleLineText);
+
+      // 点击筛选按钮
+      await page.getByLabel('action-Action-Filter records-submit-general-filter-form').click();
+
+      await expect(
+        page.getByLabel('block-item-CardItem-general-table').getByRole('row', { name: records[1].singleLineText }),
+      ).toBeVisible();
+      await expect(
+        page.getByLabel('block-item-CardItem-general-table').getByRole('row', { name: records[2].singleLineText }),
+      ).toBeVisible();
+      await expect(
+        page.getByLabel('block-item-CardItem-general-table').getByRole('row', { name: records[0].singleLineText }),
+      ).toBeHidden();
+
+      // 点击重置按钮
+      await page.getByLabel('action-Action-Reset records-general-filter-form').click();
+      await expect(
+        page.getByLabel('block-item-CardItem-general-table').getByRole('row', { name: records[1].singleLineText }),
+      ).toBeVisible();
+      await expect(
+        page.getByLabel('block-item-CardItem-general-table').getByRole('row', { name: records[2].singleLineText }),
+      ).toBeVisible();
+      await expect(
+        page.getByLabel('block-item-CardItem-general-table').getByRole('row', { name: records[0].singleLineText }),
+      ).toBeVisible();
+
+      await clearBlockTemplates();
     });
   });
 });

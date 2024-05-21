@@ -21,7 +21,7 @@ import {
   useToken,
 } from '@nocobase/client';
 import { Button, Dropdown, Form, Input, MenuProps } from 'antd';
-import React, { useMemo } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { lang } from '../locale';
 import { useWorkflowVariableOptions } from '../variable';
@@ -36,10 +36,20 @@ function AssociationInput(props) {
   const { type } = fields.find((item) => item.name === fieldName);
 
   const value = Array.isArray(props.value) ? props.value.join(',') : props.value;
-  function onChange(ev) {
-    const trimed = ev.target.value.trim();
-    props.onChange(['belongsTo', 'hasOne'].includes(type) ? trimed : trimed.split(/[,\s]+/));
-  }
+  const onChange = useCallback(
+    (ev) => {
+      const trimed = ev.target.value.trim();
+      const next = ['belongsTo', 'hasOne'].includes(type)
+        ? trimed || null
+        : trimed
+            .split(',')
+            .map((item) => item.trim())
+            .filter((item) => item !== '');
+      props.onChange(next);
+    },
+    [props.onChange, type],
+  );
+
   return <Input {...props} value={value} onChange={onChange} />;
 }
 

@@ -12,6 +12,7 @@ import { ArrayField } from '@formily/core';
 import { RecursionField, Schema, useField, useFieldSchema } from '@formily/react';
 import { List as AntdList, PaginationProps } from 'antd';
 import React, { useCallback, useState } from 'react';
+import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
 import { SortableItem } from '../../common';
 import { SchemaComponentOptions } from '../../core';
 import { useDesigner } from '../../hooks';
@@ -20,7 +21,6 @@ import { ListDesigner } from './List.Designer';
 import { ListItem } from './List.Item';
 import useStyles from './List.style';
 import { useListActionBarProps } from './hooks';
-import { withDynamicSchemaProps } from '../../../application/hoc/withDynamicSchemaProps';
 
 const InternalList = (props) => {
   const { service } = useListBlockContext();

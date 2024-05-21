@@ -13,10 +13,10 @@ import { merge } from '@formily/shared';
 import { concat } from 'lodash';
 import React, { useCallback, useEffect, useMemo } from 'react';
 import { useFormBlockContext } from '../../block-provider/FormBlockProvider';
+import { useDynamicComponentProps } from '../../hoc/withDynamicSchemaProps';
 import { useCompile, useComponent } from '../../schema-component';
 import { useIsAllowToSetDefaultValue } from '../../schema-settings/hooks/useIsAllowToSetDefaultValue';
 import { CollectionFieldProvider, useCollectionField } from './CollectionFieldProvider';
-import { useDynamicComponentProps } from '../../application/hoc';
 
 type Props = {
   component: any;

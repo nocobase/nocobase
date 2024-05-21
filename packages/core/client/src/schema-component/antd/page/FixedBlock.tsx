@@ -10,7 +10,6 @@
 import { css } from '@emotion/css';
 import { useField, useFieldSchema } from '@formily/react';
 import React, { useContext, useEffect, useRef, useState } from 'react';
-import { useRecord } from '../../../record-provider';
 
 const FixedBlockContext = React.createContext<{
   setFixedBlock: (value: string | false) => void;

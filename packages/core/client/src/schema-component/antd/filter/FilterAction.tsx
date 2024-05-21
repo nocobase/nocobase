@@ -14,12 +14,12 @@ import { flatten, unflatten } from '@nocobase/utils/client';
 import { Button, Space } from 'antd';
 import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
 import { FormProvider, SchemaComponent } from '../../core';
 import { useDesignable } from '../../hooks';
 import { useProps } from '../../hooks/useProps';
 import { Action, ActionProps } from '../action';
 import { StablePopover } from '../popover';
-import { withDynamicSchemaProps } from '../../../application/hoc/withDynamicSchemaProps';
 
 export const FilterActionContext = createContext<any>(null);
 FilterActionContext.displayName = 'FilterActionContext';

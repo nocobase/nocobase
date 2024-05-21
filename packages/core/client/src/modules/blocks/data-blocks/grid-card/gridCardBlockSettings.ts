@@ -17,8 +17,8 @@ import { useFormBlockContext } from '../../../../block-provider';
 import { useCollection_deprecated, useSortFields } from '../../../../collection-manager';
 import { removeNullCondition, useDesignable } from '../../../../schema-component';
 import { pageSizeOptions } from '../../../../schema-component/antd/grid-card/options';
-import { SchemaSettingsTemplate } from '../../../../schema-settings';
 import { SchemaSettingsDataScope } from '../../../../schema-settings/SchemaSettingsDataScope';
+import { SchemaSettingsTemplate } from '../../../../schema-settings/SchemaSettingsTemplate';
 import { setDataLoadingModeSettingsItem } from '../details-multi/setDataLoadingModeSettingsItem';
 import { SetTheCountOfColumnsDisplayedInARow } from './SetTheCountOfColumnsDisplayedInARow';
 

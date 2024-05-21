@@ -14,6 +14,9 @@ describe('UnixTimestamp', () => {
   it('renders without errors', async () => {
     const { container } = await renderApp({
       Component: UnixTimestamp,
+      props: {
+        accuracy: 'millisecond',
+      },
       value: 0,
     });
     expect(container).toMatchInlineSnapshot(`
@@ -70,6 +73,9 @@ describe('UnixTimestamp', () => {
     await renderApp({
       Component: UnixTimestamp,
       value: 1712819630000,
+      props: {
+        accuracy: 'millisecond',
+      },
     });
     await waitFor(() => {
       expect(screen.getByRole('textbox')).toHaveValue('2024-04-11');
@@ -94,6 +100,9 @@ describe('UnixTimestamp', () => {
     await renderApp({
       Component: UnixTimestamp,
       value: '2024-04-11',
+      props: {
+        accuracy: 'millisecond',
+      },
     });
 
     await waitFor(() => {
@@ -107,6 +116,9 @@ describe('UnixTimestamp', () => {
       Component: UnixTimestamp,
       value: '2024-04-11',
       onChange,
+      props: {
+        accuracy: 'millisecond',
+      },
     });
     await userEvent.click(screen.getByRole('textbox'));
 
@@ -126,6 +138,9 @@ describe('UnixTimestamp', () => {
     const { container } = await renderReadPrettyApp({
       Component: UnixTimestamp,
       value: '2024-04-11',
+      props: {
+        accuracy: 'millisecond',
+      },
     });
 
     expect(screen.getByText('2024-04-11')).toBeInTheDocument();

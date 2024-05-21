@@ -309,12 +309,14 @@ export class QueryRecordNode {
   nodeTitle: Locator;
   nodeConfigure: Locator;
   collectionDropDown: Locator;
-  allowMultipleDataBoxesForResults: Locator;
+  // allowMultipleDataBoxesForResults: Locator;
   addSortFieldsButton: Locator;
   pageNumberEditBox: Locator;
   pageNumberVariableButton: Locator;
   pageSizeEditBox: Locator;
   exitProcessOptionsBoxWithEmptyResult: Locator;
+  singleRecordRadioButton: Locator;
+  multipleRecordsRadioButton: Locator;
   submitButton: Locator;
   cancelButton: Locator;
   addNodeButton: Locator;
@@ -328,7 +330,9 @@ export class QueryRecordNode {
     this.collectionDropDown = page
       .getByLabel('block-item-DataSourceCollectionCascader-workflows-Collection')
       .locator('.ant-select-selection-search-input');
-    this.allowMultipleDataBoxesForResults = page.getByLabel('Allow multiple records as');
+    // this.allowMultipleDataBoxesForResults = page.getByLabel('Allow multiple records as');
+    this.singleRecordRadioButton = page.getByLabel('block-item-RadioWithTooltip-').getByLabel('Single record');
+    this.multipleRecordsRadioButton = page.getByLabel('block-item-RadioWithTooltip-').getByLabel('Multiple records');
     this.addSortFieldsButton = page.getByRole('button', { name: 'plus Add sort field' });
     this.pageNumberEditBox = page.getByLabel('variable-constant');
     this.pageNumberVariableButton = page.getByLabel('variable-button');

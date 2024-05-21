@@ -12,10 +12,10 @@ import { RecursionField, observer, useFieldSchema } from '@formily/react';
 import { Space, SpaceProps } from 'antd';
 import React, { CSSProperties, useContext } from 'react';
 import { createPortal } from 'react-dom';
+import { useSchemaInitializerRender } from '../../../application';
+import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
 import { DndContext } from '../../common';
 import { useDesignable, useProps } from '../../hooks';
-import { useSchemaInitializerRender } from '../../../application';
-import { withDynamicSchemaProps } from '../../../application/hoc/withDynamicSchemaProps';
 
 export interface ActionBarProps {
   layout?: 'one-column' | 'two-columns';

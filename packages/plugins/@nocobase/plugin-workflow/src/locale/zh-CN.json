@@ -173,6 +173,11 @@
   "Allow multiple records as result": "允许结果是多条数据",
   "If checked, when there are multiple records in the query result, an array will be returned as the result, which can be operated on one by one using a loop node. Otherwise, only one record will be returned.":
     "选中后，当查询结果有多条记录时，会返回数组作为结果，可以使用循环节点对它逐条操作；否则，仅返回一条数据。",
+  "Result type": "结果类型",
+  "Single record": "单条数据",
+  "Multiple records": "多条数据",
+  "The result will be an object of the first matching record only, or null if no matched record.": "结果是一个对象，仅为首条匹配的记录，或空值。",
+  "The result will be an array containing matched records, or an empty one if no matching records. This can be used to be processed in a loop node.": "结果会是一个数组，包含匹配条件的记录，没有匹配记录则为空数组。可以通过循环节点逐个处理。",
   "Exit when query result is null": "查询结果为空时，退出流程",
   "Please select collection first": "请先选择数据表",
   "Only update records matching conditions": "只更新满足条件的数据",

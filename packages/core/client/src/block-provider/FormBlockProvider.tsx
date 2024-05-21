@@ -11,13 +11,13 @@ import { createForm } from '@formily/core';
 import { Schema, useField } from '@formily/react';
 import { Spin } from 'antd';
 import React, { createContext, useContext, useEffect, useMemo, useRef } from 'react';
-import { withDynamicSchemaProps } from '../application/hoc/withDynamicSchemaProps';
 import {
   CollectionRecord,
   useCollectionManager,
   useCollectionParentRecordData,
   useCollectionRecord,
 } from '../data-source';
+import { withDynamicSchemaProps } from '../hoc/withDynamicSchemaProps';
 import { useTreeParentRecord } from '../modules/blocks/data-blocks/table/TreeRecordProvider';
 import { RecordProvider } from '../record-provider';
 import { useActionContext } from '../schema-component';

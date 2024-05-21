@@ -9,40 +9,18 @@
 
 import { ArrayCollapse, FormLayout } from '@formily/antd-v5';
 import { Field } from '@formily/core';
-import { ISchema, Schema, useField, useFieldSchema } from '@formily/react';
-import { uid } from '@formily/shared';
+import { ISchema, useField, useFieldSchema } from '@formily/react';
 import _ from 'lodash';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useFormBlockContext } from '../../../block-provider';
-import { useCollection_deprecated, useCollectionManager_deprecated } from '../../../collection-manager';
+import { useOperators } from '../../../block-provider/CollectOperators';
+import { useCollectionManager_deprecated, useCollection_deprecated } from '../../../collection-manager';
 import { SchemaSettingsModalItem, SchemaSettingsSelectItem, SchemaSettingsSwitchItem } from '../../../schema-settings';
 import { isPatternDisabled } from '../../../schema-settings/isPatternDisabled';
 import { useCompile, useDesignable, useFieldModeOptions } from '../../hooks';
 import { useOperatorList } from '../filter/useOperators';
 import { isFileCollection } from './FormItem';
-export const findFilterOperators = (schema: Schema) => {
-  while (schema) {
-    if (schema['x-filter-operators']) {
-      return {
-        operators: schema['x-filter-operators'],
-        uid: schema['x-uid'],
-      };
-    }
-    schema = schema.parent;
-  }
-  return {};
-};
-
-const divWrap = (schema: ISchema) => {
-  return {
-    type: 'void',
-    'x-component': 'div',
-    properties: {
-      [schema.name || uid()]: schema,
-    },
-  };
-};
 
 export const EditTitle = () => {
   const { getCollectionJoinField } = useCollectionManager_deprecated();
@@ -496,10 +474,11 @@ export const EditPattern = () => {
 export const useEnsureOperatorsValid = () => {
   const fieldSchema = useFieldSchema();
   const operatorList = useOperatorList();
-  const { operators: storedOperators } = findFilterOperators(fieldSchema);
+  const { getOperators, collectOperator } = useOperators();
+  const storedOperators = getOperators();
 
   if (storedOperators && operatorList.length && !storedOperators[fieldSchema.name]) {
-    storedOperators[fieldSchema.name] = operatorList[0].value;
+    collectOperator(fieldSchema.name, operatorList[0].value);
   }
 };
 
@@ -510,61 +489,51 @@ export const EditOperator = () => {
   const { t } = useTranslation();
   const { dn } = useDesignable();
   const operatorList = useOperatorList();
-  const { operators: storedOperators = {}, uid } = findFilterOperators(fieldSchema);
+  const { getOperator, collectOperator } = useOperators();
 
-  if (operatorList.length && !storedOperators[fieldSchema.name]) {
-    storedOperators[fieldSchema.name] = operatorList[0].value;
+  if (operatorList.length && !getOperator(fieldSchema.name)) {
+    collectOperator(fieldSchema.name, operatorList[0].value);
   }
 
   return operatorList.length ? (
     <SchemaSettingsSelectItem
       key="operator"
       title={t('Operator')}
-      value={storedOperators[fieldSchema.name]}
+      value={getOperator(fieldSchema.name as string)}
       options={compile(operatorList)}
       onChange={(v) => {
-        storedOperators[fieldSchema.name] = v;
+        collectOperator(fieldSchema.name as string, v);
+        _.set(fieldSchema, 'x-filter-operator', v);
+
         const operator = operatorList.find((item) => item.value === v);
-        const schema: ISchema = {
-          ['x-uid']: uid,
-          ['x-filter-operators']: storedOperators,
-        };
         let componentProps = {};
 
         // 根据操作符的配置，设置组件的属性
         if (operator?.schema?.['x-component']) {
-          _.set(fieldSchema, 'x-component-props.component', operator.schema['x-component']);
-          _.set(field, 'componentProps.component', operator.schema['x-component']);
+          _.set(fieldSchema, 'x-component-props.component', operator.schema?.['x-component']);
+          _.set(field, 'componentProps.component', operator.schema?.['x-component']);
           field.reset();
           componentProps = {
             component: operator.schema['x-component'],
-            ...operator.schema['x-component-props'],
+            ...operator.schema?.['x-component-props'],
           };
-          dn.emit('patch', {
-            schema: {
-              ['x-uid']: fieldSchema['x-uid'],
-              ['x-component-props']: componentProps,
-            },
-          });
         } else if (fieldSchema['x-component-props']?.component) {
           _.set(fieldSchema, 'x-component-props.component', null);
           _.set(field, 'componentProps.component', null);
           field.reset();
           componentProps = {
             component: null,
-            ...operator.schema['x-component-props'],
+            ...operator.schema?.['x-component-props'],
           };
-          dn.emit('patch', {
-            schema: {
-              ['x-uid']: fieldSchema['x-uid'],
-              ['x-component-props']: componentProps,
-            },
-          });
         }
 
         field.componentProps = componentProps;
         dn.emit('patch', {
-          schema,
+          schema: {
+            ['x-uid']: fieldSchema['x-uid'],
+            ['x-component-props']: componentProps,
+            ['x-filter-operator']: v,
+          },
         });
         dn.refresh();
       }}

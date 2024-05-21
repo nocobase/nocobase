@@ -19,7 +19,7 @@ import {
   defaultFieldNames,
 } from '@nocobase/plugin-workflow/client';
 
-import { NAMESPACE } from '../locale';
+import { NAMESPACE, useLang } from '../locale';
 import { SchemaComponent, css } from '@nocobase/client';
 
 const BodySchema = {
@@ -319,10 +319,32 @@ export default class extends Instruction {
     WorkflowVariableTextArea,
     WorkflowVariableJSON,
   };
-  useVariables({ key, title }, { types, fieldNames = defaultFieldNames }) {
+  useVariables({ key, title, config }, { types }) {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const statusCodeLabel = useLang('Status code');
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const dataLabel = useLang('Data');
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const headersLabel = useLang('Response headers');
     return {
-      [fieldNames.value]: key,
-      [fieldNames.label]: title,
+      [defaultFieldNames.value]: key,
+      [defaultFieldNames.label]: title,
+      [defaultFieldNames.children]: config.onlyData
+        ? null
+        : [
+            {
+              [defaultFieldNames.value]: 'status',
+              [defaultFieldNames.label]: statusCodeLabel,
+            },
+            {
+              [defaultFieldNames.value]: 'data',
+              [defaultFieldNames.label]: dataLabel,
+            },
+            {
+              [defaultFieldNames.value]: 'headers',
+              [defaultFieldNames.label]: headersLabel,
+            },
+          ],
     };
   }
 }

@@ -7,9 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React from 'react';
 import { Application, SchemaSettings, useSchemaSettingsRender } from '@nocobase/client';
 import { render, screen, waitFor } from '@nocobase/test/client';
+import React from 'react';
 
 describe('useSchemaSettingsRender', () => {
   async function createApp(DemoComponent: any) {

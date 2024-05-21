@@ -8,11 +8,11 @@
  */
 
 import { observer } from '@formily/react';
-import React from 'react';
 import classnames from 'classnames';
+import React from 'react';
+import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
 import Action from './Action';
 import { ComposedAction } from './types';
-import { withDynamicSchemaProps } from '../../../application/hoc/withDynamicSchemaProps';
 
 export const ActionLink: ComposedAction = withDynamicSchemaProps(
   observer((props: any) => {
