@@ -23,7 +23,7 @@ export class UnixTimestampFieldInterface extends CollectionFieldInterface {
       type: 'number',
       'x-component': 'UnixTimestamp',
       'x-component-props': {
-        accuracy: 'millisecond',
+        accuracy: 'second',
         showTime: true,
       },
     },
@@ -37,7 +37,7 @@ export class UnixTimestampFieldInterface extends CollectionFieldInterface {
       title: '{{t("Accuracy")}}',
       'x-component': 'Radio.Group',
       'x-decorator': 'FormItem',
-      default: 'millisecond',
+      default: 'second',
       enum: [
         { value: 'millisecond', label: '{{t("Millisecond")}}' },
         { value: 'second', label: '{{t("Second")}}' },
