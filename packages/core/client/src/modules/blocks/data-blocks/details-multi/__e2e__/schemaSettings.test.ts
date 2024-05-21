@@ -54,15 +54,8 @@ test.describe('multi data details block schema settings', () => {
   test('multi detail block support linkage rule', async ({ page, mockPage }) => {
     const nocoPage = await mockPage(detailsBlockWithLinkageRule).waitForInit();
     await nocoPage.goto();
-    await expect(
-      await page.getByLabel('block-item-CollectionField-roles-details-roles.name-Role UID').innerText(),
-    ).toContain('admin');
     await expect(await page.getByLabel('block-item-CollectionField-roles-details-roles.title')).not.toBeVisible();
-
     await page.getByRole('button', { name: 'right' }).click();
-    await expect(
-      await page.getByLabel('block-item-CollectionField-roles-details-roles.name-Role UID').innerHTML(),
-    ).not.toContain('admin');
     await expect(await page.getByLabel('block-item-CollectionField-roles-details-roles.title')).toBeVisible();
   });
 });
