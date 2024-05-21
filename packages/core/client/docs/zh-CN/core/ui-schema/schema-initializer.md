@@ -85,7 +85,6 @@ const myInitializer = new SchemaInitializer({
 });
 ```
 
-
 <code src="./demos/schema-initializer-basic.tsx"></code>
 
 #### 定制化 `Component`

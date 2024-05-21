@@ -1,4 +1,5 @@
-import React from 'react';
+import { Field } from '@formily/core';
+import { observer, useField, useFieldSchema } from '@formily/react';
 import {
   Application,
   Plugin,
@@ -9,8 +10,7 @@ import {
   useSchemaInitializerItem,
   useSchemaInitializerRender,
 } from '@nocobase/client';
-import { observer, useField, useFieldSchema } from '@formily/react';
-import { Field } from '@formily/core';
+import React from 'react';
 
 const Hello = observer(() => {
   const field = useField<Field>();
@@ -36,7 +36,7 @@ function Demo() {
 }
 
 const myInitializer = new SchemaInitializer({
-  name: 'MyInitializer',
+  name: 'myInitializer',
   title: 'Add Block',
   // 插入位置
   insertPosition: 'beforeEnd',
@@ -84,7 +84,7 @@ const Root = () => {
           type: 'void',
           name: 'page',
           'x-component': 'Page',
-          'x-initializer': 'MyInitializer',
+          'x-initializer': 'myInitializer',
           properties: {
             hello1: {
               type: 'void',
