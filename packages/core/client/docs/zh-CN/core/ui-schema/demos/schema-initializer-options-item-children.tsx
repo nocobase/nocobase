@@ -1,11 +1,11 @@
 /**
  * defaultShowCode: true
  */
-import { Application, SchemaInitializer, SchemaInitializerItem } from '@nocobase/client';
+import { Application, SchemaInitializer } from '@nocobase/client';
 import { appOptions } from './schema-initializer-common';
 
 const myInitializer = new SchemaInitializer({
-  name: 'MyInitializer',
+  name: 'myInitializer',
   title: 'Button Text',
   items: [
     {

@@ -71,7 +71,7 @@ class SchemaInitializer<P1 = ButtonProps, P2 = {}> {
 
 ```tsx | pure
 const myInitializer = new SchemaInitializer({
-  name: 'MyInitializer',
+  name: 'myInitializer',
   title: 'Add Block',
   insertPosition: 'beforeEnd',
   items: [
@@ -89,7 +89,7 @@ const myInitializer = new SchemaInitializer({
 
 ```tsx | pure
 const myInitializer = new SchemaInitializer({
-  name: 'MyInitializer',
+  name: 'myInitializer',
   Component: (props) => (
     <Avatar style={{ cursor: 'pointer' }} {...props}>
       C
@@ -126,7 +126,7 @@ const MyInitializerComponent = () => {
 }
 
 const myInitializer = new SchemaInitializer({
-  name: 'MyInitializer',
+  name: 'myInitializer',
   title: 'Add block',
   popover: false,
   Component: MyInitializerComponent,
@@ -157,7 +157,7 @@ const CustomListGridMenu: FC<SchemaInitializerItemsProps<ButtonProps, ListProps<
 };
 
 const myInitializer = new SchemaInitializer({
-  name: 'MyInitializer',
+  name: 'myInitializer',
   title: 'Button Text',
   ItemsComponent: CustomListGridMenu,
   items: [
@@ -209,7 +209,7 @@ const Demo = () => {
 }
 
 const myInitializer = new SchemaInitializer({
-  name: 'MyInitializer',
+  name: 'myInitializer',
   items: [
     {
       name: 'a',
@@ -227,7 +227,7 @@ For more built-in types, please refer to: [Built-in Components and Types](/core/
 
 ```tsx | pure
 const myInitializer = new SchemaInitializer({
-  name: 'MyInitializer',
+  name: 'myInitializer',
   items: [
     {
       name: 'a',
@@ -293,7 +293,7 @@ const Demo = (props) => {
 
 ```tsx | pure
 const myInitializer = new SchemaInitializer({
-  name: 'MyInitializer',
+  name: 'myInitializer',
   title: 'Button Text',
   items: [
     {
@@ -314,7 +314,7 @@ const myInitializer = new SchemaInitializer({
 ```tsx
 import { SchemaInitializer, Application, useSchemaInitializerRender } from '@nocobase/client';
 const myInitializer = new SchemaInitializer({
-  name: 'MyInitializer',
+  name: 'myInitializer',
   title: 'Button Text',
   items: [
     {
@@ -333,7 +333,7 @@ const myInitializer = new SchemaInitializer({
 });
 
 const Root = () => {
-  const { render } = useSchemaInitializerRender('MyInitializer');
+  const { render } = useSchemaInitializerRender('myInitializer');
   return render();
 }
 const app = new Application({
@@ -378,7 +378,7 @@ myInitializer.add('a.a2', {
 ```tsx
 import { SchemaInitializer, Application, useSchemaInitializerRender } from '@nocobase/client';
 const myInitializer = new SchemaInitializer({
-  name: 'MyInitializer',
+  name: 'myInitializer',
   title: 'Button Text',
   items: [
     {
@@ -407,7 +407,7 @@ myInitializer.add('a.a2', {
 })
 
 const Root = () => {
-  const { render } = useSchemaInitializerRender('MyInitializer');
+  const { render } = useSchemaInitializerRender('myInitializer');
   return render();
 }
 const app = new Application({
@@ -546,7 +546,7 @@ const useSchemaInitializerItem: <T = any>() => T
 
 ```tsx | pure
 const myInitializer = new SchemaInitializer({
-  name: 'MyInitializer',
+  name: 'myInitializer',
   title: 'Button Text',
   items: [
     {
@@ -676,7 +676,7 @@ const Demo = ({ children }) => {
 }
 
 const myInitializer = new SchemaInitializer({
-  name: 'MyInitializer',
+  name: 'myInitializer',
   title: 'Button Text',
   items: [
     {
