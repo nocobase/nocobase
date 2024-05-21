@@ -1054,7 +1054,7 @@ export const useBulkDestroyActionProps = () => {
       field.data.selectedRowKeys = [];
       const currentPage = service.params[0]?.page;
       const totalPage = service.data?.meta?.totalPage;
-      if (currentPage === totalPage && service.params[0]) {
+      if (currentPage === totalPage && service.params[0] && currentPage !== 1) {
         service.params[0].page = currentPage - 1;
       }
       if (callBack) {
