@@ -39,7 +39,7 @@ export const tableBlockSettings = new SchemaSettings({
       Component: SchemaSettingsBlockTitleItem,
     },
     {
-      name: 'SetTheBlockHeight',
+      name: 'setTheBlockHeight',
       Component: SchemaSettingsBlockHeightItem,
     },
     {

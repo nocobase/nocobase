@@ -10,12 +10,19 @@
 import { Card, CardProps } from 'antd';
 import React from 'react';
 import { useToken } from '../../../style';
+import { useDataBlockHeight } from '../../hooks/useBlockSize';
 
 export const BlockItemCard = React.forwardRef<HTMLDivElement, CardProps | any>(({ children, ...props }, ref) => {
   const { token } = useToken();
-
+  const height = useDataBlockHeight();
+  console.log(height);
   return (
-    <Card ref={ref} bordered={false} style={{ marginBottom: token.marginBlock }} {...props}>
+    <Card
+      ref={ref}
+      bordered={false}
+      style={{ marginBottom: token.marginBlock, height: height, overflow: 'auto' }}
+      {...props}
+    >
       {children}
     </Card>
   );
