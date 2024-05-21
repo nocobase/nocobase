@@ -72,9 +72,9 @@ const useTableHeight = () => {
 export const useDataBlockHeight = () => {
   const { heightProps } = useDataBlock();
   const pageFullScreenHeight = usePageFullScreenHeight();
-  const { heightMode, height, title } = heightProps;
+  const { heightMode, height } = heightProps;
 
-  if (!heightProps?.heightMode) {
+  if (!heightProps?.heightMode || heightMode === 'adaptive') {
     return;
   }
   if (heightMode === 'fullScreen') {
