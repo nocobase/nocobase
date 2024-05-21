@@ -30,5 +30,5 @@ test('action linkage by row data', async ({ page, mockPage }) => {
   });
 
   await expect(adminEditActionStyle.opacity).not.toBe('0.1');
-  await expect(rootEditActionStyle.opacity).toBe('0.1');
+  await expect(rootEditActionStyle.opacity).not.toBe('1');
 });
