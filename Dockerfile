@@ -1,4 +1,4 @@
-FROM node:18-bullseye as builder
+FROM node:20-bullseye as builder
 ARG VERDACCIO_URL=http://host.docker.internal:10104/
 ARG COMMIT_HASH
 ARG APPEND_PRESET_LOCAL_PLUGINS
@@ -7,7 +7,8 @@ ARG PLUGINS_DIRS
 
 ENV PLUGINS_DIRS=${PLUGINS_DIRS}
 
-RUN curl -XPUT -H "Content-type: application/json" -d '{ "name": "test", "password": "test" }' "$VERDACCIO_URL-/user/org.couchdb.user:test"
+
+RUN npx npm-cli-adduser --username test --password test -e test@nocobase.com -r $VERDACCIO_URL
 
 RUN apt-get update && apt-get install -y jq
 WORKDIR /tmp
@@ -42,7 +43,7 @@ RUN cd /app \
   && tar -zcf ./nocobase.tar.gz -C /app/my-nocobase-app .
 
 
-FROM node:18-bullseye-slim
+FROM node:20-bullseye-slim
 RUN apt-get update && apt-get install -y nginx
 RUN rm -rf /etc/nginx/sites-enabled/default
 COPY ./docker/nocobase/nocobase.conf /etc/nginx/sites-enabled/nocobase.conf
