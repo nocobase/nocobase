@@ -1,4 +1,3 @@
-import _ from 'lodash'
 import { getUmiConfig } from '@nocobase/devtools/umiConfig';
 import { defineConfig } from 'dumi';
 import { defineThemeConfig } from 'dumi-theme-nocobase';
@@ -44,13 +43,13 @@ export default defineConfig({
         link: '/components/action',
       },
       {
+        title: 'UI Schema',
+        link: '/ui-schema/schema-initializer/page-add-block',
+      },
+      {
         title: 'Home site',
         link: lang === 'zh-CN' ? 'https://docs-cn.nocobase.com' : 'https://docs.nocobase.com',
       }
-      // {
-      //   title: 'UI Schema',
-      //   link: '/ui-schema',
-      // },
     ],
     sidebarEnhance: {
       '/core': [
@@ -404,7 +403,49 @@ export default defineConfig({
             },
           ]
         },
-      ]
+      ],
+      '/ui-schema': [
+        {
+          title: 'SchemaInitializer',
+          type: 'group',
+          children: [
+            {
+              title: 'page:addBlock',
+              link: '/ui-schema/schema-initializer/page-add-block',
+            },
+          ],
+        },
+        {
+          title: 'SchemaInitializerItem',
+          type: 'group',
+          children: [
+            {
+              title: 'ActionInitializerItem',
+              link: '/ui-schema/schema-initializer-item/action-initializer-item',
+            },
+          ],
+        },
+        {
+          title: 'SchemaSettings',
+          type: 'group',
+          children: [
+            {
+              title: 'actionSettings:addNew',
+              link: '/ui-schema/schema-settings/action-settings-add-new',
+            },
+          ],
+        },
+        {
+          title: 'SchemaSettingsItem',
+          type: 'group',
+          children: [
+            {
+              title: 'EditButton',
+              link: '/ui-schema/schema-settings-item/edit-button',
+            },
+          ],
+        }
+      ],
       // '/ui-schema': [
       //   {
       //     title: 'Overview',
