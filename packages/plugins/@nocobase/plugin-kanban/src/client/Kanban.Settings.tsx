@@ -18,6 +18,7 @@ import {
   SchemaSettingsBlockTitleItem,
   removeNullCondition,
   SchemaSettingsTemplate,
+  SchemaSettingsBlockHeightItem,
 } from '@nocobase/client';
 import { useKanbanBlockContext } from './KanbanBlockProvider';
 export const kanbanSettings = new SchemaSettings({
@@ -26,6 +27,10 @@ export const kanbanSettings = new SchemaSettings({
     {
       name: 'title',
       Component: SchemaSettingsBlockTitleItem,
+    },
+    {
+      name: 'setTheBlockHeight',
+      Component: SchemaSettingsBlockHeightItem,
     },
     {
       name: 'dataScope',

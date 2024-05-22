@@ -15,7 +15,6 @@ import { useDataBlockHeight } from '../../hooks/useBlockSize';
 export const BlockItemCard = React.forwardRef<HTMLDivElement, CardProps | any>(({ children, ...props }, ref) => {
   const { token } = useToken();
   const height = useDataBlockHeight();
-  console.log(height);
   return (
     <Card
       ref={ref}

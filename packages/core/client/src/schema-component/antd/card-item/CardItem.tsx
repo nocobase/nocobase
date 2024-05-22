@@ -45,7 +45,6 @@ export const CardItem: FC<CardItemProps> = (props) => {
   const { wrapSSR, componentCls, hashId } = useStyles();
 
   if (templateKey && !template) return null;
-  console.log(2);
   return wrapSSR(
     <BlockItemError>
       <BlockItem name={name} className={`${componentCls} ${hashId} noco-card-item`}>
