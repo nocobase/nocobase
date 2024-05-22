@@ -7,10 +7,11 @@ ARG PLUGINS_DIRS
 
 ENV PLUGINS_DIRS=${PLUGINS_DIRS}
 
+RUN curl -XPUT -H "Content-type: application/json" -d '{ "name": "test", "password": "test" }' "$VERDACCIO_URL-/user/org.couchdb.user:test"
+
 RUN apt-get update && apt-get install -y jq
 WORKDIR /tmp
 COPY . /tmp
-RUN npx adduser --username test --password test -e test@nocobase.com -r $VERDACCIO_URL
 RUN cd /tmp && \
     NEWVERSION="$(cat lerna.json | jq '.version' | tr -d '"').$(date +'%Y%m%d%H%M%S')" \
         && tmp=$(mktemp) \
