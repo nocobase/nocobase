@@ -193,7 +193,7 @@ export const useDatetimeVariable = ({ operator, schema, noDisabled }: Props = {}
   const { t } = useTranslation();
   const datetimeSettings = useMemo(() => {
     const operatorValue = operator?.value || '';
-    const disabled = noDisabled ? false : !['DatePicker', 'DatePicker.RangePicker'].includes(schema?.['x-component']);
+    const disabled = noDisabled ? false : !['DatePicker.RangePicker'].includes(schema?.['x-component']);
     const dateOptions = [
       {
         key: 'now',
