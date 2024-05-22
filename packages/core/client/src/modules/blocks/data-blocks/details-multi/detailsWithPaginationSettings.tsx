@@ -21,11 +21,16 @@ import { SchemaSettingsBlockTitleItem } from '../../../../schema-settings/Schema
 import { SchemaSettingsDataScope } from '../../../../schema-settings/SchemaSettingsDataScope';
 import { SchemaSettingsTemplate } from '../../../../schema-settings/SchemaSettingsTemplate';
 import { setDataLoadingModeSettingsItem } from './setDataLoadingModeSettingsItem';
+import { SchemaSettingsBlockHeightItem } from '../../../../schema-settings/SchemaSettingsBlockHeightItem';
 
 const commonItems: SchemaSettingsItemType[] = [
   {
     name: 'title',
     Component: SchemaSettingsBlockTitleItem,
+  },
+  {
+    name: 'setTheBlockHeight',
+    Component: SchemaSettingsBlockHeightItem,
   },
   {
     name: 'linkageRules',
