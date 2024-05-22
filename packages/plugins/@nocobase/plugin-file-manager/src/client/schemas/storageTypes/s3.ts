@@ -19,7 +19,7 @@ export default {
     baseUrl: common.baseUrl,
     options: {
       type: 'object',
-      'x-component': 'div',
+      'x-component': 'fieldset',
       properties: {
         region: {
           title: `{{t("Region", { ns: "${NAMESPACE}" })}}`,

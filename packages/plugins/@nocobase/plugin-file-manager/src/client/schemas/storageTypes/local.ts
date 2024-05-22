@@ -16,7 +16,12 @@ export default {
   properties: {
     title: common.title,
     name: common.name,
-    baseUrl: common.baseUrl,
+    baseUrl: {
+      'x-component': 'CollectionField',
+      'x-decorator': 'FormItem',
+      'x-display': 'hidden',
+      default: '/storage/uploads',
+    },
     options: {
       type: 'object',
       'x-component': 'div',

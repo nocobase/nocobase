@@ -19,13 +19,14 @@ export default {
     baseUrl: common.baseUrl,
     options: {
       type: 'object',
-      'x-component': 'div',
+      'x-component': 'fieldset',
       properties: {
         region: {
           title: `{{t("Region", { ns: "${NAMESPACE}" })}}`,
           type: 'string',
           'x-decorator': 'FormItem',
           'x-component': 'Input',
+          description: `{{t('Aliyun OSS region part of the bucket. For example: "oss-cn-beijing".', { ns: "${NAMESPACE}" })}}`,
           required: true,
         },
         accessKeyId: {
@@ -57,7 +58,6 @@ export default {
           'x-component-props': {
             placeholder: '?x-oss-process=image/auto-orient,1/resize,m_fill,w_94,h_94/quality,q_90',
           },
-          default: '?x-oss-process=image/auto-orient,1/resize,m_fill,w_94,h_94/quality,q_90',
           description: '{{ xStyleProcessDesc }}',
         },
       },

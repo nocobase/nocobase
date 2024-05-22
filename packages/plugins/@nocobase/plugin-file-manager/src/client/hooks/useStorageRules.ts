@@ -9,7 +9,8 @@
 
 import { useCollectionField, useCollectionManager, useRequest } from '@nocobase/client';
 
-export function useStorageRules(name = '') {
+export function useStorageRules(storage) {
+  const name = storage ?? '';
   const { loading, data } = useRequest<any>(
     {
       url: `storages:getRules/${name}`,
@@ -21,10 +22,14 @@ export function useStorageRules(name = '') {
   return (!loading && data?.data) || null;
 }
 
-export function useCollectionFieldStorageRules() {
+export function useAttachmentFieldProps() {
   const field = useCollectionField();
   const rules = useStorageRules(field?.storage);
-  return { rules };
+
+  return {
+    rules,
+    action: `${field.target}:create${field.storage ? `?attachmentField=${field.collectionName}.${field.name}` : ''}`,
+  };
 }
 
 export function useFileCollectionStorageRules() {
