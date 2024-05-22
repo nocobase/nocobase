@@ -11,10 +11,13 @@ import { Button, Result, Typography } from 'antd';
 import React, { FC } from 'react';
 import { FallbackProps, useErrorBoundary } from 'react-error-boundary';
 import { Trans, useTranslation } from 'react-i18next';
+import { ErrorFallbackInline } from './ErrorFallbackInline';
 
 const { Paragraph, Text, Link } = Typography;
 
-export const ErrorFallback: FC<FallbackProps> = ({ error }) => {
+export const ErrorFallback: FC<FallbackProps> & {
+  Inline: FC<FallbackProps>;
+} = ({ error }) => {
   const { resetBoundary } = useErrorBoundary();
   const { t } = useTranslation();
 
@@ -52,3 +55,5 @@ export const ErrorFallback: FC<FallbackProps> = ({ error }) => {
     </div>
   );
 };
+
+ErrorFallback.Inline = ErrorFallbackInline;

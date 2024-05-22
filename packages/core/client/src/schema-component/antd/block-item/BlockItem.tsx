@@ -15,6 +15,8 @@ import { CustomCreateStylesUtils, createStyles } from '../../../style';
 import { SortableItem } from '../../common';
 import { useDesigner, useProps } from '../../hooks';
 import { useGetAriaLabelOfBlockItem } from './hooks/useGetAriaLabelOfBlockItem';
+import { ErrorBoundary } from 'react-error-boundary';
+import { ErrorFallback } from '../error-fallback';
 
 const useStyles = createStyles(({ css, token }: CustomCreateStylesUtils) => {
   return css`
@@ -88,7 +90,9 @@ export const BlockItem: React.FC<BlockItemProps> = withDynamicSchemaProps(
     return (
       <SortableItem role="button" aria-label={label} className={cls('nb-block-item', className, blockItemCss)}>
         <Designer {...fieldSchema['x-toolbar-props']} />
-        {children}
+        <ErrorBoundary FallbackComponent={ErrorFallback} onError={(err) => console.log(err)}>
+          {children}
+        </ErrorBoundary>
       </SortableItem>
     );
   },
