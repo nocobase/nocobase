@@ -390,6 +390,34 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
     return await this.model.aggregate(field, method, queryOptions);
   }
 
+  async chunk(
+    options: FindOptions & { chunkSize: number; callback: (rows: Model[], options: FindOptions) => Promise<void> },
+  ) {
+    const { chunkSize, callback } = options;
+    const transaction = await this.getTransaction(options);
+    const count = await this.count(options);
+
+    const limit = chunkSize;
+    let offset = 0;
+
+    while (offset < count) {
+      const rows = await this.find({
+        ...options,
+        limit,
+        offset,
+        transaction,
+      });
+
+      if (rows.length === 0) {
+        break;
+      }
+
+      await callback(rows, options);
+
+      offset += limit;
+    }
+  }
+
   /**
    * find
    * @param options
