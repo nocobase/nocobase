@@ -10,7 +10,7 @@ ENV PLUGINS_DIRS=${PLUGINS_DIRS}
 RUN apt-get update && apt-get install -y jq
 WORKDIR /tmp
 COPY . /tmp
-RUN npx npm-cli-adduser --username test --password test -e test@nocobase.com -r $VERDACCIO_URL
+RUN npx adduser --username test --password test -e test@nocobase.com -r $VERDACCIO_URL
 RUN cd /tmp && \
     NEWVERSION="$(cat lerna.json | jq '.version' | tr -d '"').$(date +'%Y%m%d%H%M%S')" \
         && tmp=$(mktemp) \
