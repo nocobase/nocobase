@@ -28,10 +28,13 @@ import { uniq } from './utils/uniq';
 export const VariablesContext = createContext<VariablesContextType>(null);
 VariablesContext.displayName = 'VariablesContext';
 
-const variableToCollectionName: {
-  collectionName?: string;
-  dataSource?: string;
-} = {};
+const variableToCollectionName: Record<
+  string,
+  {
+    collectionName?: string;
+    dataSource?: string;
+  }
+> = {};
 
 const getFieldPath = (variablePath: string, variableToCollectionName: Record<string, any>) => {
   let dataSource;
@@ -260,17 +263,18 @@ const VariablesProvider = ({ children }) => {
         localVariables = _.isArray(localVariables) ? localVariables : [localVariables];
       }
 
-      const path = getPath(variableString);
-      const { fieldPath, dataSource } = getFieldPath(
-        path,
-        mergeVariableToCollectionNameWithLocalVariables(variableToCollectionName, localVariables as VariableOption[]),
+      const _variableToCollectionName = mergeVariableToCollectionNameWithLocalVariables(
+        variableToCollectionName,
+        localVariables as VariableOption[],
       );
+      const path = getPath(variableString);
+      const { fieldPath, dataSource } = getFieldPath(path, _variableToCollectionName);
       let result = getCollectionJoinField(fieldPath, dataSource);
 
       // 当仅有一个例如 `$user` 这样的字符串时，需要拼一个假的 `collectionField` 返回
       if (!result && !path.includes('.')) {
         result = {
-          target: variableToCollectionName[path]?.collectionName,
+          target: _variableToCollectionName[path]?.collectionName,
         };
       }
 
@@ -335,7 +339,13 @@ function mergeCtxWithLocalVariables(ctx: Record<string, any>, localVariables?: V
 }
 
 function mergeVariableToCollectionNameWithLocalVariables(
-  variableToCollectionName: Record<string, any>,
+  variableToCollectionName: Record<
+    string,
+    {
+      collectionName?: string;
+      dataSource?: string;
+    }
+  >,
   localVariables?: VariableOption[],
 ) {
   variableToCollectionName = { ...variableToCollectionName };
