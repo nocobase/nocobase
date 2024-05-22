@@ -694,6 +694,36 @@ describe('useVariables', () => {
     });
   });
 
+  it('getCollectionFiled with only variable name', async () => {
+    const { result } = renderHook(() => useVariables(), {
+      wrapper: Providers,
+    });
+
+    await waitFor(async () => {
+      expect(await result.current.getCollectionField('{{ $user }}')).toEqual({
+        target: 'users',
+      });
+    });
+  });
+
+  it('getCollectionFiled with local variable name', async () => {
+    const { result } = renderHook(() => useVariables(), {
+      wrapper: Providers,
+    });
+
+    await waitFor(async () => {
+      expect(
+        await result.current.getCollectionField('{{ $local }}', {
+          name: '$local',
+          ctx: {},
+          collectionName: 'local',
+        }),
+      ).toEqual({
+        target: 'local',
+      });
+    });
+  });
+
   it('getCollectionField with no exist variable', async () => {
     const { result } = renderHook(() => useVariables(), {
       wrapper: Providers,
