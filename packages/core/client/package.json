@@ -59,7 +59,8 @@
     "react-router-dom": "^6.11.2",
     "react-to-print": "^2.14.7",
     "sanitize-html": "2.10.0",
-    "use-deep-compare-effect": "^1.8.1"
+    "use-deep-compare-effect": "^1.8.1",
+    "lru-cache": "6.0.0"
   },
   "peerDependencies": {
     "react": ">=18.0.0",
