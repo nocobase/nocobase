@@ -23,17 +23,17 @@ export const SchemaSettingsBlockHeightItem = function BlockTitleItem() {
 
   return (
     <SchemaSettingsModalItem
-      title={t('Set the block height')}
+      title={t('Set block height')}
       schema={
         {
           type: 'object',
-          title: t('Set the block height'),
+          title: t('Set block height'),
           properties: {
             heightMode: {
               type: 'string',
               enum: [
                 { label: t('Adaptive'), value: 'adaptive' },
-                { label: t('Specify value'), value: 'specifyValue' },
+                { label: t('Specify height'), value: 'specifyValue' },
                 { label: t('Full screen'), value: 'fullScreen' },
               ],
               required: true,

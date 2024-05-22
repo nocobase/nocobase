@@ -28,9 +28,9 @@ const usePageFullScreenHeight = () => {
   const pageHeaderHeight = disablePageHeader
     ? token.paddingContentHorizontalLG
     : token.controlHeight + token.marginXS + (token.paddingXXS + 2) * 2 + token.paddingContentHorizontalLG;
-  console.log('navHeight', navHeight);
-  console.log('pageHeaderHeight', pageHeaderHeight);
-  console.log('addBlockBtnHeight', addBlockBtnHeight);
+  // console.log('navHeight', navHeight);
+  // console.log('pageHeaderHeight', pageHeaderHeight);
+  // console.log('addBlockBtnHeight', addBlockBtnHeight);
   return navHeight + pageHeaderHeight + addBlockBtnHeight;
 };
 // 表格区块高度计算
@@ -87,8 +87,6 @@ export const useTableSize = () => {
   const [width, setTableWidth] = useState(0);
   const elementRef = useRef<HTMLDivElement>(null);
   const targetHeight = useTableHeight();
-  console.log(targetHeight);
-
   const calcTableSize = useCallback(
     debounce(() => {
       if (!elementRef.current) return;

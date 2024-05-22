@@ -847,7 +847,7 @@
   "Filter out a single piece or a group of records as a template": "筛选出一条或一组数据，作为模板",
   "The title field is used to identify the template record": "用于识别模板数据",
   "Template fields": "模板字段",
-  "The selected fields will automatically populate the form":"用于自动填充到表单",
+  "The selected fields will automatically populate the form": "用于自动填充到表单",
   "Table selected records": "表格中选中的记录",
   "Tag": "标签",
   "Tag color field": "标签颜色字段",
@@ -937,8 +937,12 @@
   "This variable has been deprecated and can be replaced with \"Current form\"": "该变量已被弃用，可以使用“当前表单”替代",
   "Unknown field type": "未知字段类型",
   "The following field types are not compatible and do not support output and display": "以下字段类型未适配，不支持输出和显示",
-  "Not fixed":"不固定",
-  "Left fixed":"左固定",
-  "Right fixed":"右固定",
-  "Fixed":"固定列"
+  "Not fixed": "不固定",
+  "Left fixed": "左固定",
+  "Right fixed": "右固定",
+  "Fixed": "固定列",
+  "Set block height": "设置区块高度",
+  "Adaptive": "自适应",
+  "Specify height": "指定高度",
+  "Full screen": "满屏"
 }
