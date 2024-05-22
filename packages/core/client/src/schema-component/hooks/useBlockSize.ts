@@ -20,7 +20,7 @@ const usePageFullScreenHeight = () => {
   const { token } = theme.useToken();
   const { designable } = useDesignable();
   const { heightProps } = useDataBlock();
-  const { disablePageHeader } = heightProps;
+  const { disablePageHeader } = heightProps || {};
   const navHeight = token.sizeXXL - 2;
   const addBlockBtnHeight = designable
     ? token.controlHeight + 3 * token.paddingContentHorizontalLG
@@ -72,7 +72,7 @@ const useTableHeight = () => {
 export const useDataBlockHeight = () => {
   const { heightProps } = useDataBlock();
   const pageFullScreenHeight = usePageFullScreenHeight();
-  const { heightMode, height } = heightProps;
+  const { heightMode, height } = heightProps || {};
 
   if (!heightProps?.heightMode || heightMode === 'adaptive') {
     return;
