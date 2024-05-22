@@ -36,7 +36,7 @@ const SettingsMenu: React.FC<{
       disabled: true,
       label: (
         <div style={{ cursor: 'text' }}>
-          <div style={{ color: token.colorText }}>NocoBase</div>
+          <div style={{ color: token.colorText }}>多巴胺网络</div>
           <div style={{ fontSize: '0.8em', color: token.colorTextDescription }}>v{data?.data?.version}</div>
         </div>
       ),
@@ -45,18 +45,18 @@ const SettingsMenu: React.FC<{
       key: 'divider_1',
       type: 'divider',
     },
-    {
-      key: 'homePage',
-      label: (
-        <a
-          href={isSimplifiedChinese ? 'https://cn.nocobase.com/' : 'https://www.nocobase.com'}
-          target="_blank"
-          rel="noreferrer"
-        >
-          {t('Home page')}
-        </a>
-      ),
-    },
+//     {
+//       key: 'homePage',
+//       label: (
+//         <a
+//           href={isSimplifiedChinese ? 'https://cn.nocobase.com/' : 'https://www.nocobase.com'}
+//           target="_blank"
+//           rel="noreferrer"
+//         >
+//           {t('Home page')}
+//         </a>
+//       ),
+//     },
     {
       key: 'userManual',
       label: (
@@ -72,17 +72,7 @@ const SettingsMenu: React.FC<{
     {
       key: 'license',
       label: (
-        <a
-          href={
-            isSimplifiedChinese
-              ? 'https://cn.nocobase.com/agreement-cn.html'
-              : 'https://www.nocobase.com/agreement.html'
-          }
-          target="_blank"
-          rel="noreferrer"
-        >
-          {t('License')}
-        </a>
+         "授权于"
       ),
     },
   ];
