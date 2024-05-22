@@ -58,6 +58,7 @@ export const SchemaSettingsBlockHeightItem = function BlockTitleItem() {
                 fulfill: {
                   state: {
                     hidden: '{{ $deps[0]==="fullScreen"||$deps[0]==="adaptive"}}',
+                    value: '{{$deps[0]!=="specifyValue"?null:$self.value}}',
                   },
                 },
               },
