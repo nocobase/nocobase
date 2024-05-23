@@ -131,10 +131,10 @@ export class WebSocketClient {
       console.log('onclose', this.readyState, this._reconnectTimes, this.serverDown);
       this.connected = false;
       clearInterval(pingIntervalTimer);
-      if (this._reconnectTimes >= Math.min(this.reconnectAttempts, 5)) {
-        this.serverDown = true;
-        this.emit('serverDown', event);
-      }
+      // if (this._reconnectTimes >= Math.min(this.reconnectAttempts, 5)) {
+      // this.serverDown = true;
+      // this.emit('serverDown', event);
+      // }
     };
   }
 
