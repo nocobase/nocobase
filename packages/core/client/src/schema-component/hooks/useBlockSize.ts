@@ -31,13 +31,35 @@ const usePageFullScreenHeight = () => {
     : token.controlHeight + token.marginXS + (token.paddingXXS + 2) * 2 + token.paddingContentHorizontalLG;
   return navHeight + pageHeaderHeight + addBlockBtnHeight;
 };
+
+const useFullScreenHeight = () => {
+  const schema = useFieldSchema();
+  const isDrawerBlock = hasActionContainerInParentChain(schema);
+  const pageReservedHeight = usePageFullScreenHeight();
+  const drawerReservedHeight = useDrawerFullScreenHeight();
+  if (isDrawerBlock) {
+    return drawerReservedHeight;
+  }
+  return pageReservedHeight;
+};
+
+// 抽屉中满屏
+const useDrawerFullScreenHeight = () => {
+  const { token } = theme.useToken();
+  const { designable } = useDesignable();
+  const tabActionHeight = token.paddingContentVerticalLG + token.margin + 2 * token.paddingContentVertical + 24;
+  const addBlockBtnHeight = designable
+    ? token.controlHeight + 3 * token.paddingContentHorizontalLG
+    : 2 * token.paddingContentHorizontalLG;
+  return tabActionHeight + addBlockBtnHeight;
+};
 // 表格区块高度计算
 const useTableHeight = () => {
   const { token } = theme.useToken();
   const { heightProps } = useDataBlock();
   const { designable } = useDesignable();
   const schema = useFieldSchema();
-  const pageFullScreenHeight = usePageFullScreenHeight();
+  const pageFullScreenHeight = useFullScreenHeight();
   const { data } = useDataBlockRequest();
   const { count, pageSize } = data?.meta || ({} as any);
   const hasPagination = count > pageSize;
@@ -50,7 +72,6 @@ const useTableHeight = () => {
   const actionBarHeight = hasTableActions || designable ? token.controlHeight + 2 * token.marginLG : token.marginLG;
   const tableHeaderHeight = (designable ? token.controlHeight : 22) + 2 * token.padding + 1;
   const blockHeaderHeight = title ? token.fontSizeLG * token.lineHeightLG + token.padding * 2 - 1 : 0;
-
   if (heightMode === 'fullScreen') {
     return (
       window.innerHeight -
@@ -67,7 +88,7 @@ const useTableHeight = () => {
 // 常规区块高度计算
 export const useDataBlockHeight = () => {
   const { heightProps } = useDataBlock();
-  const pageFullScreenHeight = usePageFullScreenHeight();
+  const pageFullScreenHeight = useFullScreenHeight();
   const { heightMode, height } = heightProps || {};
 
   if (!heightProps?.heightMode || heightMode === 'adaptive') {
@@ -106,4 +127,13 @@ export const useTableSize = () => {
   useEventListener('resize', calcTableSize);
 
   return { height, width, tableSizeRefCallback };
+};
+
+const hasActionContainerInParentChain = (schema) => {
+  if (!schema) return null;
+
+  if (schema['x-component'] === 'Action.Container') {
+    return true;
+  }
+  return hasActionContainerInParentChain(schema.parent);
 };
