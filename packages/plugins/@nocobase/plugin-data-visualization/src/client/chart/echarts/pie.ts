@@ -8,10 +8,10 @@
  */
 
 import { ChartType, RenderProps } from '../chart';
-import { ECharts } from './echarts';
+import { EChart } from './echart';
 import deepmerge from 'deepmerge';
 
-export class Pie extends ECharts {
+export class Pie extends EChart {
   constructor() {
     super({
       name: 'pie',

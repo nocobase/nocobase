@@ -7,13 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ReactECharts } from './react-echarts';
+import { EChart as C } from './ReactEChart';
 import { EChartsReactProps } from 'echarts-for-react';
 import deepmerge from 'deepmerge';
 import './transform';
 import { Chart, ChartProps, ChartType, RenderProps } from '../chart';
 
-export class ECharts extends Chart {
+export class EChart extends Chart {
   series: any;
 
   constructor({
@@ -30,7 +30,7 @@ export class ECharts extends Chart {
     super({
       name,
       title,
-      Component: ReactECharts,
+      Component: C,
       config: ['xField', 'yField', 'seriesField', ...(config || [])],
     });
     this.series = series;
@@ -48,6 +48,7 @@ export class ECharts extends Chart {
   };
 
   getProps({ data, general, advanced, fieldProps }: RenderProps): EChartsReactProps['option'] {
+    console.log(fieldProps);
     const { xField, yField, seriesField, ...others } = general;
     const xLabel = fieldProps[xField]?.label;
     const yLabel = fieldProps[yField]?.label;

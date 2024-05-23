@@ -47,7 +47,16 @@ export const ChartRenderer: React.FC & {
   const chart = useChart(config?.chartType);
   const locale = api.auth.getLocale();
   const transformers = useFieldTransformer(transform, locale);
-  const chartProps = chart?.getProps({
+
+  if (!chart) {
+    return <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('Please configure chart')} />;
+  }
+
+  if (!(data && data.length) && !service.loading) {
+    return <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('No data')} />;
+  }
+
+  const chartProps = chart.getProps({
     data,
     general,
     advanced,
@@ -61,14 +70,7 @@ export const ChartRenderer: React.FC & {
     }, {}),
   });
   const compiledProps = Schema.compile(chartProps);
-  const C = chart?.Component;
-
-  if (!chart) {
-    return <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('Please configure chart')} />;
-  }
-  if (!(data && data.length) && !service.loading) {
-    return <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('No data')} />;
-  }
+  const C = chart.Component;
 
   return (
     <Spin spinning={service.loading}>
@@ -78,7 +80,7 @@ export const ChartRenderer: React.FC & {
         }}
         FallbackComponent={ErrorFallback}
       >
-        <C {...compiledProps} />
+        {!service.loading && <C {...compiledProps} />}
       </ErrorBoundary>
     </Spin>
   );

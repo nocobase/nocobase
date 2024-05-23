@@ -8,21 +8,21 @@
  */
 
 import { Bar } from './bar';
-import { ECharts } from './echarts';
+import { EChart } from './echart';
 import { Pie } from './pie';
 
 export default [
-  new ECharts({
+  new EChart({
     name: 'line',
     title: 'Line Chart',
     series: { type: 'line' },
   }),
-  new ECharts({
+  new EChart({
     name: 'column',
     title: 'Column Chart',
     series: { type: 'bar' },
   }),
-  new ECharts({
+  new EChart({
     name: 'area',
     title: 'Area Chart',
     series: { type: 'line', areaStyle: {} },

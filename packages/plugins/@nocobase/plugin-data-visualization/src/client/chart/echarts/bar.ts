@@ -8,9 +8,9 @@
  */
 
 import { RenderProps } from '../chart';
-import { ECharts } from './echarts';
+import { EChart } from './echart';
 
-export class Bar extends ECharts {
+export class Bar extends EChart {
   constructor() {
     super({
       name: 'bar',
