@@ -15,19 +15,12 @@ const commonOptions = {
   icon: 'SettingOutlined',
   items: [
     {
-      type: 'itemGroup',
-      title: '{{t("Enable actions")}}',
-      name: 'enableActions',
-      children: [
-        {
-          name: 'submit',
-          title: '{{t("Submit")}}',
-          Component: BulkEditSubmitActionInitializer,
-          schema: {
-            'x-action-settings': {},
-          },
-        },
-      ],
+      name: 'submit',
+      title: '{{t("Submit")}}',
+      Component: BulkEditSubmitActionInitializer,
+      schema: {
+        'x-action-settings': {},
+      },
     },
   ],
 };

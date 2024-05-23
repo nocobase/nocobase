@@ -406,17 +406,58 @@ export default defineConfig({
       ],
       '/ui-schema': [
         {
-          title: 'SchemaInitializer',
+          title: 'SchemaInitializer 实例',
           type: 'group',
           children: [
             {
-              title: 'page:addBlock',
-              link: '/ui-schema/schema-initializer/page-add-block',
+              title: '区块相关',
+              children: [
+                '/ui-schema/schema-initializer/page-add-block',
+                '/ui-schema/schema-initializer/mobile-page-add-block',
+                '/ui-schema/schema-initializer/charts-add-block',
+                '/ui-schema/schema-initializer/popup-common-add-block',
+                '/ui-schema/schema-initializer/popup-add-new-add-block',
+                '/ui-schema/schema-initializer/popup-table-selector-add-block',
+                '/ui-schema/schema-initializer/popup-bulk-edit-add-block',
+                '/ui-schema/schema-initializer/workflow-manual-popup-configure-user-interface-add-block',
+              ]
+            },
+            {
+              title: '操作相关',
+              children: [
+                '/ui-schema/schema-initializer/create-form-configure-actions',
+                '/ui-schema/schema-initializer/edit-form-configure-actions',
+                '/ui-schema/schema-initializer/details-configure-actions',
+                '/ui-schema/schema-initializer/grid-card-configure-actions',
+                '/ui-schema/schema-initializer/gantt-configure-actions',
+                '/ui-schema/schema-initializer/kanban-configure-actions',
+                '/ui-schema/schema-initializer/calendar-configure-actions',
+                '/ui-schema/schema-initializer/filter-form-configure-actions',
+                '/ui-schema/schema-initializer/bulk-edit-form-configure-actions',
+                '/ui-schema/schema-initializer/chart-filter-form-configure-actions',
+              ]
+            },
+            {
+              title: '字段相关',
+              children: [
+                '/ui-schema/schema-initializer/form-configure-fields',
+                '/ui-schema/schema-initializer/details-configure-fields',
+                '/ui-schema/schema-initializer/table-configure-columns',
+                '/ui-schema/schema-initializer/assign-field-values-form-configure-fields',
+                '/ui-schema/schema-initializer/filter-form-configure-fields',
+                '/ui-schema/schema-initializer/filter-collapse-configure-fields',
+                '/ui-schema/schema-initializer/chart-filter-form-configure-fields',
+                '/ui-schema/schema-initializer/bulk-edit-form-configure-fields',
+              ]
+            },
+            {
+              title: '字段组件相关',
+              children: []
             },
           ],
         },
         {
-          title: 'SchemaInitializerItem',
+          title: 'SchemaInitializerItem 组件',
           type: 'group',
           children: [
             {
@@ -426,7 +467,7 @@ export default defineConfig({
           ],
         },
         {
-          title: 'SchemaSettings',
+          title: 'SchemaSettings 实例',
           type: 'group',
           children: [
             {
@@ -436,7 +477,7 @@ export default defineConfig({
           ],
         },
         {
-          title: 'SchemaSettingsItem',
+          title: 'SchemaSettingsItem 组件',
           type: 'group',
           children: [
             {
