@@ -8,6 +8,7 @@
  */
 
 import { Collection, FindOptions } from '@nocobase/database';
+import XLSX from 'xlsx';
 
 type ExportColumn = {
   dataIndex: Array<string>;
@@ -17,13 +18,43 @@ type ExportColumn = {
 type ExportOptions = {
   collection: Collection;
   columns: Array<ExportColumn>;
-  findOptions: FindOptions;
+  findOptions?: FindOptions;
+  chunkSize?: number;
 };
 
 class XlsxExporter {
   constructor(private options: ExportOptions) {}
-  async run() {
-    const { collection, columns, findOptions } = this.options;
+  async run(): Promise<XLSX.WorkBook> {
+    const { collection, columns, findOptions, chunkSize } = this.options;
+    const workbook = XLSX.utils.book_new();
+    const worksheet = XLSX.utils.sheet_new();
+
+    // write headers
+    XLSX.utils.sheet_add_aoa(worksheet, [columns.map((col) => col.defaultTitle)], {
+      origin: 'A1',
+    });
+
+    let startRowNumber = 2;
+
+    await collection.repository.chunk({
+      chunkSize: chunkSize || 1000,
+      async callback(rows, options) {
+        const chunkData = rows.map((r) => {
+          return columns.map((col) => {
+            return r.get(col.dataIndex[0]);
+          });
+        });
+
+        XLSX.utils.sheet_add_aoa(worksheet, chunkData, {
+          origin: `A${startRowNumber}`,
+        });
+
+        startRowNumber += rows.length;
+      },
+    });
+
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Data');
+    return workbook;
   }
 }
 

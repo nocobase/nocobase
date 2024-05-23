@@ -7,10 +7,17 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { createMockServer } from '@nocobase/test';
+import { MockServer, createMockServer } from '@nocobase/test';
+import { uid } from '@nocobase/utils';
+import XlsxExporter from '../xlsx-exporter';
+import XLSX from 'xlsx';
+import fs from 'fs';
+
+XLSX.set_fs(fs);
+import path from 'path';
 
 describe('export to xlsx', () => {
-  let app;
+  let app: MockServer;
 
   beforeEach(async () => {
     app = await createMockServer({
@@ -33,16 +40,54 @@ describe('export to xlsx', () => {
 
     await app.db.sync();
 
-    // create 1000 users
-    const values = Array.from({ length: 1000 }).map((_, index) => {
+    const values = Array.from({ length: 22 }).map((_, index) => {
       return {
         name: `user${index}`,
         age: index % 100,
       };
     });
 
-    await User.repository.create({
-      values,
+    await User.model.bulkCreate(values);
+
+    const exporter = new XlsxExporter({
+      collection: User,
+      chunkSize: 10,
+      columns: [
+        { dataIndex: ['name'], defaultTitle: 'Name' },
+        { dataIndex: ['age'], defaultTitle: 'Age' },
+      ],
     });
+
+    const wb = await exporter.run();
+
+    const xlsxFilePath = path.resolve(__dirname, `t_${uid()}.xlsx`);
+    try {
+      await new Promise((resolve, reject) => {
+        XLSX.writeFileAsync(
+          xlsxFilePath,
+          wb,
+          {
+            type: 'array',
+          },
+          () => {
+            resolve(123);
+          },
+        );
+      });
+
+      // read xlsx file
+      const workbook = XLSX.readFile(xlsxFilePath);
+      const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+      const sheetData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+      expect(sheetData.length).toBe(23); // 22 users + 1 header
+
+      const header = sheetData[0];
+      expect(header).toEqual(['Name', 'Age']);
+
+      const firstUser = sheetData[1];
+      expect(firstUser).toEqual(['user0', 0]);
+    } finally {
+      fs.unlinkSync(xlsxFilePath);
+    }
   });
 });
