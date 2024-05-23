@@ -30,7 +30,7 @@ type Params = {
 };
 
 /**
- * @internal
+ * @deprecated
  */
 export const TableSelectorContext = createContext<any>({});
 TableSelectorContext.displayName = 'TableSelectorContext';
@@ -49,6 +49,9 @@ const useTableSelectorParams = () => {
   return useContext(TableSelectorParamsContext);
 };
 
+/**
+ * @deprecated
+ */
 export const TableSelectorParamsProvider = ({ params, children }: { params: Params; children: any }) => {
   const parentParams = useTableSelectorParams();
   try {
@@ -99,6 +102,9 @@ const useAssociationNames2 = (collection) => {
   return names;
 };
 
+/**
+ * @deprecated
+ */
 export const recursiveParent = (schema: Schema, component) => {
   return schema['x-component'] === component
     ? schema
@@ -154,6 +160,9 @@ const useAssociationNames = (collection) => {
   );
 };
 
+/**
+ * @deprecated
+ */
 export const TableSelectorProvider = withDynamicSchemaProps((props: TableSelectorProviderProps) => {
   const parentParams = useTableSelectorParams();
   const fieldSchema = useFieldSchema();
@@ -278,10 +287,16 @@ export const TableSelectorProvider = withDynamicSchemaProps((props: TableSelecto
   );
 });
 
+/**
+ * @deprecated
+ */
 export const useTableSelectorContext = () => {
   return useContext(TableSelectorContext);
 };
 
+/**
+ * @deprecated
+ */
 export const useTableSelectorProps = () => {
   const field = useField<ArrayField>();
   const ctx = useTableSelectorContext();

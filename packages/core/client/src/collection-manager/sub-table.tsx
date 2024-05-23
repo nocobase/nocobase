@@ -77,6 +77,9 @@ const collection: CollectionOptions = {
   ],
 };
 
+/**
+ * @deprecated
+ */
 export const DataSourceContext_deprecated = createContext(null);
 DataSourceContext_deprecated.displayName = 'DataSourceContext_deprecated';
 
@@ -167,6 +170,9 @@ const useDestroyAction = () => {
   };
 };
 
+/**
+ * @deprecated
+ */
 export const ds = {
   useSelectedRowKeys,
   useDataSource_deprecated,
@@ -176,6 +182,9 @@ export const ds = {
   useDestroyAction,
 };
 
+/**
+ * @deprecated
+ */
 export const SubFieldDataSourceProvider_deprecated = observer(
   (props) => {
     const [selectedRowKeys, setSelectedRowKeys] = useState([]);
@@ -233,6 +242,9 @@ export const SubFieldDataSourceProvider_deprecated = observer(
   { displayName: 'SubFieldDataSourceProvider_deprecated' },
 );
 
+/**
+ * @deprecated
+ */
 export const DataSourceProvider_deprecated = observer(
   (props: any) => {
     const { rowKey, collection, association } = props;

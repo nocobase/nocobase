@@ -7,22 +7,31 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { createContext, useContext, useEffect } from 'react';
+import React, { createContext, useContext } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useAPIClient, useRequest } from '../api-client';
 import { useAppSpin } from '../application/hooks/useAppSpin';
 
+/**
+ * @deprecated
+ */
 export interface CollectionHistoryContextValue {
   historyCollections: any[];
   refreshCH: () => Promise<any>;
 }
 
+/**
+ * @deprecated
+ */
 const CollectionHistoryContext = createContext<CollectionHistoryContextValue>({
   historyCollections: [],
   refreshCH: () => undefined,
 });
 CollectionHistoryContext.displayName = 'CollectionHistoryContext';
 
+/**
+ * @deprecated
+ */
 export const CollectionHistoryProvider: React.FC = (props) => {
   const api = useAPIClient();
 
@@ -77,11 +86,17 @@ export const CollectionHistoryProvider: React.FC = (props) => {
   );
 };
 
+/**
+ * @deprecated
+ */
 export const useHistoryCollectionsByNames = (collectionNames: string[]) => {
   const { historyCollections } = useContext(CollectionHistoryContext);
   return historyCollections.filter((i) => collectionNames.includes(i.name));
 };
 
+/**
+ * @deprecated
+ */
 export const useCollectionHistory = () => {
   return useContext(CollectionHistoryContext);
 };

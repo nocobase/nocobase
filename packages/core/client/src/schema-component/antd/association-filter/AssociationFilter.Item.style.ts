@@ -9,6 +9,9 @@
 
 import { genStyleHook } from '../__builtins__';
 
+/**
+ * @deprecated
+ */
 const useStyles = genStyleHook('nb-association-filter-item', (token) => {
   const { componentCls } = token;
 
@@ -111,4 +114,7 @@ const useStyles = genStyleHook('nb-association-filter-item', (token) => {
   };
 });
 
+/**
+ * @deprecated
+ */
 export default useStyles;

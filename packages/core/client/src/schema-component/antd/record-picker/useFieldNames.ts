@@ -9,6 +9,9 @@
 
 import { useFieldSchema } from '@formily/react';
 
+/**
+ * @deprecated
+ */
 export const useFieldNames = (props) => {
   const fieldSchema = useFieldSchema();
   const fieldNames =

@@ -17,13 +17,13 @@ import { FixedBlockWrapper, SchemaComponentOptions } from '../schema-component';
 import { BlockProvider, useBlockRequestContext } from './BlockProvider';
 
 /**
- * @internal
+ * @deprecated
  */
 export const TableBlockContext = createContext<any>({});
 TableBlockContext.displayName = 'TableBlockContext';
 
 /**
- * @internal
+ * @deprecated
  */
 export function getIdsWithChildren(nodes) {
   const ids = [];
@@ -98,10 +98,8 @@ const InternalTableBlockProvider = (props: Props) => {
 };
 
 /**
- * @internal
+ * @deprecated
  * 用于兼容旧版本的 schema，当不需要兼容时可直接移除该方法
- * @param props
- * @returns
  */
 const useTableBlockParamsCompat = (props) => {
   const fieldSchema = useFieldSchema();
@@ -120,6 +118,9 @@ const useTableBlockParamsCompat = (props) => {
   return params;
 };
 
+/**
+ * @deprecated
+ */
 export const TableBlockProvider = withDynamicSchemaProps((props) => {
   const resourceName = props.resource || props.association;
 
@@ -160,7 +161,7 @@ export const TableBlockProvider = withDynamicSchemaProps((props) => {
 });
 
 /**
- * @internal
+ * @deprecated
  */
 export const useTableBlockContext = () => {
   return useContext(TableBlockContext);

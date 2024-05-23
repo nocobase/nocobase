@@ -14,6 +14,9 @@ import { useRequest } from '../api-client';
 export const AsyncDataContext = createContext<Result<any, any> & { state?: any; setState?: any }>(null);
 AsyncDataContext.displayName = 'AsyncDataContext';
 
+/**
+ * @deprecated
+ */
 export interface AsyncDataProviderProps {
   value?: any;
   request?: any;
@@ -21,6 +24,9 @@ export interface AsyncDataProviderProps {
   onSuccess?: (data, params) => void;
 }
 
+/**
+ * @deprecated
+ */
 export const AsyncDataProvider: React.FC<AsyncDataProviderProps> = (props) => {
   const { value, request, children, ...others } = props;
   const result = useRequest(request, { ...others });
@@ -30,6 +36,9 @@ export const AsyncDataProvider: React.FC<AsyncDataProviderProps> = (props) => {
   return <AsyncDataContext.Provider value={result}>{children}</AsyncDataContext.Provider>;
 };
 
+/**
+ * @deprecated
+ */
 export const useAsyncData = () => {
   return useContext(AsyncDataContext);
 };

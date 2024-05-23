@@ -23,6 +23,9 @@ import useStyles from './AssociationFilter.Item.style';
 
 const { Panel } = Collapse;
 
+/**
+ * @deprecated
+ */
 export const AssociationFilterItem = withDynamicSchemaProps(
   (props) => {
     const { wrapSSR, componentCls, hashId } = useStyles();

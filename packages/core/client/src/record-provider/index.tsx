@@ -11,8 +11,15 @@ import React, { createContext, useContext, useMemo } from 'react';
 import { CollectionRecordProvider, useCollection } from '../data-source';
 import { useCurrentUserContext } from '../user';
 
+/**
+ * @deprecated
+ */
 export const RecordContext_deprecated = createContext({});
 RecordContext_deprecated.displayName = 'RecordContext_deprecated';
+
+/**
+ * @deprecated
+ */
 export const RecordIndexContext = createContext(null);
 RecordIndexContext.displayName = 'RecordIndexContext';
 
@@ -43,10 +50,16 @@ export const RecordProvider: React.FC<{
   );
 };
 
+/**
+ * @deprecated
+ */
 export const RecordSimpleProvider: React.FC<{ value: Record<string, any>; children: React.ReactNode }> = (props) => {
   return <RecordContext_deprecated.Provider {...props} />;
 };
 
+/**
+ * @deprecated
+ */
 export const RecordIndexProvider: React.FC<{ index: any }> = (props) => {
   const { index, children } = props;
   return <RecordIndexContext.Provider value={index}>{children}</RecordIndexContext.Provider>;
@@ -59,10 +72,16 @@ export function useRecord<D = any>() {
   return useContext(RecordContext_deprecated) as D;
 }
 
+/**
+ * @deprecated
+ */
 export function useRecordIndex() {
   return useContext(RecordIndexContext);
 }
 
+/**
+ * @deprecated
+ */
 export const useRecordIsOwn = () => {
   const record = useRecord();
   const ctx = useCurrentUserContext();

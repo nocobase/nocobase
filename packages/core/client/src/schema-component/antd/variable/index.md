@@ -1,4 +1,4 @@
-# Variable
+# Variable <Badge>实验性</Badge>
 
 变量选择器。
 

@@ -24,6 +24,9 @@ import {
 import { SchemaSettingsDataScope } from '../../../schema-settings/SchemaSettingsDataScope';
 import { useCompile, useDesignable } from '../../hooks';
 
+/**
+ * @deprecated
+ */
 export const AssociationFilterItemDesigner = (props) => {
   const fieldSchema = useFieldSchema();
   const { form } = useFormBlockContext();

@@ -9,13 +9,13 @@
 
 import React from 'react';
 import { useAPIClient, useRequest } from '../api-client';
-import { CollectionManagerSchemaComponentProvider } from './CollectionManagerSchemaComponentProvider';
-import { CollectionCategroriesContext } from './context';
-import { CollectionManagerOptions } from './types';
+import { useAppSpin } from '../application/hooks/useAppSpin';
 import { CollectionManagerProvider } from '../data-source/collection/CollectionManagerProvider';
 import { useDataSourceManager } from '../data-source/data-source/DataSourceManagerProvider';
 import { useCollectionHistory } from './CollectionHistoryProvider';
-import { useAppSpin } from '../application/hooks/useAppSpin';
+import { CollectionManagerSchemaComponentProvider } from './CollectionManagerSchemaComponentProvider';
+import { CollectionCategroriesContext } from './context';
+import { CollectionManagerOptions } from './types';
 
 /**
  * @deprecated use `CollectionManagerProvider` instead
@@ -28,6 +28,9 @@ export const CollectionManagerProvider_deprecated: React.FC<CollectionManagerOpt
   );
 };
 
+/**
+ * @deprecated
+ */
 export const RemoteCollectionManagerProvider = (props: any) => {
   const api = useAPIClient();
   const dm = useDataSourceManager();
@@ -66,6 +69,9 @@ export const RemoteCollectionManagerProvider = (props: any) => {
   );
 };
 
+/**
+ * @deprecated
+ */
 export const CollectionCategroriesProvider = (props) => {
   const { service, refreshCategory } = props;
   return (

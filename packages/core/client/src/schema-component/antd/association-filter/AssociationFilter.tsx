@@ -11,23 +11,26 @@ import { css } from '@emotion/css';
 import { useFieldSchema } from '@formily/react';
 import cls from 'classnames';
 import React from 'react';
-import { useCollection_deprecated } from '../../../collection-manager';
-import { DndContext, SortableItem } from '../../common';
-import { useDesigner } from '../../hooks';
-import { useToken } from '../__builtins__';
-import { AssociationFilterBlockDesigner } from './AssociationFilter.BlockDesigner';
-import { AssociationFilterItem } from './AssociationFilter.Item';
-import { AssociationFilterItemDesigner } from './AssociationFilter.Item.Designer';
-import { AssociationFilterProvider } from './AssociationFilterProvider';
 import { useSchemaInitializerRender } from '../../../application';
 import { Plugin } from '../../../application/Plugin';
+import { useCollection_deprecated } from '../../../collection-manager';
 import {
   associationFilterFilterBlockInitializer,
   filterCollapseItemInitializer,
   filterCollapseItemInitializer_deprecated,
 } from '../../../modules/blocks/filter-blocks/collapse/filterCollapseItemInitializer';
+import { DndContext, SortableItem } from '../../common';
+import { useDesigner } from '../../hooks';
+import { useToken } from '../__builtins__';
+import { AssociationFilterBlockDesigner } from './AssociationFilter.BlockDesigner';
 import { associationFilterInitializer } from './AssociationFilter.Initializer';
+import { AssociationFilterItem } from './AssociationFilter.Item';
+import { AssociationFilterItemDesigner } from './AssociationFilter.Item.Designer';
+import { AssociationFilterProvider } from './AssociationFilterProvider';
 
+/**
+ * @deprecated
+ */
 export const AssociationFilter = (props) => {
   const { token } = useToken();
   const Designer = useDesigner();

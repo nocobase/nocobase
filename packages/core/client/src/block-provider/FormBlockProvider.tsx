@@ -26,6 +26,9 @@ import { BlockProvider, useBlockRequestContext } from './BlockProvider';
 import { TemplateBlockProvider } from './TemplateBlockProvider';
 import { FormActiveFieldsProvider } from './hooks/useFormActiveFields';
 
+/**
+ * @deprecated
+ */
 export const FormBlockContext = createContext<{
   form?: any;
   type?: 'update' | 'create';
@@ -104,9 +107,7 @@ const InternalFormBlockProvider = (props) => {
 };
 
 /**
- * @internal
- * 获取表单区块的类型：update 表示是表单编辑区块，create 表示是表单新增区块
- * @returns
+ * @deprecated
  */
 export const useFormBlockType = () => {
   const ctx = useFormBlockContext() || {};
@@ -117,12 +118,18 @@ export const useFormBlockType = () => {
   return res;
 };
 
+/**
+ * @deprecated
+ */
 export const useIsDetailBlock = () => {
   const ctx = useFormBlockContext();
   const { fieldSchema } = useActionContext();
   return ctx.type !== 'create' && fieldSchema?.['x-acl-action'] !== 'create' && fieldSchema?.['x-action'] !== 'create';
 };
 
+/**
+ * @deprecated
+ */
 export const FormBlockProvider = withDynamicSchemaProps((props) => {
   const parentRecordData = useCollectionParentRecordData();
   const { parentRecord } = props;
@@ -144,15 +151,14 @@ export const FormBlockProvider = withDynamicSchemaProps((props) => {
 });
 
 /**
- * @internal
- * @returns
+ * @deprecated
  */
 export const useFormBlockContext = () => {
   return useContext(FormBlockContext);
 };
 
 /**
- * @internal
+ * @deprecated
  */
 export const useFormBlockProps = () => {
   const ctx = useFormBlockContext();
@@ -188,7 +194,7 @@ const RenderChildrenWithDataTemplates = ({ form, children }) => {
 };
 
 /**
- * @internal
+ * @deprecated
  */
 export const findFormBlock = (schema: Schema) => {
   while (schema) {

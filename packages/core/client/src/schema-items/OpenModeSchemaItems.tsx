@@ -19,6 +19,7 @@ interface Options {
   openMode?: boolean;
   openSize?: boolean;
 }
+
 export const SchemaInitializerOpenModeSchemaItems: React.FC<Options> = (options) => {
   const { openMode = true, openSize = true } = options;
   const fieldSchema = useFieldSchema();

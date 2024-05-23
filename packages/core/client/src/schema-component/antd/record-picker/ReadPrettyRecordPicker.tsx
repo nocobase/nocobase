@@ -39,6 +39,9 @@ const toValue = (value, placeholder) => {
   return value;
 };
 
+/**
+ * @deprecated
+ */
 export const ReadPrettyRecordPicker: React.FC = observer(
   (props: any) => {
     const { ellipsis } = props;

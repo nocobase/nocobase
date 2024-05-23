@@ -18,6 +18,9 @@ import { SchemaSettingsConnectDataBlocks } from '../../../schema-settings/Schema
 import { SchemaSettingsTemplate } from '../../../schema-settings/SchemaSettingsTemplate';
 import { useSchemaTemplate } from '../../../schema-templates';
 
+/**
+ * @deprecated
+ */
 export const AssociationFilterBlockDesigner = () => {
   const { name, title } = useCollection_deprecated();
   const template = useSchemaTemplate();

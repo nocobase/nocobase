@@ -9,6 +9,7 @@
 
 import React from 'react';
 import { ActionInitializerItem } from '../../../schema-initializer/items/ActionInitializerItem';
+
 export const CreateChildInitializer = (props) => {
   const schema = {
     type: 'void',

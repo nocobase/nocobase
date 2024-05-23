@@ -10,6 +10,7 @@
 import { ArrayBase } from '@formily/antd-v5';
 import { useForm } from '@formily/react';
 import { message } from 'antd';
+import LRUCache from 'lru-cache';
 import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getAssociationPath } from '../../block-provider/hooks';
@@ -17,7 +18,6 @@ import { useCollectionManager_deprecated } from '../../collection-manager';
 import { useCompile } from '../../schema-component';
 import { TreeNode } from './TreeLabel';
 import { systemKeys } from './hooks/useCollectionState';
-import LRUCache from 'lru-cache';
 
 export const useSyncFromForm = (fieldSchema, collection?, callBack?) => {
   const { getCollectionJoinField, getCollectionFields } = useCollectionManager_deprecated();

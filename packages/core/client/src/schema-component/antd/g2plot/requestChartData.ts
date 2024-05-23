@@ -9,6 +9,9 @@
 
 import { APIClient } from '../../../api-client';
 
+/**
+ * @deprecated
+ */
 export const requestChartData = (options) => {
   return async function (this: { api: APIClient }) {
     try {

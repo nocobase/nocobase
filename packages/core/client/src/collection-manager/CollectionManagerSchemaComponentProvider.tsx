@@ -8,11 +8,14 @@
  */
 
 import React from 'react';
-import { SchemaComponentOptions } from '..';
 import { CollectionProvider_deprecated, ResourceActionProvider, useDataSourceFromRAC } from '.';
+import { SchemaComponentOptions } from '..';
 import * as hooks from './action-hooks';
-import { DataSourceProvider_deprecated, ds, SubFieldDataSourceProvider_deprecated } from './sub-table';
+import { DataSourceProvider_deprecated, SubFieldDataSourceProvider_deprecated, ds } from './sub-table';
 
+/**
+ * @deprecated
+ */
 export const CollectionManagerSchemaComponentProvider: React.FC = (props) => {
   return (
     <SchemaComponentOptions

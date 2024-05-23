@@ -14,13 +14,16 @@ import cloneDeep from 'lodash/cloneDeep';
 import omit from 'lodash/omit';
 import { useCallback, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useCollection_deprecated, useCollectionManager_deprecated } from '.';
+import { useCollectionManager_deprecated, useCollection_deprecated } from '.';
 import { useRequest } from '../api-client';
 import { useRecord } from '../record-provider';
 import { useActionContext } from '../schema-component';
 import { useFilterFieldOptions, useFilterFieldProps } from '../schema-component/antd/filter/useFilterActionProps';
 import { useResourceActionContext, useResourceContext } from './ResourceActionProvider';
 
+/**
+ * @deprecated
+ */
 export const useCancelAction = () => {
   const form = useForm();
   const ctx = useActionContext();
@@ -32,6 +35,9 @@ export const useCancelAction = () => {
   };
 };
 
+/**
+ * @deprecated
+ */
 export const useValuesFromRecord = (options) => {
   const record = useRecord();
   const result = useRequest(
@@ -50,6 +56,9 @@ export const useValuesFromRecord = (options) => {
   return result;
 };
 
+/**
+ * @deprecated
+ */
 export const useResetFilterAction = () => {
   const { run } = useResourceActionContext();
   const form = useForm();
@@ -64,6 +73,9 @@ export const useResetFilterAction = () => {
   };
 };
 
+/**
+ * @deprecated
+ */
 export const useKanbanEvents = () => {
   const { resource } = useCollection_deprecated();
   return {
@@ -88,6 +100,9 @@ export const useKanbanEvents = () => {
   };
 };
 
+/**
+ * @deprecated
+ */
 export const useSortFields = (collectionName: string) => {
   const { getCollectionFields, getInterface } = useCollectionManager_deprecated();
   const fields = getCollectionFields(collectionName);
@@ -110,6 +125,9 @@ export const useSortFields = (collectionName: string) => {
     });
 };
 
+/**
+ * @deprecated
+ */
 export const useChildrenCollections = (collectionName: string) => {
   const { getChildrenCollections } = useCollectionManager_deprecated();
   const childrenCollections = getChildrenCollections(collectionName);
@@ -121,6 +139,9 @@ export const useChildrenCollections = (collectionName: string) => {
   });
 };
 
+/**
+ * @deprecated
+ */
 export const useSelfAndChildrenCollections = (collectionName: string) => {
   const { getChildrenCollections, getCollection } = useCollectionManager_deprecated();
   const childrenCollections = getChildrenCollections(collectionName);
@@ -141,6 +162,9 @@ export const useSelfAndChildrenCollections = (collectionName: string) => {
   return options;
 };
 
+/**
+ * @deprecated
+ */
 export const useCollectionFilterOptions = (collection: any, dataSource?: string) => {
   const { getCollectionFields, getInterface } = useCollectionManager_deprecated();
   return useMemo(() => {
@@ -196,6 +220,9 @@ export const useCollectionFilterOptions = (collection: any, dataSource?: string)
   }, [_.isString(collection) ? collection : collection?.name, dataSource]);
 };
 
+/**
+ * @deprecated
+ */
 export const useCollectionFilterOptionsV2 = (collection: any) => {
   const { getCollectionFields, getInterface } = useCollectionManager_deprecated();
 
@@ -254,6 +281,9 @@ export const useCollectionFilterOptionsV2 = (collection: any) => {
   return { getFields };
 };
 
+/**
+ * @deprecated
+ */
 export const useLinkageCollectionFilterOptions = (collectionName: string) => {
   const { getCollectionFields, getInterface } = useCollectionManager_deprecated();
   const fields = getCollectionFields(collectionName);
@@ -311,7 +341,10 @@ export const useLinkageCollectionFilterOptions = (collectionName: string) => {
   const options = getOptions(fields, 1);
   return options;
 };
-// 通用
+
+/**
+ * @deprecated
+ */
 export const useCollectionFieldsOptions = (collectionName: string, maxDepth = 2, excludes = []) => {
   const { getCollectionFields, getInterface } = useCollectionManager_deprecated();
   const fields = getCollectionFields(collectionName).filter((v) => !excludes.includes(v.interface));
@@ -369,6 +402,9 @@ export const useCollectionFieldsOptions = (collectionName: string, maxDepth = 2,
   return options;
 };
 
+/**
+ * @deprecated
+ */
 export const useFilterDataSource = (options) => {
   const { name } = useCollection_deprecated();
   const data = useCollectionFilterOptions(name);
@@ -381,6 +417,9 @@ export const useFilterDataSource = (options) => {
   );
 };
 
+/**
+ * @deprecated
+ */
 export const useFilterAction = () => {
   const { run, params, defaultRequest } = useResourceActionContext();
   const form = useForm();
@@ -396,6 +435,9 @@ export const useFilterAction = () => {
   };
 };
 
+/**
+ * @deprecated
+ */
 export const useCreateAction = (actionCallback?: (values: any) => void) => {
   const form = useForm();
   const field = useField();
@@ -423,6 +465,9 @@ export const useCreateAction = (actionCallback?: (values: any) => void) => {
   };
 };
 
+/**
+ * @deprecated
+ */
 export const useCreateActionWithoutRefresh = (actionCallback?: (values: any) => void) => {
   const form = useForm();
   const { resource } = useResourceContext();
@@ -436,6 +481,9 @@ export const useCreateActionWithoutRefresh = (actionCallback?: (values: any) => 
   };
 };
 
+/**
+ * @deprecated
+ */
 export const useUpdateViewAction = (actionCallback?: (filterByTk: string, values: any) => void) => {
   const form = useForm();
   const ctx = useActionContext();
@@ -453,6 +501,9 @@ export const useUpdateViewAction = (actionCallback?: (filterByTk: string, values
   };
 };
 
+/**
+ * @deprecated
+ */
 export const useMoveAction = () => {
   const { resource } = useResourceContext();
   const { refresh } = useResourceActionContext();
@@ -467,6 +518,9 @@ export const useMoveAction = () => {
   };
 };
 
+/**
+ * @deprecated
+ */
 export const useUpdateAction = (actionCallback?: (key: string, values: any) => void) => {
   const field = useField();
   const form = useForm();
@@ -494,6 +548,9 @@ export const useUpdateAction = (actionCallback?: (key: string, values: any) => v
   };
 };
 
+/**
+ * @deprecated
+ */
 export const useDestroyAction = (actionCallback?: (key: string) => void) => {
   const { refresh } = useResourceActionContext();
   const { resource, targetKey } = useResourceContext();
@@ -507,6 +564,9 @@ export const useDestroyAction = (actionCallback?: (key: string) => void) => {
   };
 };
 
+/**
+ * @deprecated
+ */
 export const useBulkDestroyAction = (actionCallback?: (keys: string[]) => void) => {
   const { state, setState, refresh } = useResourceActionContext();
   const { resource } = useResourceContext();
@@ -526,6 +586,9 @@ export const useBulkDestroyAction = (actionCallback?: (keys: string[]) => void) 
   };
 };
 
+/**
+ * @deprecated
+ */
 export const useValuesFromRA = (options) => {
   const ctx = useResourceActionContext();
   return useRequest(() => Promise.resolve(ctx.data), {
@@ -534,6 +597,9 @@ export const useValuesFromRA = (options) => {
   });
 };
 
+/**
+ * @deprecated
+ */
 export const useCreateActionAndRefreshCM = () => {
   const { run } = useCreateAction();
   const { refreshCM } = useCollectionManager_deprecated();
@@ -545,6 +611,9 @@ export const useCreateActionAndRefreshCM = () => {
   };
 };
 
+/**
+ * @deprecated
+ */
 export const useUpdateActionAndRefreshCM = () => {
   const { run } = useUpdateAction();
   const { refreshCM } = useCollectionManager_deprecated();
@@ -556,6 +625,9 @@ export const useUpdateActionAndRefreshCM = () => {
   };
 };
 
+/**
+ * @deprecated
+ */
 export const useDestroyActionAndRefreshCM = () => {
   const { run } = useDestroyAction();
   const { refreshCM } = useCollectionManager_deprecated();
@@ -567,17 +639,26 @@ export const useDestroyActionAndRefreshCM = () => {
   };
 };
 
+/**
+ * @deprecated
+ */
 export const useDeleteButtonDisabled = (record?: any) => {
   const recordFromProvider = useRecord();
   return isDeleteButtonDisabled(record || recordFromProvider);
 };
 
+/**
+ * @deprecated
+ */
 export const isDeleteButtonDisabled = (record?: any) => {
   const { interface: i, deletable = true } = record || {};
 
   return !deletable || i === 'id';
 };
 
+/**
+ * @deprecated
+ */
 export const useBulkDestroyActionAndRefreshCM = () => {
   const { run } = useBulkDestroyAction();
   const { refreshCM } = useCollectionManager_deprecated();
@@ -589,6 +670,9 @@ export const useBulkDestroyActionAndRefreshCM = () => {
   };
 };
 
+/**
+ * @deprecated
+ */
 export const useFilterActionProps = () => {
   const { collection } = useResourceContext();
   const options = useFilterFieldOptions(collection.fields);
