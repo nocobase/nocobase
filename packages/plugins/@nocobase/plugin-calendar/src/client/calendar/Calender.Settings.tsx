@@ -103,10 +103,10 @@ export const calendarBlockSettings = new SchemaSettings({
       name: 'showLunar',
       Component: ShowLunarDesignerItem,
     },
-    {
-      name: 'fixBlock',
-      Component: FixedBlockDesignerItem,
-    },
+    // {
+    //   name: 'fixBlock',
+    //   Component: FixedBlockDesignerItem,
+    // },
     {
       name: 'startDateField',
       Component: SchemaSettingsCascaderItem,

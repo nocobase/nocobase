@@ -63,10 +63,10 @@ export const kanbanSettings = new SchemaSettings({
         };
       },
     },
-    {
-      name: 'fixedBlock',
-      Component: FixedBlockDesignerItem,
-    },
+    // {
+    //   name: 'fixedBlock',
+    //   Component: FixedBlockDesignerItem,
+    // },
     {
       name: 'template',
       Component: SchemaSettingsTemplate,
