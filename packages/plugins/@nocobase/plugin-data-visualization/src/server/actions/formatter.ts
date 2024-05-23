@@ -6,8 +6,25 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
+import { Sequelize } from 'sequelize';
 
-export const dateFormatFn = (sequelize: any, dialect: string, field: string, format: string) => {
+const getOffsetMinutesFromTimezone = (timezone: string) => {
+  const sign = timezone.charAt(0);
+  timezone = timezone.slice(1);
+  const [hours, minutes] = timezone.split(':');
+  const hoursNum = Number(hours);
+  const minutesNum = Number(minutes);
+  const offset = hoursNum * 60 + minutesNum;
+  return `${sign}${offset} minutes`;
+};
+
+export const dateFormatFn = (
+  sequelize: Sequelize,
+  dialect: string,
+  field: string,
+  format: string,
+  timezone?: string,
+) => {
   switch (dialect) {
     case 'sqlite':
       format = format
@@ -17,6 +34,9 @@ export const dateFormatFn = (sequelize: any, dialect: string, field: string, for
         .replace(/hh/g, '%H')
         .replace(/mm/g, '%M')
         .replace(/ss/g, '%S');
+      if (timezone) {
+        return sequelize.fn('strftime', format, sequelize.col(field), getOffsetMinutesFromTimezone(timezone));
+      }
       return sequelize.fn('strftime', format, sequelize.col(field));
     case 'mysql':
     case 'mariadb':
@@ -27,9 +47,24 @@ export const dateFormatFn = (sequelize: any, dialect: string, field: string, for
         .replace(/hh/g, '%H')
         .replace(/mm/g, '%i')
         .replace(/ss/g, '%S');
+      if (timezone) {
+        return sequelize.fn(
+          'date_format',
+          sequelize.fn('convert_tz', sequelize.col(field), process.env.DB_TIMEZONE || '+00:00', timezone),
+          format,
+        );
+      }
       return sequelize.fn('date_format', sequelize.col(field), format);
     case 'postgres':
       format = format.replace(/hh/g, 'HH24').replace(/mm/g, 'MI').replace(/ss/g, 'SS');
+      if (timezone) {
+        const fieldWithTZ = sequelize.literal(
+          `(${sequelize
+            .getQueryInterface()
+            .quoteIdentifiers(field)} AT TIME ZONE CURRENT_SETTING('TIMEZONE') AT TIME ZONE '${timezone}')`,
+        );
+        return sequelize.fn('to_char', fieldWithTZ, format);
+      }
       return sequelize.fn('to_char', sequelize.col(field), format);
     default:
       return sequelize.col(field);
@@ -37,7 +72,7 @@ export const dateFormatFn = (sequelize: any, dialect: string, field: string, for
 };
 
 /* istanbul ignore next -- @preserve */
-export const formatFn = (sequelize: any, dialect: string, field: string, format: string) => {
+export const formatFn = (sequelize: Sequelize, dialect: string, field: string, format: string) => {
   switch (dialect) {
     case 'sqlite':
     case 'postgres':
@@ -47,13 +82,13 @@ export const formatFn = (sequelize: any, dialect: string, field: string, format:
   }
 };
 
-export const formatter = (sequelize: any, type: string, field: string, format: string) => {
+export const formatter = (sequelize: Sequelize, type: string, field: string, format: string, timezone?: string) => {
   const dialect = sequelize.getDialect();
   switch (type) {
     case 'date':
     case 'datetime':
     case 'time':
-      return dateFormatFn(sequelize, dialect, field, format);
+      return dateFormatFn(sequelize, dialect, field, format, timezone);
     default:
       return formatFn(sequelize, dialect, field, format);
   }

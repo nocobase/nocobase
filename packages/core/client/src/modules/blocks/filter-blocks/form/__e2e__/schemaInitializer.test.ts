@@ -7,8 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { createBlockInPage, expect, oneEmptyFilterFormBlock, test } from '@nocobase/test/e2e';
+import { Page, createBlockInPage, expect, oneEmptyFilterFormBlock, test } from '@nocobase/test/e2e';
 import { oneFilterFormWithInherit } from './templatesOfBug';
+
+const deleteButton = async (page: Page, name: string) => {
+  await page.getByLabel(`action-Action-${name}-`).hover();
+  await page.getByLabel(`action-Action-${name}-`).getByLabel('designer-schema-settings-').hover();
+  await page.getByRole('menuitem', { name: 'Delete' }).click();
+  await page.getByRole('button', { name: 'OK', exact: true }).click();
+};
 
 test.describe('where filter form block can be added', () => {
   test('page', async ({ page, mockPage }) => {
@@ -104,21 +111,13 @@ test.describe('configure actions', () => {
     await page.getByRole('menuitem', { name: 'Filter' }).click();
     await page.getByRole('menuitem', { name: 'Reset' }).click();
 
-    await expect(page.getByRole('menuitem', { name: 'Filter' }).getByRole('switch')).toBeChecked();
-    await expect(page.getByRole('menuitem', { name: 'Reset' }).getByRole('switch')).toBeChecked();
-
     await page.mouse.move(300, 0);
     await expect(page.getByLabel('action-Action-Filter-submit-general-filter-form')).toBeVisible();
     await expect(page.getByLabel('action-Action-Reset-general-filter-form')).toBeVisible();
 
     // delete buttons
-    await page.getByLabel('schema-initializer-ActionBar-filterForm:configureActions-general').hover();
-    await page.getByRole('menuitem', { name: 'Filter' }).click();
-    await page.getByRole('menuitem', { name: 'Reset' }).click();
-
-    await expect(page.getByRole('menuitem', { name: 'Filter' }).getByRole('switch')).not.toBeChecked();
-    await expect(page.getByRole('menuitem', { name: 'Reset' }).getByRole('switch')).not.toBeChecked();
-
+    await deleteButton(page, 'Filter');
+    await deleteButton(page, 'Reset');
     await page.mouse.move(300, 0);
     await expect(page.getByLabel('action-Action-Filter-submit-general-filter-form')).not.toBeVisible();
     await expect(page.getByLabel('action-Action-Reset-general-filter-form')).not.toBeVisible();

@@ -1,10 +1,10 @@
 /**
  * defaultShowCode: true
  */
-import React, { ReactNode } from 'react';
-import { Application, SchemaInitializer, SchemaInitializerItem, useSchemaInitializerItem } from '@nocobase/client';
-import { appOptions } from './schema-initializer-common';
 import { TableOutlined } from '@ant-design/icons';
+import { Application, SchemaInitializer, SchemaInitializerItem, useSchemaInitializerItem } from '@nocobase/client';
+import React, { ReactNode } from 'react';
+import { appOptions } from './schema-initializer-common';
 
 const Demo = () => {
   const { name, foo, icon } = useSchemaInitializerItem<{ name: string; foo: string; icon: ReactNode }>();
@@ -13,7 +13,7 @@ const Demo = () => {
 };
 
 const myInitializer = new SchemaInitializer({
-  name: 'MyInitializer',
+  name: 'myInitializer',
   title: 'Button Text',
   items: [
     {

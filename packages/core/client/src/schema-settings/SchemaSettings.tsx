@@ -12,7 +12,6 @@ import { ArrayCollapse, ArrayItems, FormItem, FormLayout, Input } from '@formily
 import { Field, GeneralField, createForm } from '@formily/core';
 import { ISchema, Schema, SchemaOptionsContext, useField, useFieldSchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
-import { error } from '@nocobase/utils/client';
 import type { DropdownProps } from 'antd';
 import {
   Alert,
@@ -22,7 +21,6 @@ import {
   CascaderProps,
   ConfigProvider,
   Dropdown,
-  Empty,
   MenuItemProps,
   MenuProps,
   Modal,
@@ -46,65 +44,47 @@ import React, {
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { Router } from 'react-router-dom';
+import { APIClientProvider } from '../api-client/APIClientProvider';
+import { useAPIClient } from '../api-client/hooks/useAPIClient';
+import { FormBlockContext, findFormBlock, useFormBlockContext, useFormBlockType } from '../block-provider';
 import {
-  APIClientProvider,
-  ActionContextProvider,
-  AssociationOrCollectionProvider,
-  CollectionFieldOptions_deprecated,
-  CollectionRecordProvider,
-  DataSourceApplicationProvider,
-  Designable,
-  FormDialog,
-  FormProvider,
-  RemoteSchemaComponent,
-  SchemaComponent,
-  SchemaComponentContext,
-  SchemaComponentOptions,
-  createDesignable,
-  findFormBlock,
-  useAPIClient,
-  useCollectionManager_deprecated,
-  useCollectionRecord,
-  useCollection_deprecated,
-  useCompile,
-  useDataBlockProps,
-  useDesignable,
-  useGlobalTheme,
-  useLinkageCollectionFilterOptions,
-  useRecord,
-  useSortFields,
-} from '..';
-import { FormBlockContext, useFormBlockContext, useFormBlockType, useTableBlockContext } from '../block-provider';
-import {
-  FormActiveFieldsProvider,
-  findFilterTargets,
-  updateFilterTargets,
-  useFormActiveFields,
-} from '../block-provider/hooks';
-import {
-  useBlockRequestContext,
+  BlockContext,
   BlockRequestContext_deprecated,
   useBlockContext,
-  BlockContext,
+  useBlockRequestContext,
 } from '../block-provider/BlockProvider';
+import { FormActiveFieldsProvider, useFormActiveFields } from '../block-provider/hooks';
+import { useLinkageCollectionFilterOptions, useSortFields } from '../collection-manager/action-hooks';
+import { useCollectionManager_deprecated } from '../collection-manager/hooks/useCollectionManager_deprecated';
+import { useCollection_deprecated } from '../collection-manager/hooks/useCollection_deprecated';
+import { CollectionFieldOptions_deprecated } from '../collection-manager/types';
 import { SelectWithTitle, SelectWithTitleProps } from '../common/SelectWithTitle';
 import { useNiceDropdownMaxHeight } from '../common/useNiceDropdownHeight';
+import {
+  CollectionRecordProvider,
+  useCollectionRecord,
+} from '../data-source/collection-record/CollectionRecordProvider';
+import { DataSourceApplicationProvider } from '../data-source/components/DataSourceApplicationProvider';
+import { AssociationOrCollectionProvider, useDataBlockProps } from '../data-source/data-block/DataBlockProvider';
 import { useDataSourceManager } from '../data-source/data-source/DataSourceManagerProvider';
 import { useDataSourceKey } from '../data-source/data-source/DataSourceProvider';
-import {
-  FilterBlockType,
-  getSupportFieldsByAssociation,
-  getSupportFieldsByForeignKey,
-  isSameCollection,
-  useSupportedBlocks,
-} from '../filter-provider/utils';
 import { useFilterBlock } from '../filter-provider/FilterProvider';
 import { FlagProvider } from '../flag-provider';
+import { useGlobalTheme } from '../global-theme';
 import { useCollectMenuItem, useCollectMenuItems, useMenuItem } from '../hooks/useMenuItem';
 import { DeclareVariable } from '../modules/variable/DeclareVariable';
 import { useVariable } from '../modules/variable/useVariable';
+import { useRecord } from '../record-provider';
+import { ActionContextProvider } from '../schema-component/antd/action/context';
 import { SubFormProvider, useSubFormValue } from '../schema-component/antd/association-field/hooks';
-import { getTargetKey } from '../schema-component/antd/association-filter/utilts';
+import { FormDialog } from '../schema-component/antd/form-dialog';
+import { SchemaComponentContext } from '../schema-component/context';
+import { FormProvider } from '../schema-component/core/FormProvider';
+import { RemoteSchemaComponent } from '../schema-component/core/RemoteSchemaComponent';
+import { SchemaComponent } from '../schema-component/core/SchemaComponent';
+import { SchemaComponentOptions } from '../schema-component/core/SchemaComponentOptions';
+import { useCompile } from '../schema-component/hooks/useCompile';
+import { Designable, createDesignable, useDesignable } from '../schema-component/hooks/useDesignable';
 import { useSchemaTemplateManager } from '../schema-templates';
 import { useBlockTemplateContext } from '../schema-templates/BlockTemplate';
 import { useLocalVariables, useVariables } from '../variables';
@@ -204,103 +184,6 @@ export const SchemaSettingsDropdown: React.FC<SchemaSettingsProps> = (props) => 
         <div data-testid={props['data-testid']}>{typeof title === 'string' ? <span>{title}</span> : title}</div>
       </Dropdown>
     </SchemaSettingsProvider>
-  );
-};
-
-export const SchemaSettingsTemplate = function Template(props) {
-  const { componentName, collectionName, resourceName, needRender } = props;
-  const { t } = useTranslation();
-  const { getCollection } = useCollectionManager_deprecated();
-  const { dn, setVisible, template, fieldSchema } = useSchemaSettings();
-  const compile = useCompile();
-  const api = useAPIClient();
-  const { dn: tdn } = useBlockTemplateContext();
-  const { saveAsTemplate, copyTemplateSchema } = useSchemaTemplateManager();
-  const { theme } = useGlobalTheme();
-
-  if (!collectionName && !needRender) {
-    return null;
-  }
-  if (template) {
-    return (
-      <SchemaSettingsItem
-        title="Convert reference to duplicate"
-        onClick={async () => {
-          const schema = await copyTemplateSchema(template);
-          const removed = tdn.removeWithoutEmit();
-          tdn.insertAfterEnd(schema, {
-            async onSuccess() {
-              await api.request({
-                url: `/uiSchemas:remove/${removed['x-uid']}`,
-              });
-            },
-          });
-        }}
-      >
-        {t('Convert reference to duplicate')}
-      </SchemaSettingsItem>
-    );
-  }
-  return (
-    <SchemaSettingsItem
-      title="Save as template"
-      onClick={async () => {
-        setVisible(false);
-        const collection = collectionName && getCollection(collectionName);
-        const values = await FormDialog(
-          t('Save as template'),
-          () => {
-            return (
-              <FormLayout layout={'vertical'}>
-                <SchemaComponent
-                  components={{ Input, FormItem }}
-                  schema={{
-                    type: 'object',
-                    properties: {
-                      name: {
-                        title: t('Template name'),
-                        required: true,
-                        default: collection
-                          ? `${compile(collection?.title || collection?.name)}_${t(componentName)}`
-                          : t(componentName),
-                        'x-decorator': 'FormItem',
-                        'x-component': 'Input',
-                      },
-                    },
-                  }}
-                />
-              </FormLayout>
-            );
-          },
-          theme,
-        ).open({});
-        const sdn = createDesignable({
-          t,
-          api,
-          refresh: dn.refresh.bind(dn),
-          current: fieldSchema.parent,
-        });
-        sdn.loadAPIClientEvents();
-        const { key } = await saveAsTemplate({
-          collectionName,
-          resourceName,
-          componentName,
-          dataSourceKey: collection.dataSource,
-          name: values.name,
-          uid: fieldSchema['x-uid'],
-        });
-        sdn.removeWithoutEmit(fieldSchema);
-        sdn.insertBeforeEnd({
-          type: 'void',
-          'x-component': 'BlockTemplate',
-          'x-component-props': {
-            templateId: key,
-          },
-        });
-      }}
-    >
-      {t('Save as template')}
-    </SchemaSettingsItem>
   );
 };
 
@@ -606,144 +489,6 @@ export const SchemaSettingsRemove: FC<SchemaSettingsRemoveProps> = (props) => {
     >
       {t('Delete')}
     </SchemaSettingsItem>
-  );
-};
-
-interface SchemaSettingsConnectDataBlocksProps {
-  type: FilterBlockType;
-  emptyDescription?: string;
-}
-
-export const SchemaSettingsConnectDataBlocks: FC<SchemaSettingsConnectDataBlocksProps> = (props) => {
-  const { type, emptyDescription } = props;
-  const fieldSchema = useFieldSchema();
-  const { dn } = useDesignable();
-  const { t } = useTranslation();
-  const collection = useCollection_deprecated();
-  const { inProvider } = useFilterBlock();
-  const dataBlocks = useSupportedBlocks(type);
-  // eslint-disable-next-line prefer-const
-  let { targets = [], uid } = findFilterTargets(fieldSchema);
-  const compile = useCompile();
-  const { getAllCollectionsInheritChain } = useCollectionManager_deprecated();
-
-  if (!inProvider) {
-    return null;
-  }
-
-  const Content = dataBlocks.map((block) => {
-    const title = `${compile(block.collection.title)} #${block.uid.slice(0, 4)}`;
-    const onHover = () => {
-      const dom = block.dom;
-      const designer = dom.querySelector('.general-schema-designer') as HTMLElement;
-      if (designer) {
-        designer.style.display = 'block';
-      }
-      dom.style.boxShadow = '0 0 10px rgba(0, 0, 0, 0.2)';
-      dom.scrollIntoView({
-        behavior: 'smooth',
-        block: 'center',
-      });
-    };
-    const onLeave = () => {
-      const dom = block.dom;
-      const designer = dom.querySelector('.general-schema-designer') as HTMLElement;
-      if (designer) {
-        designer.style.display = null;
-      }
-      dom.style.boxShadow = 'none';
-    };
-    if (isSameCollection(block.collection, collection)) {
-      return (
-        <SchemaSettingsSwitchItem
-          key={block.uid}
-          title={title}
-          checked={targets.some((target) => target.uid === block.uid)}
-          onChange={(checked) => {
-            if (checked) {
-              targets.push({ uid: block.uid });
-            } else {
-              targets = targets.filter((target) => target.uid !== block.uid);
-              block.clearFilter(uid);
-            }
-
-            updateFilterTargets(fieldSchema, targets);
-            dn.emit('patch', {
-              schema: {
-                ['x-uid']: uid,
-                'x-filter-targets': targets,
-              },
-            }).catch(error);
-            dn.refresh();
-          }}
-          onMouseEnter={onHover}
-          onMouseLeave={onLeave}
-        />
-      );
-    }
-
-    const target = targets.find((target) => target.uid === block.uid);
-    // 与筛选区块的数据表具有关系的表
-    return (
-      <SchemaSettingsSelectItem
-        key={block.uid}
-        title={title}
-        value={target?.field || ''}
-        options={[
-          ...getSupportFieldsByAssociation(getAllCollectionsInheritChain(collection.name), block).map((field) => {
-            return {
-              label: compile(field.uiSchema.title) || field.name,
-              value: `${field.name}.${getTargetKey(field)}`,
-            };
-          }),
-          ...getSupportFieldsByForeignKey(collection, block).map((field) => {
-            return {
-              label: `${compile(field.uiSchema.title) || field.name} [${t('Foreign key')}]`,
-              value: field.name,
-            };
-          }),
-          {
-            label: t('Unconnected'),
-            value: '',
-          },
-        ]}
-        onChange={(value) => {
-          if (value === '') {
-            targets = targets.filter((target) => target.uid !== block.uid);
-            block.clearFilter(uid);
-          } else {
-            targets = targets.filter((target) => target.uid !== block.uid);
-            targets.push({ uid: block.uid, field: value });
-          }
-          updateFilterTargets(fieldSchema, targets);
-          dn.emit('patch', {
-            schema: {
-              ['x-uid']: uid,
-              'x-filter-targets': targets,
-            },
-          });
-          dn.refresh();
-        }}
-        onMouseEnter={onHover}
-        onMouseLeave={onLeave}
-      />
-    );
-  });
-
-  return (
-    <SchemaSettingsSubMenu title={t('Connect data blocks')}>
-      {Content.length ? (
-        Content
-      ) : (
-        <SchemaSettingsItem title="empty">
-          <Empty
-            style={{ width: 160, padding: '0 1em' }}
-            description={emptyDescription}
-            image={Empty.PRESENTED_IMAGE_SIMPLE}
-          />
-        </SchemaSettingsItem>
-      )}
-    </SchemaSettingsSubMenu>
   );
 };
 
@@ -1087,47 +832,6 @@ export const SchemaSettingsModalItem: FC<SchemaSettingsModalItemProps> = (props)
   );
 };
 
-export const SchemaSettingsBlockTitleItem = function BlockTitleItem() {
-  const field = useField();
-  const fieldSchema = useFieldSchema();
-  const { dn } = useDesignable();
-  const { t } = useTranslation();
-
-  return (
-    <SchemaSettingsModalItem
-      title={t('Edit block title')}
-      schema={
-        {
-          type: 'object',
-          title: t('Edit block title'),
-          properties: {
-            title: {
-              title: t('Block title'),
-              type: 'string',
-              default: fieldSchema?.['x-component-props']?.['title'],
-              'x-decorator': 'FormItem',
-              'x-component': 'Input',
-            },
-          },
-        } as ISchema
-      }
-      onSubmit={({ title }) => {
-        const componentProps = fieldSchema['x-component-props'] || {};
-        componentProps.title = title;
-        fieldSchema['x-component-props'] = componentProps;
-        field.componentProps.title = title;
-        dn.emit('patch', {
-          schema: {
-            ['x-uid']: fieldSchema['x-uid'],
-            'x-component-props': fieldSchema['x-component-props'],
-          },
-        });
-        dn.refresh();
-      }}
-    />
-  );
-};
-
 export const SchemaSettingsDefaultSortingRules = function DefaultSortingRules(props) {
   const { path = 'x-component-props.params.sort' } = props;
   const { t } = useTranslation();
@@ -1263,8 +967,10 @@ export const SchemaSettingsLinkageRules = function LinkageRules(props) {
   const localVariables = useLocalVariables();
   const record = useRecord();
   const { type: formBlockType } = useFormBlockType();
-  const type = props?.type || ['Action', 'Action.Link'].includes(fieldSchema['x-component']) ? 'button' : 'field';
+  const type = props?.type || fieldSchema?.['x-action'] ? 'button' : 'field';
   const gridSchema = findGridSchema(fieldSchema) || fieldSchema;
+  const options = useLinkageCollectionFilterOptions(collectionName);
+  const linkageOptions = useLinkageCollectionFieldOptions(collectionName, readPretty);
   const schema = useMemo<ISchema>(
     () => ({
       type: 'object',
@@ -1273,14 +979,11 @@ export const SchemaSettingsLinkageRules = function LinkageRules(props) {
         fieldReaction: {
           'x-component': FormLinkageRules,
           'x-use-component-props': () => {
-            // eslint-disable-next-line react-hooks/rules-of-hooks
-            const options = useLinkageCollectionFilterOptions(collectionName);
             return {
               options,
               defaultValues: gridSchema?.['x-linkage-rules'] || fieldSchema?.['x-linkage-rules'],
               type,
-              // eslint-disable-next-line react-hooks/rules-of-hooks
-              linkageOptions: useLinkageCollectionFieldOptions(collectionName, readPretty),
+              linkageOptions,
               collectionName,
               form,
               variables,
@@ -1498,48 +1201,6 @@ export const findParentFieldSchema = (fieldSchema: Schema) => {
     }
     parent = parent.parent;
   }
-};
-
-export const SchemaSettingsSortField = () => {
-  const { fields } = useCollection_deprecated();
-  const field = useField<Field>();
-  const fieldSchema = useFieldSchema();
-  const { t } = useTranslation();
-  const { dn } = useDesignable();
-  const compile = useCompile();
-  const { service, association } = useTableBlockContext();
-  const { getCollectionJoinField } = useCollectionManager_deprecated();
-  const collectionField = getCollectionJoinField(association);
-  const options = fields
-    .filter((field) => !field?.target && field.interface === 'sort')
-    .map((field) => {
-      return {
-        value: field?.name,
-        label: compile(field?.uiSchema?.title) || field?.name,
-        disabled: field?.scopeKey && collectionField?.foreignKey !== field.scopeKey,
-      };
-    });
-
-  return (
-    <SchemaSettingsSelectItem
-      key="sort-field"
-      title={t('Drag and drop sorting field')}
-      options={options}
-      value={field.decoratorProps.dragSortBy}
-      onChange={(dragSortBy) => {
-        fieldSchema['x-decorator-props'].dragSortBy = dragSortBy;
-        service.run({ ...service.params?.[0], sort: dragSortBy });
-        field.decoratorProps.dragSortBy = dragSortBy;
-        dn.emit('patch', {
-          schema: {
-            ['x-uid']: fieldSchema['x-uid'],
-            'x-decorator-props': fieldSchema['x-decorator-props'],
-          },
-        });
-        dn.refresh();
-      }}
-    />
-  );
 };
 
 // 是否是系统字段

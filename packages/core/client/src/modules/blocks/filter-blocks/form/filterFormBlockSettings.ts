@@ -12,12 +12,9 @@ import { useTranslation } from 'react-i18next';
 import { SchemaSettings } from '../../../../application/schema-settings/SchemaSettings';
 import { useCollection_deprecated } from '../../../../collection-manager';
 import { FilterBlockType } from '../../../../filter-provider';
-import {
-  SchemaSettingsBlockTitleItem,
-  SchemaSettingsConnectDataBlocks,
-  SchemaSettingsFormItemTemplate,
-  SchemaSettingsLinkageRules,
-} from '../../../../schema-settings';
+import { SchemaSettingsFormItemTemplate, SchemaSettingsLinkageRules } from '../../../../schema-settings';
+import { SchemaSettingsBlockTitleItem } from '../../../../schema-settings/SchemaSettingsBlockTitleItem';
+import { SchemaSettingsConnectDataBlocks } from '../../../../schema-settings/SchemaSettingsConnectDataBlocks';
 
 export const filterFormBlockSettings = new SchemaSettings({
   name: 'blockSettings:filterForm',

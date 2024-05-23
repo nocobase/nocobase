@@ -11,14 +11,13 @@
 
 import { Model } from '@nocobase/database';
 import { LoggerOptions } from '@nocobase/logger';
-import { fsExists, importModule } from '@nocobase/utils';
+import { fsExists } from '@nocobase/utils';
 import fs from 'fs';
-import glob from 'glob';
 import type { TFuncKey, TOptions } from 'i18next';
-import { basename, resolve } from 'path';
+import { resolve } from 'path';
 import { Application } from './application';
-import { getExposeChangelogUrl, getExposeReadmeUrl, InstallOptions } from './plugin-manager';
-import { checkAndGetCompatible } from './plugin-manager/utils';
+import { InstallOptions, getExposeChangelogUrl, getExposeReadmeUrl } from './plugin-manager';
+import { checkAndGetCompatible, getPluginBasePath } from './plugin-manager/utils';
 
 export interface PluginInterface {
   beforeLoad?: () => void;
@@ -149,43 +148,13 @@ export abstract class Plugin<O = any> implements PluginInterface {
   /**
    * @internal
    */
-  async loadCommands() {
-    const extensions = ['js', 'ts'];
-    const directory = resolve(
-      process.env.NODE_MODULES_PATH,
-      this.options.packageName,
-      await this.getSourceDir(),
-      'server/commands',
-    );
-    const patten = `${directory}/*.{${extensions.join(',')}}`;
-    const files = glob.sync(patten, {
-      ignore: ['**/*.d.ts'],
-    });
-    for (const file of files) {
-      let filename = basename(file);
-      filename = filename.substring(0, filename.lastIndexOf('.')) || filename;
-      const callback = await importModule(file);
-      callback(this.app);
-    }
-    if (files.length) {
-      this.app.log.debug(`load commands [${this.name}]`);
-    }
-  }
-
-  /**
-   * @internal
-   */
   async loadMigrations() {
     this.app.log.debug(`load plugin migrations [${this.name}]`);
-    if (!this.options.packageName) {
+    const basePath = await this.getPluginBasePath();
+    if (!basePath) {
       return { beforeLoad: [], afterSync: [], afterLoad: [] };
     }
-    const directory = resolve(
-      process.env.NODE_MODULES_PATH,
-      this.options.packageName,
-      await this.getSourceDir(),
-      'server/migrations',
-    );
+    const directory = resolve(basePath, 'server/migrations');
     return await this.app.loadMigrations({
       directory,
       namespace: this.options.packageName,
@@ -195,19 +164,22 @@ export abstract class Plugin<O = any> implements PluginInterface {
     });
   }
 
+  private async getPluginBasePath() {
+    if (!this.options.packageName) {
+      return;
+    }
+    return getPluginBasePath(this.options.packageName);
+  }
+
   /**
    * @internal
    */
   async loadCollections() {
-    if (!this.options.packageName) {
+    const basePath = await this.getPluginBasePath();
+    if (!basePath) {
       return;
     }
-    const directory = resolve(
-      process.env.NODE_MODULES_PATH,
-      this.options.packageName,
-      await this.getSourceDir(),
-      'server/collections',
-    );
+    const directory = resolve(basePath, 'server/collections');
     if (await fsExists(directory)) {
       await this.db.import({
         directory,
@@ -264,38 +236,6 @@ export abstract class Plugin<O = any> implements PluginInterface {
     }
 
     return results;
-  }
-
-  /**
-   * @internal
-   */
-  protected async getSourceDir() {
-    if (this._sourceDir) {
-      return this._sourceDir;
-    }
-    if (await this.isDev()) {
-      return (this._sourceDir = 'src');
-    }
-    if (basename(__dirname) === 'src') {
-      return (this._sourceDir = 'src');
-    }
-    return (this._sourceDir = this.isPreset ? 'lib' : 'dist');
-  }
-
-  /**
-   * @internal
-   */
-  protected async isDev() {
-    if (!this.options.packageName) {
-      return false;
-    }
-    const file = await fs.promises.realpath(
-      resolve(process.env.NODE_MODULES_PATH || resolve(process.cwd(), 'node_modules'), this.options.packageName),
-    );
-    if (file.startsWith(resolve(process.cwd(), 'packages'))) {
-      return !!process.env.IS_DEV_CMD;
-    }
-    return false;
   }
 }
 

@@ -7,29 +7,27 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { ArrayItems } from '@formily/antd-v5';
 import { ISchema } from '@formily/json-schema';
 import { useField, useFieldSchema } from '@formily/react';
+import { useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAPIClient } from '../../../../api-client';
-import { useTableBlockContext, useFormBlockContext } from '../../../../block-provider';
+import { SchemaSettings } from '../../../../application/schema-settings/SchemaSettings';
+import { useFormBlockContext, useTableBlockContext } from '../../../../block-provider';
 import {
   useCollectionManager_deprecated,
   useCollection_deprecated,
   useSortFields,
 } from '../../../../collection-manager';
 import { FilterBlockType } from '../../../../filter-provider/utils';
-import { useDesignable, removeNullCondition } from '../../../../schema-component';
-import {
-  SchemaSettingsBlockTitleItem,
-  SchemaSettingsSortField,
-  SchemaSettingsConnectDataBlocks,
-  SchemaSettingsTemplate,
-} from '../../../../schema-settings/SchemaSettings';
-import { SchemaSettingsDataScope } from '../../../../schema-settings/SchemaSettingsDataScope';
-import { useCallback } from 'react';
-import { useTranslation } from 'react-i18next';
-import { ArrayItems } from '@formily/antd-v5';
+import { removeNullCondition, useDesignable } from '../../../../schema-component';
 import { FixedBlockDesignerItem } from '../../../../schema-component/antd/page/FixedBlockDesignerItem';
-import { SchemaSettings } from '../../../../application/schema-settings/SchemaSettings';
+import { SchemaSettingsBlockTitleItem } from '../../../../schema-settings/SchemaSettingsBlockTitleItem';
+import { SchemaSettingsConnectDataBlocks } from '../../../../schema-settings/SchemaSettingsConnectDataBlocks';
+import { SchemaSettingsDataScope } from '../../../../schema-settings/SchemaSettingsDataScope';
+import { SchemaSettingsSortField } from '../../../../schema-settings/SchemaSettingsSortField';
+import { SchemaSettingsTemplate } from '../../../../schema-settings/SchemaSettingsTemplate';
 import { setDataLoadingModeSettingsItem } from '../details-multi/setDataLoadingModeSettingsItem';
 
 export const tableBlockSettings = new SchemaSettings({

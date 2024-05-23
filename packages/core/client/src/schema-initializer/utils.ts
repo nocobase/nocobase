@@ -382,6 +382,7 @@ export const useFilterFormItemInitializerFields = (options?: any) => {
         'x-settings': 'fieldSettings:FilterFormItem',
         'x-component': 'CollectionField',
         'x-decorator': 'FormItem',
+        'x-use-decorator-props': 'useFormItemProps',
         'x-collection-field': `${name}.${field.name}`,
         'x-component-props': {},
       };
@@ -395,6 +396,7 @@ export const useFilterFormItemInitializerFields = (options?: any) => {
           'x-settings': 'fieldSettings:FilterFormItem',
           'x-component': 'CollectionField',
           'x-decorator': 'FormItem',
+          'x-use-decorator-props': 'useFormItemProps',
           'x-collection-field': `${name}.${field.name}`,
           'x-component-props': field.uiSchema?.['x-component-props'],
         };
@@ -857,6 +859,8 @@ export const useCollectionDataSourceItems = ({
   hideOtherRecordsInPopup,
   onClick,
   filterOtherRecordsCollection,
+  currentText,
+  otherText,
 }: {
   componentName;
   filter?: (options: { collection?: Collection; associationField?: CollectionFieldOptions }) => boolean;
@@ -873,6 +877,8 @@ export const useCollectionDataSourceItems = ({
    * 用来筛选弹窗中的 “Other records” 选项中的数据表
    */
   filterOtherRecordsCollection?: (collection: Collection) => boolean;
+  currentText?: string;
+  otherText?: string;
 }) => {
   const { t } = useTranslation();
   const dm = useDataSourceManager();
@@ -932,7 +938,7 @@ export const useCollectionDataSourceItems = ({
         componentProps: {
           ...dataBlockInitializerProps,
           icon: null,
-          title: t('Current record'),
+          title: currentText || t('Current record'),
           name: 'currentRecord',
           hideSearch: false,
           hideChildrenIfSingleCollection: true,
@@ -970,7 +976,7 @@ export const useCollectionDataSourceItems = ({
         onClick() {},
         componentProps: {
           icon: null,
-          title: t('Other records'),
+          title: otherText || t('Other records'),
           name: 'otherRecords',
           showAssociationFields: false,
           onlyCurrentDataSource: false,
@@ -1031,6 +1037,7 @@ export const useCollectionDataSourceItems = ({
       collection.name,
       componentName,
       dataBlockInitializerProps,
+      filterOtherRecordsCollection,
       hideOtherRecordsInPopup,
       noAssociationMenu,
       onClick,

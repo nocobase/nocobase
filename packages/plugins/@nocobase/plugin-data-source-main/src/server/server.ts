@@ -26,7 +26,6 @@ import { beforeCreateForValidateField, beforeUpdateForValidateField } from './ho
 import { beforeCreateForViewCollection } from './hooks/beforeCreateForViewCollection';
 import { CollectionModel, FieldModel } from './models';
 import collectionActions from './resourcers/collections';
-import sqlResourcer from './resourcers/sql';
 import viewResourcer from './resourcers/views';
 
 export class PluginDataSourceMainServer extends Plugin {
@@ -293,11 +292,6 @@ export class PluginDataSourceMainServer extends Plugin {
       name: `pm.data-source-manager.collection-view `,
       actions: ['dbViews:*'],
     });
-
-    this.app.acl.registerSnippet({
-      name: `pm.data-source-manager.collection-sql `,
-      actions: ['sqlCollection:*'],
-    });
   }
 
   async load() {
@@ -324,7 +318,6 @@ export class PluginDataSourceMainServer extends Plugin {
     });
 
     this.app.resource(viewResourcer);
-    this.app.resource(sqlResourcer);
     this.app.actions(collectionActions);
 
     const handleFieldSource = (fields) => {

@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ActionInitializer } from '@nocobase/client';
+import { ActionInitializerItem } from '@nocobase/client';
 import React from 'react';
 
 export const AuditLogsViewActionInitializer = () => {
@@ -346,5 +346,5 @@ export const AuditLogsViewActionInitializer = () => {
       },
     },
   };
-  return <ActionInitializer schema={schema} />;
+  return <ActionInitializerItem schema={schema} />;
 };

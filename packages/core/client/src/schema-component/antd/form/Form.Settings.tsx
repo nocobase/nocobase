@@ -9,7 +9,7 @@
 
 import { SchemaSettings } from '../../../application/schema-settings';
 import { useCollection_deprecated } from '../../../collection-manager';
-import { SchemaSettingsTemplate } from '../../../schema-settings/SchemaSettings';
+import { SchemaSettingsTemplate } from '../../../schema-settings/SchemaSettingsTemplate';
 
 /**
  * @deprecated

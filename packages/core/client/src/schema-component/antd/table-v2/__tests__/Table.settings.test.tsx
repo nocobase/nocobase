@@ -14,13 +14,13 @@ import {
   useTableBlockDecoratorProps,
 } from '@nocobase/client';
 import {
+  CheckSettingsOptions,
+  checkSchema,
   checkSettings,
   renderSettings,
-  checkSchema,
   screen,
   userEvent,
   waitFor,
-  CheckSettingsOptions,
 } from '@nocobase/test/client';
 import { withSchema } from '@nocobase/test/web';
 

@@ -11,6 +11,7 @@ import { ISchema, useField, useFieldSchema } from '@formily/react';
 import {
   FilterBlockType,
   FixedBlockDesignerItem,
+  SchemaSettings,
   SchemaSettingsBlockTitleItem,
   SchemaSettingsCascaderItem,
   SchemaSettingsConnectDataBlocks,
@@ -19,13 +20,11 @@ import {
   SchemaSettingsModalItem,
   SchemaSettingsSelectItem,
   SchemaSettingsTemplate,
+  setDataLoadingModeSettingsItem,
   useCollection,
+  useCollectionManager_deprecated,
   useDesignable,
   useFormBlockContext,
-  SchemaSettings,
-  useCollectionManager_deprecated,
-  setDataLoadingModeSettingsItem,
-  useDataLoadingMode,
 } from '@nocobase/client';
 import lodash from 'lodash';
 import { useMapTranslation } from '../locale';

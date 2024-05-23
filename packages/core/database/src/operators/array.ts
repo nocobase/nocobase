@@ -33,15 +33,18 @@ const getFieldName = (ctx) => {
 
   const model = getModelFromAssociationPath();
 
+  let columnPrefix = model.name;
+
   if (model.rawAttributes[fieldName]) {
     columnName = model.rawAttributes[fieldName].field || fieldName;
   }
 
   if (associationPath.length > 0) {
     const association = associationPath.join('->');
-    columnName = `${association}.${columnName}`;
+    columnPrefix = association;
   }
 
+  columnName = `${columnPrefix}.${columnName}`;
   return columnName;
 };
 

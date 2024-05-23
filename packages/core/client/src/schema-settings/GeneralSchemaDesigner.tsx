@@ -14,7 +14,8 @@ import { Space } from 'antd';
 import classNames from 'classnames';
 import React, { FC, useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { SchemaToolbarProvider, useSchemaInitializerRender, useSchemaSettingsRender } from '../application';
+import { SchemaInitializer, SchemaSettings, SchemaToolbarProvider, useSchemaInitializerRender } from '../application';
+import { useSchemaSettingsRender } from '../application/schema-settings/hooks/useSchemaSettingsRender';
 import { useDataSourceManager } from '../data-source/data-source/DataSourceManagerProvider';
 import { useDataSource } from '../data-source/data-source/DataSourceProvider';
 import { DragHandler, useCompile, useDesignable, useGridContext, useGridRowContext } from '../schema-component';
@@ -181,8 +182,8 @@ export const GeneralSchemaDesigner: FC<GeneralSchemaDesignerProps> = (props: any
 export interface SchemaToolbarProps {
   title?: string | string[];
   draggable?: boolean;
-  initializer?: string | false;
-  settings?: string | false;
+  initializer?: string | SchemaInitializer<any> | false;
+  settings?: string | SchemaSettings<any> | false;
   /**
    * @default true
    */
@@ -215,11 +216,11 @@ const InternalSchemaToolbar: FC<SchemaToolbarProps> = (props) => {
     if (Array.isArray(title)) return title.map((item) => compile(item));
   }, [compile, title]);
   const { render: schemaSettingsRender, exists: schemaSettingsExists } = useSchemaSettingsRender(
-    fieldSchema['x-settings'] || settings,
+    settings || fieldSchema['x-settings'],
     fieldSchema['x-settings-props'],
   );
   const { render: schemaInitializerRender, exists: schemaInitializerExists } = useSchemaInitializerRender(
-    fieldSchema['x-initializer'] || initializer,
+    initializer || fieldSchema['x-initializer'],
     fieldSchema['x-initializer-props'],
   );
   const rowCtx = useGridRowContext();

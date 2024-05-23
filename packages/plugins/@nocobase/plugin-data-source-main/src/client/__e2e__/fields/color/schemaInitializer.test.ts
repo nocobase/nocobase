@@ -135,7 +135,7 @@ test.describe('form item & view form', () => {
         await expect(
           page
             .getByLabel('block-item-CollectionField-general-form-general.integer-integer')
-            .getByText(record.integer.toFixed(0)),
+            .getByText(record.integer.toLocaleString()),
         ).toBeVisible();
         await expect(
           page
@@ -145,7 +145,7 @@ test.describe('form item & view form', () => {
         await expect(
           page
             .getByLabel('block-item-CollectionField-general-form-general.percent-percent')
-            .getByText(`${(record.percent * 100).toFixed(0)}%`),
+            .getByText(`${Math.round(record.percent * 100).toLocaleString()}%`),
         ).toBeVisible();
         await expect(
           page
@@ -195,9 +195,11 @@ test.describe('table column & table', () => {
       expectValue: async () => {
         await expect(page.getByRole('button', { name: record.email })).toBeVisible();
         await expect(page.getByRole('button', { name: record.singleLineText })).toBeVisible();
-        await expect(page.getByRole('button', { name: String(record.integer) })).toBeVisible();
+        await expect(page.getByRole('button', { name: record.integer.toLocaleString() })).toBeVisible();
         await expect(page.getByRole('button', { name: record.number.toFixed(0) })).toBeVisible();
-        await expect(page.getByRole('button', { name: `${(record.percent * 100).toFixed(0)}%` })).toBeVisible();
+        await expect(
+          page.getByRole('button', { name: `${Math.round(record.percent * 100).toLocaleString()}%` }),
+        ).toBeVisible();
         await expect(page.getByRole('button', { name: record.longText.slice(0, 10) })).toBeVisible();
       },
     });

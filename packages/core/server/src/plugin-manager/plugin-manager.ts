@@ -16,7 +16,7 @@ import fg from 'fast-glob';
 import fs from 'fs';
 import _ from 'lodash';
 import net from 'net';
-import { basename, dirname, join, resolve, sep } from 'path';
+import { basename, join, resolve, sep } from 'path';
 import Application from '../application';
 import { createAppProxy, tsxRerunning } from '../helper';
 import { Plugin } from '../plugin';
@@ -29,6 +29,7 @@ import {
   copyTempPackageToStorageAndLinkToNodeModules,
   downloadAndUnzipToTempDir,
   getNpmInfo,
+  getPluginBasePath,
   getPluginInfoByNpm,
   removeTmpDir,
   updatePluginByCompressedFileUrl,
@@ -350,7 +351,7 @@ export class PluginManager {
       console.error(error);
       // empty
     }
-    this.app.log.debug(`add plugin [${options.name}]`, {
+    this.app.log.trace(`add plugin [${options.name}]`, {
       method: 'add',
       submodule: 'plugin-manager',
       name: options.name,
@@ -395,7 +396,7 @@ export class PluginManager {
    * @internal
    */
   async loadCommands() {
-    this.app.log.debug('load commands');
+    this.app.log.info('load commands');
     const items = await this.repository.find({
       filter: {
         enabled: true,
@@ -404,21 +405,16 @@ export class PluginManager {
     const packageNames: string[] = items.map((item) => item.packageName);
     const source = [];
     for (const packageName of packageNames) {
-      const file = require.resolve(packageName);
-      const sourceDir = basename(dirname(file)) === 'src' ? 'src' : 'dist';
-      const directory = join(
-        packageName,
-        sourceDir,
-        'server/commands/*.' + (basename(dirname(file)) === 'src' ? 'ts' : 'js'),
-      );
+      const dirname = await getPluginBasePath(packageName);
+      const directory = join(dirname, 'server/commands/*.' + (basename(dirname) === 'src' ? 'ts' : 'js'));
+
       source.push(directory.replaceAll(sep, '/'));
     }
     for (const plugin of this.options.plugins || []) {
       if (typeof plugin === 'string') {
-        const packageName = await PluginManager.getPackageName(plugin);
-        const file = require.resolve(packageName);
-        const sourceDir = basename(dirname(file)) === 'src' ? 'src' : 'lib';
-        const directory = join(packageName, sourceDir, 'server/commands/*.' + (sourceDir === 'src' ? 'ts' : 'js'));
+        const { packageName } = await PluginManager.parseName(plugin);
+        const dirname = await getPluginBasePath(packageName);
+        const directory = join(dirname, 'server/commands/*.' + (basename(dirname) === 'src' ? 'ts' : 'js'));
         source.push(directory.replaceAll(sep, '/'));
       }
     }
@@ -433,6 +429,7 @@ export class PluginManager {
   }
 
   async load(options: any = {}) {
+    this.app.log.debug('loading plugins...');
     this.app.setMaintainingMessage('loading plugins...');
     const total = this.pluginInstances.size;
 
@@ -450,7 +447,7 @@ export class PluginManager {
       if (!plugin.enabled) {
         continue;
       }
-      this.app.logger.debug(`before load plugin [${name}]`, { submodule: 'plugin-manager', method: 'load', name });
+      this.app.logger.trace(`before load plugin [${name}]`, { submodule: 'plugin-manager', method: 'load', name });
       await plugin.beforeLoad();
     }
 
@@ -469,14 +466,15 @@ export class PluginManager {
       }
 
       await this.app.emitAsync('beforeLoadPlugin', plugin, options);
-      this.app.logger.debug(`load plugin [${name}] `, { submodule: 'plugin-manager', method: 'load', name });
+      this.app.logger.trace(`load plugin [${name}] `, { submodule: 'plugin-manager', method: 'load', name });
       await plugin.loadCollections();
       await plugin.load();
       plugin.state.loaded = true;
       await this.app.emitAsync('afterLoadPlugin', plugin, options);
     }
 
-    this.app.setMaintainingMessage('loaded plugins');
+    this.app.log.debug('plugins loaded');
+    this.app.setMaintainingMessage('plugins loaded');
   }
 
   async install(options: InstallOptions = {}) {
@@ -882,7 +880,8 @@ export class PluginManager {
       if (!(await this.app.isStarted())) {
         this.app.log.debug('app upgrading');
         await this.app.runCommand('upgrade');
-        await execa('yarn', ['nocobase', 'refresh'], {
+        await tsxRerunning();
+        await execa('yarn', ['nocobase', 'pm2-restart'], {
           env: process.env,
         });
         return;
@@ -890,13 +889,10 @@ export class PluginManager {
       const file = resolve(process.cwd(), 'storage/app-upgrading');
       await fs.promises.writeFile(file, '', 'utf-8');
       // await this.app.upgrade();
-      if (process.env.IS_DEV_CMD) {
-        await tsxRerunning();
-      } else {
-        await execa('yarn', ['nocobase', 'pm2-restart'], {
-          env: process.env,
-        });
-      }
+      await tsxRerunning();
+      await execa('yarn', ['nocobase', 'pm2-restart'], {
+        env: process.env,
+      });
     };
     if (Array.isArray(nameOrPkg)) {
       for (const name of nameOrPkg) {

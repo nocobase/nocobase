@@ -2,13 +2,13 @@
  * defaultShowCode: true
  */
 import {
+  Action,
+  Application,
   Grid,
   SchemaInitializer,
-  Application,
   SchemaInitializerSwitch,
   useCurrentSchema,
   useSchemaInitializer,
-  Action,
 } from '@nocobase/client';
 import React from 'react';
 import { appOptions } from './schema-initializer-common';
@@ -47,7 +47,7 @@ const AddNewButton = () => {
 };
 
 const myInitializer = new SchemaInitializer({
-  name: 'MyInitializer',
+  name: 'myInitializer',
   title: 'Configure actions',
   wrap: Grid.wrap,
   items: [

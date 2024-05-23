@@ -10,7 +10,8 @@
 import { ISchema, Schema } from '@formily/json-schema';
 import { Tooltip } from 'antd';
 import React, { useContext, useMemo } from 'react';
-import { CollectionFieldOptions_deprecated, useCollectionManager_deprecated } from '../../../collection-manager';
+import { CollectionFieldOptions_deprecated } from '../../../collection-manager';
+import { useCollectionManager } from '../../../data-source/collection/CollectionManagerProvider';
 import { useCompile, useGetFilterOptions } from '../../../schema-component';
 import { isSpecialCaseField } from '../../../schema-component/antd/form-item/hooks/useSpecialCase';
 import { FieldOption, Option } from '../type';
@@ -171,7 +172,7 @@ export const useBaseVariable = ({
   const compile = useCompile();
   const getFilterOptions = useGetFilterOptions();
   const { isDisabled } = useContext(BaseVariableContext) || {};
-  const { getCollectionField } = useCollectionManager_deprecated(dataSource);
+  const cm = useCollectionManager();
 
   const loadChildren = (option: Option): Promise<void> => {
     if (!option.field?.target) {
@@ -192,7 +193,7 @@ export const useBaseVariable = ({
             loadChildren,
             compile,
             isDisabled: isDisabled || isDisabledDefault,
-            getCollectionField,
+            getCollectionField: cm.getCollectionField,
             deprecated,
           }) || []
         )

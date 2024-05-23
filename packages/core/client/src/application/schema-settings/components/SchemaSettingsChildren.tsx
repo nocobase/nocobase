@@ -9,6 +9,7 @@
 
 import React, { FC, memo, useEffect, useMemo, useRef } from 'react';
 
+import { useFieldComponentName } from '../../../common/useFieldComponentName';
 import { useFindComponent } from '../../../schema-component';
 import {
   SchemaSettingsActionModalItem,
@@ -24,9 +25,8 @@ import {
   SchemaSettingsSwitchItem,
   useSchemaSettings,
 } from '../../../schema-settings/SchemaSettings';
-import { SchemaSettingItemContext } from '../context';
+import { SchemaSettingItemContext } from '../context/SchemaSettingItemContext';
 import { SchemaSettingsItemType } from '../types';
-import { useFieldComponentName } from '../../../common/useFieldComponentName';
 
 export interface SchemaSettingsChildrenProps {
   children: SchemaSettingsItemType[];

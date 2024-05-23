@@ -18,26 +18,22 @@ import {
   parseVariables,
   postProcess,
 } from '../actions/query';
+import { Database } from '@nocobase/database';
 
 const formatter = await import('../actions/formatter');
 
 describe('query', () => {
   describe('parseBuilder', () => {
-    const sequelize = {
-      fn: vi.fn().mockImplementation((fn: string, field: string) => [fn, field]),
-      col: vi.fn().mockImplementation((field: string) => field),
-      getDialect() {
-        return false;
-      },
-    };
     let ctx: any;
     let app: MockServer;
+    let db: Database;
     beforeAll(async () => {
       app = await createMockServer({
         plugins: ['data-source-manager', 'users', 'acl'],
       });
-      app.db.options.underscored = true;
-      app.db.collection({
+      db = app.db;
+      db.options.underscored = true;
+      db.collection({
         name: 'orders',
         fields: [
           {
@@ -63,9 +59,8 @@ describe('query', () => {
       });
       ctx = {
         app,
-        db: app.db,
+        db,
       };
-      ctx.db.sequelize = sequelize;
     });
 
     it('should check permissions', async () => {
@@ -141,6 +136,7 @@ describe('query', () => {
         ],
       });
     });
+
     it('should parse measures', async () => {
       const measures1 = [
         {
@@ -159,7 +155,9 @@ describe('query', () => {
         },
       };
       await compose([parseFieldAndAssociations, parseBuilder])(context, async () => {});
-      expect(context.action.params.values.queryParams.attributes).toEqual([['orders.price', 'price']]);
+      expect(context.action.params.values.queryParams.attributes).toEqual([
+        [db.sequelize.col('orders.price'), 'price'],
+      ]);
       const measures2 = [
         {
           field: ['price'],
@@ -179,8 +177,11 @@ describe('query', () => {
         },
       };
       await compose([parseFieldAndAssociations, parseBuilder])(context2, async () => {});
-      expect(context2.action.params.values.queryParams.attributes).toEqual([[['sum', 'orders.price'], 'price-alias']]);
+      expect(context2.action.params.values.queryParams.attributes).toEqual([
+        [db.sequelize.fn('sum', db.sequelize.col('orders.price')), 'price-alias'],
+      ]);
     });
+
     it('should parse dimensions', async () => {
       vi.spyOn(formatter, 'formatter').mockReturnValue('formatted-field');
       const dimensions = [
@@ -225,6 +226,7 @@ describe('query', () => {
       await compose([parseFieldAndAssociations, parseBuilder])(context2, async () => {});
       expect(context2.action.params.values.queryParams.group).toEqual(['formatted-field']);
     });
+
     it('should parse filter', async () => {
       const filter = {
         createdAt: {

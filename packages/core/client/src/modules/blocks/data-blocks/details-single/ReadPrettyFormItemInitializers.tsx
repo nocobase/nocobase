@@ -54,12 +54,7 @@ const AssociatedFields = () => {
   return <SchemaInitializerChildren>{schema}</SchemaInitializerChildren>;
 };
 
-/**
- * @deprecated
- * use `readPrettyFormItemInitializers` instead
- */
-export const readPrettyFormItemInitializers_deprecated = new CompatibleSchemaInitializer({
-  name: 'ReadPrettyFormItemInitializers',
+const commonOptions = {
   wrap: gridRowColWrap,
   icon: 'SettingOutlined',
   title: '{{t("Configure fields")}}',
@@ -100,51 +95,21 @@ export const readPrettyFormItemInitializers_deprecated = new CompatibleSchemaIni
       },
     },
   ],
+};
+
+/**
+ * @deprecated
+ * use `readPrettyFormItemInitializers` instead
+ */
+export const readPrettyFormItemInitializers_deprecated = new CompatibleSchemaInitializer({
+  name: 'ReadPrettyFormItemInitializers',
+  ...commonOptions,
 });
 
 export const readPrettyFormItemInitializers = new CompatibleSchemaInitializer(
   {
     name: 'details:configureFields',
-    wrap: gridRowColWrap,
-    icon: 'SettingOutlined',
-    title: '{{t("Configure fields")}}',
-    items: [
-      {
-        type: 'itemGroup',
-        name: 'displayFields',
-        title: '{{t("Display fields")}}',
-        useChildren: useFormItemInitializerFields,
-      },
-      {
-        name: 'parentCollectionFields',
-        Component: ParentCollectionFields,
-      },
-      {
-        name: 'associationFields',
-        Component: AssociatedFields,
-      },
-      {
-        name: 'divider',
-        type: 'divider',
-      },
-      {
-        name: 'addText',
-        title: '{{t("Add text")}}',
-        Component: 'BlockItemInitializer',
-        schema: {
-          type: 'void',
-          'x-editable': false,
-          'x-decorator': 'FormItem',
-          // 'x-designer': 'Markdown.Void.Designer',
-          'x-toolbar': 'FormItemSchemaToolbar',
-          'x-settings': 'blockSettings:markdown',
-          'x-component': 'Markdown.Void',
-          'x-component-props': {
-            content: '{{t("This is a demo text, **supports Markdown syntax**.")}}',
-          },
-        },
-      },
-    ],
+    ...commonOptions,
   },
   readPrettyFormItemInitializers_deprecated,
 );

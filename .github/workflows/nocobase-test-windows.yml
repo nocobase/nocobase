@@ -1,0 +1,73 @@
+name: Test on Windows
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'package.json'
+      - '**/yarn.lock'
+      - 'packages/core/acl/**'
+      - 'packages/core/actions/**'
+      - 'packages/core/database/**'
+      - 'packages/core/resourcer/**'
+      - 'packages/core/data-source-manager/**'
+      - 'packages/core/server/**'
+      - 'packages/core/utils/**'
+      - 'packages/plugins/**/src/server/**'
+      - '.github/workflows/nocobase-test-windows.yml'
+  pull_request:
+    paths:
+      - 'package.json'
+      - '**/yarn.lock'
+      - 'packages/core/acl/**'
+      - 'packages/core/actions/**'
+      - 'packages/core/database/**'
+      - 'packages/core/resourcer/**'
+      - 'packages/core/data-source-manager/**'
+      - 'packages/core/server/**'
+      - 'packages/core/utils/**'
+      - 'packages/plugins/**/src/server/**'
+      - '.github/workflows/nocobase-test-windows.yml'
+
+jobs:
+  build:
+    runs-on: windows-2022
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - run: yarn config set network-timeout 600000 -g
+
+      - name: Get yarn cache directory path
+        id: yarn-cache-dir-path
+        run: echo "::set-output name=dir::$(yarn cache dir)"
+
+      - uses: actions/cache@v3
+        id: yarn-cache # use this to check for `cache-hit` (`steps.yarn-cache.outputs.cache-hit != 'true'`)
+        with:
+          path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
+          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-yarn-
+
+      - name: Install project dependencies
+        run: yarn --prefer-offline
+
+      - name: Test with Sqlite
+        run: yarn test --server --single-thread=false
+        env:
+          LOGGER_LEVEL: error
+          DB_DIALECT: sqlite
+          DB_STORAGE: /tmp/db.sqlite
+          DB_TEST_PREFIX: test_
+          DB_UNDERSCORED: ${{ matrix.underscored }}

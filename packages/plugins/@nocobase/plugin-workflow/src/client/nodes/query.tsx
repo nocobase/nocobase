@@ -24,6 +24,7 @@ import { NAMESPACE } from '../locale';
 import { appends, collection, filter, pagination, sort } from '../schemas/collection';
 import { WorkflowVariableInput, getCollectionFieldOptions } from '../variable';
 import { Instruction } from '.';
+import { RadioWithTooltip } from '../components';
 
 export default class extends Instruction {
   title = `{{t("Query record", { ns: "${NAMESPACE}" })}}`;
@@ -49,10 +50,25 @@ export default class extends Instruction {
     },
     multiple: {
       type: 'boolean',
+      title: `{{t("Result type", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
-      'x-component': 'Checkbox',
-      'x-content': `{{t("Allow multiple records as result", { ns: "${NAMESPACE}" })}}`,
-      description: `{{t("If checked, when there are multiple records in the query result, an array will be returned as the result, which can be operated on one by one using a loop node. Otherwise, only one record will be returned.", { ns: "${NAMESPACE}" })}}`,
+      'x-component': 'RadioWithTooltip',
+      'x-component-props': {
+        options: [
+          {
+            label: `{{t("Single record", { ns: "${NAMESPACE}" })}}`,
+            value: false,
+            tooltip: `{{t("The result will be an object of the first matching record only, or null if no matched record.", { ns: "${NAMESPACE}" })}}`,
+          },
+          {
+            label: `{{t("Multiple records", { ns: "${NAMESPACE}" })}}`,
+            value: true,
+            tooltip: `{{t("The result will be an array containing matched records, or an empty one if no matching records. This can be used to be processed in a loop node.", { ns: "${NAMESPACE}" })}}`,
+          },
+        ],
+      },
+      required: true,
+      default: false,
     },
     params: {
       type: 'object',
@@ -112,6 +128,7 @@ export default class extends Instruction {
     FilterDynamicComponent,
     SchemaComponentContext,
     WorkflowVariableInput,
+    RadioWithTooltip,
   };
   useVariables({ key: name, title, config }, options) {
     // eslint-disable-next-line react-hooks/rules-of-hooks

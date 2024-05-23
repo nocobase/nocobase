@@ -45,7 +45,7 @@ export function registerMiddlewares(app: Application, options: ApplicationOption
     await next();
   });
 
-  app.use(requestLogger(app.name, options.logger?.request), { tag: 'logger' });
+  app.use(requestLogger(app.name, app.requestLogger, options.logger?.request), { tag: 'logger' });
 
   app.use(
     cors({

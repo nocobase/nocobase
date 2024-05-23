@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ActionInitializer, useCollection_deprecated } from '@nocobase/client';
+import { ActionInitializerItem, useCollection_deprecated } from '@nocobase/client';
 import React from 'react';
 
 export const UploadActionInitializer = (props) => {
@@ -46,5 +46,5 @@ export const UploadActionInitializer = (props) => {
       },
     },
   };
-  return <ActionInitializer {...props} schema={schema} />;
+  return <ActionInitializerItem {...props} schema={schema} />;
 };
