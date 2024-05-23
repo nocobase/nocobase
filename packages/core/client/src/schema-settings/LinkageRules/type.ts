@@ -19,4 +19,11 @@ export enum ActionType {
   Disabled = 'disabled',
   Value = 'value',
   Active = 'enabled',
+  Color = 'color',
+  BackgroundColor = 'backgroundColor',
+}
+
+export enum LinkageRuleDataKey {
+  style = 'x-linkage-rules-style',
+  default = 'x-linkage-rules',
 }
