@@ -10,10 +10,11 @@
 import { useEventListener } from 'ahooks';
 import { debounce } from 'lodash';
 import { useCallback, useRef, useState } from 'react';
+import { useFieldSchema } from '@formily/react';
 import { theme } from 'antd';
 import { useDesignable } from '..';
 import { useDataBlock } from '../../data-source';
-import { useFieldSchema } from '@formily/react';
+import { useDataBlockRequest } from '../../';
 
 // 页面中满屏
 const usePageFullScreenHeight = () => {
@@ -28,9 +29,6 @@ const usePageFullScreenHeight = () => {
   const pageHeaderHeight = disablePageHeader
     ? token.paddingContentHorizontalLG
     : token.controlHeight + token.marginXS + (token.paddingXXS + 2) * 2 + token.paddingContentHorizontalLG;
-  // console.log('navHeight', navHeight);
-  // console.log('pageHeaderHeight', pageHeaderHeight);
-  // console.log('addBlockBtnHeight', addBlockBtnHeight);
   return navHeight + pageHeaderHeight + addBlockBtnHeight;
 };
 // 表格区块高度计算
@@ -40,20 +38,18 @@ const useTableHeight = () => {
   const { designable } = useDesignable();
   const schema = useFieldSchema();
   const pageFullScreenHeight = usePageFullScreenHeight();
+  const { data } = useDataBlockRequest();
+  const { count, pageSize } = data?.meta || ({} as any);
+  const hasPagination = count > pageSize;
   const { heightMode, height, title } = heightProps;
   if (!heightProps?.heightMode || heightMode === 'adaptive') {
     return;
   }
   const hasTableActions = Object.keys(schema.parent.properties.actions?.properties || {}).length > 0;
-  const paginationHeight = token.controlHeight + token.padding + token.marginLG;
+  const paginationHeight = hasPagination ? token.controlHeight + token.padding + token.marginLG : token.marginLG;
   const actionBarHeight = hasTableActions || designable ? token.controlHeight + 2 * token.marginLG : token.marginLG;
   const tableHeaderHeight = (designable ? token.controlHeight : 22) + 2 * token.padding + 1;
   const blockHeaderHeight = title ? token.fontSizeLG * token.lineHeightLG + token.padding * 2 - 1 : 0;
-
-  // console.log('blockHeaderHeight', blockHeaderHeight);
-  // console.log('actionBarHeight', actionBarHeight);
-  // console.log('tableHeaderHeight', tableHeaderHeight);
-  // console.log('paginationHeight', paginationHeight);
 
   if (heightMode === 'fullScreen') {
     return (
