@@ -116,7 +116,7 @@ export interface CollectionOptions extends Omit<ModelOptions, 'name' | 'hooks'> 
    * - 'user' - collection is from user
    */
   origin?: string;
-
+  asStrategyResource?: boolean;
   [key: string]: any;
 }
 
