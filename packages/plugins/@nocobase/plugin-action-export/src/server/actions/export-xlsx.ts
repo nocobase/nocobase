@@ -9,40 +9,43 @@
 
 import { Context, Next } from '@nocobase/actions';
 import { Repository } from '@nocobase/database';
-import xlsx from 'node-xlsx';
-import render from '../renders';
 import { columns2Appends } from '../utils';
+import XlsxExporter from '../xlsx-exporter';
+import XLSX from 'xlsx';
 
 export async function exportXlsx(ctx: Context, next: Next) {
   const { title, filter, sort, fields, except } = ctx.action.params;
   let columns = ctx.action.params.values?.columns || ctx.action.params?.columns;
+
   if (typeof columns === 'string') {
     columns = JSON.parse(columns);
   }
+
   const repository = ctx.getCurrentRepository() as Repository;
+
   const collection = repository.collection;
+
   columns = columns?.filter((col) => collection.hasField(col.dataIndex[0]) && col?.dataIndex?.length > 0);
+
   const appends = columns2Appends(columns, ctx);
-  const data = await repository.find({
-    filter,
-    fields,
-    appends,
-    except,
-    sort,
-    limit: 200,
-    context: ctx,
-  });
-  const collectionFields = columns.map((col) => collection.fields.get(col.dataIndex[0]));
-  const { rows, ranges } = await render({ columns, fields: collectionFields, data }, ctx);
-  ctx.body = xlsx.build([
-    {
-      name: 'Sheet 1',
-      data: rows,
-      options: {
-        '!merges': ranges,
-      },
+
+  const xlsxExporter = new XlsxExporter({
+    collection,
+    columns,
+    findOptions: {
+      filter,
+      fields,
+      appends,
+      except,
+      sort,
     },
-  ]);
+  });
+
+  const wb = await xlsxExporter.run();
+
+  const buffer = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+
+  ctx.body = buffer;
 
   ctx.set({
     'Content-Type': 'application/octet-stream',
