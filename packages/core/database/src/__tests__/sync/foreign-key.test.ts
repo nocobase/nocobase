@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { primaryKey } from '@nocobase/client';
 import { Database, mockDatabase } from '@nocobase/database';
 
 describe('foreign key', () => {
@@ -50,7 +51,11 @@ describe('foreign key', () => {
 
     await db.sync();
 
+    const foreignKey = posts.model.rawAttributes['userId'].field;
+
     const indexes = await db.sequelize.getQueryInterface().showIndex(posts.getTableNameWithSchema());
-    expect(indexes).toHaveLength(2);
+
+    // @ts-ignore
+    expect(indexes.some((index) => index.fields.some((field) => field.attribute === foreignKey))).toBeTruthy();
   });
 });
