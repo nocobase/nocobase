@@ -41,10 +41,10 @@ const SettingsMenu: React.FC<{
         </div>
       ),
     },
-    {
-      key: 'divider_1',
-      type: 'divider',
-    },
+//     {
+//       key: 'divider_1',
+//       type: 'divider',
+//     },
 //     {
 //       key: 'homePage',
 //       label: (
@@ -57,24 +57,24 @@ const SettingsMenu: React.FC<{
 //         </a>
 //       ),
 //     },
-    {
-      key: 'userManual',
-      label: (
-        <a
-          href={isSimplifiedChinese ? 'https://docs-cn.nocobase.com/handbook' : 'https://docs.nocobase.com/handbook'}
-          target="_blank"
-          rel="noreferrer"
-        >
-          {t('Handbook')}
-        </a>
-      ),
-    },
-    {
-      key: 'license',
-      label: (
-         "授权于"
-      ),
-    },
+//     {
+//       key: 'userManual',
+//       label: (
+//         <a
+//           href={isSimplifiedChinese ? 'https://docs-cn.nocobase.com/handbook' : 'https://docs.nocobase.com/handbook'}
+//           target="_blank"
+//           rel="noreferrer"
+//         >
+//           {t('Handbook')}
+//         </a>
+//       ),
+//     },
+//     {
+//       key: 'license',
+//       label: (
+//          "授权于"
+//       ),
+//     },
   ];
 
   return <Menu items={items} />;
