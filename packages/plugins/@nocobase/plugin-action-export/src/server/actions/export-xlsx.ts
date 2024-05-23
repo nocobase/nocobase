@@ -25,17 +25,12 @@ export async function exportXlsx(ctx: Context, next: Next) {
 
   const collection = repository.collection;
 
-  columns = columns?.filter((col) => collection.hasField(col.dataIndex[0]) && col?.dataIndex?.length > 0);
-
-  const appends = columns2Appends(columns, ctx);
-
   const xlsxExporter = new XlsxExporter({
     collection,
     columns,
     findOptions: {
       filter,
       fields,
-      appends,
       except,
       sort,
     },
@@ -49,7 +44,6 @@ export async function exportXlsx(ctx: Context, next: Next) {
 
   ctx.set({
     'Content-Type': 'application/octet-stream',
-    // to avoid "invalid character" error in header (RFC)
     'Content-Disposition': `attachment; filename=${encodeURI(title)}.xlsx`,
   });
 

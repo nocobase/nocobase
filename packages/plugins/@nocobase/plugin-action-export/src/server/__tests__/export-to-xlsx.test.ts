@@ -29,6 +29,222 @@ describe('export to xlsx', () => {
     await app.destroy();
   });
 
+  it('should export with empty title', async () => {
+    const User = app.db.collection({
+      name: 'users',
+      fields: [
+        { type: 'string', name: 'name', title: '姓名' },
+        { type: 'integer', name: 'age', title: '年龄' },
+      ],
+    });
+
+    await app.db.sync();
+    const values = Array.from({ length: 20 }).map((_, index) => {
+      return {
+        name: `user${index}`,
+        age: index % 100,
+      };
+    });
+
+    await User.model.bulkCreate(values);
+
+    const exporter = new XlsxExporter({
+      collection: User,
+      chunkSize: 10,
+      columns: [
+        { dataIndex: ['name'], defaultTitle: 'Name' },
+        { dataIndex: ['age'], defaultTitle: 'Age' },
+      ],
+      findOptions: {
+        filter: {
+          age: {
+            $gt: 9,
+          },
+        },
+      },
+    });
+
+    const wb = await exporter.run();
+
+    const xlsxFilePath = path.resolve(__dirname, `t_${uid()}.xlsx`);
+    try {
+      await new Promise((resolve, reject) => {
+        XLSX.writeFileAsync(
+          xlsxFilePath,
+          wb,
+          {
+            type: 'array',
+          },
+          () => {
+            resolve(123);
+          },
+        );
+      });
+
+      // read xlsx file
+      const workbook = XLSX.readFile(xlsxFilePath);
+      const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+      const sheetData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+
+      const header = sheetData[0];
+      expect(header).toEqual(['姓名', '年龄']);
+    } finally {
+      fs.unlinkSync(xlsxFilePath);
+    }
+  });
+
+  it('should export with filter', async () => {
+    const User = app.db.collection({
+      name: 'users',
+      fields: [
+        { type: 'string', name: 'name' },
+        { type: 'integer', name: 'age' },
+      ],
+    });
+
+    await app.db.sync();
+
+    const values = Array.from({ length: 20 }).map((_, index) => {
+      return {
+        name: `user${index}`,
+        age: index % 100,
+      };
+    });
+
+    await User.model.bulkCreate(values);
+
+    const exporter = new XlsxExporter({
+      collection: User,
+      chunkSize: 10,
+      columns: [
+        { dataIndex: ['name'], defaultTitle: 'Name' },
+        { dataIndex: ['age'], defaultTitle: 'Age' },
+      ],
+      findOptions: {
+        filter: {
+          age: {
+            $gt: 9,
+          },
+        },
+      },
+    });
+
+    const wb = await exporter.run();
+
+    const xlsxFilePath = path.resolve(__dirname, `t_${uid()}.xlsx`);
+    try {
+      await new Promise((resolve, reject) => {
+        XLSX.writeFileAsync(
+          xlsxFilePath,
+          wb,
+          {
+            type: 'array',
+          },
+          () => {
+            resolve(123);
+          },
+        );
+      });
+
+      // read xlsx file
+      const workbook = XLSX.readFile(xlsxFilePath);
+      const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+      const sheetData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+      expect(sheetData.length).toBe(11); // 10 users + 1 header
+
+      const header = sheetData[0];
+      expect(header).toEqual(['Name', 'Age']);
+
+      const firstUser = sheetData[1];
+      expect(firstUser).toEqual(['user10', 10]);
+    } finally {
+      fs.unlinkSync(xlsxFilePath);
+    }
+  });
+
+  it('should export with associations', async () => {
+    const User = app.db.collection({
+      name: 'users',
+      fields: [
+        { type: 'string', name: 'name' },
+        { type: 'integer', name: 'age' },
+        {
+          type: 'hasMany',
+          name: 'posts',
+          target: 'posts',
+        },
+      ],
+    });
+
+    const Post = app.db.collection({
+      name: 'posts',
+      fields: [
+        { type: 'string', name: 'title' },
+        { type: 'belongsTo', name: 'user', target: 'users' },
+      ],
+    });
+
+    await app.db.sync();
+
+    const values = Array.from({ length: 22 }).map((_, index) => {
+      return {
+        name: `user${index}`,
+        age: index % 100,
+        posts: Array.from({ length: 3 }).map((_, postIndex) => {
+          return {
+            title: `post${postIndex}`,
+          };
+        }),
+      };
+    });
+
+    await User.repository.create({
+      values,
+    });
+
+    const exporter = new XlsxExporter({
+      collection: User,
+      chunkSize: 10,
+      columns: [
+        { dataIndex: ['name'], defaultTitle: 'Name' },
+        { dataIndex: ['age'], defaultTitle: 'Age' },
+        { dataIndex: ['posts', 'title'], defaultTitle: 'Post Title' },
+      ],
+    });
+
+    const wb = await exporter.run();
+
+    const xlsxFilePath = path.resolve(__dirname, `t_${uid()}.xlsx`);
+    try {
+      await new Promise((resolve, reject) => {
+        XLSX.writeFileAsync(
+          xlsxFilePath,
+          wb,
+          {
+            type: 'array',
+          },
+          () => {
+            resolve(123);
+          },
+        );
+      });
+
+      // read xlsx file
+      const workbook = XLSX.readFile(xlsxFilePath);
+      const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+      const sheetData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+      expect(sheetData.length).toBe(23); // 22 users * 3 posts + 1 header
+
+      const header = sheetData[0];
+      expect(header).toEqual(['Name', 'Age', 'Post Title']);
+
+      const firstUser = sheetData[1];
+      expect(firstUser).toEqual(['user0', 0, 'post0,post1,post2']);
+    } finally {
+      fs.unlinkSync(xlsxFilePath);
+    }
+  });
+
   it('should export data to xlsx', async () => {
     const User = app.db.collection({
       name: 'users',
