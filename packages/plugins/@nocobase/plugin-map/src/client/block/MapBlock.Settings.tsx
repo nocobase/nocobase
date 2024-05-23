@@ -25,6 +25,7 @@ import {
   useCollectionManager_deprecated,
   useDesignable,
   useFormBlockContext,
+  SchemaSettingsBlockHeightItem,
 } from '@nocobase/client';
 import lodash from 'lodash';
 import { useMapTranslation } from '../locale';
@@ -39,9 +40,13 @@ export const mapBlockSettings = new SchemaSettings({
       Component: SchemaSettingsBlockTitleItem,
     },
     {
-      name: 'fixBlock',
-      Component: FixedBlockDesignerItem,
+      name: 'setTheBlockHeight',
+      Component: SchemaSettingsBlockHeightItem,
     },
+    // {
+    //   name: 'fixBlock',
+    //   Component: FixedBlockDesignerItem,
+    // },
     {
       name: 'mapField',
       Component: SchemaSettingsCascaderItem,
