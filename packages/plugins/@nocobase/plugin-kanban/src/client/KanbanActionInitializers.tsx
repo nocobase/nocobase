@@ -10,7 +10,6 @@
 import { CompatibleSchemaInitializer, useCollection_deprecated } from '@nocobase/client';
 
 const commonOptions = {
-  name: 'kanban:configureActions',
   title: "{{t('Configure actions')}}",
   icon: 'SettingOutlined',
   style: {
