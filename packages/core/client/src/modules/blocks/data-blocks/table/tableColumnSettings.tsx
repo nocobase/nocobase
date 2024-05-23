@@ -7,12 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import React from 'react';
 import { ISchema } from '@formily/json-schema';
 import { useField, useFieldSchema } from '@formily/react';
 import { useTranslation } from 'react-i18next';
-import { useApp } from '../../../../application';
+import { useApp, useSchemaToolbar } from '../../../../application';
 import { SchemaSettings } from '../../../../application/schema-settings/SchemaSettings';
-import { useCollectionManager_deprecated } from '../../../../collection-manager';
+import { useCollection_deprecated, useCollectionManager_deprecated } from '../../../../collection-manager';
 import { useDesignable } from '../../../../schema-component';
 import { useAssociationFieldContext } from '../../../../schema-component/antd/association-field/hooks';
 import { useColumnSchema } from '../../../../schema-component/antd/table-v2/Table.Column.Decorator';
@@ -20,6 +21,7 @@ import { SchemaSettingsDefaultValue } from '../../../../schema-settings/SchemaSe
 import { useFieldComponentName } from './utils';
 import { isPatternDisabled } from '../../../../schema-settings/isPatternDisabled';
 import { useCollection } from '../../../../data-source';
+import { SchemaSettingsLinkageRules } from '../../../../schema-settings';
 
 export const tableColumnSettings = new SchemaSettings({
   name: 'fieldSettings:TableColumn',
@@ -44,7 +46,6 @@ export const tableColumnSettings = new SchemaSettings({
             const { t } = useTranslation();
             const columnSchema = useFieldSchema();
             const { dn } = useDesignable();
-
             return {
               title: t('Custom column title'),
               schema: {
@@ -76,6 +77,50 @@ export const tableColumnSettings = new SchemaSettings({
                 }
                 dn.refresh();
               },
+            };
+          },
+        },
+        {
+          name: 'style',
+          Component: (props) => {
+            const propsWithType = { ...props, type: 'style' };
+            return <SchemaSettingsLinkageRules {...propsWithType} />;
+          },
+          useVisible() {
+            const { uiSchema, fieldSchema } = useColumnSchema();
+            const field: any = useField();
+            const path = field.path?.splice(field.path?.length - 1, 1);
+            const isReadPretty = field.form.query(`${path.concat(`*.` + fieldSchema.name)}`).get('readPretty');
+            return isReadPretty;
+          },
+          useComponentProps() {
+            const { name } = useCollection_deprecated();
+            const { linkageRulesProps } = useSchemaToolbar();
+            return {
+              ...linkageRulesProps,
+              collectionName: name,
+            };
+          },
+        },
+        {
+          name: 'linkageRules',
+          Component: (props) => {
+            const propsWithType = { ...props };
+            return <SchemaSettingsLinkageRules {...propsWithType} />;
+          },
+          useVisible() {
+            const { uiSchema, fieldSchema } = useColumnSchema();
+            const field: any = useField();
+            const path = field.path?.splice(field.path?.length - 1, 1);
+            const isReadPretty = field.form.query(`${path.concat(`*.` + fieldSchema.name)}`).get('readPretty');
+            return isReadPretty;
+          },
+          useComponentProps() {
+            const { name } = useCollection_deprecated();
+            const { linkageRulesProps } = useSchemaToolbar();
+            return {
+              ...linkageRulesProps,
+              collectionName: name,
             };
           },
         },
