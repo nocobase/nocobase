@@ -19,7 +19,7 @@ test.describe('data scope in action permission', () => {
       .getByTestId('drawer-Action.Drawer-dataSources-Configure permissions')
       .getByText('Action permissions', { exact: true })
       .click();
-    await page.getByLabel('action-Action.Link-Configure-dataSourcesCollections-users').click();
+    await page.getByLabel('action-Action.Link-Configure-dataSourcesCollections-users', { exact: true }).click();
     await page.getByLabel('Individual').check();
     await page
       .getByTestId('drawer-Action.Drawer-dataSourcesCollections-Configure permission')
