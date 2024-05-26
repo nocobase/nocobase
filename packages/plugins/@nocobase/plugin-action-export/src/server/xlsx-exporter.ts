@@ -121,7 +121,23 @@ class XlsxExporter {
       return deepValue;
     }
 
-    return value;
+    const db = this.options.collection.db;
+    if (!db) {
+      return value;
+    }
+
+    const field = this.findFieldByDataIndex(dataIndex);
+    const fieldOptions = field.options;
+    const interfaceName = fieldOptions['interface'];
+
+    if (!interfaceName) {
+      return value;
+    }
+
+    const InterfaceClass = db.interfaceManager.getInterfaceType(interfaceName);
+    const interfaceInstance = new InterfaceClass(fieldOptions);
+    console.log({ value, rowData, dataIndex });
+    return interfaceInstance.toString(value, {});
   }
 }
 

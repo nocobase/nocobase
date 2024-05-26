@@ -15,6 +15,7 @@ import fs from 'fs';
 
 XLSX.set_fs(fs);
 import path from 'path';
+import { BaseInterface } from '@nocobase/database';
 
 describe('export to xlsx', () => {
   let app: MockServer;
@@ -27,6 +28,86 @@ describe('export to xlsx', () => {
 
   afterEach(async () => {
     await app.destroy();
+  });
+
+  it('should export with different ui schema', async () => {
+    const User = app.db.collection({
+      name: 'users',
+      fields: [
+        { type: 'string', name: 'name', title: '姓名' },
+        { type: 'integer', name: 'age', title: '年龄' },
+        {
+          type: 'integer',
+          name: 'testInterface',
+          interface: 'testInterface',
+          title: 'Interface 测试',
+          uiSchema: { test: 'testValue' },
+        },
+      ],
+    });
+
+    class TestInterface extends BaseInterface {
+      toString(value, ctx) {
+        return `${this.options.uiSchema.test}.${value}`;
+      }
+    }
+
+    app.db.interfaceManager.registerInterfaceType('testInterface', TestInterface);
+
+    await app.db.sync();
+    const values = Array.from({ length: 20 }).map((_, index) => {
+      return {
+        name: `user${index}`,
+        age: index % 100,
+        testInterface: index,
+      };
+    });
+
+    await User.model.bulkCreate(values);
+
+    const exporter = new XlsxExporter({
+      collection: User,
+      chunkSize: 10,
+      columns: [
+        { dataIndex: ['name'], defaultTitle: 'Name' },
+        {
+          dataIndex: ['testInterface'],
+          defaultTitle: '',
+        },
+      ],
+    });
+
+    const wb = await exporter.run();
+
+    const xlsxFilePath = path.resolve(__dirname, `t_${uid()}.xlsx`);
+    try {
+      await new Promise((resolve, reject) => {
+        XLSX.writeFileAsync(
+          xlsxFilePath,
+          wb,
+          {
+            type: 'array',
+          },
+          () => {
+            resolve(123);
+          },
+        );
+      });
+
+      // read xlsx file
+      const workbook = XLSX.readFile(xlsxFilePath);
+      const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+      const sheetData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+
+      console.log(sheetData);
+      const header = sheetData[0];
+      expect(header).toEqual(['姓名', 'Interface 测试']);
+
+      const firstUser = sheetData[1];
+      expect(firstUser).toEqual(['user0', 'testValue.0']);
+    } finally {
+      fs.unlinkSync(xlsxFilePath);
+    }
   });
 
   it('should export with empty title', async () => {
