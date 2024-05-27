@@ -30,8 +30,8 @@ const SchemaToolbarErrorFallback: React.FC<FallbackProps> = (props) => {
 export const useSchemaToolbarRender = (fieldSchema: ISchema) => {
   const { designable } = useDesignable();
   const toolbar = useMemo(() => {
-    if (fieldSchema['x-toolbar'] || fieldSchema['x-designer']) {
-      return fieldSchema['x-toolbar'] || fieldSchema['x-designer'];
+    if (fieldSchema['x-designer'] || fieldSchema['x-toolbar']) {
+      return fieldSchema['x-designer'] || fieldSchema['x-toolbar'];
     }
 
     if (fieldSchema['x-settings']) {
