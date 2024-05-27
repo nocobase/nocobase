@@ -7,6 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { MultipleSelectInterface } from '@nocobase/database';
+import { MultipleSelectInterface } from './multiple-select-interface';
 
 export class CheckboxesInterface extends MultipleSelectInterface {}

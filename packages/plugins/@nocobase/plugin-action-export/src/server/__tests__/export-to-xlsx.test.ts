@@ -186,79 +186,77 @@ describe('export to xlsx', () => {
     await app.destroy();
   });
 
-  describe('check fields', async () => {
-    it('should export with multi select', async () => {
-      const User = app.db.collection({
-        name: 'users',
-        fields: [
-          { type: 'string', name: 'name', title: '姓名' },
-          {
-            uiSchema: {
-              enum: [
-                {
-                  value: '123',
-                  label: 'Label123',
-                  color: 'orange',
-                },
-                {
-                  value: '223',
-                  label: 'Label223',
-                  color: 'lime',
-                },
-              ],
-              type: 'array',
-              'x-component': 'Select',
-              'x-component-props': {
-                mode: 'multiple',
+  it('should export with multi select', async () => {
+    const User = app.db.collection({
+      name: 'users',
+      fields: [
+        { type: 'string', name: 'name', title: '姓名' },
+        {
+          uiSchema: {
+            enum: [
+              {
+                value: '123',
+                label: 'Label123',
+                color: 'orange',
               },
-              title: 'multi-select',
-            },
-            defaultValue: [],
-            name: 'multiSelect',
+              {
+                value: '223',
+                label: 'Label223',
+                color: 'lime',
+              },
+            ],
             type: 'array',
-            interface: 'multipleSelect',
+            'x-component': 'Select',
+            'x-component-props': {
+              mode: 'multiple',
+            },
+            title: 'multi-select',
           },
-        ],
-      });
-
-      await app.db.sync();
-
-      await User.repository.create({
-        values: {
-          name: 'u1',
-          multiSelect: ['123', '223'],
+          defaultValue: [],
+          name: 'multiSelect',
+          type: 'array',
+          interface: 'multipleSelect',
         },
-      });
-
-      const exporter = new XlsxExporter({
-        collection: User,
-        chunkSize: 10,
-        columns: [
-          { dataIndex: ['name'], defaultTitle: 'Name' },
-          {
-            dataIndex: ['multiSelect'],
-            defaultTitle: '',
-          },
-        ],
-      });
-
-      const wb = await exporter.run();
-
-      const xlsxFilePath = path.resolve(__dirname, `t_${uid()}.xlsx`);
-      try {
-        XLSX.writeFile(wb, xlsxFilePath);
-
-        // read xlsx file
-        const workbook = XLSX.readFile(xlsxFilePath);
-        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-        const sheetData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
-
-        const firstUser = sheetData[1];
-        expect(firstUser).toEqual(['u1', 'Label123,Label223']);
-      } finally {
-        fs.unlinkSync(xlsxFilePath);
-      }
+      ],
     });
+
+    await app.db.sync();
+
+    await User.repository.create({
+      values: {
+        name: 'u1',
+        multiSelect: ['123', '223'],
+      },
+    });
+
+    const exporter = new XlsxExporter({
+      collection: User,
+      chunkSize: 10,
+      columns: [
+        { dataIndex: ['name'], defaultTitle: 'Name' },
+        {
+          dataIndex: ['multiSelect'],
+          defaultTitle: '',
+        },
+      ],
+    });
+
+    const wb = await exporter.run();
+
+    const xlsxFilePath = path.resolve(__dirname, `t_${uid()}.xlsx`);
+    try {
+      XLSX.writeFile(wb, xlsxFilePath);
+
+      // read xlsx file
+      const workbook = XLSX.readFile(xlsxFilePath);
+      const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+      const sheetData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+
+      const firstUser = sheetData[1];
+      expect(firstUser).toEqual(['u1', 'Label123,Label223']);
+    } finally {
+      fs.unlinkSync(xlsxFilePath);
+    }
   });
 
   it('should export with different ui schema', async () => {

@@ -8,10 +8,24 @@
  */
 
 import Database from '../database';
-import { MultipleSelectInterface } from './index';
+import {
+  BooleanInterface,
+  DatetimeInterface,
+  MultipleSelectInterface,
+  PercentInterface,
+  SelectInterface,
+} from './index';
 
 const interfaces = {
   multipleSelect: MultipleSelectInterface,
+  checkboxes: MultipleSelectInterface,
+  checkboxGroup: MultipleSelectInterface,
+  select: SelectInterface,
+  radio: SelectInterface,
+  radioGroup: SelectInterface,
+  percent: PercentInterface,
+  datetime: DatetimeInterface,
+  boolean: BooleanInterface,
 };
 
 export function registerInterfaces(db: Database) {

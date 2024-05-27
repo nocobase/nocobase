@@ -26,7 +26,7 @@ type ExportOptions = {
 class XlsxExporter {
   constructor(private options: ExportOptions) {}
 
-  async run(): Promise<XLSX.WorkBook> {
+  async run(ctx?): Promise<XLSX.WorkBook> {
     const { collection, columns, chunkSize } = this.options;
 
     const workbook = XLSX.utils.book_new();
@@ -45,7 +45,7 @@ class XlsxExporter {
       callback: async (rows, options) => {
         const chunkData = rows.map((r) => {
           return columns.map((col) => {
-            return this.renderCellValue(r, col);
+            return this.renderCellValue(r, col, ctx);
           });
         });
 
@@ -119,7 +119,7 @@ class XlsxExporter {
     });
   }
 
-  private renderCellValue(rowData: Model, column: ExportColumn) {
+  private renderCellValue(rowData: Model, column: ExportColumn, ctx?) {
     const { dataIndex } = column;
     rowData = rowData.toJSON();
     const value = rowData[dataIndex[0]];
@@ -154,7 +154,7 @@ class XlsxExporter {
     }
 
     const interfaceInstance = new InterfaceClass(fieldOptions);
-    return interfaceInstance.toString(value, {});
+    return interfaceInstance.toString(value, ctx);
   }
 }
 
