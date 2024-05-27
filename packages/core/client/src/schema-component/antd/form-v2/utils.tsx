@@ -115,7 +115,7 @@ export const collectFieldStateOfLinkageRules = ({
               console.error(error);
             }
           } else if (value?.mode === 'constant') {
-            return value?.value || value;
+            return value?.value ?? value;
           } else {
             return null;
           }
