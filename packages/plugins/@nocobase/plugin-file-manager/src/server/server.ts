@@ -12,6 +12,7 @@ import { resolve } from 'path';
 import { FileModel } from './FileModel';
 import initActions from './actions';
 import { getStorageConfig } from './storages';
+import { AttachmentInterface } from './interfaces/attachment-interface';
 
 export { default as storageTypes } from './storages';
 
@@ -120,5 +121,7 @@ export default class PluginFileManagerServer extends Plugin {
     this.app.acl.addFixedParams('attachments', 'update', ownMerger);
     this.app.acl.addFixedParams('attachments', 'create', ownMerger);
     this.app.acl.addFixedParams('attachments', 'destroy', ownMerger);
+
+    this.app.db.interfaceManager.registerInterfaceType('attachment', AttachmentInterface);
   }
 }

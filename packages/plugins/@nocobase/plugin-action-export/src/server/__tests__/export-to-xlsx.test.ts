@@ -30,6 +30,90 @@ describe('export to xlsx with preset', () => {
     await app.destroy();
   });
 
+  it('should export with attachment field', async () => {
+    const Post = app.db.collection({
+      name: 'posts',
+      fields: [
+        { type: 'string', name: 'title' },
+        {
+          name: 'attachment1',
+          type: 'belongsToMany',
+          interface: 'attachment',
+          uiSchema: {
+            'x-component-props': {
+              accept: 'image/*',
+              multiple: true,
+            },
+            type: 'array',
+            'x-component': 'Upload.Attachment',
+            title: 'attachment1',
+          },
+          target: 'attachments',
+          storage: 'local',
+          through: 'postsAttachments',
+        },
+      ],
+    });
+
+    await app.db.sync();
+
+    await Post.repository.create({
+      values: {
+        title: 'p1',
+        attachment1: [
+          {
+            title: 'nocobase-logo1',
+            filename: '682e5ad037dd02a0fe4800a3e91c283b.png',
+            extname: '.png',
+            mimetype: 'image/png',
+            url: 'https://nocobase.oss-cn-beijing.aliyuncs.com/test1.png',
+          },
+          {
+            title: 'nocobase-logo2',
+            filename: '682e5ad037dd02a0fe4800a3e91c283b.png',
+            extname: '.png',
+            mimetype: 'image/png',
+            url: 'https://nocobase.oss-cn-beijing.aliyuncs.com/test2.png',
+          },
+        ],
+      },
+    });
+
+    const exporter = new XlsxExporter({
+      collection: Post,
+      chunkSize: 10,
+      columns: [
+        { dataIndex: ['title'], defaultTitle: 'Title' },
+        {
+          dataIndex: ['attachment1'],
+          defaultTitle: 'attachment',
+        },
+      ],
+    });
+
+    const wb = await exporter.run();
+
+    const xlsxFilePath = path.resolve(__dirname, `t_${uid()}.xlsx`);
+    try {
+      XLSX.writeFile(wb, xlsxFilePath);
+
+      // read xlsx file
+      const workbook = XLSX.readFile(xlsxFilePath);
+      const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+      const sheetData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+
+      const header = sheetData[0];
+      expect(header).toEqual(['Title', 'attachment']);
+
+      const firstUser = sheetData[1];
+      expect(firstUser[1]).toEqual(
+        'https://nocobase.oss-cn-beijing.aliyuncs.com/test1.png,https://nocobase.oss-cn-beijing.aliyuncs.com/test2.png',
+      );
+    } finally {
+      fs.unlinkSync(xlsxFilePath);
+    }
+  });
+
   it('should export with china region field', async () => {
     const Post = app.db.collection({
       name: 'posts',
@@ -78,7 +162,6 @@ describe('export to xlsx with preset', () => {
       const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
       const sheetData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
 
-      console.log(sheetData);
       const header = sheetData[0];
       expect(header).toEqual(['Title', 'region']);
 

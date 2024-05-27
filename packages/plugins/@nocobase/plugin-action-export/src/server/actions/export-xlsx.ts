@@ -9,7 +9,7 @@
 
 import { Context, Next } from '@nocobase/actions';
 import { Repository } from '@nocobase/database';
-import { columns2Appends } from '../utils';
+
 import XlsxExporter from '../xlsx-exporter';
 import XLSX from 'xlsx';
 
