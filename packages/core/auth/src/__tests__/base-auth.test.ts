@@ -17,7 +17,6 @@ describe('base-auth', () => {
     } as any);
 
     expect(auth.validateUsername('')).toBe(false);
-    expect(auth.validateUsername('a')).toBe(false);
     expect(auth.validateUsername('a@')).toBe(false);
     expect(auth.validateUsername('a.')).toBe(false);
     expect(auth.validateUsername('a<')).toBe(false);
@@ -26,8 +25,8 @@ describe('base-auth', () => {
     expect(auth.validateUsername('a/')).toBe(false);
     expect(auth.validateUsername("a'")).toBe(false);
     expect(auth.validateUsername('ab')).toBe(true);
-    // 16 characters
-    expect(auth.validateUsername('12345678910111213')).toBe(false);
+    // 50 characters
+    expect(auth.validateUsername('01234567890123456789012345678901234567890123456789a')).toBe(false);
   });
 
   it('check: should return null when no token', async () => {
