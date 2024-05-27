@@ -61,7 +61,7 @@ const useTableHeight = () => {
   const schema = useFieldSchema();
   const pageFullScreenHeight = useFullScreenHeight();
   const { data } = useDataBlockRequest();
-  const { count, pageSize } = data?.meta || ({} as any);
+  const { count, pageSize } = (data as any)?.meta || ({} as any);
   const hasPagination = count > pageSize;
   const { heightMode, height, title } = heightProps;
   if (!heightProps?.heightMode || heightMode === 'adaptive') {

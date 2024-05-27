@@ -28,6 +28,8 @@ import {
   SchemaSettingsSwitchItem,
 } from '../../../schema-settings';
 import { SchemaSettingsBlockTitleItem } from '../../../schema-settings/SchemaSettingsBlockTitleItem';
+import { SchemaSettingsBlockHeightItem } from '../../../schema-settings/SchemaSettingsBlockHeightItem';
+
 import { SchemaSettingsConnectDataBlocks } from '../../../schema-settings/SchemaSettingsConnectDataBlocks';
 import { SchemaSettingsDataScope } from '../../../schema-settings/SchemaSettingsDataScope';
 import { SchemaSettingsTemplate } from '../../../schema-settings/SchemaSettingsTemplate';
@@ -130,6 +132,7 @@ export const TableBlockDesigner = () => {
   return (
     <GeneralSchemaDesigner template={template} title={title || name}>
       <SchemaSettingsBlockTitleItem />
+      <SchemaSettingsBlockHeightItem />
       {collection?.tree && collectionField?.collectionName === collectionField?.target && (
         <SchemaSettingsSwitchItem
           title={t('Tree table')}

@@ -34,10 +34,10 @@ describe('Table.settings', () => {
           title: 'Edit block title',
           type: 'modal',
         },
-        // {
-        //   title: 'Set block height',
-        //   type: 'modal',
-        // },
+        {
+          title: 'Set block height',
+          type: 'modal',
+        },
         {
           title: 'Enable drag and drop sorting',
           type: 'switch',
@@ -77,24 +77,24 @@ describe('Table.settings', () => {
             expect(screen.queryByText('Drag and drop sorting field')).not.toBeInTheDocument();
           },
         },
-        // {
-        //   title: 'Fix block',
-        //   type: 'switch',
-        //   async afterFirstClick() {
-        //     await checkSchema({
-        //       'x-decorator-props': {
-        //         fixedBlock: true,
-        //       },
-        //     });
-        //   },
-        //   async afterSecondClick() {
-        //     await checkSchema({
-        //       'x-decorator-props': {
-        //         fixedBlock: false,
-        //       },
-        //     });
-        //   },
-        // },
+        {
+          title: 'Fix block',
+          type: 'switch',
+          async afterFirstClick() {
+            await checkSchema({
+              'x-decorator-props': {
+                fixedBlock: true,
+              },
+            });
+          },
+          async afterSecondClick() {
+            await checkSchema({
+              'x-decorator-props': {
+                fixedBlock: false,
+              },
+            });
+          },
+        },
         {
           title: 'Set the data scope',
           type: 'modal',
