@@ -14,7 +14,7 @@ import {
   test,
   expect,
 } from '@nocobase/test/e2e';
-import { detailBlockWithLinkageRule } from './templatesOfBug';
+import { detailBlockWithLinkageRule, detailsBlockWithLinkageRule } from './templatesOfBug';
 
 test.describe('multi data details block schema settings', () => {
   test('supported options', async ({ page, mockPage, mockRecord }) => {
@@ -50,6 +50,13 @@ test.describe('multi data details block schema settings', () => {
     await page.getByRole('button', { name: 'OK' }).click();
     await page.reload();
     await expect(page.getByLabel('block-item-CollectionField-users-details-users.email-Email')).toBeVisible();
+  });
+  test('multi detail block support linkage rule', async ({ page, mockPage }) => {
+    const nocoPage = await mockPage(detailsBlockWithLinkageRule).waitForInit();
+    await nocoPage.goto();
+    await expect(await page.getByLabel('block-item-CollectionField-roles-details-roles.title')).not.toBeVisible();
+    await page.getByRole('button', { name: 'right' }).click();
+    await expect(await page.getByLabel('block-item-CollectionField-roles-details-roles.title')).toBeVisible();
   });
 });
 

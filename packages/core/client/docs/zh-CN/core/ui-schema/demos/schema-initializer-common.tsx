@@ -9,7 +9,7 @@ const HelloPage = () => {
           name: 'root',
           type: 'void',
           'x-component': 'Grid',
-          'x-initializer': 'MyInitializer',
+          'x-initializer': 'myInitializer',
           properties: {},
         }}
       />

@@ -8,9 +8,9 @@
  */
 
 import { useExpressionScope } from '@formily/react';
-import React, { ComponentType, useMemo } from 'react';
-import { useDesignable } from '../../schema-component';
 import _ from 'lodash';
+import React, { ComponentType, useMemo } from 'react';
+import { useDesignable } from '../schema-component';
 
 const useDefaultDynamicComponentProps = () => undefined;
 

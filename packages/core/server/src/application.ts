@@ -15,6 +15,7 @@ import {
   createLogger,
   createSystemLogger,
   getLoggerFilePath,
+  Logger,
   LoggerOptions,
   RequestLoggerOptions,
   SystemLogger,
@@ -219,6 +220,13 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   private _maintainingStatusBeforeCommand: MaintainingCommandStatus | null;
   private _actionCommand: Command;
 
+  /**
+   * @internal
+   */
+  public requestLogger: Logger;
+  private sqlLogger: Logger;
+  protected _logger: SystemLogger;
+
   constructor(public options: ApplicationOptions) {
     super();
     this.context.reqId = randomUUID();
@@ -228,9 +236,11 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this._appSupervisor.addApp(this);
   }
 
-  protected _logger: SystemLogger;
-
   get logger() {
+    return this._logger;
+  }
+
+  get log() {
     return this._logger;
   }
 
@@ -356,10 +366,6 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   get version() {
     return this._version;
-  }
-
-  get log() {
-    return this._logger;
   }
 
   get name() {
@@ -504,6 +510,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       await this.telemetry.shutdown();
     }
 
+    this.closeLogger();
+
     const oldDb = this.db;
 
     this.init();
@@ -542,9 +550,11 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     this._cacheManager = await createCacheManager(this, this.options.cacheManager);
 
+    this.log.debug('init plugins');
     this.setMaintainingMessage('init plugins');
     await this.pm.initPlugins();
 
+    this.log.debug('loading app...');
     this.setMaintainingMessage('start load');
     this.setMaintainingMessage('emit beforeLoad');
 
@@ -689,7 +699,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     }
     if (options?.reqId) {
       this.context.reqId = options.reqId;
-      this._logger = this._logger.child({ reqId: this.context.reqId });
+      this._logger = this._logger.child({ reqId: this.context.reqId }) as any;
     }
     this._maintainingStatusBeforeCommand = this._maintainingCommandStatus;
 
@@ -753,6 +763,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       );
     }
 
+    this.log.debug(`starting app...`);
     this.setMaintainingMessage('starting app...');
 
     if (this.db.closed()) {
@@ -864,6 +875,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     await this.emitAsync('afterDestroy', this, options);
 
     this.log.debug('finish destroy app', { method: 'destory' });
+
+    this.closeLogger();
   }
 
   async isInstalled() {
@@ -1045,19 +1058,40 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     return command;
   }
 
-  protected init() {
-    const options = this.options;
-
+  protected initLogger(options: AppLoggerOptions) {
     this._logger = createSystemLogger({
       dirname: getLoggerFilePath(this.name),
       filename: 'system',
       seperateError: true,
-      ...(options.logger?.system || {}),
+      ...(options?.system || {}),
     }).child({
       reqId: this.context.reqId,
       app: this.name,
       module: 'application',
+      // Due to the use of custom log levels,
+      // we have to use any type here until Winston updates the type definitions.
+    }) as any;
+    this.requestLogger = createLogger({
+      dirname: getLoggerFilePath(this.name),
+      filename: 'request',
+      ...(options?.request || {}),
     });
+    this.sqlLogger = this.createLogger({
+      filename: 'sql',
+      level: 'debug',
+    });
+  }
+
+  protected closeLogger() {
+    this.log?.close();
+    this.requestLogger?.close();
+    this.sqlLogger?.close();
+  }
+
+  protected init() {
+    const options = this.options;
+
+    this.initLogger(options.logger);
 
     this.reInitEvents();
 
@@ -1152,10 +1186,6 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   }
 
   protected createDatabase(options: ApplicationOptions) {
-    const sqlLogger = this.createLogger({
-      filename: 'sql',
-      level: 'debug',
-    });
     const logging = (msg: any) => {
       if (typeof msg === 'string') {
         msg = msg.replace(/[\r\n]/gm, '').replace(/\s+/g, ' ');
@@ -1163,7 +1193,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       if (msg.includes('INSERT INTO')) {
         msg = msg.substring(0, 2000) + '...';
       }
-      sqlLogger.debug({ message: msg, app: this.name, reqId: this.context.reqId });
+      this.sqlLogger.debug({ message: msg, app: this.name, reqId: this.context.reqId });
     };
     const dbOptions = options.database instanceof Database ? options.database.options : options.database;
     const db = new Database({

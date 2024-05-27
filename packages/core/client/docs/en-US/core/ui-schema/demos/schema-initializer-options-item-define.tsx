@@ -1,8 +1,8 @@
 /**
  * defaultShowCode: true
  */
-import React from 'react';
 import { Application, SchemaInitializer, SchemaInitializerItem } from '@nocobase/client';
+import React from 'react';
 import { appOptions } from './schema-initializer-common';
 
 const Demo = () => {
@@ -11,7 +11,7 @@ const Demo = () => {
 };
 
 const myInitializer = new SchemaInitializer({
-  name: 'MyInitializer',
+  name: 'myInitializer',
   title: 'Button Text',
   items: [
     {

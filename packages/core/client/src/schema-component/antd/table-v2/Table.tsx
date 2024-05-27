@@ -35,8 +35,8 @@ import {
   useTableSelectorContext,
 } from '../../../';
 import { useACLFieldWhitelist } from '../../../acl/ACLProvider';
-import { withDynamicSchemaProps } from '../../../application/hoc/withDynamicSchemaProps';
 import { isNewRecord } from '../../../data-source/collection-record/isNewRecord';
+import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
 import { useToken } from '../__builtins__';
 import { SubFormProvider } from '../association-field/hooks';
 import { ColumnFieldProvider } from './components/ColumnFieldProvider';

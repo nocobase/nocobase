@@ -8,7 +8,7 @@
  */
 
 import { getLoggerFilePath } from './config';
-import { LoggerOptions, createLogger } from './logger';
+import { Logger, LoggerOptions } from './logger';
 import { pick } from 'lodash';
 const defaultRequestWhitelist = [
   'action',
@@ -28,12 +28,7 @@ export interface RequestLoggerOptions extends LoggerOptions {
   responseWhitelist?: string[];
 }
 
-export const requestLogger = (appName: string, options?: RequestLoggerOptions) => {
-  const requestLogger = createLogger({
-    dirname: getLoggerFilePath(appName),
-    filename: 'request',
-    ...(options || {}),
-  });
+export const requestLogger = (appName: string, requestLogger: Logger, options?: RequestLoggerOptions) => {
   return async (ctx, next) => {
     const reqId = ctx.reqId;
     const path = /^\/api\/(.+):(.+)/.exec(ctx.path);

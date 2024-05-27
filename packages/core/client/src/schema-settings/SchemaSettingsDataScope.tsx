@@ -39,6 +39,7 @@ export const SchemaSettingsDataScope: FC<DataScopeProps> = function DataScopeCon
             {...props}
             form={form}
             record={record}
+            noDisabled={true}
             shouldChange={getShouldChange({
               collectionField: props.collectionField,
               variables,

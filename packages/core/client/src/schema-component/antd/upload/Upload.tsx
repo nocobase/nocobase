@@ -19,7 +19,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import LightBox from 'react-image-lightbox';
 import 'react-image-lightbox/style.css'; // This only needs to be imported once in your app
-import { withDynamicSchemaProps } from '../../../application/hoc/withDynamicSchemaProps';
+import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
 import { useProps } from '../../hooks/useProps';
 import {
   DEFAULT_MAX_FILE_SIZE,

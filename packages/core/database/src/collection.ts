@@ -116,7 +116,7 @@ export interface CollectionOptions extends Omit<ModelOptions, 'name' | 'hooks'> 
    * - 'user' - collection is from user
    */
   origin?: string;
-
+  asStrategyResource?: boolean;
   [key: string]: any;
 }
 
@@ -332,7 +332,7 @@ export class Collection<
 
     const { database } = this.context;
 
-    database.logger.debug(`beforeSetField: ${safeJsonStringify(options)}`, {
+    database.logger.trace(`beforeSetField: ${safeJsonStringify(options)}`, {
       databaseInstanceId: database.instanceId,
       collectionName: this.name,
       fieldName: name,
@@ -664,6 +664,7 @@ export class Collection<
       if (lodash.isEqual(item.fields, indexName)) {
         return;
       }
+
       const name: string = item.fields.join(',');
       if (name.startsWith(`${indexName.join(',')},`)) {
         return;
@@ -701,6 +702,7 @@ export class Collection<
     this.model._indexes = indexes.filter((item) => {
       return !lodash.isEqual(item.fields, fields);
     });
+
     this.refreshIndexes();
   }
 
@@ -715,14 +717,10 @@ export class Collection<
     this.model._indexes = lodash.uniqBy(
       indexes
         .filter((item) => {
-          return item.fields.every((field) =>
-            Object.values(this.model.rawAttributes).find((fieldVal) => fieldVal.field === field),
-          );
+          return item.fields.every((field) => this.model.rawAttributes[field]);
         })
         .map((item) => {
-          if (this.options.underscored) {
-            item.fields = item.fields.map((field) => snakeCase(field));
-          }
+          item.fields = item.fields.map((field) => this.model.rawAttributes[field].field);
           return item;
         }),
       'name',

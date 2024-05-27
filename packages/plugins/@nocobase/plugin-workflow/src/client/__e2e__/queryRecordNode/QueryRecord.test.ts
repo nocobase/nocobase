@@ -150,7 +150,7 @@ test('Collection event add data trigger, no filtering and no sorting, query comm
   await queryRecordNode.collectionDropDown.click();
   await page.getByRole('menuitemcheckbox', { name: 'Main right' }).click();
   await page.getByRole('menuitemcheckbox', { name: triggerNodeCollectionDisplayName }).click();
-  await queryRecordNode.allowMultipleDataBoxesForResults.check();
+  await queryRecordNode.multipleRecordsRadioButton.check();
   await expect(queryRecordNode.pageNumberEditBox).toHaveValue('1');
   await expect(queryRecordNode.pageSizeEditBox).toHaveValue('20');
   await queryRecordNode.submitButton.click();
@@ -229,7 +229,7 @@ test('Collection event add data trigger, no filter ID ascending, query common ta
   await queryRecordNode.collectionDropDown.click();
   await page.getByRole('menuitemcheckbox', { name: 'Main right' }).click();
   await page.getByRole('menuitemcheckbox', { name: triggerNodeCollectionDisplayName }).click();
-  await queryRecordNode.allowMultipleDataBoxesForResults.check();
+  await queryRecordNode.multipleRecordsRadioButton.check();
   // 设置排序条件
   await queryRecordNode.addSortFieldsButton.click();
   await page.getByTestId('select-single').click();
@@ -338,7 +338,7 @@ test('Collection event add data trigger, no filter ID descending, query common t
   await queryRecordNode.collectionDropDown.click();
   await page.getByRole('menuitemcheckbox', { name: 'Main right' }).click();
   await page.getByRole('menuitemcheckbox', { name: triggerNodeCollectionDisplayName }).click();
-  await queryRecordNode.allowMultipleDataBoxesForResults.check();
+  await queryRecordNode.multipleRecordsRadioButton.check();
   // 设置排序条件
   await queryRecordNode.addSortFieldsButton.click();
   await page.getByTestId('select-single').click();
@@ -448,7 +448,7 @@ test('Collection event add data trigger, no filtering and no sorting, query mult
   await queryRecordNode.collectionDropDown.click();
   await page.getByRole('menuitemcheckbox', { name: 'Main right' }).click();
   await page.getByRole('menuitemcheckbox', { name: triggerNodeCollectionDisplayName }).click();
-  await queryRecordNode.allowMultipleDataBoxesForResults.check();
+  await queryRecordNode.multipleRecordsRadioButton.check();
   await expect(queryRecordNode.pageNumberEditBox).toHaveValue('1');
   await expect(queryRecordNode.pageSizeEditBox).toHaveValue('20');
   const pageNumber = faker.number.int({ min: 1, max: 5 });
@@ -552,7 +552,7 @@ test('Collection event add data trigger, no filtering and no sorting, query the 
   await queryRecordNode.collectionDropDown.click();
   await page.getByRole('menuitemcheckbox', { name: 'Main right' }).click();
   await page.getByRole('menuitemcheckbox', { name: triggerNodeCollectionDisplayName }).click();
-  // await queryRecordNode.allowMultipleDataBoxesForResults.check();
+  // await queryRecordNode.multipleRecordsRadioButton.check();
   await expect(queryRecordNode.pageNumberEditBox).toHaveValue('1');
   await expect(queryRecordNode.pageSizeEditBox).toHaveValue('20');
   const pageNumber = faker.number.int({ min: 5, max: 5 });
@@ -658,7 +658,7 @@ test('Collection event add data trigger, no filtering and no sorting, query the 
   await queryRecordNode.collectionDropDown.click();
   await page.getByRole('menuitemcheckbox', { name: 'Main right' }).click();
   await page.getByRole('menuitemcheckbox', { name: triggerNodeCollectionDisplayName }).click();
-  await queryRecordNode.allowMultipleDataBoxesForResults.check();
+  await queryRecordNode.multipleRecordsRadioButton.check();
   await expect(queryRecordNode.pageNumberEditBox).toHaveValue('1');
   await expect(queryRecordNode.pageSizeEditBox).toHaveValue('20');
   const pageNumber = faker.number.int({ min: 5, max: 5 });
@@ -787,7 +787,7 @@ test('Collection event add data trigger, filter to meet all conditions (status_s
   await queryRecordNode.collectionDropDown.click();
   await page.getByRole('menuitemcheckbox', { name: 'Main right' }).click();
   await page.getByRole('menuitemcheckbox', { name: queryNodeCollectionDisplayName }).click();
-  // await queryRecordNode.allowMultipleDataBoxesForResults.check();
+  // await queryRecordNode.multipleRecordsRadioButton.check();
   // 设置过滤条件
   await page.getByText('Add condition', { exact: true }).click();
   await page.getByLabel('block-item-Filter-workflows-Filter').getByRole('button', { name: 'Select field' }).click();
@@ -903,7 +903,7 @@ test('Collection event add data trigger, filter to satisfy any condition (status
   await queryRecordNode.collectionDropDown.click();
   await page.getByRole('menuitemcheckbox', { name: 'Main right' }).click();
   await page.getByRole('menuitemcheckbox', { name: queryNodeCollectionDisplayName }).click();
-  await queryRecordNode.allowMultipleDataBoxesForResults.check();
+  await queryRecordNode.multipleRecordsRadioButton.check();
   // 设置过滤条件
   await page.getByTestId('filter-select-all-or-any').click();
   await page.getByRole('option', { name: 'Any' }).click();

@@ -5,7 +5,7 @@ import { Application, SchemaInitializer } from '@nocobase/client';
 import { appOptions } from './schema-initializer-common';
 
 const myInitializer = new SchemaInitializer({
-  name: 'MyInitializer',
+  name: 'myInitializer',
   title: 'Button Text',
   items: [
     {

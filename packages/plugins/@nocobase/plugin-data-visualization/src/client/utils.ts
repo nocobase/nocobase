@@ -90,6 +90,9 @@ export const processData = (selectedFields: FieldOption[], data: any[], scope: a
     if (!options || !Array.isArray(options)) {
       return value;
     }
+    if (Array.isArray(value)) {
+      return value.map((v) => parseEnum(field, v));
+    }
     const option = options.find((option) => option.value === value);
     return Schema.compile(option?.label || value, scope);
   };
@@ -104,6 +107,7 @@ export const processData = (selectedFields: FieldOption[], data: any[], scope: a
       switch (field.interface) {
         case 'select':
         case 'radioGroup':
+        case 'multipleSelect':
           processed[key] = parseEnum(field, value);
           break;
         default:

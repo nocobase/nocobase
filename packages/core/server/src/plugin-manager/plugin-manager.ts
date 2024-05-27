@@ -351,7 +351,7 @@ export class PluginManager {
       console.error(error);
       // empty
     }
-    this.app.log.debug(`add plugin [${options.name}]`, {
+    this.app.log.trace(`add plugin [${options.name}]`, {
       method: 'add',
       submodule: 'plugin-manager',
       name: options.name,
@@ -429,6 +429,7 @@ export class PluginManager {
   }
 
   async load(options: any = {}) {
+    this.app.log.debug('loading plugins...');
     this.app.setMaintainingMessage('loading plugins...');
     const total = this.pluginInstances.size;
 
@@ -446,7 +447,7 @@ export class PluginManager {
       if (!plugin.enabled) {
         continue;
       }
-      this.app.logger.debug(`before load plugin [${name}]`, { submodule: 'plugin-manager', method: 'load', name });
+      this.app.logger.trace(`before load plugin [${name}]`, { submodule: 'plugin-manager', method: 'load', name });
       await plugin.beforeLoad();
     }
 
@@ -465,14 +466,15 @@ export class PluginManager {
       }
 
       await this.app.emitAsync('beforeLoadPlugin', plugin, options);
-      this.app.logger.debug(`load plugin [${name}] `, { submodule: 'plugin-manager', method: 'load', name });
+      this.app.logger.trace(`load plugin [${name}] `, { submodule: 'plugin-manager', method: 'load', name });
       await plugin.loadCollections();
       await plugin.load();
       plugin.state.loaded = true;
       await this.app.emitAsync('afterLoadPlugin', plugin, options);
     }
 
-    this.app.setMaintainingMessage('loaded plugins');
+    this.app.log.debug('plugins loaded');
+    this.app.setMaintainingMessage('plugins loaded');
   }
 
   async install(options: InstallOptions = {}) {

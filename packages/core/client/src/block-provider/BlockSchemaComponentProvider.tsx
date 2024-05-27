@@ -31,6 +31,7 @@ import { CollapseItemSchemaToolbar } from '../modules/blocks/filter-blocks/colla
 import { useCollapseBlockDecoratorProps } from '../modules/blocks/filter-blocks/collapse/hooks/useCollapseBlockDecoratorProps';
 import { useFilterFormBlockDecoratorProps } from '../modules/blocks/filter-blocks/form/hooks/useFilterFormBlockDecoratorProps';
 import { useFilterFormBlockProps } from '../modules/blocks/filter-blocks/form/hooks/useFilterFormBlockProps';
+import { useFormItemProps } from '../modules/blocks/filter-blocks/form/hooks/useFormItemProps';
 import { SchemaComponentOptions } from '../schema-component';
 import { RecordLink, useParamsFromRecord, useSourceIdFromParentRecord, useSourceIdFromRecord } from './BlockProvider';
 import { DetailsBlockProvider, useDetailsBlockProps } from './DetailsBlockProvider';
@@ -83,6 +84,7 @@ export const BlockSchemaComponentProvider: React.FC = (props) => {
         useFilterFormBlockProps,
         useFilterFormBlockDecoratorProps,
         useGridCardBlockDecoratorProps,
+        useFormItemProps,
       }}
     >
       {props.children}
@@ -142,6 +144,7 @@ export class BlockSchemaComponentPlugin extends Plugin {
       useFilterFormBlockProps,
       useFilterFormBlockDecoratorProps,
       useGridCardBlockDecoratorProps,
+      useFormItemProps,
     });
   }
 }

@@ -13,14 +13,13 @@ import _ from 'lodash';
 import { useCallback, useEffect, useState } from 'react';
 import { FilterTarget, findFilterTargets } from '../block-provider/hooks';
 import {
-  Collection_deprecated,
   CollectionFieldOptions_deprecated,
+  Collection_deprecated,
   FieldOptions,
-  useCollection_deprecated,
   useCollectionManager_deprecated,
+  useCollection_deprecated,
 } from '../collection-manager';
 import { removeNullCondition } from '../schema-component';
-import { findFilterOperators } from '../schema-component/antd/form-item/SchemaSettingOptions';
 import { DataBlock, useFilterBlock } from './FilterProvider';
 
 export enum FilterBlockType {
@@ -99,12 +98,10 @@ export const useSupportedBlocks = (filterBlockType: FilterBlockType) => {
 
 export const transformToFilter = (
   values: Record<string, any>,
-  fieldSchema: Schema,
+  operators: Record<string, string>,
   getCollectionJoinField: (name: string) => CollectionFieldOptions_deprecated,
   collectionName: string,
 ) => {
-  const { operators } = findFilterOperators(fieldSchema);
-
   values = flatten(values, {
     breakOn({ value, path }) {
       // 下面操作符的值是一个数组，需要特殊处理

@@ -26,6 +26,8 @@ export class CollectionRepository extends Repository {
   }
 
   async load(options: LoadOptions = {}) {
+    this.database.logger.debug('loading collections...');
+
     const { filter, skipExist } = options;
     const instances = (await this.find({ filter, appends: ['fields'] })) as CollectionModel[];
 
@@ -95,8 +97,7 @@ export class CollectionRepository extends Repository {
         lazyCollectionFields.set(instanceName, skipField);
       }
 
-      this.database.logger.debug(`load collection`, {
-        instanceName,
+      this.database.logger.trace(`load ${instanceName} collection`, {
         submodule: 'CollectionRepository',
         method: 'load',
       });
@@ -110,7 +111,7 @@ export class CollectionRepository extends Repository {
 
     // load view fields
     for (const viewCollectionName of viewCollections) {
-      this.database.logger.debug(`load collection fields`, {
+      this.database.logger.trace(`load collection fields`, {
         submodule: 'CollectionRepository',
         method: 'load',
         viewCollectionName,
@@ -141,7 +142,7 @@ export class CollectionRepository extends Repository {
 
     // load lazy collection field
     for (const [collectionName, skipField] of lazyCollectionFields) {
-      this.database.logger.debug(`load collection fields`, {
+      this.database.logger.trace(`load collection fields`, {
         submodule: 'CollectionRepository',
         method: 'load',
         collectionName,
@@ -152,7 +153,7 @@ export class CollectionRepository extends Repository {
 
     // load source attribute fields
     for (const [collectionName, skipField] of fieldWithSourceAttributes) {
-      this.database.logger.debug(`load collection fields`, {
+      this.database.logger.trace(`load collection fields`, {
         submodule: 'CollectionRepository',
         method: 'load',
         collectionName,
@@ -161,6 +162,8 @@ export class CollectionRepository extends Repository {
       this.app.setMaintainingMessage(`load ${collectionName} collection fields`);
       await nameMap[collectionName].loadFields({ includeFields: skipField });
     }
+
+    this.database.logger.debug('collections loaded');
   }
 
   async db2cm(collectionName: string) {

@@ -124,7 +124,7 @@ export const consoleFormat: winston.Logform.Format = winston.format.printf((info
     .map(([k, v]) => `${k}=${v}`)
     .join(' ');
 
-  const level = info.level.padEnd(5, ' ');
+  const level = `[${info.level}]`.padEnd(7, ' ');
   const message = info.message.padEnd(44, ' ');
   const color =
     {
@@ -132,10 +132,11 @@ export const consoleFormat: winston.Logform.Format = winston.format.printf((info
       warn: chalk.yellow,
       info: chalk.green,
       debug: chalk.blue,
+      trace: chalk.cyan,
     }[info.level] || chalk.white;
   const colorized = message.startsWith('Executing')
-    ? color(`${info.timestamp} [${level}]`) + ` ${message}`
-    : color(`${info.timestamp} [${level}] ${message}`);
+    ? color(`${info.timestamp} ${level}`) + ` ${message}`
+    : color(`${info.timestamp} ${level} ${message}`);
   return `${colorized} ${tags}`;
 });
 

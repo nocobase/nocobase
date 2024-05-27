@@ -7,4 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from './useSchemaSettingsRender';
+import { useCollectOperator } from './useCollectOperator';
+
+export const useFormItemProps = () => {
+  useCollectOperator();
+};

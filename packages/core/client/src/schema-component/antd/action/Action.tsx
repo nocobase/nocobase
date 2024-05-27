@@ -17,13 +17,13 @@ import { useTranslation } from 'react-i18next';
 import { StablePopover, useActionContext } from '../..';
 import { useDesignable } from '../../';
 import { useACLActionParamsContext } from '../../../acl';
-import { withDynamicSchemaProps } from '../../../application/hoc/withDynamicSchemaProps';
 import {
   useCollection,
   useCollectionParentRecordData,
   useCollectionRecordData,
   useDataBlockRequest,
 } from '../../../data-source';
+import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
 import { Icon } from '../../../icon';
 import { TreeRecordProvider } from '../../../modules/blocks/data-blocks/table/TreeRecordProvider';
 import { DeclareVariable } from '../../../modules/variable/DeclareVariable';

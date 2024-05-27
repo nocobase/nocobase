@@ -30,7 +30,7 @@ i18n
   // .use(Backend)
   .use(initReactI18next)
   .init({
-    lng: localStorage.getItem('NOCOBASE_LOCALE') || 'en-US',
+    lng: 'en-US',
     // debug: true,
     defaultNS: 'client',
     // fallbackNS: 'client',
@@ -47,7 +47,3 @@ i18n
     keySeparator: false,
     nsSeparator: false,
   });
-
-i18n.on('languageChanged', (lng) => {
-  localStorage.setItem('NOCOBASE_LOCALE', lng);
-});

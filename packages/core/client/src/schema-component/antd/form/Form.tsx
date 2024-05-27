@@ -16,12 +16,8 @@ import React, { createContext, useContext, useEffect, useMemo } from 'react';
 import { useAttach, useComponent } from '../..';
 import { useRequest } from '../../../api-client';
 import { useCollection_deprecated } from '../../../collection-manager';
-import {
-  GeneralSchemaDesigner,
-  SchemaSettingsDivider,
-  SchemaSettingsRemove,
-  SchemaSettingsTemplate,
-} from '../../../schema-settings';
+import { GeneralSchemaDesigner, SchemaSettingsDivider, SchemaSettingsRemove } from '../../../schema-settings';
+import { SchemaSettingsTemplate } from '../../../schema-settings/SchemaSettingsTemplate';
 import { useSchemaTemplate } from '../../../schema-templates';
 
 type Opts = Options<any, any> & { uid?: string };

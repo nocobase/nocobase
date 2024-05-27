@@ -7,8 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import winston, { format, Logger } from 'winston';
-import { createLogger, LoggerOptions } from './logger';
+import winston, { format } from 'winston';
+import { createLogger, Logger, LoggerOptions, levels } from './logger';
 import Transport from 'winston-transport';
 import { SPLAT } from 'triple-beam';
 import { getFormat } from './format';
@@ -27,11 +27,12 @@ export type logMethod = (
   },
 ) => SystemLogger;
 
-export interface SystemLogger extends Omit<Logger, 'info' | 'warn' | 'error' | 'debug'> {
+export interface SystemLogger extends Omit<Logger, 'info' | 'warn' | 'error' | 'debug' | 'trace'> {
   info: logMethod;
   warn: logMethod;
   error: logMethod;
   debug: logMethod;
+  trace: logMethod;
 }
 
 class SystemLoggerTransport extends Transport {
@@ -86,6 +87,13 @@ class SystemLoggerTransport extends Transport {
     }
     callback(null, true);
   }
+
+  close() {
+    this.logger.close();
+    if (this.errorLogger) {
+      this.errorLogger.close();
+    }
+  }
 }
 
 function child(defaultRequestMetadata: any) {
@@ -108,9 +116,16 @@ function child(defaultRequestMetadata: any) {
 }
 
 export const createSystemLogger = (options: SystemLoggerOptions): SystemLogger => {
-  const logger = winston.createLogger({
-    transports: [new SystemLoggerTransport(options)],
+  const transport = new SystemLoggerTransport(options);
+  transport.once('unpipe', () => {
+    transport.close();
   });
+  const logger = winston.createLogger({
+    levels,
+    transports: [transport],
+    // Due to the use of custom log levels,
+    // we have to use the any type until Winston updates the type definitions.
+  }) as any;
 
   // Since error.cause is not supported by child logger of winston
   // we have to use a proxy to rewrite child method

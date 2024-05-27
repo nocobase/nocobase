@@ -11,7 +11,7 @@ import React, { FC, ReactNode, createContext, useContext, useMemo } from 'react'
 
 import { ACLCollectionProvider } from '../../acl/ACLProvider';
 import { UseRequestOptions, UseRequestService } from '../../api-client';
-import { withDynamicSchemaProps } from '../../application/hoc';
+import { withDynamicSchemaProps } from '../../hoc/withDynamicSchemaProps';
 import { Designable, useDesignable } from '../../schema-component';
 import {
   AssociationProvider,

@@ -50,4 +50,49 @@ describe('update or create', () => {
     expect(post).not.toBeNull();
     expect(post['title']).toEqual('t1');
   });
+
+  test('update or create with empty values', async () => {
+    await Post.repository.create({ values: { title: 't1' } });
+
+    const response = await app
+      .agent()
+      .resource('posts')
+      .updateOrCreate({
+        values: {},
+        filterKeys: ['title'],
+      });
+
+    expect(response.statusCode).toEqual(200);
+    const post = await Post.repository.findOne({
+      filter: {
+        'title.$empty': true,
+      },
+    });
+
+    expect(post).not.toBeNull();
+
+    await app
+      .agent()
+      .resource('posts')
+      .updateOrCreate({
+        values: {},
+        filterKeys: ['title'],
+      });
+
+    expect(
+      await Post.repository.count({
+        filter: {
+          'title.$empty': true,
+        },
+      }),
+    ).toEqual(1);
+
+    expect(
+      await Post.repository.count({
+        filter: {
+          title: 't1',
+        },
+      }),
+    ).toEqual(1);
+  });
 });

@@ -34,8 +34,20 @@ export const errors: AppErrors = {
   APP_ERROR: {
     status: 503,
     message: ({ app }) => {
-      return AppSupervisor.getInstance().appErrors[app.name]?.message;
+      const error = AppSupervisor.getInstance().appErrors[app.name];
+      if (!error) {
+        return '';
+      }
+
+      let message = error.message;
+
+      if ((error as any).cause) {
+        message = `${message}: ${(error as any).cause.message}`;
+      }
+
+      return message;
     },
+
     code: ({ app }): string => {
       const error = AppSupervisor.getInstance().appErrors[app.name];
       return error['code'] || 'APP_ERROR';

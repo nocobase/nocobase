@@ -11,7 +11,6 @@ import { Form } from '@formily/core';
 import { ISchema, Schema } from '@formily/react';
 import { useMemo } from 'react';
 import { CollectionFieldOptions_deprecated } from '../../../collection-manager';
-import { useBlockCollection } from './useBlockCollection';
 import { useDatetimeVariable } from './useDateVariable';
 import { useCurrentFormVariable } from './useFormVariable';
 import { useCurrentObjectVariable } from './useIterationVariable';
@@ -56,7 +55,6 @@ export const useVariableOptions = ({
   targetFieldSchema,
   record,
 }: Props) => {
-  const { name: blockCollectionName = record?.__collectionName } = useBlockCollection();
   const blockParentCollectionName = record?.__parent?.__collectionName;
   const { currentUserSettings } = useCurrentUserVariable({
     maxDepth: 3,
