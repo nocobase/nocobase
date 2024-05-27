@@ -9,11 +9,11 @@
 
 import { useFieldSchema } from '@formily/react';
 import {
+  mergeFilter,
   useBlockRequestContext,
   useCollection_deprecated,
   useCollectionManager_deprecated,
   useCompile,
-  mergeFilter,
 } from '@nocobase/client';
 import lodash from 'lodash';
 import { saveAs } from 'file-saver';
@@ -32,14 +32,14 @@ export const useExportAction = () => {
   const filters = service.params?.[1]?.filters || {};
   return {
     async onClick() {
-      const confirmed = await modal.confirm({
-        title: t('Export'),
-        content: t('Export warning'),
-        okText: t('Start export'),
-      });
-      if (!confirmed) {
-        return;
-      }
+      // const confirmed = await modal.confirm({
+      //   title: t('Export'),
+      //   content: t('Export warning'),
+      //   okText: t('Start export'),
+      // });
+      // if (!confirmed) {
+      //   return;
+      // }
       const { exportSettings } = lodash.cloneDeep(actionSchema?.['x-action-settings'] ?? {});
       exportSettings.forEach((es) => {
         const { uiSchema, interface: fieldInterface } =
@@ -53,9 +53,6 @@ export const useExportAction = () => {
           ];
         }
         es.defaultTitle = uiSchema?.title;
-        if (fieldInterface === 'chinaRegion') {
-          es.dataIndex.push('name');
-        }
       });
       const { data } = await resource.export(
         {
