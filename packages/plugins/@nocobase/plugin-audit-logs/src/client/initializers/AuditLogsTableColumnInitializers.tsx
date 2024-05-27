@@ -31,7 +31,7 @@ const ParentCollectionFields = () => {
         type: 'itemGroup',
         divider: true,
         title: t(`Parent collection fields`) + '(' + compile(`${Object.keys(inherit)[0]}`) + ')',
-        children: Object.values(inherit)[0].filter((v: any) => !v?.field?.isForeignKey),
+        children: Object.values(inherit)[0],
       });
   });
   return <SchemaInitializerChildren>{res}</SchemaInitializerChildren>;
