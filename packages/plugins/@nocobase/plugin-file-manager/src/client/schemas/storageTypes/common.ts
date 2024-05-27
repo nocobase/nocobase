@@ -40,22 +40,24 @@ export default {
     properties: {
       size: {
         type: 'number',
-        title: `{{t("File size limit (in bytes)", { ns: "${NAMESPACE}" })}}`,
-        description: `{{t("Set to 0 as unlimited, default up to 1GB.", { ns: "${NAMESPACE}" })}}`,
-        'x-component': 'InputNumber',
+        title: `{{t("File size limit", { ns: "${NAMESPACE}" })}}`,
+        description: `{{t("Set to 0 as unlimited.", { ns: "${NAMESPACE}" })}}`,
         'x-decorator': 'FormItem',
+        'x-component': 'FileSizeField',
         'x-component-props': {
           min: 0,
           step: 1,
           placeholder: DEFAULT_MAX_FILE_SIZE,
+          defaultValue: DEFAULT_MAX_FILE_SIZE,
         },
+        required: true,
       },
       mimetype: {
         type: 'string',
         title: `{{t("File type (in MIME type format)", { ns: "${NAMESPACE}" })}}`,
         description: `{{t('Multi-types seperated with comma, for example: "image/*", "image/png", "image/*, application/pdf" etc.', { ns: "${NAMESPACE}" })}}`,
-        'x-component': 'Input',
         'x-decorator': 'FormItem',
+        'x-component': 'Input',
         'x-component-props': {
           placeholder: '*',
         },

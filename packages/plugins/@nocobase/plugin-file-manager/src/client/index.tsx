@@ -15,6 +15,7 @@ import { storageTypes } from './schemas/storageTypes';
 import { AttachmentFieldInterface } from './interfaces/attachment';
 import { FileCollectionTemplate } from './templates';
 import { useAttachmentFieldProps, useFileCollectionStorageRules } from './hooks';
+import { FileSizeField } from './FileSizeField';
 
 export class PluginFileManagerClient extends Plugin {
   storageTypes = new Map();
@@ -54,6 +55,10 @@ export class PluginFileManagerClient extends Plugin {
     this.app.addScopes({
       useAttachmentFieldProps,
       useFileCollectionStorageRules,
+    });
+
+    this.app.addComponents({
+      FileSizeField,
     });
   }
 

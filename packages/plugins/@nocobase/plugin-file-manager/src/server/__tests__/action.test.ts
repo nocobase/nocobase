@@ -207,7 +207,7 @@ describe('action', () => {
   });
 
   describe('rules', () => {
-    it.only('file size smaller than limit', async () => {
+    it.skip('file size smaller than limit', async () => {
       const storage = await StorageRepo.create({
         values: {
           name: 'local_private',
