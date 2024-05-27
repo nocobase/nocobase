@@ -7,15 +7,88 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { MockServer, createMockServer } from '@nocobase/test';
+import { createMockServer, MockServer } from '@nocobase/test';
 import { uid } from '@nocobase/utils';
 import XlsxExporter from '../xlsx-exporter';
 import XLSX from 'xlsx';
 import fs from 'fs';
-
-XLSX.set_fs(fs);
 import path from 'path';
 import { BaseInterface } from '@nocobase/database';
+
+XLSX.set_fs(fs);
+
+describe('export to xlsx with preset', () => {
+  let app: MockServer;
+
+  beforeEach(async () => {
+    app = await createMockServer({
+      plugins: ['nocobase'],
+    });
+  });
+
+  afterEach(async () => {
+    await app.destroy();
+  });
+
+  it('should export with china region field', async () => {
+    const Post = app.db.collection({
+      name: 'posts',
+      fields: [
+        { type: 'string', name: 'title' },
+        {
+          type: 'belongsToMany',
+          target: 'chinaRegions',
+          through: 'userRegions',
+          targetKey: 'code',
+          interface: 'chinaRegion',
+          name: 'region',
+        },
+      ],
+    });
+
+    await app.db.sync();
+
+    await Post.repository.create({
+      values: {
+        title: 'post0',
+        region: [{ code: '14' }, { code: '1404' }, { code: '140406' }],
+      },
+    });
+
+    const exporter = new XlsxExporter({
+      collection: Post,
+      chunkSize: 10,
+      columns: [
+        { dataIndex: ['title'], defaultTitle: 'Title' },
+        {
+          dataIndex: ['region'],
+          defaultTitle: 'region',
+        },
+      ],
+    });
+
+    const wb = await exporter.run();
+
+    const xlsxFilePath = path.resolve(__dirname, `t_${uid()}.xlsx`);
+    try {
+      XLSX.writeFile(wb, xlsxFilePath);
+
+      // read xlsx file
+      const workbook = XLSX.readFile(xlsxFilePath);
+      const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+      const sheetData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+
+      console.log(sheetData);
+      const header = sheetData[0];
+      expect(header).toEqual(['Title', 'region']);
+
+      const firstUser = sheetData[1];
+      expect(firstUser).toEqual(['post0', '山西省/长治市/潞城区']);
+    } finally {
+      fs.unlinkSync(xlsxFilePath);
+    }
+  });
+});
 
 describe('export to xlsx', () => {
   let app: MockServer;

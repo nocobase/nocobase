@@ -9,6 +9,7 @@
 
 import { Plugin } from '@nocobase/server';
 import { resolve } from 'path';
+import { ChinaRegionInterface } from './interfaces/china-region-interface';
 
 function getChinaDivisionData(key: string) {
   try {
@@ -38,6 +39,8 @@ export class PluginFieldChinaRegionServer extends Plugin {
         await next();
       }
     });
+
+    this.app.db.interfaceManager.registerInterfaceType('chinaRegion', ChinaRegionInterface);
   }
 
   async importData() {

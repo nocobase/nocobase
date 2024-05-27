@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Collection, Field, FindOptions, Model } from '@nocobase/database';
+import { Collection, Field, FindOptions, Model, RelationField } from '@nocobase/database';
 import XLSX from 'xlsx';
 import { deepGet } from './utils/deep-get';
 
@@ -26,24 +26,6 @@ type ExportOptions = {
 class XlsxExporter {
   constructor(private options: ExportOptions) {}
 
-  private getAppendOptionsFromColumns() {
-    return this.options.columns.filter((col) => col.dataIndex.length > 1).map((col) => col.dataIndex.join('.'));
-  }
-
-  private getFindOptions() {
-    const { findOptions = {} } = this.options;
-    const appendOptions = this.getAppendOptionsFromColumns();
-
-    if (appendOptions.length) {
-      return {
-        ...findOptions,
-        appends: appendOptions,
-      };
-    }
-
-    return findOptions;
-  }
-
   async run(): Promise<XLSX.WorkBook> {
     const { collection, columns, chunkSize } = this.options;
 
@@ -59,7 +41,7 @@ class XlsxExporter {
 
     await collection.repository.chunk({
       ...this.getFindOptions(),
-      chunkSize: chunkSize || 1000,
+      chunkSize: chunkSize || 200,
       callback: async (rows, options) => {
         const chunkData = rows.map((r) => {
           return columns.map((col) => {
@@ -77,6 +59,37 @@ class XlsxExporter {
 
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Data');
     return workbook;
+  }
+
+  private getAppendOptionsFromColumns() {
+    return this.options.columns
+      .map((col) => {
+        if (col.dataIndex.length > 1) {
+          return col.dataIndex.join('.');
+        }
+
+        const field = this.options.collection.getField(col.dataIndex[0]);
+        if (field instanceof RelationField) {
+          return col.dataIndex[0];
+        }
+
+        return null;
+      })
+      .filter(Boolean);
+  }
+
+  private getFindOptions() {
+    const { findOptions = {} } = this.options;
+    const appendOptions = this.getAppendOptionsFromColumns();
+
+    if (appendOptions.length) {
+      return {
+        ...findOptions,
+        appends: appendOptions,
+      };
+    }
+
+    return findOptions;
   }
 
   private findFieldByDataIndex(dataIndex: Array<string>): Field {
@@ -135,8 +148,12 @@ class XlsxExporter {
     }
 
     const InterfaceClass = db.interfaceManager.getInterfaceType(interfaceName);
+
+    if (!InterfaceClass) {
+      return value;
+    }
+
     const interfaceInstance = new InterfaceClass(fieldOptions);
-    console.log({ value, rowData, dataIndex });
     return interfaceInstance.toString(value, {});
   }
 }
