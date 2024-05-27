@@ -199,11 +199,47 @@ describe('action', () => {
 
         // 文件的 url 是否正常生成
         expect(body.data.url).toBe(`${BASE_URL}/${urlPath}/${body.data.filename}`);
-        console.log(body.data.url);
         const url = body.data.url.replace(`http://localhost:${APP_PORT}`, '');
         const content = await agent.get(url);
         expect(content.text.includes('Hello world!')).toBe(true);
       });
+    });
+  });
+
+  describe('rules', () => {
+    it.only('file size smaller than limit', async () => {
+      const storage = await StorageRepo.create({
+        values: {
+          name: 'local_private',
+          type: STORAGE_TYPE_LOCAL,
+          rules: {
+            size: 13,
+          },
+          baseUrl: '/storage/uploads',
+          options: {
+            documentRoot: 'storage/uploads',
+          },
+        },
+      });
+
+      db.collection({
+        name: 'customers',
+        fields: [
+          {
+            name: 'file',
+            type: 'belongsTo',
+            target: 'attachments',
+            storage: storage.name,
+          },
+        ],
+      });
+
+      const res1 = await agent.resource('attachments').create({
+        attachmentField: 'customers.file',
+        file: path.resolve(__dirname, './files/text.txt'),
+      });
+      // console.log('-------', res1);
+      expect(res1.status).toBe(200);
     });
   });
 
