@@ -10,10 +10,10 @@ https://github.com/nocobase/nocobase/assets/1267426/1d6a3979-d1eb-4e50-b726-2f90
 
 ## Recent major updates
 
-- [v1.0.0-alpha.15：New Plugins and Improved “Configure actions” Interaction - 2024/05/19](https://docs.nocobase.com/welcome/changelog/20240519)
-- [v1.0：Significant Milestone - 2024/04/28](https://docs.nocobase.com/welcome/release/v1001-changelog)
-- [v0.21：Block performance optimization - 2024/03/29](https://docs.nocobase.com/welcome/release/v0210-changelog)
-- [v0.20：Support for multiple data sources - 2024/03/03](https://docs.nocobase.com/welcome/release/v0200-changelog)
+- [v1.0.0-alpha.15: New Plugins and Improved “Configure actions” Interaction - 2024/05/19](https://docs.nocobase.com/welcome/changelog/20240519)
+- [v1.0: Significant Milestone - 2024/04/28](https://docs.nocobase.com/welcome/release/v1001-changelog)
+- [v0.21: Block performance optimization - 2024/03/29](https://docs.nocobase.com/welcome/release/v0210-changelog)
+- [v0.20: Support for multiple data sources - 2024/03/03](https://docs.nocobase.com/welcome/release/v0200-changelog)
 - [v0.19: Application process optimization - 2024/01/08](https://docs.nocobase.com/welcome/release/v0190-changelog)
 - [v0.18: Establish a sound testing system - 2023/12/21](https://docs.nocobase.com/welcome/release/v0180-changelog)
 - [v0.17: New SchemaInitializer and SchemaSettings - 2023/12/11](https://docs.nocobase.com/welcome/release/v0170-changelog)
