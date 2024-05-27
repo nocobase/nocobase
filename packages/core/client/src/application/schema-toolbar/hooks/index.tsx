@@ -22,7 +22,7 @@ const SchemaToolbarErrorFallback: React.FC<FallbackProps> = (props) => {
 
   return (
     <ErrorFallback.Modal {...props}>
-      <SchemaToolbar title={`Error: ${props.error.message}`} />
+      <SchemaToolbar title={`render toolbar error: ${props.error.message}`} />
     </ErrorFallback.Modal>
   );
 };

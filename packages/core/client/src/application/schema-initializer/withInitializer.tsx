@@ -14,10 +14,11 @@ import React, { ComponentType, useCallback, useMemo, useState } from 'react';
 import { css } from '@emotion/css';
 import { useNiceDropdownMaxHeight } from '../../common/useNiceDropdownHeight';
 import { useFlag } from '../../flag-provider';
-import { useDesignable } from '../../schema-component';
+import { ErrorFallback, useDesignable } from '../../schema-component';
 import { useSchemaInitializerStyles } from './components/style';
 import { SchemaInitializerContext } from './context';
 import { SchemaInitializerOptions } from './types';
+import { ErrorBoundary } from 'react-error-boundary';
 
 const defaultWrap = (s: ISchema) => s;
 
@@ -87,53 +88,55 @@ export function withInitializer<T>(C: ComponentType<T>) {
       }
 
       return (
-        <SchemaInitializerContext.Provider
-          value={{
-            visible,
-            setVisible,
-            insert: insertSchema,
-            options: props,
-          }}
-        >
-          {popover === false ? (
-            React.createElement(C, cProps)
-          ) : (
-            <Popover
-              placement={'bottomLeft'}
-              {...popoverProps}
-              arrow={false}
-              overlayClassName={overlayClassName}
-              open={visible}
-              onOpenChange={setVisible}
-              content={wrapSSR(
-                <div
-                  className={`${componentCls} ${hashId}`}
-                  style={{
-                    maxHeight: dropdownMaxHeight,
-                    overflowY: 'auto',
-                  }}
-                >
-                  <ConfigProvider
-                    theme={{
-                      components: {
-                        Menu: {
-                          itemHeight: token.marginXL,
-                          borderRadius: token.borderRadiusSM,
-                          itemBorderRadius: token.borderRadiusSM,
-                          subMenuItemBorderRadius: token.borderRadiusSM,
-                        },
-                      },
+        <ErrorBoundary FallbackComponent={ErrorFallback.Modal} onError={(err) => console.error(err)}>
+          <SchemaInitializerContext.Provider
+            value={{
+              visible,
+              setVisible,
+              insert: insertSchema,
+              options: props,
+            }}
+          >
+            {popover === false ? (
+              React.createElement(C, cProps)
+            ) : (
+              <Popover
+                placement={'bottomLeft'}
+                {...popoverProps}
+                arrow={false}
+                overlayClassName={overlayClassName}
+                open={visible}
+                onOpenChange={setVisible}
+                content={wrapSSR(
+                  <div
+                    className={`${componentCls} ${hashId}`}
+                    style={{
+                      maxHeight: dropdownMaxHeight,
+                      overflowY: 'auto',
                     }}
                   >
-                    {children}
-                  </ConfigProvider>
-                </div>,
-              )}
-            >
-              {React.createElement(C, cProps)}
-            </Popover>
-          )}
-        </SchemaInitializerContext.Provider>
+                    <ConfigProvider
+                      theme={{
+                        components: {
+                          Menu: {
+                            itemHeight: token.marginXL,
+                            borderRadius: token.borderRadiusSM,
+                            itemBorderRadius: token.borderRadiusSM,
+                            subMenuItemBorderRadius: token.borderRadiusSM,
+                          },
+                        },
+                      }}
+                    >
+                      {children}
+                    </ConfigProvider>
+                  </div>,
+                )}
+              >
+                {React.createElement(C, cProps)}
+              </Popover>
+            )}
+          </SchemaInitializerContext.Provider>
+        </ErrorBoundary>
       );
     },
     { displayName: `WithInitializer(${C.displayName || C.name})` },

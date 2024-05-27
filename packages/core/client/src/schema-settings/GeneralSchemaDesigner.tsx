@@ -200,7 +200,10 @@ const InternalSchemaToolbar: FC<SchemaToolbarProps> = (props) => {
     showBackground,
     showBorder = true,
     draggable = true,
-  } = { ...props, ...(fieldSchema['x-toolbar-props'] || {}) } as SchemaToolbarProps;
+  } = {
+    ...props,
+    ...(fieldSchema['x-toolbar-props'] || {}),
+  } as SchemaToolbarProps;
   const { designable } = useDesignable();
   const compile = useCompile();
   const { styles } = useStyles();
@@ -271,7 +274,14 @@ const InternalSchemaToolbar: FC<SchemaToolbarProps> = (props) => {
 
   useEffect(() => {
     const toolbarElement = toolbarRef.current;
-    const parentElement = toolbarElement?.parentElement;
+    let parentElement = toolbarElement?.parentElement;
+    while (parentElement && window.getComputedStyle(parentElement).height === '0px') {
+      parentElement = parentElement.parentElement;
+    }
+    if (!parentElement) {
+      return;
+    }
+
     function show() {
       if (toolbarElement) {
         toolbarElement.style.display = 'block';
@@ -284,21 +294,17 @@ const InternalSchemaToolbar: FC<SchemaToolbarProps> = (props) => {
       }
     }
 
-    if (parentElement) {
-      const style = window.getComputedStyle(parentElement);
-      if (style.position === 'static') {
-        parentElement.style.position = 'relative';
-      }
-
-      parentElement.addEventListener('mouseenter', show);
-      parentElement.addEventListener('mouseleave', hide);
+    const style = window.getComputedStyle(parentElement);
+    if (style.position === 'static') {
+      parentElement.style.position = 'relative';
     }
 
+    parentElement.addEventListener('mouseenter', show);
+    parentElement.addEventListener('mouseleave', hide);
+
     return () => {
-      if (parentElement) {
-        parentElement.removeEventListener('mouseenter', show);
-        parentElement.removeEventListener('mouseleave', hide);
-      }
+      parentElement.removeEventListener('mouseenter', show);
+      parentElement.removeEventListener('mouseleave', hide);
     };
   }, []);
 

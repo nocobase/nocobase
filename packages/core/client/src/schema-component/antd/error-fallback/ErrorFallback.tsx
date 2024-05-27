@@ -11,7 +11,6 @@ import { Button, Result, Typography } from 'antd';
 import React, { FC } from 'react';
 import { FallbackProps, useErrorBoundary } from 'react-error-boundary';
 import { Trans, useTranslation } from 'react-i18next';
-import { ErrorFallbackInline } from './ErrorFallbackInline';
 import { ErrorFallbackModal } from './ErrorFallbackModal';
 
 const { Paragraph, Text, Link } = Typography;
