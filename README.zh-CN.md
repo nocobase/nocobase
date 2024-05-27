@@ -2,11 +2,13 @@
  
 https://github.com/nocobase/nocobase/assets/1267426/29623e45-9a48-4598-bb9e-9dd173ade553
 
-## 5 月 20 号期待你的支持！
+## 感谢你的支持！
+<a href="https://trendshift.io/repositories/4112" target="_blank"><img src="https://trendshift.io/api/badge/repositories/4112" alt="nocobase%2Fnocobase | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/></a>
 
-<a href="https://www.producthunt.com/products/nocobase" target="_blank"><img src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=456520&theme=light" alt="NocoBase - Scalability&#0045;first&#0044;&#0032;open&#0045;source&#0032;no&#0045;code&#0032;platform | Product Hunt" style="width: 250px; height: 54px;" width="250" height="54" /></a>
+<a href="https://www.producthunt.com/posts/nocobase?utm_source=badge-top-post-badge&utm_medium=badge&utm_souce=badge-nocobase" target="_blank"><img src="https://api.producthunt.com/widgets/embed-image/v1/top-post-badge.svg?post_id=456520&theme=light&period=daily" alt="NocoBase - Scalability&#0045;first&#0044;&#0032;open&#0045;source&#0032;no&#0045;code&#0032;platform | Product Hunt" style="width: 250px; height: 54px;" width="250" height="54" /></a>
 
 ## 最近重要更新
+- [v1.0.0-alpha.15：新增插件、改进「配置操作」交互 - 2024/05/19](https://docs-cn.nocobase.com/welcome/changelog/20240519)
 - [v1.0：新的里程碑 - 2024/04/28](https://docs-cn.nocobase.com/welcome/release/v1001-changelog)
 - [v0.21：优化区块性能 - 2024/03/29](https://docs-cn.nocobase.com/welcome/release/v0210-changelog)
 - [v0.20：支持多数据源 - 2024/03/03](https://docs-cn.nocobase.com/welcome/release/v0200-changelog)

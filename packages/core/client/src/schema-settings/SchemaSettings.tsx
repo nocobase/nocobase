@@ -93,6 +93,7 @@ import { EnableChildCollections } from './EnableChildCollections';
 import { ChildDynamicComponent } from './EnableChildCollections/DynamicComponent';
 import { FormLinkageRules } from './LinkageRules';
 import { useLinkageCollectionFieldOptions } from './LinkageRules/action-hooks';
+import { ApplicationContext, useApp } from '../application';
 
 export interface SchemaSettingsProps {
   title?: any;
@@ -725,6 +726,7 @@ export const SchemaSettingsModalItem: FC<SchemaSettingsModalItemProps> = (props)
   const options = useContext(SchemaOptionsContext);
   const collection = useCollection_deprecated();
   const apiClient = useAPIClient();
+  const app = useApp();
   const { theme } = useGlobalTheme();
   const ctx = useBlockRequestContext();
   const upLevelActiveFields = useFormActiveFields();
@@ -793,11 +795,13 @@ export const SchemaSettingsModalItem: FC<SchemaSettingsModalItemProps> = (props)
                                         }
                                       `}
                                     >
-                                      <APIClientProvider apiClient={apiClient}>
-                                        <ConfigProvider locale={locale}>
-                                          <SchemaComponent components={components} scope={scope} schema={schema} />
-                                        </ConfigProvider>
-                                      </APIClientProvider>
+                                      <ApplicationContext.Provider value={app}>
+                                        <APIClientProvider apiClient={apiClient}>
+                                          <ConfigProvider locale={locale}>
+                                            <SchemaComponent components={components} scope={scope} schema={schema} />
+                                          </ConfigProvider>
+                                        </APIClientProvider>
+                                      </ApplicationContext.Provider>
                                     </FormLayout>
                                   </SchemaComponentOptions>
                                 </AssociationOrCollectionProvider>

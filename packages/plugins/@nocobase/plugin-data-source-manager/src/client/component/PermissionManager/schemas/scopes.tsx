@@ -8,8 +8,15 @@
  */
 
 import { ISchema } from '@formily/react';
-import { useContext, useEffect } from 'react';
-import { useFormBlockContext, VariableInput, useFilterFieldOptions } from '@nocobase/client';
+import {
+  Filter,
+  FlagProvider,
+  VariableInput,
+  useFilterFieldOptions,
+  useFormBlockContext,
+  withDynamicSchemaProps,
+} from '@nocobase/client';
+import React, { useContext, useEffect } from 'react';
 import { RoleResourceCollectionContext } from '../RolesResourcesActions';
 
 export const rolesResourcesScopesCollection = (dataSourceKey = 'main') => {
@@ -146,7 +153,13 @@ export const getScopesSchema = (dataSourceKey) => {
                                         title: '{{t("Data scope")}}',
                                         name: 'filter',
                                         'x-decorator': 'FormItem',
-                                        'x-component': 'Filter',
+                                        'x-component': withDynamicSchemaProps((props) => {
+                                          return (
+                                            <FlagProvider isVariableParsedInOtherContext={true}>
+                                              <Filter {...props} />
+                                            </FlagProvider>
+                                          );
+                                        }),
                                         'x-use-component-props': () => {
                                           // eslint-disable-next-line react-hooks/rules-of-hooks
                                           const ctx = useContext(RoleResourceCollectionContext);
@@ -274,7 +287,13 @@ export const getScopesSchema = (dataSourceKey) => {
                                                 title: '{{t("Data scope")}}',
                                                 name: 'filter',
                                                 'x-decorator': 'FormItem',
-                                                'x-component': 'Filter',
+                                                'x-component': withDynamicSchemaProps((props) => {
+                                                  return (
+                                                    <FlagProvider isVariableParsedInOtherContext={true}>
+                                                      <Filter {...props} />
+                                                    </FlagProvider>
+                                                  );
+                                                }),
                                                 'x-use-component-props': () => {
                                                   // eslint-disable-next-line react-hooks/rules-of-hooks
                                                   const ctx = useContext(RoleResourceCollectionContext);
