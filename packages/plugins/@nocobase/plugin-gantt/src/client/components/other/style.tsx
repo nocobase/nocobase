@@ -12,12 +12,12 @@ import { createStyles } from 'antd-style';
 const useStyles = createStyles(({ token, css }) => {
   return {
     scrollWrapper: css`
-      overflow: auto;
-      position: absolute;
-      bottom: -8px;
-      max-width: 100%;
-      scrollbarWidth: thin;
-      height: 1.2rem;
+    overflow: auto;
+    max-width: 100%;
+    /*firefox*/
+    scrollbar-width: thin;
+    /*iPad*/
+    height: 1.2rem;
       &::-webkit-scrollbar: { width: 8, height: 8 };
       &::-webkit-scrollbar-corner: { background: transparent };
       &::-webkit-scrollbar-track: { background: var(--colorBgScrollTrack) };
@@ -66,31 +66,64 @@ const useStyles = createStyles(({ token, css }) => {
       pointerevents: none;
     `,
     nbGridOther: css`
-       .horizontalScroll: {
-        height: 1
+         .horizontalScroll: {
+          height: 1
+          }
+
+        .verticalScroll: {
+          overflow: hidden auto;
+          width: 1rem;
+          flexShrink: 0;
+          scrollbarWidth: thin;
+          &::-webkit-scrollbar: { width: 8, height: 8 };
+          &::-webkit-scrollbar-corner: { background: transparent};
+          &::-webkit-scrollbar-track: { background: var(--colorBgScrollTrack) };
+          &::-webkit-scrollbar-thumb: {
+            background: var(--colorBgScrollBar);
+            borderRadius: 4;
+          }
+          &::-webkit-scrollbar-thumb:hover': {
+            background: var(--colorBgScrollBarHover)
+          }
+          &::-webkit-scrollbar-thumb:active': {
+            background: var(--colorBgScrollBarActive)
+          },
         }
-  
-      .verticalScroll: {
-        overflow: hidden auto;
-        width: 1rem;
-        flexShrink: 0;
-        scrollbarWidth: thin;
-        &::-webkit-scrollbar: { width: 8, height: 8 };
-        &::-webkit-scrollbar-corner: { background: transparent};
-        &::-webkit-scrollbar-track: { background: var(--colorBgScrollTrack) };
-        &::-webkit-scrollbar-thumb: {
-          background: var(--colorBgScrollBar);
-          borderRadius: 4;
-        }
-        &::-webkit-scrollbar-thumb:hover': {
-          background: var(--colorBgScrollBarHover)
-        }
-        &::-webkit-scrollbar-thumb:active': {
-          background: var(--colorBgScrollBarActive)
-        },
       }
-    }
-   `,
+     `,
+    scroll: css`
+      overflow: hidden auto;
+      width: 1rem;
+      flex-shrink: 0;
+      /*firefox*/
+      scrollbar-width: thin;
+      &::-webkit-scrollbar: {
+        width: 1.1rem;
+        height: 1.1rem;
+      }
+      &::-webkit-scrollbar-corner {
+        background: transparent;
+      }
+      &::-webkit-scrollbar-thumb {
+        border: 6px solid transparent;
+        background: rgba(0, 0, 0, 0.2);
+        background: var(--palette-black-alpha-20, rgba(0, 0, 0, 0.2));
+        border-radius: 10px;
+        background-clip: padding-box;
+      }
+      &::-webkit-scrollbar-thumb:hover {
+        border: 4px solid transparent;
+        background: rgba(0, 0, 0, 0.3);
+        background: var(--palette-black-alpha-30, rgba(0, 0, 0, 0.3));
+        background-clip: padding-box;
+      }
+      &::hover {
+        border: 4px solid transparent;
+        background: rgba(0, 0, 0, 0.3);
+        background: var(--palette-black-alpha-30, rgba(0, 0, 0, 0.3));
+        background-clip: padding-box;
+      }
+    `,
   };
 });
 

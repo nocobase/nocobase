@@ -38,14 +38,22 @@ const useStyles = createStyles(({ token, css }) => {
       liststyle: none;
       outline: none;
       position: relative;
-      .gantt-horizontal-scoll: {
-        display: none;
-      }
-      &:hover: {
-        .gantt-horizontal-scoll: {
-          display: block;
-        }
-      }
+
+      // display: flex;
+      // padding: 0;
+      // margin: 0;
+      // list-style: none;
+      // outline: none;
+      // position: relative;
+
+      // .gantt-horizontal-scoll: {
+      //   display: none;
+      // }
+      // &:hover: {
+      //   .gantt-horizontal-scoll: {
+      //     display: block;
+      //   }
+      // }
     `,
   };
 });

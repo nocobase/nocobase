@@ -33,7 +33,8 @@ export const HorizontalScroll: React.FC<{
       style={{
         margin: rtl ? `0px ${taskListWidth}px 0px 0px` : `0px 0px 0px ${taskListWidth}px`,
       }}
-      className={cx(styles.nbGridOther, styles.scrollWrapper, 'gantt-horizontal-scoll')}
+      // className={cx(styles.nbGridOther, styles.scrollWrapper, 'gantt-horizontal-scoll')}
+      className={styles.scrollWrapper}
       onScroll={onScroll}
       ref={scrollRef}
     >

@@ -15,6 +15,9 @@ import {
   useBlockRequestContext,
   TableBlockProvider,
   useTableBlockContext,
+  useCollection,
+  useCollectionManager,
+  useCollectionManager_deprecated,
 } from '@nocobase/client';
 import _ from 'lodash';
 export const GanttBlockContext = createContext<any>({});
@@ -86,12 +89,14 @@ const InternalGanttBlockProvider = (props) => {
 
 export const GanttBlockProvider = (props) => {
   const params = { filter: props.params.filter, paginate: false, sort: ['id'] };
-  const collection = useCollection_deprecated();
+  const { getCollection } = useCollectionManager_deprecated();
+  const collection = getCollection(props?.collection);
 
+  console.log(collection);
   if (collection?.tree) {
     params['tree'] = true;
   }
-
+  console.log(params);
   return (
     <div aria-label="block-item-gantt" role="button">
       <TableBlockProvider {...props} params={params}>

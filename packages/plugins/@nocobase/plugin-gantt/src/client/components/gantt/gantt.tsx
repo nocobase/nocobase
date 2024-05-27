@@ -44,6 +44,9 @@ import { VerticalScroll } from '../other/vertical-scroll';
 import useStyles from './style';
 import { TaskGantt } from './task-gantt';
 import { TaskGanttContentProps } from './task-gantt-content';
+import { TaskListProps, TaskList } from '../task-list/task-list';
+import { TaskListHeaderDefault } from '../task-list/task-list-header';
+import { TaskListTableDefault } from '../task-list/task-list-table';
 
 const getColumnWidth = (dataSetLength: any, clientWidth: any) => {
   const columnWidth = clientWidth / dataSetLength > 50 ? Math.floor(clientWidth / dataSetLength) + 20 : 50;
@@ -112,7 +115,7 @@ export const Gantt: any = withDynamicSchemaProps((props: any) => {
   const currentTheme = JSON.parse(api.auth.getOption('theme'))?.uid;
   const {
     listCellWidth = '155px',
-    ganttHeight = 0,
+    ganttHeight = 300,
     preStepsCount = 1,
     barFill = 60,
     barCornerRadius = token.borderRadiusXS,
@@ -480,6 +483,11 @@ export const Gantt: any = withDynamicSchemaProps((props: any) => {
     setRecord(recordData);
     setVisible(true);
   };
+  const handleExpanderClick = (task: Task) => {
+    if (onExpanderClick && task.hideChildren !== undefined) {
+      onExpanderClick({ ...task, hideChildren: !task.hideChildren });
+    }
+  };
   const gridProps: GridProps = {
     columnWidth,
     svgWidth,
@@ -525,7 +533,24 @@ export const Gantt: any = withDynamicSchemaProps((props: any) => {
     onDelete,
     loading,
   };
-
+  const tableProps: TaskListProps = {
+    rowHeight,
+    rowWidth: listCellWidth,
+    fontFamily,
+    fontSize,
+    tasks: barTasks,
+    locale,
+    headerHeight,
+    scrollY,
+    ganttHeight,
+    horizontalContainerClass: styles.horizontalcontainer,
+    selectedTask,
+    taskListRef,
+    setSelectedTask: handleSelectedTask,
+    onExpanderClick: handleExpanderClick,
+    TaskListHeader: TaskListHeaderDefault,
+    TaskListTable: TaskListTableDefault,
+  };
   return (
     <div
       className={cx(css`
@@ -543,8 +568,8 @@ export const Gantt: any = withDynamicSchemaProps((props: any) => {
     >
       <GanttRecordViewer visible={visible} setVisible={setVisible} record={record} />
       <RecursionField name={'anctionBar'} schema={fieldSchema.properties.toolBar} />
-      <RecursionField name={'table'} schema={fieldSchema.properties.table} />
       <div className={styles.wrapper} onKeyDown={handleKeyDown} tabIndex={0} ref={wrapperRef}>
+        {listCellWidth && <TaskList {...tableProps} />}
         <TaskGantt
           gridProps={gridProps}
           calendarProps={calendarProps}
@@ -580,16 +605,16 @@ export const Gantt: any = withDynamicSchemaProps((props: any) => {
           onScroll={handleScrollY}
           rtl={rtl}
         />
-        <Spin spinning={loading} style={{ visibility: 'hidden' }}>
-          <HorizontalScroll
-            svgWidth={svgWidth}
-            taskListWidth={taskListWidth}
-            scroll={scrollX}
-            rtl={rtl}
-            onScroll={handleScrollX}
-          />
-        </Spin>
       </div>
+      <Spin spinning={loading} style={{ visibility: 'hidden' }}>
+        <HorizontalScroll
+          svgWidth={svgWidth}
+          taskListWidth={taskListWidth}
+          scroll={scrollX}
+          rtl={rtl}
+          onScroll={handleScrollX}
+        />
+      </Spin>
     </div>
   );
 });

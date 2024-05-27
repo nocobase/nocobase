@@ -27,15 +27,15 @@ export const VerticalScroll: React.FC<{
       scrollRef.current.scrollTop = scroll;
     }
   }, [scroll]);
-
   return (
     <div
       style={{
-        maxHeight: ganttHeight,
+        height: ganttHeight,
         marginTop: headerHeight,
         marginLeft: rtl ? '' : '-1rem',
+        zIndex: 2000,
       }}
-      className={cx(styles.nbGridOther, 'verticalScroll')}
+      className={styles.scroll}
       onScroll={onScroll}
       ref={scrollRef}
     >
