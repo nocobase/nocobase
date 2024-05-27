@@ -19,7 +19,7 @@ const App = () => {
 
 export default () => {
   return (
-    <ErrorBoundary FallbackComponent={ErrorFallback.Inline} onError={console.error}>
+    <ErrorBoundary FallbackComponent={ErrorFallback.Modal} onError={console.error}>
       <App />
     </ErrorBoundary>
   );

@@ -10,7 +10,7 @@
 import { render, screen, userEvent, waitFor } from '@nocobase/test/client';
 import React from 'react';
 import App1 from './components/basic';
-import InlineApp from './components/inline';
+import InlineApp from './components/modal';
 
 describe('ErrorFallback', () => {
   it('should render correctly', () => {

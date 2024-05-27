@@ -10,6 +10,6 @@
 
 <code src="./demos/new-demos/basic.tsx"></code>
 
-## Inline
+## Modal
 
-<code src="./demos/new-demos/inline.tsx"></code>
+<code src="./demos/new-demos/modal.tsx"></code>

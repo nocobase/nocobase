@@ -9,8 +9,23 @@
 
 import { ISchema } from '@formily/json-schema';
 import React, { useMemo } from 'react';
-import { useComponent, useDesignable } from '../../../schema-component';
+import { ErrorFallback, useComponent, useDesignable } from '../../../schema-component';
 import { SchemaToolbar, SchemaToolbarProps } from '../../../schema-settings/GeneralSchemaDesigner';
+import { ErrorBoundary, FallbackProps } from 'react-error-boundary';
+
+const SchemaToolbarErrorFallback: React.FC<FallbackProps> = (props) => {
+  const { designable } = useDesignable();
+
+  if (!designable) {
+    return null;
+  }
+
+  return (
+    <ErrorFallback.Modal {...props}>
+      <SchemaToolbar title={`Error: ${props.error.message}`} />
+    </ErrorFallback.Modal>
+  );
+};
 
 export const useSchemaToolbarRender = (fieldSchema: ISchema) => {
   const { designable } = useDesignable();
@@ -30,7 +45,11 @@ export const useSchemaToolbarRender = (fieldSchema: ISchema) => {
       if (!designable || !C) {
         return null;
       }
-      return <C {...fieldSchema['x-toolbar-props']} {...props} />;
+      return (
+        <ErrorBoundary FallbackComponent={SchemaToolbarErrorFallback} onError={(err) => console.error(err)}>
+          <C {...fieldSchema['x-toolbar-props']} {...props} />
+        </ErrorBoundary>
+      );
     },
     exists: !!C,
   };

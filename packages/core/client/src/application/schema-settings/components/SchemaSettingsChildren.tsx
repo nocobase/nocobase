@@ -55,7 +55,7 @@ const SchemaSettingsChildErrorFallback: FC<
   const { title, ...fallbackProps } = props;
   return (
     <SchemaSettingsItem title={title}>
-      <ErrorFallback.Inline {...fallbackProps} />
+      <ErrorFallback.Modal {...fallbackProps} />
     </SchemaSettingsItem>
   );
 };

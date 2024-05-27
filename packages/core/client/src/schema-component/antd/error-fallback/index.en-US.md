@@ -8,6 +8,6 @@ Based on the [react-error-boundary](https://github.com/bvaughn/react-error-bound
 
 <code src="./demos/new-demos/basic.tsx"></code>
 
-## Inline
+## Modal
 
-<code src="./demos/new-demos/inline.tsx"></code>
+<code src="./demos/new-demos/modal.tsx"></code>
