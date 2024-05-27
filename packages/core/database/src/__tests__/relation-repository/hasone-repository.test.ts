@@ -63,6 +63,32 @@ describe('has one repository', () => {
     await db.sync();
   });
 
+  it('should emit event after update', async () => {
+    const user = await User.repository.create({
+      values: {
+        name: 'u1',
+        profile: {
+          avatar: 'avatar',
+        },
+      },
+    });
+
+    const fn = vi.fn();
+    db.on('profiles.afterUpdateWithAssociations', () => {
+      fn();
+    });
+
+    const UserProfileRepository = new HasOneRepository(User, 'profile', user['id']);
+
+    await UserProfileRepository.update({
+      values: {
+        avatar: 'new-avatar',
+      },
+    });
+
+    expect(fn).toHaveBeenCalledOnce();
+  });
+
   test('find with appends', async () => {
     const user = await User.repository.create({
       values: {
