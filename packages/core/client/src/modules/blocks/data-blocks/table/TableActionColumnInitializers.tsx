@@ -262,6 +262,16 @@ const commonOptions = {
       },
     },
     {
+      name: 'link',
+      title: '{{t("Link")}}',
+      Component: 'LinkActionInitializer',
+      useComponentProps() {
+        return {
+          'x-component': 'Action.Link',
+        };
+      },
+    },
+    {
       name: 'divider',
       type: 'divider',
       sort: 100,

@@ -22,6 +22,8 @@ import { createSubmitActionSettings } from '../modules/actions/submit/createSubm
 import { submitActionSettings, updateSubmitActionSettings } from '../modules/actions/submit/updateSubmitActionSettings';
 import { customizeUpdateRecordActionSettings } from '../modules/actions/update-record/customizeUpdateRecordActionSettings';
 import { customizePopupActionSettings } from '../modules/actions/view-edit-popup/customizePopupActionSettings';
+import { customizeLinkActionSettings } from '../modules/actions/link/customizeLinkActionSettings';
+
 import { editActionSettings } from '../modules/actions/view-edit-popup/editActionSettings';
 import { viewActionSettings } from '../modules/actions/view-edit-popup/viewActionSettings';
 import {
@@ -88,6 +90,7 @@ export class SchemaSettingsPlugin extends Plugin {
     this.schemaSettingsManager.add(bulkDeleteActionSettings);
     this.schemaSettingsManager.add(customizeAddRecordActionSettings);
     this.schemaSettingsManager.add(customizePopupActionSettings);
+    this.schemaSettingsManager.add(customizeLinkActionSettings);
     this.schemaSettingsManager.add(customizeUpdateRecordActionSettings);
     this.schemaSettingsManager.add(createSubmitActionSettings);
     this.schemaSettingsManager.add(updateSubmitActionSettings);
