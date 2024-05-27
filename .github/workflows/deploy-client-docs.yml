@@ -12,11 +12,13 @@ on:
       - 'packages/core/client/**'
       - 'packages/core/client/docs/**'
       - '.github/workflows/deploy-client-docs.yml'
+      - 'packages/core/client/.dumirc.ts'
   pull_request:
     branches:
       - '**'
     paths:
       - 'packages/core/client/docs/**'
+      - 'packages/core/client/.dumirc.ts'
       - '.github/workflows/deploy-client-docs.yml'
 
 jobs:
