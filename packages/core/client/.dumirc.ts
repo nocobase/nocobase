@@ -471,8 +471,22 @@ export default defineConfig({
           type: 'group',
           children: [
             {
-              title: 'actionSettings:addNew',
-              link: '/ui-schema/schema-settings/action-settings-add-new',
+              title: '区块相关',
+              children: [
+                '/ui-schema/schema-settings/action-settings-add-new'
+              ]
+            },
+            {
+              title: '操作相关',
+              children: [
+                '/ui-schema/schema-settings/action-settings-add-new'
+              ]
+            },
+            {
+              title: '字段相关',
+              children: [
+                '/ui-schema/schema-settings/action-settings-add-new'
+              ]
             },
           ],
         },

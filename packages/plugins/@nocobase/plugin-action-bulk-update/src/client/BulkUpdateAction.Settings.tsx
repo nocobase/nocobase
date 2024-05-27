@@ -11,17 +11,17 @@ import { ISchema, useFieldSchema } from '@formily/react';
 import { isValid } from '@formily/shared';
 import {
   ActionDesigner,
+  AssignedFieldValues,
+  RefreshDataBlockRequest,
   SchemaSettings,
   SchemaSettingsItemType,
   SchemaSettingsModalItem,
   SchemaSettingsSelectItem,
-  AssignedFieldValues,
   useDesignable,
   useSchemaToolbar,
-  RefreshDataBlockRequest,
 } from '@nocobase/client';
-import { useTranslation } from 'react-i18next';
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 
 function UpdateMode() {
   const { dn } = useDesignable();
@@ -171,7 +171,7 @@ const schemaSettingsItems: SchemaSettingsItemType[] = [
 
 /**
  * @deprecated
- * 用于兼容之前版本的 name
+ * 用于兼容之前版本的 name，请使用 bulkUpdateActionSettings 替换
  */
 const deprecatedBulkUpdateActionSettings = new SchemaSettings({
   name: 'ActionSettings:customize:bulkUpdate',

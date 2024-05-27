@@ -12,16 +12,16 @@ import { ISchema, connect, mapProps, useField, useFieldSchema, useForm } from '@
 import {
   ActionDesigner,
   SchemaSettingOpenModeSchemaItems,
-  useCollection_deprecated,
-  useRecord,
-  SchemaSettingsModalItem,
+  SchemaSettings,
   SchemaSettingsItemType,
   SchemaSettingsLinkageRules,
+  SchemaSettingsModalItem,
   useCollectionState,
+  useCollection_deprecated,
   useDesignable,
+  useRecord,
   useSchemaToolbar,
   useSyncFromForm,
-  SchemaSettings,
 } from '@nocobase/client';
 import { Tree as AntdTree } from 'antd';
 import { cloneDeep } from 'lodash';
@@ -388,7 +388,7 @@ const schemaSettingsItems: SchemaSettingsItemType[] = [
 
 /**
  * @deprecated
- * 用于兼容之前的 name
+ * 用于兼容之前的 name，请使用 duplicateActionSettings 替代
  */
 const deprecatedDuplicateActionSettings = new SchemaSettings({
   name: 'ActionSettings:duplicate',

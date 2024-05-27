@@ -58,7 +58,7 @@ const schemaSettingsItems: SchemaSettingsItemType[] = [
 
 /**
  * @deprecated
- * 用于兼容之前的 name
+ * 用于兼容之前的 name，请使用 printActionSettings 替代
  */
 const deprecatedPrintActionSettings = new SchemaSettings({
   name: 'ActionSettings:print',
