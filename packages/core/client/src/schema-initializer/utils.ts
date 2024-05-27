@@ -113,9 +113,7 @@ export const useTableColumnInitializerFields = () => {
   const isReadPretty = isSubTable ? form.readPretty : true;
 
   return currentFields
-    .filter(
-      (field) => field?.interface && field?.interface !== 'subTable' && !field?.isForeignKey && !field?.treeChildren,
-    )
+    .filter((field) => field?.interface && field?.interface !== 'subTable' && !field?.treeChildren)
     .map((field) => {
       const interfaceConfig = getInterface(field.interface);
       const isFileCollection = field?.target && getCollection(field?.target)?.template === 'file';
@@ -302,7 +300,7 @@ export const useFormItemInitializerFields = (options?: any) => {
   const action = fieldSchema?.['x-action'];
 
   return currentFields
-    ?.filter((field) => field?.interface && !field?.isForeignKey && !field?.treeChildren)
+    ?.filter((field) => field?.interface && !field?.treeChildren)
     ?.map((field) => {
       const interfaceConfig = getInterface(field.interface);
       const targetCollection = getCollection(field.target);
@@ -369,7 +367,7 @@ export const useFilterFormItemInitializerFields = (options?: any) => {
   const action = fieldSchema?.['x-action'];
 
   return currentFields
-    ?.filter((field) => field?.interface && !field?.isForeignKey && getInterface(field.interface)?.filterable)
+    ?.filter((field) => field?.interface && getInterface(field.interface)?.filterable)
     ?.map((field) => {
       const interfaceConfig = getInterface(field.interface);
       const targetCollection = getCollection(field.target);
@@ -572,7 +570,7 @@ export const useInheritsFormItemInitializerFields = (options?) => {
     const targetCollection = getCollection(v);
     return {
       [targetCollection?.title]: fields
-        ?.filter((field) => field?.interface && !field?.isForeignKey)
+        ?.filter((field) => field?.interface)
         ?.map((field) => {
           const interfaceConfig = getInterface(field.interface);
           const targetCollection = getCollection(field.target);
@@ -629,7 +627,7 @@ export const useFilterInheritsFormItemInitializerFields = (options?) => {
     const targetCollection = getCollection(v);
     return {
       [targetCollection.title]: fields
-        ?.filter((field) => field?.interface && !field?.isForeignKey && getInterface(field.interface)?.filterable)
+        ?.filter((field) => field?.interface && getInterface(field.interface)?.filterable)
         ?.map((field) => {
           const interfaceConfig = getInterface(field.interface);
           const targetCollection = getCollection(field.target);

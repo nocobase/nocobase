@@ -274,7 +274,7 @@ export const useCollectionManager_deprecated = (dataSourceName?: string) => {
 
   // 是否可以作为标题字段
   const isTitleField = (field) => {
-    return !field.isForeignKey && getInterface(field.interface)?.titleUsable;
+    return getInterface(field.interface)?.titleUsable;
   };
 
   const getParentCollectionFields = useCallback(
