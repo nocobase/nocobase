@@ -117,7 +117,7 @@ const defineServerConfig = () => {
     test: {
       setupFiles: resolve(__dirname, './setup/server.ts'),
       exclude: getExclude(true),
-      retry: 2,
+      retry: process.env.CI ? 2 : 0,
     },
     coverage: {
       exclude: getExclude(true),
