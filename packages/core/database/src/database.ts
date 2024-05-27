@@ -850,11 +850,9 @@ export class Database extends EventEmitter implements AsyncEmitter {
       const result = await this.sequelize.query(`SHOW VARIABLES LIKE 'lower_case_table_names'`, { plain: true });
 
       if (result?.Value === '1' && !this.options.underscored) {
-        console.log(
+        throw new Error(
           `Your database lower_case_table_names=1, please add ${chalk.yellow('DB_UNDERSCORED=true')} to the .env file`,
         );
-
-        process.exit();
       }
     }
 

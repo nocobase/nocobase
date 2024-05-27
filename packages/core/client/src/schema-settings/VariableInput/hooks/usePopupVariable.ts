@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { useFlag } from '../../../flag-provider/hooks/useFlag';
 import { useVariable } from '../../../modules/variable/useVariable';
 import { useBaseVariable } from './useBaseVariable';
 
@@ -17,6 +18,7 @@ import { useBaseVariable } from './useBaseVariable';
  */
 export const usePopupVariable = (props: any = {}) => {
   const { value, title, collection } = useVariable('$nPopupRecord');
+  const { isVariableParsedInOtherContext } = useFlag();
   const settings = useBaseVariable({
     collectionField: props.collectionField,
     uiSchema: props.schema,
@@ -34,7 +36,7 @@ export const usePopupVariable = (props: any = {}) => {
     /** 变量值 */
     popupRecordCtx: value,
     /** 用于判断是否需要显示配置项 */
-    shouldDisplayPopupRecord: !!value,
+    shouldDisplayPopupRecord: !!value && !isVariableParsedInOtherContext,
     /** 当前记录对应的 collection name */
     collectionName: collection?.name,
     dataSource: collection?.dataSource,
