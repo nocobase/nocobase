@@ -16,11 +16,13 @@ jobs:
           repository: nocobase/nocobase
           ssh-key: ${{ secrets.NOCOBASE_DEPLOY_KEY }}
           persist-credentials: true
+          fetch-depth: 0
       - name: Checkout pro-plugins
         uses: actions/checkout@v4
         with:
           repository: nocobase/pro-plugins
           path: packages/pro-plugins
+          fetch-depth: 0
           ssh-key: ${{ secrets.PRO_PLUGINS_DEPLOY_KEY }}
           persist-credentials: true
       - name: Set Node.js 18

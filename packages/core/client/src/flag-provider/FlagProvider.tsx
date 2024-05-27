@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React from 'react';
+import React, { FC } from 'react';
 
 export interface FlagProviderProps {
   /**
@@ -30,11 +30,15 @@ export interface FlagProviderProps {
    * 是否存在于 `子表单` 中
    */
   isInSubForm?: boolean;
-  children: any;
+  /**
+   * 如果为 true，则表示变量需要在其他上下文中解析
+   * @default true
+   */
+  isVariableParsedInOtherContext?: boolean;
 }
 
 export const FlagContext = React.createContext<Omit<FlagProviderProps, 'children'>>(null);
 
-export const FlagProvider = (props: FlagProviderProps) => {
+export const FlagProvider: FC<FlagProviderProps> = (props) => {
   return <FlagContext.Provider value={props}>{props.children}</FlagContext.Provider>;
 };
