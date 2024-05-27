@@ -85,6 +85,7 @@ import { patchSequelizeQueryInterface, snakeCase } from './utils';
 import { BaseValueParser, registerFieldValueParsers } from './value-parsers';
 import { ViewCollection } from './view-collection';
 import { InterfaceManager } from './interface-manager';
+import { registerInterfaces } from './interfaces/utils';
 
 export type MergeOptions = merge.Options;
 
@@ -272,6 +273,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
       });
     }
 
+    registerInterfaces(this);
     registerFieldValueParsers(this);
 
     this.initOperators();
