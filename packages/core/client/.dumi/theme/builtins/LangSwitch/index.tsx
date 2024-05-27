@@ -1,6 +1,7 @@
 import React from "react";
 
 const LangSwitch = () => {
+  if (typeof window === 'undefined') return null;
   const { hostname } = window.location
   if (hostname === 'localhost') return null;
   const en = window.location.href.replace(hostname, 'client.docs.nocobase.com')

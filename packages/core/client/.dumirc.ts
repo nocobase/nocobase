@@ -14,6 +14,12 @@ export default defineConfig({
   alias: {
     ...umiConfig.alias,
   },
+  ssr: process.env.NODE_ENV === 'production' ? {
+    builder: 'webpack',
+  } : false,
+  sitemap: process.env.NODE_ENV === 'production' ? {
+    hostname: lang === 'zh-CN' ? 'https://client.docs-cn.nocobase.com' : 'https://client.docs.nocobase.com'
+  } : false,
   fastRefresh: false, // 热更新会导致 Context 丢失，不开启
   // ssr: {},
   // exportStatic: {
