@@ -99,7 +99,6 @@ describe('export to xlsx', () => {
       const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
       const sheetData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
 
-      console.log(sheetData);
       const header = sheetData[0];
       expect(header).toEqual(['姓名', 'Interface 测试']);
 
