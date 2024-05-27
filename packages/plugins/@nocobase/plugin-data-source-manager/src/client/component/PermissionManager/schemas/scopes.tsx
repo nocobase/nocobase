@@ -146,7 +146,13 @@ export const getScopesSchema = (dataSourceKey) => {
                                         title: '{{t("Data scope")}}',
                                         name: 'filter',
                                         'x-decorator': 'FormItem',
-                                        'x-component': 'Filter',
+                                        'x-component': (props) => {
+                                          return (
+                                            <FlagProvider isVariableParsedInOtherContext={true}>
+                                              <Filter {...props} />
+                                            </FlagProvider>
+                                          );
+                                        },
                                         'x-use-component-props': () => {
                                           // eslint-disable-next-line react-hooks/rules-of-hooks
                                           const ctx = useContext(RoleResourceCollectionContext);
