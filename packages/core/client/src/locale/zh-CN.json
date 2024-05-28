@@ -941,5 +941,7 @@
   "Left fixed": "左固定",
   "Right fixed": "右固定",
   "Fixed": "固定列",
-  "Please configure the URL": "请配置URL"
+  "Please configure the URL": "请配置URL",
+  "Path":"路径",
+  "Search parameters":"请求参数"
 }

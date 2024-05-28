@@ -42,7 +42,7 @@ export function SchemaSettingsActionLinkItem() {
         title: t('Edit Link'),
         properties: {
           url: {
-            title: t('URL'),
+            title: t('Path'),
             type: 'string',
             default: fieldSchema?.['x-component-props']?.['url'],
             'x-decorator': 'FormItem',
@@ -55,7 +55,7 @@ export function SchemaSettingsActionLinkItem() {
             type: 'array',
             'x-component': 'ArrayItems',
             'x-decorator': 'FormItem',
-            title: `{{t("Parameters")}}`,
+            title: `{{t("Search parameters")}}`,
             default: fieldSchema?.['x-component-props']?.params || [{}],
             items: {
               type: 'object',
