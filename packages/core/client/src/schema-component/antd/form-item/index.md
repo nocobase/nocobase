@@ -10,3 +10,27 @@ type FormItemProps = IFormItemProps
 ## Example
 
 <code src="./demos/new-demos/basic.tsx"></code>
+
+## 字段默认值
+
+### 常量
+<code src="./demos/new-demos/demo.tsx"></code>
+
+### 变量
+- 默认值为当前表单值
+
+Title的默认值为当前表单Number的实时输入的值。
+
+<code src="./demos/new-demos/demo1.tsx"></code>
+
+- 默认值为日期变量
+
+日期默认值为「当前时间」
+
+<code src="./demos/new-demos/demo2.tsx"></code>
+
+- 默认值为当前对象值（适用于子表格/子表单中）
+
+每一个行中title的默认值为当前行的number值
+
+<code src="./demos/new-demos/demo3.tsx"></code>

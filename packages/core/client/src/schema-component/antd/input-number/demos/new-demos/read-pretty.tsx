@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { mockApp } from '@nocobase/client/demo-utils';
 import { SchemaComponent, Plugin, ISchema } from '@nocobase/client';
@@ -21,15 +20,31 @@ const schema: ISchema = {
         addonAfter: '万元',
       },
     },
+    maxInteger: {
+      type: 'number',
+      default: '1691195350092210177',
+      title: 'MAX_SAFE_INTEGER',
+      'x-decorator': 'FormItem',
+      'x-component': 'InputNumber',
+      'x-pattern': 'readPretty',
+    },
+    mimInteger: {
+      type: 'number',
+      default: '-9007199254740991',
+      title: 'MIN_SAFE_INTEGER',
+      'x-decorator': 'FormItem',
+      'x-component': 'InputNumber',
+      'x-pattern': 'readPretty',
+    },
   },
-}
+};
 const Demo = () => {
   return <SchemaComponent schema={schema} />;
 };
 
 class DemoPlugin extends Plugin {
   async load() {
-    this.app.router.add('root', { path: '/', Component: Demo })
+    this.app.router.add('root', { path: '/', Component: Demo });
   }
 }
 

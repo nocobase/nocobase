@@ -70,7 +70,7 @@ const useParseDefaultValue = () => {
       if (
         variables &&
         field &&
-        ((isVariable(fieldSchema.default) && field.value == null) || field.value === fieldSchema.default || forceUpdate)
+        (isVariable(fieldSchema.default) || field.value === fieldSchema.default || forceUpdate)
       ) {
         // 一个变量字符串如果显示出来会比较奇怪
         if (isVariable(field.value)) {
@@ -89,7 +89,6 @@ const useParseDefaultValue = () => {
         const value = transformVariableValue(await variables.parseVariable(fieldSchema.default, localVariables), {
           targetCollectionField: collectionField,
         });
-
         if (value == null || value === '') {
           // fix https://nocobase.height.app/T-4350/description
           // 如果 field.mounted 为 false，说明 field 已经被卸载了，不需要再设置默认值
@@ -140,7 +139,6 @@ const useParseDefaultValue = () => {
             // 返回一个随机值，确保能触发 run 函数
             return Math.random();
           }
-
           return value;
         },
         () => run({ forceUpdate: true }),

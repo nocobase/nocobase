@@ -2,6 +2,7 @@
 
 数字输入框。其基于 ant-design [InputNumber](https://ant.design/components/input-number/) 组件进行封装。
 
+InputNumber 是数值类型字段，如 Integer 和 Number 字段的UI组件。
 
 ## Basic Usage
 
@@ -53,3 +54,8 @@ interface InputNumberReadPrettyProps {
 ## Separator
 
 <code src="./demos/new-demos/separator.tsx"></code>
+
+### 切换 Separator
+
+<code src="./demos/new-demos/changeSeparator.tsx"></code>
+

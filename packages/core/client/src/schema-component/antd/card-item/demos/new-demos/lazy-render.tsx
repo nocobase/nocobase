@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { mockApp } from '@nocobase/client/demo-utils';
 import { SchemaComponent, Plugin, SchemaSettings, ISchema } from '@nocobase/client';
@@ -74,6 +73,42 @@ const schema: ISchema = {
         },
       },
     },
+    block4: {
+      type: 'void',
+      'x-component': 'CardItem',
+      'x-settings': 'simpleSettings',
+      'x-component-props': {
+        title: 'Block 4',
+        lazyRender: {
+          threshold: 1,
+        },
+      },
+      properties: {
+        hello: {
+          type: 'void',
+          'x-component': 'div',
+          'x-content': 'Hello Card!',
+        },
+      },
+    },
+    block5: {
+      type: 'void',
+      'x-component': 'CardItem',
+      'x-settings': 'simpleSettings',
+      'x-component-props': {
+        title: 'Block 5',
+        lazyRender: {
+          threshold: 1,
+        },
+      },
+      properties: {
+        hello: {
+          type: 'void',
+          'x-component': 'div',
+          'x-content': 'Hello Card!',
+        },
+      },
+    },
   },
 };
 
@@ -83,8 +118,8 @@ const Demo = () => {
 
 class DemoPlugin extends Plugin {
   async load() {
-    this.app.schemaSettingsManager.add(simpleSettings)
-    this.app.router.add('root', { path: '/', Component: Demo })
+    this.app.schemaSettingsManager.add(simpleSettings);
+    this.app.router.add('root', { path: '/', Component: Demo });
   }
 }
 

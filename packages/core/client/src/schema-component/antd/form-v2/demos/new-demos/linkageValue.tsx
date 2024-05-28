@@ -53,7 +53,7 @@ const schema: ISchema = {
       'x-settings': 'blockSettings:createForm',
       'x-component': 'CardItem',
       'x-component-props': {
-        title: 'When number > 10, hide title',
+        title: 'When number > 10, title value is "number > 10"',
       },
       properties: {
         form: {
@@ -78,7 +78,11 @@ const schema: ISchema = {
                   actions: [
                     {
                       targetFields: ['title'],
-                      operator: 'none',
+                      operator: 'value',
+                      value: {
+                        mode: 'constant',
+                        value: ' number  > 10',
+                      },
                     },
                   ],
                 },

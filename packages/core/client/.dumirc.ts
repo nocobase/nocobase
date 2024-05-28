@@ -1,4 +1,4 @@
-import _ from 'lodash'
+import _ from 'lodash';
 import { getUmiConfig } from '@nocobase/devtools/umiConfig';
 import { defineConfig } from 'dumi';
 import { defineThemeConfig } from 'dumi-theme-nocobase';
@@ -25,9 +25,12 @@ export default defineConfig({
     docDirs: [`./docs/${lang}`],
     atomDirs: [
       { type: 'component', dir: 'src/schema-component/antd' },
+      { type: 'component', dir: 'src/data-source' },
+      { type: 'component', dir: 'src/schema-initializer' },
+      { type: 'component', dir: 'src/schema-settings' },
     ],
   },
-  locales: lang === 'zh-CN' ? [{ id: 'zh-CN', name: '中文' },] : [{ id: 'en-US', name: 'English' }],
+  locales: lang === 'zh-CN' ? [{ id: 'zh-CN', name: '中文' }] : [{ id: 'en-US', name: 'English' }],
   themeConfig: defineThemeConfig({
     title: 'NocoBase',
     logo: 'https://www.nocobase.com/images/logo.png',
@@ -46,7 +49,7 @@ export default defineConfig({
       {
         title: 'Home site',
         link: lang === 'zh-CN' ? 'https://docs-cn.nocobase.com' : 'https://docs.nocobase.com',
-      }
+      },
       // {
       //   title: 'UI Schema',
       //   link: '/ui-schema',
@@ -186,7 +189,7 @@ export default defineConfig({
               title: 'ExtendCollectionsProvider',
               link: '/core/data-source/extend-collections-provider',
             },
-          ]
+          ],
         },
         {
           title: 'DataBlock',
@@ -212,199 +215,247 @@ export default defineConfig({
               title: 'DataBlockRequestProvider',
               link: '/core/data-block/data-block-request-provider',
             },
-          ]
-        }
+          ],
+        },
       ],
       '/components': [
-        {
-          title: 'Action',
-          type: 'group',
-          children: [
-            {
-              "title": "Action",
-              "link": "/components/action"
-            },
-            {
-              "title": "Filter",
-              "link": "/components/filter"
-            },
-          ]
-        },
         {
           title: 'Field',
           type: 'group',
           children: [
             {
-              "title": "Checkbox",
-              "link": "/components/checkbox"
+              title: 'Checkbox',
+              link: '/components/checkbox',
             },
             {
-              "title": "Cascader",
-              "link": "/components/cascader"
+              title: 'Cascader',
+              link: '/components/cascader',
             },
             {
-              "title": "ColorPicker",
-              "link": "/components/color-picker"
+              title: 'ColorPicker',
+              link: '/components/color-picker',
             },
             {
-              "title": "ColorSelect",
-              "link": "/components/color-select"
+              title: 'ColorSelect',
+              link: '/components/color-select',
             },
             {
-              "title": "DatePicker",
-              "link": "/components/date-picker"
+              title: 'DatePicker',
+              link: '/components/date-picker',
             },
             {
-              "title": "TimePicker",
-              "link": "/components/time-picker"
+              title: 'UnixTimestamp',
+              link: '/components/unix-timestamp',
             },
             {
-              "title": "IconPicker",
-              "link": "/components/icon-picker"
+              title: 'TimePicker',
+              link: '/components/time-picker',
             },
             {
-              "title": "InputNumber",
-              "link": "/components/input-number"
+              title: 'IconPicker',
+              link: '/components/icon-picker',
             },
             {
-              "title": "Input",
-              "link": "/components/input"
+              title: 'InputNumber',
+              link: '/components/input-number',
             },
             {
-              "title": "AutoComplete",
-              "link": "/components/auto-complete"
+              title: 'Input',
+              link: '/components/input',
+            },
+          
+            {
+              title: 'NanoIDInput',
+              link: '/components/nanoid-input',
             },
             {
-              "title": "NanoIDInput",
-              "link": "/components/nanoid-input"
+              title: 'Password',
+              link: '/components/password',
             },
             {
-              "title": "Password",
-              "link": "/components/password"
+              title: 'Percent',
+              link: '/components/percent',
             },
             {
-              "title": "Percent",
-              "link": "/components/percent"
+              title: 'Radio',
+              link: '/components/radio',
             },
             {
-              "title": "Radio",
-              "link": "/components/radio"
+              title: 'Select',
+              link: '/components/select',
             },
             {
-              "title": "Select",
-              "link": "/components/select"
+              title: 'RemoteSelect',
+              link: '/components/remote-select',
             },
             {
-              "title": "RemoteSelect",
-              "link": "/components/remote-select"
+              title: 'TreeSelect',
+              link: '/components/tree-select',
             },
             {
-              "title": "TreeSelect",
-              "link": "/components/tree-select"
+              title: 'Upload',
+              link: '/components/upload',
             },
             {
-              "title": "Upload",
-              "link": "/components/upload"
+              title: 'CollectionSelect',
+              link: '/components/collection-select',
             },
             {
-              "title": "CollectionSelect",
-              "link": "/components/collection-select"
+              title: 'Cron',
+              link: '/components/cron',
             },
             {
-              "title": "Cron",
-              "link": "/components/cron"
+              title: 'Preview',
+              link: '/components/preview',
             },
             {
-              "title": "Markdown",
-              "link": "/components/markdown"
+              title: 'Markdown',
+              link: '/components/markdown',
             },
             {
-              "title": "Variable",
-              "link": "/components/variable"
+              title: 'RichText',
+              link: '/components/rich-text',
             },
-            {
-              "title": "QuickEdit",
-              "link": "/components/quick-edit"
-            },
-            {
-              "title": "RichText",
-              "link": "/components/rich-text"
-            }
-          ]
+          ],
         },
         {
-          title: 'Block',
+          title: '操作',
           type: 'group',
           children: [
             {
-              "title": "BlockItem",
-              "link": "/components/block-item"
+              title: 'Action',
+              link: '/components/action',
             },
             {
-              "title": "CardItem",
-              "link": "/components/card-item"
+              title: 'Filter.Action',
+              link: '/components/filter',
             },
-            {
-              "title": "FormItem",
-              "link": "/components/form-item"
-            },
-            {
-              "title": "FormV2",
-              "link": "/components/form-v2"
-            },
-            {
-              "title": "TableV2",
-              "link": "/components/table-v2"
-            },
-            {
-              "title": "Details",
-              "link": "/components/details"
-            },
-            {
-              "title": "GridCard",
-              "link": "/components/grid-card"
-            },
-            {
-              "title": "Grid",
-              "link": "/components/grid"
-            },
-            {
-              "title": "List",
-              "link": "/components/list"
-            },
-          ]
+          ],
         },
         {
-          title: 'Others',
+          title: '区块',
           type: 'group',
           children: [
             {
-              "title": "Tabs",
-              "link": "/components/tabs"
+              title: 'FormV2',
+              link: '/components/form-v2',
             },
             {
-              "title": "ErrorFallback",
-              "link": "/components/error-fallback"
+              title: 'TableV2',
+              link: '/components/table-v2',
             },
             {
-              "title": "G2Plot",
-              "link": "/components/g2plot"
+              title: 'Details',
+              link: '/components/details',
             },
             {
-              "title": "Menu",
-              "link": "/components/menu"
+              title: 'GridCard',
+              link: '/components/grid-card',
             },
             {
-              "title": "Pagination",
-              "link": "/components/pagination"
+              title: 'Grid',
+              link: '/components/grid',
             },
             {
-              "title": "Preview",
-              "link": "/components/preview"
+              title: 'List',
+              link: '/components/list',
             },
-          ]
+          ],
         },
-      ]
+        {
+          title: '装饰器',
+          type: 'group',
+          children: [
+            {
+              title: '基础装饰器',
+              children: [
+                {
+                  title: 'BlockItem',
+                  link: '/components/block-item',
+                },
+                {
+                  title: 'CardItem',
+                  link: '/components/card-item',
+                },
+                {
+                  title: 'FormItem',
+                  link: '/components/form-item',
+                },
+              ],
+            },
+            {
+              title: '区块装饰器',
+              children: [
+                {
+                  title: 'DataBlockProvider',
+                  link: '/components/data-block',
+                },
+              ],
+            },
+          ],
+        },
+        {
+          title: 'Schema 设计器',
+          type: 'group',
+          children: [
+            {
+              title: 'SchemaInitializer',
+              link: '/components/schema-initializer',
+            },
+            {
+              title: 'SchemaSettings',
+              link: '/components/schema-settings',
+            },
+            {
+              title: 'SchemaToolbar',
+              link: '/components/schema-toolbar',
+            },
+          ],
+        },
+        {
+          title: '其他',
+          type: 'group',
+          children: [
+            {
+              title: 'Variable',
+              link: '/components/variable',
+            },
+            {
+              title: 'Page',
+              link: '/components/page',
+            },
+            {
+              title: 'Tabs',
+              link: '/components/tabs',
+            },
+            {
+              title: 'Menu',
+              link: '/components/menu',
+            },
+            {
+              title: 'ErrorFallback',
+              link: '/components/error-fallback',
+            },
+            {
+              title: 'G2Plot',
+              link: '/components/g2plot',
+            },
+            {
+              title: 'Pagination',
+              link: '/components/pagination',
+            },
+         
+            {
+              title: 'QuickEdit',
+              link: '/components/quick-edit',
+            },
+            {
+              title: 'AutoComplete',
+              link: '/components/auto-complete',
+            },
+          ],
+        },
+      ],
       // '/ui-schema': [
       //   {
       //     title: 'Overview',
@@ -670,7 +721,7 @@ export default defineConfig({
     },
     localesEnhance: [
       { id: 'zh-CN', switchPrefix: '中', hostname: 'client.docs-cn.nocobase.com' },
-      { id: 'en-US', switchPrefix: 'en', hostname: 'client.docs.nocobase.com' }
+      { id: 'en-US', switchPrefix: 'en', hostname: 'client.docs.nocobase.com' },
     ],
   }),
 });

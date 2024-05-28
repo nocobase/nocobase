@@ -20,7 +20,7 @@ export const NanoIDInput = Object.assign(
   connect(
     AntdInput,
     mapProps((props: any, field: any) => {
-      const { size, customAlphabet } = useCollectionField() || { size: 21 };
+      const { size, customAlphabet } = useCollectionField() || { size: 21, ...props };
       const { t } = useTranslation();
       const form = useForm();
       function isValidNanoid(value) {

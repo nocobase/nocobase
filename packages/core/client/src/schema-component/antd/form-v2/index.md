@@ -71,11 +71,27 @@ FormV2 内部封装了 FormLayout 组件，FormLayout 组件的 props 请参考 
 ## Linkage
 
 表单项之间可以通过 `x-linkage-rules` 属性进行联动。
+区块保存为区块模版时，联动规则的配置也会一起保存。因此`x-linkage-rules`存在`Grid`这个节点。
 
-TODO:
+- 条件必填
 
-<!-- <code src="./demos/new-demos/linkage.tsx"></code> -->
+<code src="./demos/new-demos/linkageRequired.tsx"></code>
 
-更多联动规则的写法请参考：TODO
+- 显示/隐藏
 
+<code src="./demos/new-demos/linkage.tsx"></code>
+
+- 可编辑/禁用/阅读友好
+
+<code src="./demos/new-demos/linkagePattern.tsx"></code>
+
+- 赋值
+
+常量
+
+<code src="./demos/new-demos/linkageValue.tsx"></code>
+
+变量
+
+<code src="./demos/new-demos/linkageValue1.tsx"></code>
 ## Hooks

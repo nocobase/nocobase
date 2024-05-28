@@ -12,6 +12,12 @@ type CascaderProps<DataNodeType extends BaseOptionType = any> = AntdCascaderProp
    * must select the last level
    */
   changeOnSelectLast?: boolean;
+    /**
+   * must select the last level
+   */
+  changeOnSelectLast?: boolean;
+  maxLevel?: number;
+  onChange?: (value: any) => void;
 }
 ```
 

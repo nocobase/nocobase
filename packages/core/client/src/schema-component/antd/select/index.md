@@ -20,6 +20,10 @@ type SelectProps = AntdSelectProps<any, any> & {
    * @default { label: 'label', value: 'value', color: 'color', options: 'children' }
    */
   fieldNames: FieldNames;
+    /**
+   * Whether it is loading data options
+   */
+  loading?: boolean;
 };
 ```
 
@@ -30,6 +34,12 @@ type SelectProps = AntdSelectProps<any, any> & {
 ## Multiple
 
 <code src="./demos/new-demos/multiple.tsx"></code>
+
+## Tags
+
+标签形式的多选框，用户亦可自由输入
+
+<code src="./demos/new-demos/tags.tsx"></code>
 
 ## ObjectValue
 

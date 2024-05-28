@@ -34,6 +34,11 @@ export type SelectProps<
    * @default { label: 'label', value: 'value', color: 'color', options: 'children' }
    */
   fieldNames?: FieldNames;
+  mode: 'tags' | 'multiple';
+  /**
+   * Whether it is loading data options
+   */
+  loading?: boolean;
 };
 
 const isEmptyObject = (val: any) => !isValid(val) || (typeof val === 'object' && Object.keys(val).length === 0);

@@ -1,8 +1,8 @@
 import React from 'react';
 import { mockApp } from '@nocobase/client/demo-utils';
-import { SchemaComponent, Plugin } from '@nocobase/client';
+import { SchemaComponent, Plugin, ISchema } from '@nocobase/client';
 
-const schema = {
+const schema: ISchema = {
   type: 'void',
   name: 'root',
   'x-decorator': 'FormV2',
@@ -10,12 +10,10 @@ const schema = {
   properties: {
     test: {
       type: 'string',
-      title: 'Test',
+      title: 'Email',
       'x-decorator': 'FormItem',
-      'x-component': 'NanoIDInput',
-      'x-component-props': {
-        customAlphabet: '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz',
-      },
+      'x-component': 'Input',
+      'x-validator': 'email',
     },
   },
 };

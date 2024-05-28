@@ -25,3 +25,11 @@ type DetailsProps = FormProps;
 ## List Form Data
 
 <code src="./demos/new-demos/list.tsx"></code>
+
+## Linkage
+
+详情区块的配置项由 `'blockSettings:detailsWithPagination'` 控制。
+
+通过设置 `x-linkage-rules` 控制字段的显示/隐藏。
+<code src="./demos/new-demos/linkage.tsx"></code>
+

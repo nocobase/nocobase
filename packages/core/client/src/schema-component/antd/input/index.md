@@ -2,7 +2,11 @@
 
 文本输入框。其基于 ant-design [Input](https://ant.design/components/input/) 组件进行封装。
 
-## Input
+
+Input组件是文本类型字段，如 Email、UUID、Phone、Single line text 等字段的UI组件，通过 `x-validator`设置不同的验证规则。
+
+<code src="./demos/new-demos/email.tsx"></code>
+
 
 ### Basic Usage
 
@@ -31,6 +35,8 @@ interface InputReadPrettyProps {
 <code src="./demos/new-demos/input-read-pretty.tsx"></code>
 
 ## Input.TextArea
+
+Input.TextArea 是多行文本的UI组件
 
 ### Basic Usage
 
@@ -62,6 +68,7 @@ interface InputTextAreaReadPrettyProps {
 
 ## Input.URL
 
+Input.URL 是URL字段的UI组件
 ### Basic Usage
 
 ```ts

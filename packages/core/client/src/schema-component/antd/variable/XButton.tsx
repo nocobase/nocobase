@@ -15,6 +15,7 @@ export const XButton = forwardRef((props: ButtonProps, ref: any) => {
     return {
       fontStyle: 'italic',
       fontFamily: 'New York, Times New Roman, Times, serif',
+      height: 'fit-content',
     };
   }, []);
 
