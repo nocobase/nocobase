@@ -86,6 +86,8 @@ export type ComposedAction = React.FC<ActionProps> & {
   [key: string]: any;
 };
 
-export type ComposedActionDrawer<T = DrawerProps> = React.FC<T & { footerNodeName?: string }> & {
+export type ActionDrawerProps<T = DrawerProps> = T & { footerNodeName?: string };
+
+export type ComposedActionDrawer<T = DrawerProps> = React.FC<ActionDrawerProps<T>> & {
   Footer?: React.FC;
 };
