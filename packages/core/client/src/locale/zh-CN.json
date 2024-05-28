@@ -942,6 +942,7 @@
   "Right fixed": "右固定",
   "Fixed": "固定列",
   "Please configure the URL": "请配置URL",
-  "URL":"URL",
-  "Search parameters":"URL 查询参数"
+  "URL": "URL",
+  "Search parameters": "URL 查询参数",
+  "Do not concatenate search params in the URL": "查询参数不要在 URL 里拼接"
 }

@@ -42,7 +42,7 @@ export function SchemaSettingsActionLinkItem() {
         title: t('Edit Link'),
         properties: {
           url: {
-            title: t('Path'),
+            title: t('URL'),
             type: 'string',
             default: fieldSchema?.['x-component-props']?.['url'],
             'x-decorator': 'FormItem',
@@ -50,6 +50,7 @@ export function SchemaSettingsActionLinkItem() {
             'x-component-props': {
               scope,
             },
+            description: t('Do not concatenate search params in the URL'),
           },
           params: {
             type: 'array',
