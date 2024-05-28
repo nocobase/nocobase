@@ -22,6 +22,13 @@ export function VariableSelect({
   changeOnSelect = false,
   fieldNames = {},
   className,
+}: {
+  options: any[];
+  setOptions: (options: any) => void;
+  onInsert: (keyPaths: string[]) => void;
+  changeOnSelect?: boolean;
+  fieldNames?: any;
+  className?: string;
 }): JSX.Element {
   const { t } = useTranslation();
   const [selectedVar, setSelectedVar] = useState<string[]>([]);
@@ -40,7 +47,6 @@ export function VariableSelect({
     <XButton className={cx('x-button', componentCls, hashId, className)}>
       <Cascader
         placeholder={t('Select a variable')}
-        value={[]}
         options={options}
         fieldNames={fieldNames}
         loadData={loadData}
@@ -50,7 +56,7 @@ export function VariableSelect({
             return;
           }
           const option = selectedOptions[selectedOptions.length - 1];
-          if (!option?.children?.length) {
+          if ((!option?.children?.length && !option?.loadChildren) || option?.isLeaf) {
             onInsert(keyPaths);
           }
         }}

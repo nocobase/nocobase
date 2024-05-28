@@ -6,17 +6,17 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
-import { useField, useFieldSchema } from '@formily/react';
-import React from 'react';
 import { css } from '@emotion/css';
 import { ArrayItems } from '@formily/antd-v5';
+import { useField, useFieldSchema } from '@formily/react';
+import React from 'react';
+import { useTranslation } from 'react-i18next';
+import { useDesignable, useFormBlockContext, useRecord } from '../../../';
 import { useSchemaToolbar } from '../../../application';
 import { SchemaSettings } from '../../../application/schema-settings/SchemaSettings';
 import { useCollection_deprecated } from '../../../collection-manager';
 import { ButtonEditor, RemoveButton } from '../../../schema-component/antd/action/Action.Designer';
-import { useTranslation } from 'react-i18next';
 import { SchemaSettingsLinkageRules, SchemaSettingsModalItem } from '../../../schema-settings';
-import { useDesignable, useFormBlockContext, useRecord } from '../../../';
 import { useVariableOptions } from '../../../schema-settings/VariableInput/hooks/useVariableOptions';
 
 export function SchemaSettingsActionLinkItem() {
@@ -49,6 +49,7 @@ export function SchemaSettingsActionLinkItem() {
             'x-component': 'Variable.TextArea',
             'x-component-props': {
               scope,
+              changeOnSelect: true,
             },
             description: t('Do not concatenate search params in the URL'),
           },
@@ -93,6 +94,7 @@ export function SchemaSettingsActionLinkItem() {
                         scope,
                         placeholder: `{{t("Value")}}`,
                         useTypedConstant: true,
+                        changeOnSelect: true,
                       },
                     },
                     remove: {
