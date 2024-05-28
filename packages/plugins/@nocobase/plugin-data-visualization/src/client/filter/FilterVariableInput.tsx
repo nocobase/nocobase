@@ -14,12 +14,15 @@ import {
   getShouldChange,
   useCurrentUserVariable,
   useDatetimeVariable,
+  CollectionProvider,
 } from '@nocobase/client';
 import { useMemoizedFn } from 'ahooks';
 import React, { useEffect, useMemo } from 'react';
 
 export const ChartFilterVariableInput: React.FC<any> = (props) => {
   const { value, onChange, fieldSchema } = props;
+  const collectionField = fieldSchema?.['x-collection-field'] || '';
+  const [collection] = collectionField.split('.');
   const { currentUserSettings } = useCurrentUserVariable({
     collectionField: { uiSchema: fieldSchema },
     uiSchema: fieldSchema,
@@ -36,7 +39,11 @@ export const ChartFilterVariableInput: React.FC<any> = (props) => {
   const schema = {
     ...fieldSchema,
     'x-component': fieldSchema['x-component'] || 'Input',
-    'x-decorator': '',
+    'x-decorator': 'CollectionProvider',
+    'x-decorator-props': {
+      name: collection,
+      allowNull: !collection,
+    },
     title: '',
     name: 'value',
     default: '',
@@ -53,7 +60,7 @@ export const ChartFilterVariableInput: React.FC<any> = (props) => {
     <VariableScopeProvider scope={options}>
       <VariableInput
         {...componentProps}
-        renderSchemaComponent={() => <SchemaComponent schema={schema} />}
+        renderSchemaComponent={() => <SchemaComponent schema={schema} components={{ CollectionProvider }} />}
         fieldNames={{}}
         value={value?.value}
         scope={options}
