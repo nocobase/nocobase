@@ -10,7 +10,7 @@
 import { promises as fs } from 'fs';
 import path from 'path';
 import { getApp } from '.';
-import { FILE_FIELD_NAME, STORAGE_TYPE_LOCAL } from '../../constants';
+import { FILE_FIELD_NAME, FILE_SIZE_LIMIT_DEFAULT, STORAGE_TYPE_LOCAL } from '../../constants';
 
 const { LOCAL_STORAGE_BASE_URL, LOCAL_STORAGE_DEST = 'storage/uploads', APP_PORT = '13000' } = process.env;
 
@@ -379,13 +379,13 @@ describe('action', () => {
       it('get rules without key as default storage', async () => {
         const { body, status } = await agent.resource('storages').getRules();
         expect(status).toBe(200);
-        expect(body.data).toEqual({});
+        expect(body.data).toEqual({ size: FILE_SIZE_LIMIT_DEFAULT });
       });
 
-      it('get rules by storage id as empty rules', async () => {
+      it('get rules by storage id as default rules', async () => {
         const { body, status } = await agent.resource('storages').getRules({ filterByTk: 1 });
         expect(status).toBe(200);
-        expect(body.data).toEqual({});
+        expect(body.data).toEqual({ size: FILE_SIZE_LIMIT_DEFAULT });
       });
 
       it('get rules by unexisted id as 404', async () => {
