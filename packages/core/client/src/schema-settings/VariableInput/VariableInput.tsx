@@ -197,12 +197,12 @@ export const getShouldChange = ({
     if (['o2o', 'o2m', 'oho'].includes(collectionFieldOfVariable?.interface)) {
       return false;
     }
-    if (!collectionField.target && collectionFieldOfVariable?.target) {
-      return false;
-    }
-    if (collectionField.target && !collectionFieldOfVariable?.target) {
-      return false;
-    }
+    // if (!collectionField.target && collectionFieldOfVariable?.target) {
+    //   return false;
+    // }
+    // if (collectionField.target && !collectionFieldOfVariable?.target) {
+    //   return false;
+    // }
     if (
       collectionField.target &&
       collectionFieldOfVariable?.target &&
