@@ -12,7 +12,7 @@ import mkdirp from 'mkdirp';
 import multer from 'multer';
 import path from 'path';
 import { AttachmentModel, StorageType } from '.';
-import { STORAGE_TYPE_LOCAL } from '../../constants';
+import { FILE_SIZE_LIMIT_DEFAULT, STORAGE_TYPE_LOCAL } from '../../constants';
 import { getFilename } from '../utils';
 
 function getDocumentRoot(storage): string {
@@ -39,6 +39,9 @@ export default class extends StorageType {
       baseUrl: '/storage/uploads',
       options: {
         documentRoot: 'storage/uploads',
+      },
+      rules: {
+        size: FILE_SIZE_LIMIT_DEFAULT,
       },
     };
   }
