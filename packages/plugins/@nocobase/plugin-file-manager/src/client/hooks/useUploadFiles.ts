@@ -15,7 +15,7 @@ import {
   useSourceIdFromParentRecord,
 } from '@nocobase/client';
 import { useContext, useMemo } from 'react';
-import { useFileCollectionStorageRules } from './useStorageRules';
+import { useStorageRules } from './useStorageRules';
 
 export const useUploadFiles = () => {
   const { service } = useBlockRequestContext();
@@ -23,7 +23,7 @@ export const useUploadFiles = () => {
   const { props: blockProps } = useBlockRequestContext();
   const collection = useCollection();
   const sourceId = useSourceIdFromParentRecord();
-  const rules = useFileCollectionStorageRules();
+  const rules = useStorageRules(collection?.getOption('storage'));
   const action = useMemo(() => {
     let action = `${collection.name}:create`;
     if (blockProps?.association) {
