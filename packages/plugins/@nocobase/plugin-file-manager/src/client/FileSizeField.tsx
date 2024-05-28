@@ -9,13 +9,13 @@
 
 import { InputNumber, Select, Space } from 'antd';
 import React, { useCallback } from 'react';
+import { FILE_SIZE_LIMIT_DEFAULT, FILE_SIZE_LIMIT_MAX, FILE_SIZE_LIMIT_MIN } from '../constants';
 
 const UnitOptions = [
-  { value: 1, label: 'B' },
+  { value: 1, label: 'Byte' },
   { value: 1024, label: 'KB' },
   { value: 1024 * 1024, label: 'MB' },
   { value: 1024 * 1024 * 1024, label: 'GB' },
-  { value: 1024 * 1024 * 1024 * 1024, label: 'TB' },
 ];
 
 function getUnitOption(v, defaultUnit = 1024 * 1024) {
@@ -30,34 +30,42 @@ function getUnitOption(v, defaultUnit = 1024 * 1024) {
   return UnitOptions[0];
 }
 
+function limitSize(value, min, max) {
+  return Math.min(Math.max(min, value), max);
+}
+
 export function FileSizeField(props) {
-  const { value, defaultValue, defaultUnit = 1024 * 1024, placeholder, onChange } = props;
-  const vOption = getUnitOption(value ?? defaultValue, defaultUnit);
-  const v = value == null ? value : value / vOption.value;
+  const {
+    value,
+    defaultValue = FILE_SIZE_LIMIT_DEFAULT,
+    defaultUnit = 1024 * 1024,
+    min = FILE_SIZE_LIMIT_MIN,
+    max = FILE_SIZE_LIMIT_MAX,
+    step = 1,
+    onChange,
+  } = props;
   const dvOption = getUnitOption(defaultValue, defaultUnit);
   const dv = defaultValue == null ? defaultValue : defaultValue / dvOption.value;
-  const pvOption = getUnitOption(Number.parseInt(placeholder, 10), defaultUnit);
-  const pv = defaultValue == null ? defaultValue : defaultValue / pvOption.value;
-
-  // const placeholder = DEFAULT_MAX_FILE_SIZE / defaultUnit;
+  const vOption = getUnitOption(value ?? defaultValue, defaultUnit);
+  const v = value == null ? dv : value / vOption.value;
 
   const onNumberChange = useCallback(
     (val) => {
-      onChange?.(val == null ? val : val * vOption.value);
+      onChange?.(limitSize(val == null ? val : val * vOption.value, min, max));
     },
     [vOption.value],
   );
 
   const onUnitChange = useCallback(
     (val) => {
-      onChange?.(v * val);
+      onChange?.(limitSize(v * val, min, max));
     },
     [v],
   );
 
   return (
     <Space.Compact>
-      <InputNumber value={v} onChange={onNumberChange} defaultValue={dv} />
+      <InputNumber value={v} onChange={onNumberChange} defaultValue={`${dv}`} step={step} />
       <Select options={UnitOptions} value={vOption.value} onChange={onUnitChange} className="auto-width" />
     </Space.Compact>
   );

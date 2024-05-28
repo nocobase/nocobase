@@ -16,7 +16,7 @@ import { useAPIClient } from '../../../api-client';
 import { UNKNOWN_FILE_ICON, UPLOAD_PLACEHOLDER } from './placeholder';
 import type { IUploadProps, UploadProps } from './type';
 
-export const DEFAULT_MAX_FILE_SIZE = 1024 * 1024 * 1024;
+export const FILE_SIZE_LIMI_MAX = 1024 * 1024 * 1024;
 
 export const isImage = (file) => {
   return match(file.mimetype || file.type, 'image/*');
@@ -223,7 +223,7 @@ export const toValue = (fileList: any) => {
 
 const Rules: Record<string, RuleFunction> = {
   size(file, options: number): null | string {
-    const size = options ?? DEFAULT_MAX_FILE_SIZE;
+    const size = options ?? FILE_SIZE_LIMI_MAX;
     if (size === 0) {
       return null;
     }

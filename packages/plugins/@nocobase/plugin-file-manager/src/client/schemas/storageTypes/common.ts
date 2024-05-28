@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { DEFAULT_MAX_FILE_SIZE } from '../../../constants';
+import { FILE_SIZE_LIMIT_DEFAULT, FILE_SIZE_LIMIT_MAX, FILE_SIZE_LIMIT_MIN } from '../../../constants';
 import { NAMESPACE } from '../../locale';
 
 export default {
@@ -41,15 +41,9 @@ export default {
       size: {
         type: 'number',
         title: `{{t("File size limit", { ns: "${NAMESPACE}" })}}`,
-        description: `{{t("Set to 0 as unlimited.", { ns: "${NAMESPACE}" })}}`,
+        description: `{{t("Minimum from 1 byte, maximum up to 1GB.", { ns: "${NAMESPACE}" })}}`,
         'x-decorator': 'FormItem',
         'x-component': 'FileSizeField',
-        'x-component-props': {
-          min: 0,
-          step: 1,
-          placeholder: DEFAULT_MAX_FILE_SIZE,
-          defaultValue: DEFAULT_MAX_FILE_SIZE,
-        },
         required: true,
       },
       mimetype: {
