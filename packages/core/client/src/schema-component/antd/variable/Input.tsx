@@ -222,7 +222,7 @@ export function Input(props: VariableInputProps) {
     const option = selectedOptions[selectedOptions.length - 1];
     if (!option.children?.length && !option.isLeaf && option.loadChildren) {
       let activeKey;
-      if (variable) {
+      if (variable && variable.length >= 2) {
         for (const key of variable) {
           if (key === option[names.value]) {
             activeKey = key;

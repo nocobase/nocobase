@@ -8,6 +8,7 @@
  */
 
 import _ from 'lodash';
+import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Option } from '../type';
 import { getLabelWithTooltip } from './useBaseVariable';
@@ -43,28 +44,30 @@ export const useURLSearchParamsVariable = (props: any = {}) => {
   const { t } = useTranslation();
   const urlSearchParamsCtx = getQueryParamsFromLocation();
   const disabled = _.isEmpty(urlSearchParamsCtx);
-  const urlSearchParamsSettings: Option = {
-    label: getLabelWithTooltip(
-      t('URL search params'),
-      disabled
-        ? t(
-            'The value of this variable is derived from the query string of the page URL. This variable can only be used normally when the page has a query string.',
-          )
-        : '',
-    ),
-    value: variableName,
-    key: variableName,
-    isLeaf: false,
-    disabled,
-    loadChildren: async (option, activeKey) => {
-      const activeSettings = activeKey
-        ? {
-            [activeKey]: undefined,
-          }
-        : {};
-      option.children = getURLSearchParamsChildren({ ...activeSettings, ...urlSearchParamsCtx });
-    },
-  };
+  const urlSearchParamsSettings: Option = useMemo(() => {
+    return {
+      label: getLabelWithTooltip(
+        t('URL search params'),
+        disabled
+          ? t(
+              'The value of this variable is derived from the query string of the page URL. This variable can only be used normally when the page has a query string.',
+            )
+          : '',
+      ),
+      value: variableName,
+      key: variableName,
+      isLeaf: false,
+      disabled,
+      loadChildren: async (option, activeKey) => {
+        const activeSettings = activeKey
+          ? {
+              [activeKey]: undefined,
+            }
+          : {};
+        option.children = getURLSearchParamsChildren({ ...activeSettings, ...urlSearchParamsCtx });
+      },
+    };
+  }, []);
 
   return {
     name: variableName,
