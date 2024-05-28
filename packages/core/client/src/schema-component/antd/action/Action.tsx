@@ -14,7 +14,7 @@ import classnames from 'classnames';
 import { default as lodash } from 'lodash';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { StablePopover, useActionContext } from '../..';
+import { ErrorFallback, StablePopover, useActionContext } from '../..';
 import { useDesignable } from '../../';
 import { useACLActionParamsContext } from '../../../acl';
 import {
@@ -44,6 +44,9 @@ import { useA } from './hooks';
 import { useGetAriaLabelOfAction } from './hooks/useGetAriaLabelOfAction';
 import { ActionProps, ComposedAction } from './types';
 import { linkageAction, setInitialActionState } from './utils';
+import { ErrorBoundary } from 'react-error-boundary';
+
+const handleError = (err) => console.log(err);
 
 export const Action: ComposedAction = withDynamicSchemaProps(
   observer((props: ActionProps) => {
@@ -246,6 +249,11 @@ export const Action: ComposedAction = withDynamicSchemaProps(
 Action.Popover = observer(
   (props) => {
     const { button, visible, setVisible } = useActionContext();
+    const content = (
+      <ErrorBoundary FallbackComponent={ErrorFallback} onError={handleError}>
+        {props.children}
+      </ErrorBoundary>
+    );
     return (
       <StablePopover
         {...props}
@@ -254,7 +262,7 @@ Action.Popover = observer(
         onOpenChange={(visible) => {
           setVisible(visible);
         }}
-        content={props.children}
+        content={content}
       >
         {button}
       </StablePopover>

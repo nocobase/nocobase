@@ -239,9 +239,7 @@ export class InheritanceCollectionMixin extends Collection {
     }
     const currentFields = this.getCurrentFields();
     const inheritedFields = this.getInheritedFields();
-    const allFields = unionBy(currentFields?.concat(inheritedFields) || [], 'name').filter((v: any) => {
-      return !v.isForeignKey;
-    });
+    const allFields = unionBy(currentFields?.concat(inheritedFields) || [], 'name');
 
     this.allFields = allFields;
 
@@ -254,9 +252,7 @@ export class InheritanceCollectionMixin extends Collection {
     }
     const currentFields = this.getCurrentFields();
     const inheritedFields = this.getInheritedFields();
-    const allFields = unionBy(currentFields?.concat(inheritedFields) || [], 'name').filter((v: any) => {
-      return v.isForeignKey;
-    });
+    const allFields = unionBy(currentFields?.concat(inheritedFields) || [], 'name');
 
     return allFields;
   }
