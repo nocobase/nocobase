@@ -1469,7 +1469,7 @@ export function useLinkActionProps() {
         message.warning('Please configure the URL');
         return;
       }
-      const to = url + `?${decodeURIComponent(params)}`;
+      const to = `${url}${params ? `?${decodeURIComponent(params)}` : ''}`;
       const link = await replaceVariableValue(to, variables, localVariables);
       if (link) {
         if (isURL(link)) {
