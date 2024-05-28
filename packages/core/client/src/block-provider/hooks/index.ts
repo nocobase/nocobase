@@ -1475,6 +1475,7 @@ export const replaceVariableValue = async (url: string, variables, localVariable
   if (!url) {
     return;
   }
+  const { evaluate } = evaluators.get('string');
   // 解析如 `{{$user.name}}` 之类的变量
   const { exp, scope: expScope } = await replaceVariables(url, {
     variables,
@@ -1482,20 +1483,9 @@ export const replaceVariableValue = async (url: string, variables, localVariable
   });
 
   try {
-    if (Object.keys(expScope).length > 0) {
-      const result = exp.replace(REGEX_OF_VARIABLE, (match) => {
-        return `${expScope[extractContent(match)] || match}`;
-      });
-      return result;
-    }
-    return exp;
+    const result = evaluate(exp, { now: () => new Date().toString(), ...expScope });
+    return result;
   } catch (error) {
     console.error(error);
   }
 };
-
-function extractContent(text) {
-  const regex = /\{\{([^}]+)\}\}/g;
-  const matches = text.match(regex) || [];
-  return matches.map((match) => match.slice(2, -2));
-}
