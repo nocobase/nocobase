@@ -37,7 +37,7 @@ export function SchemaSettingsActionLinkItem() {
       components={{ Variable, Input }}
       schema={{
         type: 'object',
-        title: t('To'),
+        title: t('Edit Link'),
         properties: {
           to: {
             title: t('To'),
@@ -56,7 +56,6 @@ export function SchemaSettingsActionLinkItem() {
         componentProps.to = to;
         fieldSchema['x-component-props'] = componentProps;
         field.componentProps.to = to;
-        console.log(componentProps);
         dn.emit('patch', {
           schema: {
             ['x-uid']: fieldSchema['x-uid'],
