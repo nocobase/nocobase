@@ -9,7 +9,14 @@
 
 import { ISchema, useField, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
-import { SchemaSettings, useAPIClient, useDesignable } from '@nocobase/client';
+import {
+  SchemaSettings,
+  useAPIClient,
+  useDesignable,
+  useFormBlockContext,
+  useRecord,
+  useVariableOptions,
+} from '@nocobase/client';
 import { useTranslation } from 'react-i18next';
 
 /**
@@ -28,7 +35,15 @@ export const iframeBlockSchemaSettings_deprecated = new SchemaSettings({
         const { dn } = useDesignable();
         const api = useAPIClient();
         const { mode, url, htmlId, height = '60vh' } = fieldSchema['x-component-props'] || {};
-
+        const { form } = useFormBlockContext();
+        const record = useRecord();
+        const scope = useVariableOptions({
+          collectionField: { uiSchema: fieldSchema },
+          form,
+          record,
+          uiSchema: fieldSchema,
+          noDisabled: true,
+        });
         const saveHtml = async (html: string) => {
           const options = {
             values: { html },
@@ -98,7 +113,10 @@ export const iframeBlockSchemaSettings_deprecated = new SchemaSettings({
                 title: t('URL'),
                 type: 'string',
                 'x-decorator': 'FormItem',
-                'x-component': 'Input',
+                'x-component': 'Variable.TextArea',
+                'x-component-props': {
+                  scope,
+                },
                 required: true,
                 'x-reactions': {
                   dependencies: ['mode'],
@@ -169,7 +187,15 @@ export const iframeBlockSchemaSettings = new SchemaSettings({
         const { dn } = useDesignable();
         const api = useAPIClient();
         const { mode, url, htmlId, height = '60vh' } = fieldSchema['x-component-props'] || {};
-
+        const { form } = useFormBlockContext();
+        const record = useRecord();
+        const scope = useVariableOptions({
+          collectionField: { uiSchema: fieldSchema },
+          form,
+          record,
+          uiSchema: fieldSchema,
+          noDisabled: true,
+        });
         const saveHtml = async (html: string) => {
           const options = {
             values: { html },
@@ -239,7 +265,10 @@ export const iframeBlockSchemaSettings = new SchemaSettings({
                 title: t('URL'),
                 type: 'string',
                 'x-decorator': 'FormItem',
-                'x-component': 'Input',
+                'x-component': 'Variable.TextArea',
+                'x-component-props': {
+                  scope,
+                },
                 required: true,
                 'x-reactions': {
                   dependencies: ['mode'],

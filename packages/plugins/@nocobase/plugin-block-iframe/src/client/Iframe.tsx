@@ -8,9 +8,9 @@
  */
 
 import { observer, useField } from '@formily/react';
-import { useRequest } from '@nocobase/client';
+import { useRequest, replaceVariableValue, useVariables, useLocalVariables } from '@nocobase/client';
 import { Card, Spin } from 'antd';
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import RIframe from 'react-iframe';
 import type { IIframe } from 'react-iframe/types';
@@ -29,6 +29,8 @@ export const Iframe: any = observer(
     const { url, htmlId, mode = 'url', height, html, ...others } = props;
     const field = useField();
     const { t } = useTranslation();
+    const variables = useVariables();
+    const localVariables = useLocalVariables();
     const { loading, data: htmlContent } = useRequest<string>(
       {
         url: `iframeHtml:getHtml/${htmlId}`,
@@ -38,20 +40,35 @@ export const Iframe: any = observer(
         ready: mode === 'html' && !!htmlId,
       },
     );
-    const src = React.useMemo(() => {
-      if (mode === 'html') {
-        const encodedHtml = encodeURIComponent(htmlContent);
-        const dataUrl = 'data:text/html;charset=utf-8,' + encodedHtml;
-        return dataUrl;
-      }
-      return url;
-    }, [htmlContent, mode, url]);
 
+    const [src, setSrc] = useState(null);
+
+    useEffect(() => {
+      const generateSrc = async () => {
+        if (mode === 'html') {
+          const encodedHtml = encodeURIComponent(htmlContent);
+          const dataUrl = 'data:text/html;charset=utf-8,' + encodedHtml;
+          setSrc(dataUrl);
+        } else {
+          try {
+            const targetUrl = await replaceVariableValue(url, variables, localVariables);
+            console.log(targetUrl);
+            setSrc(targetUrl);
+          } catch (error) {
+            console.error('Error fetching target URL:', error);
+            // Handle error or set a fallback URL
+            setSrc('fallback-url');
+          }
+        }
+      };
+
+      generateSrc();
+    }, [htmlContent, mode, url, variables, localVariables]);
     if ((mode === 'url' && !url) || (mode === 'html' && !htmlId)) {
       return <Card style={{ marginBottom: 24 }}>{t('Please fill in the iframe URL')}</Card>;
     }
 
-    if (loading) {
+    if (loading && !src) {
       return (
         <div
           style={{

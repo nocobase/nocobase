@@ -16,6 +16,9 @@ import {
   SchemaSettingsRemove,
   useAPIClient,
   useDesignable,
+  useFormBlockContext,
+  useRecord,
+  useVariableOptions,
 } from '@nocobase/client';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
@@ -62,7 +65,15 @@ export const IframeDesigner = () => {
       },
     });
   };
-
+  const { form } = useFormBlockContext();
+  const record = useRecord();
+  const scope = useVariableOptions({
+    collectionField: { uiSchema: fieldSchema },
+    form,
+    record,
+    uiSchema: fieldSchema,
+    noDisabled: true,
+  });
   return (
     <GeneralSchemaDesigner>
       <SchemaSettingsModalItem
@@ -100,7 +111,10 @@ export const IframeDesigner = () => {
                 title: t('URL'),
                 type: 'string',
                 'x-decorator': 'FormItem',
-                'x-component': 'Input',
+                'x-component': 'Variable.TextArea',
+                'x-component-props': {
+                  scope,
+                },
                 required: true,
                 'x-reactions': {
                   dependencies: ['mode'],
