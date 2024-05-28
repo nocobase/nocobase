@@ -941,5 +941,9 @@
   "Left fixed": "左固定",
   "Right fixed": "右固定",
   "Fixed": "固定列",
+  "Please configure the URL": "请配置URL",
+  "URL": "URL",
+  "Search parameters": "URL 查询参数",
+  "Do not concatenate search params in the URL": "查询参数不要在 URL 里拼接",
   "The value of this variable is derived from the query string of the page URL. This variable can only be used normally when the page has a query string.": "该变量的值是根据页面 URL 的 query string 得来的，只有当页面存在 query string 的时候，该变量才能正常使用。"
 }

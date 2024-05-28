@@ -68,6 +68,20 @@ const commonOptions = {
       },
     },
     {
+      type: 'item',
+      title: "{{t('Link')}}",
+      name: 'link',
+      Component: 'LinkActionInitializer',
+      schema: {
+        'x-align': 'right',
+      },
+      useComponentProps() {
+        return {
+          'x-component': 'Action',
+        };
+      },
+    },
+    {
       name: 'toggle',
       title: "{{t('Expand/Collapse')}}",
       Component: 'ExpandableActionInitializer',
