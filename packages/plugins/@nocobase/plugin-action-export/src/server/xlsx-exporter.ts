@@ -54,6 +54,10 @@ class XlsxExporter {
         });
 
         startRowNumber += rows.length;
+
+        await new Promise((resolve) => {
+          setTimeout(resolve, 50);
+        });
       },
     });
 
@@ -80,6 +84,9 @@ class XlsxExporter {
 
   private getFindOptions() {
     const { findOptions = {} } = this.options;
+
+    // findOptions.limit = 2000;
+
     const appendOptions = this.getAppendOptionsFromColumns();
 
     if (appendOptions.length) {
@@ -135,6 +142,7 @@ class XlsxExporter {
     }
 
     const db = this.options.collection.db;
+
     if (!db) {
       return value;
     }

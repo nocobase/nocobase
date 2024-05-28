@@ -12,8 +12,11 @@ import { Repository } from '@nocobase/database';
 
 import XlsxExporter from '../xlsx-exporter';
 import XLSX from 'xlsx';
+import { Mutex } from 'async-mutex';
 
-export async function exportXlsx(ctx: Context, next: Next) {
+const mutex = new Mutex();
+
+async function exportXlsxAction(ctx: Context, next: Next) {
   const { title, filter, sort, fields, except } = ctx.action.params;
   let columns = ctx.action.params.values?.columns || ctx.action.params?.columns;
 
@@ -46,6 +49,20 @@ export async function exportXlsx(ctx: Context, next: Next) {
     'Content-Type': 'application/octet-stream',
     'Content-Disposition': `attachment; filename=${encodeURI(title)}.xlsx`,
   });
+}
+
+export async function exportXlsx(ctx: Context, next: Next) {
+  if (mutex.isLocked()) {
+    throw new Error(`another export action is running, please try again later.`);
+  }
+
+  const release = await mutex.acquire();
+
+  try {
+    await exportXlsxAction(ctx, next);
+  } finally {
+    release();
+  }
 
   await next();
 }
