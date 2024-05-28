@@ -57,9 +57,11 @@ export const useURLSearchParamsVariable = (props: any = {}) => {
     isLeaf: false,
     disabled,
     loadChildren: async (option, activeKey) => {
-      const activeSettings = {
-        [activeKey]: undefined,
-      };
+      const activeSettings = activeKey
+        ? {
+            [activeKey]: undefined,
+          }
+        : {};
       option.children = getURLSearchParamsChildren({ ...activeSettings, ...urlSearchParamsCtx });
     },
   };
