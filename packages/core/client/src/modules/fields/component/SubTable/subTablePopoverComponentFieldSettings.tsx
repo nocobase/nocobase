@@ -21,6 +21,7 @@ import {
 } from '../../../../schema-component';
 import { isSubMode } from '../../../../schema-component/antd/association-field/util';
 import { useCollectionManager_deprecated, useSortFields } from '../../../../collection-manager';
+import { useIsAssociationField } from '../../../../schema-component/antd/form-item';
 
 const fieldComponent: any = {
   name: 'fieldComponent',
@@ -219,7 +220,40 @@ export const setDefaultSortingRules = {
     return readPretty && ['m2m', 'o2m'].includes(targetInterface);
   },
 };
+
+export const allowAddNewData = {
+  name: 'allowAddNewData',
+  type: 'switch',
+  useVisible() {
+    const readPretty = useIsFieldReadPretty();
+    const isAssociationField = useIsAssociationField();
+    return !readPretty && isAssociationField;
+  },
+  useComponentProps() {
+    const { t } = useTranslation();
+    const field = useField<Field>();
+    const fieldSchema = useFieldSchema();
+    const { dn, refresh } = useDesignable();
+    return {
+      title: t('Allow add new'),
+      checked: fieldSchema['x-component-props']?.allowAddnew !== (false as boolean),
+      onChange(value) {
+        const schema = {
+          ['x-uid']: fieldSchema['x-uid'],
+        };
+        field.componentProps.allowAddnew = value;
+        fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
+        fieldSchema['x-component-props'].allowAddnew = value;
+        schema['x-component-props'] = fieldSchema['x-component-props'];
+        dn.emit('patch', {
+          schema,
+        });
+        refresh();
+      },
+    };
+  },
+};
 export const subTablePopoverComponentFieldSettings = new SchemaSettings({
   name: 'fieldSettings:component:SubTable',
-  items: [fieldComponent, allowSelectExistingRecord, setDefaultSortingRules],
+  items: [fieldComponent, allowAddNewData, allowSelectExistingRecord, setDefaultSortingRules],
 });
