@@ -1453,18 +1453,29 @@ async function resetFormCorrectly(form: Form) {
 export function useLinkActionProps() {
   const navigate = useNavigate();
   const fieldSchema = useFieldSchema();
-  const to = fieldSchema?.['x-component-props']?.['to'];
+  const url = fieldSchema?.['x-component-props']?.['url'];
+  const searchParams = fieldSchema?.['x-component-props']?.['params'] || [];
+  const params = new URLSearchParams(
+    searchParams
+      .filter(({ name, value }) => name && typeof value !== 'undefined')
+      .map(({ name, value }) => [name, value]),
+  ).toString();
   const variables = useVariables();
   const localVariables = useLocalVariables();
   return {
     type: 'default',
     async onClick() {
-      const url = await replaceVariableValue(to, variables, localVariables);
-      if (url) {
-        if (isURL(url)) {
-          window.open(url, '_blank');
+      if (!url) {
+        message.warning('Please configure the URL');
+        return;
+      }
+      const to = url + `?${decodeURIComponent(params)}`;
+      const link = await replaceVariableValue(to, variables, localVariables);
+      if (link) {
+        if (isURL(link)) {
+          window.open(link, '_blank');
         } else {
-          navigate(url);
+          navigate(link);
         }
       }
     },

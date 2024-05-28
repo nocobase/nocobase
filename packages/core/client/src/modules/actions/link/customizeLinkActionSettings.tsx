@@ -8,13 +8,15 @@
  */
 import { useField, useFieldSchema } from '@formily/react';
 import React from 'react';
+import { css } from '@emotion/css';
+import { ArrayItems } from '@formily/antd-v5';
 import { useSchemaToolbar } from '../../../application';
 import { SchemaSettings } from '../../../application/schema-settings/SchemaSettings';
 import { useCollection_deprecated } from '../../../collection-manager';
 import { ButtonEditor, RemoveButton } from '../../../schema-component/antd/action/Action.Designer';
 import { useTranslation } from 'react-i18next';
 import { SchemaSettingsLinkageRules, SchemaSettingsModalItem } from '../../../schema-settings';
-import { useDesignable, useFormBlockContext, useRecord, Variable, Input } from '../../../';
+import { useDesignable, useFormBlockContext, useRecord } from '../../../';
 import { useVariableOptions } from '../../../schema-settings/VariableInput/hooks/useVariableOptions';
 
 export function SchemaSettingsActionLinkItem() {
@@ -34,28 +36,91 @@ export function SchemaSettingsActionLinkItem() {
   return (
     <SchemaSettingsModalItem
       title={t('Edit Link')}
-      components={{ Variable, Input }}
+      components={{ ArrayItems }}
       schema={{
         type: 'object',
         title: t('Edit Link'),
         properties: {
-          to: {
-            title: t('To'),
+          url: {
+            title: t('URL'),
             type: 'string',
-            default: fieldSchema?.['x-component-props']?.['to'],
+            default: fieldSchema?.['x-component-props']?.['url'],
             'x-decorator': 'FormItem',
             'x-component': 'Variable.TextArea',
             'x-component-props': {
               scope,
             },
           },
+          params: {
+            type: 'array',
+            'x-component': 'ArrayItems',
+            'x-decorator': 'FormItem',
+            title: `{{t("Parameters")}}`,
+            default: fieldSchema?.['x-component-props']?.params || [{}],
+            items: {
+              type: 'object',
+              properties: {
+                space: {
+                  type: 'void',
+                  'x-component': 'Space',
+                  'x-component-props': {
+                    style: {
+                      flexWrap: 'nowrap',
+                      maxWidth: '100%',
+                    },
+                    className: css`
+                      & > .ant-space-item:first-child,
+                      & > .ant-space-item:last-child {
+                        flex-shrink: 0;
+                      }
+                    `,
+                  },
+                  properties: {
+                    name: {
+                      type: 'string',
+                      'x-decorator': 'FormItem',
+                      'x-component': 'Input',
+                      'x-component-props': {
+                        placeholder: `{{t("Name")}}`,
+                      },
+                    },
+                    value: {
+                      type: 'string',
+                      'x-decorator': 'FormItem',
+                      'x-component': 'Variable.TextArea',
+                      'x-component-props': {
+                        scope,
+                        placeholder: `{{t("Value")}}`,
+                        useTypedConstant: true,
+                      },
+                    },
+                    remove: {
+                      type: 'void',
+                      'x-decorator': 'FormItem',
+                      'x-component': 'ArrayItems.Remove',
+                    },
+                  },
+                },
+              },
+            },
+            properties: {
+              add: {
+                type: 'void',
+                title: `{{t("Add parameter")}}`,
+                'x-component': 'ArrayItems.Addition',
+              },
+            },
+          },
         },
       }}
-      onSubmit={({ to }) => {
+      onSubmit={({ url, params }) => {
         const componentProps = fieldSchema['x-component-props'] || {};
-        componentProps.to = to;
+        componentProps.url = url;
         fieldSchema['x-component-props'] = componentProps;
-        field.componentProps.to = to;
+        field.componentProps.url = url;
+        componentProps.params = params;
+        fieldSchema['x-component-props'] = componentProps;
+        field.componentProps.params = params;
         dn.emit('patch', {
           schema: {
             ['x-uid']: fieldSchema['x-uid'],
