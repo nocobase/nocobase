@@ -56,10 +56,11 @@ export function SchemaSettingsActionLinkItem() {
         componentProps.to = to;
         fieldSchema['x-component-props'] = componentProps;
         field.componentProps.to = to;
+        console.log(componentProps);
         dn.emit('patch', {
           schema: {
             ['x-uid']: fieldSchema['x-uid'],
-            'x-component-props': fieldSchema['x-component-props'],
+            'x-component-props': componentProps,
           },
         });
         dn.refresh();

@@ -43,6 +43,9 @@ import { useBlockRequestContext, useFilterByTk, useParamsFromRecord } from '../B
 import { useOperators } from '../CollectOperators';
 import { useDetailsBlockContext } from '../DetailsBlockProvider';
 import { TableFieldResource } from '../TableFieldProvider';
+import { evaluators } from '@nocobase/evaluators/client';
+import { replaceVariables } from '../../schema-component/antd/form-v2/utils';
+import { REGEX_OF_VARIABLE } from '../../variables/utils/isVariable';
 
 export * from './useDataBlockParentRecord';
 export * from './useFormActiveFields';
@@ -1445,4 +1448,54 @@ async function resetFormCorrectly(form: Form) {
     });
   });
   await form.reset();
+}
+
+export function useLinkActionProps() {
+  const navigate = useNavigate();
+  const fieldSchema = useFieldSchema();
+  const to = fieldSchema?.['x-component-props']?.['to'];
+  const variables = useVariables();
+  const localVariables = useLocalVariables();
+  return {
+    type: 'default',
+    async onClick() {
+      const url = await replaceVariableValue(to, variables, localVariables);
+      if (url) {
+        if (isURL(url)) {
+          window.open(url, '_blank');
+        } else {
+          navigate(url);
+        }
+      }
+    },
+  };
+}
+
+export const replaceVariableValue = async (url: string, variables, localVariables) => {
+  if (!url) {
+    return;
+  }
+  // 解析如 `{{$user.name}}` 之类的变量
+  const { exp, scope: expScope } = await replaceVariables(url, {
+    variables,
+    localVariables,
+  });
+
+  try {
+    if (Object.keys(expScope).length > 0) {
+      const result = exp.replace(REGEX_OF_VARIABLE, (match) => {
+        return `${expScope[extractContent(match)] || match}`;
+      });
+      return result;
+    }
+    return exp;
+  } catch (error) {
+    console.error(error);
+  }
+};
+
+function extractContent(text) {
+  const regex = /\{\{([^}]+)\}\}/g;
+  const matches = text.match(regex) || [];
+  return matches.map((match) => match.slice(2, -2));
 }

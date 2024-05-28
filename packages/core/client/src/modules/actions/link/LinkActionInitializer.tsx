@@ -19,7 +19,7 @@ export const LinkActionInitializer = (props) => {
     'x-toolbar': 'ActionSchemaToolbar',
     'x-settings': 'actionSettings:link',
     'x-component': props?.['x-component'] || 'Action.Link',
-    'x-component-props': {},
+    'x-use-component-props': 'useLinkActionProps',
   };
 
   const itemConfig = useSchemaInitializerItem();

@@ -138,7 +138,7 @@ export const collectFieldStateOfLinkageRules = ({
   }
 };
 
-async function replaceVariables(
+export async function replaceVariables(
   value: string,
   {
     variables,
@@ -169,7 +169,6 @@ async function replaceVariables(
   if (waitForParsing) {
     await Promise.all(waitForParsing);
   }
-
   return {
     exp: value.replace(REGEX_OF_VARIABLE, (match) => {
       return `{{${store[match] || match}}}`;
