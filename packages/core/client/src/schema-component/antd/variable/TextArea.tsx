@@ -475,7 +475,7 @@ async function preloadOptions(scope, value: string) {
           prevOption = options.find((item) => item.value === key);
         } else {
           if (prevOption.loadChildren && !prevOption.children?.length) {
-            await prevOption.loadChildren(prevOption);
+            await prevOption.loadChildren(prevOption, key, keys);
           }
           prevOption = prevOption.children.find((item) => item.value === key);
         }
