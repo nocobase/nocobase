@@ -46,13 +46,13 @@ export const Iframe: any = observer(
     useEffect(() => {
       const generateSrc = async () => {
         if (mode === 'html') {
-          const encodedHtml = encodeURIComponent(htmlContent);
+          const targetHtmlContent = await replaceVariableValue(htmlContent, variables, localVariables);
+          const encodedHtml = encodeURIComponent(targetHtmlContent);
           const dataUrl = 'data:text/html;charset=utf-8,' + encodedHtml;
           setSrc(dataUrl);
         } else {
           try {
             const targetUrl = await replaceVariableValue(url, variables, localVariables);
-            console.log(targetUrl);
             setSrc(targetUrl);
           } catch (error) {
             console.error('Error fetching target URL:', error);

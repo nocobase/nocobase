@@ -129,7 +129,11 @@ export const IframeDesigner = () => {
                 title: t('html'),
                 type: 'string',
                 'x-decorator': 'FormItem',
-                'x-component': 'Input.TextArea',
+                'x-component': 'Variable.RawTextArea',
+                'x-component-props': {
+                  scope,
+                  style: { minHeight: '200px' },
+                },
                 required: true,
                 'x-reactions': {
                   dependencies: ['mode'],

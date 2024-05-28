@@ -131,7 +131,10 @@ export const iframeBlockSchemaSettings_deprecated = new SchemaSettings({
                 title: t('html'),
                 type: 'string',
                 'x-decorator': 'FormItem',
-                'x-component': 'Input.TextArea',
+                'x-component': 'Variable.RawTextArea',
+                'x-component-props': {
+                  scope,
+                },
                 required: true,
                 'x-reactions': {
                   dependencies: ['mode'],
@@ -283,7 +286,10 @@ export const iframeBlockSchemaSettings = new SchemaSettings({
                 title: t('html'),
                 type: 'string',
                 'x-decorator': 'FormItem',
-                'x-component': 'Input.TextArea',
+                'x-component': 'Variable.RawTextArea',
+                'x-component-props': {
+                  scope,
+                },
                 required: true,
                 'x-reactions': {
                   dependencies: ['mode'],
