@@ -8,19 +8,16 @@
  */
 
 import _ from 'lodash';
+import qs from 'qs';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Option } from '../type';
 import { getLabelWithTooltip } from './useBaseVariable';
 
-const getQueryParamsFromLocation = () => {
-  const search = window.location.search;
-  const params = new URLSearchParams(search);
-  const result: Record<string, any> = {};
-  for (const [key, value] of params) {
-    result[key] = value;
-  }
-  return result;
+const getURLSearchParams = () => {
+  const search = window.location.search.slice(1);
+  const params = qs.parse(search);
+  return params;
 };
 
 const getURLSearchParamsChildren = (queryParams: Record<string, any>): Option[] => {
@@ -42,7 +39,7 @@ const getURLSearchParamsChildren = (queryParams: Record<string, any>): Option[] 
 export const useURLSearchParamsVariable = (props: any = {}) => {
   const variableName = '$nURLSearchParams';
   const { t } = useTranslation();
-  const urlSearchParamsCtx = getQueryParamsFromLocation();
+  const urlSearchParamsCtx = getURLSearchParams();
   const disabled = _.isEmpty(urlSearchParamsCtx);
   const urlSearchParamsSettings: Option = useMemo(() => {
     return {
