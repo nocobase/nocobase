@@ -186,6 +186,66 @@ describe('export to xlsx', () => {
     await app.destroy();
   });
 
+  it('should export with datetime field', async () => {
+    const Post = app.db.collection({
+      name: 'posts',
+      fields: [
+        {
+          name: 'title',
+          type: 'string',
+        },
+        {
+          uiSchema: {
+            'x-component-props': { dateFormat: 'YYYY-MM-DD', gmt: false, showTime: true, timeFormat: 'HH:mm:ss' },
+            type: 'string',
+            'x-component': 'DatePicker',
+            title: 'test_date',
+          },
+          name: 'test_date',
+          type: 'date',
+          interface: 'datetime',
+        },
+      ],
+    });
+
+    await app.db.sync();
+
+    await Post.repository.create({
+      values: {
+        title: 'some_title',
+        test_date: '2024-05-10T01:42:35.000Z',
+      },
+    });
+
+    const exporter = new XlsxExporter({
+      collection: Post,
+      chunkSize: 10,
+      columns: [
+        { dataIndex: ['title'], defaultTitle: '' },
+        {
+          dataIndex: ['test_date'],
+          defaultTitle: '',
+        },
+      ],
+    });
+
+    const wb = await exporter.run({});
+
+    const xlsxFilePath = path.resolve(__dirname, `t_${uid()}.xlsx`);
+    try {
+      XLSX.writeFile(wb, xlsxFilePath);
+
+      // read xlsx file
+      const workbook = XLSX.readFile(xlsxFilePath);
+      const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+      const sheetData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+
+      const firstUser = sheetData[1];
+      expect(firstUser).toEqual(['some_title', '2024-05-10 09:42:35']);
+    } finally {
+      fs.unlinkSync(xlsxFilePath);
+    }
+  });
   it('should export with multi select', async () => {
     const User = app.db.collection({
       name: 'users',

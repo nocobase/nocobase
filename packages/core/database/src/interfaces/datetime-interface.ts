@@ -10,9 +10,16 @@
 import { BaseInterface } from './base-interface';
 import { getDefaultFormat, str2moment } from '@nocobase/utils';
 
+function resolveTimeZoneFromCtx(ctx) {
+  if (ctx?.get && ctx?.get('X-Timezone')) {
+    return ctx.get('X-Timezone');
+  }
+
+  return 0;
+}
 export class DatetimeInterface extends BaseInterface {
   toString(value: any, ctx?: any) {
-    const utcOffset = ctx.get('X-Timezone');
+    const utcOffset = resolveTimeZoneFromCtx(ctx);
     const props = this.options?.uiSchema?.['x-component-props'] ?? {};
     const format = getDefaultFormat(props);
     const m = str2moment(value, { ...props, utcOffset });
