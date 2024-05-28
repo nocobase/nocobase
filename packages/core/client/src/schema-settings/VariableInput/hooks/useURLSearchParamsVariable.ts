@@ -47,7 +47,9 @@ export const useURLSearchParamsVariable = (props: any = {}) => {
     label: getLabelWithTooltip(
       t('URL search params'),
       disabled
-        ? t('该变量的值是根据页面 URL 的 query string 得来的，只有当页面存在 query string 的时候，该变量才能正常使用')
+        ? t(
+            'The value of this variable is derived from the query string of the page URL. This variable can only be used normally when the page has a query string.',
+          )
         : '',
     ),
     value: variableName,
