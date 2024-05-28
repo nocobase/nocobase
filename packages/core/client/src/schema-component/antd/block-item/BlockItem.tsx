@@ -13,8 +13,11 @@ import React, { useMemo } from 'react';
 import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
 import { CustomCreateStylesUtils, createStyles } from '../../../style';
 import { SortableItem } from '../../common';
-import { useDesigner, useProps } from '../../hooks';
+import { useProps } from '../../hooks';
 import { useGetAriaLabelOfBlockItem } from './hooks/useGetAriaLabelOfBlockItem';
+import { ErrorBoundary } from 'react-error-boundary';
+import { ErrorFallback } from '../error-fallback';
+import { useSchemaToolbarRender } from '../../../application';
 
 const useStyles = createStyles(({ css, token }: CustomCreateStylesUtils) => {
   return css`
@@ -79,16 +82,18 @@ export const BlockItem: React.FC<BlockItemProps> = withDynamicSchemaProps(
     const { className, children } = useProps(props);
     const { styles: blockItemCss } = useStyles();
 
-    const Designer = useDesigner();
     const fieldSchema = useFieldSchema();
+    const { render } = useSchemaToolbarRender(fieldSchema);
     const { getAriaLabel } = useGetAriaLabelOfBlockItem(props.name);
 
     const label = useMemo(() => getAriaLabel(), [getAriaLabel]);
 
     return (
       <SortableItem role="button" aria-label={label} className={cls('nb-block-item', className, blockItemCss)}>
-        <Designer {...fieldSchema['x-toolbar-props']} />
-        {children}
+        {render()}
+        <ErrorBoundary FallbackComponent={ErrorFallback} onError={(err) => console.log(err)}>
+          {children}
+        </ErrorBoundary>
       </SortableItem>
     );
   },

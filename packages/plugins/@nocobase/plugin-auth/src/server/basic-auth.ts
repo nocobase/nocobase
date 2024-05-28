@@ -59,7 +59,7 @@ export class BasicAuth extends BaseAuth {
     const User = ctx.db.getRepository('users');
     const { values } = ctx.action.params;
     const { username, password, confirm_password } = values;
-    if (!/^[^@.<>"'/]{2,16}$/.test(username)) {
+    if (!this.validateUsername(username)) {
       ctx.throw(400, ctx.t('Please enter a valid username', { ns: namespace }));
     }
     if (!password) {

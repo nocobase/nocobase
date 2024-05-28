@@ -41,7 +41,7 @@ export const useLabelFields = (collectionName?: any) => {
   }
   const targetFields = getCollectionFields(collectionName);
   return targetFields
-    ?.filter?.((field) => field?.interface && !field?.target && field.type !== 'boolean' && !field.isForeignKey)
+    ?.filter?.((field) => field?.interface && !field?.target && field.type !== 'boolean')
     ?.map?.((field) => {
       return {
         value: field.name,

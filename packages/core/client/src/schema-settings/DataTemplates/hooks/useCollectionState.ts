@@ -236,7 +236,7 @@ export const useCollectionState = (currentCollectionName: string) => {
     const targetFields = getCollectionFields(collectionName);
     const options = targetFields
       .filter((field) => {
-        return !field.isForeignKey && getInterface(field.interface)?.titleUsable;
+        return getInterface(field.interface)?.titleUsable;
       })
       .map((field) => ({
         value: field?.name,
