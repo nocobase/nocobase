@@ -167,6 +167,10 @@ export const formDetailsSettings = new SchemaSettings({
       Component: SchemaSettingsBlockTitleItem,
     },
     {
+      name: 'setTheBlockHeight',
+      Component: SchemaSettingsBlockHeightItem,
+    },
+    {
       name: 'linkageRules',
       Component: SchemaSettingsLinkageRules,
       useComponentProps() {
