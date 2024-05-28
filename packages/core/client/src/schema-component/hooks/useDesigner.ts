@@ -14,6 +14,10 @@ import { SchemaToolbar } from '../../schema-settings';
 
 const DefaultSchemaToolbar = () => null;
 
+/**
+ * @deprecated
+ * use `useSchemaToolbarRender` instead
+ */
 export const useDesigner = () => {
   const { designable } = useDesignable();
   const fieldSchema = useFieldSchema();
