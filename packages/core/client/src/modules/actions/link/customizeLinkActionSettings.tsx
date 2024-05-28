@@ -146,6 +146,10 @@ export const customizeLinkActionSettings = new SchemaSettings({
       },
     },
     {
+      name: 'editLink',
+      Component: SchemaSettingsActionLinkItem,
+    },
+    {
       name: 'linkageRules',
       Component: SchemaSettingsLinkageRules,
       useComponentProps() {
@@ -156,10 +160,6 @@ export const customizeLinkActionSettings = new SchemaSettings({
           collectionName: name,
         };
       },
-    },
-    {
-      name: 'editLink',
-      Component: SchemaSettingsActionLinkItem,
     },
     {
       name: 'remove',
