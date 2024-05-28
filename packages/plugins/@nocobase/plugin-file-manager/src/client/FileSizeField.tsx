@@ -37,15 +37,15 @@ function limitSize(value, min, max) {
 export function FileSizeField(props) {
   const {
     value,
-    defaultValue = FILE_SIZE_LIMIT_DEFAULT,
     defaultUnit = 1024 * 1024,
     min = FILE_SIZE_LIMIT_MIN,
     max = FILE_SIZE_LIMIT_MAX,
     step = 1,
     onChange,
   } = props;
+  const defaultValue = props.defaultValue ?? FILE_SIZE_LIMIT_DEFAULT;
   const dvOption = getUnitOption(defaultValue, defaultUnit);
-  const dv = defaultValue == null ? defaultValue : defaultValue / dvOption.value;
+  const dv = defaultValue / dvOption.value;
   const vOption = getUnitOption(value ?? defaultValue, defaultUnit);
   const v = value == null ? dv : value / vOption.value;
 

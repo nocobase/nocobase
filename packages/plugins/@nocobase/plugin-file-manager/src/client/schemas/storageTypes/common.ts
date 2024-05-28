@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FILE_SIZE_LIMIT_DEFAULT, FILE_SIZE_LIMIT_MAX, FILE_SIZE_LIMIT_MIN } from '../../../constants';
+import { FILE_SIZE_LIMIT_DEFAULT } from '../../../constants';
 import { NAMESPACE } from '../../locale';
 
 export default {
@@ -45,6 +45,7 @@ export default {
         'x-decorator': 'FormItem',
         'x-component': 'FileSizeField',
         required: true,
+        default: FILE_SIZE_LIMIT_DEFAULT,
       },
       mimetype: {
         type: 'string',
