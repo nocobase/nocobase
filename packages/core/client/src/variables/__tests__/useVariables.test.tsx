@@ -218,6 +218,7 @@ describe('useVariables', () => {
             "yesterday": [Function],
           },
           "$nRole": "root",
+          "$nURLSearchParams": {},
           "$system": {
             "now": [Function],
           },
@@ -429,6 +430,7 @@ describe('useVariables', () => {
             "yesterday": [Function],
           },
           "$nRole": "root",
+          "$nURLSearchParams": {},
           "$system": {
             "now": [Function],
           },
@@ -513,6 +515,7 @@ describe('useVariables', () => {
             "yesterday": [Function],
           },
           "$nRole": "root",
+          "$nURLSearchParams": {},
           "$new": {
             "name": "new variable",
           },
