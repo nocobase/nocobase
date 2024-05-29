@@ -126,6 +126,14 @@ class XlsxExporter {
     });
   }
 
+  private renderRawValue(value) {
+    if (typeof value === 'object') {
+      return JSON.stringify(value);
+    }
+
+    return value;
+  }
+
   private renderCellValue(rowData: Model, column: ExportColumn, ctx?) {
     const { dataIndex } = column;
     rowData = rowData.toJSON();
@@ -144,7 +152,7 @@ class XlsxExporter {
     const db = this.options.collection.db;
 
     if (!db) {
-      return value;
+      return this.renderRawValue(value);
     }
 
     const field = this.findFieldByDataIndex(dataIndex);
@@ -152,13 +160,13 @@ class XlsxExporter {
     const interfaceName = fieldOptions['interface'];
 
     if (!interfaceName) {
-      return value;
+      return this.renderRawValue(value);
     }
 
     const InterfaceClass = db.interfaceManager.getInterfaceType(interfaceName);
 
     if (!InterfaceClass) {
-      return value;
+      return this.renderRawValue(value);
     }
 
     const interfaceInstance = new InterfaceClass(fieldOptions);

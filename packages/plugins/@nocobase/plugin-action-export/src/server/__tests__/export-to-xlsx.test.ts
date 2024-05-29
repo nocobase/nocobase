@@ -186,6 +186,71 @@ describe('export to xlsx', () => {
     await app.destroy();
   });
 
+  it('should export with json field', async () => {
+    const Post = app.db.collection({
+      name: 'posts',
+      fields: [
+        {
+          name: 'title',
+          type: 'string',
+        },
+        {
+          name: 'json',
+          type: 'json',
+        },
+      ],
+    });
+
+    await app.db.sync();
+
+    await Post.repository.create({
+      values: {
+        title: 'some_title',
+        json: {
+          a: {
+            b: 'c',
+          },
+        },
+      },
+    });
+
+    const exporter = new XlsxExporter({
+      collection: Post,
+      chunkSize: 10,
+      columns: [
+        { dataIndex: ['title'], defaultTitle: '' },
+        {
+          dataIndex: ['json'],
+          defaultTitle: '',
+        },
+      ],
+    });
+
+    const wb = await exporter.run({});
+
+    const xlsxFilePath = path.resolve(__dirname, `t_${uid()}.xlsx`);
+    try {
+      XLSX.writeFile(wb, xlsxFilePath);
+
+      // read xlsx file
+      const workbook = XLSX.readFile(xlsxFilePath);
+      const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+      const sheetData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+
+      const firstUser = sheetData[1];
+      expect(firstUser).toEqual([
+        'some_title',
+        JSON.stringify({
+          a: {
+            b: 'c',
+          },
+        }),
+      ]);
+    } finally {
+      fs.unlinkSync(xlsxFilePath);
+    }
+  });
+
   it('should export with datetime field', async () => {
     const Post = app.db.collection({
       name: 'posts',
@@ -246,6 +311,7 @@ describe('export to xlsx', () => {
       fs.unlinkSync(xlsxFilePath);
     }
   });
+
   it('should export with multi select', async () => {
     const User = app.db.collection({
       name: 'users',
