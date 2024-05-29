@@ -1454,6 +1454,7 @@ async function resetFormCorrectly(form: Form) {
 export function useLinkActionProps() {
   const navigate = useNavigate();
   const fieldSchema = useFieldSchema();
+  const { t } = useTranslation();
   const url = fieldSchema?.['x-component-props']?.['url'];
   const searchParams = fieldSchema?.['x-component-props']?.['params'] || [];
   const variables = useVariables();
@@ -1463,7 +1464,7 @@ export function useLinkActionProps() {
     type: 'default',
     async onClick() {
       if (!url) {
-        message.warning('Please configure the URL');
+        message.warning(t('Please configure the URL'));
         return;
       }
       const queryString = await parseVariablesAndChangeParamsToQueryString(searchParams, variables, localVariables);
