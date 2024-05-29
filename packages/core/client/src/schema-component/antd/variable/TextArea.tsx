@@ -378,7 +378,6 @@ export function TextArea(props) {
   );
 
   const disabled = props.disabled || form.disabled;
-  console.log(html);
   return wrapSSR(
     <Space.Compact
       className={cx(
