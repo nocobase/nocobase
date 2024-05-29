@@ -75,4 +75,29 @@ describe('repository chunk', () => {
 
     expect(chunkCallback).toHaveBeenCalledTimes(10);
   });
+
+  it('should chunk with limit', async () => {
+    const values = Array.from({ length: 99 }, (_, i) => ({ name: `user-${i}` }));
+
+    const repository = db.getRepository('users');
+
+    await repository.create({
+      values,
+    });
+
+    let totalCount = 0;
+    const chunkCallback = vi.fn();
+
+    await repository.chunk({
+      chunkSize: 10,
+      limit: 11,
+      callback: async (rows) => {
+        chunkCallback();
+        totalCount += rows.length;
+      },
+    });
+
+    expect(chunkCallback).toHaveBeenCalledTimes(2);
+    expect(totalCount).toBe(11);
+  });
 });
