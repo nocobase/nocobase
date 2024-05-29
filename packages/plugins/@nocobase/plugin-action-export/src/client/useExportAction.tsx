@@ -14,14 +14,17 @@ import {
   useCollection_deprecated,
   useCollectionManager_deprecated,
   useCompile,
+  useCurrentAppInfo,
 } from '@nocobase/client';
 import lodash from 'lodash';
 import { saveAs } from 'file-saver';
 import { App } from 'antd';
 import { useExportTranslation } from './locale';
+import { useMemo } from 'react';
 
 export const useExportAction = () => {
   const { service, resource, props } = useBlockRequestContext();
+  const appInfo = useCurrentAppInfo();
   const defaultFilter = props?.params.filter;
   const actionSchema = useFieldSchema();
   const compile = useCompile();
@@ -30,16 +33,24 @@ export const useExportAction = () => {
   const { t } = useExportTranslation();
   const { modal } = App.useApp();
   const filters = service.params?.[1]?.filters || {};
+  const exportLimit = useMemo(() => {
+    if (appInfo?.data?.exportLimit) {
+      return appInfo.data.exportLimit;
+    }
+
+    return 2000;
+  }, [appInfo]);
+
   return {
     async onClick() {
-      // const confirmed = await modal.confirm({
-      //   title: t('Export'),
-      //   content: t('Export warning'),
-      //   okText: t('Start export'),
-      // });
-      // if (!confirmed) {
-      //   return;
-      // }
+      const confirmed = await modal.confirm({
+        title: t('Export'),
+        content: t('Export warning', { limit: exportLimit }),
+        okText: t('Start export'),
+      });
+      if (!confirmed) {
+        return;
+      }
       const { exportSettings } = lodash.cloneDeep(actionSchema?.['x-action-settings'] ?? {});
       exportSettings.forEach((es) => {
         const { uiSchema, interface: fieldInterface } =

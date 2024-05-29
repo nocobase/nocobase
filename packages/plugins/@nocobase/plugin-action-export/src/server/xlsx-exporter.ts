@@ -24,6 +24,8 @@ type ExportOptions = {
 };
 
 class XlsxExporter {
+  limit = process.env['EXPORT_LIMIT'] ? parseInt(process.env['EXPORT_LIMIT']) : 2000;
+
   constructor(private options: ExportOptions) {}
 
   async run(ctx?): Promise<XLSX.WorkBook> {
@@ -85,7 +87,7 @@ class XlsxExporter {
   private getFindOptions() {
     const { findOptions = {} } = this.options;
 
-    // findOptions.limit = 2000;
+    findOptions.limit = this.limit;
 
     const appendOptions = this.getAppendOptionsFromColumns();
 
