@@ -129,7 +129,7 @@ class XlsxExporter {
   }
 
   private renderRawValue(value) {
-    if (typeof value === 'object') {
+    if (typeof value === 'object' && value !== null) {
       return JSON.stringify(value);
     }
 
