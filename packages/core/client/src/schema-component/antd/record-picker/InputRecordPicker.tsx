@@ -20,9 +20,10 @@ import { CollectionProvider_deprecated, useCollection_deprecated } from '../../.
 import { FormProvider, SchemaComponentOptions } from '../../core';
 import { useCompile } from '../../hooks';
 import { ActionContextProvider, useActionContext } from '../action';
-import { FileSelector } from '../preview';
 import { useFieldNames } from './useFieldNames';
 import { getLabelFormatValue, useLabelUiSchema } from './util';
+import { Upload } from '../upload';
+import { toArr } from '@formily/shared';
 
 export const RecordPickerContext = createContext(null);
 RecordPickerContext.displayName = 'RecordPickerContext';
@@ -152,27 +153,24 @@ export const InputRecordPicker: React.FC<any> = (props: IRecordPickerProps) => {
     setSelectedRows([]);
   };
 
-  const handleRemove = (file) => {
-    const newOptions = options.filter((option) => option.id !== file.id);
-    setOptions(newOptions);
-    if (newOptions.length === 0) {
-      return onChange(null);
-    }
-    onChange(newOptions);
-  };
+  // const handleRemove = (file) => {
+  //   const newOptions = options.filter((option) => option.id !== file.id);
+  //   setOptions(newOptions);
+  //   if (newOptions.length === 0) {
+  //     return onChange(null);
+  //   }
+  //   onChange(newOptions);
+  // };
 
   return (
     <div>
       {showFilePicker ? (
-        <FileSelector
+        <Upload.Attachment
           value={options}
           multiple={multiple}
-          quickUpload={quickUpload}
-          selectFile={selectFile}
           action={`${collectionField?.target}:create`}
-          onSelect={handleSelect}
-          onRemove={handleRemove}
-          onChange={(changed) => {
+          onChange={(files) => {
+            let changed = toArr(files);
             if (changed.every((file) => file.status !== 'uploading')) {
               changed = changed.filter((file) => file.status === 'done').map((file) => file.response.data);
               if (multiple) {

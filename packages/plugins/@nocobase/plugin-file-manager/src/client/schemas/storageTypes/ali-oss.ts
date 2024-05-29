@@ -8,37 +8,25 @@
  */
 
 import { NAMESPACE } from '../../locale';
+import common from './common';
 
 export default {
   title: `{{t("Aliyun OSS", { ns: "${NAMESPACE}" })}}`,
   name: 'ali-oss',
   properties: {
-    title: {
-      'x-component': 'CollectionField',
-      'x-decorator': 'FormItem',
-    },
-    name: {
-      'x-component': 'CollectionField',
-      'x-decorator': 'FormItem',
-      'x-disabled': '{{ !createOnly }}',
-      required: true,
-      default: '{{ useNewId("s_") }}',
-      description:
-        '{{t("Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.")}}',
-    },
-    baseUrl: {
-      'x-component': 'CollectionField',
-      'x-decorator': 'FormItem',
-    },
+    title: common.title,
+    name: common.name,
+    baseUrl: common.baseUrl,
     options: {
       type: 'object',
-      'x-component': 'div',
+      'x-component': 'fieldset',
       properties: {
         region: {
           title: `{{t("Region", { ns: "${NAMESPACE}" })}}`,
           type: 'string',
           'x-decorator': 'FormItem',
           'x-component': 'Input',
+          description: `{{t('Aliyun OSS region part of the bucket. For example: "oss-cn-beijing".', { ns: "${NAMESPACE}" })}}`,
           required: true,
         },
         accessKeyId: {
@@ -70,24 +58,13 @@ export default {
           'x-component-props': {
             placeholder: '?x-oss-process=image/auto-orient,1/resize,m_fill,w_94,h_94/quality,q_90',
           },
-          default: '?x-oss-process=image/auto-orient,1/resize,m_fill,w_94,h_94/quality,q_90',
           description: '{{ xStyleProcessDesc }}',
         },
       },
     },
-    path: {
-      'x-component': 'CollectionField',
-      'x-decorator': 'FormItem',
-    },
-    default: {
-      'x-component': 'CollectionField',
-      'x-decorator': 'FormItem',
-      'x-content': `{{t("Default storage", { ns: "${NAMESPACE}" })}}`,
-    },
-    paranoid: {
-      'x-component': 'CollectionField',
-      'x-decorator': 'FormItem',
-      'x-content': `{{t("Keep file in storage when destroy record", { ns: "${NAMESPACE}" })}}`,
-    },
+    path: common.path,
+    rules: common.rules,
+    default: common.default,
+    paranoid: common.paranoid,
   },
 };
