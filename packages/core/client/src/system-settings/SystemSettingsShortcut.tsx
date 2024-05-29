@@ -105,6 +105,7 @@ const schema: ISchema = {
             multiple: false,
             // accept: 'jpg,png'
           },
+          'x-use-component-props': 'useCollectionFieldStorageRules',
         },
         enabledLanguages: {
           type: 'array',

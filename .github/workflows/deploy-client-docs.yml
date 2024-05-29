@@ -16,6 +16,7 @@ on:
     branches:
       - '**'
     paths:
+      - 'packages/core/client/**'
       - 'packages/core/client/docs/**'
       - '.github/workflows/deploy-client-docs.yml'
 

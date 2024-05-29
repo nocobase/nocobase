@@ -10,7 +10,7 @@
 import path from 'path';
 import { MockServer } from '@nocobase/test';
 import s3Storage from '../../storages/s3';
-import { FILE_FIELD_NAME } from '../../constants';
+import { FILE_FIELD_NAME } from '../../../constants';
 import { getApp, requestFile } from '..';
 import Database from '@nocobase/database';
 
