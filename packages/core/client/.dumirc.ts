@@ -14,31 +14,39 @@ export default defineConfig({
   alias: {
     ...umiConfig.alias,
   },
-  ssr: process.env.NODE_ENV === 'production' ? {
-    builder: 'webpack',
-  } : false,
+  ssr: process.env.NODE_ENV === 'production' ? { builder: 'webpack' } : false,
   sitemap: process.env.NODE_ENV === 'production' ? {
-    hostname: lang === 'zh-CN' ? 'https://client.docs-cn.nocobase.com' : 'https://client.docs.nocobase.com'
+    hostname: lang === 'zh-CN' ? 'https://docs-cn.nocobase.com' : 'https://docs.nocobase.com'
   } : false,
   metas: [
     { name: 'keywords', content: 'nocobase,nocobase doc,low-code,no-code,self-hosted,open source,open-source,no-code development,low-code development,workflow management software,business process management,collaboration software,enterprise process management,enterprise management system,no-code system,no-code platform,free no-code development platform' },
     { name: 'description', content: "NocoBase is a lightweight, extremely scalable open source no-code and low-code development platform. Instead of investing years of time and millions of dollars in research and development, deploy NocoBase in a few minutes and you'll have a private, controllable, and extremely scalable no- code development platform!" },
   ],
-  headScripts: [
-    `document.addEventListener('DOMContentLoaded', function () {
-      document.body.style.visibility = 'hidden';
-    });
+  headScripts: process.env.NODE_ENV === 'production' ? [
+    `    function hiddenBody() {
+      const body = document.body;
+      if (body) {
+        body.setAttribute('hidden', true);
+      } else {
+        requestAnimationFrame(hiddenBody);
+      }
+    }
 
-    const checkLoading = setInterval(() => {
+    hiddenBody();
+
+    function visibleBody() {
       const loading = document.querySelector('.dumi-default-loading-skeleton');
       const headerMenu = document.querySelector('header .ant-menu');
-      const antdIsLoaded = headerMenu && window.getComputedStyle(headerMenu).listStyle === 'outside none none';
-      if (loading || antdIsLoaded) {
-        document.body.style.visibility = 'initial';
-        clearInterval(checkLoading);
+      const antdIsLoaded = headerMenu ? window.getComputedStyle(headerMenu).listStyle === 'outside none none' : false;
+      if (antdIsLoaded) {
+        document.body.removeAttribute('hidden');
+      } else {
+        requestAnimationFrame(visibleBody);
       }
-    }, 50);`
-  ],
+    }
+
+    visibleBody();`
+  ] : [],
   fastRefresh: false, // 热更新会导致 Context 丢失，不开启
   // ssr: {},
   // exportStatic: {
