@@ -83,7 +83,7 @@ export class PluginClientServer extends Plugin {
             lang = currentUser?.appLang;
           }
 
-          const info = {
+          const info: any = {
             database: {
               dialect,
             },
