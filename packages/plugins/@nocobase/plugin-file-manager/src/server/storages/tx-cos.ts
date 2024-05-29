@@ -9,19 +9,19 @@
 
 import { promisify } from 'util';
 
-import { AttachmentModel } from '.';
-import { STORAGE_TYPE_TX_COS } from '../constants';
+import { AttachmentModel, StorageType } from '.';
+import { STORAGE_TYPE_TX_COS } from '../../constants';
 import { cloudFilenameGetter } from '../utils';
 
-export default {
-  filenameKey: 'url',
+export default class extends StorageType {
+  filenameKey = 'url';
   make(storage) {
     const createTxCosStorage = require('multer-cos');
     return new createTxCosStorage({
       cos: storage.options,
       filename: cloudFilenameGetter(storage),
     });
-  },
+  }
   defaults() {
     return {
       title: '腾讯云对象存储',
@@ -35,7 +35,7 @@ export default {
         Bucket: process.env.TX_COS_BUCKET,
       },
     };
-  },
+  }
   async delete(storage, records: AttachmentModel[]): Promise<[number, AttachmentModel[]]> {
     const { cos } = this.make(storage);
     const { Deleted } = await promisify(cos.deleteMultipleObject)({
@@ -47,5 +47,5 @@ export default {
       Deleted.length,
       records.filter((record) => !Deleted.find((item) => item.Key === `${record.path}/${record.filename}`)),
     ];
-  },
-};
+  }
+}

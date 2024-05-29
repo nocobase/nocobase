@@ -9,22 +9,18 @@
 
 import { StorageEngine } from 'multer';
 import Application from '@nocobase/server';
-import { Registry } from '@nocobase/utils';
-
-import local from './local';
-import oss from './ali-oss';
-import s3 from './s3';
-import cos from './tx-cos';
-
-import { STORAGE_TYPE_LOCAL, STORAGE_TYPE_ALI_OSS, STORAGE_TYPE_S3, STORAGE_TYPE_TX_COS } from '../constants';
 
 export interface StorageModel {
+  id?: number;
   title: string;
   type: string;
   name: string;
   baseUrl: string;
-  options: { [key: string]: string };
-  deleteFileOnDestroy?: boolean;
+  options: Record<string, any>;
+  rules?: Record<string, any>;
+  path?: string;
+  default?: boolean;
+  paranoid?: boolean;
 }
 
 export interface AttachmentModel {
@@ -42,14 +38,8 @@ export interface IStorage {
   delete(storage: StorageModel, records: AttachmentModel[]): Promise<[number, AttachmentModel[]]>;
 }
 
-const storageTypes = new Registry<IStorage>();
-storageTypes.register(STORAGE_TYPE_LOCAL, local);
-storageTypes.register(STORAGE_TYPE_ALI_OSS, oss);
-storageTypes.register(STORAGE_TYPE_S3, s3);
-storageTypes.register(STORAGE_TYPE_TX_COS, cos);
-
-export function getStorageConfig(key: string): IStorage {
-  return storageTypes.get(key);
+export abstract class StorageType implements IStorage {
+  abstract make(storage: StorageModel): StorageEngine;
+  abstract defaults(): StorageModel;
+  abstract delete(storage: StorageModel, records: AttachmentModel[]): Promise<[number, AttachmentModel[]]>;
 }
-
-export default storageTypes;

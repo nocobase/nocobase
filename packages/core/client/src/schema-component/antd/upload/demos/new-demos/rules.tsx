@@ -1,12 +1,3 @@
-/**
- * This file is part of the NocoBase (R) project.
- * Copyright (c) 2020-2024 NocoBase Co., Ltd.
- * Authors: NocoBase Team.
- *
- * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
- * For more information, please refer to: https://www.nocobase.com/agreement.
- */
-
 import { uid } from '@formily/shared';
 
 import React from 'react';
@@ -26,7 +17,10 @@ const schema: ISchema = {
       'x-component': 'Upload.Attachment',
       'x-component-props': {
         action: 'attachments:create',
-        multiple: true,
+        rules: {
+          size: 10240,
+          mimetype: 'image/png',
+        },
       },
     },
   },

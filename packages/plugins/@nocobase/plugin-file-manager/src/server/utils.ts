@@ -21,6 +21,6 @@ export const cloudFilenameGetter = (storage) => (req, file, cb) => {
     if (err) {
       return cb(err);
     }
-    cb(null, `${storage.path ? `${storage.path}/` : ''}${filename}`);
+    cb(null, `${storage.path ? `${storage.path.replace(/\/+$/, '')}/` : ''}${filename}`);
   });
 };

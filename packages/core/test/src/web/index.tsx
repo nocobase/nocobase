@@ -7,11 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { ComponentType } from 'react';
-import MockAdapter from 'axios-mock-adapter';
+import { observer, useFieldSchema, useForm } from '@formily/react';
 import { AxiosInstance, AxiosRequestConfig } from 'axios';
-import { set, get, pick } from 'lodash';
-import { useFieldSchema, observer, useForm } from '@formily/react';
+import MockAdapter from 'axios-mock-adapter';
+import { get, pick, set } from 'lodash';
+import React, { ComponentType } from 'react';
 
 import {
   AntdSchemaComponentPlugin,
@@ -23,13 +23,12 @@ import {
   SchemaComponent,
   SchemaSettings,
   SchemaSettingsPlugin,
-  // @ts-ignore
 } from '@nocobase/client';
 
-import dataSourceMainCollections from './dataSourceMainCollections.json';
-import dataSource2 from './dataSource2.json';
-import dataSourceMainData from './dataSourceMainData.json';
 import _ from 'lodash';
+import dataSource2 from './dataSource2.json';
+import dataSourceMainCollections from './dataSourceMainCollections.json';
+import dataSourceMainData from './dataSourceMainData.json';
 
 const defaultApis = {
   'uiSchemas:patch': { data: { result: 'ok' } },
@@ -49,6 +48,9 @@ type MockApis = Record<URL, ResponseData>;
 type AppOrOptions = Application | ApplicationOptions;
 
 function getProcessMockData(apis: Record<string, any>, key: string) {
+  if (typeof apis[key] === 'function') {
+    return apis[key];
+  }
   return (config: AxiosRequestConfig) => {
     if (!apis[key]) return [404, { data: { message: 'mock data not found' } }];
     if (config?.params?.pageSize || config?.params?.page) {
