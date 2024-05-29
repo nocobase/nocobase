@@ -9,7 +9,9 @@
 
 export const FILE_FIELD_NAME = 'file';
 export const LIMIT_FILES = 1;
-export const DEFAULT_MAX_FILE_SIZE = 1024 * 1024 * 1024;
+export const FILE_SIZE_LIMIT_MIN = 1;
+export const FILE_SIZE_LIMIT_MAX = 1024 * 1024 * 1024;
+export const FILE_SIZE_LIMIT_DEFAULT = 1024 * 1024 * 20;
 
 export const STORAGE_TYPE_LOCAL = 'local';
 export const STORAGE_TYPE_ALI_OSS = 'ali-oss';

@@ -7,9 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { render, screen } from '@nocobase/test/client';
+import { render, screen, userEvent, waitFor } from '@nocobase/test/client';
 import React from 'react';
-import App1 from '../demos/demo1';
+import App1 from './components/basic';
+import InlineApp from './components/modal';
 
 describe('ErrorFallback', () => {
   it('should render correctly', () => {
@@ -23,5 +24,20 @@ describe('ErrorFallback', () => {
 
     // 底部复制按钮
     expect(document.querySelector('.ant-typography-copy')).toBeInTheDocument();
+  });
+
+  it('should render inline correctly', async () => {
+    render(<InlineApp />);
+
+    expect(screen.getByText(/Error: error message/i)).toBeInTheDocument();
+    expect(document.querySelector('.ant-typography-copy')).toBeInTheDocument();
+
+    await userEvent.hover(screen.getByText(/Error: error message/i));
+    await waitFor(() => {
+      expect(screen.getByText(/render failed/i)).toBeInTheDocument();
+      expect(
+        screen.getByText(/this is likely a nocobase internals bug\. please open an issue at/i),
+      ).toBeInTheDocument();
+    });
   });
 });

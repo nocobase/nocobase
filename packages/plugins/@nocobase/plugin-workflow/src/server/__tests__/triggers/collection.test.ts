@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { MockDatabase } from '@nocobase/database';
+import { BelongsToRepository, MockDatabase } from '@nocobase/database';
 import { getApp, sleep } from '@nocobase/plugin-workflow-test';
 import { MockServer } from '@nocobase/test';
 
@@ -131,6 +131,27 @@ describe('workflow > triggers > collection', () => {
       expect(executions.length).toBe(1);
       expect(executions[0].context.data.title).toBe('t1');
       expect(executions[0].context.data.category.title).toBe('c1');
+    });
+
+    it('trigger on association', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'collection',
+        config: {
+          mode: 3,
+          collection: 'categories',
+        },
+      });
+
+      const post = await PostRepo.create({ values: { title: 't1', category: {} } });
+      const CategoryRepo = db.getRepository<BelongsToRepository>('posts.category', post.id);
+      await CategoryRepo.update({ values: { title: 'c1' } });
+
+      await sleep(500);
+
+      const executions = await workflow.getExecutions();
+      expect(executions.length).toBe(1);
+      expect(executions[0].context.data.title).toBe('c1');
     });
   });
 
