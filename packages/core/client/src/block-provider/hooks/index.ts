@@ -10,11 +10,13 @@
 import { Field, Form } from '@formily/core';
 import { SchemaExpressionScopeContext, useField, useFieldSchema, useForm } from '@formily/react';
 import { untracked } from '@formily/reactive';
+import { evaluators } from '@nocobase/evaluators/client';
 import { isURL, parse } from '@nocobase/utils/client';
 import { App, message } from 'antd';
 import _ from 'lodash';
 import get from 'lodash/get';
 import omit from 'lodash/omit';
+import qs from 'qs';
 import { ChangeEvent, useCallback, useContext, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
@@ -35,17 +37,16 @@ import { useTreeParentRecord } from '../../modules/blocks/data-blocks/table/Tree
 import { useRecord } from '../../record-provider';
 import { removeNullCondition, useActionContext, useCompile } from '../../schema-component';
 import { isSubMode } from '../../schema-component/antd/association-field/util';
+import { replaceVariables } from '../../schema-component/antd/form-v2/utils';
 import { useCurrentUserContext } from '../../user';
 import { useLocalVariables, useVariables } from '../../variables';
+import { VariableOption, VariablesContextType } from '../../variables/types';
 import { isVariable } from '../../variables/utils/isVariable';
 import { transformVariableValue } from '../../variables/utils/transformVariableValue';
 import { useBlockRequestContext, useFilterByTk, useParamsFromRecord } from '../BlockProvider';
 import { useOperators } from '../CollectOperators';
 import { useDetailsBlockContext } from '../DetailsBlockProvider';
 import { TableFieldResource } from '../TableFieldProvider';
-import { evaluators } from '@nocobase/evaluators/client';
-import { replaceVariables } from '../../schema-component/antd/form-v2/utils';
-import { REGEX_OF_VARIABLE } from '../../variables/utils/isVariable';
 
 export * from './useDataBlockParentRecord';
 export * from './useFormActiveFields';
@@ -1453,24 +1454,21 @@ async function resetFormCorrectly(form: Form) {
 export function useLinkActionProps() {
   const navigate = useNavigate();
   const fieldSchema = useFieldSchema();
+  const { t } = useTranslation();
   const url = fieldSchema?.['x-component-props']?.['url'];
   const searchParams = fieldSchema?.['x-component-props']?.['params'] || [];
-  const params = new URLSearchParams(
-    searchParams
-      .filter(({ name, value }) => name && typeof value !== 'undefined')
-      .map(({ name, value }) => [name, value]),
-  ).toString();
   const variables = useVariables();
   const localVariables = useLocalVariables();
+
   return {
     type: 'default',
     async onClick() {
       if (!url) {
-        message.warning('Please configure the URL');
+        message.warning(t('Please configure the URL'));
         return;
       }
-      const to = `${url}${params ? `?${decodeURIComponent(params)}` : ''}`;
-      const link = await replaceVariableValue(to, variables, localVariables);
+      const queryString = await parseVariablesAndChangeParamsToQueryString(searchParams, variables, localVariables);
+      const link = `${url}${queryString ? `?${queryString}` : ``}`;
       if (link) {
         if (isURL(link)) {
           window.open(link, '_blank');
@@ -1500,3 +1498,33 @@ export const replaceVariableValue = async (url: string, variables, localVariable
     console.error(error);
   }
 };
+
+async function parseVariablesAndChangeParamsToQueryString(
+  searchParams: { name: string; value: any }[],
+  variables: VariablesContextType,
+  localVariables: VariableOption[],
+) {
+  const parsed = await Promise.all(
+    searchParams.map(async ({ name, value }) => {
+      if (typeof value === 'string') {
+        if (isVariable(value)) {
+          const result = await variables.parseVariable(value, localVariables);
+          return { name, value: result };
+        }
+        const result = await replaceVariableValue(value, variables, localVariables);
+        return { name, value: result };
+      }
+      return { name, value };
+    }),
+  );
+
+  const params = {};
+
+  for (const { name, value } of parsed) {
+    if (name && value) {
+      params[name] = value;
+    }
+  }
+
+  return qs.stringify(params);
+}

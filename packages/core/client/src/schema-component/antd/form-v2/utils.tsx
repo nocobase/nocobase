@@ -13,7 +13,6 @@ import { uid } from '@nocobase/utils/client';
 import _ from 'lodash';
 import { ActionType } from '../../../schema-settings/LinkageRules/type';
 import { VariableOption, VariablesContextType } from '../../../variables/types';
-import { REGEX_OF_VARIABLE } from '../../../variables/utils/isVariable';
 import { conditionAnalyses } from '../../common/utils/uitls';
 
 interface Props {
@@ -155,6 +154,7 @@ export async function replaceVariables(
     return;
   }
 
+  const REGEX_OF_VARIABLE = /{\{\s*([a-zA-Z0-9_$-.]+?)\s*\}\}/g;
   const waitForParsing = value.match(REGEX_OF_VARIABLE)?.map(async (item) => {
     const result = await variables.parseVariable(item, localVariables);
 

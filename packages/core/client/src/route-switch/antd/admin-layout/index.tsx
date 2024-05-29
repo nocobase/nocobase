@@ -161,6 +161,15 @@ const MenuEditor = (props) => {
     return s;
   }, [data?.data]);
 
+  useEffect(() => {
+    if (isMatchAdminName) {
+      const s = findByUid(schema, defaultSelectedUid);
+      if (s) {
+        setTitle(s.title);
+      }
+    }
+  }, [defaultSelectedUid, isMatchAdmin, isMatchAdminName, schema, setTitle]);
+
   useRequest(
     {
       url: 'applicationPlugins:list',
