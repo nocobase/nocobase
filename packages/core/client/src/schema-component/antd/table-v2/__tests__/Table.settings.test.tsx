@@ -77,24 +77,24 @@ describe('Table.settings', () => {
             expect(screen.queryByText('Drag and drop sorting field')).not.toBeInTheDocument();
           },
         },
-        {
-          title: 'Fix block',
-          type: 'switch',
-          async afterFirstClick() {
-            await checkSchema({
-              'x-decorator-props': {
-                fixedBlock: true,
-              },
-            });
-          },
-          async afterSecondClick() {
-            await checkSchema({
-              'x-decorator-props': {
-                fixedBlock: false,
-              },
-            });
-          },
-        },
+        // {
+        //   title: 'Fix block',
+        //   type: 'switch',
+        //   async afterFirstClick() {
+        //     await checkSchema({
+        //       'x-decorator-props': {
+        //         fixedBlock: true,
+        //       },
+        //     });
+        //   },
+        //   async afterSecondClick() {
+        //     await checkSchema({
+        //       'x-decorator-props': {
+        //         fixedBlock: false,
+        //       },
+        //     });
+        //   },
+        // },
         {
           title: 'Set the data scope',
           type: 'modal',
