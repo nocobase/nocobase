@@ -11,9 +11,15 @@ import { Context, Next } from '@nocobase/actions';
 import { koaMulter as multer } from '@nocobase/utils';
 import path from 'path';
 
-import { DEFAULT_MAX_FILE_SIZE, FILE_FIELD_NAME, LIMIT_FILES } from '../constants';
+import {
+  FILE_SIZE_LIMIT_DEFAULT,
+  FILE_SIZE_LIMIT_MAX,
+  FILE_FIELD_NAME,
+  LIMIT_FILES,
+  FILE_SIZE_LIMIT_MIN,
+} from '../../constants';
 import * as Rules from '../rules';
-import { getStorageConfig } from '../storages';
+import Plugin from '..';
 
 // TODO(optimize): 需要优化错误处理，计算失败后需要抛出对应错误，以便程序处理
 function getFileFilter(storage) {
@@ -33,7 +39,7 @@ function getFileData(ctx: Context) {
     return ctx.throw(400, 'file validation failed');
   }
 
-  const storageConfig = getStorageConfig(storage.type);
+  const storageConfig = ctx.app.pm.get(Plugin).storageTypes.get(storage.type);
   const { [storageConfig.filenameKey || 'filename']: name } = file;
   // make compatible filename across cloud service (with path)
   const filename = path.basename(name);
@@ -64,7 +70,7 @@ async function multipart(ctx: Context, next: Next) {
     return ctx.throw(500);
   }
 
-  const storageConfig = getStorageConfig(storage.type);
+  const storageConfig = ctx.app.pm.get(Plugin).storageTypes.get(storage.type);
   if (!storageConfig) {
     ctx.logger.error(`[file-manager] storage type "${storage.type}" is not defined`);
     return ctx.throw(500);
@@ -73,12 +79,16 @@ async function multipart(ctx: Context, next: Next) {
   const multerOptions = {
     fileFilter: getFileFilter(storage),
     limits: {
-      fileSize: storage.rules.size ?? DEFAULT_MAX_FILE_SIZE,
       // 每次只允许提交一个文件
       files: LIMIT_FILES,
     },
     storage: storageConfig.make(storage),
   };
+  multerOptions.limits['fileSize'] = Math.min(
+    Math.max(FILE_SIZE_LIMIT_MIN, storage.rules.size ?? FILE_SIZE_LIMIT_DEFAULT),
+    FILE_SIZE_LIMIT_MAX,
+  );
+
   const upload = multer(multerOptions).single(FILE_FIELD_NAME);
   try {
     // NOTE: empty next and invoke after success
@@ -160,7 +170,7 @@ export async function destroyMiddleware(ctx: Context, next: Next) {
   await storages.reduce(
     (promise, storage) =>
       promise.then(async () => {
-        const storageConfig = getStorageConfig(storage.type);
+        const storageConfig = ctx.app.pm.get(Plugin).storageTypes.get(storage.type);
         const result = await storageConfig.delete(storage, storageGroupedRecords[storage.id]);
         count += result[0];
         undeleted.push(...result[1]);
