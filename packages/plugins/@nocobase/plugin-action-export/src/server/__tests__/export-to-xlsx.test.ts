@@ -294,7 +294,11 @@ describe('export to xlsx', () => {
       ],
     });
 
-    const wb = await exporter.run({});
+    const wb = await exporter.run({
+      get() {
+        return '+08:00';
+      },
+    });
 
     const xlsxFilePath = path.resolve(__dirname, `t_${uid()}.xlsx`);
     try {
