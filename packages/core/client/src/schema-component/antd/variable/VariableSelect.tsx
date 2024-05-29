@@ -47,6 +47,7 @@ export function VariableSelect({
     <XButton className={cx('x-button', componentCls, hashId, className)}>
       <Cascader
         placeholder={t('Select a variable')}
+        value={[]}
         options={options}
         fieldNames={fieldNames}
         loadData={loadData}
