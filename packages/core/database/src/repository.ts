@@ -393,17 +393,20 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
   async chunk(
     options: FindOptions & { chunkSize: number; callback: (rows: Model[], options: FindOptions) => Promise<void> },
   ) {
-    const { chunkSize, callback } = options;
+    const { chunkSize, callback, limit: overallLimit } = options;
     const transaction = await this.getTransaction(options);
-    const count = await this.count(options);
 
-    const limit = chunkSize;
     let offset = 0;
+    let totalProcessed = 0;
 
-    while (offset < count) {
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+      // Calculate the limit for the current chunk
+      const currentLimit = overallLimit !== undefined ? Math.min(chunkSize, overallLimit - totalProcessed) : chunkSize;
+
       const rows = await this.find({
         ...options,
-        limit,
+        limit: currentLimit,
         offset,
         transaction,
       });
@@ -414,7 +417,12 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
 
       await callback(rows, options);
 
-      offset += limit;
+      offset += currentLimit;
+      totalProcessed += rows.length;
+
+      if (overallLimit !== undefined && totalProcessed >= overallLimit) {
+        break;
+      }
     }
   }
 
