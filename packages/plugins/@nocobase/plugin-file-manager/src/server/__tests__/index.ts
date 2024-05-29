@@ -18,8 +18,7 @@ export async function getApp(options = {}): Promise<MockServer> {
     cors: {
       origin: '*',
     },
-    plugins: ['file-manager'],
-    acl: false,
+    plugins: ['users', 'auth', 'file-manager'],
   });
 
   app.use(async (ctx, next) => {

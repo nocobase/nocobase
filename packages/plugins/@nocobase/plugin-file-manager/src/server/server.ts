@@ -7,33 +7,42 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Plugin } from '@nocobase/server';
 import { resolve } from 'path';
+
+import { Plugin } from '@nocobase/server';
+import { Registry } from '@nocobase/utils';
+
 import { FileModel } from './FileModel';
 import initActions from './actions';
-import { getStorageConfig } from './storages';
+import { IStorage, StorageModel } from './storages';
+import { STORAGE_TYPE_ALI_OSS, STORAGE_TYPE_LOCAL, STORAGE_TYPE_S3, STORAGE_TYPE_TX_COS } from '../constants';
+import StorageTypeLocal from './storages/local';
+import StorageTypeAliOss from './storages/ali-oss';
+import StorageTypeS3 from './storages/s3';
+import StorageTypeTxCos from './storages/tx-cos';
 
-export { default as storageTypes } from './storages';
+export type * from './storages';
+
+const DEFAULT_STORAGE_TYPE = STORAGE_TYPE_LOCAL;
 
 export default class PluginFileManagerServer extends Plugin {
-  storageType() {
-    return 'local';
-  }
+  storageTypes = new Registry<IStorage>();
+  storagesCache = new Map<number, StorageModel>();
 
   async loadStorages(options?: { transaction: any }) {
     const repository = this.db.getRepository('storages');
     const storages = await repository.find({
       transaction: options?.transaction,
     });
-    const map = new Map();
+    this.storagesCache = new Map();
     for (const storage of storages) {
-      map.set(storage.get('id'), storage.toJSON());
+      this.storagesCache.set(storage.get('id'), storage.toJSON());
     }
-    this.db['_fileStorages'] = map;
+    this.db['_fileStorages'] = this.storagesCache;
   }
 
   async install() {
-    const defaultStorageConfig = getStorageConfig(this.storageType());
+    const defaultStorageConfig = this.storageTypes.get(DEFAULT_STORAGE_TYPE);
 
     if (defaultStorageConfig) {
       const Storage = this.db.getCollection('storages');
@@ -49,7 +58,7 @@ export default class PluginFileManagerServer extends Plugin {
       await Storage.repository.create({
         values: {
           ...defaultStorageConfig.defaults(),
-          type: this.storageType(),
+          type: DEFAULT_STORAGE_TYPE,
           default: true,
         },
       });
@@ -69,14 +78,21 @@ export default class PluginFileManagerServer extends Plugin {
   }
 
   async load() {
-    await this.importCollections(resolve(__dirname, './collections'));
+    this.storageTypes.register(STORAGE_TYPE_LOCAL, new StorageTypeLocal());
+    this.storageTypes.register(STORAGE_TYPE_ALI_OSS, new StorageTypeAliOss());
+    this.storageTypes.register(STORAGE_TYPE_S3, new StorageTypeS3());
+    this.storageTypes.register(STORAGE_TYPE_TX_COS, new StorageTypeTxCos());
+
+    await this.db.import({
+      directory: resolve(__dirname, './collections'),
+    });
 
     const Storage = this.db.getModel('storages');
-    Storage.afterSave(async (m, { transaction }) => {
-      await this.loadStorages({ transaction });
+    Storage.afterSave((m) => {
+      this.storagesCache.set(m.id, m.toJSON());
     });
-    Storage.afterDestroy(async (m, { transaction }) => {
-      await this.loadStorages({ transaction });
+    Storage.afterDestroy((m) => {
+      this.storagesCache.delete(m.id);
     });
 
     this.app.acl.registerSnippet({
@@ -96,12 +112,13 @@ export default class PluginFileManagerServer extends Plugin {
 
     this.app.acl.allow('attachments', 'upload', 'loggedIn');
     this.app.acl.allow('attachments', 'create', 'loggedIn');
+    this.app.acl.allow('storages', 'getRules', 'loggedIn');
 
     // this.app.resourcer.use(uploadMiddleware);
     // this.app.resourcer.use(createAction);
     // this.app.resourcer.registerActionHandler('upload', uploadAction);
 
-    const defaultStorageName = getStorageConfig(this.storageType()).defaults().name;
+    const defaultStorageName = this.storageTypes.get(DEFAULT_STORAGE_TYPE).defaults().name;
 
     this.app.acl.addFixedParams('storages', 'destroy', () => {
       return {
