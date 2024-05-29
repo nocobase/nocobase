@@ -22,7 +22,6 @@ import {
 } from '../../../../collection-manager';
 import { FilterBlockType } from '../../../../filter-provider/utils';
 import { removeNullCondition, useDesignable } from '../../../../schema-component';
-import { FixedBlockDesignerItem } from '../../../../schema-component/antd/page/FixedBlockDesignerItem';
 import { SchemaSettingsBlockTitleItem } from '../../../../schema-settings/SchemaSettingsBlockTitleItem';
 import { SchemaSettingsConnectDataBlocks } from '../../../../schema-settings/SchemaSettingsConnectDataBlocks';
 import { SchemaSettingsDataScope } from '../../../../schema-settings/SchemaSettingsDataScope';
@@ -136,10 +135,6 @@ export const tableBlockSettings = new SchemaSettings({
         const field = useField();
         return field.decoratorProps.dragSort;
       },
-    },
-    {
-      name: 'FixBlock',
-      Component: FixedBlockDesignerItem,
     },
     {
       name: 'SetTheDataScope',

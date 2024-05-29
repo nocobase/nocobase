@@ -36,7 +36,6 @@ import { SchemaSettingsTemplate } from '../../../schema-settings/SchemaSettingsT
 import { useSchemaTemplate } from '../../../schema-templates';
 import { useDesignable } from '../../hooks';
 import { removeNullCondition } from '../filter';
-import { FixedBlockDesignerItem } from '../page/FixedBlockDesignerItem';
 
 export const EditSortField = () => {
   const { fields } = useCollection_deprecated();
@@ -179,7 +178,6 @@ export const TableBlockDesigner = () => {
         }}
       />
       {field.decoratorProps.dragSort && <EditSortField />}
-      <FixedBlockDesignerItem />
       <SchemaSettingsDataScope
         collectionName={name}
         defaultFilter={fieldSchema?.['x-decorator-props']?.params?.filter || {}}

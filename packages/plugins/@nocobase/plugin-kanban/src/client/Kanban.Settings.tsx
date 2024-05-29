@@ -14,7 +14,6 @@ import {
   useCollection_deprecated,
   useDesignable,
   SchemaSettings,
-  FixedBlockDesignerItem,
   SchemaSettingsBlockTitleItem,
   removeNullCondition,
   SchemaSettingsTemplate,
@@ -63,10 +62,6 @@ export const kanbanSettings = new SchemaSettings({
         };
       },
     },
-    // {
-    //   name: 'fixedBlock',
-    //   Component: FixedBlockDesignerItem,
-    // },
     {
       name: 'template',
       Component: SchemaSettingsTemplate,

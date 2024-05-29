@@ -10,7 +10,6 @@
 import { ISchema, useField, useFieldSchema } from '@formily/react';
 import {
   FilterBlockType,
-  FixedBlockDesignerItem,
   SchemaSettings,
   SchemaSettingsBlockTitleItem,
   SchemaSettingsCascaderItem,
@@ -43,10 +42,6 @@ export const mapBlockSettings = new SchemaSettings({
       name: 'setTheBlockHeight',
       Component: SchemaSettingsBlockHeightItem,
     },
-    // {
-    //   name: 'fixBlock',
-    //   Component: FixedBlockDesignerItem,
-    // },
     {
       name: 'mapField',
       Component: SchemaSettingsCascaderItem,
