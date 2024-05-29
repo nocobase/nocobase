@@ -35,11 +35,11 @@ export function SchemaSettingsActionLinkItem() {
   });
   return (
     <SchemaSettingsModalItem
-      title={t('Edit Link')}
+      title={t('Edit link')}
       components={{ ArrayItems }}
       schema={{
         type: 'object',
-        title: t('Edit Link'),
+        title: t('Edit link'),
         properties: {
           url: {
             title: t('URL'),
