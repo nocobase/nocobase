@@ -8,7 +8,7 @@
  */
 
 import { observer, useField } from '@formily/react';
-import { useRequest } from '@nocobase/client';
+import { useRequest, useBlockHeight } from '@nocobase/client';
 import { Card, Spin } from 'antd';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
@@ -26,9 +26,10 @@ function isNumeric(str: string | undefined) {
 
 export const Iframe: any = observer(
   (props: IIframe & { html?: string; htmlId?: number; mode: string }) => {
-    const { url, htmlId, mode = 'url', height, html, ...others } = props;
+    const { url, htmlId, mode = 'url', height = '60vh', html, ...others } = props;
     const field = useField();
     const { t } = useTranslation();
+    const targetHeight = useBlockHeight() || height;
     const { loading, data: htmlContent } = useRequest<string>(
       {
         url: `iframeHtml:getHtml/${htmlId}`,
@@ -72,7 +73,7 @@ export const Iframe: any = observer(
         display="block"
         position="relative"
         styles={{
-          height: isNumeric(height) ? `${height}px` : height,
+          height: isNumeric(targetHeight) ? `${targetHeight}px` : targetHeight,
           marginBottom: '24px',
           border: 0,
         }}

@@ -9,7 +9,7 @@
 
 import { ISchema, useField, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
-import { SchemaSettings, useAPIClient, useDesignable } from '@nocobase/client';
+import { SchemaSettings, useAPIClient, useDesignable, SchemaSettingsBlockHeightItem } from '@nocobase/client';
 import { useTranslation } from 'react-i18next';
 
 /**
@@ -124,18 +124,22 @@ export const iframeBlockSchemaSettings_deprecated = new SchemaSettings({
                   },
                 },
               },
-              height: {
-                title: t('Height'),
-                type: 'string',
-                'x-decorator': 'FormItem',
-                'x-component': 'Input',
-                required: true,
-              },
+              // height: {
+              //   title: t('Height'),
+              //   type: 'string',
+              //   'x-decorator': 'FormItem',
+              //   'x-component': 'Input',
+              //   required: true,
+              // },
             },
           } as ISchema,
           onSubmit: submitHandler,
         };
       },
+    },
+    {
+      name: 'setTheBlockHeight',
+      Component: SchemaSettingsBlockHeightItem,
     },
     {
       name: 'divider',
@@ -265,18 +269,22 @@ export const iframeBlockSchemaSettings = new SchemaSettings({
                   },
                 },
               },
-              height: {
-                title: t('Height'),
-                type: 'string',
-                'x-decorator': 'FormItem',
-                'x-component': 'Input',
-                required: true,
-              },
+              // height: {
+              //   title: t('Height'),
+              //   type: 'string',
+              //   'x-decorator': 'FormItem',
+              //   'x-component': 'Input',
+              //   required: true,
+              // },
             },
           } as ISchema,
           onSubmit: submitHandler,
         };
       },
+    },
+    {
+      name: 'setTheBlockHeight',
+      Component: SchemaSettingsBlockHeightItem,
     },
     {
       name: 'divider',

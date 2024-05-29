@@ -156,7 +156,8 @@ export const DataBlockProvider: FC<DataBlockProviderProps & { children?: ReactNo
     const { collection, association, dataSource, children, hidden, ...resets } = props as Partial<AllDataBlockProps>;
     const { dn } = useDesignable();
     const fieldSchema = useFieldSchema();
-    const disablePageHeader = useMemo(() => getIsdisablePageHeader(fieldSchema), []);
+    const pageSchema = useMemo(() => getPageSchema(fieldSchema), []);
+    const { disablePageHeader, enablePageTabs } = pageSchema?.['x-component-props'] || {};
     if (hidden) {
       return null;
     }
@@ -165,7 +166,7 @@ export const DataBlockProvider: FC<DataBlockProviderProps & { children?: ReactNo
         value={{
           dn,
           props: { ...resets, collection, association, dataSource } as AllDataBlockProps,
-          heightProps: { ...fieldSchema?.['x-component-props'], disablePageHeader },
+          heightProps: { ...fieldSchema?.['x-component-props'], disablePageHeader, enablePageTabs },
         }}
       >
         <CollectionManagerProvider dataSource={dataSource}>
@@ -197,11 +198,11 @@ export const useDataBlockProps = <T extends {}>(): DataBlockContextValue<T>['pro
   return context.props;
 };
 
-const getIsdisablePageHeader = (schema) => {
+export const getPageSchema = (schema) => {
   if (!schema) return null;
 
   if (schema['x-component'] === 'Page') {
-    return schema?.['x-component-props']?.disablePageHeader;
+    return schema;
   }
-  return getIsdisablePageHeader(schema.parent);
+  return getPageSchema(schema.parent);
 };

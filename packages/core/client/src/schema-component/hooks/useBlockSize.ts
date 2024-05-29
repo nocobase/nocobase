@@ -9,33 +9,50 @@
 
 import { useEventListener } from 'ahooks';
 import { debounce } from 'lodash';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useRef, useState, useMemo } from 'react';
 import { useFieldSchema } from '@formily/react';
 import { theme } from 'antd';
 import { useDesignable } from '..';
 import { useDataBlock } from '../../data-source';
-import { useDataBlockRequest } from '../../';
+import { useDataBlockRequest, getPageSchema } from '../../';
+
+const getPageHeaderHeight = (disablePageHeader, enablePageTabs, token) => {
+  if (disablePageHeader) {
+    return token.paddingContentHorizontalLG;
+  } else {
+    if (enablePageTabs) {
+      return (
+        token.paddingSM +
+        token.controlHeight +
+        token.marginXS +
+        2 * token.controlPaddingHorizontalSM +
+        22 +
+        token.paddingContentHorizontalLG
+      );
+    }
+    return token.controlHeight + token.marginXS + (token.paddingXXS + 2) * 2 + token.paddingContentHorizontalLG;
+  }
+};
 
 // 页面中满屏
-const usePageFullScreenHeight = () => {
+const usePageFullScreenHeight = (props?) => {
   const { token } = theme.useToken();
   const { designable } = useDesignable();
   const { heightProps } = useDataBlock();
-  const { disablePageHeader } = heightProps || {};
+  const { disablePageHeader, enablePageTabs } = heightProps || props || {};
   const navHeight = token.sizeXXL - 2;
   const addBlockBtnHeight = designable
     ? token.controlHeight + 3 * token.paddingContentHorizontalLG
     : 2 * token.paddingContentHorizontalLG;
-  const pageHeaderHeight = disablePageHeader
-    ? token.paddingContentHorizontalLG
-    : token.controlHeight + token.marginXS + (token.paddingXXS + 2) * 2 + token.paddingContentHorizontalLG;
+  const pageHeaderHeight = getPageHeaderHeight(disablePageHeader, enablePageTabs, token);
   return navHeight + pageHeaderHeight + addBlockBtnHeight;
 };
 
-const useFullScreenHeight = () => {
+//抽屉中满屏
+const useFullScreenHeight = (props?) => {
   const schema = useFieldSchema();
   const isDrawerBlock = hasActionContainerInParentChain(schema);
-  const pageReservedHeight = usePageFullScreenHeight();
+  const pageReservedHeight = usePageFullScreenHeight(props);
   const drawerReservedHeight = useDrawerFullScreenHeight();
   if (isDrawerBlock) {
     return drawerReservedHeight;
@@ -85,10 +102,28 @@ const useTableHeight = () => {
   return height - blockHeaderHeight - actionBarHeight - tableHeaderHeight - paginationHeight;
 };
 
-// 常规区块高度计算
+// 常规数据区块高度计算
 export const useDataBlockHeight = () => {
   const { heightProps } = useDataBlock();
   const pageFullScreenHeight = useFullScreenHeight();
+  const { heightMode, height } = heightProps || {};
+
+  if (!heightProps?.heightMode || heightMode === 'adaptive') {
+    return;
+  }
+  if (heightMode === 'fullScreen') {
+    return window.innerHeight - pageFullScreenHeight;
+  }
+  return height;
+};
+
+//其他非数据区块高度
+export const useBlockHeight = () => {
+  const fieldSchema = useFieldSchema();
+  const pageSchema = useMemo(() => getPageSchema(fieldSchema), []);
+  const { disablePageHeader, enablePageTabs } = pageSchema?.['x-component-props'] || {};
+  const heightProps = { ...fieldSchema?.['x-component-props'], disablePageHeader, enablePageTabs };
+  const pageFullScreenHeight = useFullScreenHeight(heightProps);
   const { heightMode, height } = heightProps || {};
 
   if (!heightProps?.heightMode || heightMode === 'adaptive') {
