@@ -157,7 +157,7 @@ export const DataBlockProvider: FC<DataBlockProviderProps & { children?: ReactNo
     const { dn } = useDesignable();
     const fieldSchema = useFieldSchema();
     const pageSchema = useMemo(() => getPageSchema(fieldSchema), []);
-    const { disablePageHeader, enablePageTabs } = pageSchema?.['x-component-props'] || {};
+    const { disablePageHeader, enablePageTabs, hidePageTitle } = pageSchema?.['x-component-props'] || {};
     if (hidden) {
       return null;
     }
@@ -166,7 +166,7 @@ export const DataBlockProvider: FC<DataBlockProviderProps & { children?: ReactNo
         value={{
           dn,
           props: { ...resets, collection, association, dataSource } as AllDataBlockProps,
-          heightProps: { ...fieldSchema?.['x-component-props'], disablePageHeader, enablePageTabs },
+          heightProps: { ...fieldSchema?.['x-component-props'], disablePageHeader, enablePageTabs, hidePageTitle },
         }}
       >
         <CollectionManagerProvider dataSource={dataSource}>

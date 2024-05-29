@@ -16,21 +16,25 @@ import { useDesignable } from '..';
 import { useDataBlock } from '../../data-source';
 import { useDataBlockRequest, getPageSchema } from '../../';
 
-const getPageHeaderHeight = (disablePageHeader, enablePageTabs, token) => {
+const getPageHeaderHeight = (disablePageHeader, enablePageTabs, hidePageTitle, token) => {
   if (disablePageHeader) {
     return token.paddingContentHorizontalLG;
   } else {
-    if (enablePageTabs) {
-      return (
-        token.paddingSM +
-        token.controlHeight +
-        token.marginXS +
-        2 * token.controlPaddingHorizontalSM +
-        22 +
-        token.paddingContentHorizontalLG
-      );
+    if (!hidePageTitle) {
+      if (enablePageTabs) {
+        return (
+          token.paddingSM +
+          token.controlHeight +
+          token.marginXS +
+          2 * token.controlPaddingHorizontalSM +
+          22 +
+          token.paddingContentHorizontalLG
+        );
+      }
+      return token.controlHeight + token.marginXS + (token.paddingXXS + 2) * 2 + token.paddingContentHorizontalLG;
+    } else {
+      return token.paddingContentHorizontalLG + 12;
     }
-    return token.controlHeight + token.marginXS + (token.paddingXXS + 2) * 2 + token.paddingContentHorizontalLG;
   }
 };
 
@@ -39,12 +43,12 @@ const usePageFullScreenHeight = (props?) => {
   const { token } = theme.useToken();
   const { designable } = useDesignable();
   const { heightProps } = useDataBlock();
-  const { disablePageHeader, enablePageTabs } = heightProps || props || {};
+  const { disablePageHeader, enablePageTabs, hidePageTitle } = heightProps || props || {};
   const navHeight = token.sizeXXL - 2;
   const addBlockBtnHeight = designable
-    ? token.controlHeight + 3 * token.paddingContentHorizontalLG
-    : 2 * token.paddingContentHorizontalLG;
-  const pageHeaderHeight = getPageHeaderHeight(disablePageHeader, enablePageTabs, token);
+    ? token.controlHeight + 2 * token.paddingContentHorizontalLG
+    : 1 * token.paddingContentHorizontalLG;
+  const pageHeaderHeight = getPageHeaderHeight(disablePageHeader, enablePageTabs, hidePageTitle, token);
   return navHeight + pageHeaderHeight + addBlockBtnHeight;
 };
 
@@ -121,8 +125,8 @@ export const useDataBlockHeight = () => {
 export const useBlockHeight = () => {
   const fieldSchema = useFieldSchema();
   const pageSchema = useMemo(() => getPageSchema(fieldSchema), []);
-  const { disablePageHeader, enablePageTabs } = pageSchema?.['x-component-props'] || {};
-  const heightProps = { ...fieldSchema?.['x-component-props'], disablePageHeader, enablePageTabs };
+  const { disablePageHeader, enablePageTabs, hidePageTitle } = pageSchema?.['x-component-props'] || {};
+  const heightProps = { ...fieldSchema?.['x-component-props'], disablePageHeader, enablePageTabs, hidePageTitle };
   const pageFullScreenHeight = useFullScreenHeight(heightProps);
   const { heightMode, height } = heightProps || {};
 
