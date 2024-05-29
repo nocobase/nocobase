@@ -9,17 +9,21 @@
 
 import { Button, Result, Typography } from 'antd';
 import React, { FC } from 'react';
-import { FallbackProps, useErrorBoundary } from 'react-error-boundary';
+import { FallbackProps } from 'react-error-boundary';
 import { Trans, useTranslation } from 'react-i18next';
 import { ErrorFallbackModal } from './ErrorFallbackModal';
+import { useAPIClient } from '../../../api-client';
+import { useFieldSchema } from '@formily/react';
 
 const { Paragraph, Text, Link } = Typography;
 
 export const ErrorFallback: FC<FallbackProps> & {
   Modal: FC<FallbackProps>;
 } = ({ error }) => {
-  const { resetBoundary } = useErrorBoundary();
+  const schema = useFieldSchema();
   const { t } = useTranslation();
+  const api = useAPIClient();
+  const [loading, setLoading] = React.useState(false);
 
   const subTitle = (
     <Trans>
@@ -29,6 +33,33 @@ export const ErrorFallback: FC<FallbackProps> & {
       </Link>
     </Trans>
   );
+
+  const download = async () => {
+    setLoading(true);
+    try {
+      const res = await api.request({
+        url: 'logger:collect',
+        method: 'post',
+        responseType: 'blob',
+        data: {
+          error: {
+            message: error.message,
+            stack: error.stack,
+          },
+          schema: schema.toJSON(),
+        },
+      });
+      const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/gzip' }));
+      const link = document.createElement('a');
+      link.setAttribute('href', url);
+      link.setAttribute('download', 'logs.tar.gz');
+      link.click();
+      link.remove();
+    } catch (err) {
+      console.log(err);
+    }
+    setLoading(false);
+  };
 
   return (
     <div style={{ backgroundColor: 'white' }}>
@@ -41,8 +72,8 @@ export const ErrorFallback: FC<FallbackProps> & {
           <Button type="primary" key="feedback" href="https://github.com/nocobase/nocobase/issues" target="_blank">
             {t('Feedback')}
           </Button>,
-          <Button key="try" onClick={resetBoundary}>
-            {t('Try again')}
+          <Button key="log" loading={loading} onClick={download}>
+            {t('Download logs')}
           </Button>,
         ]}
       >
