@@ -25,6 +25,8 @@ const interfaces = {
   radioGroup: SelectInterface,
   percent: PercentInterface,
   datetime: DatetimeInterface,
+  createdAt: DatetimeInterface,
+  updatedAt: DatetimeInterface,
   boolean: BooleanInterface,
 };
 

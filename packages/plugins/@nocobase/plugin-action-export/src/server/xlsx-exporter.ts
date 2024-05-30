@@ -124,7 +124,7 @@ class XlsxExporter {
   private renderHeaders() {
     return this.options.columns.map((col) => {
       const field = this.findFieldByDataIndex(col.dataIndex);
-      return field.options.title || col.defaultTitle;
+      return field?.options.title || col.defaultTitle;
     });
   }
 
@@ -158,6 +158,10 @@ class XlsxExporter {
     }
 
     const field = this.findFieldByDataIndex(dataIndex);
+    if (!field) {
+      return this.renderRawValue(value);
+    }
+
     const fieldOptions = field.options;
     const interfaceName = fieldOptions['interface'];
 
