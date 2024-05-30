@@ -14,10 +14,12 @@ import { Trans, useTranslation } from 'react-i18next';
 import { ErrorFallbackModal } from './ErrorFallbackModal';
 import { useAPIClient } from '../../../api-client';
 import { useFieldSchema } from '@formily/react';
+import { useLocation } from 'react-router-dom';
 
 const { Paragraph, Text, Link } = Typography;
 
 export const useDownloadLogs = (error: any, data: Record<string, any> = {}) => {
+  const location = useLocation();
   const [loading, setLoading] = React.useState(false);
   const api = useAPIClient();
   return {
@@ -34,6 +36,7 @@ export const useDownloadLogs = (error: any, data: Record<string, any> = {}) => {
               message: error.message,
               stack: error.stack,
             },
+            location,
             ...data,
           },
         });
