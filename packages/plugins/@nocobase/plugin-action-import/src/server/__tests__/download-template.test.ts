@@ -56,7 +56,6 @@ describe('download template', () => {
     const workbook = await templateCreator.run();
     const sheet0 = workbook.Sheets[workbook.SheetNames[0]];
     const sheetData = XLSX.utils.sheet_to_json(sheet0, { header: 1 });
-    console.log(sheetData);
     const headerData = sheetData[0];
     expect(headerData).toEqual(['Name', 'Email']);
   });
