@@ -795,6 +795,7 @@
   "Render Failed": "渲染失败",
   "Feedback": "反馈问题",
   "Try again": "重试一下",
+  "Download logs": "下载日志",
   "Click or drag file to this area to upload": "点击或拖拽文件到此区域上传",
   "Support for a single or bulk upload, file size should not exceed": "支持单个或批量上传，文件大小不能超过",
   "Default title for each record": "用作数据的默认标题",

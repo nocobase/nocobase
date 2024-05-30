@@ -17,13 +17,46 @@ import { useFieldSchema } from '@formily/react';
 
 const { Paragraph, Text, Link } = Typography;
 
+export const useDownloadLogs = (error: any, data: Record<string, any> = {}) => {
+  const [loading, setLoading] = React.useState(false);
+  const api = useAPIClient();
+  return {
+    loading,
+    download: async () => {
+      setLoading(true);
+      try {
+        const res = await api.request({
+          url: 'logger:collect',
+          method: 'post',
+          responseType: 'blob',
+          data: {
+            error: {
+              message: error.message,
+              stack: error.stack,
+            },
+            ...data,
+          },
+        });
+        const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/gzip' }));
+        const link = document.createElement('a');
+        link.setAttribute('href', url);
+        link.setAttribute('download', 'logs.tar.gz');
+        link.click();
+        link.remove();
+      } catch (err) {
+        console.log(err);
+      }
+      setLoading(false);
+    },
+  };
+};
+
 export const ErrorFallback: FC<FallbackProps> & {
   Modal: FC<FallbackProps>;
 } = ({ error }) => {
   const schema = useFieldSchema();
   const { t } = useTranslation();
-  const api = useAPIClient();
-  const [loading, setLoading] = React.useState(false);
+  const { loading, download } = useDownloadLogs(error, { schema });
 
   const subTitle = (
     <Trans>
@@ -33,33 +66,6 @@ export const ErrorFallback: FC<FallbackProps> & {
       </Link>
     </Trans>
   );
-
-  const download = async () => {
-    setLoading(true);
-    try {
-      const res = await api.request({
-        url: 'logger:collect',
-        method: 'post',
-        responseType: 'blob',
-        data: {
-          error: {
-            message: error.message,
-            stack: error.stack,
-          },
-          schema: schema.toJSON(),
-        },
-      });
-      const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/gzip' }));
-      const link = document.createElement('a');
-      link.setAttribute('href', url);
-      link.setAttribute('download', 'logs.tar.gz');
-      link.click();
-      link.remove();
-    } catch (err) {
-      console.log(err);
-    }
-    setLoading(false);
-  };
 
   return (
     <div style={{ backgroundColor: 'white' }}>
