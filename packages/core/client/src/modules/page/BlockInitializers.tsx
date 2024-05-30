@@ -77,13 +77,6 @@ const commonOptions = {
       ],
     },
   ],
-  style: () => {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    const token = useAntdToken();
-    return {
-      marginBottom: token.marginLG,
-    };
-  },
 };
 
 /**
