@@ -230,7 +230,6 @@ const SortableRow = (props) => {
       ? classObj.topActiveClass
       : classObj.bottomActiveClass;
 
-  console.log('active?.id !== id', active?.id, id, active?.id !== id);
   return (
     <tr
       ref={active?.id !== id ? setNodeRef : null}

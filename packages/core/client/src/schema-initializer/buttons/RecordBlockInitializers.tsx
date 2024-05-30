@@ -178,7 +178,7 @@ function useRecordBlocks() {
             if (fromOthersInPopup) {
               return templateWrapCollection(templateSchema, { item, fromOthersInPopup });
             }
-            templateWrap(templateSchema, { item });
+            return templateWrap(templateSchema, { item });
           },
           showAssociationFields: true,
         };
