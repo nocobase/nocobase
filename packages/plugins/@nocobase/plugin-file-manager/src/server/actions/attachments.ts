@@ -46,6 +46,7 @@ function getFileData(ctx: Context) {
   const extname = Path.extname(filename);
   const path = storage.path.replace(/^\/|\/$/g, '');
   const baseUrl = storage.baseUrl.replace(/\/+$/, '');
+  const pathname = [path, filename].filter(Boolean).join('/');
 
   return {
     title: Buffer.from(file.originalname, 'latin1').toString('utf8').replace(extname, ''),
@@ -55,7 +56,7 @@ function getFileData(ctx: Context) {
     path,
     size: file.size,
     // 直接缓存起来
-    url: `${baseUrl}/${path}/${filename}`,
+    url: `${baseUrl}/${pathname}`,
     mimetype: file.mimetype,
     // @ts-ignore
     meta: ctx.request.body,
