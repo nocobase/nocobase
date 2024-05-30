@@ -49,7 +49,11 @@ export const Iframe: any = observer(
     }, [htmlContent, mode, url]);
 
     if ((mode === 'url' && !url) || (mode === 'html' && !htmlId)) {
-      return <Card style={{ marginBottom: 24 }}>{t('Please fill in the iframe URL')}</Card>;
+      return (
+        <Card style={{ marginBottom: 24, height: isNumeric(targetHeight) ? `${targetHeight}px` : targetHeight }}>
+          {t('Please fill in the iframe URL')}
+        </Card>
+      );
     }
 
     if (loading) {
