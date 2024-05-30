@@ -8,7 +8,7 @@
  */
 
 import React from 'react';
-import { render } from '@testing-library/react';
+import { render, waitFor, screen } from '@testing-library/react';
 import { sleep } from '../web';
 
 export * from './utils';
@@ -20,6 +20,19 @@ function customRender(ui: React.ReactElement, options = {}) {
     wrapper: ({ children }) => children,
     ...options,
   });
+}
+
+export async function waitForApp() {
+  return waitFor(() => {
+    // @ts-ignore
+    expect(screen.queryByText('Loading...')).not.toBeInTheDocument();
+  });
+}
+
+export async function renderApp(element: React.JSX.Element) {
+  const res = render(element);
+  await waitForApp();
+  return res;
 }
 
 export * from '@testing-library/react';

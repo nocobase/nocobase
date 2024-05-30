@@ -17,7 +17,7 @@ export const collectionTransform = (collection: CollectionOptions, app: Applicat
   const { rawTitle, title, fields = [], ...rest } = collection;
   return {
     ...rest,
-    title: rawTitle ? title : app.i18n.t(title),
+    title: rawTitle ? title : app.i18n.t(title, { ns: 'lm-collections' }),
     rawTitle: rawTitle || title,
     fields: fields?.map(({ uiSchema, ...field }) => {
       if (uiSchema?.title) {
