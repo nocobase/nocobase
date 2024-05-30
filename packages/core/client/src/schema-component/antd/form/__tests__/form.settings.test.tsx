@@ -8,13 +8,13 @@
  */
 
 import { BlockSchemaComponentPlugin, FormBlockProvider, VariablesProvider } from '@nocobase/client';
-import { checkSettings, renderApp } from '@nocobase/test/client';
+import { checkSettings, renderAppOptions } from '@nocobase/test/client';
 import { withSchema } from '@nocobase/test/web';
 
 describe('form.settings', () => {
   test('new schema version', async () => {
     const FormBlockProviderWithSchema = withSchema(FormBlockProvider);
-    await renderApp({
+    await renderAppOptions({
       designable: true,
       schema: {
         _isJSONSchemaObject: true,
