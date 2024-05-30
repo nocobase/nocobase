@@ -14,6 +14,7 @@ import XLSX from 'xlsx';
 import fs from 'fs';
 import path from 'path';
 import { BaseInterface } from '@nocobase/database';
+import moment from 'moment';
 
 XLSX.set_fs(fs);
 
@@ -618,6 +619,19 @@ describe('export to xlsx', () => {
           target: 'groups',
           through: 'usersGroups',
         },
+        {
+          name: 'createdAt',
+          type: 'date',
+          interface: 'createdAt',
+          field: 'createdAt',
+          uiSchema: {
+            type: 'datetime',
+            title: '{{t("Created at")}}',
+            'x-component': 'DatePicker',
+            'x-component-props': {},
+            'x-read-pretty': true,
+          },
+        },
       ],
     });
 
@@ -706,8 +720,13 @@ describe('export to xlsx', () => {
       expect(header).toEqual(['Name', 'Age', 'Post Title', 'Group Names', 'Created at']);
 
       const firstUser = sheetData[1];
-      console.log({ firstUser });
-      expect(firstUser).toEqual(['user0', 0, 'post0,post1,post2', 'group1,group2,group3']);
+      expect(firstUser).toEqual([
+        'user0',
+        0,
+        'post0,post1,post2',
+        'group1,group2,group3',
+        moment().format('YYYY-MM-DD'),
+      ]);
     } finally {
       fs.unlinkSync(xlsxFilePath);
     }
