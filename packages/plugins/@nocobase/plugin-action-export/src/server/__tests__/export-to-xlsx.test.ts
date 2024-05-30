@@ -612,6 +612,12 @@ describe('export to xlsx', () => {
           name: 'posts',
           target: 'posts',
         },
+        {
+          type: 'belongsToMany',
+          name: 'groups',
+          target: 'groups',
+          through: 'usersGroups',
+        },
       ],
     });
 
@@ -623,7 +629,16 @@ describe('export to xlsx', () => {
       ],
     });
 
+    const Group = app.db.collection({
+      name: 'groups',
+      fields: [{ type: 'string', name: 'name' }],
+    });
+
     await app.db.sync();
+
+    const [group1, group2, group3] = await Group.repository.create({
+      values: [{ name: 'group1' }, { name: 'group2' }, { name: 'group3' }],
+    });
 
     const values = Array.from({ length: 22 }).map((_, index) => {
       return {
@@ -632,6 +647,17 @@ describe('export to xlsx', () => {
         posts: Array.from({ length: 3 }).map((_, postIndex) => {
           return {
             title: `post${postIndex}`,
+            groups: [
+              {
+                id: group1.get('id'),
+              },
+              {
+                id: group2.get('id'),
+              },
+              {
+                id: group3.get('id'),
+              },
+            ],
           };
         }),
       };
@@ -648,6 +674,7 @@ describe('export to xlsx', () => {
         { dataIndex: ['name'], defaultTitle: 'Name' },
         { dataIndex: ['age'], defaultTitle: 'Age' },
         { dataIndex: ['posts', 'title'], defaultTitle: 'Post Title' },
+        { dataIndex: ['groups', 'name'], defaultTitle: 'Group Names' },
       ],
     });
 
@@ -675,10 +702,10 @@ describe('export to xlsx', () => {
       expect(sheetData.length).toBe(23); // 22 users * 3 posts + 1 header
 
       const header = sheetData[0];
-      expect(header).toEqual(['Name', 'Age', 'Post Title']);
+      expect(header).toEqual(['Name', 'Age', 'Post Title', 'Group Names']);
 
       const firstUser = sheetData[1];
-      expect(firstUser).toEqual(['user0', 0, 'post0,post1,post2']);
+      expect(firstUser).toEqual(['user0', 0, 'post0,post1,post2', 'group1,group2,group3']);
     } finally {
       fs.unlinkSync(xlsxFilePath);
     }
