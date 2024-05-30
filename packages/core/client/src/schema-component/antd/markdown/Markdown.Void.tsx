@@ -111,7 +111,7 @@ export const MarkdownVoid: any = observer(
     ) : (
       <div
         className={cls([componentCls, hashId, 'nb-markdown nb-markdown-default nb-markdown-table', className])}
-        style={{ ...props.style, height: height || '100%' }}
+        style={{ ...props.style, height: height || '100%', overflow: 'auto' }}
         dangerouslySetInnerHTML={{ __html: html }}
       />
     );

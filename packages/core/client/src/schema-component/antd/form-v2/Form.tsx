@@ -13,6 +13,7 @@ import { Field, Form as FormilyForm, createForm, onFieldInit, onFormInputChange 
 import { FieldContext, FormContext, RecursionField, observer, useField, useFieldSchema } from '@formily/react';
 import { reaction } from '@formily/reactive';
 import { uid } from '@formily/shared';
+import { theme } from 'antd';
 import { getValuesByPath } from '@nocobase/utils/client';
 import { ConfigProvider, Spin } from 'antd';
 import React, { useEffect, useMemo } from 'react';
@@ -30,11 +31,36 @@ import { REGEX_OF_VARIABLE, isVariable } from '../../../variables/utils/isVariab
 import { getInnermostKeyAndValue, getTargetField } from '../../common/utils/uitls';
 import { useProps } from '../../hooks/useProps';
 import { collectFieldStateOfLinkageRules, getTempFieldState } from './utils';
+import { useDataBlockHeight } from '../../hooks/useBlockSize';
+import { useDesignable } from '../../';
+import { useDataBlock } from '../../../';
 
 export interface FormProps extends IFormLayoutProps {
   form?: FormilyForm;
   disabled?: boolean;
 }
+
+const useFormBlockHeight = () => {
+  const height = useDataBlockHeight();
+  const schema = useFieldSchema();
+  const { token } = theme.useToken();
+  const { designable } = useDesignable();
+  const { heightProps } = useDataBlock();
+  const { title } = heightProps;
+  const actionSchema: any = schema.reduceProperties((buf, s) => {
+    if (s['x-component'] === 'ActionBar') {
+      return s;
+    }
+    return buf;
+  });
+  const hasFormActions = Object.keys(actionSchema.properties || {}).length > 0;
+
+  const actionBarHeight = hasFormActions || designable ? token.controlHeight + 2 * token.marginLG : 2 * token.marginLG;
+  const blockTitleHeaderHeight = title
+    ? token.fontSizeLG * token.lineHeightLG + token.padding * 2 - 1
+    : token.paddingLG;
+  return height - actionBarHeight - token.paddingLG - blockTitleHeaderHeight;
+};
 
 const FormComponent: React.FC<FormProps> = (props) => {
   const { form, children, ...others } = props;
@@ -42,11 +68,22 @@ const FormComponent: React.FC<FormProps> = (props) => {
   const fieldSchema = useFieldSchema();
   // TODO: component 里 useField 会与当前 field 存在偏差
   const f = useAttach(form.createVoidField({ ...field.props, basePath: '' }));
+  const height = useFormBlockHeight();
   return (
     <FieldContext.Provider value={undefined}>
       <FormContext.Provider value={form}>
         <FormLayout layout={'vertical'} {...others}>
-          <RecursionField basePath={f.address} schema={fieldSchema} onlyRenderProperties />
+          <div
+            className={css`
+              .nb-grid {
+                height: ${height ? height + 'px' : '100%'};
+                overflow-y: auto;
+                overflow-x: clip;
+              }
+            `}
+          >
+            <RecursionField basePath={f.address} schema={fieldSchema} onlyRenderProperties />
+          </div>
         </FormLayout>
       </FormContext.Provider>
     </FieldContext.Provider>

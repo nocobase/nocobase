@@ -154,7 +154,6 @@ export const useCreateKanbanBlock = () => {
   const { theme } = useGlobalTheme();
   const api = useAPIClient();
   const createKanbanBlock = async ({ item }) => {
-    console.log(item);
     const collectionFields = getCollectionFields(item.name, item.dataSource);
     const fields = collectionFields
       ?.filter((field) => ['select', 'radioGroup'].includes(field.interface))

@@ -7,11 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { cx } from '@emotion/css';
+import { cx, css } from '@emotion/css';
 import { ArrayField } from '@formily/core';
 import { RecursionField, Schema, useField, useFieldSchema } from '@formily/react';
-import { List as AntdList, PaginationProps } from 'antd';
+import { List as AntdList, PaginationProps, theme } from 'antd';
 import React, { useCallback, useState } from 'react';
+import { useDesignable } from '../../../';
 import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
 import { SortableItem } from '../../common';
 import { SchemaComponentOptions } from '../../core';
@@ -21,6 +22,27 @@ import { ListDesigner } from './List.Designer';
 import { ListItem } from './List.Item';
 import useStyles from './List.style';
 import { useListActionBarProps } from './hooks';
+import { useDataBlockHeight } from '../../hooks/useBlockSize';
+
+const useListBlockHeight = () => {
+  const height = useDataBlockHeight();
+  const schema = useFieldSchema();
+  const { token } = theme.useToken();
+  const { designable } = useDesignable();
+  const {
+    service: { data },
+  } = useListBlockContext() || {};
+  const { count, pageSize } = (data as any)?.meta || ({} as any);
+  const hasPagination = count > pageSize;
+
+  if (!height) {
+    return;
+  }
+  const hasListActions = Object.keys(schema.parent.properties.actionBar?.properties || {}).length > 0;
+  const actionBarHeight = hasListActions || designable ? token.controlHeight + 2 * token.marginLG : token.marginLG;
+  const paginationHeight = hasPagination ? token.controlHeight + token.paddingLG + token.marginLG : token.marginLG;
+  return height - actionBarHeight - paginationHeight;
+};
 
 const InternalList = (props) => {
   const { service } = useListBlockContext();
@@ -31,7 +53,7 @@ const InternalList = (props) => {
   const field = useField<ArrayField>();
   const [schemaMap] = useState(new Map());
   const { wrapSSR, componentCls, hashId } = useStyles();
-
+  const height = useListBlockHeight();
   const getSchema = useCallback(
     (key) => {
       if (!schemaMap.has(key)) {
@@ -68,7 +90,20 @@ const InternalList = (props) => {
         useListActionBarProps,
       }}
     >
-      <SortableItem className={cx('nb-list', componentCls, hashId)}>
+      <SortableItem
+        className={cx(
+          'nb-list',
+          componentCls,
+          hashId,
+          css`
+            .ant-spin-nested-loading {
+              height: ${height ? height + 'px' : '100%'};
+              overflow-y: auto;
+              overflow-x: clip;
+            }
+          `,
+        )}
+      >
         <AntdList
           {...props}
           pagination={
