@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { render, screen, waitFor, renderApp, userEvent } from '@nocobase/test/client';
+import { render, screen, waitFor, renderAppOptions, userEvent } from '@nocobase/test/client';
 import React from 'react';
 import App1 from '../demos/demo1';
 import { Page } from '../Page';
@@ -31,7 +31,7 @@ describe('Page', () => {
   describe('Page Component', () => {
     const title = 'Test Title';
     test('schema title', async () => {
-      await renderApp({
+      await renderAppOptions({
         schema: {
           type: 'void',
           title,
@@ -43,7 +43,7 @@ describe('Page', () => {
     });
 
     test('hide title', async () => {
-      await renderApp({
+      await renderAppOptions({
         schema: {
           type: 'void',
           title,
@@ -58,7 +58,7 @@ describe('Page', () => {
     });
 
     test('should request remote schema when no title', async () => {
-      await renderApp({
+      await renderAppOptions({
         schema: {
           type: 'void',
           'x-uid': 'test',
@@ -80,7 +80,7 @@ describe('Page', () => {
     });
 
     test('enablePageTabs', async () => {
-      await renderApp({
+      await renderAppOptions({
         schema: {
           type: 'void',
           title,
@@ -118,7 +118,7 @@ describe('Page', () => {
     });
 
     test('add tab', async () => {
-      await renderApp({
+      await renderAppOptions({
         schema: {
           type: 'void',
           title,

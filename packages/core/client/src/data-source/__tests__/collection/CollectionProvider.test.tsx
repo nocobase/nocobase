@@ -20,7 +20,7 @@ import {
 } from '@nocobase/client';
 import collections from '../collections.json';
 
-function renderApp(Demo: ComponentType, props: any = {}) {
+function renderAppOptions(Demo: ComponentType, props: any = {}) {
   const app = new Application({
     dataSourceManager: {
       collections: collections as any,
@@ -58,7 +58,7 @@ describe('CollectionProvider', () => {
       );
     };
 
-    renderApp(Demo, { name: 'users' });
+    renderAppOptions(Demo, { name: 'users' });
 
     expect(screen.getByTestId('name')).toHaveTextContent('users');
 
@@ -74,7 +74,7 @@ describe('CollectionProvider', () => {
       return <div data-testid="children">children</div>;
     };
 
-    renderApp(Demo, { name: 'not-exists', allowNull: true });
+    renderAppOptions(Demo, { name: 'not-exists', allowNull: true });
 
     expect(screen.getByTestId('children')).toHaveTextContent('children');
   });
@@ -87,7 +87,7 @@ describe('CollectionProvider', () => {
       return <div>children</div>;
     };
 
-    renderApp(Demo, { name: 'not-exists', allowNull: false });
+    renderAppOptions(Demo, { name: 'not-exists', allowNull: false });
 
     expect(screen.getByText('Delete')).toBeInTheDocument();
   });
@@ -98,7 +98,7 @@ describe('CollectionProvider', () => {
       return <div data-testid="fields">{fields.length}</div>;
     };
 
-    renderApp(Demo, { name: 'users' });
+    renderAppOptions(Demo, { name: 'users' });
 
     expect(screen.getByTestId('fields')).toHaveTextContent('1');
   });

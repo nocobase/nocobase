@@ -20,7 +20,7 @@ import {
 } from '@nocobase/client';
 import collections from '../collections.json';
 
-function renderApp(Demo: ComponentType, dataSource?: string) {
+function renderAppOptions(Demo: ComponentType, dataSource?: string) {
   const app = new Application({
     dataSourceManager: {
       collections: collections as any,
@@ -50,7 +50,7 @@ describe('CollectionManagerProvider', () => {
       const users = cm.getCollection('users');
       return <div data-testid="demo">{users.name}</div>;
     };
-    renderApp(Demo);
+    renderAppOptions(Demo);
 
     expect(screen.getByTestId('demo')).toHaveTextContent('users');
   });
@@ -60,7 +60,7 @@ describe('CollectionManagerProvider', () => {
       const collections = useCollections();
       return <div data-testid="demo">{collections.length}</div>;
     };
-    renderApp(Demo);
+    renderAppOptions(Demo);
 
     expect(screen.getByTestId('demo')).toHaveTextContent('2');
   });
@@ -70,7 +70,7 @@ describe('CollectionManagerProvider', () => {
       const collections = useCollections((collection) => collection.name === 'users');
       return <div data-testid="demo">{collections.length}</div>;
     };
-    renderApp(Demo);
+    renderAppOptions(Demo);
 
     expect(screen.getByTestId('demo')).toHaveTextContent('1');
   });
@@ -80,7 +80,7 @@ describe('CollectionManagerProvider', () => {
       const collections = useCollections();
       return <div data-testid="demo">{collections.length}</div>;
     };
-    renderApp(Demo, 'a');
+    renderAppOptions(Demo, 'a');
 
     expect(screen.getByTestId('demo')).toHaveTextContent('1');
   });
@@ -99,7 +99,7 @@ describe('CollectionManagerProvider', () => {
       );
     };
 
-    renderApp(Wrapper, 'a');
+    renderAppOptions(Wrapper, 'a');
 
     expect(screen.getByTestId('demo')).toHaveTextContent('2');
   });
@@ -120,7 +120,7 @@ describe('CollectionManagerProvider', () => {
       );
     };
 
-    renderApp(Wrapper, 'a');
+    renderAppOptions(Wrapper, 'a');
 
     expect(screen.getByTestId('demo')).toHaveTextContent('2');
   });
