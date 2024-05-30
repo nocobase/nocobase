@@ -7,15 +7,20 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { useDataBlockHeight } from '@nocobase/client';
+import { useDataBlockHeight, useDataBlock } from '@nocobase/client';
 import { theme } from 'antd';
 
 export const useCalenderHeight = () => {
   const height = useDataBlockHeight();
+  const { heightProps } = useDataBlock();
+  const { title } = heightProps;
   const { token } = theme.useToken();
   if (!height) {
     return;
   }
-  const actionBarHeight = 2 * token.marginLG;
-  return height - actionBarHeight;
+  const actionBarHeight = token.marginLG;
+  const blockTitleHeaderHeight = title
+    ? token.fontSizeLG * token.lineHeightLG + token.padding * 2 - 1
+    : token.paddingLG;
+  return height - actionBarHeight - blockTitleHeaderHeight;
 };
