@@ -11,11 +11,7 @@ import { promisify } from 'util';
 
 import { AttachmentModel, StorageType } from '.';
 import { STORAGE_TYPE_TX_COS } from '../../constants';
-import { cloudFilenameGetter } from '../utils';
-
-function getFileKey(record) {
-  return `${record.path}/${record.filename}`.replace(new RegExp('^/|/$', 'g'), '');
-}
+import { cloudFilenameGetter, getFileKey } from '../utils';
 
 export default class extends StorageType {
   filenameKey = 'url';
