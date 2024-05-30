@@ -11,7 +11,7 @@ import { promisify } from 'util';
 
 import { AttachmentModel, StorageType } from '.';
 import { STORAGE_TYPE_TX_COS } from '../../constants';
-import { cloudFilenameGetter } from '../utils';
+import { cloudFilenameGetter, getFileKey } from '../utils';
 
 export default class extends StorageType {
   filenameKey = 'url';
@@ -38,14 +38,11 @@ export default class extends StorageType {
   }
   async delete(storage, records: AttachmentModel[]): Promise<[number, AttachmentModel[]]> {
     const { cos } = this.make(storage);
-    const { Deleted } = await promisify(cos.deleteMultipleObject)({
+    const { Deleted } = await promisify(cos.deleteMultipleObject).call(cos, {
       Region: storage.options.Region,
       Bucket: storage.options.Bucket,
-      Objects: records.map((record) => ({ Key: `${record.path}/${record.filename}` })),
+      Objects: records.map((record) => ({ Key: getFileKey(record) })),
     });
-    return [
-      Deleted.length,
-      records.filter((record) => !Deleted.find((item) => item.Key === `${record.path}/${record.filename}`)),
-    ];
+    return [Deleted.length, records.filter((record) => !Deleted.find((item) => item.Key === getFileKey(record)))];
   }
 }
