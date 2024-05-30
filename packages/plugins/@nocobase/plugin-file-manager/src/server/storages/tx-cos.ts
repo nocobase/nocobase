@@ -13,6 +13,10 @@ import { AttachmentModel, StorageType } from '.';
 import { STORAGE_TYPE_TX_COS } from '../../constants';
 import { cloudFilenameGetter } from '../utils';
 
+function getFileKey(record) {
+  return `${record.path}/${record.filename}`.replace(new RegExp('^/|/$', 'g'), '');
+}
+
 export default class extends StorageType {
   filenameKey = 'url';
   make(storage) {
@@ -41,11 +45,8 @@ export default class extends StorageType {
     const { Deleted } = await promisify(cos.deleteMultipleObject).call(cos, {
       Region: storage.options.Region,
       Bucket: storage.options.Bucket,
-      Objects: records.map((record) => ({ Key: `${record.path}/${record.filename}` })),
+      Objects: records.map((record) => ({ Key: getFileKey(record) })),
     });
-    return [
-      Deleted.length,
-      records.filter((record) => !Deleted.find((item) => item.Key === `${record.path}/${record.filename}`)),
-    ];
+    return [Deleted.length, records.filter((record) => !Deleted.find((item) => item.Key === getFileKey(record)))];
   }
 }
