@@ -67,8 +67,8 @@ const InternalTableBlockProvider = (props: Props) => {
   }, [service?.loading, fieldSchema]);
 
   const setExpandFlagValue = useCallback(
-    (falg) => {
-      setExpandFlag(falg || !expandFlag);
+    (flag) => {
+      setExpandFlag(flag || !expandFlag);
     },
     [expandFlag],
   );
