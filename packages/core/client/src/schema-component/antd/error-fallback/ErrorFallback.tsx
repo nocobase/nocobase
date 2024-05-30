@@ -19,7 +19,6 @@ import { useLocation } from 'react-router-dom';
 const { Paragraph, Text, Link } = Typography;
 
 export const useDownloadLogs = (error: any, data: Record<string, any> = {}) => {
-  const location = useLocation();
   const [loading, setLoading] = React.useState(false);
   const api = useAPIClient();
   return {
@@ -36,7 +35,6 @@ export const useDownloadLogs = (error: any, data: Record<string, any> = {}) => {
               message: error.message,
               stack: error.stack,
             },
-            location,
             ...data,
           },
         });
@@ -58,8 +56,9 @@ export const ErrorFallback: FC<FallbackProps> & {
   Modal: FC<FallbackProps>;
 } = ({ error }) => {
   const schema = useFieldSchema();
+  const location = useLocation();
   const { t } = useTranslation();
-  const { loading, download } = useDownloadLogs(error, { schema });
+  const { loading, download } = useDownloadLogs(error, { schema, location });
 
   const subTitle = (
     <Trans>
