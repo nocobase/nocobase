@@ -9,6 +9,7 @@
 
 import { Collection } from '@nocobase/database';
 import XLSX, { WorkBook } from 'xlsx';
+import lodash from 'lodash';
 
 export type ImportColumn = {
   dataIndex: Array<string>;
@@ -19,12 +20,43 @@ type ImporterOptions = {
   collection: Collection;
   columns: Array<ImportColumn>;
   workbook: WorkBook;
+  chunkSize?: number;
 };
 
 export class XlsxImporter {
-  constructor(private options: ImporterOptions) {}
+  constructor(private options: ImporterOptions) {
+    if (options.columns.length == 0) {
+      throw new Error();
+    }
+  }
 
-  async run() {}
+  async run() {
+    const rows = this.getData();
+    const chunks = lodash.chunk(rows, this.options.chunkSize || 200);
+    for (const chunkRows of chunks) {
+      for (const row of chunkRows) {
+        const rowValues = {};
+
+        for (let index = 0; index < this.options.columns.length; index++) {
+          const column = this.options.columns[index];
+
+          const field = this.options.collection.fields.get(column.dataIndex[0]);
+
+          if (!field) {
+            throw new Error(`Field not found: ${column.dataIndex[0]}`);
+          }
+
+          const interfaceType = field.options.interface;
+
+          const value = row[index];
+
+          if (value === null || value === undefined) {
+            continue;
+          }
+        }
+      }
+    }
+  }
 
   getData() {
     const firstSheet = this.firstSheet();
@@ -40,6 +72,9 @@ export class XlsxImporter {
         throw new Error(`Invalid header: ${column.defaultTitle} !== ${headers[i]}`);
       }
     }
+
+    // remove header
+    rows.shift();
 
     return rows;
   }

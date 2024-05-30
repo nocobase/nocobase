@@ -133,5 +133,69 @@ describe('xlsx importer', () => {
     expect(error).toBeFalsy();
   });
 
-  it('should import data with xlsx', async () => {});
+  it('should import data with xlsx', async () => {
+    const User = app.db.collection({
+      name: 'users',
+      fields: [
+        {
+          type: 'string',
+          name: 'name',
+        },
+        {
+          type: 'string',
+          name: 'email',
+        },
+      ],
+    });
+
+    await app.db.sync();
+
+    const templateCreator = new TemplateCreator({
+      collection: User,
+      columns: [
+        {
+          dataIndex: ['name'],
+          defaultTitle: '姓名',
+        },
+        {
+          dataIndex: ['email'],
+          defaultTitle: '邮箱',
+        },
+      ],
+    });
+
+    const template = await templateCreator.run();
+
+    const worksheet = template.Sheets[template.SheetNames[0]];
+
+    XLSX.utils.sheet_add_aoa(
+      worksheet,
+      [
+        ['User1', 'test@test.com'],
+        ['User2', 'test2@test.com'],
+      ],
+      {
+        origin: 'A2',
+      },
+    );
+
+    const importer = new XlsxImporter({
+      collection: User,
+      columns: [
+        {
+          dataIndex: ['name'],
+          defaultTitle: '姓名',
+        },
+        {
+          dataIndex: ['email'],
+          defaultTitle: '邮箱',
+        },
+      ],
+      workbook: template,
+    });
+
+    await importer.run();
+
+    expect(await User.repository.count()).toBe(2);
+  });
 });
