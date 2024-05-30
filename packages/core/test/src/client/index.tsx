@@ -40,7 +40,7 @@ export { default as userEvent } from '@testing-library/user-event';
 // override render export
 export { customRender as render, sleep };
 
-export * from './renderApp';
+export * from './renderAppOptions';
 export * from './renderHookWithApp';
 export * from './renderSettings';
 export * from './renderSingleSettings';

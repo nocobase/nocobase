@@ -51,6 +51,7 @@ export const useTableBlockProps = () => {
   }, [field, ctx?.service?.data, isLoading, ctx?.field?.data?.selectedRowKeys]);
 
   return {
+    bordered: ctx.bordered,
     childrenColumnName: ctx.childrenColumnName,
     loading: ctx?.service?.loading,
     showIndex: ctx.showIndex,

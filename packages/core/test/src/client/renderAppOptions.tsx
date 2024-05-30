@@ -12,7 +12,7 @@ import { render } from '@testing-library/react';
 import { GetAppComponentOptions, addXReadPrettyToEachLayer, getAppComponent } from '../web';
 import { WaitApp } from './utils';
 
-export const renderApp = async (options: GetAppComponentOptions) => {
+export const renderAppOptions = async (options: GetAppComponentOptions) => {
   const App = getAppComponent(options);
 
   const res = render(<App />);
@@ -23,5 +23,5 @@ export const renderApp = async (options: GetAppComponentOptions) => {
 };
 
 export const renderReadPrettyApp = (options: GetAppComponentOptions) => {
-  return renderApp({ ...options, schema: addXReadPrettyToEachLayer(options.schema) });
+  return renderAppOptions({ ...options, schema: addXReadPrettyToEachLayer(options.schema) });
 };

@@ -1,10 +1,8 @@
-
-
 import { BlockSchemaComponentPlugin, VariablesProvider } from '@nocobase/client';
-import { renderApp } from '@nocobase/test/client';
+import { renderAppOptions } from '@nocobase/test/client';
 
 export const renderDemo9 = () =>
-  renderApp({
+  renderAppOptions({
     designable: true,
     schema: {
       _isJSONSchemaObject: true,
