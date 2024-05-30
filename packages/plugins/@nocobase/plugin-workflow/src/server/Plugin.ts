@@ -233,9 +233,7 @@ export default class PluginWorkflowServer extends Plugin {
       actions: ['workflows:list'],
     });
 
-    this.app.acl.allow('workflows', ['trigger'], 'loggedIn');
-
-    await this.importCollections(path.resolve(__dirname, 'collections'));
+    this.app.acl.allow('*', ['trigger'], 'loggedIn');
 
     this.db.addMigrations({
       namespace: this.name,
