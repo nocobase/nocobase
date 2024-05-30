@@ -121,6 +121,12 @@ export const AMapComponent = React.forwardRef<AMapForwardedRefProps, AMapCompone
     ...overlayCommonOptions,
   });
 
+  useEffect(() => {
+    if (map.current) {
+      map.current.setZoom(zoom);
+    }
+  }, [zoom]);
+
   const toRemoveOverlay = useMemoizedFn(() => {
     if (overlay.current) {
       overlay.current.remove();
