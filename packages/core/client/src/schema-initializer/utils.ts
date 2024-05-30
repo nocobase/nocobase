@@ -968,13 +968,14 @@ export const useCollectionDataSourceItems = ({
         // 目的是使点击无效
         onClick() {},
         componentProps: {
+          ...dataBlockInitializerProps,
           icon: null,
           title: otherText || t('Other records'),
           name: 'otherRecords',
           showAssociationFields: false,
           onlyCurrentDataSource: false,
           hideChildrenIfSingleCollection: false,
-          onCreateBlockSchema: dataBlockInitializerProps.onCreateBlockSchema,
+          fromOthersInPopup: true,
           componentType: componentTypeMap[componentName] || componentName,
           filter({ collection, associationField }) {
             if (filterOtherRecordsCollection) {
