@@ -127,7 +127,11 @@ export async function testDefaultValue({
     await page.getByLabel('variable-button').click();
     await testSupportedAndUnsupportedVariables(page, supportedVariables, unsupportedVariables);
     for (const value of variableValue) {
-      await page.getByRole('menuitemcheckbox', { name: value }).click();
+      if (value === 'ID') {
+        await page.getByRole('menuitemcheckbox', { name: value, exact: true }).click();
+      } else {
+        await page.getByRole('menuitemcheckbox', { name: value }).click();
+      }
     }
     await page.getByRole('button', { name: 'OK', exact: true }).click();
 
