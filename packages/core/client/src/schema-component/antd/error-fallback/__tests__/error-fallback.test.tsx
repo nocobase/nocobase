@@ -9,12 +9,13 @@
 
 import { render, screen, userEvent, waitFor } from '@nocobase/test/client';
 import React from 'react';
-import App1 from './components/basic';
-import InlineApp from './components/modal';
+import App1 from '../demos/basic';
+import ModalApp from '../demos/modal';
 
 describe('ErrorFallback', () => {
-  it('should render correctly', () => {
+  it.only('should render correctly', () => {
     render(<App1 />);
+    screen.debug();
 
     expect(screen.getByText(/render failed/i)).toBeInTheDocument();
     expect(screen.getByText(/this is likely a nocobase internals bug\. please open an issue at/i)).toBeInTheDocument();
@@ -27,7 +28,7 @@ describe('ErrorFallback', () => {
   });
 
   it('should render inline correctly', async () => {
-    render(<InlineApp />);
+    render(<ModalApp />);
 
     expect(screen.getByText(/Error: error message/i)).toBeInTheDocument();
     expect(document.querySelector('.ant-typography-copy')).toBeInTheDocument();
