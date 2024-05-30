@@ -38,7 +38,7 @@ export default class extends StorageType {
   }
   async delete(storage, records: AttachmentModel[]): Promise<[number, AttachmentModel[]]> {
     const { cos } = this.make(storage);
-    const { Deleted } = await promisify(cos.deleteMultipleObject)({
+    const { Deleted } = await promisify(cos.deleteMultipleObject).call(cos, {
       Region: storage.options.Region,
       Bucket: storage.options.Bucket,
       Objects: records.map((record) => ({ Key: `${record.path}/${record.filename}` })),
