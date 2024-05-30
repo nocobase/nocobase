@@ -325,6 +325,25 @@ const anyVar = '';
 app.addScopes({ useSomeThing, anyVar })
 ```
 
+### app.getCollectionManager()
+
+Get the [collection manager](/core/data-source/collection-manager) instance of the specified data source.
+
+- Type
+
+```tsx | pure
+class Application {
+  getCollectionManager(dataSource?: string): CollectionManager;
+}
+```
+
+- Example
+
+```tsx | pure
+app.getCollectionManager() // Get the default data source collection manager
+app.getCollectionManager('test') // Get the specified data source collection manager
+```
+
 ## Hooks
 
 ### useApp()
