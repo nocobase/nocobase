@@ -7,5 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from '../constants';
-export { default } from './server';
+import { SchemaSettings } from '@nocobase/client';
+import { defaultZoomLevel } from '../block/MapBlock.Settings';
+
+export const fieldSettingsComponentMap = new SchemaSettings({
+  name: 'fieldSettings:component:Map',
+  items: [defaultZoomLevel],
+});

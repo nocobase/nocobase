@@ -208,17 +208,65 @@ function useCommonInterfaceInitializers(): SchemaInitializerItemType[] {
 
 const AddCustomFormFieldButtonContext = React.createContext<any>({});
 
+function useAction() {
+  const { values, query, reset } = useForm();
+  const messages = [useLang('Field name existed in form')];
+  const { collection, interfaceOptions, setCollectionFields, insert, setCallback, setInterface } = useContext(
+    AddCustomFormFieldButtonContext,
+  );
+  return {
+    async run() {
+      const { default: options } = interfaceOptions;
+      const defaultName = uid();
+      options.name = values.name ?? defaultName;
+      options.uiSchema.title = values.uiSchema?.title ?? defaultName;
+      options.interface = interfaceOptions.name;
+      const existed = collection.fields?.find((item) => item.name === options.name);
+      if (existed) {
+        const field = query('name').take() as Field;
+        field.setFeedback({
+          type: 'error',
+          // code: 'FormulaError',
+          messages,
+        });
+        return;
+      }
+      const newField = merge(options, values) as any;
+      setCollectionFields([...collection.fields, newField]);
+
+      insert({
+        name: options.name,
+        type: options.uiSchema.type,
+        'x-decorator': 'FormItem',
+        'x-component': 'CollectionField',
+        'x-component-props': {
+          field: newField,
+        },
+        'x-collection-field': `${collection.name}.${options.name}`,
+        // 'x-designer': 'FormItem.Designer',
+        'x-toolbar': 'FormItemSchemaToolbar',
+        'x-settings': 'fieldSettings:FormItem',
+      });
+      reset();
+      setCallback(null);
+      setInterface(null);
+    },
+  };
+}
+
 const CustomItemsComponent = (props) => {
   const [interfaceOptions, setInterface] = useState<any>(null);
   const [insert, setCallback] = useState<any>();
   const items = useCommonInterfaceInitializers();
   const collection = useCollection_deprecated();
   const { setCollectionFields } = useContext(FormBlockContext);
-  const form = useMemo(() => createForm(), [interfaceOptions]);
-
+  const form = useMemo(() => createForm(), []);
   return (
     <AddCustomFormFieldButtonContext.Provider
       value={{
+        collection,
+        insert,
+        interfaceOptions,
         onAddField(item) {
           const fieldInterface: Record<string, any> = pick(item, [
             'name',
@@ -236,6 +284,8 @@ const CustomItemsComponent = (props) => {
           setInterface(result);
         },
         setCallback,
+        setInterface,
+        setCollectionFields,
       }}
     >
       <SchemaInitializerItems {...props} items={items} />
@@ -289,48 +339,7 @@ const CustomItemsComponent = (props) => {
                       'x-component': 'Action',
                       'x-component-props': {
                         type: 'primary',
-                        useAction() {
-                          const { values, query, reset } = useForm();
-                          const messages = [useLang('Field name existed in form')];
-                          return {
-                            async run() {
-                              const { default: options } = interfaceOptions;
-                              const defaultName = uid();
-                              options.name = values.name ?? defaultName;
-                              options.uiSchema.title = values.uiSchema?.title ?? defaultName;
-                              options.interface = interfaceOptions.name;
-                              const existed = collection.fields?.find((item) => item.name === options.name);
-                              if (existed) {
-                                const field = query('name').take() as Field;
-                                field.setFeedback({
-                                  type: 'error',
-                                  // code: 'FormulaError',
-                                  messages,
-                                });
-                                return;
-                              }
-                              const newField = merge(options, values) as any;
-                              setCollectionFields([...collection.fields, newField]);
-
-                              insert({
-                                name: options.name,
-                                type: options.uiSchema.type,
-                                'x-decorator': 'FormItem',
-                                'x-component': 'CollectionField',
-                                'x-component-props': {
-                                  field: newField,
-                                },
-                                'x-collection-field': `${collection.name}.${options.name}`,
-                                // 'x-designer': 'FormItem.Designer',
-                                'x-toolbar': 'FormItemSchemaToolbar',
-                                'x-settings': 'fieldSettings:FormItem',
-                              });
-                              reset();
-                              setCallback(null);
-                              setInterface(null);
-                            },
-                          };
-                        },
+                        useAction,
                       },
                     },
                   },

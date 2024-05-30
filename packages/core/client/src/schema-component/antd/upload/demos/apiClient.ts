@@ -36,4 +36,25 @@ mockRequest.onPost('/attachments:create').reply(async (config) => {
   ];
 });
 
+mockRequest.onGet('/storages:getRules/').reply(async (config) => {
+  return [
+    200,
+    {
+      data: {},
+    },
+  ];
+});
+
+mockRequest.onGet('/storages:getRules/limited').reply(async (config) => {
+  return [
+    200,
+    {
+      data: {
+        size: 1024,
+        mimetype: 'text/plain',
+      },
+    },
+  ];
+});
+
 export default apiClient;
