@@ -42,7 +42,7 @@ export const gridRowColWrap = (schema: ISchema) => {
         type: 'void',
         'x-component': 'Grid.Col',
         properties: {
-          [schema.name || uid()]: schema,
+          [schema?.name || uid()]: schema,
         },
       },
     },

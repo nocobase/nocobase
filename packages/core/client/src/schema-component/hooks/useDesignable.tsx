@@ -65,6 +65,9 @@ interface RecursiveRemoveOptions {
 }
 
 const generateUid = (s: ISchema) => {
+  if (!s) {
+    return;
+  }
   if (!s['x-uid']) {
     s['x-uid'] = uid();
   }
