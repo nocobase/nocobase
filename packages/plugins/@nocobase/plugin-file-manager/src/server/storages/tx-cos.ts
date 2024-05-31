@@ -11,15 +11,18 @@ import { promisify } from 'util';
 
 import { AttachmentModel, StorageType } from '.';
 import { STORAGE_TYPE_TX_COS } from '../../constants';
-import { cloudFilenameGetter, getFileKey } from '../utils';
+import { getFilename, getFileKey } from '../utils';
 
 export default class extends StorageType {
   filenameKey = 'url';
   make(storage) {
     const createTxCosStorage = require('multer-cos');
     return new createTxCosStorage({
-      cos: storage.options,
-      filename: cloudFilenameGetter(storage),
+      cos: {
+        ...storage.options,
+        dir: (storage.path ?? '').replace(/\/+$/, ''),
+      },
+      filename: getFilename,
     });
   }
   defaults() {
