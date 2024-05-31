@@ -42,7 +42,7 @@ export const gridRowColWrap = (schema: ISchema) => {
         type: 'void',
         'x-component': 'Grid.Col',
         properties: {
-          [schema.name || uid()]: schema,
+          [schema?.name || uid()]: schema,
         },
       },
     },
@@ -717,7 +717,7 @@ const findSchema = (schema: Schema, key: string, action: string) => {
     if (s[key] === action) {
       return s;
     }
-    if (s['x-component'] !== 'Action.Container' && s['x-component'] !== 'AssociationField.Viewer') {
+    if (s['x-component'] !== 'Action.Container' && !s['x-component'].includes('AssociationField')) {
       const c = findSchema(s, key, action);
       if (c) {
         return c;
@@ -968,13 +968,14 @@ export const useCollectionDataSourceItems = ({
         // 目的是使点击无效
         onClick() {},
         componentProps: {
+          ...dataBlockInitializerProps,
           icon: null,
           title: otherText || t('Other records'),
           name: 'otherRecords',
           showAssociationFields: false,
           onlyCurrentDataSource: false,
           hideChildrenIfSingleCollection: false,
-          onCreateBlockSchema: dataBlockInitializerProps.onCreateBlockSchema,
+          fromOthersInPopup: true,
           componentType: componentTypeMap[componentName] || componentName,
           filter({ collection, associationField }) {
             if (filterOtherRecordsCollection) {
