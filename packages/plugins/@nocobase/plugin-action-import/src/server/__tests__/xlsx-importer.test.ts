@@ -22,9 +22,97 @@ describe('xlsx importer', () => {
     await app.destroy();
   });
 
-  //
-  // it('should reset id seq after import', async () => {});
-  //
+  it('should reset id seq after import', async () => {
+    const User = app.db.collection({
+      name: 'users',
+      autoGenId: false,
+      fields: [
+        {
+          type: 'bigInt',
+          name: 'id',
+          primaryKey: true,
+          autoIncrement: true,
+        },
+        {
+          type: 'string',
+          name: 'name',
+        },
+        {
+          type: 'string',
+          name: 'email',
+        },
+      ],
+    });
+
+    await app.db.sync();
+
+    const templateCreator = new TemplateCreator({
+      collection: User,
+      columns: [
+        {
+          dataIndex: ['id'],
+          defaultTitle: 'ID',
+        },
+        {
+          dataIndex: ['name'],
+          defaultTitle: '姓名',
+        },
+        {
+          dataIndex: ['email'],
+          defaultTitle: '邮箱',
+        },
+      ],
+    });
+
+    const template = await templateCreator.run();
+
+    const worksheet = template.Sheets[template.SheetNames[0]];
+
+    XLSX.utils.sheet_add_aoa(
+      worksheet,
+      [
+        [1, 'User1', 'test@test.com'],
+        [2, 'User2', 'test2@test.com'],
+      ],
+      {
+        origin: 'A2',
+      },
+    );
+
+    const importer = new XlsxImporter({
+      collectionManager: app.mainDataSource.collectionManager,
+      collection: User,
+      columns: [
+        {
+          dataIndex: ['id'],
+          defaultTitle: 'ID',
+        },
+        {
+          dataIndex: ['name'],
+          defaultTitle: '姓名',
+        },
+        {
+          dataIndex: ['email'],
+          defaultTitle: '邮箱',
+        },
+      ],
+      workbook: template,
+    });
+
+    await importer.run();
+
+    expect(await User.repository.count()).toBe(2);
+
+    const user3 = await User.repository.create({
+      values: {
+        name: 'User3',
+        email: 'test3@test.com',
+      },
+    });
+
+    expect(user3.get('id')).toBe(3);
+  });
+
   // it('should import with sort field', async () => {});
   //
 

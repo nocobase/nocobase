@@ -10,6 +10,7 @@
 import XLSX, { WorkBook } from 'xlsx';
 import lodash from 'lodash';
 import { ICollection, ICollectionManager, IRelationField } from '@nocobase/data-source-manager';
+import { Collection as DBCollection, Database } from '@nocobase/database';
 import { Transaction } from 'sequelize';
 
 export type ImportColumn = {
@@ -49,12 +50,47 @@ export class XlsxImporter {
     try {
       await this.performImport(options);
 
+      // @ts-ignore
+      if (this.options.collectionManager.db) {
+        await this.resetSeq(options);
+      }
+
       transaction && (await transaction.commit());
     } catch (error) {
       transaction && (await transaction.rollback());
 
       throw error;
     }
+  }
+
+  async resetSeq(options?: RunOptions) {
+    const { transaction } = options;
+    // @ts-ignore
+    const db: Database = this.options.collectionManager.db;
+    const collection: DBCollection = this.options.collection as DBCollection;
+
+    // @ts-ignore
+    const autoIncrementAttribute = collection.model.autoIncrementAttribute;
+    if (!autoIncrementAttribute) {
+      return;
+    }
+
+    const autoIncrInfo = await db.queryInterface.getAutoIncrementInfo({
+      tableInfo: collection.getTableNameWithSchema(),
+      fieldName: autoIncrementAttribute,
+      transaction,
+    });
+
+    const maxVal = (await collection.model.max(autoIncrementAttribute, { transaction })) as number;
+
+    const queryInterface = db.queryInterface;
+    await queryInterface.setAutoIncrementVal({
+      tableInfo: collection.getTableNameWithSchema(),
+      columnName: collection.model.rawAttributes[autoIncrementAttribute].field,
+      currentVal: maxVal,
+      seqName: autoIncrInfo.seqName,
+      transaction,
+    });
   }
 
   async performImport(options?: RunOptions) {
