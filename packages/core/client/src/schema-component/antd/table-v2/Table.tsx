@@ -241,10 +241,10 @@ const SortableRow = (props) => {
 
 const SortHandle = (props) => {
   const { id, ...otherProps } = props;
-  const { listeners } = useSortable({
+  const { listeners, setNodeRef } = useSortable({
     id,
   });
-  return <MenuOutlined {...otherProps} {...listeners} style={{ cursor: 'grab' }} />;
+  return <MenuOutlined ref={setNodeRef} {...otherProps} {...listeners} style={{ cursor: 'grab' }} />;
 };
 
 const TableIndex = (props) => {

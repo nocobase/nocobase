@@ -14,15 +14,26 @@ import classNames from 'classnames';
 import React from 'react';
 import { useToken } from '../../../style';
 import { useSetAriaLabelForModal } from './hooks/useSetAriaLabelForModal';
-import { ComposedActionDrawer, OpenSize } from './types';
+import { ActionDrawerProps, ComposedActionDrawer, OpenSize } from './types';
 import { useActionContext } from './hooks';
+import { ErrorBoundary, FallbackProps } from 'react-error-boundary';
+import { ErrorFallback } from '../error-fallback';
+
+const ModalErrorFallback: React.FC<FallbackProps> = (props) => {
+  const { visible, setVisible } = useActionContext();
+  return (
+    <Modal open={visible} onCancel={() => setVisible(false, true)} width="60%">
+      <ErrorFallback {...props} />
+    </Modal>
+  );
+};
 
 const openSizeWidthMap = new Map<OpenSize, string>([
   ['small', '40%'],
   ['middle', '60%'],
   ['large', '80%'],
 ]);
-export const ActionModal: ComposedActionDrawer<ModalProps> = observer(
+export const InternalActionModal: React.FC<ActionDrawerProps<ModalProps>> = observer(
   (props) => {
     const { footerNodeName = 'Action.Modal.Footer', width, ...others } = props;
     const { visible, setVisible, openSize = 'middle', modalProps } = useActionContext();
@@ -114,6 +125,12 @@ export const ActionModal: ComposedActionDrawer<ModalProps> = observer(
     );
   },
   { displayName: 'ActionModal' },
+);
+
+export const ActionModal: ComposedActionDrawer<ModalProps> = (props) => (
+  <ErrorBoundary FallbackComponent={ModalErrorFallback} onError={(err) => console.log(err)}>
+    <InternalActionModal {...props} />
+  </ErrorBoundary>
 );
 
 ActionModal.Footer = observer(

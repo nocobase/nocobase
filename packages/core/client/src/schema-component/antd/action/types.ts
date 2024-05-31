@@ -30,6 +30,7 @@ export interface ActionContextProps {
   modalProps?: ModalProps;
   submitted?: boolean;
   setSubmitted?: (v: boolean) => void;
+  children?: React.ReactNode;
 }
 
 export type UseActionType = (callback?: () => void) => {
@@ -86,6 +87,8 @@ export type ComposedAction = React.FC<ActionProps> & {
   [key: string]: any;
 };
 
-export type ComposedActionDrawer<T = DrawerProps> = React.FC<T & { footerNodeName?: string }> & {
+export type ActionDrawerProps<T = DrawerProps> = T & { footerNodeName?: string };
+
+export type ComposedActionDrawer<T = DrawerProps> = React.FC<ActionDrawerProps<T>> & {
   Footer?: React.FC;
 };

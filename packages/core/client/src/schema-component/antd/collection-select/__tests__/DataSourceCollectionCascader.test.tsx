@@ -7,12 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { renderApp, screen, userEvent, waitFor } from '@nocobase/test/client';
+import { renderAppOptions, screen, userEvent, waitFor } from '@nocobase/test/client';
 import { DataSourceCollectionCascader } from '../CollectionSelect';
 
 describe('DataSourceCollectionCascader', () => {
   test('should works', async () => {
-    await renderApp({
+    await renderAppOptions({
       enableMultipleDataSource: true,
       schema: {
         type: 'string',
