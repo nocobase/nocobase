@@ -9,7 +9,7 @@
 
 import XLSX, { WorkBook } from 'xlsx';
 import lodash from 'lodash';
-import { ICollection, ICollectionManager } from '@nocobase/data-source-manager';
+import { ICollection, ICollectionManager, IRelationField } from '@nocobase/data-source-manager';
 import { Transaction } from 'sequelize';
 
 export type ImportColumn = {
@@ -92,21 +92,42 @@ export class XlsxImporter {
             }
 
             const interfaceInstance = new InterfaceClass(field.options);
-            const value = interfaceInstance.toValue(str);
-            rowValues[dataKey] = value;
+
+            const ctx: any = {
+              transaction,
+            };
+
+            if (column.dataIndex.length > 1) {
+              ctx.targetCollection = (field as IRelationField).targetCollection();
+              ctx.filterKey = column.dataIndex[1];
+            }
+
+            rowValues[dataKey] = await interfaceInstance.toValue(this.trimString(str), ctx);
           }
+
           await this.options.collection.repository.create({
             values: rowValues,
             transaction,
           });
         } catch (error) {
-          throw new Error(`failed to import row ${handingRowIndex}`, { cause: error });
+          throw new Error(
+            `failed to import row ${handingRowIndex}, rowData: ${JSON.stringify(rowValues)} message: ${error.message}`,
+            { cause: error },
+          );
         }
       }
 
       // await to prevent high cpu usage
       await new Promise((resolve) => setTimeout(resolve, 50));
     }
+  }
+
+  trimString(str: string) {
+    if (typeof str === 'string') {
+      return str.trim();
+    }
+
+    return str;
   }
 
   getData() {

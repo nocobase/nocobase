@@ -135,6 +135,131 @@ describe('xlsx importer', () => {
     expect(error).toBeFalsy();
   });
 
+  it('should import with associations', async () => {
+    const User = app.db.collection({
+      name: 'users',
+      fields: [
+        {
+          type: 'string',
+          name: 'name',
+        },
+        {
+          type: 'string',
+          name: 'email',
+        },
+      ],
+    });
+
+    const Tag = app.db.collection({
+      name: 'tags',
+      fields: [
+        {
+          type: 'string',
+          name: 'name',
+        },
+      ],
+    });
+
+    const Post = app.db.collection({
+      name: 'posts',
+      fields: [
+        {
+          type: 'string',
+          name: 'title',
+        },
+        {
+          type: 'string',
+          name: 'content',
+        },
+        {
+          type: 'belongsTo',
+          name: 'user',
+          interface: 'm2o',
+        },
+        {
+          type: 'belongsToMany',
+          name: 'tags',
+          through: 'postsTags',
+          interface: 'm2m',
+        },
+      ],
+    });
+
+    await app.db.sync();
+
+    await User.repository.create({
+      values: {
+        name: 'User1',
+        email: 'u1@test.com',
+      },
+    });
+
+    await Tag.repository.create({
+      values: [
+        {
+          name: 'Tag1',
+        },
+        {
+          name: 'Tag2',
+        },
+        {
+          name: 'Tag3',
+        },
+      ],
+    });
+
+    const importColumns = [
+      {
+        dataIndex: ['title'],
+        defaultTitle: '标题',
+      },
+      {
+        dataIndex: ['content'],
+        defaultTitle: '内容',
+      },
+      {
+        dataIndex: ['user', 'name'],
+        defaultTitle: '作者',
+      },
+      {
+        dataIndex: ['tags', 'name'],
+        defaultTitle: '标签',
+      },
+    ];
+
+    const templateCreator = new TemplateCreator({
+      collection: Post,
+      columns: importColumns,
+    });
+
+    const template = await templateCreator.run();
+
+    const worksheet = template.Sheets[template.SheetNames[0]];
+
+    XLSX.utils.sheet_add_aoa(
+      worksheet,
+      [
+        ['Post1', 'Content1', 'User1', 'Tag1,Tag2'],
+        ['Post2', 'Content2', 'User1', 'Tag2,Tag3'],
+        ['Post3', 'Content3', 'UserNotExist', 'Tag3,TagNotExist'],
+      ],
+      {
+        origin: 'A2',
+      },
+    );
+
+    const importer = new XlsxImporter({
+      collectionManager: app.mainDataSource.collectionManager,
+      collection: Post,
+      columns: importColumns,
+      workbook: template,
+    });
+
+    await importer.run();
+
+    expect(await Post.repository.count()).toBe(3);
+  });
+
   it('should import data with xlsx', async () => {
     const User = app.db.collection({
       name: 'users',

@@ -44,7 +44,7 @@ export interface IFieldInterface {
   options: FieldOptions;
 
   toString(value: any, ctx?: any): string;
-  toValue(str: string): any;
+  toValue(str: string, ctx?: any): any;
 }
 
 export type FindOptions = any;

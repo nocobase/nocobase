@@ -15,6 +15,7 @@ import {
   PercentInterface,
   SelectInterface,
 } from './index';
+import { ManyToOneInterface } from './many-to-one-interface';
 
 const interfaces = {
   multipleSelect: MultipleSelectInterface,
@@ -28,6 +29,7 @@ const interfaces = {
   createdAt: DatetimeInterface,
   updatedAt: DatetimeInterface,
   boolean: BooleanInterface,
+  m2o: ManyToOneInterface,
 };
 
 export function registerInterfaces(db: Database) {
