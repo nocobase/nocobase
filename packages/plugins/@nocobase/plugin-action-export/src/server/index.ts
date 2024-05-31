@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { InstallOptions, Plugin } from '@nocobase/server';
+import { Plugin } from '@nocobase/server';
 import { exportXlsx } from './actions';
 
 export class PluginActionExportServer extends Plugin {
@@ -15,11 +15,6 @@ export class PluginActionExportServer extends Plugin {
 
   async load() {
     this.app.dataSourceManager.afterAddDataSource((dataSource) => {
-      // @ts-ignore
-      if (!dataSource.collectionManager?.db) {
-        return;
-      }
-
       dataSource.resourceManager.registerActionHandler('export', exportXlsx);
       dataSource.acl.setAvailableAction('export', {
         displayName: '{{t("Export")}}',
@@ -27,8 +22,6 @@ export class PluginActionExportServer extends Plugin {
       });
     });
   }
-
-  async install(options: InstallOptions) {}
 }
 
 export default PluginActionExportServer;

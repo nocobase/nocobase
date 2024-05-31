@@ -6,8 +6,9 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
+import { IFieldInterface } from '@nocobase/data-source-manager';
 
-export abstract class BaseInterface {
+export abstract class BaseInterface implements IFieldInterface {
   constructor(public options: any) {}
-  abstract toString(value, ctx?);
+  abstract toString(value: any, ctx?: any): string;
 }

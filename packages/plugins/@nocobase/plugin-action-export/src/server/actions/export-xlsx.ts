@@ -13,6 +13,7 @@ import { Repository } from '@nocobase/database';
 import XlsxExporter from '../xlsx-exporter';
 import XLSX from 'xlsx';
 import { Mutex } from 'async-mutex';
+import { DataSource } from '@nocobase/data-source-manager';
 
 const mutex = new Mutex();
 
@@ -25,10 +26,12 @@ async function exportXlsxAction(ctx: Context, next: Next) {
   }
 
   const repository = ctx.getCurrentRepository() as Repository;
+  const dataSource = ctx.dataSource as DataSource;
 
   const collection = repository.collection;
 
   const xlsxExporter = new XlsxExporter({
+    collectionManager: dataSource.collectionManager,
     collection,
     columns,
     findOptions: {
