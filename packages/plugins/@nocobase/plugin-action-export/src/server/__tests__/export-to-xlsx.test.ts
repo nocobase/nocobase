@@ -81,6 +81,7 @@ describe('export to xlsx with preset', () => {
     });
 
     const exporter = new XlsxExporter({
+      collectionManager: app.mainDataSource.collectionManager,
       collection: Post,
       chunkSize: 10,
       columns: [
@@ -141,6 +142,7 @@ describe('export to xlsx with preset', () => {
     });
 
     const exporter = new XlsxExporter({
+      collectionManager: app.mainDataSource.collectionManager,
       collection: Post,
       chunkSize: 10,
       columns: [
@@ -216,6 +218,7 @@ describe('export to xlsx', () => {
     });
 
     const exporter = new XlsxExporter({
+      collectionManager: app.mainDataSource.collectionManager,
       collection: Post,
       chunkSize: 10,
       columns: [
@@ -284,6 +287,7 @@ describe('export to xlsx', () => {
     });
 
     const exporter = new XlsxExporter({
+      collectionManager: app.mainDataSource.collectionManager,
       collection: Post,
       chunkSize: 10,
       columns: [
@@ -361,6 +365,7 @@ describe('export to xlsx', () => {
     });
 
     const exporter = new XlsxExporter({
+      collectionManager: app.mainDataSource.collectionManager,
       collection: User,
       chunkSize: 10,
       columns: [
@@ -426,6 +431,7 @@ describe('export to xlsx', () => {
     await User.model.bulkCreate(values);
 
     const exporter = new XlsxExporter({
+      collectionManager: app.mainDataSource.collectionManager,
       collection: User,
       chunkSize: 10,
       columns: [
@@ -489,6 +495,7 @@ describe('export to xlsx', () => {
     await User.model.bulkCreate(values);
 
     const exporter = new XlsxExporter({
+      collectionManager: app.mainDataSource.collectionManager,
       collection: User,
       chunkSize: 10,
       columns: [
@@ -554,6 +561,7 @@ describe('export to xlsx', () => {
     await User.model.bulkCreate(values);
 
     const exporter = new XlsxExporter({
+      collectionManager: app.mainDataSource.collectionManager,
       collection: User,
       chunkSize: 10,
       columns: [
@@ -682,6 +690,7 @@ describe('export to xlsx', () => {
     });
 
     const exporter = new XlsxExporter({
+      collectionManager: app.mainDataSource.collectionManager,
       collection: User,
       chunkSize: 10,
       columns: [
@@ -753,6 +762,7 @@ describe('export to xlsx', () => {
     await User.model.bulkCreate(values);
 
     const exporter = new XlsxExporter({
+      collectionManager: app.mainDataSource.collectionManager,
       collection: User,
       chunkSize: 10,
       columns: [

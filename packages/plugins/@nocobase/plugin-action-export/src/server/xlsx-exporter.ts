@@ -7,7 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Collection, Field, FindOptions, Model, RelationField } from '@nocobase/database';
+import {
+  FindOptions,
+  ICollection,
+  ICollectionManager,
+  IField,
+  IModel,
+  IRelationField,
+} from '@nocobase/data-source-manager';
+
 import XLSX from 'xlsx';
 import { deepGet } from './utils/deep-get';
 
@@ -17,7 +25,8 @@ type ExportColumn = {
 };
 
 type ExportOptions = {
-  collection: Collection;
+  collectionManager: ICollectionManager;
+  collection: ICollection;
   columns: Array<ExportColumn>;
   findOptions?: FindOptions;
   chunkSize?: number;
@@ -75,7 +84,8 @@ class XlsxExporter {
         }
 
         const field = this.options.collection.getField(col.dataIndex[0]);
-        if (field instanceof RelationField) {
+
+        if (field.isRelationField()) {
           return col.dataIndex[0];
         }
 
@@ -101,24 +111,25 @@ class XlsxExporter {
     return findOptions;
   }
 
-  private findFieldByDataIndex(dataIndex: Array<string>): Field {
+  private findFieldByDataIndex(dataIndex: Array<string>): IField {
     const { collection } = this.options;
-    const field = collection.getField(dataIndex[0]);
+    const currentField = collection.getField(dataIndex[0]);
+
     if (dataIndex.length > 1) {
-      let association;
+      let targetCollection: ICollection;
 
       for (let i = 0; i < dataIndex.length - 1; i++) {
         const isLast = i === dataIndex.length - 1;
 
         if (isLast) {
-          return association.target.getField(dataIndex[i]);
+          return targetCollection.getField(dataIndex[i]);
         }
 
-        association = collection.getField(dataIndex[i]);
+        targetCollection = (currentField as IRelationField).targetCollection();
       }
     }
 
-    return field;
+    return currentField;
   }
 
   private renderHeaders() {
@@ -136,7 +147,7 @@ class XlsxExporter {
     return value;
   }
 
-  private renderCellValue(rowData: Model, column: ExportColumn, ctx?) {
+  private renderCellValue(rowData: IModel, column: ExportColumn, ctx?) {
     const { dataIndex } = column;
     rowData = rowData.toJSON();
     const value = rowData[dataIndex[0]];
@@ -151,13 +162,8 @@ class XlsxExporter {
       return deepValue;
     }
 
-    const db = this.options.collection.db;
-
-    if (!db) {
-      return this.renderRawValue(value);
-    }
-
     const field = this.findFieldByDataIndex(dataIndex);
+
     if (!field) {
       return this.renderRawValue(value);
     }
@@ -169,7 +175,7 @@ class XlsxExporter {
       return this.renderRawValue(value);
     }
 
-    const InterfaceClass = db.interfaceManager.getInterfaceType(interfaceName);
+    const InterfaceClass = this.options.collectionManager.getFieldInterface(interfaceName);
 
     if (!InterfaceClass) {
       return this.renderRawValue(value);
