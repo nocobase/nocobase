@@ -12,7 +12,7 @@ import { ImportColumn } from './xlsx-importer';
 import XLSX, { WorkBook } from 'xlsx';
 
 type TemplateCreatorOptions = {
-  collection: ICollection;
+  collection?: ICollection;
   title?: string;
   explain?: string;
   columns: Array<ImportColumn>;
