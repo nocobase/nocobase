@@ -44,7 +44,7 @@ function getFileData(ctx: Context) {
   // make compatible filename across cloud service (with path)
   const filename = Path.basename(name);
   const extname = Path.extname(filename);
-  const path = storage.path.replace(/^\/|\/$/g, '');
+  const path = (storage.path || '').replace(/^\/|\/$/g, '');
   const baseUrl = storage.baseUrl.replace(/\/+$/, '');
   const pathname = [path, filename].filter(Boolean).join('/');
 
