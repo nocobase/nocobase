@@ -42,6 +42,7 @@ describe('xlsx importer', () => {
         },
       ],
     });
+
     const workbook = XLSX.utils.book_new();
     const worksheet = XLSX.utils.sheet_new();
 
@@ -318,6 +319,7 @@ describe('xlsx importer', () => {
 
     const templateCreator = new TemplateCreator({
       collection: User,
+      explain: 'test',
       columns: [
         {
           dataIndex: ['name'],
@@ -341,13 +343,14 @@ describe('xlsx importer', () => {
         ['User2', 'test2@test.com'],
       ],
       {
-        origin: 'A2',
+        origin: 'A3',
       },
     );
 
     const importer = new XlsxImporter({
       collectionManager: app.mainDataSource.collectionManager,
       collection: User,
+      explain: 'test',
       columns: [
         {
           dataIndex: ['name'],

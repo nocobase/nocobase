@@ -23,6 +23,7 @@ type ImporterOptions = {
   columns: Array<ImportColumn>;
   workbook: WorkBook;
   chunkSize?: number;
+  explain?: string;
 };
 
 type RunOptions = {
@@ -62,6 +63,10 @@ export class XlsxImporter {
     const chunks = lodash.chunk(rows, this.options.chunkSize || 200);
 
     let handingRowIndex = 1;
+
+    if (this.options.explain) {
+      handingRowIndex += 1;
+    }
 
     for (const chunkRows of chunks) {
       for (const row of chunkRows) {
@@ -134,7 +139,12 @@ export class XlsxImporter {
     const firstSheet = this.firstSheet();
     const rows = XLSX.utils.sheet_to_json(firstSheet, { header: 1, defval: null, raw: false });
 
+    if (this.options.explain) {
+      rows.shift();
+    }
+
     const headers = rows[0];
+
     const columns = this.options.columns;
 
     // validate headers
