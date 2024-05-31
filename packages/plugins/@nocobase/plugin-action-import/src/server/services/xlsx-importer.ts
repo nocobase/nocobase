@@ -75,8 +75,15 @@ export class XlsxImporter {
       return;
     }
 
+    let tableInfo = collection.getTableNameWithSchema();
+    if (typeof tableInfo === 'string') {
+      tableInfo = {
+        tableName: tableInfo,
+      };
+    }
+
     const autoIncrInfo = await db.queryInterface.getAutoIncrementInfo({
-      tableInfo: collection.getTableNameWithSchema(),
+      tableInfo,
       fieldName: autoIncrementAttribute,
       transaction,
     });
@@ -85,7 +92,7 @@ export class XlsxImporter {
 
     const queryInterface = db.queryInterface;
     await queryInterface.setAutoIncrementVal({
-      tableInfo: collection.getTableNameWithSchema(),
+      tableInfo,
       columnName: collection.model.rawAttributes[autoIncrementAttribute].field,
       currentVal: maxVal,
       seqName: autoIncrInfo.seqName,
