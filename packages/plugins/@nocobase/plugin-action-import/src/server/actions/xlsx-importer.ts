@@ -10,6 +10,7 @@
 import XLSX, { WorkBook } from 'xlsx';
 import lodash from 'lodash';
 import { ICollection, ICollectionManager } from '@nocobase/data-source-manager';
+import { Transaction } from 'sequelize';
 
 export type ImportColumn = {
   dataIndex: Array<string>;
@@ -24,6 +25,10 @@ type ImporterOptions = {
   chunkSize?: number;
 };
 
+type RunOptions = {
+  transaction?: Transaction;
+};
+
 export class XlsxImporter {
   constructor(private options: ImporterOptions) {
     if (options.columns.length == 0) {
@@ -31,47 +36,74 @@ export class XlsxImporter {
     }
   }
 
-  async run() {
+  async run(options: RunOptions = {}) {
+    let transaction = options.transaction;
+
+    // @ts-ignore
+    if (!transaction && this.options.collectionManager.db) {
+      // @ts-ignore
+      transaction = options.transaction = await this.options.collectionManager.db.sequelize.transaction();
+    }
+
+    try {
+      await this.performImport(options);
+
+      transaction && (await transaction.commit());
+    } catch (error) {
+      transaction && (await transaction.rollback());
+
+      throw error;
+    }
+  }
+
+  async performImport(options?: RunOptions) {
+    const transaction = options?.transaction;
     const rows = this.getData();
     const chunks = lodash.chunk(rows, this.options.chunkSize || 200);
+
+    let handingRowIndex = 1;
+
     for (const chunkRows of chunks) {
-      const chunkData = [];
       for (const row of chunkRows) {
         const rowValues = {};
-        for (let index = 0; index < this.options.columns.length; index++) {
-          const column = this.options.columns[index];
+        handingRowIndex += 1;
+        try {
+          for (let index = 0; index < this.options.columns.length; index++) {
+            const column = this.options.columns[index];
 
-          const field = this.options.collection.getField(column.dataIndex[0]);
+            const field = this.options.collection.getField(column.dataIndex[0]);
 
-          if (!field) {
-            throw new Error(`Field not found: ${column.dataIndex[0]}`);
+            if (!field) {
+              throw new Error(`Field not found: ${column.dataIndex[0]}`);
+            }
+
+            const str = row[index];
+
+            const dataKey = column.dataIndex[0];
+
+            const fieldOptions = field.options;
+            const interfaceName = fieldOptions.interface;
+
+            const InterfaceClass = this.options.collectionManager.getFieldInterface(interfaceName);
+
+            if (!InterfaceClass) {
+              rowValues[dataKey] = str;
+              continue;
+            }
+
+            const interfaceInstance = new InterfaceClass(field.options);
+            const value = interfaceInstance.toValue(str);
+            rowValues[dataKey] = value;
           }
-
-          const str = row[index];
-
-          const dataKey = column.dataIndex[0];
-
-          const fieldOptions = field.options;
-          const interfaceName = fieldOptions.interface;
-
-          const InterfaceClass = this.options.collectionManager.getFieldInterface(interfaceName);
-
-          if (!InterfaceClass) {
-            rowValues[dataKey] = str;
-            continue;
-          }
-
-          const interfaceInstance = new InterfaceClass(field.options);
-          const value = interfaceInstance.toValue(str);
-          rowValues[dataKey] = value;
+          await this.options.collection.repository.create({
+            values: rowValues,
+            transaction,
+          });
+        } catch (error) {
+          throw new Error(`failed to import row ${handingRowIndex}`, { cause: error });
         }
-
-        chunkData.push(rowValues);
       }
 
-      this.options.collection.repository.create({
-        values: chunkData,
-      });
       // await to prevent high cpu usage
       await new Promise((resolve) => setTimeout(resolve, 50));
     }
