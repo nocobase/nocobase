@@ -25,8 +25,14 @@ export class TemplateCreator {
     const workbook = XLSX.utils.book_new();
     const worksheet = XLSX.utils.sheet_new();
 
+    const data = [this.renderHeaders()];
+
+    if (this.options.explain && this.options.explain?.trim() !== '') {
+      data.unshift([this.options.explain]);
+    }
+
     // write headers
-    XLSX.utils.sheet_add_aoa(worksheet, [this.renderHeaders()], {
+    XLSX.utils.sheet_add_aoa(worksheet, data, {
       origin: 'A1',
     });
 

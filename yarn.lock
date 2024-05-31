@@ -11572,11 +11572,6 @@ dedent@^0.7.0:
   resolved "https://registry.npmmirror.com/dedent/-/dedent-0.7.0.tgz#2495ddbaf6eb874abb0e1be9df22d2e5a544326c"
   integrity sha512-Q6fKUPqnAHAyhiUgFU7BUzLiv0kd8saH9al7tnu5Q/okj6dnupxyTgFIBjVzJATdfIAm9NAsvXNzjaKa+bxVyA==
 
-dedupe@^3.0.2:
-  version "3.0.3"
-  resolved "https://registry.npmmirror.com/dedupe/-/dedupe-3.0.3.tgz#7ae7b55ca01028bc7d5714cd57a5bdf5e4aeea6e"
-  integrity sha512-ZSCmu4uLkBWTAPSz9LXtrTNusY2P6BoghZhokPBLzpQpLiBtU0B4QXNxVnwpy7yaqFc1jN30V5BkKMr/uXqf/w==
-
 deep-eql@^4.1.3:
   version "4.1.3"
   resolved "https://registry.npmmirror.com/deep-eql/-/deep-eql-4.1.3.tgz#7c7775513092f7df98d8df9996dd085eb668cc6d"

@@ -22,6 +22,12 @@ describe('xlsx importer', () => {
     await app.destroy();
   });
 
+  //
+  // it('should reset id seq after import', async () => {});
+  //
+  // it('should import with sort field', async () => {});
+  //
+
   it('should validate workbook with error', async () => {
     const User = app.db.collection({
       name: 'users',
