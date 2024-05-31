@@ -10,10 +10,6 @@
 import { BaseInterface } from './base-interface';
 
 export class ToManyInterface extends BaseInterface {
-  toString(value: any, ctx?: any): string {
-    return value;
-  }
-
   async toValue(str: string, ctx?: any) {
     const items = str.split(',');
 

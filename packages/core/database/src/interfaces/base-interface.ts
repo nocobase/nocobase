@@ -9,9 +9,12 @@
 
 export abstract class BaseInterface {
   constructor(public options: any) {}
-  abstract toString(value: any, ctx?: any): string;
 
-  toValue(str: string, ctx?: any) {
+  toString(value: any, ctx?: any) {
+    return value;
+  }
+
+  async toValue(str: string, ctx?: any): Promise<any> {
     return str;
   }
 }
