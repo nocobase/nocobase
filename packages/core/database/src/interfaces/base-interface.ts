@@ -10,5 +10,8 @@
 export abstract class BaseInterface {
   constructor(public options: any) {}
   abstract toString(value: any, ctx?: any): string;
-  abstract toValue(str: string, ctx?: any): any;
+
+  toValue(str: string, ctx?: any) {
+    return str;
+  }
 }
