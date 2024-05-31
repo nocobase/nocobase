@@ -45,13 +45,17 @@ export class CollectionManager implements ICollectionManager {
   /* istanbul ignore next -- @preserve */
   registerFieldTypes() {}
 
-  registerFieldInterfaces(interfaces: Record<string, IFieldInterface>) {
+  registerFieldInterfaces(interfaces: Record<string, new (options: any) => IFieldInterface>) {
     Object.keys(interfaces).forEach((key) => {
       this.registerFieldInterface(key, interfaces[key]);
     });
   }
 
-  registerFieldInterface(name: string, fieldInterface: IFieldInterface): void {}
+  registerFieldInterface(name: string, fieldInterface: new (options: any) => IFieldInterface): void {}
+
+  getFieldInterface(name: string): { new (options: any): IFieldInterface | undefined } {
+    return;
+  }
 
   /* istanbul ignore next -- @preserve */
   registerCollectionTemplates() {}
@@ -99,7 +103,8 @@ export class CollectionManager implements ICollectionManager {
 
   async sync() {}
 
-  protected newCollection(options) {
+  protected newCollection(options): ICollection {
+    // @ts-ignore
     return new Collection(options, this);
   }
 }
