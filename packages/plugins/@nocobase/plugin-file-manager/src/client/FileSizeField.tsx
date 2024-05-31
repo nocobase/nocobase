@@ -47,7 +47,7 @@ export function FileSizeField(props) {
   const dvOption = getUnitOption(defaultValue, defaultUnit);
   const dv = defaultValue / dvOption.value;
   const vOption = getUnitOption(value ?? defaultValue, defaultUnit);
-  const v = value == null ? dv : value / vOption.value;
+  const v = value == null ? value : value / vOption.value;
 
   const onNumberChange = useCallback(
     (val) => {
