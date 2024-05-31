@@ -18,7 +18,6 @@ import {
   IRepository,
   MergeOptions,
 } from './types';
-import Record from '@nocobase/client/src/schema-component/antd/table-v2/demos/new-demos/record';
 
 export class SequelizeCollectionManager implements ICollectionManager {
   db: Database;
