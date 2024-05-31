@@ -7,9 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Collection } from '@nocobase/database';
 import XLSX, { WorkBook } from 'xlsx';
 import lodash from 'lodash';
+import { ICollection, ICollectionManager } from '@nocobase/data-source-manager';
 
 export type ImportColumn = {
   dataIndex: Array<string>;
@@ -17,7 +17,8 @@ export type ImportColumn = {
 };
 
 type ImporterOptions = {
-  collection: Collection;
+  collectionManager: ICollectionManager;
+  collection: ICollection;
   columns: Array<ImportColumn>;
   workbook: WorkBook;
   chunkSize?: number;
@@ -34,27 +35,45 @@ export class XlsxImporter {
     const rows = this.getData();
     const chunks = lodash.chunk(rows, this.options.chunkSize || 200);
     for (const chunkRows of chunks) {
+      const chunkData = [];
       for (const row of chunkRows) {
         const rowValues = {};
-
         for (let index = 0; index < this.options.columns.length; index++) {
           const column = this.options.columns[index];
 
-          const field = this.options.collection.fields.get(column.dataIndex[0]);
+          const field = this.options.collection.getField(column.dataIndex[0]);
 
           if (!field) {
             throw new Error(`Field not found: ${column.dataIndex[0]}`);
           }
 
-          const interfaceType = field.options.interface;
+          const str = row[index];
 
-          const value = row[index];
+          const dataKey = column.dataIndex[0];
 
-          if (value === null || value === undefined) {
+          const fieldOptions = field.options;
+          const interfaceName = fieldOptions.interface;
+
+          const InterfaceClass = this.options.collectionManager.getFieldInterface(interfaceName);
+
+          if (!InterfaceClass) {
+            rowValues[dataKey] = str;
             continue;
           }
+
+          const interfaceInstance = new InterfaceClass(field.options);
+          const value = interfaceInstance.toValue(str);
+          rowValues[dataKey] = value;
         }
+
+        chunkData.push(rowValues);
       }
+
+      this.options.collection.repository.create({
+        values: chunkData,
+      });
+      // await to prevent high cpu usage
+      await new Promise((resolve) => setTimeout(resolve, 50));
     }
   }
 

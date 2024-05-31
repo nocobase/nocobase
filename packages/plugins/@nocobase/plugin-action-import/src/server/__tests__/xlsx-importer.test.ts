@@ -53,6 +53,7 @@ describe('xlsx importer', () => {
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Sheet 1');
 
     const importer = new XlsxImporter({
+      collectionManager: app.mainDataSource.collectionManager,
       collection: User,
       columns: [
         {
@@ -109,6 +110,7 @@ describe('xlsx importer', () => {
     const template = await templateCreator.run();
 
     const importer = new XlsxImporter({
+      collectionManager: app.mainDataSource.collectionManager,
       collection: User,
       columns: [
         {
@@ -180,6 +182,7 @@ describe('xlsx importer', () => {
     );
 
     const importer = new XlsxImporter({
+      collectionManager: app.mainDataSource.collectionManager,
       collection: User,
       columns: [
         {

@@ -11,4 +11,5 @@ import { IFieldInterface } from '@nocobase/data-source-manager';
 export abstract class BaseInterface implements IFieldInterface {
   constructor(public options: any) {}
   abstract toString(value: any, ctx?: any): string;
+  abstract toValue(str: string): any;
 }
