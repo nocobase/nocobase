@@ -9,7 +9,7 @@
 
 import { createMockServer, MockServer } from '@nocobase/test';
 import { TemplateCreator } from '../services/template-creator';
-import { XlsxImporter } from '../actions/xlsx-importer';
+import { XlsxImporter } from '../services/xlsx-importer';
 import XLSX from 'xlsx';
 
 describe('xlsx importer', () => {

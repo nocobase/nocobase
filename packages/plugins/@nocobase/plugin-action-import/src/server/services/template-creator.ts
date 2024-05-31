@@ -8,7 +8,7 @@
  */
 
 import { ICollection } from '@nocobase/data-source-manager';
-import { ImportColumn } from '../actions/xlsx-importer';
+import { ImportColumn } from './xlsx-importer';
 import XLSX, { WorkBook } from 'xlsx';
 
 type TemplateCreatorOptions = {
