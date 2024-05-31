@@ -16,6 +16,10 @@ import {
   SelectInterface,
 } from './index';
 import { ManyToOneInterface } from './many-to-one-interface';
+import { ManyToManyInterface } from './many-to-many-interface';
+import { OneHasOneInterface } from './one-has-one-interface';
+import { OneBelongsToOneInterface } from './one-belongs-to-one-interface';
+import { OneToManyInterface } from './one-to-many-interface';
 
 const interfaces = {
   multipleSelect: MultipleSelectInterface,
@@ -29,7 +33,11 @@ const interfaces = {
   createdAt: DatetimeInterface,
   updatedAt: DatetimeInterface,
   boolean: BooleanInterface,
+  oho: OneHasOneInterface,
+  obo: OneBelongsToOneInterface,
+  o2m: OneToManyInterface,
   m2o: ManyToOneInterface,
+  m2m: ManyToManyInterface,
 };
 
 export function registerInterfaces(db: Database) {

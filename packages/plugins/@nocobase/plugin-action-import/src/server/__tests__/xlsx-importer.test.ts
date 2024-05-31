@@ -160,6 +160,16 @@ describe('xlsx importer', () => {
       ],
     });
 
+    const Comments = app.db.collection({
+      name: 'comments',
+      fields: [
+        {
+          type: 'string',
+          name: 'content',
+        },
+      ],
+    });
+
     const Post = app.db.collection({
       name: 'posts',
       fields: [
@@ -181,6 +191,11 @@ describe('xlsx importer', () => {
           name: 'tags',
           through: 'postsTags',
           interface: 'm2m',
+        },
+        {
+          type: 'hasMany',
+          name: 'comments',
+          interface: 'o2m',
         },
       ],
     });
@@ -208,6 +223,20 @@ describe('xlsx importer', () => {
       ],
     });
 
+    await Comments.repository.create({
+      values: [
+        {
+          content: 'Comment1',
+        },
+        {
+          content: 'Comment2',
+        },
+        {
+          content: 'Comment3',
+        },
+      ],
+    });
+
     const importColumns = [
       {
         dataIndex: ['title'],
@@ -225,6 +254,10 @@ describe('xlsx importer', () => {
         dataIndex: ['tags', 'name'],
         defaultTitle: '标签',
       },
+      {
+        dataIndex: ['comments', 'content'],
+        defaultTitle: '评论',
+      },
     ];
 
     const templateCreator = new TemplateCreator({
@@ -239,9 +272,9 @@ describe('xlsx importer', () => {
     XLSX.utils.sheet_add_aoa(
       worksheet,
       [
-        ['Post1', 'Content1', 'User1', 'Tag1,Tag2'],
-        ['Post2', 'Content2', 'User1', 'Tag2,Tag3'],
-        ['Post3', 'Content3', 'UserNotExist', 'Tag3,TagNotExist'],
+        ['Post1', 'Content1', 'User1', 'Tag1,Tag2', 'Comment1,Comment2'],
+        ['Post2', 'Content2', 'User1', 'Tag2,Tag3', 'Comment3'],
+        ['Post3', 'Content3', 'UserNotExist', 'Tag3,TagNotExist', ''],
       ],
       {
         origin: 'A2',

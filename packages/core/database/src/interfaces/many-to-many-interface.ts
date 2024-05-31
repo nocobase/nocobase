@@ -7,6 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ToOneInterface } from './to-one-interface';
+import { ToManyInterface } from './to-many-interface';
 
-export class ManyToOneInterface extends ToOneInterface {}
+export class ManyToManyInterface extends ToManyInterface {}
