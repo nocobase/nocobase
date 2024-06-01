@@ -13,9 +13,8 @@ import { Field, Form as FormilyForm, createForm, onFieldInit, onFormInputChange 
 import { FieldContext, FormContext, RecursionField, observer, useField, useFieldSchema } from '@formily/react';
 import { reaction } from '@formily/reactive';
 import { uid } from '@formily/shared';
-import { theme } from 'antd';
 import { getValuesByPath } from '@nocobase/utils/client';
-import { ConfigProvider, Spin } from 'antd';
+import { ConfigProvider, Spin, theme } from 'antd';
 import React, { useEffect, useMemo } from 'react';
 import { useActionContext } from '..';
 import { useAttach, useComponent } from '../..';
@@ -45,6 +44,8 @@ const FormComponent: React.FC<FormProps> = (props) => {
   // TODO: component 里 useField 会与当前 field 存在偏差
   const f = useAttach(form.createVoidField({ ...field.props, basePath: '' }));
   const height = useFormBlockHeight();
+  const { token } = theme.useToken();
+
   return (
     <FieldContext.Provider value={undefined}>
       <FormContext.Provider value={form}>
@@ -55,6 +56,7 @@ const FormComponent: React.FC<FormProps> = (props) => {
                 height: ${height ? height + 'px' : '100%'};
                 overflow-y: auto;
                 overflow-x: clip;
+                padding-right: ${height ? token.paddingSM + 'px' : 0};
               }
             `}
           >
