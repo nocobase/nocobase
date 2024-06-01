@@ -22,6 +22,7 @@ import { OneBelongsToOneInterface } from './one-belongs-to-one-interface';
 import { OneToManyInterface } from './one-to-many-interface';
 import { IntegerInterface } from './integer-interface';
 import { NumberInterface } from './number-interface';
+import { JsonInterface } from './json-interface';
 
 const interfaces = {
   integer: IntegerInterface,
@@ -37,6 +38,7 @@ const interfaces = {
   createdAt: DatetimeInterface,
   updatedAt: DatetimeInterface,
   boolean: BooleanInterface,
+  json: JsonInterface,
   oho: OneHasOneInterface,
   obo: OneBelongsToOneInterface,
   o2m: OneToManyInterface,
