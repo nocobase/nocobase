@@ -12,7 +12,7 @@
   "Import warning": "You can import up to 200 rows of data at a time, any excess will be ignored.",
   "Upload placeholder": "Drag and drop the file here or click to upload, file size should not exceed 30M",
   "Excel data importing": "Excel data importing",
-  "Import done, total success have {{successCount}} , total failure have {{failureCount}}": "Import is complete, with a total of {{successCount}} successful and {{failureCount}} failed",
+  "{{successCount}} records have been successfully imported": "{{successCount}} records have been successfully imported",
   "To download the failure data": "To download the failure data",
   "Add importable field": "Add importable field",
   "Done": "Done",

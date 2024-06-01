@@ -12,7 +12,7 @@
   "Import warning": "每次最多导入 200 行数据，超出的将被忽略。",
   "Upload placeholder": "将文件拖曳到此处或点击上传，文件大小不超过10M",
   "Excel data importing": "数据导入中，请勿关闭窗口",
-  "Import done, total success have {{successCount}} , total failure have {{failureCount}}": "导入完成，共导入成功{{successCount}}条数据，共导入失败{{failureCount}}条数据",
+  "{{successCount}} records have been successfully imported": "已成功导入 {{successCount}} 条数据",
   "To download the failure data": "下载导入失败的数据",
   "Add importable field": "添加可导入字段",
   "Done": "完成",
