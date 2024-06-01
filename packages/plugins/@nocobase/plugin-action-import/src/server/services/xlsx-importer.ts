@@ -34,7 +34,7 @@ type RunOptions = {
 export class XlsxImporter {
   constructor(private options: ImporterOptions) {
     if (options.columns.length == 0) {
-      throw new Error();
+      throw new Error(`columns is empty`);
     }
   }
 
