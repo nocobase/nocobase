@@ -22,6 +22,98 @@ describe('xlsx importer', () => {
     await app.destroy();
   });
 
+  it('should import with number field', async () => {
+    const User = app.db.collection({
+      name: 'users',
+      autoGenId: false,
+      fields: [
+        {
+          type: 'bigInt',
+          name: 'id',
+          primaryKey: true,
+          autoIncrement: true,
+        },
+        {
+          type: 'bigInt',
+          interface: 'integer',
+          name: 'bigInt',
+        },
+        {
+          type: 'float',
+          interface: 'percent',
+          name: 'percent',
+        },
+        {
+          type: 'float',
+          interface: 'float',
+          name: 'float',
+        },
+      ],
+    });
+
+    await app.db.sync();
+
+    const columns = [
+      {
+        dataIndex: ['id'],
+        defaultTitle: 'ID',
+      },
+      {
+        dataIndex: ['bigInt'],
+        defaultTitle: 'bigInt',
+      },
+      {
+        dataIndex: ['percent'],
+        defaultTitle: '百分比',
+      },
+      {
+        dataIndex: ['float'],
+        defaultTitle: '浮点数',
+      },
+    ];
+
+    const templateCreator = new TemplateCreator({
+      collection: User,
+      columns,
+    });
+
+    const template = await templateCreator.run();
+
+    const worksheet = template.Sheets[template.SheetNames[0]];
+
+    XLSX.utils.sheet_add_aoa(
+      worksheet,
+      [
+        [1, '1238217389217389217', '10%', 0.1],
+        [2, 123123, '20%', 0.2],
+      ],
+      {
+        origin: 'A2',
+      },
+    );
+
+    const importer = new XlsxImporter({
+      collectionManager: app.mainDataSource.collectionManager,
+      collection: User,
+      columns,
+      workbook: template,
+    });
+
+    await importer.run();
+
+    expect(await User.repository.count()).toBe(2);
+
+    const user1 = await User.repository.findOne({
+      filter: {
+        id: 1,
+      },
+    });
+
+    expect(user1.get('bigInt')).toBe('1238217389217389217');
+    expect(user1.get('percent')).toBe(0.1);
+    expect(user1.get('float')).toBe(0.1);
+  });
+
   it('should reset id seq after import', async () => {
     const User = app.db.collection({
       name: 'users',
@@ -112,9 +204,6 @@ describe('xlsx importer', () => {
 
     expect(user3.get('id')).toBe(3);
   });
-
-  // it('should import with sort field', async () => {});
-  //
 
   it('should validate workbook with error', async () => {
     const User = app.db.collection({

@@ -20,8 +20,12 @@ import { ManyToManyInterface } from './many-to-many-interface';
 import { OneHasOneInterface } from './one-has-one-interface';
 import { OneBelongsToOneInterface } from './one-belongs-to-one-interface';
 import { OneToManyInterface } from './one-to-many-interface';
+import { IntegerInterface } from './integer-interface';
+import { NumberInterface } from './number-interface';
 
 const interfaces = {
+  integer: IntegerInterface,
+  number: NumberInterface,
   multipleSelect: MultipleSelectInterface,
   checkboxes: MultipleSelectInterface,
   checkboxGroup: MultipleSelectInterface,
