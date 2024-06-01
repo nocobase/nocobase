@@ -18,9 +18,8 @@ export const useCalenderHeight = () => {
   if (!height) {
     return;
   }
-  const actionBarHeight = token.marginLG;
-  const blockTitleHeaderHeight = title
-    ? token.fontSizeLG * token.lineHeightLG + token.padding * 2 - 1
-    : token.paddingLG;
-  return height - actionBarHeight - blockTitleHeaderHeight;
+  const paddingHeight = 2 * token.paddingLG;
+  const blockTitleHeaderHeight = title ? token.fontSizeLG * token.lineHeightLG + token.padding * 2 - 1 : 0;
+
+  return height - paddingHeight - blockTitleHeaderHeight;
 };
