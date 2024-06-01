@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { getURLSearchParamsChildren } from '../../hooks/useURLSearchParamsVariable';
+import { getURLSearchParams, getURLSearchParamsChildren } from '../../hooks/useURLSearchParamsVariable';
 
 test('getURLSearchParamsChildren should return an array of options with expected properties', () => {
   const queryParams = {
@@ -38,4 +38,17 @@ test('getURLSearchParamsChildren should return an array of options with expected
       isLeaf: true,
     },
   ]);
+});
+
+test('getURLSearchParams should parse search string and return params object', () => {
+  const search = '?param1=value1&param2=value2&param3=value3';
+  const expectedParams = {
+    param1: 'value1',
+    param2: 'value2',
+    param3: 'value3',
+  };
+
+  const result = getURLSearchParams(search);
+
+  expect(result).toEqual(expectedParams);
 });

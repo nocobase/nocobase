@@ -16,8 +16,8 @@ import { useLocation } from 'react-router-dom';
 import { Option } from '../type';
 import { getLabelWithTooltip } from './useBaseVariable';
 
-const getURLSearchParams = (search: string) => {
-  if (search[0] === '?') {
+export const getURLSearchParams = (search: string) => {
+  if (search.startsWith('?')) {
     search = search.slice(1);
   }
   const params = qs.parse(search);
