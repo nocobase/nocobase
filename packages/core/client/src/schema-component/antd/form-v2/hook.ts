@@ -12,6 +12,7 @@ import { useFieldSchema } from '@formily/react';
 import { useDataBlockHeight } from '../../hooks/useBlockSize';
 import { useDesignable } from '../../';
 import { useDataBlock } from '../../../';
+import { useDataBlockRequest } from '../../../data-source';
 
 export const useFormBlockHeight = () => {
   const height = useDataBlockHeight();
@@ -28,8 +29,10 @@ export const useFormBlockHeight = () => {
   });
   const hasFormActions = Object.keys(actionSchema?.properties || {}).length > 0;
   const actionBarHeight = hasFormActions || designable ? token.controlHeight + 2 * token.marginLG : 2 * token.marginLG;
-  const blockTitleHeaderHeight = title
-    ? token.fontSizeLG * token.lineHeightLG + token.padding * 2 - 1
-    : token.paddingLG;
-  return height - actionBarHeight - token.paddingLG - blockTitleHeaderHeight;
+  const blockTitleHeaderHeight = title ? token.fontSizeLG * token.lineHeightLG + token.padding * 2 - 1 : 0;
+  const { data } = useDataBlockRequest() || {};
+  const { count, pageSize } = (data as any)?.meta || ({} as any);
+  const hasPagination = count > pageSize;
+  const paginationHeight = hasPagination ? token.controlHeightSM + token.paddingLG : 0;
+  return height - actionBarHeight - token.paddingLG - blockTitleHeaderHeight - paginationHeight;
 };

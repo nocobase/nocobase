@@ -10,9 +10,8 @@
 import { cx, css } from '@emotion/css';
 import { ArrayField } from '@formily/core';
 import { RecursionField, Schema, useField, useFieldSchema } from '@formily/react';
-import { List as AntdList, PaginationProps, theme } from 'antd';
+import { List as AntdList, PaginationProps } from 'antd';
 import React, { useCallback, useState } from 'react';
-import { useDesignable } from '../../../';
 import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
 import { SortableItem } from '../../common';
 import { SchemaComponentOptions } from '../../core';
@@ -21,28 +20,7 @@ import { ListBlockProvider, useListBlockContext, useListItemProps } from './List
 import { ListDesigner } from './List.Designer';
 import { ListItem } from './List.Item';
 import useStyles from './List.style';
-import { useListActionBarProps } from './hooks';
-import { useDataBlockHeight } from '../../hooks/useBlockSize';
-
-const useListBlockHeight = () => {
-  const height = useDataBlockHeight();
-  const schema = useFieldSchema();
-  const { token } = theme.useToken();
-  const { designable } = useDesignable();
-  const {
-    service: { data },
-  } = useListBlockContext() || {};
-  const { count, pageSize } = (data as any)?.meta || ({} as any);
-  const hasPagination = count > pageSize;
-
-  if (!height) {
-    return;
-  }
-  const hasListActions = Object.keys(schema.parent.properties.actionBar?.properties || {}).length > 0;
-  const actionBarHeight = hasListActions || designable ? token.controlHeight + 2 * token.marginLG : token.marginLG;
-  const paginationHeight = hasPagination ? token.controlHeight + token.paddingLG + token.marginLG : token.marginLG;
-  return height - actionBarHeight - paginationHeight;
-};
+import { useListActionBarProps, useListBlockHeight } from './hooks';
 
 const InternalList = (props) => {
   const { service } = useListBlockContext();
