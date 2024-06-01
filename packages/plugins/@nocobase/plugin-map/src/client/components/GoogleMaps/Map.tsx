@@ -99,6 +99,12 @@ export const GoogleMapsComponent = React.forwardRef<GoogleMapForwardedRefProps, 
     const api = useAPIClient();
     const { modal } = App.useApp();
 
+    useEffect(() => {
+      if (map.current) {
+        map.current.setZoom(zoom);
+      }
+    }, [zoom]);
+
     const type = useMemo<MapEditorType>(() => {
       if (props.type) return props.type;
       const collectionField = getField(fieldSchema?.name);

@@ -9,7 +9,7 @@
 
 import { Context, Next } from '@nocobase/actions';
 import { koaMulter as multer } from '@nocobase/utils';
-import path from 'path';
+import Path from 'path';
 
 import {
   FILE_SIZE_LIMIT_DEFAULT,
@@ -42,19 +42,21 @@ function getFileData(ctx: Context) {
   const storageConfig = ctx.app.pm.get(Plugin).storageTypes.get(storage.type);
   const { [storageConfig.filenameKey || 'filename']: name } = file;
   // make compatible filename across cloud service (with path)
-  const filename = path.basename(name);
-  const extname = path.extname(filename);
-  const urlPath = storage.path ? storage.path.replace(/^([^/])/, '/$1') : '';
+  const filename = Path.basename(name);
+  const extname = Path.extname(filename);
+  const path = (storage.path || '').replace(/^\/|\/$/g, '');
+  const baseUrl = storage.baseUrl.replace(/\/+$/, '');
+  const pathname = [path, filename].filter(Boolean).join('/');
 
   return {
     title: Buffer.from(file.originalname, 'latin1').toString('utf8').replace(extname, ''),
     filename,
     extname,
     // TODO(feature): 暂时两者相同，后面 storage.path 模版化以后，这里只是 file 实际的 path
-    path: storage.path,
+    path,
     size: file.size,
     // 直接缓存起来
-    url: `${storage.baseUrl}${urlPath}/${filename}`,
+    url: `${baseUrl}/${pathname}`,
     mimetype: file.mimetype,
     // @ts-ignore
     meta: ctx.request.body,

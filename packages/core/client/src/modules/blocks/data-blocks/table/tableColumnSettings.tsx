@@ -371,7 +371,7 @@ export const tableColumnSettings = new SchemaSettings({
         const { t } = useTranslation();
 
         return {
-          removeParentsIfNoChildren: true,
+          removeParentsIfNoChildren: false,
           confirm: {
             title: t('Delete field'),
           },

@@ -324,6 +324,25 @@ const anyVar = '';
 app.addScopes({ useSomeThing, anyVar })
 ```
 
+### app.getCollectionManager()
+
+获取指定数据源的 [collection manager](/core/data-source/collection-manager) 实例。
+
+- 类型
+
+```tsx | pure
+class Application {
+  getCollectionManager(dataSource?: string): CollectionManager;
+}
+```
+
+- 示例
+
+```tsx | pure
+app.getCollectionManager() // 获取默认数据源的 collection manager
+app.getCollectionManager('test') // 获取指定数据源的 collection manager
+```
+
 ## Hooks
 
 ### useApp()

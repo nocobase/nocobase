@@ -30,6 +30,7 @@ export interface ActionContextProps {
   modalProps?: ModalProps;
   submitted?: boolean;
   setSubmitted?: (v: boolean) => void;
+  children?: React.ReactNode;
 }
 
 export type UseActionType = (callback?: () => void) => {

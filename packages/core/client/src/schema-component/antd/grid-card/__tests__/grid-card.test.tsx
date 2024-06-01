@@ -8,11 +8,11 @@
  */
 
 import { BlockSchemaComponentPlugin } from '@nocobase/client';
-import { renderApp, waitFor, screen, userEvent } from '@nocobase/test/client';
+import { renderAppOptions, waitFor, screen, userEvent } from '@nocobase/test/client';
 
 describe('GridCard', () => {
   it('should render correctly', async () => {
-    await renderApp({
+    await renderAppOptions({
       designable: true,
       schema: {
         _isJSONSchemaObject: true,
