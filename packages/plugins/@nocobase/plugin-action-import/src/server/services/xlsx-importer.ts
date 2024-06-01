@@ -48,7 +48,7 @@ export class XlsxImporter {
     }
 
     try {
-      await this.performImport(options);
+      const imported = await this.performImport(options);
 
       // @ts-ignore
       if (this.options.collectionManager.db) {
@@ -56,6 +56,8 @@ export class XlsxImporter {
       }
 
       transaction && (await transaction.commit());
+
+      return imported;
     } catch (error) {
       transaction && (await transaction.rollback());
 
@@ -111,6 +113,8 @@ export class XlsxImporter {
       handingRowIndex += 1;
     }
 
+    let imported = 0;
+
     for (const chunkRows of chunks) {
       for (const row of chunkRows) {
         const rowValues = {};
@@ -158,6 +162,8 @@ export class XlsxImporter {
             values: rowValues,
             transaction,
           });
+
+          imported += 1;
         } catch (error) {
           throw new Error(
             `failed to import row ${handingRowIndex}, rowData: ${JSON.stringify(rowValues)} message: ${error.message}`,
@@ -169,6 +175,8 @@ export class XlsxImporter {
       // await to prevent high cpu usage
       await new Promise((resolve) => setTimeout(resolve, 50));
     }
+
+    return imported;
   }
 
   trimString(str: string) {

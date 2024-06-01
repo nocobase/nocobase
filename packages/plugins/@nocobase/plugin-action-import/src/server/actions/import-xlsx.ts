@@ -43,9 +43,8 @@ async function importXlsxAction(ctx: Context, next: Next) {
 
   const importedCount = await importer.run();
 
-  ctx.body = {
-    successCount: importedCount,
-  };
+  ctx.bodyMeta = { successCount: importedCount };
+  ctx.body = ctx.bodyMeta;
 }
 
 export async function importXlsx(ctx: Context, next: Next) {
