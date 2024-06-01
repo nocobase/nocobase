@@ -164,6 +164,8 @@ export class XlsxImporter {
           });
 
           imported += 1;
+
+          await new Promise((resolve) => setTimeout(resolve, 5));
         } catch (error) {
           throw new Error(
             `failed to import row ${handingRowIndex}, rowData: ${JSON.stringify(rowValues)} message: ${error.message}`,
