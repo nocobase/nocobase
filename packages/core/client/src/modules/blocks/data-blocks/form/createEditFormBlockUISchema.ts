@@ -27,8 +27,6 @@ export function createEditFormBlockUISchema(options: EditFormBlockOptions): ISch
   const { collectionName, dataSource, association, templateSchema } = options;
   const resourceName = association || collectionName;
   const isCurrentObj = options.isCurrent ? { 'x-is-current': true } : {};
-  const { token } = theme.useToken();
-
   if (!dataSource) {
     throw new Error('dataSource are required');
   }
