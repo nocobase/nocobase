@@ -35,7 +35,7 @@ const addSomeCustomActions = async (page: Page) => {
 
   // 再增加两个自定义的 actions
   await page.getByRole('button', { name: 'Actions', exact: true }).hover();
-  await page.getByLabel('designer-schema-settings-TableV2.Column-TableV2.ActionColumnDesigner-general').hover();
+  await page.getByLabel('designer-schema-initializers-TableV2.Column-TableV2.ActionColumnDesigner-general').hover();
   await page.getByRole('menuitem', { name: 'Popup' }).click();
   await page.getByRole('menuitem', { name: 'Update record' }).click();
 };
@@ -393,7 +393,9 @@ test.describe('actions schema settings', () => {
       const openPopup = async () => {
         if (!(await page.getByLabel('action-Action.Link-Update record-customize:update-users2-table-0').isVisible())) {
           await page.getByRole('button', { name: 'Actions', exact: true }).hover();
-          await page.getByLabel('designer-schema-settings-TableV2.Column-TableV2.ActionColumnDesigner-users2').hover();
+          await page
+            .getByLabel('designer-schema-initializers-TableV2.Column-TableV2.ActionColumnDesigner-users2')
+            .hover();
           await page.getByRole('menuitem', { name: 'Update record' }).click();
         }
 
@@ -476,7 +478,7 @@ test.describe('actions schema settings', () => {
 
       // 添加 add child 按钮
       await page.getByRole('button', { name: 'Actions', exact: true }).hover();
-      await page.getByLabel('designer-schema-settings-TableV2.Column-TableV2.ActionColumnDesigner-tree').hover();
+      await page.getByLabel('designer-schema-initializers-TableV2.Column-TableV2.ActionColumnDesigner-tree').hover();
       await page.getByRole('menuitem', { name: 'Add child' }).click();
 
       await expectSettingsMenu({
@@ -538,7 +540,7 @@ test.describe('table column schema settings', () => {
 
     // 2. 为该关系字段设置一个数据范围后，下拉框中应该有一个匹配项
     await page.getByRole('button', { name: 'manyToMany1', exact: true }).hover();
-    await page.getByLabel('designer-schema-settings-TableV2.Column-fieldSettings:TableColumn-collection2').hover();
+    await page.getByLabel('designer-schema-initializers-TableV2.Column-fieldSettings:TableColumn-collection2').hover();
     await page.getByRole('menuitem', { name: 'Set the data scope' }).click();
     await page.getByText('Add condition', { exact: true }).click();
     await page.getByTestId('select-filter-field').click();
@@ -565,7 +567,7 @@ test.describe('table column schema settings', () => {
     //取消固定
     await page.getByRole('button', { name: 'Roles' }).hover();
     await page
-      .getByRole('button', { name: 'designer-schema-settings-TableV2.Column-fieldSettings:TableColumn-users' })
+      .getByRole('button', { name: 'designer-schema-initializers-TableV2.Column-fieldSettings:TableColumn-users' })
       .hover();
     await page.getByTestId('schema-settings-menu').getByText('FixedLeft fixed').click();
     await page.getByText('Not fixed').click();

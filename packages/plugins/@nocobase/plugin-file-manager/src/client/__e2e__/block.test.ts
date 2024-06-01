@@ -57,7 +57,7 @@ test.describe('file collection block', () => {
 
     // 1. Table 中没有 size 选项，并且应该显示小尺寸的图片
     await page.getByRole('button', { name: 'Preview' }).hover();
-    await page.getByLabel('designer-schema-settings-TableV2.Column-fieldSettings:TableColumn-files').hover();
+    await page.getByLabel('designer-schema-initializers-TableV2.Column-fieldSettings:TableColumn-files').hover();
     await expect(page.getByRole('menuitem', { name: 'Custom column title' })).toBeVisible();
     await expect(page.getByRole('menuitem', { name: 'Column width' })).toBeVisible();
     await expect(page.getByRole('menuitem', { name: 'Size' })).not.toBeVisible();

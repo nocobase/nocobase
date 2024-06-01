@@ -51,7 +51,7 @@ test('Date display format in table', async ({ page, mockPage, mockRecord }) => {
     page,
     showMenu: async () => {
       await page.getByRole('button', { name: 'datetime' }).hover();
-      await page.getByLabel('designer-schema-settings-TableV2.Column-fieldSettings:TableColumn-general').hover();
+      await page.getByLabel('designer-schema-initializers-TableV2.Column-fieldSettings:TableColumn-general').hover();
     },
     supportedOptions: ['Custom column title', 'Column width', 'Sortable', 'Date display format', 'Delete'],
   });

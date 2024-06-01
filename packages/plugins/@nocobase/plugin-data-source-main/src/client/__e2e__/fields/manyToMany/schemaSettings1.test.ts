@@ -277,7 +277,7 @@ test.describe('form item & create form', () => {
 
     // 2. 将其 field component 设置为 Record picker
     await page.getByRole('button', { name: 'Roles' }).hover();
-    await page.getByLabel('designer-schema-settings-TableV2.Column-fieldSettings:TableColumn-users').hover();
+    await page.getByLabel('designer-schema-initializers-TableV2.Column-fieldSettings:TableColumn-users').hover();
     await page.getByRole('menuitem', { name: 'Field component Select' }).click();
     await page.getByRole('option', { name: 'Record picker' }).click();
 

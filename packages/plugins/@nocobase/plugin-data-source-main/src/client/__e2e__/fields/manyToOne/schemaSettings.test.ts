@@ -141,7 +141,7 @@ test.describe('table column & sub-table', () => {
 
     // 1. 切换 title field
     await page.getByRole('button', { name: 'Roles', exact: true }).hover();
-    await page.getByLabel('designer-schema-settings-TableV2.Column-fieldSettings:TableColumn-users').hover();
+    await page.getByLabel('designer-schema-initializers-TableV2.Column-fieldSettings:TableColumn-users').hover();
     await page.getByRole('menuitem', { name: 'Title field Role UID' }).click();
     await page.getByRole('option', { name: 'Role name' }).click();
 

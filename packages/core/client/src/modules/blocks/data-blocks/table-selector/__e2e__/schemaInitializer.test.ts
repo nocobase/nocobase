@@ -88,7 +88,7 @@ test.describe('configure actions column', () => {
     await expectActionsColumnWidth(200);
 
     await page.getByText('Actions', { exact: true }).hover();
-    await page.getByLabel('designer-schema-settings-TableV2.Column-TableV2.ActionColumnDesigner-users').hover();
+    await page.getByLabel('designer-schema-initializers-TableV2.Column-TableV2.ActionColumnDesigner-users').hover();
     await page.getByRole('menuitem', { name: 'Column width' }).click();
 
     await expect(page.getByRole('dialog').getByText('Column width')).toBeVisible();
