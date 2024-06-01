@@ -9,8 +9,20 @@
 
 import { BaseInterface } from '@nocobase/database';
 import lodash from 'lodash';
+import { basename, extname } from 'path';
 
 export class AttachmentInterface extends BaseInterface {
+  async toValue(value: any, ctx?: any) {
+    return this.castArray(value).map((url: string) => {
+      return {
+        title: basename(url),
+        extname: extname(url),
+        filename: basename(url),
+        url,
+      };
+    });
+  }
+
   toString(value: any, ctx?: any) {
     return lodash
       .castArray(value)
