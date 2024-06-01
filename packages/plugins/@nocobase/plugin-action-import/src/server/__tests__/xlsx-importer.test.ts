@@ -16,7 +16,7 @@ describe('xlsx importer', () => {
   let app: MockServer;
   beforeEach(async () => {
     app = await createMockServer({
-      plugins: ['nocobase'],
+      plugins: ['field-china-region'],
     });
   });
 
