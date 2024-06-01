@@ -14,7 +14,7 @@ export abstract class BaseInterface {
     return value;
   }
 
-  async toValue(str: string, ctx?: any): Promise<any> {
+  async toValue(str: any, ctx?: any): Promise<any> {
     return str;
   }
 }
