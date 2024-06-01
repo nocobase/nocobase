@@ -8,7 +8,7 @@
  */
 
 export abstract class BaseInterface {
-  constructor(public options: any) {}
+  constructor(public options: any = {}) {}
 
   toString(value: any, ctx?: any) {
     return value;

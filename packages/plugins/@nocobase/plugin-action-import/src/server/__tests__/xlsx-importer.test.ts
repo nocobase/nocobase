@@ -15,11 +15,70 @@ import XLSX from 'xlsx';
 describe('xlsx importer', () => {
   let app: MockServer;
   beforeEach(async () => {
-    app = await createMockServer({});
+    app = await createMockServer({
+      plugins: ['nocobase'],
+    });
   });
 
   afterEach(async () => {
     await app.destroy();
+  });
+
+  it('should import china region field', async () => {
+    const Post = app.db.collection({
+      name: 'posts',
+      fields: [
+        { type: 'string', name: 'title' },
+        {
+          type: 'belongsToMany',
+          target: 'chinaRegions',
+          through: 'userRegions',
+          targetKey: 'code',
+          interface: 'chinaRegion',
+          name: 'region',
+        },
+      ],
+    });
+
+    await app.db.sync();
+
+    const columns = [
+      { dataIndex: ['title'], defaultTitle: 'Title' },
+      {
+        dataIndex: ['region'],
+        defaultTitle: 'region',
+      },
+    ];
+
+    const templateCreator = new TemplateCreator({
+      collection: Post,
+      columns,
+    });
+
+    const template = await templateCreator.run();
+
+    const worksheet = template.Sheets[template.SheetNames[0]];
+
+    XLSX.utils.sheet_add_aoa(worksheet, [['post0', '山西省/长治市/潞城区']], {
+      origin: 'A2',
+    });
+
+    const importer = new XlsxImporter({
+      collectionManager: app.mainDataSource.collectionManager,
+      collection: Post,
+      columns,
+      workbook: template,
+    });
+
+    await importer.run();
+
+    expect(await Post.repository.count()).toBe(1);
+
+    const post = await Post.repository.findOne({
+      appends: ['region'],
+    });
+
+    expect(post.get('region').map((item: any) => item.code)).toEqual(['14', '1404', '140406']);
   });
 
   it('should import with number field', async () => {

@@ -143,6 +143,7 @@ export class XlsxImporter {
 
             const ctx: any = {
               transaction,
+              field,
             };
 
             if (column.dataIndex.length > 1) {
