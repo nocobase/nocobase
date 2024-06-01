@@ -48,6 +48,11 @@ describe('xlsx importer', () => {
           interface: 'float',
           name: 'float',
         },
+        {
+          type: 'boolean',
+          interface: 'boolean',
+          name: 'boolean',
+        },
       ],
     });
 
@@ -70,6 +75,10 @@ describe('xlsx importer', () => {
         dataIndex: ['float'],
         defaultTitle: '浮点数',
       },
+      {
+        dataIndex: ['boolean'],
+        defaultTitle: '布尔值',
+      },
     ];
 
     const templateCreator = new TemplateCreator({
@@ -84,8 +93,8 @@ describe('xlsx importer', () => {
     XLSX.utils.sheet_add_aoa(
       worksheet,
       [
-        [1, '1238217389217389217', '10%', 0.1],
-        [2, 123123, '20%', 0.2],
+        [1, '1238217389217389217', '10%', 0.1, '是'],
+        [2, 123123, '20%', 0.2, '0'],
       ],
       {
         origin: 'A2',
@@ -112,6 +121,18 @@ describe('xlsx importer', () => {
     expect(user1.get('bigInt')).toBe('1238217389217389217');
     expect(user1.get('percent')).toBe(0.1);
     expect(user1.get('float')).toBe(0.1);
+    expect(user1.get('boolean')).toBe(true);
+
+    const user2 = await User.repository.findOne({
+      filter: {
+        id: 2,
+      },
+    });
+
+    expect(user2.get('bigInt')).toBe(123123);
+    expect(user2.get('percent')).toBe(0.2);
+    expect(user2.get('float')).toBe(0.2);
+    expect(user2.get('boolean')).toBe(false);
   });
 
   it('should reset id seq after import', async () => {

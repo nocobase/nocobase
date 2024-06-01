@@ -10,6 +10,30 @@
 import { BaseInterface } from './base-interface';
 
 export class BooleanInterface extends BaseInterface {
+  async toValue(value: string, ctx?: any): Promise<any> {
+    if (typeof value === 'boolean') {
+      return value;
+    }
+
+    if (typeof value === 'number') {
+      return !!value;
+    }
+
+    if (typeof value === 'string') {
+      if (!value) {
+        return false;
+      }
+
+      if (['1', 'y', 'yes', 'true', '是'].includes(value.toLowerCase())) {
+        return true;
+      } else if (['0', 'n', 'no', 'false', '否'].includes(value.toLowerCase())) {
+        return false;
+      }
+    }
+
+    throw new Error(`Invalid value - ${JSON.stringify(value)}`);
+  }
+
   toString(value: any, ctx?: any) {
     const enumConfig = this.options.uiSchema?.enum || [];
     if (enumConfig?.length > 0) {
