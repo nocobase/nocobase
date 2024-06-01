@@ -10,6 +10,12 @@
 import { BaseInterface } from './base-interface';
 
 export class SelectInterface extends BaseInterface {
+  async toValue(str: string, ctx?: any): Promise<any> {
+    const enumConfig = this.options.uiSchema?.enum || [];
+    const option = enumConfig.find((item) => item.label === str);
+    return option?.value || str;
+  }
+
   toString(value: any, ctx?: any) {
     const enumConfig = this.options.uiSchema?.enum || [];
     const option = enumConfig.find((item) => item.value === value);

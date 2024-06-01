@@ -11,6 +11,15 @@ import { BaseInterface } from './base-interface';
 import lodash from 'lodash';
 
 export class MultipleSelectInterface extends BaseInterface {
+  async toValue(str: string, ctx?: any): Promise<any> {
+    const items = str.split(/,|，|、/);
+    const enumConfig = this.options.uiSchema?.enum || [];
+    return items.map((item) => {
+      const option = enumConfig.find((option) => option.label === item);
+      return option ? option.value : item;
+    });
+  }
+
   toString(value: any, ctx?: any) {
     const enumConfig = this.options.uiSchema?.enum || [];
     return lodash
