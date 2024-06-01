@@ -26,7 +26,6 @@ import {
 import { useStyles } from './style';
 import { partialRight, when } from './utils';
 import withDroppable from './withDroppable';
-
 import { useDataBlockHeight, useDesignable, useDataBlock } from '@nocobase/client';
 import { theme } from 'antd';
 import { useFieldSchema } from '@formily/react';

@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { useDataBlockHeight, useDesignable } from '@nocobase/client';
+import { useDataBlockHeight, useDesignable, useDataBlock } from '@nocobase/client';
 import { theme } from 'antd';
 import { useFieldSchema } from '@formily/react';
 
@@ -15,6 +15,8 @@ export const useMapHeight = () => {
   const height = useDataBlockHeight();
   const { token } = theme.useToken();
   const { designable } = useDesignable();
+  const { heightProps } = useDataBlock() || {};
+  const { title } = heightProps || {};
   const schema = useFieldSchema();
   if (!height) {
     return;
@@ -23,5 +25,6 @@ export const useMapHeight = () => {
   const actionBarHeight =
     designable || hasMapAction ? token.paddingLG + token.controlHeight + token.margin : token.paddingLG + token.margin;
   const footerHeight = token.paddingLG;
-  return height - actionBarHeight - footerHeight;
+  const blockTitleHeaderHeight = title ? token.fontSizeLG * token.lineHeightLG + token.padding * 2 - 1 : 0;
+  return height - actionBarHeight - footerHeight - blockTitleHeaderHeight;
 };

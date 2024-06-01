@@ -113,7 +113,6 @@ export const AMapComponent = React.forwardRef<AMapForwardedRefProps, AMapCompone
   const id = useRef(`nocobase-map-${type || ''}-${Date.now().toString(32)}`);
   const { modal } = App.useApp();
   const height = useMapHeight();
-  console.log(height);
   const [commonOptions] = useState<AMap.PolylineOptions & AMap.PolygonOptions>({
     strokeWeight: 5,
     strokeColor: '#4e9bff',
