@@ -45,15 +45,15 @@ const useFormBlockHeight = () => {
   const schema = useFieldSchema();
   const { token } = theme.useToken();
   const { designable } = useDesignable();
-  const { heightProps } = useDataBlock();
-  const { title } = heightProps;
+  const { heightProps } = useDataBlock() || {};
+  const { title } = heightProps || {};
   const actionSchema: any = schema.reduceProperties((buf, s) => {
     if (s['x-component'] === 'ActionBar') {
       return s;
     }
     return buf;
   });
-  const hasFormActions = Object.keys(actionSchema.properties || {}).length > 0;
+  const hasFormActions = Object.keys(actionSchema?.properties || {}).length > 0;
 
   const actionBarHeight = hasFormActions || designable ? token.controlHeight + 2 * token.marginLG : 2 * token.marginLG;
   const blockTitleHeaderHeight = title
