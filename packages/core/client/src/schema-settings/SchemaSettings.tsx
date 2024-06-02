@@ -991,14 +991,6 @@ export const SchemaSettingsLinkageRules = function LinkageRules(props) {
   const getRules = useCallback(() => {
     return gridSchema?.[ruleKeyMap[type]] || fieldSchema?.[ruleKeyMap[type]] || [];
   }, [gridSchema, fieldSchema, ruleKeyMap, type]);
-
-  const setRules = useCallback(
-    (rules) => {
-      gridSchema[ruleKeyMap[type]] = rules;
-      fieldSchema[ruleKeyMap[type]] = rules;
-    },
-    [[gridSchema, fieldSchema, ruleKeyMap, type]],
-  );
   const title = titleMap[type];
   const schema = useMemo<ISchema>(
     () => ({
@@ -1045,7 +1037,7 @@ export const SchemaSettingsLinkageRules = function LinkageRules(props) {
       });
       dn.refresh();
     },
-    [dn, getTemplateById, gridSchema, setRules],
+    [dn, getTemplateById, gridSchema, ruleKeyMap, type],
   );
 
   return (

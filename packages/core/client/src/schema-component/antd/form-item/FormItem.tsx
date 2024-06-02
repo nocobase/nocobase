@@ -9,8 +9,8 @@
 
 import { css, cx } from '@emotion/css';
 import { IFormItemProps, FormItem as Item } from '@formily/antd-v5';
-import { Field, onFormValuesChange, Form } from '@formily/core';
-import { observer, useField, useFieldSchema, useFormEffects } from '@formily/react';
+import { Field } from '@formily/core';
+import { observer, useField, useFieldSchema, useForm } from '@formily/react';
 import React, { useEffect, useMemo, useState } from 'react';
 import { ACLCollectionFieldProvider } from '../../../acl/ACLProvider';
 import { useApp } from '../../../application';
@@ -29,7 +29,6 @@ import useLazyLoadDisplayAssociationFieldsOfForm from './hooks/useLazyLoadDispla
 import useParseDefaultValue from './hooks/useParseDefaultValue';
 import { LinkageRuleDataKey } from '../../../schema-settings/LinkageRules/type';
 import { getSatisfiedValueMap } from '../../../schema-settings/LinkageRules/compute-rules';
-import { useDesignable } from '../../hooks';
 import { isEmpty } from 'lodash';
 Item.displayName = 'FormilyFormItem';
 
@@ -49,26 +48,19 @@ export const FormItem: any = withDynamicSchemaProps(
   observer((props: IFormItemProps) => {
     useEnsureOperatorsValid();
     const field = useField<Field>();
-    const { dn } = useDesignable();
     const schema = useFieldSchema();
     const contextVariable = useContextVariable();
     const variables = useVariables();
     const { addActiveFieldName } = useFormActiveFields() || {};
-    // const form = useForm();
-    const [form, setForm] = useState<Form>();
+    const form = useForm();
     const localVariables = useLocalVariables({ currentForm: { values: form?.values } as any });
     const [style, setStyle] = useState({});
     useEffect(() => {
       variables?.registerVariable(contextVariable);
     }, [contextVariable]);
-    useFormEffects(() => {
-      onFormValuesChange((form) => {
-        setForm(form);
-      });
-    });
+    const linkageStyleRules = schema[LinkageRuleDataKey.style];
     useEffect(() => {
-      const linkageStyleRules = schema[LinkageRuleDataKey.style] || [];
-      if (form) {
+      if (form && linkageStyleRules) {
         getSatisfiedValueMap({ rules: linkageStyleRules, variables, localVariables })
           .then((valueMap) => {
             if (!isEmpty(valueMap)) {
@@ -79,7 +71,7 @@ export const FormItem: any = withDynamicSchemaProps(
             throw new Error(err.message);
           });
       }
-    }, [schema, variables, localVariables, form, dn]);
+    }, [variables, localVariables, form, linkageStyleRules]);
     // 需要放在注冊完变量之后
     useParseDefaultValue();
     useLazyLoadDisplayAssociationFieldsOfForm();
