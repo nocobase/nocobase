@@ -32,7 +32,7 @@ export const SchemaSettingsBlockHeightItem = function BlockTitleItem() {
             heightMode: {
               type: 'string',
               enum: [
-                { label: t('Adaptive'), value: 'adaptive' },
+                { label: t('Default'), value: 'adaptive' },
                 { label: t('Specify height'), value: 'specifyValue' },
                 { label: t('Full screen'), value: 'fullScreen' },
               ],
