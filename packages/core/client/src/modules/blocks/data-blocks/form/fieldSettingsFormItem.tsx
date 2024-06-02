@@ -6,7 +6,7 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
-
+import React from 'react';
 import { ArrayCollapse, FormLayout } from '@formily/antd-v5';
 import { Field } from '@formily/core';
 import { ISchema, useField, useFieldSchema } from '@formily/react';
@@ -24,6 +24,7 @@ import { isPatternDisabled } from '../../../../schema-settings';
 import { ActionType } from '../../../../schema-settings/LinkageRules/type';
 import { SchemaSettingsDefaultValue } from '../../../../schema-settings/SchemaSettingsDefaultValue';
 import { useIsAllowToSetDefaultValue } from '../../../../schema-settings/hooks/useIsAllowToSetDefaultValue';
+import { SchemaSettingsLinkageRules } from '../../../../schema-settings';
 
 export const fieldSettingsFormItem = new SchemaSettings({
   name: 'fieldSettings:FormItem',
@@ -440,6 +441,25 @@ export const fieldSettingsFormItem = new SchemaSettings({
               const isFormReadPretty = useIsFormReadPretty();
               const validateSchema = useValidateSchema();
               return form && !isFormReadPretty && validateSchema;
+            },
+          },
+          {
+            name: 'style',
+            Component: (props) => {
+              const propsWithType = { ...props, type: 'style' };
+              return <SchemaSettingsLinkageRules {...propsWithType} />;
+            },
+            useVisible() {
+              const field: any = useField();
+              return field.readPretty;
+            },
+            useComponentProps() {
+              const { name } = useCollection_deprecated();
+              const { linkageRulesProps } = useSchemaToolbar();
+              return {
+                ...linkageRulesProps,
+                collectionName: name,
+              };
             },
           },
         ];

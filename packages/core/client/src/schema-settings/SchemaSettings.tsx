@@ -971,21 +971,46 @@ export const SchemaSettingsLinkageRules = function LinkageRules(props) {
   const localVariables = useLocalVariables();
   const record = useRecord();
   const { type: formBlockType } = useFormBlockType();
-  const type = props?.type || fieldSchema?.['x-action'] ? 'button' : 'field';
+  const type = props?.type ?? (['Action', 'Action.Link'].includes(fieldSchema['x-component']) ? 'button' : 'field');
   const gridSchema = findGridSchema(fieldSchema) || fieldSchema;
   const options = useLinkageCollectionFilterOptions(collectionName);
   const linkageOptions = useLinkageCollectionFieldOptions(collectionName, readPretty);
+  const titleMap = {
+    button: t('Linkage rules'),
+    field: t('Linkage rules'),
+    style: t('Style'),
+  };
+  const ruleKeyMap = useMemo(
+    () => ({
+      button: 'x-linkage-rules',
+      field: 'x-linkage-rules',
+      style: 'x-linkage-rules-style',
+    }),
+    [],
+  );
+  const getRules = useCallback(() => {
+    return gridSchema?.[ruleKeyMap[type]] || fieldSchema?.[ruleKeyMap[type]] || [];
+  }, [gridSchema, fieldSchema, ruleKeyMap, type]);
+
+  const setRules = useCallback(
+    (rules) => {
+      gridSchema[ruleKeyMap[type]] = rules;
+      fieldSchema[ruleKeyMap[type]] = rules;
+    },
+    [[gridSchema, fieldSchema, ruleKeyMap, type]],
+  );
+  const title = titleMap[type];
   const schema = useMemo<ISchema>(
     () => ({
       type: 'object',
-      title: t('Linkage rules'),
+      title,
       properties: {
         fieldReaction: {
           'x-component': FormLinkageRules,
           'x-use-component-props': () => {
             return {
               options,
-              defaultValues: gridSchema?.['x-linkage-rules'] || fieldSchema?.['x-linkage-rules'],
+              defaultValues: getRules(),
               type,
               linkageOptions,
               collectionName,
@@ -999,7 +1024,7 @@ export const SchemaSettingsLinkageRules = function LinkageRules(props) {
         },
       },
     }),
-    [collectionName, fieldSchema, form, gridSchema, localVariables, record, t, type, variables],
+    [collectionName, fieldSchema, form, gridSchema, localVariables, record, t, type, variables, getRules],
   );
   const components = useMemo(() => ({ ArrayCollapse, FormLayout }), []);
   const onSubmit = useCallback(
@@ -1013,25 +1038,18 @@ export const SchemaSettingsLinkageRules = function LinkageRules(props) {
       const schema = {
         ['x-uid']: uid,
       };
-
-      gridSchema['x-linkage-rules'] = rules;
-      schema['x-linkage-rules'] = rules;
+      gridSchema[ruleKeyMap[type]] = rules;
+      schema[ruleKeyMap[type]] = rules;
       dn.emit('patch', {
         schema,
       });
       dn.refresh();
     },
-    [dn, getTemplateById, gridSchema],
+    [dn, getTemplateById, gridSchema, setRules],
   );
 
   return (
-    <SchemaSettingsModalItem
-      title={t('Linkage rules')}
-      components={components}
-      width={770}
-      schema={schema}
-      onSubmit={onSubmit}
-    />
+    <SchemaSettingsModalItem title={title} components={components} width={770} schema={schema} onSubmit={onSubmit} />
   );
 };
 

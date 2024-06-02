@@ -14,22 +14,27 @@ import React, { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { withDynamicSchemaProps } from '../../hoc/withDynamicSchemaProps';
 import { useProps } from '../../schema-component/hooks/useProps';
-import { FormButtonLinkageRuleAction, FormFieldLinkageRuleAction } from './LinkageRuleAction';
+import {
+  FormButtonLinkageRuleAction,
+  FormFieldLinkageRuleAction,
+  FormStyleLinkageRuleAction,
+} from './LinkageRuleAction';
 import { RemoveActionContext } from './context';
 export const LinkageRuleActions = observer(
   (props: any): any => {
     const { type, linkageOptions } = props;
     const field = useField<ArrayFieldModel>();
+    const componentMap: {
+      [key in LinkageRuleActionGroupProps['type']]: any;
+    } = {
+      button: FormButtonLinkageRuleAction,
+      field: FormFieldLinkageRuleAction,
+      style: FormStyleLinkageRuleAction,
+    };
     return field?.value?.map((item, index) => {
       return (
         <RemoveActionContext.Provider key={index} value={() => field.remove(index)}>
-          <ObjectField
-            name={index}
-            component={[
-              type === 'button' ? FormButtonLinkageRuleAction : FormFieldLinkageRuleAction,
-              { ...props, options: linkageOptions },
-            ]}
-          />
+          <ObjectField name={index} component={[componentMap[type], { ...props, options: linkageOptions }]} />
         </RemoveActionContext.Provider>
       );
     });
@@ -37,8 +42,8 @@ export const LinkageRuleActions = observer(
   { displayName: 'LinkageRuleActions' },
 );
 
-interface LinkageRuleActionGroupProps {
-  type: 'button' | 'field';
+export interface LinkageRuleActionGroupProps {
+  type: 'button' | 'field' | 'style';
   linkageOptions: any;
   collectionName: string;
 }
