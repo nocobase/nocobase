@@ -7,10 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { useField, useForm } from '@formily/react';
-import React from 'react';
+import { uid } from '@formily/shared';
 
-import { useCollectionDataSource, useCollectionManager_deprecated } from '@nocobase/client';
+import { useCollectionDataSource } from '@nocobase/client';
 import { isValidFilter } from '@nocobase/utils/client';
 
 import CollectionFieldset from '../components/CollectionFieldset';
@@ -20,34 +19,7 @@ import { RadioWithTooltip } from '../components/RadioWithTooltip';
 import { NAMESPACE, lang } from '../locale';
 import { collection, filter, values } from '../schemas/collection';
 import { Instruction } from '.';
-
-function IndividualHooksRadioWithTooltip({ onChange, ...props }) {
-  const { getCollectionFields } = useCollectionManager_deprecated();
-  const form = useForm();
-  const { collection } = form.values;
-  const fields = getCollectionFields(collection);
-  const field = useField<any>();
-
-  function onValueChange({ target }) {
-    const valuesField = field.query('.values').take();
-    if (!valuesField) {
-      return;
-    }
-    const filteredValues = fields.reduce((result, item) => {
-      if (
-        item.name in valuesField.value &&
-        (target.value || !['hasOne', 'hasMany', 'belongsToMany'].includes(item.type))
-      ) {
-        result[item.name] = valuesField.value[item.name];
-      }
-      return result;
-    }, {});
-    form.setValuesIn('params.values', filteredValues);
-
-    onChange(target.value);
-  }
-  return <RadioWithTooltip {...props} onChange={onValueChange} />;
-}
+import { AssignedFieldsForm } from '../components/AssignedFieldsForm';
 
 export default class extends Instruction {
   title = `{{t("Update record", { ns: "${NAMESPACE}" })}}`;
@@ -94,7 +66,7 @@ export default class extends Instruction {
           type: 'boolean',
           title: `{{t("Update mode", { ns: "${NAMESPACE}" })}}`,
           'x-decorator': 'FormItem',
-          'x-component': 'IndividualHooksRadioWithTooltip',
+          'x-component': 'RadioWithTooltip',
           'x-component-props': {
             options: [
               {
@@ -120,21 +92,48 @@ export default class extends Instruction {
         },
         values: {
           ...values,
-          'x-component-props': {
-            filter(this, field) {
-              return this.params?.individualHooks || !['hasOne', 'hasMany', 'belongsToMany'].includes(field.type);
+          'x-reactions': [
+            {
+              dependencies: ['collection', 'assignForm'],
+              fulfill: {
+                state: {
+                  display: '{{($deps[0] && !$deps[1]) ? "visible" : "hidden"}}',
+                },
+              },
             },
-          },
+          ],
         },
       },
     },
+    assignForm: {
+      type: 'string',
+      title: '{{t("Fields values")}}',
+      'x-decorator': 'FormItem',
+      'x-component': 'AssignedFieldsForm',
+      'x-reactions': [
+        {
+          dependencies: ['collection'],
+          fulfill: {
+            state: {
+              display: '{{($deps[0] && $self.value) ? "visible" : "hidden"}}',
+            },
+          },
+        },
+      ],
+    },
   };
+  createDefaultConfig() {
+    return {
+      assignForm: uid(),
+    };
+  }
   scope = {
     useCollectionDataSource,
   };
   components = {
     FilterDynamicComponent,
     CollectionFieldset,
-    IndividualHooksRadioWithTooltip,
+    AssignedFieldsForm,
+    RadioWithTooltip,
   };
 }

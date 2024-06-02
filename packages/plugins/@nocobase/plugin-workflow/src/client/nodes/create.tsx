@@ -7,10 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { uid } from '@formily/shared';
 import {
   SchemaInitializerItemType,
   useCollectionDataSource,
   useCollectionManager_deprecated,
+  parseCollectionName,
   useCompile,
 } from '@nocobase/client';
 
@@ -20,6 +22,7 @@ import { NAMESPACE } from '../locale';
 import { appends, collection, values } from '../schemas/collection';
 import { getCollectionFieldOptions } from '../variable';
 import { Instruction } from '.';
+import { AssignedFieldsForm } from '../components/AssignedFieldsForm';
 
 export default class extends Instruction {
   title = `{{t("Create record", { ns: "${NAMESPACE}" })}}`;
@@ -36,7 +39,6 @@ export default class extends Instruction {
           effects: ['onFieldValueChange'],
           fulfill: {
             state: {
-              visible: '{{!!$self.value}}',
               value: '{{Object.create({})}}',
             },
           },
@@ -53,19 +55,53 @@ export default class extends Instruction {
     //     disabled: true
     //   }
     // },
+    assignForm: {
+      type: 'string',
+      title: '{{t("Fields values")}}',
+      'x-decorator': 'FormItem',
+      'x-component': 'AssignedFieldsForm',
+      'x-reactions': [
+        {
+          dependencies: ['collection'],
+          fulfill: {
+            state: {
+              display: '{{($deps[0] && $self.value) ? "visible" : "hidden"}}',
+            },
+          },
+        },
+      ],
+    },
     params: {
       type: 'object',
       properties: {
-        values,
+        values: {
+          ...values,
+          'x-reactions': [
+            {
+              dependencies: ['collection', 'assignForm'],
+              fulfill: {
+                state: {
+                  display: '{{($deps[0] && !$deps[1]) ? "visible" : "hidden"}}',
+                },
+              },
+            },
+          ],
+        },
         appends,
       },
     },
   };
+  createDefaultConfig() {
+    return {
+      assignForm: uid(),
+    };
+  }
   scope = {
     useCollectionDataSource,
   };
   components = {
     CollectionFieldset,
+    AssignedFieldsForm,
   };
   useVariables({ key: name, title, config }, options) {
     // eslint-disable-next-line react-hooks/rules-of-hooks

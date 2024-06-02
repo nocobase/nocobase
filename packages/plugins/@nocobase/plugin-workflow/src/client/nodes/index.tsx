@@ -53,15 +53,30 @@ export abstract class Instruction {
   type: string;
   group: string;
   description?: string;
+  /**
+   * @experimental
+   */
   options?: { label: string; value: any; key: string }[];
   fieldset: { [key: string]: ISchema };
+  /**
+   * @experimental
+   */
   view?: ISchema;
   scope?: { [key: string]: any };
   components?: { [key: string]: any };
   Component?(props): JSX.Element;
+  /**
+   * @experimental
+   */
+  createDefaultConfig?(): Record<string, any> {
+    return {};
+  }
   useVariables?(node, options?: UseVariableOptions): VariableOption;
   useScopeVariables?(node, options?): VariableOption[];
   useInitializers?(node): SchemaInitializerItemType | null;
+  /**
+   * @experimental
+   */
   isAvailable?(ctx: NodeAvailableContext): boolean;
   end?: boolean | ((node) => boolean);
 }
@@ -378,6 +393,7 @@ export function NodeDefaultView(props) {
               scope={{
                 ...instruction.scope,
                 useFormProviderProps,
+                useUpdateAction,
               }}
               components={instruction.components}
               schema={{
@@ -477,7 +493,7 @@ export function NodeDefaultView(props) {
                                 'x-component': 'Action',
                                 'x-component-props': {
                                   type: 'primary',
-                                  useAction: useUpdateAction,
+                                  useAction: '{{ useUpdateAction }}',
                                 },
                               },
                             },
