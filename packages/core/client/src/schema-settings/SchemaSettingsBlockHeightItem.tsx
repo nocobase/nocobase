@@ -32,12 +32,12 @@ export const SchemaSettingsBlockHeightItem = function BlockTitleItem() {
             heightMode: {
               type: 'string',
               enum: [
-                { label: t('Default'), value: 'adaptive' },
+                { label: t('Default'), value: 'default' },
                 { label: t('Specify height'), value: 'specifyValue' },
-                { label: t('Full screen'), value: 'fullScreen' },
+                { label: t('Full height'), value: 'fullHeight' },
               ],
               required: true,
-              default: fieldSchema?.['x-component-props']?.heightMode || 'adaptive',
+              default: fieldSchema?.['x-component-props']?.heightMode || 'default',
               'x-decorator': 'FormItem',
               'x-component': 'Radio.Group',
             },
@@ -57,7 +57,7 @@ export const SchemaSettingsBlockHeightItem = function BlockTitleItem() {
                 dependencies: ['heightMode'],
                 fulfill: {
                   state: {
-                    hidden: '{{ $deps[0]==="fullScreen"||$deps[0]==="adaptive"}}',
+                    hidden: '{{ $deps[0]==="fullHeight"||$deps[0]==="default"}}',
                     value: '{{$deps[0]!=="specifyValue"?null:$self.value}}',
                   },
                 },

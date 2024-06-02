@@ -85,7 +85,7 @@ const useTableHeight = () => {
   const { count, pageSize } = (data as any)?.meta || ({} as any);
   const hasPagination = count > pageSize;
   const { heightMode, height, title } = heightProps;
-  if (!heightProps?.heightMode || heightMode === 'adaptive') {
+  if (!heightProps?.heightMode || heightMode === 'default') {
     return;
   }
   const hasTableActions = Object.keys(schema.parent.properties.actions?.properties || {}).length > 0;
@@ -93,7 +93,7 @@ const useTableHeight = () => {
   const actionBarHeight = hasTableActions || designable ? token.controlHeight + 2 * token.marginLG : token.marginLG;
   const tableHeaderHeight = (designable ? token.controlHeight : 22) + 2 * token.padding + 1;
   const blockHeaderHeight = title ? token.fontSizeLG * token.lineHeightLG + token.padding * 2 - 1 : 0;
-  if (heightMode === 'fullScreen') {
+  if (heightMode === 'fullHeight') {
     return (
       window.innerHeight -
       pageFullScreenHeight -
@@ -112,10 +112,10 @@ export const useDataBlockHeight = () => {
   const pageFullScreenHeight = useFullScreenHeight();
   const { heightMode, height } = heightProps || {};
 
-  if (!heightProps?.heightMode || heightMode === 'adaptive') {
+  if (!heightProps?.heightMode || heightMode === 'default') {
     return;
   }
-  if (heightMode === 'fullScreen') {
+  if (heightMode === 'fullHeight') {
     return window.innerHeight - pageFullScreenHeight;
   }
   return height;
@@ -130,10 +130,10 @@ export const useBlockHeight = () => {
   const pageFullScreenHeight = useFullScreenHeight(heightProps);
   const { heightMode, height } = heightProps || {};
 
-  if (!heightProps?.heightMode || heightMode === 'adaptive') {
+  if (!heightProps?.heightMode || heightMode === 'default') {
     return;
   }
-  if (heightMode === 'fullScreen') {
+  if (heightMode === 'fullHeight') {
     return window.innerHeight - pageFullScreenHeight;
   }
   return height;
