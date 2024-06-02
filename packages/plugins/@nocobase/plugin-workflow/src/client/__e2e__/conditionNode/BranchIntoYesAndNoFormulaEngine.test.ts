@@ -26,8 +26,7 @@ import {
 import { expect, test } from '@nocobase/test/e2e';
 import { dayjs } from '@nocobase/utils';
 
-// TODO: 该测试不稳定，先跳过
-test.skip('Collection event Add Data Trigger, determines that the trigger node single line text field variable is equal to an equal constant, passes.', async ({
+test('Collection event Add Data Trigger, determines that the trigger node single line text field variable is equal to an equal constant, passes.', async ({
   page,
   mockCollections,
   mockRecords,
@@ -82,8 +81,10 @@ test.skip('Collection event Add Data Trigger, determines that the trigger node s
   await page.getByRole('menuitemcheckbox', { name: 'Trigger data' }).click();
   await page.getByRole('menuitemcheckbox', { name: triggerNodeFieldDisplayName }).click();
   const conditionalRightConstant = faker.lorem.words();
-  await page.waitForTimeout(500);
-  await page.keyboard.type(`=='${conditionalRightConstant}'`, { delay: 50 });
+  await page
+    .getByLabel('block-item-WorkflowVariableTextArea-workflows-Condition expression')
+    .getByLabel('textbox')
+    .pressSequentially(`=='${conditionalRightConstant}'`);
   await expect(conditionNode.conditionExpressionEditBox).toHaveText(
     `Trigger variables / Trigger data / ${triggerNodeFieldDisplayName}=='${conditionalRightConstant}'`,
   );
@@ -261,8 +262,7 @@ test('Collection event Add Data Trigger, determines that the trigger node single
   await apiDeleteWorkflow(workflowId);
 });
 
-// TODO: 该测试不稳定，先跳过
-test.skip('Collection event Add Data Trigger, determines that the trigger node single line text field variable is not equal to an equal constant, fails.', async ({
+test('Collection event Add Data Trigger, determines that the trigger node single line text field variable is not equal to an equal constant, fails.', async ({
   page,
   mockCollections,
   mockRecords,
@@ -317,8 +317,10 @@ test.skip('Collection event Add Data Trigger, determines that the trigger node s
   await page.getByRole('menuitemcheckbox', { name: 'Trigger data' }).click();
   await page.getByRole('menuitemcheckbox', { name: triggerNodeFieldDisplayName }).click();
   const conditionalRightConstant = faker.lorem.words();
-  await page.waitForTimeout(500);
-  await page.keyboard.type(`!='${conditionalRightConstant}'`, { delay: 50 });
+  await page
+    .getByLabel('block-item-WorkflowVariableTextArea-workflows-Condition expression')
+    .getByLabel('textbox')
+    .pressSequentially(`!='${conditionalRightConstant}'`);
   await expect(conditionNode.conditionExpressionEditBox).toHaveText(
     `Trigger variables / Trigger data / ${triggerNodeFieldDisplayName}!='${conditionalRightConstant}'`,
   );
