@@ -134,6 +134,7 @@ export const iframeBlockSchemaSettings_deprecated = new SchemaSettings({
                 'x-component': 'Variable.RawTextArea',
                 'x-component-props': {
                   scope,
+                  rows: 10,
                 },
                 required: true,
                 'x-reactions': {
@@ -289,6 +290,7 @@ export const iframeBlockSchemaSettings = new SchemaSettings({
                 'x-component': 'Variable.RawTextArea',
                 'x-component-props': {
                   scope,
+                  rows: 10,
                 },
                 required: true,
                 'x-reactions': {
