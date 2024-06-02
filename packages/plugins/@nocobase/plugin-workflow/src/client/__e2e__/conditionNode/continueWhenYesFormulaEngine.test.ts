@@ -166,7 +166,7 @@ test('Collection event Add Data Trigger, Formula engine, determines that the tri
     .getByLabel('block-item-WorkflowVariableTextArea-workflows-Condition expression')
     .getByLabel('textbox')
     .press('ControlOrMeta+ArrowRight');
-  await page.keyboard.type(`=='${conditionalRightConstant}'`);
+  await page.keyboard.type(`=='${conditionalRightConstant}'`, { delay: 100 });
   await expect(conditionNode.conditionExpressionEditBox).toHaveText(
     `Trigger variables / Trigger data / ${triggerNodeFieldDisplayName}=='${conditionalRightConstant}'`,
   );
