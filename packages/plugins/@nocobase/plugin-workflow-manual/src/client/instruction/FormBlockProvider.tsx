@@ -9,6 +9,7 @@
 
 import { createForm } from '@formily/core';
 import { useField, useFieldSchema } from '@formily/react';
+import { theme } from 'antd';
 import {
   BlockRequestContext_deprecated,
   CollectionManagerProvider,
@@ -33,7 +34,7 @@ export function FormBlockProvider(props) {
   const field = useField();
   const formBlockRef = useRef(null);
   const dataSource = props.dataSource || DEFAULT_DATA_SOURCE_KEY;
-
+  const { token } = theme.useToken();
   const { getAssociationAppends } = useAssociationNames(dataSource);
   const { appends, updateAssociationValues } = getAssociationAppends();
   const [formKey] = Object.keys(fieldSchema.toJSON().properties ?? {});
@@ -89,7 +90,7 @@ export function FormBlockProvider(props) {
               value={{ block: 'form', props, field, service, resource, __parent }}
             >
               <FormBlockContext.Provider value={formBlockValue}>
-                <FormV2.Templates style={{ marginBottom: 18 }} form={form} />
+                <FormV2.Templates style={{ marginBottom: token.margin }} form={form} />
                 <div ref={formBlockRef}>{props.children}</div>
               </FormBlockContext.Provider>
             </BlockRequestContext_deprecated.Provider>
