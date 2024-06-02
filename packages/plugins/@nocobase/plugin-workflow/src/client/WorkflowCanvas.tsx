@@ -177,41 +177,40 @@ export function WorkflowCanvas() {
           />
         </header>
         <aside>
-          <div className="workflow-versions">
-            <Dropdown
-              trigger={['click']}
-              menu={{
-                onClick: onSwitchVersion,
-                defaultSelectedKeys: [`${workflow.id}`],
-                className: cx(styles.dropdownClass, styles.workflowVersionDropdownClass),
-                items: revisions
-                  .sort((a, b) => b.id - a.id)
-                  .map((item, index) => ({
-                    role: 'button',
-                    'aria-label': `version-${index}`,
-                    key: `${item.id}`,
-                    icon: item.current ? <RightOutlined /> : null,
-                    className: cx({
-                      executed: item.executed,
-                      unexecuted: !item.executed,
-                      enabled: item.enabled,
-                    }),
-                    label: (
-                      <>
-                        <strong>{`#${item.id}`}</strong>
-                        <time>{str2moment(item.createdAt).format('YYYY-MM-DD HH:mm:ss')}</time>
-                      </>
-                    ),
-                  })),
-              }}
-            >
-              <Button type="text" aria-label="version">
-                <label>{lang('Version')}</label>
-                <span>{workflow?.id ? `#${workflow.id}` : null}</span>
-                <DownOutlined />
-              </Button>
-            </Dropdown>
-          </div>
+          <Dropdown
+            className="workflow-versions"
+            trigger={['click']}
+            menu={{
+              onClick: onSwitchVersion,
+              defaultSelectedKeys: [`${workflow.id}`],
+              className: cx(styles.dropdownClass, styles.workflowVersionDropdownClass),
+              items: revisions
+                .sort((a, b) => b.id - a.id)
+                .map((item, index) => ({
+                  role: 'button',
+                  'aria-label': `version-${index}`,
+                  key: `${item.id}`,
+                  icon: item.current ? <RightOutlined /> : null,
+                  className: cx({
+                    executed: item.executed,
+                    unexecuted: !item.executed,
+                    enabled: item.enabled,
+                  }),
+                  label: (
+                    <>
+                      <strong>{`#${item.id}`}</strong>
+                      <time>{str2moment(item.createdAt).format('YYYY-MM-DD HH:mm:ss')}</time>
+                    </>
+                  ),
+                })),
+            }}
+          >
+            <Button type="text" aria-label="version">
+              <label>{lang('Version')}</label>
+              <span>{workflow?.id ? `#${workflow.id}` : null}</span>
+              <DownOutlined />
+            </Button>
+          </Dropdown>
           <Switch
             checked={workflow.enabled}
             onChange={onToggle}
