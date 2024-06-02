@@ -11,7 +11,7 @@ import { devices, defineConfig as playwrightDefineConfig, type PlaywrightTestCon
 
 export const defineConfig = (config?: PlaywrightTestConfig) => {
   return playwrightDefineConfig({
-    timeout: process.env.CI ? 60 * 1000 : 60 * 1000,
+    timeout: process.env.CI ? 60 * 1000 : 30 * 1000,
 
     expect: {
       timeout: 10 * 1000,
@@ -29,7 +29,7 @@ export const defineConfig = (config?: PlaywrightTestConfig) => {
     // Fail the build on CI if you accidentally left test.only in the source code.
     forbidOnly: !!process.env.CI,
 
-    retries: 1,
+    retries: process.env.CI ? 2 : 0,
 
     // Opt out of parallel tests on CI.
     // workers: process.env.CI ? 1 : undefined,
