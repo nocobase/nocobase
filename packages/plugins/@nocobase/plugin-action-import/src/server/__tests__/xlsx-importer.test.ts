@@ -177,10 +177,12 @@ describe('xlsx importer', () => {
       },
     });
 
-    expect(user1.get('bigInt')).toBe('1238217389217389217');
-    expect(user1.get('percent')).toBe(0.1);
-    expect(user1.get('float')).toBe(0.1);
-    expect(user1.get('boolean')).toBe(true);
+    const user1Json = user1.toJSON();
+
+    expect(user1Json['bigInt']).toBe('1238217389217389217');
+    expect(user1Json['percent']).toBe(0.1);
+    expect(user1Json['float']).toBe(0.1);
+    expect(user1Json['boolean']).toBe(true);
 
     const user2 = await User.repository.findOne({
       filter: {
@@ -188,10 +190,11 @@ describe('xlsx importer', () => {
       },
     });
 
-    expect(user2.get('bigInt')).toBe(123123);
-    expect(user2.get('percent')).toBe(0.2);
-    expect(user2.get('float')).toBe(0.2);
-    expect(user2.get('boolean')).toBe(false);
+    const user2Json = user2.toJSON();
+    expect(user2Json['bigInt']).toBe(123123);
+    expect(user2Json['percent']).toBe(0.2);
+    expect(user2Json['float']).toBe(0.2);
+    expect(user2Json['boolean']).toBe(false);
   });
 
   it('should reset id seq after import', async () => {
