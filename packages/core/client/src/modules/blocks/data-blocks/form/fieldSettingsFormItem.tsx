@@ -446,8 +446,8 @@ export const fieldSettingsFormItem = new SchemaSettings({
           {
             name: 'style',
             Component: (props) => {
-              const propsWithType = { ...props, type: 'style' };
-              return <SchemaSettingsLinkageRules {...propsWithType} />;
+              const localProps = { ...props, category: 'style' };
+              return <SchemaSettingsLinkageRules {...localProps} />;
             },
             useVisible() {
               const field: any = useField();

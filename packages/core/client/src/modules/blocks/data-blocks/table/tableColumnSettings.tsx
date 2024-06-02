@@ -83,8 +83,8 @@ export const tableColumnSettings = new SchemaSettings({
         {
           name: 'style',
           Component: (props) => {
-            const propsWithType = { ...props, type: 'style' };
-            return <SchemaSettingsLinkageRules {...propsWithType} />;
+            const localProps = { ...props, category: 'style' };
+            return <SchemaSettingsLinkageRules {...localProps} />;
           },
           useVisible() {
             const { uiSchema, fieldSchema } = useColumnSchema();
@@ -94,7 +94,7 @@ export const tableColumnSettings = new SchemaSettings({
             return isReadPretty;
           },
           useComponentProps() {
-            const { name } = useCollection_deprecated();
+            const { name } = useCollection();
             const { linkageRulesProps } = useSchemaToolbar();
             return {
               ...linkageRulesProps,

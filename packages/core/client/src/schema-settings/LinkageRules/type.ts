@@ -23,7 +23,12 @@ export enum ActionType {
   BackgroundColor = 'backgroundColor',
 }
 
-export enum LinkageRuleDataKey {
-  style = 'x-linkage-rules-style',
-  default = 'x-linkage-rules',
+export enum LinkageRuleCategory {
+  default = 'default',
+  style = 'style',
 }
+
+export const LinkageRuleDataKeyMap: Record<`${LinkageRuleCategory}`, string> = {
+  [LinkageRuleCategory.style]: 'x-linkage-style-rules',
+  [LinkageRuleCategory.default]: 'x-linkage-rules',
+};

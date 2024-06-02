@@ -20,8 +20,8 @@ import { isPortalInBody } from '@nocobase/utils/client';
 import { useCreation, useDeepCompareEffect, useMemoizedFn } from 'ahooks';
 import { Table as AntdTable, Skeleton, TableColumnProps } from 'antd';
 import { default as classNames, default as cls } from 'classnames';
-import _, { omit, isEmpty } from 'lodash';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import _, { omit } from 'lodash';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useInView } from 'react-intersection-observer';
 import { DndContext, useDesignable, useTableSize } from '../..';
@@ -34,7 +34,6 @@ import {
   useTableBlockContext,
   useTableSelectorContext,
 } from '../../../';
-import { useLocalVariables, useVariables } from '../../../';
 import { useACLFieldWhitelist } from '../../../acl/ACLProvider';
 import { isNewRecord } from '../../../data-source/collection-record/isNewRecord';
 import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
@@ -42,8 +41,7 @@ import { useToken } from '../__builtins__';
 import { SubFormProvider } from '../association-field/hooks';
 import { ColumnFieldProvider } from './components/ColumnFieldProvider';
 import { extractIndex, isCollectionFieldComponent, isColumnComponent } from './utils';
-import { getSatisfiedValueMap } from '../../../schema-settings/LinkageRules/compute-rules';
-import { LinkageRuleDataKey } from '../../../schema-settings/LinkageRules/type';
+import { useSatisfiedActionValues } from '../../../schema-settings/LinkageRules/useActionValues';
 const MemoizedAntdTable = React.memo(AntdTable);
 
 const useArrayField = (props) => {
@@ -110,7 +108,6 @@ const useTableColumns = (props: { showDel?: boolean; isSubTable?: boolean }) => 
   }, [token.paddingContentVerticalLG, token.marginSM]);
 
   const collection = useCollection();
-  const variables = useVariables();
 
   const columns = useMemo(
     () =>
@@ -121,7 +118,6 @@ const useTableColumns = (props: { showDel?: boolean; isSubTable?: boolean }) => 
           }
         }, []);
         const dataIndex = collectionFields?.length > 0 ? collectionFields[0].name : s.name;
-        const linkageStyleRules = s?.[LinkageRuleDataKey.style] || [];
         return {
           title: <RecursionField name={s.name} schema={s} onlyRenderSelf />,
           dataIndex,
@@ -150,7 +146,7 @@ const useTableColumns = (props: { showDel?: boolean; isSubTable?: boolean }) => 
             );
           },
           onCell: (record) => {
-            return { record, linkageStyleRules, variables };
+            return { record, schema: s };
           },
         } as TableColumnProps<any>;
 
@@ -533,28 +529,14 @@ export const Table: any = withDynamicSchemaProps(
     const BodyCellComponent = useCallback(
       (props) => {
         const isIndex = props.className?.includes('selection-column');
-        const { record, linkageStyleRules, variables } = props;
+        const { record, schema } = props;
         const { ref, inView } = useInView({
           threshold: 0,
           triggerOnce: true,
           initialInView: isIndex || !!process.env.__E2E__ || dataSource.length <= 10,
           skip: isIndex || !!process.env.__E2E__,
         });
-        const localVariables = useLocalVariables({ currentForm: { values: record } as any });
-        const [style, setStyle] = useState({});
-        useEffect(() => {
-          if (linkageStyleRules) {
-            getSatisfiedValueMap({ rules: linkageStyleRules, variables, localVariables })
-              .then((valueMap) => {
-                if (!isEmpty(valueMap)) {
-                  setStyle(valueMap);
-                } else setStyle({});
-              })
-              .catch((err) => {
-                throw new Error(err);
-              });
-          }
-        }, [linkageStyleRules, variables, localVariables]);
+        const { valueMap: style } = useSatisfiedActionValues({ formValues: record, category: 'style', schema });
 
         return (
           <td {...props} ref={ref} className={classNames(props.className, cellClass)} style={style}>

@@ -22,8 +22,9 @@ import {
 import { RemoveActionContext } from './context';
 export const LinkageRuleActions = observer(
   (props: any): any => {
-    const { type, linkageOptions } = props;
+    const { linkageOptions, category, elementType } = props;
     const field = useField<ArrayFieldModel>();
+    const type = category === 'default' ? elementType : category;
     const componentMap: {
       [key in LinkageRuleActionGroupProps['type']]: any;
     } = {
@@ -55,12 +56,11 @@ export const LinkageRuleActionGroup = withDynamicSchemaProps(
     const logic = 'actions';
 
     // 新版 UISchema（1.0 之后）中已经废弃了 useProps，这里之所以继续保留是为了兼容旧版的 UISchema
-    const { type, linkageOptions, collectionName } = useProps(props);
-
+    const { category, elementType, linkageOptions, collectionName } = useProps(props);
     const style = useMemo(() => ({ marginLeft: 10 }), []);
     const components = useMemo(
-      () => [LinkageRuleActions, { type, linkageOptions, collectionName }],
-      [collectionName, linkageOptions, type],
+      () => [LinkageRuleActions, { category, elementType, linkageOptions, collectionName }],
+      [collectionName, linkageOptions, category, elementType],
     );
     const spaceStyle = useMemo(() => ({ marginTop: 8, marginBottom: 8 }), []);
     const onClick = useCallback(() => {

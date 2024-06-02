@@ -314,6 +314,7 @@ export const useFormItemInitializerFields = (options?: any) => {
         'x-settings': 'fieldSettings:FormItem',
         'x-component': 'CollectionField',
         'x-decorator': 'FormItem',
+        'x-use-decorator-props': 'useDataFormItemProps',
         'x-collection-field': `${name}.${field.name}`,
         'x-component-props': isFileCollection
           ? {
