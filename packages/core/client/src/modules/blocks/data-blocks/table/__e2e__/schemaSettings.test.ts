@@ -393,7 +393,9 @@ test.describe('actions schema settings', () => {
       const openPopup = async () => {
         if (!(await page.getByLabel('action-Action.Link-Update record-customize:update-users2-table-0').isVisible())) {
           await page.getByRole('button', { name: 'Actions', exact: true }).hover();
-          await page.getByLabel('designer-schema-settings-TableV2.Column-TableV2.ActionColumnDesigner-users2').hover();
+          await page
+            .getByLabel('designer-schema-initializer-TableV2.Column-TableV2.ActionColumnDesigner-users2')
+            .hover();
           await page.getByRole('menuitem', { name: 'Update record' }).click();
         }
 
@@ -476,7 +478,7 @@ test.describe('actions schema settings', () => {
 
       // 添加 add child 按钮
       await page.getByRole('button', { name: 'Actions', exact: true }).hover();
-      await page.getByLabel('designer-schema-settings-TableV2.Column-TableV2.ActionColumnDesigner-tree').hover();
+      await page.getByLabel('designer-schema-initializer-TableV2.Column-TableV2.ActionColumnDesigner-tree').hover();
       await page.getByRole('menuitem', { name: 'Add child' }).click();
 
       await expectSettingsMenu({

@@ -148,7 +148,7 @@ const commonOptions = {
       <PlusOutlined
         {...props}
         role="button"
-        aria-label={getAriaLabel('schema-initializers')}
+        aria-label={getAriaLabel('schema-initializer')}
         style={{ cursor: 'pointer' }}
       />
     );
