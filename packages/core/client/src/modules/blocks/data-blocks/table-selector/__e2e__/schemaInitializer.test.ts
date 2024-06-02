@@ -88,7 +88,7 @@ test.describe('configure actions column', () => {
     await expectActionsColumnWidth(200);
 
     await page.getByText('Actions', { exact: true }).hover();
-    await page.getByLabel('designer-schema-settings-TableV2.Column-TableV2.ActionColumnDesigner-users').hover();
+    await page.getByLabel('designer-schema-settings-TableV2.Column-fieldSettings:TableColumn-users').hover();
     await page.getByRole('menuitem', { name: 'Column width' }).click();
 
     await expect(page.getByRole('dialog').getByText('Column width')).toBeVisible();
@@ -96,7 +96,7 @@ test.describe('configure actions column', () => {
     // 修改列宽度为 400
     await page.getByRole('dialog').getByRole('spinbutton').click();
     await page.getByRole('dialog').getByRole('spinbutton').fill('400');
-    await page.getByTestId('modal-Action.Modal-users-Column width').getByRole('button', { name: 'Submit' }).click();
+    await page.getByRole('button', { name: 'OK', exact: true }).click();
 
     await expectActionsColumnWidth(400);
   });

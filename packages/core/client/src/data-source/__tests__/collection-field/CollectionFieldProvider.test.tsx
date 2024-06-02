@@ -19,7 +19,7 @@ import {
 } from '@nocobase/client';
 import collections from '../collections.json';
 
-function renderApp(Demo: ComponentType, name?: string) {
+function renderAppOptions(Demo: ComponentType, name?: string) {
   const app = new Application({
     dataSourceManager: {
       collections: collections as any,
@@ -51,7 +51,7 @@ describe('CollectionFieldProvider', () => {
       );
     };
 
-    renderApp(Demo, 'nickname');
+    renderAppOptions(Demo, 'nickname');
 
     expect(screen.getByTestId('demo')).toHaveTextContent('nickname');
   });
@@ -61,7 +61,7 @@ describe('CollectionFieldProvider', () => {
       return <div>children</div>;
     };
 
-    renderApp(Demo, 'not-exists');
+    renderAppOptions(Demo, 'not-exists');
 
     expect(document.body.innerHTML).toContain('ant-typography');
     expect(document.body.innerHTML).not.toContain('children');

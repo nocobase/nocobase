@@ -10,7 +10,7 @@
 import { waitFor, screen } from '@testing-library/react';
 import { GetAppComponentOptions } from '../web';
 import userEvent from '@testing-library/user-event';
-import { renderApp, renderReadPrettyApp } from './renderApp';
+import { renderAppOptions, renderReadPrettyApp } from './renderAppOptions';
 import { expectNoTsError } from './utils';
 
 export async function showSettingsMenu(container: HTMLElement | Document = document) {
@@ -30,7 +30,7 @@ export interface RenderSettingsOptions extends GetAppComponentOptions {
 }
 export const renderSettings = async (options: RenderSettingsOptions = {}) => {
   const { container = () => document, ...appOptions } = options;
-  const result = await renderApp({ ...appOptions, designable: true });
+  const result = await renderAppOptions({ ...appOptions, designable: true });
 
   const containerElement = container();
 

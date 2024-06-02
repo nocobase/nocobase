@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { test, expect } from '@nocobase/test/e2e';
+import { expect, test } from '@nocobase/test/e2e';
 import { disassociatePage } from './templatesOfPage';
 
 test('basic', async ({ page, mockPage, mockRecord }) => {
@@ -35,7 +35,7 @@ test('basic', async ({ page, mockPage, mockRecord }) => {
     .hover();
   await page
     .getByTestId('drawer-Action.Container-collection1-Edit record')
-    .getByLabel('designer-schema-settings-TableV2.Column-TableV2.ActionColumnDesigner-collection2')
+    .getByLabel('designer-schema-initializer-TableV2.Column-fieldSettings:TableColumn-collection2')
     .hover();
   await page.getByRole('menuitem', { name: 'Disassociate' }).click();
 

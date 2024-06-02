@@ -24,3 +24,7 @@ export const cloudFilenameGetter = (storage) => (req, file, cb) => {
     cb(null, `${storage.path ? `${storage.path.replace(/\/+$/, '')}/` : ''}${filename}`);
   });
 };
+
+export function getFileKey(record) {
+  return [record.path.replace(/^\/|\/$/g, ''), record.filename].filter(Boolean).join('/');
+}

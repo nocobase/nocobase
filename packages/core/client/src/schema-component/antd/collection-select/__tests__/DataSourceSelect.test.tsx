@@ -7,12 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { renderApp, screen, userEvent, waitFor, renderReadPrettyApp } from '@nocobase/test/client';
+import { renderAppOptions, screen, userEvent, waitFor, renderReadPrettyApp } from '@nocobase/test/client';
 import { DataSourceSelect } from '../CollectionSelect';
 
 describe('DataSourceSelect', () => {
   test('single', async () => {
-    await renderApp({
+    await renderAppOptions({
       Component: DataSourceSelect,
     });
 
@@ -23,7 +23,7 @@ describe('DataSourceSelect', () => {
   });
 
   test('multiple', async () => {
-    await renderApp({
+    await renderAppOptions({
       enableMultipleDataSource: true,
       schema: {
         type: 'string',
@@ -39,7 +39,7 @@ describe('DataSourceSelect', () => {
   });
 
   test('change', async () => {
-    await renderApp({
+    await renderAppOptions({
       enableMultipleDataSource: true,
       schema: {
         type: 'string',
@@ -54,7 +54,7 @@ describe('DataSourceSelect', () => {
   });
 
   test('filter', async () => {
-    await renderApp({
+    await renderAppOptions({
       enableMultipleDataSource: true,
       schema: {
         type: 'string',

@@ -7,13 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import {
-  expect,
-  oneEmptyDetailsBlock,
-  oneEmptyTableBlockWithActions,
-  oneEmptyTableBlockWithCustomizeActions,
-  test,
-} from '@nocobase/test/e2e';
+import { expect, oneEmptyTableBlockWithCustomizeActions, test } from '@nocobase/test/e2e';
 
 test.describe('TableActionColumnInitializers & DetailsActionInitializers & ReadPrettyFormActionInitializers should add duplication action', () => {
   test('duplication action in TableActionColumnInitializers', async ({ page, mockPage, mockRecords }) => {
@@ -21,7 +15,7 @@ test.describe('TableActionColumnInitializers & DetailsActionInitializers & ReadP
     await mockRecords('general', 3);
     await nocoPage.goto();
     await page.getByRole('button', { name: 'Actions', exact: true }).hover();
-    await page.getByLabel('designer-schema-settings-TableV2.Column-TableV2.ActionColumnDesigner-general').hover();
+    await page.getByLabel('designer-schema-initializer-TableV2.Column-TableV2.ActionColumnDesigner-general').hover();
     await page.getByRole('menuitem', { name: 'Duplicate' }).click();
     await expect(page.getByLabel('action-Action.Link-Duplicate-duplicate-general-table-0')).toBeVisible();
   });
