@@ -15,7 +15,7 @@ test.describe('TableActionColumnInitializers & DetailsActionInitializers & ReadP
     await mockRecords('general', 3);
     await nocoPage.goto();
     await page.getByRole('button', { name: 'Actions', exact: true }).hover();
-    await page.getByLabel('designer-schema-initializers-TableV2.Column-TableV2.ActionColumnDesigner-general').hover();
+    await page.getByLabel('designer-schema-initializer-TableV2.Column-TableV2.ActionColumnDesigner-general').hover();
     await page.getByRole('menuitem', { name: 'Duplicate' }).click();
     await expect(page.getByLabel('action-Action.Link-Duplicate-duplicate-general-table-0')).toBeVisible();
   });

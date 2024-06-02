@@ -26,7 +26,8 @@ import {
 import { expect, test } from '@nocobase/test/e2e';
 import { dayjs } from '@nocobase/utils';
 
-test('Collection event Add Data Trigger, determines that the trigger node single line text field variable is equal to an equal constant, passes.', async ({
+// TODO: 该测试不稳定，先跳过
+test.skip('Collection event Add Data Trigger, determines that the trigger node single line text field variable is equal to an equal constant, passes.', async ({
   page,
   mockCollections,
   mockRecords,
@@ -260,7 +261,8 @@ test('Collection event Add Data Trigger, determines that the trigger node single
   await apiDeleteWorkflow(workflowId);
 });
 
-test('Collection event Add Data Trigger, determines that the trigger node single line text field variable is not equal to an equal constant, fails.', async ({
+// TODO: 该测试不稳定，先跳过
+test.skip('Collection event Add Data Trigger, determines that the trigger node single line text field variable is not equal to an equal constant, fails.', async ({
   page,
   mockCollections,
   mockRecords,

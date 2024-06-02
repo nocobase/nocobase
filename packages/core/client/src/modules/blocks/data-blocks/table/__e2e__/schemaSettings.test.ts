@@ -35,7 +35,7 @@ const addSomeCustomActions = async (page: Page) => {
 
   // 再增加两个自定义的 actions
   await page.getByRole('button', { name: 'Actions', exact: true }).hover();
-  await page.getByLabel('designer-schema-initializers-TableV2.Column-TableV2.ActionColumnDesigner-general').hover();
+  await page.getByLabel('designer-schema-initializer-TableV2.Column-TableV2.ActionColumnDesigner-general').hover();
   await page.getByRole('menuitem', { name: 'Popup' }).click();
   await page.getByRole('menuitem', { name: 'Update record' }).click();
 };
