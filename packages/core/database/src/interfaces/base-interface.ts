@@ -10,10 +10,20 @@
 export abstract class BaseInterface {
   constructor(public options: any = {}) {}
 
+  /**
+   * cast value to string
+   * @param value
+   * @param ctx
+   */
   toString(value: any, ctx?: any) {
     return value;
   }
 
+  /**
+   * parse string to value
+   * @param str
+   * @param ctx
+   */
   async toValue(str: any, ctx?: any): Promise<any> {
     return str;
   }
