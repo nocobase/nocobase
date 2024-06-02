@@ -174,7 +174,7 @@ test.describe('set default value', () => {
     // 测试子表格字段默认值 ------------------------------------------------------------------------------------------
     await page.getByRole('button', { name: 'Nickname', exact: true }).hover();
     await page
-      .getByRole('button', { name: 'designer-schema-initializers-TableV2.Column-fieldSettings:TableColumn-users' })
+      .getByRole('button', { name: 'designer-schema-settings-TableV2.Column-fieldSettings:TableColumn-users' })
       .hover();
     await page.getByRole('menuitem', { name: 'Set default value', exact: true }).click();
     await page.mouse.move(300, 0);
@@ -185,7 +185,7 @@ test.describe('set default value', () => {
     // 确保下拉选项被隐藏
     await page.getByRole('button', { name: 'Nickname', exact: true }).hover();
     await page
-      .getByRole('button', { name: 'designer-schema-initializers-TableV2.Column-fieldSettings:TableColumn-users' })
+      .getByRole('button', { name: 'designer-schema-settings-TableV2.Column-fieldSettings:TableColumn-users' })
       .hover();
     await page.mouse.move(300, 0);
 
@@ -217,7 +217,7 @@ test.describe('set default value', () => {
     // 为 username 设置一个变量默认值: {{ currentObject.nickname }}
     await page.getByRole('button', { name: 'Username', exact: true }).hover();
     await page
-      .getByRole('button', { name: 'designer-schema-initializers-TableV2.Column-fieldSettings:TableColumn-users' })
+      .getByRole('button', { name: 'designer-schema-settings-TableV2.Column-fieldSettings:TableColumn-users' })
       .hover();
     await page.getByRole('menuitem', { name: 'Set default value', exact: true }).click();
     await page.mouse.move(300, 0);

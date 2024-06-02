@@ -99,7 +99,7 @@ test.describe('table column & sub-table in edit form', () => {
       showMenu: async () => {
         await page.getByLabel('action-Action.Link-Edit record-update-subTable-table-0').click();
         await page.getByRole('button', { name: 'singleLineText', exact: true }).hover();
-        await page.getByLabel('designer-schema-initializers-TableV2.Column-TableV2.Column.Designer-general').hover();
+        await page.getByLabel('designer-schema-settings-TableV2.Column-TableV2.Column.Designer-general').hover();
       },
       supportedOptions: ['Custom column title', 'Column width', 'Required', 'Pattern', 'Set default value', 'Delete'],
     });
@@ -122,7 +122,7 @@ test.describe('table column & sub-table in edit form', () => {
       },
       showMenu: async () => {
         await page.getByRole('button', { name: 'singleLineText', exact: true }).hover();
-        await page.getByLabel('designer-schema-initializers-TableV2.Column-TableV2.Column.Designer-general').hover();
+        await page.getByLabel('designer-schema-settings-TableV2.Column-TableV2.Column.Designer-general').hover();
       },
       supportedVariables: [
         'Constant',
