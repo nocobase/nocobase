@@ -13,6 +13,7 @@ import { useDataBlockHeight } from '../../hooks/useBlockSize';
 import { useDesignable } from '../../';
 import { useDataBlock } from '../../../';
 import { useDataBlockRequest } from '../../../data-source';
+import { useDataTemplates } from './Templates';
 
 export const useFormBlockHeight = () => {
   const height = useDataBlockHeight();
@@ -21,6 +22,7 @@ export const useFormBlockHeight = () => {
   const { designable } = useDesignable();
   const { heightProps } = useDataBlock() || {};
   const { title } = heightProps || {};
+  const { display, enabled } = useDataTemplates();
   const actionSchema: any = schema.reduceProperties((buf, s) => {
     if (s['x-component'] === 'ActionBar') {
       return s;
@@ -40,5 +42,6 @@ export const useFormBlockHeight = () => {
   const { count, pageSize } = (data as any)?.meta || ({} as any);
   const hasPagination = count > pageSize;
   const paginationHeight = hasPagination ? token.controlHeightSM + token.paddingLG : 0;
-  return height - actionBarHeight - token.paddingLG - blockTitleHeaderHeight - paginationHeight;
+  const dataTemplateHeight = display && enabled ? token.controlHeight + 2 * token.padding + token.margin : 0;
+  return height - actionBarHeight - token.paddingLG - blockTitleHeaderHeight - paginationHeight - dataTemplateHeight;
 };

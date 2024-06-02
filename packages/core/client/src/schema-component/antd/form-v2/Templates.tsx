@@ -44,7 +44,7 @@ export interface ITemplate {
   display: boolean;
 }
 
-const useDataTemplates = () => {
+export const useDataTemplates = () => {
   const fieldSchema = useFieldSchema();
   const { t } = useTranslation();
   const { duplicateData } = useFormBlockContext();
@@ -116,7 +116,13 @@ export const Templates = ({ style = {}, form }) => {
     }
   }, [templateOptions]);
   const wrapperStyle = useMemo(() => {
-    return { display: 'flex', alignItems: 'center', backgroundColor: token.colorFillAlter, padding: '1em', ...style };
+    return {
+      display: 'flex',
+      alignItems: 'center',
+      backgroundColor: token.colorFillAlter,
+      padding: token.padding,
+      ...style,
+    };
   }, [style, token.colorFillAlter]);
 
   const labelStyle = useMemo<{
