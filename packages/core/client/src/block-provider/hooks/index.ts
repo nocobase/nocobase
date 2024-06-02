@@ -1485,7 +1485,11 @@ export function useLinkActionProps() {
   };
 }
 
-async function replaceVariableValue(url: string, variables: VariablesContextType, localVariables: VariableOption[]) {
+export async function replaceVariableValue(
+  url: string,
+  variables: VariablesContextType,
+  localVariables: VariableOption[],
+) {
   if (!url) {
     return;
   }
