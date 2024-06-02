@@ -274,7 +274,7 @@ test.describe('creation form block schema settings', () => {
     });
   });
 
-  test('save block template & using block template', async ({ page, mockPage }) => {
+  test('save block template & using block template', async ({ page, mockPage, clearBlockTemplates }) => {
     await mockPage({
       pageSchema: {
         _isJSONSchemaObject: true,
@@ -757,8 +757,19 @@ test.describe('creation form block schema settings', () => {
     await page.getByRole('menuitem', { name: 'Users_Form (Fields only)' }).first().click();
     await page.mouse.move(300, 0);
 
+    // 使用模板创建一个新增表单
+    await page.getByLabel('schema-initializer-Grid-popup').hover();
+    await page.getByRole('menuitem', { name: 'form Form (Add new) right' }).hover();
+    await page.getByRole('menuitem', { name: 'Other records right' }).hover();
+    await page.getByRole('menuitem', { name: 'Users right' }).hover();
+    await page.getByRole('menuitem', { name: 'Duplicate template right' }).hover();
+    await page.getByRole('menuitem', { name: 'Users_Form (Fields only)' }).click();
+    await expect(
+      page.getByTestId('drawer-Action.Container-users-Edit record').getByLabel('block-item-CollectionField-'),
+    ).toHaveCount(2);
+
     //修改引用模板
-    await page.locator('.ant-drawer').getByLabel('schema-initializer-Grid-form:configureFields-users').hover();
+    await page.locator('.ant-drawer').getByLabel('schema-initializer-Grid-form:configureFields-users').first().hover();
     await page.getByRole('menuitem', { name: 'Phone' }).click();
     await page.locator('.ant-drawer-mask').click();
     //复制模板不同步，引用模板同步
@@ -770,11 +781,6 @@ test.describe('creation form block schema settings', () => {
     await page.locator('.ant-drawer-mask').click();
 
     //删除模板
-    await page.getByTestId('plugin-settings-button').click();
-    await page.getByRole('link', { name: 'Block templates' }).click();
-    await page.getByRole('menuitem', { name: 'layout Block templates' }).click();
-    await page.getByLabel('Select all').check();
-    await page.getByLabel('action-Action-Delete-destroy-').click();
-    await page.getByRole('button', { name: 'OK', exact: true }).click();
+    await clearBlockTemplates();
   });
 });
