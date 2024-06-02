@@ -40,4 +40,5 @@ export interface ISchemaComponentOptionsProps {
   scope?: any;
   components?: SchemaReactComponents;
   inherit?: boolean;
+  children?: React.ReactNode;
 }

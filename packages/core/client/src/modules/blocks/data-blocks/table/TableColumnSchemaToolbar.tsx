@@ -7,9 +7,17 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import _ from 'lodash';
 import React from 'react';
 import { SchemaToolbar } from '../../../../schema-settings';
 
 export const TableColumnSchemaToolbar = (props) => {
-  return <SchemaToolbar initializer={false} showBorder={false} showBackground {...props} />;
+  return (
+    <SchemaToolbar
+      initializer={props.initializer || false}
+      showBorder={false}
+      showBackground
+      {..._.omit(props, 'initializer')}
+    />
+  );
 };

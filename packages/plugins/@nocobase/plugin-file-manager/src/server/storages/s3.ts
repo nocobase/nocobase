@@ -9,7 +9,7 @@
 
 import { AttachmentModel, StorageType } from '.';
 import { STORAGE_TYPE_S3 } from '../../constants';
-import { cloudFilenameGetter } from '../utils';
+import { cloudFilenameGetter, getFileKey } from '../utils';
 
 export default class extends StorageType {
   filenameKey = 'key';
@@ -61,14 +61,11 @@ export default class extends StorageType {
       new DeleteObjectsCommand({
         Bucket: storage.options.bucket,
         Delete: {
-          Objects: records.map((record) => ({ Key: `${record.path}/${record.filename}` })),
+          Objects: records.map((record) => ({ Key: getFileKey(record) })),
         },
       }),
     );
 
-    return [
-      Deleted.length,
-      records.filter((record) => !Deleted.find((item) => item.Key === `${record.path}/${record.filename}`)),
-    ];
+    return [Deleted.length, records.filter((record) => !Deleted.find((item) => item.Key === getFileKey(record)))];
   }
 }

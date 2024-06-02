@@ -13,11 +13,13 @@ import { useParsedFilter } from '../../../../../block-provider/hooks/useParsedFi
 export const useDetailsWithPaginationBlockParams = (props) => {
   const { params } = props;
 
-  const { filter } = useParsedFilter({
+  const { filter, parseVariableLoading } = useParsedFilter({
     filterOption: params?.filter,
   });
 
-  return useMemo(() => {
+  const result = useMemo(() => {
     return { ...params, filter };
   }, [JSON.stringify(filter)]);
+
+  return { params: result, parseVariableLoading };
 };

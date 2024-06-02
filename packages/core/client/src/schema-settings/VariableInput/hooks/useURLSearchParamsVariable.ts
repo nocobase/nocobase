@@ -7,20 +7,24 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { observable } from '@formily/reactive';
 import _ from 'lodash';
 import qs from 'qs';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useLocation } from 'react-router-dom';
 import { Option } from '../type';
 import { getLabelWithTooltip } from './useBaseVariable';
 
-const getURLSearchParams = () => {
-  const search = window.location.search.slice(1);
+export const getURLSearchParams = (search: string) => {
+  if (search.startsWith('?')) {
+    search = search.slice(1);
+  }
   const params = qs.parse(search);
   return params;
 };
 
-const getURLSearchParamsChildren = (queryParams: Record<string, any>): Option[] => {
+export const getURLSearchParamsChildren = (queryParams: Record<string, any>): Option[] => {
   return Object.keys(queryParams).map((key) => {
     return {
       label: key,
@@ -39,8 +43,17 @@ const getURLSearchParamsChildren = (queryParams: Record<string, any>): Option[] 
 export const useURLSearchParamsVariable = (props: any = {}) => {
   const variableName = '$nURLSearchParams';
   const { t } = useTranslation();
-  const urlSearchParamsCtx = getURLSearchParams();
-  const disabled = _.isEmpty(urlSearchParamsCtx);
+  const location = useLocation();
+
+  // 使用响应式对象，目的是为了在变量值变化时，能够触发重新解析变量值
+  const [_urlSearchParamsCtx] = useState(() => observable({}));
+
+  const urlSearchParamsCtx = useMemo(() => {
+    const newValue = getURLSearchParams(location.search);
+    Object.assign(_urlSearchParamsCtx, newValue);
+    return _urlSearchParamsCtx;
+  }, [_urlSearchParamsCtx, location.search]);
+  const disabled = useMemo(() => _.isEmpty(urlSearchParamsCtx), [urlSearchParamsCtx]);
   const urlSearchParamsSettings: Option = useMemo(() => {
     return {
       label: getLabelWithTooltip(
@@ -64,7 +77,7 @@ export const useURLSearchParamsVariable = (props: any = {}) => {
         option.children = getURLSearchParamsChildren({ ...activeSettings, ...urlSearchParamsCtx });
       },
     };
-  }, []);
+  }, [disabled, t, urlSearchParamsCtx]);
 
   return {
     name: variableName,

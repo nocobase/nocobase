@@ -1467,7 +1467,12 @@ export function useLinkActionProps() {
         message.warning(t('Please configure the URL'));
         return;
       }
-      const queryString = await parseVariablesAndChangeParamsToQueryString(searchParams, variables, localVariables);
+      const queryString = await parseVariablesAndChangeParamsToQueryString({
+        searchParams,
+        variables,
+        localVariables,
+        replaceVariableValue,
+      });
       const link = `${url}${queryString ? `?${queryString}` : ``}`;
       if (link) {
         if (isURL(link)) {
@@ -1480,7 +1485,7 @@ export function useLinkActionProps() {
   };
 }
 
-export const replaceVariableValue = async (url: string, variables, localVariables) => {
+async function replaceVariableValue(url: string, variables: VariablesContextType, localVariables: VariableOption[]) {
   if (!url) {
     return;
   }
@@ -1497,13 +1502,23 @@ export const replaceVariableValue = async (url: string, variables, localVariable
   } catch (error) {
     console.error(error);
   }
-};
+}
 
-async function parseVariablesAndChangeParamsToQueryString(
-  searchParams: { name: string; value: any }[],
-  variables: VariablesContextType,
-  localVariables: VariableOption[],
-) {
+export async function parseVariablesAndChangeParamsToQueryString({
+  searchParams,
+  variables,
+  localVariables,
+  replaceVariableValue,
+}: {
+  searchParams: { name: string; value: any }[];
+  variables: VariablesContextType;
+  localVariables: VariableOption[];
+  replaceVariableValue: (
+    url: string,
+    variables: VariablesContextType,
+    localVariables: VariableOption[],
+  ) => Promise<any>;
+}) {
   const parsed = await Promise.all(
     searchParams.map(async ({ name, value }) => {
       if (typeof value === 'string') {

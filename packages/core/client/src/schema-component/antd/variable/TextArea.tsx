@@ -13,6 +13,7 @@ import { Space } from 'antd';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { renderToString } from 'react-dom/server';
 import sanitizeHTML from 'sanitize-html';
+import useInputStyle from 'antd/es/input/style';
 
 import { error } from '@nocobase/utils/client';
 
@@ -219,6 +220,7 @@ export function TextArea(props) {
   const [html, setHtml] = useState(() => renderHTML(value ?? '', keyLabelMap));
   // NOTE: e.g. [startElementIndex, startOffset, endElementIndex, endOffset]
   const [range, setRange] = useState<[number, number, number, number]>([-1, 0, -1, 0]);
+  useInputStyle('ant-input');
 
   useEffect(() => {
     preloadOptions(scope, value)

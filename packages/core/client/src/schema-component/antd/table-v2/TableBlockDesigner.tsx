@@ -17,7 +17,7 @@ import { useAPIClient } from '../../../api-client';
 import { useFormBlockContext, useTableBlockContext } from '../../../block-provider';
 import { useCollectionManager_deprecated, useCollection_deprecated } from '../../../collection-manager';
 import { useSortFields } from '../../../collection-manager/action-hooks';
-import { FilterBlockType, mergeFilter } from '../../../filter-provider/utils';
+import { FilterBlockType } from '../../../filter-provider/utils';
 import { SetDataLoadingMode } from '../../../modules/blocks/data-blocks/details-multi/setDataLoadingModeSettingsItem';
 import {
   GeneralSchemaDesigner,
@@ -112,17 +112,14 @@ export const TableBlockDesigner = () => {
       params.filter = filter;
       field.decoratorProps.params = params;
       fieldSchema['x-decorator-props']['params'] = params;
-      const filters = service.params?.[1]?.filters || {};
-      service.run(
-        { ...service.params?.[0], filter: mergeFilter([...Object.values(filters), filter]), page: 1 },
-        { filters },
-      );
+
       dn.emit('patch', {
         schema: {
           ['x-uid']: fieldSchema['x-uid'],
           'x-decorator-props': fieldSchema['x-decorator-props'],
         },
       });
+      service.params[0].page = 1;
     },
     [dn, field.decoratorProps, fieldSchema, service],
   );

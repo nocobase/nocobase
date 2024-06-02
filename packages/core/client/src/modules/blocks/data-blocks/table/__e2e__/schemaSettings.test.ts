@@ -35,7 +35,7 @@ const addSomeCustomActions = async (page: Page) => {
 
   // 再增加两个自定义的 actions
   await page.getByRole('button', { name: 'Actions', exact: true }).hover();
-  await page.getByLabel('designer-schema-settings-TableV2.Column-TableV2.ActionColumnDesigner-general').hover();
+  await page.getByLabel('designer-schema-initializer-TableV2.Column-TableV2.ActionColumnDesigner-general').hover();
   await page.getByRole('menuitem', { name: 'Popup' }).click();
   await page.getByRole('menuitem', { name: 'Update record' }).click();
 };
@@ -393,7 +393,9 @@ test.describe('actions schema settings', () => {
       const openPopup = async () => {
         if (!(await page.getByLabel('action-Action.Link-Update record-customize:update-users2-table-0').isVisible())) {
           await page.getByRole('button', { name: 'Actions', exact: true }).hover();
-          await page.getByLabel('designer-schema-settings-TableV2.Column-TableV2.ActionColumnDesigner-users2').hover();
+          await page
+            .getByLabel('designer-schema-initializer-TableV2.Column-TableV2.ActionColumnDesigner-users2')
+            .hover();
           await page.getByRole('menuitem', { name: 'Update record' }).click();
         }
 
@@ -403,6 +405,8 @@ test.describe('actions schema settings', () => {
           .first()
           .hover();
         await page.getByRole('menuitem', { name: 'Assign field values' }).click();
+
+        await page.waitForTimeout(1000);
 
         if (!(await page.getByLabel('block-item-AssignedField-').getByRole('textbox').isVisible())) {
           await page.getByLabel('schema-initializer-Grid-assignFieldValuesForm:configureFields-users').hover();
@@ -476,7 +480,7 @@ test.describe('actions schema settings', () => {
 
       // 添加 add child 按钮
       await page.getByRole('button', { name: 'Actions', exact: true }).hover();
-      await page.getByLabel('designer-schema-settings-TableV2.Column-TableV2.ActionColumnDesigner-tree').hover();
+      await page.getByLabel('designer-schema-initializer-TableV2.Column-TableV2.ActionColumnDesigner-tree').hover();
       await page.getByRole('menuitem', { name: 'Add child' }).click();
 
       await expectSettingsMenu({

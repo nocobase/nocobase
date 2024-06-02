@@ -7,12 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { renderReadPrettyApp, renderApp, screen, userEvent, waitFor } from '@nocobase/test/client';
+import { renderReadPrettyApp, renderAppOptions, screen, userEvent, waitFor } from '@nocobase/test/client';
 import { FormItem, CollectionSelect } from '@nocobase/client';
 
 describe('CollectionSelect', () => {
   it('should works', async () => {
-    const { container } = await renderApp({
+    const { container } = await renderAppOptions({
       schema: {
         type: 'object',
         properties: {

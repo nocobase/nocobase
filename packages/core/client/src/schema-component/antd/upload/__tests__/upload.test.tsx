@@ -13,7 +13,7 @@ import App1 from '../demos/demo1';
 import App2 from '../demos/demo2';
 
 import { BlockSchemaComponentPlugin } from '@nocobase/client';
-import { screen, renderApp, renderReadPrettyApp, userEvent, waitFor } from '@nocobase/test/client';
+import { screen, renderAppOptions, renderReadPrettyApp, userEvent, waitFor } from '@nocobase/test/client';
 
 describe('Upload', () => {
   it('basic', () => {
@@ -25,7 +25,7 @@ describe('Upload', () => {
   });
 
   it('upload single', async () => {
-    await renderApp({
+    await renderAppOptions({
       designable: true,
       enableUserListDataBlock: true,
       schema: {
@@ -124,7 +124,7 @@ describe('Upload', () => {
   });
 
   it('upload multi', async () => {
-    await renderApp({
+    await renderAppOptions({
       designable: true,
       enableUserListDataBlock: true,
       schema: {
@@ -214,7 +214,7 @@ describe('Upload', () => {
   });
 
   it('delete', async () => {
-    await renderApp({
+    await renderAppOptions({
       designable: true,
       enableUserListDataBlock: true,
       schema: {
