@@ -10,12 +10,11 @@
 import { ActionType } from './type';
 import { InputModeType } from './ValueDynamicComponent';
 import { conditionAnalyses } from '../../schema-component/common/utils/uitls';
-import { color } from '../../style/color';
 const getActionValue = (operator, value) => {
   const getValueByMode = (value) => {
     const mode = value?.mode as InputModeType;
     if (mode === 'constant') {
-      return color[value.value];
+      return value.value;
     } else return null;
   };
   switch (true) {

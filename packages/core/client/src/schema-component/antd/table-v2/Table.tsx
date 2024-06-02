@@ -541,14 +541,14 @@ export const Table: any = withDynamicSchemaProps(
           skip: isIndex || !!process.env.__E2E__,
         });
         const localVariables = useLocalVariables({ currentForm: { values: record } as any });
-        const [style, setStyle] = useState();
+        const [style, setStyle] = useState({});
         useEffect(() => {
           if (linkageStyleRules) {
             getSatisfiedValueMap({ rules: linkageStyleRules, variables, localVariables })
               .then((valueMap) => {
                 if (!isEmpty(valueMap)) {
                   setStyle(valueMap);
-                }
+                } else setStyle({});
               })
               .catch((err) => {
                 throw new Error(err);

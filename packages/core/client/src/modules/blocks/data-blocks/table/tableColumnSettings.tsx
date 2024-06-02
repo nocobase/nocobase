@@ -103,28 +103,6 @@ export const tableColumnSettings = new SchemaSettings({
           },
         },
         {
-          name: 'linkageRules',
-          Component: (props) => {
-            const propsWithType = { ...props };
-            return <SchemaSettingsLinkageRules {...propsWithType} />;
-          },
-          useVisible() {
-            const { uiSchema, fieldSchema } = useColumnSchema();
-            const field: any = useField();
-            const path = field.path?.splice(field.path?.length - 1, 1);
-            const isReadPretty = field.form.query(`${path.concat(`*.` + fieldSchema.name)}`).get('readPretty');
-            return isReadPretty;
-          },
-          useComponentProps() {
-            const { name } = useCollection_deprecated();
-            const { linkageRulesProps } = useSchemaToolbar();
-            return {
-              ...linkageRulesProps,
-              collectionName: name,
-            };
-          },
-        },
-        {
           name: 'columnWidth',
           type: 'modal',
           useComponentProps() {

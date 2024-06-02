@@ -29,6 +29,7 @@ import useLazyLoadDisplayAssociationFieldsOfForm from './hooks/useLazyLoadDispla
 import useParseDefaultValue from './hooks/useParseDefaultValue';
 import { LinkageRuleDataKey } from '../../../schema-settings/LinkageRules/type';
 import { getSatisfiedValueMap } from '../../../schema-settings/LinkageRules/compute-rules';
+import { useDesignable } from '../../hooks';
 import { isEmpty } from 'lodash';
 Item.displayName = 'FormilyFormItem';
 
@@ -48,6 +49,7 @@ export const FormItem: any = withDynamicSchemaProps(
   observer((props: IFormItemProps) => {
     useEnsureOperatorsValid();
     const field = useField<Field>();
+    const { dn } = useDesignable();
     const schema = useFieldSchema();
     const contextVariable = useContextVariable();
     const variables = useVariables();
@@ -71,13 +73,13 @@ export const FormItem: any = withDynamicSchemaProps(
           .then((valueMap) => {
             if (!isEmpty(valueMap)) {
               setStyle(valueMap);
-            }
+            } else setStyle({});
           })
           .catch((err) => {
             throw new Error(err.message);
           });
       }
-    }, [schema, variables, localVariables, form]);
+    }, [schema, variables, localVariables, form, dn]);
     // 需要放在注冊完变量之后
     useParseDefaultValue();
     useLazyLoadDisplayAssociationFieldsOfForm();

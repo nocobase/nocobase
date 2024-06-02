@@ -203,7 +203,7 @@ export const FormStyleLinkageRuleAction = observer(
     const schema = {
       type: 'string',
       'x-decorator': 'FormItem',
-      'x-component': 'ColorSelect',
+      'x-component': 'ColorPicker',
     };
 
     const onChange = useCallback(
