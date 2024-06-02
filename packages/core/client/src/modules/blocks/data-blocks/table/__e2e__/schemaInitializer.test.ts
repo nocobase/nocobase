@@ -136,7 +136,7 @@ test.describe('configure actions column', () => {
 
     // add view & Edit & Delete & Duplicate ------------------------------------------------------------
     await page.getByText('Actions', { exact: true }).hover();
-    await page.getByLabel('designer-schema-settings-TableV2.Column-TableV2.ActionColumnDesigner-t_unp4scqamw9').hover();
+    await page.getByLabel('designer-schema-initializer-TableV2.Column-TableV2.ActionColumnDesigner-').hover();
     await page.getByRole('menuitem', { name: 'View' }).click();
     await page.getByRole('menuitem', { name: 'Edit' }).click();
     await page.getByRole('menuitem', { name: 'Delete' }).click();
@@ -162,7 +162,7 @@ test.describe('configure actions column', () => {
 
     // add custom action ------------------------------------------------------------
     await page.getByText('Actions', { exact: true }).hover();
-    await page.getByLabel('designer-schema-settings-TableV2.Column-TableV2.ActionColumnDesigner-t_unp4scqamw9').hover();
+    await page.getByLabel('designer-schema-initializer-TableV2.Column-TableV2.ActionColumnDesigner-').hover();
 
     await page.getByRole('menuitem', { name: 'Popup' }).click();
     // 此时二级菜单，不应该关闭，可以继续点击？
@@ -182,14 +182,14 @@ test.describe('configure actions column', () => {
     await expect(page.getByRole('columnheader', { name: 'Actions', exact: true })).toHaveJSProperty('offsetWidth', 200);
 
     await page.getByText('Actions', { exact: true }).hover();
-    await page.getByLabel('designer-schema-settings-TableV2.Column-TableV2.ActionColumnDesigner-t_unp4scqamw9').hover();
+    await page.getByLabel('designer-schema-settings-TableV2.Column-TableV2.ActionColumnDesigner-').hover();
     await page.getByRole('menuitem', { name: 'Column width' }).click();
 
     await expect(page.getByRole('dialog').getByText('Column width')).toBeVisible();
 
     await page.getByRole('dialog').getByRole('spinbutton').click();
     await page.getByRole('dialog').getByRole('spinbutton').fill('400');
-    await page.getByRole('button', { name: 'Submit' }).click();
+    await page.getByRole('button', { name: 'OK', exact: true }).click();
 
     await expect(page.getByRole('columnheader', { name: 'Actions', exact: true })).toHaveJSProperty('offsetWidth', 400);
   });
