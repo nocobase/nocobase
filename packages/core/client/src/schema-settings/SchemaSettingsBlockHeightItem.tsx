@@ -15,6 +15,12 @@ import { useTranslation } from 'react-i18next';
 import { SchemaSettingsModalItem } from './SchemaSettings';
 import { useDesignable } from '../schema-component/hooks/useDesignable';
 
+export const HeightMode = {
+  DEFAULT: 'defaultHeight',
+  SPECIFY_VALUE: 'specifyValue',
+  FULL_HEIGHT: 'fullHeight',
+};
+
 export const SchemaSettingsBlockHeightItem = function BlockTitleItem() {
   const field = useField();
   const fieldSchema = useFieldSchema();
@@ -32,12 +38,12 @@ export const SchemaSettingsBlockHeightItem = function BlockTitleItem() {
             heightMode: {
               type: 'string',
               enum: [
-                { label: t('Default'), value: 'default' },
-                { label: t('Specify height'), value: 'specifyValue' },
-                { label: t('Full height'), value: 'fullHeight' },
+                { label: t('Default'), value: HeightMode.DEFAULT },
+                { label: t('Specify height'), value: HeightMode.SPECIFY_VALUE },
+                { label: t('Full height'), value: HeightMode.FULL_HEIGHT },
               ],
               required: true,
-              default: fieldSchema?.['x-component-props']?.heightMode || 'default',
+              default: fieldSchema?.['x-component-props']?.heightMode || HeightMode.DEFAULT,
               'x-decorator': 'FormItem',
               'x-component': 'Radio.Group',
             },
@@ -57,7 +63,7 @@ export const SchemaSettingsBlockHeightItem = function BlockTitleItem() {
                 dependencies: ['heightMode'],
                 fulfill: {
                   state: {
-                    hidden: '{{ $deps[0]==="fullHeight"||$deps[0]==="default"}}',
+                    hidden: '{{ $deps[0]==="fullHeight"||$deps[0]==="defaultHeight"}}',
                     value: '{{$deps[0]!=="specifyValue"?null:$self.value}}',
                   },
                 },

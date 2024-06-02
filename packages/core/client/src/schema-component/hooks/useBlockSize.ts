@@ -15,6 +15,7 @@ import { theme } from 'antd';
 import { useDesignable } from '..';
 import { useDataBlock } from '../../data-source';
 import { useDataBlockRequest, getPageSchema } from '../../';
+import { HeightMode } from '../../schema-settings/SchemaSettingsBlockHeightItem';
 
 const getPageHeaderHeight = (disablePageHeader, enablePageTabs, hidePageTitle, token) => {
   if (disablePageHeader) {
@@ -85,7 +86,7 @@ const useTableHeight = () => {
   const { count, pageSize } = (data as any)?.meta || ({} as any);
   const hasPagination = count > pageSize;
   const { heightMode, height, title } = heightProps;
-  if (!heightProps?.heightMode || heightMode === 'default') {
+  if (!heightProps?.heightMode || heightMode === HeightMode.DEFAULT) {
     return;
   }
   const hasTableActions = Object.keys(schema.parent.properties.actions?.properties || {}).length > 0;
@@ -93,7 +94,7 @@ const useTableHeight = () => {
   const actionBarHeight = hasTableActions || designable ? token.controlHeight + 2 * token.marginLG : token.marginLG;
   const tableHeaderHeight = (designable ? token.controlHeight : 22) + 2 * token.padding + 1;
   const blockHeaderHeight = title ? token.fontSizeLG * token.lineHeightLG + token.padding * 2 - 1 : 0;
-  if (heightMode === 'fullHeight') {
+  if (heightMode === HeightMode.FULL_HEIGHT) {
     return (
       window.innerHeight -
       pageFullScreenHeight -
@@ -112,10 +113,10 @@ export const useDataBlockHeight = () => {
   const pageFullScreenHeight = useFullScreenHeight();
   const { heightMode, height } = heightProps || {};
 
-  if (!heightProps?.heightMode || heightMode === 'default') {
+  if (!heightProps?.heightMode || heightMode === HeightMode.DEFAULT) {
     return;
   }
-  if (heightMode === 'fullHeight') {
+  if (heightMode === HeightMode.FULL_HEIGHT) {
     return window.innerHeight - pageFullScreenHeight;
   }
   return height;
@@ -130,10 +131,10 @@ export const useBlockHeight = () => {
   const pageFullScreenHeight = useFullScreenHeight(heightProps);
   const { heightMode, height } = heightProps || {};
 
-  if (!heightProps?.heightMode || heightMode === 'default') {
+  if (!heightProps?.heightMode || heightMode === HeightMode.DEFAULT) {
     return;
   }
-  if (heightMode === 'fullHeight') {
+  if (heightMode === HeightMode.FULL_HEIGHT) {
     return window.innerHeight - pageFullScreenHeight;
   }
   return height;
