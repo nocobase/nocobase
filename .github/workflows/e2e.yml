@@ -33,7 +33,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: nocobase/pro-plugins
-          ref: T-4378
+          ref: main
           path: packages/pro-plugins
           ssh-key: ${{ secrets.SUBMODULE_SSH_KEY }}
 
