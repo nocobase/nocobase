@@ -73,8 +73,12 @@ export const createTableBlockUISchema = (options: {
             'x-action-column': 'actions',
             'x-decorator': 'TableV2.Column.ActionBar',
             'x-component': 'TableV2.Column',
-            'x-designer': 'TableV2.ActionColumnDesigner',
+            'x-toolbar': 'TableColumnSchemaToolbar',
             'x-initializer': 'table:configureItemActions',
+            'x-settings': 'fieldSettings:TableColumn',
+            'x-toolbar-props': {
+              initializer: 'table:configureItemActions',
+            },
             properties: {
               [uid()]: {
                 type: 'void',
