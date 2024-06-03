@@ -75,7 +75,6 @@ export function Result(props) {
   const fieldName = fieldPath.split('.')[0];
   const index = parseInt(fieldPath.split('.')?.[1]);
   const ctx = useContext(ActionContext);
-
   useEffect(() => {
     setEditingValue(value);
   }, [value]);
@@ -85,14 +84,15 @@ export function Result(props) {
       if (
         (fieldSchema.name as string).indexOf('.') >= 0 ||
         !formBlockContext?.form ||
-        formBlockContext.form?.readPretty
+        formBlockContext.form?.readPretty ||
+        fieldSchema['x-decorator'] !== 'FormItem'
       ) {
         return;
       }
       const scope = toJS(getValuesByPath(form.values, fieldName, index));
       let v;
       try {
-        v = evaluate(expression, scope) || value;
+        v = evaluate(expression, scope);
         v = toDbType(v, dataType);
       } catch (error) {
         v = null;
