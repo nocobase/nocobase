@@ -99,13 +99,12 @@ export const SubTable: any = observer(
     };
     const usePickActionProps = () => {
       const { setVisible } = useActionContext();
-      const { selectedRows, options, collectionField } = useContext(RecordPickerContext);
+      const { selectedRows, setSelectedRows } = useContext(RecordPickerContext);
       return {
         onClick() {
-          const selectData = unionBy(selectedRows, options, collectionField?.targetKey || 'id');
-          const data = field.value || [];
-          field.value = uniqBy(data.concat(selectData), collectionField?.targetKey || 'id');
+          selectedRows.map((v) => field.value.push(markRecordAsNew({ ...v })));
           field.onInput(field.value);
+          setSelectedRows([]);
           setVisible(false);
         },
       };
