@@ -36,9 +36,9 @@ export const useStyles = createStyles(({ css, token }) => {
         overflow-x: hidden;
         overflow-y: auto;
         padding: 0 12px;
-        margin-bottom: 12px;
+        margin-bottom: ${token.marginSM}px;
         > div {
-          margin-bottom: 12px;
+          margin-bottom: ${token.marginSM}px;
         }
         + div {
           display: none !important;

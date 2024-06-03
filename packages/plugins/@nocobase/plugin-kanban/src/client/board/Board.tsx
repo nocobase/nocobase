@@ -26,28 +26,8 @@ import {
 import { useStyles } from './style';
 import { partialRight, when } from './utils';
 import withDroppable from './withDroppable';
-import { useDataBlockHeight, useDesignable, useDataBlock } from '@nocobase/client';
-import { theme } from 'antd';
-import { useFieldSchema } from '@formily/react';
+import { useKanbanBlockHeight } from './hook';
 
-const useKanbanBlockHeight = () => {
-  const { heightProps } = useDataBlock();
-  const { title } = heightProps;
-  const height = useDataBlockHeight();
-  const { token } = theme.useToken();
-  const { designable } = useDesignable();
-  const schema = useFieldSchema();
-  if (!height) {
-    return;
-  }
-  const hasKanbanActions = Object.keys(schema.parent.properties.actions?.properties || {}).length > 0;
-  const actionBarHeight = hasKanbanActions || designable ? token.controlHeight + 2 * token.marginLG : token.marginLG;
-  const kanbanHeaderHeight = 2 * token.padding + token.lineHeightSM * token.fontSizeSM + 2;
-
-  const blockTitleHeaderHeight = title ? token.fontSizeLG * token.lineHeightLG + token.padding * 2 - 1 : 0;
-  const footerheight = token.padding + token.marginSM + token.paddingLG + 7.5;
-  return height - actionBarHeight - kanbanHeaderHeight - footerheight - blockTitleHeaderHeight;
-};
 const Columns = forwardRef((props, ref: any) => {
   return <div ref={ref} style={{ whiteSpace: 'nowrap', overflowY: 'clip' }} {...props} />;
 });
