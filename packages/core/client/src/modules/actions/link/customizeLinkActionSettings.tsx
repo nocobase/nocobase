@@ -9,9 +9,10 @@
 import { css } from '@emotion/css';
 import { ArrayItems } from '@formily/antd-v5';
 import { useField, useFieldSchema } from '@formily/react';
+import _ from 'lodash';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { useDesignable, useFormBlockContext, useRecord } from '../../../';
+import { useCollectionRecord, useDesignable, useFormBlockContext, useRecord } from '../../../';
 import { useSchemaToolbar } from '../../../application';
 import { SchemaSettings } from '../../../application/schema-settings/SchemaSettings';
 import { useCollection_deprecated } from '../../../collection-manager';
@@ -154,6 +155,10 @@ export const customizeLinkActionSettings = new SchemaSettings({
     {
       name: 'linkageRules',
       Component: SchemaSettingsLinkageRules,
+      useVisible() {
+        const record = useCollectionRecord();
+        return !_.isEmpty(record?.data);
+      },
       useComponentProps() {
         const { name } = useCollection_deprecated();
         const { linkageRulesProps } = useSchemaToolbar();

@@ -18,7 +18,7 @@ test.describe('Link', () => {
 
     // 1. create a new Link button
     await page.getByRole('button', { name: 'Actions', exact: true }).hover();
-    await page.getByLabel('designer-schema-settings-TableV2.Column-TableV2.ActionColumnDesigner-users').hover();
+    await page.getByLabel('designer-schema-initializer-TableV2.Column-TableV2.ActionColumnDesigner-users').hover();
     await page.getByRole('menuitem', { name: 'Link' }).click();
 
     // 2. config the Link button
