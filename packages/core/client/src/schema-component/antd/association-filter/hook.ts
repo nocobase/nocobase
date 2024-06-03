@@ -9,9 +9,13 @@
 
 import { theme } from 'antd';
 import { useDataBlockHeight } from '../../hooks/useBlockSize';
+import { useDataBlock } from '../../../';
 
 export const useAssociationFilterHeight = () => {
   const height = useDataBlockHeight();
   const { token } = theme.useToken();
-  return height - 2 * token.paddingLG;
+  const { heightProps } = useDataBlock() || {};
+  const { title } = heightProps || {};
+  const blockTitleHeaderHeight = title ? token.fontSizeLG * token.lineHeightLG + token.padding * 2 - 1 : 0;
+  return height - 2 * token.paddingLG - blockTitleHeaderHeight;
 };
