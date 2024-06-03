@@ -8,7 +8,13 @@
  */
 
 import { observer, useField } from '@formily/react';
-import { useRequest, replaceVariableValue, useVariables, useLocalVariables } from '@nocobase/client';
+import {
+  useRequest,
+  replaceVariableValue,
+  useVariables,
+  useLocalVariables,
+  parseVariablesAndChangeParamsToQueryString,
+} from '@nocobase/client';
 import { Card, Spin } from 'antd';
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -25,8 +31,8 @@ function isNumeric(str: string | undefined) {
 }
 
 export const Iframe: any = observer(
-  (props: IIframe & { html?: string; htmlId?: number; mode: string }) => {
-    const { url, htmlId, mode = 'url', height, html, ...others } = props;
+  (props: IIframe & { html?: string; htmlId?: number; mode: string; params?: any }) => {
+    const { url, htmlId, mode = 'url', height, html, params, ...others } = props;
     const field = useField();
     const { t } = useTranslation();
     const variables = useVariables();
@@ -52,7 +58,14 @@ export const Iframe: any = observer(
           setSrc(dataUrl);
         } else {
           try {
-            const targetUrl = await replaceVariableValue(url, variables, localVariables);
+            const queryString = await parseVariablesAndChangeParamsToQueryString({
+              searchParams: params,
+              variables,
+              localVariables,
+              replaceVariableValue,
+            });
+            const targetUrl = `${url}${queryString ? `?${queryString}` : ``}`;
+
             setSrc(targetUrl);
           } catch (error) {
             console.error('Error fetching target URL:', error);

@@ -17,6 +17,7 @@ import {
   useRecord,
   useVariableOptions,
 } from '@nocobase/client';
+import { css } from '@emotion/css';
 import { useTranslation } from 'react-i18next';
 
 /**
@@ -215,10 +216,11 @@ export const iframeBlockSchemaSettings = new SchemaSettings({
           }
         };
 
-        const submitHandler = async ({ mode, url, html, height }) => {
+        const submitHandler = async ({ mode, url, html, height, params }) => {
           const componentProps = fieldSchema['x-component-props'] || {};
           componentProps['mode'] = mode;
           componentProps['height'] = height;
+          componentProps['params'] = params;
           componentProps['url'] = url;
           if (mode === 'html') {
             const data = await saveHtml(html);
@@ -273,6 +275,7 @@ export const iframeBlockSchemaSettings = new SchemaSettings({
                 'x-component-props': {
                   scope,
                 },
+                description: t('Do not concatenate search params in the URL'),
                 required: true,
                 'x-reactions': {
                   dependencies: ['mode'],
@@ -280,6 +283,75 @@ export const iframeBlockSchemaSettings = new SchemaSettings({
                     state: {
                       hidden: '{{$deps[0] === "html"}}',
                     },
+                  },
+                },
+              },
+              params: {
+                type: 'array',
+                'x-component': 'ArrayItems',
+                'x-decorator': 'FormItem',
+                title: `{{t("Search parameters")}}`,
+                default: fieldSchema?.['x-component-props']?.params || [{}],
+                items: {
+                  type: 'object',
+                  properties: {
+                    space: {
+                      type: 'void',
+                      'x-component': 'Space',
+                      'x-component-props': {
+                        style: {
+                          flexWrap: 'nowrap',
+                          maxWidth: '100%',
+                        },
+                        className: css`
+                          & > .ant-space-item:first-child,
+                          & > .ant-space-item:last-child {
+                            flex-shrink: 0;
+                          }
+                        `,
+                      },
+                      properties: {
+                        name: {
+                          type: 'string',
+                          'x-decorator': 'FormItem',
+                          'x-component': 'Input',
+                          'x-component-props': {
+                            placeholder: `{{t("Name")}}`,
+                          },
+                        },
+                        value: {
+                          type: 'string',
+                          'x-decorator': 'FormItem',
+                          'x-component': 'Variable.TextArea',
+                          'x-component-props': {
+                            scope,
+                            placeholder: `{{t("Value")}}`,
+                            useTypedConstant: true,
+                            changeOnSelect: true,
+                          },
+                        },
+                        remove: {
+                          type: 'void',
+                          'x-decorator': 'FormItem',
+                          'x-component': 'ArrayItems.Remove',
+                        },
+                      },
+                    },
+                  },
+                },
+                'x-reactions': {
+                  dependencies: ['mode'],
+                  fulfill: {
+                    state: {
+                      hidden: '{{$deps[0] === "html"}}',
+                    },
+                  },
+                },
+                properties: {
+                  add: {
+                    type: 'void',
+                    title: `{{t("Add parameter")}}`,
+                    'x-component': 'ArrayItems.Addition',
                   },
                 },
               },
