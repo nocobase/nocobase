@@ -58,14 +58,15 @@ export const Iframe: any = observer(
           setSrc(dataUrl);
         } else {
           try {
+            const tempUrl = await replaceVariableValue(url, variables, localVariables);
             const queryString = await parseVariablesAndChangeParamsToQueryString({
               searchParams: params,
               variables,
               localVariables,
               replaceVariableValue,
             });
-            const targetUrl = `${url}${queryString ? `?${queryString}` : ``}`;
 
+            const targetUrl = `${tempUrl}${queryString ? `?${queryString}` : ``}`;
             setSrc(targetUrl);
           } catch (error) {
             console.error('Error fetching target URL:', error);
