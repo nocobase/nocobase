@@ -13,6 +13,7 @@ import qs from 'qs';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation } from 'react-router-dom';
+import { useFlag } from '../../../flag-provider/hooks/useFlag';
 import { Option } from '../type';
 import { getLabelWithTooltip } from './useBaseVariable';
 
@@ -44,6 +45,7 @@ export const useURLSearchParamsVariable = (props: any = {}) => {
   const variableName = '$nURLSearchParams';
   const { t } = useTranslation();
   const location = useLocation();
+  const { isVariableParsedInOtherContext } = useFlag();
 
   // 使用响应式对象，目的是为了在变量值变化时，能够触发重新解析变量值
   const [_urlSearchParamsCtx] = useState(() => observable({}));
@@ -85,5 +87,6 @@ export const useURLSearchParamsVariable = (props: any = {}) => {
     urlSearchParamsSettings,
     /** 变量值 */
     urlSearchParamsCtx,
+    shouldDisplay: !isVariableParsedInOtherContext,
   };
 };

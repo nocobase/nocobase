@@ -103,7 +103,7 @@ export const useVariableOptions = ({
     noDisabled,
     targetFieldSchema,
   });
-  const { urlSearchParamsSettings } = useURLSearchParamsVariable();
+  const { urlSearchParamsSettings, shouldDisplay: shouldDisplayURLSearchParams } = useURLSearchParamsVariable();
 
   return useMemo(() => {
     return [
@@ -115,7 +115,7 @@ export const useVariableOptions = ({
       shouldDisplayCurrentRecord && currentRecordSettings,
       shouldDisplayCurrentParentRecord && currentParentRecordSettings,
       shouldDisplayPopupRecord && popupRecordSettings,
-      urlSearchParamsSettings,
+      shouldDisplayURLSearchParams && urlSearchParamsSettings,
     ].filter(Boolean);
   }, [
     currentUserSettings,
@@ -131,6 +131,7 @@ export const useVariableOptions = ({
     currentParentRecordSettings,
     shouldDisplayPopupRecord,
     popupRecordSettings,
+    shouldDisplayURLSearchParams,
     urlSearchParamsSettings,
   ]);
 };
