@@ -7,9 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useMemo } from 'react';
-import { Spin } from 'antd';
-import { ISchema, useForm } from '@formily/react';
+import React, { useEffect, useMemo } from 'react';
+import { Button, Spin } from 'antd';
+import { uid } from '@formily/shared';
+import { ISchema, Schema, useForm, useFormEffects } from '@formily/react';
 import {
   SchemaComponentProvider,
   useAPIClient,
@@ -25,7 +26,7 @@ import {
   CollectionField,
   useActionContext,
 } from '@nocobase/client';
-import { createForm, onFieldValueChange } from '@formily/core';
+import { createForm, onFieldValueChange, onFormValuesChange } from '@formily/core';
 import { toJS } from '@formily/reactive';
 import { FormLayout } from '@formily/antd-v5';
 import { useWorkflowVariableOptions } from '../variable';
@@ -43,6 +44,14 @@ function AssignedField(props) {
 
 export function AssignedFieldsForm(props) {
   const { value } = props;
+  const newSchema = {
+    type: 'void',
+    'x-async': false,
+    'x-component': 'Grid',
+    'x-initializer': 'assignFieldValuesForm:configureFields',
+    'x-uid': props.value,
+  };
+  const [schema, setSchema] = React.useState(null);
   const { workflow } = useFlowContext();
   const { setFormValueChanged } = useActionContext();
   const api = useAPIClient();
@@ -56,39 +65,40 @@ export function AssignedFieldsForm(props) {
       createForm({
         initialValues: params.values,
         disabled: workflow.executed,
-        // values: params.values,
         effects() {
-          onFieldValueChange('*', () => {
-            // setValuesIn(`params.values[${field.path}]`, field.value);
-            setValuesIn('params.values', toJS(form.values));
+          onFormValuesChange((f) => {
+            setValuesIn('params.values', toJS(f.values));
             setFormValueChanged(true);
           });
         },
       }),
-    [values.collection, workflow],
+    [workflow.executed],
   );
 
+  useFormEffects(() => {
+    onFieldValueChange('collection', async (field) => {
+      form.clearFormGraph('*');
+      await api.resource('uiSchemas').remove({ resourceIndex: value });
+      await api.resource('uiSchemas').insert({
+        values: newSchema,
+      });
+      setSchema({ ...newSchema, name: uid() });
+    });
+  });
+
   const schemaOptions = useSchemaOptionsContext();
-  const { data, loading } = useRequest(async () => {
+  const { loading } = useRequest(async () => {
     if (!value) {
       return null;
     }
     const res = await api.request({ url: `uiSchemas:getJsonSchema/${value}` });
     if (res.data.data?.['x-uid'] === value) {
-      return res.data.data;
+      setSchema(res.data.data);
     } else {
-      const newSchema = {
-        type: 'void',
-        'x-async': false,
-        'x-component': 'Grid',
-        'x-initializer': 'assignFieldValuesForm:configureFields',
-        'x-uid': props.value,
-        name: props.value,
-      };
       await api.resource('uiSchemas').insert({
         values: newSchema,
       });
-      return newSchema;
+      setSchema({ ...newSchema, name: uid() });
     }
   });
 
@@ -103,7 +113,7 @@ export function AssignedFieldsForm(props) {
           <FormLayout layout={'vertical'}>
             <SchemaComponentProvider form={form} designable={!workflow.executed}>
               <SchemaComponentOptions {...schemaOptions}>
-                <SchemaComponent schema={data as ISchema} components={{ AssignedField }} />
+                <SchemaComponent schema={schema as ISchema} components={{ AssignedField }} />
               </SchemaComponentOptions>
             </SchemaComponentProvider>
           </FormLayout>
