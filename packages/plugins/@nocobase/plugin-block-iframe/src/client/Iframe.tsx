@@ -26,7 +26,7 @@ function isNumeric(str: string | undefined) {
 
 export const Iframe: any = observer(
   (props: IIframe & { html?: string; htmlId?: number; mode: string }) => {
-    const { url, htmlId, mode = 'url', height = '60vh', html, ...others } = props;
+    const { url, htmlId, mode = 'url', height, html, ...others } = props;
     const field = useField();
     const { t } = useTranslation();
     const targetHeight = useBlockHeight() || height;
