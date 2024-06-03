@@ -92,7 +92,7 @@ export function Result(props) {
       const scope = toJS(getValuesByPath(form.values, fieldName, index));
       let v;
       try {
-        v = evaluate(expression, scope);
+        v = evaluate(expression, scope) || value;
         v = toDbType(v, dataType);
       } catch (error) {
         v = null;
