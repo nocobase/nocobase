@@ -22,7 +22,7 @@ export const getURLSearchParams = (search: string) => {
     search = search.slice(1);
   }
   const params = qs.parse(search);
-  return params;
+  return params || {};
 };
 
 export const getURLSearchParamsChildren = (queryParams: Record<string, any>): Option[] => {
