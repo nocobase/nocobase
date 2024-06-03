@@ -44,7 +44,7 @@ export interface ITemplate {
   display: boolean;
 }
 
-export const useDataTemplates = () => {
+export const useFormDataTemplates = () => {
   const fieldSchema = useFieldSchema();
   const { t } = useTranslation();
   const { duplicateData } = useFormBlockContext();
@@ -95,7 +95,7 @@ export const useDataTemplates = () => {
 
 export const Templates = ({ style = {}, form }) => {
   const { token } = useToken();
-  const { templates, display, enabled, defaultTemplate } = useDataTemplates();
+  const { templates, display, enabled, defaultTemplate } = useFormDataTemplates();
   const { getCollectionJoinField } = useCollectionManager_deprecated();
   const templateOptions = compatibleDataId(templates);
   const [targetTemplate, setTargetTemplate] = useState(defaultTemplate?.key || 'none');

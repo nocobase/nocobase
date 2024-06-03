@@ -13,7 +13,7 @@ import { useDataBlockHeight } from '../../hooks/useBlockSize';
 import { useDesignable } from '../../';
 import { useDataBlock } from '../../../';
 import { useDataBlockRequest } from '../../../data-source';
-import { useDataTemplates } from './Templates';
+import { useFormDataTemplates } from './Templates';
 
 export const useFormBlockHeight = () => {
   const height = useDataBlockHeight();
@@ -22,7 +22,7 @@ export const useFormBlockHeight = () => {
   const { designable } = useDesignable();
   const { heightProps } = useDataBlock() || {};
   const { title } = heightProps || {};
-  const { display, enabled } = useDataTemplates();
+  const { display, enabled } = useFormDataTemplates();
   const actionSchema: any = schema.reduceProperties((buf, s) => {
     if (s['x-component'] === 'ActionBar') {
       return s;
