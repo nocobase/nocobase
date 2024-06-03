@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { MenuOutlined } from '@ant-design/icons';
+import { PlusOutlined } from '@ant-design/icons';
 import { ISchema, useField, useFieldSchema } from '@formily/react';
 import _ from 'lodash';
 import React from 'react';
@@ -145,10 +145,10 @@ const commonOptions = {
   Component: (props: any) => {
     const { getAriaLabel } = useGetAriaLabelOfDesigner();
     return (
-      <MenuOutlined
+      <PlusOutlined
         {...props}
         role="button"
-        aria-label={getAriaLabel('schema-settings')}
+        aria-label={getAriaLabel('schema-initializer')}
         style={{ cursor: 'pointer' }}
       />
     );
@@ -260,25 +260,6 @@ const commonOptions = {
         const collection = useCollection_deprecated();
         return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
       },
-    },
-    {
-      name: 'divider',
-      type: 'divider',
-      sort: 100,
-    },
-    {
-      name: 'fixed',
-      title: 't("Fixed")',
-      type: 'item',
-      Component: SchemaSettingsFixed,
-      sort: 100,
-    },
-    {
-      type: 'item',
-      name: 'columnWidth',
-      title: 't("Column width")',
-      Component: Resizable,
-      sort: 100,
     },
   ],
 };

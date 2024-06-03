@@ -1,4 +1,4 @@
-Updated Date: March 30, 2024
+Updated Date: May 29, 2024
 
 NocoBase License Agreement
 
@@ -81,7 +81,7 @@ Except for Third-Party Open Source Software, the Company owns all copyrights, tr
 
 6.6 Can remove or change the brand, name, link, version number, license, and other information about NocoBase on the Software interface.
 
-6.7 Can sell plugins developed for Software in the Plugin Market or on User’s own website.
+6.7 Can sell plugins developed for Software in the Plugin Market.
 
 6.8 Can sell or provide Upper Layer Applications developed based on Software in the form of SaaS to the public.
 
@@ -97,17 +97,19 @@ Except for Third-Party Open Source Software, the Company owns all copyrights, tr
 
 7.2 It is not allowed to sell, transfer, lease, share, or give away the Commercial License.
 
-7.3 It is not allowed to sell, transfer, lease, share, or give away any form of no-code, zero-code, low-code platform, or developer tools developed based on Software.
+7.3 It is not allowed to sell, transfer, lease, share, or give away any form of no-code, zero-code, low-code platform, or developer tools developed based on Software, except for bulk licenses obtained through an Enterprise License, with the terms of bulk licensing separately agreed upon in the contract.
 
-7.4 It is not allowed to provide any form of no-code, zero-code, low-code platform SaaS products to the public using the original or modified Software.
+7.4 It is not allowed to provide any form of no-code, zero-code, low-code platform SaaS products to the public using the original or modified Software, except for bulk licenses obtained through an Enterprise License, with the terms of bulk licensing separately agreed upon in the contract.
 
 7.5 It is not allowed to use reverse engineering, decompilation, and other means to try to discover the source code of Commercial Plugins that have not obtained source code license.
 
 7.6 It is not allowed to disclose the source code of Commercial Plugins to any third party.
 
-7.7 If there is a violation of the above obligations or the terms of this Agreement, the rights owned by the User will be immediately terminated, the paid fees will not be refunded, and the Company reserves the right to pursue the User's legal responsibility.
+7.7 It is not allowed to publicly sell plugins developed for Software outside of the Plugin Market.
 
-7.8 If there are other agreements in the contract for the above obligations, the contract agreement shall prevail.
+7.8 If there is a violation of the above obligations or the terms of this Agreement, the rights owned by the User will be immediately terminated, the paid fees will not be refunded, and the Company reserves the right to pursue the User's legal responsibility.
+
+7.9 If there are other agreements in the contract for the above obligations, the contract agreement shall prevail.
 
 =============================================================
 8. Legal Jurisdiction, Interpretation, and Dispute Resolution

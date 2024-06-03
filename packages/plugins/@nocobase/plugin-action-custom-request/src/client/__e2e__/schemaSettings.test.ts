@@ -17,7 +17,7 @@ test.describe('custom request action', () => {
 
     // 新建一个 custom request action
     await page.getByRole('button', { name: 'Actions', exact: true }).hover();
-    await page.getByLabel('designer-schema-settings-TableV2.Column-TableV2.ActionColumnDesigner-').hover();
+    await page.getByLabel('designer-schema-initializer-TableV2.Column-TableV2.ActionColumnDesigner-').hover();
     await page.getByRole('menuitem', { name: 'Custom request' }).click();
 
     // 打开编辑按钮弹窗

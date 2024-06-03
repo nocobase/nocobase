@@ -42,7 +42,7 @@ export const gridRowColWrap = (schema: ISchema) => {
         type: 'void',
         'x-component': 'Grid.Col',
         properties: {
-          [schema.name || uid()]: schema,
+          [schema?.name || uid()]: schema,
         },
       },
     },
@@ -113,9 +113,7 @@ export const useTableColumnInitializerFields = () => {
   const isReadPretty = isSubTable ? form.readPretty : true;
 
   return currentFields
-    .filter(
-      (field) => field?.interface && field?.interface !== 'subTable' && !field?.isForeignKey && !field?.treeChildren,
-    )
+    .filter((field) => field?.interface && field?.interface !== 'subTable' && !field?.treeChildren)
     .map((field) => {
       const interfaceConfig = getInterface(field.interface);
       const isFileCollection = field?.target && getCollection(field?.target)?.template === 'file';
@@ -302,7 +300,7 @@ export const useFormItemInitializerFields = (options?: any) => {
   const action = fieldSchema?.['x-action'];
 
   return currentFields
-    ?.filter((field) => field?.interface && !field?.isForeignKey && !field?.treeChildren)
+    ?.filter((field) => field?.interface && !field?.treeChildren)
     ?.map((field) => {
       const interfaceConfig = getInterface(field.interface);
       const targetCollection = getCollection(field.target);
@@ -369,7 +367,7 @@ export const useFilterFormItemInitializerFields = (options?: any) => {
   const action = fieldSchema?.['x-action'];
 
   return currentFields
-    ?.filter((field) => field?.interface && !field?.isForeignKey && getInterface(field.interface)?.filterable)
+    ?.filter((field) => field?.interface && getInterface(field.interface)?.filterable)
     ?.map((field) => {
       const interfaceConfig = getInterface(field.interface);
       const targetCollection = getCollection(field.target);
@@ -572,7 +570,7 @@ export const useInheritsFormItemInitializerFields = (options?) => {
     const targetCollection = getCollection(v);
     return {
       [targetCollection?.title]: fields
-        ?.filter((field) => field?.interface && !field?.isForeignKey)
+        ?.filter((field) => field?.interface)
         ?.map((field) => {
           const interfaceConfig = getInterface(field.interface);
           const targetCollection = getCollection(field.target);
@@ -629,7 +627,7 @@ export const useFilterInheritsFormItemInitializerFields = (options?) => {
     const targetCollection = getCollection(v);
     return {
       [targetCollection.title]: fields
-        ?.filter((field) => field?.interface && !field?.isForeignKey && getInterface(field.interface)?.filterable)
+        ?.filter((field) => field?.interface && getInterface(field.interface)?.filterable)
         ?.map((field) => {
           const interfaceConfig = getInterface(field.interface);
           const targetCollection = getCollection(field.target);
@@ -679,12 +677,7 @@ export const useCustomFormItemInitializerFields = (options?: any) => {
   const remove = useRemoveGridFormItem();
   return currentFields
     ?.filter((field) => {
-      return (
-        field?.interface &&
-        !field?.uiSchema?.['x-read-pretty'] &&
-        field.interface !== 'snapshot' &&
-        field.type !== 'sequence'
-      );
+      return field?.interface && field.interface !== 'snapshot' && field.type !== 'sequence';
     })
     ?.map((field) => {
       const interfaceConfig = getInterface(field.interface);
@@ -724,7 +717,7 @@ const findSchema = (schema: Schema, key: string, action: string) => {
     if (s[key] === action) {
       return s;
     }
-    if (s['x-component'] !== 'Action.Container' && s['x-component'] !== 'AssociationField.Viewer') {
+    if (s['x-component'] !== 'Action.Container' && !s['x-component'].includes('AssociationField')) {
       const c = findSchema(s, key, action);
       if (c) {
         return c;
@@ -975,13 +968,14 @@ export const useCollectionDataSourceItems = ({
         // 目的是使点击无效
         onClick() {},
         componentProps: {
+          ...dataBlockInitializerProps,
           icon: null,
           title: otherText || t('Other records'),
           name: 'otherRecords',
           showAssociationFields: false,
           onlyCurrentDataSource: false,
           hideChildrenIfSingleCollection: false,
-          onCreateBlockSchema: dataBlockInitializerProps.onCreateBlockSchema,
+          fromOthersInPopup: true,
           componentType: componentTypeMap[componentName] || componentName,
           filter({ collection, associationField }) {
             if (filterOtherRecordsCollection) {

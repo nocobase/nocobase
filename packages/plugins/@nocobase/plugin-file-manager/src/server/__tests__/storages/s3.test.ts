@@ -9,8 +9,8 @@
 
 import path from 'path';
 import { MockServer } from '@nocobase/test';
-import s3Storage from '../../storages/s3';
-import { FILE_FIELD_NAME } from '../../constants';
+import S3Storage from '../../storages/s3';
+import { FILE_FIELD_NAME } from '../../../constants';
 import { getApp, requestFile } from '..';
 import Database from '@nocobase/database';
 
@@ -23,6 +23,7 @@ describe('storage:s3', () => {
   let AttachmentRepo;
   let StorageRepo;
   let storage;
+  const s3Storage = new S3Storage();
 
   beforeEach(async () => {
     app = await getApp();

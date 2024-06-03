@@ -14,9 +14,10 @@ import { concat } from 'lodash';
 import React, { useCallback, useEffect, useMemo } from 'react';
 import { useFormBlockContext } from '../../block-provider/FormBlockProvider';
 import { useDynamicComponentProps } from '../../hoc/withDynamicSchemaProps';
-import { useCompile, useComponent } from '../../schema-component';
+import { ErrorFallback, useCompile, useComponent } from '../../schema-component';
 import { useIsAllowToSetDefaultValue } from '../../schema-settings/hooks/useIsAllowToSetDefaultValue';
 import { CollectionFieldProvider, useCollectionField } from './CollectionFieldProvider';
+import { ErrorBoundary } from 'react-error-boundary';
 
 type Props = {
   component: any;
@@ -96,9 +97,11 @@ export const CollectionFieldInternalField: React.FC = (props: Props) => {
 export const CollectionField = connect((props) => {
   const fieldSchema = useFieldSchema();
   return (
-    <CollectionFieldProvider name={fieldSchema.name}>
-      <CollectionFieldInternalField {...props} />
-    </CollectionFieldProvider>
+    <ErrorBoundary FallbackComponent={ErrorFallback.Modal} onError={(err) => console.log(err)}>
+      <CollectionFieldProvider name={fieldSchema.name}>
+        <CollectionFieldInternalField {...props} />
+      </CollectionFieldProvider>
+    </ErrorBoundary>
   );
 });
 

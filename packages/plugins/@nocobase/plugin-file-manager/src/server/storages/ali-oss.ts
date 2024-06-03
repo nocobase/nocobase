@@ -7,18 +7,18 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { AttachmentModel } from '.';
-import { STORAGE_TYPE_ALI_OSS } from '../constants';
-import { cloudFilenameGetter } from '../utils';
+import { AttachmentModel, StorageType } from '.';
+import { STORAGE_TYPE_ALI_OSS } from '../../constants';
+import { cloudFilenameGetter, getFileKey } from '../utils';
 
-export default {
+export default class extends StorageType {
   make(storage) {
     const createAliOssStorage = require('multer-aliyun-oss');
     return new createAliOssStorage({
       config: storage.options,
       filename: cloudFilenameGetter(storage),
     });
-  },
+  }
   defaults() {
     return {
       title: '阿里云对象存储',
@@ -32,13 +32,10 @@ export default {
         bucket: process.env.ALI_OSS_BUCKET,
       },
     };
-  },
+  }
   async delete(storage, records: AttachmentModel[]): Promise<[number, AttachmentModel[]]> {
     const { client } = this.make(storage);
-    const { deleted } = await client.deleteMulti(records.map((record) => `${record.path}/${record.filename}`));
-    return [
-      deleted.length,
-      records.filter((record) => !deleted.find((item) => item.Key === `${record.path}/${record.filename}`)),
-    ];
-  },
-};
+    const { deleted } = await client.deleteMulti(records.map(getFileKey));
+    return [deleted.length, records.filter((record) => !deleted.find((item) => item.Key === getFileKey(record)))];
+  }
+}

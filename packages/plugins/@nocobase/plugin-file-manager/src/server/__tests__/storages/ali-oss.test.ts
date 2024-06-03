@@ -9,8 +9,8 @@
 
 import path from 'path';
 import { MockServer } from '@nocobase/test';
-import aliossStorage from '../../storages/ali-oss';
-import { FILE_FIELD_NAME } from '../../constants';
+import AliOSSStorage from '../../storages/ali-oss';
+import { FILE_FIELD_NAME } from '../../../constants';
 import { getApp, requestFile } from '..';
 import { Database } from '@nocobase/database';
 
@@ -23,6 +23,7 @@ describe('storage:ali-oss', () => {
   let AttachmentRepo;
   let StorageRepo;
   let storage;
+  const aliossStorage = new AliOSSStorage();
 
   beforeEach(async () => {
     app = await getApp();

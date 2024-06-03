@@ -13,7 +13,7 @@ import App1 from '../demos/demo1';
 import App2 from '../demos/demo2';
 
 import { BlockSchemaComponentPlugin } from '@nocobase/client';
-import { screen, renderApp, renderReadPrettyApp, userEvent, waitFor } from '@nocobase/test/client';
+import { screen, renderAppOptions, renderReadPrettyApp, userEvent, waitFor } from '@nocobase/test/client';
 
 describe('Upload', () => {
   it('basic', () => {
@@ -25,7 +25,7 @@ describe('Upload', () => {
   });
 
   it('upload single', async () => {
-    await renderApp({
+    await renderAppOptions({
       designable: true,
       enableUserListDataBlock: true,
       schema: {
@@ -124,7 +124,7 @@ describe('Upload', () => {
   });
 
   it('upload multi', async () => {
-    await renderApp({
+    await renderAppOptions({
       designable: true,
       enableUserListDataBlock: true,
       schema: {
@@ -214,7 +214,7 @@ describe('Upload', () => {
   });
 
   it('delete', async () => {
-    await renderApp({
+    await renderAppOptions({
       designable: true,
       enableUserListDataBlock: true,
       schema: {
@@ -244,22 +244,24 @@ describe('Upload', () => {
                 _isJSONSchemaObject: true,
                 version: '2.0',
                 type: 'string',
-                default: {
-                  id: 1,
-                  title: '微信图片_20240131154451',
-                  filename: '234ead512e44bf944689069ce2b41a95.png',
-                  extname: '.png',
-                  path: '',
-                  size: 841380,
-                  url: 'https://zos.alipayobjects.com/rmsportal/jkjgkEfvpUPVyRjUImniVslZfWPnJuuZ.png',
-                  mimetype: 'image/png',
-                  meta: {},
-                  storageId: 1,
-                  updatedAt: '2024-04-21T01:26:02.961Z',
-                  createdAt: '2024-04-21T01:26:02.961Z',
-                  createdById: 1,
-                  updatedById: 1,
-                },
+                default: [
+                  {
+                    id: 1,
+                    title: '微信图片_20240131154451',
+                    filename: '234ead512e44bf944689069ce2b41a95.png',
+                    extname: '.png',
+                    path: '',
+                    size: 841380,
+                    url: 'https://zos.alipayobjects.com/rmsportal/jkjgkEfvpUPVyRjUImniVslZfWPnJuuZ.png',
+                    mimetype: 'image/png',
+                    meta: {},
+                    storageId: 1,
+                    updatedAt: '2024-04-21T01:26:02.961Z',
+                    createdAt: '2024-04-21T01:26:02.961Z',
+                    createdById: 1,
+                    updatedById: 1,
+                  },
+                ],
                 'x-component': 'CollectionField',
                 'x-decorator': 'FormItem',
                 'x-read-pretty': false,
