@@ -66,6 +66,8 @@ describe('Date time interface', () => {
 
   it('should to value', async () => {
     const interfaceInstance = new DatetimeInterface();
+    expect(await interfaceInstance.toValue('')).toBe(null);
+
     expect(await interfaceInstance.toValue('20231223')).toBe(dayjs('2023-12-23 00:00:00.000').toISOString());
     expect(await interfaceInstance.toValue('2023/12/23')).toBe(dayjs('2023-12-23 00:00:00.000').toISOString());
     expect(await interfaceInstance.toValue('2023-12-23')).toBe(dayjs('2023-12-23 00:00:00.000').toISOString());

@@ -32,6 +32,10 @@ function resolveTimeZoneFromCtx(ctx) {
 
 export class DatetimeInterface extends BaseInterface {
   async toValue(value: any, ctx: any = {}): Promise<any> {
+    if (!value) {
+      return null;
+    }
+
     if (typeof value === 'string') {
       const match = /^(\d{4})[-/]?(\d{2})[-/]?(\d{2})$/.exec(value);
       if (match) {
