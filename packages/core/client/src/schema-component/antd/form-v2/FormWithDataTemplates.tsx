@@ -11,14 +11,16 @@ import React from 'react';
 import { Templates } from '../..';
 import { useFormBlockContext } from '../../../block-provider/FormBlockProvider';
 import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
+import { useToken } from '../../../style';
 import { Form } from './Form';
 
 export const FormWithDataTemplates: any = withDynamicSchemaProps(
   (props) => {
     const formBlockCtx = useFormBlockContext();
+    const { token } = useToken();
     return (
       <>
-        <Templates style={{ marginBottom: 18 }} form={props.form || formBlockCtx?.form} />
+        <Templates style={{ marginBottom: token.margin }} form={props.form || formBlockCtx?.form} />
         <Form {...props} />
       </>
     );

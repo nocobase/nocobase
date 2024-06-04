@@ -13,11 +13,15 @@ import { SchemaSettingsItemType } from '../../../../application/schema-settings/
 import { useCollection_deprecated } from '../../../../collection-manager';
 import { SchemaSettingsFormItemTemplate, SchemaSettingsLinkageRules } from '../../../../schema-settings';
 import { SchemaSettingsBlockTitleItem } from '../../../../schema-settings/SchemaSettingsBlockTitleItem';
-
+import { SchemaSettingsBlockHeightItem } from '../../../../schema-settings/SchemaSettingsBlockHeightItem';
 const commonItems: SchemaSettingsItemType[] = [
   {
     name: 'title',
     Component: SchemaSettingsBlockTitleItem,
+  },
+  {
+    name: 'setTheBlockHeight',
+    Component: SchemaSettingsBlockHeightItem,
   },
   {
     name: 'linkageRules',

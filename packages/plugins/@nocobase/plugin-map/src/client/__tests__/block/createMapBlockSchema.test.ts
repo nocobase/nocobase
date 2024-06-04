@@ -33,11 +33,7 @@ test('createMapBlockSchema should return an object with expected properties', ()
         "actions": {
           "type": "void",
           "x-component": "ActionBar",
-          "x-component-props": {
-            "style": {
-              "marginBottom": 16,
-            },
-          },
+          "x-component-props": {},
           "x-initializer": "map:configureActions",
         },
         "mocked-uid": {

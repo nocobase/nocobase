@@ -22,7 +22,6 @@ export const SchemaInitializerButton: FC<SchemaInitializerButtonProps> = React.m
   const { style, options, ...others } = props;
   const compile = useCompile();
   const { getAriaLabel } = useGetAriaLabelOfSchemaInitializer();
-
   return (
     <Button
       data-testid={options['data-testid']}
