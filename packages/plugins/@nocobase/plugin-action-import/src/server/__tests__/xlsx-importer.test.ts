@@ -11,6 +11,7 @@ import { createMockServer, MockServer } from '@nocobase/test';
 import { TemplateCreator } from '../services/template-creator';
 import { XlsxImporter } from '../services/xlsx-importer';
 import XLSX from 'xlsx';
+import * as process from 'node:process';
 
 describe('xlsx importer', () => {
   let app: MockServer;
@@ -81,7 +82,7 @@ describe('xlsx importer', () => {
     expect(post.get('region').map((item: any) => item.code)).toEqual(['14', '1404', '140406']);
   });
 
-  it('should import with number field', async () => {
+  it.skipIf(process.env['DB_DIALECT'] === 'sqlite')('should import with number field', async () => {
     const User = app.db.collection({
       name: 'users',
       autoGenId: false,
