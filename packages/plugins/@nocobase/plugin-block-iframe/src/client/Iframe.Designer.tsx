@@ -104,7 +104,7 @@ export const IframeDesigner = () => {
                 default: 'url',
                 enum: [
                   { value: 'url', label: t('URL') },
-                  { value: 'html', label: t('html') },
+                  { value: 'html', label: t('HTML') },
                 ],
               },
               url: {
