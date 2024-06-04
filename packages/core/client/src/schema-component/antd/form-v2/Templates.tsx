@@ -93,7 +93,7 @@ const useDataTemplates = () => {
   };
 };
 
-export const Templates = ({ style = {}, form }) => {
+export const Templates = ({ style = {}, form }: { style?: React.CSSProperties; form?: any }) => {
   const { token } = useToken();
   const { templates, display, enabled, defaultTemplate } = useDataTemplates();
   const { getCollectionJoinField } = useCollectionManager_deprecated();
