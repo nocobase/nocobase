@@ -1,15 +1,14 @@
-
-
 import {
   DetailsBlockProvider,
   ISchema,
+  Plugin,
+  SchemaComponent,
   useDetailsPaginationProps,
   useDetailsWithPaginationDecoratorProps,
   useDetailsWithPaginationProps,
 } from '@nocobase/client';
-import React from 'react';
 import { mockApp } from '@nocobase/client/demo-utils';
-import { SchemaComponent, Plugin } from '@nocobase/client';
+import React from 'react';
 
 const schema: ISchema = {
   type: 'void',
@@ -52,28 +51,30 @@ const schema: ISchema = {
       },
     },
   },
-}
+};
 
 const Demo = () => {
-  return <SchemaComponent
-    schema={schema}
-    scope={{
-      useDetailsWithPaginationDecoratorProps,
-      useDetailsWithPaginationProps,
-      useDetailsPaginationProps,
-    }}
-  />;
+  return (
+    <SchemaComponent
+      schema={schema}
+      scope={{
+        useDetailsWithPaginationDecoratorProps,
+        useDetailsWithPaginationProps,
+        useDetailsPaginationProps,
+      }}
+    />
+  );
 };
 
 class DemoPlugin extends Plugin {
   async load() {
-    this.app.router.add('root', { path: '/', Component: Demo })
+    this.app.router.add('root', { path: '/', Component: Demo });
   }
 }
 
 const app = mockApp({
   plugins: [DemoPlugin],
-  components: { DetailsBlockProvider }
+  components: { DetailsBlockProvider },
 });
 
 export default app.getRootComponent();

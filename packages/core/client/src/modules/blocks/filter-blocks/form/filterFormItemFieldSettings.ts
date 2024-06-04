@@ -17,6 +17,7 @@ import { SchemaSettings } from '../../../../application/schema-settings/SchemaSe
 import { useCollectionManager_deprecated, useCollection_deprecated } from '../../../../collection-manager';
 import { useFieldComponentName } from '../../../../common/useFieldComponentName';
 import { EditOperator, useDesignable, useValidateSchema } from '../../../../schema-component';
+import { SchemaSettingsDefaultValue } from '../../../../schema-settings/SchemaSettingsDefaultValue';
 
 export const filterFormItemFieldSettings = new SchemaSettings({
   name: 'fieldSettings:FilterFormItem',
@@ -184,6 +185,10 @@ export const filterFormItemFieldSettings = new SchemaSettings({
               };
             },
           },
+          {
+            name: 'setDefaultValue',
+            Component: SchemaSettingsDefaultValue,
+          } as any,
           {
             name: 'setValidationRules',
             type: 'modal',

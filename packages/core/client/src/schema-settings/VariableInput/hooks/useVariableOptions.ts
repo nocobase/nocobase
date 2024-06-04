@@ -18,6 +18,7 @@ import { useCurrentParentRecordVariable } from './useParentRecordVariable';
 import { usePopupVariable } from './usePopupVariable';
 import { useCurrentRecordVariable } from './useRecordVariable';
 import { useCurrentRoleVariable } from './useRoleVariable';
+import { useURLSearchParamsVariable } from './useURLSearchParamsVariable';
 import { useCurrentUserVariable } from './useUserVariable';
 
 interface Props {
@@ -102,6 +103,7 @@ export const useVariableOptions = ({
     noDisabled,
     targetFieldSchema,
   });
+  const { urlSearchParamsSettings, shouldDisplay: shouldDisplayURLSearchParams } = useURLSearchParamsVariable();
 
   return useMemo(() => {
     return [
@@ -113,6 +115,7 @@ export const useVariableOptions = ({
       shouldDisplayCurrentRecord && currentRecordSettings,
       shouldDisplayCurrentParentRecord && currentParentRecordSettings,
       shouldDisplayPopupRecord && popupRecordSettings,
+      shouldDisplayURLSearchParams && urlSearchParamsSettings,
     ].filter(Boolean);
   }, [
     currentUserSettings,
@@ -128,5 +131,7 @@ export const useVariableOptions = ({
     currentParentRecordSettings,
     shouldDisplayPopupRecord,
     popupRecordSettings,
+    shouldDisplayURLSearchParams,
+    urlSearchParamsSettings,
   ]);
 };

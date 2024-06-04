@@ -10,6 +10,7 @@
 import { SchemaExpressionScopeContext, SchemaOptionsContext } from '@formily/react';
 import { act, renderHook, waitFor } from '@nocobase/test/client';
 import React from 'react';
+import { Router } from 'react-router';
 import { APIClientProvider } from '../../api-client';
 import { mockAPIClient } from '../../testUtils';
 import { CurrentUserProvider } from '../../user';
@@ -142,15 +143,17 @@ mockRequest.onGet('/someBelongsToField/0/belongsToField:get').reply(() => {
 
 const Providers = ({ children }) => {
   return (
-    <APIClientProvider apiClient={apiClient}>
-      <CurrentUserProvider>
-        <SchemaOptionsContext.Provider value={{}}>
-          <SchemaExpressionScopeContext.Provider value={{}}>
-            <VariablesProvider>{children}</VariablesProvider>
-          </SchemaExpressionScopeContext.Provider>
-        </SchemaOptionsContext.Provider>
-      </CurrentUserProvider>
-    </APIClientProvider>
+    <Router location={window.location} navigator={null}>
+      <APIClientProvider apiClient={apiClient}>
+        <CurrentUserProvider>
+          <SchemaOptionsContext.Provider value={{}}>
+            <SchemaExpressionScopeContext.Provider value={{}}>
+              <VariablesProvider>{children}</VariablesProvider>
+            </SchemaExpressionScopeContext.Provider>
+          </SchemaOptionsContext.Provider>
+        </CurrentUserProvider>
+      </APIClientProvider>
+    </Router>
   );
 };
 
@@ -218,6 +221,7 @@ describe('useVariables', () => {
             "yesterday": [Function],
           },
           "$nRole": "root",
+          "$nURLSearchParams": {},
           "$system": {
             "now": [Function],
           },
@@ -429,6 +433,7 @@ describe('useVariables', () => {
             "yesterday": [Function],
           },
           "$nRole": "root",
+          "$nURLSearchParams": {},
           "$system": {
             "now": [Function],
           },
@@ -513,6 +518,7 @@ describe('useVariables', () => {
             "yesterday": [Function],
           },
           "$nRole": "root",
+          "$nURLSearchParams": {},
           "$new": {
             "name": "new variable",
           },
