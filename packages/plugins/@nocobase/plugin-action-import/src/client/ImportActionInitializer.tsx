@@ -46,6 +46,11 @@ export const ImportWarning = () => {
   return <Alert type="warning" style={{ marginBottom: '10px' }} message={t('Import warning')} />;
 };
 
+export const DownloadTips = () => {
+  const { t } = useImportTranslation();
+  return <Alert type="info" style={{ marginBottom: '10px', whiteSpace: 'pre-line' }} message={t('Download tips')} />;
+};
+
 export const ImportActionInitializer = () => {
   const itemConfig = useSchemaInitializerItem();
   const { insert } = useSchemaInitializer();
@@ -96,18 +101,7 @@ export const ImportActionInitializer = () => {
                 properties: {
                   tip: {
                     type: 'void',
-                    'x-component': 'Markdown.Void',
-                    'x-editable': false,
-                    'x-component-props': {
-                      style: {
-                        padding: `var(--paddingContentVerticalSM)`,
-                        backgroundColor: `var(--colorInfoBg)`,
-                        border: `1px solid var(--colorInfoBorder)`,
-                        color: `var(--colorText)`,
-                        marginBottom: `var(--marginSM)`,
-                      },
-                      content: `{{ t("Download tips", {ns: "${NAMESPACE}" }) }}`,
-                    },
+                    'x-component': 'DownloadTips',
                   },
                   downloadAction: {
                     type: 'void',
