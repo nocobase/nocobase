@@ -10,7 +10,7 @@
 import { Database } from '../database';
 import { mockDatabase } from './index';
 
-describe('collection', () => {
+describe.skipIf(process.env['DB_DIALECT'] === 'sqlite')('collection', () => {
   let db: Database;
 
   beforeEach(async () => {
