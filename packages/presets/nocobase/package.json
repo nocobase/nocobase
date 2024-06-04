@@ -20,6 +20,7 @@
     "@nocobase/plugin-auth-sms": "1.0.0-alpha.17",
     "@nocobase/plugin-backup-restore": "1.0.0-alpha.17",
     "@nocobase/plugin-block-iframe": "1.0.0-alpha.17",
+    "@nocobase/plugin-block-workbench": "1.0.0-alpha.17",
     "@nocobase/plugin-calendar": "1.0.0-alpha.17",
     "@nocobase/plugin-charts": "1.0.0-alpha.17",
     "@nocobase/plugin-client": "1.0.0-alpha.17",
