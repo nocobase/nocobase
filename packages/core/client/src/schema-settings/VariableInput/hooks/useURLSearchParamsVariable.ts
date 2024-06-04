@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { observable } from '@formily/reactive';
+import { observable, untracked } from '@formily/reactive';
 import _ from 'lodash';
 import qs from 'qs';
 import { useMemo, useState } from 'react';
@@ -36,6 +36,26 @@ export const getURLSearchParamsChildren = (queryParams: Record<string, any>): Op
   });
 };
 
+export const useURLSearchParamsCtx = (search: string) => {
+  // 使用响应式对象，目的是为了在变量值变化时，能够触发重新解析变量值
+  const [_urlSearchParamsCtx] = useState(() => observable({}));
+
+  return useMemo(() => {
+    const newValue = getURLSearchParams(search);
+
+    untracked(() => {
+      Object.assign(_urlSearchParamsCtx, newValue);
+      Object.keys(_urlSearchParamsCtx).forEach((key) => {
+        if (newValue[key] === undefined) {
+          delete _urlSearchParamsCtx[key];
+        }
+      });
+    });
+
+    return _urlSearchParamsCtx;
+  }, [_urlSearchParamsCtx, search]);
+};
+
 /**
  * 变量：`URL search params`
  * @param props
@@ -46,15 +66,7 @@ export const useURLSearchParamsVariable = (props: any = {}) => {
   const { t } = useTranslation();
   const location = useLocation();
   const { isVariableParsedInOtherContext } = useFlag();
-
-  // 使用响应式对象，目的是为了在变量值变化时，能够触发重新解析变量值
-  const [_urlSearchParamsCtx] = useState(() => observable({}));
-
-  const urlSearchParamsCtx = useMemo(() => {
-    const newValue = getURLSearchParams(location.search);
-    Object.assign(_urlSearchParamsCtx, newValue);
-    return _urlSearchParamsCtx;
-  }, [_urlSearchParamsCtx, location.search]);
+  const urlSearchParamsCtx = useURLSearchParamsCtx(location.search);
   const disabled = useMemo(() => _.isEmpty(urlSearchParamsCtx), [urlSearchParamsCtx]);
   const urlSearchParamsSettings: Option = useMemo(() => {
     return {
