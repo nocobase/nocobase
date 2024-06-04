@@ -16,7 +16,7 @@ import { useFormBlockContext } from './FormBlockProvider';
 import { useFormFieldContext } from './FormFieldProvider';
 
 /**
- * @internal
+ * @deprecated
  */
 export const TableFieldContext = createContext<any>({});
 TableFieldContext.displayName = 'TableFieldContext';
@@ -55,6 +55,9 @@ const InternalTableFieldProvider = (props) => {
   );
 };
 
+/**
+ * @deprecated
+ */
 export class TableFieldResource {
   field: Field;
   api: APIClient;
@@ -135,13 +138,13 @@ export class TableFieldResource {
 }
 
 /**
- * @internal
+ * @deprecated
  */
 export const WithoutTableFieldResource = createContext(null);
 WithoutTableFieldResource.displayName = 'WithoutTableFieldResource';
 
 /**
- * @internal
+ * @deprecated
  */
 export const TableFieldProvider = (props) => {
   return (
@@ -154,14 +157,14 @@ export const TableFieldProvider = (props) => {
 };
 
 /**
- * @internal
+ * @deprecated
  */
 export const useTableFieldContext = () => {
   return useContext(TableFieldContext);
 };
 
 /**
- * @internal
+ * @deprecated
  */
 export const useTableFieldProps = () => {
   const field = useField<ArrayField>();

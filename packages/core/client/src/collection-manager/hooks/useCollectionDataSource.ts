@@ -12,6 +12,9 @@ import { action } from '@formily/reactive';
 import { useCollectionManager_deprecated } from '.';
 import { useCompile } from '../../schema-component';
 
+/**
+ * @deprecated
+ */
 export function useCollectionDataSource(filter?: Function) {
   const compile = useCompile();
   const { collections = [] } = useCollectionManager_deprecated();

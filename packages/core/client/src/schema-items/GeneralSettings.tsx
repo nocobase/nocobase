@@ -10,11 +10,14 @@
 import { Field } from '@formily/core';
 import { ISchema, useField, useFieldSchema } from '@formily/react';
 import { useTranslation } from 'react-i18next';
-import { useDesignable } from '../schema-component';
 import { SchemaSettingOptions } from '../application';
 import { useSchemaToolbar } from '../application/schema-toolbar';
-import { useCollection_deprecated, useCollectionManager_deprecated } from '../collection-manager';
+import { useCollectionManager_deprecated, useCollection_deprecated } from '../collection-manager';
+import { useDesignable } from '../schema-component';
 
+/**
+ * @deprecated
+ */
 export const generalSettingsItems: SchemaSettingOptions['items'] = [
   {
     name: 'editFieldTitle',

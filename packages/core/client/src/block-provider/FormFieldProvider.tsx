@@ -19,7 +19,7 @@ import { BlockProvider, useBlockRequestContext } from './BlockProvider';
 import { useFormBlockContext } from './FormBlockProvider';
 
 /**
- * @internal
+ * @deprecated
  */
 export const FormFieldContext = createContext<any>({});
 FormFieldContext.displayName = 'FormFieldContext';
@@ -88,13 +88,13 @@ const InternalFormFieldProvider = (props) => {
 };
 
 /**
- * @internal
+ * @deprecated
  */
 export const WithoutFormFieldResource = createContext(null);
 WithoutFormFieldResource.displayName = 'WithoutFormFieldResource';
 
 /**
- * @internal
+ * @deprecated
  */
 export const FormFieldProvider = (props) => {
   return (
@@ -107,14 +107,14 @@ export const FormFieldProvider = (props) => {
 };
 
 /**
- * @internal
+ * @deprecated
  */
 export const useFormFieldContext = () => {
   return useContext(FormFieldContext);
 };
 
 /**
- * @internal
+ * @deprecated
  */
 export const useFormFieldProps = () => {
   const ctx = useFormFieldContext();

@@ -22,7 +22,7 @@ import { BlockProvider, useBlockRequestContext } from './BlockProvider';
 import { TemplateBlockProvider } from './TemplateBlockProvider';
 
 /**
- * @internal
+ * @deprecated
  */
 export const DetailsBlockContext = createContext<any>({});
 DetailsBlockContext.displayName = 'DetailsBlockContext';
@@ -69,10 +69,8 @@ const InternalDetailsBlockProvider = (props) => {
 };
 
 /**
- * @internal
+ * @deprecated
  * 用于兼容旧版本的 schema，当不需要兼容时可直接移除该方法
- * @param props
- * @returns
  */
 const useCompatDetailsBlockParams = (props) => {
   const fieldSchema = useFieldSchema();
@@ -91,6 +89,9 @@ const useCompatDetailsBlockParams = (props) => {
   return params;
 };
 
+/**
+ * @deprecated
+ */
 export const DetailsBlockProvider = withDynamicSchemaProps((props) => {
   const params = useCompatDetailsBlockParams(props);
   const record = useCollectionRecordData();
@@ -118,7 +119,7 @@ export const DetailsBlockProvider = withDynamicSchemaProps((props) => {
 });
 
 /**
- * @internal
+ * @deprecated
  */
 export const useDetailsBlockContext = () => {
   return useContext(DetailsBlockContext);
@@ -126,8 +127,6 @@ export const useDetailsBlockContext = () => {
 
 /**
  * @deprecated
- * use `useDetailsWithPaginationProps` or `useDetailsProps` instead
- * @returns
  */
 export const useDetailsBlockProps = () => {
   const ctx = useDetailsBlockContext();

@@ -10,9 +10,12 @@
 import { merge } from '@formily/shared';
 import React from 'react';
 
-import { useCurrentSchema } from '../../../schema-initializer/utils';
 import { SchemaInitializerSwitch, useSchemaInitializer, useSchemaInitializerItem } from '../../../application';
+import { useCurrentSchema } from '../../../schema-initializer/utils';
 
+/**
+ * @deprecated
+ */
 export const AssociationFilterDesignerDisplayField = () => {
   const itemConfig = useSchemaInitializerItem();
   const { schema } = itemConfig;

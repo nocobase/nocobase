@@ -25,6 +25,9 @@ import { getLabelFormatValue, useLabelUiSchema } from './util';
 import { Upload } from '../upload';
 import { toArr } from '@formily/shared';
 
+/**
+ * @deprecated
+ */
 export const RecordPickerContext = createContext(null);
 RecordPickerContext.displayName = 'RecordPickerContext';
 
@@ -117,6 +120,9 @@ interface IRecordPickerProps {
   [key: string]: any;
 }
 
+/**
+ * @deprecated
+ */
 export const InputRecordPicker: React.FC<any> = (props: IRecordPickerProps) => {
   const { value, multiple, onChange, quickUpload, selectFile, ...others } = props;
   const fieldNames = useFieldNames(props);
@@ -229,6 +235,9 @@ export const InputRecordPicker: React.FC<any> = (props: IRecordPickerProps) => {
   );
 };
 
+/**
+ * @deprecated
+ */
 export const RecordPickerProvider = (props) => {
   const { multiple, onChange, selectedRows, setSelectedRows, options, collectionField, ...other } = props;
   return (
@@ -298,6 +307,9 @@ const Drawer: React.FunctionComponent<{
   );
 };
 
+/**
+ * @deprecated
+ */
 export function isShowFilePicker(labelUiSchema) {
   return labelUiSchema?.['x-component'] === 'Preview';
 }

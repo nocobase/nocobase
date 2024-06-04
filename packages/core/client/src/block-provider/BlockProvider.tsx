@@ -43,6 +43,10 @@ import { useDataBlockParentRecord } from './hooks/useDataBlockParentRecord';
  */
 export const BlockResourceContext = createContext(null);
 BlockResourceContext.displayName = 'BlockResourceContext';
+
+/**
+ * @deprecated
+ */
 export const BlockAssociationContext = createContext(null);
 BlockAssociationContext.displayName = 'BlockAssociationContext';
 
@@ -72,9 +76,7 @@ export const useBlockResource = () => {
 };
 
 /**
- * @internal
- * @param props
- * @returns
+ * @deprecated
  */
 export const MaybeCollectionProvider = (props) => {
   const { collection } = props;
@@ -90,8 +92,6 @@ export const MaybeCollectionProvider = (props) => {
 /**
  * @deprecated
  * use `DataBlockRequestProvider` instead
- * @param props
- * @returns
  */
 export const BlockRequestProvider_deprecated = (props) => {
   const field = useField<Field>();
@@ -201,7 +201,7 @@ export const RenderChildrenWithAssociationFilter: React.FC<any> = (props) => {
 };
 
 /**
- * @internal
+ * @deprecated
  */
 export const BlockContext = createContext<{
   /** 用以区分区块的标识 */
@@ -210,15 +210,14 @@ export const BlockContext = createContext<{
 BlockContext.displayName = 'BlockContext';
 
 /**
- * @internal
- * @returns
+ * @deprecated
  */
 export const useBlockContext = () => {
   return useContext(BlockContext);
 };
 
 /**
- * 用于兼容旧版本 Schema
+ * @deprecated
  */
 const useCompatDataBlockParentRecord = (props) => {
   const fieldSchema = useFieldSchema();
@@ -283,13 +282,15 @@ export const BlockProvider = (props: {
 /**
  * @deprecated
  * use `useDataBlockProps` instead
- * @returns
  */
 export const useBlockAssociationContext = () => {
   const { association } = useDataBlockProps();
   return useContext(BlockAssociationContext) || association;
 };
 
+/**
+ * @deprecated
+ */
 export const useFilterByTk = () => {
   const { resource, __parent } = useBlockRequestContext();
   const recordIndex = useRecordIndex();
@@ -333,8 +334,7 @@ export const useSourceIdFromParentRecord = () => {
 };
 
 /**
- * @internal
- * @returns
+ * @deprecated
  */
 export const useParamsFromRecord = () => {
   const filterByTk = useFilterByTk();
@@ -369,6 +369,9 @@ export const useParamsFromRecord = () => {
   return obj;
 };
 
+/**
+ * @deprecated
+ */
 export const RecordLink = (props) => {
   const field = useField();
   const record = useRecord();

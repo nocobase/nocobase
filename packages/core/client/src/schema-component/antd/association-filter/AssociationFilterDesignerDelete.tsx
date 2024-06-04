@@ -7,13 +7,16 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useContext } from 'react';
 import { useFieldSchema } from '@formily/react';
+import React, { useContext } from 'react';
+import { useTranslation } from 'react-i18next';
 import { createDesignable, SchemaComponentContext } from '../..';
 import { useAPIClient } from '../../../api-client';
-import { useTranslation } from 'react-i18next';
 import { SchemaInitializerItem, useSchemaInitializerItem } from '../../../application';
 
+/**
+ * @deprecated
+ */
 export const AssociationFilterDesignerDelete = () => {
   const itemConfig = useSchemaInitializerItem();
   const { refresh } = useContext(SchemaComponentContext);

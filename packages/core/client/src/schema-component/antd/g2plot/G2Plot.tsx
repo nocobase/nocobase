@@ -53,12 +53,18 @@ import { useTranslation } from 'react-i18next';
 import { useAPIClient } from '../../../api-client';
 import { G2PlotDesigner } from './G2PlotDesigner';
 
+/**
+ * @deprecated
+ */
 export type ReactG2PlotProps<O> = {
   readonly className?: string;
   readonly plot: any;
   readonly config: O;
 };
 
+/**
+ * @deprecated
+ */
 const plots = {
   Line,
   Area,
@@ -97,6 +103,9 @@ const plots = {
   Facet,
 };
 
+/**
+ * @deprecated
+ */
 export const G2PlotRenderer = forwardRef(function <O = any>(props: ReactG2PlotProps<O>, ref: any) {
   const { className, plot, config } = props;
   const containerRef = useRef(undefined);
@@ -137,6 +146,9 @@ export const G2PlotRenderer = forwardRef(function <O = any>(props: ReactG2PlotPr
 });
 G2PlotRenderer.displayName = 'G2PlotRenderer';
 
+/**
+ * @deprecated
+ */
 export const G2Plot: any = observer(
   (props: any) => {
     const { plot, config } = props;

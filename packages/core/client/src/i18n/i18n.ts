@@ -18,6 +18,9 @@ export function tval(text: TFuncKey | TFuncKey[], options?: TOptions) {
   return `{{t(${JSON.stringify(text)})}}`;
 }
 
+/**
+ * @deprecated
+ */
 export const i18n = i18next.createInstance();
 
 const resources = {};

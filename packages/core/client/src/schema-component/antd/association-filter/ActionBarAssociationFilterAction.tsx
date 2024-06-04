@@ -18,8 +18,6 @@ import { ActionInitializerItem } from '../../../schema-initializer/items/ActionI
 
 /**
  * @deprecated
- * @param props
- * @returns
  */
 export const ActionBarAssociationFilterAction = (props) => {
   const { refresh } = useContext(SchemaComponentContext);

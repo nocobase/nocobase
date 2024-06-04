@@ -13,9 +13,7 @@ import { useCollection_deprecated } from '../../collection-manager';
 
 /**
  * label = 'schema-initializer' + x-component + [x-initializer] + [collectionName] + [postfix]
- * @returns
  */
-
 export const useGetAriaLabelOfSchemaInitializer = () => {
   const fieldSchema = useFieldSchema();
   const { name } = useCollection_deprecated();

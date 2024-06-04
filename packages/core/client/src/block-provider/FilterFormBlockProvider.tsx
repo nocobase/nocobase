@@ -15,6 +15,9 @@ import { DefaultValueProvider } from '../schema-settings';
 import { CollectOperators } from './CollectOperators';
 import { FormBlockProvider } from './FormBlockProvider';
 
+/**
+ * @deprecated
+ */
 export const FilterFormBlockProvider = withDynamicSchemaProps((props) => {
   const filedSchema = useFieldSchema();
   // 'x-filter-operators' 已被弃用，这里是为了兼容旧的配置

@@ -25,6 +25,7 @@ export const useCurrentAppInfo = () => {
     };
   }>(CurrentAppInfoContext);
 };
+
 export const CurrentAppInfoProvider = (props) => {
   const { render } = useAppSpin();
   const result = useRequest({

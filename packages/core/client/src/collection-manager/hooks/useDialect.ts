@@ -9,6 +9,9 @@
 
 import { useCurrentAppInfo } from '../../appInfo';
 
+/**
+ * @deprecated
+ */
 const useDialect = () => {
   const {
     data: { database },

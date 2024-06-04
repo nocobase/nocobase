@@ -14,6 +14,9 @@ import { useCollectionManager_deprecated } from '.';
 import { CollectionProvider_deprecated, useRecord } from '..';
 import { useAPIClient, useRequest } from '../api-client';
 
+/**
+ * @deprecated
+ */
 export const ResourceActionContext = createContext<
   Result<any, any> & { state?: any; setState?: any; dragSort?: boolean; defaultRequest?: any }
 >(null);
@@ -97,6 +100,9 @@ const AssociationResourceActionProvider = (props) => {
   );
 };
 
+/**
+ * @deprecated
+ */
 export const ResourceActionProvider: React.FC<ResourceActionProviderProps> = (props) => {
   // eslint-disable-next-line prefer-const
   let { collection, request } = props;
@@ -113,10 +119,16 @@ export const ResourceActionProvider: React.FC<ResourceActionProviderProps> = (pr
   return <CollectionResourceActionProvider {...props} collection={collection} />;
 };
 
+/**
+ * @deprecated
+ */
 export const useResourceActionContext = () => {
   return useContext(ResourceActionContext);
 };
 
+/**
+ * @deprecated
+ */
 export const useDataSourceFromRAC = (options: any) => {
   const service = useContext(ResourceActionContext);
   const field = useField();
@@ -129,6 +141,9 @@ export const useDataSourceFromRAC = (options: any) => {
   return service;
 };
 
+/**
+ * @deprecated
+ */
 export const useResourceContext = () => {
   const { type, resource, collection, association } = useContext(ResourceContext);
   return {

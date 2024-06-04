@@ -8,6 +8,7 @@
  */
 
 import { ISchema, useField, useFieldSchema } from '@formily/react';
+import _ from 'lodash';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient } from '../../../api-client';
@@ -18,7 +19,6 @@ import {
   SchemaSettingsRemove,
 } from '../../../schema-settings';
 import { useCompile, useDesignable } from '../../hooks';
-import _ from 'lodash';
 
 const validateJSON = {
   validator: `{{(value, rule)=> {
@@ -39,6 +39,9 @@ const validateJSON = {
   message: '{{t("Invalid JSON format")}}',
 };
 
+/**
+ * @deprecated
+ */
 export const G2PlotDesigner = () => {
   const { t } = useTranslation();
   const { dn } = useDesignable();

@@ -14,6 +14,9 @@ import { Tag } from 'antd';
 import React from 'react';
 import { CollectionFieldOptions_deprecated, useCollectionManager_deprecated } from '../../../collection-manager';
 
+/**
+ * @deprecated
+ */
 export const useLabelUiSchema = (collectionField: CollectionFieldOptions_deprecated, label: string): ISchema => {
   const { getCollectionJoinField } = useCollectionManager_deprecated();
   if (!collectionField) {
@@ -23,6 +26,9 @@ export const useLabelUiSchema = (collectionField: CollectionFieldOptions_depreca
   return labelField?.uiSchema;
 };
 
+/**
+ * @deprecated
+ */
 export const getDatePickerLabels = (props): string => {
   const format = getDefaultFormat(props) as string;
   const m = str2moment(props.value, props) as dayjs.Dayjs;
@@ -30,6 +36,9 @@ export const getDatePickerLabels = (props): string => {
   return isArr(labels) ? labels.join('~') : labels;
 };
 
+/**
+ * @deprecated
+ */
 export const getLabelFormatValue = (labelUiSchema: ISchema, value: any, isTag = false): any => {
   if (Array.isArray(labelUiSchema?.enum) && value) {
     const opt: any = labelUiSchema.enum.find((option: any) => option.value === value);

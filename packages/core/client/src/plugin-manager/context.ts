@@ -9,5 +9,8 @@
 
 import { createContext } from 'react';
 
+/**
+ * @deprecated
+ */
 export const PinnedPluginListContext = createContext({ items: {} });
 PinnedPluginListContext.displayName = 'PinnedPluginListContext';
