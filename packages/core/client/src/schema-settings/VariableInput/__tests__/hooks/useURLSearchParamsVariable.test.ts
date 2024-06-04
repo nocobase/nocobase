@@ -7,7 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { getURLSearchParams, getURLSearchParamsChildren } from '../../hooks/useURLSearchParamsVariable';
+import { isObservable } from '@formily/reactive';
+import { renderHook } from '@nocobase/test/client';
+import {
+  getURLSearchParams,
+  getURLSearchParamsChildren,
+  useURLSearchParamsCtx,
+} from '../../hooks/useURLSearchParamsVariable';
 
 test('getURLSearchParamsChildren should return an array of options with expected properties', () => {
   const queryParams = {
@@ -51,4 +57,42 @@ test('getURLSearchParams should parse search string and return params object', (
   const result = getURLSearchParams(search);
 
   expect(result).toEqual(expectedParams);
+});
+
+test('useURLSearchParamsCtx should return the parsed search params object', () => {
+  const search = '?param1=value1&param2=value2&param3=value3';
+  const { result } = renderHook(() => useURLSearchParamsCtx(search));
+
+  expect(result.current).toEqual({
+    param1: 'value1',
+    param2: 'value2',
+    param3: 'value3',
+  });
+  expect(isObservable(result.current)).toBe(true);
+});
+
+test('useURLSearchParamsCtx should update the parsed search params object when search value changes', () => {
+  const { result, rerender } = renderHook(({ search }) => useURLSearchParamsCtx(search), {
+    initialProps: {
+      search: '?param1=value1&param2=value2&param3=value3',
+    },
+  });
+  expect(result.current).toEqual({
+    param1: 'value1',
+    param2: 'value2',
+    param3: 'value3',
+  });
+
+  rerender({
+    search: '?param1=newValue1&param2=newValue2',
+  });
+  expect(result.current).toEqual({
+    param1: 'newValue1',
+    param2: 'newValue2',
+  });
+
+  rerender({
+    search: '',
+  });
+  expect(result.current).toEqual({});
 });

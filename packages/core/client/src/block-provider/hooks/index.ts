@@ -1451,6 +1451,10 @@ async function resetFormCorrectly(form: Form) {
   await form.reset();
 }
 
+export function appendQueryStringToUrl(url: string, queryString: string) {
+  return url + (url.includes('?') ? '&' : '?') + queryString;
+}
+
 export function useLinkActionProps() {
   const navigate = useNavigate();
   const fieldSchema = useFieldSchema();
@@ -1473,7 +1477,7 @@ export function useLinkActionProps() {
         localVariables,
         replaceVariableValue,
       });
-      const link = `${url}${queryString ? `?${queryString}` : ``}`;
+      const link = appendQueryStringToUrl(url, queryString);
       if (link) {
         if (isURL(link)) {
           window.open(link, '_blank');
@@ -1485,11 +1489,7 @@ export function useLinkActionProps() {
   };
 }
 
-export async function replaceVariableValue(
-  url: string,
-  variables: VariablesContextType,
-  localVariables: VariableOption[],
-) {
+async function replaceVariableValue(url: string, variables: VariablesContextType, localVariables: VariableOption[]) {
   if (!url) {
     return;
   }
@@ -1541,9 +1541,40 @@ export async function parseVariablesAndChangeParamsToQueryString({
 
   for (const { name, value } of parsed) {
     if (name && value) {
-      params[name] = value;
+      params[name] = reduceValueSize(value);
     }
   }
 
   return qs.stringify(params);
+}
+
+/**
+ * 1. 去除 value 是一个对象或者数组的 key
+ * 2. 去除 value 是一个字符串长度超过 100 个字符的 key
+ */
+export function reduceValueSize(value: any) {
+  if (_.isPlainObject(value)) {
+    const result = {};
+    Object.keys(value).forEach((key) => {
+      if (_.isPlainObject(value[key]) || _.isArray(value[key])) {
+        return;
+      }
+      if (_.isString(value[key]) && value[key].length > 100) {
+        return;
+      }
+      result[key] = value[key];
+    });
+    return result;
+  }
+
+  if (_.isArray(value)) {
+    return value.map((item) => {
+      if (_.isPlainObject(item) || _.isArray(item)) {
+        return reduceValueSize(item);
+      }
+      return item;
+    });
+  }
+
+  return value;
 }
