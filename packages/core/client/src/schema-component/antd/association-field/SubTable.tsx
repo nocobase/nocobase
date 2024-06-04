@@ -111,7 +111,7 @@ export const SubTable: any = observer(
     };
     const getFilter = () => {
       const targetKey = collectionField?.targetKey || 'id';
-      const list = field.value.map((option) => option[targetKey]).filter(Boolean);
+      const list = (field.value || []).map((option) => option[targetKey]).filter(Boolean);
       const filter = list.length ? { $and: [{ [`${targetKey}.$ne`]: list }] } : {};
       return filter;
     };
