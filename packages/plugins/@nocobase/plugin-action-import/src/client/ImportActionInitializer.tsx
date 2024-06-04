@@ -11,8 +11,8 @@ import type { ISchema } from '@formily/react';
 import { Schema } from '@formily/react';
 import { merge } from '@formily/shared';
 import {
-  SchemaInitializerItem,
   css,
+  SchemaInitializerItem,
   useCollection_deprecated,
   useSchemaInitializer,
   useSchemaInitializerItem,
@@ -106,7 +106,7 @@ export const ImportActionInitializer = () => {
                         color: `var(--colorText)`,
                         marginBottom: `var(--marginSM)`,
                       },
-                      content: `{{ t("Download tip", {ns: "${NAMESPACE}" }) }}`,
+                      content: `{{ t("Download tips", {ns: "${NAMESPACE}" }) }}`,
                     },
                   },
                   downloadAction: {
