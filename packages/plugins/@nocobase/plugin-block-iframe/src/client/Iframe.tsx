@@ -77,7 +77,7 @@ export const Iframe: any = observer(
       };
 
       generateSrc();
-    }, [htmlContent, mode, url, variables, localVariables]);
+    }, [htmlContent, mode, url, variables, localVariables, params]);
     if ((mode === 'url' && !url) || (mode === 'html' && !htmlId)) {
       return <Card style={{ marginBottom: 24 }}>{t('Please fill in the iframe URL')}</Card>;
     }
