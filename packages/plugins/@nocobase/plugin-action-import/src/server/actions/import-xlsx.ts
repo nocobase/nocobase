@@ -24,9 +24,18 @@ async function importXlsxAction(ctx: Context, next: Next) {
     columns = JSON.parse(columns);
   }
 
+  let readLimit = IMPORT_LIMIT_COUNT;
+
+  // add header raw
+  readLimit += 1;
+
+  if (ctx.request.body.explain) {
+    readLimit += 1;
+  }
+
   const workbook = XLSX.read(ctx.file.buffer, {
     type: 'buffer',
-    sheetRows: IMPORT_LIMIT_COUNT,
+    sheetRows: readLimit,
   });
 
   const repository = ctx.getCurrentRepository() as Repository;
