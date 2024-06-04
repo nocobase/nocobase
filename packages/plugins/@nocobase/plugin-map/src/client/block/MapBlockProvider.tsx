@@ -8,7 +8,13 @@
  */
 
 import { useField, useFieldSchema } from '@formily/react';
-import { BlockProvider, FixedBlockWrapper, SchemaComponentOptions, useBlockRequestContext } from '@nocobase/client';
+import {
+  BlockProvider,
+  FixedBlockWrapper,
+  SchemaComponentOptions,
+  useBlockRequestContext,
+  useParsedFilter,
+} from '@nocobase/client';
 import React, { createContext, useContext, useState } from 'react';
 
 export const MapBlockContext = createContext<any>({});
@@ -42,11 +48,33 @@ const InternalMapBlockProvider = (props) => {
   );
 };
 
+const useMapBlockParams = (params: Record<string, any>) => {
+  const { filter: parsedFilter, parseVariableLoading } = useParsedFilter({
+    filterOption: params?.filter,
+  });
+
+  return {
+    params: {
+      ...params,
+      filter: parsedFilter,
+    } as Record<string, any>,
+    parseVariableLoading,
+  };
+};
+
 export const MapBlockProvider = (props) => {
   const uField = useField();
-  const { params, fieldNames } = props;
+  const { fieldNames } = props;
+  const { params, parseVariableLoading } = useMapBlockParams(props.params);
+
+  // 在解析变量的时候不渲染，避免因为重复请求数据导致的资源浪费
+  if (parseVariableLoading) {
+    return null;
+  }
+
   const appends = params.appends || [];
   const { field } = fieldNames || {};
+
   if (Array.isArray(field) && field.length > 1) {
     appends.push(field[0]);
   }
