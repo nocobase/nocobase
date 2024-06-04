@@ -19,10 +19,10 @@ export * from './SchemaSettingsDefaultValue';
 export * from './SchemaSettingsNumberFormat';
 export * from './SchemaSettingsSortingRule';
 export * from './SchemaSettingsTemplate';
+export * from './SchemaSettingsBlockHeightItem';
 export * from './hooks/useGetAriaLabelOfDesigner';
 export * from './hooks/useIsAllowToSetDefaultValue';
 export { default as useParseDataScopeFilter } from './hooks/useParseDataScopeFilter';
 export * from './isPatternDisabled';
-
 export { SchemaSettingsPlugin } from './SchemaSettingsPlugin';
 export * from './VariableInput';

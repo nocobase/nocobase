@@ -275,7 +275,7 @@ test.describe('creation form block schema settings', () => {
   });
 
   test('save block template & using block template', async ({ page, mockPage, clearBlockTemplates }) => {
-    await mockPage({
+    const nocoPage = await mockPage({
       pageSchema: {
         _isJSONSchemaObject: true,
         version: '2.0',
@@ -420,7 +420,8 @@ test.describe('creation form block schema settings', () => {
         'x-async': true,
         'x-index': 1,
       },
-    }).goto();
+    }).waitForInit();
+    await nocoPage.goto();
     await page.getByLabel('block-item-CardItem-users-form').hover();
     await page
       .getByLabel('block-item-CardItem-users-form')

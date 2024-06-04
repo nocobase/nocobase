@@ -17,12 +17,12 @@ import {
   SchemaSettingsSwitchItem,
   SchemaSettingsDataScope,
   useDesignable,
-  FixedBlockDesignerItem,
   SchemaSettingsCascaderItem,
   useFormBlockContext,
   removeNullCondition,
   SchemaSettingsTemplate,
   useCollectionManager_deprecated,
+  SchemaSettingsBlockHeightItem,
 } from '@nocobase/client';
 import { useTranslation } from '../../locale';
 import { useCalendarBlockContext } from '../schema-initializer/CalendarBlockProvider';
@@ -57,6 +57,10 @@ export const calendarBlockSettings = new SchemaSettings({
     {
       name: 'title',
       Component: SchemaSettingsBlockTitleItem,
+    },
+    {
+      name: 'setTheBlockHeight',
+      Component: SchemaSettingsBlockHeightItem,
     },
     {
       name: 'titleField',
@@ -97,10 +101,6 @@ export const calendarBlockSettings = new SchemaSettings({
     {
       name: 'showLunar',
       Component: ShowLunarDesignerItem,
-    },
-    {
-      name: 'fixBlock',
-      Component: FixedBlockDesignerItem,
     },
     {
       name: 'startDateField',

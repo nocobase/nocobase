@@ -15,6 +15,7 @@ import { FilterBlockType } from '../../../../filter-provider';
 import { SchemaSettingsBlockTitleItem } from '../../../../schema-settings/SchemaSettingsBlockTitleItem';
 import { SchemaSettingsConnectDataBlocks } from '../../../../schema-settings/SchemaSettingsConnectDataBlocks';
 import { SchemaSettingsTemplate } from '../../../../schema-settings/SchemaSettingsTemplate';
+import { SchemaSettingsBlockHeightItem } from '../../../../schema-settings/SchemaSettingsBlockHeightItem';
 
 export const filterCollapseBlockSettings = new SchemaSettings({
   name: 'blockSettings:filterCollapse',
@@ -22,6 +23,10 @@ export const filterCollapseBlockSettings = new SchemaSettings({
     {
       name: 'EditBlockTitle',
       Component: SchemaSettingsBlockTitleItem,
+    },
+    {
+      name: 'setTheBlockHeight',
+      Component: SchemaSettingsBlockHeightItem,
     },
     {
       name: 'ConvertReferenceToDuplicate',

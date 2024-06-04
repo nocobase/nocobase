@@ -26,10 +26,11 @@ interface CardItemProps extends CardProps {
    * @see https://github.com/thebuilder/react-intersection-observer
    */
   lazyRender?: IntersectionOptions & { element?: React.JSX.Element };
+  heightMode?: string;
 }
 
 export const CardItem: FC<CardItemProps> = (props) => {
-  const { children, name, lazyRender = {}, ...restProps } = props;
+  const { children, name, lazyRender = {}, heightMode, ...restProps } = props;
   const template = useSchemaTemplate();
   const fieldSchema = useFieldSchema();
   const templateKey = fieldSchema?.['x-template-key'];
