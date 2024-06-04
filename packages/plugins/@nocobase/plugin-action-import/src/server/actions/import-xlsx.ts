@@ -29,7 +29,7 @@ async function importXlsxAction(ctx: Context, next: Next) {
   // add header raw
   readLimit += 1;
 
-  if (ctx.request.body.explain) {
+  if ((ctx.request.body as any).explain) {
     readLimit += 1;
   }
 
