@@ -9,6 +9,7 @@
 
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
+import { theme } from 'antd';
 
 export interface CreateFormBlockUISchemaOptions {
   dataSource: string;
@@ -27,7 +28,7 @@ export interface CreateFormBlockUISchemaOptions {
 export function createCreateFormBlockUISchema(options: CreateFormBlockUISchemaOptions): ISchema {
   const { collectionName, association, dataSource, templateSchema, isCusomeizeCreate } = options;
   const resourceName = association || collectionName;
-
+  // const { token } = theme.useToken();
   if (!dataSource) {
     throw new Error('dataSource are required');
   }
@@ -68,7 +69,7 @@ export function createCreateFormBlockUISchema(options: CreateFormBlockUISchemaOp
             'x-component-props': {
               layout: 'one-column',
               style: {
-                marginTop: 24,
+                marginTop: 'var(--nb-spacing)',
               },
             },
           },

@@ -14,10 +14,10 @@ import {
   useCollection_deprecated,
   useDesignable,
   SchemaSettings,
-  FixedBlockDesignerItem,
   SchemaSettingsBlockTitleItem,
   removeNullCondition,
   SchemaSettingsTemplate,
+  SchemaSettingsBlockHeightItem,
 } from '@nocobase/client';
 import { useKanbanBlockContext } from './KanbanBlockProvider';
 export const kanbanSettings = new SchemaSettings({
@@ -26,6 +26,10 @@ export const kanbanSettings = new SchemaSettings({
     {
       name: 'title',
       Component: SchemaSettingsBlockTitleItem,
+    },
+    {
+      name: 'setTheBlockHeight',
+      Component: SchemaSettingsBlockHeightItem,
     },
     {
       name: 'dataScope',
@@ -57,10 +61,6 @@ export const kanbanSettings = new SchemaSettings({
           },
         };
       },
-    },
-    {
-      name: 'fixedBlock',
-      Component: FixedBlockDesignerItem,
     },
     {
       name: 'template',

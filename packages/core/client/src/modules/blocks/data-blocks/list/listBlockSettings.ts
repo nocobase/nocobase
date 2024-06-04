@@ -19,6 +19,7 @@ import { SchemaSettingsBlockTitleItem } from '../../../../schema-settings/Schema
 import { SchemaSettingsDataScope } from '../../../../schema-settings/SchemaSettingsDataScope';
 import { SchemaSettingsTemplate } from '../../../../schema-settings/SchemaSettingsTemplate';
 import { setDataLoadingModeSettingsItem } from '../details-multi/setDataLoadingModeSettingsItem';
+import { SchemaSettingsBlockHeightItem } from '../../../../schema-settings/SchemaSettingsBlockHeightItem';
 
 export const listBlockSettings = new SchemaSettings({
   name: 'blockSettings:list',
@@ -26,6 +27,10 @@ export const listBlockSettings = new SchemaSettings({
     {
       name: 'EditBlockTitle',
       Component: SchemaSettingsBlockTitleItem,
+    },
+    {
+      name: 'setTheBlockHeight',
+      Component: SchemaSettingsBlockHeightItem,
     },
     {
       name: 'SetTheDataScope',

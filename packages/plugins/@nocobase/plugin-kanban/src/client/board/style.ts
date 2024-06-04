@@ -32,13 +32,13 @@ export const useStyles = createStyles(({ css, token }) => {
         box-sizing: border-box;
         max-width: 300px;
         min-width: 300px;
-        height: 70vh;
+        // height: 70vh;
         overflow-x: hidden;
         overflow-y: auto;
         padding: 0 12px;
-        margin-bottom: 12px;
+        margin-bottom: ${token.marginSM}px;
         > div {
-          margin-bottom: 12px;
+          margin-bottom: ${token.marginSM}px;
         }
         + div {
           display: none !important;
@@ -69,7 +69,7 @@ export const useStyles = createStyles(({ css, token }) => {
       }
 
       .react-kanban-column-header {
-        padding: 15px;
+        padding: ${token.padding}px;
       }
 
       .react-kanban-card-adder-form {

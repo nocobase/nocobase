@@ -9,7 +9,7 @@
 
 import { createForm } from '@formily/core';
 import { RecursionField, Schema, useField, useFieldSchema } from '@formily/react';
-import { Spin } from 'antd';
+import { Spin, theme } from 'antd';
 import React, { createContext, useContext, useEffect, useMemo, useRef } from 'react';
 import {
   CollectionRecord,
@@ -183,9 +183,10 @@ const RenderChildrenWithDataTemplates = ({ form }) => {
   const { findComponent } = useDesignable();
   const field = useField();
   const Component = findComponent(field.component?.[0]) || React.Fragment;
+  const { token } = theme.useToken();
   return (
     <Component {...field.componentProps}>
-      <DataTemplateSelect style={{ marginBottom: 18 }} form={form} />
+      <DataTemplateSelect style={{ marginBottom: token.margin }} form={form} />
       <RecursionField schema={FieldSchema} onlyRenderProperties />
     </Component>
   );

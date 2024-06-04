@@ -9,6 +9,7 @@
 
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
+import { theme } from 'antd';
 
 interface EditFormBlockOptions {
   dataSource: string;
@@ -26,7 +27,6 @@ export function createEditFormBlockUISchema(options: EditFormBlockOptions): ISch
   const { collectionName, dataSource, association, templateSchema } = options;
   const resourceName = association || collectionName;
   const isCurrentObj = options.isCurrent ? { 'x-is-current': true } : {};
-
   if (!dataSource) {
     throw new Error('dataSource are required');
   }
@@ -68,7 +68,7 @@ export function createEditFormBlockUISchema(options: EditFormBlockOptions): ISch
             'x-component-props': {
               layout: 'one-column',
               style: {
-                marginTop: 24,
+                marginTop: 'var(--nb-spacing)',
               },
             },
           },
