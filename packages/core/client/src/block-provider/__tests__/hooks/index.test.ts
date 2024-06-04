@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { parseVariablesAndChangeParamsToQueryString, reduceValueSize } from '../../hooks/index';
+import { appendQueryStringToUrl, parseVariablesAndChangeParamsToQueryString, reduceValueSize } from '../../hooks/index';
 
 describe('parseVariablesAndChangeParamsToQueryString', () => {
   it('should parse variables and change params to query string', async () => {
@@ -128,5 +128,25 @@ describe('reduceValueSize', () => {
     ];
     const result2 = reduceValueSize(value2);
     expect(result2).toEqual(['value1', 'value2', { key1: 'value1', key2: 'value2' }]);
+  });
+});
+
+describe('appendQueryStringToUrl', () => {
+  it('should append query string to the URL', () => {
+    const url = 'https://example.com';
+    const queryString = 'param1=value1&param2=value2';
+
+    const result = appendQueryStringToUrl(url, queryString);
+
+    expect(result).toBe('https://example.com?param1=value1&param2=value2');
+  });
+
+  it('should append query string to the URL with existing query parameters', () => {
+    const url = 'https://example.com?existingParam=value';
+    const queryString = 'param1=value1&param2=value2';
+
+    const result = appendQueryStringToUrl(url, queryString);
+
+    expect(result).toBe('https://example.com?existingParam=value&param1=value1&param2=value2');
   });
 });

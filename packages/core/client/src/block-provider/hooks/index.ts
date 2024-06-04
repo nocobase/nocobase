@@ -1451,6 +1451,10 @@ async function resetFormCorrectly(form: Form) {
   await form.reset();
 }
 
+export function appendQueryStringToUrl(url: string, queryString: string) {
+  return url + (url.includes('?') ? '&' : '?') + queryString;
+}
+
 export function useLinkActionProps() {
   const navigate = useNavigate();
   const fieldSchema = useFieldSchema();
@@ -1473,7 +1477,7 @@ export function useLinkActionProps() {
         localVariables,
         replaceVariableValue,
       });
-      const link = `${url}${queryString ? `?${queryString}` : ``}`;
+      const link = appendQueryStringToUrl(url, queryString);
       if (link) {
         if (isURL(link)) {
           window.open(link, '_blank');
