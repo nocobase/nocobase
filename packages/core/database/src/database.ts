@@ -241,9 +241,15 @@ export class Database extends EventEmitter implements AsyncEmitter {
     }
 
     this.options = opts;
-    this.logger.debug(`create database instance: ${safeJsonStringify(this.options)}`, {
-      databaseInstanceId: this.instanceId,
-    });
+    this.logger.debug(
+      `create database instance: ${safeJsonStringify(
+        // remove sensitive information
+        lodash.omit(this.options, ['storage', 'host', 'password']),
+      )}`,
+      {
+        databaseInstanceId: this.instanceId,
+      },
+    );
 
     const sequelizeOptions = this.sequelizeOptions(this.options);
     this.sequelize = new Sequelize(sequelizeOptions);

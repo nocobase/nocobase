@@ -17,6 +17,7 @@ import {
   SchemaSettingsLinkageRules,
 } from '../../../../schema-settings';
 import { SchemaSettingsBlockTitleItem } from '../../../../schema-settings/SchemaSettingsBlockTitleItem';
+import { SchemaSettingsBlockHeightItem } from '../../../../schema-settings/SchemaSettingsBlockHeightItem';
 
 export const createFormBlockSettings = new SchemaSettings({
   name: 'blockSettings:createForm',
@@ -24,6 +25,10 @@ export const createFormBlockSettings = new SchemaSettings({
     {
       name: 'title',
       Component: SchemaSettingsBlockTitleItem,
+    },
+    {
+      name: 'setTheBlockHeight',
+      Component: SchemaSettingsBlockHeightItem,
     },
     {
       name: 'linkageRules',

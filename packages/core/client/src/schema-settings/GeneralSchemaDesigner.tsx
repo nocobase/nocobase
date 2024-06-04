@@ -255,6 +255,9 @@ const InternalSchemaToolbar: FC<SchemaToolbarProps> = (props) => {
 
   const initializerElement = useMemo(() => {
     if (initializer === false) return null;
+    if (schemaInitializerExists) {
+      return schemaInitializerRender(initializerProps);
+    }
     if (gridContext?.InitializerComponent || gridContext?.renderSchemaInitializer) {
       return gridContext?.InitializerComponent ? (
         <gridContext.InitializerComponent {...initializerProps} />
@@ -262,8 +265,6 @@ const InternalSchemaToolbar: FC<SchemaToolbarProps> = (props) => {
         gridContext.renderSchemaInitializer?.(initializerProps)
       );
     }
-    if (!schemaInitializerExists) return null;
-    return schemaInitializerRender(initializerProps);
   }, [gridContext, initializer, initializerProps, schemaInitializerExists, schemaInitializerRender]);
 
   const settingsElement = useMemo(() => {

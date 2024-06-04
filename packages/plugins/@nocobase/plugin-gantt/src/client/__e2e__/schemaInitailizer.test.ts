@@ -50,7 +50,8 @@ test.describe('configure fields', () => {
     await expect(page.getByRole('menuitem', { name: 'Single line text2' }).getByRole('switch')).not.toBeChecked();
   });
   test('add association field should appends association', async ({ page, mockPage, mockRecord }) => {
-    await mockPage(oneEmptyGantt).goto();
+    const nocoPage = await mockPage(oneEmptyGantt).waitForInit();
+    await nocoPage.goto();
     await mockRecord('general', { singleLineText: 'singleLineText', manyToOne: { id: 1 } });
     await page.getByLabel('schema-initializer-TableV2-table:configureColumns-general').hover();
 
@@ -68,6 +69,7 @@ test.describe('configure fields', () => {
     //支持修改标题字段
     await page.getByRole('button', { name: 'Many to one' }).hover();
     await page.getByLabel('designer-schema-settings-TableV2.Column-fieldSettings:TableColumn-general').hover();
+    await page.getByLabel('designer-schema-settings-TableV2.Column-fieldSettings:TableColumn-general').click();
     await page.getByRole('menuitem', { name: 'Title field' }).click();
     await page.getByText('Username').click();
     await expect(

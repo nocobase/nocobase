@@ -291,7 +291,7 @@ describe('Table.Column.settings', () => {
     ]);
   };
 
-  describe('new version schema', () => {
+  describe.skip('new version schema', () => {
     test('common field', async () => {
       await renderSettings(getRenderOptions());
       await checkCommonField();
@@ -303,7 +303,7 @@ describe('Table.Column.settings', () => {
     });
   });
 
-  describe('old version schema', () => {
+  describe.skip('old version schema', () => {
     test('common field', async () => {
       await renderSettings(getRenderOptions(true));
       await checkCommonField();

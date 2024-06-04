@@ -14,7 +14,7 @@ import { FieldContext, FormContext, RecursionField, observer, useField, useField
 import { reaction } from '@formily/reactive';
 import { uid } from '@formily/shared';
 import { getValuesByPath } from '@nocobase/utils/client';
-import { ConfigProvider, Spin } from 'antd';
+import { ConfigProvider, Spin, theme } from 'antd';
 import React, { useEffect, useMemo } from 'react';
 import { useActionContext } from '..';
 import { useAttach, useComponent } from '../..';
@@ -30,6 +30,7 @@ import { REGEX_OF_VARIABLE, isVariable } from '../../../variables/utils/isVariab
 import { getInnermostKeyAndValue, getTargetField } from '../../common/utils/uitls';
 import { useProps } from '../../hooks/useProps';
 import { collectFieldStateOfLinkageRules, getTempFieldState } from './utils';
+import { useFormBlockHeight } from './hook';
 
 export interface FormProps extends IFormLayoutProps {
   form?: FormilyForm;
@@ -42,11 +43,25 @@ const FormComponent: React.FC<FormProps> = (props) => {
   const fieldSchema = useFieldSchema();
   // TODO: component 里 useField 会与当前 field 存在偏差
   const f = useAttach(form.createVoidField({ ...field.props, basePath: '' }));
+  const height = useFormBlockHeight();
+  const { token } = theme.useToken();
+
   return (
     <FieldContext.Provider value={undefined}>
       <FormContext.Provider value={form}>
         <FormLayout layout={'vertical'} {...others}>
-          <RecursionField basePath={f.address} schema={fieldSchema} onlyRenderProperties />
+          <div
+            className={css`
+              .nb-grid {
+                height: ${height ? height + 'px' : '100%'};
+                overflow-y: auto;
+                overflow-x: clip;
+                padding-right: ${height ? token.paddingSM + 'px' : 0};
+              }
+            `}
+          >
+            <RecursionField basePath={f.address} schema={fieldSchema} onlyRenderProperties />
+          </div>
         </FormLayout>
       </FormContext.Provider>
     </FieldContext.Provider>

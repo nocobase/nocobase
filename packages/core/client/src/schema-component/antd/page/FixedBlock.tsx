@@ -73,11 +73,11 @@ const fixedBlockCss = css`
   overflow: hidden;
   position: relative;
   .noco-card-item {
-    height: 100%;
+    height: auto;
     .ant-card {
       display: flex;
       flex-direction: column;
-      height: 100%;
+      height: auto;
       .ant-card-body {
         height: 1px;
         flex: 1;

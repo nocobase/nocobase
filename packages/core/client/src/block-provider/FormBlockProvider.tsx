@@ -8,8 +8,8 @@
  */
 
 import { createForm } from '@formily/core';
-import { Schema, useField } from '@formily/react';
-import { Spin } from 'antd';
+import { RecursionField, Schema, useField, useFieldSchema } from '@formily/react';
+import { Spin, theme } from 'antd';
 import React, { createContext, useContext, useEffect, useMemo, useRef } from 'react';
 import {
   CollectionRecord,
@@ -20,7 +20,7 @@ import {
 import { withDynamicSchemaProps } from '../hoc/withDynamicSchemaProps';
 import { useTreeParentRecord } from '../modules/blocks/data-blocks/table/TreeRecordProvider';
 import { RecordProvider } from '../record-provider';
-import { useActionContext } from '../schema-component';
+import { useActionContext, useDesignable } from '../schema-component';
 import { Templates as DataTemplateSelect } from '../schema-component/antd/form-v2/Templates';
 import { BlockProvider, useBlockRequestContext } from './BlockProvider';
 import { TemplateBlockProvider } from './TemplateBlockProvider';
@@ -96,7 +96,7 @@ const InternalFormBlockProvider = (props) => {
     <FormBlockContext.Provider value={formBlockValue}>
       <RecordProvider isNew={record?.isNew} parent={record?.parentRecord?.data} record={record?.data}>
         <div ref={formBlockRef}>
-          <RenderChildrenWithDataTemplates form={form}>{props.children}</RenderChildrenWithDataTemplates>
+          <RenderChildrenWithDataTemplates form={form} />
         </div>
       </RecordProvider>
     </FormBlockContext.Provider>
@@ -178,12 +178,17 @@ export const useFormBlockProps = () => {
   };
 };
 
-const RenderChildrenWithDataTemplates = ({ form, children }) => {
+const RenderChildrenWithDataTemplates = ({ form }) => {
+  const FieldSchema = useFieldSchema();
+  const { findComponent } = useDesignable();
+  const field = useField();
+  const Component = findComponent(field.component?.[0]) || React.Fragment;
+  const { token } = theme.useToken();
   return (
-    <>
-      <DataTemplateSelect style={{ marginBottom: 18 }} form={form} />
-      {children}
-    </>
+    <Component {...field.componentProps}>
+      <DataTemplateSelect style={{ marginBottom: token.margin }} form={form} />
+      <RecursionField schema={FieldSchema} onlyRenderProperties />
+    </Component>
   );
 };
 

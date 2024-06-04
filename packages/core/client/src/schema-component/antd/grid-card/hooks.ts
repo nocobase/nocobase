@@ -7,7 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { SpaceProps } from 'antd';
+import { SpaceProps, theme } from 'antd';
+import { useDataBlockHeight } from '../../hooks/useBlockSize';
+import { useDesignable } from '../../';
+import { useFieldSchema } from '@formily/react';
 
 const spaceProps: SpaceProps = {
   size: ['large', 'small'],
@@ -18,4 +21,19 @@ export const useGridCardActionBarProps = () => {
   return {
     spaceProps,
   };
+};
+
+export const useGridCardBodyHeight = () => {
+  const { token } = theme.useToken();
+  const { designable } = useDesignable();
+  const height = useDataBlockHeight();
+  const schema = useFieldSchema();
+  const hasActions = Object.keys(schema.parent.properties.actionBar?.properties || {}).length > 0;
+  if (!height) {
+    return;
+  }
+  const actionBarHeight = designable || hasActions ? token.controlHeight + 2 * token.paddingLG + token.marginLG : 0;
+  const paginationHeight = token.controlHeight + 2 * token.paddingLG + token.marginLG;
+
+  return height - actionBarHeight - paginationHeight;
 };

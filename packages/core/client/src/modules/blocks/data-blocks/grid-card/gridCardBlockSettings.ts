@@ -21,10 +21,14 @@ import { SchemaSettingsDataScope } from '../../../../schema-settings/SchemaSetti
 import { SchemaSettingsTemplate } from '../../../../schema-settings/SchemaSettingsTemplate';
 import { setDataLoadingModeSettingsItem } from '../details-multi/setDataLoadingModeSettingsItem';
 import { SetTheCountOfColumnsDisplayedInARow } from './SetTheCountOfColumnsDisplayedInARow';
-
+import { SchemaSettingsBlockHeightItem } from '../../../../schema-settings/SchemaSettingsBlockHeightItem';
 export const gridCardBlockSettings = new SchemaSettings({
   name: 'blockSettings:gridCard',
   items: [
+    {
+      name: 'setTheBlockHeight',
+      Component: SchemaSettingsBlockHeightItem,
+    },
     {
       name: 'SetTheCountOfColumnsDisplayedInARow',
       Component: SetTheCountOfColumnsDisplayedInARow,
