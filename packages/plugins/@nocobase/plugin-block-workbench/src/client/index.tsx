@@ -27,6 +27,11 @@ export class PluginBlockWorkbenchClient extends Plugin {
       `otherBlocks.${workbenchBlockInitializerItem.name}`,
       workbenchBlockInitializerItem,
     );
+    this.app.schemaInitializerManager.addItem(
+      'mobilePage:addBlock',
+      `otherBlocks.${workbenchBlockInitializerItem.name}`,
+      workbenchBlockInitializerItem,
+    );
   }
 }
 
