@@ -8,7 +8,7 @@
  */
 
 import { observer, useField, useFieldSchema } from '@formily/react';
-import { Input as AntdInput, Button, Space, Spin } from 'antd';
+import { Input as AntdInput, Button, Space, Spin, theme } from 'antd';
 import cls from 'classnames';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -18,6 +18,7 @@ import { MarkdownVoidDesigner } from './Markdown.Void.Designer';
 import { useStyles } from './style';
 import { useParseMarkdown } from './util';
 import { TextAreaProps } from 'antd/es/input';
+import { useBlockHeight } from '../../hooks/useBlockSize';
 
 export interface MarkdownEditorProps extends Omit<TextAreaProps, 'onSubmit'> {
   defaultValue?: string;
@@ -59,6 +60,15 @@ const MarkdownEditor = (props: MarkdownEditorProps) => {
   );
 };
 
+const useMarkdownHeight = () => {
+  const { token } = theme.useToken();
+  const height = useBlockHeight();
+  if (!height) {
+    return;
+  }
+  return height - 2 * token.paddingLG;
+};
+
 export const MarkdownVoid: any = observer(
   (props: any) => {
     const { isDarkTheme } = useGlobalTheme();
@@ -69,6 +79,7 @@ export const MarkdownVoid: any = observer(
     const { dn } = useDesignable();
     const { onSave, onCancel } = props;
     const { html, loading } = useParseMarkdown(content);
+    const height = useMarkdownHeight();
     if (loading) {
       return <Spin />;
     }
@@ -100,7 +111,7 @@ export const MarkdownVoid: any = observer(
     ) : (
       <div
         className={cls([componentCls, hashId, 'nb-markdown nb-markdown-default nb-markdown-table', className])}
-        style={props.style}
+        style={{ ...props.style, height: height || '100%', overflow: 'auto' }}
         dangerouslySetInnerHTML={{ __html: html }}
       />
     );

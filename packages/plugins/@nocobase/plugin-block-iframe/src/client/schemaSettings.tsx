@@ -15,6 +15,7 @@ import {
   Variable,
   useAPIClient,
   useDesignable,
+  SchemaSettingsBlockHeightItem,
   useFormBlockContext,
   useRecord,
   useVariableOptions,
@@ -218,19 +219,23 @@ const commonOptions: any = {
                   },
                 },
               },
-              height: {
-                title: t('Height'),
-                type: 'string',
-                'x-decorator': 'FormItem',
-                'x-component': 'Input',
-                required: true,
-              },
+              // height: {
+              //   title: t('Height'),
+              //   type: 'string',
+              //   'x-decorator': 'FormItem',
+              //   'x-component': 'Input',
+              //   required: true,
+              // },
             },
           } as ISchema,
           onSubmit: submitHandler,
           noRecord: true,
         };
       },
+    },
+    {
+      name: 'setTheBlockHeight',
+      Component: SchemaSettingsBlockHeightItem,
     },
     {
       name: 'divider',

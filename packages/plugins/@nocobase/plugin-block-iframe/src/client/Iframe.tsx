@@ -10,6 +10,7 @@
 import { observer, useField } from '@formily/react';
 import {
   useRequest,
+  useBlockHeight,
   replaceVariableValue,
   useVariables,
   useLocalVariables,
@@ -35,6 +36,7 @@ export const Iframe: any = observer(
     const { url, htmlId, mode = 'url', height, html, params, ...others } = props;
     const field = useField();
     const { t } = useTranslation();
+    const targetHeight = useBlockHeight() || height;
     const variables = useVariables();
     const localVariables = useLocalVariables();
     const { loading, data: htmlContent } = useRequest<string>(
@@ -79,7 +81,11 @@ export const Iframe: any = observer(
       generateSrc();
     }, [htmlContent, mode, url, variables, localVariables, params]);
     if ((mode === 'url' && !url) || (mode === 'html' && !htmlId)) {
-      return <Card style={{ marginBottom: 24 }}>{t('Please fill in the iframe URL')}</Card>;
+      return (
+        <Card style={{ marginBottom: 24, height: isNumeric(targetHeight) ? `${targetHeight}px` : targetHeight }}>
+          {t('Please fill in the iframe URL')}
+        </Card>
+      );
     }
 
     if (loading && !src) {
@@ -103,7 +109,7 @@ export const Iframe: any = observer(
         display="block"
         position="relative"
         styles={{
-          height: isNumeric(height) ? `${height}px` : height,
+          height: isNumeric(targetHeight) ? `${targetHeight}px` : targetHeight,
           marginBottom: '24px',
           border: 0,
         }}
