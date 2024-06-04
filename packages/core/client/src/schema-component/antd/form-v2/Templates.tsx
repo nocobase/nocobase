@@ -93,7 +93,7 @@ export const useFormDataTemplates = () => {
   };
 };
 
-export const Templates = ({ style = {}, form }) => {
+export const Templates = ({ style = {}, form }: { style?: React.CSSProperties; form?: any }) => {
   const { token } = useToken();
   const { templates, display, enabled, defaultTemplate } = useFormDataTemplates();
   const { getCollectionJoinField } = useCollectionManager_deprecated();
@@ -103,7 +103,7 @@ export const Templates = ({ style = {}, form }) => {
   const api = useAPIClient();
   const { t } = useTranslation();
   useEffect(() => {
-    if (enabled && defaultTemplate) {
+    if (enabled && defaultTemplate && form) {
       form.__template = true;
       if (defaultTemplate.key === 'duplicate') {
         handleTemplateDataChange(defaultTemplate.dataId, defaultTemplate);
