@@ -8,22 +8,22 @@
  */
 
 import { useField, useFieldSchema } from '@formily/react';
-import React from 'react';
 import {
   SchemaSettings,
-  SchemaSettingsBlockTitleItem,
-  SchemaSettingsSelectItem,
-  useCollection,
-  SchemaSettingsSwitchItem,
-  SchemaSettingsDataScope,
-  useDesignable,
-  SchemaSettingsCascaderItem,
-  useFormBlockContext,
-  removeNullCondition,
-  SchemaSettingsTemplate,
-  useCollectionManager_deprecated,
   SchemaSettingsBlockHeightItem,
+  SchemaSettingsBlockTitleItem,
+  SchemaSettingsCascaderItem,
+  SchemaSettingsDataScope,
+  SchemaSettingsSelectItem,
+  SchemaSettingsSwitchItem,
+  SchemaSettingsTemplate,
+  removeNullCondition,
+  useCollection,
+  useCollectionManager_deprecated,
+  useDesignable,
+  useFormBlockContext,
 } from '@nocobase/client';
+import React from 'react';
 import { useTranslation } from '../../locale';
 import { useCalendarBlockContext } from '../schema-initializer/CalendarBlockProvider';
 
@@ -181,7 +181,6 @@ export const calendarBlockSettings = new SchemaSettings({
         const fieldSchema = useFieldSchema();
         const { form } = useFormBlockContext();
         const field = useField();
-        const { service } = useCalendarBlockContext();
         const { dn } = useDesignable();
         return {
           collectionName: name,
@@ -193,7 +192,6 @@ export const calendarBlockSettings = new SchemaSettings({
             params.filter = filter;
             field.decoratorProps.params = params;
             fieldSchema['x-decorator-props']['params'] = params;
-            service.run({ ...service?.params?.[0], filter });
             dn.emit('patch', {
               schema: {
                 ['x-uid']: fieldSchema['x-uid'],

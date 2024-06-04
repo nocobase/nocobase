@@ -406,6 +406,8 @@ test.describe('actions schema settings', () => {
           .hover();
         await page.getByRole('menuitem', { name: 'Assign field values' }).click();
 
+        await page.waitForTimeout(1000);
+
         if (!(await page.getByLabel('block-item-AssignedField-').getByRole('textbox').isVisible())) {
           await page.getByLabel('schema-initializer-Grid-assignFieldValuesForm:configureFields-users').hover();
           await page.getByRole('menuitem', { name: 'Nickname' }).click();

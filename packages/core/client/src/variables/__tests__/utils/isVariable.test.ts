@@ -36,3 +36,7 @@ it('should return true for a string with a valid variable "{{ $nRecord._name }}"
 it('should return true for a string with a valid variable " {{ $nRecord.name }} "', () => {
   expect(isVariable(' {{ $nRecord.name }} ')).toBe(true);
 });
+
+it('should return false for a string with a valid variable "{{ $nRecord.name }}+1"', () => {
+  expect(isVariable('{{ $nRecord.name }}+1')).toBe(false);
+});
