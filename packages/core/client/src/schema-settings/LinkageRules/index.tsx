@@ -10,7 +10,7 @@
 import { css } from '@emotion/css';
 import { observer, useFieldSchema } from '@formily/react';
 import React, { useMemo } from 'react';
-import { FormBlockContext } from '../../block-provider';
+import { FormBlockContext } from '../../block-provider/FormBlockProvider';
 import { useCollectionManager_deprecated } from '../../collection-manager';
 import { useCollectionParentRecordData } from '../../data-source/collection-record/CollectionRecordProvider';
 import { withDynamicSchemaProps } from '../../hoc/withDynamicSchemaProps';

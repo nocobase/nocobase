@@ -10,7 +10,7 @@
 import { Field } from '@formily/core';
 import { observer, useField, useFieldSchema, useForm } from '@formily/react';
 import React, { useEffect } from 'react';
-import { useFormBlockContext } from '../../../block-provider';
+import { useFormBlockContext } from '../../../block-provider/FormBlockProvider';
 import { useCollection_deprecated } from '../../../collection-manager';
 import { useCompile } from '../../hooks';
 import { ActionBar } from '../action';

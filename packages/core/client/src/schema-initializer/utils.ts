@@ -20,8 +20,8 @@ import {
   useCollection,
   useCollectionManager,
   useDataSourceKey,
-  useFormBlockContext,
 } from '../';
+import { useFormBlockContext } from '../block-provider/FormBlockProvider';
 import { useFormActiveFields } from '../block-provider/hooks/useFormActiveFields';
 import { FieldOptions, useCollectionManager_deprecated, useCollection_deprecated } from '../collection-manager';
 import { Collection, CollectionFieldOptions } from '../data-source/collection/Collection';

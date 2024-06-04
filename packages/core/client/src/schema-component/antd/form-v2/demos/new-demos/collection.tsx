@@ -1,5 +1,3 @@
-
-
 import { useForm } from '@formily/react';
 import {
   ActionProps,
@@ -78,25 +76,20 @@ const schema: ISchema = {
 };
 
 const Demo = () => {
-  return (
-    <SchemaComponent
-      schema={schema}
-      scope={{ useSubmitActionProps }}
-    />
-  );
+  return <SchemaComponent schema={schema} scope={{ useSubmitActionProps }} />;
 };
 
 class DemoPlugin extends Plugin {
   async load() {
-    this.app.router.add('root', { path: '/', Component: Demo })
+    this.app.router.add('root', { path: '/', Component: Demo });
   }
 }
 
 const app = mockApp({
   plugins: [DemoPlugin],
   components: {
-    FormBlockProvider
-  }
+    FormBlockProvider,
+  },
 });
 
 export default app.getRootComponent();

@@ -47,13 +47,18 @@ import { Router } from 'react-router-dom';
 import { APIClientProvider } from '../api-client/APIClientProvider';
 import { useAPIClient } from '../api-client/hooks/useAPIClient';
 import { ApplicationContext, useApp } from '../application';
-import { FormBlockContext, findFormBlock, useFormBlockContext, useFormBlockType } from '../block-provider';
 import {
   BlockContext,
   BlockRequestContext_deprecated,
   useBlockContext,
   useBlockRequestContext,
 } from '../block-provider/BlockProvider';
+import {
+  FormBlockContext,
+  findFormBlock,
+  useFormBlockContext,
+  useFormBlockType,
+} from '../block-provider/FormBlockProvider';
 import { FormActiveFieldsProvider, useFormActiveFields } from '../block-provider/hooks';
 import { useLinkageCollectionFilterOptions, useSortFields } from '../collection-manager/action-hooks';
 import { useCollectionManager_deprecated } from '../collection-manager/hooks/useCollectionManager_deprecated';
