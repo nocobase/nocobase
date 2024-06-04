@@ -46,6 +46,7 @@ import { useTranslation } from 'react-i18next';
 import { Router } from 'react-router-dom';
 import { APIClientProvider } from '../api-client/APIClientProvider';
 import { useAPIClient } from '../api-client/hooks/useAPIClient';
+import { ApplicationContext, useApp } from '../application';
 import { FormBlockContext, findFormBlock, useFormBlockContext, useFormBlockType } from '../block-provider';
 import {
   BlockContext,
@@ -93,7 +94,6 @@ import { EnableChildCollections } from './EnableChildCollections';
 import { ChildDynamicComponent } from './EnableChildCollections/DynamicComponent';
 import { FormLinkageRules } from './LinkageRules';
 import { useLinkageCollectionFieldOptions } from './LinkageRules/action-hooks';
-import { ApplicationContext, useApp } from '../application';
 
 export interface SchemaSettingsProps {
   title?: any;

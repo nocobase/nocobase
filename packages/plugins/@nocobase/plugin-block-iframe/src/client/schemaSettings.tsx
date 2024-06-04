@@ -12,13 +12,31 @@ import { ISchema, useField, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import {
   SchemaSettings,
+  Variable,
   useAPIClient,
   useDesignable,
   useFormBlockContext,
   useRecord,
   useVariableOptions,
 } from '@nocobase/client';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
+
+const getVariableComponentWithScope = (Com) => {
+  return (props) => {
+    const fieldSchema = useFieldSchema();
+    const { form } = useFormBlockContext();
+    const record = useRecord();
+    const scope = useVariableOptions({
+      collectionField: { uiSchema: fieldSchema },
+      form,
+      record,
+      uiSchema: fieldSchema,
+      noDisabled: true,
+    });
+    return <Com {...props} scope={scope} />;
+  };
+};
 
 const commonOptions: any = {
   items: [
@@ -34,13 +52,6 @@ const commonOptions: any = {
         const { mode, url, htmlId, height = '60vh' } = fieldSchema['x-component-props'] || {};
         const { form } = useFormBlockContext();
         const record = useRecord();
-        const scope = useVariableOptions({
-          collectionField: { uiSchema: fieldSchema },
-          form,
-          record,
-          uiSchema: fieldSchema,
-          noDisabled: true,
-        });
         const saveHtml = async (html: string) => {
           const options = {
             values: { html },
@@ -111,10 +122,7 @@ const commonOptions: any = {
                 title: t('URL'),
                 type: 'string',
                 'x-decorator': 'FormItem',
-                'x-component': 'Variable.TextArea',
-                'x-component-props': {
-                  scope,
-                },
+                'x-component': getVariableComponentWithScope(Variable.TextArea),
                 description: t('Do not concatenate search params in the URL'),
                 required: true,
                 'x-reactions': {
@@ -162,9 +170,8 @@ const commonOptions: any = {
                         value: {
                           type: 'string',
                           'x-decorator': 'FormItem',
-                          'x-component': 'Variable.TextArea',
+                          'x-component': getVariableComponentWithScope(Variable.TextArea),
                           'x-component-props': {
-                            scope,
                             placeholder: `{{t("Value")}}`,
                             useTypedConstant: true,
                             changeOnSelect: true,
@@ -199,9 +206,8 @@ const commonOptions: any = {
                 title: t('html'),
                 type: 'string',
                 'x-decorator': 'FormItem',
-                'x-component': 'Variable.RawTextArea',
+                'x-component': getVariableComponentWithScope(Variable.RawTextArea),
                 'x-component-props': {
-                  scope,
                   rows: 10,
                 },
                 required: true,
@@ -224,6 +230,7 @@ const commonOptions: any = {
             },
           } as ISchema,
           onSubmit: submitHandler,
+          noRecord: true,
         };
       },
     },
