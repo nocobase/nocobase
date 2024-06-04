@@ -16,7 +16,7 @@ import { DataSource } from '@nocobase/data-source-manager';
 
 const mutex = new Mutex();
 
-const IMPORT_LIMIT_COUNT = 200;
+const IMPORT_LIMIT_COUNT = 2000;
 
 async function importXlsxAction(ctx: Context, next: Next) {
   let columns = (ctx.request.body as any).columns as any[];
