@@ -137,6 +137,10 @@ export default {
     collect: async (ctx: Context, next: Next) => {
       const { error, ...info } = ctx.action.params.values || {};
       const { message, ...e } = error || {};
+      ctx.log.error({ message: `Diagnosis, frontend error, ${message}`, ...e });
+      ctx.log.error(`Diagnostic information`, info);
+      ctx.log.error('Diagnosis, environment variables', lodash.pick(process.env, envVars));
+
       const path = getLoggerFilePath(ctx.app.name || 'main');
       const files = await getLastestLogs(path);
       if (!files.length) {
@@ -145,9 +149,6 @@ export default {
           ctx.t('No log files found. Please check the LOGGER_TRANSPORTS environment variable configuration.'),
         );
       }
-      ctx.log.error({ message: `Diagnosis, frontend error, ${message}`, ...e });
-      ctx.log.error(`Diagnostic information`, info);
-      ctx.log.error('Diagnosis, environment variables', lodash.pick(process.env, envVars));
       try {
         ctx.attachment('logs.tar.gz');
         ctx.body = await tarFiles(path, files);
