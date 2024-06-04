@@ -31,7 +31,6 @@ test.describe('table block schema settings', () => {
       supportedOptions: [
         'Edit block title',
         'Enable drag and drop sorting',
-        'Fix block',
         'Set the data scope',
         'Records per page',
         'Connect data blocks',
