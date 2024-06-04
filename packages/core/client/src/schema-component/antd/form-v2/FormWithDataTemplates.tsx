@@ -9,14 +9,16 @@
 
 import React from 'react';
 import { Templates } from '../..';
+import { useFormBlockContext } from '../../../block-provider/FormBlockProvider';
 import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
 import { Form } from './Form';
 
 export const FormWithDataTemplates: any = withDynamicSchemaProps(
   (props) => {
+    const formBlockCtx = useFormBlockContext();
     return (
       <>
-        <Templates style={{ marginBottom: 18 }} form={props.form} />
+        <Templates style={{ marginBottom: 18 }} form={props.form || formBlockCtx?.form} />
         <Form {...props} />
       </>
     );

@@ -103,7 +103,7 @@ export const Templates = ({ style = {}, form }: { style?: React.CSSProperties; f
   const api = useAPIClient();
   const { t } = useTranslation();
   useEffect(() => {
-    if (enabled && defaultTemplate) {
+    if (enabled && defaultTemplate && form) {
       form.__template = true;
       if (defaultTemplate.key === 'duplicate') {
         handleTemplateDataChange(defaultTemplate.dataId, defaultTemplate);
