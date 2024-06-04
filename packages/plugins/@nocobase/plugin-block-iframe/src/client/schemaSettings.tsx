@@ -50,8 +50,6 @@ const commonOptions: any = {
         const { dn } = useDesignable();
         const api = useAPIClient();
         const { mode, url, htmlId, height = '60vh' } = fieldSchema['x-component-props'] || {};
-        const { form } = useFormBlockContext();
-        const record = useRecord();
         const saveHtml = async (html: string) => {
           const options = {
             values: { html },
