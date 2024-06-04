@@ -43,7 +43,7 @@ const initImportSettings = (fields) => {
 
 export const ImportWarning = () => {
   const { t } = useImportTranslation();
-  return <Alert type="warning" style={{ marginBottom: '10px' }} message={t('Import warning')} />;
+  return <Alert type="warning" style={{ marginBottom: '10px' }} message={t('Import warnings', { limit: 2000 })} />;
 };
 
 export const DownloadTips = () => {
