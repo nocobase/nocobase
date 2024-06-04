@@ -16,6 +16,8 @@ import {
   useParsedFilter,
 } from '@nocobase/client';
 import React, { createContext, useContext, useState } from 'react';
+import { css } from '@emotion/css';
+import { theme } from 'antd';
 
 export const MapBlockContext = createContext<any>({});
 MapBlockContext.displayName = 'MapBlockContext';
@@ -26,6 +28,7 @@ const InternalMapBlockProvider = (props) => {
   const field = useField();
   const { resource, service } = useBlockRequestContext();
   const [selectedRecordKeys, setSelectedRecordKeys] = useState([]);
+  const { token } = theme.useToken();
 
   return (
     <FixedBlockWrapper>
@@ -41,7 +44,16 @@ const InternalMapBlockProvider = (props) => {
             setSelectedRecordKeys,
           }}
         >
-          {props.children}
+          {' '}
+          <div
+            className={css`
+              .nb-action-bar {
+                margin-bottom: ${token.margin}px;
+              }
+            `}
+          >
+            {props.children}
+          </div>
         </MapBlockContext.Provider>
       </SchemaComponentOptions>
     </FixedBlockWrapper>

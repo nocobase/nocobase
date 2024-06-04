@@ -28,13 +28,14 @@ import {
   SchemaSettingsSwitchItem,
 } from '../../../schema-settings';
 import { SchemaSettingsBlockTitleItem } from '../../../schema-settings/SchemaSettingsBlockTitleItem';
+import { SchemaSettingsBlockHeightItem } from '../../../schema-settings/SchemaSettingsBlockHeightItem';
+
 import { SchemaSettingsConnectDataBlocks } from '../../../schema-settings/SchemaSettingsConnectDataBlocks';
 import { SchemaSettingsDataScope } from '../../../schema-settings/SchemaSettingsDataScope';
 import { SchemaSettingsTemplate } from '../../../schema-settings/SchemaSettingsTemplate';
 import { useSchemaTemplate } from '../../../schema-templates';
 import { useDesignable } from '../../hooks';
 import { removeNullCondition } from '../filter';
-import { FixedBlockDesignerItem } from '../page/FixedBlockDesignerItem';
 
 export const EditSortField = () => {
   const { fields } = useCollection_deprecated();
@@ -127,6 +128,7 @@ export const TableBlockDesigner = () => {
   return (
     <GeneralSchemaDesigner template={template} title={title || name}>
       <SchemaSettingsBlockTitleItem />
+      <SchemaSettingsBlockHeightItem />
       {collection?.tree && collectionField?.collectionName === collectionField?.target && (
         <SchemaSettingsSwitchItem
           title={t('Tree table')}
@@ -173,7 +175,6 @@ export const TableBlockDesigner = () => {
         }}
       />
       {field.decoratorProps.dragSort && <EditSortField />}
-      <FixedBlockDesignerItem />
       <SchemaSettingsDataScope
         collectionName={name}
         defaultFilter={fieldSchema?.['x-decorator-props']?.params?.filter || {}}

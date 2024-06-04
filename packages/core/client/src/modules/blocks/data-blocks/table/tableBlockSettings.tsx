@@ -22,12 +22,12 @@ import {
 } from '../../../../collection-manager';
 import { FilterBlockType } from '../../../../filter-provider/utils';
 import { removeNullCondition, useDesignable } from '../../../../schema-component';
-import { FixedBlockDesignerItem } from '../../../../schema-component/antd/page/FixedBlockDesignerItem';
 import { SchemaSettingsBlockTitleItem } from '../../../../schema-settings/SchemaSettingsBlockTitleItem';
 import { SchemaSettingsConnectDataBlocks } from '../../../../schema-settings/SchemaSettingsConnectDataBlocks';
 import { SchemaSettingsDataScope } from '../../../../schema-settings/SchemaSettingsDataScope';
 import { SchemaSettingsSortField } from '../../../../schema-settings/SchemaSettingsSortField';
 import { SchemaSettingsTemplate } from '../../../../schema-settings/SchemaSettingsTemplate';
+import { SchemaSettingsBlockHeightItem } from '../../../../schema-settings/SchemaSettingsBlockHeightItem';
 import { setDataLoadingModeSettingsItem } from '../details-multi/setDataLoadingModeSettingsItem';
 
 export const tableBlockSettings = new SchemaSettings({
@@ -36,6 +36,10 @@ export const tableBlockSettings = new SchemaSettings({
     {
       name: 'editBlockTitle',
       Component: SchemaSettingsBlockTitleItem,
+    },
+    {
+      name: 'setTheBlockHeight',
+      Component: SchemaSettingsBlockHeightItem,
     },
     {
       name: 'treeTable',
@@ -131,10 +135,6 @@ export const tableBlockSettings = new SchemaSettings({
         const field = useField();
         return field.decoratorProps.dragSort;
       },
-    },
-    {
-      name: 'FixBlock',
-      Component: FixedBlockDesignerItem,
     },
     {
       name: 'SetTheDataScope',

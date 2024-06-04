@@ -9,8 +9,8 @@
 
 import { useField, useFieldSchema } from '@formily/react';
 import {
-  FixedBlockDesignerItem,
   SchemaSettings,
+  SchemaSettingsBlockHeightItem,
   SchemaSettingsBlockTitleItem,
   SchemaSettingsCascaderItem,
   SchemaSettingsDataScope,
@@ -59,6 +59,10 @@ export const calendarBlockSettings = new SchemaSettings({
       Component: SchemaSettingsBlockTitleItem,
     },
     {
+      name: 'setTheBlockHeight',
+      Component: SchemaSettingsBlockHeightItem,
+    },
+    {
       name: 'titleField',
       Component: SchemaSettingsSelectItem,
       useComponentProps() {
@@ -97,10 +101,6 @@ export const calendarBlockSettings = new SchemaSettings({
     {
       name: 'showLunar',
       Component: ShowLunarDesignerItem,
-    },
-    {
-      name: 'fixBlock',
-      Component: FixedBlockDesignerItem,
     },
     {
       name: 'startDateField',
