@@ -285,8 +285,9 @@ const SideMenu = ({
   mode,
   sideMenuSchema,
   sideMenuRef,
-  defaultOpenKeys,
-  defaultSelectedKeys,
+  openKeys,
+  setOpenKeys,
+  selectedKeys,
   onSelect,
   render,
   t,
@@ -344,10 +345,13 @@ const SideMenu = ({
         <Component />
         <AntdMenu
           mode={'inline'}
-          defaultOpenKeys={defaultOpenKeys}
-          defaultSelectedKeys={defaultSelectedKeys}
+          openKeys={openKeys}
+          selectedKeys={selectedKeys}
           onSelect={(info) => {
             onSelect?.(info);
+          }}
+          onOpenChange={(openKeys) => {
+            setOpenKeys(openKeys);
           }}
           className={sideMenuClass}
           items={items as MenuProps['items']}
@@ -474,8 +478,9 @@ export const Menu: ComposedMenu = observer(
               mode={mode}
               sideMenuSchema={sideMenuSchema}
               sideMenuRef={sideMenuRef}
-              defaultOpenKeys={defaultOpenKeys}
-              defaultSelectedKeys={defaultSelectedKeys}
+              openKeys={defaultOpenKeys}
+              setOpenKeys={setDefaultOpenKeys}
+              selectedKeys={selectedKeys}
               onSelect={onSelect}
               render={render}
               t={t}

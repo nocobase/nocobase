@@ -86,6 +86,16 @@ const commonOptions = {
         return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
       },
     },
+    {
+      name: 'link',
+      title: '{{t("Link")}}',
+      Component: 'LinkActionInitializer',
+      useComponentProps() {
+        return {
+          'x-component': 'Action.Link',
+        };
+      },
+    },
   ],
 };
 

@@ -949,5 +949,13 @@
   "Fixed": "固定列",
   "Set block height": "设置区块高度",
   "Specify height": "指定高度",
-  "Full height": "全高"
+  "Full height": "全高",
+  "Please configure the URL": "请配置URL",
+  "URL": "URL",
+  "Search parameters": "URL 查询参数",
+  "Do not concatenate search params in the URL": "查询参数不要在 URL 里拼接",
+  "The value of this variable is derived from the query string of the page URL. This variable can only be used normally when the page has a query string.": "该变量的值是根据页面 URL 的 query string 得来的，只有当页面存在 query string 的时候，该变量才能正常使用。",
+  "Edit link":"编辑链接",
+  "Add parameter":"添加参数",
+  "URL search params": "URL 查询参数"
 }

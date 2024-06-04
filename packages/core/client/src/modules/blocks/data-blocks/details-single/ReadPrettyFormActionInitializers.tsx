@@ -72,6 +72,16 @@ const commonOptions = {
       Component: 'CustomRequestInitializer',
       useVisible: useVisibleCollection,
     },
+    {
+      name: 'link',
+      title: '{{t("Link")}}',
+      Component: 'LinkActionInitializer',
+      useComponentProps() {
+        return {
+          'x-component': 'Action',
+        };
+      },
+    },
   ],
 };
 

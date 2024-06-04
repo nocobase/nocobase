@@ -8,11 +8,11 @@
  */
 
 import {
+  expect,
   expectSettingsMenu,
   oneDetailBlockWithM2oFieldToGeneral,
   oneEmptyDetailsBlock,
   test,
-  expect,
 } from '@nocobase/test/e2e';
 import { detailBlockWithLinkageRule, detailsBlockWithLinkageRule } from './templatesOfBug';
 
@@ -54,9 +54,9 @@ test.describe('multi data details block schema settings', () => {
   test('multi detail block support linkage rule', async ({ page, mockPage }) => {
     const nocoPage = await mockPage(detailsBlockWithLinkageRule).waitForInit();
     await nocoPage.goto();
-    await expect(await page.getByLabel('block-item-CollectionField-roles-details-roles.title')).not.toBeVisible();
+    await expect(page.getByLabel('block-item-CollectionField-roles-details-roles.title')).not.toBeVisible();
     await page.getByRole('button', { name: 'right' }).click();
-    await expect(await page.getByLabel('block-item-CollectionField-roles-details-roles.title')).toBeVisible();
+    await expect(page.getByLabel('block-item-CollectionField-roles-details-roles.title')).toBeVisible();
   });
 });
 
