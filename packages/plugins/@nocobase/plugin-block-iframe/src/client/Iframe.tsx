@@ -9,15 +9,16 @@
 
 import { observer, useField } from '@formily/react';
 import {
-  useRequest,
-  useBlockHeight,
-  replaceVariableValue,
-  useVariables,
-  useLocalVariables,
+  appendQueryStringToUrl,
   parseVariablesAndChangeParamsToQueryString,
+  replaceVariableValue,
+  useBlockHeight,
+  useLocalVariables,
+  useRequest,
+  useVariables,
 } from '@nocobase/client';
 import { Card, Spin } from 'antd';
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import RIframe from 'react-iframe';
 import type { IIframe } from 'react-iframe/types';
@@ -68,7 +69,7 @@ export const Iframe: any = observer(
               replaceVariableValue,
             });
 
-            const targetUrl = `${tempUrl}${queryString ? `?${queryString}` : ``}`;
+            const targetUrl = appendQueryStringToUrl(tempUrl, queryString);
             setSrc(targetUrl);
           } catch (error) {
             console.error('Error fetching target URL:', error);
