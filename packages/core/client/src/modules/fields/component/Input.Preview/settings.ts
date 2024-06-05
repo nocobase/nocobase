@@ -12,40 +12,7 @@ import { useField, useFieldSchema } from '@formily/react';
 import { useTranslation } from 'react-i18next';
 import { SchemaSettings } from '../../../../application/schema-settings/SchemaSettings';
 import { useColumnSchema, useDesignable } from '../../../../schema-component';
-
-const fieldComponent: any = {
-  name: 'fieldComponent',
-  type: 'select',
-  useComponentProps() {
-    const { t } = useTranslation();
-    const field = useField<Field>();
-    const schema = useFieldSchema();
-    const { fieldSchema: tableColumnSchema } = useColumnSchema();
-    const fieldSchema = tableColumnSchema || schema;
-    const { dn } = useDesignable();
-    return {
-      title: t('Field component'),
-      options: [
-        { value: 'Input.URL', label: 'URL' },
-        { value: 'Input.Preview', label: 'Preview' },
-      ],
-      value: fieldSchema['x-component-props']?.['component'] || 'Input.URL',
-      onChange(component) {
-        const schema = {
-          ['x-uid']: fieldSchema['x-uid'],
-        };
-        fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
-        fieldSchema['x-component-props']['component'] = component;
-        schema['x-component-props'] = fieldSchema['x-component-props'];
-        field.componentProps = field.componentProps || {};
-        field.componentProps.component = component;
-        dn.emit('patch', {
-          schema,
-        });
-      },
-    };
-  },
-};
+import { fieldComponent } from '../Input.URL/settings';
 
 const size = {
   name: 'size',
@@ -83,7 +50,7 @@ const size = {
   },
 };
 
-export const urlComponentFieldSettings = new SchemaSettings({
-  name: 'fieldSettings:component:Input.URL',
+export const inputPreviewComponentFieldSettings = new SchemaSettings({
+  name: 'fieldSettings:component:Input.Preview',
   items: [fieldComponent, size],
 });

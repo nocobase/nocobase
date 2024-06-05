@@ -52,6 +52,8 @@ import { datePickerComponentFieldSettings } from '../modules/fields/component/Da
 import { fileManagerComponentFieldSettings } from '../modules/fields/component/FileManager/fileManagerComponentFieldSettings';
 import { previewComponentFieldSettings } from '../modules/fields/component/FileManager/previewComponentFieldSettings';
 import { uploadAttachmentComponentFieldSettings } from '../modules/fields/component/FileManager/uploadAttachmentComponentFieldSettings';
+import { inputPreviewComponentFieldSettings } from '../modules/fields/component/Input.Preview/settings';
+import { inputURLComponentFieldSettings } from '../modules/fields/component/Input.URL/settings';
 import { inputNumberComponentFieldSettings } from '../modules/fields/component/InputNumber/inputNumberComponentFieldSettings';
 import { subformComponentFieldSettings } from '../modules/fields/component/Nester/subformComponentFieldSettings';
 import { recordPickerComponentFieldSettings } from '../modules/fields/component/Picker/recordPickerComponentFieldSettings';
@@ -60,7 +62,6 @@ import { selectComponentFieldSettings } from '../modules/fields/component/Select
 import { subTablePopoverComponentFieldSettings } from '../modules/fields/component/SubTable/subTablePopoverComponentFieldSettings';
 import { tagComponentFieldSettings } from '../modules/fields/component/Tag/tagComponentFieldSettings';
 import { unixTimestampComponentFieldSettings } from '../modules/fields/component/UnixTimestamp/unixTimestampComponentFieldSettings';
-import { urlComponentFieldSettings } from '../modules/fields/component/URL/settings';
 
 export class SchemaSettingsPlugin extends Plugin {
   async load() {
@@ -118,7 +119,8 @@ export class SchemaSettingsPlugin extends Plugin {
     this.schemaSettingsManager.add(fileManagerComponentFieldSettings);
     this.schemaSettingsManager.add(tagComponentFieldSettings);
     this.schemaSettingsManager.add(cascadeSelectComponentFieldSettings);
-    this.schemaSettingsManager.add(urlComponentFieldSettings);
+    this.schemaSettingsManager.add(inputPreviewComponentFieldSettings);
+    this.schemaSettingsManager.add(inputURLComponentFieldSettings);
     this.schemaSettingsManager.add(uploadAttachmentComponentFieldSettings);
     this.schemaSettingsManager.add(previewComponentFieldSettings);
   }
