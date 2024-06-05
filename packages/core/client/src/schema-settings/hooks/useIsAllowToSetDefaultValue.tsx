@@ -10,12 +10,12 @@
 import { Form } from '@formily/core';
 import { Schema, useFieldSchema } from '@formily/react';
 import React, { useContext, useMemo } from 'react';
-import { CollectionFieldOptions_deprecated } from '../..';
-import { isSystemField } from '../SchemaSettings';
-import { isPatternDisabled } from '../isPatternDisabled';
-import { useFormBlockContext, useFormBlockType } from '../../block-provider';
+import { useFormBlockContext, useFormBlockType } from '../../block-provider/FormBlockProvider';
 import { useCollectionManager_deprecated } from '../../collection-manager/hooks/useCollectionManager_deprecated';
 import { useCollection_deprecated } from '../../collection-manager/hooks/useCollection_deprecated';
+import { CollectionFieldOptions_deprecated } from '../../collection-manager/types';
+import { isSystemField } from '../SchemaSettings';
+import { isPatternDisabled } from '../isPatternDisabled';
 
 interface DefaultValueProviderProps {
   isAllowToSetDefaultValue: (params: IsAllowToSetDefaultValueParams) => boolean;

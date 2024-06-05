@@ -12,14 +12,14 @@ import { ISchema, useField, useFieldSchema } from '@formily/react';
 import _ from 'lodash';
 import { useTranslation } from 'react-i18next';
 import { SchemaSettings } from '../../../../application/schema-settings/SchemaSettings';
-import { useFormBlockContext } from '../../../../block-provider';
+import { useFormBlockContext } from '../../../../block-provider/FormBlockProvider';
 import { useCollection_deprecated, useSortFields } from '../../../../collection-manager';
 import { removeNullCondition, useDesignable } from '../../../../schema-component';
+import { SchemaSettingsBlockHeightItem } from '../../../../schema-settings/SchemaSettingsBlockHeightItem';
 import { SchemaSettingsBlockTitleItem } from '../../../../schema-settings/SchemaSettingsBlockTitleItem';
 import { SchemaSettingsDataScope } from '../../../../schema-settings/SchemaSettingsDataScope';
 import { SchemaSettingsTemplate } from '../../../../schema-settings/SchemaSettingsTemplate';
 import { setDataLoadingModeSettingsItem } from '../details-multi/setDataLoadingModeSettingsItem';
-import { SchemaSettingsBlockHeightItem } from '../../../../schema-settings/SchemaSettingsBlockHeightItem';
 
 export const listBlockSettings = new SchemaSettings({
   name: 'blockSettings:list',

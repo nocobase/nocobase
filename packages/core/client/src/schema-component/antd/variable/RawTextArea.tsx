@@ -29,7 +29,7 @@ export function RawTextArea(props): JSX.Element {
   const inputRef = useRef<any>(null);
   const { changeOnSelect, component: Component = Input.TextArea, ...others } = props;
   const scope = typeof props.scope === 'function' ? props.scope() : props.scope;
-  const [options, setOptions] = useState(scope ? cloneDeep(scope) : []);
+  const [options, setOptions] = useState(scope ? scope : []);
 
   function onInsert(selected) {
     if (!inputRef.current) {
