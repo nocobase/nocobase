@@ -7,9 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React from 'react';
+import React, { useCallback } from 'react';
 
-import { Variable, parseCollectionName, useCompile, usePlugin } from '@nocobase/client';
+import { Variable, useApp, useCompile, usePlugin } from '@nocobase/client';
 
 import { useFlowContext } from './FlowContext';
 import { NAMESPACE, lang } from './locale';
@@ -259,8 +259,7 @@ export function useWorkflowVariableOptions(options: UseVariableOptions = {}) {
 }
 
 function getNormalizedFields(collectionName, { compile, getCollectionFields }) {
-  const [dataSourceName, collection] = parseCollectionName(collectionName);
-  const fields = getCollectionFields(collection, dataSourceName);
+  const fields = getCollectionFields(collectionName);
   const foreignKeyFields: any[] = [];
   const result: any[] = [];
   fields.forEach((field) => {
@@ -280,7 +279,7 @@ function getNormalizedFields(collectionName, { compile, getCollectionFields }) {
           ...foreignKeyField,
           uiSchema: {
             ...field.uiSchema,
-            title: field.uiSchema?.title ? `${compile(field.uiSchema?.title)} ID` : foreignKeyField.name,
+            title: foreignKeyField.uiSchema?.title ? compile(foreignKeyField.uiSchema?.title) : foreignKeyField.name,
           },
         });
       } else {
@@ -297,17 +296,7 @@ function getNormalizedFields(collectionName, { compile, getCollectionFields }) {
         });
       }
     } else if (field.type === 'context' && field.collectionName === 'users') {
-      const belongsToField =
-        result.find((f) => f.type === 'belongsTo' && f.target === 'users' && f.foreignKey === field.name) ?? {};
-      result.splice(i, 0, {
-        ...field,
-        type: field.dataType,
-        interface: belongsToField.interface,
-        uiSchema: {
-          ...belongsToField.uiSchema,
-          title: belongsToField.uiSchema?.title ? `${compile(belongsToField.uiSchema?.title)} ID` : field.name,
-        },
-      });
+      result.splice(i, 1);
     }
   }
 
@@ -379,6 +368,13 @@ export function getCollectionFieldOptions(options): VariableOption[] {
   });
 
   return result;
+}
+
+export function useGetCollectionFields(dataSourceName?) {
+  const app = useApp();
+  const { collectionManager } = app.dataSourceManager.getDataSource(dataSourceName);
+
+  return collectionManager.getCollectionFields.bind(collectionManager);
 }
 
 export function WorkflowVariableInput({ variableOptions, ...props }): JSX.Element {
