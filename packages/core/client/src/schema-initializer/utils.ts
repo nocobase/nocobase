@@ -104,7 +104,7 @@ const quickEditField = [
   'lineString',
 ];
 
-export const useTableColumnInitializerFields = () => {
+export function useTableColumnInitializerFields() {
   const { name, currentFields = [] } = useCollection_deprecated();
   const { getInterface, getCollection } = useCollectionManager_deprecated();
   const fieldSchema = useFieldSchema();
@@ -165,9 +165,9 @@ export const useTableColumnInitializerFields = () => {
         schema,
       } as SchemaInitializerItemType;
     });
-};
+}
 
-export const useAssociatedTableColumnInitializerFields = () => {
+export function useAssociatedTableColumnInitializerFields() {
   const { name, fields } = useCollection_deprecated();
   const { getInterface, getCollectionFields, getCollection } = useCollectionManager_deprecated();
   const groups = fields
@@ -187,7 +187,6 @@ export const useAssociatedTableColumnInitializerFields = () => {
             // type: 'string',
             name: `${field.name}.${subField.name}`,
             // title: subField?.uiSchema?.title || subField.name,
-
             'x-component': 'CollectionField',
             'x-read-pretty': true,
             'x-collection-field': `${name}.${field.name}.${subField.name}`,
@@ -222,9 +221,9 @@ export const useAssociatedTableColumnInitializerFields = () => {
     });
 
   return groups;
-};
+}
 
-export const useInheritsTableColumnInitializerFields = () => {
+export function useInheritsTableColumnInitializerFields() {
   const { name } = useCollection_deprecated();
   const { getInterface, getInheritCollections, getCollection, getParentCollectionFields } =
     useCollectionManager_deprecated();
@@ -289,7 +288,7 @@ export const useInheritsTableColumnInitializerFields = () => {
         }),
     };
   });
-};
+}
 
 export const useFormItemInitializerFields = (options?: any) => {
   const { name, currentFields } = useCollection_deprecated();
