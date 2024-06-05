@@ -30,6 +30,8 @@ import { SchemaSettingsDataScope } from '../../../../schema-settings/SchemaSetti
 import { SchemaSettingsSortField } from '../../../../schema-settings/SchemaSettingsSortField';
 import { SchemaSettingsTemplate } from '../../../../schema-settings/SchemaSettingsTemplate';
 import { setDataLoadingModeSettingsItem } from '../details-multi/setDataLoadingModeSettingsItem';
+import { setDefaultSortingRulesSchemaSettingsItem } from '../../../../schema-settings/setDefaultSortingRulesSchemaSettingsItem';
+import { setTheDataScopeSchemaSettingsItem } from '../../../../schema-settings/setTheDataScopeSchemaSettingsItem';
 
 export const tableBlockSettings = new SchemaSettings({
   name: 'blockSettings:table',
@@ -137,165 +139,8 @@ export const tableBlockSettings = new SchemaSettings({
         return field.decoratorProps.dragSort;
       },
     },
-    {
-      name: 'SetTheDataScope',
-      Component: SchemaSettingsDataScope,
-      useComponentProps: () => {
-        const { name } = useCollection_deprecated();
-        const field = useField();
-        const fieldSchema = useFieldSchema();
-        const { form } = useFormBlockContext();
-        const { service } = useTableBlockContext();
-        const { dn } = useDesignable();
-        const onDataScopeSubmit = useCallback(
-          ({ filter }) => {
-            filter = removeNullCondition(filter);
-            const params = field.decoratorProps.params || {};
-            params.filter = filter;
-            field.decoratorProps.params = params;
-            fieldSchema['x-decorator-props']['params'] = params;
-
-            dn.emit('patch', {
-              schema: {
-                ['x-uid']: fieldSchema['x-uid'],
-                'x-decorator-props': fieldSchema['x-decorator-props'],
-              },
-            });
-            service.params[0].page = 1;
-          },
-          [dn, field.decoratorProps, fieldSchema, service],
-        );
-
-        return {
-          collectionName: name,
-          defaultFilter: fieldSchema?.['x-decorator-props']?.params?.filter || {},
-          form: form,
-          onSubmit: onDataScopeSubmit,
-        };
-      },
-    },
-    {
-      name: 'SetDefaultSortingRules',
-      type: 'modal',
-      useComponentProps() {
-        const { name } = useCollection_deprecated();
-        const field = useField();
-        const fieldSchema = useFieldSchema();
-        const sortFields = useSortFields(name);
-        const { service } = useTableBlockContext();
-        const { t } = useTranslation();
-        const { dn } = useDesignable();
-        const defaultSort = fieldSchema?.['x-decorator-props']?.params?.sort || [];
-        const sort = defaultSort?.map((item: string) => {
-          return item?.startsWith('-')
-            ? {
-                field: item.substring(1),
-                direction: 'desc',
-              }
-            : {
-                field: item,
-                direction: 'asc',
-              };
-        });
-
-        return {
-          title: t('Set default sorting rules'),
-          components: { ArrayItems },
-          schema: {
-            type: 'object',
-            title: t('Set default sorting rules'),
-            properties: {
-              sort: {
-                type: 'array',
-                default: sort,
-                'x-component': 'ArrayItems',
-                'x-decorator': 'FormItem',
-                items: {
-                  type: 'object',
-                  properties: {
-                    space: {
-                      type: 'void',
-                      'x-component': 'Space',
-                      properties: {
-                        sort: {
-                          type: 'void',
-                          'x-decorator': 'FormItem',
-                          'x-component': 'ArrayItems.SortHandle',
-                        },
-                        field: {
-                          type: 'string',
-                          enum: sortFields,
-                          required: true,
-                          'x-decorator': 'FormItem',
-                          'x-component': 'Select',
-                          'x-component-props': {
-                            style: {
-                              width: 260,
-                            },
-                          },
-                        },
-                        direction: {
-                          type: 'string',
-                          'x-decorator': 'FormItem',
-                          'x-component': 'Radio.Group',
-                          'x-component-props': {
-                            optionType: 'button',
-                          },
-                          enum: [
-                            {
-                              label: t('ASC'),
-                              value: 'asc',
-                            },
-                            {
-                              label: t('DESC'),
-                              value: 'desc',
-                            },
-                          ],
-                        },
-                        remove: {
-                          type: 'void',
-                          'x-decorator': 'FormItem',
-                          'x-component': 'ArrayItems.Remove',
-                        },
-                      },
-                    },
-                  },
-                },
-                properties: {
-                  add: {
-                    type: 'void',
-                    title: t('Add sort field'),
-                    'x-component': 'ArrayItems.Addition',
-                  },
-                },
-              },
-            },
-          } as ISchema,
-          onSubmit: ({ sort }) => {
-            const sortArr = sort.map((item) => {
-              return item.direction === 'desc' ? `-${item.field}` : item.field;
-            });
-            const params = field.decoratorProps.params || {};
-            params.sort = sortArr;
-            field.decoratorProps.params = params;
-            fieldSchema['x-decorator-props']['params'] = params;
-            dn.emit('patch', {
-              schema: {
-                ['x-uid']: fieldSchema['x-uid'],
-                'x-decorator-props': fieldSchema['x-decorator-props'],
-              },
-            });
-            service.run({ ...service.params?.[0], sort: sortArr });
-          },
-        };
-      },
-      useVisible() {
-        const field = useField();
-        const { dragSort } = field.decoratorProps;
-
-        return !dragSort;
-      },
-    },
+    setTheDataScopeSchemaSettingsItem,
+    setDefaultSortingRulesSchemaSettingsItem,
     setDataLoadingModeSettingsItem,
     {
       name: 'RecordsPerPage',

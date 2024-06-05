@@ -151,7 +151,8 @@ export const SchemaSettingsProvider: React.FC<SchemaSettingsProviderProps> = (pr
 
 export const SchemaSettingsDropdown: React.FC<SchemaSettingsProps> = (props) => {
   const { title, dn, ...others } = props;
-  const [visible, setVisible] = useState(false);
+  const app = useApp();
+  const [visible, setVisible] = useState(app.showSettings || false);
   const { Component, getMenuItems } = useMenuItem();
   const [, startTransition] = useReactTransition();
   const dropdownMaxHeight = useNiceDropdownMaxHeight([visible]);

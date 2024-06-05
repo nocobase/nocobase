@@ -70,6 +70,7 @@ export interface ApplicationOptions {
   devDynamicImport?: DevDynamicImport;
   dataSourceManager?: DataSourceManagerOptions;
   disableAcl?: boolean;
+  showSettings?: boolean;
 }
 
 export class Application {
@@ -93,6 +94,7 @@ export class Application {
   public schemaInitializerManager: SchemaInitializerManager;
   public schemaSettingsManager: SchemaSettingsManager;
   public dataSourceManager: DataSourceManager;
+  public showSettings: boolean;
 
   public name: string;
 
@@ -115,6 +117,7 @@ export class Application {
       maintaining: observable.ref,
       error: observable.ref,
     });
+    this.showSettings = options.showSettings;
     this.devDynamicImport = options.devDynamicImport;
     this.scopes = merge(this.scopes, options.scopes);
     this.components = merge(this.components, options.components);
