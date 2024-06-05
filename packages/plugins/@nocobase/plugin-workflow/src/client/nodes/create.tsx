@@ -7,12 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import {
-  SchemaInitializerItemType,
-  useCollectionDataSource,
-  useCollectionManager_deprecated,
-  useCompile,
-} from '@nocobase/client';
+import { SchemaInitializerItemType, parseCollectionName, useCollectionDataSource, useCompile } from '@nocobase/client';
 
 import { CollectionBlockInitializer } from '../components/CollectionBlockInitializer';
 import CollectionFieldset from '../components/CollectionFieldset';
