@@ -116,7 +116,12 @@ export const getThumbURL = (target: any) => {
 export function getResponseMessage({ error, response }: UploadFile<any>) {
   if (error instanceof Error && 'isAxiosError' in error) {
     // @ts-ignore
-    return error.response.data?.errors?.map?.((item) => item?.message).join(', ');
+    if (error.response) {
+      // @ts-ignore
+      return error.response.data?.errors?.map?.((item) => item?.message).join(', ');
+    } else {
+      return error.message;
+    }
   }
   if (!response) {
     return '';
