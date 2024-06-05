@@ -10,7 +10,7 @@
 import { Input, Select } from 'antd';
 import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useFormBlockContext } from '../../block-provider';
+import { useFormBlockContext } from '../../block-provider/FormBlockProvider';
 import { useRecord } from '../../record-provider';
 import { Variable } from '.././../schema-component';
 import { useCompatOldVariables } from '../VariableInput/VariableInput';

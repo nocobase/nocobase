@@ -19,12 +19,13 @@ import { isInitializersSame, useApp } from '../../../application';
 import { usePlugin } from '../../../application/hooks';
 import { SchemaSettingOptions, SchemaSettings } from '../../../application/schema-settings';
 import { useSchemaToolbar } from '../../../application/schema-toolbar';
-import { useFormBlockContext } from '../../../block-provider';
+import { useFormBlockContext } from '../../../block-provider/FormBlockProvider';
 import {
   joinCollectionName,
   useCollectionManager_deprecated,
   useCollection_deprecated,
 } from '../../../collection-manager';
+import { DataSourceProvider, useDataSourceKey } from '../../../data-source';
 import { FlagProvider } from '../../../flag-provider';
 import { SaveMode } from '../../../modules/actions/submit/createSubmitActionSettings';
 import { SchemaSettingOpenModeSchemaItems } from '../../../schema-items';
@@ -41,7 +42,6 @@ import {
 import { DefaultValueProvider } from '../../../schema-settings/hooks/useIsAllowToSetDefaultValue';
 import { useLinkageAction } from './hooks';
 import { requestSettingsSchema } from './utils';
-import { DataSourceProvider, useDataSourceKey } from '../../../data-source';
 
 const MenuGroup = (props) => {
   return props.children;
