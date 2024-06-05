@@ -315,12 +315,10 @@ test.describe('table block schema settings', () => {
       page,
       mockPage,
     }) => {
-      const nocoPage = await mockPage(oneTableWithRoles).waitForInit();
-      await nocoPage.goto();
+      await mockPage(oneTableWithRoles).goto();
 
       // 1. 创建一个详情区块
       await page.getByLabel('schema-initializer-Grid-page:').hover();
-      await page.getByLabel('schema-initializer-Grid-page:').click();
       await page.getByRole('menuitem', { name: 'table Details right' }).hover();
       await page.getByRole('menuitem', { name: 'Roles' }).click();
       await page.mouse.move(300, 0);

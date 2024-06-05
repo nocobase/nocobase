@@ -1,5 +1,4 @@
-
-import { Plugin, SchemaComponent, ExtendCollectionsProvider, FormBlockProvider, ISchema } from '@nocobase/client';
+import { ExtendCollectionsProvider, FormBlockProvider, ISchema, Plugin, SchemaComponent } from '@nocobase/client';
 import { mockApp } from '@nocobase/client/demo-utils';
 import React from 'react';
 
@@ -95,22 +94,24 @@ const schema: ISchema = {
 };
 
 const Demo = () => {
-  return <ExtendCollectionsProvider collections={[bookCollection]}>
-    <SchemaComponent schema={schema} />
-  </ExtendCollectionsProvider>;
+  return (
+    <ExtendCollectionsProvider collections={[bookCollection]}>
+      <SchemaComponent schema={schema} />
+    </ExtendCollectionsProvider>
+  );
 };
 
 class DemoPlugin extends Plugin {
   async load() {
-    this.app.router.add('root', { path: '/', Component: Demo })
+    this.app.router.add('root', { path: '/', Component: Demo });
   }
 }
 
 const app = mockApp({
   plugins: [DemoPlugin],
   components: {
-    FormBlockProvider
-  }
+    FormBlockProvider,
+  },
 });
 
 export default app.getRootComponent();

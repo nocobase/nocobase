@@ -7,12 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { useDataBlockHeight, useDataBlock } from '@nocobase/client';
+import { useDataBlockHeight, useBlockHeightProps } from '@nocobase/client';
 import { theme } from 'antd';
 
 export const useCalenderHeight = () => {
   const height = useDataBlockHeight();
-  const { heightProps } = useDataBlock();
+  const { heightProps } = useBlockHeightProps();
   const { title } = heightProps;
   const { token } = theme.useToken();
   if (!height) {
