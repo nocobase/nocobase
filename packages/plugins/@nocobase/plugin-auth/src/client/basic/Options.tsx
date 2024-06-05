@@ -29,9 +29,7 @@ export const Options = () => {
                 type: 'boolean',
                 title: '{{t("Allow to sign up")}}',
                 'x-component': 'Checkbox',
-                'x-component-props': {
-                  defaultChecked: true,
-                },
+                default: true,
               },
             },
           },
