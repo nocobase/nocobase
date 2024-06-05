@@ -23,12 +23,76 @@ describe('export to xlsx with preset', () => {
 
   beforeEach(async () => {
     app = await createMockServer({
-      plugins: ['nocobase'],
+      plugins: ['nocobase', 'map'],
     });
   });
 
   afterEach(async () => {
     await app.destroy();
+  });
+
+  it('should export with map field', async () => {
+    const Post = app.db.collection({
+      name: 'posts',
+      fields: [
+        { type: 'string', name: 'title' },
+        {
+          name: 'circle',
+          type: 'circle',
+          interface: 'circle',
+          uiSchema: {
+            'x-component-props': { mapType: 'amap' },
+            type: 'void',
+            'x-component': 'Map',
+            'x-component-designer': 'Map.Designer',
+            title: 'circle',
+          },
+        },
+      ],
+    });
+
+    await app.db.sync();
+
+    await Post.repository.create({
+      values: {
+        title: 'p1',
+        circle: [116.397428, 39.90923, 3241],
+      },
+    });
+
+    const exporter = new XlsxExporter({
+      collectionManager: app.mainDataSource.collectionManager,
+      collection: Post,
+      chunkSize: 10,
+      columns: [
+        { dataIndex: ['title'], defaultTitle: 'Title' },
+        {
+          dataIndex: ['circle'],
+          defaultTitle: 'circle',
+        },
+      ],
+    });
+
+    const wb = await exporter.run();
+
+    const xlsxFilePath = path.resolve(__dirname, `t_${uid()}.xlsx`);
+
+    try {
+      XLSX.writeFile(wb, xlsxFilePath);
+
+      // read xlsx file
+      const workbook = XLSX.readFile(xlsxFilePath);
+      const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+      const sheetData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+
+      const header = sheetData[0];
+      expect(header).toEqual(['Title', 'circle']);
+
+      const firstUser = sheetData[1];
+      expect(firstUser[1]).toEqual('116.397428,39.90923,3241');
+    } finally {
+      fs.unlinkSync(xlsxFilePath);
+    }
   });
 
   it('should export with attachment field', async () => {
