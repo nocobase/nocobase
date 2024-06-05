@@ -729,6 +729,8 @@ test.describe('creation form block schema settings', () => {
         'x-index': 1,
       },
     }).goto();
+
+    await page.waitForLoadState('networkidle');
     await page.getByLabel('schema-initializer-Grid-page:addBlock').hover();
     //使用复制模板
     await page.getByRole('menuitem', { name: 'form Form' }).first().hover();
