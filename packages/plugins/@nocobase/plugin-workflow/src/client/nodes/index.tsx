@@ -9,6 +9,7 @@
 
 import { CloseOutlined, DeleteOutlined } from '@ant-design/icons';
 import { createForm } from '@formily/core';
+import { toJS } from '@formily/reactive';
 import { ISchema, useForm } from '@formily/react';
 import { App, Button, Dropdown, Input, Tag, Tooltip, message } from 'antd';
 import { cloneDeep } from 'lodash';
@@ -101,6 +102,7 @@ function useUpdateAction() {
           config: form.values,
         },
       });
+      form.setInitialValues(toJS(form.values));
       ctx.setFormValueChanged(false);
       ctx.setVisible(false);
       refresh();
