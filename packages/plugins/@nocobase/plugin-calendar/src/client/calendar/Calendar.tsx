@@ -29,10 +29,10 @@ import { i18nt, useTranslation } from '../../locale';
 import Header from './components/Header';
 import { CalendarToolbarContext } from './context';
 import GlobalStyle from './global.style';
+import { useCalenderHeight } from './hook';
 import useStyle from './style';
 import type { ToolbarProps } from './types';
 import { formatDate } from './utils';
-import { useCalenderHeight } from './hook';
 
 const Weeks = ['month', 'week', 'day'] as View[];
 const localizer = dayjsLocalizer(dayjs);
@@ -204,7 +204,6 @@ export const Calendar: any = withDynamicSchemaProps(
       // 新版 UISchema（1.0 之后）中已经废弃了 useProps，这里之所以继续保留是为了兼容旧版的 UISchema
       const { dataSource, fieldNames, showLunar } = useProps(props);
       const height = useCalenderHeight();
-      console.log(height);
       const [date, setDate] = useState<Date>(new Date());
       const [view, setView] = useState<View>('month');
       const events = useEvents(dataSource, fieldNames, date, view);

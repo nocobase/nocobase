@@ -275,6 +275,8 @@ test.describe('creation form block schema settings', () => {
   });
 
   test('save block template & using block template', async ({ page, mockPage, clearBlockTemplates }) => {
+    // 确保测试结束后已保存的模板会被清空
+    await clearBlockTemplates();
     const nocoPage = await mockPage({
       pageSchema: {
         _isJSONSchemaObject: true,
@@ -730,72 +732,56 @@ test.describe('creation form block schema settings', () => {
       },
     }).goto();
 
-    await page.waitForLoadState('networkidle');
-    try {
-      await page.getByLabel('schema-initializer-Grid-page:addBlock').hover();
-      //使用复制模板
-      await page.getByRole('menuitem', { name: 'form Form' }).first().hover();
-      await page.getByRole('menuitem', { name: 'Users' }).hover();
-      await page.getByRole('menuitem', { name: 'Duplicate template' }).hover();
-      await page.getByRole('menuitem', { name: 'Users_Form (Fields only)' }).first().click();
-      await page.mouse.move(300, 0);
-      await expect(page.getByLabel('block-item-CardItem-users-form')).toBeVisible();
+    await page.getByLabel('schema-initializer-Grid-page:addBlock').hover();
+    //使用复制模板
+    await page.getByRole('menuitem', { name: 'form Form' }).first().hover();
+    await page.getByRole('menuitem', { name: 'Users' }).hover();
+    await page.getByRole('menuitem', { name: 'Duplicate template' }).hover();
+    await page.getByRole('menuitem', { name: 'Users_Form (Fields only)' }).first().click();
+    await page.mouse.move(300, 0);
+    await expect(page.getByLabel('block-item-CardItem-users-form')).toBeVisible();
 
-      //在新建操作中使用引用模板
-      await page.getByLabel('action-Action-Add new-create-users-table').click();
-      await page.getByLabel('schema-initializer-Grid-popup:addNew:addBlock-users').hover();
-      await page.getByRole('menuitem', { name: 'form Form' }).first().hover();
-      await page.getByRole('menuitem', { name: 'Current collection' }).hover();
-      await page.getByRole('menuitem', { name: 'Reference template' }).hover();
-      await page.getByRole('menuitem', { name: 'Users_Form (Fields only)' }).first().click();
-      await page.mouse.move(300, 0);
-      await page.getByLabel('schema-initializer-Grid-popup:addNew:addBlock-users').hover();
-      await expect(page.locator('.ant-drawer').getByLabel('block-item-CardItem-users-form')).toBeVisible();
-      await page.locator('.ant-drawer-mask').click();
+    //在新建操作中使用引用模板
+    await page.getByLabel('action-Action-Add new-create-users-table').click();
+    await page.getByLabel('schema-initializer-Grid-popup:addNew:addBlock-users').hover();
+    await page.getByRole('menuitem', { name: 'form Form' }).first().hover();
+    await page.getByRole('menuitem', { name: 'Current collection' }).hover();
+    await page.getByRole('menuitem', { name: 'Reference template' }).hover();
+    await page.getByRole('menuitem', { name: 'Users_Form (Fields only)' }).first().click();
+    await page.mouse.move(300, 0);
+    await page.getByLabel('schema-initializer-Grid-popup:addNew:addBlock-users').hover();
+    await expect(page.locator('.ant-drawer').getByLabel('block-item-CardItem-users-form')).toBeVisible();
+    await page.locator('.ant-drawer-mask').click();
 
-      //在编辑操作中使用引用模板
-      await page.getByLabel('action-Action.Link-Edit-update-users-table-0').click();
-      await page.getByLabel('schema-initializer-Grid-popup:common:addBlock-users').click();
-      await page.getByRole('menuitem', { name: 'form Form (Edit)' }).first().hover();
-      await page.getByRole('menuitem', { name: 'Reference template' }).hover();
-      await page.getByRole('menuitem', { name: 'Users_Form (Fields only)' }).first().click();
-      await page.mouse.move(300, 0);
+    //在编辑操作中使用引用模板
+    await page.getByLabel('action-Action.Link-Edit-update-users-table-0').click();
+    await page.getByLabel('schema-initializer-Grid-popup:common:addBlock-users').click();
+    await page.getByRole('menuitem', { name: 'form Form (Edit)' }).first().hover();
+    await page.getByRole('menuitem', { name: 'Reference template' }).hover();
+    await page.getByRole('menuitem', { name: 'Users_Form (Fields only)' }).first().click();
+    await page.mouse.move(300, 0);
 
-      // 使用模板创建一个新增表单
-      await page.getByLabel('schema-initializer-Grid-popup').hover();
-      await page.getByRole('menuitem', { name: 'form Form (Add new) right' }).hover();
-      await page.getByRole('menuitem', { name: 'Other records right' }).hover();
-      await page.getByRole('menuitem', { name: 'Users right' }).hover();
-      await page.getByRole('menuitem', { name: 'Duplicate template right' }).hover();
-      await page.getByRole('menuitem', { name: 'Users_Form (Fields only)' }).click();
-      await expect(
-        page.getByTestId('drawer-Action.Container-users-Edit record').getByLabel('block-item-CollectionField-'),
-      ).toHaveCount(2);
+    // 使用模板创建一个新增表单
+    await page.getByLabel('schema-initializer-Grid-popup').hover();
+    await page.getByRole('menuitem', { name: 'form Form (Add new) right' }).hover();
+    await page.getByRole('menuitem', { name: 'Other records right' }).hover();
+    await page.getByRole('menuitem', { name: 'Users right' }).hover();
+    await page.getByRole('menuitem', { name: 'Duplicate template right' }).hover();
+    await page.getByRole('menuitem', { name: 'Users_Form (Fields only)' }).click();
+    await expect(
+      page.getByTestId('drawer-Action.Container-users-Edit record').getByLabel('block-item-CollectionField-'),
+    ).toHaveCount(2);
 
-      //修改引用模板
-      await page
-        .locator('.ant-drawer')
-        .getByLabel('schema-initializer-Grid-form:configureFields-users')
-        .first()
-        .hover();
-      await page.getByRole('menuitem', { name: 'Phone' }).click();
-      await page.locator('.ant-drawer-mask').click();
-      //复制模板不同步，引用模板同步
-      await expect(
-        page
-          .getByLabel('block-item-CardItem-users-form')
-          .getByLabel('block-item-CollectionField-users-form-users.phone'),
-      ).not.toBeVisible();
-      await page.getByLabel('block-item-CardItem-users-table').getByLabel('action-Action-Add').click();
-      await expect(page.getByLabel('block-item-CollectionField-users-form-users.phone')).toBeVisible();
-      await page.locator('.ant-drawer-mask').click();
-    } catch (error) {
-      //删除模板
-      await clearBlockTemplates();
-      throw error;
-    }
-
-    //删除模板
-    await clearBlockTemplates();
+    //修改引用模板
+    await page.locator('.ant-drawer').getByLabel('schema-initializer-Grid-form:configureFields-users').first().hover();
+    await page.getByRole('menuitem', { name: 'Phone' }).click();
+    await page.locator('.ant-drawer-mask').click();
+    //复制模板不同步，引用模板同步
+    await expect(
+      page.getByLabel('block-item-CardItem-users-form').getByLabel('block-item-CollectionField-users-form-users.phone'),
+    ).not.toBeVisible();
+    await page.getByLabel('block-item-CardItem-users-table').getByLabel('action-Action-Add').click();
+    await expect(page.getByLabel('block-item-CollectionField-users-form-users.phone')).toBeVisible();
+    await page.locator('.ant-drawer-mask').click();
   });
 });

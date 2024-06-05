@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { useDataBlockHeight, useDesignable, useDataBlock } from '@nocobase/client';
+import { useDataBlockHeight, useDesignable, useBlockHeightProps } from '@nocobase/client';
 import { theme } from 'antd';
 import { useFieldSchema } from '@formily/react';
 
@@ -15,7 +15,7 @@ export const useMapHeight = () => {
   const height = useDataBlockHeight();
   const { token } = theme.useToken();
   const { designable } = useDesignable();
-  const { heightProps } = useDataBlock() || {};
+  const { heightProps } = useBlockHeightProps() || {};
   const { title } = heightProps || {};
   const schema = useFieldSchema();
   if (!height) {

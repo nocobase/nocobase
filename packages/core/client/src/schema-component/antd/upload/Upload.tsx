@@ -390,7 +390,8 @@ export function Uploader({ rules, ...props }: UploadProps) {
 
   const { mimetype: accept, size } = rules ?? {};
   const sizeHint = useSizeHint(size);
-  const selectable = !disabled && (multiple || !(value || pendingList.length));
+  const selectable =
+    !disabled && (multiple || ((!value || (Array.isArray(value) && !value.length)) && !pendingList.length));
 
   return (
     <>
