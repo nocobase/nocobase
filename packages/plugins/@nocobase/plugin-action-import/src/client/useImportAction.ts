@@ -103,6 +103,7 @@ export const useImportStartAction = () => {
   const form = useForm();
   const { setVisible, fieldSchema } = useActionContext();
   const { setImportModalVisible, setImportStatus, setImportResult } = useImportContext();
+  const { upload } = form.values;
   return {
     async run() {
       const { importColumns, explain } = lodash.cloneDeep(
@@ -149,5 +150,6 @@ export const useImportStartAction = () => {
         setVisible(true);
       }
     },
+    disabled: upload?.length === 0 || form.errors?.length > 0,
   };
 };
