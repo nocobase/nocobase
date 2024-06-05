@@ -7,14 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { useEventListener } from 'ahooks';
-import { debounce } from 'lodash';
-import { useCallback, useRef, useState, useMemo } from 'react';
 import { useFieldSchema } from '@formily/react';
+import { useEventListener } from 'ahooks';
 import { theme } from 'antd';
+import { debounce } from 'lodash';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { useDesignable } from '..';
+import { getPageSchema, useDataBlockRequest } from '../../';
 import { useDataBlock } from '../../data-source';
-import { useDataBlockRequest, getPageSchema } from '../../';
 import { HeightMode } from '../../schema-settings/SchemaSettingsBlockHeightItem';
 
 const getPageHeaderHeight = (disablePageHeader, enablePageTabs, hidePageTitle, token) => {
@@ -140,8 +140,8 @@ export const useBlockHeight = () => {
   return height;
 };
 export const useTableSize = () => {
-  const [height, setTableHeight] = useState(0);
-  const [width, setTableWidth] = useState(0);
+  const [height, setTableHeight] = useState<number>();
+  const [width, setTableWidth] = useState<number>();
   const elementRef = useRef<HTMLDivElement>(null);
   const targetHeight = useTableHeight();
   const calcTableSize = useCallback(

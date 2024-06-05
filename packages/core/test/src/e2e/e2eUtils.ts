@@ -283,7 +283,7 @@ interface ExtendUtils {
    */
   destoryExternalDataSource: <T = any>(key: string) => Promise<T>;
   /**
-   * 清空区块模板
+   * 清空区块模板，该方法应该放到测试用例开始的位置（放在末尾的话，如果测试报错会导致模板不会被清空）
    */
   clearBlockTemplates: () => Promise<void>;
 }
@@ -524,7 +524,13 @@ const _test = base.extend<ExtendUtils>({
     await use(destoryDataSource);
   },
   clearBlockTemplates: async ({ browser }, use) => {
+    // 用来标记当前测试用例是否已经结束，只有结束了才会清空区块模板
+    let ended = false;
     const clearBlockTemplates = async () => {
+      if (!ended) {
+        return;
+      }
+
       const api = await request.newContext({
         storageState: process.env.PLAYWRIGHT_AUTH_FILE,
       });
@@ -544,11 +550,9 @@ const _test = base.extend<ExtendUtils>({
       }
     };
 
-    try {
-      await use(clearBlockTemplates);
-    } catch (error) {
-      await clearBlockTemplates();
-    }
+    await use(clearBlockTemplates);
+    ended = true;
+    await clearBlockTemplates();
   },
 });
 
