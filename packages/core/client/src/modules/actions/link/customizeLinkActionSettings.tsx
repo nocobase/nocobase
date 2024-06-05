@@ -15,7 +15,6 @@ import { useTranslation } from 'react-i18next';
 import { useCollectionRecord, useDesignable, useFormBlockContext, useRecord } from '../../../';
 import { useSchemaToolbar } from '../../../application';
 import { SchemaSettings } from '../../../application/schema-settings/SchemaSettings';
-import { useFormBlockContext } from '../../../block-provider/FormBlockProvider';
 import { useCollection_deprecated } from '../../../collection-manager';
 import { ButtonEditor, RemoveButton } from '../../../schema-component/antd/action/Action.Designer';
 import { SchemaSettingsLinkageRules, SchemaSettingsModalItem } from '../../../schema-settings';
