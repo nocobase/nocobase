@@ -11,10 +11,9 @@ import { theme } from 'antd';
 import { useFieldSchema } from '@formily/react';
 import { useDataBlockHeight } from '../../hooks/useBlockSize';
 import { useDesignable } from '../../';
-import { useDataBlock } from '../../../';
 import { useDataBlockRequest } from '../../../data-source';
 import { useFormDataTemplates } from './Templates';
-import { useBlockHeightProps } from '../../../block-provider';
+import { useBlockHeightProps } from '../../../block-provider/hooks/useBlockHeightProps';
 
 export const useFormBlockHeight = () => {
   const height = useDataBlockHeight();

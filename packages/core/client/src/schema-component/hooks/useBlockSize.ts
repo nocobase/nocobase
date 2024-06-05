@@ -13,9 +13,9 @@ import { useCallback, useRef, useState, useMemo } from 'react';
 import { useFieldSchema } from '@formily/react';
 import { theme } from 'antd';
 import { useDesignable } from '..';
-import { useDataBlockRequest, getPageSchema } from '../../';
+import { useDataBlockRequest } from '../../';
 import { HeightMode } from '../../schema-settings/SchemaSettingsBlockHeightItem';
-import { useBlockHeightProps } from '../../block-provider';
+import { useBlockHeightProps, getPageSchema } from '../../block-provider/hooks';
 
 const getPageHeaderHeight = (disablePageHeader, enablePageTabs, hidePageTitle, token) => {
   if (disablePageHeader) {

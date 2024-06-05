@@ -29,7 +29,7 @@ export const getPageSchema = (schema) => {
   return getPageSchema(schema.parent);
 };
 
-export const getCardItemSchema = (schema) => {
+const getCardItemSchema = (schema) => {
   if (!schema) return null;
   if (['BlockItem', 'CardItem'].includes(schema['x-component'])) {
     return schema;
