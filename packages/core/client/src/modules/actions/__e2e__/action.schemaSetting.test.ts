@@ -17,9 +17,7 @@ test.describe('action settings', () => {
     await page.getByLabel('action-Action.Link-Delete-').first().hover();
     await page.getByLabel('designer-schema-settings-Action.Link-actionSettings:delete-general').first().hover();
 
-    await expect(
-      await page.getByRole('menuitem', { name: 'Refresh data on action' }).getByRole('switch').isChecked(),
-    ).toBeTruthy();
+    await expect(page.getByRole('menuitem', { name: 'Refresh data on action' }).getByRole('switch')).toBeChecked();
     // 默认开启执行后刷新
     const [request] = await Promise.all([
       page.waitForRequest((request) => request.url().includes('api/general:list')),
@@ -43,6 +41,7 @@ test.describe('action settings', () => {
     });
     await page.getByLabel('action-Action.Link-Delete-').click();
     await page.getByRole('button', { name: 'OK' }).click();
+    await page.waitForTimeout(500);
     expect(requestMade).toBeFalsy();
   });
 });
