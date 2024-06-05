@@ -10,7 +10,7 @@
 import { cx, css } from '@emotion/css';
 import { ArrayField } from '@formily/core';
 import { RecursionField, Schema, useField, useFieldSchema } from '@formily/react';
-import { List as AntdList, PaginationProps } from 'antd';
+import { List as AntdList, PaginationProps, theme } from 'antd';
 import React, { useCallback, useState } from 'react';
 import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
 import { SortableItem } from '../../common';
@@ -32,6 +32,7 @@ const InternalList = (props) => {
   const [schemaMap] = useState(new Map());
   const { wrapSSR, componentCls, hashId } = useStyles();
   const height = useListBlockHeight();
+  const { token } = theme.useToken();
   const getSchema = useCallback(
     (key) => {
       if (!schemaMap.has(key)) {
@@ -77,7 +78,11 @@ const InternalList = (props) => {
             .ant-spin-nested-loading {
               height: ${height ? height + 'px' : '100%'};
               overflow-y: auto;
-              overflow-x: clip;
+              .ant-spin-container {
+                width: 100%;
+                overflow-x: clip;
+                padding-right: ${token.paddingSM + 'px'};
+              }
             }
           `,
         )}
