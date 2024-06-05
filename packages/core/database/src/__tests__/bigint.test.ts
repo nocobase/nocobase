@@ -10,7 +10,7 @@
 import { Database } from '../database';
 import { mockDatabase } from './index';
 
-describe.runIf(process.env.DB_DIALECT == 'postgres')('collection', () => {
+describe.skipIf(process.env['DB_DIALECT'] === 'sqlite')('collection', () => {
   let db: Database;
 
   beforeEach(async () => {
@@ -84,7 +84,6 @@ describe.runIf(process.env.DB_DIALECT == 'postgres')('collection', () => {
 
     const item = await Test.repository.findOne();
 
-    console.log(item.toJSON());
     expect(item.toJSON()['id']).toBe('35809622393264128');
   });
 
