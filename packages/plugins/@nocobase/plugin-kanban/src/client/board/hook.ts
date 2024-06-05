@@ -7,12 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { useDataBlockHeight, useDesignable, useDataBlock } from '@nocobase/client';
+import { useDataBlockHeight, useDesignable, useBlockHeightProps } from '@nocobase/client';
 import { theme } from 'antd';
 import { useFieldSchema } from '@formily/react';
 
 export const useKanbanBlockHeight = () => {
-  const { heightProps } = useDataBlock();
+  const { heightProps } = useBlockHeightProps();
   const { title } = heightProps;
   const height = useDataBlockHeight();
   const { token } = theme.useToken();
