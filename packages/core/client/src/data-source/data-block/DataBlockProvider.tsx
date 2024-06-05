@@ -115,7 +115,6 @@ export type UseDataBlockProps<T extends keyof AllDataBlockType> = (
 export interface DataBlockContextValue<T extends {} = {}> {
   props: AllDataBlockProps & T;
   dn: Designable;
-  heightProps?: any;
 }
 
 export const DataBlockContext = createContext<DataBlockContextValue<any>>({} as any);
@@ -155,9 +154,6 @@ export const DataBlockProvider: FC<DataBlockProviderProps & { children?: ReactNo
   (props) => {
     const { collection, association, dataSource, children, hidden, ...resets } = props as Partial<AllDataBlockProps>;
     const { dn } = useDesignable();
-    const fieldSchema = useFieldSchema();
-    const pageSchema = useMemo(() => getPageSchema(fieldSchema), []);
-    const { disablePageHeader, enablePageTabs, hidePageTitle } = pageSchema?.['x-component-props'] || {};
     if (hidden) {
       return null;
     }
@@ -166,7 +162,6 @@ export const DataBlockProvider: FC<DataBlockProviderProps & { children?: ReactNo
         value={{
           dn,
           props: { ...resets, collection, association, dataSource } as AllDataBlockProps,
-          heightProps: { ...fieldSchema?.['x-component-props'], disablePageHeader, enablePageTabs, hidePageTitle },
         }}
       >
         <CollectionManagerProvider dataSource={dataSource}>
@@ -196,13 +191,4 @@ export const useDataBlock = <T extends {}>() => {
 export const useDataBlockProps = <T extends {}>(): DataBlockContextValue<T>['props'] => {
   const context = useDataBlock<T>();
   return context.props;
-};
-
-export const getPageSchema = (schema) => {
-  if (!schema) return null;
-
-  if (schema['x-component'] === 'Page') {
-    return schema;
-  }
-  return getPageSchema(schema.parent);
 };

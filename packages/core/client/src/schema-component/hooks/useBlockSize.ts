@@ -13,9 +13,9 @@ import { theme } from 'antd';
 import { debounce } from 'lodash';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { useDesignable } from '..';
-import { getPageSchema, useDataBlockRequest } from '../../';
-import { useDataBlock } from '../../data-source';
+import { useDataBlockRequest } from '../../';
 import { HeightMode } from '../../schema-settings/SchemaSettingsBlockHeightItem';
+import { useBlockHeightProps, getPageSchema } from '../../block-provider/hooks';
 
 const getPageHeaderHeight = (disablePageHeader, enablePageTabs, hidePageTitle, token) => {
   if (disablePageHeader) {
@@ -43,7 +43,7 @@ const getPageHeaderHeight = (disablePageHeader, enablePageTabs, hidePageTitle, t
 const usePageFullScreenHeight = (props?) => {
   const { token } = theme.useToken();
   const { designable } = useDesignable();
-  const { heightProps } = useDataBlock();
+  const { heightProps } = useBlockHeightProps();
   const { disablePageHeader, enablePageTabs, hidePageTitle } = heightProps || props || {};
   const navHeight = token.sizeXXL - 2;
   const addBlockBtnHeight = designable
@@ -78,7 +78,7 @@ const useDrawerFullScreenHeight = () => {
 // 表格区块高度计算
 const useTableHeight = () => {
   const { token } = theme.useToken();
-  const { heightProps } = useDataBlock();
+  const { heightProps } = useBlockHeightProps();
   const { designable } = useDesignable();
   const schema = useFieldSchema();
   const pageFullScreenHeight = useFullScreenHeight();
@@ -109,7 +109,7 @@ const useTableHeight = () => {
 
 // 常规数据区块高度计算
 export const useDataBlockHeight = () => {
-  const { heightProps } = useDataBlock();
+  const { heightProps } = useBlockHeightProps();
   const pageFullScreenHeight = useFullScreenHeight();
   const { heightMode, height } = heightProps || {};
 

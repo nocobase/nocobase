@@ -55,8 +55,11 @@ const FormComponent: React.FC<FormProps> = (props) => {
               .nb-grid {
                 height: ${height ? height + 'px' : '100%'};
                 overflow-y: auto;
-                overflow-x: clip;
-                padding-right: ${height ? token.paddingSM + 'px' : 0};
+                .nb-grid-warp {
+                  width: 100%;
+                  overflow-x: clip;
+                  padding-right: ${token.paddingSM + 'px'};
+                }
               }
             `}
           >
