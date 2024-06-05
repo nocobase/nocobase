@@ -12,7 +12,7 @@ import { useFieldSchema } from '@formily/react';
 import { useDesignable } from '../../../';
 import { useListBlockContext } from './List.Decorator';
 import { useDataBlockHeight } from '../../hooks/useBlockSize';
-import { useBlockHeightProps } from '../../../block-provider';
+import { useBlockHeightProps } from '../../../block-provider/hooks/useBlockHeightProps';
 
 const spaceProps: SpaceProps = {
   size: ['large', 'small'],
