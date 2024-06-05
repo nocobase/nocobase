@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { useFieldSchema } from '@formily/react';
+import { useField, useFieldSchema } from '@formily/react';
 import {
   mergeFilter,
   useBlockRequestContext,
@@ -33,6 +33,7 @@ export const useExportAction = () => {
   const { t } = useExportTranslation();
   const { modal } = App.useApp();
   const filters = service.params?.[1]?.filters || {};
+  const field = useField();
   const exportLimit = useMemo(() => {
     if (appInfo?.data?.exportLimit) {
       return appInfo.data.exportLimit;
@@ -43,6 +44,8 @@ export const useExportAction = () => {
 
   return {
     async onClick() {
+      field.data = field.data || {};
+      field.data.loading = true;
       const confirmed = await modal.confirm({
         title: t('Export'),
         content: t('Export warning', { limit: exportLimit }),
@@ -81,6 +84,7 @@ export const useExportAction = () => {
         },
       );
       const blob = new Blob([data], { type: 'application/x-xls' });
+      field.data.loading = false;
       saveAs(blob, `${compile(title)}.xlsx`);
     },
   };
