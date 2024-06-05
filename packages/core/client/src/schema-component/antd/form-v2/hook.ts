@@ -14,13 +14,14 @@ import { useDesignable } from '../../';
 import { useDataBlock } from '../../../';
 import { useDataBlockRequest } from '../../../data-source';
 import { useFormDataTemplates } from './Templates';
+import { useBlockHeightProps } from '../../../block-provider';
 
 export const useFormBlockHeight = () => {
   const height = useDataBlockHeight();
   const schema = useFieldSchema();
   const { token } = theme.useToken();
   const { designable } = useDesignable();
-  const { heightProps } = useDataBlock() || {};
+  const { heightProps } = useBlockHeightProps() || {};
   const { title } = heightProps || {};
   const { display, enabled } = useFormDataTemplates();
   const actionSchema: any = schema.reduceProperties((buf, s) => {

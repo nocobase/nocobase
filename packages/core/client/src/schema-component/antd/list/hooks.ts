@@ -12,7 +12,7 @@ import { useFieldSchema } from '@formily/react';
 import { useDesignable } from '../../../';
 import { useListBlockContext } from './List.Decorator';
 import { useDataBlockHeight } from '../../hooks/useBlockSize';
-import { useDataBlock } from '../../../';
+import { useBlockHeightProps } from '../../../block-provider';
 
 const spaceProps: SpaceProps = {
   size: ['large', 'small'],
@@ -30,7 +30,7 @@ export const useListBlockHeight = () => {
   const schema = useFieldSchema();
   const { token } = theme.useToken();
   const { designable } = useDesignable();
-  const { heightProps } = useDataBlock() || {};
+  const { heightProps } = useBlockHeightProps() || {};
   const { title } = heightProps || {};
   const {
     service: { data },

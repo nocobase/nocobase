@@ -51,6 +51,7 @@ import { TableFieldResource } from '../TableFieldProvider';
 export * from './useDataBlockParentRecord';
 export * from './useFormActiveFields';
 export * from './useParsedFilter';
+export * from './useBlockHeightProps';
 
 export const usePickActionProps = () => {
   const form = useForm();
