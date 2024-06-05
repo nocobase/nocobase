@@ -10,7 +10,7 @@
 import { Form } from '@formily/core';
 import { Schema } from '@formily/json-schema';
 import { useTranslation } from 'react-i18next';
-import { useFormBlockContext } from '../../../block-provider';
+import { useFormBlockContext } from '../../../block-provider/FormBlockProvider';
 import { CollectionFieldOptions_deprecated } from '../../../collection-manager';
 import { useDataBlockRequest } from '../../../data-source';
 import { useFlag } from '../../../flag-provider/hooks/useFlag';

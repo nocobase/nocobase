@@ -26,10 +26,10 @@ import {
   useCollectionRecord,
   useDataSourceHeaders,
   useFormActiveFields,
-  useFormBlockContext,
   useTableBlockContext,
 } from '../..';
 import { useAPIClient, useRequest } from '../../api-client';
+import { useFormBlockContext } from '../../block-provider/FormBlockProvider';
 import { useCollectionManager_deprecated, useCollection_deprecated } from '../../collection-manager';
 import { useFilterBlock } from '../../filter-provider/FilterProvider';
 import { mergeFilter, transformToFilter } from '../../filter-provider/utils';
@@ -1489,7 +1489,12 @@ export function useLinkActionProps() {
   };
 }
 
-async function replaceVariableValue(url: string, variables: VariablesContextType, localVariables: VariableOption[]) {
+
+export async function replaceVariableValue(
+  url: string,
+  variables: VariablesContextType,
+  localVariables: VariableOption[],
+) {
   if (!url) {
     return;
   }
