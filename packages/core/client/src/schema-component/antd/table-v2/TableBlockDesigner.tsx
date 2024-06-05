@@ -14,7 +14,8 @@ import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCompile } from '../../';
 import { useAPIClient } from '../../../api-client';
-import { useFormBlockContext, useTableBlockContext } from '../../../block-provider';
+import { useTableBlockContext } from '../../../block-provider';
+import { useFormBlockContext } from '../../../block-provider/FormBlockProvider';
 import { useCollectionManager_deprecated, useCollection_deprecated } from '../../../collection-manager';
 import { useSortFields } from '../../../collection-manager/action-hooks';
 import { FilterBlockType } from '../../../filter-provider/utils';
@@ -27,8 +28,8 @@ import {
   SchemaSettingsSelectItem,
   SchemaSettingsSwitchItem,
 } from '../../../schema-settings';
-import { SchemaSettingsBlockTitleItem } from '../../../schema-settings/SchemaSettingsBlockTitleItem';
 import { SchemaSettingsBlockHeightItem } from '../../../schema-settings/SchemaSettingsBlockHeightItem';
+import { SchemaSettingsBlockTitleItem } from '../../../schema-settings/SchemaSettingsBlockTitleItem';
 
 import { SchemaSettingsConnectDataBlocks } from '../../../schema-settings/SchemaSettingsConnectDataBlocks';
 import { SchemaSettingsDataScope } from '../../../schema-settings/SchemaSettingsDataScope';
