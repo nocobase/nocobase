@@ -64,6 +64,7 @@ export default abstract class QueryInterface {
   abstract getAutoIncrementInfo(options: {
     tableInfo: TableInfo;
     fieldName: string;
+    transaction?: Transaction;
   }): Promise<{ seqName?: string; currentVal: number }>;
 
   abstract setAutoIncrementVal(options: {

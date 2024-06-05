@@ -7,4 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from './columns2Appends';
+import { ToOneInterface } from './to-one-interface';
+
+export class OneBelongsToOneInterface extends ToOneInterface {}

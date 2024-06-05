@@ -8,7 +8,14 @@
  */
 
 import { Collection } from './collection';
-import { CollectionOptions, ICollection, ICollectionManager, IRepository, MergeOptions } from './types';
+import {
+  CollectionOptions,
+  ICollection,
+  ICollectionManager,
+  IFieldInterface,
+  IRepository,
+  MergeOptions,
+} from './types';
 
 export class CollectionManager implements ICollectionManager {
   protected collections = new Map<string, ICollection>();
@@ -38,8 +45,17 @@ export class CollectionManager implements ICollectionManager {
   /* istanbul ignore next -- @preserve */
   registerFieldTypes() {}
 
-  /* istanbul ignore next -- @preserve */
-  registerFieldInterfaces() {}
+  registerFieldInterfaces(interfaces: Record<string, new (options: any) => IFieldInterface>) {
+    Object.keys(interfaces).forEach((key) => {
+      this.registerFieldInterface(key, interfaces[key]);
+    });
+  }
+
+  registerFieldInterface(name: string, fieldInterface: new (options: any) => IFieldInterface): void {}
+
+  getFieldInterface(name: string): { new (options: any): IFieldInterface | undefined } {
+    return;
+  }
 
   /* istanbul ignore next -- @preserve */
   registerCollectionTemplates() {}
@@ -87,7 +103,8 @@ export class CollectionManager implements ICollectionManager {
 
   async sync() {}
 
-  protected newCollection(options) {
+  protected newCollection(options): ICollection {
+    // @ts-ignore
     return new Collection(options, this);
   }
 }
