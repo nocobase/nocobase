@@ -91,7 +91,7 @@ const VariablesProvider = ({ children }) => {
 
       for (let index = 0; index < list.length; index++) {
         if (current == null) {
-          return current;
+          return current === undefined ? variableOption.defaultValue : current;
         }
 
         const key = list[index];
