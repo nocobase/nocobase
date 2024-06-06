@@ -7,5 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export const getConnectionCollectionPath = (name: string | number) =>
-  `/admin/settings/data-source-manager/${name}/collections`;
+export const getConnectionCollectionPath = ({ name, type }: { name: string | number; type: string }) => {
+  return `/admin/settings/data-source-manager/${name}/collections?type=${type}`;
+};

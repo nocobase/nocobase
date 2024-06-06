@@ -32,7 +32,7 @@ import {
   CollectionCategroriesProvider,
   usePlugin,
 } from '@nocobase/client';
-import { useParams } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import { ConfigurationTable } from './ConfigurationTable';
 import { ConfigurationTabs } from './ConfigurationTabs';
 import PluginDatabaseConnectionsClient from '../../';
@@ -48,8 +48,9 @@ const schema2: ISchema = {
 
 export const CollectionManagerPage = () => {
   const plugin = usePlugin(PluginDatabaseConnectionsClient);
-  const { dataSourceType } = useParams();
-  const type = plugin.types.get(dataSourceType);
+  const location = useLocation();
+  const dataSourceType = new URLSearchParams(location.search).get('type');
+  const type = dataSourceType && plugin.types.get(dataSourceType);
 
   return (
     <SchemaComponent
@@ -60,7 +61,7 @@ export const CollectionManagerPage = () => {
         ConfigurationTabs,
         AddFieldAction,
         AddCollectionField,
-        AddCollection: type.AddCollection || AddCollection,
+        AddCollection: type?.AddCollection || AddCollection,
         AddCollectionAction,
         EditCollection,
         EditCollectionAction,
