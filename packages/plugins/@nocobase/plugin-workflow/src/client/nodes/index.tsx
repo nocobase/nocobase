@@ -12,7 +12,7 @@ import { createForm } from '@formily/core';
 import { toJS } from '@formily/reactive';
 import { ISchema, useForm } from '@formily/react';
 import { App, Button, Dropdown, Input, Tag, Tooltip, message } from 'antd';
-import { cloneDeep } from 'lodash';
+import { cloneDeep, get } from 'lodash';
 import React, { useCallback, useContext, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -114,6 +114,11 @@ export const NodeContext = React.createContext<any>({});
 
 export function useNodeContext() {
   return useContext(NodeContext);
+}
+
+export function useNodeSavedConfig(keys = []) {
+  const node = useNodeContext();
+  return keys.some((key) => get(node.config, key) != null);
 }
 
 /**

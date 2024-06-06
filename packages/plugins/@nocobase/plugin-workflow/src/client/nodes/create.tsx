@@ -7,22 +7,20 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { uid } from '@formily/shared';
 import {
   SchemaInitializerItemType,
   useCollectionDataSource,
   useCollectionManager_deprecated,
-  parseCollectionName,
   useCompile,
 } from '@nocobase/client';
 
 import { CollectionBlockInitializer } from '../components/CollectionBlockInitializer';
 import CollectionFieldset from '../components/CollectionFieldset';
+import { AssignedFieldsFormSchemaConfig } from '../components/AssignedFieldsFormSchemaConfig';
 import { NAMESPACE } from '../locale';
 import { appends, collection, values } from '../schemas/collection';
 import { getCollectionFieldOptions } from '../variable';
-import { Instruction } from '.';
-import { AssignedFieldsForm } from '../components/AssignedFieldsForm';
+import { Instruction, useNodeSavedConfig } from '.';
 
 export default class extends Instruction {
   title = `{{t("Create record", { ns: "${NAMESPACE}" })}}`;
@@ -32,6 +30,7 @@ export default class extends Instruction {
   fieldset = {
     collection: {
       ...collection,
+      'x-disabled': '{{ useNodeSavedConfig(["collection"]) }}',
       'x-reactions': [
         ...collection['x-reactions'],
         {
@@ -45,21 +44,11 @@ export default class extends Instruction {
         },
       ],
     },
-    // multiple: {
-    //   type: 'boolean',
-    //   title: '多条数据',
-    //   name: 'multiple',
-    //   'x-decorator': 'FormItem',
-    //   'x-component': 'Checkbox',
-    //   'x-component-props': {
-    //     disabled: true
-    //   }
-    // },
-    assignForm: {
-      type: 'string',
+    assignFormSchema: {
+      type: 'object',
       title: '{{t("Fields values")}}',
       'x-decorator': 'FormItem',
-      'x-component': 'AssignedFieldsForm',
+      'x-component': 'AssignedFieldsFormSchemaConfig',
       'x-reactions': [
         {
           dependencies: ['collection'],
@@ -78,7 +67,7 @@ export default class extends Instruction {
           ...values,
           'x-reactions': [
             {
-              dependencies: ['collection', 'assignForm'],
+              dependencies: ['collection', 'assignFormSchema'],
               fulfill: {
                 state: {
                   display: '{{($deps[0] && !$deps[1]) ? "visible" : "hidden"}}',
@@ -93,15 +82,16 @@ export default class extends Instruction {
   };
   createDefaultConfig() {
     return {
-      assignForm: uid(),
+      assignFormSchema: {},
     };
   }
   scope = {
     useCollectionDataSource,
+    useNodeSavedConfig,
   };
   components = {
     CollectionFieldset,
-    AssignedFieldsForm,
+    AssignedFieldsFormSchemaConfig,
   };
   useVariables({ key: name, title, config }, options) {
     // eslint-disable-next-line react-hooks/rules-of-hooks

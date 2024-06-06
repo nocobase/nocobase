@@ -13,13 +13,13 @@ import { useCollectionDataSource } from '@nocobase/client';
 import { isValidFilter } from '@nocobase/utils/client';
 
 import CollectionFieldset from '../components/CollectionFieldset';
+import { AssignedFieldsFormSchemaConfig } from '../components/AssignedFieldsFormSchemaConfig';
 import { FilterDynamicComponent } from '../components/FilterDynamicComponent';
 
 import { RadioWithTooltip } from '../components/RadioWithTooltip';
 import { NAMESPACE, lang } from '../locale';
 import { collection, filter, values } from '../schemas/collection';
-import { Instruction } from '.';
-import { AssignedFieldsForm } from '../components/AssignedFieldsForm';
+import { Instruction, useNodeSavedConfig } from '.';
 
 export default class extends Instruction {
   title = `{{t("Update record", { ns: "${NAMESPACE}" })}}`;
@@ -29,6 +29,7 @@ export default class extends Instruction {
   fieldset = {
     collection: {
       ...collection,
+      'x-disabled': '{{ useNodeSavedConfig(["collection"]) }}',
       'x-reactions': [
         ...collection['x-reactions'],
         {
@@ -94,7 +95,7 @@ export default class extends Instruction {
           ...values,
           'x-reactions': [
             {
-              dependencies: ['collection', 'assignForm'],
+              dependencies: ['collection', 'assignFormSchema'],
               fulfill: {
                 state: {
                   display: '{{($deps[0] && !$deps[1]) ? "visible" : "hidden"}}',
@@ -105,11 +106,11 @@ export default class extends Instruction {
         },
       },
     },
-    assignForm: {
-      type: 'string',
+    assignFormSchema: {
+      type: 'object',
       title: '{{t("Fields values")}}',
       'x-decorator': 'FormItem',
-      'x-component': 'AssignedFieldsForm',
+      'x-component': 'AssignedFieldsFormSchemaConfig',
       'x-reactions': [
         {
           dependencies: ['collection'],
@@ -129,11 +130,12 @@ export default class extends Instruction {
   }
   scope = {
     useCollectionDataSource,
+    useNodeSavedConfig,
   };
   components = {
     FilterDynamicComponent,
     CollectionFieldset,
-    AssignedFieldsForm,
+    AssignedFieldsFormSchemaConfig,
     RadioWithTooltip,
   };
 }
