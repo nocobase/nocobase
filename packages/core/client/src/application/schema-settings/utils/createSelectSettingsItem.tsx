@@ -10,13 +10,15 @@
 import _ from 'lodash';
 import { useFieldSchema } from '@formily/react';
 import { SchemaSettingsItemType, SelectProps, useDesignable } from '@nocobase/client';
-import { getTitleByName, getNewSchema } from './util';
+import { getTitleByName, getNewSchema, useHookDefault } from './util';
 
 interface CreateSelectSchemaSettingsItemProps {
   name: string;
-  useOptions: () => SelectProps['options'];
+  options?: SelectProps['options'];
+  useOptions?: () => SelectProps['options'];
   schemaKey: string;
   defaultValue?: string | number;
+  useDefaultValue?: () => string | number;
 }
 
 /**
@@ -28,14 +30,22 @@ interface CreateSelectSchemaSettingsItemProps {
 export const createSelectSchemaSettingsItem = (
   options: CreateSelectSchemaSettingsItemProps,
 ): SchemaSettingsItemType => {
-  const { name, useOptions, schemaKey, defaultValue } = options;
+  const {
+    name,
+    options: propsOptions,
+    useOptions = useHookDefault,
+    schemaKey,
+    defaultValue: propsDefaultValue,
+    useDefaultValue = useHookDefault,
+  } = options;
   return {
     name,
     type: 'select',
     useComponentProps() {
       const filedSchema = useFieldSchema();
       const { deepMerge } = useDesignable();
-      const options = useOptions();
+      const options = useOptions(propsOptions);
+      const defaultValue = useDefaultValue(propsDefaultValue);
       return {
         title: getTitleByName(name),
         options,

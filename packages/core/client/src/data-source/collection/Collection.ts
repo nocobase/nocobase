@@ -287,4 +287,8 @@ export class Collection {
   hasField(name: SchemaKey) {
     return !!this.getField(name);
   }
+
+  isTitleField(field: CollectionFieldOptions) {
+    return this.app.dataSourceManager.collectionFieldInterfaceManager.getFieldInterface(field.interface)?.titleUsable;
+  }
 }

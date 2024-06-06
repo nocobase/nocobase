@@ -23,3 +23,5 @@ export function getNewSchema(fieldSchema: ISchema, schemaKey: string, value: any
     [schemaKeyArr[0]]: clonedSchema,
   };
 }
+
+export const useHookDefault = (defaultValues?: any) => defaultValues;
