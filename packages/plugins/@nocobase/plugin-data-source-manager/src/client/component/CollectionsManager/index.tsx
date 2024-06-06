@@ -30,9 +30,12 @@ import {
   DeleteCollection,
   DeleteCollectionAction,
   CollectionCategroriesProvider,
+  usePlugin,
 } from '@nocobase/client';
+import { useParams } from 'react-router-dom';
 import { ConfigurationTable } from './ConfigurationTable';
 import { ConfigurationTabs } from './ConfigurationTabs';
+import PluginDatabaseConnectionsClient from '../../';
 
 const schema2: ISchema = {
   type: 'object',
@@ -44,6 +47,10 @@ const schema2: ISchema = {
 };
 
 export const CollectionManagerPage = () => {
+  const plugin = usePlugin(PluginDatabaseConnectionsClient);
+  const { dataSourceType } = useParams();
+  const type = plugin.types.get(dataSourceType);
+
   return (
     <SchemaComponent
       schema={schema2}
@@ -53,7 +60,7 @@ export const CollectionManagerPage = () => {
         ConfigurationTabs,
         AddFieldAction,
         AddCollectionField,
-        AddCollection,
+        AddCollection: type.AddCollection || AddCollection,
         AddCollectionAction,
         EditCollection,
         EditCollectionAction,
