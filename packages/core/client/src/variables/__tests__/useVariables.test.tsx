@@ -720,11 +720,27 @@ describe('useVariables', () => {
         belongsToField: null,
       },
       collectionName: 'some',
+      defaultValue: 'default value',
     });
 
     await waitFor(async () => {
-      // 因为 $some 的 ctx 没有 id 所以无法获取关系字段的数据
-      expect(await result.current.parseVariable('{{ $some.belongsToField.belongsToField }}')).toBe(undefined);
+      // 只有解析后的值是 undefined 才会使用默认值
+      expect(await result.current.parseVariable('{{ $some.belongsToField.belongsToField }}')).toBe(null);
+    });
+
+    // 会覆盖之前的 $some
+    result.current.registerVariable({
+      name: '$some',
+      ctx: {
+        name: 'new variable',
+      },
+      collectionName: 'some',
+      defaultValue: 'default value',
+    });
+
+    await waitFor(async () => {
+      // 解析后的值是 undefined 所以会返回上面设置的默认值
+      expect(await result.current.parseVariable('{{ $some.belongsToField.belongsToField }}')).toBe('default value');
     });
   });
 
