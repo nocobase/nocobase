@@ -7,9 +7,5 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from './SchemaSettings';
-export * from './SchemaSettingsManager';
-export * from './components';
-export * from './context/SchemaSettingItemContext';
-export * from './types';
-export * from './utils';
+export * from './createSelectSettingsItem';
+export * from './createSwitchSettingsItem';
