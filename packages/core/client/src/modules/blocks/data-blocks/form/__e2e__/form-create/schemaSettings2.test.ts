@@ -289,4 +289,324 @@ test.describe('linkage rules', () => {
     await page.getByLabel('action-Action-Add new-create-').click();
     await expect(page.getByRole('spinbutton')).toHaveValue('88');
   });
+
+  test('expression', async ({ page, mockPage }) => {
+    // 这里联动规则的表达式是 SUM({{$nForm.m2m.number2}})
+    await mockPage({
+      collections: [
+        {
+          name: 'general1',
+          fields: [
+            {
+              interface: 'm2m',
+              name: 'm2m',
+              target: 'general2',
+            },
+            {
+              name: 'number1',
+              interface: 'number',
+            },
+          ],
+        },
+        {
+          name: 'general2',
+          fields: [
+            {
+              name: 'number2',
+              interface: 'number',
+            },
+          ],
+        },
+      ],
+      pageSchema: {
+        _isJSONSchemaObject: true,
+        version: '2.0',
+        type: 'void',
+        'x-component': 'Page',
+        properties: {
+          a983qeowkws: {
+            _isJSONSchemaObject: true,
+            version: '2.0',
+            type: 'void',
+            'x-component': 'Grid',
+            'x-initializer': 'page:addBlock',
+            properties: {
+              '4hcplhhhjkd': {
+                _isJSONSchemaObject: true,
+                version: '2.0',
+                type: 'void',
+                'x-component': 'Grid.Row',
+                'x-app-version': '1.0.0-alpha.17',
+                properties: {
+                  '8vm4ku1ydvb': {
+                    _isJSONSchemaObject: true,
+                    version: '2.0',
+                    type: 'void',
+                    'x-component': 'Grid.Col',
+                    'x-app-version': '1.0.0-alpha.17',
+                    properties: {
+                      vwr5s2ur5dq: {
+                        _isJSONSchemaObject: true,
+                        version: '2.0',
+                        type: 'void',
+                        'x-acl-action-props': {
+                          skipScopeCheck: true,
+                        },
+                        'x-acl-action': 'general1:create',
+                        'x-decorator': 'FormBlockProvider',
+                        'x-use-decorator-props': 'useCreateFormBlockDecoratorProps',
+                        'x-decorator-props': {
+                          dataSource: 'main',
+                          collection: 'general1',
+                        },
+                        'x-toolbar': 'BlockSchemaToolbar',
+                        'x-settings': 'blockSettings:createForm',
+                        'x-component': 'CardItem',
+                        'x-app-version': '1.0.0-alpha.17',
+                        properties: {
+                          arnq3dc33z2: {
+                            _isJSONSchemaObject: true,
+                            version: '2.0',
+                            type: 'void',
+                            'x-component': 'FormV2',
+                            'x-use-component-props': 'useCreateFormBlockProps',
+                            'x-app-version': '1.0.0-alpha.17',
+                            properties: {
+                              grid: {
+                                'x-uid': '4loai5g36vq',
+                                _isJSONSchemaObject: true,
+                                version: '2.0',
+                                type: 'void',
+                                'x-component': 'Grid',
+                                'x-initializer': 'form:configureFields',
+                                'x-app-version': '1.0.0-alpha.17',
+                                'x-linkage-rules': [
+                                  {
+                                    condition: {
+                                      $and: [],
+                                    },
+                                    actions: [
+                                      {
+                                        targetFields: ['number1'],
+                                        operator: 'value',
+                                        value: {
+                                          mode: 'express',
+                                          value: 'SUM({{$nForm.m2m.number2}})',
+                                          result: 'SUM({{$nForm.m2m.number2}})',
+                                        },
+                                      },
+                                    ],
+                                  },
+                                ],
+                                properties: {
+                                  '7ojiakwij91': {
+                                    _isJSONSchemaObject: true,
+                                    version: '2.0',
+                                    type: 'void',
+                                    'x-component': 'Grid.Row',
+                                    'x-app-version': '1.0.0-alpha.17',
+                                    properties: {
+                                      wqobiuf78k7: {
+                                        _isJSONSchemaObject: true,
+                                        version: '2.0',
+                                        type: 'void',
+                                        'x-component': 'Grid.Col',
+                                        'x-app-version': '1.0.0-alpha.17',
+                                        properties: {
+                                          m2m: {
+                                            'x-uid': 'q2nspu2chvx',
+                                            _isJSONSchemaObject: true,
+                                            version: '2.0',
+                                            type: 'string',
+                                            'x-toolbar': 'FormItemSchemaToolbar',
+                                            'x-settings': 'fieldSettings:FormItem',
+                                            'x-component': 'CollectionField',
+                                            'x-decorator': 'FormItem',
+                                            'x-collection-field': 'general1.m2m',
+                                            'x-component-props': {
+                                              fieldNames: {
+                                                label: 'id',
+                                                value: 'id',
+                                              },
+                                              mode: 'SubTable',
+                                            },
+                                            'x-app-version': '1.0.0-alpha.17',
+                                            default: null,
+                                            properties: {
+                                              c7xkm84bmt6: {
+                                                _isJSONSchemaObject: true,
+                                                version: '2.0',
+                                                type: 'void',
+                                                'x-component': 'AssociationField.SubTable',
+                                                'x-initializer': 'table:configureColumns',
+                                                'x-initializer-props': {
+                                                  action: false,
+                                                },
+                                                'x-index': 1,
+                                                'x-app-version': '1.0.0-alpha.17',
+                                                properties: {
+                                                  oo3fc25zzad: {
+                                                    _isJSONSchemaObject: true,
+                                                    version: '2.0',
+                                                    type: 'void',
+                                                    'x-decorator': 'TableV2.Column.Decorator',
+                                                    'x-toolbar': 'TableColumnSchemaToolbar',
+                                                    'x-settings': 'fieldSettings:TableColumn',
+                                                    'x-component': 'TableV2.Column',
+                                                    'x-app-version': '1.0.0-alpha.17',
+                                                    properties: {
+                                                      number2: {
+                                                        _isJSONSchemaObject: true,
+                                                        version: '2.0',
+                                                        'x-collection-field': 'general2.number2',
+                                                        'x-component': 'CollectionField',
+                                                        'x-component-props': {},
+                                                        'x-decorator': 'FormItem',
+                                                        'x-decorator-props': {
+                                                          labelStyle: {
+                                                            display: 'none',
+                                                          },
+                                                        },
+                                                        'x-app-version': '1.0.0-alpha.17',
+                                                        'x-uid': '1ec44yt9vvc',
+                                                        'x-async': false,
+                                                        'x-index': 1,
+                                                      },
+                                                    },
+                                                    'x-uid': 'fifizb929rl',
+                                                    'x-async': false,
+                                                    'x-index': 1,
+                                                  },
+                                                },
+                                                'x-uid': 'vs0i5cea2lz',
+                                                'x-async': false,
+                                              },
+                                            },
+                                            'x-async': false,
+                                            'x-index': 1,
+                                          },
+                                        },
+                                        'x-uid': 'loi45wm38uc',
+                                        'x-async': false,
+                                        'x-index': 1,
+                                      },
+                                    },
+                                    'x-uid': '3mqmk65o5vj',
+                                    'x-async': false,
+                                    'x-index': 1,
+                                  },
+                                  ivo5sf0mer5: {
+                                    _isJSONSchemaObject: true,
+                                    version: '2.0',
+                                    type: 'void',
+                                    'x-component': 'Grid.Row',
+                                    'x-app-version': '1.0.0-alpha.17',
+                                    properties: {
+                                      m24lag9jftt: {
+                                        _isJSONSchemaObject: true,
+                                        version: '2.0',
+                                        type: 'void',
+                                        'x-component': 'Grid.Col',
+                                        'x-app-version': '1.0.0-alpha.17',
+                                        properties: {
+                                          number1: {
+                                            _isJSONSchemaObject: true,
+                                            version: '2.0',
+                                            type: 'string',
+                                            'x-toolbar': 'FormItemSchemaToolbar',
+                                            'x-settings': 'fieldSettings:FormItem',
+                                            'x-component': 'CollectionField',
+                                            'x-decorator': 'FormItem',
+                                            'x-collection-field': 'general1.number1',
+                                            'x-component-props': {},
+                                            'x-app-version': '1.0.0-alpha.17',
+                                            'x-uid': '6ngy8dheikt',
+                                            'x-async': false,
+                                            'x-index': 1,
+                                          },
+                                        },
+                                        'x-uid': 'apnc7lgwbke',
+                                        'x-async': false,
+                                        'x-index': 1,
+                                      },
+                                    },
+                                    'x-uid': 'qvlz4twc80m',
+                                    'x-async': false,
+                                    'x-index': 2,
+                                  },
+                                },
+                                'x-async': false,
+                                'x-index': 1,
+                              },
+                              ql31r9t3f0j: {
+                                _isJSONSchemaObject: true,
+                                version: '2.0',
+                                type: 'void',
+                                'x-initializer': 'createForm:configureActions',
+                                'x-component': 'ActionBar',
+                                'x-component-props': {
+                                  layout: 'one-column',
+                                  style: {
+                                    marginTop: 'var(--nb-spacing)',
+                                  },
+                                },
+                                'x-app-version': '1.0.0-alpha.17',
+                                'x-uid': 'ujy1hfdwh5z',
+                                'x-async': false,
+                                'x-index': 2,
+                              },
+                            },
+                            'x-uid': 's3wr5r6wopc',
+                            'x-async': false,
+                            'x-index': 1,
+                          },
+                        },
+                        'x-uid': 'vf5sis7hzmy',
+                        'x-async': false,
+                        'x-index': 1,
+                      },
+                    },
+                    'x-uid': 'kuzdktymvt9',
+                    'x-async': false,
+                    'x-index': 1,
+                  },
+                },
+                'x-uid': 'o94tcqvgdy1',
+                'x-async': false,
+                'x-index': 1,
+              },
+            },
+            'x-uid': 'cxcm7gwygrz',
+            'x-async': false,
+            'x-index': 1,
+          },
+        },
+        'x-uid': 'mmhuwwmedwu',
+        'x-async': true,
+        'x-index': 1,
+      },
+    }).goto();
+
+    // 1. 一开始 number1 字段的值是 0
+    await expect(
+      page.getByLabel('block-item-CollectionField-general1-form-general1.number1-number1').getByRole('spinbutton'),
+    ).toHaveValue('0');
+
+    // 2. 为 m2m 字段添加一条数据，并将 number2 字段的值设置为 1，此时 number1 字段的值应该是 1
+    await page.getByRole('button', { name: 'Add new' }).click();
+    await page
+      .getByLabel('block-item-CollectionField-general2-form-general2.number2-number2')
+      .getByRole('spinbutton')
+      .fill('1');
+    await expect(
+      page.getByLabel('block-item-CollectionField-general1-form-general1.number1-number1').getByRole('spinbutton'),
+    ).toHaveValue('1');
+
+    // 3. 再为 m2m 字段添加一条数据，并将 number2 字段的值设置为 2，此时 number1 字段的值应该是 3
+    await page.getByRole('button', { name: 'Add new' }).click();
+    await page.getByRole('row', { name: 'table-index-2 block-item-' }).getByRole('spinbutton').fill('2');
+    await expect(
+      page.getByLabel('block-item-CollectionField-general1-form-general1.number1-number1').getByRole('spinbutton'),
+    ).toHaveValue('3');
+  });
 });
