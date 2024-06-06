@@ -26,11 +26,11 @@ import { useLocalVariables, useVariables } from '../../../variables';
 import { VariableOption, VariablesContextType } from '../../../variables/types';
 import { getPath } from '../../../variables/utils/getPath';
 import { getVariableName } from '../../../variables/utils/getVariableName';
-import { REGEX_OF_VARIABLE, isVariable } from '../../../variables/utils/isVariable';
+import { getVariablesFromExpression, isVariable } from '../../../variables/utils/isVariable';
 import { getInnermostKeyAndValue, getTargetField } from '../../common/utils/uitls';
 import { useProps } from '../../hooks/useProps';
-import { collectFieldStateOfLinkageRules, getTempFieldState } from './utils';
 import { useFormBlockHeight } from './hook';
+import { collectFieldStateOfLinkageRules, getTempFieldState } from './utils';
 
 export interface FormProps extends IFormLayoutProps {
   form?: FormilyForm;
@@ -407,8 +407,7 @@ function getVariableValuesInExpression({ action, localVariables }) {
     return;
   }
 
-  return value
-    .match(REGEX_OF_VARIABLE)
+  return getVariablesFromExpression(value)
     ?.map((variableString: string) => {
       return getVariableValue(variableString, localVariables);
     })
