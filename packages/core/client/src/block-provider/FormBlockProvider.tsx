@@ -8,7 +8,7 @@
  */
 
 import { createForm } from '@formily/core';
-import { RecursionField, Schema, useField, useFieldSchema } from '@formily/react';
+import { Schema, useField } from '@formily/react';
 import { Spin } from 'antd';
 import React, { createContext, useContext, useEffect, useMemo, useRef } from 'react';
 import {
@@ -20,8 +20,7 @@ import {
 import { withDynamicSchemaProps } from '../hoc/withDynamicSchemaProps';
 import { useTreeParentRecord } from '../modules/blocks/data-blocks/table/TreeRecordProvider';
 import { RecordProvider } from '../record-provider';
-import { useActionContext, useDesignable } from '../schema-component';
-import { Templates as DataTemplateSelect } from '../schema-component/antd/form-v2/Templates';
+import { useActionContext } from '../schema-component';
 import { BlockProvider, useBlockRequestContext } from './BlockProvider';
 import { TemplateBlockProvider } from './TemplateBlockProvider';
 import { FormActiveFieldsProvider } from './hooks/useFormActiveFields';
@@ -95,9 +94,7 @@ const InternalFormBlockProvider = (props) => {
   return (
     <FormBlockContext.Provider value={formBlockValue}>
       <RecordProvider isNew={record?.isNew} parent={record?.parentRecord?.data} record={record?.data}>
-        <div ref={formBlockRef}>
-          <RenderChildrenWithDataTemplates form={form} />
-        </div>
+        <div ref={formBlockRef}>{props.children}</div>
       </RecordProvider>
     </FormBlockContext.Provider>
   );
@@ -176,19 +173,6 @@ export const useFormBlockProps = () => {
   return {
     form: ctx.form,
   };
-};
-
-const RenderChildrenWithDataTemplates = ({ form }) => {
-  const FieldSchema = useFieldSchema();
-  const { findComponent } = useDesignable();
-  const field = useField();
-  const Component = findComponent(field.component?.[0]) || React.Fragment;
-  return (
-    <Component {...field.componentProps}>
-      <DataTemplateSelect style={{ marginBottom: 18 }} form={form} />
-      <RecursionField schema={FieldSchema} onlyRenderProperties />
-    </Component>
-  );
 };
 
 /**

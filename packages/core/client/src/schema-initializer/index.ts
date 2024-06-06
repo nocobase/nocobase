@@ -28,6 +28,8 @@ import { CreateSubmitActionInitializer } from '../modules/actions/submit/CreateS
 import { UpdateSubmitActionInitializer } from '../modules/actions/submit/UpdateSubmitActionInitializer';
 import { UpdateRecordActionInitializer } from '../modules/actions/update-record/UpdateRecordActionInitializer';
 import { PopupActionInitializer } from '../modules/actions/view-edit-popup/PopupActionInitializer';
+import { LinkActionInitializer } from '../modules/actions/link/LinkActionInitializer';
+
 import { recordFormBlockInitializers } from '../modules/actions/view-edit-popup/RecordFormBlockInitializers';
 import { UpdateActionInitializer } from '../modules/actions/view-edit-popup/UpdateActionInitializer';
 import { ViewActionInitializer } from '../modules/actions/view-edit-popup/ViewActionInitializer';
@@ -171,6 +173,7 @@ export class SchemaInitializerPlugin extends Plugin {
       ViewActionInitializer,
       UpdateActionInitializer,
       PopupActionInitializer,
+      LinkActionInitializer,
       UpdateRecordActionInitializer,
       CreateSubmitActionInitializer,
       UpdateSubmitActionInitializer,

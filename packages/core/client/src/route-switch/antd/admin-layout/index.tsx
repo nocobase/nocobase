@@ -11,7 +11,7 @@ import { css } from '@emotion/css';
 import { useSessionStorageState } from 'ahooks';
 import { App, ConfigProvider, Divider, Layout } from 'antd';
 import { createGlobalStyle } from 'antd-style';
-import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, Outlet, useLocation, useMatch, useNavigate, useParams } from 'react-router-dom';
 import {
   ACLRolesCheckProvider,
@@ -37,6 +37,7 @@ import { Plugin } from '../../../application/Plugin';
 import { useAppSpin } from '../../../application/hooks/useAppSpin';
 import { Help } from '../../../user/Help';
 import { VariablesProvider } from '../../../variables';
+import { useMenuTranslation } from '../../../schema-component/antd/menu/locale';
 
 const filterByACL = (schema, options) => {
   const { allowAll, allowMenuItemIds = [] } = options;
@@ -76,7 +77,9 @@ const useMenuProps = () => {
 const MenuEditor = (props) => {
   const { notification } = App.useApp();
   const [hasNotice, setHasNotice] = useSessionStorageState('plugin-notice', { defaultValue: false });
-  const { setTitle } = useDocumentTitle();
+  const { t } = useMenuTranslation();
+  const { setTitle: _setTitle } = useDocumentTitle();
+  const setTitle = useCallback((title) => _setTitle(t(title)), []);
   const navigate = useNavigate();
   const params = useParams<any>();
   const location = useLocation();
@@ -160,6 +163,15 @@ const MenuEditor = (props) => {
     }
     return s;
   }, [data?.data]);
+
+  useEffect(() => {
+    if (isMatchAdminName) {
+      const s = findByUid(schema, defaultSelectedUid);
+      if (s) {
+        setTitle(s.title);
+      }
+    }
+  }, [defaultSelectedUid, isMatchAdmin, isMatchAdminName, schema, setTitle]);
 
   useRequest(
     {

@@ -275,7 +275,9 @@ test.describe('creation form block schema settings', () => {
   });
 
   test('save block template & using block template', async ({ page, mockPage, clearBlockTemplates }) => {
-    await mockPage({
+    // 确保测试结束后已保存的模板会被清空
+    await clearBlockTemplates();
+    const nocoPage = await mockPage({
       pageSchema: {
         _isJSONSchemaObject: true,
         version: '2.0',
@@ -420,7 +422,8 @@ test.describe('creation form block schema settings', () => {
         'x-async': true,
         'x-index': 1,
       },
-    }).goto();
+    }).waitForInit();
+    await nocoPage.goto();
     await page.getByLabel('block-item-CardItem-users-form').hover();
     await page
       .getByLabel('block-item-CardItem-users-form')
@@ -728,6 +731,7 @@ test.describe('creation form block schema settings', () => {
         'x-index': 1,
       },
     }).goto();
+
     await page.getByLabel('schema-initializer-Grid-page:addBlock').hover();
     //使用复制模板
     await page.getByRole('menuitem', { name: 'form Form' }).first().hover();
@@ -779,8 +783,5 @@ test.describe('creation form block schema settings', () => {
     await page.getByLabel('block-item-CardItem-users-table').getByLabel('action-Action-Add').click();
     await expect(page.getByLabel('block-item-CollectionField-users-form-users.phone')).toBeVisible();
     await page.locator('.ant-drawer-mask').click();
-
-    //删除模板
-    await clearBlockTemplates();
   });
 });

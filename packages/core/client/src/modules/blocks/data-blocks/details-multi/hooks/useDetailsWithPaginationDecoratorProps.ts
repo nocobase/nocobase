@@ -13,7 +13,7 @@ import { useDetailsWithPaginationBlockParams } from './useDetailsWithPaginationB
 export function useDetailsWithPaginationDecoratorProps(props) {
   let parentRecord;
 
-  const params = useDetailsWithPaginationBlockParams(props);
+  const { params, parseVariableLoading } = useDetailsWithPaginationBlockParams(props);
 
   // association 的值是固定不变的，所以可以在条件中使用 hooks
   if (props.association) {
@@ -24,5 +24,9 @@ export function useDetailsWithPaginationDecoratorProps(props) {
   return {
     parentRecord,
     params,
+    /**
+     * 用于解析变量的 loading 状态
+     */
+    parseVariableLoading,
   };
 }
