@@ -7,14 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { SchemaSettingsItemType, useDesignable } from '@nocobase/client';
+import { SchemaSettingsItemType, useCompile, useDesignable } from '@nocobase/client';
 import { useFieldSchema } from '@formily/react';
 import _ from 'lodash';
 
-import { getTitleByName, getNewSchema, useHookDefault } from './util';
+import { getNewSchema, useHookDefault } from './util';
 
 export interface CreateSwitchSchemaSettingsItemProps {
   name: string;
+  title: string;
   schemaKey: string;
   defaultValue?: boolean;
   useDefaultValue?: () => boolean;
@@ -27,7 +28,7 @@ export interface CreateSwitchSchemaSettingsItemProps {
  * @unstable
  */
 export function createSwitchSettingsItem(options: CreateSwitchSchemaSettingsItemProps): SchemaSettingsItemType {
-  const { name, schemaKey, defaultValue: propsDefaultValue, useDefaultValue = useHookDefault } = options;
+  const { name, schemaKey, title, defaultValue: propsDefaultValue, useDefaultValue = useHookDefault } = options;
   return {
     name,
     type: 'switch',
@@ -35,9 +36,10 @@ export function createSwitchSettingsItem(options: CreateSwitchSchemaSettingsItem
       const filedSchema = useFieldSchema();
       const { deepMerge } = useDesignable();
       const defaultValue = useDefaultValue(propsDefaultValue);
+      const compile = useCompile();
 
       return {
-        title: getTitleByName(name),
+        title: compile(title),
         checked: !!_.get(filedSchema, schemaKey, defaultValue),
         onChange(v) {
           deepMerge(getNewSchema(filedSchema, schemaKey, v));

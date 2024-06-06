@@ -10,10 +10,6 @@
 import { ISchema } from '@formily/json-schema';
 import _ from 'lodash';
 
-export function getTitleByName(name: string) {
-  return _.upperFirst(_.kebabCase(name).replaceAll('-', ' '));
-}
-
 export function getNewSchema(fieldSchema: ISchema, schemaKey: string, value: any) {
   const schemaKeyArr = schemaKey.split('.');
   const clonedSchema = _.cloneDeep(fieldSchema[schemaKeyArr[0]]);
