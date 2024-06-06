@@ -37,9 +37,7 @@ export const CollectionFieldInternalField: React.FC = (props: Props) => {
   const { uiSchema: uiSchemaOrigin, defaultValue } = collectionField;
   const { isAllowToSetDefaultValue } = useIsAllowToSetDefaultValue();
   const uiSchema = useMemo(() => compile(uiSchemaOrigin), [JSON.stringify(uiSchemaOrigin)]);
-  const Component = useComponent(
-    fieldSchema['x-component-props']?.['component'] || uiSchema?.['x-component'] || 'Input',
-  );
+  const Component = useComponent(component || uiSchema?.['x-component'] || 'Input');
   const setFieldProps = useCallback(
     (key, value) => {
       field[key] = typeof field[key] === 'undefined' ? value : field[key];
