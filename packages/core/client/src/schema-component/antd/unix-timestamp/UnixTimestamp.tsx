@@ -43,7 +43,7 @@ interface UnixTimestampProps {
 export const UnixTimestamp = connect(
   (props: UnixTimestampProps) => {
     const { value, onChange, accuracy = 'second' } = props;
-    const v = useMemo(() => toValue(value, accuracy), [value]);
+    const v = useMemo(() => toValue(value, accuracy), [value, accuracy]);
     return (
       <DatePicker
         {...props}
@@ -57,8 +57,8 @@ export const UnixTimestamp = connect(
     );
   },
   mapReadPretty((props) => {
-    const { value, accuracy } = props;
-    const v = useMemo(() => toValue(value, accuracy), [value]);
+    const { value, accuracy = 'second' } = props;
+    const v = useMemo(() => toValue(value, accuracy), [value, accuracy]);
     return <DatePicker.ReadPretty {...props} value={v} />;
   }),
 );
