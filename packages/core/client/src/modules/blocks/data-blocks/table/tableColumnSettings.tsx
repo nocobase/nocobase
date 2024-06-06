@@ -13,13 +13,13 @@ import { useTranslation } from 'react-i18next';
 import { useApp } from '../../../../application';
 import { SchemaSettings } from '../../../../application/schema-settings/SchemaSettings';
 import { useCollectionManager_deprecated } from '../../../../collection-manager';
+import { useFieldComponentName } from '../../../../common/useFieldComponentName';
 import { useCollection } from '../../../../data-source';
 import { useDesignable } from '../../../../schema-component';
 import { useAssociationFieldContext } from '../../../../schema-component/antd/association-field/hooks';
 import { useColumnSchema } from '../../../../schema-component/antd/table-v2/Table.Column.Decorator';
 import { SchemaSettingsDefaultValue } from '../../../../schema-settings/SchemaSettingsDefaultValue';
 import { isPatternDisabled } from '../../../../schema-settings/isPatternDisabled';
-import { useFieldComponentName } from './utils';
 
 export const tableColumnSettings = new SchemaSettings({
   name: 'fieldSettings:TableColumn',
