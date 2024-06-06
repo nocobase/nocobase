@@ -371,6 +371,8 @@ export const AMapComponent = React.forwardRef<AMapForwardedRefProps, AMapCompone
       map.current = null;
       mouseTool.current = null;
       editor.current = null;
+      // @ts-ignore
+      AMapLoader.reset();
     };
   }, [accessKey, type, securityJsCode]);
 
