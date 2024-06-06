@@ -545,6 +545,7 @@ describe('useVariables', () => {
         ctx: {
           name: 'new variable',
         },
+        defaultValue: null,
       });
     });
 
@@ -564,6 +565,46 @@ describe('useVariables', () => {
         ctx: {
           name: 'new variable',
         },
+      });
+    });
+
+    await waitFor(async () => {
+      expect(await result.current.parseVariable('{{ $new.noExist }}')).toBe(null);
+    });
+  });
+
+  it('$new.noExist with default value', async () => {
+    const { result } = renderHook(() => useVariables(), {
+      wrapper: Providers,
+    });
+
+    await waitFor(async () => {
+      result.current.registerVariable({
+        name: '$new',
+        ctx: {
+          name: 'new variable',
+        },
+        defaultValue: 'default value',
+      });
+    });
+
+    await waitFor(async () => {
+      expect(await result.current.parseVariable('{{ $new.noExist }}')).toBe('default value');
+    });
+  });
+
+  it('$new.noExist with undefined default value', async () => {
+    const { result } = renderHook(() => useVariables(), {
+      wrapper: Providers,
+    });
+
+    await waitFor(async () => {
+      result.current.registerVariable({
+        name: '$new',
+        ctx: {
+          name: 'new variable',
+        },
+        defaultValue: undefined,
       });
     });
 
