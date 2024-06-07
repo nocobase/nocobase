@@ -63,7 +63,7 @@ export const Iframe: any = observer(
           try {
             const tempUrl = await replaceVariableValue(url, variables, localVariables);
             const queryString = await parseVariablesAndChangeParamsToQueryString({
-              searchParams: params,
+              searchParams: params || [],
               variables,
               localVariables,
               replaceVariableValue,

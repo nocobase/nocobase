@@ -7,15 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { useEventListener } from 'ahooks';
-import { debounce } from 'lodash';
-import { useCallback, useRef, useState, useMemo } from 'react';
 import { useFieldSchema } from '@formily/react';
+import { useEventListener } from 'ahooks';
 import { theme } from 'antd';
+import { debounce } from 'lodash';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { useDesignable } from '..';
-import { useDataBlock } from '../../data-source';
-import { useDataBlockRequest, getPageSchema } from '../../';
+import { useDataBlockRequest } from '../../';
 import { HeightMode } from '../../schema-settings/SchemaSettingsBlockHeightItem';
+import { useBlockHeightProps, getPageSchema } from '../../block-provider/hooks';
 
 const getPageHeaderHeight = (disablePageHeader, enablePageTabs, hidePageTitle, token) => {
   if (disablePageHeader) {
@@ -43,7 +43,7 @@ const getPageHeaderHeight = (disablePageHeader, enablePageTabs, hidePageTitle, t
 const usePageFullScreenHeight = (props?) => {
   const { token } = theme.useToken();
   const { designable } = useDesignable();
-  const { heightProps } = useDataBlock();
+  const { heightProps } = useBlockHeightProps();
   const { disablePageHeader, enablePageTabs, hidePageTitle } = heightProps || props || {};
   const navHeight = token.sizeXXL - 2;
   const addBlockBtnHeight = designable
@@ -78,7 +78,7 @@ const useDrawerFullScreenHeight = () => {
 // 表格区块高度计算
 const useTableHeight = () => {
   const { token } = theme.useToken();
-  const { heightProps } = useDataBlock();
+  const { heightProps } = useBlockHeightProps();
   const { designable } = useDesignable();
   const schema = useFieldSchema();
   const pageFullScreenHeight = useFullScreenHeight();
@@ -113,7 +113,7 @@ interface UseDataBlockHeightOptions {
   innerExtraHeight?: number;
 }
 export const useDataBlockHeight = (options?: UseDataBlockHeightOptions) => {
-  const { heightProps } = useDataBlock();
+  const { heightProps } = useBlockHeightProps();
   const pageFullScreenHeight = useFullScreenHeight();
   const { token } = theme.useToken();
 
@@ -154,8 +154,8 @@ export const useBlockHeight = () => {
   return height;
 };
 export const useTableSize = () => {
-  const [height, setTableHeight] = useState(0);
-  const [width, setTableWidth] = useState(0);
+  const [height, setTableHeight] = useState<number>();
+  const [width, setTableWidth] = useState<number>();
   const elementRef = useRef<HTMLDivElement>(null);
   const targetHeight = useTableHeight();
   const calcTableSize = useCallback(

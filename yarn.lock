@@ -35232,27 +35232,9 @@ xlsx@^0.17.0:
     wmf "~1.0.1"
     word "~0.3.0"
 
-xml-crypto@^3.0.1:
-  version "3.2.0"
-  resolved "https://registry.npmmirror.com/xml-crypto/-/xml-crypto-3.2.0.tgz#a9debab572c8e895cff5fb351a8d8be3f6e1962e"
-  integrity sha512-qVurBUOQrmvlgmZqIVBqmb06TD2a/PpEUfFPgD7BuBfjmoH4zgkqaWSIJrnymlCvM2GGt9x+XtJFA+ttoAufqg==
-  dependencies:
-    "@xmldom/xmldom" "^0.8.8"
-    xpath "0.0.32"
-
-xml-encryption@^3.0.2:
-  version "3.0.2"
-  resolved "https://registry.npmmirror.com/xml-encryption/-/xml-encryption-3.0.2.tgz#d3cb67d97cdd9673313a42cc0d7fa43ff0886c21"
-  integrity sha512-VxYXPvsWB01/aqVLd6ZMPWZ+qaj0aIdF+cStrVJMcFj3iymwZeI0ABzB3VqMYv48DkSpRhnrXqTUkR34j+UDyg==
-  dependencies:
-    "@xmldom/xmldom" "^0.8.5"
-    escape-html "^1.0.3"
-    xpath "0.0.32"
-
-xml-escape@~1.0.0:
-  version "1.0.0"
-  resolved "https://registry.npmmirror.com/xml-escape/-/xml-escape-1.0.0.tgz#00963d697b2adf0c185c4e04e73174ba9b288eb2"
-  integrity sha512-gCT82WbwOT9SBI/94j5i0tqHpjHIP/0kP11BS8s2wcBtdcFsDNLS9sLvA+C55fD3hpGhgnE/r7hfeBFkiMATjw==
+"xlsx@https://cdn.sheetjs.com/xlsx-0.20.2/xlsx-0.20.2.tgz":
+  version "0.20.2"
+  resolved "https://cdn.sheetjs.com/xlsx-0.20.2/xlsx-0.20.2.tgz#0f64eeed3f1a46e64724620c3553f2dbd3cd2d7d"
 
 xml-lexer@^0.2.2:
   version "0.2.2"

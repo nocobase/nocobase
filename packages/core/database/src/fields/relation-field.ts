@@ -44,6 +44,14 @@ export abstract class RelationField extends Field {
     return this.context.database.sequelize.models[this.target];
   }
 
+  targetCollection() {
+    return this.context.database.getCollection(this.target);
+  }
+
+  isRelationField(): boolean {
+    return true;
+  }
+
   keyPairsTypeMatched(type1, type2) {
     type1 = type1.toLowerCase();
     type2 = type2.toLowerCase();

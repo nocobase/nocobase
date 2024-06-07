@@ -17,7 +17,9 @@
     "file-saver": "^2.0.5",
     "node-xlsx": "^0.16.1",
     "react": "^18.2.0",
-    "react-i18next": "^11.15.1"
+    "react-i18next": "^11.15.1",
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.2/xlsx-0.20.2.tgz",
+    "async-mutex": "^0.3.2"
   },
   "peerDependencies": {
     "@nocobase/actions": "1.x",
