@@ -52,6 +52,13 @@ vi.mock('../../collection-manager', async () => {
               target: 'test',
             };
           }
+          if (path === 'users.belongsToManyField') {
+            return {
+              type: 'belongsToMany',
+              target: 'test',
+              through: 'throughCollectionName',
+            };
+          }
           if (path === 'local.belongsToField') {
             return {
               type: 'belongsTo',
@@ -110,6 +117,20 @@ mockRequest.onGet('/users/0/hasManyField:list?pageSize=9999').reply(() => {
         {
           id: 0,
           name: '$user.hasManyField',
+        },
+      ],
+    },
+  ];
+});
+mockRequest.onGet('/users/0/belongsToManyField:list?pageSize=9999').reply(() => {
+  return [
+    200,
+    {
+      data: [
+        {
+          id: 0,
+          name: '$user.belongsToManyField',
+          throughCollectionName: 'throughCollectionName',
         },
       ],
     },
@@ -365,6 +386,21 @@ describe('useVariables', () => {
         {
           id: 0,
           name: '$user.hasManyField.hasManyField',
+        },
+      ]);
+    });
+  });
+
+  it('should remove through collection field', async () => {
+    const { result } = renderHook(() => useVariables(), {
+      wrapper: Providers,
+    });
+
+    await waitFor(async () => {
+      expect(await result.current.parseVariable('{{ $user.belongsToManyField }}')).toEqual([
+        {
+          id: 0,
+          name: '$user.belongsToManyField',
         },
       ]);
     });
