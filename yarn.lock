@@ -4866,66 +4866,6 @@
   dependencies:
     eslint-scope "5.1.1"
 
-"@nocobase/client@1.x":
-  version "1.0.0-alpha.17"
-  dependencies:
-    "@ahooksjs/use-url-state" "3.5.1"
-    "@ant-design/cssinjs" "^1.11.1"
-    "@ant-design/icons" "^5.1.4"
-    "@ant-design/pro-layout" "^7.16.11"
-    "@antv/g2plot" "^2.4.18"
-    "@ctrl/tinycolor" "^3.6.0"
-    "@dnd-kit/core" "^5.0.1"
-    "@dnd-kit/modifiers" "^6.0.0"
-    "@dnd-kit/sortable" "^6.0.0"
-    "@emotion/css" "^11.7.1"
-    "@formily/antd-v5" "^1.1.9"
-    "@formily/core" "^2.2.27"
-    "@formily/grid" "^2.2.27"
-    "@formily/json-schema" "^2.2.27"
-    "@formily/path" "^2.2.27"
-    "@formily/react" "^2.2.27"
-    "@formily/reactive" "^2.2.27"
-    "@formily/reactive-react" "^2.2.27"
-    "@formily/shared" "^2.2.27"
-    "@formily/validator" "^2.2.27"
-    "@nocobase/evaluators" "1.0.0-alpha.17"
-    "@nocobase/sdk" "1.0.0-alpha.17"
-    "@nocobase/utils" "1.0.0-alpha.17"
-    ahooks "^3.7.2"
-    antd "^5.12.8"
-    antd-style "3.4.5"
-    axios "^0.26.1"
-    bignumber.js "^9.1.2"
-    classnames "^2.3.1"
-    cronstrue "^2.11.0"
-    file-saver "^2.0.5"
-    filesize "9.0.11"
-    flat "^5.0.2"
-    i18next "^22.4.9"
-    i18next-http-backend "^2.1.1"
-    lodash "4.17.21"
-    lru-cache "6.0.0"
-    markdown-it "14.1.0"
-    markdown-it-highlightjs "3.3.1"
-    mathjs "^10.6.0"
-    mermaid "9.4.3"
-    react-beautiful-dnd "^13.1.0"
-    react-drag-listview "^0.1.9"
-    react-error-boundary "^4.0.10"
-    react-helmet "^6.1.0"
-    react-hotkeys-hook "^3.4.7"
-    react-i18next "^11.15.1"
-    react-iframe "~1.8.5"
-    react-image-lightbox "^5.1.4"
-    react-intersection-observer "9.8.1"
-    react-js-cron "^3.1.0"
-    react-quill "^2.0.0"
-    react-router-dom "^6.11.2"
-    react-to-print "^2.14.7"
-    sanitize-html "2.13.0"
-    use-deep-compare-effect "^1.8.1"
-
 "@node-saml/node-saml@^4.0.2":
   version "4.0.5"
   resolved "https://registry.npmmirror.com/@node-saml/node-saml/-/node-saml-4.0.5.tgz#039e387095b54639b06df62b1b4a6d8941c6d907"
@@ -35235,6 +35175,28 @@ xlsx@^0.17.0:
 "xlsx@https://cdn.sheetjs.com/xlsx-0.20.2/xlsx-0.20.2.tgz":
   version "0.20.2"
   resolved "https://cdn.sheetjs.com/xlsx-0.20.2/xlsx-0.20.2.tgz#0f64eeed3f1a46e64724620c3553f2dbd3cd2d7d"
+
+xml-crypto@^3.0.1:
+  version "3.2.0"
+  resolved "https://registry.npmmirror.com/xml-crypto/-/xml-crypto-3.2.0.tgz#a9debab572c8e895cff5fb351a8d8be3f6e1962e"
+  integrity sha512-qVurBUOQrmvlgmZqIVBqmb06TD2a/PpEUfFPgD7BuBfjmoH4zgkqaWSIJrnymlCvM2GGt9x+XtJFA+ttoAufqg==
+  dependencies:
+    "@xmldom/xmldom" "^0.8.8"
+    xpath "0.0.32"
+
+xml-encryption@^3.0.2:
+  version "3.0.2"
+  resolved "https://registry.npmmirror.com/xml-encryption/-/xml-encryption-3.0.2.tgz#d3cb67d97cdd9673313a42cc0d7fa43ff0886c21"
+  integrity sha512-VxYXPvsWB01/aqVLd6ZMPWZ+qaj0aIdF+cStrVJMcFj3iymwZeI0ABzB3VqMYv48DkSpRhnrXqTUkR34j+UDyg==
+  dependencies:
+    "@xmldom/xmldom" "^0.8.5"
+    escape-html "^1.0.3"
+    xpath "0.0.32"
+
+xml-escape@~1.0.0:
+  version "1.0.0"
+  resolved "https://registry.npmmirror.com/xml-escape/-/xml-escape-1.0.0.tgz#00963d697b2adf0c185c4e04e73174ba9b288eb2"
+  integrity sha512-gCT82WbwOT9SBI/94j5i0tqHpjHIP/0kP11BS8s2wcBtdcFsDNLS9sLvA+C55fD3hpGhgnE/r7hfeBFkiMATjw==
 
 xml-lexer@^0.2.2:
   version "0.2.2"
