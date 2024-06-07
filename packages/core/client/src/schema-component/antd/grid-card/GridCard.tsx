@@ -21,6 +21,7 @@ import { GridCardDesigner } from './GridCard.Designer';
 import { GridCardItem } from './GridCard.Item';
 import { useGridCardActionBarProps, useGridCardBodyHeight } from './hooks';
 import { defaultColumnCount, pageSizeOptions } from './options';
+import { useBlockHeightProps } from '../../../block-provider';
 
 const rowGutter = {
   md: 12,
@@ -89,7 +90,8 @@ const InternalGridCard = (props: GridCardProps) => {
   const field = useField<ArrayField>();
   const Designer = useDesigner();
   const height = useGridCardBodyHeight();
-  console.log(fieldSchema);
+  const { heightProps } = useBlockHeightProps() || {};
+  const { heightMode } = heightProps || {};
   const [schemaMap] = useState(new Map());
   const getSchema = useCallback(
     (key) => {
@@ -136,7 +138,7 @@ const InternalGridCard = (props: GridCardProps) => {
           css`
             .ant-spin-nested-loading {
               height: ${height ? height + `px` : '100%'};
-              overflow-y: auto;
+              overflow-y: ${!heightMode || heightMode === 'defaultHeight' ? 'null' : 'auto'};
               overflow-x: clip;
             }
           `,
