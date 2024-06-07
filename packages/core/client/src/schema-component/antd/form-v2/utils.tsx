@@ -13,6 +13,7 @@ import { uid } from '@nocobase/utils/client';
 import _ from 'lodash';
 import { ActionType } from '../../../schema-settings/LinkageRules/type';
 import { VariableOption, VariablesContextType } from '../../../variables/types';
+import { REGEX_OF_VARIABLE_IN_EXPRESSION } from '../../../variables/utils/isVariable';
 import { conditionAnalyses } from '../../common/utils/uitls';
 
 interface Props {
@@ -154,8 +155,7 @@ export async function replaceVariables(
     return;
   }
 
-  const REGEX_OF_VARIABLE = /{\{\s*([a-zA-Z0-9_$-.]+?)\s*\}\}/g;
-  const waitForParsing = value.match(REGEX_OF_VARIABLE)?.map(async (item) => {
+  const waitForParsing = value.match(REGEX_OF_VARIABLE_IN_EXPRESSION)?.map(async (item) => {
     const result = await variables.parseVariable(item, localVariables);
 
     // 在开头加 `_` 是为了保证 id 不能以数字开头，否则在解析表达式的时候（不是解析变量）会报错
@@ -170,7 +170,7 @@ export async function replaceVariables(
     await Promise.all(waitForParsing);
   }
   return {
-    exp: value.replace(REGEX_OF_VARIABLE, (match) => {
+    exp: value.replace(REGEX_OF_VARIABLE_IN_EXPRESSION, (match) => {
       return `{{${store[match] || match}}}`;
     }),
     scope,
