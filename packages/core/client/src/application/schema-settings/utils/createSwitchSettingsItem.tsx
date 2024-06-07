@@ -42,7 +42,7 @@ export function createSwitchSettingsItem(options: CreateSwitchSchemaSettingsItem
         title: compile(title),
         checked: !!_.get(filedSchema, schemaKey, defaultValue),
         onChange(v) {
-          deepMerge(getNewSchema(filedSchema, schemaKey, v));
+          deepMerge(getNewSchema({ fieldSchema: filedSchema, schemaKey, value: v }));
         },
       };
     },

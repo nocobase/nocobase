@@ -55,7 +55,7 @@ export const createSelectSchemaSettingsItem = (
         options,
         value: _.get(filedSchema, schemaKey, defaultValue),
         onChange(v) {
-          deepMerge(getNewSchema(filedSchema, schemaKey, v));
+          deepMerge(getNewSchema({ fieldSchema: filedSchema, schemaKey, value: v }));
         },
       };
     },

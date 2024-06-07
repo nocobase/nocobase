@@ -10,10 +10,26 @@
 import { ISchema } from '@formily/json-schema';
 import _ from 'lodash';
 
-export function getNewSchema(fieldSchema: ISchema, schemaKey: string, value: any) {
+type IGetNewSchema = {
+  fieldSchema: ISchema;
+  schemaKey: string;
+  value: any;
+  valueKeys?: string[];
+};
+
+export function getNewSchema(options: IGetNewSchema) {
+  const { fieldSchema, schemaKey, value, valueKeys } = options as any;
   const schemaKeyArr = schemaKey.split('.');
   const clonedSchema = _.cloneDeep(fieldSchema[schemaKeyArr[0]]);
-  _.set(clonedSchema, schemaKeyArr.slice(1), value);
+
+  if (value != undefined && typeof value === 'object') {
+    Object.keys(value).forEach((key) => {
+      if (valueKeys && !valueKeys.includes(key)) return;
+      _.set(clonedSchema, `${schemaKeyArr.slice(1)}.${key}`, value[key]);
+    });
+  } else {
+    _.set(clonedSchema, schemaKeyArr.slice(1), value);
+  }
   return {
     'x-uid': fieldSchema['x-uid'],
     [schemaKeyArr[0]]: clonedSchema,
