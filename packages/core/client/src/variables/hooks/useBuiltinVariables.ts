@@ -23,7 +23,7 @@ const useBuiltInVariables = () => {
   const { currentUserCtx } = useCurrentUserVariable();
   const { currentRoleCtx } = useCurrentRoleVariable();
   const { datetimeCtx } = useDatetimeVariable();
-  const { urlSearchParamsCtx, name: urlSearchParamsName } = useURLSearchParamsVariable();
+  const { urlSearchParamsCtx, name: urlSearchParamsName, defaultValue } = useURLSearchParamsVariable();
   const builtinVariables: VariableOption[] = useMemo(() => {
     return [
       {
@@ -80,9 +80,10 @@ const useBuiltInVariables = () => {
       {
         name: urlSearchParamsName,
         ctx: urlSearchParamsCtx,
+        defaultValue,
       },
     ];
-  }, [currentRoleCtx, currentUserCtx, datetimeCtx, urlSearchParamsCtx, urlSearchParamsName]);
+  }, [currentRoleCtx, currentUserCtx, datetimeCtx, defaultValue, urlSearchParamsCtx, urlSearchParamsName]);
 
   return { builtinVariables };
 };
