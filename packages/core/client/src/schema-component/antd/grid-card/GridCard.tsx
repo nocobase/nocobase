@@ -138,7 +138,7 @@ const InternalGridCard = (props: GridCardProps) => {
           css`
             .ant-spin-nested-loading {
               height: ${height ? height + `px` : '100%'};
-              overflow-y: ${(!heightMode || heightMode) === 'defaultHeight' ? 'null' : 'auto'};
+              overflow-y: ${!heightMode || heightMode === 'defaultHeight' ? 'null' : 'auto'};
               overflow-x: clip;
             }
           `,
