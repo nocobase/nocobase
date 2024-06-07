@@ -58,6 +58,10 @@ export abstract class Field {
 
   abstract get dataType();
 
+  isRelationField() {
+    return false;
+  }
+
   async sync(syncOptions: SyncOptions) {
     await this.collection.sync({
       ...syncOptions,

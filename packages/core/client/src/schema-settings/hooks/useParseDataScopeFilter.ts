@@ -63,7 +63,7 @@ const useParseDataScopeFilter = ({ exclude = defaultExclude }: Props = {}) => {
         Object.keys(flat).map(async (key) => {
           flat[key] = await flat[key];
           if (flat[key] === undefined) {
-            flat[key] = null;
+            delete flat[key];
           }
           return flat[key];
         }),

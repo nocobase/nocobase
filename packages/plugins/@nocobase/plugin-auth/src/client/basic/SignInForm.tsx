@@ -103,7 +103,7 @@ export const SignInForm = (props: { authenticator: Authenticator }) => {
   const authenticator = props.authenticator;
   const { authType, name, options } = authenticator;
   const signUpPages = useSignUpForms();
-  const allowSignUp = !!signUpPages[authType] && options?.allowSignUp;
+  const allowSignUp = signUpPages[authType] && options?.allowSignUp ? true : false;
   const signUpLink = `/signup?name=${name}`;
 
   const useBasicSignIn = () => {

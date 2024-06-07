@@ -7,5 +7,5 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from './downloadXlsxTemplate';
-export * from './importXlsx';
+export * from './download-xlsx-template';
+export * from './import-xlsx';

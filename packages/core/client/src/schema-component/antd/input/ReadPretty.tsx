@@ -9,16 +9,18 @@
 
 import { css, cx } from '@emotion/css';
 import { usePrefixCls } from '@formily/antd-v5/esm/__builtins__';
-import { Typography } from 'antd';
+import { useFieldSchema } from '@formily/react';
+import { Image, Typography } from 'antd';
 import cls from 'classnames';
 import React from 'react';
+import { useCompile } from '../../hooks';
 import { EllipsisWithTooltip } from './EllipsisWithTooltip';
 import { HTMLEncode } from './shared';
-import { useCompile } from '../../hooks';
 
 export type InputReadPrettyComposed = {
   Input: React.FC<InputReadPrettyProps>;
   URL: React.FC<URLReadPrettyProps>;
+  Preview: React.FC<URLReadPrettyProps>;
   TextArea: React.FC<TextAreaReadPrettyProps>;
   Html: React.FC<HtmlReadPrettyProps>;
   JSON: React.FC<JSONTextAreaReadPrettyProps>;
@@ -183,6 +185,33 @@ ReadPretty.URL = (props) => {
       {props.suffix}
       {props.addonAfter}
     </div>
+  );
+};
+
+ReadPretty.Preview = function Preview(props: any) {
+  const fieldSchema = useFieldSchema();
+  const size = fieldSchema['x-component-props']?.['size'] || 'small';
+  if (!props.value) {
+    return props.value;
+  }
+  const sizes = {
+    small: 24,
+    middle: 48,
+    large: 72,
+  };
+  return (
+    <Image
+      style={
+        ['small', 'middle', 'large'].includes(size)
+          ? {
+              width: sizes[size],
+              height: sizes[size],
+              objectFit: 'cover',
+            }
+          : {}
+      }
+      src={props.value}
+    />
   );
 };
 

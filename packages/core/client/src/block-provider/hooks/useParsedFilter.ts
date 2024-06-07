@@ -25,12 +25,15 @@ import { isVariable } from '../../variables/utils/isVariable';
 export function useParsedFilter({ filterOption }: { filterOption: any }) {
   const { parseFilter, findVariable } = useParseDataScopeFilter();
   const [filter, setFilter] = useState({});
+  const [parseVariableLoading, setParseVariableLoading] = useState(!!filterOption);
 
   useEffect(() => {
     if (!filterOption) return;
 
     const _run = async () => {
+      setParseVariableLoading(true);
       const result = await parseFilter(filterOption);
+      setParseVariableLoading(false);
       setFilter(result);
     };
     _run();
@@ -64,7 +67,12 @@ export function useParsedFilter({ filterOption }: { filterOption: any }) {
       });
       return flat;
     }, run);
-  }, [JSON.stringify(filterOption)]);
+  }, [JSON.stringify(filterOption), parseVariableLoading]);
 
-  return { filter };
+  return {
+    /** 数据范围的筛选参数 */
+    filter,
+    /** 表示是否正在解析筛选参数中的变量 */
+    parseVariableLoading,
+  };
 }

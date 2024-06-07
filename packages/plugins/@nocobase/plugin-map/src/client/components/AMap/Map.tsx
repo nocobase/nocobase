@@ -20,7 +20,7 @@ import { useMapConfiguration } from '../../hooks';
 import { useMapTranslation } from '../../locale';
 import { MapEditorType } from '../../types';
 import { Search } from './Search';
-
+import { useMapHeight } from '../hook';
 export interface AMapComponentProps {
   value?: any;
   onChange?: (value: number[]) => void;
@@ -112,7 +112,7 @@ export const AMapComponent = React.forwardRef<AMapForwardedRefProps, AMapCompone
   const navigate = useNavigate();
   const id = useRef(`nocobase-map-${type || ''}-${Date.now().toString(32)}`);
   const { modal } = App.useApp();
-
+  const height = useMapHeight();
   const [commonOptions] = useState<AMap.PolylineOptions & AMap.PolygonOptions>({
     strokeWeight: 5,
     strokeColor: '#4e9bff',
@@ -371,6 +371,8 @@ export const AMapComponent = React.forwardRef<AMapForwardedRefProps, AMapCompone
       map.current = null;
       mouseTool.current = null;
       editor.current = null;
+      // @ts-ignore
+      AMapLoader.reset();
     };
   }, [accessKey, type, securityJsCode]);
 
@@ -408,7 +410,7 @@ export const AMapComponent = React.forwardRef<AMapForwardedRefProps, AMapCompone
     <div
       className={css`
         position: relative;
-        height: 500px;
+        height: ${height || 500}px;
       `}
       id={id.current}
       style={props?.style}

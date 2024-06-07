@@ -257,11 +257,11 @@ export const TableSelectorProvider = withDynamicSchemaProps((props: TableSelecto
     console.error(err);
   }
 
-  const { filter: parsedFilter } = useParsedFilter({
+  const { filter: parsedFilter, parseVariableLoading } = useParsedFilter({
     filterOption: params?.filter,
   });
 
-  if (!_.isEmpty(params?.filter) && _.isEmpty(parsedFilter)) {
+  if ((!_.isEmpty(params?.filter) && _.isEmpty(parsedFilter)) || parseVariableLoading) {
     return null;
   }
 

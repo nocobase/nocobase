@@ -10,6 +10,7 @@
 import { useField } from '@formily/react';
 import { useTranslation } from 'react-i18next';
 import { SchemaSettings } from '../../../../application/schema-settings/SchemaSettings';
+import { SchemaSettingsBlockHeightItem } from '../../../../schema-settings/SchemaSettingsBlockHeightItem';
 
 export const markdownBlockSettings = new SchemaSettings({
   name: 'blockSettings:markdown',
@@ -28,6 +29,10 @@ export const markdownBlockSettings = new SchemaSettings({
           },
         };
       },
+    },
+    {
+      name: 'setTheBlockHeight',
+      Component: SchemaSettingsBlockHeightItem,
     },
     {
       name: 'divider',

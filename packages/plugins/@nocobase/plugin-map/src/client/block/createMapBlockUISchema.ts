@@ -9,6 +9,7 @@
 
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
+import { theme } from 'antd';
 
 export const createMapBlockUISchema = (options: {
   collectionName: string;
@@ -16,7 +17,6 @@ export const createMapBlockUISchema = (options: {
   fieldNames: object;
 }): ISchema => {
   const { collectionName, fieldNames, dataSource } = options;
-
   return {
     type: 'void',
     'x-acl-action': `${collectionName}:list`,
@@ -40,11 +40,7 @@ export const createMapBlockUISchema = (options: {
         type: 'void',
         'x-initializer': 'map:configureActions',
         'x-component': 'ActionBar',
-        'x-component-props': {
-          style: {
-            marginBottom: 16,
-          },
-        },
+        'x-component-props': {},
       },
       [uid()]: {
         type: 'void',

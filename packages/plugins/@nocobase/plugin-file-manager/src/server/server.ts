@@ -20,6 +20,7 @@ import StorageTypeLocal from './storages/local';
 import StorageTypeAliOss from './storages/ali-oss';
 import StorageTypeS3 from './storages/s3';
 import StorageTypeTxCos from './storages/tx-cos';
+import { AttachmentInterface } from './interfaces/attachment-interface';
 
 export type * from './storages';
 
@@ -137,5 +138,7 @@ export default class PluginFileManagerServer extends Plugin {
     this.app.acl.addFixedParams('attachments', 'update', ownMerger);
     this.app.acl.addFixedParams('attachments', 'create', ownMerger);
     this.app.acl.addFixedParams('attachments', 'destroy', ownMerger);
+
+    this.app.db.interfaceManager.registerInterfaceType('attachment', AttachmentInterface);
   }
 }

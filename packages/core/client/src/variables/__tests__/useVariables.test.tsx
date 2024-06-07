@@ -10,6 +10,7 @@
 import { SchemaExpressionScopeContext, SchemaOptionsContext } from '@formily/react';
 import { act, renderHook, waitFor } from '@nocobase/test/client';
 import React from 'react';
+import { Router } from 'react-router';
 import { APIClientProvider } from '../../api-client';
 import { mockAPIClient } from '../../testUtils';
 import { CurrentUserProvider } from '../../user';
@@ -49,6 +50,13 @@ vi.mock('../../collection-manager', async () => {
             return {
               type: 'hasMany',
               target: 'test',
+            };
+          }
+          if (path === 'users.belongsToManyField') {
+            return {
+              type: 'belongsToMany',
+              target: 'test',
+              through: 'throughCollectionName',
             };
           }
           if (path === 'local.belongsToField') {
@@ -114,6 +122,20 @@ mockRequest.onGet('/users/0/hasManyField:list?pageSize=9999').reply(() => {
     },
   ];
 });
+mockRequest.onGet('/users/0/belongsToManyField:list?pageSize=9999').reply(() => {
+  return [
+    200,
+    {
+      data: [
+        {
+          id: 0,
+          name: '$user.belongsToManyField',
+          throughCollectionName: 'throughCollectionName',
+        },
+      ],
+    },
+  ];
+});
 mockRequest.onGet('/test/0/hasManyField:list?pageSize=9999').reply(() => {
   return [
     200,
@@ -142,15 +164,17 @@ mockRequest.onGet('/someBelongsToField/0/belongsToField:get').reply(() => {
 
 const Providers = ({ children }) => {
   return (
-    <APIClientProvider apiClient={apiClient}>
-      <CurrentUserProvider>
-        <SchemaOptionsContext.Provider value={{}}>
-          <SchemaExpressionScopeContext.Provider value={{}}>
-            <VariablesProvider>{children}</VariablesProvider>
-          </SchemaExpressionScopeContext.Provider>
-        </SchemaOptionsContext.Provider>
-      </CurrentUserProvider>
-    </APIClientProvider>
+    <Router location={window.location} navigator={null}>
+      <APIClientProvider apiClient={apiClient}>
+        <CurrentUserProvider>
+          <SchemaOptionsContext.Provider value={{}}>
+            <SchemaExpressionScopeContext.Provider value={{}}>
+              <VariablesProvider>{children}</VariablesProvider>
+            </SchemaExpressionScopeContext.Provider>
+          </SchemaOptionsContext.Provider>
+        </CurrentUserProvider>
+      </APIClientProvider>
+    </Router>
   );
 };
 
@@ -218,6 +242,7 @@ describe('useVariables', () => {
             "yesterday": [Function],
           },
           "$nRole": "root",
+          "$nURLSearchParams": {},
           "$system": {
             "now": [Function],
           },
@@ -366,6 +391,21 @@ describe('useVariables', () => {
     });
   });
 
+  it('should remove through collection field', async () => {
+    const { result } = renderHook(() => useVariables(), {
+      wrapper: Providers,
+    });
+
+    await waitFor(async () => {
+      expect(await result.current.parseVariable('{{ $user.belongsToManyField }}')).toEqual([
+        {
+          id: 0,
+          name: '$user.belongsToManyField',
+        },
+      ]);
+    });
+  });
+
   it('register variable', async () => {
     const { result } = renderHook(() => useVariables(), {
       wrapper: Providers,
@@ -429,6 +469,7 @@ describe('useVariables', () => {
             "yesterday": [Function],
           },
           "$nRole": "root",
+          "$nURLSearchParams": {},
           "$system": {
             "now": [Function],
           },
@@ -513,6 +554,7 @@ describe('useVariables', () => {
             "yesterday": [Function],
           },
           "$nRole": "root",
+          "$nURLSearchParams": {},
           "$new": {
             "name": "new variable",
           },
@@ -539,6 +581,7 @@ describe('useVariables', () => {
         ctx: {
           name: 'new variable',
         },
+        defaultValue: null,
       });
     });
 
@@ -558,6 +601,46 @@ describe('useVariables', () => {
         ctx: {
           name: 'new variable',
         },
+      });
+    });
+
+    await waitFor(async () => {
+      expect(await result.current.parseVariable('{{ $new.noExist }}')).toBe(null);
+    });
+  });
+
+  it('$new.noExist with default value', async () => {
+    const { result } = renderHook(() => useVariables(), {
+      wrapper: Providers,
+    });
+
+    await waitFor(async () => {
+      result.current.registerVariable({
+        name: '$new',
+        ctx: {
+          name: 'new variable',
+        },
+        defaultValue: 'default value',
+      });
+    });
+
+    await waitFor(async () => {
+      expect(await result.current.parseVariable('{{ $new.noExist }}')).toBe('default value');
+    });
+  });
+
+  it('$new.noExist with undefined default value', async () => {
+    const { result } = renderHook(() => useVariables(), {
+      wrapper: Providers,
+    });
+
+    await waitFor(async () => {
+      result.current.registerVariable({
+        name: '$new',
+        ctx: {
+          name: 'new variable',
+        },
+        defaultValue: undefined,
       });
     });
 
@@ -673,11 +756,27 @@ describe('useVariables', () => {
         belongsToField: null,
       },
       collectionName: 'some',
+      defaultValue: 'default value',
     });
 
     await waitFor(async () => {
-      // 因为 $some 的 ctx 没有 id 所以无法获取关系字段的数据
-      expect(await result.current.parseVariable('{{ $some.belongsToField.belongsToField }}')).toBe(undefined);
+      // 只有解析后的值是 undefined 才会使用默认值
+      expect(await result.current.parseVariable('{{ $some.belongsToField.belongsToField }}')).toBe(null);
+    });
+
+    // 会覆盖之前的 $some
+    result.current.registerVariable({
+      name: '$some',
+      ctx: {
+        name: 'new variable',
+      },
+      collectionName: 'some',
+      defaultValue: 'default value',
+    });
+
+    await waitFor(async () => {
+      // 解析后的值是 undefined 所以会返回上面设置的默认值
+      expect(await result.current.parseVariable('{{ $some.belongsToField.belongsToField }}')).toBe('default value');
     });
   });
 

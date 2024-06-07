@@ -33,7 +33,21 @@ export type FieldOptions = {
 
 export interface IField {
   options: FieldOptions;
+  isRelationField(): boolean;
 }
+
+export interface IRelationField extends IField {
+  targetCollection(): ICollection;
+}
+
+export interface IFieldInterface {
+  options: FieldOptions;
+
+  toString(value: any, ctx?: any): string;
+  toValue(str: string, ctx?: any): any;
+}
+
+export type FindOptions = any;
 
 export interface ICollection {
   repository: IRepository;
@@ -58,7 +72,7 @@ export interface IModel {
 }
 
 export interface IRepository {
-  find(options?: any): Promise<IModel[]>;
+  find(options?: FindOptions): Promise<IModel[]>;
 
   findOne(options?: any): Promise<IModel>;
 
@@ -82,7 +96,11 @@ export type MergeOptions = {
 export interface ICollectionManager {
   registerFieldTypes(types: Record<string, any>): void;
 
-  registerFieldInterfaces(interfaces: Record<string, any>): void;
+  registerFieldInterfaces(interfaces: Record<string, new (options: any) => IFieldInterface>): void;
+
+  registerFieldInterface(name: string, fieldInterface: new (options: any) => IFieldInterface): void;
+
+  getFieldInterface(name: string): new (options: any) => IFieldInterface | undefined;
 
   registerCollectionTemplates(templates: Record<string, any>): void;
 

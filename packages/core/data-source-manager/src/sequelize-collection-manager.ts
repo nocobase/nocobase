@@ -9,8 +9,15 @@
 
 /* istanbul ignore file -- @preserve */
 
-import Database from '@nocobase/database';
-import { CollectionOptions, ICollection, ICollectionManager, IRepository, MergeOptions } from './types';
+import { Database } from '@nocobase/database';
+import {
+  CollectionOptions,
+  ICollection,
+  ICollectionManager,
+  IFieldInterface,
+  IRepository,
+  MergeOptions,
+} from './types';
 
 export class SequelizeCollectionManager implements ICollectionManager {
   db: Database;
@@ -96,5 +103,13 @@ export class SequelizeCollectionManager implements ICollectionManager {
 
   async sync() {
     await this.db.sync();
+  }
+
+  registerFieldInterface(name: string, fieldInterface: new (options: any) => IFieldInterface): void {
+    this.db.interfaceManager.registerInterfaceType(name, fieldInterface);
+  }
+
+  getFieldInterface(name: string): { new (options: any): IFieldInterface | undefined } {
+    return this.db.interfaceManager.getInterfaceType(name);
   }
 }

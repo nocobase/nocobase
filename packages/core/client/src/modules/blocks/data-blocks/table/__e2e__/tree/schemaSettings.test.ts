@@ -18,9 +18,9 @@ test.describe('tree table block schema settings', () => {
       showMenu: () => showSettingsMenu(page),
       supportedOptions: [
         'Edit block title',
+        'Set block height',
         'Tree table',
         'Enable drag and drop sorting',
-        'Fix block',
         'Set the data scope',
         'Set default sorting rules',
         'Records per page',
