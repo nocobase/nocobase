@@ -33,6 +33,7 @@ export type FieldOptions = {
 
 export interface IField {
   options: FieldOptions;
+
   isRelationField(): boolean;
 }
 
@@ -44,6 +45,7 @@ export interface IFieldInterface {
   options: FieldOptions;
 
   toString(value: any, ctx?: any): string;
+
   toValue(str: string, ctx?: any): any;
 }
 
@@ -106,9 +108,9 @@ export interface ICollectionManager {
 
   registerModels(models: Record<string, any>): void;
 
-  registerRepositories(repositories: Record<string, any>): void;
+  registerRepositories(repositories: Record<string, new (collection: ICollection) => IRepository>): void;
 
-  getRegisteredRepository(key: string): IRepository;
+  getRegisteredRepository(key: string): new (collection: ICollection) => IRepository;
 
   defineCollection(options: CollectionOptions): ICollection;
 

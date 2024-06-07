@@ -18,6 +18,13 @@ export class DataSourcesCollectionModel extends MagicAttributeModel {
     const dataSourceName = this.get('dataSourceKey');
     const dataSource = app.dataSourceManager.dataSources.get(dataSourceName);
     const collection = dataSource.collectionManager.getCollection(collectionOptions.name);
-    collection.updateOptions(collectionOptions);
+
+    if (collection) {
+      collection.updateOptions(collectionOptions);
+    } else {
+      dataSource.collectionManager.defineCollection(collectionOptions);
+    }
+
+    return collection;
   }
 }

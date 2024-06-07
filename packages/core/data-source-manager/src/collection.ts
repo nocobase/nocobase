@@ -21,6 +21,7 @@ export class Collection implements ICollection {
     protected collectionManager: ICollectionManager,
   ) {
     this.setRepository(options.repository);
+
     if (options.fields) {
       this.setFields(options.fields);
     }
@@ -32,6 +33,7 @@ export class Collection implements ICollection {
     this.options = newOptions;
 
     this.setFields(newOptions.fields || []);
+
     if (options.repository) {
       this.setRepository(options.repository);
     }
@@ -64,6 +66,7 @@ export class Collection implements ICollection {
   }
 
   protected setRepository(repository: any) {
-    this.repository = this.collectionManager.getRegisteredRepository(repository || 'Repository');
+    const RepositoryClass = this.collectionManager.getRegisteredRepository(repository || 'Repository');
+    this.repository = new RepositoryClass(this);
   }
 }

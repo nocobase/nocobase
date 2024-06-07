@@ -320,7 +320,7 @@ export class PluginDataSourceManagerServer extends Plugin {
       name: 'dataSources',
     });
 
-    this.app.db.on('dataSourcesFields.afterSave', async (model: DataSourcesFieldModel) => {
+    this.app.db.on('dataSourcesFields.afterSaveWithAssociation', async (model: DataSourcesFieldModel) => {
       model.load({
         app: this.app,
       });
@@ -332,7 +332,7 @@ export class PluginDataSourceManagerServer extends Plugin {
       });
     });
 
-    this.app.db.on('dataSourcesCollections.afterSave', async (model: DataSourcesCollectionModel) => {
+    this.app.db.on('dataSourcesCollections.afterSaveWithAssociations', async (model: DataSourcesCollectionModel) => {
       model.load({
         app: this.app,
       });
