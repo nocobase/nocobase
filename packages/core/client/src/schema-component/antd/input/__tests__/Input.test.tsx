@@ -129,7 +129,30 @@ describe('Input.JSON', () => {
       const textarea = container.querySelector('textarea') as HTMLTextAreaElement;
       fireEvent.change(textarea, { target: { value: '{"name":nocobase}' } });
       fireEvent.blur(textarea, { target: { value: '{"name":nocobase}' } });
-      expect(screen.getByText(/Unexpected token/)).toBeInTheDocument();
+      expect(screen.getByText(/invalid character 'o'/)).toBeInTheDocument();
+    });
+  });
+
+  it('should not display error when the value is valid JSON5', async () => {
+    const { container } = render(<App4 />);
+
+    await waitFor(() => {
+      const textarea = container.querySelector('textarea') as HTMLTextAreaElement;
+      fireEvent.change(textarea, { target: { value: '{name:"nocobase"}' } });
+      fireEvent.blur(textarea, { target: { value: '{name:"nocobase"}' } });
+      expect(screen.getByText(/invalid /)).not.toBeInTheDocument();
+      expect(JSON.parse(textarea.value)).toEqual({ name: 'nocobase' });
+      const pre = container.querySelector('pre') as HTMLPreElement;
+
+      expect(pre).toMatchInlineSnapshot(`
+      <pre
+        class="ant-json css-4dta7v"
+      >
+        {
+        name: "nocobase"
+      }
+      </pre>
+    `);
     });
   });
 });

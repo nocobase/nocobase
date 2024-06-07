@@ -10,10 +10,13 @@ const schema: ISchema = {
   'x-component': 'ShowFormData',
   properties: {
     test: {
-      type: 'string',
+      type: 'json',
       title: 'Test',
       'x-decorator': 'FormItem',
       'x-component': 'Input.JSON',
+      'x-value': {
+        name: 'nocobase',
+      },
     },
   },
 }
@@ -23,7 +26,7 @@ const Demo = () => {
 
 class DemoPlugin extends Plugin {
   async load() {
-    this.app.router.add('root', { path: '/', Component: Demo })
+    this.app.router.add('root', { path: '/', Component: Demo });
   }
 }
 
