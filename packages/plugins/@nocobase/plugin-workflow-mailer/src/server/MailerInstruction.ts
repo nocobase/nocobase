@@ -62,9 +62,9 @@ export default class extends Instruction {
     send({
       ...options,
       ...(contentType === 'html' ? { html } : { text }),
-      to: to.flat(),
-      cc: cc ? cc.flat() : null,
-      bcc: bcc ? bcc.flat() : null,
+      to: to.flat().filter(Boolean),
+      cc: cc ? cc.flat().filter(Boolean) : null,
+      bcc: bcc ? bcc.flat().filter(Boolean) : null,
     })
       .then((response) => {
         processor.logger.info(`smtp-mailer (#${node.id}) sent successfully.`);
