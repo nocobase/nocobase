@@ -11,15 +11,17 @@ import _ from 'lodash';
 import { useFieldSchema } from '@formily/react';
 import { SchemaSettingsItemType, SelectProps, useCompile, useDesignable } from '@nocobase/client';
 import { getNewSchema, useHookDefault } from './util';
+import { TFunction, useTranslation } from 'react-i18next';
 
 interface CreateSelectSchemaSettingsItemProps {
   name: string;
-  title: string;
+  title: string | ((t: TFunction<'translation', undefined>) => string);
   options?: SelectProps['options'];
   useOptions?: () => SelectProps['options'];
   schemaKey: string;
   defaultValue?: string | number;
   useDefaultValue?: () => string | number;
+  useVisible?: () => boolean;
 }
 
 /**
@@ -37,6 +39,7 @@ export const createSelectSchemaSettingsItem = (
     options: propsOptions,
     useOptions = useHookDefault,
     schemaKey,
+    useVisible,
     defaultValue: propsDefaultValue,
     useDefaultValue = useHookDefault,
   } = options;
@@ -49,10 +52,12 @@ export const createSelectSchemaSettingsItem = (
       const options = useOptions(propsOptions);
       const defaultValue = useDefaultValue(propsDefaultValue);
       const compile = useCompile();
+      const { t } = useTranslation();
 
       return {
-        title: compile(title),
+        title: typeof title === 'function' ? title(t) : compile(title),
         options,
+        useVisible,
         value: _.get(filedSchema, schemaKey, defaultValue),
         onChange(v) {
           deepMerge(getNewSchema({ fieldSchema: filedSchema, schemaKey, value: v }));

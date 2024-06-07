@@ -10,17 +10,19 @@
 import { SchemaSettingsItemType, useCompile, useDesignable } from '@nocobase/client';
 import { ISchema, useFieldSchema } from '@formily/react';
 import _ from 'lodash';
+import { TFunction, useTranslation } from 'react-i18next';
 
 import { getNewSchema, useHookDefault } from './util';
 
 export interface CreateModalSchemaSettingsItemProps {
   name: string;
-  title: string;
+  title: string | ((t: TFunction<'translation', undefined>) => string);
   parentSchemaKey: string;
   defaultValue?: any;
   useDefaultValue?: () => any;
   schema: (defaultValue: any) => ISchema;
   valueKeys?: string[];
+  useVisible?: () => boolean;
 }
 
 /**
@@ -36,6 +38,7 @@ export function createModalSettingsItem(options: CreateModalSchemaSettingsItemPr
     valueKeys,
     schema,
     title,
+    useVisible,
     defaultValue: propsDefaultValue,
     useDefaultValue = useHookDefault,
   } = options;
@@ -48,9 +51,11 @@ export function createModalSettingsItem(options: CreateModalSchemaSettingsItemPr
       const defaultValue = useDefaultValue(propsDefaultValue);
       const values = _.get(fieldSchema, parentSchemaKey);
       const compile = useCompile();
+      const { t } = useTranslation();
 
       return {
-        title: compile(title),
+        title: typeof title === 'function' ? title(t) : compile(title),
+        useVisible,
         schema: schema({ ...defaultValue, ...values }),
         onSubmit(values) {
           deepMerge(getNewSchema({ fieldSchema, schemaKey: parentSchemaKey, value: values, valueKeys }));

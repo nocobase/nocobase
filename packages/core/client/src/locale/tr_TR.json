@@ -572,5 +572,6 @@
   "License": "Lisans",
   "This variable has been deprecated and can be replaced with \"Current form\"": "Değişken kullanımdan kaldırıldı; \"Geçerli form\" yerine kullanılabilir",
   "The value of this variable is derived from the query string of the page URL. This variable can only be used normally when the page has a query string.": "Bu değişkenin değeri sayfa URL'sinin sorgu dizgisinden türetilir. Bu değişken, sayfanın bir sorgu dizgisi olduğunda yalnızca normal olarak kullanılabilir.",
-  "URL search params": "URL arama parametreleri"
+  "URL search params": "URL arama parametreleri",
+  "Expand All": "Tümünü genişlet"
 }

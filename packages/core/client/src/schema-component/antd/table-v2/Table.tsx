@@ -455,7 +455,7 @@ export const Table: any = withDynamicSchemaProps(
       if (!_.isEqual(newExpandesKeys, expandedKeys)) {
         setExpandesKeys(newExpandesKeys);
       }
-    }, [expandFlag]);
+    }, [expandFlag, allIncludesChildren]);
 
     /**
      * 为没有设置 key 属性的表格行生成一个唯一的 key

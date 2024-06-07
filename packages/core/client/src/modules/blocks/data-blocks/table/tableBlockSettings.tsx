@@ -7,31 +7,23 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ArrayItems } from '@formily/antd-v5';
-import { ISchema } from '@formily/json-schema';
 import { useField, useFieldSchema } from '@formily/react';
-import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient } from '../../../../api-client';
 import { SchemaSettings } from '../../../../application/schema-settings/SchemaSettings';
 import { useTableBlockContext } from '../../../../block-provider';
-import { useFormBlockContext } from '../../../../block-provider/FormBlockProvider';
-import {
-  useCollectionManager_deprecated,
-  useCollection_deprecated,
-  useSortFields,
-} from '../../../../collection-manager';
+import { useCollectionManager_deprecated, useCollection_deprecated } from '../../../../collection-manager';
 import { FilterBlockType } from '../../../../filter-provider/utils';
-import { removeNullCondition, useDesignable } from '../../../../schema-component';
+import { useDesignable } from '../../../../schema-component';
 import { SchemaSettingsBlockHeightItem } from '../../../../schema-settings/SchemaSettingsBlockHeightItem';
 import { SchemaSettingsBlockTitleItem } from '../../../../schema-settings/SchemaSettingsBlockTitleItem';
 import { SchemaSettingsConnectDataBlocks } from '../../../../schema-settings/SchemaSettingsConnectDataBlocks';
-import { SchemaSettingsDataScope } from '../../../../schema-settings/SchemaSettingsDataScope';
 import { SchemaSettingsSortField } from '../../../../schema-settings/SchemaSettingsSortField';
 import { SchemaSettingsTemplate } from '../../../../schema-settings/SchemaSettingsTemplate';
 import { setDataLoadingModeSettingsItem } from '../details-multi/setDataLoadingModeSettingsItem';
 import { setDefaultSortingRulesSchemaSettingsItem } from '../../../../schema-settings/setDefaultSortingRulesSchemaSettingsItem';
 import { setTheDataScopeSchemaSettingsItem } from '../../../../schema-settings/setTheDataScopeSchemaSettingsItem';
+import { createSwitchSettingsItem } from '../../../../application/schema-settings/utils';
 
 export const tableBlockSettings = new SchemaSettings({
   name: 'blockSettings:table',
@@ -68,6 +60,11 @@ export const tableBlockSettings = new SchemaSettings({
           onChange: (flag) => {
             field.decoratorProps.treeTable = flag;
             fieldSchema['x-decorator-props'].treeTable = flag;
+
+            if (flag === false) {
+              fieldSchema['x-decorator-props'].expandFlag = false;
+            }
+
             const params = {
               ...service.params?.[0],
               tree: flag ? true : null,
@@ -90,6 +87,16 @@ export const tableBlockSettings = new SchemaSettings({
         return collection?.tree && collectionField?.collectionName === collectionField?.target;
       },
     },
+    createSwitchSettingsItem({
+      name: 'expandFlag',
+      title: (t) => t('Expand All'),
+      defaultValue: false,
+      schemaKey: 'x-decorator-props.expandFlag',
+      useVisible() {
+        const field = useField();
+        return field.decoratorProps.treeTable;
+      },
+    }),
     {
       name: 'enableDragAndDropSorting',
       type: 'switch',

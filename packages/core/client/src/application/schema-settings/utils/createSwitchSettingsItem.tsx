@@ -12,13 +12,15 @@ import { useFieldSchema } from '@formily/react';
 import _ from 'lodash';
 
 import { getNewSchema, useHookDefault } from './util';
+import { TFunction, useTranslation } from 'react-i18next';
 
 export interface CreateSwitchSchemaSettingsItemProps {
   name: string;
-  title: string;
+  title: string | ((t: TFunction<'translation', undefined>) => string);
   schemaKey: string;
   defaultValue?: boolean;
   useDefaultValue?: () => boolean;
+  useVisible?: () => boolean;
 }
 
 /**
@@ -28,18 +30,27 @@ export interface CreateSwitchSchemaSettingsItemProps {
  * @unstable
  */
 export function createSwitchSettingsItem(options: CreateSwitchSchemaSettingsItemProps): SchemaSettingsItemType {
-  const { name, schemaKey, title, defaultValue: propsDefaultValue, useDefaultValue = useHookDefault } = options;
+  const {
+    name,
+    useVisible,
+    schemaKey,
+    title,
+    defaultValue: propsDefaultValue,
+    useDefaultValue = useHookDefault,
+  } = options;
   return {
     name,
+    useVisible,
     type: 'switch',
     useComponentProps() {
       const filedSchema = useFieldSchema();
       const { deepMerge } = useDesignable();
       const defaultValue = useDefaultValue(propsDefaultValue);
       const compile = useCompile();
+      const { t } = useTranslation();
 
       return {
-        title: compile(title),
+        title: typeof title === 'function' ? title(t) : compile(title),
         checked: !!_.get(filedSchema, schemaKey, defaultValue),
         onChange(v) {
           deepMerge(getNewSchema({ fieldSchema: filedSchema, schemaKey, value: v }));
