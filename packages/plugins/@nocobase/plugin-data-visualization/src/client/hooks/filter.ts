@@ -17,6 +17,7 @@ import {
   useActionContext,
   useCollectionManager_deprecated,
   useDataSourceManager,
+  useVariables,
 } from '@nocobase/client';
 import { useCallback, useContext, useMemo } from 'react';
 import { ChartDataContext } from '../block/ChartDataProvider';
@@ -24,7 +25,7 @@ import { Schema } from '@formily/react';
 import { useChartsTranslation } from '../locale';
 import { ChartFilterContext } from '../filter/FilterProvider';
 import { useMemoizedFn } from 'ahooks';
-import { parse } from '@nocobase/utils/client';
+import { flatten, parse, unflatten } from '@nocobase/utils/client';
 import lodash from 'lodash';
 import { getFormulaComponent, getValuesByPath } from '../utils';
 import deepmerge from 'deepmerge';
@@ -103,6 +104,7 @@ export const useChartFilter = () => {
   const { fieldSchema } = useActionContext();
   const action = fieldSchema?.['x-action'];
   const { fields: fieldProps, form } = useContext(ChartFilterContext);
+  const variables = useVariables();
 
   const getChartFilterFields = ({
     dataSource,
@@ -405,6 +407,38 @@ export const useChartFilter = () => {
       .join(' / ');
   });
 
+  const parseFilter = useCallback(
+    async (filterValue: any) => {
+      const flat = flatten(filterValue, {
+        breakOn({ key }) {
+          return key.startsWith('$') && key !== '$and' && key !== '$or';
+        },
+        transformValue(value) {
+          if (!(typeof value === 'string' && value.startsWith('{{$') && value?.endsWith('}}'))) {
+            return value;
+          }
+          if (['$user', '$date', '$nDate', '$nRole'].some((n) => value.includes(n))) {
+            return value;
+          }
+          const result = variables?.parseVariable(value);
+          return result;
+        },
+      });
+      await Promise.all(
+        Object.keys(flat).map(async (key) => {
+          flat[key] = await flat[key];
+          if (flat[key] === undefined) {
+            delete flat[key];
+          }
+          return flat[key];
+        }),
+      );
+      const result = unflatten(flat);
+      return result;
+    },
+    [variables],
+  );
+
   return {
     filter,
     refresh,
@@ -413,6 +447,7 @@ export const useChartFilter = () => {
     hasFilter,
     appendFilter,
     getTranslatedTitle,
+    parseFilter,
   };
 };
 
