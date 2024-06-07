@@ -124,7 +124,7 @@ const VariablesProvider = ({ children }) => {
             }
             return item?.[key];
           });
-          current = _.flatten(await Promise.all(result));
+          current = removeThroughCollectionFields(_.flatten(await Promise.all(result)), associationField);
         } else if (shouldToRequest(current[key]) && current.id != null && associationField?.target) {
           const url = `/${collectionName}/${current.id}/${key}:${getAction(associationField.type)}`;
           let data = null;
@@ -149,9 +149,9 @@ const VariablesProvider = ({ children }) => {
             raw(current)[key] = data.data.data;
           }
 
-          current = getValuesByPath(current, key);
+          current = removeThroughCollectionFields(getValuesByPath(current, key), associationField);
         } else {
-          current = getValuesByPath(current, key);
+          current = removeThroughCollectionFields(getValuesByPath(current, key), associationField);
         }
 
         if (associationField?.target) {
@@ -343,4 +343,27 @@ function mergeVariableToCollectionNameWithLocalVariables(
   });
 
   return variablesStore;
+}
+
+/**
+ * 去除关系字段中的中间表字段。
+ * 如果在创建新记录的时候，存在关系字段的中间表字段，提交的时候会报错，所以需要去除。
+ * @param value
+ * @param associationField
+ * @returns
+ */
+export function removeThroughCollectionFields(
+  value: Record<string, any> | Record<string, any>[],
+  associationField: CollectionFieldOptions_deprecated,
+) {
+  if (!associationField?.through || !value) {
+    return value;
+  }
+
+  if (Array.isArray(value)) {
+    return value.map((item) => {
+      return _.omit(item, associationField.through);
+    });
+  }
+  return _.omit(value, associationField.through);
 }
