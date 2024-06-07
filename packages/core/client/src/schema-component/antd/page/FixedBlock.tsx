@@ -56,9 +56,11 @@ export const FixedBlockWrapper: React.FC = (props) => {
   return (
     <div
       className="nb-fixed-block"
-      style={{
-        height: fixedBlockUID ? `calc(100vh - ${height})` : undefined,
-      }}
+      style={
+        {
+          // height: fixedBlockUID ? `calc(100vh - ${height})` : undefined,
+        }
+      }
     >
       {props.children}
     </div>
