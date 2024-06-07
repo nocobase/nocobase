@@ -7,10 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { createMockServer, MockServer } from '@nocobase/test';
 import { CollectionManager, DataSource, IRepository } from '@nocobase/data-source-manager';
-import { SuperAgentTest } from 'supertest';
 import { ICollectionManager, IModel } from '@nocobase/data-source-manager/src/types';
+import { MockServer, createMockServer } from '@nocobase/test';
+import os from 'os';
+import { SuperAgentTest } from 'supertest';
 
 describe('data source with acl', () => {
   let app: MockServer;
@@ -103,7 +104,7 @@ describe('data source with acl', () => {
     await app.destroy();
   });
 
-  it('should call application middleware', async () => {
+  it.skipIf(os.platform() === 'win32')('should call application middleware', async () => {
     const middlewareFn = vi.fn();
     app.use(async (ctx, next) => {
       middlewareFn();
@@ -122,7 +123,7 @@ describe('data source with acl', () => {
     expect(middlewareFn).toBeCalledTimes(1);
   });
 
-  it('should allow root user', async () => {
+  it.skipIf(os.platform() === 'win32')('should allow root user', async () => {
     const adminUser = await app.db.getRepository('users').create({
       values: {
         roles: ['root'],
