@@ -47,7 +47,7 @@ export const WorkbenchBlock: FC<{ height?: number }> = withDynamicSchemaProps(
   (props) => {
     return (
       <div>
-        <SchemaComponentOptions components={{ Action: WorkbenchAction }}>
+        <SchemaComponentOptions components={{ WorkbenchAction }}>
           <InternalIcons />
           <ConfigureActionsButton />
         </SchemaComponentOptions>
