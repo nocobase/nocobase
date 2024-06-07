@@ -90,7 +90,7 @@ const InternalGridCard = (props: GridCardProps) => {
   const field = useField<ArrayField>();
   const Designer = useDesigner();
   const height = useGridCardBodyHeight();
-  const { heightProps } = useBlockHeightProps();
+  const { heightProps } = useBlockHeightProps() || {};
   const { heightMode } = heightProps || {};
   const [schemaMap] = useState(new Map());
   const getSchema = useCallback(
