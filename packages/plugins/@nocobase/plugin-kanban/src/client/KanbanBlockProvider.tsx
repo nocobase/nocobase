@@ -60,7 +60,7 @@ const InternalKanbanBlockProvider = (props) => {
           service,
           resource,
           groupField,
-          fixedBlock: field?.decoratorProps?.fixedBlock,
+          // fixedBlock: field?.decoratorProps?.fixedBlock,
           sortField: props?.sortField,
         }}
       >
