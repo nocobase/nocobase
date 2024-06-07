@@ -15,10 +15,17 @@ import { Processor, Instruction, JOB_STATUS, FlowNodeModel } from '@nocobase/plu
 
 export default class extends Instruction {
   async run(node: FlowNodeModel, prevJob, processor: Processor) {
-    const { provider, contentType, html, text, ignoreFail, ...options } = processor.getParsedValue(
-      node.config,
-      node.id,
-    );
+    const {
+      provider,
+      contentType,
+      to = [],
+      cc,
+      bcc,
+      html,
+      text,
+      ignoreFail,
+      ...options
+    } = processor.getParsedValue(node.config, node.id);
 
     const { workflow } = processor.execution;
     const sync = this.workflow.isWorkflowSync(workflow);
@@ -55,6 +62,9 @@ export default class extends Instruction {
     send({
       ...options,
       ...(contentType === 'html' ? { html } : { text }),
+      to: to.flat(),
+      cc: cc ? cc.flat() : null,
+      bcc: bcc ? bcc.flat() : null,
     })
       .then((response) => {
         processor.logger.info(`smtp-mailer (#${node.id}) sent successfully.`);

@@ -9,7 +9,7 @@
 
 import { ArrayItems } from '@formily/antd-v5';
 
-import { SchemaComponentContext } from '@nocobase/client';
+import { SchemaComponentContext, css } from '@nocobase/client';
 import {
   Instruction,
   WorkflowVariableInput,
@@ -19,15 +19,22 @@ import {
 
 import { NAMESPACE } from '../locale';
 
+const emailsClass = css`
+  width: 100%;
+
+  .ant-space-item:nth-child(2) {
+    flex-grow: 1;
+  }
+`;
+
 export default class extends Instruction {
-  title = `{{t("SMTP mailer", { ns: "${NAMESPACE}" })}}`;
-  type = 'smtp-mailer';
+  title = `{{t("Mailer", { ns: "${NAMESPACE}" })}}`;
+  type = 'mailer';
   group = 'extended';
-  description = `{{t("Send email by calling SMTP service. You can use the variables in the upstream nodes as receivers, subject and content of the email.", { ns: "${NAMESPACE}" })}}`;
+  description = `{{t("Send email. You can use the variables in the upstream nodes as receivers, subject and content of the email.", { ns: "${NAMESPACE}" })}}`;
   fieldset = {
     provider: {
       type: 'object',
-      // title: `{{t("SMTP provider", { ns: "${NAMESPACE}" })}}`,
       properties: {
         server: {
           type: 'void',
@@ -52,7 +59,7 @@ export default class extends Instruction {
                     host: {
                       type: 'string',
                       required: true,
-                      title: `{{t("Service host", { ns: "${NAMESPACE}" })}}`,
+                      title: `{{t("SMTP host", { ns: "${NAMESPACE}" })}}`,
                       'x-decorator': 'FormItem',
                       'x-component': 'Input',
                     },
@@ -151,8 +158,10 @@ export default class extends Instruction {
       required: true,
       title: `{{t("From", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
-      'x-component': 'Input',
-      'x-validator': 'email',
+      'x-component': 'WorkflowVariableInput',
+      'x-component-props': {
+        useTypedConstant: ['string'],
+      },
     },
     to: {
       type: 'array',
@@ -163,6 +172,9 @@ export default class extends Instruction {
       items: {
         type: 'void',
         'x-component': 'Space',
+        'x-component-props': {
+          className: emailsClass,
+        },
         properties: {
           sort: {
             type: 'void',
@@ -201,6 +213,9 @@ export default class extends Instruction {
       items: {
         type: 'void',
         'x-component': 'Space',
+        'x-component-props': {
+          className: emailsClass,
+        },
         properties: {
           sort: {
             type: 'void',
@@ -239,6 +254,9 @@ export default class extends Instruction {
       items: {
         type: 'void',
         'x-component': 'Space',
+        'x-component-props': {
+          className: emailsClass,
+        },
         properties: {
           sort: {
             type: 'void',
@@ -274,7 +292,7 @@ export default class extends Instruction {
       required: true,
       title: `{{t("Subject", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
-      'x-component': 'Input',
+      'x-component': 'WorkflowVariableTextArea',
     },
     contentType: {
       type: 'string',

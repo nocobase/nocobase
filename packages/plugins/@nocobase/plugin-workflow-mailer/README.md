@@ -1,4 +1,4 @@
-# workflow
+# Workflow Mailer
 
 English | [中文](./README.zh-CN.md)
 

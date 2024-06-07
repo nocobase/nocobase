@@ -1,7 +1,7 @@
 {
-  "SMTP mailer": "SMTP mailer",
-  "Send email by calling SMTP service. You can use the variables in the upstream nodes as receivers, subject and content of the email.": "Send email by calling SMTP service. You can use the variables in the upstream nodes as receivers, subject and content of the email.",
-  "Service host": "Service host",
+  "Mailer": "Mailer",
+  "Send email. You can use the variables in the upstream nodes as receivers, subject and content of the email.": "Send email by calling SMTP service. You can use the variables in the upstream nodes as receivers, subject and content of the email.",
+  "SMTP host": "Service host",
   "Port": "Port",
   "Secure": "Secure",
   "User": "User",

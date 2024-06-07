@@ -1,4 +1,4 @@
-# workflow
+# 工作流邮件发送节点
 
 [English](./README.md) | 中文
 

@@ -10,11 +10,11 @@
 import { Plugin } from '@nocobase/server';
 import WorkflowPlugin from '@nocobase/plugin-workflow';
 
-import SMTPInstruction from './SMTPInstruction';
+import MailerInstruction from './MailerInstruction';
 
 export default class extends Plugin {
   async load() {
     const workflowPlugin = this.app.pm.get(WorkflowPlugin) as WorkflowPlugin;
-    workflowPlugin.registerInstruction('smtp-mailer', SMTPInstruction);
+    workflowPlugin.registerInstruction('mailer', MailerInstruction);
   }
 }

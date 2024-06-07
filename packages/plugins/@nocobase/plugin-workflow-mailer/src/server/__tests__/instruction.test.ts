@@ -18,7 +18,7 @@ import { MockServer } from '@nocobase/test';
 import PluginWorkflow, { Processor, EXECUTION_STATUS, JOB_STATUS } from '@nocobase/plugin-workflow';
 import { getApp, sleep } from '@nocobase/plugin-workflow-test';
 
-import { RequestConfig } from '../SMTPInstruction';
+import { RequestConfig } from '../MailerInstruction';
 
 const HOST = 'localhost';
 
