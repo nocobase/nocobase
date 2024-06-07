@@ -414,7 +414,7 @@ export const useChartFilter = () => {
           return key.startsWith('$') && key !== '$and' && key !== '$or';
         },
         transformValue(value) {
-          if (!value?.startsWith('{{$') || !value?.endsWith('}}')) {
+          if (!(typeof value === 'string' && value.startsWith('{{$') && value?.endsWith('}}'))) {
             return value;
           }
           if (['$user', '$date', '$nDate', '$nRole'].some((n) => value.includes(n))) {
