@@ -55,6 +55,7 @@
     "@nocobase/plugin-workflow-delay": "1.0.0-alpha.17",
     "@nocobase/plugin-workflow-dynamic-calculation": "1.0.0-alpha.17",
     "@nocobase/plugin-workflow-loop": "1.0.0-alpha.17",
+    "@nocobase/plugin-workflow-mailer": "1.0.0-alpha.17",
     "@nocobase/plugin-workflow-manual": "1.0.0-alpha.17",
     "@nocobase/plugin-workflow-parallel": "1.0.0-alpha.17",
     "@nocobase/plugin-workflow-request": "1.0.0-alpha.17",
