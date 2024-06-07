@@ -14,7 +14,8 @@ import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient } from '../../../../api-client';
 import { SchemaSettings } from '../../../../application/schema-settings/SchemaSettings';
-import { useFormBlockContext, useTableBlockContext } from '../../../../block-provider';
+import { useTableBlockContext } from '../../../../block-provider';
+import { useFormBlockContext } from '../../../../block-provider/FormBlockProvider';
 import {
   useCollectionManager_deprecated,
   useCollection_deprecated,
@@ -22,12 +23,12 @@ import {
 } from '../../../../collection-manager';
 import { FilterBlockType } from '../../../../filter-provider/utils';
 import { removeNullCondition, useDesignable } from '../../../../schema-component';
+import { SchemaSettingsBlockHeightItem } from '../../../../schema-settings/SchemaSettingsBlockHeightItem';
 import { SchemaSettingsBlockTitleItem } from '../../../../schema-settings/SchemaSettingsBlockTitleItem';
 import { SchemaSettingsConnectDataBlocks } from '../../../../schema-settings/SchemaSettingsConnectDataBlocks';
 import { SchemaSettingsDataScope } from '../../../../schema-settings/SchemaSettingsDataScope';
 import { SchemaSettingsSortField } from '../../../../schema-settings/SchemaSettingsSortField';
 import { SchemaSettingsTemplate } from '../../../../schema-settings/SchemaSettingsTemplate';
-import { SchemaSettingsBlockHeightItem } from '../../../../schema-settings/SchemaSettingsBlockHeightItem';
 import { setDataLoadingModeSettingsItem } from '../details-multi/setDataLoadingModeSettingsItem';
 
 export const tableBlockSettings = new SchemaSettings({

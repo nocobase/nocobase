@@ -86,7 +86,7 @@
     "typescript": "5.1.3"
   },
   "volta": {
-    "node": "18.14.2",
+    "node": "20.14.0",
     "yarn": "1.22.19"
   },
   "dependencies": {}

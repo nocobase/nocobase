@@ -8,7 +8,7 @@
  */
 
 import { BlockSchemaComponentPlugin, TableV2, useTableBlockDecoratorProps } from '@nocobase/client';
-import { checkSettings, renderSettings, checkSchema, screen, waitFor } from '@nocobase/test/client';
+import { checkSchema, checkSettings, renderSettings, screen, waitFor } from '@nocobase/test/client';
 import { withSchema } from '@nocobase/test/web';
 
 describe('Table.Column.settings', () => {

@@ -12,16 +12,16 @@ import { ISchema, useField, useFieldSchema } from '@formily/react';
 import { useTranslation } from 'react-i18next';
 import { SchemaSettings } from '../../../../application/schema-settings/SchemaSettings';
 import { SchemaSettingsItemType } from '../../../../application/schema-settings/types';
-import { useFormBlockContext } from '../../../../block-provider';
 import { useDetailsBlockContext } from '../../../../block-provider/DetailsBlockProvider';
+import { useFormBlockContext } from '../../../../block-provider/FormBlockProvider';
 import { useCollection_deprecated, useSortFields } from '../../../../collection-manager';
 import { removeNullCondition, useDesignable } from '../../../../schema-component';
 import { SchemaSettingsLinkageRules } from '../../../../schema-settings';
+import { SchemaSettingsBlockHeightItem } from '../../../../schema-settings/SchemaSettingsBlockHeightItem';
 import { SchemaSettingsBlockTitleItem } from '../../../../schema-settings/SchemaSettingsBlockTitleItem';
 import { SchemaSettingsDataScope } from '../../../../schema-settings/SchemaSettingsDataScope';
 import { SchemaSettingsTemplate } from '../../../../schema-settings/SchemaSettingsTemplate';
 import { setDataLoadingModeSettingsItem } from './setDataLoadingModeSettingsItem';
-import { SchemaSettingsBlockHeightItem } from '../../../../schema-settings/SchemaSettingsBlockHeightItem';
 
 const commonItems: SchemaSettingsItemType[] = [
   {

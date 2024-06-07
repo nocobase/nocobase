@@ -38,15 +38,15 @@ export const getValuesByPath = (obj: object, path: string, defaultValue?: any) =
     }
   }
 
-  result = result.filter((item) => item != null);
+  result = result.filter((item) => item !== undefined);
 
   if (result.length === 0) {
     return defaultValue;
   }
 
   if (shouldReturnArray) {
-    return result;
+    return result.filter((item) => item !== null);
   }
 
-  return result.length === 1 ? result[0] : result;
+  return result[0];
 };
