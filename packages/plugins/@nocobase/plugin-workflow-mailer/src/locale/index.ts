@@ -9,7 +9,7 @@
 
 import { useTranslation } from 'react-i18next';
 
-export const NAMESPACE = 'workflow-smtp-mailer';
+export const NAMESPACE = 'workflow-mailer';
 
 export function useLang(key: string, options = {}) {
   const { t } = usePluginTranslation(options);
