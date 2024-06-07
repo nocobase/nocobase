@@ -16,13 +16,20 @@ import {
   IRepository,
   MergeOptions,
 } from './types';
+import { DataSource } from './data-source';
 
 export class CollectionManager implements ICollectionManager {
   protected collections = new Map<string, ICollection>();
   protected repositories = new Map<string, IRepository>();
   protected models = new Map<string, any>();
 
-  constructor(options = {}) {}
+  protected dataSource: DataSource;
+
+  constructor(options = {}) {
+    if (options.dataSource) {
+      this.dataSource = options.dataSource;
+    }
+  }
 
   /* istanbul ignore next -- @preserve */
   getRegisteredFieldType(type) {}
