@@ -446,10 +446,6 @@ export default defineConfig({
                 '/ui-schema/schema-initializer/bulk-edit-form-configure-fields',
               ]
             },
-            {
-              title: '字段组件相关',
-              children: []
-            },
           ],
         },
         {
@@ -469,21 +465,89 @@ export default defineConfig({
             {
               title: '区块相关',
               children: [
-                '/ui-schema/schema-settings/action-settings-add-new'
+                '/ui-schema/schema-settings/blockSettings-calendar',
+                '/ui-schema/schema-settings/blockSettings-comment',
+                '/ui-schema/schema-settings/blockSettings-createForm',
+                '/ui-schema/schema-settings/blockSettings-details',
+                '/ui-schema/schema-settings/blockSettings-detailsWithPagination',
+                '/ui-schema/schema-settings/blockSettings-editForm',
+                '/ui-schema/schema-settings/blockSettings-filterCollapse',
+                '/ui-schema/schema-settings/blockSettings-filterForm',
+                '/ui-schema/schema-settings/blockSettings-gantt',
+                '/ui-schema/schema-settings/blockSettings-gridCard',
+                '/ui-schema/schema-settings/blockSettings-iframe',
+                '/ui-schema/schema-settings/blockSettings-kanban',
+                '/ui-schema/schema-settings/blockSettings-list',
+                '/ui-schema/schema-settings/blockSettings-map',
+                '/ui-schema/schema-settings/blockSettings-markdown',
+                '/ui-schema/schema-settings/blockSettings-table',
+                '/ui-schema/schema-settings/blockSettings-tableSelector',
               ]
             },
             {
               title: '操作相关',
               children: [
-                '/ui-schema/schema-settings/action-settings-add-new'
+                '/ui-schema/schema-settings/actionSettings-addChild',
+                '/ui-schema/schema-settings/actionSettings-addNew',
+                '/ui-schema/schema-settings/actionSettings-addRecord',
+                '/ui-schema/schema-settings/actionSettings-bulkDelete',
+                '/ui-schema/schema-settings/actionSettings-bulkEdit',
+                '/ui-schema/schema-settings/actionSettings-bulkUpdate',
+                '/ui-schema/schema-settings/actionSettings-createSubmit',
+                '/ui-schema/schema-settings/actionSettings-customRequest',
+                '/ui-schema/schema-settings/actionSettings-delete',
+                '/ui-schema/schema-settings/actionSettings-disassociate',
+                '/ui-schema/schema-settings/actionSettings-duplicate',
+                '/ui-schema/schema-settings/actionSettings-edit',
+                '/ui-schema/schema-settings/actionSettings-expendable',
+                '/ui-schema/schema-settings/actionSettings-export',
+                '/ui-schema/schema-settings/actionSettings-filter',
+                '/ui-schema/schema-settings/actionSettings-import',
+                '/ui-schema/schema-settings/actionSettings-popup',
+                '/ui-schema/schema-settings/actionSettings-print',
+                '/ui-schema/schema-settings/actionSettings-refresh',
+                '/ui-schema/schema-settings/actionSettings-saveRecord',
+                '/ui-schema/schema-settings/actionSettings-submit',
+                '/ui-schema/schema-settings/actionSettings-submitToWorkflow',
+                '/ui-schema/schema-settings/actionSettings-updateRecord',
+                '/ui-schema/schema-settings/actionSettings-updateSubmit',
+                '/ui-schema/schema-settings/actionSettings-view',
               ]
             },
             {
               title: '字段相关',
               children: [
-                '/ui-schema/schema-settings/action-settings-add-new'
+                '/ui-schema/schema-settings/fieldSettings-BulkEditFormItem',
+                '/ui-schema/schema-settings/fieldSettings-FilterCollapseItem',
+                '/ui-schema/schema-settings/fieldSettings-FilterFormItem',
+                '/ui-schema/schema-settings/fieldSettings-FormItem',
+                '/ui-schema/schema-settings/fieldSettings-TableColumn',
               ]
             },
+            {
+              title: '字段组件相关',
+              children: [
+                '/ui-schema/schema-settings/fieldSettings-component-CascadeSelect',
+                '/ui-schema/schema-settings/fieldSettings-component-DatePicker',
+                '/ui-schema/schema-settings/fieldSettings-component-DepartmentOwnersField',
+                '/ui-schema/schema-settings/fieldSettings-component-FileManager',
+                '/ui-schema/schema-settings/fieldSettings-component-Formula-Result',
+                '/ui-schema/schema-settings/fieldSettings-component-Input.Preview',
+                '/ui-schema/schema-settings/fieldSettings-component-Input.URL',
+                '/ui-schema/schema-settings/fieldSettings-component-InputNumber',
+                '/ui-schema/schema-settings/fieldSettings-component-Nester',
+                '/ui-schema/schema-settings/fieldSettings-component-Picker',
+                '/ui-schema/schema-settings/fieldSettings-component-PopoverNester',
+                '/ui-schema/schema-settings/fieldSettings-component-Preview',
+                '/ui-schema/schema-settings/fieldSettings-component-Select',
+                '/ui-schema/schema-settings/fieldSettings-component-SubTable',
+                '/ui-schema/schema-settings/fieldSettings-component-Tag',
+                '/ui-schema/schema-settings/fieldSettings-component-UnixTimestamp',
+                '/ui-schema/schema-settings/fieldSettings-component-Upload-Attachment',
+                '/ui-schema/schema-settings/fieldSettings-component-UserDepartmentsField',
+                '/ui-schema/schema-settings/fieldSettings-component-UserMainDepartmentField',
+              ],
+            }
           ],
         },
         {
