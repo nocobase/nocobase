@@ -8,6 +8,7 @@
  */
 
 import { Html5QrcodeScanner } from 'html5-qrcode';
+import { useNavigate } from 'react-router-dom';
 import React, { useEffect } from 'react';
 
 const qrcodeRegionId = 'html5qr-code-full-region';
@@ -31,13 +32,14 @@ const createConfig = (props) => {
 };
 
 export const QRCodeScanner = (props) => {
+  const navigate = useNavigate();
   useEffect(() => {
     // when component mounts
     const config = createConfig(props);
     const verbose = props.verbose === true;
     // Suceess callback is required.
     const qrCodeSuccessCallback = (decodedText, decodedResult) => {
-      window.location.href = decodedText;
+      navigate(decodedText);
     };
     const html5QrcodeScanner = new Html5QrcodeScanner(qrcodeRegionId, config, verbose);
     html5QrcodeScanner.render(qrCodeSuccessCallback, props.qrCodeErrorCallback);
@@ -48,7 +50,7 @@ export const QRCodeScanner = (props) => {
         console.error('Failed to clear html5QrcodeScanner. ', error);
       });
     };
-  }, []);
+  }, [navigate, props]);
 
   return (
     <>

@@ -8,6 +8,7 @@
     "@nocobase/test": "1.x"
   },
   "dependencies": {
-    "html5-qrcode": "^2.3.8"
+    "html5-qrcode": "^2.3.8",
+    "react-router-dom": "^6.23.1"
   }
 }
