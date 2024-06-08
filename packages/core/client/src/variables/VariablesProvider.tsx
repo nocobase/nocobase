@@ -28,27 +28,24 @@ import { uniq } from './utils/uniq';
 export const VariablesContext = createContext<VariablesContextType>(null);
 VariablesContext.displayName = 'VariablesContext';
 
-const variableToCollectionName: Record<
-  string,
-  {
-    collectionName?: string;
-    dataSource?: string;
-  }
-> = {};
+const variablesStore: Record<string, VariableOption> = {};
 
-const getFieldPath = (variablePath: string, variableToCollectionName: Record<string, any>) => {
+const getFieldPath = (variablePath: string, variablesStore: Record<string, VariableOption>) => {
   let dataSource;
+  let variableOption: VariableOption;
   const list = variablePath.split('.');
   const result = list.map((item) => {
-    if (variableToCollectionName[item]) {
-      dataSource = variableToCollectionName[item].dataSource;
-      return variableToCollectionName[item].collectionName;
+    if (variablesStore[item]) {
+      dataSource = variablesStore[item].dataSource;
+      variableOption = variablesStore[item];
+      return variablesStore[item].collectionName;
     }
     return item;
   });
   return {
     fieldPath: result.join('.'),
     dataSource,
+    variableOption,
   };
 };
 
@@ -83,12 +80,9 @@ const VariablesProvider = ({ children }) => {
     ) => {
       const list = variablePath.split('.');
       const variableName = list[0];
-      const _variableToCollectionName = mergeVariableToCollectionNameWithLocalVariables(
-        variableToCollectionName,
-        localVariables,
-      );
+      const _variableToCollectionName = mergeVariableToCollectionNameWithLocalVariables(variablesStore, localVariables);
       let current = mergeCtxWithLocalVariables(ctxRef.current, localVariables);
-      const { fieldPath, dataSource } = getFieldPath(variableName, _variableToCollectionName);
+      const { fieldPath, dataSource, variableOption } = getFieldPath(variableName, _variableToCollectionName);
       let collectionName = fieldPath;
 
       if (!(variableName in current)) {
@@ -97,7 +91,7 @@ const VariablesProvider = ({ children }) => {
 
       for (let index = 0; index < list.length; index++) {
         if (current == null) {
-          return current;
+          return current === undefined ? variableOption.defaultValue : current;
         }
 
         const key = list[index];
@@ -130,7 +124,7 @@ const VariablesProvider = ({ children }) => {
             }
             return item?.[key];
           });
-          current = _.flatten(await Promise.all(result));
+          current = removeThroughCollectionFields(_.flatten(await Promise.all(result)), associationField);
         } else if (shouldToRequest(current[key]) && current.id != null && associationField?.target) {
           const url = `/${collectionName}/${current.id}/${key}:${getAction(associationField.type)}`;
           let data = null;
@@ -155,9 +149,9 @@ const VariablesProvider = ({ children }) => {
             raw(current)[key] = data.data.data;
           }
 
-          current = getValuesByPath(current, key);
+          current = removeThroughCollectionFields(getValuesByPath(current, key), associationField);
         } else {
-          current = getValuesByPath(current, key);
+          current = removeThroughCollectionFields(getValuesByPath(current, key), associationField);
         }
 
         if (associationField?.target) {
@@ -165,7 +159,8 @@ const VariablesProvider = ({ children }) => {
         }
       }
 
-      return compile(_.isFunction(current) ? current() : current);
+      const result = compile(_.isFunction(current) ? current() : current);
+      return result === undefined ? variableOption.defaultValue : result;
     },
     [getCollectionJoinField],
   );
@@ -185,12 +180,10 @@ const VariablesProvider = ({ children }) => {
           [variableOption.name]: variableOption.ctx,
         };
       });
-      if (variableOption.collectionName) {
-        variableToCollectionName[variableOption.name] = {
-          collectionName: variableOption.collectionName,
-          dataSource: variableOption.dataSource,
-        };
-      }
+      variablesStore[variableOption.name] = {
+        ...variableOption,
+        defaultValue: _.has(variableOption, 'defaultValue') ? variableOption.defaultValue : null,
+      };
     },
     [setCtx],
   );
@@ -200,13 +193,8 @@ const VariablesProvider = ({ children }) => {
       return null;
     }
 
-    const { collectionName, dataSource } = variableToCollectionName[variableName] || {};
-
     return {
-      name: variableName,
-      ctx: ctxRef.current[variableName],
-      collectionName,
-      dataSource,
+      ...variablesStore[variableName],
     };
   }, []);
 
@@ -217,7 +205,7 @@ const VariablesProvider = ({ children }) => {
         delete next[variableName];
         return next;
       });
-      delete variableToCollectionName[variableName];
+      delete variablesStore[variableName];
     },
     [setCtx],
   );
@@ -264,7 +252,7 @@ const VariablesProvider = ({ children }) => {
       }
 
       const _variableToCollectionName = mergeVariableToCollectionNameWithLocalVariables(
-        variableToCollectionName,
+        variablesStore,
         localVariables as VariableOption[],
       );
       const path = getPath(variableString);
@@ -285,7 +273,10 @@ const VariablesProvider = ({ children }) => {
 
   useEffect(() => {
     builtinVariables.forEach((variableOption) => {
-      registerVariable(variableOption);
+      registerVariable({
+        ...variableOption,
+        defaultValue: _.has(variableOption, 'defaultValue') ? variableOption.defaultValue : null,
+      });
     });
   }, [builtinVariables, registerVariable]);
 
@@ -339,25 +330,40 @@ function mergeCtxWithLocalVariables(ctx: Record<string, any>, localVariables?: V
 }
 
 function mergeVariableToCollectionNameWithLocalVariables(
-  variableToCollectionName: Record<
-    string,
-    {
-      collectionName?: string;
-      dataSource?: string;
-    }
-  >,
+  variablesStore: Record<string, VariableOption>,
   localVariables?: VariableOption[],
 ) {
-  variableToCollectionName = { ...variableToCollectionName };
+  variablesStore = { ...variablesStore };
 
   localVariables?.forEach((item) => {
-    if (item.collectionName) {
-      variableToCollectionName[item.name] = {
-        collectionName: item.collectionName,
-        dataSource: item.dataSource,
-      };
-    }
+    variablesStore[item.name] = {
+      ...item,
+      defaultValue: _.has(item, 'defaultValue') ? item.defaultValue : null,
+    };
   });
 
-  return variableToCollectionName;
+  return variablesStore;
+}
+
+/**
+ * 去除关系字段中的中间表字段。
+ * 如果在创建新记录的时候，存在关系字段的中间表字段，提交的时候会报错，所以需要去除。
+ * @param value
+ * @param associationField
+ * @returns
+ */
+export function removeThroughCollectionFields(
+  value: Record<string, any> | Record<string, any>[],
+  associationField: CollectionFieldOptions_deprecated,
+) {
+  if (!associationField?.through || !value) {
+    return value;
+  }
+
+  if (Array.isArray(value)) {
+    return value.map((item) => {
+      return _.omit(item, associationField.through);
+    });
+  }
+  return _.omit(value, associationField.through);
 }

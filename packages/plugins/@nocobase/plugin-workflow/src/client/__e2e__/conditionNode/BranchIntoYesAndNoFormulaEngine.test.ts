@@ -81,8 +81,11 @@ test('Collection event Add Data Trigger, determines that the trigger node single
   await page.getByRole('menuitemcheckbox', { name: 'Trigger data' }).click();
   await page.getByRole('menuitemcheckbox', { name: triggerNodeFieldDisplayName }).click();
   const conditionalRightConstant = faker.lorem.words();
-  await page.waitForTimeout(500);
-  await page.keyboard.type(`=='${conditionalRightConstant}'`, { delay: 50 });
+  await page
+    .getByLabel('block-item-WorkflowVariableTextArea-workflows-Condition expression')
+    .getByLabel('textbox')
+    .press('ControlOrMeta+ArrowRight');
+  await page.keyboard.type(`=='${conditionalRightConstant}'`, { delay: 100 });
   await expect(conditionNode.conditionExpressionEditBox).toHaveText(
     `Trigger variables / Trigger data / ${triggerNodeFieldDisplayName}=='${conditionalRightConstant}'`,
   );
@@ -199,7 +202,7 @@ test('Collection event Add Data Trigger, determines that the trigger node single
   await page.getByRole('menuitemcheckbox', { name: triggerNodeFieldDisplayName }).click();
   const conditionalRightConstant = faker.lorem.words();
   await page.waitForTimeout(500);
-  await page.keyboard.type(`=='${conditionalRightConstant}'`, { delay: 50 });
+  await page.keyboard.type(`=='${conditionalRightConstant}'`, { delay: 100 });
   await expect(conditionNode.conditionExpressionEditBox).toHaveText(
     `Trigger variables / Trigger data / ${triggerNodeFieldDisplayName}=='${conditionalRightConstant}'`,
   );
@@ -315,8 +318,11 @@ test('Collection event Add Data Trigger, determines that the trigger node single
   await page.getByRole('menuitemcheckbox', { name: 'Trigger data' }).click();
   await page.getByRole('menuitemcheckbox', { name: triggerNodeFieldDisplayName }).click();
   const conditionalRightConstant = faker.lorem.words();
-  await page.waitForTimeout(500);
-  await page.keyboard.type(`!='${conditionalRightConstant}'`, { delay: 50 });
+  await page
+    .getByLabel('block-item-WorkflowVariableTextArea-workflows-Condition expression')
+    .getByLabel('textbox')
+    .press('ControlOrMeta+ArrowRight');
+  await page.keyboard.type(`!='${conditionalRightConstant}'`, { delay: 100 });
   await expect(conditionNode.conditionExpressionEditBox).toHaveText(
     `Trigger variables / Trigger data / ${triggerNodeFieldDisplayName}!='${conditionalRightConstant}'`,
   );
@@ -433,7 +439,7 @@ test('Collection event Add Data Trigger, determines that the trigger node single
   await page.getByRole('menuitemcheckbox', { name: triggerNodeFieldDisplayName }).click();
   const conditionalRightConstant = faker.lorem.words();
   await page.waitForTimeout(500);
-  await page.keyboard.type(`!='${conditionalRightConstant}'`, { delay: 50 });
+  await page.keyboard.type(`!='${conditionalRightConstant}'`, { delay: 100 });
   await expect(conditionNode.conditionExpressionEditBox).toHaveText(
     `Trigger variables / Trigger data / ${triggerNodeFieldDisplayName}!='${conditionalRightConstant}'`,
   );

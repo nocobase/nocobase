@@ -9,11 +9,15 @@
 
 import { SchemaComponentOptions } from '@nocobase/client';
 import React from 'react';
+import { ArrayItems } from '@formily/antd-v5';
+
 import { Iframe } from './Iframe';
 import { IframeBlockInitializer } from './IframeBlockInitializer';
 
 export const IframeBlockProvider = (props: any) => {
   return (
-    <SchemaComponentOptions components={{ Iframe, IframeBlockInitializer }}>{props.children}</SchemaComponentOptions>
+    <SchemaComponentOptions components={{ Iframe, IframeBlockInitializer, ArrayItems }}>
+      {props.children}
+    </SchemaComponentOptions>
   );
 };

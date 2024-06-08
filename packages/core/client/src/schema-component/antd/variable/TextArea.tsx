@@ -210,7 +210,7 @@ function getCurrentRange(element: HTMLElement): RangeIndexes {
 
 export function TextArea(props) {
   const { wrapSSR, hashId, componentCls } = useStyles();
-  const { value = '', scope, onChange, multiline = true, changeOnSelect } = props;
+  const { value = '', scope, onChange, multiline = true, changeOnSelect, style } = props;
   const inputRef = useRef<HTMLDivElement>(null);
   const [options, setOptions] = useState([]);
   const form = useForm();
@@ -380,7 +380,6 @@ export function TextArea(props) {
   );
 
   const disabled = props.disabled || form.disabled;
-
   return wrapSSR(
     <Space.Compact
       className={cx(
@@ -416,6 +415,7 @@ export function TextArea(props) {
         onCompositionStart={onCompositionStart}
         onCompositionEnd={onCompositionEnd}
         placeholder={props.placeholder}
+        style={style}
         className={cx(
           hashId,
           'ant-input',
@@ -443,13 +443,7 @@ export function TextArea(props) {
         dangerouslySetInnerHTML={{ __html: html }}
       />
       {!disabled ? (
-        <VariableSelect
-          className=""
-          options={options}
-          setOptions={setOptions}
-          onInsert={onInsert}
-          changeOnSelect={changeOnSelect}
-        />
+        <VariableSelect options={options} setOptions={setOptions} onInsert={onInsert} changeOnSelect={changeOnSelect} />
       ) : null}
     </Space.Compact>,
   );
@@ -477,7 +471,7 @@ async function preloadOptions(scope, value: string) {
           prevOption = options.find((item) => item.value === key);
         } else {
           if (prevOption.loadChildren && !prevOption.children?.length) {
-            await prevOption.loadChildren(prevOption);
+            await prevOption.loadChildren(prevOption, key, keys);
           }
           prevOption = prevOption.children.find((item) => item.value === key);
         }

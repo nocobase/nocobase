@@ -311,26 +311,24 @@ export const InternalCascadeSelect = observer(
       },
     };
     return (
-      props.value !== null && (
-        <FormProvider form={selectForm}>
-          {collectionField.interface === 'm2o' ? (
-            <SchemaComponent
-              components={{ FormItem }}
-              schema={{
-                ...fieldSchema,
-                default: field.value,
-                title: '',
-                'x-component': AssociationCascadeSelect,
-                'x-component-props': {
-                  ...props,
-                },
-              }}
-            />
-          ) : (
-            <SchemaField schema={schema} />
-          )}
-        </FormProvider>
-      )
+      <FormProvider form={selectForm}>
+        {collectionField.interface === 'm2o' ? (
+          <SchemaComponent
+            components={{ FormItem }}
+            schema={{
+              ...fieldSchema,
+              default: field.value,
+              title: '',
+              'x-component': AssociationCascadeSelect,
+              'x-component-props': {
+                ...props,
+              },
+            }}
+          />
+        ) : (
+          <SchemaField schema={schema} />
+        )}
+      </FormProvider>
     );
   },
   { displayName: 'InternalCascadeSelect' },

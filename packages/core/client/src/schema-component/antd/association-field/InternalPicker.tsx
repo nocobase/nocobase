@@ -8,7 +8,7 @@
  */
 
 import { observer, RecursionField, useField, useFieldSchema } from '@formily/react';
-import { Input, Select, Space } from 'antd';
+import { Select, Space } from 'antd';
 import { differenceBy, unionBy } from 'lodash';
 import React, { useContext, useMemo, useState } from 'react';
 import {
@@ -23,8 +23,8 @@ import {
   CollectionProvider_deprecated,
   RecordProvider,
   useCollectionRecordData,
-  useFormBlockContext,
-} from '../../../';
+} from '../../..';
+import { useFormBlockContext } from '../../../block-provider/FormBlockProvider';
 import {
   TableSelectorParamsProvider,
   useTableSelectorProps as useTsp,

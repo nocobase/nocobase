@@ -7,14 +7,20 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { useFieldSchema } from '@formily/react';
+import { observer } from '@formily/reactive-react';
 import {
-  screen,
   checkSettings,
-  renderSingleSettings,
-  waitFor,
-  userEvent,
   renderReadPrettySingleSettings,
+  renderSingleSettings,
+  screen,
+  userEvent,
+  waitFor,
 } from '@nocobase/test/client';
+import React from 'react';
+import { FilterFormBlockProvider } from '../../../../../src/block-provider/FilterFormBlockProvider';
+import { FormBlockProvider } from '../../../../../src/block-provider/FormBlockProvider';
+import { FormItem } from '../FormItem';
 import {
   EditComponent,
   EditDefaultValue,
@@ -27,10 +33,6 @@ import {
   EditTooltip,
   EditValidationRules,
 } from '../SchemaSettingOptions';
-import { FilterFormBlockProvider, FormBlockProvider, FormItem } from '@nocobase/client';
-import { useFieldSchema } from '@formily/react';
-import { observer } from '@formily/reactive-react';
-import React from 'react';
 
 describe('SchemaSettingOptions', () => {
   describe('EditTitle', () => {

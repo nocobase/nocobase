@@ -274,8 +274,10 @@ test.describe('creation form block schema settings', () => {
     });
   });
 
-  test('save block template & using block template', async ({ page, mockPage }) => {
-    await mockPage({
+  test('save block template & using block template', async ({ page, mockPage, clearBlockTemplates }) => {
+    // 确保测试结束后已保存的模板会被清空
+    await clearBlockTemplates();
+    const nocoPage = await mockPage({
       pageSchema: {
         _isJSONSchemaObject: true,
         version: '2.0',
@@ -420,7 +422,8 @@ test.describe('creation form block schema settings', () => {
         'x-async': true,
         'x-index': 1,
       },
-    }).goto();
+    }).waitForInit();
+    await nocoPage.goto();
     await page.getByLabel('block-item-CardItem-users-form').hover();
     await page
       .getByLabel('block-item-CardItem-users-form')
@@ -728,6 +731,7 @@ test.describe('creation form block schema settings', () => {
         'x-index': 1,
       },
     }).goto();
+
     await page.getByLabel('schema-initializer-Grid-page:addBlock').hover();
     //使用复制模板
     await page.getByRole('menuitem', { name: 'form Form' }).first().hover();
@@ -757,8 +761,19 @@ test.describe('creation form block schema settings', () => {
     await page.getByRole('menuitem', { name: 'Users_Form (Fields only)' }).first().click();
     await page.mouse.move(300, 0);
 
+    // 使用模板创建一个新增表单
+    await page.getByLabel('schema-initializer-Grid-popup').hover();
+    await page.getByRole('menuitem', { name: 'form Form (Add new) right' }).hover();
+    await page.getByRole('menuitem', { name: 'Other records right' }).hover();
+    await page.getByRole('menuitem', { name: 'Users right' }).hover();
+    await page.getByRole('menuitem', { name: 'Duplicate template right' }).hover();
+    await page.getByRole('menuitem', { name: 'Users_Form (Fields only)' }).click();
+    await expect(
+      page.getByTestId('drawer-Action.Container-users-Edit record').getByLabel('block-item-CollectionField-'),
+    ).toHaveCount(2);
+
     //修改引用模板
-    await page.locator('.ant-drawer').getByLabel('schema-initializer-Grid-form:configureFields-users').hover();
+    await page.locator('.ant-drawer').getByLabel('schema-initializer-Grid-form:configureFields-users').first().hover();
     await page.getByRole('menuitem', { name: 'Phone' }).click();
     await page.locator('.ant-drawer-mask').click();
     //复制模板不同步，引用模板同步
@@ -768,13 +783,5 @@ test.describe('creation form block schema settings', () => {
     await page.getByLabel('block-item-CardItem-users-table').getByLabel('action-Action-Add').click();
     await expect(page.getByLabel('block-item-CollectionField-users-form-users.phone')).toBeVisible();
     await page.locator('.ant-drawer-mask').click();
-
-    //删除模板
-    await page.getByTestId('plugin-settings-button').click();
-    await page.getByRole('link', { name: 'Block templates' }).click();
-    await page.getByRole('menuitem', { name: 'layout Block templates' }).click();
-    await page.getByLabel('Select all').check();
-    await page.getByLabel('action-Action-Delete-destroy-').click();
-    await page.getByRole('button', { name: 'OK', exact: true }).click();
   });
 });

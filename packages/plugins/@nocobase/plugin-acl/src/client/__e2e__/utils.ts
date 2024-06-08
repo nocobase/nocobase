@@ -8,6 +8,7 @@
  */
 
 import { general, PageConfig } from '@nocobase/test/e2e';
+
 /**
  * 页面中有一个空的 Table 区块，并且配有字段:普通字段和关系字段
  */
@@ -650,7 +651,7 @@ export const oneTableBlock: PageConfig = {
                                                 marginBottom: 'var(--marginSM)',
                                                 backgroundColor: 'var(--colorInfoBg)',
                                               },
-                                              content: '{{ t("Download tip", {ns: "import" }) }}',
+                                              content: '{{ t("Download tips", {ns: "import" }) }}',
                                             },
                                             _isJSONSchemaObject: true,
                                             'x-uid': 'p47ou5drhji',

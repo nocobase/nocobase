@@ -22,4 +22,8 @@ export class CollectionField implements IField {
       ...options,
     };
   }
+
+  isRelationField(): boolean {
+    return false;
+  }
 }

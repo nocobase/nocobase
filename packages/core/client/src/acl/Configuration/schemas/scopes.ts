@@ -9,7 +9,7 @@
 
 import { ISchema } from '@formily/react';
 import { useContext, useEffect } from 'react';
-import { useFormBlockContext } from '../../../block-provider';
+import { useFormBlockContext } from '../../../block-provider/FormBlockProvider';
 import { useFilterOptions } from '../../../schema-component';
 import { VariableInput } from '../../../schema-settings';
 import { RoleResourceCollectionContext } from '../RolesResourcesActions';

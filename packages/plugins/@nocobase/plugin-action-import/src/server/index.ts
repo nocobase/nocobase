@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { InstallOptions, Plugin } from '@nocobase/server';
+import { Plugin } from '@nocobase/server';
 import { namespace } from '..';
 import { downloadXlsxTemplate, importXlsx } from './actions';
 import { enUS, zhCN } from './locale';
@@ -21,11 +21,6 @@ export class PluginActionImportServer extends Plugin {
 
   async load() {
     this.app.dataSourceManager.afterAddDataSource((dataSource) => {
-      // @ts-ignore
-      if (!dataSource.collectionManager?.db) {
-        return;
-      }
-
       dataSource.resourceManager.use(importMiddleware);
       dataSource.resourceManager.registerActionHandler('downloadXlsxTemplate', downloadXlsxTemplate);
       dataSource.resourceManager.registerActionHandler('importXlsx', importXlsx);
@@ -39,10 +34,6 @@ export class PluginActionImportServer extends Plugin {
 
       dataSource.acl.allow('*', 'downloadXlsxTemplate', 'loggedIn');
     });
-  }
-
-  async install(options: InstallOptions) {
-    // TODO
   }
 }
 

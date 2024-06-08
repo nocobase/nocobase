@@ -9,6 +9,7 @@
 
 import React, { forwardRef, useState } from 'react';
 import { DragDropContext } from 'react-beautiful-dnd';
+import { css } from '@emotion/css';
 import Column from './Column';
 import ColumnAdder from './ColumnAdder';
 import DefaultCard from './DefaultCard';
@@ -25,20 +26,30 @@ import {
 import { useStyles } from './style';
 import { partialRight, when } from './utils';
 import withDroppable from './withDroppable';
+import { useKanbanBlockHeight } from './hook';
 
-const Columns = forwardRef((props, ref: any) => (
-  <div ref={ref} style={{ whiteSpace: 'nowrap', height: '100%', overflowY: 'clip' }} {...props} />
-));
+const Columns = forwardRef((props, ref: any) => {
+  return <div ref={ref} style={{ whiteSpace: 'nowrap', overflowY: 'clip' }} {...props} />;
+});
 Columns.displayName = 'Columns';
 
 const DroppableBoard = withDroppable(Columns);
 
 const Board: any = (props) => {
+  const height = useKanbanBlockHeight();
   const { styles } = useStyles();
 
   return (
     <div className={styles.nbBord}>
-      {props.initialBoard ? <UncontrolledBoard {...props} /> : <ControlledBoard {...props} />}
+      <div
+        className={css`
+          .react-kanban-card-skeleton {
+            height: ${height ? height + 'px' : '70vh'};
+          }
+        `}
+      >
+        {props.initialBoard ? <UncontrolledBoard {...props} /> : <ControlledBoard {...props} />}
+      </div>
     </div>
   );
 };
@@ -260,7 +271,6 @@ function BoardContainer(props) {
     onCardNew,
     allowAddCard,
   } = props;
-  const { styles } = useStyles();
   function handleOnDragEnd(event) {
     const coordinates = getCoordinates(event, board);
     if (!coordinates.source) return;
@@ -273,8 +283,8 @@ function BoardContainer(props) {
   }
   return (
     <DragDropContext onDragEnd={handleOnDragEnd}>
-      <div style={{ overflowY: 'hidden', display: 'flex', alignItems: 'flex-start' }} className={styles.kanbanBoard}>
-        <DroppableBoard droppableId="board-droppable" direction="horizontal" type="BOARD">
+      <div style={{ overflowY: 'hidden', display: 'flex', alignItems: 'flex-start', height: '100%' }}>
+        <DroppableBoard droppableId="board-droppable" direction="horizontal" type="BOARD" style={{ height: '200px' }}>
           {board.columns?.map((column, index) => (
             <Column
               key={column.id}

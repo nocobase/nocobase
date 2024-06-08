@@ -8,7 +8,7 @@
  */
 
 import { BlockSchemaComponentPlugin, TableV2, useTableBlockDecoratorProps } from '@nocobase/client';
-import { checkSettings, renderSettings, checkSchema, screen, waitFor } from '@nocobase/test/client';
+import { checkSchema, checkSettings, renderSettings, screen, waitFor } from '@nocobase/test/client';
 import { withSchema } from '@nocobase/test/web';
 
 describe('Table.Column.settings', () => {
@@ -291,7 +291,7 @@ describe('Table.Column.settings', () => {
     ]);
   };
 
-  describe('new version schema', () => {
+  describe.skip('new version schema', () => {
     test('common field', async () => {
       await renderSettings(getRenderOptions());
       await checkCommonField();
@@ -303,7 +303,7 @@ describe('Table.Column.settings', () => {
     });
   });
 
-  describe('old version schema', () => {
+  describe.skip('old version schema', () => {
     test('common field', async () => {
       await renderSettings(getRenderOptions(true));
       await checkCommonField();

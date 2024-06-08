@@ -8,8 +8,8 @@
 
 ## Basic
 
-<code src="./demos/new-demos/basic.tsx"></code>
+<code src="./demos/basic.tsx"></code>
 
 ## Modal
 
-<code src="./demos/new-demos/modal.tsx"></code>
+<code src="./demos/modal.tsx"></code>

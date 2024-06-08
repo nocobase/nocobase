@@ -15,7 +15,7 @@ import _ from 'lodash';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { GeneralSchemaDesigner, SchemaSettingsItem } from '../..';
-import { useFormBlockContext } from '../../../block-provider';
+import { useFormBlockContext } from '../../../block-provider/FormBlockProvider';
 import { useCollectionManager_deprecated } from '../../../collection-manager';
 import { mergeFilter } from '../../../filter-provider/utils';
 import { removeNullCondition, useCompile, useDesignable } from '../../../schema-component';

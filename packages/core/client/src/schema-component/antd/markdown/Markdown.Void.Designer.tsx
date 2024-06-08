@@ -16,6 +16,7 @@ import {
   SchemaSettingsItem,
   SchemaSettingsRemove,
 } from '../../../schema-settings';
+import { SchemaSettingsBlockHeightItem } from '../../../schema-settings/SchemaSettingsBlockHeightItem';
 
 export const MarkdownVoidDesigner = () => {
   const field = useField();
@@ -28,6 +29,7 @@ export const MarkdownVoidDesigner = () => {
           field.editable = true;
         }}
       />
+      <SchemaSettingsBlockHeightItem />
       <SchemaSettingsDivider />
       <SchemaSettingsRemove
         removeParentsIfNoChildren

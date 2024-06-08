@@ -96,6 +96,9 @@ const useStyles = createStyles(({ css, token }) => {
     `,
 
     workflowVersionDropdownClass: css`
+      max-height: 80vh;
+      overflow-y: auto;
+
       .ant-dropdown-menu-item {
         .ant-dropdown-menu-title-content {
           strong {

@@ -10,7 +10,6 @@
 import { ISchema, useField, useFieldSchema } from '@formily/react';
 import {
   FilterBlockType,
-  FixedBlockDesignerItem,
   SchemaSettings,
   SchemaSettingsBlockTitleItem,
   SchemaSettingsCascaderItem,
@@ -25,6 +24,7 @@ import {
   useCollectionManager_deprecated,
   useDesignable,
   useFormBlockContext,
+  SchemaSettingsBlockHeightItem,
 } from '@nocobase/client';
 import _ from 'lodash';
 import { useMapTranslation } from '../locale';
@@ -80,8 +80,8 @@ export const mapBlockSettings = new SchemaSettings({
       Component: SchemaSettingsBlockTitleItem,
     },
     {
-      name: 'fixBlock',
-      Component: FixedBlockDesignerItem,
+      name: 'setTheBlockHeight',
+      Component: SchemaSettingsBlockHeightItem,
     },
     {
       name: 'mapField',

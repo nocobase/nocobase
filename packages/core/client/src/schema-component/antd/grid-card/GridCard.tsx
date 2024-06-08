@@ -19,7 +19,7 @@ import { useDesigner, useProps } from '../../hooks';
 import { GridCardBlockProvider, useGridCardBlockContext, useGridCardItemProps } from './GridCard.Decorator';
 import { GridCardDesigner } from './GridCard.Designer';
 import { GridCardItem } from './GridCard.Item';
-import { useGridCardActionBarProps } from './hooks';
+import { useGridCardActionBarProps, useGridCardBodyHeight } from './hooks';
 import { defaultColumnCount, pageSizeOptions } from './options';
 
 const rowGutter = {
@@ -88,6 +88,7 @@ const InternalGridCard = (props: GridCardProps) => {
   const fieldSchema = useFieldSchema();
   const field = useField<ArrayField>();
   const Designer = useDesigner();
+  const height = useGridCardBodyHeight();
   const [schemaMap] = useState(new Map());
   const getSchema = useCallback(
     (key) => {
@@ -127,7 +128,19 @@ const InternalGridCard = (props: GridCardProps) => {
         useGridCardActionBarProps,
       }}
     >
-      <SortableItem className={cx('nb-card-list', designerCss)}>
+      <SortableItem
+        className={cx(
+          'nb-card-list',
+          designerCss,
+          css`
+            .ant-spin-nested-loading {
+              height: ${height ? height + `px` : '100%'};
+              overflow-y: ${height ? 'auto' : null};
+              overflow-x: clip;
+            }
+          `,
+        )}
+      >
         <AntdList
           pagination={
             !meta || meta.count <= meta.pageSize

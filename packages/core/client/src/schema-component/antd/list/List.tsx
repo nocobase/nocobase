@@ -7,10 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { cx } from '@emotion/css';
+import { cx, css } from '@emotion/css';
 import { ArrayField } from '@formily/core';
 import { RecursionField, Schema, useField, useFieldSchema } from '@formily/react';
-import { List as AntdList, PaginationProps } from 'antd';
+import { List as AntdList, PaginationProps, theme } from 'antd';
 import React, { useCallback, useState } from 'react';
 import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
 import { SortableItem } from '../../common';
@@ -20,7 +20,7 @@ import { ListBlockProvider, useListBlockContext, useListItemProps } from './List
 import { ListDesigner } from './List.Designer';
 import { ListItem } from './List.Item';
 import useStyles from './List.style';
-import { useListActionBarProps } from './hooks';
+import { useListActionBarProps, useListBlockHeight } from './hooks';
 
 const InternalList = (props) => {
   const { service } = useListBlockContext();
@@ -31,7 +31,8 @@ const InternalList = (props) => {
   const field = useField<ArrayField>();
   const [schemaMap] = useState(new Map());
   const { wrapSSR, componentCls, hashId } = useStyles();
-
+  const height = useListBlockHeight();
+  const { token } = theme.useToken();
   const getSchema = useCallback(
     (key) => {
       if (!schemaMap.has(key)) {
@@ -68,7 +69,24 @@ const InternalList = (props) => {
         useListActionBarProps,
       }}
     >
-      <SortableItem className={cx('nb-list', componentCls, hashId)}>
+      <SortableItem
+        className={cx(
+          'nb-list',
+          componentCls,
+          hashId,
+          css`
+            .ant-spin-nested-loading {
+              height: ${height ? height + 'px' : '100%'};
+              overflow-y: auto;
+              .ant-spin-container {
+                width: 100%;
+                overflow-x: clip;
+                padding-right: ${token.paddingSM + 'px'};
+              }
+            }
+          `,
+        )}
+      >
         <AntdList
           {...props}
           pagination={
