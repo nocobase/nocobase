@@ -92,6 +92,7 @@ const commonOptions = {
         'x-component-props': {
           content: '{{t("This is a demo text, **supports Markdown syntax**.")}}',
         },
+        'x-use-component-props': 'useDetailsProps',
       },
     },
   ],

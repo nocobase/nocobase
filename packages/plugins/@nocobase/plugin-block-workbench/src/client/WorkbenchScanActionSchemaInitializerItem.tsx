@@ -67,6 +67,38 @@ export function WorkbenchScanActionSchemaInitializerItem(props) {
             iconStyle: {
               background: values.color || '#1677FF',
             },
+            openMode: 'modal',
+          },
+          properties: {
+            modal: {
+              type: 'void',
+              'x-component': 'Action.Modal',
+              title: '扫一扫',
+              'x-decorator': 'FormV2',
+              properties: {
+                scanner: {
+                  'x-component': 'QRCodeScanner',
+                  'x-component-props': {
+                    fps: 10,
+                    qrbox: 250,
+                    disableFlip: false,
+                  },
+                },
+                footer: {
+                  type: 'void',
+                  'x-component': 'Action.Modal.Footer',
+                  properties: {
+                    close: {
+                      title: 'Close',
+                      'x-component': 'Action',
+                      'x-component-props': {
+                        type: 'default',
+                      },
+                    },
+                  },
+                },
+              },
+            },
           },
         });
       }}

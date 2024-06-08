@@ -17,7 +17,7 @@ import {
 import { Space } from 'antd';
 import React, { FC } from 'react';
 import { WorkbenchAction } from './WorkbenchAction';
-
+import { QRCodeScanner } from './components/qrcode-scanner';
 const ConfigureActionsButton = observer(
   () => {
     const fieldSchema = useFieldSchema();
@@ -47,7 +47,7 @@ export const WorkbenchBlock: FC<{ height?: number }> = withDynamicSchemaProps(
   (props) => {
     return (
       <div>
-        <SchemaComponentOptions components={{ WorkbenchAction }}>
+        <SchemaComponentOptions components={{ WorkbenchAction, QRCodeScanner }}>
           <InternalIcons />
           <ConfigureActionsButton />
         </SchemaComponentOptions>
