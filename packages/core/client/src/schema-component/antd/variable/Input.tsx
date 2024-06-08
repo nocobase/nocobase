@@ -313,7 +313,6 @@ export function Input(props: VariableInputProps) {
 
               .ant-input {
                 overflow: auto;
-                white-space: nowrap;
                 ${disabled ? '' : 'padding-right: 28px;'}
 
                 .ant-tag {
@@ -322,7 +321,6 @@ export function Input(props: VariableInputProps) {
                   margin: 0;
                   padding: 2px 7px;
                   border-radius: 10px;
-                  white-space: nowrap;
                 }
               }
             `,
