@@ -117,7 +117,7 @@ const WithForm = (props: WithFormProps) => {
   const { setFormValueChanged } = useActionContext();
   const variables = useVariables();
   const localVariables = useLocalVariables({ currentForm: form });
-  const { templateFinshed } = useTemplateBlockContext();
+  const { templateFinished } = useTemplateBlockContext();
   const linkageRules: any[] =
     (getLinkageRules(fieldSchema) || fieldSchema.parent?.['x-linkage-rules'])?.filter((k) => !k.disabled) || [];
 
@@ -196,7 +196,7 @@ const WithForm = (props: WithFormProps) => {
         dispose();
       });
     };
-  }, [linkageRules, templateFinshed]);
+  }, [linkageRules, templateFinished]);
 
   return fieldSchema['x-decorator'] === 'FormV2' ? <FormDecorator {...props} /> : <FormComponent {...props} />;
 };
