@@ -24,7 +24,8 @@ import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
 import { useCollectionRecord } from '../../../data-source';
 import { useVariableOptions } from '../../../schema-settings/VariableInput/hooks/useVariableOptions';
 import { VariableSelect } from '../variable/VariableSelect';
-import { replaceVariableValue, useLocalVariables, useVariables } from '@nocobase/client';
+import { replaceVariableValue } from '../../../block-provider/hooks';
+import { useLocalVariables, useVariables } from '../../../variables';
 import { registerQrcodeWebcom } from './qrcode-webcom';
 export interface MarkdownEditorProps extends Omit<TextAreaProps, 'onSubmit'> {
   scope: any[];

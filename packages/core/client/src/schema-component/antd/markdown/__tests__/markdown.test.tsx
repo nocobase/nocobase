@@ -14,7 +14,7 @@ import App2 from '../demos/demo2';
 import { MemoryRouter } from 'react-router-dom';
 
 describe('Markdown', () => {
-  it('should display the value of user input', () => {
+  it('should display the value of user input', function () {
     const { container } = render(
       <MemoryRouter>
         <App1 />
@@ -28,7 +28,7 @@ describe('Markdown', () => {
   });
 });
 
-describe('Markdown.Void', () => {
+describe('Markdown.Void', function () {
   it('should display the value of user input', async () => {
     const { container } = render(
       <MemoryRouter>
