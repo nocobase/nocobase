@@ -128,11 +128,14 @@ export const MarkdownVoid: any = withDynamicSchemaProps(
     const [html, setHtml] = useState('');
     const variables = useVariables();
     const localVariables = useLocalVariables();
+    const [loading, setLoading] = useState(false);
     useEffect(() => {
+      setLoading(true);
       const cvtContentToHTML = async () => {
         const replacedContent = await replaceVariableValue(content, variables, localVariables);
         const html = await parseMarkdown(replacedContent);
         setHtml(html);
+        setLoading(false);
       };
       cvtContentToHTML();
     }, [content, variables, localVariables]);
@@ -148,7 +151,7 @@ export const MarkdownVoid: any = withDynamicSchemaProps(
     useEffect(() => {
       registerQrcodeWebcom();
     }, []);
-
+    if (loading) return <Spin />;
     return field?.editable ? (
       <MarkdownEditor
         scope={scope}
