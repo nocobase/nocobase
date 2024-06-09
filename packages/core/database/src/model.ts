@@ -138,7 +138,7 @@ export class Model<TModelAttributes extends {} = any, TCreationAttributes extend
       return result as T;
     };
 
-    return traverseJSON(super.toJSON(), opts);
+    return traverseJSON(this.get({ plain: true }) as T, opts);
   }
 
   private hiddenObjKey(obj, options: JSONTransformerOptions) {
