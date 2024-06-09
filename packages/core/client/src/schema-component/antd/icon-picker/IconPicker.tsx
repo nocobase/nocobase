@@ -72,7 +72,8 @@ function IconField(props: IconPickerProps) {
               {filteredIcons.map((key) => (
                 <span
                   key={key}
-                  style={{ fontSize: 18, marginRight: 10, cursor: 'pointer' }}
+                  title={key.replace(/outlined|filled|twotone$/i, '')}
+                  style={{ fontSize: 24, marginRight: 10, cursor: 'pointer' }}
                   onClick={() => {
                     onChange(key);
                     setVisible(false);
