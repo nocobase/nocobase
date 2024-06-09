@@ -345,7 +345,7 @@ describe('list-tree', () => {
     expect(response.body.rows).toMatchObject(values);
   });
 
-  it.only('should filter child nodes for tree', async () => {
+  it('should filter child nodes for tree', async () => {
     const values = [
       {
         name: 'A1',
