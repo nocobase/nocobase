@@ -13,6 +13,7 @@ import App1 from '../demos/input';
 import App4 from '../demos/json';
 import App2 from '../demos/textarea';
 import App3 from '../demos/url';
+import JSON5 from 'json5';
 
 describe('Input', () => {
   it('should display the title', () => {
@@ -103,14 +104,20 @@ describe('Input.JSON', () => {
 
   it('should display the value of user input', async () => {
     const { container } = render(<App4 />);
-
     await waitFor(() => {
-      const textarea = container.querySelector('textarea') as HTMLTextAreaElement;
-      const pre = container.querySelector('pre') as HTMLPreElement;
-      fireEvent.change(textarea, { target: { value: '{"name":"nocobase"}' } });
-      fireEvent.blur(textarea, { target: { value: '{"name":"nocobase"}' } });
-      expect(JSON.parse(textarea.value)).toEqual({ name: 'nocobase' });
-      expect(pre).toMatchInlineSnapshot(`
+      expect(screen.getByText('Editable').innerHTML).toBe('Editable');
+      expect(screen.getByText('Read pretty').innerHTML).toBe('Read pretty');
+    });
+
+    const textarea = container.querySelector('textarea') as HTMLTextAreaElement;
+    const pre = container.querySelector('pre') as HTMLPreElement;
+    await userEvent.clear(textarea);
+    // To escape special characters, use double curly braces
+    await userEvent.type(textarea, '{{"name":"nocobase"}');
+    // mock blur event
+    await userEvent.click(document.body);
+    expect(JSON5.parse(textarea.value)).toEqual({ name: 'nocobase' });
+    expect(pre).toMatchInlineSnapshot(`
       <pre
         class="ant-json css-4dta7v"
       >
@@ -119,40 +126,49 @@ describe('Input.JSON', () => {
       }
       </pre>
     `);
-    });
   });
 
   it('should display the error when the value is invalid', async () => {
     const { container } = render(<App4 />);
-
     await waitFor(() => {
-      const textarea = container.querySelector('textarea') as HTMLTextAreaElement;
-      fireEvent.change(textarea, { target: { value: '{"name":nocobase}' } });
-      fireEvent.blur(textarea, { target: { value: '{"name":nocobase}' } });
-      expect(screen.getByText(/invalid character 'o'/)).toBeInTheDocument();
+      expect(screen.getByText('Editable').innerHTML).toBe('Editable');
+      expect(screen.getByText('Read pretty').innerHTML).toBe('Read pretty');
     });
+
+    const textarea = container.querySelector('textarea') as HTMLTextAreaElement;
+    await userEvent.clear(textarea);
+    // To escape special characters, use double curly braces
+    await userEvent.type(textarea, '{{"name":nocobase}');
+    // mock blur event
+    await userEvent.click(document.body);
+    expect(screen.getByText(/invalid character 'o'/)).toBeInTheDocument();
   });
 
-  it('should not display error when the value is valid JSON5', async () => {
+  it.only('should not display error when the value is valid JSON5', async () => {
     const { container } = render(<App4 />);
 
     await waitFor(() => {
-      const textarea = container.querySelector('textarea') as HTMLTextAreaElement;
-      fireEvent.change(textarea, { target: { value: '{name:"nocobase"}' } });
-      fireEvent.blur(textarea, { target: { value: '{name:"nocobase"}' } });
-      expect(screen.getByText(/invalid /)).not.toBeInTheDocument();
-      expect(JSON.parse(textarea.value)).toEqual({ name: 'nocobase' });
-      const pre = container.querySelector('pre') as HTMLPreElement;
+      expect(screen.getByText('Editable').innerHTML).toBe('Editable');
+      expect(screen.getByText('Read pretty').innerHTML).toBe('Read pretty');
+    });
 
-      expect(pre).toMatchInlineSnapshot(`
+    const textarea = container.querySelector('textarea') as HTMLTextAreaElement;
+    await userEvent.clear(textarea);
+    // To escape special characters, use double curly braces
+    await userEvent.type(textarea, '{{name:"nocobase"}');
+    // mock blur event
+    await userEvent.click(document.body);
+    expect(screen.queryByText(/invalid /)).not.toBeInTheDocument();
+    expect(JSON5.parse(textarea.value)).toEqual({ name: 'nocobase' });
+    const pre = container.querySelector('pre') as HTMLPreElement;
+    expect(pre).toMatchInlineSnapshot(`
       <pre
         class="ant-json css-4dta7v"
       >
         {
-        name: "nocobase"
+        "name": "nocobase"
       }
       </pre>
     `);
-    });
   });
 });

@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { mockApp } from '@nocobase/client/demo-utils';
 import { SchemaComponent, Plugin, ISchema } from '@nocobase/client';
@@ -14,12 +13,12 @@ const schema: ISchema = {
       title: 'Test',
       'x-decorator': 'FormItem',
       'x-component': 'Input.JSON',
-      'x-value': {
+      default: {
         name: 'nocobase',
       },
     },
   },
-}
+};
 const Demo = () => {
   return <SchemaComponent schema={schema} />;
 };
