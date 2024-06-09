@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { render, screen, userEvent } from '@nocobase/test/client';
+import { fireEvent, render, screen, userEvent } from '@nocobase/test/client';
 import React from 'react';
 import App from '../demos/icon-picker';
 
@@ -47,4 +47,15 @@ describe('IconPicker', () => {
     await userEvent.click(icons[1]);
     expect(screen.queryAllByRole('img').length).toBe(0);
   }, 300000);
+
+  it('should filter the displayed icons when changing the value of search input', async () => {
+    const { container } = render(<App />);
+
+    const button = container.querySelector('button') as HTMLButtonElement;
+    await userEvent.click(button);
+
+    const searchInput = container.querySelector('input[name="icon-search"]') as HTMLInputElement;
+    fireEvent.change(searchInput, { target: { value: 'left' } });
+    expect(screen.queryAllByRole('img').length).toBeLessThan(421);
+  });
 });

@@ -16,6 +16,7 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Icon, hasIcon, icons } from '../../../icon';
 import { StablePopover } from '../popover';
+import { debounce } from 'lodash';
 
 export interface IconPickerProps {
   value?: string;
@@ -29,10 +30,22 @@ interface IconPickerReadPrettyProps {
 }
 
 function IconField(props: IconPickerProps) {
+  const availableIcons = [...icons.keys()];
   const layout = useFormLayout();
   const { value, onChange, disabled } = props;
   const [visible, setVisible] = useState(false);
+  const [filteredIcons, setFilteredIcons] = useState(availableIcons);
   const { t } = useTranslation();
+
+  const filterIcons = debounce((input?: string) => {
+    const searchValue = input?.trim() ?? '';
+    setFilteredIcons(
+      searchValue.length
+        ? availableIcons.filter((i) => i.split(' ').some((val) => val.includes(searchValue)))
+        : availableIcons,
+    );
+  }, 300);
+
   return (
     <div>
       <Space.Compact>
@@ -47,7 +60,16 @@ function IconField(props: IconPickerProps) {
           }}
           content={
             <div style={{ width: '26em', maxHeight: '20em', overflowY: 'auto' }}>
-              {[...icons.keys()].map((key) => (
+              <input
+                title={t('Search')}
+                type="search"
+                name="icon-search"
+                autoComplete="off"
+                style={{ width: 'calc(100% - 25px)' }}
+                placeholder={t('Search') + '...'}
+                onChange={(event) => filterIcons(event.target?.value)}
+              />
+              {filteredIcons.map((key) => (
                 <span
                   key={key}
                   style={{ fontSize: 18, marginRight: 10, cursor: 'pointer' }}
