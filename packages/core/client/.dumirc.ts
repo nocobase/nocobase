@@ -406,6 +406,10 @@ export default defineConfig({
           type: 'group',
           children: [
             {
+              title: '概述',
+              link: '/ui-schema/schema-initializer/overview',
+            },
+            {
               title: '区块相关',
               children: [
                 '/ui-schema/schema-initializer/page-add-block',
@@ -453,6 +457,10 @@ export default defineConfig({
           type: 'group',
           children: [
             {
+              title: '概述',
+              link: '/ui-schema/schema-initializer-item/overview',
+            },
+            {
               title: 'ActionInitializerItem',
               link: '/ui-schema/schema-initializer-item/action-initializer-item',
             },
@@ -462,6 +470,10 @@ export default defineConfig({
           title: 'SchemaSettings 实例',
           type: 'group',
           children: [
+            {
+              title: '概述',
+              link: '/ui-schema/schema-settings/overview',
+            },
             {
               title: '区块相关',
               children: [
@@ -553,6 +565,10 @@ export default defineConfig({
           title: 'SchemaSettingsItem 组件',
           type: 'group',
           children: [
+            {
+              title: '概述',
+              link: '/ui-schema/schema-settings-item/overview',
+            },
             {
               title: 'EditButton',
               link: '/ui-schema/schema-settings-item/edit-button',
