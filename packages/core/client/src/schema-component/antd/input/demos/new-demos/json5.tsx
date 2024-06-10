@@ -13,6 +13,12 @@ const schema: ISchema = {
       title: 'Test',
       'x-decorator': 'FormItem',
       'x-component': 'Input.JSON',
+      'x-component-props': {
+        json5: true,
+      },
+      default: {
+        name: 'nocobase',
+      },
     },
   },
 };
