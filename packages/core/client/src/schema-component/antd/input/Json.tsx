@@ -23,7 +23,7 @@ const jsonCss = css`
 `;
 
 export const Json = React.forwardRef<typeof Input.TextArea, JSONTextAreaProps>(
-  ({ value, onChange, space = 2, json5 = true, ...props }: JSONTextAreaProps, ref: Ref<any>) => {
+  ({ value, onChange, space = 2, json5 = false, ...props }: JSONTextAreaProps, ref: Ref<any>) => {
     const _JSON = json5 ? JSON5 : JSON;
     const field = useField<Field>();
     const [text, setText] = useState('');

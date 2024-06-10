@@ -97,6 +97,10 @@ type JSONTextAreaProps = AntdTextAreaProps & { value?: string; space?: number; j
 
 <code src="./demos/new-demos/json.tsx"></code>
 
+### JSON5
+
+<code src="./demos/new-demos/json5.tsx"></code>
+
 ### ReadPretty
 
 ```ts
