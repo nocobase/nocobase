@@ -1,4 +1,6 @@
-# SchemaInitializer 实例是什么
+# SchemaInitializer 实例
+
+## 介绍
 
 SchemaInitializer 实例分布在页面和区块中，通常是以一个按钮的形式存在，用于在页面中增加区块，或者在区块中增加操作按钮和字段。
 

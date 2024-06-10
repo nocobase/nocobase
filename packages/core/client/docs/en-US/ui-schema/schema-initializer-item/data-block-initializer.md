@@ -100,11 +100,19 @@ interface DataBlockInitializerProps {
 
 ```tsx | pure
 const SimpleBlock = (props) => {
+  const { insert } = useSchemaInitializer();
   const schema = {
+    type: 'void',
     title: 'SimpleBlock',
-    'x-component': 'Action',
+    'x-decorator': 'DataBlockProvider',
+    'x-component': 'Form',
   };
-  return <ActionInitializerItem {...props} schema={schema} />;
+
+  const createBlockSchema = (args) => {
+    insert(schema);
+  };
+  
+  return <DataBlockInitializer title={'SimpleBlock'} onCreateBlockSchema={createBlockSchema} />;
 };
 ```
 

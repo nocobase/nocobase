@@ -1,4 +1,6 @@
-# SchemaSettings 实例是什么
+# SchemaSettings 实例
+
+## 介绍
 
 SchemaSettings 实例是用来配置页面、区块、操作按钮、字段的。
 

@@ -2,7 +2,7 @@
 
 ## 介绍
 
-上面介绍的组件 `ActionInitializerItem`、`CollectionFiledInitializer`、`DataBlockInitializer` 第一是基于这里的基本组件进行的封装。
+上面介绍的组件都是基于这里的基本组件进行的封装。
 
 ## 目前有这些基本的组件
 
