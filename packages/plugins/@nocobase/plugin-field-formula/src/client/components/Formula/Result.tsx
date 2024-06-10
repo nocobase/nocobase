@@ -101,7 +101,9 @@ export function Result(props) {
         setEditingValue(v);
       }
       setEditingValue(v);
-      props.onChange(v);
+      setTimeout(() => {
+        props.onChange(v);
+      });
       ctx?.setFormValueChanged?.(false);
     });
   });
