@@ -12,6 +12,10 @@ type InputProps = AntdInputProps;
 
 <code src="./demos/new-demos/input.tsx"></code>
 
+### JSON5
+
+<code src="./demos/new-demos/json5.tsx"></code>
+
 ### ReadPretty
 
 ```ts
