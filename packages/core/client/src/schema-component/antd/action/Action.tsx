@@ -69,6 +69,7 @@ export const Action: ComposedAction = withDynamicSchemaProps(
       /** 如果为 true 则说明该按钮是树表格的 Add child 按钮 */
       addChild,
       onMouseEnter,
+      refreshDataBlockRequest: propsRefreshDataBlockRequest,
       ...others
     } = useProps(props); // 新版 UISchema（1.0 之后）中已经废弃了 useProps，这里之所以继续保留是为了兼容旧版的 UISchema
     const aclCtx = useACLActionParamsContext();
@@ -78,7 +79,7 @@ export const Action: ComposedAction = withDynamicSchemaProps(
     const [formValueChanged, setFormValueChanged] = useState(false);
     const Designer = useDesigner();
     const field = useField<any>();
-    const { run, element } = useAction(actionCallback);
+    const { run, element, disabled: disableAction } = useAction(actionCallback);
     const fieldSchema = useFieldSchema();
     const compile = useCompile();
     const form = useForm();
@@ -90,7 +91,7 @@ export const Action: ComposedAction = withDynamicSchemaProps(
     const openSize = fieldSchema?.['x-component-props']?.['openSize'];
     const refreshDataBlockRequest = fieldSchema?.['x-component-props']?.['refreshDataBlockRequest'];
 
-    const disabled = form.disabled || field.disabled || field.data?.disabled || propsDisabled;
+    const disabled = form.disabled || field.disabled || field.data?.disabled || propsDisabled || disableAction;
     const linkageRules = useMemo(() => fieldSchema?.['x-linkage-rules'] || [], [fieldSchema?.['x-linkage-rules']]);
     const { designable } = useDesignable();
     const tarComponent = useComponent(component) || component;

@@ -1124,7 +1124,7 @@ describe('formula field', () => {
           await db.sync();
 
           const test = await Test.model.create<any>({
-            a: BigInt(now.valueOf()),
+            a: now.valueOf(),
           });
           expect(test.get('result')).toEqual(new Date(now));
         });

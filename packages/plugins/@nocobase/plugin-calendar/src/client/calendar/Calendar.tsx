@@ -29,6 +29,7 @@ import { i18nt, useTranslation } from '../../locale';
 import Header from './components/Header';
 import { CalendarToolbarContext } from './context';
 import GlobalStyle from './global.style';
+import { useCalenderHeight } from './hook';
 import useStyle from './style';
 import type { ToolbarProps } from './types';
 import { formatDate } from './utils';
@@ -201,8 +202,8 @@ export const Calendar: any = withDynamicSchemaProps(
   observer(
     (props: any) => {
       // 新版 UISchema（1.0 之后）中已经废弃了 useProps，这里之所以继续保留是为了兼容旧版的 UISchema
-      const { dataSource, fieldNames, showLunar, fixedBlock } = useProps(props);
-
+      const { dataSource, fieldNames, showLunar } = useProps(props);
+      const height = useCalenderHeight();
       const [date, setDate] = useState<Date>(new Date());
       const [view, setView] = useState<View>('month');
       const events = useEvents(dataSource, fieldNames, date, view);
@@ -247,7 +248,7 @@ export const Calendar: any = withDynamicSchemaProps(
         showMore: (count) => i18nt('{{count}} more items', { count }),
       };
       return wrapSSR(
-        <div className={`${hashId} ${containerClassName}`} style={{ height: fixedBlock ? '100%' : 700 }}>
+        <div className={`${hashId} ${containerClassName}`} style={{ height: height || 700 }}>
           <GlobalStyle />
           <CalendarRecordViewer visible={visible} setVisible={setVisible} record={record} />
           <BigCalendar

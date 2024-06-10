@@ -15,6 +15,7 @@ import { FilterBlockType } from '../../../../filter-provider';
 import { SchemaSettingsFormItemTemplate, SchemaSettingsLinkageRules } from '../../../../schema-settings';
 import { SchemaSettingsBlockTitleItem } from '../../../../schema-settings/SchemaSettingsBlockTitleItem';
 import { SchemaSettingsConnectDataBlocks } from '../../../../schema-settings/SchemaSettingsConnectDataBlocks';
+import { SchemaSettingsBlockHeightItem } from '../../../../schema-settings/SchemaSettingsBlockHeightItem';
 
 export const filterFormBlockSettings = new SchemaSettings({
   name: 'blockSettings:filterForm',
@@ -22,6 +23,10 @@ export const filterFormBlockSettings = new SchemaSettings({
     {
       name: 'title',
       Component: SchemaSettingsBlockTitleItem,
+    },
+    {
+      name: 'setTheBlockHeight',
+      Component: SchemaSettingsBlockHeightItem,
     },
     {
       name: 'formItemTemplate',

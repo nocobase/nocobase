@@ -14,7 +14,8 @@ import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient } from '../../../../api-client';
 import { SchemaSettings } from '../../../../application/schema-settings/SchemaSettings';
-import { useFormBlockContext, useTableBlockContext } from '../../../../block-provider';
+import { useTableBlockContext } from '../../../../block-provider';
+import { useFormBlockContext } from '../../../../block-provider/FormBlockProvider';
 import {
   useCollectionManager_deprecated,
   useCollection_deprecated,
@@ -22,7 +23,7 @@ import {
 } from '../../../../collection-manager';
 import { FilterBlockType } from '../../../../filter-provider/utils';
 import { removeNullCondition, useDesignable } from '../../../../schema-component';
-import { FixedBlockDesignerItem } from '../../../../schema-component/antd/page/FixedBlockDesignerItem';
+import { SchemaSettingsBlockHeightItem } from '../../../../schema-settings/SchemaSettingsBlockHeightItem';
 import { SchemaSettingsBlockTitleItem } from '../../../../schema-settings/SchemaSettingsBlockTitleItem';
 import { SchemaSettingsConnectDataBlocks } from '../../../../schema-settings/SchemaSettingsConnectDataBlocks';
 import { SchemaSettingsDataScope } from '../../../../schema-settings/SchemaSettingsDataScope';
@@ -36,6 +37,10 @@ export const tableBlockSettings = new SchemaSettings({
     {
       name: 'editBlockTitle',
       Component: SchemaSettingsBlockTitleItem,
+    },
+    {
+      name: 'setTheBlockHeight',
+      Component: SchemaSettingsBlockHeightItem,
     },
     {
       name: 'treeTable',
@@ -131,10 +136,6 @@ export const tableBlockSettings = new SchemaSettings({
         const field = useField();
         return field.decoratorProps.dragSort;
       },
-    },
-    {
-      name: 'FixBlock',
-      Component: FixedBlockDesignerItem,
     },
     {
       name: 'SetTheDataScope',

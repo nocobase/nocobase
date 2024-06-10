@@ -766,6 +766,7 @@
   "App error": "App error",
   "Feedback": "Feedback",
   "Try again": "Try again",
+  "Download logs": "Download logs",
   "Data template": "Data template",
   "Duplicate": "Duplicate",
   "Duplicating": "Duplicating",
@@ -827,5 +828,7 @@
   "Plugin settings": "Plugin settings",
   "Menu": "Menu",
   "Drag and drop sorting field": "Drag and drop sorting field",
-  "This variable has been deprecated and can be replaced with \"Current form\"": "This variable has been deprecated and can be replaced with \"Current form\""
+  "This variable has been deprecated and can be replaced with \"Current form\"": "This variable has been deprecated and can be replaced with \"Current form\"",
+  "The value of this variable is derived from the query string of the page URL. This variable can only be used normally when the page has a query string.": "The value of this variable is derived from the query string of the page URL. This variable can only be used normally when the page has a query string.",
+  "URL search params": "URL search params"
 }

@@ -31,7 +31,6 @@ test.describe('table block schema settings', () => {
       supportedOptions: [
         'Edit block title',
         'Enable drag and drop sorting',
-        'Fix block',
         'Set the data scope',
         'Records per page',
         'Connect data blocks',
@@ -39,32 +38,6 @@ test.describe('table block schema settings', () => {
         'Delete',
       ],
     });
-  });
-
-  test('fix block', async ({ page, mockPage }) => {
-    await mockPage(oneTableBlockWithAddNewAndViewAndEditAndBasicFields).goto();
-
-    const tableSize = await page.getByLabel('block-item-CardItem-general-table').boundingBox();
-
-    await showSettingsMenu(page);
-    await page.getByRole('menuitem', { name: 'Fix block' }).click();
-    await expect(page.getByRole('menuitem', { name: 'Fix block' }).getByRole('switch')).toBeChecked();
-
-    // 等待页面重新渲染
-    await page.waitForTimeout(1000);
-    const fixedTableSize = await page.getByLabel('block-item-CardItem-general-table').boundingBox();
-    expect(fixedTableSize.height).toBeGreaterThan(570);
-    expect(fixedTableSize.height).toBeLessThan(575);
-
-    // 取消固定
-    await page.getByRole('menuitem', { name: 'Fix block' }).click();
-    await expect(page.getByRole('menuitem', { name: 'Fix block' }).getByRole('switch')).not.toBeChecked();
-
-    // 等待页面重新渲染
-    await page.waitForTimeout(100);
-    const unfixedTableSize = await page.getByLabel('block-item-CardItem-general-table').boundingBox();
-
-    expect(unfixedTableSize.height).toBe(tableSize.height);
   });
 
   test('records per page', async ({ page, mockPage, mockRecords }) => {

@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { useFieldSchema } from '@formily/react';
 import React, { FC, ReactNode, createContext, useContext, useMemo } from 'react';
 
 import { ACLCollectionProvider } from '../../acl/ACLProvider';
@@ -153,11 +154,9 @@ export const DataBlockProvider: FC<DataBlockProviderProps & { children?: ReactNo
   (props) => {
     const { collection, association, dataSource, children, hidden, ...resets } = props as Partial<AllDataBlockProps>;
     const { dn } = useDesignable();
-
     if (hidden) {
       return null;
     }
-
     return (
       <DataBlockContext.Provider
         value={{

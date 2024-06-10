@@ -12,12 +12,12 @@ import { connect, useField, useFieldSchema } from '@formily/react';
 import { merge } from '@formily/shared';
 import { concat } from 'lodash';
 import React, { useCallback, useEffect, useMemo } from 'react';
+import { ErrorBoundary } from 'react-error-boundary';
 import { useFormBlockContext } from '../../block-provider/FormBlockProvider';
 import { useDynamicComponentProps } from '../../hoc/withDynamicSchemaProps';
 import { ErrorFallback, useCompile, useComponent } from '../../schema-component';
 import { useIsAllowToSetDefaultValue } from '../../schema-settings/hooks/useIsAllowToSetDefaultValue';
 import { CollectionFieldProvider, useCollectionField } from './CollectionFieldProvider';
-import { ErrorBoundary } from 'react-error-boundary';
 
 type Props = {
   component: any;
@@ -37,7 +37,9 @@ export const CollectionFieldInternalField: React.FC = (props: Props) => {
   const { uiSchema: uiSchemaOrigin, defaultValue } = collectionField;
   const { isAllowToSetDefaultValue } = useIsAllowToSetDefaultValue();
   const uiSchema = useMemo(() => compile(uiSchemaOrigin), [JSON.stringify(uiSchemaOrigin)]);
-  const Component = useComponent(component || uiSchema?.['x-component'] || 'Input');
+  const Component = useComponent(
+    fieldSchema['x-component-props']?.['component'] || uiSchema?.['x-component'] || 'Input',
+  );
   const setFieldProps = useCallback(
     (key, value) => {
       field[key] = typeof field[key] === 'undefined' ? value : field[key];

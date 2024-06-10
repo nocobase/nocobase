@@ -10,11 +10,13 @@
 import { Field, Form } from '@formily/core';
 import { SchemaExpressionScopeContext, useField, useFieldSchema, useForm } from '@formily/react';
 import { untracked } from '@formily/reactive';
+import { evaluators } from '@nocobase/evaluators/client';
 import { isURL, parse } from '@nocobase/utils/client';
 import { App, message } from 'antd';
 import _ from 'lodash';
 import get from 'lodash/get';
 import omit from 'lodash/omit';
+import qs from 'qs';
 import { ChangeEvent, useCallback, useContext, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
@@ -24,10 +26,10 @@ import {
   useCollectionRecord,
   useDataSourceHeaders,
   useFormActiveFields,
-  useFormBlockContext,
   useTableBlockContext,
 } from '../..';
 import { useAPIClient, useRequest } from '../../api-client';
+import { useFormBlockContext } from '../../block-provider/FormBlockProvider';
 import { useCollectionManager_deprecated, useCollection_deprecated } from '../../collection-manager';
 import { useFilterBlock } from '../../filter-provider/FilterProvider';
 import { mergeFilter, transformToFilter } from '../../filter-provider/utils';
@@ -35,8 +37,10 @@ import { useTreeParentRecord } from '../../modules/blocks/data-blocks/table/Tree
 import { useRecord } from '../../record-provider';
 import { removeNullCondition, useActionContext, useCompile } from '../../schema-component';
 import { isSubMode } from '../../schema-component/antd/association-field/util';
+import { replaceVariables } from '../../schema-component/antd/form-v2/utils';
 import { useCurrentUserContext } from '../../user';
 import { useLocalVariables, useVariables } from '../../variables';
+import { VariableOption, VariablesContextType } from '../../variables/types';
 import { isVariable } from '../../variables/utils/isVariable';
 import { transformVariableValue } from '../../variables/utils/transformVariableValue';
 import { useBlockRequestContext, useFilterByTk, useParamsFromRecord } from '../BlockProvider';
@@ -47,6 +51,7 @@ import { TableFieldResource } from '../TableFieldProvider';
 export * from './useDataBlockParentRecord';
 export * from './useFormActiveFields';
 export * from './useParsedFilter';
+export * from './useBlockHeightProps';
 
 export const usePickActionProps = () => {
   const form = useForm();
@@ -1445,4 +1450,136 @@ async function resetFormCorrectly(form: Form) {
     });
   });
   await form.reset();
+}
+
+export function appendQueryStringToUrl(url: string, queryString: string) {
+  return url + (url.includes('?') ? '&' : '?') + queryString;
+}
+
+export function useLinkActionProps() {
+  const navigate = useNavigate();
+  const fieldSchema = useFieldSchema();
+  const { t } = useTranslation();
+  const url = fieldSchema?.['x-component-props']?.['url'];
+  const searchParams = fieldSchema?.['x-component-props']?.['params'] || [];
+  const variables = useVariables();
+  const localVariables = useLocalVariables();
+
+  return {
+    type: 'default',
+    async onClick() {
+      if (!url) {
+        message.warning(t('Please configure the URL'));
+        return;
+      }
+      const queryString = await parseVariablesAndChangeParamsToQueryString({
+        searchParams,
+        variables,
+        localVariables,
+        replaceVariableValue,
+      });
+      const link = appendQueryStringToUrl(url, queryString);
+      if (link) {
+        if (isURL(link)) {
+          window.open(link, '_blank');
+        } else {
+          navigate(link);
+        }
+      }
+    },
+  };
+}
+
+export async function replaceVariableValue(
+  url: string,
+  variables: VariablesContextType,
+  localVariables: VariableOption[],
+) {
+  if (!url) {
+    return;
+  }
+  const { evaluate } = evaluators.get('string');
+  // 解析如 `{{$user.name}}` 之类的变量
+  const { exp, scope: expScope } = await replaceVariables(url, {
+    variables,
+    localVariables,
+  });
+
+  try {
+    const result = evaluate(exp, { now: () => new Date().toString(), ...expScope });
+    return result;
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+export async function parseVariablesAndChangeParamsToQueryString({
+  searchParams,
+  variables,
+  localVariables,
+  replaceVariableValue,
+}: {
+  searchParams: { name: string; value: any }[];
+  variables: VariablesContextType;
+  localVariables: VariableOption[];
+  replaceVariableValue: (
+    url: string,
+    variables: VariablesContextType,
+    localVariables: VariableOption[],
+  ) => Promise<any>;
+}) {
+  const parsed = await Promise.all(
+    searchParams.map(async ({ name, value }) => {
+      if (typeof value === 'string') {
+        if (isVariable(value)) {
+          const result = await variables.parseVariable(value, localVariables);
+          return { name, value: result };
+        }
+        const result = await replaceVariableValue(value, variables, localVariables);
+        return { name, value: result };
+      }
+      return { name, value };
+    }),
+  );
+
+  const params = {};
+
+  for (const { name, value } of parsed) {
+    if (name && value) {
+      params[name] = reduceValueSize(value);
+    }
+  }
+
+  return qs.stringify(params);
+}
+
+/**
+ * 1. 去除 value 是一个对象或者数组的 key
+ * 2. 去除 value 是一个字符串长度超过 100 个字符的 key
+ */
+export function reduceValueSize(value: any) {
+  if (_.isPlainObject(value)) {
+    const result = {};
+    Object.keys(value).forEach((key) => {
+      if (_.isPlainObject(value[key]) || _.isArray(value[key])) {
+        return;
+      }
+      if (_.isString(value[key]) && value[key].length > 100) {
+        return;
+      }
+      result[key] = value[key];
+    });
+    return result;
+  }
+
+  if (_.isArray(value)) {
+    return value.map((item) => {
+      if (_.isPlainObject(item) || _.isArray(item)) {
+        return reduceValueSize(item);
+      }
+      return item;
+    });
+  }
+
+  return value;
 }

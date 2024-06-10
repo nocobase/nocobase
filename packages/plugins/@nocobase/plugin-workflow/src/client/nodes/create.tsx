@@ -7,19 +7,44 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import {
-  SchemaInitializerItemType,
-  useCollectionDataSource,
-  useCollectionManager_deprecated,
-  useCompile,
-} from '@nocobase/client';
+import { SchemaInitializerItemType, parseCollectionName, useCollectionDataSource, useCompile } from '@nocobase/client';
 
 import { CollectionBlockInitializer } from '../components/CollectionBlockInitializer';
 import CollectionFieldset from '../components/CollectionFieldset';
 import { NAMESPACE } from '../locale';
 import { appends, collection, values } from '../schemas/collection';
-import { getCollectionFieldOptions } from '../variable';
+import { getCollectionFieldOptions, useGetCollectionFields } from '../variable';
 import { Instruction } from '.';
+
+function useVariables({ key: name, title, config }, options) {
+  const [dataSourceName, collection] = parseCollectionName(config.collection);
+  const compile = useCompile();
+  const getCollectionFields = useGetCollectionFields(dataSourceName);
+  // const depth = config?.params?.appends?.length
+  //   ? config?.params?.appends.reduce((max, item) => Math.max(max, item.split('.').length), 1)
+  //   : 0;
+  const [result] = getCollectionFieldOptions({
+    // collection: config.collection,
+    // depth: options?.depth ?? depth,
+    appends: [name, ...(config.params?.appends?.map((item) => `${name}.${item}`) || [])],
+    ...options,
+    fields: [
+      {
+        collectionName: collection,
+        name,
+        type: 'hasOne',
+        target: collection,
+        uiSchema: {
+          title,
+        },
+      },
+    ],
+    compile,
+    getCollectionFields,
+  });
+
+  return result;
+}
 
 export default class extends Instruction {
   title = `{{t("Create record", { ns: "${NAMESPACE}" })}}`;
@@ -67,36 +92,7 @@ export default class extends Instruction {
   components = {
     CollectionFieldset,
   };
-  useVariables({ key: name, title, config }, options) {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    const compile = useCompile();
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    const { getCollectionFields } = useCollectionManager_deprecated();
-    // const depth = config?.params?.appends?.length
-    //   ? config?.params?.appends.reduce((max, item) => Math.max(max, item.split('.').length), 1)
-    //   : 0;
-    const [result] = getCollectionFieldOptions({
-      // collection: config.collection,
-      // depth: options?.depth ?? depth,
-      appends: [name, ...(config.params?.appends?.map((item) => `${name}.${item}`) || [])],
-      ...options,
-      fields: [
-        {
-          collectionName: config.collection,
-          name,
-          type: 'hasOne',
-          target: config.collection,
-          uiSchema: {
-            title,
-          },
-        },
-      ],
-      compile,
-      getCollectionFields,
-    });
-
-    return result;
-  }
+  useVariables = useVariables;
   useInitializers(node): SchemaInitializerItemType | null {
     if (!node.config.collection) {
       return null;

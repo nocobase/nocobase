@@ -221,7 +221,16 @@ export function Input(props: VariableInputProps) {
   const loadData = async (selectedOptions: DefaultOptionType[]) => {
     const option = selectedOptions[selectedOptions.length - 1];
     if (!option.children?.length && !option.isLeaf && option.loadChildren) {
-      await option.loadChildren(option);
+      let activeKey;
+      if (variable && variable.length >= 2) {
+        for (const key of variable) {
+          if (key === option[names.value]) {
+            activeKey = key;
+            break;
+          }
+        }
+      }
+      await option.loadChildren(option, activeKey, variable);
       setOptions((prev) => [...prev]);
     }
   };
@@ -260,7 +269,7 @@ export function Input(props: VariableInputProps) {
             prevOption = options.find((item) => item[names.value] === key);
           } else {
             if (prevOption.loadChildren && !prevOption.children?.length) {
-              await prevOption.loadChildren(prevOption);
+              await prevOption.loadChildren(prevOption, key, variable);
             }
             prevOption = prevOption.children.find((item) => item[names.value] === key);
           }
@@ -313,7 +322,6 @@ export function Input(props: VariableInputProps) {
                   margin: 0;
                   padding: 2px 7px;
                   border-radius: 10px;
-                  white-space: nowrap;
                 }
               }
             `,

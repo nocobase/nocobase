@@ -14,14 +14,14 @@ import { uid } from '@formily/shared';
 import cls from 'classnames';
 import _ from 'lodash';
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { SchemaComponent, useDesignable, useFormBlockContext, useSchemaInitializerRender } from '../../../';
-import { useFormBlockType } from '../../../block-provider';
+import { SchemaComponent, useDesignable, useSchemaInitializerRender } from '../../../';
+import { useFormBlockContext, useFormBlockType } from '../../../block-provider/FormBlockProvider';
 import { FilterBlockProvider } from '../../../filter-provider/FilterProvider';
 import { DndContext, DndContextProps } from '../../common/dnd-context';
 import { useToken } from '../__builtins__';
 import useStyles from './Grid.style';
 
-const GridRowContext = createContext<any>({});
+export const GridRowContext = createContext<any>({});
 GridRowContext.displayName = 'GridRowContext';
 const GridColContext = createContext<any>({});
 GridColContext.displayName = 'GridColContext';
@@ -357,46 +357,48 @@ export const Grid: any = observer(
       <FilterBlockProvider>
         <GridContext.Provider value={gridContextValue}>
           <div className={`nb-grid ${styles.container}`} style={{ position: 'relative' }} ref={gridRef}>
-            <DndWrapper dndContext={props.dndContext}>
-              {showDivider ? (
-                <RowDivider
-                  rows={rows}
-                  first
-                  id={`${addr}_0`}
-                  data={{
-                    breakRemoveOn: breakRemoveOnGrid,
-                    wrapSchema: wrapRowSchema,
-                    insertAdjacent: 'afterBegin',
-                    schema: fieldSchema,
-                  }}
-                />
-              ) : null}
-              {rows.map((schema, index) => {
-                return (
-                  <React.Fragment key={index}>
-                    {distributedValue ? (
-                      <SchemaComponent name={schema.name} schema={schema} distributed />
-                    ) : (
-                      <MemorizedRecursionField name={schema.name} schema={schema} />
-                    )}
-                    {showDivider ? (
-                      <RowDivider
-                        rows={rows}
-                        index={index}
-                        id={`${addr}_${index + 1}`}
-                        data={{
-                          breakRemoveOn: breakRemoveOnGrid,
-                          wrapSchema: wrapRowSchema,
-                          insertAdjacent: 'afterEnd',
-                          schema,
-                        }}
-                      />
-                    ) : null}
-                  </React.Fragment>
-                );
-              })}
-            </DndWrapper>
-            {render()}
+            <div className="nb-grid-warp">
+              <DndWrapper dndContext={props.dndContext}>
+                {showDivider ? (
+                  <RowDivider
+                    rows={rows}
+                    first
+                    id={`${addr}_0`}
+                    data={{
+                      breakRemoveOn: breakRemoveOnGrid,
+                      wrapSchema: wrapRowSchema,
+                      insertAdjacent: 'afterBegin',
+                      schema: fieldSchema,
+                    }}
+                  />
+                ) : null}
+                {rows.map((schema, index) => {
+                  return (
+                    <React.Fragment key={index}>
+                      {distributedValue ? (
+                        <SchemaComponent name={schema.name} schema={schema} distributed />
+                      ) : (
+                        <MemorizedRecursionField name={schema.name} schema={schema} />
+                      )}
+                      {showDivider ? (
+                        <RowDivider
+                          rows={rows}
+                          index={index}
+                          id={`${addr}_${index + 1}`}
+                          data={{
+                            breakRemoveOn: breakRemoveOnGrid,
+                            wrapSchema: wrapRowSchema,
+                            insertAdjacent: 'afterEnd',
+                            schema,
+                          }}
+                        />
+                      ) : null}
+                    </React.Fragment>
+                  );
+                })}
+              </DndWrapper>
+              {render()}
+            </div>
           </div>
         </GridContext.Provider>
       </FilterBlockProvider>

@@ -12,12 +12,18 @@ import { useMemo } from 'react';
 import { DEFAULT_DATA_SOURCE_KEY } from '../../data-source/data-source/DataSourceManager';
 import { useCurrentUserVariable, useDatetimeVariable } from '../../schema-settings';
 import { useCurrentRoleVariable } from '../../schema-settings/VariableInput/hooks/useRoleVariable';
+import { useURLSearchParamsVariable } from '../../schema-settings/VariableInput/hooks/useURLSearchParamsVariable';
 import { VariableOption } from '../types';
 
+/**
+ * 相当于全局的变量
+ * @returns
+ */
 const useBuiltInVariables = () => {
   const { currentUserCtx } = useCurrentUserVariable();
   const { currentRoleCtx } = useCurrentRoleVariable();
   const { datetimeCtx } = useDatetimeVariable();
+  const { urlSearchParamsCtx, name: urlSearchParamsName, defaultValue } = useURLSearchParamsVariable();
   const builtinVariables: VariableOption[] = useMemo(() => {
     return [
       {
@@ -71,8 +77,13 @@ const useBuiltInVariables = () => {
         name: 'currentTime',
         ctx: () => dayjs().toISOString(),
       },
+      {
+        name: urlSearchParamsName,
+        ctx: urlSearchParamsCtx,
+        defaultValue,
+      },
     ];
-  }, [currentRoleCtx, currentUserCtx, datetimeCtx]);
+  }, [currentRoleCtx, currentUserCtx, datetimeCtx, defaultValue, urlSearchParamsCtx, urlSearchParamsName]);
 
   return { builtinVariables };
 };
