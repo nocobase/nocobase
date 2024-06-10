@@ -580,8 +580,31 @@ export default defineConfig({
               link: '/ui-schema/schema-settings-item/overview',
             },
             {
-              title: 'EditButton',
-              link: '/ui-schema/schema-settings-item/edit-button',
+              title: '区块相关',
+              children: [
+                '/ui-schema/schema-settings-item/edit-block-title',
+                '/ui-schema/schema-settings-item/set-the-block-height',
+                '/ui-schema/schema-settings-item/set-the-data-scope',
+                '/ui-schema/schema-settings-item/set-data-loading-mode',
+                '/ui-schema/schema-settings-item/connect-data-blocks',
+                '/ui-schema/schema-settings-item/linkage-rules',
+                '/ui-schema/schema-settings-item/data-templates',
+                '/ui-schema/schema-settings-item/convert-reference-to-duplicate',
+                '/ui-schema/schema-settings-item/delete',
+                '/ui-schema/schema-settings-item/set-default-sorting-rules',
+              ],
+            },
+            {
+              title: '操作相关',
+              children: [
+                '/ui-schema/schema-settings-item/edit-block-title',
+              ],
+            },
+            {
+              title: '字段相关',
+              children: [
+                '/ui-schema/schema-settings-item/edit-block-title',
+              ],
             },
           ],
         }
