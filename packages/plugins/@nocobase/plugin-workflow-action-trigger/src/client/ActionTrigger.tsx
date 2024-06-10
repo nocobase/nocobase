@@ -9,13 +9,7 @@
 
 import { useForm } from '@formily/react';
 
-import {
-  SchemaInitializerItemType,
-  parseCollectionName,
-  useCollectionDataSource,
-  useCollectionManager_deprecated,
-  useCompile,
-} from '@nocobase/client';
+import { SchemaInitializerItemType, parseCollectionName, useCollectionDataSource, useCompile } from '@nocobase/client';
 import {
   Trigger,
   CollectionBlockInitializer,
