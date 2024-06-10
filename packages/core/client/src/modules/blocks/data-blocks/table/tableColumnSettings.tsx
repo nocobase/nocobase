@@ -87,11 +87,13 @@ export const tableColumnSettings = new SchemaSettings({
             return <SchemaSettingsLinkageRules {...localProps} />;
           },
           useVisible() {
-            const { uiSchema, fieldSchema } = useColumnSchema();
+            const { fieldSchema } = useColumnSchema();
             const field: any = useField();
             const path = field.path?.splice(field.path?.length - 1, 1);
-            const isReadPretty = field.form.query(`${path.concat(`*.` + fieldSchema.name)}`).get('readPretty');
-            return isReadPretty;
+            if (fieldSchema) {
+              const isReadPretty = field.form.query(`${path.concat(`*.` + fieldSchema.name)}`).get('readPretty');
+              return isReadPretty;
+            } else return false;
           },
           useComponentProps() {
             const { name } = useCollection();

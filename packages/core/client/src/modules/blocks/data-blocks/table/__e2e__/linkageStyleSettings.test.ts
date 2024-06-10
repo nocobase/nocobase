@@ -10,7 +10,7 @@
 import { expect, test, oneTableBlockWithIntegerAndIDColumn } from '@nocobase/test/e2e';
 
 test.describe('view', () => {
-  test('linkage style', async ({ page, mockPage, mockRecord }) => {
+  test('linkage style color', async ({ page, mockPage, mockRecord }) => {
     const nocoPage = await mockPage(oneTableBlockWithIntegerAndIDColumn).waitForInit();
     await mockRecord('general', { integer: '423' });
     await nocoPage.goto();
@@ -32,5 +32,28 @@ test.describe('view', () => {
     const cell = await page.getByRole('button', { name: '423' });
     const color = await cell.evaluate((el) => getComputedStyle(el).color);
     await expect(color).toBe('rgb(163, 79, 204)');
+  });
+  test('linkage style background color', async ({ page, mockPage, mockRecord }) => {
+    const nocoPage = await mockPage(oneTableBlockWithIntegerAndIDColumn).waitForInit();
+    await mockRecord('general', { integer: '423' });
+    await nocoPage.goto();
+    await page.getByText('integer', { exact: true }).hover();
+
+    await page
+      .getByRole('button', {
+        name: 'designer-schema-settings-TableV2.Column-fieldSettings:TableColumn-general',
+      })
+      .click();
+    await page.getByRole('menuitem', { name: 'Style' }).click();
+    await page.getByRole('button', { name: 'plus Add linkage rule' }).click();
+    await page.getByText('Add property').click();
+    await page.locator('#rc_select_2').click();
+    await page.getByText('Background Color', { exact: true }).click();
+    await page.getByLabel('color-picker-normal').click();
+    await page.locator('input[type="text"]').fill('A34FCC');
+    await page.getByRole('button', { name: 'OK' }).click();
+    const cell = await page.getByRole('button', { name: '423' });
+    const bgColor = await cell.evaluate((el) => getComputedStyle(el.parentElement).backgroundColor);
+    await expect(bgColor).toContain('163, 79, 204');
   });
 });

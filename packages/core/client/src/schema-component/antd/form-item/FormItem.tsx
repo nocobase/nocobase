@@ -25,7 +25,6 @@ import { FilterFormDesigner } from './FormItem.FilterFormDesigner';
 import { useEnsureOperatorsValid } from './SchemaSettingOptions';
 import useLazyLoadDisplayAssociationFieldsOfForm from './hooks/useLazyLoadDisplayAssociationFieldsOfForm';
 import useParseDefaultValue from './hooks/useParseDefaultValue';
-import { useDataFormItemProps } from '../../../modules/blocks/data-blocks/form/hooks/useDataFormItemProps';
 
 Item.displayName = 'FormilyFormItem';
 
@@ -48,7 +47,7 @@ export const FormItem: any = withDynamicSchemaProps(
     const schema = useFieldSchema();
     const { addActiveFieldName } = useFormActiveFields() || {};
     const form = useForm();
-    const { style } = useDataFormItemProps();
+    const { style } = props;
     // 需要放在注冊完变量之后
     useParseDefaultValue();
     useLazyLoadDisplayAssociationFieldsOfForm();

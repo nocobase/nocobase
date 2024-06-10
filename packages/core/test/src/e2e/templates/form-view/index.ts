@@ -7,7 +7,4 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from './e2eUtils';
-export * from './templatesOfCollection';
-export * from './templatesOfPage';
-export * from './templates';
+export * from './commonView';
