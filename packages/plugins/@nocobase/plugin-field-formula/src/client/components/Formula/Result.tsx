@@ -102,9 +102,10 @@ export function Result(props) {
       }
       setEditingValue(v);
       setTimeout(() => {
-        props.onChange(v);
+        if (value !== v && value !== undefined) {
+          props.onChange(v);
+        }
       });
-      ctx?.setFormValueChanged?.(false);
     });
   });
   const Component = TypedComponents[dataType] ?? InputString;
