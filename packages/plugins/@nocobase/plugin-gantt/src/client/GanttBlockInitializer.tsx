@@ -14,16 +14,16 @@ import React, { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import {
-  useSchemaInitializer,
-  useSchemaInitializerItem,
-  useCollectionManager_deprecated,
-  useGlobalTheme,
-  FormDialog,
-  SchemaComponent,
-  DataBlockInitializer,
-  SchemaComponentOptions,
   Collection,
   CollectionFieldOptions,
+  DataBlockInitializer,
+  FormDialog,
+  SchemaComponent,
+  SchemaComponentOptions,
+  useCollectionManager_deprecated,
+  useGlobalTheme,
+  useSchemaInitializer,
+  useSchemaInitializerItem,
 } from '@nocobase/client';
 import { createGanttBlockUISchema } from './createGanttBlockUISchema';
 
@@ -57,7 +57,7 @@ export const GanttBlockInitializer = ({
       onlyCurrentDataSource={onlyCurrentDataSource}
       hideSearch={hideSearch}
       filter={filterCollections}
-      showAssociationFields={showAssociationFields}
+      showMoreOptions={showAssociationFields}
     />
   );
 };

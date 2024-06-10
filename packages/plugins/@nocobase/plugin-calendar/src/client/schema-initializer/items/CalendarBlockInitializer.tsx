@@ -56,7 +56,7 @@ export const CalendarBlockInitializer = ({
       onlyCurrentDataSource={onlyCurrentDataSource}
       hideSearch={hideSearch}
       filter={filterCollections}
-      showAssociationFields={showAssociationFields}
+      showMoreOptions={showAssociationFields}
     />
   );
 };

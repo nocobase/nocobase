@@ -54,7 +54,7 @@ export const TableBlockInitializer = ({
       onlyCurrentDataSource={onlyCurrentDataSource}
       hideSearch={hideSearch}
       filter={filterCollections}
-      showAssociationFields={showAssociationFields}
+      showMoreOptions={showAssociationFields}
     />
   );
 };

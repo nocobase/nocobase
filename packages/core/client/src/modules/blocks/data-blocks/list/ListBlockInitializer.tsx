@@ -59,7 +59,7 @@ export const ListBlockInitializer = ({
       onlyCurrentDataSource={onlyCurrentDataSource}
       hideSearch={hideSearch}
       filter={filterCollections}
-      showAssociationFields={showAssociationFields}
+      showMoreOptions={showAssociationFields}
     />
   );
 };

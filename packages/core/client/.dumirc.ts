@@ -450,6 +450,12 @@ export default defineConfig({
                 '/ui-schema/schema-initializer/bulk-edit-form-configure-fields',
               ]
             },
+            {
+              title: '菜单相关',
+              children: [
+                '/ui-schema/schema-initializer/header-add-menu-item'
+              ]
+            }
           ],
         },
         {
@@ -460,10 +466,14 @@ export default defineConfig({
               title: '概述',
               link: '/ui-schema/schema-initializer-item/overview',
             },
+            '/ui-schema/schema-initializer-item/action-initializer-item',
+            '/ui-schema/schema-initializer-item/collection-field-initializer',
+            '/ui-schema/schema-initializer-item/data-block-initializer',
+            '/ui-schema/schema-initializer-item/table-collection-field-initializer',
             {
-              title: 'ActionInitializerItem',
-              link: '/ui-schema/schema-initializer-item/action-initializer-item',
-            },
+              title: '其它基本组件',
+              link: '/ui-schema/schema-initializer-item/others'
+            }
           ],
         },
         {

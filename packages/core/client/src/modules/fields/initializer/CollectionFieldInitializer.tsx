@@ -8,13 +8,27 @@
  */
 
 import { ISchema } from '@formily/react';
-import React from 'react';
+import React, { FC } from 'react';
 
-import { InitializerWithSwitch } from '../../../schema-initializer/items/InitializerWithSwitch';
 import { useSchemaInitializerItem } from '../../../application';
+import { InitializerWithSwitch } from '../../../schema-initializer/items/InitializerWithSwitch';
 
-export const CollectionFieldInitializer = () => {
+interface CollectionFieldInitializerProps {
+  /**
+   * 被创建的字段的 schema
+   */
+  schema?: ISchema;
+}
+
+export const CollectionFieldInitializer: FC<CollectionFieldInitializerProps> = (props) => {
   const schema: ISchema = {};
   const itemConfig = useSchemaInitializerItem();
-  return <InitializerWithSwitch {...itemConfig} item={itemConfig} schema={schema} type={'x-collection-field'} />;
+  return (
+    <InitializerWithSwitch
+      {...itemConfig}
+      item={itemConfig}
+      schema={props.schema || schema}
+      type={'x-collection-field'}
+    />
+  );
 };
