@@ -21,7 +21,7 @@ import { DndContext, DndContextProps } from '../../common/dnd-context';
 import { useToken } from '../__builtins__';
 import useStyles from './Grid.style';
 
-const GridRowContext = createContext<any>({});
+export const GridRowContext = createContext<any>({});
 GridRowContext.displayName = 'GridRowContext';
 const GridColContext = createContext<any>({});
 GridColContext.displayName = 'GridColContext';
