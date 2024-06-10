@@ -8,8 +8,9 @@
  */
 
 import React, { useCallback } from 'react';
+import { uniqBy } from 'lodash';
 
-import { Variable, useApp, useCompile, usePlugin } from '@nocobase/client';
+import { Variable, parseCollectionName, useApp, useCompile, usePlugin } from '@nocobase/client';
 
 import { useFlowContext } from './FlowContext';
 import { NAMESPACE, lang } from './locale';
@@ -259,16 +260,25 @@ export function useWorkflowVariableOptions(options: UseVariableOptions = {}) {
 }
 
 function getNormalizedFields(collectionName, { compile, getCollectionFields }) {
-  const fields = getCollectionFields(collectionName);
-  const foreignKeyFields: any[] = [];
+  // NOTE: for compatibility with legacy version
+  const [dataSourceName, collection] = parseCollectionName(collectionName);
+  // NOTE: `dataSourceName` will be ignored in new version
+  const fields = getCollectionFields(collection, dataSourceName);
+  console.log('--------------', fields);
+  const fkFields: any[] = [];
   const result: any[] = [];
   fields.forEach((field) => {
     if (field.isForeignKey) {
-      foreignKeyFields.push(field);
+      fkFields.push(field);
     } else {
+      const fkField = fields.find((f) => f.name === field.foreignKey);
+      if (fkField) {
+        fkFields.push(fkField);
+      }
       result.push(field);
     }
   });
+  const foreignKeyFields = uniqBy(fkFields, 'name');
   for (let i = result.length - 1; i >= 0; i--) {
     const field = result[i];
     if (field.type === 'belongsTo') {
@@ -300,7 +310,7 @@ function getNormalizedFields(collectionName, { compile, getCollectionFields }) {
     }
   }
 
-  return result.filter((field) => field.interface && !field.hidden);
+  return uniqBy(result, 'name').filter((field) => field.interface && !field.hidden);
 }
 
 function loadChildren(option) {
@@ -374,7 +384,7 @@ export function useGetCollectionFields(dataSourceName?) {
   const app = useApp();
   const { collectionManager } = app.dataSourceManager.getDataSource(dataSourceName);
 
-  return collectionManager.getCollectionFields.bind(collectionManager);
+  return useCallback((collectionName) => collectionManager.getCollectionFields(collectionName), [collectionManager]);
 }
 
 export function WorkflowVariableInput({ variableOptions, ...props }): JSX.Element {
