@@ -12,6 +12,10 @@ type InputProps = AntdInputProps;
 
 <code src="./demos/new-demos/input.tsx"></code>
 
+### JSON5
+
+<code src="./demos/new-demos/json5.tsx"></code>
+
 ### ReadPretty
 
 ```ts
@@ -92,7 +96,7 @@ interface URLReadPrettyProps {
 ### Basic Usage
 
 ```ts
-type JSONTextAreaProps = AntdTextAreaProps & { value?: string; space?: number }
+type JSONTextAreaProps = AntdTextAreaProps & { value?: string; space?: number; json5?: boolean; }
 ```
 
 <code src="./demos/new-demos/json.tsx"></code>
