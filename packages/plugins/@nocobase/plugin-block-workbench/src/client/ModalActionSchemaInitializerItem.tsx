@@ -8,7 +8,14 @@
  */
 
 import { useForm } from '@formily/react';
-import { Action, ActionContextProvider, ISchema, SchemaComponent, SchemaInitializerItem } from '@nocobase/client';
+import {
+  Action,
+  ActionContextProvider,
+  ISchema,
+  SchemaComponent,
+  SchemaInitializerItem,
+  useSchemaInitializer,
+} from '@nocobase/client';
 import { uid } from '@nocobase/utils/client';
 import React, { useMemo, useState } from 'react';
 
@@ -16,6 +23,7 @@ export function ModalActionSchemaInitializerItem(props) {
   const { modalSchema = {}, ...otherProps } = props;
   const { properties, ...others } = modalSchema;
   const [visible, setVisible] = useState(false);
+  const { setVisible: setSchemaInitializerVisible } = useSchemaInitializer();
 
   const schema: ISchema = useMemo(() => {
     return {
@@ -78,6 +86,7 @@ export function ModalActionSchemaInitializerItem(props) {
       <SchemaInitializerItem
         {...otherProps}
         onClick={(e) => {
+          setSchemaInitializerVisible(false);
           setVisible(true);
           props?.onClick?.(e);
         }}

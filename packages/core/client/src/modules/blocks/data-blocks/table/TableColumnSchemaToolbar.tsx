@@ -9,15 +9,18 @@
 
 import _ from 'lodash';
 import React from 'react';
+import { GridRowContext } from '../../../../schema-component/antd/grid/Grid';
 import { SchemaToolbar } from '../../../../schema-settings';
 
 export const TableColumnSchemaToolbar = (props) => {
   return (
-    <SchemaToolbar
-      initializer={props.initializer || false}
-      showBorder={false}
-      showBackground
-      {..._.omit(props, 'initializer')}
-    />
+    <GridRowContext.Provider value={null}>
+      <SchemaToolbar
+        initializer={props.initializer || false}
+        showBorder={false}
+        showBackground
+        {..._.omit(props, 'initializer')}
+      />
+    </GridRowContext.Provider>
   );
 };
