@@ -17,7 +17,7 @@ describe('xlsx importer', () => {
   let app: MockServer;
   beforeEach(async () => {
     app = await createMockServer({
-      plugins: ['field-china-region'],
+      plugins: ['field-china-region', 'field-sequence'],
     });
   });
 
@@ -60,9 +60,17 @@ describe('xlsx importer', () => {
 
     const worksheet = template.Sheets[template.SheetNames[0]];
 
-    XLSX.utils.sheet_add_aoa(worksheet, [['post0', '山西省/长治市/潞城区']], {
-      origin: 'A2',
-    });
+    XLSX.utils.sheet_add_aoa(
+      worksheet,
+      [
+        ['post0', '山西省/长治市/潞城区'],
+        ['post1', ''],
+        ['post2', null],
+      ],
+      {
+        origin: 'A2',
+      },
+    );
 
     const importer = new XlsxImporter({
       collectionManager: app.mainDataSource.collectionManager,
@@ -73,7 +81,7 @@ describe('xlsx importer', () => {
 
     await importer.run();
 
-    expect(await Post.repository.count()).toBe(1);
+    expect(await Post.repository.count()).toBe(3);
 
     const post = await Post.repository.findOne({
       appends: ['region'],
@@ -216,6 +224,16 @@ describe('xlsx importer', () => {
         {
           type: 'string',
           name: 'email',
+        },
+        {
+          type: 'sequence',
+          name: 'name',
+          patterns: [
+            {
+              type: 'integer',
+              options: { key: 1 },
+            },
+          ],
         },
       ],
     });
@@ -543,6 +561,8 @@ describe('xlsx importer', () => {
         ['Post1', 'Content1', 'User1', 'Tag1,Tag2', 'Comment1,Comment2'],
         ['Post2', 'Content2', 'User1', 'Tag2,Tag3', 'Comment3'],
         ['Post3', 'Content3', 'UserNotExist', 'Tag3,TagNotExist', ''],
+        ['Post4', '', '', ''],
+        ['Post5', null, null, null],
       ],
       {
         origin: 'A2',
@@ -558,7 +578,7 @@ describe('xlsx importer', () => {
 
     await importer.run();
 
-    expect(await Post.repository.count()).toBe(3);
+    expect(await Post.repository.count()).toBe(5);
   });
 
   it('should import data with xlsx', async () => {
