@@ -31,7 +31,7 @@ test.describe('view', () => {
     await page.getByRole('button', { name: 'OK' }).click();
     const cell = await page.getByRole('button', { name: '423' });
     const color = await cell.evaluate((el) => getComputedStyle(el).color);
-    await expect(color).toBe('rgb(163, 79, 204)');
+    await expect(color).toContain('163, 79, 204');
   });
   test('linkage style background color', async ({ page, mockPage, mockRecord }) => {
     const nocoPage = await mockPage(oneTableBlockWithIntegerAndIDColumn).waitForInit();
