@@ -62,6 +62,16 @@ function getValuesByPath(values, key, index?) {
   }
 }
 
+function areValuesEqual(value1, value2) {
+  if (value1 === value2) {
+    return true;
+  }
+  if ((value1 === null && value2 === undefined) || (value1 === undefined && value2 === null) || value2 === null) {
+    return true;
+  }
+  return false;
+}
+
 export function Result(props) {
   const { value, ...others } = props;
   const fieldSchema = useFieldSchema();
@@ -102,7 +112,7 @@ export function Result(props) {
       }
       setEditingValue(v);
       setTimeout(() => {
-        if (value !== v && value !== undefined) {
+        if (!areValuesEqual(form.values[fieldName], v)) {
           props.onChange(v);
         }
       });
