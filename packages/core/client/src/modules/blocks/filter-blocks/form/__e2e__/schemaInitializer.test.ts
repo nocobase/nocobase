@@ -8,7 +8,7 @@
  */
 
 import { Page, createBlockInPage, expect, oneEmptyFilterFormBlock, test } from '@nocobase/test/e2e';
-import { oneFilterFormWithInherit } from './templatesOfBug';
+import { oneFilterFormWithInherit } from './templates';
 
 const deleteButton = async (page: Page, name: string) => {
   await page.getByLabel(`action-Action-${name}-`).hover();
