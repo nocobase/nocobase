@@ -869,5 +869,6 @@
   "License": "許可證",
   "This variable has been deprecated and can be replaced with \"Current form\"": "該變數已被棄用，可以使用“當前表單”作為替代",
   "The value of this variable is derived from the query string of the page URL. This variable can only be used normally when the page has a query string.": "該變數的值來自頁面 URL 的查詢字符串，只有當頁面有查詢字符串時，該變數才能正常使用。",
-  "URL search params": "URL 查詢參數"
+  "URL search params": "URL 查詢參數",
+  "Expand All": "展開全部"
 }
