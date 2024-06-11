@@ -51,10 +51,9 @@ class QRCodeWebComponent extends HTMLElement {
     this.root.unmount();
   }
 }
-let registered = false;
-export function registerQrcodeWebcom() {
-  if (!registered) {
+
+export function registerQrcodeWebComponent() {
+  if (!customElements.get('qr-code')) {
     customElements.define('qr-code', QRCodeWebComponent);
-    registered = true;
   }
 }

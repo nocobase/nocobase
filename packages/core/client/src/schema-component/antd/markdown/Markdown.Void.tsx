@@ -26,7 +26,7 @@ import { useVariableOptions } from '../../../schema-settings/VariableInput/hooks
 import { VariableSelect } from '../variable/VariableSelect';
 import { replaceVariableValue } from '../../../block-provider/hooks';
 import { useLocalVariables, useVariables } from '../../../variables';
-import { registerQrcodeWebcom } from './qrcode-webcom';
+import { registerQrcodeWebComponent } from './qrcode-webcom';
 export interface MarkdownEditorProps extends Omit<TextAreaProps, 'onSubmit'> {
   scope: any[];
   defaultValue?: string;
@@ -150,7 +150,7 @@ export const MarkdownVoid: any = withDynamicSchemaProps(
     });
 
     useEffect(() => {
-      registerQrcodeWebcom();
+      registerQrcodeWebComponent();
     }, []);
     if (loading) return <Spin />;
     return field?.editable ? (
