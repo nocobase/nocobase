@@ -8,16 +8,18 @@
  */
 
 import { SchemaInitializerItemType, useSchemaInitializer } from '@nocobase/client';
+import { useTranslation } from 'react-i18next';
 import { blockSchema } from './blockSchema';
 
 export const workbenchBlockInitializerItem: SchemaInitializerItemType = {
   type: 'item',
-  name: 'WorkbenchBlock',
+  name: 'workbenchBlock',
   icon: 'FileImageOutlined',
   useComponentProps() {
+    const { t } = useTranslation('@nocobase/plugin-block-workbench');
     const { insert } = useSchemaInitializer();
     return {
-      title: 'Workbench',
+      title: t('Workbench'),
       onClick: () => {
         insert(blockSchema);
       },

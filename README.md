@@ -10,6 +10,7 @@ https://github.com/nocobase/nocobase/assets/1267426/1d6a3979-d1eb-4e50-b726-2f90
 
 ## Recent major updates
 
+- [v1.0.1-alpha.1: Blocks support height settings - 2024/06/07](https://docs.nocobase.com/welcome/changelog/20240607)
 - [v1.0.0-alpha.15: New Plugins and Improved “Configure actions” Interaction - 2024/05/19](https://docs.nocobase.com/welcome/changelog/20240519)
 - [v1.0: Significant Milestone - 2024/04/28](https://docs.nocobase.com/welcome/release/v1001-changelog)
 - [v0.21: Block performance optimization - 2024/03/29](https://docs.nocobase.com/welcome/release/v0210-changelog)
@@ -21,8 +22,6 @@ https://github.com/nocobase/nocobase/assets/1267426/1d6a3979-d1eb-4e50-b726-2f90
 - [v0.15: New plugin settings manager - 2023/11/13](https://docs.nocobase.com/welcome/release/v0150-changelog)
 - [v0.14: New plugin manager, supports adding plugins through UI - 2023/09/11](https://docs.nocobase.com/welcome/release/v0140-changelog)
 - [v0.13: New application status flow - 2023/08/24](https://docs.nocobase.com/welcome/release/v0130-changelog)
-- [v0.12: New plugin build tool - 2023/08/01](https://docs.nocobase.com/welcome/release/v0120-changelog)
-- [v0.11: New client application, plugin and router - 2023/07/08](https://docs.nocobase.com/welcome/release/v0110-changelog)
 
 ## What is NocoBase
 

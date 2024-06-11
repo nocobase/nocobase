@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { SchemaSettings, useSchemaInitializer, useSchemaInitializerItem } from '@nocobase/client';
+import { ButtonEditor, SchemaSettings, useSchemaInitializer, useSchemaInitializerItem } from '@nocobase/client';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { ModalActionSchemaInitializerItem } from './ModalActionSchemaInitializerItem';
@@ -15,6 +15,17 @@ import { ModalActionSchemaInitializerItem } from './ModalActionSchemaInitializer
 export const workbenchActionSettingsScanQrCode = new SchemaSettings({
   name: 'workbench:actionSettings:scanQrCode',
   items: [
+    {
+      name: 'editButton',
+      Component: ButtonEditor,
+      useComponentProps() {
+        return { hasIconColor: true };
+      },
+    },
+    {
+      name: 'd1',
+      type: 'divider',
+    },
     {
       type: 'remove',
       name: 'remove',
@@ -45,7 +56,7 @@ export function WorkbenchScanActionSchemaInitializerItem(props) {
             'x-component': 'IconPicker',
             'x-decorator': 'FormItem',
           },
-          color: {
+          iconColor: {
             title: t('Color'),
             required: true,
             default: '#1677FF',
@@ -63,9 +74,7 @@ export function WorkbenchScanActionSchemaInitializerItem(props) {
           'x-settings': 'workbench:actionSettings:scanQrCode',
           'x-component-props': {
             icon: values.icon,
-            iconStyle: {
-              background: values.color || '#1677FF',
-            },
+            iconColor: values.iconColor,
             openMode: 'modal',
           },
           properties: {

@@ -9,7 +9,6 @@
 
 import { SchemaInitializer } from '@nocobase/client';
 import { WorkbenchLinkActionSchemaInitializerItem } from './WorkbenchLinkActionSchemaInitializerItem';
-import { WorkbenchScanActionSchemaInitializerItem } from './WorkbenchScanActionSchemaInitializerItem';
 
 export const workbenchConfigureActions = new SchemaInitializer({
   name: 'workbench:configureActions',
@@ -21,11 +20,6 @@ export const workbenchConfigureActions = new SchemaInitializer({
       name: 'link',
       title: '{{t("Link")}}',
       Component: WorkbenchLinkActionSchemaInitializerItem,
-    },
-    {
-      name: 'qrcode',
-      title: 'Scan Qr code',
-      Component: WorkbenchScanActionSchemaInitializerItem,
     },
   ],
 });

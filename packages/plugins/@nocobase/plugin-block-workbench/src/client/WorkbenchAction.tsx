@@ -29,12 +29,12 @@ const useStyles = createStyles(({ token, css }) => ({
 function Button() {
   const fieldSchema = useFieldSchema();
   const icon = fieldSchema['x-component-props']?.['icon'];
-  const iconStyle = fieldSchema['x-component-props']?.['iconStyle'];
+  const backgroundColor = fieldSchema['x-component-props']?.['iconColor'];
   const { styles, cx } = useStyles();
 
   return (
     <div>
-      <Avatar style={{ ...iconStyle }} size={64} icon={<Icon type={icon} />} />
+      <Avatar style={{ backgroundColor }} size={64} icon={<Icon type={icon} />} />
       <div className={cx(styles.title)}>{fieldSchema.title}</div>
     </div>
   );

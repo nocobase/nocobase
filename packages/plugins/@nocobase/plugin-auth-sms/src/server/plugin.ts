@@ -9,9 +9,9 @@
 
 import VerificationPlugin from '@nocobase/plugin-verification';
 import { InstallOptions, Plugin } from '@nocobase/server';
-import { resolve } from 'path';
-import { authType } from '../constants';
+import { authType, namespace } from '../constants';
 import { SMSAuth } from './sms-auth';
+import { tval } from '@nocobase/utils';
 
 export class PluginAuthSMSServer extends Plugin {
   afterAdd() {}
@@ -38,6 +38,7 @@ export class PluginAuthSMSServer extends Plugin {
 
     this.app.authManager.registerTypes(authType, {
       auth: SMSAuth,
+      title: tval('SMS', { ns: namespace }),
     });
   }
 
