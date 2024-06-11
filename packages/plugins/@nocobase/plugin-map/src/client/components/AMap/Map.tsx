@@ -410,7 +410,7 @@ export const AMapComponent = React.forwardRef<AMapForwardedRefProps, AMapCompone
     <div
       className={css`
         position: relative;
-        height: ${height || 500}px;
+        height: ${height || 500}px !important;
       `}
       id={id.current}
       style={props?.style}
