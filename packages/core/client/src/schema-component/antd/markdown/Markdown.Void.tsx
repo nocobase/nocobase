@@ -71,7 +71,7 @@ const MarkdownEditor = (props: MarkdownEditorProps) => {
     [value],
   );
   return (
-    <div className={'mb-markdown'} style={{ position: 'relative' }}>
+    <div className={'mb-markdown'} style={{ position: 'relative', paddingTop: '20px' }}>
       <AntdInput.TextArea
         ref={inputRef}
         autoSize={{ minRows: 3 }}
@@ -80,8 +80,9 @@ const MarkdownEditor = (props: MarkdownEditorProps) => {
         onChange={(e) => {
           setValue(e.target.value);
         }}
+        style={{ paddingBottom: '40px' }}
       />
-      <div style={{ position: 'absolute', top: 1, right: 1 }}>
+      <div style={{ position: 'absolute', top: 21, right: 1 }}>
         <VariableSelect options={options} setOptions={setOptions} onInsert={onInsert} />
       </div>
 
