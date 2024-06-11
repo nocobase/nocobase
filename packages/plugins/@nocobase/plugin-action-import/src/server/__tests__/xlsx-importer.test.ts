@@ -17,7 +17,7 @@ describe('xlsx importer', () => {
   let app: MockServer;
   beforeEach(async () => {
     app = await createMockServer({
-      plugins: ['field-china-region'],
+      plugins: ['field-china-region', 'field-sequence'],
     });
   });
 
@@ -224,6 +224,16 @@ describe('xlsx importer', () => {
         {
           type: 'string',
           name: 'email',
+        },
+        {
+          type: 'sequence',
+          name: 'name',
+          patterns: [
+            {
+              type: 'integer',
+              options: { key: 1 },
+            },
+          ],
         },
       ],
     });

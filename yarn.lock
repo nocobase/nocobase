@@ -19105,6 +19105,11 @@ nodemailer-mock@^1.5.11:
     debug "^4.3.4"
     nodemailer "^6.x"
 
+nodemailer@6.9.13:
+  version "6.9.13"
+  resolved "https://registry.npmmirror.com/nodemailer/-/nodemailer-6.9.13.tgz#5b292bf1e92645f4852ca872c56a6ba6c4a3d3d6"
+  integrity sha512-7o38Yogx6krdoBf3jCAqnIN4oSQFx+fMa0I7dK1D+me9kBxx12D+/33wSb+fhOCtIxvYJ+4x4IMEhmhCKfAiOA==
+
 nodemailer@^6.6.1, nodemailer@^6.x:
   version "6.9.7"
   resolved "https://registry.npmmirror.com/nodemailer/-/nodemailer-6.9.7.tgz#ec2f488f62ba1558e7b19239b62778df4a5c4397"
