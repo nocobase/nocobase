@@ -13,13 +13,13 @@ import { WorkbenchScanActionSchemaInitializerItem } from './WorkbenchScanActionS
 
 export const workbenchConfigureActions = new SchemaInitializer({
   name: 'workbench:configureActions',
-  title: 'Configure actions',
+  title: '{{t("Configure actions")}}',
   // 插入位置
   insertPosition: 'beforeEnd',
   items: [
     {
       name: 'link',
-      title: 'Link',
+      title: '{{t("Link")}}',
       Component: WorkbenchLinkActionSchemaInitializerItem,
     },
     {

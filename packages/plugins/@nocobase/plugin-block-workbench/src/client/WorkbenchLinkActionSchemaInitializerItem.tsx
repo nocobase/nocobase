@@ -58,9 +58,11 @@ export function WorkbenchLinkActionSchemaInitializerItem(props) {
         insert({
           type: 'void',
           title: values.title,
-          'x-component': 'WorkbenchAction',
+          'x-action': 'customize:link',
           'x-toolbar': 'ActionSchemaToolbar',
-          'x-settings': 'workbench:actionSettings:link',
+          'x-settings': 'actionSettings:link',
+          'x-component': 'WorkbenchAction',
+          'x-use-component-props': 'useLinkActionProps',
           'x-component-props': {
             icon: values.icon,
             iconStyle: {

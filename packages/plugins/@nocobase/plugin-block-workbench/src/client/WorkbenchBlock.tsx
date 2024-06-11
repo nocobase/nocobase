@@ -11,11 +11,12 @@ import { RecursionField, observer, useFieldSchema } from '@formily/react';
 import {
   DndContext,
   SchemaComponentOptions,
+  useDesignable,
   useSchemaInitializerRender,
   withDynamicSchemaProps,
 } from '@nocobase/client';
 import { Space } from 'antd';
-import React, { FC } from 'react';
+import React from 'react';
 import { WorkbenchAction } from './WorkbenchAction';
 
 const ConfigureActionsButton = observer(
@@ -29,9 +30,10 @@ const ConfigureActionsButton = observer(
 
 const InternalIcons = () => {
   const fieldSchema = useFieldSchema();
+  const { designable } = useDesignable();
 
   return (
-    <div style={{ marginBottom: '1rem' }}>
+    <div style={{ marginBottom: designable ? '1rem' : 0 }}>
       <DndContext>
         <Space wrap>
           {fieldSchema.mapProperties((s, key) => (
@@ -43,16 +45,22 @@ const InternalIcons = () => {
   );
 };
 
-export const WorkbenchBlock: FC<{ height?: number }> = withDynamicSchemaProps(
+export const WorkbenchBlock: any = withDynamicSchemaProps(
   (props) => {
     return (
       <div>
-        <SchemaComponentOptions components={{ WorkbenchAction }}>
-          <InternalIcons />
-          <ConfigureActionsButton />
-        </SchemaComponentOptions>
+        <SchemaComponentOptions components={{ WorkbenchAction }}>{props.children}</SchemaComponentOptions>
       </div>
     );
   },
   { displayName: 'WorkbenchBlock' },
 );
+
+WorkbenchBlock.ActionBar = () => {
+  return (
+    <>
+      <InternalIcons />
+      <ConfigureActionsButton />
+    </>
+  );
+};
