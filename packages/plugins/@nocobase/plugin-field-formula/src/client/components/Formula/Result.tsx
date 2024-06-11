@@ -62,16 +62,6 @@ function getValuesByPath(values, key, index?) {
   }
 }
 
-function areValuesEqual(value1, value2) {
-  if (value1 === value2) {
-    return true;
-  }
-  if ((value1 === null && value2 === undefined) || (value1 !== undefined && value2 === null)) {
-    return true;
-  }
-  return false;
-}
-
 export function Result(props) {
   const { value, ...others } = props;
   const fieldSchema = useFieldSchema();
@@ -100,7 +90,7 @@ export function Result(props) {
         return;
       }
       const scope = toJS(getValuesByPath(form.values, fieldName, index));
-      let v = undefined;
+      let v;
       try {
         v = evaluate(expression, scope);
         v = toDbType(v, dataType);
@@ -111,11 +101,8 @@ export function Result(props) {
         setEditingValue(v);
       }
       setEditingValue(v);
-      setTimeout(() => {
-        if (!areValuesEqual(form.values[fieldName], v) || (value !== undefined && !v)) {
-          props.onChange(v);
-        }
-      });
+      props.onChange(v);
+      ctx?.setFormValueChanged?.(false);
     });
   });
   const Component = TypedComponents[dataType] ?? InputString;
