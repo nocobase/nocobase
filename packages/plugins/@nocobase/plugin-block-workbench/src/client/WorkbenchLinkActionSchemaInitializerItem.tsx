@@ -7,7 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { SchemaSettings, useSchemaInitializer, useSchemaInitializerItem } from '@nocobase/client';
+import {
+  ButtonEditor,
+  SchemaSettings,
+  SchemaSettingsActionLinkItem,
+  useSchemaInitializer,
+  useSchemaInitializerItem,
+} from '@nocobase/client';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { ModalActionSchemaInitializerItem } from './ModalActionSchemaInitializerItem';
@@ -15,6 +21,17 @@ import { ModalActionSchemaInitializerItem } from './ModalActionSchemaInitializer
 export const workbenchActionSettingsLink = new SchemaSettings({
   name: 'workbench:actionSettings:link',
   items: [
+    {
+      name: 'editButton',
+      Component: ButtonEditor,
+      useComponentProps() {
+        return { hasIconColor: true };
+      },
+    },
+    {
+      name: 'editLink',
+      Component: SchemaSettingsActionLinkItem,
+    },
     {
       type: 'remove',
       name: 'remove',
@@ -45,7 +62,7 @@ export function WorkbenchLinkActionSchemaInitializerItem(props) {
             'x-component': 'IconPicker',
             'x-decorator': 'FormItem',
           },
-          color: {
+          iconColor: {
             title: t('Color'),
             required: true,
             default: '#1677FF',
@@ -60,14 +77,12 @@ export function WorkbenchLinkActionSchemaInitializerItem(props) {
           title: values.title,
           'x-action': 'customize:link',
           'x-toolbar': 'ActionSchemaToolbar',
-          'x-settings': 'actionSettings:link',
+          'x-settings': 'workbench:actionSettings:link',
           'x-component': 'WorkbenchAction',
           'x-use-component-props': 'useLinkActionProps',
           'x-component-props': {
             icon: values.icon,
-            iconStyle: {
-              background: values.color,
-            },
+            iconColor: values.iconColor,
           },
         });
       }}
