@@ -11,13 +11,14 @@ import { Plugin } from '@nocobase/client';
 import { WorkbenchBlock } from './WorkbenchBlock';
 import { workbenchActionSettingsLink } from './WorkbenchLinkActionSchemaInitializerItem';
 import { workbenchActionSettingsScanQrCode } from './WorkbenchScanActionSchemaInitializerItem';
+import { QRCodeScanner } from './components/qrcode-scanner';
 import { workbenchBlockInitializerItem } from './workbenchBlockInitializerItem';
 import { workbenchBlockSettings } from './workbenchBlockSettings';
 import { workbenchConfigureActions } from './workbenchConfigureActions';
 
 export class PluginBlockWorkbenchClient extends Plugin {
   async load() {
-    this.app.addComponents({ WorkbenchBlock });
+    this.app.addComponents({ WorkbenchBlock, QRCodeScanner });
     this.app.schemaSettingsManager.add(workbenchBlockSettings);
     this.app.schemaSettingsManager.add(workbenchActionSettingsLink);
     this.app.schemaSettingsManager.add(workbenchActionSettingsScanQrCode);

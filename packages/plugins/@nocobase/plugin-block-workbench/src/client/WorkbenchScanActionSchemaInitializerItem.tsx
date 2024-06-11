@@ -55,7 +55,6 @@ export function WorkbenchScanActionSchemaInitializerItem(props) {
         },
       }}
       onSubmit={(values) => {
-        console.log('values', values);
         insert({
           type: 'void',
           title: values.title,
