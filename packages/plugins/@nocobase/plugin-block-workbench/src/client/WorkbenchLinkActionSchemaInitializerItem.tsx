@@ -33,6 +33,10 @@ export const workbenchActionSettingsLink = new SchemaSettings({
       Component: SchemaSettingsActionLinkItem,
     },
     {
+      name: 'd1',
+      type: 'divider',
+    },
+    {
       type: 'remove',
       name: 'remove',
     },
