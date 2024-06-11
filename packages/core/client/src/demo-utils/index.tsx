@@ -15,7 +15,9 @@ import {
   AntdSchemaComponentPlugin,
   Application,
   ApplicationOptions,
+  BlockSchemaToolbar,
   CollectionPlugin,
+  DataBlockInitializer,
   LocalDataSource,
   SchemaSettingsPlugin,
 } from '../index';
@@ -108,7 +110,11 @@ export const mockApp = (options: MockAppOptions) => {
   app.pluginManager.add(AntdSchemaComponentPlugin);
   app.pluginManager.add(SchemaSettingsPlugin);
   app.pluginManager.add(CollectionPlugin, { config: { enableRemoteDataSource: false } });
-  app.addComponents({ ActionInitializer });
+  app.addComponents({
+    ActionInitializer,
+    DataBlockInitializer,
+    BlockSchemaToolbar,
+  });
 
   const apis = Object.assign({}, defaultApis, optionsApis);
 
