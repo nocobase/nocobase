@@ -7914,10 +7914,10 @@ ajv@^7.0.0, ajv@^7.0.3:
     require-from-string "^2.0.2"
     uri-js "^4.2.2"
 
-ali-oss@^6.16.0:
-  version "6.18.1"
-  resolved "https://registry.npmmirror.com/ali-oss/-/ali-oss-6.18.1.tgz#13f2eb5f5c2a2cf2d322c1b35412133c18cec485"
-  integrity sha512-VsptD0jX3JNc3AjiLs5a9oTP0ArfT9IYhBuY6G/SpuY6LMuiwfqywrAosY65BlHKODAdYy8VWL6kmt0mO7BUGA==
+ali-oss@^6.1.0:
+  version "6.20.0"
+  resolved "https://registry.npmmirror.com/ali-oss/-/ali-oss-6.20.0.tgz#a19b0207560399f18db6827097e8631ef9c9cfd7"
+  integrity sha512-TzFXgGlw81sy2JvcCveSYsa2b2+6kv+HA6WTc+cXg6bu8nUAmVPfncRGbn3x2getSOniOFA+TyGy3V4l3Fks+Q==
   dependencies:
     address "^1.2.2"
     agentkeepalive "^3.4.1"
@@ -7932,10 +7932,12 @@ ali-oss@^6.16.0:
     is-type-of "^1.4.0"
     js-base64 "^2.5.2"
     jstoxml "^2.0.0"
+    lodash "^4.17.21"
     merge-descriptors "^1.0.1"
     mime "^2.4.5"
     platform "^1.3.1"
     pump "^3.0.0"
+    qs "^6.4.0"
     sdk-base "^2.0.1"
     stream-http "2.8.2"
     stream-wormhole "^1.0.4"
@@ -18732,12 +18734,12 @@ ms@^2.0.0, ms@^2.1.1:
   resolved "https://registry.npmmirror.com/ms/-/ms-2.1.3.tgz#574c8138ce1d2b5861f0b44579dbadd60c6615b2"
   integrity sha512-6FlzubTLZG3J2a/NVCAleEhjzq5oxgHyaCU9yYXvcLsvoVaHJq/s5xXI6/XXP6tz7R9xAOtHnSO/tXtF3WRTlA==
 
-multer-aliyun-oss@2.1.1:
-  version "2.1.1"
-  resolved "https://registry.npmmirror.com/multer-aliyun-oss/-/multer-aliyun-oss-2.1.1.tgz#7b6b41385fce2905e8e258a7e68b453ef3982fa0"
-  integrity sha512-EfDlv2oUZS94+VULybEo8rSlGTsV3YphmCAMT8/nMWBleQDjLMeV7tCK6dXe2Lj+yqRjaTHyuOMhbT5i4voHOQ==
+multer-aliyun-oss@2.1.3:
+  version "2.1.3"
+  resolved "https://registry.npmmirror.com/multer-aliyun-oss/-/multer-aliyun-oss-2.1.3.tgz#0627b24a09ccf511388db83e612b4fc43f58a983"
+  integrity sha512-HAq2Mtm88TqG6VqEJyui3lpw3hfgPXe8EKLBKhCWFyAc+sQUnK54/usvuHfoTDcI8TgomhEnf1qZB7rP7Ge5fg==
   dependencies:
-    ali-oss "^6.16.0"
+    ali-oss "^6.1.0"
 
 multer-cos@^1.0.3:
   version "1.0.3"
@@ -19104,6 +19106,11 @@ nodemailer-mock@^1.5.11:
   dependencies:
     debug "^4.3.4"
     nodemailer "^6.x"
+
+nodemailer@6.9.13:
+  version "6.9.13"
+  resolved "https://registry.npmmirror.com/nodemailer/-/nodemailer-6.9.13.tgz#5b292bf1e92645f4852ca872c56a6ba6c4a3d3d6"
+  integrity sha512-7o38Yogx6krdoBf3jCAqnIN4oSQFx+fMa0I7dK1D+me9kBxx12D+/33wSb+fhOCtIxvYJ+4x4IMEhmhCKfAiOA==
 
 nodemailer@^6.6.1, nodemailer@^6.x:
   version "6.9.7"
