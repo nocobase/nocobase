@@ -60,9 +60,17 @@ describe('xlsx importer', () => {
 
     const worksheet = template.Sheets[template.SheetNames[0]];
 
-    XLSX.utils.sheet_add_aoa(worksheet, [['post0', '山西省/长治市/潞城区']], {
-      origin: 'A2',
-    });
+    XLSX.utils.sheet_add_aoa(
+      worksheet,
+      [
+        ['post0', '山西省/长治市/潞城区'],
+        ['post1', ''],
+        ['post2', null],
+      ],
+      {
+        origin: 'A2',
+      },
+    );
 
     const importer = new XlsxImporter({
       collectionManager: app.mainDataSource.collectionManager,
@@ -73,7 +81,7 @@ describe('xlsx importer', () => {
 
     await importer.run();
 
-    expect(await Post.repository.count()).toBe(1);
+    expect(await Post.repository.count()).toBe(3);
 
     const post = await Post.repository.findOne({
       appends: ['region'],
