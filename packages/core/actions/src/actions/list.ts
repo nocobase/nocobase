@@ -7,11 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { assign } from '@nocobase/utils';
+import { assign, isValidFilter } from '@nocobase/utils';
 import { Context } from '..';
 import { getRepositoryFromParams, pageArgsToLimitArgs } from '../utils';
 import { DEFAULT_PAGE, DEFAULT_PER_PAGE } from '../constants';
-import _ from 'lodash';
 
 function totalPage(total, pageSize): number {
   return Math.ceil(total / pageSize);
@@ -21,7 +20,7 @@ function findArgs(ctx: Context) {
   const resourceName = ctx.action.resourceName;
   const params = ctx.action.params;
   if (params.tree) {
-    if (!_.isEmpty(params.filter)) {
+    if (isValidFilter(params.filter)) {
       params.tree = false;
     } else {
       const [collectionName, associationName] = resourceName.split('.');
