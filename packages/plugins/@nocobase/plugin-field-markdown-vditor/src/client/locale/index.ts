@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { tval } from '@nocobase/client';
+import { tval } from '@nocobase/utils/client';
 
 const NAMESPACE = 'field-markdown-vditor';
 

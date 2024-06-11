@@ -9,9 +9,9 @@
 
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
+import { tval } from '@nocobase/utils/client';
 import {
   SchemaComponentOptions,
-  tval,
   useActionContext,
   useRecord,
   useRequest,

@@ -68,6 +68,7 @@ export class PresetNocoBase extends Plugin {
     'api-doc>=0.13.0-alpha.1',
     'auth-sms>=0.10.0-alpha.2',
     'field-markdown-vditor>=0.21.0-alpha.16',
+    'workflow-mailer',
   ];
 
   splitNames(name: string) {

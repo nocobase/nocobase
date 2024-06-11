@@ -11,6 +11,10 @@ import i18next, { TFuncKey, TOptions } from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import locale from '../locale';
 
+/**
+ * @deprecated
+ * use {@link @nocobase/utils/client#tval} instead
+ */
 export function tval(text: TFuncKey | TFuncKey[], options?: TOptions) {
   if (options) {
     return `{{t(${JSON.stringify(text)}, ${JSON.stringify(options)})}}`;

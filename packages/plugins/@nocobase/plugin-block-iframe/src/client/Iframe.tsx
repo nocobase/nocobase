@@ -63,7 +63,7 @@ export const Iframe: any = observer(
           try {
             const tempUrl = await replaceVariableValue(url, variables, localVariables);
             const queryString = await parseVariablesAndChangeParamsToQueryString({
-              searchParams: params,
+              searchParams: params || [],
               variables,
               localVariables,
               replaceVariableValue,
@@ -93,7 +93,7 @@ export const Iframe: any = observer(
       return (
         <div
           style={{
-            height: isNumeric(height) ? `${height}px` : height,
+            height: isNumeric(targetHeight) ? `${targetHeight}px` : targetHeight || '60vh',
             marginBottom: '24px',
             border: 0,
           }}
@@ -110,7 +110,7 @@ export const Iframe: any = observer(
         display="block"
         position="relative"
         styles={{
-          height: isNumeric(targetHeight) ? `${targetHeight}px` : targetHeight,
+          height: isNumeric(targetHeight) ? `${targetHeight}px` : targetHeight || '60vh',
           marginBottom: '24px',
           border: 0,
         }}
