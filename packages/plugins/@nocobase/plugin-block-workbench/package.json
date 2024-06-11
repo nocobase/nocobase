@@ -7,7 +7,7 @@
     "@nocobase/server": "1.x",
     "@nocobase/test": "1.x"
   },
-  "dependencies": {
+  "devDependencies": {
     "html5-qrcode": "^2.3.8",
     "react-router-dom": "^6.23.1"
   }

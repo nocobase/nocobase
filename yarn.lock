@@ -15117,6 +15117,11 @@ html2sketch@^1.0.2:
     transformation-matrix "^2.11.1"
     uuid "^8.2.0"
 
+html5-qrcode@^2.3.8:
+  version "2.3.8"
+  resolved "https://registry.npmmirror.com/html5-qrcode/-/html5-qrcode-2.3.8.tgz#0b0cdf7a9926cfd4be530e13a51db47592adfa0d"
+  integrity sha512-jsr4vafJhwoLVEDW3n1KvPnCCXWaQfRng0/EEYk1vNcQGcG/htAdhJX0be8YyqMoSz7+hZvOZSTAepsabiuhiQ==
+
 htmlparser2@^6.1.0:
   version "6.1.0"
   resolved "https://registry.npmmirror.com/htmlparser2/-/htmlparser2-6.1.0.tgz#c4d762b6c3371a05dbe65e94ae43a9f845fb8fb7"
@@ -22099,7 +22104,7 @@ react-refresh@0.14.0, react-refresh@^0.14.0:
   resolved "https://registry.npmmirror.com/react-refresh/-/react-refresh-0.14.0.tgz#4e02825378a5f227079554d4284889354e5f553e"
   integrity sha512-wViHqhAd8OHeLS/IRMJjTSDHF3U9eWi62F/MledQGPdJGDhodXJ9PBLNGr6WWL7qlH12Mt3TyTpbS+hGXMjCzQ==
 
-react-router-dom@6.3.0, react-router-dom@6.x, react-router-dom@^6.11.2:
+react-router-dom@6.3.0, react-router-dom@6.x, react-router-dom@^6.11.2, react-router-dom@^6.23.1:
   version "6.21.0"
   resolved "https://registry.npmmirror.com/react-router-dom/-/react-router-dom-6.21.0.tgz#aa4c6bc046a8e8723095bc09b3c0ab2254532712"
   integrity sha512-1dUdVj3cwc1npzJaf23gulB562ESNvxf7E4x8upNJycqyUm5BRRZ6dd3LrlzhtLaMrwOCO8R0zoiYxdaJx4LlQ==
