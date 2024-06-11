@@ -9,7 +9,7 @@
 
 import Icon, { TableOutlined } from '@ant-design/icons';
 import { Divider, Empty, Input, MenuProps, Spin } from 'antd';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { FC, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   SchemaInitializerItem,
@@ -305,9 +305,10 @@ export interface DataBlockInitializerProps {
   currentText?: string;
   /** 用于更改 Other records 的文案 */
   otherText?: string;
+  children?: React.ReactNode;
 }
 
-export const DataBlockInitializer = (props: DataBlockInitializerProps) => {
+export const DataBlockInitializer: FC<DataBlockInitializerProps> = (props) => {
   const {
     templateWrap,
     onCreateBlockSchema,

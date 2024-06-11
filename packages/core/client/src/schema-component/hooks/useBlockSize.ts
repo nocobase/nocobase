@@ -108,16 +108,30 @@ const useTableHeight = () => {
 };
 
 // 常规数据区块高度计算
-export const useDataBlockHeight = () => {
+interface UseDataBlockHeightOptions {
+  removeBlockHeaderHeight?: boolean;
+  innerExtraHeight?: number;
+}
+export const useDataBlockHeight = (options?: UseDataBlockHeightOptions) => {
   const { heightProps } = useBlockHeightProps();
   const pageFullScreenHeight = useFullScreenHeight();
-  const { heightMode, height } = heightProps || {};
+  const { token } = theme.useToken();
+
+  const { heightMode, height, title } = heightProps || {};
+  const blockHeaderHeight = title ? token.fontSizeLG * token.lineHeightLG + token.padding * 2 - 1 : 0;
 
   if (!heightProps?.heightMode || heightMode === HeightMode.DEFAULT) {
     return;
   }
   if (heightMode === HeightMode.FULL_HEIGHT) {
-    return window.innerHeight - pageFullScreenHeight;
+    let res = window.innerHeight - pageFullScreenHeight;
+    if (options?.removeBlockHeaderHeight) {
+      res = res - blockHeaderHeight;
+    }
+    if (options?.innerExtraHeight) {
+      res = res - options.innerExtraHeight;
+    }
+    return res;
   }
   return height;
 };
