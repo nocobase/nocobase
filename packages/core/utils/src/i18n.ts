@@ -7,10 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { tval } from '@nocobase/utils/client';
+import { TFuncKey, TOptions } from 'i18next';
 
-const NAMESPACE = 'field-markdown-vditor';
-
-export function generateNTemplate(key: string) {
-  return tval(key, { ns: NAMESPACE })
+export function tval(text: TFuncKey | TFuncKey[], options?: TOptions) {
+  if (options) {
+    return `{{t(${JSON.stringify(text)}, ${JSON.stringify(options)})}}`;
+  }
+  return `{{t(${JSON.stringify(text)})}}`;
 }

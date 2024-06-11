@@ -17,12 +17,13 @@ import _ from 'lodash';
 import get from 'lodash/get';
 import omit from 'lodash/omit';
 import qs from 'qs';
-import { ChangeEvent, useCallback, useContext, useEffect } from 'react';
+import { ChangeEvent, useCallback, useContext, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useReactToPrint } from 'react-to-print';
 import {
   AssociationFilter,
+  useCollection,
   useCollectionRecord,
   useDataSourceHeaders,
   useFormActiveFields,
@@ -48,10 +49,10 @@ import { useOperators } from '../CollectOperators';
 import { useDetailsBlockContext } from '../DetailsBlockProvider';
 import { TableFieldResource } from '../TableFieldProvider';
 
+export * from './useBlockHeightProps';
 export * from './useDataBlockParentRecord';
 export * from './useFormActiveFields';
 export * from './useParsedFilter';
-export * from './useBlockHeightProps';
 
 export const usePickActionProps = () => {
   const form = useForm();
@@ -386,6 +387,9 @@ export interface FilterTarget {
     /** associated field */
     field?: string;
   }[];
+  /**
+   * 筛选表单区块的 uid
+   */
   uid?: string;
 }
 
@@ -412,22 +416,22 @@ export const updateFilterTargets = (fieldSchema, targets: FilterTarget['targets'
   }
 };
 
-export const useFilterBlockActionProps = () => {
+/**
+ * 注意：因为筛选表单的字段有可能设置的有默认值，所以筛选表单的筛选操作会在首次渲染时自动执行一次，
+ * 以确保数据区块中首次显示的数据与筛选表单的筛选条件匹配。
+ * @returns
+ */
+const useDoFilter = () => {
   const form = useForm();
-  const actionField = useField();
-  const fieldSchema = useFieldSchema();
   const { getDataBlocks } = useFilterBlock();
-  const { name } = useCollection_deprecated();
   const { getCollectionJoinField } = useCollectionManager_deprecated();
   const { getOperators } = useOperators();
+  const fieldSchema = useFieldSchema();
+  const { name } = useCollection();
+  const { targets = [], uid } = useMemo(() => findFilterTargets(fieldSchema), [fieldSchema]);
 
-  actionField.data = actionField.data || {};
-
-  return {
-    async onClick() {
-      const { targets = [], uid } = findFilterTargets(fieldSchema);
-
-      actionField.data.loading = true;
+  const doFilter = useCallback(
+    async ({ doNothingWhenFilterIsEmpty = false } = {}) => {
       try {
         // 收集 filter 的值
         await Promise.all(
@@ -448,6 +452,10 @@ export const useFilterBlockActionProps = () => {
               block.defaultFilter,
             ]);
 
+            if (doNothingWhenFilterIsEmpty && _.isEmpty(mergedFilter)) {
+              return;
+            }
+
             if (block.dataLoadingMode === 'manual' && _.isEmpty(mergedFilter)) {
               return block.clearData();
             }
@@ -465,6 +473,32 @@ export const useFilterBlockActionProps = () => {
       } catch (error) {
         console.error(error);
       }
+    },
+    [form.values, getCollectionJoinField, getDataBlocks, getOperators, name, targets, uid],
+  );
+
+  // 这里的代码是为了实现：筛选表单的筛选操作在首次渲染时自动执行一次
+  useEffect(() => {
+    doFilter({ doNothingWhenFilterIsEmpty: true });
+  }, [getDataBlocks().length]);
+
+  return {
+    /**
+     * 用于执行筛选表单的筛选操作
+     */
+    doFilter,
+  };
+};
+
+export const useFilterBlockActionProps = () => {
+  const { doFilter } = useDoFilter();
+  const actionField = useField();
+  actionField.data = actionField.data || {};
+
+  return {
+    async onClick() {
+      actionField.data.loading = true;
+      await doFilter();
       actionField.data.loading = false;
     },
   };
@@ -1489,7 +1523,6 @@ export function useLinkActionProps() {
     },
   };
 }
-
 
 export async function replaceVariableValue(
   url: string,

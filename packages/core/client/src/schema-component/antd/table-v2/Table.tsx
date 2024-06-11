@@ -696,6 +696,9 @@ export const Table: any = withDynamicSchemaProps(
                 height: 100%;
                 display: flex;
                 flex-direction: column;
+                .ant-table-body {
+                  min-height: ${tableHeight}px;
+                }
               }
             }
           }
