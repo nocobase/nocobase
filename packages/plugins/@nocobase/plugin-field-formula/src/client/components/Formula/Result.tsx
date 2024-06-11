@@ -66,7 +66,7 @@ function areValuesEqual(value1, value2) {
   if (value1 === value2) {
     return true;
   }
-  if ((value1 === null && value2 === undefined) || (value1 === undefined && value2 === null) || value2 === null) {
+  if ((value1 === null && value2 === undefined) || (value1 !== undefined && value2 === null)) {
     return true;
   }
   return false;
@@ -100,7 +100,7 @@ export function Result(props) {
         return;
       }
       const scope = toJS(getValuesByPath(form.values, fieldName, index));
-      let v;
+      let v = undefined;
       try {
         v = evaluate(expression, scope);
         v = toDbType(v, dataType);
@@ -112,7 +112,7 @@ export function Result(props) {
       }
       setEditingValue(v);
       setTimeout(() => {
-        if (!areValuesEqual(form.values[fieldName], v)) {
+        if (!areValuesEqual(form.values[fieldName], v) || (value !== undefined && !v)) {
           props.onChange(v);
         }
       });
