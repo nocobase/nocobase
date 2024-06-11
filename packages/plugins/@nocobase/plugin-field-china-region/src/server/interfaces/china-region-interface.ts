@@ -11,6 +11,9 @@ import { BaseInterface, Repository } from '@nocobase/database';
 
 export class ChinaRegionInterface extends BaseInterface {
   async toValue(str: string, ctx?: any): Promise<any> {
+    if (!str) {
+      return null;
+    }
     const { field } = ctx;
     const items = str.split('/');
     const repository = field.database.getRepository(field.target) as Repository;
