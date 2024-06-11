@@ -18,6 +18,7 @@ import { BasicAuth } from './basic-auth';
 import { AuthModel } from './model/authenticator';
 import { Storer } from './storer';
 import { TokenBlacklistService } from './token-blacklist';
+import { tval } from '@nocobase/utils';
 
 export class PluginAuthServer extends Plugin {
   cache: Cache;
@@ -57,7 +58,7 @@ export class PluginAuthServer extends Plugin {
 
     this.app.authManager.registerTypes(presetAuthType, {
       auth: BasicAuth,
-      title: `{{t("Password", {ns: "${namespace}"})}}`,
+      title: tval('Password', { ns: namespace }),
     });
     // Register actions
     Object.entries(authActions).forEach(
