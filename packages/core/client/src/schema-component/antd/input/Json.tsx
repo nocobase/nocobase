@@ -13,8 +13,9 @@ import { Input } from 'antd';
 import { TextAreaProps } from 'antd/es/input';
 import React, { useState, useEffect, Ref } from 'react';
 import { cx, css } from '@emotion/css';
+import JSON5 from 'json5';
 
-export type JSONTextAreaProps = TextAreaProps & { value?: string; space?: number };
+export type JSONTextAreaProps = TextAreaProps & { value?: string; space?: number; json5?: boolean };
 
 const jsonCss = css`
   font-size: 80%;
@@ -22,13 +23,14 @@ const jsonCss = css`
 `;
 
 export const Json = React.forwardRef<typeof Input.TextArea, JSONTextAreaProps>(
-  ({ value, onChange, space = 2, ...props }: JSONTextAreaProps, ref: Ref<any>) => {
+  ({ value, onChange, space = 2, json5 = false, ...props }: JSONTextAreaProps, ref: Ref<any>) => {
+    const _JSON = json5 ? JSON5 : JSON;
     const field = useField<Field>();
     const [text, setText] = useState('');
     useEffect(() => {
       try {
         if (value != null) {
-          setText(JSON.stringify(value, null, space));
+          setText(_JSON.stringify(value, null, space));
         } else {
           setText(undefined);
         }
@@ -45,9 +47,9 @@ export const Json = React.forwardRef<typeof Input.TextArea, JSONTextAreaProps>(
         onChange={(ev) => {
           setText(ev.target.value);
           try {
-            const v = ev.target.value.trim() !== '' ? JSON.parse(ev.target.value) : null;
+            const v = ev.target.value.trim() !== '' ? _JSON.parse(ev.target.value) : null;
             if (ev.target.value.trim() !== '') {
-              JSON.parse(ev.target.value);
+              _JSON.parse(ev.target.value);
             }
             field.setFeedback({});
           } catch (err) {
@@ -60,7 +62,7 @@ export const Json = React.forwardRef<typeof Input.TextArea, JSONTextAreaProps>(
         }}
         onBlur={(ev) => {
           try {
-            const v = ev.target.value.trim() !== '' ? JSON.parse(ev.target.value) : null;
+            const v = ev.target.value.trim() !== '' ? _JSON.parse(ev.target.value) : null;
             field.setFeedback({});
             onChange?.(v);
           } catch (err) {
