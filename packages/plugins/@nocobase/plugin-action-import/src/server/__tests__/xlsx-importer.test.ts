@@ -551,6 +551,8 @@ describe('xlsx importer', () => {
         ['Post1', 'Content1', 'User1', 'Tag1,Tag2', 'Comment1,Comment2'],
         ['Post2', 'Content2', 'User1', 'Tag2,Tag3', 'Comment3'],
         ['Post3', 'Content3', 'UserNotExist', 'Tag3,TagNotExist', ''],
+        ['Post4', '', '', ''],
+        ['Post5', null, null, null],
       ],
       {
         origin: 'A2',
@@ -566,7 +568,7 @@ describe('xlsx importer', () => {
 
     await importer.run();
 
-    expect(await Post.repository.count()).toBe(3);
+    expect(await Post.repository.count()).toBe(5);
   });
 
   it('should import data with xlsx', async () => {
