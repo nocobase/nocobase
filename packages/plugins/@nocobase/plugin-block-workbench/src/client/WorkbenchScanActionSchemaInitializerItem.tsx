@@ -7,7 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ButtonEditor, SchemaSettings, useSchemaInitializer, useSchemaInitializerItem } from '@nocobase/client';
+import {
+  SchemaSettings,
+  useSchemaInitializer,
+  useSchemaInitializerItem,
+  useActionContext,
+  ISchema,
+} from '@nocobase/client';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { ModalActionSchemaInitializerItem } from './ModalActionSchemaInitializerItem';
@@ -38,6 +44,16 @@ export function WorkbenchScanActionSchemaInitializerItem(props) {
   // 调用插入功能
   const { insert } = useSchemaInitializer();
   const { t } = useTranslation();
+  const ctx = useActionContext();
+  const useCancelAction = () => {
+    const { setVisible } = useActionContext();
+    return {
+      run() {
+        setVisible(false);
+      },
+    };
+  };
+
   return (
     <ModalActionSchemaInitializerItem
       title={itemConfig.title}
@@ -101,6 +117,7 @@ export function WorkbenchScanActionSchemaInitializerItem(props) {
                       'x-component': 'Action',
                       'x-component-props': {
                         type: 'default',
+                        useAction: useCancelAction,
                       },
                     },
                   },
@@ -108,7 +125,7 @@ export function WorkbenchScanActionSchemaInitializerItem(props) {
               },
             },
           },
-        });
+        } as ISchema);
       }}
     />
   );

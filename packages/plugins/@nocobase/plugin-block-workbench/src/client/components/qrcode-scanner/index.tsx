@@ -52,9 +52,5 @@ export const QRCodeScanner = (props) => {
     };
   }, [navigate, props]);
 
-  return (
-    <>
-      <div id={qrcodeRegionId} />
-    </>
-  );
+  return <div id={qrcodeRegionId} />;
 };
