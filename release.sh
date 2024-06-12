@@ -11,7 +11,7 @@ else
     echo $new_version;
 fi
 
-yarn lerna version $new_version --preid alpha --force-publish=* --no-git-tag-version -y
+lerna version $new_version --preid alpha --force-publish=* --no-git-tag-version -y
 
 # cd ./packages/pro-plugins
 # git add .
