@@ -34,6 +34,11 @@ const getPageHeaderHeight = (disablePageHeader, enablePageTabs, hidePageTitle, t
       }
       return token.controlHeight + token.marginXS + (token.paddingXXS + 2) * 2 + token.paddingContentHorizontalLG;
     } else {
+      if (enablePageTabs) {
+        return (
+          token.controlPaddingHorizontal + 3 * token.controlPaddingHorizontalSM + 22 + token.paddingContentHorizontalLG
+        );
+      }
       return token.paddingContentHorizontalLG + 12;
     }
   }

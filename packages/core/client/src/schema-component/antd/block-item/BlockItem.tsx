@@ -9,6 +9,8 @@
 
 import { useFieldSchema } from '@formily/react';
 import cls from 'classnames';
+import { css } from '@emotion/css';
+import { theme } from 'antd';
 import React, { useMemo } from 'react';
 import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
 import { CustomCreateStylesUtils, createStyles } from '../../../style';
@@ -18,6 +20,7 @@ import { useGetAriaLabelOfBlockItem } from './hooks/useGetAriaLabelOfBlockItem';
 import { ErrorBoundary } from 'react-error-boundary';
 import { ErrorFallback } from '../error-fallback';
 import { useSchemaToolbarRender } from '../../../application';
+import { useDesignable } from '../../';
 
 const useStyles = createStyles(({ css, token }: CustomCreateStylesUtils) => {
   return css`
@@ -81,15 +84,29 @@ export const BlockItem: React.FC<BlockItemProps> = withDynamicSchemaProps(
     // 新版 UISchema（1.0 之后）中已经废弃了 useProps，这里之所以继续保留是为了兼容旧版的 UISchema
     const { className, children } = useProps(props);
     const { styles: blockItemCss } = useStyles();
-
     const fieldSchema = useFieldSchema();
     const { render } = useSchemaToolbarRender(fieldSchema);
     const { getAriaLabel } = useGetAriaLabelOfBlockItem(props.name);
-
+    const { token } = theme.useToken();
+    const { designable } = useDesignable();
     const label = useMemo(() => getAriaLabel(), [getAriaLabel]);
 
     return (
-      <SortableItem role="button" aria-label={label} className={cls('nb-block-item', className, blockItemCss)}>
+      <SortableItem
+        role="button"
+        aria-label={label}
+        className={cls(
+          'nb-block-item',
+          className,
+          blockItemCss,
+          css`
+            margin-bottom: ${designable ? token.marginLG : 0}px !important;
+            .ant-card {
+              margin-bottom: ${designable ? token.marginLG : 0}px !important;
+            }
+          `,
+        )}
+      >
         {render()}
         <ErrorBoundary FallbackComponent={ErrorFallback} onError={(err) => console.log(err)}>
           {children}
