@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { getSupportFieldsByAssociation, getSupportFieldsByForeignKey } from '../utils';
+import { getSupportFieldsByAssociation, getSupportFieldsByForeignKey, transformToFilter } from '../utils';
 
 describe('getSupportFieldsByAssociation', () => {
   it('should return all associated fields matching the inherited collections chain', () => {
@@ -138,5 +138,82 @@ describe('getSupportFieldsByForeignKey', () => {
       { id: 2, name: 'fk2', target: 'collection2' },
       { id: 3, name: 'fk3', target: 'collection1' },
     ]);
+  });
+});
+
+describe('transformToFilter', () => {
+  const values = {
+    field1: 'value1',
+    field2: 'value2',
+    field3: [
+      {
+        id: 'value3',
+      },
+      {
+        id: 'value4',
+      },
+    ],
+  };
+
+  const operators = {
+    field1: '$eq',
+    field2: '$ne',
+    field3: '$in',
+  };
+
+  const collectionName = 'collection';
+
+  const getCollectionJoinField = vi.fn((name: string) => {
+    if (name === `${collectionName}.field1`) return {};
+    if (name === `${collectionName}.field2`) return {};
+    if (name === `${collectionName}.field3`) return { target: 'targetCollection', targetKey: 'id' };
+    return {};
+  });
+
+  it('should transform values to filter', () => {
+    const expectedFilter = {
+      $and: [
+        {
+          field1: {
+            $eq: 'value1',
+          },
+        },
+        {
+          field2: {
+            $ne: 'value2',
+          },
+        },
+        {
+          'field3.id': {
+            $eq: ['value3', 'value4'],
+          },
+        },
+      ],
+    };
+
+    const filter = transformToFilter(values, operators, getCollectionJoinField, collectionName);
+
+    expect(filter).toEqual(expectedFilter);
+  });
+
+  it('should handle null values', () => {
+    const valuesWithNull = {
+      field1: null,
+      field2: 'value2',
+    };
+
+    const expectedFilter = {
+      $and: [
+        {
+          field2: {
+            $ne: 'value2',
+          },
+        },
+      ],
+    };
+
+    const filter = transformToFilter(valuesWithNull, operators, getCollectionJoinField, collectionName);
+
+    expect(filter).toEqual(expectedFilter);
   });
 });
