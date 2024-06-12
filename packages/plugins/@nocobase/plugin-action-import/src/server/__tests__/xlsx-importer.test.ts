@@ -972,7 +972,7 @@ describe('xlsx importer', () => {
       [
         ['Post1', 'Content1', 'User1', 'Tag1,Tag2', 'Comment1,Comment2'],
         ['Post2', 'Content2', 'User1', 'Tag2,Tag3', 'Comment3'],
-        ['Post3', 'Content3', 'UserNotExist', 'Tag3,TagNotExist', ''],
+        ['Post3', 'Content3', 'User1', 'Tag3', ''],
         ['Post4', '', '', ''],
         ['Post5', null, null, null],
       ],

@@ -28,9 +28,7 @@ export class ToManyInterface extends BaseInterface {
 
     // check if all items are found
     items.forEach((item) => {
-      if (
-        !targetInstances.find((targetInstance) => targetInstance[targetCollection.model.primaryKeyAttribute] === item)
-      ) {
+      if (!targetInstances.find((targetInstance) => targetInstance[filterKey] === item)) {
         throw new Error(`"${item}" not found in ${targetCollection.model.name} ${filterKey}`);
       }
     });
