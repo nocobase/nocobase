@@ -26,6 +26,15 @@ export class ToManyInterface extends BaseInterface {
       transaction,
     });
 
+    // check if all items are found
+    items.forEach((item) => {
+      if (
+        !targetInstances.find((targetInstance) => targetInstance[targetCollection.model.primaryKeyAttribute] === item)
+      ) {
+        throw new Error(`"${item}" not found in ${targetCollection.model.name} ${filterKey}`);
+      }
+    });
+
     const primaryKeyAttribute = targetCollection.model.primaryKeyAttribute;
 
     return targetInstances.map((targetInstance) => targetInstance[primaryKeyAttribute]);

@@ -25,6 +25,134 @@ describe('xlsx importer', () => {
     await app.destroy();
   });
 
+  describe('import with associations', () => {
+    let User;
+    let Post;
+    beforeEach(async () => {
+      User = app.db.collection({
+        name: 'users',
+        fields: [
+          {
+            type: 'string',
+            name: 'name',
+          },
+          {
+            type: 'hasMany',
+            name: 'posts',
+            target: 'posts',
+            interface: 'o2m',
+            foreignKey: 'userId',
+          },
+        ],
+      });
+
+      Post = app.db.collection({
+        name: 'posts',
+        fields: [
+          {
+            type: 'string',
+            name: 'title',
+          },
+          {
+            type: 'belongsTo',
+            name: 'user',
+            target: 'users',
+            interface: 'm2o',
+          },
+        ],
+      });
+
+      await app.db.sync();
+    });
+
+    it('should validate to many association', async () => {
+      const columns = [
+        {
+          dataIndex: ['name'],
+          defaultTitle: '名称',
+        },
+        {
+          dataIndex: ['posts', 'title'],
+          defaultTitle: '标题',
+        },
+      ];
+
+      const templateCreator = new TemplateCreator({
+        collection: User,
+        columns,
+      });
+
+      const template = await templateCreator.run();
+
+      const worksheet = template.Sheets[template.SheetNames[0]];
+
+      XLSX.utils.sheet_add_aoa(worksheet, [['test', '测试标题']], {
+        origin: 'A2',
+      });
+
+      const importer = new XlsxImporter({
+        collectionManager: app.mainDataSource.collectionManager,
+        collection: User,
+        columns,
+        workbook: template,
+      });
+
+      let error;
+
+      try {
+        await importer.run();
+      } catch (e) {
+        error = e;
+      }
+
+      expect(error).toBeTruthy();
+    });
+
+    it('should validate to one association', async () => {
+      const columns = [
+        {
+          dataIndex: ['title'],
+          defaultTitle: '标题',
+        },
+        {
+          dataIndex: ['user', 'name'],
+          defaultTitle: '用户名',
+        },
+      ];
+
+      const templateCreator = new TemplateCreator({
+        collection: Post,
+        columns,
+      });
+
+      const template = await templateCreator.run();
+
+      const worksheet = template.Sheets[template.SheetNames[0]];
+
+      XLSX.utils.sheet_add_aoa(worksheet, [['test title', 'test user']], {
+        origin: 'A2',
+      });
+
+      const importer = new XlsxImporter({
+        collectionManager: app.mainDataSource.collectionManager,
+        collection: Post,
+        columns,
+        workbook: template,
+      });
+
+      let error;
+
+      try {
+        await importer.run();
+      } catch (e) {
+        error = e;
+      }
+
+      expect(error).toBeTruthy();
+      console.log(error);
+    });
+  });
+
   it('should import china region field', async () => {
     const Post = app.db.collection({
       name: 'posts',

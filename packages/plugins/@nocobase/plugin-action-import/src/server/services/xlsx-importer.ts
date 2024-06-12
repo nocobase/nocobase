@@ -188,7 +188,7 @@ export class XlsxImporter extends EventEmitter {
           await new Promise((resolve) => setTimeout(resolve, 5));
         } catch (error) {
           throw new Error(
-            `failed to import row ${handingRowIndex}, rowData: ${JSON.stringify(rowValues)} message: ${error.message}`,
+            `failed to import row ${handingRowIndex}, message: ${error.message}, rowData: ${JSON.stringify(rowValues)}`,
             { cause: error },
           );
         }
