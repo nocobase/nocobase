@@ -102,7 +102,7 @@ export const SubTable: any = observer(
       const { selectedRows, setSelectedRows } = useContext(RecordPickerContext);
       return {
         onClick() {
-          selectedRows.map((v) => field.value.push(markRecordAsNew({ ...v })));
+          selectedRows.map((v) => field.value.push(v));
           field.onInput(field.value);
           setSelectedRows([]);
           setVisible(false);
