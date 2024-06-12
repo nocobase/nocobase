@@ -1,3 +1,18 @@
+current_version=$(jq -r '.version' lerna.json)
+IFS='.-' read -r major minor patch label <<< "$current_version"
+
+if [ "$1" == '--is-feat' ]; then
+    new_minor=$((minor + 1))
+    new_version="$major.$new_minor.0-$label"
+    echo $new_version;
+else
+    new_patch=$((patch + 1))
+    new_version="$major.$minor.$new_patch-$label"
+    echo $new_version;
+fi
+
+yarn lerna version $new_version --preid alpha --force-publish=* --no-git-tag-version -y
+
 yarn version:alpha -y
 cd ./packages/pro-plugins
 git add .
@@ -11,4 +26,4 @@ git tag v$(jq -r '.version' lerna.json)
 yarn changelog --breaking-pattern "BREAKING CHANGE:"
 git add .
 git commit -m "chore: update changelog"
-#git push --atomic origin main v$(jq -r '.version' lerna.json)
+# git push --atomic origin main v$(jq -r '.version' lerna.json)
