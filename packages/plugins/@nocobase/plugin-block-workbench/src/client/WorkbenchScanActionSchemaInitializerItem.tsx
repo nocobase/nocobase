@@ -8,12 +8,12 @@
  */
 
 import {
+  ButtonEditor,
+  ISchema,
   SchemaSettings,
+  useActionContext,
   useSchemaInitializer,
   useSchemaInitializerItem,
-  useActionContext,
-  ISchema,
-  ButtonEditor,
 } from '@nocobase/client';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
@@ -45,7 +45,6 @@ export function WorkbenchScanActionSchemaInitializerItem(props) {
   // 调用插入功能
   const { insert } = useSchemaInitializer();
   const { t } = useTranslation();
-  const ctx = useActionContext();
   const useCancelAction = () => {
     const { setVisible } = useActionContext();
     return {
@@ -57,9 +56,9 @@ export function WorkbenchScanActionSchemaInitializerItem(props) {
 
   return (
     <ModalActionSchemaInitializerItem
-      title={itemConfig.title}
+      title={t('Scan QR code', { ns: 'block-workbench' })}
       modalSchema={{
-        title: 'Add Scan Qr code',
+        title: t('Scan QR code', { ns: 'block-workbench' }),
         properties: {
           title: {
             title: t('Title'),
@@ -98,7 +97,7 @@ export function WorkbenchScanActionSchemaInitializerItem(props) {
             modal: {
               type: 'void',
               'x-component': 'Action.Modal',
-              title: '扫一扫',
+              title: t('Scan QR code', { ns: 'block-workbench' }),
               'x-decorator': 'FormV2',
               properties: {
                 scanner: {

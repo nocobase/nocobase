@@ -49,7 +49,6 @@ export class PluginBlockWorkbenchClient extends Plugin {
     // 扫码操作
     this.app.schemaSettingsManager.add(workbenchActionSettingsScanQrCode);
     this.app.schemaInitializerManager.addItem('workbench:configureActions', `qrcode`, {
-      title: 'Scan Qr code',
       Component: WorkbenchScanActionSchemaInitializerItem,
     });
   }
