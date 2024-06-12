@@ -13,6 +13,7 @@ import {
   useSchemaInitializerItem,
   useActionContext,
   ISchema,
+  ButtonEditor,
 } from '@nocobase/client';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
