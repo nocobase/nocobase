@@ -8,7 +8,7 @@
  */
 
 import { expect, test } from '@nocobase/test/e2e';
-import { tableListDetailsGridCardWithUsers } from './templatesOfBug';
+import { TableBlockWithDataScope, tableListDetailsGridCardWithUsers } from './templatesOfBug';
 
 test.describe('setDataLoadingModeSettingsItem', () => {
   test('basic', async ({ page, mockPage }) => {
@@ -71,5 +71,13 @@ test.describe('setDataLoadingModeSettingsItem', () => {
     await expect(page.getByLabel('block-item-CardItem-users-details').getByText('No data')).toBeVisible();
     await expect(page.getByLabel('block-item-CardItem-users-list').getByText('No data')).toBeVisible();
     await expect(page.getByLabel('block-item-BlockItem-users-').getByText('No data')).toBeVisible();
+  });
+
+  test('When the data block has data scope settings and dataLoadingMode is manual, data should not be displayed after the first page load', async ({
+    page,
+    mockPage,
+  }) => {
+    await mockPage(TableBlockWithDataScope).goto();
+    await expect(page.getByLabel('block-item-CardItem-users-table').getByText('No data')).toBeVisible();
   });
 });
