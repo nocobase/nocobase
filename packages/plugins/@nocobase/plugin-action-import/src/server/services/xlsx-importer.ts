@@ -114,6 +114,7 @@ export class XlsxImporter {
     }
 
     let imported = 0;
+    const autoIncrPrimaryKeyImported = false;
 
     for (const chunkRows of chunks) {
       for (const row of chunkRows) {
@@ -134,6 +135,7 @@ export class XlsxImporter {
             const dataKey = column.dataIndex[0];
 
             const fieldOptions = field.options;
+            console.log(fieldOptions);
             const interfaceName = fieldOptions.interface;
 
             const InterfaceClass = this.options.collectionManager.getFieldInterface(interfaceName);

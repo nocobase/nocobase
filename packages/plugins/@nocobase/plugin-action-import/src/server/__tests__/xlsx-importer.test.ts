@@ -206,7 +206,90 @@ describe('xlsx importer', () => {
     expect(user2Json['boolean']).toBe(false);
   });
 
-  it('should reset id seq after import', async () => {
+  it('should not reset id seq if not import id field', async () => {
+    const User = app.db.collection({
+      name: 'users',
+      autoGenId: false,
+      fields: [
+        {
+          type: 'bigInt',
+          name: 'id',
+          primaryKey: true,
+          autoIncrement: true,
+        },
+        {
+          type: 'string',
+          name: 'name',
+        },
+        {
+          type: 'string',
+          name: 'email',
+        },
+      ],
+    });
+
+    await app.db.sync();
+
+    const templateCreator = new TemplateCreator({
+      collection: User,
+      columns: [
+        {
+          dataIndex: ['name'],
+          defaultTitle: '姓名',
+        },
+        {
+          dataIndex: ['email'],
+          defaultTitle: '邮箱',
+        },
+      ],
+    });
+
+    const template = await templateCreator.run();
+
+    const worksheet = template.Sheets[template.SheetNames[0]];
+
+    XLSX.utils.sheet_add_aoa(
+      worksheet,
+      [
+        ['User1', 'test@test.com'],
+        ['User2', 'test2@test.com'],
+      ],
+      {
+        origin: 'A2',
+      },
+    );
+
+    const importer = new XlsxImporter({
+      collectionManager: app.mainDataSource.collectionManager,
+      collection: User,
+      columns: [
+        {
+          dataIndex: ['name'],
+          defaultTitle: '姓名',
+        },
+        {
+          dataIndex: ['email'],
+          defaultTitle: '邮箱',
+        },
+      ],
+      workbook: template,
+    });
+
+    await importer.run();
+
+    expect(await User.repository.count()).toBe(2);
+
+    const user3 = await User.repository.create({
+      values: {
+        name: 'User3',
+        email: 'test3@test.com',
+      },
+    });
+
+    expect(user3.get('id')).toBe(3);
+  });
+
+  it('should reset id seq after import id field', async () => {
     const User = app.db.collection({
       name: 'users',
       autoGenId: false,
