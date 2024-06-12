@@ -11,6 +11,10 @@ import { BaseInterface } from './base-interface';
 
 export class ToManyInterface extends BaseInterface {
   async toValue(str: string, ctx?: any) {
+    if (!str) {
+      return null;
+    }
+
     const items = str.split(',');
 
     const { filterKey, targetCollection, transaction } = ctx;
