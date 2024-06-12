@@ -32,6 +32,7 @@ import {
 
 import { useFlowContext } from '../FlowContext';
 import { useWorkflowVariableOptions } from '../variable';
+import { Card } from 'antd';
 
 function reduceSchema(s, fn) {
   fn(s);
@@ -117,20 +118,22 @@ export function AssignedFieldsFormSchemaConfig(props) {
   );
 
   return (
-    <CollectionManagerProvider dataSource={dataSourceName}>
-      <CollectionProvider name={collectionName}>
-        <FormProvider form={form}>
-          <FormLayout layout={'vertical'}>
-            <VariableScopeProvider scope={scope}>
-              <SchemaComponentProvider form={form} designable>
-                <SchemaComponentOptions {...schemaOptions}>
-                  <SchemaComponent schema={schema} onChange={onChange} />
-                </SchemaComponentOptions>
-              </SchemaComponentProvider>
-            </VariableScopeProvider>
-          </FormLayout>
-        </FormProvider>
-      </CollectionProvider>
-    </CollectionManagerProvider>
+    <Card>
+      <CollectionManagerProvider dataSource={dataSourceName}>
+        <CollectionProvider name={collectionName}>
+          <FormProvider form={form}>
+            <FormLayout layout={'vertical'}>
+              <VariableScopeProvider scope={scope}>
+                <SchemaComponentProvider form={form} designable>
+                  <SchemaComponentOptions {...schemaOptions}>
+                    <SchemaComponent schema={schema} onChange={onChange} />
+                  </SchemaComponentOptions>
+                </SchemaComponentProvider>
+              </VariableScopeProvider>
+            </FormLayout>
+          </FormProvider>
+        </CollectionProvider>
+      </CollectionManagerProvider>
+    </Card>
   );
 }
