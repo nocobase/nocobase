@@ -275,6 +275,9 @@ describe('xlsx importer', () => {
       workbook: template,
     });
 
+    const testFn = vi.fn();
+    importer.on('seqReset', testFn);
+
     await importer.run();
 
     expect(await User.repository.count()).toBe(2);
@@ -287,6 +290,7 @@ describe('xlsx importer', () => {
     });
 
     expect(user3.get('id')).toBe(3);
+    expect(testFn).not.toBeCalled();
   });
 
   it('should reset id seq after import id field', async () => {
@@ -376,6 +380,9 @@ describe('xlsx importer', () => {
       workbook: template,
     });
 
+    const testFn = vi.fn();
+    importer.on('seqReset', testFn);
+
     await importer.run();
 
     expect(await User.repository.count()).toBe(2);
@@ -388,6 +395,8 @@ describe('xlsx importer', () => {
     });
 
     expect(user3.get('id')).toBe(3);
+
+    expect(testFn).toBeCalled();
   });
 
   it('should validate workbook with error', async () => {
