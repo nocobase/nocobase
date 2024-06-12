@@ -25,6 +25,199 @@ describe('xlsx importer', () => {
     await app.destroy();
   });
 
+  describe('import with select fields', () => {
+    let User;
+    beforeEach(async () => {
+      User = app.db.collection({
+        name: 'users',
+        fields: [
+          { type: 'string', name: 'name', title: '姓名' },
+          {
+            uiSchema: {
+              enum: [
+                {
+                  value: '123',
+                  label: 'Label123',
+                  color: 'orange',
+                },
+                {
+                  value: '223',
+                  label: 'Label223',
+                  color: 'lime',
+                },
+              ],
+              type: 'array',
+              'x-component': 'Select',
+              'x-component-props': {
+                mode: 'multiple',
+              },
+              title: 'multi-select',
+            },
+            defaultValue: [],
+            name: 'multiSelect',
+            type: 'array',
+            interface: 'multipleSelect',
+          },
+          {
+            uiSchema: {
+              enum: [
+                {
+                  value: '123',
+                  label: 'Label123',
+                  color: 'orange',
+                },
+                {
+                  value: '223',
+                  label: 'Label223',
+                  color: 'lime',
+                },
+              ],
+              type: 'string',
+              'x-component': 'Select',
+              title: 'select',
+            },
+            name: 'select',
+            type: 'string',
+            interface: 'select',
+          },
+        ],
+      });
+
+      await app.db.sync();
+    });
+
+    it('should import select field with label and value', async () => {
+      const columns = [
+        {
+          dataIndex: ['name'],
+          defaultTitle: '姓名',
+        },
+        {
+          dataIndex: ['multiSelect'],
+          defaultTitle: '多选',
+        },
+        {
+          dataIndex: ['select'],
+          defaultTitle: '单选',
+        },
+      ];
+
+      const templateCreator = new TemplateCreator({
+        collection: User,
+        columns,
+      });
+
+      const template = await templateCreator.run();
+
+      const worksheet = template.Sheets[template.SheetNames[0]];
+
+      XLSX.utils.sheet_add_aoa(worksheet, [['test', 'Label123,223', 'Label123']], {
+        origin: 'A2',
+      });
+
+      const importer = new XlsxImporter({
+        collectionManager: app.mainDataSource.collectionManager,
+        collection: User,
+        columns,
+        workbook: template,
+      });
+
+      await importer.run();
+
+      expect(await User.repository.count()).toBe(1);
+
+      const user = await User.repository.findOne();
+
+      expect(user.get('multiSelect')).toEqual(['123', '223']);
+      expect(user.get('select')).toBe('123');
+    });
+
+    it('should validate values in multiple select field', async () => {
+      const columns = [
+        {
+          dataIndex: ['name'],
+          defaultTitle: '姓名',
+        },
+        {
+          dataIndex: ['multiSelect'],
+          defaultTitle: '多选',
+        },
+      ];
+
+      const templateCreator = new TemplateCreator({
+        collection: User,
+        columns,
+      });
+
+      const template = await templateCreator.run();
+
+      const worksheet = template.Sheets[template.SheetNames[0]];
+
+      XLSX.utils.sheet_add_aoa(worksheet, [['test', 'abc']], {
+        origin: 'A2',
+      });
+
+      const importer = new XlsxImporter({
+        collectionManager: app.mainDataSource.collectionManager,
+        collection: User,
+        columns,
+        workbook: template,
+      });
+
+      let error;
+
+      try {
+        await importer.run();
+      } catch (e) {
+        error = e;
+      }
+
+      expect(error).toBeTruthy();
+    });
+    it('should validate values in select field', async () => {
+      const columns = [
+        {
+          dataIndex: ['name'],
+          defaultTitle: '姓名',
+        },
+        {
+          dataIndex: ['select'],
+          defaultTitle: '单选',
+        },
+      ];
+
+      const templateCreator = new TemplateCreator({
+        collection: User,
+        columns,
+      });
+
+      const template = await templateCreator.run();
+
+      const worksheet = template.Sheets[template.SheetNames[0]];
+
+      XLSX.utils.sheet_add_aoa(worksheet, [['test', 'abc']], {
+        origin: 'A2',
+      });
+
+      const importer = new XlsxImporter({
+        collectionManager: app.mainDataSource.collectionManager,
+        collection: User,
+        columns,
+        workbook: template,
+      });
+
+      let error;
+
+      try {
+        await importer.run();
+      } catch (e) {
+        error = e;
+      }
+
+      expect(error).toBeTruthy();
+    });
+  });
+
   describe('import with associations', () => {
     let User;
     let Post;
@@ -149,7 +342,6 @@ describe('xlsx importer', () => {
       }
 
       expect(error).toBeTruthy();
-      console.log(error);
     });
   });
 
