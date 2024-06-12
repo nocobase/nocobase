@@ -7,7 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ButtonEditor, SchemaSettings, useSchemaInitializer, useSchemaInitializerItem } from '@nocobase/client';
+import {
+  ButtonEditor,
+  ISchema,
+  SchemaSettings,
+  useActionContext,
+  useSchemaInitializer,
+  useSchemaInitializerItem,
+} from '@nocobase/client';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { ModalActionSchemaInitializerItem } from './ModalActionSchemaInitializerItem';
@@ -38,11 +45,20 @@ export function WorkbenchScanActionSchemaInitializerItem(props) {
   // 调用插入功能
   const { insert } = useSchemaInitializer();
   const { t } = useTranslation();
+  const useCancelAction = () => {
+    const { setVisible } = useActionContext();
+    return {
+      run() {
+        setVisible(false);
+      },
+    };
+  };
+
   return (
     <ModalActionSchemaInitializerItem
-      title={itemConfig.title}
+      title={t('Scan QR code', { ns: 'block-workbench' })}
       modalSchema={{
-        title: 'Add Scan Qr code',
+        title: t('Scan QR code', { ns: 'block-workbench' }),
         properties: {
           title: {
             title: t('Title'),
@@ -66,7 +82,6 @@ export function WorkbenchScanActionSchemaInitializerItem(props) {
         },
       }}
       onSubmit={(values) => {
-        console.log('values', values);
         insert({
           type: 'void',
           title: values.title,
@@ -76,8 +91,41 @@ export function WorkbenchScanActionSchemaInitializerItem(props) {
           'x-component-props': {
             icon: values.icon,
             iconColor: values.iconColor,
+            openMode: 'modal',
           },
-        });
+          properties: {
+            modal: {
+              type: 'void',
+              'x-component': 'Action.Modal',
+              title: t('Scan QR code', { ns: 'block-workbench' }),
+              'x-decorator': 'FormV2',
+              properties: {
+                scanner: {
+                  'x-component': 'QRCodeScanner',
+                  'x-component-props': {
+                    fps: 10,
+                    qrbox: 250,
+                    disableFlip: false,
+                  },
+                },
+                footer: {
+                  type: 'void',
+                  'x-component': 'Action.Modal.Footer',
+                  properties: {
+                    close: {
+                      title: 'Close',
+                      'x-component': 'Action',
+                      'x-component-props': {
+                        type: 'default',
+                        useAction: useCancelAction,
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        } as ISchema);
       }}
     />
   );

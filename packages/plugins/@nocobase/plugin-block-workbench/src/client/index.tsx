@@ -10,17 +10,18 @@
 import { Plugin } from '@nocobase/client';
 import { WorkbenchBlock } from './WorkbenchBlock';
 import { workbenchActionSettingsLink } from './WorkbenchLinkActionSchemaInitializerItem';
-// import {
-//   WorkbenchScanActionSchemaInitializerItem,
-//   workbenchActionSettingsScanQrCode,
-// } from './WorkbenchScanActionSchemaInitializerItem';
+import {
+  WorkbenchScanActionSchemaInitializerItem,
+  workbenchActionSettingsScanQrCode,
+} from './WorkbenchScanActionSchemaInitializerItem';
+import { QRCodeScanner } from './components/qrcode-scanner';
 import { workbenchBlockInitializerItem } from './workbenchBlockInitializerItem';
 import { workbenchBlockSettings } from './workbenchBlockSettings';
 import { workbenchConfigureActions } from './workbenchConfigureActions';
 
 export class PluginBlockWorkbenchClient extends Plugin {
   async load() {
-    this.app.addComponents({ WorkbenchBlock });
+    this.app.addComponents({ WorkbenchBlock, QRCodeScanner });
 
     // 新增工作台区块的设置器
     this.app.schemaSettingsManager.add(workbenchBlockSettings);
@@ -46,11 +47,10 @@ export class PluginBlockWorkbenchClient extends Plugin {
     this.app.schemaSettingsManager.add(workbenchActionSettingsLink);
 
     // 扫码操作
-    // this.app.schemaSettingsManager.add(workbenchActionSettingsScanQrCode);
-    // this.app.schemaInitializerManager.addItem('workbench:configureActions', `qrcode`, {
-    //   title: 'Scan Qr code',
-    //   Component: WorkbenchScanActionSchemaInitializerItem,
-    // });
+    this.app.schemaSettingsManager.add(workbenchActionSettingsScanQrCode);
+    this.app.schemaInitializerManager.addItem('workbench:configureActions', `qrcode`, {
+      Component: WorkbenchScanActionSchemaInitializerItem,
+    });
   }
 }
 
