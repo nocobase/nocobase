@@ -24,8 +24,8 @@ export type FieldOptions = {
   uiSchema?: any;
   possibleTypes?: string[];
   defaultValue?: any;
-  primaryKey: boolean;
-  unique: boolean;
+  primaryKey?: boolean;
+  unique?: boolean;
   allowNull?: boolean;
   autoIncrement?: boolean;
   [key: string]: any;
