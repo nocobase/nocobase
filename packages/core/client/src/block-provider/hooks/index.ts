@@ -443,6 +443,7 @@ const useDoFilter = () => {
             // 保留原有的 filter
             const storedFilter = block.service.params?.[1]?.filters || {};
 
+            // 由当前表单转换而来的 filter
             storedFilter[uid] = removeNullCondition(
               transformToFilter(form.values, getOperators(), getCollectionJoinField, name),
             );
@@ -452,7 +453,7 @@ const useDoFilter = () => {
               block.defaultFilter,
             ]);
 
-            if (doNothingWhenFilterIsEmpty && _.isEmpty(mergedFilter)) {
+            if (doNothingWhenFilterIsEmpty && _.isEmpty(storedFilter[uid])) {
               return;
             }
 
