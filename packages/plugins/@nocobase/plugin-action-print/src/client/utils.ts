@@ -19,7 +19,7 @@ export const useDetailPrintActionProps = () => {
         * {
           margin: 0;
         }
-        :not(.ant-formily-item-control-content-component) > div.ant-formily-layout>div:first-child {
+         :not(.ant-formily-item-control-content-component) > div.ant-formily-layout div.nb-action-bar { {
           overflow: hidden; height: 0;
         }
       }`,
