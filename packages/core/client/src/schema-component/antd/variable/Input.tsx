@@ -346,10 +346,10 @@ export function Input(props: VariableInputProps) {
             <Tag contentEditable={false} color="blue">
               {variableText.map((item, index) => {
                 return (
-                  <>
+                  <React.Fragment key={item}>
                     {index ? ' / ' : ''}
                     {item}
-                  </>
+                  </React.Fragment>
                 );
               })}
             </Tag>

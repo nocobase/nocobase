@@ -32,7 +32,7 @@ import {
 import { useAPIClient, useRequest } from '../../api-client';
 import { useFormBlockContext } from '../../block-provider/FormBlockProvider';
 import { useCollectionManager_deprecated, useCollection_deprecated } from '../../collection-manager';
-import { useFilterBlock } from '../../filter-provider/FilterProvider';
+import { DataBlock, useFilterBlock } from '../../filter-provider/FilterProvider';
 import { mergeFilter, transformToFilter } from '../../filter-provider/utils';
 import { useTreeParentRecord } from '../../modules/blocks/data-blocks/table/TreeRecordProvider';
 import { useRecord } from '../../record-provider';
@@ -430,6 +430,10 @@ const useDoFilter = () => {
   const { name } = useCollection();
   const { targets = [], uid } = useMemo(() => findFilterTargets(fieldSchema), [fieldSchema]);
 
+  const getFilterFromCurrentForm = useCallback(() => {
+    return removeNullCondition(transformToFilter(form.values, getOperators(), getCollectionJoinField, name));
+  }, [form.values, getCollectionJoinField, getOperators, name]);
+
   const doFilter = useCallback(
     async ({ doNothingWhenFilterIsEmpty = false } = {}) => {
       try {
@@ -443,20 +447,19 @@ const useDoFilter = () => {
             // 保留原有的 filter
             const storedFilter = block.service.params?.[1]?.filters || {};
 
-            storedFilter[uid] = removeNullCondition(
-              transformToFilter(form.values, getOperators(), getCollectionJoinField, name),
-            );
+            // 由当前表单转换而来的 filter
+            storedFilter[uid] = getFilterFromCurrentForm();
 
             const mergedFilter = mergeFilter([
               ...Object.values(storedFilter).map((filter) => removeNullCondition(filter)),
               block.defaultFilter,
             ]);
 
-            if (doNothingWhenFilterIsEmpty && _.isEmpty(mergedFilter)) {
+            if (doNothingWhenFilterIsEmpty && _.isEmpty(storedFilter[uid])) {
               return;
             }
 
-            if (block.dataLoadingMode === 'manual' && _.isEmpty(mergedFilter)) {
+            if (block.dataLoadingMode === 'manual' && _.isEmpty(storedFilter[uid])) {
               return block.clearData();
             }
 
@@ -474,7 +477,7 @@ const useDoFilter = () => {
         console.error(error);
       }
     },
-    [form.values, getCollectionJoinField, getDataBlocks, getOperators, name, targets, uid],
+    [getDataBlocks, getFilterFromCurrentForm, targets, uid],
   );
 
   // 这里的代码是为了实现：筛选表单的筛选操作在首次渲染时自动执行一次
@@ -487,6 +490,10 @@ const useDoFilter = () => {
      * 用于执行筛选表单的筛选操作
      */
     doFilter,
+    /**
+     * 根据当前表单的值获取 filter
+     */
+    getFilterFromCurrentForm,
   };
 };
 
@@ -504,52 +511,35 @@ export const useFilterBlockActionProps = () => {
   };
 };
 
-export const useResetBlockActionProps = () => {
+const useDoReset = () => {
   const form = useForm();
-  const actionField = useField();
   const fieldSchema = useFieldSchema();
   const { getDataBlocks } = useFilterBlock();
+  const { targets, uid } = findFilterTargets(fieldSchema);
+  const { doFilter, getFilterFromCurrentForm } = useDoFilter();
+
+  return {
+    doReset: async () => {
+      await form.reset();
+      if (_.isEmpty(getFilterFromCurrentForm())) {
+        return doReset({ getDataBlocks, targets, uid });
+      }
+      await doFilter();
+    },
+  };
+};
+
+export const useResetBlockActionProps = () => {
+  const actionField = useField();
+  const { doReset } = useDoReset();
 
   actionField.data = actionField.data || {};
 
   return {
     async onClick() {
-      const { targets, uid } = findFilterTargets(fieldSchema);
-
-      form.reset();
       actionField.data.loading = true;
-      try {
-        // 收集 filter 的值
-        await Promise.all(
-          getDataBlocks().map(async (block) => {
-            const target = targets.find((target) => target.uid === block.uid);
-            if (!target) return;
-
-            if (block.dataLoadingMode === 'manual') {
-              return block.clearData();
-            }
-
-            const param = block.service.params?.[0] || {};
-            // 保留原有的 filter
-            const storedFilter = block.service.params?.[1]?.filters || {};
-
-            delete storedFilter[uid];
-            const mergedFilter = mergeFilter([...Object.values(storedFilter), block.defaultFilter]);
-
-            return block.doFilter(
-              {
-                ...param,
-                page: 1,
-                filter: mergedFilter,
-              },
-              { filters: storedFilter },
-            );
-          }),
-        );
-        actionField.data.loading = false;
-      } catch (error) {
-        actionField.data.loading = false;
-      }
+      await doReset();
+      actionField.data.loading = false;
     },
   };
 };
@@ -1347,6 +1337,52 @@ export const useAssociationFilterBlockProps = () => {
     labelKey,
   };
 };
+async function doReset({
+  getDataBlocks,
+  targets,
+  uid,
+}: {
+  getDataBlocks: () => DataBlock[];
+  targets: {
+    /** field uid */
+    uid: string;
+    /** associated field */
+    field?: string;
+  }[];
+  uid: string;
+}) {
+  try {
+    await Promise.all(
+      getDataBlocks().map(async (block) => {
+        const target = targets.find((target) => target.uid === block.uid);
+        if (!target) return;
+
+        if (block.dataLoadingMode === 'manual') {
+          return block.clearData();
+        }
+
+        const param = block.service.params?.[0] || {};
+        // 保留原有的 filter
+        const storedFilter = block.service.params?.[1]?.filters || {};
+
+        delete storedFilter[uid];
+        const mergedFilter = mergeFilter([...Object.values(storedFilter), block.defaultFilter]);
+
+        return block.doFilter(
+          {
+            ...param,
+            page: 1,
+            filter: mergedFilter,
+          },
+          { filters: storedFilter },
+        );
+      }),
+    );
+  } catch (error) {
+    console.error(error);
+  }
+}
+
 export function getAssociationPath(str) {
   const lastIndex = str.lastIndexOf('.');
   if (lastIndex !== -1) {

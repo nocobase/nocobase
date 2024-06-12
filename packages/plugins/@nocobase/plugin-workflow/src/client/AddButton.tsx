@@ -74,9 +74,9 @@ export function AddButton(props: AddButtonProps) {
   const onCreate = useCallback(
     async ({ keyPath }) => {
       const type = keyPath.pop();
-      const config = {};
       const [optionKey] = keyPath;
       const instruction = engine.instructions.get(type);
+      const config = instruction.createDefaultConfig();
       if (optionKey) {
         const { value } = instruction.options?.find((item) => item.key === optionKey) ?? {};
         Object.assign(config, typeof value === 'function' ? value() : value);

@@ -17,7 +17,7 @@ describe('xlsx importer', () => {
   let app: MockServer;
   beforeEach(async () => {
     app = await createMockServer({
-      plugins: ['field-china-region'],
+      plugins: ['field-china-region', 'field-sequence'],
     });
   });
 
@@ -60,9 +60,17 @@ describe('xlsx importer', () => {
 
     const worksheet = template.Sheets[template.SheetNames[0]];
 
-    XLSX.utils.sheet_add_aoa(worksheet, [['post0', '山西省/长治市/潞城区']], {
-      origin: 'A2',
-    });
+    XLSX.utils.sheet_add_aoa(
+      worksheet,
+      [
+        ['post0', '山西省/长治市/潞城区'],
+        ['post1', ''],
+        ['post2', null],
+      ],
+      {
+        origin: 'A2',
+      },
+    );
 
     const importer = new XlsxImporter({
       collectionManager: app.mainDataSource.collectionManager,
@@ -73,7 +81,7 @@ describe('xlsx importer', () => {
 
     await importer.run();
 
-    expect(await Post.repository.count()).toBe(1);
+    expect(await Post.repository.count()).toBe(3);
 
     const post = await Post.repository.findOne({
       appends: ['region'],
@@ -198,7 +206,7 @@ describe('xlsx importer', () => {
     expect(user2Json['boolean']).toBe(false);
   });
 
-  it('should reset id seq after import', async () => {
+  it('should not reset id seq if not import id field', async () => {
     const User = app.db.collection({
       name: 'users',
       autoGenId: false,
@@ -216,6 +224,103 @@ describe('xlsx importer', () => {
         {
           type: 'string',
           name: 'email',
+        },
+      ],
+    });
+
+    await app.db.sync();
+
+    const templateCreator = new TemplateCreator({
+      collection: User,
+      columns: [
+        {
+          dataIndex: ['name'],
+          defaultTitle: '姓名',
+        },
+        {
+          dataIndex: ['email'],
+          defaultTitle: '邮箱',
+        },
+      ],
+    });
+
+    const template = await templateCreator.run();
+
+    const worksheet = template.Sheets[template.SheetNames[0]];
+
+    XLSX.utils.sheet_add_aoa(
+      worksheet,
+      [
+        ['User1', 'test@test.com'],
+        ['User2', 'test2@test.com'],
+      ],
+      {
+        origin: 'A2',
+      },
+    );
+
+    const importer = new XlsxImporter({
+      collectionManager: app.mainDataSource.collectionManager,
+      collection: User,
+      columns: [
+        {
+          dataIndex: ['name'],
+          defaultTitle: '姓名',
+        },
+        {
+          dataIndex: ['email'],
+          defaultTitle: '邮箱',
+        },
+      ],
+      workbook: template,
+    });
+
+    const testFn = vi.fn();
+    importer.on('seqReset', testFn);
+
+    await importer.run();
+
+    expect(await User.repository.count()).toBe(2);
+
+    const user3 = await User.repository.create({
+      values: {
+        name: 'User3',
+        email: 'test3@test.com',
+      },
+    });
+
+    expect(user3.get('id')).toBe(3);
+    expect(testFn).not.toBeCalled();
+  });
+
+  it('should reset id seq after import id field', async () => {
+    const User = app.db.collection({
+      name: 'users',
+      autoGenId: false,
+      fields: [
+        {
+          type: 'bigInt',
+          name: 'id',
+          primaryKey: true,
+          autoIncrement: true,
+        },
+        {
+          type: 'string',
+          name: 'name',
+        },
+        {
+          type: 'string',
+          name: 'email',
+        },
+        {
+          type: 'sequence',
+          name: 'name',
+          patterns: [
+            {
+              type: 'integer',
+              options: { key: 1 },
+            },
+          ],
         },
       ],
     });
@@ -275,6 +380,9 @@ describe('xlsx importer', () => {
       workbook: template,
     });
 
+    const testFn = vi.fn();
+    importer.on('seqReset', testFn);
+
     await importer.run();
 
     expect(await User.repository.count()).toBe(2);
@@ -287,6 +395,8 @@ describe('xlsx importer', () => {
     });
 
     expect(user3.get('id')).toBe(3);
+
+    expect(testFn).toBeCalled();
   });
 
   it('should validate workbook with error', async () => {
@@ -543,6 +653,8 @@ describe('xlsx importer', () => {
         ['Post1', 'Content1', 'User1', 'Tag1,Tag2', 'Comment1,Comment2'],
         ['Post2', 'Content2', 'User1', 'Tag2,Tag3', 'Comment3'],
         ['Post3', 'Content3', 'UserNotExist', 'Tag3,TagNotExist', ''],
+        ['Post4', '', '', ''],
+        ['Post5', null, null, null],
       ],
       {
         origin: 'A2',
@@ -558,7 +670,7 @@ describe('xlsx importer', () => {
 
     await importer.run();
 
-    expect(await Post.repository.count()).toBe(3);
+    expect(await Post.repository.count()).toBe(5);
   });
 
   it('should import data with xlsx', async () => {
