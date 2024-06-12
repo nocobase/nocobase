@@ -79,5 +79,23 @@ test.describe('setDataLoadingModeSettingsItem', () => {
   }) => {
     await mockPage(TableBlockWithDataScope).goto();
     await expect(page.getByLabel('block-item-CardItem-users-table').getByText('No data')).toBeVisible();
+
+    // 此时点击 filter 按钮，应该还是没数据，因为表单没有值
+    await page.getByLabel('action-Action-Filter-submit-').click({
+      position: {
+        x: 10,
+        y: 10,
+      },
+    });
+    await expect(page.getByLabel('block-item-CardItem-users-table').getByText('No data')).toBeVisible();
+
+    // 点击 Reset 按钮，也是一样
+    await page.getByLabel('action-Action-Reset-users-').click({
+      position: {
+        x: 10,
+        y: 10,
+      },
+    });
+    await expect(page.getByLabel('block-item-CardItem-users-table').getByText('No data')).toBeVisible();
   });
 });

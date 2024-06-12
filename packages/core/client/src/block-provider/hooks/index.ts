@@ -459,7 +459,7 @@ const useDoFilter = () => {
               return;
             }
 
-            if (block.dataLoadingMode === 'manual' && _.isEmpty(mergedFilter)) {
+            if (block.dataLoadingMode === 'manual' && _.isEmpty(storedFilter[uid])) {
               return block.clearData();
             }
 
