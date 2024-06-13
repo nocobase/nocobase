@@ -16,6 +16,7 @@ import { useApp, useSchemaToolbar } from '../../../../application';
 import { SchemaSettings } from '../../../../application/schema-settings/SchemaSettings';
 import { useFormBlockContext } from '../../../../block-provider/FormBlockProvider';
 import { useCollectionManager_deprecated, useCollection_deprecated } from '../../../../collection-manager';
+import { useCollection } from '../../../../data-source';
 import { useFieldComponentName } from '../../../../common/useFieldComponentName';
 import { useDesignable, useValidateSchema } from '../../../../schema-component';
 import { useIsFormReadPretty } from '../../../../schema-component/antd/form-item/FormItem.Settings';
@@ -454,7 +455,7 @@ export const fieldSettingsFormItem = new SchemaSettings({
               return field.readPretty;
             },
             useComponentProps() {
-              const { name } = useCollection_deprecated();
+              const { name } = useCollection();
               const { linkageRulesProps } = useSchemaToolbar();
               return {
                 ...linkageRulesProps,
