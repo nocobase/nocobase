@@ -9,8 +9,6 @@
 
 import { useFieldSchema } from '@formily/react';
 import cls from 'classnames';
-import { css } from '@emotion/css';
-import { theme } from 'antd';
 import React, { useMemo } from 'react';
 import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
 import { CustomCreateStylesUtils, createStyles } from '../../../style';
@@ -20,7 +18,6 @@ import { useGetAriaLabelOfBlockItem } from './hooks/useGetAriaLabelOfBlockItem';
 import { ErrorBoundary } from 'react-error-boundary';
 import { ErrorFallback } from '../error-fallback';
 import { useSchemaToolbarRender } from '../../../application';
-import { useDesignable } from '../../';
 
 const useStyles = createStyles(({ css, token }: CustomCreateStylesUtils) => {
   return css`
@@ -87,26 +84,10 @@ export const BlockItem: React.FC<BlockItemProps> = withDynamicSchemaProps(
     const fieldSchema = useFieldSchema();
     const { render } = useSchemaToolbarRender(fieldSchema);
     const { getAriaLabel } = useGetAriaLabelOfBlockItem(props.name);
-    const { token } = theme.useToken();
-    const { designable } = useDesignable();
     const label = useMemo(() => getAriaLabel(), [getAriaLabel]);
 
     return (
-      <SortableItem
-        role="button"
-        aria-label={label}
-        className={cls(
-          'nb-block-item',
-          className,
-          blockItemCss,
-          css`
-            margin-bottom: ${designable ? token.marginLG : 0}px !important;
-            .ant-card {
-              margin-bottom: ${designable ? token.marginLG : 0}px !important;
-            }
-          `,
-        )}
-      >
+      <SortableItem role="button" aria-label={label} className={cls('nb-block-item', className, blockItemCss)}>
         {render()}
         <ErrorBoundary FallbackComponent={ErrorFallback} onError={(err) => console.log(err)}>
           {children}
