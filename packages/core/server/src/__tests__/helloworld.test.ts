@@ -6,25 +6,21 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
-console.log('top of file');
 
+import { startServerWithRandomPort, supertest, waitSecond } from '@nocobase/test';
+import { vi } from 'vitest';
+console.log('before import');
 import ws from 'ws';
+console.log('after import');
+import { AppSupervisor } from '../app-supervisor';
+import Application from '../application';
+import { Gateway } from '../gateway';
+import { errors } from '../gateway/errors';
 describe('helloworld', () => {
   it('should work', () => {
     expect(1).toBe(1);
   });
 });
-
-// import { startServerWithRandomPort, supertest, waitSecond } from '@nocobase/test';
-// import { vi } from 'vitest';
-// console.log('before import');
-// import ws from 'ws';
-// console.log('after import');
-// import { AppSupervisor } from '../app-supervisor';
-// import Application from '../application';
-// import { Gateway } from '../gateway';
-// import { errors } from '../gateway/errors';
-
 // console.log('12321');
 // describe('gateway', () => {
 //   let gateway: Gateway;
