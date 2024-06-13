@@ -30,11 +30,13 @@ export const useFormBlockHeight = () => {
     return buf;
   });
   const isFilterForm = schema.parent?.['x-decorator'] === 'FilterFormBlockProvider';
+  const isDetailForm = schema.parent?.['x-decorator'] === 'DetailsBlockProvider';
+
   const hasFormActions = Object.keys(actionSchema?.properties || {}).length > 0;
   const actionBarHeight =
     hasFormActions || designable
       ? token.controlHeight + (isFilterForm ? 2 * token.marginLG : 2 * token.marginLG)
-      : isFilterForm
+      : isFilterForm || isDetailForm
         ? 1 * token.marginLG
         : 2 * token.marginLG;
   const blockTitleHeaderHeight = title ? token.fontSizeLG * token.lineHeightLG + token.padding * 2 - 1 : 0;
