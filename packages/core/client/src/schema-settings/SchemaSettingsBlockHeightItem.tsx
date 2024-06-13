@@ -56,6 +56,7 @@ export const SchemaSettingsBlockHeightItem = function BlockTitleItem() {
               'x-component': 'InputNumber',
               'x-component-props': {
                 addonAfter: 'px',
+                min: 250,
                 max: 2000,
               },
               'x-reactions': {
