@@ -298,7 +298,7 @@ export const collectionTableSchema: ISchema = {
                       },
                     },
                   },
-                  'x-hidden': '{{allowCongigureFields}}',
+                  'x-hidden': '{{disabledCongigureFields}}',
                 },
                 update: {
                   type: 'void',

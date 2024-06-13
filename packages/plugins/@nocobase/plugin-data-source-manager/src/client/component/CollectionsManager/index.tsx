@@ -78,7 +78,7 @@ export const CollectionManagerPage = () => {
       }}
       scope={{
         allowCollectionDeletion: type?.allowCollectionDeletion,
-        allowCongigureFields: type?.allowCongigureFields,
+        disabledCongigureFields: type?.disabledCongigureFields,
       }}
     />
   );
