@@ -68,7 +68,7 @@ jobs:
       - name: Install project dependencies
         run: yarn install
       - name: Test with Sqlite
-        run: yarn test --server --single-thread=false packages/${{ matrix.corePackages }}
+        run: yarn test --server --single-thread=false packages/core/${{ matrix.corePackages }}
         env:
           LOGGER_LEVEL: error
           DB_DIALECT: sqlite
