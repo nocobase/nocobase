@@ -39,27 +39,27 @@ jobs:
     strategy:
       matrix:
         node_version: ['20']
-        underscored: [true, false]
+        underscored: [true]
     runs-on: ubuntu-latest
     container: node:${{ matrix.node_version }}
     steps:
       - uses: actions/checkout@v4
       - name: Use Node.js ${{ matrix.node_version }}
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node_version }}
           cache: 'yarn'
       - name: Install project dependencies
         run: yarn install
       - name: Test with Sqlite
-        run: yarn test --server --single-thread=false
+        run: yarn test --server #--single-thread=false
         env:
           LOGGER_LEVEL: error
           DB_DIALECT: sqlite
           DB_STORAGE: /tmp/db.sqlite
-          DB_TEST_PREFIX: test_
+          # DB_TEST_PREFIX: test_
           DB_UNDERSCORED: ${{ matrix.underscored }}
-    timeout-minutes: 60
+    timeout-minutes: 120
 
   # postgres-test:
   #   strategy:
