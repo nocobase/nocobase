@@ -168,7 +168,7 @@ export const collectionTableSchema: ISchema = {
             role: 'button',
             isBulk: true,
           },
-          'x-visible': false,
+          'x-visible': '{{allowCollectionDeletion}}',
         },
         create: {
           type: 'void',
@@ -312,7 +312,7 @@ export const collectionTableSchema: ISchema = {
                 delete: {
                   type: 'void',
                   title: '{{ t("Delete") }}',
-                  'x-visible': false,
+                  'x-visible': '{{allowCollectionDeletion}}',
                   'x-component': 'DeleteCollection',
                   'x-component-props': {
                     role: 'button',
