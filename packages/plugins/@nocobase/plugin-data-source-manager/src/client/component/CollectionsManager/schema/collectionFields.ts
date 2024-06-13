@@ -125,6 +125,7 @@ export const fieldsTableSchema: ISchema = {
           'x-component-props': {
             type: 'primary',
           },
+          'x-hidden': '{{ disableAddFields }}',
         },
       },
     },
