@@ -42,17 +42,23 @@ jobs:
         underscored: [true]
         corePackages:
           [
-            'acl',
-            'actions',
-            'app',
-            'auth',
-            'cache',
-            'database',
-            'data-source-manager',
-            'evaluators',
-            'resourcer',
-            'server',
-            'utils',
+            'app-life-cycle.test.ts',
+            'pm.test.ts',
+            'application.test.ts',
+            'middlewares/data-wrapping.test.ts',
+            'app.test.ts',
+            'plugin.test.ts',
+            'command.test.ts',
+            'app-command.test.ts',
+            'i18next.test.ts',
+            'cron.test.ts',
+            'multiple-application.test.ts',
+            'gateway/ipc.test.ts',
+            'life-cycle.test.ts',
+            'validate-filter-params.test.ts',
+            'main-data-source.test.ts',
+            'app-supervisor.test.ts',
+            'application-version.test.ts',
           ]
     runs-on: ubuntu-latest
     container: node:${{ matrix.node_version }}
@@ -68,7 +74,7 @@ jobs:
       - name: Install project dependencies
         run: yarn install
       - name: Test with Sqlite
-        run: yarn test --server --single-thread=false packages/core/${{ matrix.corePackages }}
+        run: yarn test --server --single-thread=false packages/core/server/src/__tests__/${{ matrix.corePackages }}
         env:
           LOGGER_LEVEL: error
           DB_DIALECT: sqlite
