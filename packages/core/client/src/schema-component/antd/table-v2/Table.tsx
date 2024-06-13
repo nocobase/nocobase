@@ -21,7 +21,7 @@ import { useCreation, useDeepCompareEffect, useMemoizedFn } from 'ahooks';
 import { Table as AntdTable, Skeleton, TableColumnProps } from 'antd';
 import { default as classNames, default as cls } from 'classnames';
 import _, { omit } from 'lodash';
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useInView } from 'react-intersection-observer';
 import { DndContext, useDesignable, useTableSize } from '../..';
@@ -42,6 +42,7 @@ import { SubFormProvider } from '../association-field/hooks';
 import { ColumnFieldProvider } from './components/ColumnFieldProvider';
 import { extractIndex, isCollectionFieldComponent, isColumnComponent } from './utils';
 import { useSatisfiedActionValues } from '../../../schema-settings/LinkageRules/useActionValues';
+import { useVariables, useContextVariable } from '../../../variables';
 const MemoizedAntdTable = React.memo(AntdTable);
 
 const useArrayField = (props) => {
@@ -537,6 +538,11 @@ export const Table: any = withDynamicSchemaProps(
           skip: isIndex || !!process.env.__E2E__,
         });
         const { valueMap: style } = useSatisfiedActionValues({ formValues: record, category: 'style', schema });
+        const variables = useVariables();
+        const contextVariable = useContextVariable();
+        useEffect(() => {
+          variables?.registerVariable(contextVariable);
+        }, [contextVariable, variables]);
 
         return (
           <td {...props} ref={ref} className={classNames(props.className, cellClass)} style={style}>

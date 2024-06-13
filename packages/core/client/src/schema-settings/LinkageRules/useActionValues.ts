@@ -12,7 +12,6 @@ import { useVariables, useLocalVariables } from '../../variables';
 import { useFieldSchema } from '@formily/react';
 import { LinkageRuleCategory, LinkageRuleDataKeyMap } from './type';
 import { getSatisfiedValueMap } from './compute-rules';
-import { useContextVariable } from '../../variables';
 import { isEmpty } from 'lodash';
 export function useSatisfiedActionValues({
   formValues,
@@ -29,12 +28,8 @@ export function useSatisfiedActionValues({
   const fieldSchema = useFieldSchema();
   const variables = useVariables();
   const localVariables = useLocalVariables({ currentForm: { values: formValues } as any });
-  const contextVariable = useContextVariable();
   const localSchema = schema ?? fieldSchema;
   const linkageRules = rules ?? localSchema[LinkageRuleDataKeyMap[category]];
-  useEffect(() => {
-    variables?.registerVariable(contextVariable);
-  }, [contextVariable, variables]);
 
   useEffect(() => {
     if (linkageRules && formValues) {

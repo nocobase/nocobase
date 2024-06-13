@@ -25,6 +25,7 @@ import { FilterFormDesigner } from './FormItem.FilterFormDesigner';
 import { useEnsureOperatorsValid } from './SchemaSettingOptions';
 import useLazyLoadDisplayAssociationFieldsOfForm from './hooks/useLazyLoadDisplayAssociationFieldsOfForm';
 import useParseDefaultValue from './hooks/useParseDefaultValue';
+import { useVariables, useContextVariable } from '../../../variables';
 
 Item.displayName = 'FormilyFormItem';
 
@@ -48,6 +49,11 @@ export const FormItem: any = withDynamicSchemaProps(
     const { addActiveFieldName } = useFormActiveFields() || {};
     const form = useForm();
     const { style } = props;
+    const variables = useVariables();
+    const contextVariable = useContextVariable();
+    useEffect(() => {
+      variables?.registerVariable(contextVariable);
+    }, [contextVariable, variables]);
     // 需要放在注冊完变量之后
     useParseDefaultValue();
     useLazyLoadDisplayAssociationFieldsOfForm();
