@@ -40,7 +40,7 @@ jobs:
       matrix:
         node_version: ['20']
         underscored: [true]
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
     container: node:${{ matrix.node_version }}
     steps:
       - uses: actions/checkout@v4
