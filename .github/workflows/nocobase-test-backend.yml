@@ -42,11 +42,12 @@ jobs:
         underscored: [true]
         corePackages:
           [
-            'app-life-cycle.test.ts',
+            'app.test.ts',
             'pm.test.ts',
+            'gateway.test.ts',
+            'app-life-cycle.test.ts',
             'application.test.ts',
             'middlewares/data-wrapping.test.ts',
-            'app.test.ts',
             'plugin.test.ts',
             'command.test.ts',
             'app-command.test.ts',
