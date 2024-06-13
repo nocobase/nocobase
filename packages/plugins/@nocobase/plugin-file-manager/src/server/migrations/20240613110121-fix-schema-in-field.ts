@@ -68,19 +68,15 @@ export default class extends Migration {
         }
 
         schemaCount++;
-        // console.log(item.schema['x-component-props']);
-        const {
-          schema: { action, ...schema },
-        } = item;
+
         item.set('schema', {
-          ...schema,
+          ...item.schema,
           'x-use-component-props': 'useAttachmentFieldProps',
         });
         item.changed('schema');
         await item.save({ transaction });
-
-        console.log('schema updated:', fieldCount);
       }
+      console.log('schema updated:', fieldCount);
     });
   }
 }
