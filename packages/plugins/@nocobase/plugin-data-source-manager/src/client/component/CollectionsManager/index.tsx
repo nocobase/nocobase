@@ -51,7 +51,6 @@ export const CollectionManagerPage = () => {
   const location = useLocation();
   const dataSourceType = new URLSearchParams(location.search).get('type');
   const type = dataSourceType && plugin.types.get(dataSourceType);
-
   return (
     <SchemaComponent
       schema={schema2}
@@ -63,7 +62,7 @@ export const CollectionManagerPage = () => {
         AddCollectionField,
         AddCollection: type?.AddCollection || AddCollection,
         AddCollectionAction,
-        EditCollection,
+        EditCollection: type?.EditCollection || EditCollection,
         EditCollectionAction,
         DeleteCollection,
         DeleteCollectionAction,
@@ -76,6 +75,9 @@ export const CollectionManagerPage = () => {
         SyncFieldsAction,
         SyncFieldsActionCom,
         SyncSQLFieldsAction,
+      }}
+      scope={{
+        allowCollectionDeletion: type?.allowCollectionDeletion,
       }}
     />
   );

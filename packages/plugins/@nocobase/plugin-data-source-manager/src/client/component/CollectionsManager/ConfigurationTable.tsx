@@ -33,7 +33,6 @@ import {
 import { message } from 'antd';
 import { getCollectionSchema } from './schema/collections';
 import { CollectionFields } from './CollectionFields';
-import { EditCollection } from './EditCollectionAction';
 import { DataSourceContext } from '../../DatabaseConnectionProvider';
 
 /**
@@ -170,7 +169,6 @@ export const ConfigurationTable = () => {
       <SchemaComponent
         schema={collectionSchema}
         components={{
-          EditCollection,
           AddSubFieldAction,
           EditSubFieldAction,
           FieldSummary,
