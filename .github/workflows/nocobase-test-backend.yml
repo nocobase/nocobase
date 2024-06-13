@@ -40,6 +40,20 @@ jobs:
       matrix:
         node_version: ['20']
         underscored: [true]
+        corePackages:
+          [
+            'acl',
+            'actions',
+            'app',
+            'auth',
+            'cache',
+            'database',
+            'data-source-manager',
+            'evaluators',
+            'resourcer',
+            'server',
+            'utils',
+          ]
     runs-on: ubuntu-latest
     container: node:${{ matrix.node_version }}
     steps:
@@ -54,14 +68,14 @@ jobs:
       - name: Install project dependencies
         run: yarn install
       - name: Test with Sqlite
-        run: yarn test --server --single-thread=false packages/core
+        run: yarn test --server --single-thread=false packages/${{ matrix.corePackages }}
         env:
           LOGGER_LEVEL: error
           DB_DIALECT: sqlite
           DB_STORAGE: /tmp/db.sqlite
           DB_TEST_PREFIX: test_
           DB_UNDERSCORED: ${{ matrix.underscored }}
-    timeout-minutes: 120
+    timeout-minutes: 10
 
   # postgres-test:
   #   strategy:
