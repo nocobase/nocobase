@@ -52,12 +52,12 @@ jobs:
       - name: Install project dependencies
         run: yarn install
       - name: Test with Sqlite
-        run: yarn test --server --single-thread=false
+        run: yarn test --server #--single-thread=false
         env:
           LOGGER_LEVEL: error
           DB_DIALECT: sqlite
           DB_STORAGE: /tmp/db.sqlite
-          DB_TEST_PREFIX: test_
+          # DB_TEST_PREFIX: test_
           DB_UNDERSCORED: ${{ matrix.underscored }}
     timeout-minutes: 60
 
