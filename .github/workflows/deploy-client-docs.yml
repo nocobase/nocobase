@@ -30,7 +30,7 @@ jobs:
       with:
         node-version: 18
         cache: 'yarn'
-    - run: yarn --frozen-lockfile
+    - run: yarn install
     - name: Build zh-CN
       run: yarn doc build core/client --lang=zh-CN
     - name: Build en-US

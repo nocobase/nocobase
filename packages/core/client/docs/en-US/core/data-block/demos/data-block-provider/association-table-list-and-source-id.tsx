@@ -110,11 +110,11 @@ const mocks = {
       },
     ],
   },
-  [`${collection}:get/1`]: {
+  [`${collection}:get?filter[id]=1`]: {
     id: 1,
     username: 'Tom',
   },
-  [`${collection}:get/2`]: {
+  [`${collection}:get?filter[id]=2`]: {
     id: 1,
     username: 'Jack',
   },

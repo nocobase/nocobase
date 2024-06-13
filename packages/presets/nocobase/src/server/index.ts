@@ -39,6 +39,7 @@ export class PresetNocoBase extends Plugin {
     'action-export',
     'backup-restore',
     'block-iframe',
+    'block-workbench',
     'field-formula',
     'data-visualization',
     'auth',
@@ -68,7 +69,7 @@ export class PresetNocoBase extends Plugin {
     'api-doc>=0.13.0-alpha.1',
     'auth-sms>=0.10.0-alpha.2',
     'field-markdown-vditor>=0.21.0-alpha.16',
-    'workflow-mailer>=1.0.0-alpha.17',
+    'workflow-mailer',
   ];
 
   splitNames(name: string) {

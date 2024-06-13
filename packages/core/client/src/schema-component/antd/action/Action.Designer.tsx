@@ -79,6 +79,14 @@ export function ButtonEditor(props) {
               'x-visible': !isLink,
               // description: `原字段标题：${collectionField?.uiSchema?.title}`,
             },
+            iconColor: {
+              title: t('Color'),
+              required: true,
+              default: fieldSchema?.['x-component-props']?.iconColor || '#1677FF',
+              'x-hidden': !props.hasIconColor,
+              'x-component': 'ColorPicker',
+              'x-decorator': 'FormItem',
+            },
             type: {
               'x-decorator': 'FormItem',
               'x-component': 'Radio.Group',
@@ -93,18 +101,20 @@ export function ButtonEditor(props) {
                 { value: 'primary', label: '{{t("Highlight")}}' },
                 { value: 'danger', label: '{{t("Danger red")}}' },
               ],
-              'x-visible': !isLink,
+              'x-visible': !props.hasIconColor && !isLink,
             },
           },
         } as ISchema
       }
-      onSubmit={({ title, icon, type }) => {
+      onSubmit={({ title, icon, type, iconColor }) => {
         fieldSchema.title = title;
         field.title = title;
+        field.componentProps.iconColor = iconColor;
         field.componentProps.icon = icon;
         field.componentProps.danger = type === 'danger';
         field.componentProps.type = type || field.componentProps.type;
         fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
+        fieldSchema['x-component-props'].iconColor = iconColor;
         fieldSchema['x-component-props'].icon = icon;
         fieldSchema['x-component-props'].danger = type === 'danger';
         fieldSchema['x-component-props'].type = type || field.componentProps.type;

@@ -12,7 +12,7 @@ import { isValidFilter } from '@nocobase/utils/client';
 
 import { FilterDynamicComponent } from '../components/FilterDynamicComponent';
 import { collection, filter } from '../schemas/collection';
-import { Instruction } from '.';
+import { Instruction, useNodeSavedConfig } from '.';
 import { NAMESPACE, lang } from '../locale';
 
 export default class extends Instruction {
@@ -23,6 +23,7 @@ export default class extends Instruction {
   fieldset = {
     collection: {
       ...collection,
+      'x-disabled': '{{ useNodeSavedConfig(["collection"]) }}',
       'x-reactions': [
         ...collection['x-reactions'],
         {
@@ -57,6 +58,7 @@ export default class extends Instruction {
     },
   };
   scope = {
+    useNodeSavedConfig,
     useCollectionDataSource,
   };
   components = {

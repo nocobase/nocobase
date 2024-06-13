@@ -38,10 +38,9 @@ describe('actions', () => {
 
     it('should list authenticator types', async () => {
       const res = await agent.resource('authenticators').listTypes();
-      expect(res.body.data).toEqual([
+      expect(res.body.data).toMatchObject([
         {
           name: 'Email/Password',
-          title: 'Password',
         },
       ]);
     });

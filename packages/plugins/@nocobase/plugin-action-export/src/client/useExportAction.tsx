@@ -45,7 +45,6 @@ export const useExportAction = () => {
   return {
     async onClick() {
       field.data = field.data || {};
-      field.data.loading = true;
       const confirmed = await modal.confirm({
         title: t('Export'),
         content: t('Export warning', { limit: exportLimit }),
@@ -54,6 +53,7 @@ export const useExportAction = () => {
       if (!confirmed) {
         return;
       }
+      field.data.loading = true;
       const { exportSettings } = lodash.cloneDeep(actionSchema?.['x-action-settings'] ?? {});
       exportSettings.forEach((es) => {
         const { uiSchema, interface: fieldInterface } =

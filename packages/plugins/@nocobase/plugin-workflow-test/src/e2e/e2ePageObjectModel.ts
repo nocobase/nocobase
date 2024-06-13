@@ -364,7 +364,7 @@ export class CreateRecordNode {
     this.collectionDropDown = page
       .getByLabel('block-item-DataSourceCollectionCascader-workflows-Collection')
       .locator('.ant-select-selection-search-input');
-    this.addFieldsButton = page.getByRole('button', { name: 'plus Add field' });
+    this.addFieldsButton = page.getByLabel('schema-initializer-Grid-assignFieldValuesForm:configureFields');
     this.submitButton = page.getByLabel('action-Action-Submit-workflows');
     this.cancelButton = page.getByLabel('action-Action-Cancel-workflows');
     this.addNodeButton = page.getByLabel(`add-button-create-${nodeName}`, { exact: true });
@@ -394,12 +394,12 @@ export class UpdateRecordNode {
       .getByLabel('block-item-DataSourceCollectionCascader-workflows-Collection')
       .locator('.ant-select-selection-search-input');
     this.batchUpdateModeRadio = page
-      .getByLabel('block-item-IndividualHooksRadioWithTooltip-workflows-Update mode')
+      .getByLabel('block-item-RadioWithTooltip-workflows-Update mode')
       .getByLabel('Update in a batch');
     this.articleByArticleUpdateModeRadio = page
-      .getByLabel('block-item-IndividualHooksRadioWithTooltip-workflows-Update mode')
+      .getByLabel('block-item-RadioWithTooltip-workflows-Update mode')
       .getByLabel('Update one by one');
-    this.addFieldsButton = page.getByRole('button', { name: 'plus Add field' });
+    this.addFieldsButton = page.getByLabel('schema-initializer-Grid-assignFieldValuesForm:configureFields');
     this.submitButton = page.getByLabel('action-Action-Submit-workflows');
     this.cancelButton = page.getByLabel('action-Action-Cancel-workflows');
     this.addNodeButton = page.getByLabel(`add-button-update-${nodeName}`, { exact: true });

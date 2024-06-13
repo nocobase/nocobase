@@ -780,5 +780,6 @@
   "License": "Ліцензія",
   "This variable has been deprecated and can be replaced with \"Current form\"": "Змінна була застарілою; \"Поточна форма\" може бути використана як заміна",
   "The value of this variable is derived from the query string of the page URL. This variable can only be used normally when the page has a query string.": "Значення цієї змінної походить з рядка запиту URL-адреси сторінки. Цю змінну можна використовувати нормально лише тоді, коли у сторінки є рядок запиту.",
-  "URL search params": "Параметри пошуку URL"
+  "URL search params": "Параметри пошуку URL",
+  "Expand All": "Розгорнути все"
 }

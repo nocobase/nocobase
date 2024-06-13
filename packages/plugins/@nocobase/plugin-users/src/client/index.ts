@@ -7,7 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Plugin, tval } from '@nocobase/client';
+import { Plugin } from '@nocobase/client';
+import { tval } from '@nocobase/utils/client';
 import { UsersManagement } from './UsersManagement';
 import ACLPlugin from '@nocobase/plugin-acl/client';
 import { RoleUsersManager } from './RoleUsersManager';
