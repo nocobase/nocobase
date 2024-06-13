@@ -40,7 +40,7 @@ jobs:
       matrix:
         node_version: ['20']
         underscored: [true]
-        corePackages: ['gateway.test.ts']
+        corePackages: ['helloworld.test.ts']
     runs-on: ubuntu-latest
     container: node:${{ matrix.node_version }}
     steps:
