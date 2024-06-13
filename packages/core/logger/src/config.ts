@@ -8,10 +8,7 @@ export const getLoggerFilePath = (...paths: string[]): string => {
 };
 
 export const getLoggerTransport = (): ('console' | 'file' | 'dailyRotateFile')[] =>
-  (
-    (process.env.LOGGER_TRANSPORT as any) ||
-    (process.env.APP_ENV === 'development' ? 'console' : 'console,dailyRotateFile')
-  ).split(',');
+  ((process.env.LOGGER_TRANSPORT as any) || 'console,dailyRotateFile').split(',');
 
 export const getLoggerFormat = (): 'logfmt' | 'json' | 'delimiter' | 'console' =>
   (process.env.LOGGER_FORMAT as any) || (process.env.APP_ENV === 'development' ? 'console' : 'json');
