@@ -50,7 +50,7 @@ describe('CollectionSelect', () => {
         >
           <div
             aria-label="block-item-demo title"
-            class="nb-sortable-designer nb-block-item nb-form-item acss-gw2dva css-vua9sf"
+            class="nb-sortable-designer nb-block-item nb-form-item acss-gw2dva"
             role="button"
           >
             <div
@@ -187,7 +187,7 @@ describe('CollectionSelect', () => {
         >
           <div
             aria-label="block-item-demo title"
-            class="nb-sortable-designer nb-block-item nb-form-item acss-gw2dva css-vua9sf"
+            class="nb-sortable-designer nb-block-item nb-form-item acss-gw2dva"
             role="button"
           >
             <div
