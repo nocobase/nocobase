@@ -9,18 +9,24 @@
 
 import { startServerWithRandomPort, supertest, waitSecond } from '@nocobase/test';
 import { vi } from 'vitest';
+console.log('before import');
 import ws from 'ws';
+console.log('after import');
 import { AppSupervisor } from '../app-supervisor';
 import Application from '../application';
 import { Gateway } from '../gateway';
 import { errors } from '../gateway/errors';
 
+console.log('12321');
 describe('gateway', () => {
   let gateway: Gateway;
   beforeEach(() => {
+    console.log('before beforeEach');
     gateway = Gateway.getInstance();
+    console.log('after beforeEach');
   });
   afterEach(async () => {
+    console.log('afterEach');
     await gateway.destroy();
     await AppSupervisor.getInstance().destroy();
   });

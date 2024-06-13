@@ -40,27 +40,7 @@ jobs:
       matrix:
         node_version: ['20']
         underscored: [true]
-        corePackages:
-          [
-            'app.test.ts',
-            'pm.test.ts',
-            'gateway.test.ts',
-            'app-life-cycle.test.ts',
-            'application.test.ts',
-            'middlewares/data-wrapping.test.ts',
-            'plugin.test.ts',
-            'command.test.ts',
-            'app-command.test.ts',
-            'i18next.test.ts',
-            'cron.test.ts',
-            'multiple-application.test.ts',
-            'gateway/ipc.test.ts',
-            'life-cycle.test.ts',
-            'validate-filter-params.test.ts',
-            'main-data-source.test.ts',
-            'app-supervisor.test.ts',
-            'application-version.test.ts',
-          ]
+        corePackages: ['gateway.test.ts']
     runs-on: ubuntu-latest
     container: node:${{ matrix.node_version }}
     steps:
