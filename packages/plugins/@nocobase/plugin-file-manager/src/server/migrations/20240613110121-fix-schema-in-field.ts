@@ -13,9 +13,10 @@ export default class extends Migration {
   on = 'afterLoad'; // 'beforeLoad' or 'afterLoad'
 
   async up() {
-    const r = this.db.getRepository('fields');
+    const FieldRepo = this.db.getRepository('fields');
+    const SchemaRepo = this.db.getRepository('uiSchemas');
     await this.db.sequelize.transaction(async (transaction) => {
-      const items = await r.find({
+      const fields = await FieldRepo.find({
         filter: {
           type: 'belongsToMany',
           interface: 'attachment',
@@ -23,15 +24,15 @@ export default class extends Migration {
         transaction,
       });
 
-      let count = 0;
-      for (const item of items) {
+      let fieldCount = 0;
+      for (const item of fields) {
         if (
           item.options.target === 'attachments' &&
           item.options.uiSchema &&
           item.options.uiSchema['x-component'] === 'Upload.Attachment' &&
           !item.options.uiSchema['x-use-component-props']
         ) {
-          count++;
+          fieldCount++;
           const { uiSchema, ...options } = item.options;
           uiSchema['x-use-component-props'] = 'useAttachmentFieldProps';
           item.set('options', {
@@ -42,7 +43,44 @@ export default class extends Migration {
           await item.save({ transaction });
         }
       }
-      console.log('item updated:', count);
+      console.log('fields updated:', fieldCount);
+
+      const items = await SchemaRepo.find({
+        filter: {
+          'schema.x-component': 'CollectionField',
+        },
+        transaction,
+      });
+
+      let schemaCount = 0;
+      for (const item of items) {
+        const [collectionName, name] = item.schema['x-collection-field'].split('.');
+        const field = await FieldRepo.findOne({
+          filter: {
+            name,
+            collectionName,
+            'options.target': 'attachments',
+          },
+          transaction,
+        });
+        if (!field || item.schema['x-use-component-props'] === 'useAttachmentFieldProps') {
+          continue;
+        }
+
+        schemaCount++;
+        // console.log(item.schema['x-component-props']);
+        const {
+          schema: { action, ...schema },
+        } = item;
+        item.set('schema', {
+          ...schema,
+          'x-use-component-props': 'useAttachmentFieldProps',
+        });
+        item.changed('schema');
+        await item.save({ transaction });
+
+        console.log('schema updated:', fieldCount);
+      }
     });
   }
 }
