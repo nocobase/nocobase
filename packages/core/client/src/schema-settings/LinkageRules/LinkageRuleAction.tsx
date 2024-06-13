@@ -204,6 +204,9 @@ export const FormStyleLinkageRuleAction = observer(
       type: 'string',
       'x-decorator': 'FormItem',
       'x-component': 'ColorPicker',
+      'x-component-props': {
+        defaultValue: '',
+      },
     };
 
     const onChange = useCallback(
