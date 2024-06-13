@@ -33,9 +33,9 @@ export const useFormBlockHeight = () => {
   const hasFormActions = Object.keys(actionSchema?.properties || {}).length > 0;
   const actionBarHeight =
     hasFormActions || designable
-      ? token.controlHeight + (isFilterForm ? token.marginLG : 2 * token.marginLG)
+      ? token.controlHeight + (isFilterForm ? 2 * token.marginLG : 2 * token.marginLG)
       : isFilterForm
-        ? token.marginLG
+        ? 1 * token.marginLG
         : 2 * token.marginLG;
   const blockTitleHeaderHeight = title ? token.fontSizeLG * token.lineHeightLG + token.padding * 2 - 1 : 0;
   const { data } = useDataBlockRequest() || {};
@@ -43,5 +43,12 @@ export const useFormBlockHeight = () => {
   const hasPagination = count > pageSize;
   const paginationHeight = hasPagination ? token.controlHeightSM + token.paddingLG : 0;
   const dataTemplateHeight = display && enabled ? token.controlHeight + 2 * token.padding + token.margin : 0;
-  return height - actionBarHeight - token.paddingLG - blockTitleHeaderHeight - paginationHeight - dataTemplateHeight;
+  return (
+    height -
+    actionBarHeight -
+    (designable ? token.paddingLG : 0) -
+    blockTitleHeaderHeight -
+    paginationHeight -
+    dataTemplateHeight
+  );
 };
