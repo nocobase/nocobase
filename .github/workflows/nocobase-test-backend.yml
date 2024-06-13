@@ -57,7 +57,7 @@ jobs:
       - name: Test with Sqlite
         run: yarn test --server --single-thread=false packages/core/server/src/__tests__/${{ matrix.corePackages }}
         env:
-          LOGGER_LEVEL: error
+          LOGGER_LEVEL: debug
           DB_DIALECT: sqlite
           DB_STORAGE: /tmp/db.sqlite
           DB_TEST_PREFIX: test_
