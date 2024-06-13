@@ -6,8 +6,9 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
-
 console.log('top of file');
+
+import ws from 'ws';
 describe('helloworld', () => {
   it('should work', () => {
     expect(1).toBe(1);
