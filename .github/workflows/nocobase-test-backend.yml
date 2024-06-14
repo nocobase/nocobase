@@ -54,7 +54,7 @@ jobs:
       - name: Test with Sqlite
         run: yarn test --server --single-thread=false
         env:
-          LOGGER_LEVEL: debug
+          LOGGER_LEVEL: error
           DB_DIALECT: sqlite
           DB_STORAGE: /tmp/db.sqlite
           DB_TEST_PREFIX: test_
