@@ -232,7 +232,10 @@ export class Gateway extends EventEmitter {
       });
     }
 
-    const handleApp = await this.getRequestHandleAppName(req as IncomingRequest);
+    const handleApp = AppSupervisor.getInstance().mainAppHasBeenStarted
+      ? await this.getRequestHandleAppName(req as IncomingRequest)
+      : 'main';
+
     const log = this.getLogger(handleApp, res);
 
     const hasApp = AppSupervisor.getInstance().hasApp(handleApp);
