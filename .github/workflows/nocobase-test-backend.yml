@@ -39,7 +39,7 @@ jobs:
     strategy:
       matrix:
         node_version: ['20']
-        underscored: [true]
+        underscored: [true, false]
     runs-on: ubuntu-latest
     container: node:${{ matrix.node_version }}
     steps:
