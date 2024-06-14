@@ -204,7 +204,8 @@ describe('gateway', () => {
       await waitSecond();
     });
 
-    it('should run test', () => {
+    it('should run test', async () => {
+      await connectClient(port);
       expect(1).toBe(1);
     });
 
