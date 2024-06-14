@@ -54,6 +54,9 @@ describe('createListBlockSchema', () => {
                     "x-component": "ActionBar",
                     "x-component-props": {
                       "layout": "one-column",
+                      "style": {
+                        "marginTop": "var(--nb-spacing)",
+                      },
                     },
                     "x-initializer": "list:configureItemActions",
                     "x-use-component-props": "useListActionBarProps",

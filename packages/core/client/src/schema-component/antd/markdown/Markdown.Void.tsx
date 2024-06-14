@@ -148,7 +148,6 @@ export const MarkdownVoid: any = withDynamicSchemaProps(
       uiSchema: schema,
       noDisabled: true,
     });
-
     useEffect(() => {
       registerQrcodeWebComponent();
     }, []);
@@ -182,7 +181,7 @@ export const MarkdownVoid: any = withDynamicSchemaProps(
     ) : (
       <div
         className={cls([componentCls, hashId, 'nb-markdown nb-markdown-default nb-markdown-table', className])}
-        style={{ ...props.style, height: height || '100%', overflow: 'auto' }}
+        style={{ ...props.style, height: height || '100%' }}
         dangerouslySetInnerHTML={{ __html: html }}
       />
     );

@@ -345,11 +345,10 @@ export function Uploader({ rules, ...props }: UploadProps) {
   const beforeUpload = useBeforeUpload(rules);
 
   useEffect(() => {
-    const error = pendingList.find((file) => file.status === 'error');
-    if (error) {
+    if (pendingList.length) {
       field.setFeedback({
         type: 'error',
-        code: 'UploadError',
+        code: 'ValidateError',
         messages: [t('Incomplete uploading files need to be resolved')],
       });
     } else {
