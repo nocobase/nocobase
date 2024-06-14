@@ -38,30 +38,19 @@ jobs:
   sqlite-test:
     strategy:
       matrix:
-        node_version: ['18']
+        node_version: ['20']
         underscored: [true, false]
     runs-on: ubuntu-latest
     container: node:${{ matrix.node_version }}
     steps:
       - uses: actions/checkout@v4
       - name: Use Node.js ${{ matrix.node_version }}
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node_version }}
-      - name: Get yarn cache directory path
-        id: yarn-cache-dir-path
-        run: echo "::set-output name=dir::$(yarn cache dir)"
-
-      - uses: actions/cache@v3
-        id: yarn-cache # use this to check for `cache-hit` (`steps.yarn-cache.outputs.cache-hit != 'true'`)
-        with:
-          path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
-          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-yarn-
-
+          cache: 'yarn'
       - name: Install project dependencies
-        run: yarn --prefer-offline
+        run: yarn install
       - name: Test with Sqlite
         run: yarn test --server --single-thread=false
         env:
@@ -70,12 +59,11 @@ jobs:
           DB_STORAGE: /tmp/db.sqlite
           DB_TEST_PREFIX: test_
           DB_UNDERSCORED: ${{ matrix.underscored }}
-    timeout-minutes: 60
 
   postgres-test:
     strategy:
       matrix:
-        node_version: ['18']
+        node_version: ['20']
         underscored: [true, false]
         schema: [public, nocobase]
         collection_schema: [public, user_schema]
@@ -99,23 +87,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Use Node.js ${{ matrix.node_version }}
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node_version }}
-      - name: Get yarn cache directory path
-        id: yarn-cache-dir-path
-        run: echo "::set-output name=dir::$(yarn cache dir)"
-
-      - uses: actions/cache@v3
-        id: yarn-cache # use this to check for `cache-hit` (`steps.yarn-cache.outputs.cache-hit != 'true'`)
-        with:
-          path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
-          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-yarn-
+          cache: 'yarn'
 
       - name: Install project dependencies
-        run: yarn --prefer-offline
+        run: yarn install
       - name: Test with postgres
         run: |
           ./node_modules/.bin/tsx packages/core/test/src/scripts/test-db-creator.ts &
@@ -139,7 +117,7 @@ jobs:
   mysql-test:
     strategy:
       matrix:
-        node_version: ['18']
+        node_version: ['20']
         underscored: [true, false]
     runs-on: ubuntu-latest
     container: node:${{ matrix.node_version }}
@@ -153,22 +131,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Use Node.js ${{ matrix.node_version }}
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node_version }}
-      - name: Get yarn cache directory path
-        id: yarn-cache-dir-path
-        run: echo "::set-output name=dir::$(yarn cache dir)"
+          cache: 'yarn'
 
-      - uses: actions/cache@v3
-        id: yarn-cache # use this to check for `cache-hit` (`steps.yarn-cache.outputs.cache-hit != 'true'`)
-        with:
-          path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
-          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-yarn-
       - name: Install project dependencies
-        run: yarn --prefer-offline
+        run: yarn install
       - name: Test with MySQL
         run: |
           ./node_modules/.bin/tsx packages/core/test/src/scripts/test-db-creator.ts &
@@ -189,7 +158,7 @@ jobs:
   mariadb-test:
     strategy:
       matrix:
-        node_version: ['18']
+        node_version: ['20']
         underscored: [true, false]
     runs-on: ubuntu-latest
     container: node:${{ matrix.node_version }}
@@ -203,20 +172,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Use Node.js ${{ matrix.node_version }}
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node_version }}
-      - name: Get yarn cache directory path
-        id: yarn-cache-dir-path
-        run: echo "::set-output name=dir::$(yarn cache dir)"
+          cache: 'yarn'
 
-      - uses: actions/cache@v3
-        id: yarn-cache # use this to check for `cache-hit` (`steps.yarn-cache.outputs.cache-hit != 'true'`)
-        with:
-          path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
-          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-yarn-
+      - name: Install project dependencies
+        run: yarn install
       - name: Install project dependencies
         run: yarn --prefer-offline
       - name: Test with MariaDB

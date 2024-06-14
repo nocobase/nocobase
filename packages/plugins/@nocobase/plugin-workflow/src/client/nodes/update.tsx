@@ -95,7 +95,7 @@ export default class extends Instruction {
           ...values,
           'x-reactions': [
             {
-              dependencies: ['collection', 'assignFormSchema'],
+              dependencies: ['collection', 'usingAssignFormSchema'],
               fulfill: {
                 state: {
                   display: '{{($deps[0] && !$deps[1]) ? "visible" : "hidden"}}',
@@ -106,6 +106,9 @@ export default class extends Instruction {
         },
       },
     },
+    usingAssignFormSchema: {
+      type: 'boolean',
+    },
     assignFormSchema: {
       type: 'object',
       title: '{{t("Fields values")}}',
@@ -113,10 +116,10 @@ export default class extends Instruction {
       'x-component': 'AssignedFieldsFormSchemaConfig',
       'x-reactions': [
         {
-          dependencies: ['collection'],
+          dependencies: ['collection', 'usingAssignFormSchema'],
           fulfill: {
             state: {
-              display: '{{($deps[0] && $self.value) ? "visible" : "hidden"}}',
+              display: '{{($deps[0] && $deps[1]) ? "visible" : "hidden"}}',
             },
           },
         },
@@ -125,7 +128,8 @@ export default class extends Instruction {
   };
   createDefaultConfig() {
     return {
-      assignForm: uid(),
+      usingAssignFormSchema: true,
+      assignFormSchema: {},
     };
   }
   scope = {
