@@ -11,18 +11,22 @@ import { CloseOutlined, LoadingOutlined } from '@ant-design/icons';
 import { useFormLayout } from '@formily/antd-v5';
 import { connect, mapProps, mapReadPretty } from '@formily/react';
 import { isValid } from '@formily/shared';
-import { Button, Space } from 'antd';
+import { Button, Space, Input, theme } from 'antd';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Icon, hasIcon, icons } from '../../../icon';
 import { StablePopover } from '../popover';
 import { debounce } from 'lodash';
 
+const { Search } = Input;
+
 export interface IconPickerProps {
   value?: string;
   onChange?: (value: string) => void;
   disabled?: boolean;
   suffix?: React.ReactNode;
+  iconSize?: number;
+  searchable?: boolean;
 }
 
 interface IconPickerReadPrettyProps {
@@ -30,21 +34,22 @@ interface IconPickerReadPrettyProps {
 }
 
 function IconField(props: IconPickerProps) {
+  const { fontSizeXL } = theme.useToken().token;
   const availableIcons = [...icons.keys()];
   const layout = useFormLayout();
-  const { value, onChange, disabled } = props;
+  const { value, onChange, disabled, iconSize = fontSizeXL, searchable = true } = props;
   const [visible, setVisible] = useState(false);
   const [filteredIcons, setFilteredIcons] = useState(availableIcons);
   const { t } = useTranslation();
 
-  const filterIcons = debounce((input?: string) => {
-    const searchValue = input?.trim() ?? '';
+  const filterIcons = debounce((value) => {
+    const searchValue = value?.trim() ?? '';
     setFilteredIcons(
       searchValue.length
         ? availableIcons.filter((i) => i.split(' ').some((val) => val.includes(searchValue)))
         : availableIcons,
     );
-  }, 300);
+  }, 250);
 
   return (
     <div>
@@ -60,20 +65,22 @@ function IconField(props: IconPickerProps) {
           }}
           content={
             <div style={{ width: '26em', maxHeight: '20em', overflowY: 'auto' }}>
-              <input
-                title={t('Search')}
-                type="search"
-                name="icon-search"
-                autoComplete="off"
-                style={{ width: 'calc(100% - 25px)' }}
-                placeholder={t('Search') + '...'}
-                onChange={(event) => filterIcons(event.target?.value)}
-              />
+              {searchable && (
+                <Search
+                  name="icon-search"
+                  placeholder={t('Search') + '...'}
+                  allowClear
+                  onSearch={filterIcons}
+                  onChange={(event) => filterIcons(event.target?.value)}
+                  style={{ width: 'calc(100% - 25px)' }}
+                />
+              )}
+
               {filteredIcons.map((key) => (
                 <span
                   key={key}
                   title={key.replace(/outlined|filled|twotone$/i, '')}
-                  style={{ fontSize: 24, marginRight: 10, cursor: 'pointer' }}
+                  style={{ fontSize: iconSize, marginRight: 10, cursor: 'pointer' }}
                   onClick={() => {
                     onChange(key);
                     setVisible(false);
