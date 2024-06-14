@@ -44,8 +44,6 @@ jobs:
     container: node:${{ matrix.node_version }}
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
       - name: Use Node.js ${{ matrix.node_version }}
         uses: actions/setup-node@v4
         with:
