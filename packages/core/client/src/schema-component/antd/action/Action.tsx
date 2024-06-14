@@ -127,8 +127,8 @@ export const Action: ComposedAction = withDynamicSchemaProps(
     }, [field, linkageRules, localVariables, variables]);
 
     const handleButtonClick = useCallback(
-      (e: React.MouseEvent) => {
-        if (isPortalInBody(e.target as Element)) {
+      (e: React.MouseEvent, checkPortal = true) => {
+        if (checkPortal && isPortalInBody(e.target as Element)) {
           return;
         }
         e.preventDefault();
@@ -186,7 +186,7 @@ export const Action: ComposedAction = withDynamicSchemaProps(
           {...others}
           onMouseEnter={handleMouseEnter}
           loading={field?.data?.loading || loading}
-          icon={icon ? <Icon type={icon} /> : null}
+          icon={typeof icon === 'string' ? <Icon type={icon} /> : icon}
           disabled={disabled}
           style={buttonStyle}
           onClick={handleButtonClick}

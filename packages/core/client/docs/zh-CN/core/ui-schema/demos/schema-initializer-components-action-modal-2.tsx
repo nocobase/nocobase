@@ -16,6 +16,7 @@ import {
 } from '@nocobase/client';
 import React from 'react';
 import { appOptions } from './schema-initializer-common';
+import { MenuOutlined } from '@ant-design/icons';
 
 const myInitializer = new SchemaInitializer({
   name: 'myInitializer',
@@ -31,6 +32,7 @@ const myInitializer = new SchemaInitializer({
             title="Add Card"
             buttonText="Add Card"
             isItem
+            icon={<MenuOutlined />}
             onSubmit={({ title }) => {
               insert({
                 type: 'void',

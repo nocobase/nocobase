@@ -329,7 +329,7 @@ export const DataBlockInitializer: FC<DataBlockInitializerProps> = (props) => {
     currentText,
     otherText,
   } = props;
-  const { insert, setVisible } = useSchemaInitializer();
+  const { insert } = useSchemaInitializer();
   const compile = useCompile();
   const { getTemplateSchemaByMode } = useSchemaTemplateManager();
   const onClick = useCallback(
@@ -348,9 +348,8 @@ export const DataBlockInitializer: FC<DataBlockInitializerProps> = (props) => {
           onCreateBlockSchema({ item, fromOthersInPopup });
         }
       }
-      setVisible(false);
     },
-    [getTemplateSchemaByMode, insert, onCreateBlockSchema, propsOnClick, setVisible, templateWrap],
+    [getTemplateSchemaByMode, insert, onCreateBlockSchema, propsOnClick, templateWrap],
   );
   const items =
     itemsFromProps ||

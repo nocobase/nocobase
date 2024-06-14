@@ -15,6 +15,7 @@ import { SchemaInitializerItem } from './SchemaInitializerItem';
 
 export interface SchemaInitializerActionModalProps {
   title: string;
+  icon?: string | React.ReactNode;
   schema: any;
   onCancel?: () => void;
   onSubmit?: (values: any) => void;
@@ -23,21 +24,13 @@ export interface SchemaInitializerActionModalProps {
   isItem?: boolean;
 }
 
-const SchemaInitializerActionModalItemComponent = React.forwardRef((props: any, ref) => {
-  const { onClick, title, ...others } = props;
-  return (
-    <SchemaInitializerItem
-      ref={ref}
-      {...others}
-      onClick={(e) => {
-        onClick?.(e.event);
-      }}
-    ></SchemaInitializerItem>
-  );
+const SchemaInitializerActionModalItemComponent = React.forwardRef((props: any, ref: any) => {
+  const { onClick, ...others } = props;
+  return <SchemaInitializerItem ref={ref} {...others} onClick={(e) => onClick?.(e.event, false)} />;
 });
 
 export const SchemaInitializerActionModal: FC<SchemaInitializerActionModalProps> = (props) => {
-  const { title, schema, buttonText, isItem, component, onCancel, onSubmit } = props;
+  const { title, icon, schema, buttonText, isItem, component, onCancel, onSubmit } = props;
   const useCancelAction = useCallback(() => {
     // eslint-disable-next-line react-hooks/rules-of-hooks
     const form = useForm();
@@ -66,6 +59,15 @@ export const SchemaInitializerActionModal: FC<SchemaInitializerActionModalProps>
       },
     };
   }, [onSubmit]);
+
+  const ItemComponent = useMemo(
+    () =>
+      React.forwardRef(({ onClick }: any, ref) => {
+        return <SchemaInitializerActionModalItemComponent onClick={onClick} ref={ref} title={buttonText} icon={icon} />;
+      }),
+    [buttonText, icon],
+  );
+
   const defaultSchema = useMemo(() => {
     return {
       type: 'void',
@@ -76,14 +78,14 @@ export const SchemaInitializerActionModal: FC<SchemaInitializerActionModalProps>
           'x-component-props': component
             ? {
                 component,
+                icon,
               }
             : isItem
               ? {
-                  title: buttonText,
-                  component: SchemaInitializerActionModalItemComponent,
+                  component: ItemComponent,
                 }
               : {
-                  icon: 'PlusOutlined',
+                  icon: icon || 'PlusOutlined',
                   style: {
                     borderColor: 'var(--colorSettings)',
                     color: 'var(--colorSettings)',
