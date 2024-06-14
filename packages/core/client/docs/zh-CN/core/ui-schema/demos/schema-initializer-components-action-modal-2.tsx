@@ -54,6 +54,36 @@ const myInitializer = new SchemaInitializer({
         );
       },
     },
+    {
+      name: 'b',
+      type: 'actionModal',
+      useComponentProps() {
+        const { insert } = useSchemaInitializer();
+        return {
+          isItem: true,
+          icon: <MenuOutlined />,
+          buttonText: 'Add Card 2',
+          title: 'Add Card Form 2',
+          schema: {
+            title: {
+              type: 'string',
+              title: 'Title',
+              required: true,
+              'x-component': 'Input',
+              'x-decorator': 'FormItem',
+            },
+          },
+          onSubmit({ title }) {
+            insert({
+              type: 'void',
+              title,
+              'x-decorator': 'CardItem',
+              'x-component': 'Hello',
+            });
+          },
+        }
+      },
+    }
   ],
 });
 

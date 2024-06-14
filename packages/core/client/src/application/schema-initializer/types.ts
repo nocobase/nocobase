@@ -32,7 +32,7 @@ type SchemaInitializerItemBuiltInType<T = {}> = T & {
 
 export interface SchemaInitializerItemComponentType<T = {}> {
   name: string;
-  Component: ComponentType<T> | string;
+  Component?: ComponentType<T> | string;
   sort?: number;
   componentProps?: Omit<T, 'children'>;
   useComponentProps?: () => Omit<T, 'children'>;

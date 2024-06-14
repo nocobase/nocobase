@@ -12,6 +12,7 @@ import React, { FC, useCallback, useMemo } from 'react';
 import { useActionContext, SchemaComponent } from '../../../schema-component';
 import { useSchemaInitializerItem } from '../context';
 import { SchemaInitializerItem } from './SchemaInitializerItem';
+import { uid } from '@formily/shared';
 
 export interface SchemaInitializerActionModalProps {
   title: string;
@@ -68,11 +69,13 @@ export const SchemaInitializerActionModal: FC<SchemaInitializerActionModalProps>
     [buttonText, icon],
   );
 
+  const schemaId = useMemo(() => uid(), []);
+
   const defaultSchema = useMemo(() => {
     return {
       type: 'void',
       properties: {
-        action1: {
+        [schemaId]: {
           type: 'void',
           'x-component': 'Action',
           'x-component-props': component
@@ -134,7 +137,7 @@ export const SchemaInitializerActionModal: FC<SchemaInitializerActionModalProps>
         },
       },
     };
-  }, [buttonText, component, schema, title, useCancelAction, useSubmitAction]);
+  }, [buttonText, component, schemaId, schema, title, useCancelAction, useSubmitAction]);
 
   return <SchemaComponent schema={defaultSchema as any} />;
 };
