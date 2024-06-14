@@ -74,6 +74,9 @@ export const createListBlockUISchema = (options: {
                 'x-use-component-props': 'useListActionBarProps',
                 'x-component-props': {
                   layout: 'one-column',
+                  style: {
+                    marginTop: 'var(--nb-spacing)',
+                  },
                 },
               },
             },

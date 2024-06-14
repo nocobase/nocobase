@@ -8,9 +8,10 @@
  */
 
 import { SpaceProps, theme } from 'antd';
+import { useFieldSchema } from '@formily/react';
 import { useDataBlockHeight } from '../../hooks/useBlockSize';
 import { useDesignable } from '../../';
-import { useFieldSchema } from '@formily/react';
+import { useDataBlockRequest } from '../../../data-source';
 
 const spaceProps: SpaceProps = {
   size: ['large', 'small'],
@@ -29,11 +30,15 @@ export const useGridCardBodyHeight = () => {
   const height = useDataBlockHeight();
   const schema = useFieldSchema();
   const hasActions = Object.keys(schema.parent.properties.actionBar?.properties || {}).length > 0;
+  const { data } = useDataBlockRequest() || {};
+  const { count, pageSize } = (data as any)?.meta || ({} as any);
+  const hasPagination = count > pageSize;
   if (!height) {
     return;
   }
+
   const actionBarHeight = designable || hasActions ? token.controlHeight + 2 * token.paddingLG + token.marginLG : 0;
-  const paginationHeight = token.controlHeight + 2 * token.paddingLG + token.marginLG;
+  const paginationHeight = hasPagination ? token.controlHeight + 2 * token.paddingLG + token.marginLG : 0;
 
   return height - actionBarHeight - paginationHeight;
 };
