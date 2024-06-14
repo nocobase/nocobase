@@ -64,7 +64,7 @@ export const SchemaInitializerItem = memo(
             if (info.key !== name) return;
             onClick?.({ ...info, item: props });
             if (closeInitializerMenuWhenClick) {
-              setVisible(false);
+              setVisible?.(false);
             }
           },
           icon: typeof icon === 'string' ? <Icon type={icon as string} /> : icon,
@@ -83,7 +83,7 @@ export const SchemaInitializerItem = memo(
           event.stopPropagation();
           onClick?.({ event, item: props });
           if (closeInitializerMenuWhenClick) {
-            setVisible(false);
+            setVisible?.(false);
           }
         }}
       >
