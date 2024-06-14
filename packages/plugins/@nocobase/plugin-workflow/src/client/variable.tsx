@@ -264,7 +264,6 @@ function getNormalizedFields(collectionName, { compile, getCollectionFields }) {
   const [dataSourceName, collection] = parseCollectionName(collectionName);
   // NOTE: `dataSourceName` will be ignored in new version
   const fields = getCollectionFields(collection, dataSourceName);
-  console.log('--------------', fields);
   const fkFields: any[] = [];
   const result: any[] = [];
   fields.forEach((field) => {
