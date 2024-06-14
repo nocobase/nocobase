@@ -64,7 +64,7 @@ export const CollectionManagerPage = () => {
         AddCollectionAction,
         EditCollection: type?.EditCollection || EditCollection,
         EditCollectionAction,
-        DeleteCollection,
+        DeleteCollection: type?.DeleteCollection || DeleteCollection,
         DeleteCollectionAction,
         EditFieldAction,
         EditCollectionField,
