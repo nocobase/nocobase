@@ -320,6 +320,21 @@ export class PluginDataSourceManagerServer extends Plugin {
       name: 'dataSources',
     });
 
+    this.app.db.on('dataSourcesFields.beforeSave', async (model: DataSourcesFieldModel, options) => {
+      const { transaction } = options;
+      if (!model.get('collectionName') || !model.get('dataSourceKey')) {
+        const collectionKey = model.get('collectionKey');
+        if (!collectionKey) {
+          throw new Error('collectionKey is required');
+        }
+
+        const collection = await model.getCollection({ transaction });
+
+        model.set('collectionName', collection.get('name'));
+        model.set('dataSourceKey', collection.get('dataSourceKey'));
+      }
+    });
+
     this.app.db.on('dataSourcesFields.afterSaveWithAssociation', async (model: DataSourcesFieldModel) => {
       model.load({
         app: this.app,
