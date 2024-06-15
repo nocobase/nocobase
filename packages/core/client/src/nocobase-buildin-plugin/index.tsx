@@ -24,7 +24,7 @@ import { RemoteDocumentTitlePlugin } from '../document-title';
 import { PinnedListPlugin } from '../plugin-manager';
 import { PMPlugin } from '../pm';
 import { AdminLayoutPlugin, RouteSchemaComponent } from '../route-switch';
-import { AntdSchemaComponentPlugin, SchemaComponentPlugin } from '../schema-component';
+import { AntdSchemaComponentPlugin, PageTabs, SchemaComponentPlugin } from '../schema-component';
 import { ErrorFallback } from '../schema-component/antd/error-fallback';
 import { AssociationFilterPlugin, SchemaInitializerPlugin } from '../schema-initializer';
 import { SchemaSettingsPlugin } from '../schema-settings';
@@ -301,6 +301,10 @@ export class NocoBaseBuildInPlugin extends Plugin {
     this.router.add('admin.page', {
       path: '/admin/:name',
       Component: 'AdminDynamicPage',
+    });
+    this.router.add('admin.page.tab', {
+      path: '/admin/:name/tabs/:tabUid',
+      Component: PageTabs as any,
     });
   }
 

@@ -16,7 +16,7 @@ import classNames from 'classnames';
 import React, { useContext, useEffect, useMemo, useState } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { useTranslation } from 'react-i18next';
-import { useSearchParams } from 'react-router-dom';
+import { Outlet, useNavigate, useOutletContext, useParams, useSearchParams } from 'react-router-dom';
 import { FormDialog } from '..';
 import { useStyles as useAClStyles } from '../../../acl/style';
 import { useRequest } from '../../../api-client';
@@ -44,6 +44,7 @@ export const Page = (props) => {
   const dn = useDesignable();
   const { theme } = useGlobalTheme();
   const { getAriaLabel } = useGetAriaLabelOfSchemaInitializer();
+  const { tabUid } = useParams();
 
   // react18  tab 动画会卡顿，所以第一个 tab 时，动画禁用，后面的 tab 才启用
   const [hasMounted, setHasMounted] = useState(false);
@@ -62,11 +63,13 @@ export const Page = (props) => {
   const enablePageTabs = fieldSchema['x-component-props']?.enablePageTabs;
   const hidePageTitle = fieldSchema['x-component-props']?.hidePageTitle;
   const options = useContext(SchemaOptionsContext);
-  const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [loading, setLoading] = useState(false);
   const activeKey = useMemo(
-    () => searchParams.get('tab') || Object.keys(fieldSchema.properties || {}).shift(),
-    [fieldSchema.properties, searchParams],
+    // 处理 searchParams 是为了兼容旧版的 tab 参数
+    () => tabUid || searchParams.get('tab') || Object.keys(fieldSchema.properties || {}).shift(),
+    [fieldSchema.properties, searchParams, tabUid],
   );
   const [height, setHeight] = useState(0);
   const { wrapSSR, hashId, componentCls } = useStyles();
@@ -122,7 +125,7 @@ export const Page = (props) => {
                     }}
                     onTabClick={(activeKey) => {
                       setLoading(true);
-                      setSearchParams([['tab', activeKey]]);
+                      navigate(`./tabs/${activeKey}`);
                       setTimeout(() => {
                         setLoading(false);
                       }, 50);
@@ -206,24 +209,39 @@ export const Page = (props) => {
       </div>
       <div className="nb-page-wrapper">
         <ErrorBoundary FallbackComponent={ErrorFallback} onError={handleErrors}>
-          {PageContent(loading, disablePageHeader, enablePageTabs, fieldSchema, activeKey, height, props)}
+          {tabUid ? (
+            <Outlet context={{ loading, disablePageHeader, enablePageTabs, fieldSchema, height, tabUid }} />
+          ) : (
+            <PageContent {...{ loading, disablePageHeader, enablePageTabs, fieldSchema, height, activeKey }} />
+          )}
         </ErrorBoundary>
       </div>
     </div>,
   );
 };
 
+export const PageTabs = () => {
+  const { loading, disablePageHeader, enablePageTabs, fieldSchema, height, tabUid } = useOutletContext<any>();
+  return <PageContent {...{ loading, disablePageHeader, enablePageTabs, fieldSchema, activeKey: tabUid, height }} />;
+};
+
 Page.displayName = 'Page';
 
-function PageContent(
-  loading: boolean,
-  disablePageHeader: any,
-  enablePageTabs: any,
-  fieldSchema: Schema<any, any, any, any, any, any, any, any, any>,
-  activeKey: string,
-  height: number,
-  props: any,
-): React.ReactNode {
+function PageContent({
+  loading,
+  disablePageHeader,
+  enablePageTabs,
+  fieldSchema,
+  activeKey,
+  height,
+}: {
+  loading: boolean;
+  disablePageHeader: any;
+  enablePageTabs: any;
+  fieldSchema: Schema<any, any, any, any, any, any, any, any, any>;
+  activeKey: string;
+  height: number;
+}) {
   const { token } = useToken();
   const { render } = useAppSpin();
 
@@ -231,30 +249,34 @@ function PageContent(
     return render();
   }
 
-  return !disablePageHeader && enablePageTabs ? (
-    fieldSchema.mapProperties((schema) => {
-      if (schema.name !== activeKey) return null;
+  return (
+    <>
+      {!disablePageHeader && enablePageTabs ? (
+        fieldSchema.mapProperties((schema) => {
+          if (schema.name !== activeKey) return null;
 
-      return (
-        <FixedBlock key={schema.name} height={`calc(${height}px + 46px + ${token.paddingPageVertical}px * 2)`}>
-          <SchemaComponent
-            distributed
-            schema={
-              new Schema({
-                properties: {
-                  [schema.name]: schema,
-                },
-              })
-            }
-          />
+          return (
+            <FixedBlock key={schema.name} height={`calc(${height}px + 46px + ${token.paddingPageVertical}px * 2)`}>
+              <SchemaComponent
+                distributed
+                schema={
+                  new Schema({
+                    properties: {
+                      [schema.name]: schema,
+                    },
+                  })
+                }
+              />
+            </FixedBlock>
+          );
+        })
+      ) : (
+        <FixedBlock height={`calc(${height}px + 46px + ${token.paddingPageVertical}px * 2)`}>
+          <div className={`pageWithFixedBlockCss nb-page-content`}>
+            <SchemaComponent schema={fieldSchema} distributed />
+          </div>
         </FixedBlock>
-      );
-    })
-  ) : (
-    <FixedBlock height={`calc(${height}px + 46px + ${token.paddingPageVertical}px * 2)`}>
-      <div className={`pageWithFixedBlockCss nb-page-content`}>
-        <SchemaComponent schema={fieldSchema} distributed />
-      </div>
-    </FixedBlock>
+      )}
+    </>
   );
 }
