@@ -417,7 +417,7 @@ export const useChartFilter = () => {
           if (!(typeof value === 'string' && value.startsWith('{{$') && value?.endsWith('}}'))) {
             return value;
           }
-          if (['$user', '$date', '$nDate', '$nRole'].some((n) => value.includes(n))) {
+          if (['$user', '$date', '$nDate', '$nRole', '$nFilter'].some((n) => value.includes(n))) {
             return value;
           }
           const result = variables?.parseVariable(value);
