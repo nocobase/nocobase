@@ -15,6 +15,10 @@ export class ToOneInterface extends BaseInterface {
   }
 
   async toValue(str: string, ctx?: any) {
+    if (!str) {
+      return null;
+    }
+
     const { filterKey, targetCollection, transaction } = ctx;
 
     const targetInstance = await targetCollection.repository.findOne({
@@ -24,12 +28,11 @@ export class ToOneInterface extends BaseInterface {
       transaction,
     });
 
+    if (!targetInstance) {
+      throw new Error(`"${str}" not found in ${targetCollection.model.name} ${filterKey}`);
+    }
     const primaryKeyAttribute = targetCollection.model.primaryKeyAttribute;
 
-    if (targetInstance) {
-      return targetInstance[primaryKeyAttribute];
-    }
-
-    return null;
+    return targetInstance[primaryKeyAttribute];
   }
 }

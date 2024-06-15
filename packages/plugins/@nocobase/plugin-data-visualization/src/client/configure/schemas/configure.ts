@@ -130,6 +130,7 @@ export const getConfigSchema = (general: any): ISchema => ({
                         autoSize: {
                           minRows: 3,
                         },
+                        json5: true,
                       },
                     },
                   },
