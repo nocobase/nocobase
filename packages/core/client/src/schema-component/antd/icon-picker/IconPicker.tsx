@@ -17,6 +17,7 @@ import { useTranslation } from 'react-i18next';
 import { Icon, hasIcon, icons } from '../../../icon';
 import { StablePopover } from '../popover';
 import { debounce } from 'lodash';
+import { createStyles } from 'antd-style';
 
 const { Search } = Input;
 
@@ -33,6 +34,31 @@ interface IconPickerReadPrettyProps {
   value?: string;
 }
 
+const useStyle = (isSearchable: IconPickerProps['searchable']) =>
+  createStyles(({ token, css }) => {
+    return {
+      popoverContent: css`
+        width: 26em;
+        ${!isSearchable && 'max-'}height: 20em;
+        overflow-y: auto;
+      `,
+      searchbarDivider: css`
+        margin-top: ${token.marginXS}px;
+        margin-bottom: ${token.margin}px;
+
+        &::after {
+          position: relative;
+          top: 12px;
+          display: block;
+          width: calc(100% - 20px);
+          height: 1px;
+          background: ${token.colorSplit};
+          content: '';
+        }
+      `,
+    };
+  })();
+
 function IconField(props: IconPickerProps) {
   const { fontSizeXL } = theme.useToken().token;
   const availableIcons = [...icons.keys()];
@@ -41,6 +67,7 @@ function IconField(props: IconPickerProps) {
   const [visible, setVisible] = useState(false);
   const [filteredIcons, setFilteredIcons] = useState(availableIcons);
   const { t } = useTranslation();
+  const { styles } = useStyle(searchable);
 
   const filterIcons = debounce((value) => {
     const searchValue = value?.trim() ?? '';
@@ -64,38 +91,43 @@ function IconField(props: IconPickerProps) {
             setVisible(val);
           }}
           content={
-            <div style={{ width: '26em', maxHeight: '20em', overflowY: 'auto' }}>
-              {searchable && (
-                <Search
-                  name="icon-search"
-                  placeholder={t('Search') + '...'}
-                  allowClear
-                  onSearch={filterIcons}
-                  onChange={(event) => filterIcons(event.target?.value)}
-                  style={{ width: 'calc(100% - 25px)' }}
-                />
-              )}
-
+            <div className={styles.popoverContent}>
               {filteredIcons.length === 0 ? (
                 <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />
               ) : (
                 filteredIcons.map((key) => (
-                <span
-                  key={key}
-                  title={key.replace(/outlined|filled|twotone$/i, '')}
-                  style={{ fontSize: iconSize, marginRight: 10, cursor: 'pointer' }}
-                  onClick={() => {
-                    onChange(key);
-                    setVisible(false);
-                  }}
-                >
-                  <Icon type={key} />
-                </span>
+                  <span
+                    key={key}
+                    title={key.replace(/outlined|filled|twotone$/i, '')}
+                    style={{ fontSize: iconSize, marginRight: 10, cursor: 'pointer' }}
+                    onClick={() => {
+                      onChange(key);
+                      setVisible(false);
+                    }}
+                  >
+                    <Icon type={key} />
+                  </span>
                 ))
               )}
             </div>
           }
-          title={t('Icon')}
+          title={
+            <div>
+              <div>{t('Icon')}</div>
+              {searchable && (
+                <div className={styles.searchbarDivider}>
+                  <Search
+                    role="search"
+                    name="icon-search"
+                    placeholder={t('Search') + '...'}
+                    allowClear
+                    onSearch={filterIcons}
+                    onChange={(event) => filterIcons(event.target?.value)}
+                  />
+                </div>
+              )}
+            </div>
+          }
           trigger="click"
         >
           <Button size={layout.size as any} disabled={disabled}>
