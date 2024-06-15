@@ -122,6 +122,8 @@ export interface ICollectionManager {
 
   getCollections(): Array<ICollection>;
 
+  removeCollection(name: string): void;
+
   getRepository(name: string, sourceId?: string | number): IRepository;
 
   sync(): Promise<void>;

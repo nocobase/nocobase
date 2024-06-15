@@ -24,7 +24,7 @@ export class CollectionManager implements ICollectionManager {
   protected repositories = new Map<string, IRepository>();
   protected models = new Map<string, any>();
 
-  constructor(options = {}) {
+  constructor(options: any = {}) {
     if (options.dataSource) {
       this.dataSource = options.dataSource;
     }
@@ -108,6 +108,10 @@ export class CollectionManager implements ICollectionManager {
   }
 
   async sync() {}
+
+  removeCollection(name: string): void {
+    this.collections.delete(name);
+  }
 
   protected newCollection(options): ICollection {
     // @ts-ignore
