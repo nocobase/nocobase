@@ -62,10 +62,10 @@ export const SchemaInitializerItem = memo(
           label: children || compile(title),
           onClick: (info) => {
             if (info.key !== name) return;
-            onClick?.({ ...info, item: props });
             if (closeInitializerMenuWhenClick) {
               setVisible?.(false);
             }
+            onClick?.({ ...info, item: props });
           },
           icon: typeof icon === 'string' ? <Icon type={icon as string} /> : icon,
           children: childrenItems,
@@ -81,10 +81,10 @@ export const SchemaInitializerItem = memo(
         ref={ref}
         onClick={(event) => {
           event.stopPropagation();
-          onClick?.({ event, item: props });
           if (closeInitializerMenuWhenClick) {
             setVisible?.(false);
           }
+          onClick?.({ event, item: props });
         }}
       >
         <div
