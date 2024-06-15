@@ -12,7 +12,7 @@ import { Space, Spin, Tag } from 'antd';
 import dayjs from 'dayjs';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
-import { css, useCompile, usePlugin } from '@nocobase/client';
+import { css, useBlockHeightProps, useCompile, usePlugin } from '@nocobase/client';
 
 import {
   SchemaComponent,
@@ -228,6 +228,7 @@ function UserJobStatusColumn(props) {
 }
 
 export const WorkflowTodo: React.FC & { Drawer: React.FC; Decorator: React.FC } = () => {
+  const heightProps = useBlockHeightProps();
   return (
     <SchemaComponent
       components={{
@@ -282,6 +283,7 @@ export const WorkflowTodo: React.FC & { Drawer: React.FC; Decorator: React.FC } 
             'x-use-component-props': 'useTableBlockProps',
             'x-component-props': {
               rowKey: 'id',
+              heightProps,
             },
             properties: {
               actions: {
@@ -642,7 +644,6 @@ function Decorator({ params = {}, children }) {
     showIndex: true,
     dragSort: false,
   };
-
   return (
     <ExtendCollectionsProvider collections={[nodeCollection, workflowCollection, todoCollection]}>
       <TableBlockProvider name="workflow-todo" {...blockProps}>

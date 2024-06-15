@@ -15,9 +15,16 @@ export const useBlockHeightProps = () => {
   const cardItemSchema = getCardItemSchema(fieldSchema);
   const pageSchema = useMemo(() => getPageSchema(fieldSchema), []);
   const { disablePageHeader, enablePageTabs, hidePageTitle } = pageSchema?.['x-component-props'] || {};
-  return {
-    heightProps: { ...cardItemSchema?.['x-component-props'], disablePageHeader, enablePageTabs, hidePageTitle },
-  };
+  return (
+    fieldSchema?.['x-component-props']?.heightProps || {
+      heightProps: {
+        ...cardItemSchema?.['x-component-props'],
+        disablePageHeader,
+        enablePageTabs,
+        hidePageTitle,
+      },
+    }
+  );
 };
 
 export const getPageSchema = (schema) => {

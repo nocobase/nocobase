@@ -76,8 +76,8 @@ const useDrawerFullScreenHeight = () => {
   const { designable } = useDesignable();
   const tabActionHeight = token.paddingContentVerticalLG + token.margin + 2 * token.paddingContentVertical + 24;
   const addBlockBtnHeight = designable
-    ? token.controlHeight + 3 * token.paddingContentHorizontalLG
-    : 2 * token.paddingContentHorizontalLG;
+    ? token.controlHeight + 2 * token.paddingContentHorizontalLG
+    : 1 * token.paddingContentHorizontalLG;
   return tabActionHeight + addBlockBtnHeight;
 };
 // 表格区块高度计算
