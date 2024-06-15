@@ -119,8 +119,11 @@ test.describe('configure actions', () => {
     // add buttons
     await page.getByLabel('schema-initializer-ActionBar-table:configureActions-t_unp4scqamw9').hover();
     await page.getByRole('menuitem', { name: 'Filter' }).click();
+    await page.getByLabel('schema-initializer-ActionBar-table:configureActions-t_unp4scqamw9').hover();
     await page.getByRole('menuitem', { name: 'Add new' }).click();
+    await page.getByLabel('schema-initializer-ActionBar-table:configureActions-t_unp4scqamw9').hover();
     await page.getByRole('menuitem', { name: 'Delete' }).click();
+    await page.getByLabel('schema-initializer-ActionBar-table:configureActions-t_unp4scqamw9').hover();
     await page.getByRole('menuitem', { name: 'Refresh' }).click();
 
     await page.mouse.move(300, 0);

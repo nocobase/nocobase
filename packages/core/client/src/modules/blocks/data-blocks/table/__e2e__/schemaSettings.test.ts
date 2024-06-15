@@ -37,6 +37,9 @@ const addSomeCustomActions = async (page: Page) => {
   await page.getByRole('button', { name: 'Actions', exact: true }).hover();
   await page.getByLabel('designer-schema-initializer-TableV2.Column-TableV2.ActionColumnDesigner-general').hover();
   await page.getByRole('menuitem', { name: 'Popup' }).click();
+
+  await page.getByRole('button', { name: 'Actions', exact: true }).hover();
+  await page.getByLabel('designer-schema-initializer-TableV2.Column-TableV2.ActionColumnDesigner-general').hover();
   await page.getByRole('menuitem', { name: 'Update record' }).click();
 };
 
