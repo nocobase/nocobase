@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { MagicAttributeModel } from '@nocobase/database';
+import { MagicAttributeModel, Model } from '@nocobase/database';
 import { Application } from '@nocobase/server';
 
 export class DataSourcesCollectionModel extends MagicAttributeModel {
@@ -19,6 +19,15 @@ export class DataSourcesCollectionModel extends MagicAttributeModel {
     const dataSource = app.dataSourceManager.dataSources.get(dataSourceName);
     const collection = dataSource.collectionManager.getCollection(collectionOptions.name);
 
+    if (collectionOptions.fields) {
+      collectionOptions.fields = collectionOptions.fields.map((field) => {
+        if (field instanceof Model) {
+          return field.get();
+        }
+
+        return field;
+      });
+    }
     if (collection) {
       collection.updateOptions(collectionOptions);
     } else {

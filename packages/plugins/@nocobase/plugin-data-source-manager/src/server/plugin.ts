@@ -340,7 +340,7 @@ export class PluginDataSourceManagerServer extends Plugin {
       dataSource.collectionManager.removeCollection(model.get('name'));
     });
 
-    this.app.db.on('dataSourcesFields.afterSaveWithAssociation', async (model: DataSourcesFieldModel) => {
+    this.app.db.on('dataSourcesFields.afterSaveWithAssociations', async (model: DataSourcesFieldModel) => {
       model.load({
         app: this.app,
       });

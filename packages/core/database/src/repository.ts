@@ -697,6 +697,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
           ...options,
           transaction,
         });
+        console.log(`${this.collection.name}.afterSaveWithAssociations`);
         await this.database.emitAsync(`${this.collection.name}.afterSaveWithAssociations`, instance, {
           ...options,
           transaction,
