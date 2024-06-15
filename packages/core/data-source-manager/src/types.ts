@@ -10,6 +10,7 @@
 export type CollectionOptions = {
   name: string;
   repository?: string;
+  filterTargetKey?: string;
   fields: any[];
   [key: string]: any;
 };
