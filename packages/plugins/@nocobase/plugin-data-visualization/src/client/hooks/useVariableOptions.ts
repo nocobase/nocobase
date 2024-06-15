@@ -36,7 +36,7 @@ export const useGeneralVariableOptions = (
     [datetimeSettings, currentUserSettings, currentRoleSettings, urlSearchParamsSettings],
   );
 
-  if (!operator || !schema) return [];
+  if (!schema) return [];
 
   return result;
 };
