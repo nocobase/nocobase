@@ -11,7 +11,7 @@ import { CloseOutlined, LoadingOutlined } from '@ant-design/icons';
 import { useFormLayout } from '@formily/antd-v5';
 import { connect, mapProps, mapReadPretty } from '@formily/react';
 import { isValid } from '@formily/shared';
-import { Button, Space, Input, theme } from 'antd';
+import { Button, Empty, Space, Input, theme } from 'antd';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Icon, hasIcon, icons } from '../../../icon';
@@ -76,7 +76,10 @@ function IconField(props: IconPickerProps) {
                 />
               )}
 
-              {filteredIcons.map((key) => (
+              {filteredIcons.length === 0 ? (
+                <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />
+              ) : (
+                filteredIcons.map((key) => (
                 <span
                   key={key}
                   title={key.replace(/outlined|filled|twotone$/i, '')}
@@ -88,7 +91,8 @@ function IconField(props: IconPickerProps) {
                 >
                   <Icon type={key} />
                 </span>
-              ))}
+                ))
+              )}
             </div>
           }
           title={t('Icon')}
