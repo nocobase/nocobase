@@ -96,15 +96,17 @@ const PagePopupsItem: FC<{
     uid: params?.popupUid,
   });
 
-  if (!schema) {
+  if (!schema && index !== paramsList.length - 1) {
     return null;
   }
 
   const clonedSchema = _.cloneDeep(schema);
-  insertToPopupSchema(clonedSchema, params, currentSchema);
+  if (schema) {
+    insertToPopupSchema(clonedSchema, params, currentSchema);
+  }
 
   if (index === paramsList.length - 1) {
-    return <SchemaComponent components={{ PagePopupsItemProvider }} schema={rootSchema} onlyRenderProperties />;
+    return <SchemaComponent components={{ PagePopupsItemProvider }} schema={{ ...rootSchema }} onlyRenderProperties />;
   }
 
   return (
