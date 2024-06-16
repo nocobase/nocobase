@@ -13,6 +13,7 @@ import { App, Button } from 'antd';
 import classnames from 'classnames';
 import { default as lodash } from 'lodash';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { ErrorBoundary } from 'react-error-boundary';
 import { useTranslation } from 'react-i18next';
 import { ErrorFallback, StablePopover, useActionContext } from '../..';
 import { useDesignable } from '../../';
@@ -32,6 +33,8 @@ import { useLocalVariables, useVariables } from '../../../variables';
 import { SortableItem } from '../../common';
 import { useCompile, useComponent, useDesigner } from '../../hooks';
 import { useProps } from '../../hooks/useProps';
+import { PopupsProvider } from '../page/PagePopups';
+import { usePopup } from '../page/utils';
 import ActionContainer from './Action.Container';
 import { ActionDesigner } from './Action.Designer';
 import { ActionDrawer } from './Action.Drawer';
@@ -44,7 +47,6 @@ import { useA } from './hooks';
 import { useGetAriaLabelOfAction } from './hooks/useGetAriaLabelOfAction';
 import { ActionProps, ComposedAction } from './types';
 import { linkageAction, setInitialActionState } from './utils';
-import { ErrorBoundary } from 'react-error-boundary';
 
 const handleError = (err) => console.log(err);
 
@@ -75,6 +77,7 @@ export const Action: ComposedAction = withDynamicSchemaProps(
     const aclCtx = useACLActionParamsContext();
     const { wrapSSR, componentCls, hashId } = useStyles();
     const { t } = useTranslation();
+    const { openPopup, visibleWithURL, setVisibleWithURL } = usePopup();
     const [visible, setVisible] = useState(false);
     const [formValueChanged, setFormValueChanged] = useState(false);
     const Designer = useDesigner();
@@ -143,7 +146,11 @@ export const Action: ComposedAction = withDynamicSchemaProps(
                 }
               });
             } else {
-              setVisible(true);
+              openPopup({
+                onFail() {
+                  setVisible(true);
+                },
+              });
               run();
             }
           };
@@ -158,7 +165,21 @@ export const Action: ComposedAction = withDynamicSchemaProps(
           }
         }
       },
-      [confirm, disabled, modal, onClick, run],
+      [
+        aclCtx,
+        actionTitle,
+        confirm?.content,
+        confirm?.title,
+        disabled,
+        modal,
+        onClick,
+        openPopup,
+        refreshDataBlockRequest,
+        run,
+        service,
+        setVisible,
+        t,
+      ],
     );
 
     const buttonStyle = useMemo(() => {
@@ -166,7 +187,7 @@ export const Action: ComposedAction = withDynamicSchemaProps(
         ...style,
         opacity: designable && (field?.data?.hidden || !aclCtx) && 0.1,
       };
-    }, [designable, field?.data?.hidden, style]);
+    }, [aclCtx, designable, field?.data?.hidden, style]);
 
     const handleMouseEnter = useCallback(
       (e) => {
@@ -207,29 +228,34 @@ export const Action: ComposedAction = withDynamicSchemaProps(
     // }
 
     const result = (
-      <ActionContextProvider
-        button={buttonElement}
-        visible={visible}
-        setVisible={setVisible}
-        formValueChanged={formValueChanged}
-        setFormValueChanged={setFormValueChanged}
-        openMode={openMode}
-        openSize={openSize}
-        containerRefKey={containerRefKey}
-        fieldSchema={fieldSchema}
-      >
-        {popover && <RecursionField basePath={field.address} onlyRenderProperties schema={fieldSchema} />}
-        {!popover && renderButton()}
-        <DeclareVariable
-          name="$nPopupRecord"
-          title={t('Current popup record')}
-          value={recordData}
-          collection={collection}
+      <PopupsProvider visible={false}>
+        <ActionContextProvider
+          button={buttonElement}
+          visible={visible || visibleWithURL}
+          setVisible={(value) => {
+            setVisible?.(value);
+            setVisibleWithURL?.(value);
+          }}
+          formValueChanged={formValueChanged}
+          setFormValueChanged={setFormValueChanged}
+          openMode={openMode}
+          openSize={openSize}
+          containerRefKey={containerRefKey}
+          fieldSchema={fieldSchema}
         >
-          {!popover && props.children}
-        </DeclareVariable>
-        {element}
-      </ActionContextProvider>
+          {popover && <RecursionField basePath={field.address} onlyRenderProperties schema={fieldSchema} />}
+          {!popover && renderButton()}
+          <DeclareVariable
+            name="$nPopupRecord"
+            title={t('Current popup record')}
+            value={recordData}
+            collection={collection}
+          >
+            {!popover && props.children}
+          </DeclareVariable>
+          {element}
+        </ActionContextProvider>
+      </PopupsProvider>
     );
 
     // fix https://nocobase.height.app/T-3235/description

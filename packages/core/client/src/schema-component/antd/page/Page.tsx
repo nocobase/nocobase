@@ -210,9 +210,14 @@ export const Page = (props) => {
       <div className="nb-page-wrapper">
         <ErrorBoundary FallbackComponent={ErrorFallback} onError={handleErrors}>
           {tabUid ? (
+            // used to match the rout with name "admin.page.tab"
             <Outlet context={{ loading, disablePageHeader, enablePageTabs, fieldSchema, height, tabUid }} />
           ) : (
-            <PageContent {...{ loading, disablePageHeader, enablePageTabs, fieldSchema, height, activeKey }} />
+            <>
+              <PageContent {...{ loading, disablePageHeader, enablePageTabs, fieldSchema, height, activeKey }} />
+              {/* Used to match the route with name "admin.page.popup" */}
+              <Outlet />
+            </>
           )}
         </ErrorBoundary>
       </div>
@@ -222,7 +227,13 @@ export const Page = (props) => {
 
 export const PageTabs = () => {
   const { loading, disablePageHeader, enablePageTabs, fieldSchema, height, tabUid } = useOutletContext<any>();
-  return <PageContent {...{ loading, disablePageHeader, enablePageTabs, fieldSchema, activeKey: tabUid, height }} />;
+  return (
+    <>
+      <PageContent {...{ loading, disablePageHeader, enablePageTabs, fieldSchema, activeKey: tabUid, height }} />
+      {/* used to match the route with name "admin.page.tab.popup" */}
+      <Outlet />
+    </>
+  );
 };
 
 Page.displayName = 'Page';

@@ -11,13 +11,12 @@ import { observer, RecursionField, useField, useFieldSchema } from '@formily/rea
 import { Drawer } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
-import { ActionDrawerProps, OpenSize } from './types';
+import { ErrorBoundary, FallbackProps } from 'react-error-boundary';
+import { ErrorFallback } from '../error-fallback';
 import { useStyles } from './Action.Drawer.style';
 import { useActionContext } from './hooks';
 import { useSetAriaLabelForDrawer } from './hooks/useSetAriaLabelForDrawer';
-import { ComposedActionDrawer } from './types';
-import { ErrorBoundary, FallbackProps } from 'react-error-boundary';
-import { ErrorFallback } from '../error-fallback';
+import { ActionDrawerProps, ComposedActionDrawer, OpenSize } from './types';
 
 const DrawerErrorFallback: React.FC<FallbackProps> = (props) => {
   const { visible, setVisible } = useActionContext();
