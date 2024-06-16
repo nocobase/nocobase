@@ -6,51 +6,121 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
-
-import { Html5QrcodeScanner } from 'html5-qrcode';
+import { LeftOutlined } from '@ant-design/icons';
+import { Html5Qrcode, Html5QrcodeScannerState } from 'html5-qrcode';
 import { useNavigate } from 'react-router-dom';
-import React, { useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { useActionContext } from '@nocobase/client';
+import { useTranslation } from 'react-i18next';
 
-const qrcodeRegionId = 'html5qr-code-full-region';
+export const QRCodeScannerInner = (props) => {
+  const { t } = useTranslation();
+  const containerRef = useRef<HTMLDivElement>();
+  const navigate = useNavigate();
+  useEffect(() => {
+    document.documentElement.style.overscrollBehavior = 'none';
+    return () => {
+      document.documentElement.style.overscrollBehavior = 'default';
+    };
+  }, []);
 
-// Creates the configuration object for Html5QrcodeScanner.
-const createConfig = (props) => {
-  const config: any = {};
-  if (props.fps) {
-    config.fps = props.fps;
-  }
-  if (props.qrbox) {
-    config.qrbox = props.qrbox;
-  }
-  if (props.aspectRatio) {
-    config.aspectRatio = props.aspectRatio;
-  }
-  if (props.disableFlip !== undefined) {
-    config.disableFlip = props.disableFlip;
-  }
-  return config;
+  useEffect(() => {
+    const scanner = new Html5Qrcode('qrcode');
+    const init = async ({ width, height }: { width: number; height: number }) => {
+      scanner.start(
+        { facingMode: 'environment' },
+        {
+          fps: 10, // Optional, frame per seconds for qr code scanning
+          aspectRatio: height / width,
+        },
+        (text, result) => {
+          navigate(text);
+        },
+        undefined,
+      );
+    };
+    if (containerRef.current) {
+      const { width, height } = containerRef.current.getBoundingClientRect();
+      console.log({ width, height });
+      init({ width, height });
+    }
+
+    return () => {
+      const state = scanner.getState();
+      if ([Html5QrcodeScannerState.SCANNING, Html5QrcodeScannerState.PAUSED].includes(state)) {
+        scanner
+          .stop()
+          .then(() => scanner.clear())
+          .catch(() => alert('未知错误'));
+      }
+    };
+  }, [navigate]);
+
+  return <div ref={containerRef} id="qrcode" style={{ width: '100%', height: '100%' }} />;
 };
 
 export const QRCodeScanner = (props) => {
-  const navigate = useNavigate();
+  const { visible, setVisible } = useActionContext();
+  const [cameraAvaliable, setCameraAvaliable] = useState(false);
+  const { t } = useTranslation();
+
   useEffect(() => {
-    // when component mounts
-    const config = createConfig(props);
-    const verbose = props.verbose === true;
-    // Suceess callback is required.
-    const qrCodeSuccessCallback = (decodedText, decodedResult) => {
-      navigate(decodedText);
+    const getCameras = async () => {
+      try {
+        const res = await Html5Qrcode.getCameras();
+        if (res.length === 0) alert('未检测到摄像头设备');
+        else setCameraAvaliable(true);
+      } catch (error) {
+        const errMsgMap = {
+          NotFoundError: '未检测到摄像头设备',
+          NotAllowedError: '您未授权',
+        };
+        console.log(error);
+        const msg = errMsgMap[error.name];
+        alert(msg ?? error);
+        setCameraAvaliable(false);
+        setVisible(false);
+      }
     };
-    const html5QrcodeScanner = new Html5QrcodeScanner(qrcodeRegionId, config, verbose);
-    html5QrcodeScanner.render(qrCodeSuccessCallback, props.qrCodeErrorCallback);
+    if (visible && !cameraAvaliable) getCameras();
+  }, [visible, cameraAvaliable, setVisible]);
+  const style: React.CSSProperties = {
+    position: 'fixed',
+    width: '100%',
+    height: '100%',
+    background: 'black',
+    zIndex: '1001',
+    top: 0,
+    left: 0,
+    overflow: 'hidden',
+  };
+  const backIconStyle: React.CSSProperties = {
+    position: 'absolute',
+    top: '22px',
+    left: '20px',
+    zIndex: '1003',
+    color: 'white',
+    fontSize: '1.8em',
+    fontWeight: 'bold',
+  };
+  const titleStyle: React.CSSProperties = {
+    position: 'absolute',
+    color: 'white',
+    fontSize: '1.5em',
+    left: 0,
+    right: 0,
+    top: '20px',
+    zIndex: '1002',
+    marginLeft: 'auto',
+    marginRight: 'auto',
+    textAlign: 'center',
+  };
 
-    // cleanup function when component will unmount
-    return () => {
-      html5QrcodeScanner.clear().catch((error) => {
-        console.error('Failed to clear html5QrcodeScanner. ', error);
-      });
-    };
-  }, [navigate, props]);
-
-  return <div id={qrcodeRegionId} />;
+  return visible && cameraAvaliable ? (
+    <div style={style}>
+      <QRCodeScannerInner />
+      <LeftOutlined style={backIconStyle} onClick={() => setVisible(false)} />
+      <div style={titleStyle}>{t('Scan QR code', { ns: 'block-workbench' })}</div>
+    </div>
+  ) : null;
 };
