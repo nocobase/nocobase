@@ -65,15 +65,17 @@ export const FormItem: any = withDynamicSchemaProps(
 
     const showTitle = schema['x-decorator-props']?.showTitle ?? true;
     const extra = useMemo(() => {
-      return typeof field.description === 'string' ? (
-        <div
-          dangerouslySetInnerHTML={{
-            __html: HTMLEncode(field.description).split('\n').join('<br/>'),
-          }}
-        />
-      ) : (
-        field.description
-      );
+      if (field.description && field.description !== '') {
+        return typeof field.description === 'string' ? (
+          <div
+            dangerouslySetInnerHTML={{
+              __html: HTMLEncode(field.description).split('\n').join('<br/>'),
+            }}
+          />
+        ) : (
+          field.description
+        );
+      }
     }, [field.description]);
     const className = useMemo(() => {
       return cx(formItemWrapCss, {
