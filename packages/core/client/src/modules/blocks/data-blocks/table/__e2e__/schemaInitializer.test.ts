@@ -138,7 +138,13 @@ test.describe('configure actions column', () => {
     await page.getByText('Actions', { exact: true }).hover();
     await page.getByLabel('designer-schema-initializer-TableV2.Column-TableV2.ActionColumnDesigner-').hover();
     await page.getByRole('menuitem', { name: 'View' }).click();
+
+    await page.getByText('Actions', { exact: true }).hover();
+    await page.getByLabel('designer-schema-initializer-TableV2.Column-TableV2.ActionColumnDesigner-').hover();
     await page.getByRole('menuitem', { name: 'Edit' }).click();
+
+    await page.getByText('Actions', { exact: true }).hover();
+    await page.getByLabel('designer-schema-initializer-TableV2.Column-TableV2.ActionColumnDesigner-').hover();
     await page.getByRole('menuitem', { name: 'Delete' }).click();
     await page.getByRole('menuitem', { name: 'Duplicate' }).click();
 
@@ -163,9 +169,10 @@ test.describe('configure actions column', () => {
     // add custom action ------------------------------------------------------------
     await page.getByText('Actions', { exact: true }).hover();
     await page.getByLabel('designer-schema-initializer-TableV2.Column-TableV2.ActionColumnDesigner-').hover();
-
     await page.getByRole('menuitem', { name: 'Popup' }).click();
-    // 此时二级菜单，不应该关闭，可以继续点击？
+
+    await page.getByText('Actions', { exact: true }).hover();
+    await page.getByLabel('designer-schema-initializer-TableV2.Column-TableV2.ActionColumnDesigner-').hover();
     await page.getByRole('menuitem', { name: 'Update record' }).click();
 
     await page.mouse.move(300, 0);
