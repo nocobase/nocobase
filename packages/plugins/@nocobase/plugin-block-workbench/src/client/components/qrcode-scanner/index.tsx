@@ -14,7 +14,8 @@ import { useActionContext } from '@nocobase/client';
 import { useTranslation } from 'react-i18next';
 
 export const QRCodeScannerInner = (props) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation('block-workbench');
+
   const containerRef = useRef<HTMLDivElement>();
   const navigate = useNavigate();
   useEffect(() => {
@@ -51,7 +52,7 @@ export const QRCodeScannerInner = (props) => {
         scanner
           .stop()
           .then(() => scanner.clear())
-          .catch(() => alert('未知错误'));
+          .catch(() => alert(t('Unknown error')));
       }
     };
   }, [navigate]);
@@ -62,18 +63,18 @@ export const QRCodeScannerInner = (props) => {
 export const QRCodeScanner = (props) => {
   const { visible, setVisible } = useActionContext();
   const [cameraAvaliable, setCameraAvaliable] = useState(false);
-  const { t } = useTranslation();
+  const { t } = useTranslation('block-workbench');
 
   useEffect(() => {
     const getCameras = async () => {
       try {
         const res = await Html5Qrcode.getCameras();
-        if (res.length === 0) alert('未检测到摄像头设备');
+        if (res.length === 0) alert(t('No camera device detected'));
         else setCameraAvaliable(true);
       } catch (error) {
         const errMsgMap = {
-          NotFoundError: '未检测到摄像头设备',
-          NotAllowedError: '您未授权',
+          NotFoundError: t('No camera device detected'),
+          NotAllowedError: t('You have not granted permission to use the camera'),
         };
         console.log(error);
         const msg = errMsgMap[error.name];
@@ -83,7 +84,7 @@ export const QRCodeScanner = (props) => {
       }
     };
     if (visible && !cameraAvaliable) getCameras();
-  }, [visible, cameraAvaliable, setVisible]);
+  }, [visible, cameraAvaliable, setVisible, t]);
   const style: React.CSSProperties = {
     position: 'fixed',
     width: '100%',
@@ -120,7 +121,7 @@ export const QRCodeScanner = (props) => {
     <div style={style}>
       <QRCodeScannerInner />
       <LeftOutlined style={backIconStyle} onClick={() => setVisible(false)} />
-      <div style={titleStyle}>{t('Scan QR code', { ns: 'block-workbench' })}</div>
+      <div style={titleStyle}>{t('Scan QR code')}</div>
     </div>
   ) : null;
 };
