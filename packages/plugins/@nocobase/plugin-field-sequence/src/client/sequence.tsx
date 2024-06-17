@@ -35,7 +35,6 @@ function RuleTypeSelect(props) {
   useFormEffects(() => {
     onFieldValueChange(`patterns.${index}.type`, (field) => {
       const type = RuleTypes[field.value];
-      console.log('--------', type.defaults);
       setValuesIn(`patterns.${index}.options`, type.defaults ? { ...type.defaults } : {});
     });
   });
