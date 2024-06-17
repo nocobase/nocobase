@@ -20,9 +20,9 @@ import {
   useCollectionRecord,
   useDataSourceKey,
 } from '../../../data-source';
-import { PopupsProviderContext } from './PagePopups';
+import { PopupsProviderContext, PopupsVisibleProviderContext } from './PagePopups';
 
-export interface PopupParam {
+export interface PopupParams {
   /** popup uid */
   popupUid: string;
   /** data source */
@@ -43,7 +43,7 @@ export interface PopupParam {
   sourceid?: string;
 }
 
-export interface PopupParamsStorage extends PopupParam {
+export interface PopupParamsStorage extends PopupParams {
   schema?: ISchema;
   record?: CollectionRecord;
   parentRecord?: CollectionRecord;
@@ -72,11 +72,11 @@ export const getPopupParamsFromPath = _.memoize((path: string) => {
     return {
       popupUid,
       ...obj,
-    } as PopupParam;
+    } as PopupParams;
   });
 });
 
-export const getPopupPathFromParams = (params: PopupParam) => {
+export const getPopupPathFromParams = (params: PopupParams) => {
   const { popupUid, tab, datasource, filterbytk, collection, association, sourceid } = params;
   const popupPath = [
     popupUid,
@@ -97,7 +97,7 @@ export const getPopupPathFromParams = (params: PopupParam) => {
   return `/popups/${popupPath.join('/')}`;
 };
 
-export const usePopup = () => {
+export const usePagePopup = () => {
   const navigate = useNavigate();
   const fieldSchema = useFieldSchema();
   const dataSourceKey = useDataSourceKey();
@@ -106,7 +106,8 @@ export const usePopup = () => {
   const collection = useCollection();
   const cm = useCollectionManager();
   const association = useAssociationName();
-  const { visible, setVisible } = useContext(PopupsProviderContext) || {};
+  const { visible, setVisible } = useContext(PopupsVisibleProviderContext) || {};
+  const { popupParams } = useContext(PopupsProviderContext) || {};
 
   const openPopup = useCallback(
     ({ onFail }: { onFail?: () => void } = {}) => {
@@ -160,6 +161,7 @@ export const usePopup = () => {
     closePopup,
     visibleWithURL: visible,
     setVisibleWithURL: setVisible,
+    popupParams,
   };
 };
 

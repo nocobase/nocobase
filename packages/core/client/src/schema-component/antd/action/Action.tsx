@@ -33,8 +33,8 @@ import { useLocalVariables, useVariables } from '../../../variables';
 import { SortableItem } from '../../common';
 import { useCompile, useComponent, useDesigner } from '../../hooks';
 import { useProps } from '../../hooks/useProps';
-import { PopupsProvider } from '../page/PagePopups';
-import { usePopup } from '../page/pagePopupUtils';
+import { PopupsVisibleProvider } from '../page/PagePopups';
+import { usePagePopup } from '../page/pagePopupUtils';
 import ActionContainer from './Action.Container';
 import { ActionDesigner } from './Action.Designer';
 import { ActionDrawer } from './Action.Drawer';
@@ -77,7 +77,7 @@ export const Action: ComposedAction = withDynamicSchemaProps(
     const aclCtx = useACLActionParamsContext();
     const { wrapSSR, componentCls, hashId } = useStyles();
     const { t } = useTranslation();
-    const { openPopup, visibleWithURL, setVisibleWithURL } = usePopup();
+    const { openPopup, visibleWithURL, setVisibleWithURL } = usePagePopup();
     const [visible, setVisible] = useState(false);
     const [formValueChanged, setFormValueChanged] = useState(false);
     const Designer = useDesigner();
@@ -228,7 +228,7 @@ export const Action: ComposedAction = withDynamicSchemaProps(
     // }
 
     const result = (
-      <PopupsProvider visible={false}>
+      <PopupsVisibleProvider visible={false}>
         <ActionContextProvider
           button={buttonElement}
           visible={visible || visibleWithURL}
@@ -255,7 +255,7 @@ export const Action: ComposedAction = withDynamicSchemaProps(
           </DeclareVariable>
           {element}
         </ActionContextProvider>
-      </PopupsProvider>
+      </PopupsVisibleProvider>
     );
 
     // fix https://nocobase.height.app/T-3235/description

@@ -93,6 +93,13 @@ function useParentRequest<T>(options: Omit<AllDataBlockProps, 'type'>) {
   );
 }
 
+const getRecordData = (record: CollectionRecord | CollectionRecord['data']) => {
+  if (record instanceof CollectionRecord) {
+    return record.data;
+  }
+  return record;
+};
+
 export const BlockRequestProvider: FC = ({ children }) => {
   const props = useDataBlockProps();
   const {
@@ -137,13 +144,17 @@ export const BlockRequestProvider: FC = ({ children }) => {
       {action !== 'list' ? (
         <CollectionRecordProvider
           isNew={action == null}
-          record={currentRequest.data?.data}
-          parentRecord={memoizedParentRecord}
+          record={currentRequest.data?.data || getRecordData(record)}
+          parentRecord={memoizedParentRecord || getRecordData(parentRecord)}
         >
           {children}
         </CollectionRecordProvider>
       ) : (
-        <CollectionRecordProvider isNew={false} record={null} parentRecord={memoizedParentRecord}>
+        <CollectionRecordProvider
+          isNew={false}
+          record={null}
+          parentRecord={memoizedParentRecord || getRecordData(parentRecord)}
+        >
           {children}
         </CollectionRecordProvider>
       )}

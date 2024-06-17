@@ -15,19 +15,24 @@ import { useAPIClient } from '../../../api-client';
 import { DataBlockProvider } from '../../../data-source/data-block/DataBlockProvider';
 import { SchemaComponent } from '../../core';
 import {
-  PopupParam,
+  PopupParams,
   PopupParamsStorage,
   getPopupParamsFromPath,
   getStoredPopupParams,
-  usePopup,
+  usePagePopup,
 } from './pagePopupUtils';
 
-interface PopupsProviderProps {
+interface PopupsVisibleProviderProps {
   visible: boolean;
   setVisible?: (value: boolean) => void;
 }
+interface PopupsProviderProps {
+  popupParams: PopupParams;
+}
 
+export const PopupsVisibleProviderContext = React.createContext<PopupsVisibleProviderProps>(null);
 export const PopupsProviderContext = React.createContext<PopupsProviderProps>(null);
+PopupsVisibleProviderContext.displayName = 'PopupsVisibleProviderContext';
 PopupsProviderContext.displayName = 'PopupsProviderContext';
 
 /**
@@ -36,12 +41,24 @@ PopupsProviderContext.displayName = 'PopupsProviderContext';
  * @param param0
  * @returns
  */
-export const PopupsProvider: FC<PopupsProviderProps> = ({ children, visible, setVisible }) => {
-  return <PopupsProviderContext.Provider value={{ visible, setVisible }}>{children}</PopupsProviderContext.Provider>;
+export const PopupsVisibleProvider: FC<PopupsVisibleProviderProps> = ({ children, visible, setVisible }) => {
+  return (
+    <PopupsVisibleProviderContext.Provider value={{ visible, setVisible }}>
+      {children}
+    </PopupsVisibleProviderContext.Provider>
+  );
 };
 
-const PagePopupsItemProvider: FC<{ params: PopupParam }> = ({ params, children }) => {
-  const { closePopup } = usePopup();
+const PopupsProvider: FC<PopupsProviderProps> = (props) => {
+  return (
+    <PopupsProviderContext.Provider value={{ popupParams: props.popupParams }}>
+      {props.children}
+    </PopupsProviderContext.Provider>
+  );
+};
+
+const PagePopupsItemProvider: FC<{ params: PopupParams }> = ({ params, children }) => {
+  const { closePopup } = usePagePopup();
   const [visible, _setVisible] = useState(true);
   const setVisible = (visible: boolean) => {
     if (!visible) {
@@ -55,20 +72,22 @@ const PagePopupsItemProvider: FC<{ params: PopupParam }> = ({ params, children }
   }
 
   return (
-    <PopupsProvider visible={visible} setVisible={setVisible}>
-      <DataBlockProvider
-        dataSource={_params.datasource}
-        collection={_params.collection}
-        association={_params.association}
-        filterByTk={_params.filterbytk}
-        sourceId={_params.sourceid}
-        // @ts-ignore
-        record={_params.record}
-        parentRecord={_params.parentRecord}
-        action="get"
-      >
-        <div style={{ display: 'none' }}>{children}</div>
-      </DataBlockProvider>
+    <PopupsProvider popupParams={params}>
+      <PopupsVisibleProvider visible={visible} setVisible={setVisible}>
+        <DataBlockProvider
+          dataSource={_params.datasource}
+          collection={_params.collection}
+          association={_params.association}
+          filterByTk={_params.filterbytk}
+          sourceId={_params.sourceid}
+          // @ts-ignore
+          record={_params.record}
+          parentRecord={_params.parentRecord}
+          action="get"
+        >
+          <div style={{ display: 'none' }}>{children}</div>
+        </DataBlockProvider>
+      </PopupsVisibleProvider>
     </PopupsProvider>
   );
 };
@@ -79,7 +98,7 @@ const PagePopupsItemProvider: FC<{ params: PopupParam }> = ({ params, children }
  * @param params
  * @param parentSchema
  */
-export const insertToPopupSchema = (childSchema: ISchema, params: PopupParam, parentSchema: ISchema) => {
+export const insertToPopupSchema = (childSchema: ISchema, params: PopupParams, parentSchema: ISchema) => {
   const componentSchema = {
     type: 'void',
     'x-component': 'PagePopupsItemProvider',
