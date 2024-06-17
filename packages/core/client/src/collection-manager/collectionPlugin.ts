@@ -55,7 +55,6 @@ import {
 } from './interfaces';
 import {
   GeneralCollectionTemplate,
-  ExpressionCollectionTemplate,
   SqlCollectionTemplate,
   TreeCollectionTemplate,
   ViewCollectionTemplate,
@@ -180,7 +179,6 @@ export class CollectionPlugin extends Plugin {
   addCollectionTemplates() {
     this.dataSourceManager.addCollectionTemplates([
       GeneralCollectionTemplate,
-      ExpressionCollectionTemplate,
       SqlCollectionTemplate,
       TreeCollectionTemplate,
       ViewCollectionTemplate,
