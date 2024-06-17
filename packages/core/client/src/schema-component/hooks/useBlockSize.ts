@@ -13,7 +13,7 @@ import { theme } from 'antd';
 import { debounce } from 'lodash';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { useDesignable } from '..';
-import { useDataBlockRequest } from '../../';
+import { useDataBlockRequest, useCollection } from '../../';
 import { HeightMode } from '../../schema-settings/SchemaSettingsBlockHeightItem';
 import { useBlockHeightProps, getPageSchema } from '../../block-provider/hooks';
 
@@ -58,7 +58,18 @@ const usePageFullScreenHeight = (props?) => {
   return navHeight + pageHeaderHeight + addBlockBtnHeight;
 };
 
-//抽屉中满屏
+// 抽屉中满屏
+const useDrawerFullScreenHeight = () => {
+  const { token } = theme.useToken();
+  const { designable } = useDesignable();
+  const tabActionHeight = token.paddingContentVerticalLG + token.margin + 2 * token.paddingContentVertical + 24;
+  const addBlockBtnHeight = designable
+    ? token.controlHeight + 2 * token.paddingContentHorizontalLG
+    : 1 * token.paddingContentHorizontalLG;
+  return tabActionHeight + addBlockBtnHeight;
+};
+
+//满屏
 const useFullScreenHeight = (props?) => {
   const schema = useFieldSchema();
   const isDrawerBlock = hasActionContainerInParentChain(schema);
@@ -70,16 +81,7 @@ const useFullScreenHeight = (props?) => {
   return pageReservedHeight;
 };
 
-// 抽屉中满屏
-const useDrawerFullScreenHeight = () => {
-  const { token } = theme.useToken();
-  const { designable } = useDesignable();
-  const tabActionHeight = token.paddingContentVerticalLG + token.margin + 2 * token.paddingContentVertical + 24;
-  const addBlockBtnHeight = designable
-    ? token.controlHeight + 2 * token.paddingContentHorizontalLG
-    : 1 * token.paddingContentHorizontalLG;
-  return tabActionHeight + addBlockBtnHeight;
-};
+const InternalWorkflowCollection = ['users_jobs'];
 // 表格区块高度计算
 const useTableHeight = () => {
   const { token } = theme.useToken();
@@ -88,6 +90,7 @@ const useTableHeight = () => {
   const schema = useFieldSchema();
   const pageFullScreenHeight = useFullScreenHeight();
   const { data } = useDataBlockRequest();
+  const { name } = useCollection();
   const { count, pageSize } = (data as any)?.meta || ({} as any);
   const hasPagination = count > pageSize;
   const { heightMode, height, title } = heightProps;
@@ -97,9 +100,15 @@ const useTableHeight = () => {
   const hasTableActions = Object.keys(schema.parent.properties.actions?.properties || {}).length > 0;
   const paginationHeight = hasPagination ? token.controlHeight + token.padding + token.marginLG : token.marginLG;
   const actionBarHeight = hasTableActions || designable ? token.controlHeight + 2 * token.marginLG : token.marginLG;
-  const tableHeaderHeight = (designable ? token.controlHeight : 22) + 2 * token.padding + 1;
+  const tableHeaderHeight =
+    (designable && !InternalWorkflowCollection.includes(name) ? token.controlHeight : 22) + 2 * token.padding + 1;
   const blockHeaderHeight = title ? token.fontSizeLG * token.lineHeightLG + token.padding * 2 - 1 : 0;
   if (heightMode === HeightMode.FULL_HEIGHT) {
+    console.log('blockHeaderHeight', blockHeaderHeight);
+    console.log('tableHeaderHeight', tableHeaderHeight);
+    console.log('tableHeaderHeight', tableHeaderHeight);
+    console.log('actionBarHeight', actionBarHeight);
+    console.log('paginationHeight', paginationHeight);
     return (
       window.innerHeight -
       pageFullScreenHeight -
