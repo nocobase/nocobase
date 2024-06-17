@@ -132,6 +132,31 @@ describe('collections repository', () => {
     await app.destroy();
   });
 
+  it('should throw error when field name already exists', async () => {
+    await Field.repository.create({
+      values: {
+        name: 'name',
+        type: 'string',
+        collectionName: 'tests',
+      },
+    });
+    let error;
+
+    try {
+      await Field.repository.create({
+        values: {
+          name: 'name',
+          type: 'string',
+          collectionName: 'tests',
+        },
+      });
+    } catch (err) {
+      error = err;
+    }
+
+    expect(error).toBeDefined();
+  });
+
   it('should generate the name and key randomly', async () => {
     const field = await Field.repository.create({
       values: {
