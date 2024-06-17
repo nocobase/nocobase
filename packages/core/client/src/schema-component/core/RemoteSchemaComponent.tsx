@@ -10,7 +10,7 @@
 import { createForm } from '@formily/core';
 import { Schema } from '@formily/react';
 import { Spin } from 'antd';
-import React, { useMemo } from 'react';
+import React, { memo, useMemo } from 'react';
 import { useSchemaComponentContext } from '../hooks';
 import { FormProvider } from './FormProvider';
 import { SchemaComponent } from './SchemaComponent';
@@ -70,6 +70,7 @@ const RequestSchemaComponent: React.FC<RemoteSchemaComponentProps> = (props) => 
   );
 };
 
-export const RemoteSchemaComponent: React.FC<RemoteSchemaComponentProps> = (props) => {
+export const RemoteSchemaComponent: React.FC<RemoteSchemaComponentProps> = memo((props) => {
   return props.uid ? <RequestSchemaComponent {...props} /> : null;
-};
+});
+RemoteSchemaComponent.displayName = 'RemoteSchemaComponent';

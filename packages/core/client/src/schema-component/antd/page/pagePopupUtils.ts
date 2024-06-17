@@ -7,16 +7,17 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { useFieldSchema } from '@formily/react';
+import { ISchema, useFieldSchema } from '@formily/react';
 import _ from 'lodash';
 import { useCallback, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
+  CollectionRecord,
   useAssociationName,
   useCollection,
   useCollectionManager,
-  useCollectionParentRecordData,
-  useCollectionRecordData,
+  useCollectionParentRecord,
+  useCollectionRecord,
   useDataSourceKey,
 } from '../../../data-source';
 import { PopupsProviderContext } from './PagePopups';
@@ -42,7 +43,23 @@ export interface PopupParam {
   sourceid?: string;
 }
 
-export const getPopupParamsFromPath = (path: string) => {
+export interface PopupParamsStorage extends PopupParam {
+  schema?: ISchema;
+  record?: CollectionRecord;
+  parentRecord?: CollectionRecord;
+}
+
+const popupParamsStorage: Record<string, PopupParamsStorage> = {};
+
+export const getStoredPopupParams = (popupUid: string) => {
+  return popupParamsStorage[popupUid];
+};
+
+export const storePopupParams = (popupUid: string, params: PopupParamsStorage) => {
+  popupParamsStorage[popupUid] = params;
+};
+
+export const getPopupParamsFromPath = _.memoize((path: string) => {
   const popupPaths = path.split('popups');
   return popupPaths.map((popupPath) => {
     const [popupUid, ...popupParams] = popupPath.split('/').filter(Boolean);
@@ -57,7 +74,7 @@ export const getPopupParamsFromPath = (path: string) => {
       ...obj,
     } as PopupParam;
   });
-};
+});
 
 export const getPopupPathFromParams = (params: PopupParam) => {
   const { popupUid, tab, datasource, filterbytk, collection, association, sourceid } = params;
@@ -84,8 +101,8 @@ export const usePopup = () => {
   const navigate = useNavigate();
   const fieldSchema = useFieldSchema();
   const dataSourceKey = useDataSourceKey();
-  const recordData = useCollectionRecordData();
-  const parentRecordData = useCollectionParentRecordData();
+  const record = useCollectionRecord();
+  const parentRecord = useCollectionParentRecord();
   const collection = useCollection();
   const cm = useCollectionManager();
   const association = useAssociationName();
@@ -97,22 +114,35 @@ export const usePopup = () => {
         return onFail?.();
       }
 
+      const filterByTK = record?.data?.[collection.getPrimaryKey()];
+      const sourceId = parentRecord?.data?.[cm.getCollection(association?.split('.')[0])?.getPrimaryKey()];
       const pathname = getPopupPathFromParams({
         popupUid: fieldSchema['x-uid'],
         datasource: dataSourceKey,
-        filterbytk: recordData?.[collection.getPrimaryKey()],
+        filterbytk: filterByTK,
         collection: collection.name,
         association,
-        sourceid: parentRecordData?.[cm.getCollection(association?.split('.')[0])?.getPrimaryKey()],
+        sourceid: sourceId,
       });
       let url = window.location.pathname;
       if (_.last(url) === '/') {
         url = url.slice(0, -1);
       }
 
+      storePopupParams(fieldSchema['x-uid'], {
+        schema: fieldSchema,
+        popupUid: fieldSchema['x-uid'],
+        datasource: dataSourceKey,
+        filterbytk: filterByTK,
+        collection: collection.name,
+        association,
+        sourceid: sourceId,
+        record,
+        parentRecord,
+      });
       navigate(`${url}${pathname}`);
     },
-    [association, cm, collection, dataSourceKey, fieldSchema, navigate, parentRecordData, recordData],
+    [association, cm, collection, dataSourceKey, fieldSchema, navigate, parentRecord, record],
   );
 
   const closePopup = useCallback(() => {

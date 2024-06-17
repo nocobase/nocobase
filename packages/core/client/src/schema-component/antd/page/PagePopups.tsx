@@ -9,12 +9,18 @@
 
 import { ISchema } from '@formily/json-schema';
 import _ from 'lodash';
-import { FC, default as React, useState } from 'react';
+import { FC, default as React, useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
+import { useAPIClient } from '../../../api-client';
 import { DataBlockProvider } from '../../../data-source/data-block/DataBlockProvider';
 import { SchemaComponent } from '../../core';
-import { useRequestSchema } from '../../core/useRequestSchema';
-import { PopupParam, getPopupParamsFromPath, usePopup } from './pagePopupUtils';
+import {
+  PopupParam,
+  PopupParamsStorage,
+  getPopupParamsFromPath,
+  getStoredPopupParams,
+  usePopup,
+} from './pagePopupUtils';
 
 interface PopupsProviderProps {
   visible: boolean;
@@ -42,15 +48,23 @@ const PagePopupsItemProvider: FC<{ params: PopupParam }> = ({ params, children }
       closePopup();
     }
   };
+  let _params: PopupParamsStorage = params;
+  const storedParams = getStoredPopupParams(params.popupUid);
+  if (storedParams) {
+    _params = storedParams;
+  }
 
   return (
     <PopupsProvider visible={visible} setVisible={setVisible}>
       <DataBlockProvider
-        dataSource={params.datasource}
-        collection={params.collection}
-        association={params.association}
-        filterByTk={params.filterbytk}
-        sourceId={params.sourceid}
+        dataSource={_params.datasource}
+        collection={_params.collection}
+        association={_params.association}
+        filterByTk={_params.filterbytk}
+        sourceId={_params.sourceid}
+        // @ts-ignore
+        record={_params.record}
+        parentRecord={_params.parentRecord}
         action="get"
       >
         <div style={{ display: 'none' }}>{children}</div>
@@ -65,7 +79,7 @@ const PagePopupsItemProvider: FC<{ params: PopupParam }> = ({ params, children }
  * @param params
  * @param parentSchema
  */
-const insertToPopupSchema = (childSchema: ISchema, params: PopupParam, parentSchema: ISchema) => {
+export const insertToPopupSchema = (childSchema: ISchema, params: PopupParam, parentSchema: ISchema) => {
   const componentSchema = {
     type: 'void',
     'x-component': 'PagePopupsItemProvider',
@@ -85,61 +99,53 @@ const insertToPopupSchema = (childSchema: ISchema, params: PopupParam, parentSch
   }
 };
 
-const PagePopupsItem: FC<{
-  paramsList: PopupParam[];
-  index: number;
-  rootSchema: ISchema;
-  currentSchema: ISchema;
-}> = ({ paramsList, index, rootSchema, currentSchema }) => {
-  const params = paramsList[index];
-  const { schema } = useRequestSchema({
-    uid: params?.popupUid,
-  });
-
-  if (!schema && index !== paramsList.length - 1) {
-    return null;
-  }
-
-  const clonedSchema = _.cloneDeep(schema);
-  if (schema) {
-    insertToPopupSchema(clonedSchema, params, currentSchema);
-  }
-
-  if (index === paramsList.length - 1) {
-    return <SchemaComponent components={{ PagePopupsItemProvider }} schema={{ ...rootSchema }} onlyRenderProperties />;
-  }
-
-  return (
-    <PagePopupsItem paramsList={paramsList} index={index + 1} rootSchema={rootSchema} currentSchema={clonedSchema} />
-  );
-};
-
 export const PagePopups = () => {
   const params = useParams();
   const popupParams = getPopupParamsFromPath(params['*']);
   const firstParams = popupParams[0];
+  const { requestSchema } = useRequestSchema();
+  const [rootSchema, setRootSchema] = useState<ISchema>(null);
 
-  const { schema } = useRequestSchema({
-    uid: firstParams?.popupUid,
-  });
+  useEffect(() => {
+    const run = async () => {
+      const waitList = popupParams.map(
+        (params) => getStoredPopupParams(params.popupUid)?.schema || requestSchema(params.popupUid),
+      );
+      const schemas = await Promise.all(waitList);
+      const clonedSchemas = schemas.map((schema) => {
+        return _.cloneDeep(_.omit(schema, 'parent'));
+      });
+      const rootSchema = clonedSchemas[0];
+      for (let i = 1; i < clonedSchemas.length; i++) {
+        insertToPopupSchema(clonedSchemas[i], popupParams[i], clonedSchemas[i - 1]);
+      }
+      setRootSchema(rootSchema);
+    };
+    run();
+  }, [popupParams, requestSchema]);
 
-  if (!schema) {
+  const components = useMemo(() => ({ PagePopupsItemProvider }), []);
+
+  if (!rootSchema) {
     return null;
   }
 
-  if (popupParams.length === 1) {
-    return (
-      <PagePopupsItemProvider params={firstParams}>
-        <SchemaComponent schema={schema} onlyRenderProperties />
-      </PagePopupsItemProvider>
-    );
-  }
-
-  const clonedSchema = _.cloneDeep(schema);
-
   return (
     <PagePopupsItemProvider params={firstParams}>
-      <PagePopupsItem paramsList={popupParams} index={1} rootSchema={clonedSchema} currentSchema={clonedSchema} />;
+      <SchemaComponent components={components} schema={rootSchema} onlyRenderProperties />;
     </PagePopupsItemProvider>
   );
+};
+
+const useRequestSchema = () => {
+  const api = useAPIClient();
+
+  const requestSchema = useCallback(async (uid: string) => {
+    const data = await api.request({
+      url: `/uiSchemas:getJsonSchema/${uid}`,
+    });
+    return data.data?.data as ISchema;
+  }, []);
+
+  return { requestSchema };
 };

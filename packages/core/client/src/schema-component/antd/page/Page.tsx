@@ -13,7 +13,7 @@ import { FormLayout } from '@formily/antd-v5';
 import { Schema, SchemaOptionsContext, useFieldSchema } from '@formily/react';
 import { Button, Tabs } from 'antd';
 import classNames from 'classnames';
-import React, { useContext, useEffect, useMemo, useState } from 'react';
+import React, { memo, useContext, useEffect, useMemo, useState } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { useTranslation } from 'react-i18next';
 import { Outlet, useNavigate, useOutletContext, useParams, useSearchParams } from 'react-router-dom';
@@ -238,56 +238,59 @@ export const PageTabs = () => {
 
 Page.displayName = 'Page';
 
-function PageContent({
-  loading,
-  disablePageHeader,
-  enablePageTabs,
-  fieldSchema,
-  activeKey,
-  height,
-}: {
-  loading: boolean;
-  disablePageHeader: any;
-  enablePageTabs: any;
-  fieldSchema: Schema<any, any, any, any, any, any, any, any, any>;
-  activeKey: string;
-  height: number;
-}) {
-  const { token } = useToken();
-  const { render } = useAppSpin();
+const PageContent = memo(
+  ({
+    loading,
+    disablePageHeader,
+    enablePageTabs,
+    fieldSchema,
+    activeKey,
+    height,
+  }: {
+    loading: boolean;
+    disablePageHeader: any;
+    enablePageTabs: any;
+    fieldSchema: Schema<any, any, any, any, any, any, any, any, any>;
+    activeKey: string;
+    height: number;
+  }) => {
+    const { token } = useToken();
+    const { render } = useAppSpin();
 
-  if (loading) {
-    return render();
-  }
+    if (loading) {
+      return render();
+    }
 
-  return (
-    <>
-      {!disablePageHeader && enablePageTabs ? (
-        fieldSchema.mapProperties((schema) => {
-          if (schema.name !== activeKey) return null;
+    return (
+      <>
+        {!disablePageHeader && enablePageTabs ? (
+          fieldSchema.mapProperties((schema) => {
+            if (schema.name !== activeKey) return null;
 
-          return (
-            <FixedBlock key={schema.name} height={`calc(${height}px + 46px + ${token.paddingPageVertical}px * 2)`}>
-              <SchemaComponent
-                distributed
-                schema={
-                  new Schema({
-                    properties: {
-                      [schema.name]: schema,
-                    },
-                  })
-                }
-              />
-            </FixedBlock>
-          );
-        })
-      ) : (
-        <FixedBlock height={`calc(${height}px + 46px + ${token.paddingPageVertical}px * 2)`}>
-          <div className={`pageWithFixedBlockCss nb-page-content`}>
-            <SchemaComponent schema={fieldSchema} distributed />
-          </div>
-        </FixedBlock>
-      )}
-    </>
-  );
-}
+            return (
+              <FixedBlock key={schema.name} height={`calc(${height}px + 46px + ${token.paddingPageVertical}px * 2)`}>
+                <SchemaComponent
+                  distributed
+                  schema={
+                    new Schema({
+                      properties: {
+                        [schema.name]: schema,
+                      },
+                    })
+                  }
+                />
+              </FixedBlock>
+            );
+          })
+        ) : (
+          <FixedBlock height={`calc(${height}px + 46px + ${token.paddingPageVertical}px * 2)`}>
+            <div className={`pageWithFixedBlockCss nb-page-content`}>
+              <SchemaComponent schema={fieldSchema} distributed />
+            </div>
+          </FixedBlock>
+        )}
+      </>
+    );
+  },
+);
+PageContent.displayName = 'PageContent';

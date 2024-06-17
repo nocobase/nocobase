@@ -11,7 +11,7 @@ import { css } from '@emotion/css';
 import { useSessionStorageState } from 'ahooks';
 import { App, ConfigProvider, Divider, Layout } from 'antd';
 import { createGlobalStyle } from 'antd-style';
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import React, { FC, createContext, memo, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, Outlet, useLocation, useMatch, useNavigate, useParams } from 'react-router-dom';
 import {
   ACLRolesCheckProvider,
@@ -292,35 +292,35 @@ const SetThemeOfHeaderSubmenu = ({ children }) => {
   );
 };
 
+const sideClass = css`
+  height: 100%;
+  /* position: fixed; */
+  position: relative;
+  left: 0;
+  top: 0;
+  background: rgba(0, 0, 0, 0);
+  z-index: 100;
+  .ant-layout-sider-children {
+    top: var(--nb-header-height);
+    position: fixed;
+    width: 200px;
+    height: calc(100vh - var(--nb-header-height));
+  }
+`;
+
+const InternalAdminSideBar: FC<{ pageUid: string; sideMenuRef: any }> = memo((props) => {
+  if (!props.pageUid) return null;
+  return <Layout.Sider className={sideClass} theme={'light'} ref={props.sideMenuRef}></Layout.Sider>;
+});
+InternalAdminSideBar.displayName = 'InternalAdminSideBar';
+
 const AdminSideBar = ({ sideMenuRef }) => {
   const params = useParams<any>();
-  if (!params.name) return null;
-  return (
-    <Layout.Sider
-      className={css`
-        height: 100%;
-        /* position: fixed; */
-        position: relative;
-        left: 0;
-        top: 0;
-        background: rgba(0, 0, 0, 0);
-        z-index: 100;
-        .ant-layout-sider-children {
-          top: var(--nb-header-height);
-          position: fixed;
-          width: 200px;
-          height: calc(100vh - var(--nb-header-height));
-        }
-      `}
-      theme={'light'}
-      ref={sideMenuRef}
-    ></Layout.Sider>
-  );
+  return <InternalAdminSideBar pageUid={params.name} sideMenuRef={sideMenuRef} />;
 };
 
 export const AdminDynamicPage = () => {
-  const params = useParams<{ name?: string }>();
-  return <RouteSchemaComponent schema={params.name} />;
+  return <RouteSchemaComponent />;
 };
 
 export const InternalAdminLayout = () => {
