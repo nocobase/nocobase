@@ -34,7 +34,7 @@ import { SortableItem } from '../../common';
 import { useCompile, useComponent, useDesigner } from '../../hooks';
 import { useProps } from '../../hooks/useProps';
 import { PopupsProvider } from '../page/PagePopups';
-import { usePopup } from '../page/utils';
+import { usePopup } from '../page/pagePopupUtils';
 import ActionContainer from './Action.Container';
 import { ActionDesigner } from './Action.Designer';
 import { ActionDrawer } from './Action.Drawer';

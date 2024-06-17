@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { getPopupParamsFromPath, getPopupPathFromParams, removeLastPopupPath } from '../utils';
+import { getPopupParamsFromPath, getPopupPathFromParams, removeLastPopupPath } from '../pagePopupUtils';
 
 describe('getPopupParamsFromPath', () => {
   it('should parse the path and return the popup parameters', () => {

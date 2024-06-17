@@ -14,7 +14,7 @@ import { useParams } from 'react-router-dom';
 import { DataBlockProvider } from '../../../data-source/data-block/DataBlockProvider';
 import { SchemaComponent } from '../../core';
 import { useRequestSchema } from '../../core/useRequestSchema';
-import { PopupParam, getPopupParamsFromPath, usePopup } from './utils';
+import { PopupParam, getPopupParamsFromPath, usePopup } from './pagePopupUtils';
 
 interface PopupsProviderProps {
   visible: boolean;

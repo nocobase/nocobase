@@ -10,7 +10,7 @@
 import { useFieldSchema } from '@formily/react';
 import _ from 'lodash';
 import { useCallback, useContext } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import {
   useAssociationName,
   useCollection,
@@ -82,7 +82,6 @@ export const getPopupPathFromParams = (params: PopupParam) => {
 
 export const usePopup = () => {
   const navigate = useNavigate();
-  const params = useParams();
   const fieldSchema = useFieldSchema();
   const dataSourceKey = useDataSourceKey();
   const recordData = useCollectionRecordData();
