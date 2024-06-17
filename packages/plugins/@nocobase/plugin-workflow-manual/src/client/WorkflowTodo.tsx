@@ -12,7 +12,7 @@ import { Space, Spin, Tag } from 'antd';
 import dayjs from 'dayjs';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
-import { css, useBlockHeightProps, useCompile, usePlugin } from '@nocobase/client';
+import { css, useCompile, usePlugin } from '@nocobase/client';
 
 import {
   SchemaComponent,
@@ -642,6 +642,7 @@ function Decorator({ params = {}, children }) {
     showIndex: true,
     dragSort: false,
   };
+
   return (
     <ExtendCollectionsProvider collections={[nodeCollection, workflowCollection, todoCollection]}>
       <TableBlockProvider name="workflow-todo" {...blockProps}>
