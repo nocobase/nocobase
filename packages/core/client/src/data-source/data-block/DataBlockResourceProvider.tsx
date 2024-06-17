@@ -40,7 +40,7 @@ export const DataBlockResourceProvider: FC<{ children?: ReactNode }> = ({ childr
 
   const resource = useMemo(() => {
     if (association) {
-      return api.resource(association, sourceIdValue, headers);
+      return api.resource(association, sourceIdValue, headers, !sourceIdValue);
     }
     return api.resource(collectionName, undefined, headers);
   }, [api, association, collection, sourceIdValue, headers]);
