@@ -228,7 +228,6 @@ function UserJobStatusColumn(props) {
 }
 
 export const WorkflowTodo: React.FC & { Drawer: React.FC; Decorator: React.FC } = () => {
-  const heightProps = useBlockHeightProps();
   return (
     <SchemaComponent
       components={{
@@ -283,7 +282,6 @@ export const WorkflowTodo: React.FC & { Drawer: React.FC; Decorator: React.FC } 
             'x-use-component-props': 'useTableBlockProps',
             'x-component-props': {
               rowKey: 'id',
-              heightProps,
             },
             properties: {
               actions: {
