@@ -13,7 +13,7 @@ import { theme } from 'antd';
 import { debounce } from 'lodash';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { useDesignable } from '..';
-import { useDataBlockRequest, useCollection } from '../../';
+import { useDataBlockRequest, useCollection, useTableBlockContext } from '../../';
 import { HeightMode } from '../../schema-settings/SchemaSettingsBlockHeightItem';
 import { useBlockHeightProps, getPageSchema } from '../../block-provider/hooks';
 
@@ -81,13 +81,15 @@ const useFullScreenHeight = (props?) => {
   return pageReservedHeight;
 };
 
-const InternalWorkflowCollection = ['users_jobs'];
+const InternalWorkflowCollection = ['users_jobs', 'approvals', 'approvalRecords'];
 // 表格区块高度计算
 const useTableHeight = () => {
   const { token } = theme.useToken();
-  const { heightProps } = useBlockHeightProps();
+  const { heightProps: blockHeightProps } = useBlockHeightProps();
+  const { heightProps: tableHeightProps } = useTableBlockContext();
   const { designable } = useDesignable();
   const schema = useFieldSchema();
+  const heightProps = tableHeightProps || blockHeightProps;
   const pageFullScreenHeight = useFullScreenHeight();
   const { data } = useDataBlockRequest();
   const { name } = useCollection();
@@ -104,11 +106,6 @@ const useTableHeight = () => {
     (designable && !InternalWorkflowCollection.includes(name) ? token.controlHeight : 22) + 2 * token.padding + 1;
   const blockHeaderHeight = title ? token.fontSizeLG * token.lineHeightLG + token.padding * 2 - 1 : 0;
   if (heightMode === HeightMode.FULL_HEIGHT) {
-    console.log('blockHeaderHeight', blockHeaderHeight);
-    console.log('tableHeaderHeight', tableHeaderHeight);
-    console.log('tableHeaderHeight', tableHeaderHeight);
-    console.log('actionBarHeight', actionBarHeight);
-    console.log('paginationHeight', paginationHeight);
     return (
       window.innerHeight -
       pageFullScreenHeight -
