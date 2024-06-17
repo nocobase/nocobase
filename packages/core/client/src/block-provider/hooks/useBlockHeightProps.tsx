@@ -9,17 +9,23 @@
 
 import { useFieldSchema } from '@formily/react';
 import { useMemo } from 'react';
+import { useBlockTemplateContext } from '../../schema-templates/BlockTemplate';
 
 export const useBlockHeightProps = () => {
   const fieldSchema = useFieldSchema();
   const cardItemSchema = getCardItemSchema(fieldSchema);
-  const pageSchema = useMemo(() => getPageSchema(fieldSchema), []);
+  const blockTemplateSchema = useBlockTemplateContext()?.fieldSchema;
+  const pageSchema = useMemo(() => getPageSchema(blockTemplateSchema || fieldSchema), []);
   const { disablePageHeader, enablePageTabs, hidePageTitle } = pageSchema?.['x-component-props'] || {};
   return {
-    heightProps: { ...cardItemSchema?.['x-component-props'], disablePageHeader, enablePageTabs, hidePageTitle },
+    heightProps: {
+      ...cardItemSchema?.['x-component-props'],
+      disablePageHeader,
+      enablePageTabs,
+      hidePageTitle,
+    },
   };
 };
-
 export const getPageSchema = (schema) => {
   if (!schema) return null;
 
