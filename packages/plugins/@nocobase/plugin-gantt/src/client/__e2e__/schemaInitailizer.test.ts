@@ -86,10 +86,15 @@ test.describe('configure actions', () => {
     await mockPage(oneEmptyGantt).goto();
     await page.getByLabel('schema-initializer-ActionBar-gantt:configureActions-general').hover();
     await page.getByRole('menuitem', { name: 'Filter' }).click();
+    await page.getByLabel('schema-initializer-ActionBar-gantt:configureActions-general').hover();
     await page.getByRole('menuitem', { name: 'Add new' }).click();
+    await page.getByLabel('schema-initializer-ActionBar-gantt:configureActions-general').hover();
     await page.getByRole('menuitem', { name: 'Delete' }).click();
+    await page.getByLabel('schema-initializer-ActionBar-gantt:configureActions-general').hover();
     await page.getByRole('menuitem', { name: 'Refresh' }).click();
+    await page.getByLabel('schema-initializer-ActionBar-gantt:configureActions-general').hover();
     await page.getByRole('menuitem', { name: 'Bulk update' }).click();
+    await page.getByLabel('schema-initializer-ActionBar-gantt:configureActions-general').hover();
     await page.getByRole('menuitem', { name: 'Bulk edit' }).click();
     await expect(page.getByLabel('action-Filter.Action-Filter-filter-general-table')).toBeVisible();
     await expect(page.getByLabel('action-Action-Add new-create-general-table')).toBeVisible();

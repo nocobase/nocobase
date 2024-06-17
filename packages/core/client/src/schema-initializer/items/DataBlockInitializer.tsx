@@ -348,9 +348,10 @@ export const DataBlockInitializer: FC<DataBlockInitializerProps> = (props) => {
           onCreateBlockSchema({ item, fromOthersInPopup });
         }
       }
+
       setVisible(false);
     },
-    [getTemplateSchemaByMode, insert, onCreateBlockSchema, propsOnClick, setVisible, templateWrap],
+    [getTemplateSchemaByMode, insert, setVisible, onCreateBlockSchema, propsOnClick, templateWrap],
   );
   const items =
     itemsFromProps ||
