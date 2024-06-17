@@ -33,6 +33,10 @@ export const QRCodeScannerInner = (props) => {
         {
           fps: 10, // Optional, frame per seconds for qr code scanning
           aspectRatio: height / width,
+          qrbox(width, height) {
+            const minEdge = Math.min(width, height);
+            return { width: minEdge * 0.7, height: minEdge * 0.7 };
+          },
         },
         (text, result) => {
           navigate(text);
