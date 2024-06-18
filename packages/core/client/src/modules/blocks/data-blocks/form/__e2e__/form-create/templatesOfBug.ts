@@ -9950,6 +9950,7 @@ export const T4596 = {
     version: '2.0',
     type: 'void',
     'x-component': 'Page',
+    'x-index': 1,
     properties: {
       '8fabihs13u3': {
         _isJSONSchemaObject: true,
@@ -9957,6 +9958,7 @@ export const T4596 = {
         type: 'void',
         'x-component': 'Grid',
         'x-initializer': 'page:addBlock',
+        'x-index': 1,
         properties: {
           '3nbfdp98hnv': {
             _isJSONSchemaObject: true,
@@ -9964,6 +9966,7 @@ export const T4596 = {
             type: 'void',
             'x-component': 'Grid.Row',
             'x-app-version': '1.2.4-alpha',
+            'x-index': 1,
             properties: {
               e0hd016jask: {
                 _isJSONSchemaObject: true,
@@ -9971,6 +9974,7 @@ export const T4596 = {
                 type: 'void',
                 'x-component': 'Grid.Col',
                 'x-app-version': '1.2.4-alpha',
+                'x-index': 1,
                 properties: {
                   '1pmxkzimdau': {
                     _isJSONSchemaObject: true,
@@ -9990,6 +9994,7 @@ export const T4596 = {
                     'x-settings': 'blockSettings:createForm',
                     'x-component': 'CardItem',
                     'x-app-version': '1.2.4-alpha',
+                    'x-index': 1,
                     properties: {
                       '3nbd62urdzh': {
                         _isJSONSchemaObject: true,
@@ -9998,6 +10003,7 @@ export const T4596 = {
                         'x-component': 'FormV2',
                         'x-use-component-props': 'useCreateFormBlockProps',
                         'x-app-version': '1.2.4-alpha',
+                        'x-index': 1,
                         properties: {
                           grid: {
                             _isJSONSchemaObject: true,
@@ -10006,6 +10012,7 @@ export const T4596 = {
                             'x-component': 'Grid',
                             'x-initializer': 'form:configureFields',
                             'x-app-version': '1.2.4-alpha',
+                            'x-index': 1,
                             properties: {
                               '2ljkh36y6n7': {
                                 _isJSONSchemaObject: true,
@@ -10013,6 +10020,7 @@ export const T4596 = {
                                 type: 'void',
                                 'x-component': 'Grid.Row',
                                 'x-app-version': '1.2.4-alpha',
+                                'x-index': 1,
                                 properties: {
                                   seg282crfdx: {
                                     _isJSONSchemaObject: true,
@@ -10020,6 +10028,7 @@ export const T4596 = {
                                     type: 'void',
                                     'x-component': 'Grid.Col',
                                     'x-app-version': '1.2.4-alpha',
+                                    'x-index': 1,
                                     properties: {
                                       collectionAM2OField: {
                                         _isJSONSchemaObject: true,
@@ -10037,19 +10046,17 @@ export const T4596 = {
                                           },
                                         },
                                         'x-app-version': '1.2.4-alpha',
-                                        'x-uid': '5dki9vmpwhz',
-                                        'x-async': false,
                                         'x-index': 1,
+                                        'x-uid': 'do4yzr3scts',
+                                        'x-async': false,
                                       },
                                     },
-                                    'x-uid': 'lj6f37vy440',
+                                    'x-uid': 'f5omerdi0kn',
                                     'x-async': false,
-                                    'x-index': 1,
                                   },
                                 },
-                                'x-uid': 'qeen35m0isy',
+                                'x-uid': '1vxr8iqbc1m',
                                 'x-async': false,
-                                'x-index': 1,
                               },
                               '8ez1aq0wv99': {
                                 _isJSONSchemaObject: true,
@@ -10057,6 +10064,7 @@ export const T4596 = {
                                 type: 'void',
                                 'x-component': 'Grid.Row',
                                 'x-app-version': '1.2.4-alpha',
+                                'x-index': 2,
                                 properties: {
                                   qxh5iov1310: {
                                     _isJSONSchemaObject: true,
@@ -10064,8 +10072,10 @@ export const T4596 = {
                                     type: 'void',
                                     'x-component': 'Grid.Col',
                                     'x-app-version': '1.2.4-alpha',
+                                    'x-index': 1,
                                     properties: {
                                       'collectionAM2OField.collectionBM2OField': {
+                                        'x-uid': 'xm0dkxh1m8o',
                                         _isJSONSchemaObject: true,
                                         version: '2.0',
                                         type: 'string',
@@ -10076,31 +10086,27 @@ export const T4596 = {
                                         'x-component-props': {
                                           'pattern-disable': true,
                                           fieldNames: {
+                                            label: 'singleLineText',
                                             value: 'id',
-                                            label: 'id',
                                           },
                                         },
                                         'x-decorator': 'FormItem',
                                         'x-collection-field': 'collectionA.collectionAM2OField.collectionBM2OField',
                                         'x-app-version': '1.2.4-alpha',
-                                        'x-uid': 'jiks1hlig1w',
-                                        'x-async': false,
                                         'x-index': 1,
+                                        'x-async': false,
                                       },
                                     },
-                                    'x-uid': '698h4beqn3z',
+                                    'x-uid': '34edcrftixd',
                                     'x-async': false,
-                                    'x-index': 1,
                                   },
                                 },
-                                'x-uid': '042t4m281dp',
+                                'x-uid': 'ewykrxx0ln4',
                                 'x-async': false,
-                                'x-index': 2,
                               },
                             },
-                            'x-uid': 'pputcsq95f2',
+                            'x-uid': 'wnea81u7ir5',
                             'x-async': false,
-                            'x-index': 1,
                           },
                           '2kbvvxyxgzj': {
                             _isJSONSchemaObject: true,
@@ -10115,38 +10121,32 @@ export const T4596 = {
                               },
                             },
                             'x-app-version': '1.2.4-alpha',
-                            'x-uid': '8jrcld8teev',
-                            'x-async': false,
                             'x-index': 2,
+                            'x-uid': '0hstjjkvw9x',
+                            'x-async': false,
                           },
                         },
-                        'x-uid': 'e1x0zo2minw',
+                        'x-uid': 'qsxevezydxa',
                         'x-async': false,
-                        'x-index': 1,
                       },
                     },
-                    'x-uid': 's0i1ywpe9k7',
+                    'x-uid': 'zh9641pt4ws',
                     'x-async': false,
-                    'x-index': 1,
                   },
                 },
-                'x-uid': 'e27szcjrq53',
+                'x-uid': 'ps0spq4ya0k',
                 'x-async': false,
-                'x-index': 1,
               },
             },
-            'x-uid': 'cvm5saazgfs',
+            'x-uid': 'uy0bksjg6qk',
             'x-async': false,
-            'x-index': 1,
           },
         },
-        'x-uid': 'h8jvq03p7wf',
+        'x-uid': 'l5nc16o4pi5',
         'x-async': false,
-        'x-index': 1,
       },
     },
-    'x-uid': 'b8wh1pkn6kt',
+    'x-uid': 'oqkl5enxwq1',
     'x-async': true,
-    'x-index': 1,
   },
 };

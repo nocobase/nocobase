@@ -192,16 +192,18 @@ test.describe('display association fields', () => {
   // https://nocobase.height.app/T-4596
   test('Non-ID source key', async ({ page, mockPage, mockRecord }) => {
     const nocoPage = await mockPage(T4596).waitForInit();
-    await mockRecord('collectionA', 2);
+    const record = await mockRecord('collectionA', 2);
     await nocoPage.goto();
 
     await page
       .getByLabel('block-item-CollectionField-collectionA-form-collectionA.collectionAM2OField-')
       .getByTestId('select-object-single')
       .click();
-    await page.getByRole('option', { name: '1', exact: true }).click();
+    await page.getByRole('option', { name: record.collectionAM2OField.id, exact: true }).click();
     await expect(
-      page.getByLabel('block-item-CollectionField-collectionA-form-collectionA.collectionAM2OField.').getByText('1'),
+      page
+        .getByLabel('block-item-CollectionField-collectionA-form-collectionA.collectionAM2OField.')
+        .getByText(record.collectionAM2OField.collectionBM2OField.singleLineText),
     ).toBeVisible();
   });
 });
