@@ -50,7 +50,8 @@ export class SortField extends Field {
     }
   };
 
-  initRecordsSortValue = async ({ transaction }) => {
+  initRecordsSortValue = async (options) => {
+    const { transaction } = options;
     const orderField = (() => {
       const model = this.collection.model;
 
