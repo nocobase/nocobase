@@ -9,30 +9,43 @@
 
 import React from 'react';
 import { Plugin, RouterManager, createRouterManager } from '@nocobase/client';
-import { MobileApplication } from './mobile-application';
-
-import { TabBar, mobileMenuInitializer } from './tabbar';
-
-export * from './tabbar';
+import { Mobile } from './mobile';
+import { MobileLayout } from './mobile/MobileLayout';
 
 export class PluginMobileClient extends Plugin {
-  mobileRouter: RouterManager;
-
-  options: { type: 'hash' | 'browser' | 'memory' } = { type: 'hash' };
+  mobileRouter?: RouterManager;
 
   async load() {
-    this.app.addComponents({ MobileTabBar: TabBar });
-    this.app.schemaInitializerManager.add(mobileMenuInitializer);
+    this.addAppRoutes();
+    this.setMobileRouter();
+    this.addRoutes();
   }
 
   setMobileRouter() {
-    const router = createRouterManager({ type: this.options?.type || 'hash' }, this.app);
-    router.add('mobile', {
-      path: '/mobile',
-      element: <MobileApplication />,
+    const router = createRouterManager(this.options?.config?.router || { type: 'browser' }, this.app);
+    this.mobileRouter = router;
+  }
+
+  addRoutes() {
+    this.mobileRouter.add('mobile', {
+      element: <MobileLayout />,
     });
 
-    this.mobileRouter = router;
+    this.mobileRouter.add('mobile.home', {
+      path: '/',
+      element: <div>home page</div>,
+    });
+  }
+
+  addAppRoutes() {
+    this.app.router.add('mobile', {
+      path: '/mobile/*',
+      element: <Mobile />,
+    });
+  }
+
+  getRouterComponent() {
+    return this.mobileRouter.getRouterComponent();
   }
 }
 

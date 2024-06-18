@@ -7,4 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from './MobileApplication';
+import React, { FC } from 'react';
+
+export const MobileBottom: FC = () => {
+  return (
+    <div>
+      <div></div>
+    </div>
+  );
+};

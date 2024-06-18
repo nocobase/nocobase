@@ -9,7 +9,6 @@
 
 import React from 'react';
 import type { FC, ReactNode } from 'react';
-import styles from './index.less';
 
 export interface DemoBlockProps {
   title: string;
@@ -20,13 +19,22 @@ export interface DemoBlockProps {
 
 export const DemoBlock: FC<DemoBlockProps> = (props) => {
   return (
-    <div className={styles.demoBlock}>
-      <div className={styles.title}>{props.title}</div>
+    <div style={{ marginBottom: 12 }}>
       <div
-        className={styles.main}
+        style={{
+          padding: '12px 12px 8px',
+          color: '#697b8c',
+          fontSize: 14,
+        }}
+      >
+        {props.title}
+      </div>
+      <div
         style={{
           padding: props.padding,
           background: props.background,
+          borderLeft: 'none',
+          borderRight: 'none',
         }}
       >
         {props.children}

@@ -7,12 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React from 'react';
+import { createStyles } from 'antd-style';
 
-export const MobileApplication = () => {
-  return (
-    <div>
-      <div>MobileApplication</div>
-    </div>
-  );
-};
+const useStyles = createStyles(({ token, css }) => ({
+  mobileBottom: {
+    position: 'fixed',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    zIndex: 1000,
+    background: '#fff',
+  },
+}));

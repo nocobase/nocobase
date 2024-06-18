@@ -7,4 +7,18 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from './components';
+import React, { FC } from 'react';
+import { Outlet } from 'react-router-dom';
+
+export interface MobileLayoutProps {
+  children?: React.ReactNode;
+}
+
+export const MobileLayout: FC<MobileLayoutProps> = () => {
+  return (
+    <div>
+      layout
+      <Outlet />
+    </div>
+  );
+};
