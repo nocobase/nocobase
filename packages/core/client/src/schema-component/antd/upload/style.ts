@@ -77,6 +77,7 @@ export const useStyles = genStyleHook('upload', (token) => {
         },
         [`${componentCls}-list-picture-card ${componentCls}-list-item-progress`]: {
           bottom: 'calc(50% - 11px)',
+          left: `${token.margin / 2}px`,
           pointerEvents: 'none',
         },
         [`${antCls}-btn`]: {
