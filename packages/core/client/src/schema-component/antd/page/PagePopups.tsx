@@ -13,6 +13,7 @@ import { FC, default as React, useCallback, useEffect, useMemo, useState } from 
 import { useParams } from 'react-router-dom';
 import { useAPIClient } from '../../../api-client';
 import { DataBlockProvider } from '../../../data-source/data-block/DataBlockProvider';
+import { BlockRequestContext } from '../../../data-source/data-block/DataBlockRequestProvider';
 import { SchemaComponent } from '../../core';
 import {
   PopupParams,
@@ -62,7 +63,9 @@ const PagePopupsItemProvider: FC<{ params: PopupParams }> = ({ params, children 
   const [visible, _setVisible] = useState(true);
   const setVisible = (visible: boolean) => {
     if (!visible) {
-      closePopup();
+      _setVisible(false);
+      // Leave some time to refresh the block data
+      setTimeout(closePopup, 300);
     }
   };
   let _params: PopupParamsStorage = params;
@@ -85,7 +88,10 @@ const PagePopupsItemProvider: FC<{ params: PopupParams }> = ({ params, children 
           parentRecord={_params.parentRecord}
           action="get"
         >
-          <div style={{ display: 'none' }}>{children}</div>
+          {/* Pass the service of the block where the button is located down, to refresh the block's data when the popup is closed */}
+          <BlockRequestContext.Provider value={_params.service}>
+            <div style={{ display: 'none' }}>{children}</div>
+          </BlockRequestContext.Provider>
         </DataBlockProvider>
       </PopupsVisibleProvider>
     </PopupsProvider>

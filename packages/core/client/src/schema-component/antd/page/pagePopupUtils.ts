@@ -18,6 +18,7 @@ import {
   useCollectionManager,
   useCollectionParentRecord,
   useCollectionRecord,
+  useDataBlockRequest,
   useDataSourceKey,
 } from '../../../data-source';
 import { PopupsProviderContext, PopupsVisibleProviderContext } from './PagePopups';
@@ -47,6 +48,8 @@ export interface PopupParamsStorage extends PopupParams {
   schema?: ISchema;
   record?: CollectionRecord;
   parentRecord?: CollectionRecord;
+  /** used to refresh data for block */
+  service?: any;
 }
 
 const popupParamsStorage: Record<string, PopupParamsStorage> = {};
@@ -108,9 +111,18 @@ export const usePagePopup = () => {
   const association = useAssociationName();
   const { visible, setVisible } = useContext(PopupsVisibleProviderContext) || {};
   const { popupParams } = useContext(PopupsProviderContext) || {};
+  const service = useDataBlockRequest();
 
   const openPopup = useCallback(
-    ({ onFail }: { onFail?: () => void } = {}) => {
+    ({
+      onFail,
+    }: {
+      /**
+       * 通过路由的方式打开弹窗失败时的回调
+       * @returns
+       */
+      onFail?: () => void;
+    } = {}) => {
       if (!fieldSchema['x-uid']) {
         return onFail?.();
       }
@@ -140,10 +152,11 @@ export const usePagePopup = () => {
         sourceid: sourceId,
         record,
         parentRecord,
+        service,
       });
       navigate(`${url}${pathname}`);
     },
-    [association, cm, collection, dataSourceKey, fieldSchema, navigate, parentRecord, record],
+    [association, cm, collection, dataSourceKey, fieldSchema, navigate, parentRecord, record, service],
   );
 
   const closePopup = useCallback(() => {
