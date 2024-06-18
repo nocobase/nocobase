@@ -6,7 +6,7 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
-import { LeftOutlined } from '@ant-design/icons';
+import { LeftOutlined, FileImageOutlined } from '@ant-design/icons';
 import { Html5Qrcode, Html5QrcodeScannerState } from 'html5-qrcode';
 import { useNavigate } from 'react-router-dom';
 import React, { useState, useEffect, useRef } from 'react';
@@ -18,6 +18,32 @@ export const QRCodeScannerInner = (props) => {
 
   const containerRef = useRef<HTMLDivElement>();
   const navigate = useNavigate();
+  const imgUploaderRef = useRef<HTMLInputElement>();
+  const [scanner, setScanner] = useState<Html5Qrcode>();
+  const [scannerSize, setScannerSize] = useState({ width: 0, height: 0 });
+  const [scannerRendered, setScannerRendered] = useState(false);
+  const onImgBtnClick = () => {
+    if (imgUploaderRef.current) imgUploaderRef.current.click();
+  };
+  const onImgUploaded = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (files.length > 0) {
+      const state = scanner.getState();
+      if ([Html5QrcodeScannerState.SCANNING, Html5QrcodeScannerState.PAUSED].includes(state)) {
+        const file = files[0];
+        scanner
+          .stop()
+          .then(() => {
+            scanner.clear();
+            return scanner.scanFileV2(file, false);
+          })
+          .then(({ decodedText, result }) => {
+            navigate(decodedText);
+          })
+          .catch(() => alert(t('Unknown error')));
+      }
+    }
+  };
   useEffect(() => {
     document.documentElement.style.overscrollBehavior = 'none';
     return () => {
@@ -27,15 +53,18 @@ export const QRCodeScannerInner = (props) => {
 
   useEffect(() => {
     const scanner = new Html5Qrcode('qrcode');
-    const init = async ({ width, height }: { width: number; height: number }) => {
-      scanner.start(
-        { facingMode: 'environment' },
+    setScanner(scanner);
+    const init = async () => {
+      await scanner.start(
+        {
+          facingMode: 'environment',
+        },
         {
           fps: 10, // Optional, frame per seconds for qr code scanning
-          aspectRatio: height / width,
           qrbox(width, height) {
             const minEdge = Math.min(width, height);
-            return { width: minEdge * 0.7, height: minEdge * 0.7 };
+            const qrcodeSize = Math.floor(minEdge * 0.6);
+            return { width: qrcodeSize, height: qrcodeSize };
           },
         },
         (text, result) => {
@@ -43,13 +72,13 @@ export const QRCodeScannerInner = (props) => {
         },
         undefined,
       );
+      setScannerRendered(true);
+      if (containerRef.current) {
+        const { width, height } = containerRef.current.getBoundingClientRect();
+        setScannerSize({ width, height });
+      }
     };
-    if (containerRef.current) {
-      const { width, height } = containerRef.current.getBoundingClientRect();
-      console.log({ width, height });
-      init({ width, height });
-    }
-
+    init();
     return () => {
       const state = scanner.getState();
       if ([Html5QrcodeScannerState.SCANNING, Html5QrcodeScannerState.PAUSED].includes(state)) {
@@ -59,9 +88,46 @@ export const QRCodeScannerInner = (props) => {
           .catch(() => alert(t('Unknown error')));
       }
     };
-  }, [navigate]);
+  }, [navigate, t]);
 
-  return <div ref={containerRef} id="qrcode" style={{ width: '100%', height: '100%' }} />;
+  const ToolBar = () => {
+    if (scannerRendered) {
+      return (
+        <div style={{ padding: '10px 60px' }}>
+          <div
+            style={{
+              color: 'white',
+              width: '40px',
+              display: 'flex',
+              flexDirection: 'column',
+            }}
+          >
+            <FileImageOutlined style={imageBtnStyle} onClick={onImgBtnClick} />
+            相册
+            <input
+              ref={imgUploaderRef}
+              type="file"
+              accept="image/*"
+              onChange={onImgUploaded}
+              style={{ visibility: 'hidden' }}
+            />
+          </div>
+        </div>
+      );
+    } else return null;
+  };
+  const imageBtnStyle: React.CSSProperties = {
+    zIndex: '1003',
+    fontSize: '1.8em',
+    fontWeight: 'bold',
+  };
+
+  return (
+    <>
+      <div ref={containerRef} id="qrcode" />
+      <ToolBar />
+    </>
+  );
 };
 
 export const QRCodeScanner = (props) => {
@@ -108,6 +174,7 @@ export const QRCodeScanner = (props) => {
     fontSize: '1.8em',
     fontWeight: 'bold',
   };
+
   const titleStyle: React.CSSProperties = {
     position: 'absolute',
     color: 'white',
