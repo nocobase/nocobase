@@ -15,6 +15,7 @@ import { useAPIClient } from '../../../api-client';
 import { DataBlockProvider } from '../../../data-source/data-block/DataBlockProvider';
 import { BlockRequestContext } from '../../../data-source/data-block/DataBlockRequestProvider';
 import { SchemaComponent } from '../../core';
+import { TabsContextProvider } from '../tabs/context';
 import {
   PopupParams,
   PopupParamsStorage,
@@ -58,6 +59,30 @@ const PopupsProvider: FC<PopupsProviderProps> = (props) => {
   );
 };
 
+const TabsPropsProvider: FC<{ popupParams: PopupParamsStorage }> = ({ children, popupParams }) => {
+  const { changeTab } = usePagePopup();
+  const [activeKey, setActiveKey] = useState(popupParams.tab);
+  const onTabClick = useCallback(
+    (key: string) => {
+      changeTab(key);
+    },
+    [changeTab],
+  );
+
+  useEffect(() => {
+    // TODO: Suspect that Formily has a bug, the specific manifestation is: the params parameter in the schema is updated, but it is not refreshed when rendered.
+    setTimeout(() => {
+      setActiveKey(undefined);
+    }, 100);
+  });
+
+  return (
+    <TabsContextProvider activeKey={activeKey} onTabClick={onTabClick}>
+      {children}
+    </TabsContextProvider>
+  );
+};
+
 const PagePopupsItemProvider: FC<{ params: PopupParams }> = ({ params, children }) => {
   const { closePopup } = usePagePopup();
   const [visible, _setVisible] = useState(true);
@@ -68,29 +93,31 @@ const PagePopupsItemProvider: FC<{ params: PopupParams }> = ({ params, children 
       setTimeout(closePopup, 300);
     }
   };
-  let _params: PopupParamsStorage = params;
-  const storedParams = getStoredPopupParams(params.popupUid);
+  const _params: PopupParamsStorage = params;
+  const storedParams = { ...getStoredPopupParams(params.popupUid) };
   if (storedParams) {
-    _params = storedParams;
+    Object.assign(storedParams, _params);
   }
 
   return (
-    <PopupsProvider popupParams={_params}>
+    <PopupsProvider popupParams={storedParams}>
       <PopupsVisibleProvider visible={visible} setVisible={setVisible}>
         <DataBlockProvider
-          dataSource={_params.datasource}
-          collection={_params.collection}
-          association={_params.association}
-          filterByTk={_params.filterbytk}
-          sourceId={_params.sourceid}
+          dataSource={storedParams.datasource}
+          collection={storedParams.collection}
+          association={storedParams.association}
+          filterByTk={storedParams.filterbytk}
+          sourceId={storedParams.sourceid}
           // @ts-ignore
-          record={_params.record}
-          parentRecord={_params.parentRecord}
+          record={storedParams.record}
+          parentRecord={storedParams.parentRecord}
           action="get"
         >
           {/* Pass the service of the block where the button is located down, to refresh the block's data when the popup is closed */}
-          <BlockRequestContext.Provider value={_params.service}>
-            <div style={{ display: 'none' }}>{children}</div>
+          <BlockRequestContext.Provider value={storedParams.service}>
+            <TabsPropsProvider popupParams={storedParams}>
+              <div style={{ display: 'none' }}>{children}</div>
+            </TabsPropsProvider>
           </BlockRequestContext.Provider>
         </DataBlockProvider>
       </PopupsVisibleProvider>

@@ -113,6 +113,23 @@ export const usePagePopup = () => {
   const { popupParams } = useContext(PopupsProviderContext) || {};
   const service = useDataBlockRequest();
 
+  const getNewPathname = useCallback(
+    ({ tabKey, popupUid }: { tabKey?: string; popupUid: string }) => {
+      const filterByTK = record?.data?.[collection.getPrimaryKey()];
+      const sourceId = parentRecord?.data?.[cm.getCollection(association?.split('.')[0])?.getPrimaryKey()];
+      return getPopupPathFromParams({
+        popupUid: popupUid,
+        datasource: dataSourceKey,
+        filterbytk: filterByTK,
+        collection: collection.name,
+        association,
+        sourceid: sourceId,
+        tab: tabKey,
+      });
+    },
+    [association, cm, collection, dataSourceKey, parentRecord?.data, record?.data],
+  );
+
   const openPopup = useCallback(
     ({
       onFail,
@@ -129,14 +146,7 @@ export const usePagePopup = () => {
 
       const filterByTK = record?.data?.[collection.getPrimaryKey()];
       const sourceId = parentRecord?.data?.[cm.getCollection(association?.split('.')[0])?.getPrimaryKey()];
-      const pathname = getPopupPathFromParams({
-        popupUid: fieldSchema['x-uid'],
-        datasource: dataSourceKey,
-        filterbytk: filterByTK,
-        collection: collection.name,
-        association,
-        sourceid: sourceId,
-      });
+      const pathname = getNewPathname({ popupUid: fieldSchema['x-uid'] });
       let url = window.location.pathname;
       if (_.last(url) === '/') {
         url = url.slice(0, -1);
@@ -156,12 +166,24 @@ export const usePagePopup = () => {
       });
       navigate(`${url}${pathname}`);
     },
-    [association, cm, collection, dataSourceKey, fieldSchema, navigate, parentRecord, record, service],
+    [association, cm, collection, dataSourceKey, fieldSchema, getNewPathname, navigate, parentRecord, record, service],
   );
 
   const closePopup = useCallback(() => {
     navigate(removeLastPopupPath(window.location.pathname));
   }, [navigate]);
+
+  const changeTab = useCallback(
+    (key: string) => {
+      const pathname = getNewPathname({ tabKey: key, popupUid: popupParams?.popupUid });
+      let url = removeLastPopupPath(window.location.pathname);
+      if (_.last(url) === '/') {
+        url = url.slice(0, -1);
+      }
+      navigate(`${url}${pathname}`);
+    },
+    [getNewPathname, navigate, popupParams?.popupUid],
+  );
 
   return {
     /**
@@ -175,6 +197,7 @@ export const usePagePopup = () => {
     visibleWithURL: visible,
     setVisibleWithURL: setVisible,
     popupParams,
+    changeTab,
   };
 };
 
