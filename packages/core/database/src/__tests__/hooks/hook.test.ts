@@ -33,6 +33,7 @@ describe('hook', () => {
       ],
     });
 
+    expect(Posts.model.options.modelName).toBe('posts');
     const Tags = db.collection({
       name: 'tags',
       fields: [
