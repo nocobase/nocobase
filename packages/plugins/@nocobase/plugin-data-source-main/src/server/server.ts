@@ -129,6 +129,30 @@ export class PluginDataSourceMainServer extends Plugin {
     this.app.db.on('fields.beforeCreate', beforeCreateForValidateField(this.app.db));
 
     this.app.db.on('fields.afterCreate', afterCreateForReverseField(this.app.db));
+
+    this.app.db.on('fields.beforeCreate', async (model: FieldModel, options) => {
+      const { transaction } = options;
+      // validate field name
+      const collectionName = model.get('collectionName');
+      const name = model.get('name');
+
+      if (!collectionName || !name) {
+        return;
+      }
+
+      const exists = await this.app.db.getRepository('fields').findOne({
+        filter: {
+          collectionName,
+          name,
+        },
+        transaction,
+      });
+
+      if (exists) {
+        throw new FieldNameExistsError(name, collectionName);
+      }
+    });
+
     this.app.db.on('fields.beforeUpdate', beforeUpdateForValidateField(this.app.db));
 
     this.app.db.on('fields.beforeUpdate', async (model, options) => {
@@ -186,26 +210,6 @@ export class PluginDataSourceMainServer extends Plugin {
     });
 
     const afterCreateForForeignKeyFieldHook = afterCreateForForeignKeyField(this.app.db);
-
-    this.app.db.on('fields.beforeCreate', async (model: FieldModel, options) => {
-      const { transaction } = options;
-      // validate field name
-
-      const collectionName = model.get('collectionName');
-      const name = model.get('name');
-
-      const exists = await this.app.db.getRepository('fields').findOne({
-        filter: {
-          collectionName,
-          name,
-        },
-        transaction,
-      });
-
-      if (exists) {
-        throw new FieldNameExistsError(name, collectionName);
-      }
-    });
 
     this.app.db.on('fields.afterCreate', async (model: FieldModel, options) => {
       const { context, transaction } = options;
@@ -337,7 +341,11 @@ export class PluginDataSourceMainServer extends Plugin {
         ctx.body = {
           errors: [
             {
-              message: ctx.i18n.t('field-name-exists', { name: err.value, collectionName: err.collectionName }),
+              message: ctx.i18n.t('field-name-exists', {
+                name: err.value,
+                collectionName: err.collectionName,
+                ns: 'data-source-main',
+              }),
             },
           ],
         };
