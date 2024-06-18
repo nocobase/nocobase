@@ -12,7 +12,7 @@ export class FieldNameExistsError extends Error {
   collectionName: string;
 
   constructor(value: string, collectionName: string) {
-    super(`Field name "${value}" exists in collection "${collectionName}"`);
+    super(`Field name "${value}" already exists in collection "${collectionName}"`);
     this.value = value;
     this.collectionName = collectionName;
 
