@@ -44,13 +44,10 @@ export class ModelHook {
         if (arg['model']) {
           return arg['model'].name;
         }
-        const plural = arg?.name?.plural;
-        if (this.database.sequelize.isDefined(plural)) {
-          return plural;
-        }
-        const singular = arg?.name?.singular;
-        if (this.database.sequelize.isDefined(singular)) {
-          return singular;
+
+        const modelName = arg['modelName'];
+        if (this.database.sequelize.isDefined(modelName)) {
+          return modelName;
         }
       }
     }
