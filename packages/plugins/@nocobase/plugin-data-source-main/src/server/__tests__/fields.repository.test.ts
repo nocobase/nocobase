@@ -149,12 +149,16 @@ describe('collections repository', () => {
           type: 'string',
           collectionName: 'tests',
         },
+        context: {},
       });
     } catch (err) {
       error = err;
     }
 
     expect(error).toBeDefined();
+    expect(error.name).toBe('FieldNameExistsError');
+    expect(error.value).toBe('name');
+    expect(error.collectionName).toBe('tests');
   });
 
   it('should generate the name and key randomly', async () => {

@@ -27,6 +27,7 @@ import { beforeCreateForViewCollection } from './hooks/beforeCreateForViewCollec
 import { CollectionModel, FieldModel } from './models';
 import collectionActions from './resourcers/collections';
 import viewResourcer from './resourcers/views';
+import { FieldNameExistsError } from './errors/field-name-exists-error';
 
 export class PluginDataSourceMainServer extends Plugin {
   public schema: string;
@@ -185,6 +186,26 @@ export class PluginDataSourceMainServer extends Plugin {
     });
 
     const afterCreateForForeignKeyFieldHook = afterCreateForForeignKeyField(this.app.db);
+
+    this.app.db.on('fields.beforeCreate', async (model: FieldModel, options) => {
+      const { transaction } = options;
+      // validate field name
+
+      const collectionName = model.get('collectionName');
+      const name = model.get('name');
+
+      const exists = await this.app.db.getRepository('fields').findOne({
+        filter: {
+          collectionName,
+          name,
+        },
+        transaction,
+      });
+
+      if (exists) {
+        throw new FieldNameExistsError(name, collectionName);
+      }
+    });
 
     this.app.db.on('fields.afterCreate', async (model: FieldModel, options) => {
       const { context, transaction } = options;
