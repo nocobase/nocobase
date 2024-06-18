@@ -13,7 +13,7 @@ import {
   oneSubformWithMultiLevelAssociationFields,
   test,
 } from '@nocobase/test/e2e';
-import { T2614, T2615, T2845, T2993 } from './templatesOfBug';
+import { T2614, T2615, T2845, T2993, T4596 } from './templatesOfBug';
 
 test.describe('display association fields', () => {
   test('form: should display correctly', async ({ page, mockPage, mockRecord }) => {
@@ -187,5 +187,21 @@ test.describe('display association fields', () => {
     await expect(page.getByLabel('block-item-CollectionField-users-form-users.nickname-Nickname')).toHaveText(
       new RegExp(record.m2o.m2oOfTarget1.m2oOfTarget2.nickname),
     );
+  });
+
+  // https://nocobase.height.app/T-4596
+  test('Non-ID primary key', async ({ page, mockPage, mockRecord }) => {
+    const nocoPage = await mockPage(T4596).waitForInit();
+    await mockRecord('collectionA', 2);
+    await nocoPage.goto();
+
+    await page
+      .getByLabel('block-item-CollectionField-collectionA-form-collectionA.collectionAM2OField-')
+      .getByTestId('select-object-single')
+      .click();
+    await page.getByRole('option', { name: '1' }).click();
+    await expect(
+      page.getByLabel('block-item-CollectionField-collectionA-form-collectionA.collectionAM2OField.').getByText('1'),
+    ).toBeVisible();
   });
 });
