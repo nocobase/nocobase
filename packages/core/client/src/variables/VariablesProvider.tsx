@@ -14,6 +14,7 @@ import React, { createContext, useCallback, useEffect, useMemo, useRef } from 'r
 import { useAPIClient } from '../api-client';
 import type { CollectionFieldOptions_deprecated } from '../collection-manager';
 import { useCollectionManager_deprecated } from '../collection-manager';
+import { useCollectionManager } from '../data-source';
 import { getDataSourceHeaders } from '../data-source/utils';
 import { useCompile } from '../schema-component';
 import useBuiltInVariables from './hooks/useBuiltinVariables';
@@ -53,6 +54,7 @@ const VariablesProvider = ({ children }) => {
   const ctxRef = useRef<Record<string, any>>({});
   const api = useAPIClient();
   const { getCollectionJoinField } = useCollectionManager_deprecated();
+  const cm = useCollectionManager();
   const compile = useCompile();
   const { builtinVariables } = useBuiltInVariables();
 
@@ -97,11 +99,14 @@ const VariablesProvider = ({ children }) => {
         const key = list[index];
         const { fieldPath } = getFieldPath(list.slice(0, index + 1).join('.'), _variableToCollectionName);
         const associationField: CollectionFieldOptions_deprecated = getCollectionJoinField(fieldPath, dataSource);
+        const collectionPrimaryKey = cm.getCollection(collectionName)?.getPrimaryKey();
         if (Array.isArray(current)) {
           const result = current.map((item) => {
-            if (shouldToRequest(item?.[key]) && item?.id != null) {
+            if (shouldToRequest(item?.[key]) && item?.[collectionPrimaryKey] != null) {
               if (associationField?.target) {
-                const url = `/${collectionName}/${item.id}/${key}:${getAction(associationField.type)}`;
+                const url = `/${collectionName}/${
+                  item[associationField.sourceKey || collectionPrimaryKey]
+                }/${key}:${getAction(associationField.type)}`;
                 if (hasRequested(url)) {
                   return getRequested(url);
                 }
@@ -125,8 +130,10 @@ const VariablesProvider = ({ children }) => {
             return item?.[key];
           });
           current = removeThroughCollectionFields(_.flatten(await Promise.all(result)), associationField);
-        } else if (shouldToRequest(current[key]) && current.id != null && associationField?.target) {
-          const url = `/${collectionName}/${current.id}/${key}:${getAction(associationField.type)}`;
+        } else if (shouldToRequest(current[key]) && current[collectionPrimaryKey] != null && associationField?.target) {
+          const url = `/${collectionName}/${
+            current[associationField.sourceKey || collectionPrimaryKey]
+          }/${key}:${getAction(associationField.type)}`;
           let data = null;
           if (hasRequested(url)) {
             data = await getRequested(url);
