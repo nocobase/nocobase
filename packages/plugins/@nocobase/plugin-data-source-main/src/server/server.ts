@@ -329,6 +329,21 @@ export class PluginDataSourceMainServer extends Plugin {
       },
     );
 
+    errorHandlerPlugin.errorHandler.register(
+      (err) => err instanceof FieldNameExistsError,
+      (err, ctx) => {
+        ctx.status = 400;
+
+        ctx.body = {
+          errors: [
+            {
+              message: ctx.i18n.t('field-name-exists', { name: err.value, collectionName: err.collectionName }),
+            },
+          ],
+        };
+      },
+    );
+
     this.app.resourcer.use(async (ctx, next) => {
       if (ctx.action.resourceName === 'collections.fields' && ['create', 'update'].includes(ctx.action.actionName)) {
         ctx.action.mergeParams({
