@@ -14,7 +14,6 @@ import React, { createContext, useCallback, useEffect, useMemo, useRef } from 'r
 import { useAPIClient } from '../api-client';
 import type { CollectionFieldOptions_deprecated } from '../collection-manager';
 import { useCollectionManager_deprecated } from '../collection-manager';
-import { useCollectionManager } from '../data-source';
 import { getDataSourceHeaders } from '../data-source/utils';
 import { useCompile } from '../schema-component';
 import useBuiltInVariables from './hooks/useBuiltinVariables';
@@ -53,8 +52,7 @@ const getFieldPath = (variablePath: string, variablesStore: Record<string, Varia
 const VariablesProvider = ({ children }) => {
   const ctxRef = useRef<Record<string, any>>({});
   const api = useAPIClient();
-  const { getCollectionJoinField } = useCollectionManager_deprecated();
-  const cm = useCollectionManager();
+  const { getCollectionJoinField, getCollection } = useCollectionManager_deprecated();
   const compile = useCompile();
   const { builtinVariables } = useBuiltInVariables();
 
@@ -99,7 +97,7 @@ const VariablesProvider = ({ children }) => {
         const key = list[index];
         const { fieldPath } = getFieldPath(list.slice(0, index + 1).join('.'), _variableToCollectionName);
         const associationField: CollectionFieldOptions_deprecated = getCollectionJoinField(fieldPath, dataSource);
-        const collectionPrimaryKey = cm.getCollection(collectionName)?.getPrimaryKey();
+        const collectionPrimaryKey = getCollection(collectionName)?.getPrimaryKey();
         if (Array.isArray(current)) {
           const result = current.map((item) => {
             if (shouldToRequest(item?.[key]) && item?.[collectionPrimaryKey] != null) {

@@ -66,6 +66,11 @@ vi.mock('../../collection-manager', async () => {
             };
           }
         },
+        getCollection: () => {
+          return {
+            getPrimaryKey: () => 'id',
+          };
+        },
       };
     },
     CollectionManagerPane: null,
