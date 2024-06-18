@@ -27,6 +27,7 @@ import { beforeCreateForViewCollection } from './hooks/beforeCreateForViewCollec
 import { CollectionModel, FieldModel } from './models';
 import collectionActions from './resourcers/collections';
 import viewResourcer from './resourcers/views';
+import { FieldNameExistsError } from './errors/field-name-exists-error';
 
 export class PluginDataSourceMainServer extends Plugin {
   public schema: string;
@@ -128,6 +129,30 @@ export class PluginDataSourceMainServer extends Plugin {
     this.app.db.on('fields.beforeCreate', beforeCreateForValidateField(this.app.db));
 
     this.app.db.on('fields.afterCreate', afterCreateForReverseField(this.app.db));
+
+    this.app.db.on('fields.beforeCreate', async (model: FieldModel, options) => {
+      const { transaction } = options;
+      // validate field name
+      const collectionName = model.get('collectionName');
+      const name = model.get('name');
+
+      if (!collectionName || !name) {
+        return;
+      }
+
+      const exists = await this.app.db.getRepository('fields').findOne({
+        filter: {
+          collectionName,
+          name,
+        },
+        transaction,
+      });
+
+      if (exists) {
+        throw new FieldNameExistsError(name, collectionName);
+      }
+    });
+
     this.app.db.on('fields.beforeUpdate', beforeUpdateForValidateField(this.app.db));
 
     this.app.db.on('fields.beforeUpdate', async (model, options) => {
@@ -305,6 +330,25 @@ export class PluginDataSourceMainServer extends Plugin {
       },
       (err, ctx) => {
         return ctx.throw(400, ctx.t(`The value of ${Object.keys(err.fields)} field duplicated`));
+      },
+    );
+
+    errorHandlerPlugin.errorHandler.register(
+      (err) => err instanceof FieldNameExistsError,
+      (err, ctx) => {
+        ctx.status = 400;
+
+        ctx.body = {
+          errors: [
+            {
+              message: ctx.i18n.t('field-name-exists', {
+                name: err.value,
+                collectionName: err.collectionName,
+                ns: 'data-source-main',
+              }),
+            },
+          ],
+        };
       },
     );
 

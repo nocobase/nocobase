@@ -1,0 +1,3 @@
+{
+  "field-name-exists": "Field name \"{{name}}\" already exists in collection \"{{collectionName}}\""
+}
