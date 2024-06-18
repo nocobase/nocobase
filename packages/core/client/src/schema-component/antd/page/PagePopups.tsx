@@ -72,7 +72,7 @@ const PagePopupsItemProvider: FC<{ params: PopupParams }> = ({ params, children 
   }
 
   return (
-    <PopupsProvider popupParams={params}>
+    <PopupsProvider popupParams={_params}>
       <PopupsVisibleProvider visible={visible} setVisible={setVisible}>
         <DataBlockProvider
           dataSource={_params.datasource}
