@@ -9,6 +9,9 @@
 
 import React, { FC } from 'react';
 import { Outlet } from 'react-router-dom';
+import { MobileTabBar } from '../mobile-tab-bar';
+import { MobilePage } from '../mobile-page';
+import { MobileNavigationBar } from '../mobile-navigation-bar';
 
 export interface MobileLayoutProps {
   children?: React.ReactNode;
@@ -16,9 +19,12 @@ export interface MobileLayoutProps {
 
 export const MobileLayout: FC<MobileLayoutProps> = () => {
   return (
-    <div>
-      layout
-      <Outlet />
-    </div>
+    <>
+      <MobilePage>
+        <MobileNavigationBar />
+        <Outlet />
+      </MobilePage>
+      <MobileTabBar />
+    </>
   );
 };

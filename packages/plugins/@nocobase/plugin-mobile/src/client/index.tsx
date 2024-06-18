@@ -8,9 +8,12 @@
  */
 
 import React from 'react';
+import { Outlet } from 'react-router-dom';
 import { Plugin, RouterManager, createRouterManager } from '@nocobase/client';
+
 import { Mobile } from './mobile';
 import { MobileLayout } from './mobile/MobileLayout';
+import { MobileSchemaPage } from './mobile-schema-page';
 
 export class PluginMobileClient extends Plugin {
   mobileRouter?: RouterManager;
@@ -33,7 +36,16 @@ export class PluginMobileClient extends Plugin {
 
     this.mobileRouter.add('mobile.home', {
       path: '/',
-      element: <div>home page</div>,
+      element: <MobileLayout />,
+    });
+
+    this.mobileRouter.add('mobile.schema', {
+      element: <Outlet />,
+    });
+
+    this.mobileRouter.add('mobile.schema.page', {
+      path: '/schema/:schemaId',
+      element: <MobileSchemaPage />,
     });
   }
 

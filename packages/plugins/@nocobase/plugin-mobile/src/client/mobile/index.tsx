@@ -15,5 +15,5 @@ import { PluginMobileClient } from '../index';
 export const Mobile = () => {
   const mobilePlugin = usePlugin(PluginMobileClient);
   const RouterComponent = mobilePlugin.getRouterComponent();
-  return <RouterComponent BaseLayout={mobilePlugin?.options?.config?.skipLogin ? undefined : MobileProviders} />;
+  return <RouterComponent BaseLayout={MobileProviders} />;
 };

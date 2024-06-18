@@ -7,13 +7,26 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { AdminProvider } from '@nocobase/client';
 import React, { FC } from 'react';
+import { AdminProvider, SchemaComponentOptions, usePlugin } from '@nocobase/client';
+
+import { PluginMobileClient } from '../index';
+import { MobileTabContextProvider } from '../context/MobileTab';
+import { MobileTabBar } from '../mobile-tab-bar';
 
 export interface MobileProvidersProps {
   children?: React.ReactNode;
 }
 
 export const MobileProviders: FC<MobileProvidersProps> = ({ children }) => {
-  return <AdminProvider>{children}</AdminProvider>;
+  const mobilePlugin = usePlugin(PluginMobileClient);
+  const AdminProviderComponent = mobilePlugin.options?.config?.skipLogin ? React.Fragment : AdminProvider;
+
+  return (
+    <AdminProviderComponent>
+      <MobileTabContextProvider>
+        <SchemaComponentOptions components={{ MobileTabBar }}>{children}</SchemaComponentOptions>
+      </MobileTabContextProvider>
+    </AdminProviderComponent>
+  );
 };
