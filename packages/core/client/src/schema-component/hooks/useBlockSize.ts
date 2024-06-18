@@ -49,7 +49,7 @@ const usePageFullScreenHeight = (props?) => {
   const { token } = theme.useToken();
   const { designable } = useDesignable();
   const { heightProps } = useBlockHeightProps();
-  const { disablePageHeader, enablePageTabs, hidePageTitle } = heightProps || props || {};
+  const { disablePageHeader, enablePageTabs, hidePageTitle } = props || heightProps || {};
   const navHeight = token.sizeXXL - 2;
   const addBlockBtnHeight = designable
     ? token.controlHeight + 2 * token.paddingContentHorizontalLG
@@ -90,7 +90,7 @@ const useTableHeight = () => {
   const { designable } = useDesignable();
   const schema = useFieldSchema();
   const heightProps = tableHeightProps || blockHeightProps;
-  const pageFullScreenHeight = useFullScreenHeight();
+  const pageFullScreenHeight = useFullScreenHeight(heightProps);
   const { data } = useDataBlockRequest();
   const { name } = useCollection();
   const { count, pageSize } = (data as any)?.meta || ({} as any);
