@@ -50,7 +50,6 @@ export const SubTable: any = observer(
     const compile = useCompile();
     const labelUiSchema = useLabelUiSchema(collectionField, fieldNames?.label || 'label');
     const recordV2 = useCollectionRecord();
-    console.log(field.initialValue?.length);
     const move = (fromIndex: number, toIndex: number) => {
       if (toIndex === undefined) return;
       if (!isArr(field.value)) return;
