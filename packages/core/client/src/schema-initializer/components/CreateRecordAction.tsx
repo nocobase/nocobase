@@ -98,15 +98,19 @@ const InternalCreateRecordAction = (props: any, ref) => {
   return (
     //@ts-ignore
     <div ref={buttonRef as React.Ref<HTMLButtonElement>}>
-      <ActionContextProvider value={{ ...ctx, fieldSchema, visible, setVisible }}>
-        <CreateAction
-          {...props}
-          onClick={(collectionData) => {
+      <CreateAction
+        {...props}
+        onClick={(collectionData) => {
+          if (collectionData.name === collection.name) {
+            ctx?.setVisible(true);
+          } else {
             setVisible(true);
-            setCurrentCollection(collectionData.name);
-            setCurrentCollectionDataSource(collectionData.dataSource);
-          }}
-        />
+          }
+          setCurrentCollection(collectionData.name);
+          setCurrentCollectionDataSource(collectionData.dataSource);
+        }}
+      />
+      <ActionContextProvider value={{ ...ctx, fieldSchema, visible, setVisible }}>
         <CollectionProvider_deprecated name={currentCollection} dataSource={currentCollectionDataSource}>
           <RecursionField schema={fieldSchema} basePath={field.address} onlyRenderProperties />
         </CollectionProvider_deprecated>
