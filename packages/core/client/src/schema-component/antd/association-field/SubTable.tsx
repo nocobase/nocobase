@@ -50,7 +50,6 @@ export const SubTable: any = observer(
     const compile = useCompile();
     const labelUiSchema = useLabelUiSchema(collectionField, fieldNames?.label || 'label');
     const recordV2 = useCollectionRecord();
-
     const move = (fromIndex: number, toIndex: number) => {
       if (toIndex === undefined) return;
       if (!isArr(field.value)) return;
@@ -164,7 +163,7 @@ export const SubTable: any = observer(
                 size={'small'}
                 field={field}
                 showIndex
-                dragSort={field.editable}
+                dragSort={false}
                 showDel={field.editable}
                 pagination={false}
                 rowSelection={{ type: 'none', hideSelectAll: true }}
