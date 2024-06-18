@@ -19,7 +19,7 @@ export class PluginBackupRestoreClient extends Plugin {
       title: this.t('Backup & Restore'),
       icon: 'CloudServerOutlined',
       Component: BackupAndRestoreList,
-      aclSnippet: 'pm.backup.restore',
+      aclSnippet: 'pm.backup-restore',
     });
   }
 }
