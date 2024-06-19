@@ -61,7 +61,7 @@
         'x-component-props': {
           'icon': 'GithubOutlined',
           'link': '/my',
-        },
+        },<>
         'x-link': '/my',
         'x-settings': 'MobileTabBar.Link:settings',
         'x-index': 4,

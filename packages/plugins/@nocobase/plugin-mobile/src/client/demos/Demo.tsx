@@ -157,6 +157,40 @@ const app = mockApp({
         },
       ],
     },
+    '/uiSchemas:getJsonSchema/home': {
+      data: {
+        type: 'void',
+        name: 'home',
+        'x-component': 'MobilePage',
+        properties: {
+          navigationBar: {
+            type: 'void',
+            'x-component': 'MobileNavigationBar',
+          },
+          content: {
+            type: 'void',
+            'x-component': 'MobileContent',
+          },
+        },
+      },
+    },
+    '/uiSchemas:getJsonSchema/message': {
+      data: {
+        type: 'void',
+        name: 'message',
+        'x-component': 'MobilePage',
+        properties: {
+          navigationBar: {
+            type: 'void',
+            'x-component': 'MobileNavigationBar',
+          },
+          content: {
+            type: 'void',
+            'x-component': 'MobileContent',
+          },
+        },
+      },
+    },
   },
 });
 

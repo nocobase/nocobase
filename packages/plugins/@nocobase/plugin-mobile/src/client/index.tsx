@@ -12,9 +12,15 @@ import { Outlet } from 'react-router-dom';
 import { Plugin, RouterManager, createRouterManager } from '@nocobase/client';
 
 import { Mobile } from './mobile';
-import { MobileLayout } from './mobile/MobileLayout';
+import { MobileLayout } from './mobile-layout';
 import { MobileSchemaPage } from './mobile-schema-page';
-export * from './context';
+import { MobilePage } from './mobile-page';
+import { MobileNavigationBar } from './mobile-navigation-bar';
+import { MobileContent } from './mobile-content';
+import { MobileTabBar } from './mobile-tab-bar';
+export * from './mobile-providers';
+
+const mobilePath = '/mobile';
 
 export class PluginMobileClient extends Plugin {
   mobileRouter?: RouterManager;
@@ -24,23 +30,33 @@ export class PluginMobileClient extends Plugin {
   }
 
   async load() {
+    this.addComponents();
     this.addAppRoutes();
     this.addRoutes();
   }
 
+  addComponents() {
+    this.app.addComponents({ MobilePage, MobileNavigationBar, MobileContent, MobileTabBar });
+  }
+
   setMobileRouter() {
-    const router = createRouterManager(this.options?.config?.router || { type: 'browser' }, this.app);
+    const router = createRouterManager(
+      this.options?.config?.router || { type: 'browser', basename: mobilePath },
+      this.app,
+    );
     this.mobileRouter = router;
   }
 
   addRoutes() {
+    this.app.addComponents({ MobileLayout, MobileSchemaPage });
+
     this.mobileRouter.add('mobile', {
-      element: <MobileLayout />,
+      Component: 'MobileLayout',
     });
 
     this.mobileRouter.add('mobile.home', {
       path: '/',
-      element: <MobileLayout />,
+      Component: 'MobileLayout',
     });
 
     this.mobileRouter.add('mobile.schema', {
@@ -49,14 +65,16 @@ export class PluginMobileClient extends Plugin {
 
     this.mobileRouter.add('mobile.schema.page', {
       path: '/schema/:schemaId',
-      element: <MobileSchemaPage />,
+      Component: 'MobileSchemaPage',
     });
   }
 
   addAppRoutes() {
+    this.app.addComponents({ Mobile });
+
     this.app.router.add('mobile', {
-      path: '/mobile/*',
-      element: <Mobile />,
+      path: `${mobilePath}/*`,
+      Component: 'Mobile',
     });
   }
 

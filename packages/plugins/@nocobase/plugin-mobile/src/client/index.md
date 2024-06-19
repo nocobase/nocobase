@@ -3,7 +3,91 @@
 
 <code src="./demos/Demo.tsx"></code>
 
+## 嵌套关系
+
+```tsx | pure
+<Mobile> //  提供各种 Providers 和 Routes
+  <MobileProviders>
+    <Routers>
+      <MobileLayout> // react-router 最顶部路由的 Layout `router.add('mobile', {  Component: 'MobileLayout'  })`
+        <Outlet /> // 自定义的路由组件
+        <MobileTabBar />
+      </MobileLayout>
+    </Routes>
+  </MobileProviders>
+</Mobile>
+```
+
+```tsx | pure
+<MobileSchemaPage> // react-router 匹配的 Schema 页面 router.add('/schema/:schemaId', { Component: 'MobileSchemaPage' })
+  <RemoteSchemaComponent uid={params.schemaId}> // 通过 URL 获取 uid，加载整个页面的 Schema
+    <MobilePage>
+      <MobileNavigationBar />
+      <MobileContent />
+    </MobilePage>
+  </RemoteSchemaComponent>
+</MobileSchemaPage>
+```
+
+## 路由嵌套关系
+
+```tsx | pure
+// 首先是将 `/mobile` 路由添加根项目的路由中，这样所有访问 `/mobile` 的请求都会进入到 mobile 路由中
+app.router.add('mobile', {
+  path: '/mobile/*',
+  element: <Mobile />,
+});
+```
+
+```tsx | pure
+// 匹配 Layout，这样默认情况下所有页面都是 <MobileLayout><Outlet /><MobileTabBar /></</MobileLayout>
+mobileRouter.add('mobile', {
+  element: <MobileLayout />,
+});
+```
+
+```tsx | pure
+// schema 页面的路由
+mobileRouter.add('mobile.schema', {
+  element: <Outlet />,
+});
+
+mobileRouter.add('mobile.schema.page', {
+  path: '/schema/:schemaId',
+  Component: 'MobileSchemaPage',
+});
+```
+
+```tsx | pure
+// 自定义页面的路由
+mobilePlugin.mobileRouter.add('mobile.my', {
+  path: '/my',
+  element: <MyPage />,
+});
+```
+
 ## Schema
+
+```tsx | pure
+{
+ 'x-component': 'MobilePage',
+ 'x-settings': 'MobilePage:settings',
+ 'properties': {
+  'navigationBar': {
+    'type': 'void',
+    'x-component': 'MobileNavigationBar',
+    'x-initializer': 'MobileNavigationBar:initializer',
+    properties: {
+    }
+  },
+  'content': {
+    'type': 'void',
+    'x-component': 'MobileContent',
+  }
+ }
+}
+```
+
 
 ```js
 {

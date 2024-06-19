@@ -8,18 +8,18 @@
  */
 
 import React, { FC, useEffect } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import { SafeArea } from 'antd-mobile';
 
 import { useStyles } from './styles';
-import { useMobileTabContext } from '../context/MobileTab';
+import { useMobileTabContext } from '../mobile-providers';
 
 import { MobileTabBarItem } from './MobileTabBar.Item';
 import { MobileTabBarSchema } from './MobileTabBar.Schema';
 import { MobileTabBarLink } from './MobileTabBar.Link';
 import { MobileTabBarItemDecorator } from './MobileTabBar.ItemDecorator';
 import { SchemaComponent } from '@nocobase/client';
-import { useMobileTitle } from '../context';
+import { useMobileTitle } from '../mobile-providers';
 
 export const MobileTabBar: FC & {
   Item: typeof MobileTabBarItem;
@@ -30,14 +30,7 @@ export const MobileTabBar: FC & {
   const { styles } = useStyles();
   const { tabList } = useMobileTabContext();
   const { pathname } = useLocation();
-  const navigate = useNavigate();
   const { setTitle } = useMobileTitle();
-
-  useEffect(() => {
-    if (pathname === '/') {
-      navigate(tabList[0].url);
-    }
-  }, [pathname, tabList]);
 
   const activeTabBar = tabList.find((item) => pathname === item.url);
 
@@ -48,7 +41,7 @@ export const MobileTabBar: FC & {
   }, [activeTabBar]);
 
   // 如果是 tabList 中的 pathname 则显示 tabBar，如果是内页则不显示
-  if (!activeTabBar) return null;
+  if (!activeTabBar && tabList.length > 0) return null;
 
   return (
     <>

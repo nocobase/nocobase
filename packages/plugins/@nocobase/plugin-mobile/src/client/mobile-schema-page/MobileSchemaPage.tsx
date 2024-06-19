@@ -9,6 +9,7 @@
 
 import { useParams } from 'react-router-dom';
 import React, { FC } from 'react';
+import { RemoteSchemaComponent } from '@nocobase/client';
 
 export interface MobileSchemaPageProps {
   children?: React.ReactNode;
@@ -16,10 +17,5 @@ export interface MobileSchemaPageProps {
 
 export const MobileSchemaPage: FC<MobileSchemaPageProps> = ({ children }) => {
   const { schemaId } = useParams<{ schemaId: string }>();
-  return (
-    <div>
-      <div>Schema 页面</div>
-      <div>schemaId: {schemaId}</div>
-    </div>
-  );
+  return <RemoteSchemaComponent uid={schemaId} memoized={false} />;
 };

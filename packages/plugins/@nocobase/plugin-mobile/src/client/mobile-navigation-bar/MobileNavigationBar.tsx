@@ -10,7 +10,7 @@
 import React, { FC } from 'react';
 import { NavBar } from 'antd-mobile';
 import { Affix } from 'antd';
-import { useMobileTitle } from '../context';
+import { useMobileTitle } from '../mobile-providers';
 
 export interface MobileNavigationBarProps {
   /**

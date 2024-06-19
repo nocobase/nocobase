@@ -26,6 +26,10 @@ export interface RemoteSchemaComponentProps {
   hidden?: any;
   onlyRenderProperties?: boolean;
   noForm?: boolean;
+  /**
+   * @default true
+   */
+  memoized?: boolean;
 }
 
 const defaultTransform = (s: Schema) => s;
@@ -37,6 +41,7 @@ const RequestSchemaComponent: React.FC<RemoteSchemaComponentProps> = (props) => 
     hidden,
     scope,
     uid,
+    memoized,
     components,
     onSuccess,
     schemaTransform = defaultTransform,
@@ -62,10 +67,20 @@ const RequestSchemaComponent: React.FC<RemoteSchemaComponentProps> = (props) => 
     return <Spin />;
   }
   return noForm ? (
-    <SchemaComponent memoized components={components} scope={scope} schema={schemaTransform(data?.data || {})} />
+    <SchemaComponent
+      memoized={memoized}
+      components={components}
+      scope={scope}
+      schema={schemaTransform(data?.data || {})}
+    />
   ) : (
     <FormProvider form={form}>
-      <SchemaComponent memoized components={components} scope={scope} schema={schemaTransform(data?.data || {})} />
+      <SchemaComponent
+        memoized={memoized}
+        components={components}
+        scope={scope}
+        schema={schemaTransform(data?.data || {})}
+      />
     </FormProvider>
   );
 };
