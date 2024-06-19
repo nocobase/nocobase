@@ -14,6 +14,7 @@ import { Plugin, RouterManager, createRouterManager } from '@nocobase/client';
 import { Mobile } from './mobile';
 import { MobileLayout } from './mobile/MobileLayout';
 import { MobileSchemaPage } from './mobile-schema-page';
+export * from './context';
 
 export class PluginMobileClient extends Plugin {
   mobileRouter?: RouterManager;

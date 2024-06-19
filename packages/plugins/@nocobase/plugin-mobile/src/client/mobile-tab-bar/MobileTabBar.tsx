@@ -19,6 +19,7 @@ import { MobileTabBarSchema } from './MobileTabBar.Schema';
 import { MobileTabBarLink } from './MobileTabBar.Link';
 import { MobileTabBarItemDecorator } from './MobileTabBar.ItemDecorator';
 import { SchemaComponent } from '@nocobase/client';
+import { useMobileTitle } from '../context';
 
 export const MobileTabBar: FC & {
   Item: typeof MobileTabBarItem;
@@ -30,6 +31,7 @@ export const MobileTabBar: FC & {
   const { tabList } = useMobileTabContext();
   const { pathname } = useLocation();
   const navigate = useNavigate();
+  const { setTitle } = useMobileTitle();
 
   useEffect(() => {
     if (pathname === '/') {
@@ -37,9 +39,16 @@ export const MobileTabBar: FC & {
     }
   }, [pathname, tabList]);
 
+  const activeTabBar = tabList.find((item) => pathname === item.url);
+
+  useEffect(() => {
+    if (activeTabBar) {
+      setTitle(activeTabBar.title);
+    }
+  }, [activeTabBar]);
+
   // 如果是 tabList 中的 pathname 则显示 tabBar，如果是内页则不显示
-  const isTabBarPathname = tabList.find((item) => pathname === item.url);
-  if (!isTabBarPathname) return null;
+  if (!activeTabBar) return null;
 
   return (
     <>

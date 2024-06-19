@@ -12,6 +12,7 @@ import { useRequest } from '@nocobase/client';
 export interface TabItem {
   id: number | string;
   url?: string;
+  title: string;
   options: any;
   parentId?: number | string;
   children?: TabItem[];

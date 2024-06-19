@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Plugin } from '@nocobase/client';
 import { mockApp } from '@nocobase/client/demo-utils';
-import PluginMobileClient from '@nocobase/plugin-mobile/client';
+import PluginMobileClient, { useMobileTitle } from '@nocobase/plugin-mobile/client';
 import { Button } from 'antd-mobile';
 import { useNavigate } from 'react-router-dom';
 
@@ -13,6 +13,20 @@ const MyPage = () => {
       <Button color="primary" onClick={() => navigate('/config')}>
         去 /config 页面
       </Button>
+    </div>
+  );
+};
+
+const ConfigPage = () => {
+  const { setTitle } = useMobileTitle();
+
+  useEffect(() => {
+    setTitle('Config');
+  }, []);
+
+  return (
+    <div>
+      <div>自定义页面 Config</div>
     </div>
   );
 };
@@ -40,12 +54,13 @@ class DemoPlugin extends Plugin {
 
     mobilePlugin.mobileRouter.add('mobile.config', {
       path: '/config',
-      element: <div>Config 页面</div>,
+      element: <ConfigPage />,
     });
   }
 }
 
 const app = mockApp({
+  designable: true,
   plugins: [DemoPlugin],
   router: {
     type: 'memory',
@@ -58,12 +73,13 @@ const app = mockApp({
           id: 1,
           url: '/schema/home',
           parentId: null,
+          title: 'Home',
           options: {
             type: 'void',
             // 'x-decorator': 'MobileTabBar.ItemDecorator',
             'x-component': 'MobileTabBar.Schema',
             'x-component-props': {
-              title: '首页',
+              title: 'Home',
               icon: 'AppleOutlined',
               selectedIcon: 'AppstoreOutlined',
               schemaId: 'home',
@@ -92,6 +108,7 @@ const app = mockApp({
           id: 2,
           parentId: null,
           url: '/schema/message',
+          title: 'Message',
           options: {
             type: 'void',
             'x-decorator': 'MobileTabBar.ItemDecorator',
@@ -108,6 +125,7 @@ const app = mockApp({
           id: 3,
           url: undefined,
           parentId: null,
+          title: 'Github',
           options: {
             type: 'void',
             'x-decorator': 'MobileTabBar.ItemDecorator',
@@ -124,6 +142,7 @@ const app = mockApp({
           id: 4,
           url: '/my',
           parentId: null,
+          title: 'MY',
           options: {
             type: 'void',
             'x-decorator': 'MobileTabBar.ItemDecorator',

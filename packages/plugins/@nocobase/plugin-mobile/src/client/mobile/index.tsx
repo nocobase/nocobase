@@ -8,7 +8,7 @@
  */
 
 import React from 'react';
-import { MobileProviders } from './MobileProviders';
+import { MobileProviders } from '../context';
 import { usePlugin } from '@nocobase/client';
 import { PluginMobileClient } from '../index';
 

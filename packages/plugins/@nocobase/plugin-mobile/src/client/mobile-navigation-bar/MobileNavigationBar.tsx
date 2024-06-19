@@ -8,7 +8,27 @@
  */
 
 import React, { FC } from 'react';
+import { NavBar } from 'antd-mobile';
+import { Affix } from 'antd';
+import { useMobileTitle } from '../context';
 
-export const MobileNavigationBar: FC = () => {
-  return <div>Mobile NavigationBar</div>;
+export interface MobileNavigationBarProps {
+  /**
+   * @default true
+   */
+  enableTitle?: boolean;
+  /**
+   * @default false
+   */
+  enableTabs?: boolean;
+}
+
+export const MobileNavigationBar: FC<MobileNavigationBarProps> = ({ enableTitle = true, enableTabs }) => {
+  const { title } = useMobileTitle();
+
+  return (
+    <Affix offsetTop={0}>
+      <NavBar backArrow={false}>{enableTitle ? title : null}</NavBar>
+    </Affix>
+  );
 };

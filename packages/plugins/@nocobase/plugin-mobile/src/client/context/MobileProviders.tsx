@@ -11,8 +11,9 @@ import React, { FC } from 'react';
 import { AdminProvider, SchemaComponentOptions, usePlugin } from '@nocobase/client';
 
 import { PluginMobileClient } from '../index';
-import { MobileTabContextProvider } from '../context/MobileTab';
 import { MobileTabBar } from '../mobile-tab-bar';
+import { MobileTabContextProvider } from './MobileTab';
+import { MobileTitleProvider } from './MobileTitle';
 
 export interface MobileProvidersProps {
   children?: React.ReactNode;
@@ -24,9 +25,11 @@ export const MobileProviders: FC<MobileProvidersProps> = ({ children }) => {
 
   return (
     <AdminProviderComponent>
-      <MobileTabContextProvider>
-        <SchemaComponentOptions components={{ MobileTabBar }}>{children}</SchemaComponentOptions>
-      </MobileTabContextProvider>
+      <MobileTitleProvider>
+        <MobileTabContextProvider>
+          <SchemaComponentOptions components={{ MobileTabBar }}>{children}</SchemaComponentOptions>
+        </MobileTabContextProvider>
+      </MobileTitleProvider>
     </AdminProviderComponent>
   );
 };
