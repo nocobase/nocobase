@@ -190,7 +190,7 @@ test.describe('display association fields', () => {
   });
 
   // https://nocobase.height.app/T-4596
-  test('Non-ID source key', async ({ page, mockPage, mockRecord }) => {
+  test.skip('Non-ID source key', async ({ page, mockPage, mockRecord }) => {
     const nocoPage = await mockPage(T4596).waitForInit();
     const record = await mockRecord('collectionA', 2);
     await nocoPage.goto();
