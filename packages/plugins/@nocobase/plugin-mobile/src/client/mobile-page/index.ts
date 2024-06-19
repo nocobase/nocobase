@@ -8,3 +8,4 @@
  */
 
 export * from './MobilePage';
+export * from './settings';

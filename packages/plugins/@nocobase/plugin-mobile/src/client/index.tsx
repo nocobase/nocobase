@@ -14,10 +14,10 @@ import { Plugin, RouterManager, createRouterManager } from '@nocobase/client';
 import { Mobile } from './mobile';
 import { MobileLayout } from './mobile-layout';
 import { MobileSchemaPage } from './mobile-schema-page';
-import { MobilePage } from './mobile-page';
+import { MobilePage, mobilePageSettings } from './mobile-page';
 import { MobileNavigationBar } from './mobile-navigation-bar';
-import { MobileContent } from './mobile-content';
-import { MobileTabBar } from './mobile-tab-bar';
+import { MobileContent, mobileContentInitializer } from './mobile-content';
+import { MobileTabBar, mobileTabBarInitializer, mobileTabBarSettings } from './mobile-tab-bar';
 export * from './mobile-providers';
 
 const mobilePath = '/mobile';
@@ -33,6 +33,16 @@ export class PluginMobileClient extends Plugin {
     this.addComponents();
     this.addAppRoutes();
     this.addRoutes();
+    this.addInitializers();
+    this.addSettings();
+  }
+
+  addInitializers() {
+    this.app.schemaInitializerManager.add(mobileContentInitializer, mobileTabBarInitializer);
+  }
+
+  addSettings() {
+    this.app.schemaSettingsManager.add(mobileTabBarSettings, mobilePageSettings);
   }
 
   addComponents() {

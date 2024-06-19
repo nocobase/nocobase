@@ -9,6 +9,10 @@
 
 import React, { FC } from 'react';
 
-export const MobileContent: FC = () => {
-  return <div>Mobile Content</div>;
+export interface MobileContentProps {
+  children?: React.ReactNode;
+}
+
+export const MobileContent: FC<MobileContentProps> = ({ children }) => {
+  return <div>{children}</div>;
 };

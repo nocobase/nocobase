@@ -17,6 +17,8 @@ export const useStyles = createStyles(({ token, css }) => ({
     right: 0,
     zIndex: 1000,
     background: '#fff',
+  },
+  mobileTabBarList: {
     display: 'flex',
     justifyContent: 'space-around',
     padding: '8px 0',

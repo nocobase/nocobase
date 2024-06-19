@@ -170,6 +170,13 @@ const app = mockApp({
           content: {
             type: 'void',
             'x-component': 'MobileContent',
+            properties: {
+              i7ntax4y9do: {
+                type: 'void',
+                'x-component': 'Grid',
+                'x-initializer': 'mobile:content',
+              },
+            },
           },
         },
       },
@@ -187,6 +194,13 @@ const app = mockApp({
           content: {
             type: 'void',
             'x-component': 'MobileContent',
+            properties: {
+              i7ntax4y9do: {
+                type: 'void',
+                'x-component': 'Grid',
+                'x-initializer': 'mobile:content:initializer',
+              },
+            },
           },
         },
       },

@@ -20,6 +20,8 @@ import { MobileTabBarLink } from './MobileTabBar.Link';
 import { MobileTabBarItemDecorator } from './MobileTabBar.ItemDecorator';
 import { SchemaComponent } from '@nocobase/client';
 import { useMobileTitle } from '../mobile-providers';
+import { MobileTabBarInitializer } from './initializer';
+import { MobileTabBarSettings } from './settings';
 
 export const MobileTabBar: FC & {
   Item: typeof MobileTabBarItem;
@@ -44,15 +46,17 @@ export const MobileTabBar: FC & {
   if (!activeTabBar && tabList.length > 0) return null;
 
   return (
-    <>
-      <div className={styles.mobileTabBar}>
+    <div className={styles.mobileTabBar}>
+      <MobileTabBarSettings />
+      <div className={styles.mobileTabBarList}>
         {tabList.map((item) => {
           return <SchemaComponent key={item.id} name={item.id} schema={item.options} />;
         })}
+        <MobileTabBarInitializer />
       </div>
 
       <SafeArea position="bottom" />
-    </>
+    </div>
   );
 };
 

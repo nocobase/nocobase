@@ -8,11 +8,17 @@
  */
 
 import React, { FC } from 'react';
+import { MobilePageSettings } from './settings';
 
 export interface MobilePageProps {
   children?: React.ReactNode;
 }
 
 export const MobilePage: FC<MobilePageProps> = ({ children }) => {
-  return <div>{children}</div>;
+  return (
+    <div style={{ position: 'relative' }}>
+      <MobilePageSettings />
+      {children}
+    </div>
+  );
 };

@@ -12,3 +12,5 @@ export * from './MobileTabBar.Item';
 export * from './MobileTabBar.Schema';
 export * from './MobileTabBar.ItemDecorator';
 export * from './MobileTabBar.Link';
+export * from './initializer';
+export * from './settings';
