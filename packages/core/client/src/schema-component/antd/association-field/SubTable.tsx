@@ -50,7 +50,6 @@ export const SubTable: any = observer(
     const compile = useCompile();
     const labelUiSchema = useLabelUiSchema(collectionField, fieldNames?.label || 'label');
     const recordV2 = useCollectionRecord();
-
     const move = (fromIndex: number, toIndex: number) => {
       if (toIndex === undefined) return;
       if (!isArr(field.value)) return;
@@ -102,7 +101,7 @@ export const SubTable: any = observer(
       const { selectedRows, setSelectedRows } = useContext(RecordPickerContext);
       return {
         onClick() {
-          selectedRows.map((v) => field.value.push(markRecordAsNew({ ...v })));
+          selectedRows.map((v) => field.value.push(v));
           field.onInput(field.value);
           setSelectedRows([]);
           setVisible(false);
@@ -164,7 +163,7 @@ export const SubTable: any = observer(
                 size={'small'}
                 field={field}
                 showIndex
-                dragSort={field.editable}
+                dragSort={false}
                 showDel={field.editable}
                 pagination={false}
                 rowSelection={{ type: 'none', hideSelectAll: true }}

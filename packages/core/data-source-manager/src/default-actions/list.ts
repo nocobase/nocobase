@@ -7,9 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { assign } from '@nocobase/utils';
-import { pageArgsToLimitArgs } from './utils';
 import { Context } from '@nocobase/actions';
+import { assign, isValidFilter } from '@nocobase/utils';
+import { pageArgsToLimitArgs } from './utils';
 
 function totalPage(total, pageSize): number {
   return Math.ceil(total / pageSize);
@@ -20,11 +20,15 @@ function findArgs(ctx: Context) {
   const params = ctx.action.params;
 
   if (params.tree) {
-    const [collectionName, associationName] = resourceName.split('.');
-    const collection = ctx.db.getCollection(resourceName);
-    if (collection.options.tree && !(associationName && collectionName === collection.name)) {
-      const foreignKey = collection.treeParentField?.foreignKey || 'parentId';
-      assign(params, { filter: { [foreignKey]: null } }, { filter: 'andMerge' });
+    if (isValidFilter(params.filter)) {
+      params.tree = false;
+    } else {
+      const [collectionName, associationName] = resourceName.split('.');
+      const collection = ctx.dataSource.collectionManager.getCollection(resourceName);
+      if (collection.options.tree && !(associationName && collectionName === collection.name)) {
+        const foreignKey = collection.treeParentField?.foreignKey || 'parentId';
+        assign(params, { filter: { [foreignKey]: null } }, { filter: 'andMerge' });
+      }
     }
   }
 

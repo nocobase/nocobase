@@ -61,10 +61,10 @@ export const TableSelectorParamsProvider = ({ params, children }: { params: Para
 };
 
 const InternalTableSelectorProvider = (props) => {
-  const { params, rowKey, extraFilter } = props;
+  const { params, rowKey, extraFilter, expandFlag: propsExpandFlag = false } = props;
   const field = useField();
   const { resource, service } = useBlockRequestContext();
-  const [expandFlag, setExpandFlag] = useState(false);
+  const [expandFlag, setExpandFlag] = useState(propsExpandFlag);
   const parentRecordData = useCollectionParentRecordData();
   // if (service.loading) {
   //   return <Spin />;

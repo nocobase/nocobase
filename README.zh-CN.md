@@ -8,6 +8,7 @@ https://github.com/nocobase/nocobase/assets/1267426/29623e45-9a48-4598-bb9e-9dd1
 <a href="https://www.producthunt.com/posts/nocobase?embed=true&utm_source=badge-top-post-topic-badge&utm_medium=badge&utm_souce=badge-nocobase" target="_blank"><img src="https://api.producthunt.com/widgets/embed-image/v1/top-post-topic-badge.svg?post_id=456520&theme=light&period=weekly&topic_id=267" alt="NocoBase - Scalability&#0045;first&#0044;&#0032;open&#0045;source&#0032;no&#0045;code&#0032;platform | Product Hunt" style="width: 250px; height: 54px;" width="250" height="54" /></a>
 
 ## 最近重要更新
+- [v1.0.1-alpha.1：区块支持高度设置 - 2024/06/07](https://docs-cn.nocobase.com/welcome/changelog/20240607)
 - [v1.0.0-alpha.15：新增插件、改进「配置操作」交互 - 2024/05/19](https://docs-cn.nocobase.com/welcome/changelog/20240519)
 - [v1.0：新的里程碑 - 2024/04/28](https://docs-cn.nocobase.com/welcome/release/v1001-changelog)
 - [v0.21：优化区块性能 - 2024/03/29](https://docs-cn.nocobase.com/welcome/release/v0210-changelog)
@@ -19,8 +20,6 @@ https://github.com/nocobase/nocobase/assets/1267426/29623e45-9a48-4598-bb9e-9dd1
 - [v0.15：全新的插件设置中心 - 2023/11/13](https://blog-cn.nocobase.com/posts/release-v015/)
 - [v0.14：全新的插件管理器，支持通过界面添加插件 - 2023/09/11](https://blog-cn.nocobase.com/posts/release-v014/)
 - [v0.13: 全新的应用状态流转 - 2023/08/24](https://blog-cn.nocobase.com/posts/release-v013/)
-- [v0.12: 全新的插件构建工具 - 2023/08/01](https://blog-cn.nocobase.com/posts/release-v012/)
-- [v0.11: 全新的客户端 Application、Plugin 和 Router - 2023/07/08](https://blog-cn.nocobase.com/posts/release-v011/)
 
 ## NocoBase 是什么
 

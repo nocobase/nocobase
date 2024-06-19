@@ -71,7 +71,7 @@ export const ValueDynamicComponent = (props: ValueDynamicComponentProps) => {
     [collectionName, mode, setValue],
   );
   const textAreaStyle = useMemo(() => {
-    return { minWidth: 460, marginRight: 15 };
+    return { minWidth: 460 };
   }, []);
   const compatScope = useMemo(() => {
     return compatOldVariables(scope, {
@@ -120,7 +120,6 @@ export const ValueDynamicComponent = (props: ValueDynamicComponentProps) => {
         value={mode}
         style={{ width: 150 }}
         onChange={(value) => {
-          console.log(value);
           setMode(value);
           setValue({
             mode: value,

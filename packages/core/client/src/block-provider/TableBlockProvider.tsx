@@ -9,13 +9,13 @@
 
 import { createForm } from '@formily/core';
 import { FormContext, useField, useFieldSchema } from '@formily/react';
-import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { useCollectionManager_deprecated } from '../collection-manager';
 import { withDynamicSchemaProps } from '../hoc/withDynamicSchemaProps';
 import { useTableBlockParams } from '../modules/blocks/data-blocks/table';
 import { FixedBlockWrapper, SchemaComponentOptions } from '../schema-component';
 import { BlockProvider, useBlockRequestContext } from './BlockProvider';
-
+import { useBlockHeightProps } from './hooks';
 /**
  * @internal
  */
@@ -49,14 +49,30 @@ interface Props {
    */
   collection?: string;
   children?: any;
+  expandFlag?: boolean;
 }
 
 const InternalTableBlockProvider = (props: Props) => {
-  const { params, showIndex, dragSort, rowKey, childrenColumnName, fieldNames, ...others } = props;
+  const {
+    params,
+    showIndex,
+    dragSort,
+    rowKey,
+    childrenColumnName,
+    expandFlag: propsExpandFlag = false,
+    fieldNames,
+    ...others
+  } = props;
   const field: any = useField();
   const { resource, service } = useBlockRequestContext();
   const fieldSchema = useFieldSchema();
-  const [expandFlag, setExpandFlag] = useState(fieldNames ? true : false);
+  const [expandFlag, setExpandFlag] = useState(fieldNames || propsExpandFlag ? true : false);
+  const { heightProps } = useBlockHeightProps();
+
+  useEffect(() => {
+    setExpandFlag(fieldNames || propsExpandFlag);
+  }, [fieldNames || propsExpandFlag]);
+
   const allIncludesChildren = useMemo(() => {
     const { treeTable } = fieldSchema?.['x-decorator-props'] || {};
     const data = service?.data?.data;
@@ -89,6 +105,7 @@ const InternalTableBlockProvider = (props: Props) => {
           childrenColumnName,
           allIncludesChildren,
           setExpandFlag: setExpandFlagValue,
+          heightProps,
         }}
       >
         {props.children}
@@ -132,7 +149,6 @@ export const TableBlockProvider = withDynamicSchemaProps((props) => {
   const collection = getCollection(props.collection, props.dataSource);
   const { treeTable } = fieldSchema?.['x-decorator-props'] || {};
   const { params, parseVariableLoading } = useTableBlockParamsCompat(props);
-
   let childrenColumnName = 'children';
 
   if (treeTable) {

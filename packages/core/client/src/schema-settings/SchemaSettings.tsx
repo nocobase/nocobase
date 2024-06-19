@@ -151,6 +151,7 @@ export const SchemaSettingsProvider: React.FC<SchemaSettingsProviderProps> = (pr
 
 export const SchemaSettingsDropdown: React.FC<SchemaSettingsProps> = (props) => {
   const { title, dn, ...others } = props;
+  const app = useApp();
   const [visible, setVisible] = useState(false);
   const { Component, getMenuItems } = useMenuItem();
   const [, startTransition] = useReactTransition();

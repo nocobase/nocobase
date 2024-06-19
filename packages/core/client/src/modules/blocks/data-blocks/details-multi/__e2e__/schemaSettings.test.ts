@@ -68,6 +68,7 @@ test.describe('actions schema settings', () => {
     // 创建 Edit & Delete 两个按钮
     await page.getByLabel('schema-initializer-ActionBar-detailsWithPaging:configureActions-general').hover();
     await page.getByRole('menuitem', { name: 'Edit' }).click();
+    await page.getByLabel('schema-initializer-ActionBar-detailsWithPaging:configureActions-general').hover();
     await page.getByRole('menuitem', { name: 'Delete' }).click();
     await page.mouse.move(0, 300);
 

@@ -17,7 +17,7 @@ import { BlockItemCard } from '../block-item/BlockItemCard';
 import { BlockItemError } from '../block-item/BlockItemError';
 import useStyles from './style';
 
-interface CardItemProps extends CardProps {
+export interface CardItemProps extends CardProps {
   name?: string;
   children?: React.ReactNode;
   /**
@@ -27,6 +27,7 @@ interface CardItemProps extends CardProps {
    */
   lazyRender?: IntersectionOptions & { element?: React.JSX.Element };
   heightMode?: string;
+  height?: number;
 }
 
 export const CardItem: FC<CardItemProps> = (props) => {

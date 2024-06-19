@@ -21,6 +21,7 @@ import {
   useCompile,
   useFilterAPI,
   useProps,
+  getLabelFormatValue,
 } from '@nocobase/client';
 import { useMemoizedFn } from 'ahooks';
 import { Button, Space } from 'antd';
@@ -67,7 +68,8 @@ export const GoogleMapsBlock = (props) => {
   const selectionOverlayRef = useRef<google.maps.Polygon | null>(null);
   const overlaysRef = useRef<google.maps.MVCObject[]>([]);
   selectingModeRef.current = selectingMode;
-
+  const { fields } = useCollection();
+  const labelUiSchema = fields.find((v) => v.name === fieldNames?.marker)?.uiSchema;
   const { getCollectionJoinField } = useCollectionManager_deprecated();
 
   const setOverlayOptions = (overlay: google.maps.MVCObject, state?: boolean) => {
@@ -175,6 +177,7 @@ export const GoogleMapsBlock = (props) => {
     const overlays: google.maps.MVCObject[] = dataSource
       .map((item) => {
         const data = getSource(item, fieldNames?.field, cf?.interface);
+        const title = getLabelFormatValue(labelUiSchema, item[fieldNames.marker]);
         if (!data?.length) return [];
         return data?.filter(Boolean).map((mapItem) => {
           if (!data) return;
@@ -187,7 +190,7 @@ export const GoogleMapsBlock = (props) => {
               fontFamily: 'inherit',
               fontSize: '13px',
               color: '#333',
-              text: fieldNames?.marker ? compile(item[markerName]) : undefined,
+              text: fieldNames?.marker ? compile(title) : undefined,
             } as google.maps.MarkerLabel,
           });
           overlay?.set(OVERLAY_KEY, item[primaryKey]);

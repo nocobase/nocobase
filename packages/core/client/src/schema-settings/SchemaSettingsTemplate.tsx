@@ -24,8 +24,8 @@ import { useBlockTemplateContext } from '../schema-templates/BlockTemplate';
 import { SchemaSettingsItem, useSchemaSettings } from './SchemaSettings';
 
 export function SchemaSettingsTemplate(props) {
-  const { componentName, collectionName, resourceName, needRender } = props;
-  const { t } = useTranslation();
+  const { componentName, collectionName, resourceName, needRender, useTranslationHooks = useTranslation } = props;
+  const { t } = useTranslationHooks();
   const { getCollection } = useCollectionManager_deprecated();
   const { dn, setVisible, template, fieldSchema } = useSchemaSettings();
   const compile = useCompile();

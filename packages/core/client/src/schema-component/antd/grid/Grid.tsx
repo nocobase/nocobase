@@ -13,6 +13,8 @@ import { ISchema, RecursionField, Schema, observer, useField, useFieldSchema } f
 import { uid } from '@formily/shared';
 import cls from 'classnames';
 import _ from 'lodash';
+import { css } from '@emotion/css';
+import { theme } from 'antd';
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { SchemaComponent, useDesignable, useSchemaInitializerRender } from '../../../';
 import { useFormBlockContext, useFormBlockType } from '../../../block-provider/FormBlockProvider';
@@ -21,7 +23,7 @@ import { DndContext, DndContextProps } from '../../common/dnd-context';
 import { useToken } from '../__builtins__';
 import useStyles from './Grid.style';
 
-const GridRowContext = createContext<any>({});
+export const GridRowContext = createContext<any>({});
 GridRowContext.displayName = 'GridRowContext';
 const GridColContext = createContext<any>({});
 GridColContext.displayName = 'GridColContext';
@@ -333,7 +335,8 @@ export const Grid: any = observer(
     const rows = useRowProperties();
     const { setPrintContent } = useFormBlockContext();
     const { styles } = useStyles();
-
+    const { token } = theme.useToken();
+    const { designable } = useDesignable();
     const distributedValue =
       distributed === undefined
         ? fieldSchema?.parent['x-component'] === 'Page' || fieldSchema?.parent['x-component'] === 'Tabs.TabPane'
@@ -356,7 +359,18 @@ export const Grid: any = observer(
     return (
       <FilterBlockProvider>
         <GridContext.Provider value={gridContextValue}>
-          <div className={`nb-grid ${styles.container}`} style={{ position: 'relative' }} ref={gridRef}>
+          <div
+            className={cls(
+              `nb-grid ${styles.container}`,
+              css`
+                & {
+                  margin-bottom: ${designable ? 0 : -token.marginLG}px;
+                }
+              `,
+            )}
+            style={{ position: 'relative' }}
+            ref={gridRef}
+          >
             <div className="nb-grid-warp">
               <DndWrapper dndContext={props.dndContext}>
                 {showDivider ? (

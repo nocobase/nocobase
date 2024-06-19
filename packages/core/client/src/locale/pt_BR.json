@@ -736,5 +736,6 @@
   "License": "Licença",
   "This variable has been deprecated and can be replaced with \"Current form\"": "A variável foi descontinuada; \"Formulário atual\" pode ser usada como substituto",
   "The value of this variable is derived from the query string of the page URL. This variable can only be used normally when the page has a query string.": "O valor desta variável é derivado da string de consulta da URL da página. Esta variável só pode ser usada normalmente quando a página tem uma string de consulta.",
-  "URL search params": "Parâmetros de pesquisa de URL"
+  "URL search params": "Parâmetros de pesquisa de URL",
+  "Expand All": "Expandir tudo"
 }

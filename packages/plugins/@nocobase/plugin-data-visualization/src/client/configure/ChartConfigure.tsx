@@ -123,7 +123,7 @@ export const ChartConfigure: React.FC<{
   const chartType = useDefaultChartType();
   const form = useMemo(
     () => {
-      const decoratorProps = initialValues || field?.decoratorProps;
+      const decoratorProps = initialValues || schema?.['x-decorator-props'];
       const config = decoratorProps?.config || {};
       return createForm({
         values: {

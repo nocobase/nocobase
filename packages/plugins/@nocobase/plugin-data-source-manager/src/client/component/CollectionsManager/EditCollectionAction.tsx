@@ -10,12 +10,12 @@
 import { ArrayTable } from '@formily/antd-v5';
 import { ISchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
+import { tval } from '@nocobase/utils/client';
 import {
   ActionContextProvider,
   IField,
   RecordProvider,
   SchemaComponent,
-  tval,
   useAPIClient,
   useActionContext,
   useCollectionManager_deprecated,

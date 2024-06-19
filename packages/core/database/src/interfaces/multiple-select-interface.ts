@@ -16,12 +16,22 @@ export class MultipleSelectInterface extends BaseInterface {
     const enumConfig = this.options.uiSchema?.enum || [];
     return items.map((item) => {
       const option = enumConfig.find((option) => option.label === item);
-      return option ? option.value : item;
+      if (option) {
+        return option.value;
+      }
+
+      const valueOption = enumConfig.find((option) => option.value === item);
+      if (valueOption) {
+        return valueOption.value;
+      }
+
+      throw new Error(`"${item}" is not a valid option in ${ctx.field.name} field.`);
     });
   }
 
   toString(value: any, ctx?: any) {
     const enumConfig = this.options.uiSchema?.enum || [];
+
     return lodash
       .castArray(value)
       .map((value) => {

@@ -7,9 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React from 'react';
+import React, { useCallback } from 'react';
+import { uniqBy } from 'lodash';
 
-import { Variable, parseCollectionName, useCompile, usePlugin } from '@nocobase/client';
+import { Variable, parseCollectionName, useApp, useCompile, usePlugin } from '@nocobase/client';
 
 import { useFlowContext } from './FlowContext';
 import { NAMESPACE, lang } from './locale';
@@ -259,17 +260,24 @@ export function useWorkflowVariableOptions(options: UseVariableOptions = {}) {
 }
 
 function getNormalizedFields(collectionName, { compile, getCollectionFields }) {
+  // NOTE: for compatibility with legacy version
   const [dataSourceName, collection] = parseCollectionName(collectionName);
+  // NOTE: `dataSourceName` will be ignored in new version
   const fields = getCollectionFields(collection, dataSourceName);
-  const foreignKeyFields: any[] = [];
+  const fkFields: any[] = [];
   const result: any[] = [];
   fields.forEach((field) => {
     if (field.isForeignKey) {
-      foreignKeyFields.push(field);
+      fkFields.push(field);
     } else {
+      const fkField = fields.find((f) => f.name === field.foreignKey);
+      if (fkField) {
+        fkFields.push(fkField);
+      }
       result.push(field);
     }
   });
+  const foreignKeyFields = uniqBy(fkFields, 'name');
   for (let i = result.length - 1; i >= 0; i--) {
     const field = result[i];
     if (field.type === 'belongsTo') {
@@ -280,7 +288,7 @@ function getNormalizedFields(collectionName, { compile, getCollectionFields }) {
           ...foreignKeyField,
           uiSchema: {
             ...field.uiSchema,
-            title: field.uiSchema?.title ? `${compile(field.uiSchema?.title)} ID` : foreignKeyField.name,
+            title: foreignKeyField.uiSchema?.title ? compile(foreignKeyField.uiSchema?.title) : foreignKeyField.name,
           },
         });
       } else {
@@ -297,21 +305,11 @@ function getNormalizedFields(collectionName, { compile, getCollectionFields }) {
         });
       }
     } else if (field.type === 'context' && field.collectionName === 'users') {
-      const belongsToField =
-        result.find((f) => f.type === 'belongsTo' && f.target === 'users' && f.foreignKey === field.name) ?? {};
-      result.splice(i, 0, {
-        ...field,
-        type: field.dataType,
-        interface: belongsToField.interface,
-        uiSchema: {
-          ...belongsToField.uiSchema,
-          title: belongsToField.uiSchema?.title ? `${compile(belongsToField.uiSchema?.title)} ID` : field.name,
-        },
-      });
+      result.splice(i, 1);
     }
   }
 
-  return result.filter((field) => field.interface && !field.hidden);
+  return uniqBy(result, 'name').filter((field) => field.interface && !field.hidden);
 }
 
 function loadChildren(option) {
@@ -379,6 +377,13 @@ export function getCollectionFieldOptions(options): VariableOption[] {
   });
 
   return result;
+}
+
+export function useGetCollectionFields(dataSourceName?) {
+  const app = useApp();
+  const { collectionManager } = app.dataSourceManager.getDataSource(dataSourceName);
+
+  return useCallback((collectionName) => collectionManager.getCollectionFields(collectionName), [collectionManager]);
 }
 
 export function WorkflowVariableInput({ variableOptions, ...props }): JSX.Element {

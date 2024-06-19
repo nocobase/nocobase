@@ -82,7 +82,7 @@
   "Hidden": "隐藏",
   "Hidden(reserved value)": "隐藏(保留值)",
   "Not required": "非必填",
-  "Value": "字段值",
+  "Value": "值",
   "Disabled": "禁用",
   "Enabled": "启用",
   "Problematic": "有问题",
@@ -957,5 +957,6 @@
   "The value of this variable is derived from the query string of the page URL. This variable can only be used normally when the page has a query string.": "该变量的值是根据页面 URL 的 query string 得来的，只有当页面存在 query string 的时候，该变量才能正常使用。",
   "Edit link":"编辑链接",
   "Add parameter":"添加参数",
-  "URL search params": "URL 查询参数"
+  "URL search params": "URL 查询参数",
+  "Expand All": "展开全部"
 }

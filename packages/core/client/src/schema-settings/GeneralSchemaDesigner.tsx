@@ -228,11 +228,10 @@ const InternalSchemaToolbar: FC<SchemaToolbarProps> = (props) => {
   );
   const rowCtx = useGridRowContext();
   const gridContext = useGridContext();
-
   const initializerProps: any = useMemo(() => {
     return {
       insertPosition: 'afterEnd',
-      wrap: rowCtx?.cols?.length > 1 ? undefined : gridRowColWrap,
+      wrap: rowCtx?.cols?.length === 1 ? gridRowColWrap : undefined,
       Component: (props: any) => (
         <PlusOutlined
           {...props}

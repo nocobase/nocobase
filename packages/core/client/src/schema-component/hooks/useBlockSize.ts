@@ -13,7 +13,7 @@ import { theme } from 'antd';
 import { debounce } from 'lodash';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { useDesignable } from '..';
-import { useDataBlockRequest } from '../../';
+import { useDataBlockRequest, useCollection, useTableBlockContext } from '../../';
 import { HeightMode } from '../../schema-settings/SchemaSettingsBlockHeightItem';
 import { useBlockHeightProps, getPageSchema } from '../../block-provider/hooks';
 
@@ -34,6 +34,11 @@ const getPageHeaderHeight = (disablePageHeader, enablePageTabs, hidePageTitle, t
       }
       return token.controlHeight + token.marginXS + (token.paddingXXS + 2) * 2 + token.paddingContentHorizontalLG;
     } else {
+      if (enablePageTabs) {
+        return (
+          token.controlPaddingHorizontal + 3 * token.controlPaddingHorizontalSM + 22 + token.paddingContentHorizontalLG
+        );
+      }
       return token.paddingContentHorizontalLG + 12;
     }
   }
@@ -44,7 +49,7 @@ const usePageFullScreenHeight = (props?) => {
   const { token } = theme.useToken();
   const { designable } = useDesignable();
   const { heightProps } = useBlockHeightProps();
-  const { disablePageHeader, enablePageTabs, hidePageTitle } = heightProps || props || {};
+  const { disablePageHeader, enablePageTabs, hidePageTitle } = props || heightProps || {};
   const navHeight = token.sizeXXL - 2;
   const addBlockBtnHeight = designable
     ? token.controlHeight + 2 * token.paddingContentHorizontalLG
@@ -53,7 +58,18 @@ const usePageFullScreenHeight = (props?) => {
   return navHeight + pageHeaderHeight + addBlockBtnHeight;
 };
 
-//抽屉中满屏
+// 抽屉中满屏
+const useDrawerFullScreenHeight = () => {
+  const { token } = theme.useToken();
+  const { designable } = useDesignable();
+  const tabActionHeight = token.paddingContentVerticalLG + token.margin + 2 * token.paddingContentVertical + 24;
+  const addBlockBtnHeight = designable
+    ? token.controlHeight + 2 * token.paddingContentHorizontalLG
+    : 1 * token.paddingContentHorizontalLG;
+  return tabActionHeight + addBlockBtnHeight;
+};
+
+//满屏
 const useFullScreenHeight = (props?) => {
   const schema = useFieldSchema();
   const isDrawerBlock = hasActionContainerInParentChain(schema);
@@ -65,24 +81,18 @@ const useFullScreenHeight = (props?) => {
   return pageReservedHeight;
 };
 
-// 抽屉中满屏
-const useDrawerFullScreenHeight = () => {
-  const { token } = theme.useToken();
-  const { designable } = useDesignable();
-  const tabActionHeight = token.paddingContentVerticalLG + token.margin + 2 * token.paddingContentVertical + 24;
-  const addBlockBtnHeight = designable
-    ? token.controlHeight + 3 * token.paddingContentHorizontalLG
-    : 2 * token.paddingContentHorizontalLG;
-  return tabActionHeight + addBlockBtnHeight;
-};
+const InternalWorkflowCollection = ['users_jobs', 'approvals', 'approvalRecords'];
 // 表格区块高度计算
 const useTableHeight = () => {
   const { token } = theme.useToken();
-  const { heightProps } = useBlockHeightProps();
+  const { heightProps: blockHeightProps } = useBlockHeightProps();
+  const { heightProps: tableHeightProps } = useTableBlockContext();
   const { designable } = useDesignable();
   const schema = useFieldSchema();
-  const pageFullScreenHeight = useFullScreenHeight();
+  const heightProps = tableHeightProps || blockHeightProps;
+  const pageFullScreenHeight = useFullScreenHeight(heightProps);
   const { data } = useDataBlockRequest();
+  const { name } = useCollection();
   const { count, pageSize } = (data as any)?.meta || ({} as any);
   const hasPagination = count > pageSize;
   const { heightMode, height, title } = heightProps;
@@ -92,7 +102,8 @@ const useTableHeight = () => {
   const hasTableActions = Object.keys(schema.parent.properties.actions?.properties || {}).length > 0;
   const paginationHeight = hasPagination ? token.controlHeight + token.padding + token.marginLG : token.marginLG;
   const actionBarHeight = hasTableActions || designable ? token.controlHeight + 2 * token.marginLG : token.marginLG;
-  const tableHeaderHeight = (designable ? token.controlHeight : 22) + 2 * token.padding + 1;
+  const tableHeaderHeight =
+    (designable && !InternalWorkflowCollection.includes(name) ? token.controlHeight : 22) + 2 * token.padding + 1;
   const blockHeaderHeight = title ? token.fontSizeLG * token.lineHeightLG + token.padding * 2 - 1 : 0;
   if (heightMode === HeightMode.FULL_HEIGHT) {
     return (
@@ -108,16 +119,30 @@ const useTableHeight = () => {
 };
 
 // 常规数据区块高度计算
-export const useDataBlockHeight = () => {
+interface UseDataBlockHeightOptions {
+  removeBlockHeaderHeight?: boolean;
+  innerExtraHeight?: number;
+}
+export const useDataBlockHeight = (options?: UseDataBlockHeightOptions) => {
   const { heightProps } = useBlockHeightProps();
   const pageFullScreenHeight = useFullScreenHeight();
-  const { heightMode, height } = heightProps || {};
+  const { token } = theme.useToken();
+
+  const { heightMode, height, title } = heightProps || {};
+  const blockHeaderHeight = title ? token.fontSizeLG * token.lineHeightLG + token.padding * 2 - 1 : 0;
 
   if (!heightProps?.heightMode || heightMode === HeightMode.DEFAULT) {
     return;
   }
   if (heightMode === HeightMode.FULL_HEIGHT) {
-    return window.innerHeight - pageFullScreenHeight;
+    let res = window.innerHeight - pageFullScreenHeight;
+    if (options?.removeBlockHeaderHeight) {
+      res = res - blockHeaderHeight;
+    }
+    if (options?.innerExtraHeight) {
+      res = res - options.innerExtraHeight;
+    }
+    return res;
   }
   return height;
 };

@@ -40,3 +40,31 @@ Table 会将当前行的数据通过 [CollectionRecordProvider](/core/data-block
 在编辑场景下，在通过 [useDataBlockResource()](/core/data-block/data-block-resource-provider) 和 [useDataBlockRequest()](/core/data-block/data-block-request-provider#usedatablockrequest) 对数据进行更新，以及对列表进行刷新。
 
 <code src="./demos/new-demos/record.tsx"></code>
+
+## Tree
+
+### Basic
+
+树表需要设置：
+
+```diff
+  'x-decorator-props': {
+    collection: 'tree-collection',
+    action: 'list',
+    params: {
++     tree: true,
+      pageSize: 2,
+    },
++   treeTable: true,
+    showIndex: true,
+    dragSort: false,
+  },
+```
+
+<code src="./demos/new-demos/tree.tsx"></code>
+
+### expandFlag
+
+默认展开树表的节点，需要设置 `expandFlag` 属性。
+
+<code src="./demos/new-demos/tree-expandFlag.tsx"></code>

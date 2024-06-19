@@ -190,7 +190,7 @@ export const useFilterAPI = () => {
 
   useEffect(() => {
     setIsConnected(targets && targets.some((target) => dataBlocks.some((dataBlock) => dataBlock.uid === target.uid)));
-  }, [targetsKeys.length, dataBlocks]);
+  }, [targetsKeys.length, targets, dataBlocks]);
 
   const doFilter = useCallback(
     (
@@ -242,7 +242,7 @@ export const useFilterAPI = () => {
         );
       });
     },
-    [dataBlocks],
+    [dataBlocks, targets, uid],
   );
 
   return {
