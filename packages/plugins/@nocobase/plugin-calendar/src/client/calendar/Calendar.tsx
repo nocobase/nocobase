@@ -108,7 +108,7 @@ const useEvents = (dataSource: any, fieldNames: any, date: Date, view: (typeof W
         });
 
         if (res) return out;
-        const title = getLabelFormatValue(labelUiSchema, get(item, fieldNames.title));
+        const title = getLabelFormatValue(labelUiSchema, get(item, fieldNames.title), true);
         const event = {
           id: get(item, fieldNames.id || 'id'),
           title: title || t('Untitle'),
