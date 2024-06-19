@@ -33,7 +33,7 @@ import injectTargetCollection from './decorators/target-collection-decorator';
 import { transactionWrapperBuilder } from './decorators/transaction-decorator';
 import { EagerLoadingTree } from './eager-loading/eager-loading-tree';
 import { ArrayFieldRepository } from './field-repository/array-field-repository';
-import { ArrayField, RelationField } from './fields';
+import { ArrayField, RecordSetField, RelationField } from './fields';
 import FilterParser from './filter-parser';
 import { Model } from './model';
 import operators from './operators';
@@ -45,6 +45,7 @@ import { HasOneRepository } from './relation-repository/hasone-repository';
 import { RelationRepository } from './relation-repository/relation-repository';
 import { updateAssociations, updateModelByValues } from './update-associations';
 import { UpdateGuard } from './update-guard';
+import { RecordSetRepository } from './relation-repository/record-set-repository';
 
 const debug = require('debug')('noco-database');
 
@@ -67,10 +68,10 @@ type Operators = keyof typeof operators & keyof WhereOperators;
 
 export type FilterWithOperator = {
   [key: string]:
-    | {
-        [K in Operators]: FieldValue;
-      }
-    | FieldValue;
+  | {
+    [K in Operators]: FieldValue;
+  }
+  | FieldValue;
 };
 
 export type FilterWithValue = {
@@ -173,7 +174,7 @@ interface RelatedQueryOptions {
   };
 }
 
-const transaction = transactionWrapperBuilder(function () {
+const transaction = transactionWrapperBuilder(function() {
   return (<Repository>this).collection.model.sequelize.transaction();
 });
 
@@ -188,6 +189,7 @@ class RelationRepositoryBuilder<R extends RelationRepository> {
     BelongsToMany: BelongsToManyRepository,
     HasMany: HasManyRepository,
     ArrayField: ArrayFieldRepository,
+    RecordSet: RecordSetRepository,
   };
 
   constructor(collection: Collection, associationName: string) {
@@ -195,13 +197,17 @@ class RelationRepositoryBuilder<R extends RelationRepository> {
     this.associationName = associationName;
     this.association = this.collection.model.associations[this.associationName];
 
-    if (!this.association) {
-      const field = collection.getField(associationName);
-      if (field && field instanceof ArrayField) {
-        this.association = {
-          associationType: 'ArrayField',
-        };
-      }
+    if (this.association) {
+      return;
+    }
+    const field = collection.getField(associationName);
+    if (!field) {
+      return;
+    }
+    if (field instanceof ArrayField) {
+      this.association = {
+        associationType: 'ArrayField',
+      };
     }
   }
 

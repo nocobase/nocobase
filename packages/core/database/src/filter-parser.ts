@@ -13,6 +13,7 @@ import { ModelStatic } from 'sequelize';
 import { Collection } from './collection';
 import { Database } from './database';
 import { Model } from './model';
+import { RecordSetAssociation } from './fields';
 
 const debug = require('debug')('noco-database');
 
@@ -167,6 +168,7 @@ export default class FilterParser {
           continue;
         }
 
+        const association = associations[firstKey];
         const associationKeys = [];
 
         associationKeys.push(firstKey);
@@ -177,10 +179,17 @@ export default class FilterParser {
 
         if (!existInclude) {
           // set sequelize include option
-          _.set(include, firstKey, {
+          const includeOptions = {
             association: firstKey,
             attributes: [], // out put empty fields by default
-          });
+          };
+          if (association.associationType === 'RecordSet') {
+            const { as, targetKey, source, sourceKey } = (association as any) as RecordSetAssociation;
+            includeOptions['on'] = this.database.sequelize.literal(
+              `${as}.${targetKey}=any(${source.collection.name}.${sourceKey})`,
+            );
+          }
+          _.set(include, firstKey, includeOptions);
         }
 
         // association target model

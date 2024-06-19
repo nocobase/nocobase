@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import lodash from 'lodash';
+import lodash, { flatten } from 'lodash';
 import { Association, HasOne, HasOneOptions, Includeable, Model, ModelStatic, Op, Transaction } from 'sequelize';
 import Database from '../database';
 import { appendChildCollectionNameAfterRepositoryFind } from '../listeners/append-child-collection-name-after-repository-find';
@@ -256,10 +256,13 @@ export class EagerLoadingTree {
 
         // clear filter association value
         const associations = node.model.associations;
-        for (const association of Object.keys(associations)) {
+        for (const [name, association] of Object.entries(associations)) {
+          if ((association as any).associationType === 'RecordSet') {
+            continue;
+          }
           for (const instance of instances) {
-            delete instance[association];
-            delete instance.dataValues[association];
+            delete instance[name];
+            delete instance.dataValues[name];
           }
         }
       } else if (ids.length > 0) {
@@ -285,6 +288,30 @@ export class EagerLoadingTree {
           const foreignKeyValues = node.parent.instances.map((instance) => instance.get(association.sourceKey));
 
           let where: any = { [foreignKey]: foreignKeyValues };
+
+          if (node.where) {
+            where = {
+              [Op.and]: [where, node.where],
+            };
+          }
+
+          const findOptions = {
+            where,
+            attributes: node.attributes,
+            order: params.order || orderOption(association),
+            transaction,
+          };
+
+          instances = await node.model.findAll(findOptions);
+        }
+
+        if (associationType === 'RecordSet') {
+          const targetKey = association.targetKey;
+          const targetKeyValues = node.parent.instances.map((instance) => {
+            return instance.get(association.sourceKey);
+          });
+
+          let where: any = { [targetKey]: flatten(targetKeyValues) };
 
           if (node.where) {
             where = {
@@ -405,6 +432,10 @@ export class EagerLoadingTree {
         const setParentAccessor = (parentInstance) => {
           const key = association.as;
 
+          if (!key) {
+            return;
+          }
+
           const children = parentInstance.getDataValue(association.as);
 
           if (association.isSingleAssociation) {
@@ -438,6 +469,24 @@ export class EagerLoadingTree {
               if (associationType == 'HasOne') {
                 const key = association.options.realAs || association.as;
                 parentInstance[key] = parentInstance.dataValues[key] = instance;
+              }
+            }
+          }
+        }
+
+        if (associationType === 'RecordSet') {
+          const { sourceKey, targetKey } = association;
+
+          for (const instance of node.instances) {
+            const parentInstance = node.parent.instances.find((parentInstance) =>
+              parentInstance.get(sourceKey).includes(instance.get(targetKey)),
+            );
+
+            if (parentInstance) {
+              const children = parentInstance.getDataValue(sourceKey);
+              const index = children.findIndex((child) => child == instance.get(targetKey));
+              if (index > -1) {
+                children[index] = instance;
               }
             }
           }

@@ -65,7 +65,7 @@ export const usePickActionProps = () => {
 
 function renderTemplate(str: string, data: any) {
   const re = /\{\{\s*((\w+\.?)+)\s*\}\}/g;
-  return str.replace(re, function (_, key) {
+  return str.replace(re, function(_, key) {
     return get(data, key) || '';
   });
 }
@@ -558,12 +558,8 @@ export const useCustomizeUpdateActionProps = () => {
 
   return {
     async onClick(e?, callBack?) {
-      const {
-        assignedValues: originalAssignedValues = {},
-        onSuccess,
-        skipValidator,
-        triggerWorkflows,
-      } = actionSchema?.['x-action-settings'] ?? {};
+      const { assignedValues: originalAssignedValues = {}, onSuccess, skipValidator, triggerWorkflows } =
+        actionSchema?.['x-action-settings'] ?? {};
 
       const assignedValues = {};
       const waitList = Object.keys(originalAssignedValues).map(async (key) => {
@@ -655,11 +651,8 @@ export const useCustomizeBulkUpdateActionProps = () => {
 
   return {
     async onClick() {
-      const {
-        assignedValues: originalAssignedValues = {},
-        onSuccess,
-        updateMode,
-      } = actionSchema?.['x-action-settings'] ?? {};
+      const { assignedValues: originalAssignedValues = {}, onSuccess, updateMode } =
+        actionSchema?.['x-action-settings'] ?? {};
       actionField.data = field.data || {};
       actionField.data.loading = true;
 
@@ -1267,7 +1260,7 @@ export const useAssociationFilterBlockProps = () => {
     labelKey = 'label';
     list = _list;
     params = {};
-    run = () => {};
+    run = () => { };
     filterKey = `${field.name}.${operatorMap[field.interface]}`;
     handleSearchInput = (e) => {
       // TODO: 列表没有刷新，在这个 hook 中使用 useState 会产生 re-render 次数过多的错误
@@ -1402,7 +1395,8 @@ export const useAssociationNames = (dataSource?: string) => {
       const collectionField = s['x-collection-field'] && getCollectionJoinField(s['x-collection-field'], dataSource);
       const isAssociationSubfield = s.name.includes('.');
       const isAssociationField =
-        collectionField && ['hasOne', 'hasMany', 'belongsTo', 'belongsToMany'].includes(collectionField.type);
+        collectionField &&
+        ['hasOne', 'hasMany', 'belongsTo', 'belongsToMany', 'recordSet'].includes(collectionField.type);
 
       // 根据联动规则中条件的字段获取一些 appends
       if (s['x-linkage-rules']) {
@@ -1484,7 +1478,7 @@ function getTargetField(obj) {
     function traverse(o) {
       Object.keys(o)
         .sort()
-        .forEach(function (key) {
+        .forEach(function(key) {
           keys.push(key);
           if (o[key] && typeof o[key] === 'object') {
             traverse(o[key]);
