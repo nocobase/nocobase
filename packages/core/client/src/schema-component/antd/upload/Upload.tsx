@@ -134,14 +134,14 @@ function AttachmentListItem(props) {
           {!readPretty && file.id && (
             <Button size={'small'} type={'text'} icon={<DownloadOutlined />} onClick={onDownload} />
           )}
-          {!readPretty && !disabled && (
+          {!readPretty && !disabled && file.status !== 'uploading' && (
             <Button size={'small'} type={'text'} icon={<DeleteOutlined />} onClick={onDelete} />
           )}
         </Space>
       </span>
       {file.status === 'uploading' && (
         <div className={`${prefixCls}-list-item-progress`}>
-          <Progress size={2} type={'line'} showInfo={false} percent={file.percent} />
+          <Progress strokeWidth={4} type={'line'} showInfo={false} percent={Number(file.percent)} />
         </div>
       )}
     </div>

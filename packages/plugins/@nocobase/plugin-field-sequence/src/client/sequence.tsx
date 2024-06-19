@@ -34,7 +34,8 @@ function RuleTypeSelect(props) {
 
   useFormEffects(() => {
     onFieldValueChange(`patterns.${index}.type`, (field) => {
-      setValuesIn(`patterns.${index}.options`, {});
+      const type = RuleTypes[field.value];
+      setValuesIn(`patterns.${index}.options`, type.defaults ? { ...type.defaults } : {});
     });
   });
 
@@ -194,6 +195,10 @@ const RuleTypes = {
         default: null,
       },
     },
+    defaults: {
+      digits: 4,
+      start: 1,
+    },
   },
   date: {
     title: `{{t("Date", { ns: "${NAMESPACE}" })}}`,
@@ -201,6 +206,19 @@ const RuleTypes = {
       format(options = { value: 'YYYYMMDD' }) {
         return <code>{options.value}</code>;
       },
+    },
+    fieldset: {
+      format: {
+        type: 'string',
+        title: `{{t("Date format", { ns: "${NAMESPACE}" })}}`,
+        description: `{{t('Supports all formats of the Day.js library, such as "YYYYMMDD", "YYYY-MM-DD", etc.', { ns: "${NAMESPACE}" })}}`,
+        'x-decorator': 'FormItem',
+        'x-component': 'Input',
+        default: 'YYYYMMDD',
+      },
+    },
+    defaults: {
+      format: 'YYYYMMDD',
     },
   },
 };
@@ -384,7 +402,7 @@ export class SequenceFieldInterface extends CollectionFieldInterface {
           type: 'void',
           'x-component': 'ArrayTable.Addition',
           'x-component-props': {
-            defaultValue: { type: 'integer', options: { digits: 1, start: 0 } },
+            defaultValue: { type: 'integer', options: { ...RuleTypes.integer.defaults } },
           },
           title: `{{t("Add rule", { ns: "${NAMESPACE}" })}}`,
         },

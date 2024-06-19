@@ -181,7 +181,7 @@ export const MarkdownVoid: any = withDynamicSchemaProps(
     ) : (
       <div
         className={cls([componentCls, hashId, 'nb-markdown nb-markdown-default nb-markdown-table', className])}
-        style={{ ...props.style, height: height || '100%' }}
+        style={{ ...props.style, height: height || '100%', overflowY: height ? 'auto' : 'null' }}
         dangerouslySetInnerHTML={{ __html: html }}
       />
     );

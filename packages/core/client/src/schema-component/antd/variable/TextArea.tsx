@@ -486,6 +486,7 @@ async function preloadOptions(scope, value: string) {
 TextArea.ReadPretty = function ReadPretty(props): JSX.Element {
   const { value } = props;
   const scope = typeof props.scope === 'function' ? props.scope() : props.scope;
+  const { wrapSSR, hashId, componentCls } = useStyles();
 
   const [options, setOptions] = useState([]);
   const keyLabelMap = useMemo(() => createOptionsValueLabelMap(options), [options]);
@@ -499,21 +500,25 @@ TextArea.ReadPretty = function ReadPretty(props): JSX.Element {
   }, [scope, value]);
   const html = renderHTML(value ?? '', keyLabelMap);
 
-  const content = (
+  const content = wrapSSR(
     <span
       dangerouslySetInnerHTML={{ __html: html }}
-      className={css`
-        overflow: auto;
+      className={cx(
+        componentCls,
+        hashId,
+        css`
+          overflow: auto;
 
-        .ant-tag {
-          display: inline;
-          line-height: 19px;
-          margin: 0 0.25em;
-          padding: 2px 7px;
-          border-radius: 10px;
-        }
-      `}
-    />
+          .ant-tag {
+            display: inline;
+            line-height: 19px;
+            margin: 0 0.25em;
+            padding: 2px 7px;
+            border-radius: 10px;
+          }
+        `,
+      )}
+    />,
   );
 
   return (

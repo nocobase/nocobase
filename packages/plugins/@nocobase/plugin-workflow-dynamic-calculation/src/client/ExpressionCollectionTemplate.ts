@@ -8,8 +8,7 @@
  */
 
 import { getOptions } from '@nocobase/evaluators/client';
-import { getConfigurableProperties } from './properties';
-import { CollectionTemplate } from '../../data-source/collection-template/CollectionTemplate';
+import { getConfigurableProperties, CollectionTemplate } from '@nocobase/client';
 
 export class ExpressionCollectionTemplate extends CollectionTemplate {
   name = 'expression';
@@ -21,7 +20,6 @@ export class ExpressionCollectionTemplate extends CollectionTemplate {
     updatedBy: true,
     createdAt: true,
     updatedAt: true,
-    sortable: true,
     fields: [
       {
         name: 'engine',
