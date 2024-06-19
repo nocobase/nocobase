@@ -17,6 +17,7 @@ import {
   useCollectionParentRecordData,
   useProps,
   withDynamicSchemaProps,
+  getLabelFormatValue,
 } from '@nocobase/client';
 import { parseExpression } from 'cron-parser';
 import type { Dayjs } from 'dayjs';
@@ -62,6 +63,8 @@ function Toolbar(props: ToolbarProps) {
 
 const useEvents = (dataSource: any, fieldNames: any, date: Date, view: (typeof Weeks)[number]) => {
   const { t } = useTranslation();
+  const { fields } = useCollection();
+  const labelUiSchema = fields.find((v) => v.name === fieldNames?.title)?.uiSchema;
   return useMemo(() => {
     if (!Array.isArray(dataSource)) return [];
     const events = [];
@@ -105,10 +108,10 @@ const useEvents = (dataSource: any, fieldNames: any, date: Date, view: (typeof W
         });
 
         if (res) return out;
-
+        const title = getLabelFormatValue(labelUiSchema, get(item, fieldNames.title));
         const event = {
           id: get(item, fieldNames.id || 'id'),
-          title: get(item, fieldNames.title) || t('Untitle'),
+          title: title || t('Untitle'),
           start: eventStart.toDate(),
           end: eventStart.add(intervalTime, 'millisecond').toDate(),
         };

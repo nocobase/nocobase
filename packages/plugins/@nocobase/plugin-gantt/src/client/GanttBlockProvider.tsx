@@ -99,7 +99,7 @@ const InternalGanttBlockProvider = (props) => {
 };
 
 export const GanttBlockProvider = (props) => {
-  const params = { filter: props.params.filter, paginate: false, sort: ['id'] };
+  const params = { filter: props.params?.filter, paginate: false, sort: ['id'] };
   const collection = useCollection_deprecated();
 
   if (collection?.tree) {
