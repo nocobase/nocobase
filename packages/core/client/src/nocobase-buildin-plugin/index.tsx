@@ -27,6 +27,7 @@ import { AdminLayoutPlugin, RouteSchemaComponent } from '../route-switch';
 import { AntdSchemaComponentPlugin, PageTabs, SchemaComponentPlugin } from '../schema-component';
 import { ErrorFallback } from '../schema-component/antd/error-fallback';
 import { PagePopups } from '../schema-component/antd/page/PagePopups';
+import { SubPage } from '../schema-component/antd/page/SubPages';
 import { AssociationFilterPlugin, SchemaInitializerPlugin } from '../schema-initializer';
 import { SchemaSettingsPlugin } from '../schema-settings';
 import { BlockTemplateDetails, BlockTemplatePage } from '../schema-templates';
@@ -309,11 +310,43 @@ export class NocoBaseBuildInPlugin extends Plugin {
     });
     this.router.add('admin.page.popup', {
       path: '/admin/:name/popups/*',
-      Component: PagePopups as any,
+      Component: PagePopups,
     });
     this.router.add('admin.page.tab.popup', {
       path: '/admin/:name/tabs/:tabUid/popups/*',
-      Component: PagePopups as any,
+      Component: PagePopups,
+    });
+    this.router.add('admin.subpageWithoutAssociationAndTab', {
+      path: '/admin/subpages/:subPageUid/datasource/:datasource/filterbytk/:filterbytk/collection/:collection',
+      Component: SubPage,
+    });
+    this.router.add('admin.subpageWithoutAssociationAndTab.popup', {
+      path: '/admin/subpages/:subPageUid/datasource/:datasource/filterbytk/:filterbytk/collection/:collection/popups/*',
+      Component: PagePopups,
+    });
+    this.router.add('admin.subpageWithoutAssociation', {
+      path: '/admin/subpages/:subPageUid/datasource/:datasource/filterbytk/:filterbytk/collection/:collection/tab/:tab',
+      Component: SubPage,
+    });
+    this.router.add('admin.subpageWithoutAssociation.popup', {
+      path: '/admin/subpages/:subPageUid/datasource/:datasource/filterbytk/:filterbytk/collection/:collection/tab/:tab/popups/*',
+      Component: PagePopups,
+    });
+    this.router.add('admin.subpageWithAssociationWithoutTab', {
+      path: '/admin/subpages/:subPageUid/datasource/:datasource/filterbytk/:filterbytk/association/:association/sourceid/:sourceid',
+      Component: SubPage,
+    });
+    this.router.add('admin.subpageWithAssociationWithoutTab.popup', {
+      path: '/admin/subpages/:subPageUid/datasource/:datasource/filterbytk/:filterbytk/association/:association/sourceid/:sourceid/popups/*',
+      Component: PagePopups,
+    });
+    this.router.add('admin.subpageWithAssociation', {
+      path: '/admin/subpages/:subPageUid/datasource/:datasource/filterbytk/:filterbytk/association/:association/sourceid/:sourceid/tab/:tab',
+      Component: SubPage,
+    });
+    this.router.add('admin.subpageWithAssociation.popup', {
+      path: '/admin/subpages/:subPageUid/datasource/:datasource/filterbytk/:filterbytk/association/:association/sourceid/:sourceid/tab/:tab/popups/*',
+      Component: PagePopups,
     });
   }
 

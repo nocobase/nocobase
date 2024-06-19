@@ -32,8 +32,8 @@ import { useCompile, useDesignable } from '../../hooks';
 import { useToken } from '../__builtins__';
 import { ErrorFallback } from '../error-fallback';
 import FixedBlock from './FixedBlock';
+import { useStyles } from './Page.style';
 import { PageDesigner, PageTabDesigner } from './PageTabDesigner';
-import { useStyles } from './style';
 
 export const Page = (props) => {
   const { children, ...others } = props;

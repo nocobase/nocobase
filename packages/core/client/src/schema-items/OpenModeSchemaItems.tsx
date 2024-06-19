@@ -35,6 +35,7 @@ export const SchemaInitializerOpenModeSchemaItems: React.FC<Options> = (options)
           options={[
             { label: t('Drawer'), value: 'drawer' },
             { label: t('Dialog'), value: 'modal' },
+            { label: t('Page'), value: 'page' },
           ]}
           value={openModeValue}
           onChange={(value) => {
@@ -108,6 +109,7 @@ export const SchemaSettingOpenModeSchemaItems: React.FC<Options> = (options) => 
           options={[
             { label: t('Drawer'), value: 'drawer' },
             { label: t('Dialog'), value: 'modal' },
+            { label: t('Page'), value: 'page' },
           ]}
           value={openModeValue}
           onChange={(value) => {

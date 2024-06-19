@@ -15,7 +15,7 @@ import { useAPIClient } from '../../../api-client';
 import { DataBlockProvider } from '../../../data-source/data-block/DataBlockProvider';
 import { BlockRequestContext } from '../../../data-source/data-block/DataBlockRequestProvider';
 import { SchemaComponent } from '../../core';
-import { TabsContextProvider } from '../tabs/context';
+import { TabsPropsProvider } from './TabsPropsProvider';
 import {
   PopupParams,
   PopupParamsStorage,
@@ -59,9 +59,8 @@ const PopupsProvider: FC<PopupsProviderProps> = (props) => {
   );
 };
 
-const TabsPropsProvider: FC<{ popupParams: PopupParamsStorage }> = ({ children, popupParams }) => {
+const PopupTabsPropsProvider: FC<{ params: PopupParamsStorage }> = ({ children, params }) => {
   const { changeTab } = usePagePopup();
-  const [activeKey, setActiveKey] = useState(popupParams.tab);
   const onTabClick = useCallback(
     (key: string) => {
       changeTab(key);
@@ -69,17 +68,10 @@ const TabsPropsProvider: FC<{ popupParams: PopupParamsStorage }> = ({ children, 
     [changeTab],
   );
 
-  useEffect(() => {
-    // TODO: Suspect that Formily has a bug, the specific manifestation is: the params parameter in the schema is updated, but it is not refreshed when rendered.
-    setTimeout(() => {
-      setActiveKey(undefined);
-    }, 100);
-  });
-
   return (
-    <TabsContextProvider activeKey={activeKey} onTabClick={onTabClick}>
+    <TabsPropsProvider activeKey={params.tab} onTabClick={onTabClick}>
       {children}
-    </TabsContextProvider>
+    </TabsPropsProvider>
   );
 };
 
@@ -115,9 +107,9 @@ const PagePopupsItemProvider: FC<{ params: PopupParams }> = ({ params, children 
         >
           {/* Pass the service of the block where the button is located down, to refresh the block's data when the popup is closed */}
           <BlockRequestContext.Provider value={storedParams.service}>
-            <TabsPropsProvider popupParams={storedParams}>
+            <PopupTabsPropsProvider params={storedParams}>
               <div style={{ display: 'none' }}>{children}</div>
-            </TabsPropsProvider>
+            </PopupTabsPropsProvider>
           </BlockRequestContext.Provider>
         </DataBlockProvider>
       </PopupsVisibleProvider>

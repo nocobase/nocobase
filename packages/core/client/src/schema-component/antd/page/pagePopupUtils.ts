@@ -121,7 +121,7 @@ export const usePagePopup = () => {
         popupUid: popupUid,
         datasource: dataSourceKey,
         filterbytk: filterByTK,
-        collection: collection.name,
+        collection: association ? undefined : collection.name,
         association,
         sourceid: sourceId,
         tab: tabKey,
