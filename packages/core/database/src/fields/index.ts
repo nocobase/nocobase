@@ -59,7 +59,6 @@ export * from './uid-field';
 export * from './uuid-field';
 export * from './virtual-field';
 export * from './nanoid-field';
-export * from './record-set-field';
 
 export type FieldOptions =
   | BaseFieldOptions

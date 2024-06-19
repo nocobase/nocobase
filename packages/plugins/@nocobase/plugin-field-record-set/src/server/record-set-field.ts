@@ -1,7 +1,5 @@
 import { DataTypes } from 'sequelize';
-import { BaseColumnFieldOptions, Field } from './field';
-import Database from '../database';
-import { Model } from '../model';
+import { BaseColumnFieldOptions, Field, Database, Model } from '@nocobase/database';
 
 export class RecordSetAssociation {
   db: Database;
@@ -31,12 +29,18 @@ export class RecordSetAssociation {
 }
 
 export class RecordSetField extends Field {
+  private binded = false;
+
+  get targetCollection() {
+    return this.database.getCollection(this.options.target);
+  }
+
   get dataType() {
     const dialect = this.database.sequelize.getDialect();
-    // const { target, targetKey } = this.options;
-    // const targetCollection = this.context.database.getCollection(target);
-    // const targetField = targetCollection.getField(targetKey);
+    const { targetKey } = this.options;
+    const targetField = this.targetCollection.getField(targetKey);
     if (dialect === 'postgres') {
+      console.log('=====', targetField.dataType);
       return DataTypes.ARRAY(DataTypes.INTEGER);
     }
     return DataTypes.JSON;
@@ -63,8 +67,21 @@ export class RecordSetField extends Field {
   }
 
   bind() {
-    super.bind();
+    if (this.binded) {
+      return;
+    }
     this.on('beforeSave', this.listener);
+    if (this.targetCollection) {
+      super.bind();
+      this.binded = true;
+      return;
+    }
+    this.database.on('collection:loaded', async ({ collection }) => {
+      if (collection.name === this.options.target) {
+        super.bind();
+        this.binded = true;
+      }
+    });
   }
 
   unbind() {
