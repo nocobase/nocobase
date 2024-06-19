@@ -135,7 +135,8 @@ export const usePagePopup = () => {
       onFail,
     }: {
       /**
-       * 通过路由的方式打开弹窗失败时的回调
+      /**
+       * Callback when opening the popup fails through routing
        * @returns
        */
       onFail?: () => void;

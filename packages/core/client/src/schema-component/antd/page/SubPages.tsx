@@ -142,7 +142,7 @@ export const useNavigateTOSubPage = () => {
     const pathname = getSubPagePathFromParams(params);
 
     navigate(`/admin${pathname}`);
-  }, [fieldSchema]);
+  }, [fieldSchema, navigate, dataSourceKey, record, parentRecord, collection, cm, association]);
 
   return { navigateToSubPage };
 };
