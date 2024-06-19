@@ -15,9 +15,9 @@ import { EventEmitter } from 'events';
 import { backOff } from 'exponential-backoff';
 import glob from 'glob';
 import lodash from 'lodash';
+import safeJsonStringify from 'safe-json-stringify';
 import { nanoid } from 'nanoid';
 import { basename, isAbsolute, resolve } from 'path';
-import safeJsonStringify from 'safe-json-stringify';
 import semver from 'semver';
 import {
   DataTypes,
@@ -45,8 +45,6 @@ import { Field, FieldContext, RelationField } from './fields';
 import { checkDatabaseVersion } from './helpers';
 import { InheritedCollection } from './inherited-collection';
 import InheritanceMap from './inherited-map';
-import { InterfaceManager } from './interface-manager';
-import { registerInterfaces } from './interfaces/utils';
 import { registerBuiltInListeners } from './listeners';
 import { MigrationItem, Migrations } from './migration';
 import { Model } from './model';
@@ -86,6 +84,8 @@ import {
 import { patchSequelizeQueryInterface, snakeCase } from './utils';
 import { BaseValueParser, registerFieldValueParsers } from './value-parsers';
 import { ViewCollection } from './view-collection';
+import { InterfaceManager } from './interface-manager';
+import { registerInterfaces } from './interfaces/utils';
 
 export type MergeOptions = merge.Options;
 
@@ -811,7 +811,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
 
   /* istanbul ignore next -- @preserve */
   async auth(options: Omit<QueryOptions, 'retry'> & { retry?: number | Pick<QueryOptions, 'retry'> } = {}) {
-    const { retry = 30, ...others } = options;
+    const { retry = 5, ...others } = options;
     const startingDelay = 50;
     const timeMultiple = 2;
 
