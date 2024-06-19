@@ -7,9 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { css } from '@nocobase/client';
+import { css, useAPIClient } from '@nocobase/client';
 import { InputNumber, Select } from 'antd';
-import React from 'react';
+import React, { useCallback } from 'react';
 import { Cron } from 'react-js-cron';
 import { useWorkflowTranslation } from '../../locale';
 import CronZhCN from './locale/Cron.zh-CN';
@@ -65,20 +65,24 @@ function CommonRepeatField({ value, onChange }) {
 
 export function RepeatField({ value = null, onChange }) {
   const { t } = useWorkflowTranslation();
+  const api = useAPIClient();
   const typeValue = getRepeatTypeValue(value);
-  function onTypeChange(v) {
-    if (v === 'none') {
-      onChange(null);
-      return;
-    }
-    if (v === 'cron') {
-      onChange('0 * * * * *');
-      return;
-    }
-    onChange(v);
-  }
+  const onTypeChange = useCallback(
+    (v) => {
+      if (v === 'none') {
+        onChange(null);
+        return;
+      }
+      if (v === 'cron') {
+        onChange('0 * * * * *');
+        return;
+      }
+      onChange(v);
+    },
+    [onChange],
+  );
 
-  const locale = languages[localStorage.getItem('NOCOBASE_LOCALE') || 'en-US'];
+  const locale = languages[localStorage.getItem(api.auth.locale) || 'en-US'];
 
   return (
     <fieldset
