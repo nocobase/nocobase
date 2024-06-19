@@ -15,6 +15,8 @@ import {
   useBlockRequestContext,
   TableBlockProvider,
   useTableBlockContext,
+  getLabelFormatValue,
+  useCollection,
 } from '@nocobase/client';
 import _ from 'lodash';
 export const GanttBlockContext = createContext<any>({});
@@ -28,15 +30,18 @@ const formatData = (
   hideChildren = false,
   checkPermassion?: (any) => boolean,
   primaryKey?: string,
+  labelUiSchema?: any,
 ) => {
   data.forEach((item: any) => {
     const disable = checkPermassion(item);
     const percent = parseFloat((item[fieldNames.progress] * 100).toFixed(2));
+    const title = getLabelFormatValue(labelUiSchema, item[fieldNames.title]);
+
     if (item.children && item.children.length) {
       tasks.push({
         start: new Date(item[fieldNames.start] ?? undefined),
         end: new Date(item[fieldNames.end] ?? undefined),
-        name: item[fieldNames.title],
+        name: title,
         id: item[primaryKey] + '',
         type: 'project',
         progress: percent > 100 ? 100 : percent || 0,
@@ -45,12 +50,21 @@ const formatData = (
         color: item.color,
         isDisabled: disable,
       });
-      formatData(item.children, fieldNames, tasks, item.id + '', hideChildren, checkPermassion, primaryKey);
+      formatData(
+        item.children,
+        fieldNames,
+        tasks,
+        item.id + '',
+        hideChildren,
+        checkPermassion,
+        primaryKey,
+        labelUiSchema,
+      );
     } else {
       tasks.push({
         start: item[fieldNames.start] ? new Date(item[fieldNames.start]) : undefined,
         end: new Date(item[fieldNames.end] || item[fieldNames.start]),
-        name: item[fieldNames.title],
+        name: title,
         id: item[primaryKey] + '',
         type: fieldNames.end ? 'task' : 'milestone',
         progress: percent > 100 ? 100 : percent || 0,
@@ -107,12 +121,15 @@ export const useGanttBlockContext = () => {
 
 export const useGanttBlockProps = () => {
   const ctx = useGanttBlockContext();
+  const { fieldNames } = ctx;
   const [tasks, setTasks] = useState<any>([]);
   const { getPrimaryKey, name, template, writableView } = useCollection_deprecated();
   const { parseAction } = useACLRoleContext();
   const ctxBlock = useTableBlockContext();
   const [loading, setLoading] = useState(false);
   const primaryKey = getPrimaryKey();
+  const { fields } = useCollection();
+  const labelUiSchema = fields.find((v) => v.name === fieldNames?.title)?.uiSchema;
   const checkPermission = (record) => {
     const actionPath = `${name}:update`;
     const schema = {};
@@ -128,7 +145,16 @@ export const useGanttBlockProps = () => {
     ctx.field.data = tasksData;
   };
   const expandAndCollapseAll = (flag) => {
-    const data = formatData(ctx.service.data?.data, ctx.fieldNames, [], undefined, flag, checkPermission, primaryKey);
+    const data = formatData(
+      ctx.service.data?.data,
+      ctx.fieldNames,
+      [],
+      undefined,
+      flag,
+      checkPermission,
+      primaryKey,
+      labelUiSchema,
+    );
     setTasks(data);
     ctx.field.data = data;
   };
@@ -143,6 +169,7 @@ export const useGanttBlockProps = () => {
         false,
         checkPermission,
         primaryKey,
+        labelUiSchema,
       );
       setTasks(data);
       setLoading(false);
