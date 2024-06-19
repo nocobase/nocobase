@@ -18,9 +18,12 @@ import { MobileSchemaPage } from './mobile-schema-page';
 export class PluginMobileClient extends Plugin {
   mobileRouter?: RouterManager;
 
+  async afterAdd(): Promise<void> {
+    this.setMobileRouter();
+  }
+
   async load() {
     this.addAppRoutes();
-    this.setMobileRouter();
     this.addRoutes();
   }
 

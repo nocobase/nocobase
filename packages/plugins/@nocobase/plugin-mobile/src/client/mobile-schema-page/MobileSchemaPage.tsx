@@ -16,5 +16,10 @@ export interface MobileSchemaPageProps {
 
 export const MobileSchemaPage: FC<MobileSchemaPageProps> = ({ children }) => {
   const { schemaId } = useParams<{ schemaId: string }>();
-  return <div>schemaId: {schemaId}</div>;
+  return (
+    <div>
+      <div>Schema 页面</div>
+      <div>schemaId: {schemaId}</div>
+    </div>
+  );
 };

@@ -9,8 +9,9 @@
 
 import React, { FC, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { SafeArea } from 'antd-mobile';
 
-import { useStyles } from './style';
+import { useStyles } from './styles';
 import { useMobileTabContext } from '../context/MobileTab';
 
 import { MobileTabBarItem } from './MobileTabBar.Item';
@@ -41,11 +42,15 @@ export const MobileTabBar: FC & {
   if (!isTabBarPathname) return null;
 
   return (
-    <div className={styles.mobileTabBar}>
-      {tabList.map((item) => {
-        return <SchemaComponent key={item.id} name={item.id} schema={item.options} />;
-      })}
-    </div>
+    <>
+      <div className={styles.mobileTabBar}>
+        {tabList.map((item) => {
+          return <SchemaComponent key={item.id} name={item.id} schema={item.options} />;
+        })}
+      </div>
+
+      <SafeArea position="bottom" />
+    </>
   );
 };
 

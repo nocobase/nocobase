@@ -7,9 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import React, { FC } from 'react';
 import { Icon } from '@nocobase/client';
 import { Badge } from 'antd-mobile';
-import React, { FC } from 'react';
+import classnames from 'classnames';
+
+import { useStyles } from './styles';
 
 export interface MobileTabBarItemProps {
   // 图标
@@ -35,21 +38,18 @@ function getIcon(item: MobileTabBarItemProps, selected?: boolean) {
 
 export const MobileTabBarItem: FC<MobileTabBarItemProps> = (props) => {
   const { title, onClick, selected, badge } = props;
+  const { styles } = useStyles();
 
   return (
     <Badge content={badge}>
       <div
         onClick={onClick}
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          color: selected ? 'red' : undefined,
-        }}
+        className={classnames(styles.mobileTabBarItem, {
+          [styles.mobileTabBarItemActive]: selected,
+        })}
       >
-        <span>{getIcon(props, selected)}</span>
-        <span>{title}</span>
+        <span className={styles.mobileTabBarItemIcon}>{getIcon(props, selected)}</span>
+        <span className={styles.mobileTabBarItemTitle}>{title}</span>
       </div>
     </Badge>
   );
