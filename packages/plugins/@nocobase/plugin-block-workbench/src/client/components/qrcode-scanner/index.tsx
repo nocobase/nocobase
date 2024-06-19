@@ -20,7 +20,7 @@ export const QRCodeScannerInner = (props) => {
   const navigate = useNavigate();
   const imgUploaderRef = useRef<HTMLInputElement>();
   const [scanner, setScanner] = useState<Html5Qrcode>();
-  const [scannerSize, setScannerSize] = useState({ width: 0, height: 0 });
+  const [originVideoSize, setOriginVideoSize] = useState({ width: 0, height: 0 });
   const [scannerRendered, setScannerRendered] = useState(false);
   const onImgBtnClick = () => {
     if (imgUploaderRef.current) imgUploaderRef.current.click();
@@ -53,6 +53,9 @@ export const QRCodeScannerInner = (props) => {
 
   useEffect(() => {
     const scanner = new Html5Qrcode('qrcode');
+    const vw = Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0);
+    const vh = Math.max(document.documentElement.clientHeight || 0, window.innerHeight || 0);
+    const aspectRatio = vh / vw;
     setScanner(scanner);
     const init = async () => {
       await scanner.start(
@@ -60,10 +63,12 @@ export const QRCodeScannerInner = (props) => {
           facingMode: 'environment',
         },
         {
-          fps: 10, // Optional, frame per seconds for qr code scanning
+          fps: 10,
           qrbox(width, height) {
             const minEdge = Math.min(width, height);
-            const qrcodeSize = Math.floor(minEdge * 0.6);
+            const zoomRatio = vh / height;
+            const qrcodeSize = Math.floor((minEdge * 0.6) / zoomRatio);
+            setOriginVideoSize({ width, height });
             return { width: qrcodeSize, height: qrcodeSize };
           },
         },
@@ -73,10 +78,6 @@ export const QRCodeScannerInner = (props) => {
         undefined,
       );
       setScannerRendered(true);
-      if (containerRef.current) {
-        const { width, height } = containerRef.current.getBoundingClientRect();
-        setScannerSize({ width, height });
-      }
     };
     init();
     return () => {
@@ -90,10 +91,25 @@ export const QRCodeScannerInner = (props) => {
     };
   }, [navigate, t]);
 
+  useEffect(() => {
+    const { width, height } = originVideoSize;
+    const vw = Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0);
+    const vh = Math.max(document.documentElement.clientHeight || 0, window.innerHeight || 0);
+    if (width > 0 && height > 0 && height < vh) {
+      const zoomRatio = vh / height;
+      const zoomedWidth = Math.floor(zoomRatio * width);
+      const video = document.getElementsByTagName('video')[0];
+      video.style.height = `${vh}px`;
+      video.style.width = `${zoomedWidth}px`;
+      containerRef.current.style.left = `${(vw - zoomedWidth) / 2}px`;
+      containerRef.current.style.position = `absolute`;
+    }
+  }, [originVideoSize]);
+
   const ToolBar = () => {
     if (scannerRendered) {
       return (
-        <div style={{ padding: '10px 60px' }}>
+        <div style={{ position: 'absolute', bottom: '20px', left: '20px', padding: '10px 60px' }}>
           <div
             style={{
               color: 'white',
@@ -124,7 +140,7 @@ export const QRCodeScannerInner = (props) => {
 
   return (
     <>
-      <div ref={containerRef} id="qrcode" />
+      <div ref={containerRef} id="qrcode" style={{ position: 'absolute' }} />
       <ToolBar />
     </>
   );
@@ -155,6 +171,7 @@ export const QRCodeScanner = (props) => {
     };
     if (visible && !cameraAvaliable) getCameras();
   }, [visible, cameraAvaliable, setVisible, t]);
+
   const style: React.CSSProperties = {
     position: 'fixed',
     width: '100%',
