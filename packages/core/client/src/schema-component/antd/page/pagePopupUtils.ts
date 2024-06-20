@@ -163,7 +163,7 @@ export const usePagePopup = () => {
         collection: collection.name,
         association,
         sourceid: sourceId,
-        record: record || new CollectionRecord({ isNew: false, data: recordData }),
+        record: new CollectionRecord({ isNew: false, data: recordData }),
         parentRecord,
         service,
       });
