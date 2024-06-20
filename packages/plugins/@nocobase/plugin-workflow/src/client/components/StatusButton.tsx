@@ -30,7 +30,8 @@ const useStyles = createStyles(({ css, token }) => ({
   `,
 }));
 
-export function StatusButton({ status, statusMap, ...props }) {
+export function StatusButton(props) {
+  const { status, statusMap, ...others } = props;
   const { styles } = useStyles();
   let tag = null;
   if (typeof status !== 'undefined' && statusMap?.[status]) {
@@ -40,7 +41,7 @@ export function StatusButton({ status, statusMap, ...props }) {
 
   return (
     <Button
-      {...props}
+      {...others}
       shape="circle"
       size="small"
       className={classnames(tag ? styles.statusButtonClass : styles.noStatusButtonClass, props.className)}
