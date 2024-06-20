@@ -31,7 +31,7 @@ export const useFormBlockHeight = () => {
   });
 
   const hasFormActions = Object.keys(actionSchema?.properties || {}).length > 0;
-  const isFormBlock = schema?.parent?.['x-decorator']?.includes('FormBlockProvider');
+  const isFormBlock = schema?.parent?.['x-decorator']?.includes?.('FormBlockProvider');
   const actionBarPadding = () => {
     if (isFormBlock) {
       return designable ? 2 : 1;
