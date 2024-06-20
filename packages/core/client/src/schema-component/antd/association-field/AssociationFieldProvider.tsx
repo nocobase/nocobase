@@ -10,7 +10,7 @@
 import { Field } from '@formily/core';
 import { observer, useField, useFieldSchema } from '@formily/react';
 import React, { useEffect, useMemo, useState } from 'react';
-import { useCollection, useCollectionManager } from '../../../data-source/collection';
+import { useCollectionManager } from '../../../data-source/collection';
 import { markRecordAsNew } from '../../../data-source/collection-record/isNewRecord';
 import { useSchemaComponentContext } from '../../hooks';
 import { AssociationFieldContext } from './context';
@@ -18,7 +18,7 @@ import { AssociationFieldContext } from './context';
 export const AssociationFieldProvider = observer(
   (props) => {
     const field = useField<Field>();
-    const collection = useCollection();
+    const cm = useCollectionManager();
     const dm = useCollectionManager();
     const fieldSchema = useFieldSchema();
 
@@ -29,7 +29,7 @@ export const AssociationFieldProvider = observer(
     const allowDissociate = fieldSchema['x-component-props']?.allowDissociate !== false;
 
     const collectionField = useMemo(
-      () => collection.getField(fieldSchema['x-collection-field']),
+      () => cm.getCollectionField(fieldSchema['x-collection-field']),
       // eslint-disable-next-line react-hooks/exhaustive-deps
       [fieldSchema['x-collection-field'], fieldSchema.name],
     );

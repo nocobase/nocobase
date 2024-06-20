@@ -114,8 +114,8 @@ export const usePagePopup = () => {
   const service = useDataBlockRequest();
 
   const getNewPathname = useCallback(
-    ({ tabKey, popupUid }: { tabKey?: string; popupUid: string }) => {
-      const filterByTK = record?.data?.[collection.getPrimaryKey()];
+    ({ tabKey, popupUid, recordData }: { tabKey?: string; popupUid: string; recordData: Record<string, any> }) => {
+      const filterByTK = recordData?.[collection.getPrimaryKey()];
       const sourceId = parentRecord?.data?.[cm.getCollection(association?.split('.')[0])?.getPrimaryKey()];
       return getPopupPathFromParams({
         popupUid: popupUid,
@@ -127,27 +127,29 @@ export const usePagePopup = () => {
         tab: tabKey,
       });
     },
-    [association, cm, collection, dataSourceKey, parentRecord?.data, record?.data],
+    [association, cm, collection, dataSourceKey, parentRecord?.data],
   );
 
   const openPopup = useCallback(
     ({
       onFail,
+      recordData,
     }: {
-      /**
       /**
        * Callback when opening the popup fails through routing
        * @returns
        */
       onFail?: () => void;
+      recordData?: Record<string, any>;
     } = {}) => {
       if (!fieldSchema['x-uid']) {
         return onFail?.();
       }
 
-      const filterByTK = record?.data?.[collection.getPrimaryKey()];
+      recordData = recordData || record?.data;
+      const filterByTK = recordData?.[collection.getPrimaryKey()];
       const sourceId = parentRecord?.data?.[cm.getCollection(association?.split('.')[0])?.getPrimaryKey()];
-      const pathname = getNewPathname({ popupUid: fieldSchema['x-uid'] });
+      const pathname = getNewPathname({ popupUid: fieldSchema['x-uid'], recordData });
       let url = window.location.pathname;
       if (_.last(url) === '/') {
         url = url.slice(0, -1);
@@ -161,7 +163,7 @@ export const usePagePopup = () => {
         collection: collection.name,
         association,
         sourceid: sourceId,
-        record,
+        record: record || new CollectionRecord({ isNew: false, data: recordData }),
         parentRecord,
         service,
       });
@@ -176,14 +178,14 @@ export const usePagePopup = () => {
 
   const changeTab = useCallback(
     (key: string) => {
-      const pathname = getNewPathname({ tabKey: key, popupUid: popupParams?.popupUid });
+      const pathname = getNewPathname({ tabKey: key, popupUid: popupParams?.popupUid, recordData: record?.data });
       let url = removeLastPopupPath(window.location.pathname);
       if (_.last(url) === '/') {
         url = url.slice(0, -1);
       }
       navigate(`${url}${pathname}`);
     },
-    [getNewPathname, navigate, popupParams?.popupUid],
+    [getNewPathname, navigate, popupParams?.popupUid, record?.data],
   );
 
   return {
