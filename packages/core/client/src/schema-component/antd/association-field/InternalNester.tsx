@@ -61,6 +61,7 @@ export const InternalNester = observer(
                 css`
                   .nb-grid-container {
                     height: 100% !important;
+                    margin-bottom: 0px;
                   }
                 `,
               )}
