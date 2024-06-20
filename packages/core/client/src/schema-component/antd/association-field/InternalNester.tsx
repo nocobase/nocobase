@@ -60,7 +60,7 @@ export const InternalNester = observer(
                 },
                 css`
                   .nb-grid-container {
-                    height: 100%;
+                    height: 100% !important;
                   }
                 `,
               )}
