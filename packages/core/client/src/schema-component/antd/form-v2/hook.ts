@@ -31,13 +31,14 @@ export const useFormBlockHeight = () => {
   });
 
   const hasFormActions = Object.keys(actionSchema?.properties || {}).length > 0;
-  const isFormActionBar = schema?.parent?.['x-decorator'].includes('FormBlockProvider');
+  const isFormBlock = schema?.parent?.['x-decorator'].includes('FormBlockProvider');
   const actionBarPadding = () => {
-    if (isFormActionBar) {
+    if (isFormBlock) {
       return designable ? 2 : 1;
     }
     return 2;
   };
+
   const actionBarHeight =
     hasFormActions || designable ? token.controlHeight + actionBarPadding() * token.marginLG : 1 * token.marginLG;
   const blockTitleHeaderHeight = title ? token.fontSizeLG * token.lineHeightLG + token.padding * 2 - 1 : 0;
@@ -46,5 +47,18 @@ export const useFormBlockHeight = () => {
   const hasPagination = count > pageSize;
   const paginationHeight = hasPagination ? token.controlHeightSM + (designable ? 1 : 0) * token.paddingLG : 0;
   const dataTemplateHeight = display && enabled ? token.controlHeight + 2 * token.padding + token.margin : 0;
-  return height - actionBarHeight - token.paddingLG - blockTitleHeaderHeight - paginationHeight - dataTemplateHeight;
+  const blockBottomPadding = () => {
+    if (!isFormBlock && !hasPagination) {
+      return designable ? 1 : 0;
+    }
+    return 1;
+  };
+  return (
+    height -
+    actionBarHeight -
+    blockBottomPadding() * token.paddingLG -
+    blockTitleHeaderHeight -
+    paginationHeight -
+    dataTemplateHeight
+  );
 };
