@@ -46,7 +46,6 @@ const FormComponent: React.FC<FormProps> = (props) => {
   const height = useFormBlockHeight();
   const { token } = theme.useToken();
   const { designable } = useDesignable();
-  console.log(fieldSchema, field);
   return (
     <FieldContext.Provider value={undefined}>
       <FormContext.Provider value={form}>
