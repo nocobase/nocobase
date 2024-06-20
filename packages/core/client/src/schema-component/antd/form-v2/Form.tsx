@@ -52,14 +52,11 @@ const FormComponent: React.FC<FormProps> = (props) => {
         <FormLayout layout={'vertical'} {...others}>
           <div
             className={css`
-              .nb-grid {
+              .nb-grid-container {
                 height: ${height ? height + 'px' : '100%'};
                 overflow-y: auto;
-                .nb-grid-warp {
-                  width: 100%;
-                  overflow-x: clip;
-                  padding-right: ${token.paddingSM + 'px'};
-                }
+                margin: 0px -${token.marginLG}px;
+                padding: 0px ${token.paddingLG}px;
               }
             `}
           >
