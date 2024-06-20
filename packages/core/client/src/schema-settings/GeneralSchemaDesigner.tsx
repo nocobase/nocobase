@@ -207,6 +207,7 @@ const InternalSchemaToolbar: FC<SchemaToolbarProps> = (props) => {
   const { designable } = useDesignable();
   const compile = useCompile();
   const { styles } = useStyles();
+  const { t } = useTranslation();
   const { getAriaLabel } = useGetAriaLabelOfDesigner();
   const dm = useDataSourceManager();
   const dataSources = dm?.getDataSources();
@@ -321,11 +322,14 @@ const InternalSchemaToolbar: FC<SchemaToolbarProps> = (props) => {
       {titleArr && (
         <div className={styles.toolbarTitle}>
           <Space size={2}>
-            {titleArr.map((item) => (
-              <span key={item} className={styles.toolbarTitleTag}>
-                {dataSource ? `${compile(dataSource?.displayName)} > ${item}` : item}
+            <span key={titleArr[0]} className={styles.toolbarTitleTag}>
+              {dataSource ? `${compile(dataSource?.displayName)} > ${titleArr[0]}` : titleArr[0]}
+            </span>
+            {titleArr[1] && (
+              <span className={styles.toolbarTitleTag}>
+                {`${t('Reference template')}: ${`${titleArr[0]} > ${titleArr[1]}` || t('Untitled')}`}
               </span>
-            ))}
+            )}
           </Space>
         </div>
       )}
