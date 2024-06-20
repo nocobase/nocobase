@@ -42,6 +42,11 @@ export class Collection implements ICollection {
   }
 
   setFields(fields: any[]) {
+    const fieldNames = this.fields.keys();
+    for (const fieldName of fieldNames) {
+      this.removeField(fieldName);
+    }
+
     for (const field of fields) {
       this.setField(field.name, field);
     }

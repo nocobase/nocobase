@@ -28,8 +28,12 @@ export class DataSourcesCollectionModel extends MagicAttributeModel {
         return field;
       });
     }
+
     if (collection) {
       collection.updateOptions(collectionOptions);
+      if (collectionOptions.fields) {
+        collection.setFields(collectionOptions.fields);
+      }
     } else {
       dataSource.collectionManager.defineCollection(collectionOptions);
     }

@@ -518,6 +518,52 @@ describe('data source', async () => {
       expect(field.options.title).toBe('标题 Field');
     });
 
+    it('should update fields through collection', async () => {
+      const dataSource = app.dataSourceManager.dataSources.get('mockInstance1');
+      const collection = dataSource.collectionManager.getCollection('posts');
+
+      const updateResp = await app
+        .agent()
+        .resource('dataSources.collections', 'mockInstance1')
+        .update({
+          filterByTk: 'posts',
+          values: {
+            fields: [
+              {
+                type: 'string',
+                name: 'title',
+                uiSchema: {
+                  test: 'value',
+                },
+              },
+              {
+                type: 'text',
+                name: 'content',
+              },
+            ],
+          },
+        });
+
+      expect(updateResp.status).toBe(200);
+
+      const fieldsOptions = [...collection.fields.values()].map((f) => f.options);
+      // remove a field
+      const newFieldsOptions = fieldsOptions.filter((f) => f.name === 'title');
+
+      const updateResp2 = await app
+        .agent()
+        .resource('dataSources.collections', 'mockInstance1')
+        .update({
+          filterByTk: 'posts',
+          values: {
+            fields: newFieldsOptions,
+          },
+        });
+
+      expect(updateResp2.status).toBe(200);
+      expect(collection.getField('comments')).toBeFalsy();
+    });
+
     it('should create collection field', async () => {
       const dataSource = app.dataSourceManager.dataSources.get('mockInstance1');
       const collection = dataSource.collectionManager.getCollection('comments');

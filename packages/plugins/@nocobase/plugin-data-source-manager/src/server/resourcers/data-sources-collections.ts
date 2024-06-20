@@ -86,8 +86,13 @@ export default {
           },
         });
       } else {
-        await dataSourceCollectionRecord.update({
-          ...params.values,
+        await ctx.db.getRepository('dataSourcesCollections').update({
+          filter: {
+            name: collectionName,
+            dataSourceKey,
+          },
+          values: params.values,
+          updateAssociationValues: ['fields'],
         });
       }
 

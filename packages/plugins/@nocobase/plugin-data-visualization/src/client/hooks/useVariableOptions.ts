@@ -53,16 +53,3 @@ export const useVariableOptions = () => {
 
   return result;
 };
-
-export const useVariableOptions = () => {
-  const field = useField<any>();
-  const { operator, schema } = field.data || {};
-  const filterVariable = useFilterVariable();
-  const generalOptions = useGeneralVariableOptions(schema, operator);
-
-  const result = useMemo(() => [...generalOptions, filterVariable].filter(Boolean), [generalOptions, filterVariable]);
-
-  if (!operator || !schema) return [];
-
-  return result;
-};
