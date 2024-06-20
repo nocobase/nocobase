@@ -30,11 +30,11 @@ const useStyles = createStyles(({ css, token }) => ({
   `,
 }));
 
-export function StatusButton(props) {
+export function StatusButton({ status, statusMap, ...props }) {
   const { styles } = useStyles();
   let tag = null;
-  if (typeof props.status !== 'undefined' && props.statusMap?.[props.status]) {
-    const { icon, color } = props.statusMap[props.status];
+  if (typeof status !== 'undefined' && statusMap?.[status]) {
+    const { icon, color } = statusMap[status];
     tag = <Tag color={color}>{icon}</Tag>;
   }
 
