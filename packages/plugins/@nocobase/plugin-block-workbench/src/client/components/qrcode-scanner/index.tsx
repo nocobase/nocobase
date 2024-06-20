@@ -12,6 +12,7 @@ import { useNavigate } from 'react-router-dom';
 import React, { useState, useEffect, useRef } from 'react';
 import { useActionContext } from '@nocobase/client';
 import { useTranslation } from 'react-i18next';
+import { ScanBox } from './ScanBox';
 
 export const QRCodeScannerInner = (props) => {
   const { t } = useTranslation('block-workbench');
@@ -22,6 +23,21 @@ export const QRCodeScannerInner = (props) => {
   const [scanner, setScanner] = useState<Html5Qrcode>();
   const [originVideoSize, setOriginVideoSize] = useState({ width: 0, height: 0 });
   const [scannerRendered, setScannerRendered] = useState(false);
+
+  const vw = Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0);
+  const vh = Math.max(document.documentElement.clientHeight || 0, window.innerHeight || 0);
+
+  const getBoxStyle = (): React.CSSProperties => {
+    const size = Math.floor(Math.min(vw, vh) * 0.6);
+    return {
+      left: `${(vw - size) / 2}px`,
+      top: `${(vh - size) / 2}px`,
+      position: 'fixed',
+      width: `${size}px`,
+      height: `${size}px`,
+    };
+  };
+
   const onImgBtnClick = () => {
     if (imgUploaderRef.current) imgUploaderRef.current.click();
   };
@@ -53,9 +69,6 @@ export const QRCodeScannerInner = (props) => {
 
   useEffect(() => {
     const scanner = new Html5Qrcode('qrcode');
-    const vw = Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0);
-    const vh = Math.max(document.documentElement.clientHeight || 0, window.innerHeight || 0);
-    const aspectRatio = vh / vw;
     setScanner(scanner);
     const init = async () => {
       await scanner.start(
@@ -66,10 +79,8 @@ export const QRCodeScannerInner = (props) => {
           fps: 10,
           qrbox(width, height) {
             const minEdge = Math.min(width, height);
-            const zoomRatio = vh / height;
-            const qrcodeSize = Math.floor((minEdge * 0.6) / zoomRatio);
             setOriginVideoSize({ width, height });
-            return { width: qrcodeSize, height: qrcodeSize };
+            return { width: vw, height: vh };
           },
         },
         (text, result) => {
@@ -141,6 +152,7 @@ export const QRCodeScannerInner = (props) => {
   return (
     <>
       <div ref={containerRef} id="qrcode" style={{ position: 'absolute' }} />
+      {scannerRendered && <ScanBox style={{ ...getBoxStyle() }} />}
       <ToolBar />
     </>
   );
