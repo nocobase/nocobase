@@ -29,7 +29,7 @@ export class PluginDataVisualizationServer extends Plugin {
 
   async load() {
     this.db.addMigrations({
-      namespace: 'data-visulization',
+      namespace: 'data-visualization',
       directory: resolve(__dirname, 'migrations'),
       context: {
         plugin: this,
