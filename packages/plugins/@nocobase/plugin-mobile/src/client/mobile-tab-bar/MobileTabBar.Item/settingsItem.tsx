@@ -18,26 +18,24 @@ export const editTabItemSettingsItem = createModalSettingsItem({
   width: '90%',
   schema: (defaultValues) => ({
     type: 'object',
+    default: defaultValues,
     title: 'Edit tabBar item',
     properties: {
       title: {
         title: generatePluginTranslationTemplate('title'),
         type: 'string',
-        default: defaultValues?.title,
         'x-decorator': 'FormItem',
         'x-component': 'Input',
       },
       icon: {
         title: generatePluginTranslationTemplate('Icon'),
         type: 'string',
-        default: defaultValues?.icon,
         'x-decorator': 'FormItem',
         'x-component': 'IconPicker',
       },
       selectedIcon: {
         title: generatePluginTranslationTemplate('Selected icon'),
         type: 'string',
-        default: defaultValues?.selectedIcon,
         'x-decorator': 'FormItem',
         'x-component': 'IconPicker',
       },

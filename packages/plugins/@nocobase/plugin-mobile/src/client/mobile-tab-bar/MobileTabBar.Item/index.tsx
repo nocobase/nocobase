@@ -10,3 +10,5 @@
 export * from './MobileTabBar.Item';
 export * from './settingsItem';
 export * from './useUpdateTabBarItem';
+export * from './schemaFormFields';
+export * from './utils';

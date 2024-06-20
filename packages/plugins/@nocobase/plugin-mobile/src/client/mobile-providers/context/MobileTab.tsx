@@ -26,7 +26,7 @@ export interface TabItem {
 
 export interface MobileTabContextValue {
   tabList?: TabItem[];
-  refresh: () => void;
+  refresh: () => Promise<any>;
   resource: IResource;
 }
 

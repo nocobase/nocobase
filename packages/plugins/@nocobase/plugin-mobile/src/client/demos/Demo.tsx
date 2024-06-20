@@ -4,6 +4,7 @@ import { mockApp } from '@nocobase/client/demo-utils';
 import PluginMobileClient, { useMobileTitle } from '@nocobase/plugin-mobile/client';
 import { Button } from 'antd-mobile';
 import { useNavigate } from 'react-router-dom';
+import { PluginBlockIframeClient } from '@nocobase/plugin-block-iframe/client';
 
 const MyPage = () => {
   const navigate = useNavigate();
@@ -61,7 +62,7 @@ class DemoPlugin extends Plugin {
 
 const app = mockApp({
   designable: true,
-  plugins: [DemoPlugin],
+  plugins: [DemoPlugin, PluginBlockIframeClient],
   router: {
     type: 'memory',
     initialEntries: ['/mobile'],
@@ -188,11 +189,52 @@ const app = mockApp({
           content: {
             type: 'void',
             'x-component': 'MobileContent',
+            'x-decorator': 'Grid',
+            'x-initializer': 'mobile:content',
             properties: {
-              i7ntax4y9do: {
+              iframe: {
+                _isJSONSchemaObject: true,
+                version: '2.0',
                 type: 'void',
-                'x-component': 'Grid',
-                'x-initializer': 'mobile:content',
+                'x-component': 'Grid.Row',
+                'x-app-version': '1.2.6-alpha',
+                properties: {
+                  '5j2kzibcex8': {
+                    _isJSONSchemaObject: true,
+                    version: '2.0',
+                    type: 'void',
+                    'x-component': 'Grid.Col',
+                    'x-app-version': '1.2.6-alpha',
+                    properties: {
+                      '9fpf28yu2sc': {
+                        _isJSONSchemaObject: true,
+                        version: '2.0',
+                        type: 'void',
+                        'x-settings': 'blockSettings:iframe',
+                        'x-decorator': 'BlockItem',
+                        'x-decorator-props': {
+                          name: 'iframe',
+                        },
+                        'x-component': 'Iframe',
+                        'x-component-props': {
+                          url: 'https://react.dev',
+                          height: '60vh',
+                        },
+                        'x-app-version': '1.2.6-alpha',
+                        'x-uid': 'oa9qxpoxg7d',
+                        'x-async': false,
+                        'x-index': 1,
+                      },
+                    },
+                    'x-uid': 'qq4guo52d6e',
+                    'x-async': false,
+                    'x-index': 1,
+                  },
+                },
+                name: 'sazeibwax6w',
+                'x-uid': 'whb73jdroqz',
+                'x-async': false,
+                'x-index': 1,
               },
             },
           },
@@ -217,13 +259,8 @@ const app = mockApp({
           content: {
             type: 'void',
             'x-component': 'MobileContent',
-            properties: {
-              i7ntax4y9do: {
-                type: 'void',
-                'x-component': 'Grid',
-                'x-initializer': 'mobile:content:initializer',
-              },
-            },
+            'x-decorator': 'Grid',
+            'x-initializer': 'mobile:content',
           },
         },
       },

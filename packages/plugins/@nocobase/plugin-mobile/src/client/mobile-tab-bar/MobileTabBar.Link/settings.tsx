@@ -11,6 +11,14 @@ import { SchemaSettings, createModalSettingsItem } from '@nocobase/client';
 import { editTabItemSettingsItem, useUpdateTabBarItem } from '../MobileTabBar.Item';
 import { generatePluginTranslationTemplate } from '../../locale';
 
+export const editLinkSchema = {
+  title: generatePluginTranslationTemplate('Link'),
+  type: 'string',
+  'x-decorator': 'FormItem',
+  'x-component': 'Input',
+  required: true,
+};
+
 export const mobileTabBarLinkSettings = new SchemaSettings({
   name: 'mobile:tab-bar:link',
   items: [
@@ -22,15 +30,10 @@ export const mobileTabBarLinkSettings = new SchemaSettings({
       width: '90%',
       schema: (values) => ({
         type: 'object',
-        title: 'Edit tabBar item',
+        title: 'Edit Link',
+        default: values,
         properties: {
-          url: {
-            title: generatePluginTranslationTemplate('Link'),
-            type: 'string',
-            default: values?.link,
-            'x-decorator': 'FormItem',
-            'x-component': 'Input',
-          },
+          url: editLinkSchema,
         },
       }),
       useSubmit: useUpdateTabBarItem,
