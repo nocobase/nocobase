@@ -17,7 +17,7 @@ import { getValuesByPath } from '@nocobase/utils/client';
 import { ConfigProvider, Spin, theme } from 'antd';
 import React, { useEffect, useMemo } from 'react';
 import { useActionContext } from '..';
-import { useAttach, useComponent } from '../..';
+import { useAttach, useComponent, useDesignable } from '../..';
 import { useTemplateBlockContext } from '../../../block-provider/TemplateBlockProvider';
 import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
 import { ActionType } from '../../../schema-settings/LinkageRules/type';
@@ -45,7 +45,8 @@ const FormComponent: React.FC<FormProps> = (props) => {
   const f = useAttach(form.createVoidField({ ...field.props, basePath: '' }));
   const height = useFormBlockHeight();
   const { token } = theme.useToken();
-
+  const { designable } = useDesignable();
+  console.log(fieldSchema, field);
   return (
     <FieldContext.Provider value={undefined}>
       <FormContext.Provider value={form}>
@@ -55,7 +56,7 @@ const FormComponent: React.FC<FormProps> = (props) => {
               .nb-grid-container {
                 height: ${height ? height + 'px' : '100%'};
                 overflow-y: auto;
-                margin: 0px -${token.marginLG}px;
+                margin: 0px -${token.marginLG}px ${designable ? 0 : -token.marginLG}px;
                 padding: 0px ${token.paddingLG}px;
               }
             `}
