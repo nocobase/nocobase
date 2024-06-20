@@ -13,7 +13,7 @@ import { ModelStatic } from 'sequelize';
 import { Collection } from './collection';
 import { Database } from './database';
 import { Model } from './model';
-import { RecordSetAssociation } from './fields';
+import { RecordSetAssociation } from './relation-repository/record-set-repository';
 
 const debug = require('debug')('noco-database');
 
@@ -94,7 +94,9 @@ export default class FilterParser {
 
     debug('associations %O', associations);
 
-    for (let [key, value] of Object.entries(flattenedFilter)) {
+    for (const entry of Object.entries(flattenedFilter)) {
+      const key = entry[0];
+      let value = entry[1];
       // 处理 filter 条件
       if (skipPrefix && key.startsWith(skipPrefix)) {
         continue;
@@ -184,7 +186,7 @@ export default class FilterParser {
             attributes: [], // out put empty fields by default
           };
           if (association.associationType === 'RecordSet') {
-            const { as, targetKey, source, sourceKey } = (association as any) as RecordSetAssociation;
+            const { as, targetKey, source, sourceKey } = association as any as RecordSetAssociation;
             includeOptions['on'] = this.database.sequelize.literal(
               `${as}.${targetKey}=any(${source.collection.name}.${sourceKey})`,
             );
