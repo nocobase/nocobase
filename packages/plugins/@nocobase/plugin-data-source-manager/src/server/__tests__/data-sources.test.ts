@@ -400,7 +400,10 @@ describe('data source', async () => {
         },
       });
 
-      await waitSecond(1000);
+      await waitSecond(2000);
+
+      const dataSource = app.dataSourceManager.dataSources.get('mockInstance1');
+      expect(dataSource).toBeDefined();
     });
 
     it('should get data source collections', async () => {

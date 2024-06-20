@@ -17,6 +17,7 @@ import {
   MergeOptions,
 } from './types';
 import { DataSource } from './data-source';
+import { Repository } from './repository';
 
 export class CollectionManager implements ICollectionManager {
   public dataSource: DataSource;
@@ -28,6 +29,10 @@ export class CollectionManager implements ICollectionManager {
     if (options.dataSource) {
       this.dataSource = options.dataSource;
     }
+
+    this.registerRepositories({
+      Repository: Repository,
+    });
   }
 
   /* istanbul ignore next -- @preserve */
