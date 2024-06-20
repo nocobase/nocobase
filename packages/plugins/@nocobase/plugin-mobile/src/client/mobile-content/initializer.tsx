@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+// import { Button } from 'antd-mobile';
 import { SchemaInitializer, gridRowColWrap } from '@nocobase/client';
 
 export const mobileContentInitializer = new SchemaInitializer({
@@ -14,6 +15,10 @@ export const mobileContentInitializer = new SchemaInitializer({
   name: 'mobile:content',
   icon: 'PlusOutlined',
   wrap: gridRowColWrap,
+  // Component: Button,
+  style: {
+    margin: 20,
+  },
   items: [
     {
       name: 'dataBlocks',

@@ -23,6 +23,8 @@ export interface CreateModalSchemaSettingsItemProps {
   schema: (defaultValue: any) => ISchema;
   valueKeys?: string[];
   useVisible?: () => boolean;
+  width?: number | string;
+  useSubmit?: () => (values: any) => void;
 }
 
 /**
@@ -38,13 +40,16 @@ export function createModalSettingsItem(options: CreateModalSchemaSettingsItemPr
     valueKeys,
     schema,
     title,
+    useSubmit = useHookDefault,
     useVisible,
     defaultValue: propsDefaultValue,
     useDefaultValue = useHookDefault,
+    width,
   } = options;
   return {
     name,
     type: 'actionModal',
+    useVisible,
     useComponentProps() {
       const fieldSchema = useFieldSchema();
       const { deepMerge } = useDesignable();
@@ -52,13 +57,15 @@ export function createModalSettingsItem(options: CreateModalSchemaSettingsItemPr
       const values = _.get(fieldSchema, parentSchemaKey);
       const compile = useCompile();
       const { t } = useTranslation();
+      const onSubmit = useSubmit();
 
       return {
         title: typeof title === 'function' ? title(t) : compile(title),
-        useVisible,
+        width,
         schema: schema({ ...defaultValue, ...values }),
         onSubmit(values) {
-          deepMerge(getNewSchema({ fieldSchema, schemaKey: parentSchemaKey, value: values, valueKeys }));
+          deepMerge(getNewSchema({ fieldSchema, parentSchemaKey, value: values, valueKeys }));
+          onSubmit(values);
         },
       };
     },

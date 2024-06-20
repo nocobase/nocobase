@@ -48,7 +48,7 @@ export const MobileTabBar: FC & {
       <MobileTabBarSettings />
       <div className={styles.mobileTabBarList}>
         {tabList.map((item) => {
-          return <SchemaComponent key={item.id} name={item.id} schema={item.options} />;
+          return <SchemaComponent key={item.id} schema={Object.assign({ name: item.id }, item.options)} />;
         })}
         <MobileTabBarInitializer />
       </div>

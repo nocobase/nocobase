@@ -1,0 +1,47 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+import { createModalSettingsItem } from '@nocobase/client';
+import { generatePluginTranslationTemplate } from '../../locale';
+import { useUpdateTabBarItem } from './useUpdateTabBarItem';
+
+export const editTabItemSettingsItem = createModalSettingsItem({
+  title: generatePluginTranslationTemplate('Edit tabBar item'),
+  name: 'tabBarItem',
+  parentSchemaKey: 'x-component-props',
+  width: '90%',
+  schema: (defaultValues) => ({
+    type: 'object',
+    title: 'Edit tabBar item',
+    properties: {
+      title: {
+        title: generatePluginTranslationTemplate('title'),
+        type: 'string',
+        default: defaultValues?.title,
+        'x-decorator': 'FormItem',
+        'x-component': 'Input',
+      },
+      icon: {
+        title: generatePluginTranslationTemplate('Icon'),
+        type: 'string',
+        default: defaultValues?.icon,
+        'x-decorator': 'FormItem',
+        'x-component': 'IconPicker',
+      },
+      selectedIcon: {
+        title: generatePluginTranslationTemplate('Selected icon'),
+        type: 'string',
+        default: defaultValues?.selectedIcon,
+        'x-decorator': 'FormItem',
+        'x-component': 'IconPicker',
+      },
+    },
+  }),
+  useSubmit: useUpdateTabBarItem,
+});

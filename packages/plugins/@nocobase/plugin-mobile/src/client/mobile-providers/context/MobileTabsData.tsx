@@ -7,10 +7,3 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { SchemaSettings } from '@nocobase/client';
-import { editTabItemSettingsItem } from '../MobileTabBar.Item';
-
-export const mobileTabBarSchemaSettings = new SchemaSettings({
-  name: 'mobile:tab-bar:schema',
-  items: [editTabItemSettingsItem],
-});

@@ -11,24 +11,21 @@ import React, { FC } from 'react';
 import { NavBar } from 'antd-mobile';
 import { Affix } from 'antd';
 import { useMobileTitle } from '../mobile-providers';
+import { useMobilePage } from '../mobile-page/context';
 
-export interface MobileNavigationBarProps {
-  /**
-   * @default true
-   */
-  enableTitle?: boolean;
-  /**
-   * @default false
-   */
-  enableTabs?: boolean;
-}
-
-export const MobileNavigationBar: FC<MobileNavigationBarProps> = ({ enableTitle = true, enableTabs }) => {
+export const MobileNavigationBar: FC = () => {
   const { title } = useMobileTitle();
+  const {
+    enableNavigationBar = true,
+    enableNavigationBarTabs = false,
+    enableNavigationBarTitle = true,
+  } = useMobilePage();
+
+  if (!enableNavigationBar) return null;
 
   return (
-    <Affix offsetTop={0}>
-      <NavBar backArrow={false}>{enableTitle ? title : null}</NavBar>
+    <Affix offsetTop={0} style={{ borderBottom: '1px solid var(--adm-color-border)' }}>
+      <NavBar backArrow={false}>{enableNavigationBarTitle ? title : null}</NavBar>
     </Affix>
   );
 };

@@ -12,12 +12,22 @@ import { SpinLoading } from 'antd-mobile';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 import { PluginMobileClient } from '../../index';
-import { TabItem, useTabList } from '../../request';
-import { usePlugin } from '@nocobase/client';
+import { useAPIClient, usePlugin, useRequest } from '@nocobase/client';
+import { IResource } from '@nocobase/sdk';
+
+export interface TabItem {
+  id: number | string;
+  url?: string;
+  title: string;
+  options: any;
+  parentId?: number | string;
+  children?: TabItem[];
+}
 
 export interface MobileTabContextValue {
   tabList?: TabItem[];
   refresh: () => void;
+  resource: IResource;
 }
 
 export const MobileTabContext = createContext<MobileTabContextValue>(null);
@@ -27,13 +37,10 @@ export const useMobileTabContext = () => {
   return useContext(MobileTabContext);
 };
 
-export const MobileTabContextProvider = ({ children }) => {
-  const { data, runAsync: refresh, loading } = useTabList();
-
+function useHomeNavigate(tabList: TabItem[]) {
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const mobilePlugin = usePlugin(PluginMobileClient);
-  const tabList = useMemo(() => data?.data || [], [data]);
 
   // 如果是根路径且没有自定义首页，则跳转到第一个 tab
   useEffect(() => {
@@ -46,6 +53,19 @@ export const MobileTabContextProvider = ({ children }) => {
       navigate(tabList[0].url);
     }
   }, [pathname, tabList]);
+}
+
+export const MobileTabContextProvider = ({ children }) => {
+  const api = useAPIClient();
+  const resource = useMemo(() => api.resource('mobile-tabs'), [api]);
+  const {
+    data,
+    runAsync: refresh,
+    loading,
+  } = useRequest<{ data: any[] }>(() => resource.list().then((res) => res.data));
+  const tabList = useMemo(() => data?.data || [], [data]);
+
+  useHomeNavigate(tabList);
 
   if (loading) {
     return (
@@ -54,5 +74,5 @@ export const MobileTabContextProvider = ({ children }) => {
       </div>
     );
   }
-  return <MobileTabContext.Provider value={{ tabList, refresh }}>{children}</MobileTabContext.Provider>;
+  return <MobileTabContext.Provider value={{ tabList, refresh, resource }}>{children}</MobileTabContext.Provider>;
 };

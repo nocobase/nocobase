@@ -67,7 +67,7 @@ const app = mockApp({
     initialEntries: ['/mobile'],
   },
   apis: {
-    '/mobile/tabs': {
+    'mobile-tabs:list': {
       data: [
         {
           id: 1,
@@ -125,7 +125,7 @@ const app = mockApp({
               icon: 'MessageOutlined',
               schemaId: 'message',
             },
-            // 'x-settings': 'MobileTabBar.Schema:settings',
+            'x-settings': 'mobile:tab-bar:schema',
           },
         },
         {
@@ -141,7 +141,11 @@ const app = mockApp({
               icon: 'GithubOutlined',
               link: 'https://www.github.com',
             },
-            // 'x-settings': 'MobileTabBar.Link:settings',
+            'x-decorator': 'BlockItem',
+            'x-toolbar-props': {
+              draggable: false,
+            },
+            'x-settings': 'mobile:tab-bar:link',
           },
         },
         {
@@ -157,7 +161,11 @@ const app = mockApp({
               link: '/my',
               icon: 'UserOutlined',
             },
-            // 'x-settings': 'MobileTabBar.Link:settings',
+            'x-decorator': 'BlockItem',
+            'x-toolbar-props': {
+              draggable: false,
+            },
+            'x-settings': 'mobile:tab-bar:link',
           },
         },
       ],

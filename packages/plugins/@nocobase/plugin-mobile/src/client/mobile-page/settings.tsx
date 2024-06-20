@@ -7,19 +7,29 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { SchemaSettings } from '@nocobase/client';
+import { SchemaSettings, createSwitchSettingsItem } from '@nocobase/client';
+import { generatePluginTranslationTemplate } from '../locale';
 
 export const mobilePageSettings = new SchemaSettings({
   name: 'mobile:page',
   items: [
-    {
-      name: 'test',
-      type: 'item',
-      useComponentProps() {
-        return {
-          title: 'Test',
-        };
-      },
-    },
+    createSwitchSettingsItem({
+      name: 'navigationBar',
+      title: generatePluginTranslationTemplate('Enable Navigation Bar'),
+      defaultValue: true,
+      schemaKey: 'x-component-props.enableNavigationBar',
+    }),
+    createSwitchSettingsItem({
+      name: 'navigationBarTitle',
+      title: generatePluginTranslationTemplate('Enable Navigation Bar Title'),
+      defaultValue: true,
+      schemaKey: 'x-component-props.enableNavigationBarTitle',
+    }),
+    createSwitchSettingsItem({
+      name: 'navigationBarTabs',
+      title: 'Enable Navigation Bar Tabs',
+      defaultValue: false,
+      schemaKey: generatePluginTranslationTemplate('x-component-props.enableNavigationBarTabs'),
+    }),
   ],
 });

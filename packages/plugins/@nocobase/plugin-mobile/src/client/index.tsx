@@ -20,6 +20,7 @@ import { MobileContent, mobileContentInitializer } from './mobile-content';
 import {
   MobileTabBar,
   mobileTabBarInitializer,
+  mobileTabBarLinkSettings,
   mobileTabBarSchemaSettings,
   mobileTabBarSettings,
 } from './mobile-tab-bar';
@@ -47,7 +48,12 @@ export class PluginMobileClient extends Plugin {
   }
 
   addSettings() {
-    this.app.schemaSettingsManager.add(mobileTabBarSettings, mobilePageSettings, mobileTabBarSchemaSettings);
+    this.app.schemaSettingsManager.add(
+      mobileTabBarSettings,
+      mobilePageSettings,
+      mobileTabBarSchemaSettings,
+      mobileTabBarLinkSettings,
+    );
   }
 
   addComponents() {

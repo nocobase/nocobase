@@ -8,11 +8,16 @@
  */
 
 import React, { FC } from 'react';
+import { MobilePageContextProps, MobilePageProvider } from './context';
 
-export interface MobilePageProps {
+export interface MobilePageProps extends MobilePageContextProps {
   children?: React.ReactNode;
 }
 
-export const MobilePage: FC<MobilePageProps> = ({ children }) => {
-  return <div style={{ minHeight: '100vh' }}>{children}</div>;
+export const MobilePage: FC<MobilePageProps> = ({ children, ...props }) => {
+  return (
+    <div style={{ minHeight: '100vh' }}>
+      <MobilePageProvider {...props}>{children}</MobilePageProvider>
+    </div>
+  );
 };

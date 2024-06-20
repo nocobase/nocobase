@@ -597,10 +597,22 @@ export interface SchemaSettingsActionModalItemProps
   schema?: ISchema;
   beforeOpen?: () => void;
   maskClosable?: boolean;
+  width?: string | number;
 }
 export const SchemaSettingsActionModalItem: FC<SchemaSettingsActionModalItemProps> = React.memo((props) => {
-  const { title, onSubmit, initialValues, beforeOpen, initialSchema, schema, modalTip, components, scope, ...others } =
-    props;
+  const {
+    title,
+    onSubmit,
+    width = '50%',
+    initialValues,
+    beforeOpen,
+    initialSchema,
+    schema,
+    modalTip,
+    components,
+    scope,
+    ...others
+  } = props;
   const [visible, setVisible] = useState(false);
   const [schemaUid, setSchemaUid] = useState<string>(props.uid);
   const { t } = useTranslation();
@@ -662,7 +674,7 @@ export const SchemaSettingsActionModalItem: FC<SchemaSettingsActionModalItemProp
       </SchemaSettingsItem>
       {createPortal(
         <Modal
-          width={'50%'}
+          width={width}
           title={compile(title)}
           {...others}
           destroyOnClose

@@ -17,6 +17,7 @@ export const useStyles = createStyles(({ token, css }) => ({
     right: 0,
     zIndex: 1000,
     background: '#fff',
+    borderTop: '1px solid var(--adm-color-border)',
   },
   mobileTabBarList: {
     display: 'flex',
