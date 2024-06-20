@@ -91,18 +91,33 @@ describe('record-set', () => {
 
   it('should list appends recordSet', async () => {
     const users = await db.getRepository('users').find();
-    expect(users).toMatchObject([
-      {
-        id: 1,
-        username: 'a',
-        tag_ids: ['1', '2'],
-      },
-      {
-        id: 2,
-        username: 'b',
-        tag_ids: ['2', '3'],
-      },
-    ]);
+    if (db.sequelize.getDialect() === 'postgres') {
+      expect(users).toMatchObject([
+        {
+          id: 1,
+          username: 'a',
+          tag_ids: ['1', '2'],
+        },
+        {
+          id: 2,
+          username: 'b',
+          tag_ids: ['2', '3'],
+        },
+      ]);
+    } else {
+      expect(users).toMatchObject([
+        {
+          id: 1,
+          username: 'a',
+          tag_ids: [1, 2],
+        },
+        {
+          id: 2,
+          username: 'b',
+          tag_ids: [2, 3],
+        },
+      ]);
+    }
     const users2 = await db.getRepository('users').find({
       appends: ['tag_ids'],
     });
@@ -128,11 +143,19 @@ describe('record-set', () => {
 
   it('should get appends recordSet', async () => {
     const users = await db.getRepository('users').findOne({ filterByTk: 1 });
-    expect(users).toMatchObject({
-      id: 1,
-      username: 'a',
-      tag_ids: ['1', '2'],
-    });
+    if (db.sequelize.getDialect() === 'postgres') {
+      expect(users).toMatchObject({
+        id: 1,
+        username: 'a',
+        tag_ids: ['1', '2'],
+      });
+    } else {
+      expect(users).toMatchObject({
+        id: 1,
+        username: 'a',
+        tag_ids: [1, 2],
+      });
+    }
     const users2 = await db.getRepository('users').findOne({
       filterByTk: 1,
       appends: ['tag_ids'],
@@ -177,7 +200,11 @@ describe('record-set', () => {
         tag_ids: [{ id: 1 }, { id: 3 }],
       },
     });
-    expect(user.tag_ids).toMatchObject(['1', '3']);
+    if (db.sequelize.getDialect() === 'postgres') {
+      expect(user.tag_ids).toMatchObject(['1', '3']);
+    } else {
+      expect(user.tag_ids).toMatchObject([1, 3]);
+    }
     const user2 = await db.getRepository('users').create({
       values: {
         id: 4,
@@ -185,7 +212,11 @@ describe('record-set', () => {
         tag_ids: [1, 3],
       },
     });
-    expect(user2.tag_ids).toMatchObject(['1', '3']);
+    if (db.sequelize.getDialect() === 'postgres') {
+      expect(user2.tag_ids).toMatchObject(['1', '3']);
+    } else {
+      expect(user2.tag_ids).toMatchObject([1, 3]);
+    }
   });
 
   it('should update with recordSet', async () => {
