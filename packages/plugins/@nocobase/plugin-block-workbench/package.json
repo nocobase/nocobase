@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-block-workbench",
-  "version": "1.2.5-alpha",
+  "version": "1.2.6-alpha",
   "main": "dist/server/index.js",
   "peerDependencies": {
     "@nocobase/client": "1.x",
