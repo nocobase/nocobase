@@ -9,36 +9,83 @@
 
 import { observer, useField, useFieldSchema } from '@formily/react';
 import { Input as AntdInput, Button, Space, Spin, theme } from 'antd';
+import type { TextAreaRef } from 'antd/es/input/TextArea';
 import cls from 'classnames';
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useState, useRef, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useGlobalTheme } from '../../../global-theme';
 import { useDesignable } from '../../hooks/useDesignable';
 import { MarkdownVoidDesigner } from './Markdown.Void.Designer';
 import { useStyles } from './style';
-import { useParseMarkdown } from './util';
+import { parseMarkdown } from './util';
 import { TextAreaProps } from 'antd/es/input';
 import { useBlockHeight } from '../../hooks/useBlockSize';
-
+import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
+import { useCollectionRecord } from '../../../data-source';
+import { useVariableOptions } from '../../../schema-settings/VariableInput/hooks/useVariableOptions';
+import { VariableSelect } from '../variable/VariableSelect';
+import { replaceVariableValue } from '../../../block-provider/hooks';
+import { useLocalVariables, useVariables } from '../../../variables';
+import { registerQrcodeWebComponent } from './qrcode-webcom';
 export interface MarkdownEditorProps extends Omit<TextAreaProps, 'onSubmit'> {
+  scope: any[];
   defaultValue?: string;
   onSubmit?: (value: string) => void;
   onCancel?: (e: React.MouseEvent) => void;
 }
 
 const MarkdownEditor = (props: MarkdownEditorProps) => {
+  const { scope } = props;
   const { t } = useTranslation();
   const [value, setValue] = useState(props.defaultValue);
+  const inputRef = useRef<TextAreaRef>(null);
+  const [options, setOptions] = useState([]);
+  const [curPos, setCurPos] = useState(null);
+  useEffect(() => {
+    setOptions(scope);
+  }, [scope]);
+
+  useEffect(() => {
+    const inputEle = inputRef?.current?.resizableTextArea?.textArea;
+    if (curPos && inputEle) {
+      inputEle.setSelectionRange(curPos, curPos);
+    }
+  }, [curPos]);
+
+  const onInsert = useCallback(
+    function (paths: string[]) {
+      const variable: string[] = paths.filter((key) => Boolean(key.trim()));
+      const { current } = inputRef;
+      const inputEle = current?.resizableTextArea?.textArea;
+      if (!inputEle || !variable) {
+        return;
+      }
+      current.focus();
+      const templateVar = `{{${paths.join('.')}}}`;
+      const startPos = inputEle.selectionStart || 0;
+      const newVal = value.substring(0, startPos) + templateVar + value.substring(startPos, value.length);
+      const newPos = startPos + templateVar.length;
+      setValue(newVal);
+      setCurPos(newPos);
+    },
+    [value],
+  );
   return (
-    <div className={'mb-markdown'} style={{ position: 'relative' }}>
+    <div className={'mb-markdown'} style={{ position: 'relative', paddingTop: '20px' }}>
       <AntdInput.TextArea
+        ref={inputRef}
         autoSize={{ minRows: 3 }}
         {...(props as any)}
         value={value}
         onChange={(e) => {
           setValue(e.target.value);
         }}
+        style={{ paddingBottom: '40px' }}
       />
+      <div style={{ position: 'absolute', top: 21, right: 1 }}>
+        <VariableSelect options={options} setOptions={setOptions} onInsert={onInsert} />
+      </div>
+
       <Space style={{ position: 'absolute', bottom: 5, right: 5 }}>
         <Button
           onClick={(e) => {
@@ -69,22 +116,45 @@ const useMarkdownHeight = () => {
   return height - 2 * token.paddingLG;
 };
 
-export const MarkdownVoid: any = observer(
-  (props: any) => {
+export const MarkdownVoid: any = withDynamicSchemaProps(
+  observer((props: any) => {
     const { isDarkTheme } = useGlobalTheme();
     const { componentCls, hashId } = useStyles({ isDarkTheme });
     const { content, className } = props;
     const field = useField();
     const schema = useFieldSchema();
     const { dn } = useDesignable();
-    const { onSave, onCancel } = props;
-    const { html, loading } = useParseMarkdown(content);
+    const { onSave, onCancel, form } = props;
+    const record = useCollectionRecord();
+    const [html, setHtml] = useState('');
+    const variables = useVariables();
+    const localVariables = useLocalVariables();
+    const [loading, setLoading] = useState(false);
+    useEffect(() => {
+      setLoading(true);
+      const cvtContentToHTML = async () => {
+        const replacedContent = await replaceVariableValue(content, variables, localVariables);
+        const html = await parseMarkdown(replacedContent);
+        setHtml(html);
+        setLoading(false);
+      };
+      cvtContentToHTML();
+    }, [content, variables, localVariables]);
     const height = useMarkdownHeight();
-    if (loading) {
-      return <Spin />;
-    }
+    const scope = useVariableOptions({
+      collectionField: { uiSchema: schema },
+      form,
+      record,
+      uiSchema: schema,
+      noDisabled: true,
+    });
+    useEffect(() => {
+      registerQrcodeWebComponent();
+    }, []);
+    if (loading) return <Spin />;
     return field?.editable ? (
       <MarkdownEditor
+        scope={scope}
         {...props}
         className
         defaultValue={content}
@@ -111,11 +181,11 @@ export const MarkdownVoid: any = observer(
     ) : (
       <div
         className={cls([componentCls, hashId, 'nb-markdown nb-markdown-default nb-markdown-table', className])}
-        style={{ ...props.style, height: height || '100%', overflow: 'auto' }}
+        style={{ ...props.style, height: height || '100%', overflowY: height ? 'auto' : 'null' }}
         dangerouslySetInnerHTML={{ __html: html }}
       />
     );
-  },
+  }),
   { displayName: 'MarkdownVoid' },
 );
 

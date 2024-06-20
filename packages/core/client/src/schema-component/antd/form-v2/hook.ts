@@ -29,19 +29,14 @@ export const useFormBlockHeight = () => {
     }
     return buf;
   });
-  const isFilterForm = schema.parent?.['x-decorator'] === 'FilterFormBlockProvider';
+
   const hasFormActions = Object.keys(actionSchema?.properties || {}).length > 0;
-  const actionBarHeight =
-    hasFormActions || designable
-      ? token.controlHeight + (isFilterForm ? token.marginLG : 2 * token.marginLG)
-      : isFilterForm
-        ? token.marginLG
-        : 2 * token.marginLG;
+  const actionBarHeight = hasFormActions || designable ? token.controlHeight + 2 * token.marginLG : 2 * token.marginLG;
   const blockTitleHeaderHeight = title ? token.fontSizeLG * token.lineHeightLG + token.padding * 2 - 1 : 0;
   const { data } = useDataBlockRequest() || {};
   const { count, pageSize } = (data as any)?.meta || ({} as any);
   const hasPagination = count > pageSize;
-  const paginationHeight = hasPagination ? token.controlHeightSM + token.paddingLG : 0;
+  const paginationHeight = hasPagination ? token.controlHeightSM + 1 * token.paddingLG : 0;
   const dataTemplateHeight = display && enabled ? token.controlHeight + 2 * token.padding + token.margin : 0;
   return height - actionBarHeight - token.paddingLG - blockTitleHeaderHeight - paginationHeight - dataTemplateHeight;
 };

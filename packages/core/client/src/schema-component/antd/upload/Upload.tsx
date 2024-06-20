@@ -106,7 +106,13 @@ function AttachmentListItem(props) {
 
   const item = [
     <span key="thumbnail" className={`${prefixCls}-list-item-thumbnail`}>
-      {file.imageUrl && <img src={file.imageUrl} alt={file.title} className={`${prefixCls}-list-item-image`} />}
+      {file.imageUrl && (
+        <img
+          src={`${file.imageUrl}${file.thumbnailRule || ''}`}
+          alt={file.title}
+          className={`${prefixCls}-list-item-image`}
+        />
+      )}
     </span>,
     <span key="title" className={`${prefixCls}-list-item-name`} title={file.title}>
       {file.status === 'uploading' ? t('Uploading') : file.title}
@@ -134,14 +140,14 @@ function AttachmentListItem(props) {
           {!readPretty && file.id && (
             <Button size={'small'} type={'text'} icon={<DownloadOutlined />} onClick={onDownload} />
           )}
-          {!readPretty && !disabled && (
+          {!readPretty && !disabled && file.status !== 'uploading' && (
             <Button size={'small'} type={'text'} icon={<DeleteOutlined />} onClick={onDelete} />
           )}
         </Space>
       </span>
       {file.status === 'uploading' && (
         <div className={`${prefixCls}-list-item-progress`}>
-          <Progress size={2} type={'line'} showInfo={false} percent={file.percent} />
+          <Progress strokeWidth={4} type={'line'} showInfo={false} percent={Number(file.percent)} />
         </div>
       )}
     </div>
@@ -345,11 +351,10 @@ export function Uploader({ rules, ...props }: UploadProps) {
   const beforeUpload = useBeforeUpload(rules);
 
   useEffect(() => {
-    const error = pendingList.find((file) => file.status === 'error');
-    if (error) {
+    if (pendingList.length) {
       field.setFeedback({
         type: 'error',
-        code: 'UploadError',
+        code: 'ValidateError',
         messages: [t('Incomplete uploading files need to be resolved')],
       });
     } else {

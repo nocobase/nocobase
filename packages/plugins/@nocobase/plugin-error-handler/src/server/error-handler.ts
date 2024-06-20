@@ -42,7 +42,7 @@ export class ErrorHandler {
       try {
         await next();
       } catch (err) {
-        ctx.log.error(err.message, { method: 'error-handler', err: err.stack });
+        ctx.log.error(err.message, { method: 'error-handler', err: err.stack, cause: err.cause });
 
         if (err.statusCode) {
           ctx.status = err.statusCode;

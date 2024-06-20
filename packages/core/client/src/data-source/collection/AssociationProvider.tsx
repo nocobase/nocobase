@@ -51,6 +51,10 @@ export const AssociationProvider: FC<AssociationProviderProps> = (props) => {
   );
 };
 
+/**
+ * 用来获取关系字段的信息，例如用户表中的角色字段就是这样的值：users.roles
+ * @returns
+ */
 export const useAssociationName = () => {
   const field = useCollectionField();
   return field ? `${field.collectionName}.${field.name}` : null;

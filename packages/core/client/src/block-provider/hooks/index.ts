@@ -17,12 +17,13 @@ import _ from 'lodash';
 import get from 'lodash/get';
 import omit from 'lodash/omit';
 import qs from 'qs';
-import { ChangeEvent, useCallback, useContext, useEffect } from 'react';
+import { ChangeEvent, useCallback, useContext, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useReactToPrint } from 'react-to-print';
 import {
   AssociationFilter,
+  useCollection,
   useCollectionRecord,
   useDataSourceHeaders,
   useFormActiveFields,
@@ -31,7 +32,7 @@ import {
 import { useAPIClient, useRequest } from '../../api-client';
 import { useFormBlockContext } from '../../block-provider/FormBlockProvider';
 import { useCollectionManager_deprecated, useCollection_deprecated } from '../../collection-manager';
-import { useFilterBlock } from '../../filter-provider/FilterProvider';
+import { DataBlock, useFilterBlock } from '../../filter-provider/FilterProvider';
 import { mergeFilter, transformToFilter } from '../../filter-provider/utils';
 import { useTreeParentRecord } from '../../modules/blocks/data-blocks/table/TreeRecordProvider';
 import { useRecord } from '../../record-provider';
@@ -48,10 +49,10 @@ import { useOperators } from '../CollectOperators';
 import { useDetailsBlockContext } from '../DetailsBlockProvider';
 import { TableFieldResource } from '../TableFieldProvider';
 
+export * from './useBlockHeightProps';
 export * from './useDataBlockParentRecord';
 export * from './useFormActiveFields';
 export * from './useParsedFilter';
-export * from './useBlockHeightProps';
 
 export const usePickActionProps = () => {
   const form = useForm();
@@ -386,6 +387,9 @@ export interface FilterTarget {
     /** associated field */
     field?: string;
   }[];
+  /**
+   * 筛选表单区块的 uid
+   */
   uid?: string;
 }
 
@@ -412,22 +416,26 @@ export const updateFilterTargets = (fieldSchema, targets: FilterTarget['targets'
   }
 };
 
-export const useFilterBlockActionProps = () => {
+/**
+ * 注意：因为筛选表单的字段有可能设置的有默认值，所以筛选表单的筛选操作会在首次渲染时自动执行一次，
+ * 以确保数据区块中首次显示的数据与筛选表单的筛选条件匹配。
+ * @returns
+ */
+const useDoFilter = () => {
   const form = useForm();
-  const actionField = useField();
-  const fieldSchema = useFieldSchema();
   const { getDataBlocks } = useFilterBlock();
-  const { name } = useCollection_deprecated();
   const { getCollectionJoinField } = useCollectionManager_deprecated();
   const { getOperators } = useOperators();
+  const fieldSchema = useFieldSchema();
+  const { name } = useCollection();
+  const { targets = [], uid } = useMemo(() => findFilterTargets(fieldSchema), [fieldSchema]);
 
-  actionField.data = actionField.data || {};
+  const getFilterFromCurrentForm = useCallback(() => {
+    return removeNullCondition(transformToFilter(form.values, getOperators(), getCollectionJoinField, name));
+  }, [form.values, getCollectionJoinField, getOperators, name]);
 
-  return {
-    async onClick() {
-      const { targets = [], uid } = findFilterTargets(fieldSchema);
-
-      actionField.data.loading = true;
+  const doFilter = useCallback(
+    async ({ doNothingWhenFilterIsEmpty = false } = {}) => {
       try {
         // 收集 filter 的值
         await Promise.all(
@@ -439,16 +447,19 @@ export const useFilterBlockActionProps = () => {
             // 保留原有的 filter
             const storedFilter = block.service.params?.[1]?.filters || {};
 
-            storedFilter[uid] = removeNullCondition(
-              transformToFilter(form.values, getOperators(), getCollectionJoinField, name),
-            );
+            // 由当前表单转换而来的 filter
+            storedFilter[uid] = getFilterFromCurrentForm();
 
             const mergedFilter = mergeFilter([
               ...Object.values(storedFilter).map((filter) => removeNullCondition(filter)),
               block.defaultFilter,
             ]);
 
-            if (block.dataLoadingMode === 'manual' && _.isEmpty(mergedFilter)) {
+            if (doNothingWhenFilterIsEmpty && _.isEmpty(storedFilter[uid])) {
+              return;
+            }
+
+            if (block.dataLoadingMode === 'manual' && _.isEmpty(storedFilter[uid])) {
               return block.clearData();
             }
 
@@ -465,57 +476,70 @@ export const useFilterBlockActionProps = () => {
       } catch (error) {
         console.error(error);
       }
+    },
+    [getDataBlocks, getFilterFromCurrentForm, targets, uid],
+  );
+
+  // 这里的代码是为了实现：筛选表单的筛选操作在首次渲染时自动执行一次
+  useEffect(() => {
+    doFilter({ doNothingWhenFilterIsEmpty: true });
+  }, [getDataBlocks().length]);
+
+  return {
+    /**
+     * 用于执行筛选表单的筛选操作
+     */
+    doFilter,
+    /**
+     * 根据当前表单的值获取 filter
+     */
+    getFilterFromCurrentForm,
+  };
+};
+
+export const useFilterBlockActionProps = () => {
+  const { doFilter } = useDoFilter();
+  const actionField = useField();
+  actionField.data = actionField.data || {};
+
+  return {
+    async onClick() {
+      actionField.data.loading = true;
+      await doFilter();
       actionField.data.loading = false;
     },
   };
 };
 
-export const useResetBlockActionProps = () => {
+const useDoReset = () => {
   const form = useForm();
-  const actionField = useField();
   const fieldSchema = useFieldSchema();
   const { getDataBlocks } = useFilterBlock();
+  const { targets, uid } = findFilterTargets(fieldSchema);
+  const { doFilter, getFilterFromCurrentForm } = useDoFilter();
+
+  return {
+    doReset: async () => {
+      await form.reset();
+      if (_.isEmpty(getFilterFromCurrentForm())) {
+        return doReset({ getDataBlocks, targets, uid });
+      }
+      await doFilter();
+    },
+  };
+};
+
+export const useResetBlockActionProps = () => {
+  const actionField = useField();
+  const { doReset } = useDoReset();
 
   actionField.data = actionField.data || {};
 
   return {
     async onClick() {
-      const { targets, uid } = findFilterTargets(fieldSchema);
-
-      form.reset();
       actionField.data.loading = true;
-      try {
-        // 收集 filter 的值
-        await Promise.all(
-          getDataBlocks().map(async (block) => {
-            const target = targets.find((target) => target.uid === block.uid);
-            if (!target) return;
-
-            if (block.dataLoadingMode === 'manual') {
-              return block.clearData();
-            }
-
-            const param = block.service.params?.[0] || {};
-            // 保留原有的 filter
-            const storedFilter = block.service.params?.[1]?.filters || {};
-
-            delete storedFilter[uid];
-            const mergedFilter = mergeFilter([...Object.values(storedFilter), block.defaultFilter]);
-
-            return block.doFilter(
-              {
-                ...param,
-                page: 1,
-                filter: mergedFilter,
-              },
-              { filters: storedFilter },
-            );
-          }),
-        );
-        actionField.data.loading = false;
-      } catch (error) {
-        actionField.data.loading = false;
-      }
+      await doReset();
+      actionField.data.loading = false;
     },
   };
 };
@@ -1313,6 +1337,52 @@ export const useAssociationFilterBlockProps = () => {
     labelKey,
   };
 };
+async function doReset({
+  getDataBlocks,
+  targets,
+  uid,
+}: {
+  getDataBlocks: () => DataBlock[];
+  targets: {
+    /** field uid */
+    uid: string;
+    /** associated field */
+    field?: string;
+  }[];
+  uid: string;
+}) {
+  try {
+    await Promise.all(
+      getDataBlocks().map(async (block) => {
+        const target = targets.find((target) => target.uid === block.uid);
+        if (!target) return;
+
+        if (block.dataLoadingMode === 'manual') {
+          return block.clearData();
+        }
+
+        const param = block.service.params?.[0] || {};
+        // 保留原有的 filter
+        const storedFilter = block.service.params?.[1]?.filters || {};
+
+        delete storedFilter[uid];
+        const mergedFilter = mergeFilter([...Object.values(storedFilter), block.defaultFilter]);
+
+        return block.doFilter(
+          {
+            ...param,
+            page: 1,
+            filter: mergedFilter,
+          },
+          { filters: storedFilter },
+        );
+      }),
+    );
+  } catch (error) {
+    console.error(error);
+  }
+}
+
 export function getAssociationPath(str) {
   const lastIndex = str.lastIndexOf('.');
   if (lastIndex !== -1) {
@@ -1489,7 +1559,6 @@ export function useLinkActionProps() {
     },
   };
 }
-
 
 export async function replaceVariableValue(
   url: string,

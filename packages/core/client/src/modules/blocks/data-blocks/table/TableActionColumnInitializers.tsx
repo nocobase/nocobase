@@ -32,12 +32,10 @@ export const Resizable = () => {
       title={t('Column width')}
       component={React.forwardRef<any, any>((props, ref) => {
         const { children, onClick, ...others } = props;
-        const { setVisible } = useSchemaInitializer();
         return (
           <SchemaInitializerItem
             ref={ref}
             onClick={({ event }) => {
-              setVisible(false);
               onClick(event);
             }}
             {...others}

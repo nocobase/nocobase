@@ -9,9 +9,10 @@
 
 import { CloseOutlined, DeleteOutlined } from '@ant-design/icons';
 import { createForm } from '@formily/core';
+import { toJS } from '@formily/reactive';
 import { ISchema, useForm } from '@formily/react';
 import { App, Button, Dropdown, Input, Tag, Tooltip, message } from 'antd';
-import { cloneDeep } from 'lodash';
+import { cloneDeep, get } from 'lodash';
 import React, { useCallback, useContext, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -53,15 +54,30 @@ export abstract class Instruction {
   type: string;
   group: string;
   description?: string;
+  /**
+   * @experimental
+   */
   options?: { label: string; value: any; key: string }[];
   fieldset: { [key: string]: ISchema };
+  /**
+   * @experimental
+   */
   view?: ISchema;
   scope?: { [key: string]: any };
   components?: { [key: string]: any };
   Component?(props): JSX.Element;
+  /**
+   * @experimental
+   */
+  createDefaultConfig?(): Record<string, any> {
+    return {};
+  }
   useVariables?(node, options?: UseVariableOptions): VariableOption;
   useScopeVariables?(node, options?): VariableOption[];
   useInitializers?(node): SchemaInitializerItemType | null;
+  /**
+   * @experimental
+   */
   isAvailable?(ctx: NodeAvailableContext): boolean;
   end?: boolean | ((node) => boolean);
 }
@@ -86,6 +102,7 @@ function useUpdateAction() {
           config: form.values,
         },
       });
+      form.setInitialValues(toJS(form.values));
       ctx.setFormValueChanged(false);
       ctx.setVisible(false);
       refresh();
@@ -97,6 +114,11 @@ export const NodeContext = React.createContext<any>({});
 
 export function useNodeContext() {
   return useContext(NodeContext);
+}
+
+export function useNodeSavedConfig(keys = []) {
+  const node = useNodeContext();
+  return keys.some((key) => get(node.config, key) != null);
 }
 
 /**
@@ -378,6 +400,7 @@ export function NodeDefaultView(props) {
               scope={{
                 ...instruction.scope,
                 useFormProviderProps,
+                useUpdateAction,
               }}
               components={instruction.components}
               schema={{
@@ -477,7 +500,7 @@ export function NodeDefaultView(props) {
                                 'x-component': 'Action',
                                 'x-component-props': {
                                   type: 'primary',
-                                  useAction: useUpdateAction,
+                                  useAction: '{{ useUpdateAction }}',
                                 },
                               },
                             },

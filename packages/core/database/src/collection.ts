@@ -243,6 +243,8 @@ export class Collection<
     this.model = class extends M {};
     this.model.init(null, this.sequelizeModelOptions());
 
+    this.model.options.modelName = this.options.name;
+
     if (!autoGenId) {
       this.model.removeAttribute('id');
     }

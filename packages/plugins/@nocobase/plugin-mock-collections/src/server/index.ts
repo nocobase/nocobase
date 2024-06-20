@@ -334,8 +334,8 @@ export class PluginMockCollectionsServer extends Plugin {
     });
 
     await client.connect();
-    await client.query(`DROP DATABASE IF EXISTS ${externalDB}`);
-    await client.query(`CREATE DATABASE ${externalDB}`);
+    await client.query(`DROP DATABASE IF EXISTS "${externalDB}"`);
+    await client.query(`CREATE DATABASE "${externalDB}"`);
     await client.end();
 
     // import sql import external database

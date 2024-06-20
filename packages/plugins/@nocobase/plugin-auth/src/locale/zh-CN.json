@@ -17,11 +17,11 @@
   "Please enter a valid email": "请输入有效的邮箱",
   "Please enter your username or email": "请输入用户名或邮箱",
   "Please enter a password": "请输入密码",
-  "SMS": "短信",
   "Username/Email": "用户名/邮箱",
   "Auth UID": "认证标识",
   "The authentication allows users to sign in via username or email.": "该认证方式支持用户通过用户名或邮箱登录。",
   "No authentication methods available.": "没有可用的认证方式。",
   "The password is inconsistent, please re-enter": "密码不一致，请重新输入",
-  "Sign-in": "登录"
+  "Sign-in": "登录",
+  "Password": "密码"
 }

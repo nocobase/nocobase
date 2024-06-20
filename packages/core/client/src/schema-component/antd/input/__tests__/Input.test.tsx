@@ -117,17 +117,17 @@ describe('Input.JSON', () => {
     await userEvent.click(document.body);
     expect(JSON.parse(textarea.value)).toEqual({ name: 'nocobase' });
     expect(pre).toMatchInlineSnapshot(`
-  <pre
-    data-testid="form-data"
-    style="margin-bottom: 20px;"
-  >
-    {
-    "test": {
-      "name": "nocobase"
-    }
-  }
-  </pre>
-    `);
+   <pre
+     data-testid="form-data"
+     style="margin-bottom: 20px;"
+   >
+     {
+     "test": {
+       "name": "nocobase"
+     }
+   }
+   </pre>
+     `);
   });
 
   it('should display the error when the value is invalid', async () => {
@@ -162,16 +162,16 @@ describe('Input.JSON', () => {
     expect(JSON5.parse(textarea.value)).toEqual({ name: 'nocobase' });
     const pre = container.querySelector('pre') as HTMLPreElement;
     expect(pre).toMatchInlineSnapshot(`
-  <pre
-    data-testid="form-data"
-    style="margin-bottom: 20px;"
-  >
-    {
-    "test": {
-      "name": "nocobase"
-    }
-  }
-  </pre>
-    `);
+   <pre
+     data-testid="form-data"
+     style="margin-bottom: 20px;"
+   >
+     {
+     "test": {
+       "name": "nocobase"
+     }
+   }
+   </pre>
+     `);
   });
 });

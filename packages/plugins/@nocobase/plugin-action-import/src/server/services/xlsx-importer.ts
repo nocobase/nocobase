@@ -12,6 +12,7 @@ import lodash from 'lodash';
 import { ICollection, ICollectionManager, IRelationField } from '@nocobase/data-source-manager';
 import { Collection as DBCollection, Database } from '@nocobase/database';
 import { Transaction } from 'sequelize';
+import EventEmitter from 'events';
 
 export type ImportColumn = {
   dataIndex: Array<string>;
@@ -31,8 +32,10 @@ type RunOptions = {
   transaction?: Transaction;
 };
 
-export class XlsxImporter {
+export class XlsxImporter extends EventEmitter {
   constructor(private options: ImporterOptions) {
+    super();
+
     if (options.columns.length == 0) {
       throw new Error(`columns is empty`);
     }
@@ -67,6 +70,7 @@ export class XlsxImporter {
 
   async resetSeq(options?: RunOptions) {
     const { transaction } = options;
+
     // @ts-ignore
     const db: Database = this.options.collectionManager.db;
     const collection: DBCollection = this.options.collection as DBCollection;
@@ -74,6 +78,18 @@ export class XlsxImporter {
     // @ts-ignore
     const autoIncrementAttribute = collection.model.autoIncrementAttribute;
     if (!autoIncrementAttribute) {
+      return;
+    }
+
+    let hasImportedAutoIncrementPrimary = false;
+    for (const importedDataIndex of this.options.columns) {
+      if (importedDataIndex.dataIndex[0] === autoIncrementAttribute) {
+        hasImportedAutoIncrementPrimary = true;
+        break;
+      }
+    }
+
+    if (!hasImportedAutoIncrementPrimary) {
       return;
     }
 
@@ -93,6 +109,7 @@ export class XlsxImporter {
     const maxVal = (await collection.model.max(autoIncrementAttribute, { transaction })) as number;
 
     const queryInterface = db.queryInterface;
+
     await queryInterface.setAutoIncrementVal({
       tableInfo,
       columnName: collection.model.rawAttributes[autoIncrementAttribute].field,
@@ -100,6 +117,8 @@ export class XlsxImporter {
       seqName: autoIncrInfo.seqName,
       transaction,
     });
+
+    this.emit('seqReset', { maxVal, seqName: autoIncrInfo.seqName });
   }
 
   async performImport(options?: RunOptions) {
@@ -134,6 +153,7 @@ export class XlsxImporter {
             const dataKey = column.dataIndex[0];
 
             const fieldOptions = field.options;
+
             const interfaceName = fieldOptions.interface;
 
             const InterfaceClass = this.options.collectionManager.getFieldInterface(interfaceName);
@@ -167,9 +187,8 @@ export class XlsxImporter {
 
           await new Promise((resolve) => setTimeout(resolve, 5));
         } catch (error) {
-          console.log(error);
           throw new Error(
-            `failed to import row ${handingRowIndex}, rowData: ${JSON.stringify(rowValues)} message: ${error.message}`,
+            `failed to import row ${handingRowIndex}, message: ${error.message}, rowData: ${JSON.stringify(rowValues)}`,
             { cause: error },
           );
         }

@@ -81,11 +81,9 @@ export const BlockItem: React.FC<BlockItemProps> = withDynamicSchemaProps(
     // 新版 UISchema（1.0 之后）中已经废弃了 useProps，这里之所以继续保留是为了兼容旧版的 UISchema
     const { className, children } = useProps(props);
     const { styles: blockItemCss } = useStyles();
-
     const fieldSchema = useFieldSchema();
     const { render } = useSchemaToolbarRender(fieldSchema);
     const { getAriaLabel } = useGetAriaLabelOfBlockItem(props.name);
-
     const label = useMemo(() => getAriaLabel(), [getAriaLabel]);
 
     return (

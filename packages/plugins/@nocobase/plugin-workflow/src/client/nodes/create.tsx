@@ -11,10 +11,11 @@ import { SchemaInitializerItemType, parseCollectionName, useCollectionDataSource
 
 import { CollectionBlockInitializer } from '../components/CollectionBlockInitializer';
 import CollectionFieldset from '../components/CollectionFieldset';
+import { AssignedFieldsFormSchemaConfig } from '../components/AssignedFieldsFormSchemaConfig';
 import { NAMESPACE } from '../locale';
 import { appends, collection, values } from '../schemas/collection';
 import { getCollectionFieldOptions, useGetCollectionFields } from '../variable';
-import { Instruction } from '.';
+import { Instruction, useNodeSavedConfig } from '.';
 
 function useVariables({ key: name, title, config }, options) {
   const [dataSourceName, collection] = parseCollectionName(config.collection);
@@ -54,6 +55,7 @@ export default class extends Instruction {
   fieldset = {
     collection: {
       ...collection,
+      'x-disabled': '{{ useNodeSavedConfig(["collection"]) }}',
       'x-reactions': [
         ...collection['x-reactions'],
         {
@@ -61,36 +63,64 @@ export default class extends Instruction {
           effects: ['onFieldValueChange'],
           fulfill: {
             state: {
-              visible: '{{!!$self.value}}',
               value: '{{Object.create({})}}',
             },
           },
         },
       ],
     },
-    // multiple: {
-    //   type: 'boolean',
-    //   title: '多条数据',
-    //   name: 'multiple',
-    //   'x-decorator': 'FormItem',
-    //   'x-component': 'Checkbox',
-    //   'x-component-props': {
-    //     disabled: true
-    //   }
-    // },
+    usingAssignFormSchema: {
+      type: 'boolean',
+    },
+    assignFormSchema: {
+      type: 'object',
+      title: '{{t("Fields values")}}',
+      'x-decorator': 'FormItem',
+      'x-component': 'AssignedFieldsFormSchemaConfig',
+      'x-reactions': [
+        {
+          dependencies: ['collection', 'usingAssignFormSchema'],
+          fulfill: {
+            state: {
+              display: '{{($deps[0] && $deps[1]) ? "visible" : "hidden"}}',
+            },
+          },
+        },
+      ],
+    },
     params: {
       type: 'object',
       properties: {
-        values,
+        values: {
+          ...values,
+          'x-reactions': [
+            {
+              dependencies: ['collection', 'usingAssignFormSchema'],
+              fulfill: {
+                state: {
+                  display: '{{($deps[0] && !$deps[1]) ? "visible" : "hidden"}}',
+                },
+              },
+            },
+          ],
+        },
         appends,
       },
     },
   };
+  createDefaultConfig() {
+    return {
+      usingAssignFormSchema: true,
+      assignFormSchema: {},
+    };
+  }
   scope = {
     useCollectionDataSource,
+    useNodeSavedConfig,
   };
   components = {
     CollectionFieldset,
+    AssignedFieldsFormSchemaConfig,
   };
   useVariables = useVariables;
   useInitializers(node): SchemaInitializerItemType | null {

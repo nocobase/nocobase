@@ -11,6 +11,10 @@ import { BaseInterface } from './base-interface';
 
 export class ToManyInterface extends BaseInterface {
   async toValue(str: string, ctx?: any) {
+    if (!str) {
+      return null;
+    }
+
     const items = str.split(',');
 
     const { filterKey, targetCollection, transaction } = ctx;
@@ -20,6 +24,13 @@ export class ToManyInterface extends BaseInterface {
         [filterKey]: items,
       },
       transaction,
+    });
+
+    // check if all items are found
+    items.forEach((item) => {
+      if (!targetInstances.find((targetInstance) => targetInstance[filterKey] === item)) {
+        throw new Error(`"${item}" not found in ${targetCollection.model.name} ${filterKey}`);
+      }
     });
 
     const primaryKeyAttribute = targetCollection.model.primaryKeyAttribute;

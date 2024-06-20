@@ -52,7 +52,7 @@ const getFieldPath = (variablePath: string, variablesStore: Record<string, Varia
 const VariablesProvider = ({ children }) => {
   const ctxRef = useRef<Record<string, any>>({});
   const api = useAPIClient();
-  const { getCollectionJoinField } = useCollectionManager_deprecated();
+  const { getCollectionJoinField, getCollection } = useCollectionManager_deprecated();
   const compile = useCompile();
   const { builtinVariables } = useBuiltInVariables();
 
@@ -97,11 +97,14 @@ const VariablesProvider = ({ children }) => {
         const key = list[index];
         const { fieldPath } = getFieldPath(list.slice(0, index + 1).join('.'), _variableToCollectionName);
         const associationField: CollectionFieldOptions_deprecated = getCollectionJoinField(fieldPath, dataSource);
+        const collectionPrimaryKey = getCollection(collectionName)?.getPrimaryKey();
         if (Array.isArray(current)) {
           const result = current.map((item) => {
-            if (shouldToRequest(item?.[key]) && item?.id != null) {
+            if (shouldToRequest(item?.[key]) && item?.[collectionPrimaryKey] != null) {
               if (associationField?.target) {
-                const url = `/${collectionName}/${item.id}/${key}:${getAction(associationField.type)}`;
+                const url = `/${collectionName}/${
+                  item[associationField.sourceKey || collectionPrimaryKey]
+                }/${key}:${getAction(associationField.type)}`;
                 if (hasRequested(url)) {
                   return getRequested(url);
                 }
@@ -125,8 +128,10 @@ const VariablesProvider = ({ children }) => {
             return item?.[key];
           });
           current = removeThroughCollectionFields(_.flatten(await Promise.all(result)), associationField);
-        } else if (shouldToRequest(current[key]) && current.id != null && associationField?.target) {
-          const url = `/${collectionName}/${current.id}/${key}:${getAction(associationField.type)}`;
+        } else if (shouldToRequest(current[key]) && current[collectionPrimaryKey] != null && associationField?.target) {
+          const url = `/${collectionName}/${
+            current[associationField.sourceKey || collectionPrimaryKey]
+          }/${key}:${getAction(associationField.type)}`;
           let data = null;
           if (hasRequested(url)) {
             data = await getRequested(url);

@@ -9,14 +9,9 @@
 
 import { css } from '@nocobase/client';
 import { InputNumber, Select } from 'antd';
-import React from 'react';
+import React, { useCallback } from 'react';
 import { Cron } from 'react-js-cron';
 import { useWorkflowTranslation } from '../../locale';
-import CronZhCN from './locale/Cron.zh-CN';
-
-const languages = {
-  'zh-CN': CronZhCN,
-};
 
 const RepeatOptions = [
   { value: 'none', text: 'No repeat' },
@@ -66,19 +61,20 @@ function CommonRepeatField({ value, onChange }) {
 export function RepeatField({ value = null, onChange }) {
   const { t } = useWorkflowTranslation();
   const typeValue = getRepeatTypeValue(value);
-  function onTypeChange(v) {
-    if (v === 'none') {
-      onChange(null);
-      return;
-    }
-    if (v === 'cron') {
-      onChange('0 * * * * *');
-      return;
-    }
-    onChange(v);
-  }
-
-  const locale = languages[localStorage.getItem('NOCOBASE_LOCALE') || 'en-US'];
+  const onTypeChange = useCallback(
+    (v) => {
+      if (v === 'none') {
+        onChange(null);
+        return;
+      }
+      if (v === 'cron') {
+        onChange('0 * * * * *');
+        return;
+      }
+      onChange(v);
+    },
+    [onChange],
+  );
 
   return (
     <fieldset
@@ -126,7 +122,7 @@ export function RepeatField({ value = null, onChange }) {
           value={value.trim().split(/\s+/).slice(1).join(' ')}
           setValue={(v) => onChange(`0 ${v}`)}
           clearButton={false}
-          locale={locale}
+          locale={window['cronLocale']}
         />
       ) : null}
     </fieldset>

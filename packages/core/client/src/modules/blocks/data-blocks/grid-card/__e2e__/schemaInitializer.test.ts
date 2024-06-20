@@ -67,7 +67,9 @@ test.describe('configure global actions', () => {
 
     await page.getByLabel('schema-initializer-ActionBar-gridCard:configureActions-general').hover();
     await page.getByRole('menuitem', { name: 'Filter' }).click();
+    await page.getByLabel('schema-initializer-ActionBar-gridCard:configureActions-general').hover();
     await page.getByRole('menuitem', { name: 'Add new' }).click();
+    await page.getByLabel('schema-initializer-ActionBar-gridCard:configureActions-general').hover();
     await page.getByRole('menuitem', { name: 'Refresh' }).click();
 
     await page.mouse.move(300, 0);
@@ -95,7 +97,9 @@ test.describe('configure item actions', () => {
 
     await page.getByLabel('schema-initializer-ActionBar-gridCard:configureItemActions-general').first().hover();
     await page.getByRole('menuitem', { name: 'View' }).click();
+    await page.getByLabel('schema-initializer-ActionBar-gridCard:configureItemActions-general').first().hover();
     await page.getByRole('menuitem', { name: 'Edit' }).click();
+    await page.getByLabel('schema-initializer-ActionBar-gridCard:configureItemActions-general').first().hover();
     await page.getByRole('menuitem', { name: 'Delete' }).click();
 
     await page.mouse.move(300, 0);
@@ -121,6 +125,7 @@ test.describe('configure item actions', () => {
 
     await page.getByLabel('schema-initializer-ActionBar-gridCard:configureItemActions-general').first().hover();
     await page.getByRole('menuitem', { name: 'Popup' }).click();
+    await page.getByLabel('schema-initializer-ActionBar-gridCard:configureItemActions-general').first().hover();
     await page.getByRole('menuitem', { name: 'Update record' }).click();
 
     await page.mouse.move(300, 0);

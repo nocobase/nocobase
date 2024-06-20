@@ -382,7 +382,7 @@ export const addCustomFormField = new CompatibleSchemaInitializer(
 
 function CustomFormFieldInitializer() {
   const itemConfig = useSchemaInitializerItem();
-  const { insert, setVisible } = useSchemaInitializer();
+  const { insert } = useSchemaInitializer();
   const { onAddField, setCallback } = useContext(AddCustomFormFieldButtonContext);
   const { getInterface } = useCollectionManager_deprecated();
 
@@ -394,7 +394,6 @@ function CustomFormFieldInitializer() {
       onClick={() => {
         setCallback(() => insert);
         onAddField(interfaceOptions);
-        setVisible(false);
       }}
       {...itemConfig}
     />

@@ -283,5 +283,148 @@
         "destroy": [1, 2]
       }
     }
+  },
+  "tree-collection:list": {
+    "data": [
+      {
+        "id": 1,
+        "createdAt": "2024-06-05T02:58:23.961Z",
+        "updatedAt": "2024-06-05T02:58:23.961Z",
+        "parentId": null,
+        "createdById": 1,
+        "updatedById": 1,
+        "title": "title-0",
+        "children": [
+          {
+            "id": 4,
+            "createdAt": "2024-06-05T02:59:21.455Z",
+            "updatedAt": "2024-06-05T02:59:21.462Z",
+            "parentId": 1,
+            "createdById": 1,
+            "updatedById": 1,
+            "title": "title-0-0",
+            "children": [
+              {
+                "id": 10,
+                "createdAt": "2024-06-05T03:00:14.122Z",
+                "updatedAt": "2024-06-05T03:00:14.129Z",
+                "parentId": 4,
+                "createdById": 1,
+                "updatedById": 1,
+                "title": "title-0-0-0",
+                "__index": "0.children.0.children.0"
+              },
+              {
+                "id": 11,
+                "createdAt": "2024-06-05T03:00:21.816Z",
+                "updatedAt": "2024-06-05T03:00:21.822Z",
+                "parentId": 4,
+                "createdById": 1,
+                "updatedById": 1,
+                "title": "title-0-0-1",
+                "__index": "0.children.0.children.1"
+              },
+              {
+                "id": 12,
+                "createdAt": "2024-06-05T03:00:34.253Z",
+                "updatedAt": "2024-06-05T03:00:34.261Z",
+                "parentId": 4,
+                "createdById": 1,
+                "updatedById": 1,
+                "title": "title-0-0-2",
+                "__index": "0.children.0.children.2"
+              }
+            ],
+            "__index": "0.children.0"
+          },
+          {
+            "id": 5,
+            "createdAt": "2024-06-05T02:59:27.667Z",
+            "updatedAt": "2024-06-05T02:59:27.676Z",
+            "parentId": 1,
+            "createdById": 1,
+            "updatedById": 1,
+            "title": "title-0-1",
+            "__index": "0.children.1"
+          },
+          {
+            "id": 6,
+            "createdAt": "2024-06-05T02:59:33.167Z",
+            "updatedAt": "2024-06-05T02:59:33.174Z",
+            "parentId": 1,
+            "createdById": 1,
+            "updatedById": 1,
+            "title": "title-0-2",
+            "__index": "0.children.2"
+          }
+        ],
+        "__index": "0"
+      },
+      {
+        "id": 2,
+        "createdAt": "2024-06-05T02:58:32.009Z",
+        "updatedAt": "2024-06-05T02:58:32.009Z",
+        "parentId": null,
+        "createdById": 1,
+        "updatedById": 1,
+        "title": "title-1",
+        "children": [
+          {
+            "id": 7,
+            "createdAt": "2024-06-05T02:59:39.049Z",
+            "updatedAt": "2024-06-05T02:59:39.055Z",
+            "parentId": 2,
+            "createdById": 1,
+            "updatedById": 1,
+            "title": "title-1-0",
+            "__index": "1.children.0"
+          },
+          {
+            "id": 8,
+            "createdAt": "2024-06-05T02:59:47.298Z",
+            "updatedAt": "2024-06-05T02:59:47.305Z",
+            "parentId": 2,
+            "createdById": 1,
+            "updatedById": 1,
+            "title": "title-1-1",
+            "__index": "1.children.1"
+          }
+        ],
+        "__index": "1"
+      },
+      {
+        "id": 3,
+        "createdAt": "2024-06-05T02:58:34.289Z",
+        "updatedAt": "2024-06-05T02:58:34.289Z",
+        "parentId": null,
+        "createdById": 1,
+        "updatedById": 1,
+        "title": "title-2",
+        "children": [
+          {
+            "id": 9,
+            "createdAt": "2024-06-05T02:59:54.611Z",
+            "updatedAt": "2024-06-05T02:59:54.617Z",
+            "parentId": 3,
+            "createdById": 1,
+            "updatedById": 1,
+            "title": "title-2-0",
+            "__index": "2.children.0"
+          }
+        ],
+        "__index": "2"
+      }
+    ],
+    "meta": {
+      "count": 3,
+      "page": 1,
+      "pageSize": 20,
+      "totalPage": 1,
+      "allowedActions": {
+        "view": [1, 4, 10, 11, 12, 5, 6, 2, 7, 8, 3, 9],
+        "update": [1, 4, 10, 11, 12, 5, 6, 2, 7, 8, 3, 9],
+        "destroy": [1, 4, 10, 11, 12, 5, 6, 2, 7, 8, 3, 9]
+      }
+    }
   }
 }

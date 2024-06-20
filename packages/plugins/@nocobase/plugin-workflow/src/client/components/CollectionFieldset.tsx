@@ -53,7 +53,9 @@ function AssociationInput(props) {
   return <Input {...props} value={value} onChange={onChange} />;
 }
 
-// NOTE: observer for watching useProps
+/**
+ * @deprecated
+ */
 const CollectionFieldSet = observer(
   ({ value, disabled, onChange, filter }: any) => {
     const { token } = useToken();

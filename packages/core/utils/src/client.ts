@@ -29,3 +29,4 @@ export * from './uid';
 export * from './url';
 export { dayjs, lodash };
 export * from './parseHTML';
+export * from './i18n';

@@ -63,8 +63,8 @@ export const useStyles = createStyles(({ css, token }) => {
 
       .react-kanban-column {
         background-color: ${token.colorFillQuaternary};
-        margin-right: 15px;
-        padding-bottom: 15px;
+        margin-right: ${token.margin}
+        padding-bottom: ${token.margin}
         width: 300px;
       }
 

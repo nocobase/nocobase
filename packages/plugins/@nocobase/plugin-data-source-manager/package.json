@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-data-source-manager",
-  "version": "1.0.1-alpha.1",
+  "version": "1.2.6-alpha",
   "main": "dist/server/index.js",
   "displayName": "Data source manager",
   "displayName.zh-CN": "数据源管理",

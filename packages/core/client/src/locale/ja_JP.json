@@ -102,7 +102,7 @@
   "Allow sign up": "サインアップを許可",
   "Sign out": "サインアウト",
   "Cancel": "取消",
-  "Submit": "送信",
+  "Submit": "保存",
   "Close": "閉じる",
   "Set the data scope": "データ範囲の設定",
   "Data loading mode": "データ読み込みモード",
@@ -699,5 +699,6 @@
   "License": "ライセンス",
   "This variable has been deprecated and can be replaced with \"Current form\"": "この変数は非推奨です。代わりに「現在のフォーム」を使用してください",
   "The value of this variable is derived from the query string of the page URL. This variable can only be used normally when the page has a query string.": "この変数の値はページURLのクエリ文字列から取得されます。この変数は、ページにクエリ文字列がある場合にのみ正常に使用できます。",
-  "URL search params": "URL検索パラメータ"
+  "URL search params": "URL検索パラメータ",
+  "Expand All": "すべて展開"
 }

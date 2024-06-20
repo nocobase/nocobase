@@ -8,7 +8,7 @@
  */
 
 import winston, { format } from 'winston';
-import { createLogger, Logger, LoggerOptions, levels } from './logger';
+import { createLogger, levels, Logger, LoggerOptions } from './logger';
 import Transport from 'winston-transport';
 import { SPLAT } from 'triple-beam';
 import { getFormat } from './format';

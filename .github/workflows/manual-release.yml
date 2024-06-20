@@ -6,6 +6,10 @@ concurrency:
 
 on:
   workflow_dispatch:
+    inputs:
+      is_feat:
+        description: 'is feat'
+        type: boolean
 jobs:
   push-commit:
     runs-on: ubuntu-latest
@@ -36,7 +40,9 @@ jobs:
           git config --global user.email "actions@github.com"
           git config --global user.name "GitHub Actions Bot"
           echo "packages/pro-plugins/" >> .git/info/exclude
-          bash release.sh
+          bash release.sh $IS_FEAT
+        env:
+          IS_FEAT: ${{ inputs.is_feat && '--is-feat' || '' }}
       - name: push pro plugins
         continue-on-error: true
         uses: ad-m/github-push-action@master

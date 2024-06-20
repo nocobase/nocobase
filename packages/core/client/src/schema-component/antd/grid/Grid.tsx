@@ -13,6 +13,8 @@ import { ISchema, RecursionField, Schema, observer, useField, useFieldSchema } f
 import { uid } from '@formily/shared';
 import cls from 'classnames';
 import _ from 'lodash';
+import { css } from '@emotion/css';
+import { theme } from 'antd';
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { SchemaComponent, useDesignable, useSchemaInitializerRender } from '../../../';
 import { useFormBlockContext, useFormBlockType } from '../../../block-provider/FormBlockProvider';
@@ -333,7 +335,8 @@ export const Grid: any = observer(
     const rows = useRowProperties();
     const { setPrintContent } = useFormBlockContext();
     const { styles } = useStyles();
-
+    const { token } = theme.useToken();
+    const { designable } = useDesignable();
     const distributedValue =
       distributed === undefined
         ? fieldSchema?.parent['x-component'] === 'Page' || fieldSchema?.parent['x-component'] === 'Tabs.TabPane'
@@ -356,48 +359,59 @@ export const Grid: any = observer(
     return (
       <FilterBlockProvider>
         <GridContext.Provider value={gridContextValue}>
-          <div className={`nb-grid ${styles.container}`} style={{ position: 'relative' }} ref={gridRef}>
-            <div className="nb-grid-warp">
-              <DndWrapper dndContext={props.dndContext}>
-                {showDivider ? (
-                  <RowDivider
-                    rows={rows}
-                    first
-                    id={`${addr}_0`}
-                    data={{
-                      breakRemoveOn: breakRemoveOnGrid,
-                      wrapSchema: wrapRowSchema,
-                      insertAdjacent: 'afterBegin',
-                      schema: fieldSchema,
-                    }}
-                  />
-                ) : null}
-                {rows.map((schema, index) => {
-                  return (
-                    <React.Fragment key={index}>
-                      {distributedValue ? (
-                        <SchemaComponent name={schema.name} schema={schema} distributed />
-                      ) : (
-                        <MemorizedRecursionField name={schema.name} schema={schema} />
-                      )}
-                      {showDivider ? (
-                        <RowDivider
-                          rows={rows}
-                          index={index}
-                          id={`${addr}_${index + 1}`}
-                          data={{
-                            breakRemoveOn: breakRemoveOnGrid,
-                            wrapSchema: wrapRowSchema,
-                            insertAdjacent: 'afterEnd',
-                            schema,
-                          }}
-                        />
-                      ) : null}
-                    </React.Fragment>
-                  );
-                })}
-              </DndWrapper>
-              {render()}
+          <div
+            className={cls(
+              'nb-grid-container',
+              css`
+                & {
+                  margin-bottom: ${designable ? 0 : -token.marginLG}px;
+                }
+              `,
+            )}
+          >
+            <div className={cls(`nb-grid ${styles.container}`)} style={{ position: 'relative' }} ref={gridRef}>
+              <div className="nb-grid-warp">
+                <DndWrapper dndContext={props.dndContext}>
+                  {showDivider ? (
+                    <RowDivider
+                      rows={rows}
+                      first
+                      id={`${addr}_0`}
+                      data={{
+                        breakRemoveOn: breakRemoveOnGrid,
+                        wrapSchema: wrapRowSchema,
+                        insertAdjacent: 'afterBegin',
+                        schema: fieldSchema,
+                      }}
+                    />
+                  ) : null}
+                  {rows.map((schema, index) => {
+                    return (
+                      <React.Fragment key={index}>
+                        {distributedValue ? (
+                          <SchemaComponent name={schema.name} schema={schema} distributed />
+                        ) : (
+                          <MemorizedRecursionField name={schema.name} schema={schema} />
+                        )}
+                        {showDivider ? (
+                          <RowDivider
+                            rows={rows}
+                            index={index}
+                            id={`${addr}_${index + 1}`}
+                            data={{
+                              breakRemoveOn: breakRemoveOnGrid,
+                              wrapSchema: wrapRowSchema,
+                              insertAdjacent: 'afterEnd',
+                              schema,
+                            }}
+                          />
+                        ) : null}
+                      </React.Fragment>
+                    );
+                  })}
+                </DndWrapper>
+                {render()}
+              </div>
             </div>
           </div>
         </GridContext.Provider>

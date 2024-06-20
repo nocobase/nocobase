@@ -137,6 +137,9 @@ const InternalGridCard = (props: GridCardProps) => {
               height: ${height ? height + `px` : '100%'};
               overflow-y: ${height ? 'auto' : null};
               overflow-x: clip;
+              .nb-action-bar {
+                margin-top: 0px !important;
+              }
             }
           `,
         )}

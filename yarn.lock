@@ -7914,10 +7914,10 @@ ajv@^7.0.0, ajv@^7.0.3:
     require-from-string "^2.0.2"
     uri-js "^4.2.2"
 
-ali-oss@^6.16.0:
-  version "6.18.1"
-  resolved "https://registry.npmmirror.com/ali-oss/-/ali-oss-6.18.1.tgz#13f2eb5f5c2a2cf2d322c1b35412133c18cec485"
-  integrity sha512-VsptD0jX3JNc3AjiLs5a9oTP0ArfT9IYhBuY6G/SpuY6LMuiwfqywrAosY65BlHKODAdYy8VWL6kmt0mO7BUGA==
+ali-oss@^6.1.0:
+  version "6.20.0"
+  resolved "https://registry.npmmirror.com/ali-oss/-/ali-oss-6.20.0.tgz#a19b0207560399f18db6827097e8631ef9c9cfd7"
+  integrity sha512-TzFXgGlw81sy2JvcCveSYsa2b2+6kv+HA6WTc+cXg6bu8nUAmVPfncRGbn3x2getSOniOFA+TyGy3V4l3Fks+Q==
   dependencies:
     address "^1.2.2"
     agentkeepalive "^3.4.1"
@@ -7932,10 +7932,12 @@ ali-oss@^6.16.0:
     is-type-of "^1.4.0"
     js-base64 "^2.5.2"
     jstoxml "^2.0.0"
+    lodash "^4.17.21"
     merge-descriptors "^1.0.1"
     mime "^2.4.5"
     platform "^1.3.1"
     pump "^3.0.0"
+    qs "^6.4.0"
     sdk-base "^2.0.1"
     stream-http "2.8.2"
     stream-wormhole "^1.0.4"
@@ -10237,9 +10239,9 @@ comma-separated-tokens@^2.0.0:
   integrity sha512-Fu4hJdvzeylCfQPp9SGWidpzrMs7tTrlu6Vb8XGaRGck8QSNZJJp538Wrb60Lax4fPwR64ViY468OIUTbRlGZg==
 
 commander@*:
-  version "11.1.0"
-  resolved "https://registry.npmmirror.com/commander/-/commander-11.1.0.tgz#62fdce76006a68e5c1ab3314dc92e800eb83d906"
-  integrity sha512-yPVavfyCcRhmorC7rWlkHn15b4wDVgVmBA7kV4QVBsF7kv/9TKJAbAXVTxvTnwP8HHKjRCJDClKbciiYS7p0DQ==
+  version "12.1.0"
+  resolved "https://registry.npmmirror.com/commander/-/commander-12.1.0.tgz#01423b36f501259fdaac4d0e4d60c96c991585d3"
+  integrity sha512-Vw8qHK3bZM9y/P10u3Vib8o/DdkvA2OtPtZvD871QKjy74Wj1WSKFILMPRPSdUSx5RFK1arlJzEtA4PkFgnbuA==
 
 commander@11.0.0:
   version "11.0.0"
@@ -15117,6 +15119,11 @@ html2sketch@^1.0.2:
     transformation-matrix "^2.11.1"
     uuid "^8.2.0"
 
+html5-qrcode@^2.3.8:
+  version "2.3.8"
+  resolved "https://registry.npmmirror.com/html5-qrcode/-/html5-qrcode-2.3.8.tgz#0b0cdf7a9926cfd4be530e13a51db47592adfa0d"
+  integrity sha512-jsr4vafJhwoLVEDW3n1KvPnCCXWaQfRng0/EEYk1vNcQGcG/htAdhJX0be8YyqMoSz7+hZvOZSTAepsabiuhiQ==
+
 htmlparser2@^6.1.0:
   version "6.1.0"
   resolved "https://registry.npmmirror.com/htmlparser2/-/htmlparser2-6.1.0.tgz#c4d762b6c3371a05dbe65e94ae43a9f845fb8fb7"
@@ -18732,12 +18739,12 @@ ms@^2.0.0, ms@^2.1.1:
   resolved "https://registry.npmmirror.com/ms/-/ms-2.1.3.tgz#574c8138ce1d2b5861f0b44579dbadd60c6615b2"
   integrity sha512-6FlzubTLZG3J2a/NVCAleEhjzq5oxgHyaCU9yYXvcLsvoVaHJq/s5xXI6/XXP6tz7R9xAOtHnSO/tXtF3WRTlA==
 
-multer-aliyun-oss@2.1.1:
-  version "2.1.1"
-  resolved "https://registry.npmmirror.com/multer-aliyun-oss/-/multer-aliyun-oss-2.1.1.tgz#7b6b41385fce2905e8e258a7e68b453ef3982fa0"
-  integrity sha512-EfDlv2oUZS94+VULybEo8rSlGTsV3YphmCAMT8/nMWBleQDjLMeV7tCK6dXe2Lj+yqRjaTHyuOMhbT5i4voHOQ==
+multer-aliyun-oss@2.1.3:
+  version "2.1.3"
+  resolved "https://registry.npmmirror.com/multer-aliyun-oss/-/multer-aliyun-oss-2.1.3.tgz#0627b24a09ccf511388db83e612b4fc43f58a983"
+  integrity sha512-HAq2Mtm88TqG6VqEJyui3lpw3hfgPXe8EKLBKhCWFyAc+sQUnK54/usvuHfoTDcI8TgomhEnf1qZB7rP7Ge5fg==
   dependencies:
-    ali-oss "^6.16.0"
+    ali-oss "^6.1.0"
 
 multer-cos@^1.0.3:
   version "1.0.3"
@@ -19104,6 +19111,11 @@ nodemailer-mock@^1.5.11:
   dependencies:
     debug "^4.3.4"
     nodemailer "^6.x"
+
+nodemailer@6.9.13:
+  version "6.9.13"
+  resolved "https://registry.npmmirror.com/nodemailer/-/nodemailer-6.9.13.tgz#5b292bf1e92645f4852ca872c56a6ba6c4a3d3d6"
+  integrity sha512-7o38Yogx6krdoBf3jCAqnIN4oSQFx+fMa0I7dK1D+me9kBxx12D+/33wSb+fhOCtIxvYJ+4x4IMEhmhCKfAiOA==
 
 nodemailer@^6.6.1, nodemailer@^6.x:
   version "6.9.7"
@@ -22099,7 +22111,7 @@ react-refresh@0.14.0, react-refresh@^0.14.0:
   resolved "https://registry.npmmirror.com/react-refresh/-/react-refresh-0.14.0.tgz#4e02825378a5f227079554d4284889354e5f553e"
   integrity sha512-wViHqhAd8OHeLS/IRMJjTSDHF3U9eWi62F/MledQGPdJGDhodXJ9PBLNGr6WWL7qlH12Mt3TyTpbS+hGXMjCzQ==
 
-react-router-dom@6.3.0, react-router-dom@6.x, react-router-dom@^6.11.2:
+react-router-dom@6.3.0, react-router-dom@6.x, react-router-dom@^6.11.2, react-router-dom@^6.x:
   version "6.21.0"
   resolved "https://registry.npmmirror.com/react-router-dom/-/react-router-dom-6.21.0.tgz#aa4c6bc046a8e8723095bc09b3c0ab2254532712"
   integrity sha512-1dUdVj3cwc1npzJaf23gulB562ESNvxf7E4x8upNJycqyUm5BRRZ6dd3LrlzhtLaMrwOCO8R0zoiYxdaJx4LlQ==

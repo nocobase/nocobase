@@ -12,22 +12,22 @@ import { RecursionField, observer, useField, useFieldSchema } from '@formily/rea
 import {
   ActionContextProvider,
   CollectionProvider_deprecated,
-  RecordProvider,
   FormBlockContext,
+  RecordProvider,
   fetchTemplateData,
+  useACLActionParamsContext,
   useAPIClient,
   useActionContext,
   useBlockRequestContext,
   useCollectionManager_deprecated,
+  useCollectionParentRecordData,
   useCollection_deprecated,
   useDesignable,
   useFormBlockContext,
-  useCollectionParentRecordData,
   useRecord,
-  useACLActionParamsContext,
 } from '@nocobase/client';
 import { App, Button } from 'antd';
-import React, { useState, useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 export const actionDesignerCss = css`
@@ -81,10 +81,10 @@ export const DuplicateAction = observer(
     const { designable } = useDesignable();
     const [visible, setVisible] = useState(false);
     const [loading, setLoading] = useState(false);
-    const { service, __parent, block } = useBlockRequestContext();
+    const { service, __parent, block, resource } = useBlockRequestContext();
     const { duplicateFields, duplicateMode = 'quickDulicate', duplicateCollection } = fieldSchema['x-component-props'];
     const record = useRecord();
-    const parentRecordData = useCollectionParentRecordData();
+    const parentRecordData: any = useCollectionParentRecordData();
     const { id, __collection } = record;
     const ctx = useActionContext();
     const { name } = useCollection_deprecated();
@@ -113,7 +113,7 @@ export const DuplicateAction = observer(
       setLoading(true);
       try {
         const data = await fetchTemplateData(api, template, t);
-        await api.resource(__collection || name).create({
+        await resource['create']({
           values: {
             ...data,
           },
@@ -200,10 +200,8 @@ export const DuplicateAction = observer(
               </Button>
             )}
             <CollectionProvider_deprecated name={duplicateCollection || name}>
-              <RecordProvider
-                record={{ ...record, __collection: duplicateCollection || __collection }}
-                parent={parentRecordData}
-              >
+              {/* 这里的 record 就是弹窗中创建表单的 sourceRecord */}
+              <RecordProvider record={{ ...parentRecordData, __collection: duplicateCollection || __collection }}>
                 <ActionContextProvider value={{ ...ctx, visible, setVisible }}>
                   <RecursionField schema={fieldSchema} basePath={field.address} onlyRenderProperties />
                 </ActionContextProvider>

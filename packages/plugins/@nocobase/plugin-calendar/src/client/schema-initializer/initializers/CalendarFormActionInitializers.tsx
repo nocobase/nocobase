@@ -65,7 +65,7 @@ export const CalendarFormActionInitializers = new SchemaInitializer({
             'x-component': 'Action',
             'x-decorator': 'ACLActionProvider',
           },
-          visible: function useVisible() {
+          useVisible: function useVisible() {
             const collection = useCollection_deprecated();
             return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
           },

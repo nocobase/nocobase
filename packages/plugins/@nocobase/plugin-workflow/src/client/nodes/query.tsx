@@ -24,7 +24,7 @@ import { FilterDynamicComponent } from '../components/FilterDynamicComponent';
 import { NAMESPACE } from '../locale';
 import { appends, collection, filter, pagination, sort } from '../schemas/collection';
 import { WorkflowVariableInput, getCollectionFieldOptions, useGetCollectionFields } from '../variable';
-import { Instruction } from '.';
+import { Instruction, useNodeSavedConfig } from '.';
 import { RadioWithTooltip } from '../components';
 
 function useVariables({ key: name, title, config }, options) {
@@ -65,6 +65,7 @@ export default class extends Instruction {
   fieldset = {
     collection: {
       ...collection,
+      'x-disabled': '{{ useNodeSavedConfig(["collection"]) }}',
       'x-reactions': [
         ...collection['x-reactions'],
         {
@@ -129,6 +130,7 @@ export default class extends Instruction {
     },
   };
   scope = {
+    useNodeSavedConfig,
     useCollectionDataSource,
     useSortableFields() {
       const compile = useCompile();
