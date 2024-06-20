@@ -16,7 +16,6 @@ import { WithoutTableFieldResource } from '../../../block-provider';
 import { Collection, useCollectionManager } from '../../../data-source';
 import { DeclareVariable } from '../../../modules/variable/DeclareVariable';
 import { RecordProvider, useRecord } from '../../../record-provider';
-import { FormProvider } from '../../core';
 import { useCompile } from '../../hooks';
 import { ActionContextProvider, useActionContext } from '../action';
 import { EllipsisWithTooltip } from '../input/EllipsisWithTooltip';
@@ -41,7 +40,7 @@ export function isObject(value) {
   return typeof value === 'object' && value !== null;
 }
 
-const ButtonList: FC<{ value: any; setBtnHover: any; setRecord: any }> = (props) => {
+const ButtonLinkList: FC<{ value: any; setBtnHover: any; setRecord: any }> = (props) => {
   const fieldSchema = useFieldSchema();
   const cm = useCollectionManager();
   const { enableLink } = fieldSchema['x-component-props'] || {};
@@ -111,8 +110,18 @@ const ButtonList: FC<{ value: any; setBtnHover: any; setRecord: any }> = (props)
   return <>{renderRecords()}</>;
 };
 
+interface ReadPrettyInternalViewerProps {
+  ButtonList: FC<{
+    value: any;
+    setBtnHover: any;
+    setRecord: any;
+  }>;
+  value: any;
+}
+
 export const ReadPrettyInternalViewer: React.FC = observer(
-  (props: any) => {
+  (props: ReadPrettyInternalViewerProps) => {
+    const { value, ButtonList = ButtonLinkList } = props;
     const fieldSchema = useFieldSchema();
     const recordCtx = useRecord();
     const cm = useCollectionManager();
@@ -124,17 +133,17 @@ export const ReadPrettyInternalViewer: React.FC = observer(
     const [record, setRecord] = useState({});
     const targetCollection = cm.getCollection(collectionField?.target);
     const ellipsisWithTooltipRef = useRef<IEllipsisWithTooltipRef>();
-    const [btnHover, setBtnHover] = useState(false);
     const { t } = useTranslation();
     const { visibleWithURL, setVisibleWithURL } = usePagePopup();
+    const [btnHover, setBtnHover] = useState(!!visibleWithURL);
 
     const btnElement = (
       <EllipsisWithTooltip ellipsis={true} ref={ellipsisWithTooltipRef}>
-        <ButtonList setBtnHover={setBtnHover} setRecord={setRecord} value={props.value} />
+        <ButtonList setBtnHover={setBtnHover} setRecord={setRecord} value={value} />
       </EllipsisWithTooltip>
     );
 
-    if (enableLink === false || (!btnHover && !visibleWithURL)) {
+    if (enableLink === false || !btnHover) {
       return btnElement;
     }
 
@@ -146,16 +155,14 @@ export const ReadPrettyInternalViewer: React.FC = observer(
         collection={targetCollection as Collection}
       >
         <WithoutTableFieldResource.Provider value={true}>
-          <FormProvider>
-            <RecursionField
-              schema={fieldSchema}
-              onlyRenderProperties
-              basePath={field.address}
-              filterProperties={(s) => {
-                return s['x-component'] === 'AssociationField.Viewer';
-              }}
-            />
-          </FormProvider>
+          <RecursionField
+            schema={fieldSchema}
+            onlyRenderProperties
+            basePath={field.address}
+            filterProperties={(s) => {
+              return s['x-component'] === 'AssociationField.Viewer';
+            }}
+          />
         </WithoutTableFieldResource.Provider>
       </DeclareVariable>
     );
