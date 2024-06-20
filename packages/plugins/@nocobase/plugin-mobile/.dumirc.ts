@@ -17,6 +17,10 @@ export default defineConfig({
       { type: 'component', dir: 'src/server' },
     ],
   },
+  styles: [`
+    .dumi-mobile-demo-layout { padding: 0 !important; }
+    .dumi-default-previewer-sources{ flex: 0 !important; margin-top: 50px; }
+  `],
   metas: [
     {
       name: 'viewport',

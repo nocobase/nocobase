@@ -202,7 +202,7 @@ const InternalSchemaToolbar: FC<SchemaToolbarProps> = (props) => {
     draggable = true,
   } = {
     ...props,
-    ...(fieldSchema['x-toolbar-props'] || {}),
+    ...(fieldSchema?.['x-toolbar-props'] || {}),
   } as SchemaToolbarProps;
   const { designable } = useDesignable();
   const compile = useCompile();
@@ -219,12 +219,12 @@ const InternalSchemaToolbar: FC<SchemaToolbarProps> = (props) => {
     if (Array.isArray(title)) return title.map((item) => compile(item));
   }, [compile, title]);
   const { render: schemaSettingsRender, exists: schemaSettingsExists } = useSchemaSettingsRender(
-    settings || fieldSchema['x-settings'],
-    fieldSchema['x-settings-props'],
+    settings || fieldSchema?.['x-settings'],
+    fieldSchema?.['x-settings-props'],
   );
   const { render: schemaInitializerRender, exists: schemaInitializerExists } = useSchemaInitializerRender(
-    initializer || fieldSchema['x-initializer'],
-    fieldSchema['x-initializer-props'],
+    initializer || fieldSchema?.['x-initializer'],
+    fieldSchema?.['x-initializer-props'],
   );
   const rowCtx = useGridRowContext();
   const gridContext = useGridContext();

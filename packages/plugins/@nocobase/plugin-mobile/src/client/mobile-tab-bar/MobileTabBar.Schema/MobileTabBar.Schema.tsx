@@ -10,7 +10,7 @@
 import React, { FC } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 
-import { MobileTabBarItemProps, MobileTabBarItem } from './MobileTabBar.Item';
+import { MobileTabBarItemProps, MobileTabBarItem } from '../MobileTabBar.Item';
 
 export interface MobileTabBarSchemaProps extends Omit<MobileTabBarItemProps, 'onClick' | 'selected'> {
   schemaId: string;

@@ -76,7 +76,11 @@ const app = mockApp({
           title: 'Home',
           options: {
             type: 'void',
-            // 'x-decorator': 'MobileTabBar.ItemDecorator',
+            'x-decorator': 'BlockItem',
+            'x-toolbar-props': {
+              draggable: false,
+            },
+            'x-settings': 'mobile:tab-bar:schema',
             'x-component': 'MobileTabBar.Schema',
             'x-component-props': {
               title: 'Home',
@@ -111,7 +115,10 @@ const app = mockApp({
           title: 'Message',
           options: {
             type: 'void',
-            'x-decorator': 'MobileTabBar.ItemDecorator',
+            'x-decorator': 'BlockItem',
+            'x-toolbar-props': {
+              draggable: false,
+            },
             'x-component': 'MobileTabBar.Schema',
             'x-component-props': {
               title: 'Message',
@@ -128,7 +135,6 @@ const app = mockApp({
           title: 'Github',
           options: {
             type: 'void',
-            'x-decorator': 'MobileTabBar.ItemDecorator',
             'x-component': 'MobileTabBar.Link',
             'x-component-props': {
               title: 'Github',
@@ -145,7 +151,6 @@ const app = mockApp({
           title: 'MY',
           options: {
             type: 'void',
-            'x-decorator': 'MobileTabBar.ItemDecorator',
             'x-component': 'MobileTabBar.Link',
             'x-component-props': {
               title: 'MY',
@@ -162,6 +167,11 @@ const app = mockApp({
         type: 'void',
         name: 'home',
         'x-component': 'MobilePage',
+        'x-settings': 'mobile:page',
+        'x-decorator': 'BlockItem',
+        'x-toolbar-props': {
+          draggable: false,
+        },
         properties: {
           navigationBar: {
             type: 'void',
@@ -186,6 +196,11 @@ const app = mockApp({
         type: 'void',
         name: 'message',
         'x-component': 'MobilePage',
+        'x-settings': 'mobile:page',
+        'x-decorator': 'BlockItem',
+        'x-toolbar-props': {
+          draggable: false,
+        },
         properties: {
           navigationBar: {
             type: 'void',

@@ -7,11 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React from 'react';
-import { SchemaSettings, SchemaToolbar } from '@nocobase/client';
+import { SchemaSettings } from '@nocobase/client';
 
-export const mobileTabBarSettings = new SchemaSettings({
-  name: 'mobile:tab-bar',
+export const mobileTabBarSchemaSettings = new SchemaSettings({
+  name: 'mobile:tab-bar:schema',
   items: [
     {
       name: 'test',
@@ -24,7 +23,3 @@ export const mobileTabBarSettings = new SchemaSettings({
     },
   ],
 });
-
-export const MobileTabBarSettings = () => {
-  return <SchemaToolbar settings={mobileTabBarSettings} draggable={false} />;
-};

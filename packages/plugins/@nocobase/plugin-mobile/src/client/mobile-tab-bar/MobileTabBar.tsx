@@ -17,7 +17,6 @@ import { useMobileTabContext } from '../mobile-providers';
 import { MobileTabBarItem } from './MobileTabBar.Item';
 import { MobileTabBarSchema } from './MobileTabBar.Schema';
 import { MobileTabBarLink } from './MobileTabBar.Link';
-import { MobileTabBarItemDecorator } from './MobileTabBar.ItemDecorator';
 import { SchemaComponent } from '@nocobase/client';
 import { useMobileTitle } from '../mobile-providers';
 import { MobileTabBarInitializer } from './initializer';
@@ -27,7 +26,6 @@ export const MobileTabBar: FC & {
   Item: typeof MobileTabBarItem;
   Schema: typeof MobileTabBarSchema;
   Link: typeof MobileTabBarLink;
-  ItemDecorator: typeof MobileTabBarItemDecorator;
 } = () => {
   const { styles } = useStyles();
   const { tabList } = useMobileTabContext();
@@ -63,4 +61,3 @@ export const MobileTabBar: FC & {
 MobileTabBar.Item = MobileTabBarItem;
 MobileTabBar.Link = MobileTabBarLink;
 MobileTabBar.Schema = MobileTabBarSchema;
-MobileTabBar.ItemDecorator = MobileTabBarItemDecorator;

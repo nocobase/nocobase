@@ -7,8 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { SchemaSettings, useSchemaSettingsRender } from '@nocobase/client';
-import React from 'react';
+import { SchemaSettings } from '@nocobase/client';
 
 export const mobilePageSettings = new SchemaSettings({
   name: 'mobile:page',
@@ -24,8 +23,3 @@ export const mobilePageSettings = new SchemaSettings({
     },
   ],
 });
-
-export const MobilePageSettings = () => {
-  const { render } = useSchemaSettingsRender(mobilePageSettings.name);
-  return <div style={{ display: 'inline-block', position: 'absolute', right: 0 }}>{render()}</div>;
-};

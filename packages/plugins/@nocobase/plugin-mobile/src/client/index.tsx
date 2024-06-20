@@ -17,7 +17,12 @@ import { MobileSchemaPage } from './mobile-schema-page';
 import { MobilePage, mobilePageSettings } from './mobile-page';
 import { MobileNavigationBar } from './mobile-navigation-bar';
 import { MobileContent, mobileContentInitializer } from './mobile-content';
-import { MobileTabBar, mobileTabBarInitializer, mobileTabBarSettings } from './mobile-tab-bar';
+import {
+  MobileTabBar,
+  mobileTabBarInitializer,
+  mobileTabBarSchemaSettings,
+  mobileTabBarSettings,
+} from './mobile-tab-bar';
 export * from './mobile-providers';
 
 const mobilePath = '/mobile';
@@ -42,7 +47,7 @@ export class PluginMobileClient extends Plugin {
   }
 
   addSettings() {
-    this.app.schemaSettingsManager.add(mobileTabBarSettings, mobilePageSettings);
+    this.app.schemaSettingsManager.add(mobileTabBarSettings, mobilePageSettings, mobileTabBarSchemaSettings);
   }
 
   addComponents() {
