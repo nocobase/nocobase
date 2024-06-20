@@ -8,16 +8,44 @@
  */
 
 import { omit } from 'lodash';
-import { Transactionable } from 'sequelize/types';
+import { CreateOptions, Transactionable } from 'sequelize/types';
 import { Collection } from '../collection';
 import { transactionWrapperBuilder } from '../decorators/transaction-decorator';
 import { FindOptions } from '../repository';
 import { MultipleRelationRepository } from './multiple-relation-repository';
-import { RecordSetAssociation } from '../fields';
+import Database from '../database';
+import { Model } from '../model';
 
-const transaction = transactionWrapperBuilder(function() {
+const transaction = transactionWrapperBuilder(function () {
   return this.collection.model.sequelize.transaction();
 });
+
+export class RecordSetAssociation {
+  db: Database;
+  associationType: string;
+  source: Model;
+  sourceKey: string;
+  targetName: string;
+  targetKey: string;
+  identifierField: string;
+  as: string;
+
+  constructor(options: { db: Database; source: Model; sourceKey: string; target: string; targetKey: string }) {
+    const { db, source, sourceKey, target, targetKey } = options;
+    this.associationType = 'RecordSet';
+    this.db = db;
+    this.source = source;
+    this.sourceKey = sourceKey;
+    this.targetName = target;
+    this.targetKey = targetKey;
+    this.identifierField = 'test';
+    this.as = sourceKey;
+  }
+
+  get target() {
+    return this.db.getModel(this.targetName);
+  }
+}
 
 export class RecordSetRepository extends MultipleRelationRepository {
   private recordSetAssociation: RecordSetAssociation;
@@ -25,7 +53,7 @@ export class RecordSetRepository extends MultipleRelationRepository {
   constructor(sourceCollection: Collection, association: string, sourceKeyValue: string | number) {
     super(sourceCollection, association, sourceKeyValue);
 
-    this.recordSetAssociation = (this.association as any) as RecordSetAssociation;
+    this.recordSetAssociation = this.association as any as RecordSetAssociation;
   }
 
   protected getInstance(options: Transactionable) {

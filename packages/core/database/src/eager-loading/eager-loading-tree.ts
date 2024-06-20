@@ -311,7 +311,7 @@ export class EagerLoadingTree {
             return instance.get(association.sourceKey);
           });
 
-          let where: any = { [targetKey]: flatten(targetKeyValues) };
+          let where: any = { [targetKey]: Array.from(new Set(flatten(targetKeyValues))) };
 
           if (node.where) {
             where = {
@@ -478,17 +478,13 @@ export class EagerLoadingTree {
           const { sourceKey, targetKey } = association;
 
           for (const instance of node.instances) {
-            const parentInstance = node.parent.instances.find((parentInstance) =>
-              parentInstance.get(sourceKey).includes(instance.get(targetKey)),
-            );
-
-            if (parentInstance) {
+            node.parent.instances.forEach((parentInstance) => {
               const children = parentInstance.getDataValue(sourceKey);
               const index = children.findIndex((child) => child == instance.get(targetKey));
               if (index > -1) {
                 children[index] = instance;
               }
-            }
+            });
           }
         }
 

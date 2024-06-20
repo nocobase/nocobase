@@ -1,32 +1,14 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { DataTypes } from 'sequelize';
-import { BaseColumnFieldOptions, Field, Database, Model } from '@nocobase/database';
-
-export class RecordSetAssociation {
-  db: Database;
-  associationType: string;
-  source: Model;
-  sourceKey: string;
-  targetName: string;
-  targetKey: string;
-  identifierField: string;
-  as: string;
-
-  constructor(options: { db: Database; source: Model; sourceKey: string; target: string; targetKey: string }) {
-    const { db, source, sourceKey, target, targetKey } = options;
-    this.associationType = 'RecordSet';
-    this.db = db;
-    this.source = source;
-    this.sourceKey = sourceKey;
-    this.targetName = target;
-    this.targetKey = targetKey;
-    this.identifierField = 'test';
-    this.as = sourceKey;
-  }
-
-  get target() {
-    return this.db.getModel(this.targetName);
-  }
-}
+import { BaseColumnFieldOptions, Field, Model, RecordSetAssociation } from '@nocobase/database';
 
 export class RecordSetField extends Field {
   private binded = false;
@@ -40,8 +22,7 @@ export class RecordSetField extends Field {
     const { targetKey } = this.options;
     const targetField = this.targetCollection.getField(targetKey);
     if (dialect === 'postgres') {
-      console.log('=====', targetField.dataType);
-      return DataTypes.ARRAY(DataTypes.INTEGER);
+      return DataTypes.ARRAY(targetField.dataType);
     }
     return DataTypes.JSON;
   }
@@ -61,7 +42,9 @@ export class RecordSetField extends Field {
         return;
       }
       const value: any[] = model.get(name) || [];
-      const tks = value.map((item) => item[this.options.targetKey]);
+      const tks = value
+        .map((item) => (typeof item === 'object' ? item[this.options.targetKey] : item))
+        .filter((v) => v);
       model.set(name, tks);
     };
   }

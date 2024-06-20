@@ -33,7 +33,7 @@ import injectTargetCollection from './decorators/target-collection-decorator';
 import { transactionWrapperBuilder } from './decorators/transaction-decorator';
 import { EagerLoadingTree } from './eager-loading/eager-loading-tree';
 import { ArrayFieldRepository } from './field-repository/array-field-repository';
-import { ArrayField, RecordSetField, RelationField } from './fields';
+import { ArrayField, RelationField } from './fields';
 import FilterParser from './filter-parser';
 import { Model } from './model';
 import operators from './operators';
@@ -68,10 +68,10 @@ type Operators = keyof typeof operators & keyof WhereOperators;
 
 export type FilterWithOperator = {
   [key: string]:
-  | {
-    [K in Operators]: FieldValue;
-  }
-  | FieldValue;
+    | {
+        [K in Operators]: FieldValue;
+      }
+    | FieldValue;
 };
 
 export type FilterWithValue = {
@@ -174,7 +174,7 @@ interface RelatedQueryOptions {
   };
 }
 
-const transaction = transactionWrapperBuilder(function() {
+const transaction = transactionWrapperBuilder(function () {
   return (<Repository>this).collection.model.sequelize.transaction();
 });
 
