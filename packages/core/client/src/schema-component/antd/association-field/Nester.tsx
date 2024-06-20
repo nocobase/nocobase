@@ -43,7 +43,7 @@ export const Nester = (props) => {
       </FlagProvider>
     );
   }
-  if (['hasMany', 'belongsToMany'].includes(options.type)) {
+  if (['hasMany', 'belongsToMany', 'recordSet'].includes(options.type)) {
     return (
       <FlagProvider isInSubForm>
         <ToManyNester {...props} />
