@@ -36,7 +36,7 @@ export const useFormBlockHeight = () => {
   const { data } = useDataBlockRequest() || {};
   const { count, pageSize } = (data as any)?.meta || ({} as any);
   const hasPagination = count > pageSize;
-  const paginationHeight = hasPagination ? token.controlHeightSM + (designable ? 1 : 0) * token.paddingLG : 0;
+  const paginationHeight = hasPagination ? token.controlHeightSM + 1 * token.paddingLG : 0;
   const dataTemplateHeight = display && enabled ? token.controlHeight + 2 * token.padding + token.margin : 0;
   return height - actionBarHeight - token.paddingLG - blockTitleHeaderHeight - paginationHeight - dataTemplateHeight;
 };
