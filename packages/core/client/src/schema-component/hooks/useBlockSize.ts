@@ -91,7 +91,7 @@ const useTableHeight = () => {
   const schema = useFieldSchema();
   const heightProps = tableHeightProps || blockHeightProps;
   const pageFullScreenHeight = useFullScreenHeight(heightProps);
-  const { data } = useDataBlockRequest();
+  const { data } = useDataBlockRequest() ?? {};
   const { name } = useCollection();
   const { count, pageSize } = (data as any)?.meta || ({} as any);
   const hasPagination = count > pageSize;
