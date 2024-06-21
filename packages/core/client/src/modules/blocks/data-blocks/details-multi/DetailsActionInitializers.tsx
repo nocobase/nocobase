@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { useCollection } from '../../../../data-source';
 import { CompatibleSchemaInitializer } from '../../../../application/schema-initializer/CompatibleSchemaInitializer';
 
 const commonOptions = {
@@ -32,6 +33,14 @@ const commonOptions = {
               type: 'primary',
             },
           },
+          useVisible() {
+            const collection = useCollection() || ({} as any);
+            const { unavailableActions } = collection?.options || {};
+            if (unavailableActions) {
+              return !unavailableActions?.includes?.('update');
+            }
+            return true;
+          },
         },
         {
           name: 'delete',
@@ -40,6 +49,14 @@ const commonOptions = {
           schema: {
             'x-component': 'Action',
             'x-decorator': 'ACLActionProvider',
+          },
+          useVisible() {
+            const collection = useCollection() || ({} as any);
+            const { unavailableActions } = collection?.options || {};
+            if (unavailableActions) {
+              return !unavailableActions?.includes?.('destroy');
+            }
+            return true;
           },
         },
       ],

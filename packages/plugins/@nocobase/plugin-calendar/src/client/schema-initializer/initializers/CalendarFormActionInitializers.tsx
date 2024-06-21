@@ -7,7 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { SchemaInitializer, SchemaInitializerItemType, useCollection_deprecated } from '@nocobase/client';
+import {
+  SchemaInitializer,
+  SchemaInitializerItemType,
+  useCollection_deprecated,
+  useCollection,
+} from '@nocobase/client';
 import { generateNTemplate } from '../../../locale';
 
 export const deleteEventActionInitializer: SchemaInitializerItemType<any> = {
@@ -53,8 +58,12 @@ export const CalendarFormActionInitializers = new SchemaInitializer({
             },
           },
           useVisible() {
-            const collection = useCollection_deprecated();
-            return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
+            const collection = useCollection() || ({} as any);
+            const { unavailableActions } = collection?.options || {};
+            if (unavailableActions) {
+              return !unavailableActions?.includes?.('update');
+            }
+            return true;
           },
         },
         {
@@ -65,9 +74,13 @@ export const CalendarFormActionInitializers = new SchemaInitializer({
             'x-component': 'Action',
             'x-decorator': 'ACLActionProvider',
           },
-          useVisible: function useVisible() {
-            const collection = useCollection_deprecated();
-            return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
+          useVisible() {
+            const collection = useCollection() || ({} as any);
+            const { unavailableActions } = collection?.options || {};
+            if (unavailableActions) {
+              return !unavailableActions?.includes?.('destroy');
+            }
+            return true;
           },
         },
         deleteEventActionInitializer,
@@ -158,18 +171,18 @@ export const CalendarFormActionInitializers = new SchemaInitializer({
             },
           },
           useVisible() {
-            const collection = useCollection_deprecated();
-            return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
+            const collection = useCollection() || ({} as any);
+            const { unavailableActions } = collection?.options || {};
+            if (unavailableActions) {
+              return !unavailableActions?.includes?.('update');
+            }
+            return true;
           },
         },
         {
           name: 'customRequest',
           title: generateNTemplate('Custom request'),
           Component: 'CustomRequestInitializer',
-          useVisible() {
-            const collection = useCollection_deprecated();
-            return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
-          },
         },
       ],
     },

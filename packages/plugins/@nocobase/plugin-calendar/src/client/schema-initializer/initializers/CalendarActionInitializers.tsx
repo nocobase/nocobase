@@ -10,7 +10,7 @@
 import {
   CompatibleSchemaInitializer,
   InitializerWithSwitch,
-  useCollection_deprecated,
+  useCollection,
   useSchemaInitializerItem,
 } from '@nocobase/client';
 import React from 'react';
@@ -91,8 +91,12 @@ const commonOptions = {
         },
       },
       useVisible() {
-        const collection = useCollection_deprecated();
-        return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
+        const collection = useCollection() || ({} as any);
+        const { unavailableActions } = collection?.options || {};
+        if (unavailableActions) {
+          return !unavailableActions?.includes?.('create');
+        }
+        return true;
       },
     },
   ],

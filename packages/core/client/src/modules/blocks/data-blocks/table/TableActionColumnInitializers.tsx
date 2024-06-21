@@ -16,12 +16,11 @@ import { useAPIClient } from '../../../../api-client';
 import { CompatibleSchemaInitializer } from '../../../../application/schema-initializer/CompatibleSchemaInitializer';
 import { SchemaInitializerActionModal } from '../../../../application/schema-initializer/components/SchemaInitializerActionModal';
 import { SchemaInitializerItem } from '../../../../application/schema-initializer/components/SchemaInitializerItem';
-import { useSchemaInitializer } from '../../../../application/schema-initializer/context';
-import { useCollection_deprecated } from '../../../../collection-manager';
 import { SelectWithTitle } from '../../../../common/SelectWithTitle';
 import { useDataBlockProps } from '../../../../data-source';
 import { createDesignable, useDesignable } from '../../../../schema-component';
 import { useGetAriaLabelOfDesigner } from '../../../../schema-settings/hooks/useGetAriaLabelOfDesigner';
+import { useCollection } from '../../../../data-source';
 
 export const Resizable = () => {
   const { t } = useTranslation();
@@ -162,6 +161,14 @@ const commonOptions = {
         'x-action': 'view',
         'x-decorator': 'ACLActionProvider',
       },
+      useVisible() {
+        const collection = useCollection() || ({} as any);
+        const { unavailableActions } = collection?.options || {};
+        if (unavailableActions) {
+          return !unavailableActions?.includes?.('get');
+        }
+        return true;
+      },
     },
     {
       type: 'item',
@@ -174,8 +181,8 @@ const commonOptions = {
         'x-decorator': 'ACLActionProvider',
       },
       useVisible() {
-        const collection = useCollection_deprecated() || ({} as any);
-        const { unavailableActions } = collection;
+        const collection = useCollection() || ({} as any);
+        const { unavailableActions } = collection?.options || {};
         if (unavailableActions) {
           return !unavailableActions?.includes?.('update');
         }
@@ -193,8 +200,8 @@ const commonOptions = {
         'x-decorator': 'ACLActionProvider',
       },
       useVisible() {
-        const collection = useCollection_deprecated() || ({} as any);
-        const { unavailableActions } = collection;
+        const collection = useCollection() || ({} as any);
+        const { unavailableActions } = collection?.options || {};
         if (unavailableActions) {
           return !unavailableActions?.includes?.('destroy');
         }
@@ -214,8 +221,8 @@ const commonOptions = {
       },
       useVisible() {
         const props = useDataBlockProps();
-        const collection = useCollection_deprecated() || ({} as any);
-        const { unavailableActions } = collection;
+        const collection = useCollection() || ({} as any);
+        const { unavailableActions } = collection?.options || {};
         if (unavailableActions) {
           return !!props?.association && !unavailableActions?.includes?.('update');
         }
@@ -234,7 +241,7 @@ const commonOptions = {
       },
       useVisible() {
         const fieldSchema = useFieldSchema();
-        const collection = useCollection_deprecated();
+        const collection = useCollection();
         const { treeTable } = fieldSchema?.parent?.parent['x-decorator-props'] || {};
         return collection.tree && treeTable;
       },
@@ -251,8 +258,8 @@ const commonOptions = {
       name: 'updateRecord',
       Component: 'UpdateRecordActionInitializer',
       useVisible() {
-        const collection = useCollection_deprecated() || ({} as any);
-        const { unavailableActions } = collection;
+        const collection = useCollection() || ({} as any);
+        const { unavailableActions } = collection?.options || {};
         if (unavailableActions) {
           return !unavailableActions?.includes?.('update');
         }
