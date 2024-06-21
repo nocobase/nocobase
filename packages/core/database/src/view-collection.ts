@@ -21,6 +21,10 @@ export class ViewCollection extends Collection {
     return true;
   }
 
+  unavailableActions(): Array<string> {
+    return ['create', 'update', 'delete'];
+  }
+
   protected sequelizeModelOptions(): any {
     const modelOptions = super.sequelizeModelOptions();
     modelOptions.tableName = this.options.viewName || this.options.name;

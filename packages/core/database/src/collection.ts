@@ -831,6 +831,10 @@ export class Collection<
     return false;
   }
 
+  unavailableActions() {
+    return [];
+  }
+
   protected sequelizeModelOptions() {
     const { name } = this.options;
     return {
