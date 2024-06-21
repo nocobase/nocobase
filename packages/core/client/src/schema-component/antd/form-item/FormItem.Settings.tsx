@@ -982,7 +982,7 @@ function useFormItemCollectionField() {
 
 export function useIsAssociationField() {
   const collectionField = useFormItemCollectionField();
-  const isAssociationField = ['obo', 'oho', 'o2o', 'o2m', 'm2m', 'm2o', 'updatedBy', 'createdBy', 'recordSet'].includes(
+  const isAssociationField = ['obo', 'oho', 'o2o', 'o2m', 'm2m', 'm2o', 'updatedBy', 'createdBy', 'mbm'].includes(
     collectionField?.interface,
   );
   return isAssociationField;

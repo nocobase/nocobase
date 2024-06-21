@@ -257,9 +257,9 @@ export class EagerLoadingTree {
         // clear filter association value
         const associations = node.model.associations;
         for (const [name, association] of Object.entries(associations)) {
-          if ((association as any).associationType === 'RecordSet') {
-            continue;
-          }
+          // if ((association as any).associationType === 'belongsToArray') {
+          //   continue;
+          // }
           for (const instance of instances) {
             delete instance[name];
             delete instance.dataValues[name];
@@ -305,10 +305,10 @@ export class EagerLoadingTree {
           instances = await node.model.findAll(findOptions);
         }
 
-        if (associationType === 'RecordSet') {
+        if (associationType === 'BelongsToArray') {
           const targetKey = association.targetKey;
           const targetKeyValues = node.parent.instances.map((instance) => {
-            return instance.get(association.sourceKey);
+            return instance.get(association.foreignKey);
           });
 
           let where: any = { [targetKey]: Array.from(new Set(flatten(targetKeyValues))) };
@@ -474,18 +474,21 @@ export class EagerLoadingTree {
           }
         }
 
-        if (associationType === 'RecordSet') {
-          const { sourceKey, targetKey } = association;
+        if (associationType === 'BelongsToArray') {
+          const { foreignKey, targetKey } = association;
 
-          for (const instance of node.instances) {
-            node.parent.instances.forEach((parentInstance) => {
-              const children = parentInstance.getDataValue(sourceKey);
-              const index = children.findIndex((child) => child == instance.get(targetKey));
-              if (index > -1) {
-                children[index] = instance;
-              }
-            });
-          }
+          const instanceMap = node.instances.reduce((mp: { [targetKey: string]: Model }, instance: Model) => {
+            mp[instance.get(targetKey)] = instance;
+            return mp;
+          }, {});
+
+          node.parent.instances.forEach((parentInstance: Model) => {
+            const targetKeys = parentInstance.getDataValue(foreignKey);
+            parentInstance.setDataValue(
+              association.as,
+              targetKeys?.map((targetKey: any) => instanceMap[targetKey]).filter(Boolean),
+            );
+          });
         }
 
         if (associationType == 'BelongsTo') {

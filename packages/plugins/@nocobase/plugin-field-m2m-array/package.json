@@ -1,0 +1,16 @@
+{
+  "name": "@nocobase/plugin-field-m2m-array",
+  "displayName": "Collection field: Many to many (array)",
+  "displayName.zh-CN": "数据表字段：多对多 (数组)",
+  "version": "1.2.4-alpha",
+  "main": "dist/server/index.js",
+  "dependencies": {},
+  "peerDependencies": {
+    "@nocobase/client": "1.x",
+    "@nocobase/server": "1.x",
+    "@nocobase/test": "1.x"
+  },
+  "keywords": [
+    "Collection fields"
+  ]
+}

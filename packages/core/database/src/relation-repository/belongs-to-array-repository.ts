@@ -8,7 +8,7 @@
  */
 
 import { omit } from 'lodash';
-import { CreateOptions, Transactionable } from 'sequelize/types';
+import { Transactionable } from 'sequelize/types';
 import { Collection } from '../collection';
 import { transactionWrapperBuilder } from '../decorators/transaction-decorator';
 import { FindOptions } from '../repository';
@@ -20,26 +20,33 @@ const transaction = transactionWrapperBuilder(function () {
   return this.collection.model.sequelize.transaction();
 });
 
-export class RecordSetAssociation {
+export class BelongsToArrayAssociation {
   db: Database;
   associationType: string;
   source: Model;
-  sourceKey: string;
+  foreignKey: string;
   targetName: string;
   targetKey: string;
   identifierField: string;
   as: string;
 
-  constructor(options: { db: Database; source: Model; sourceKey: string; target: string; targetKey: string }) {
-    const { db, source, sourceKey, target, targetKey } = options;
-    this.associationType = 'RecordSet';
+  constructor(options: {
+    db: Database;
+    source: Model;
+    as: string;
+    foreignKey: string;
+    target: string;
+    targetKey: string;
+  }) {
+    const { db, source, as, foreignKey, target, targetKey } = options;
+    this.associationType = 'BelongsToArray';
     this.db = db;
     this.source = source;
-    this.sourceKey = sourceKey;
+    this.foreignKey = foreignKey;
     this.targetName = target;
     this.targetKey = targetKey;
-    this.identifierField = 'test';
-    this.as = sourceKey;
+    this.identifierField = 'undefined';
+    this.as = as;
   }
 
   get target() {
@@ -47,13 +54,13 @@ export class RecordSetAssociation {
   }
 }
 
-export class RecordSetRepository extends MultipleRelationRepository {
-  private recordSetAssociation: RecordSetAssociation;
+export class BelongsToArrayRepository extends MultipleRelationRepository {
+  private belongsToArrayAssociation: BelongsToArrayAssociation;
 
   constructor(sourceCollection: Collection, association: string, sourceKeyValue: string | number) {
     super(sourceCollection, association, sourceKeyValue);
 
-    this.recordSetAssociation = this.association as any as RecordSetAssociation;
+    this.belongsToArrayAssociation = this.association as any as BelongsToArrayAssociation;
   }
 
   protected getInstance(options: Transactionable) {
@@ -66,8 +73,8 @@ export class RecordSetRepository extends MultipleRelationRepository {
   async find(options?: FindOptions): Promise<any> {
     const targetRepository = this.targetCollection.repository;
     const instance = await this.getInstance(options);
-    const tks = instance.get(this.associationName);
-    const targetKey = this.recordSetAssociation.targetKey;
+    const tks = instance.get(this.belongsToArrayAssociation.foreignKey);
+    const targetKey = this.belongsToArrayAssociation.targetKey;
 
     const addFilter = {
       [targetKey]: tks,

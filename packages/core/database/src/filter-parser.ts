@@ -185,10 +185,10 @@ export default class FilterParser {
             association: firstKey,
             attributes: [], // out put empty fields by default
           };
-          if (association.associationType === 'RecordSet') {
-            const { as, targetKey, source, sourceKey } = association as any as RecordSetAssociation;
+          if (association.associationType === 'BelongsToArray') {
+            const { as, targetKey, source, foreignKey } = association as any as RecordSetAssociation;
             includeOptions['on'] = this.database.sequelize.literal(
-              `${as}.${targetKey}=any(${source.collection.name}.${sourceKey})`,
+              `${as}.${targetKey}=any(${source.collection.name}.${foreignKey})`,
             );
           }
           _.set(include, firstKey, includeOptions);

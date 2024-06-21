@@ -14,16 +14,16 @@ function getUniqueKeyFromCollection(collection: Collection) {
   return collection?.filterTargetKey || collection?.getPrimaryKey() || 'id';
 }
 
-export class RecordSetFieldInterface extends CollectionFieldInterface {
-  name = 'recordSet';
+export class MBMFieldInterface extends CollectionFieldInterface {
+  name = 'mbm';
   type = 'object';
   group = 'relation';
   order = 6;
-  title = '{{t("Record set")}}';
+  title = '{{t("Many to many (array)")}}';
   description = '{{t("Record set description")}}';
   isAssociation = true;
   default = {
-    type: 'recordSet',
+    type: 'belongsToArray',
     // name,
     uiSchema: {
       // title,
@@ -38,7 +38,7 @@ export class RecordSetFieldInterface extends CollectionFieldInterface {
       },
     },
   };
-  availableTypes = ['recordSet'];
+  availableTypes = ['belongsToArray'];
   schemaInitialize(schema: ISchema, { field, block, readPretty, targetCollection }) {
     // schema['type'] = 'array';
     schema['x-component-props'] = schema['x-component-props'] || {};
@@ -118,7 +118,20 @@ export class RecordSetFieldInterface extends CollectionFieldInterface {
             col21: {
               type: 'void',
               'x-component': 'Grid.Col',
-              properties: {},
+              properties: {
+                foreignKey: {
+                  type: 'string',
+                  title: '{{t("Foreign key")}}',
+                  required: true,
+                  default: '{{ useNewId("f_") }}',
+                  description:
+                    "{{t('Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.')}}",
+                  'x-decorator': 'FormItem',
+                  'x-component': 'MBMForeignKey',
+                  'x-validator': 'uid',
+                  'x-disabled': '{{ !createOnly }}',
+                },
+              },
             },
             col22: {
               type: 'void',

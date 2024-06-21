@@ -45,7 +45,7 @@ import { HasOneRepository } from './relation-repository/hasone-repository';
 import { RelationRepository } from './relation-repository/relation-repository';
 import { updateAssociations, updateModelByValues } from './update-associations';
 import { UpdateGuard } from './update-guard';
-import { RecordSetRepository } from './relation-repository/record-set-repository';
+import { BelongsToArrayRepository } from './relation-repository/belongs-to-array-repository';
 
 const debug = require('debug')('noco-database');
 
@@ -189,7 +189,7 @@ class RelationRepositoryBuilder<R extends RelationRepository> {
     BelongsToMany: BelongsToManyRepository,
     HasMany: HasManyRepository,
     ArrayField: ArrayFieldRepository,
-    RecordSet: RecordSetRepository,
+    BelongsToArray: BelongsToArrayRepository,
   };
 
   constructor(collection: Collection, associationName: string) {

@@ -8,17 +8,17 @@
  */
 
 import { MockDatabase, mockDatabase } from '@nocobase/test';
-import { RecordSetField } from '../record-set-field';
 import { DataTypes } from 'sequelize';
-import { RecordSetRepository } from '@nocobase/database';
+import { BelongsToArrayField } from '../belongs-to-array-field';
+import { BelongsToArrayRepository } from '@nocobase/database';
 
-describe('record-set', () => {
+describe('belongs-to-array', () => {
   let db: MockDatabase;
 
   beforeAll(async () => {
     db = mockDatabase();
     db.registerFieldTypes({
-      recordSet: RecordSetField,
+      belongsToArray: BelongsToArrayField,
     });
     db.collection({
       name: 'tags',
@@ -51,8 +51,9 @@ describe('record-set', () => {
           type: 'string',
         },
         {
-          name: 'tag_ids',
-          type: 'recordSet',
+          name: 'tags',
+          type: 'belongsToArray',
+          foreignKey: 'tag_ids',
           target: 'tags',
           targetKey: 'id',
         },
@@ -89,7 +90,7 @@ describe('record-set', () => {
     }
   });
 
-  it('should list appends recordSet', async () => {
+  it('should list appends belongsToArray', async () => {
     const users = await db.getRepository('users').find();
     if (db.sequelize.getDialect() === 'postgres') {
       expect(users).toMatchObject([
@@ -141,7 +142,7 @@ describe('record-set', () => {
     ]);
   });
 
-  it('should get appends recordSet', async () => {
+  it('should get appends belongsToArray', async () => {
     const users = await db.getRepository('users').findOne({ filterByTk: 1 });
     if (db.sequelize.getDialect() === 'postgres') {
       expect(users).toMatchObject({
@@ -170,7 +171,7 @@ describe('record-set', () => {
     });
   });
 
-  it('should filter with the fields of recordSet', async () => {
+  it('should filter with the fields of belongsToArray', async () => {
     if (db.sequelize.getDialect() !== 'postgres') {
       return;
     }
@@ -192,7 +193,7 @@ describe('record-set', () => {
     expect(users2.length).toBe(2);
   });
 
-  it('should create with recordSet', async () => {
+  it('should create with belongsToArray', async () => {
     const user = await db.getRepository('users').create({
       values: {
         id: 3,
@@ -219,7 +220,7 @@ describe('record-set', () => {
     }
   });
 
-  it('should update with recordSet', async () => {
+  it('should update with belongsToArray', async () => {
     let user = await db.getRepository('users').create({
       values: {
         id: 5,
@@ -250,8 +251,8 @@ describe('record-set', () => {
     expect(user[0].tag_ids).toMatchObject([]);
   });
 
-  it('should list recordSet using relation', async () => {
-    const repo = db.getRepository('users.tag_ids', 1) as RecordSetRepository;
+  it('should list belongsToArray using relation', async () => {
+    const repo = db.getRepository('users.tag_ids', 1) as BelongsToArrayRepository;
     const tags = await repo.find();
     expect(tags).toMatchObject([
       { id: 1, title: 'a' },
@@ -259,8 +260,8 @@ describe('record-set', () => {
     ]);
   });
 
-  it('should get recordSet using relation', async () => {
-    const repo = db.getRepository('users.tag_ids', 1) as RecordSetRepository;
+  it('should get belongsToArray using relation', async () => {
+    const repo = db.getRepository('users.tag_ids', 1) as BelongsToArrayRepository;
     const tags = await repo.findOne({
       filterByTk: 1,
     });

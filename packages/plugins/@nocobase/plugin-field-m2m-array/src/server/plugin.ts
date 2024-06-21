@@ -8,17 +8,19 @@
  */
 
 import { Plugin } from '@nocobase/server';
-import { RecordSetField } from './record-set-field';
+import { BelongsToArrayField } from './belongs-to-array-field';
+import { createForeignKey } from './hooks/create-foreign-key';
 
-export class PluginFieldRecordSetServer extends Plugin {
+export class PluginFieldM2MArrayServer extends Plugin {
   async afterAdd() {}
 
   async beforeLoad() {}
 
   async load() {
     this.db.registerFieldTypes({
-      recordSet: RecordSetField,
+      belongsToArray: BelongsToArrayField,
     });
+    this.db.on('fields.afterCreate', createForeignKey(this.db));
   }
 
   async install() {}
@@ -30,4 +32,4 @@ export class PluginFieldRecordSetServer extends Plugin {
   async remove() {}
 }
 
-export default PluginFieldRecordSetServer;
+export default PluginFieldM2MArrayServer;

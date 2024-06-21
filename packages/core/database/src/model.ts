@@ -30,7 +30,8 @@ interface JSONTransformerOptions {
 
 export class Model<TModelAttributes extends {} = any, TCreationAttributes extends {} = TModelAttributes>
   extends SequelizeModel<TModelAttributes, TCreationAttributes>
-  implements IModel {
+  implements IModel
+{
   public static database: Database;
   public static collection: Collection;
 
@@ -126,7 +127,7 @@ export class Model<TModelAttributes extends {} = any, TCreationAttributes extend
 
           if (['HasMany', 'BelongsToMany'].includes(association.associationType)) {
             result[key] = handleArray(data[key], opts).map((item) => traverseJSON(item, opts));
-          } else if (association.associationType === 'RecordSet') {
+          } else if (association.associationType === 'BelongsToArray') {
             const value = data[key];
             if (!value || value.some((v) => typeof v !== 'object')) {
               result[key] = value;

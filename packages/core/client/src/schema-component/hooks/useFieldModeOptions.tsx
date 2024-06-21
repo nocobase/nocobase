@@ -32,7 +32,7 @@ export const useFieldModeOptions = (props?) => {
       return;
     }
     if (
-      !['o2o', 'oho', 'obo', 'o2m', 'linkTo', 'm2o', 'm2m', 'updatedBy', 'createdBy', 'recordSet'].includes(
+      !['o2o', 'oho', 'obo', 'o2m', 'linkTo', 'm2o', 'm2m', 'updatedBy', 'createdBy', 'mbm'].includes(
         collectionField.interface,
       )
     )
@@ -86,7 +86,7 @@ export const useFieldModeOptions = (props?) => {
               !isTableField && { label: t('Sub-table'), value: 'SubTable' },
             ];
       case 'm2m':
-      case 'recordSet':
+      case 'mbm':
         return isReadPretty
           ? [
               { label: t('Title'), value: 'Select' },
