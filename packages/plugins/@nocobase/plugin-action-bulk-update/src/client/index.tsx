@@ -25,12 +25,12 @@ export class PluginActionBulkUpdateClient extends Plugin {
       Component: BulkUpdateActionInitializer,
       name: 'bulkUpdate',
       useVisible() {
-        const collection = useCollection_deprecated();
-        return (
-          (collection.template !== 'view' || collection?.writableView) &&
-          collection.template !== 'file' &&
-          collection.template !== 'sql'
-        );
+        const collection = useCollection_deprecated() || ({} as any);
+        const { unavailableActions } = collection;
+        if (unavailableActions) {
+          return !unavailableActions?.includes?.('update');
+        }
+        return true;
       },
     };
 

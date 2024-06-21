@@ -55,12 +55,12 @@ export class PluginActionBulkEditClient extends Plugin {
         },
       },
       useVisible() {
-        const collection = useCollection_deprecated();
-        return (
-          (collection.template !== 'view' || collection?.writableView) &&
-          collection.template !== 'file' &&
-          collection.template !== 'sql'
-        );
+        const collection = useCollection_deprecated() || ({} as any);
+        const { unavailableActions } = collection;
+        if (unavailableActions) {
+          return !unavailableActions?.includes?.('update');
+        }
+        return true;
       },
     };
 

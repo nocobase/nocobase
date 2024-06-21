@@ -23,29 +23,6 @@ export class PluginActionDuplicateClient extends Plugin {
     this.app.schemaSettingsManager.add(deprecatedDuplicateActionSettings);
     this.app.schemaSettingsManager.add(duplicateActionSettings);
 
-    const initializerData = {
-      title: '{{t("Duplicate")}}',
-      Component: 'DuplicateActionInitializer',
-      schema: {
-        'x-component': 'Action',
-        'x-action': 'duplicate',
-        'x-toolbar': 'ActionSchemaToolbar',
-        'x-settings': 'actionSettings:duplicate',
-        'x-decorator': 'ACLActionProvider',
-        'x-component-props': {
-          type: 'primary',
-        },
-      },
-      useVisible() {
-        const collection = useCollection_deprecated();
-        return (
-          (collection.template !== 'view' || collection?.writableView) &&
-          collection.template !== 'file' &&
-          collection.template !== 'sql'
-        );
-      },
-    };
-
     const initializerTableData = {
       title: '{{t("Duplicate")}}',
       Component: 'DuplicateActionInitializer',
@@ -60,12 +37,12 @@ export class PluginActionDuplicateClient extends Plugin {
         },
       },
       useVisible() {
-        const collection = useCollection_deprecated();
-        return (
-          (collection.template !== 'view' || collection?.writableView) &&
-          collection.template !== 'file' &&
-          collection.template !== 'sql'
-        );
+        const collection = useCollection_deprecated() || ({} as any);
+        const { unavailableActions } = collection;
+        if (unavailableActions) {
+          return !unavailableActions?.includes?.('create');
+        }
+        return true;
       },
     };
 
