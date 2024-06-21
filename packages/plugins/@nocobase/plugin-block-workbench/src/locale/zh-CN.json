@@ -3,5 +3,7 @@
   "Scan QR code": "扫描二维码",
   "No camera device detected": "未检测到摄像头设备",
   "You have not granted permission to use the camera": "您未授权使用摄像头",
-  "Unknown error": "未知错误"
+  "Unknown error": "未知错误",
+  "The image size is too large. Please compress it to below 1MB before uploading": "图片尺寸过大，请压缩到1MB以下上传",
+  "QR code recognition failed, please scan again": "二维码识别失败，请重新扫描"
 }
