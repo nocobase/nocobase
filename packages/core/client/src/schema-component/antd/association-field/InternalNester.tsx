@@ -53,9 +53,18 @@ export const InternalNester = observer(
         <ACLCollectionProvider actionPath={`${collectionField.target}:${actionName}`}>
           <FormLayout layout={'vertical'}>
             <div
-              className={cx(InternalNesterCss, {
-                [InternalNesterCardCss]: showTitle === false,
-              })}
+              className={cx(
+                InternalNesterCss,
+                {
+                  [InternalNesterCardCss]: showTitle === false,
+                },
+                css`
+                  .nb-grid-container {
+                    height: 100% !important;
+                    margin-bottom: 0px;
+                  }
+                `,
+              )}
             >
               <RecursionField
                 onlyRenderProperties
