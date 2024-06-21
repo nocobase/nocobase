@@ -25,7 +25,7 @@ export class SQLCollection extends Collection {
   }
 
   unavailableActions(): Array<string> {
-    return ['create', 'update', 'delete'];
+    return ['create', 'update', 'destroy'];
   }
 
   public collectionSchema() {
