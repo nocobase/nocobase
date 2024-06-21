@@ -8,11 +8,10 @@
  */
 
 import React, { FC } from 'react';
+import { useFieldSchema } from '@formily/react';
+import { RemoteSchemaComponent } from '@nocobase/client';
 
-export interface MobileContentProps {
-  children?: React.ReactNode;
-}
-
-export const MobileContent: FC<MobileContentProps> = ({ children }) => {
-  return <div>{children}</div>;
+export const MobileContent = () => {
+  const fieldSchema = useFieldSchema();
+  return <RemoteSchemaComponent uid={fieldSchema['x-uid']} onlyRenderProperties />;
 };

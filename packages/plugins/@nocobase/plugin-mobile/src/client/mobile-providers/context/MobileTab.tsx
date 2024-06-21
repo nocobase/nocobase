@@ -12,15 +12,16 @@ import { SpinLoading } from 'antd-mobile';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 import { PluginMobileClient } from '../../index';
+import { useMobileTitle } from './MobileTitle';
 import { useAPIClient, usePlugin, useRequest } from '@nocobase/client';
 import { IResource } from '@nocobase/sdk';
 
 export interface TabItem {
-  id: number | string;
+  id: number;
   url?: string;
   title: string;
   options: any;
-  parentId?: number | string;
+  parentId?: number;
   children?: TabItem[];
 }
 
@@ -29,6 +30,8 @@ export interface MobileTabContextValue {
   refresh: () => Promise<any>;
   resource: IResource;
   schemaResource: IResource;
+  activeTabBarItem?: TabItem;
+  activeTabBarItemTab?: TabItem;
 }
 
 export const MobileTabContext = createContext<MobileTabContextValue>(null);
@@ -56,6 +59,41 @@ function useHomeNavigate(tabList: TabItem[]) {
   }, [pathname, tabList]);
 }
 
+function useActiveTabBar(tabList: TabItem[]) {
+  const { pathname } = useLocation();
+  const urlMap = tabList.reduce((map, item) => {
+    if (!item.url) {
+      map[item.url] = item;
+    }
+    if (item.children) {
+      item.children.forEach((child) => {
+        if (child.url) {
+          map[child.url] = child;
+        }
+      });
+    }
+    return map;
+  }, {});
+  const activeTabBarItem = tabList.find((item) => pathname.startsWith(item.url));
+
+  return {
+    activeTabBarItem, // 第一层
+    activeTabBarItemTab: urlMap[pathname] || activeTabBarItem, // 任意层
+  };
+}
+
+function useTitle(activeTabBar: TabItem) {
+  const { setTitle } = useMobileTitle();
+  useEffect(() => {
+    if (activeTabBar) {
+      const title =
+        activeTabBar.title || activeTabBar.options.title || activeTabBar.options?.['x-component-props']?.title;
+      setTitle(title);
+      document.title = title;
+    }
+  }, [activeTabBar]);
+}
+
 export const MobileTabContextProvider = ({ children }) => {
   const api = useAPIClient();
   const resource = useMemo(() => api.resource('mobile-tabs'), [api]);
@@ -64,8 +102,11 @@ export const MobileTabContextProvider = ({ children }) => {
     data,
     runAsync: refresh,
     loading,
-  } = useRequest<{ data: any[] }>(() => resource.list({ params: { tree: true } }).then((res) => res.data));
+  } = useRequest<{ data: TabItem[] }>(() => resource.list({ tree: true }).then((res) => res.data));
   const tabList = useMemo(() => data?.data || [], [data]);
+  const { activeTabBarItem, activeTabBarItemTab } = useActiveTabBar(tabList);
+
+  useTitle(activeTabBarItemTab);
 
   useHomeNavigate(tabList);
 
@@ -77,7 +118,9 @@ export const MobileTabContextProvider = ({ children }) => {
     );
   }
   return (
-    <MobileTabContext.Provider value={{ tabList, refresh, resource, schemaResource }}>
+    <MobileTabContext.Provider
+      value={{ activeTabBarItem, activeTabBarItemTab, tabList, refresh, resource, schemaResource }}
+    >
       {children}
     </MobileTabContext.Provider>
   );

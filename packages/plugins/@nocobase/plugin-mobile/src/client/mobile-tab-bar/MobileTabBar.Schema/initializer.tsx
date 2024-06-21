@@ -42,8 +42,25 @@ export function getMobileTabBarItemData(options: GetMobileTabBarItemDataOptions)
   };
 }
 
-function getPageSchema(schemaId: string) {
+export interface GetMobileTabBarItemTabDataOptions {
+  schemaId: string;
+  url?: string;
+  parentId: number;
+}
+
+export function getMobileTabBarItemTabData(options: GetMobileTabBarItemTabDataOptions) {
+  const { schemaId, url, parentId } = options;
   return {
+    url: `${url}/tab/${schemaId}`,
+    parentId,
+    options: {
+      title: 'Unnamed',
+    },
+  };
+}
+
+function getPageSchema(schemaId: string) {
+  const pageSchema = {
     type: 'void',
     name: schemaId,
     'x-uid': schemaId,
@@ -58,14 +75,22 @@ function getPageSchema(schemaId: string) {
         type: 'void',
         'x-component': 'MobileNavigationBar',
       },
-      content: {
+      [uid()]: {
         type: 'void',
-        'x-decorator': 'MobileContent',
-        'x-component': 'Grid',
-        'x-initializer': 'mobile:addBlock',
+        'x-component': 'MobileContent',
+        properties: {
+          [uid()]: {
+            type: 'void',
+            'x-async': true, // 异步
+            'x-component': 'Grid',
+            'x-initializer': 'mobile:addBlock',
+          },
+        },
       },
     },
   };
+
+  return { schema: pageSchema };
 }
 
 export const mobileTabBarSchemaInitializerItem: SchemaInitializerItemActionModalType = {
@@ -88,17 +113,19 @@ export const mobileTabBarSchemaInitializerItem: SchemaInitializerItemActionModal
         const schemaId = uid();
         const url = `/schema/${schemaId}`;
 
-        // 先创建 tab item
-        await resource.create({ values: getMobileTabBarItemData({ url, schemaId, values }) });
+        // 先创建 TabBar item
+        const { data } = await resource.create({ values: getMobileTabBarItemData({ url, schemaId, values }) });
+        // 创建 TabBar item 的第一个 tab
+        const parentId = data.data.id;
+        await resource.create({ values: getMobileTabBarItemTabData({ url, schemaId, parentId }) });
 
-        // 再创建空页面
-        // await api.request({ url: 'uiSchemas:insertAdjacent/mobile?position=beforeEnd', values: { schema: getPageSchema(schemaId) } });
-        // await schemaResource.insertAdjacent({  values: { schema: getPageSchema(schemaId) } })
+        // 创建空页面
         await schemaResource.insertAdjacent({
           resourceIndex: 'mobile',
           position: 'beforeEnd',
-          values: { schema: getPageSchema(schemaId) },
+          values: getPageSchema(schemaId),
         });
+
         // 刷新 tabs
         await refresh();
 

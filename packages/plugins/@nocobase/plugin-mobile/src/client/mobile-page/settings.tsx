@@ -27,9 +27,9 @@ export const mobilePageSettings = new SchemaSettings({
     }),
     createSwitchSettingsItem({
       name: 'navigationBarTabs',
-      title: 'Enable Navigation Bar Tabs',
+      title: generatePluginTranslationTemplate('Enable Navigation Bar Tabs'),
       defaultValue: false,
-      schemaKey: generatePluginTranslationTemplate('x-component-props.enableNavigationBarTabs'),
+      schemaKey: 'x-component-props.enableNavigationBarTabs',
     }),
   ],
 });

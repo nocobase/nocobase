@@ -8,7 +8,6 @@
  */
 
 import React, { FC, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
 import { SafeArea } from 'antd-mobile';
 
 import { useStyles } from './styles';
@@ -28,20 +27,10 @@ export const MobileTabBar: FC & {
   Link: typeof MobileTabBarLink;
 } = () => {
   const { styles } = useStyles();
-  const { tabList } = useMobileTabContext();
-  const { pathname } = useLocation();
-  const { setTitle } = useMobileTitle();
-
-  const activeTabBar = tabList.find((item) => pathname === item.url);
-
-  useEffect(() => {
-    if (activeTabBar && activeTabBar.options) {
-      setTitle(activeTabBar.options.title || activeTabBar.options?.['x-component-props']?.title);
-    }
-  }, [activeTabBar]);
+  const { tabList, activeTabBarItem } = useMobileTabContext();
 
   // 如果是 tabList 中的 pathname 则显示 tabBar，如果是内页则不显示
-  if (!activeTabBar && tabList.length > 0) return null;
+  if (!activeTabBarItem && tabList.length > 0) return null;
 
   return (
     <div className={styles.mobileTabBar}>
