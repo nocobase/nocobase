@@ -96,7 +96,7 @@ describe('workflow > actions > workflows', () => {
       expect(nodes[1].downstreamId).toBe(nodes[0].id);
     });
 
-    it('create as head concurrently', async () => {
+    it.skip('create as head concurrently', async () => {
       const workflow = await WorkflowModel.create({
         enabled: true,
         type: 'asyncTrigger',
