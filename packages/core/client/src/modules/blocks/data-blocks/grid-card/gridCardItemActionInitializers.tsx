@@ -8,7 +8,7 @@
  */
 
 import { CompatibleSchemaInitializer } from '../../../../application/schema-initializer/CompatibleSchemaInitializer';
-import { useCollection_deprecated } from '../../../../collection-manager';
+import { useCollection } from '../../../../data-source';
 
 const commonOptions = {
   title: '{{t("Configure actions")}}',
@@ -25,8 +25,8 @@ const commonOptions = {
         'x-align': 'left',
       },
       useVisible() {
-        const collection = useCollection_deprecated() || ({} as any);
-        const { unavailableActions } = collection;
+        const collection = useCollection() || ({} as any);
+        const { unavailableActions } = collection?.options || {};
         if (unavailableActions) {
           return !unavailableActions?.includes?.('get');
         }
@@ -44,8 +44,12 @@ const commonOptions = {
         'x-align': 'left',
       },
       useVisible() {
-        const collection = useCollection_deprecated();
-        return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
+        const collection = useCollection() || ({} as any);
+        const { unavailableActions } = collection?.options || {};
+        if (unavailableActions) {
+          return !unavailableActions?.includes?.('update');
+        }
+        return true;
       },
     },
     {
@@ -59,8 +63,12 @@ const commonOptions = {
         'x-align': 'left',
       },
       useVisible() {
-        const collection = useCollection_deprecated();
-        return collection.template !== 'sql';
+        const collection = useCollection() || ({} as any);
+        const { unavailableActions } = collection?.options || {};
+        if (unavailableActions) {
+          return !unavailableActions?.includes?.('destroy');
+        }
+        return true;
       },
     },
     {
@@ -78,8 +86,12 @@ const commonOptions = {
       title: '{{t("Update record")}}',
       Component: 'UpdateRecordActionInitializer',
       useVisible() {
-        const collection = useCollection_deprecated();
-        return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
+        const collection = useCollection() || ({} as any);
+        const { unavailableActions } = collection?.options || {};
+        if (unavailableActions) {
+          return !unavailableActions?.includes?.('update');
+        }
+        return true;
       },
     },
     {
@@ -88,10 +100,6 @@ const commonOptions = {
       Component: 'CustomRequestInitializer',
       schema: {
         'x-action': 'customize:table:request',
-      },
-      useVisible() {
-        const collection = useCollection_deprecated();
-        return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
       },
     },
     {

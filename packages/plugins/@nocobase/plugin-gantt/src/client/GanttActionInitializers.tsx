@@ -8,7 +8,7 @@
  */
 
 import { useFieldSchema } from '@formily/react';
-import { CompatibleSchemaInitializer, useCollection_deprecated } from '@nocobase/client';
+import { CompatibleSchemaInitializer, useCollection } from '@nocobase/client';
 
 const commonOptions = {
   title: "{{t('Configure actions')}}",
@@ -39,8 +39,8 @@ const commonOptions = {
         },
       },
       useVisible() {
-        const collection = useCollection_deprecated() || ({} as any);
-        const { unavailableActions } = collection;
+        const collection = useCollection() || ({} as any);
+        const { unavailableActions } = collection?.options || {};
         if (unavailableActions) {
           return !unavailableActions?.includes?.('create');
         }
@@ -57,8 +57,8 @@ const commonOptions = {
         'x-decorator': 'ACLActionProvider',
       },
       useVisible() {
-        const collection = useCollection_deprecated() || ({} as any);
-        const { unavailableActions } = collection;
+        const collection = useCollection() || ({} as any);
+        const { unavailableActions } = collection?.options || {};
         if (unavailableActions) {
           return !unavailableActions?.includes?.('destroy');
         }
@@ -83,7 +83,7 @@ const commonOptions = {
       },
       useVisible() {
         const schema = useFieldSchema();
-        const collection = useCollection_deprecated();
+        const collection = useCollection();
         const { treeTable } = schema?.parent?.['x-decorator-props'] || {};
         return collection.tree && treeTable;
       },
