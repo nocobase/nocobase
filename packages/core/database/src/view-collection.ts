@@ -22,6 +22,10 @@ export class ViewCollection extends Collection {
   }
 
   unavailableActions(): Array<string> {
+    if (this.options.writableView) {
+      return [];
+    }
+
     return ['create', 'update', 'delete'];
   }
 

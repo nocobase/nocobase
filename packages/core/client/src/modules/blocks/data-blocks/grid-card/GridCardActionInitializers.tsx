@@ -37,8 +37,12 @@ const commonOptions = {
         },
       },
       useVisible() {
-        const collection = useCollection_deprecated();
-        return !['view', 'file', 'sql'].includes(collection.template) || collection?.writableView;
+        const collection = useCollection_deprecated() || ({} as any);
+        const { unavailableActions } = collection;
+        if (unavailableActions) {
+          return !unavailableActions?.includes?.('create');
+        }
+        return true;
       },
     },
     {
@@ -62,8 +66,12 @@ const commonOptions = {
         },
       },
       useVisible() {
-        const collection = useCollection_deprecated();
-        return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
+        const collection = useCollection_deprecated() || ({} as any);
+        const { unavailableActions } = collection;
+        if (unavailableActions) {
+          return !unavailableActions?.includes?.('create');
+        }
+        return true;
       },
     },
     {

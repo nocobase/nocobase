@@ -36,8 +36,12 @@ const commonOptions = {
         },
       },
       useVisible() {
-        const collection = useCollection_deprecated();
-        return collection.template !== 'sql';
+        const collection = useCollection_deprecated() || ({} as any);
+        const { unavailableActions } = collection;
+        if (unavailableActions) {
+          return !unavailableActions?.includes?.('create');
+        }
+        return true;
       },
     },
     {
