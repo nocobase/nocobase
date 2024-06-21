@@ -16,7 +16,7 @@ export function useUpdateTabBarItem() {
   return async () => {
     const schema = fieldSchema.toJSON();
     const id = Number(schema.name);
-    await resource.update({ filterByTk: id, title: schema['x-component-props']?.title, options: schema });
+    await resource.update({ filterByTk: id, values: { options: schema } });
     refresh();
   };
 }

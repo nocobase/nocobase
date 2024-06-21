@@ -10,23 +10,26 @@
 import { ISchema } from '@nocobase/client';
 import { generatePluginTranslationTemplate } from '../../locale';
 
-export const mobileTabBarItemSchemaFormFields: Record<string, ISchema> = {
+export const getMobileTabBarItemSchemaFields = (values: any = {}): Record<string, ISchema> => ({
   title: {
     title: generatePluginTranslationTemplate('title'),
     type: 'string',
+    default: values.title,
     'x-decorator': 'FormItem',
     'x-component': 'Input',
   },
   icon: {
     title: generatePluginTranslationTemplate('Icon'),
     type: 'string',
+    default: values.icon,
     'x-decorator': 'FormItem',
     'x-component': 'IconPicker',
   },
   selectedIcon: {
     title: generatePluginTranslationTemplate('Selected icon'),
     type: 'string',
+    default: values.selectedIcon,
     'x-decorator': 'FormItem',
     'x-component': 'IconPicker',
   },
-};
+});

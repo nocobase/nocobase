@@ -91,10 +91,14 @@ mobilePlugin.mobileRouter.add('mobile.my', {
 ## 问题
 
 - 如果 TabBar 单独设置，则需要单独存储配置的东西，他不是 Schema（当然也可以没有设置，显示与否用是否有子项，其他的背景或者颜色之类的如果不需要设置的话）
-- 从过 tab 创建 Schema 的接口？
+- 从过 tab 创建 Schema 需要一个根节点（mobile）
 - 2 种 TabBar Item 的 Schema 定义方式
 - 完全自定义的 TabBar Item，例如闲鱼的 【发布闲置】 按钮
 - 主题
+- 子系统
+- 响应式 ipad、mobile
+- 删除 items 的时候，是否需要删除对应的 Schema
+- packages/presets/nocobase/src/server/index.ts
 
 ```js
 {

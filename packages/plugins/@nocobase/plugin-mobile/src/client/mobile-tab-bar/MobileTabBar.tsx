@@ -35,8 +35,8 @@ export const MobileTabBar: FC & {
   const activeTabBar = tabList.find((item) => pathname === item.url);
 
   useEffect(() => {
-    if (activeTabBar) {
-      setTitle(activeTabBar.title);
+    if (activeTabBar && activeTabBar.options) {
+      setTitle(activeTabBar.options.title || activeTabBar.options?.['x-component-props']?.title);
     }
   }, [activeTabBar]);
 

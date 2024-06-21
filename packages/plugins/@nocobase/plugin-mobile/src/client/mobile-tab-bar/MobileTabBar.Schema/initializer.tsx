@@ -11,9 +11,36 @@ import { SchemaInitializerItemActionModalType } from '@nocobase/client';
 import { useNavigate } from 'react-router-dom';
 
 import { generatePluginTranslationTemplate } from '../../locale';
-import { getMobileTabBarItemData, mobileTabBarItemSchemaFormFields } from '../MobileTabBar.Item';
+import { getMobileTabBarItemSchemaFields } from '../MobileTabBar.Item';
 import { uid } from '@formily/shared';
 import { useMobileTabContext } from '../../mobile-providers';
+
+export interface GetMobileTabBarItemDataOptions {
+  schemaId: string;
+  url?: string;
+  values: any;
+}
+
+export function getMobileTabBarItemData(options: GetMobileTabBarItemDataOptions) {
+  const { schemaId, url, values } = options;
+  return {
+    url,
+    parentId: null,
+    options: {
+      type: 'void',
+      'x-decorator': 'BlockItem',
+      'x-toolbar-props': {
+        draggable: false,
+      },
+      'x-settings': 'mobile:tab-bar:schema',
+      'x-component': 'MobileTabBar.Schema',
+      'x-component-props': {
+        ...values,
+        schemaId: schemaId,
+      },
+    },
+  };
+}
 
 function getPageSchema(schemaId: string) {
   return {
@@ -33,9 +60,9 @@ function getPageSchema(schemaId: string) {
       },
       content: {
         type: 'void',
-        'x-component': 'MobileContent',
-        'x-decorator': 'Grid',
-        'x-initializer': 'mobile:content',
+        'x-decorator': 'MobileContent',
+        'x-component': 'Grid',
+        'x-initializer': 'mobile:addBlock',
       },
     },
   };
@@ -45,33 +72,38 @@ export const mobileTabBarSchemaInitializerItem: SchemaInitializerItemActionModal
   name: 'schema',
   type: 'actionModal',
   useComponentProps() {
-    const { resource, refresh } = useMobileTabContext();
-    // const navigate = useNavigate();
-
+    const { resource, refresh, schemaResource } = useMobileTabContext();
+    const navigate = useNavigate();
     return {
       isItem: true,
       width: '90%',
       title: generatePluginTranslationTemplate('Add page'),
       buttonText: generatePluginTranslationTemplate('Page'),
-      schema: mobileTabBarItemSchemaFormFields,
+      schema: getMobileTabBarItemSchemaFields(),
       async onSubmit(values) {
         if (!values.title && !values.icon) {
           return;
         }
 
         const schemaId = uid();
+        const url = `/schema/${schemaId}`;
 
         // 先创建 tab item
-        console.log('create Tab item', getMobileTabBarItemData(schemaId, values));
+        await resource.create({ values: getMobileTabBarItemData({ url, schemaId, values }) });
 
         // 再创建空页面
-        console.log('create Page', getPageSchema(schemaId));
-
+        // await api.request({ url: 'uiSchemas:insertAdjacent/mobile?position=beforeEnd', values: { schema: getPageSchema(schemaId) } });
+        // await schemaResource.insertAdjacent({  values: { schema: getPageSchema(schemaId) } })
+        await schemaResource.insertAdjacent({
+          resourceIndex: 'mobile',
+          position: 'beforeEnd',
+          values: { schema: getPageSchema(schemaId) },
+        });
         // 刷新 tabs
         await refresh();
 
         // 再跳转到页面
-        // navigate(`/schema/${schemaId}`)
+        navigate(url);
       },
     };
   },

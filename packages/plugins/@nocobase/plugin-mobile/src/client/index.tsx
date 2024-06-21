@@ -16,7 +16,7 @@ import { MobileLayout } from './mobile-layout';
 import { MobileSchemaPage } from './mobile-schema-page';
 import { MobilePage, mobilePageSettings } from './mobile-page';
 import { MobileNavigationBar } from './mobile-navigation-bar';
-import { MobileContent, mobileContentInitializer } from './mobile-content';
+import { MobileContent, mobileAddBlockInitializer } from './mobile-content';
 import {
   MobileTabBar,
   mobileTabBarInitializer,
@@ -44,7 +44,7 @@ export class PluginMobileClient extends Plugin {
   }
 
   addInitializers() {
-    this.app.schemaInitializerManager.add(mobileContentInitializer, mobileTabBarInitializer);
+    this.app.schemaInitializerManager.add(mobileAddBlockInitializer, mobileTabBarInitializer);
   }
 
   addSettings() {

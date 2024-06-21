@@ -190,7 +190,7 @@ const app = mockApp({
             type: 'void',
             'x-component': 'MobileContent',
             'x-decorator': 'Grid',
-            'x-initializer': 'mobile:content',
+            'x-initializer': 'mobile:addBlock',
             properties: {
               iframe: {
                 _isJSONSchemaObject: true,
@@ -260,7 +260,7 @@ const app = mockApp({
             type: 'void',
             'x-component': 'MobileContent',
             'x-decorator': 'Grid',
-            'x-initializer': 'mobile:content',
+            'x-initializer': 'mobile:addBlock',
           },
         },
       },

@@ -8,13 +8,37 @@
  */
 
 import { SchemaInitializerItemActionModalType } from '@nocobase/client';
-import { uid } from '@formily/shared';
 import { useNavigate } from 'react-router-dom';
 
 import { generatePluginTranslationTemplate } from '../../locale';
-import { getMobileTabBarItemData, mobileTabBarItemSchemaFormFields } from '../MobileTabBar.Item';
+import { getMobileTabBarItemSchemaFields } from '../MobileTabBar.Item';
 import { useMobileTabContext } from '../../mobile-providers';
 import { editLinkSchema } from './settings';
+
+export interface GetMobileTabBarItemDataOptions {
+  url?: string;
+  values: any;
+}
+
+export function getMobileTabBarItemData(options: GetMobileTabBarItemDataOptions) {
+  const { url, values } = options;
+  return {
+    url,
+    parentId: null,
+    options: {
+      type: 'void',
+      'x-decorator': 'BlockItem',
+      'x-toolbar-props': {
+        draggable: false,
+      },
+      'x-settings': 'mobile:tab-bar:link',
+      'x-component': 'MobileTabBar.Link',
+      'x-component-props': {
+        ...values,
+      },
+    },
+  };
+}
 
 export const mobileTabBarLinkInitializerItem: SchemaInitializerItemActionModalType = {
   name: 'link',
@@ -29,23 +53,28 @@ export const mobileTabBarLinkInitializerItem: SchemaInitializerItemActionModalTy
       title: generatePluginTranslationTemplate('Add Link page'),
       buttonText: generatePluginTranslationTemplate('Link'),
       schema: {
-        ...mobileTabBarItemSchemaFormFields,
-        link: editLinkSchema,
+        ...getMobileTabBarItemSchemaFields(),
+        link: editLinkSchema(),
       },
       async onSubmit(values) {
         if (!values.title && !values.icon) {
           return;
         }
-        const schemaId = uid();
+
+        const isRelative = !values.link.startsWith('http') && !values.link.startsWith('//');
 
         // 先创建 tab item
-        console.log('create Tab item', getMobileTabBarItemData(schemaId, values));
+        await resource.create({
+          values: getMobileTabBarItemData({ url: isRelative ? values.link : undefined, values }),
+        });
 
         // 刷新 tabs
         await refresh();
 
         // 再跳转到页面
-        navigate(values.link);
+        if (isRelative) {
+          navigate(values.link);
+        }
       },
     };
   },

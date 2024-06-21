@@ -28,6 +28,7 @@ export interface MobileTabContextValue {
   tabList?: TabItem[];
   refresh: () => Promise<any>;
   resource: IResource;
+  schemaResource: IResource;
 }
 
 export const MobileTabContext = createContext<MobileTabContextValue>(null);
@@ -58,11 +59,12 @@ function useHomeNavigate(tabList: TabItem[]) {
 export const MobileTabContextProvider = ({ children }) => {
   const api = useAPIClient();
   const resource = useMemo(() => api.resource('mobile-tabs'), [api]);
+  const schemaResource = useMemo(() => api.resource('uiSchemas'), [api]);
   const {
     data,
     runAsync: refresh,
     loading,
-  } = useRequest<{ data: any[] }>(() => resource.list().then((res) => res.data));
+  } = useRequest<{ data: any[] }>(() => resource.list({ params: { tree: true } }).then((res) => res.data));
   const tabList = useMemo(() => data?.data || [], [data]);
 
   useHomeNavigate(tabList);
@@ -74,5 +76,9 @@ export const MobileTabContextProvider = ({ children }) => {
       </div>
     );
   }
-  return <MobileTabContext.Provider value={{ tabList, refresh, resource }}>{children}</MobileTabContext.Provider>;
+  return (
+    <MobileTabContext.Provider value={{ tabList, refresh, resource, schemaResource }}>
+      {children}
+    </MobileTabContext.Provider>
+  );
 };

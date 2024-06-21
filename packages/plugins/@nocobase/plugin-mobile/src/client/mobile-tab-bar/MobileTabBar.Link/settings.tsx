@@ -7,36 +7,28 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { SchemaSettings, createModalSettingsItem } from '@nocobase/client';
-import { editTabItemSettingsItem, useUpdateTabBarItem } from '../MobileTabBar.Item';
+import { SchemaSettings } from '@nocobase/client';
+import { editTabItemSettingsItem, removeTabItemSettingsItem } from '../MobileTabBar.Item';
 import { generatePluginTranslationTemplate } from '../../locale';
 
-export const editLinkSchema = {
+export const editLinkSchema = (value?: any) => ({
   title: generatePluginTranslationTemplate('Link'),
   type: 'string',
+  default: value,
   'x-decorator': 'FormItem',
   'x-component': 'Input',
   required: true,
-};
+  description: 'URL starts with `http://` or `https://` or internal path starts with `/`',
+});
 
 export const mobileTabBarLinkSettings = new SchemaSettings({
   name: 'mobile:tab-bar:link',
   items: [
-    editTabItemSettingsItem,
-    createModalSettingsItem({
-      title: generatePluginTranslationTemplate('Edit link'),
-      name: 'link',
-      parentSchemaKey: 'x-component-props',
-      width: '90%',
-      schema: (values) => ({
-        type: 'object',
-        title: 'Edit Link',
-        default: values,
-        properties: {
-          url: editLinkSchema,
-        },
-      }),
-      useSubmit: useUpdateTabBarItem,
+    editTabItemSettingsItem((values) => {
+      return {
+        link: editLinkSchema(values.link),
+      };
     }),
+    removeTabItemSettingsItem,
   ],
 });
