@@ -16,7 +16,7 @@ export interface MobilePageProps extends MobilePageContextProps {
 
 export const MobilePage: FC<MobilePageProps> = ({ children, ...props }) => {
   return (
-    <div style={{ minHeight: '100vh' }}>
+    <div style={{ minHeight: '100vh', maxWidth: '100%', overflowX: 'hidden' }}>
       <MobilePageProvider {...props}>{children}</MobilePageProvider>
     </div>
   );

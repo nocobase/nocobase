@@ -23,5 +23,9 @@ export const useStyles = createStyles(({ token, css }) => ({
     display: 'flex',
     justifyContent: 'space-around',
     padding: '8px 0',
+    alignItems: 'center',
+    '.ant-btn-icon': {
+      marginInlineEnd: '0 !important',
+    },
   },
 }));
