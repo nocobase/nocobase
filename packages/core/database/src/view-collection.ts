@@ -26,7 +26,7 @@ export class ViewCollection extends Collection {
       return [];
     }
 
-    return ['create', 'update', 'delete'];
+    return ['create', 'update', 'destroy'];
   }
 
   protected sequelizeModelOptions(): any {
