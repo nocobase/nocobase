@@ -28,14 +28,6 @@ export class PluginDataVisualizationServer extends Plugin {
   }
 
   async load() {
-    this.db.addMigrations({
-      namespace: 'data-visualization',
-      directory: resolve(__dirname, 'migrations'),
-      context: {
-        plugin: this,
-      },
-    });
-
     this.cache = await this.app.cacheManager.createCache({
       name: 'data-visualization',
       store: 'memory',
