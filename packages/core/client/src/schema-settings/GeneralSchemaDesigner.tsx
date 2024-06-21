@@ -327,7 +327,7 @@ const InternalSchemaToolbar: FC<SchemaToolbarProps> = (props) => {
             </span>
             {titleArr[1] && (
               <span className={styles.toolbarTitleTag}>
-                {`${t('Reference template')}: ${`${titleArr[0]} > ${titleArr[1]}` || t('Untitled')}`}
+                {`${t('Reference template')}: ${`${titleArr[1]}` || t('Untitled')}`}
               </span>
             )}
           </Space>
