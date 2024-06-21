@@ -24,6 +24,14 @@ const commonOptions = {
         'x-decorator': 'ACLActionProvider',
         'x-align': 'left',
       },
+      useVisible() {
+        const collection = useCollection_deprecated() || ({} as any);
+        const { unavailableActions } = collection;
+        if (unavailableActions) {
+          return !unavailableActions?.includes?.('get');
+        }
+        return true;
+      },
     },
     {
       name: 'edit',

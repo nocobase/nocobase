@@ -162,6 +162,14 @@ const commonOptions = {
         'x-action': 'view',
         'x-decorator': 'ACLActionProvider',
       },
+      useVisible() {
+        const collection = useCollection_deprecated() || ({} as any);
+        const { unavailableActions } = collection;
+        if (unavailableActions) {
+          return !unavailableActions?.includes?.('get');
+        }
+        return true;
+      },
     },
     {
       type: 'item',
