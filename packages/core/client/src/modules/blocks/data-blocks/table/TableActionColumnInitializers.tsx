@@ -174,8 +174,12 @@ const commonOptions = {
         'x-decorator': 'ACLActionProvider',
       },
       useVisible() {
-        const collection = useCollection_deprecated();
-        return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
+        const collection = useCollection_deprecated() || ({} as any);
+        const { unavailableActions } = collection;
+        if (unavailableActions) {
+          return !unavailableActions?.includes?.('update');
+        }
+        return true;
       },
     },
     {
@@ -189,8 +193,12 @@ const commonOptions = {
         'x-decorator': 'ACLActionProvider',
       },
       useVisible() {
-        const collection = useCollection_deprecated();
-        return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
+        const collection = useCollection_deprecated() || ({} as any);
+        const { unavailableActions } = collection;
+        if (unavailableActions) {
+          return !unavailableActions?.includes?.('delete');
+        }
+        return true;
       },
     },
     {
@@ -201,17 +209,17 @@ const commonOptions = {
       schema: {
         'x-component': 'Action.Link',
         'x-action': 'disassociate',
-        'x-acl-action': 'destroy',
+        'x-acl-action': 'update',
         'x-decorator': 'ACLActionProvider',
       },
       useVisible() {
         const props = useDataBlockProps();
-        const collection = useCollection_deprecated();
-        return (
-          !!props?.association &&
-          (collection.template !== 'view' || collection?.writableView) &&
-          collection.template !== 'sql'
-        );
+        const collection = useCollection_deprecated() || ({} as any);
+        const { unavailableActions } = collection;
+        if (unavailableActions) {
+          return !!props?.association && !unavailableActions?.includes?.('update');
+        }
+        return true;
       },
     },
     {
@@ -243,8 +251,12 @@ const commonOptions = {
       name: 'updateRecord',
       Component: 'UpdateRecordActionInitializer',
       useVisible() {
-        const collection = useCollection_deprecated();
-        return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
+        const collection = useCollection_deprecated() || ({} as any);
+        const { unavailableActions } = collection;
+        if (unavailableActions) {
+          return !unavailableActions?.includes?.('update');
+        }
+        return true;
       },
     },
     {
@@ -253,10 +265,6 @@ const commonOptions = {
       Component: 'CustomRequestInitializer',
       schema: {
         'x-action': 'customize:table:request',
-      },
-      useVisible() {
-        const collection = useCollection_deprecated();
-        return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
       },
     },
     {
