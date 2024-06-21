@@ -85,7 +85,7 @@ export const getPopupPathFromParams = (params: PopupParams) => {
     popupUid,
     'datasource',
     datasource,
-    'filterbytk',
+    filterbytk && 'filterbytk',
     filterbytk,
     collection && 'collection',
     collection,

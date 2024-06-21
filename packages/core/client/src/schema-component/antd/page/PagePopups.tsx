@@ -16,6 +16,7 @@ import { DataBlockProvider } from '../../../data-source/data-block/DataBlockProv
 import { BlockRequestContext } from '../../../data-source/data-block/DataBlockRequestProvider';
 import { SchemaComponent } from '../../core';
 import { TabsPropsProvider } from './TabsPropsProvider';
+import { deleteRandomNestedSchemaKey, getRandomNestedSchemaKey } from './nestedSchemaKeyStorage';
 import {
   PopupParams,
   PopupParamsStorage,
@@ -82,7 +83,11 @@ const PagePopupsItemProvider: FC<{ params: PopupParams }> = ({ params, children 
     if (!visible) {
       _setVisible(false);
       // Leave some time to refresh the block data
-      setTimeout(closePopup, 300);
+      setTimeout(() => {
+        closePopup();
+        // Deleting here ensures that the next time the same popup is opened, it will generate another random key.
+        deleteRandomNestedSchemaKey(params.popupUid);
+      }, 300);
     }
   };
   const _params: PopupParamsStorage = params;
@@ -135,10 +140,13 @@ export const insertToPopupSchema = (childSchema: ISchema, params: PopupParams, p
     },
   };
 
+  // If we don't use a random name, it will cause the component's parameters not to be updated when reopening the popup
+  const nestedPopupKey = getRandomNestedSchemaKey(params.popupUid);
+
   if (parentSchema.properties) {
     const popupSchema = _.get(parentSchema.properties, Object.keys(parentSchema.properties)[0]);
-    if (_.isEmpty(_.get(popupSchema, 'properties.nestedPopup'))) {
-      _.set(popupSchema, 'properties.nestedPopup', componentSchema);
+    if (_.isEmpty(_.get(popupSchema, `properties.${nestedPopupKey}`))) {
+      _.set(popupSchema, `properties.${nestedPopupKey}`, componentSchema);
     }
   }
 };

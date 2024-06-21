@@ -9,6 +9,16 @@
 
 import { insertToPopupSchema } from '../PagePopups';
 
+vi.mock('@formily/shared', async (importOriginal) => {
+  const actual: any = await importOriginal();
+  return {
+    ...actual,
+    uid() {
+      return 'nestedPopup';
+    },
+  };
+});
+
 describe('insertToPopupSchema', () => {
   it('should insert childSchema to parentSchema', () => {
     const childSchema = {
