@@ -96,6 +96,39 @@ describe('workflow > actions > workflows', () => {
       expect(nodes[1].downstreamId).toBe(nodes[0].id);
     });
 
+    it('create as head concurrently', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'asyncTrigger',
+      });
+
+      const [res1, res2] = await Promise.all([
+        agent.resource('workflows.nodes', workflow.id).create({
+          values: {
+            type: 'echo',
+          },
+        }),
+        agent.resource('workflows.nodes', workflow.id).create({
+          values: {
+            type: 'echo',
+          },
+        }),
+      ]);
+      expect(res1.status).toBe(200);
+      expect(res1.body.data.type).toBe('echo');
+      expect(res1.body.data.upstreamId).toBeFalsy();
+
+      expect(res2.status).toBe(200);
+      expect(res2.body.data.type).toBe('echo');
+      expect(res2.body.data.upstreamId).toBeFalsy();
+      expect(res2.body.data.downstreamId).toBe(res1.body.data.id);
+
+      const nodes = await workflow.getNodes({ order: [['id', 'asc']] });
+      expect(nodes.length).toBe(2);
+      expect(nodes[0].upstreamId).toBe(nodes[1].id);
+      expect(nodes[1].downstreamId).toBe(nodes[0].id);
+    });
+
     it('create after other node', async () => {
       const workflow = await WorkflowModel.create({
         enabled: true,
