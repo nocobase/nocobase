@@ -66,6 +66,8 @@ export interface ICollection {
   getField(name: string): IField;
 
   [key: string]: any;
+
+  unavailableActions?: () => string[];
 }
 
 export interface IModel {

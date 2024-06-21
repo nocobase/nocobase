@@ -24,6 +24,10 @@ export class SQLCollection extends Collection {
     return true;
   }
 
+  unavailableActions(): Array<string> {
+    return ['create', 'update', 'delete'];
+  }
+
   public collectionSchema() {
     return undefined;
   }
