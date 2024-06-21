@@ -195,11 +195,14 @@ export class PluginDataSourceManagerServer extends Plugin {
 
         item.collections = collections.map((collection) => {
           const collectionOptions = collection.options;
+          const collectionInstance = dataSource.collectionManager.getCollection(collectionOptions.name);
+
           const fields = [...collection.fields.values()].map((field) => field.options);
 
           return {
             ...collectionOptions,
             fields,
+            unavailableActions: collectionInstance?.unavailableActions() || [],
           };
         });
       }
