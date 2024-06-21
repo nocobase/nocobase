@@ -202,7 +202,10 @@ export class PluginDataSourceManagerServer extends Plugin {
           return {
             ...collectionOptions,
             fields,
-            unavailableActions: collectionInstance?.unavailableActions() || [],
+            unavailableActions:
+              collectionInstance && collectionInstance.unavailableActions
+                ? collectionInstance.unavailableActions()
+                : [],
           };
         });
       }
