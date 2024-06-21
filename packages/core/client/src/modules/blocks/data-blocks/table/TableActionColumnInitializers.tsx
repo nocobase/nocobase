@@ -196,7 +196,7 @@ const commonOptions = {
         const collection = useCollection_deprecated() || ({} as any);
         const { unavailableActions } = collection;
         if (unavailableActions) {
-          return !unavailableActions?.includes?.('delete');
+          return !unavailableActions?.includes?.('destroy');
         }
         return true;
       },
