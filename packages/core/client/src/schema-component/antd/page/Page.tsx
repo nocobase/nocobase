@@ -45,7 +45,7 @@ export const Page = (props) => {
   const dn = useDesignable();
   const { theme } = useGlobalTheme();
   const { getAriaLabel } = useGetAriaLabelOfSchemaInitializer();
-  const { tabUid } = useParams();
+  const { tabUid, name: pageUid } = useParams();
 
   // react18  tab 动画会卡顿，所以第一个 tab 时，动画禁用，后面的 tab 才启用
   const [hasMounted, setHasMounted] = useState(false);
@@ -112,7 +112,7 @@ export const Page = (props) => {
             }}
             onTabClick={(activeKey) => {
               setLoading(true);
-              navigate(`./tabs/${activeKey}`);
+              navigate(`/admin/${pageUid}/tabs/${activeKey}`);
               setTimeout(() => {
                 setLoading(false);
               }, 50);
@@ -191,7 +191,7 @@ export const Page = (props) => {
         </DndContext>
       )
     );
-  }, [hasMounted, activeKey, fieldSchema, dn.designable, options.scope, options.components]);
+  }, [hasMounted, activeKey, fieldSchema, dn.designable, options.scope, options.components, pageUid]);
 
   return wrapSSR(
     <div className={`${componentCls} ${hashId} ${aclStyles.styles}`}>
