@@ -7,58 +7,64 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { MockDatabase, mockDatabase } from '@nocobase/test';
+import { MockDatabase, MockServer, createMockServer, mockDatabase } from '@nocobase/test';
 import { DataTypes } from 'sequelize';
-import { BelongsToArrayField } from '../belongs-to-array-field';
 import { BelongsToArrayRepository } from '@nocobase/database';
 
 describe('belongs-to-array', () => {
+  let app: MockServer;
   let db: MockDatabase;
 
   beforeAll(async () => {
-    db = mockDatabase();
-    db.registerFieldTypes({
-      belongsToArray: BelongsToArrayField,
+    app = await createMockServer({
+      plugins: ['field-m2m-array', 'data-source-manager', 'data-source-main', 'error-handler'],
     });
-    db.collection({
-      name: 'tags',
-      fields: [
-        {
-          name: 'id',
-          type: 'bigInt',
-          autoIncrement: true,
-          primaryKey: true,
-          allowNull: false,
-        },
-        {
-          name: 'title',
-          type: 'string',
-        },
-      ],
+    db = app.db;
+    await db.getRepository('collections').create({
+      values: {
+        name: 'tags',
+        fields: [
+          {
+            name: 'id',
+            type: 'bigInt',
+            autoIncrement: true,
+            primaryKey: true,
+            allowNull: false,
+          },
+          {
+            name: 'title',
+            type: 'string',
+          },
+        ],
+      },
     });
-    db.collection({
-      name: 'users',
-      fields: [
-        {
-          name: 'id',
-          type: 'bigInt',
-          autoIncrement: true,
-          primaryKey: true,
-          allowNull: false,
-        },
-        {
-          name: 'username',
-          type: 'string',
-        },
-        {
-          name: 'tags',
-          type: 'belongsToArray',
-          foreignKey: 'tag_ids',
-          target: 'tags',
-          targetKey: 'id',
-        },
-      ],
+    await db.getRepository('collections').create({
+      values: {
+        name: 'users',
+        fields: [
+          {
+            name: 'id',
+            type: 'bigInt',
+            autoIncrement: true,
+            primaryKey: true,
+            allowNull: false,
+          },
+          {
+            name: 'username',
+            type: 'string',
+          },
+          {
+            name: 'tags',
+            type: 'belongsToArray',
+            foreignKey: 'tag_ids',
+            target: 'tags',
+            targetKey: 'id',
+          },
+        ],
+      },
     });
+    // @ts-ignore
+    await db.getRepository('collections').load();
     await db.sync();
     await db.getRepository('tags').create({
       values: [
@@ -76,18 +82,23 @@ describe('belongs-to-array', () => {
   });
 
   afterAll(async () => {
-    await db.clean({ drop: true });
-    await db.close();
+    // await db.clean({ drop: true });
+    await app.destroy();
   });
 
-  it('should get data type', () => {
-    const field = db.getCollection('users').getField('tag_ids');
-    const dialect = db.sequelize.getDialect();
-    if (dialect === 'postgres') {
-      expect(field.dataType).toEqual(DataTypes.ARRAY(DataTypes.BIGINT));
-    } else {
-      expect(field.dataType).toEqual(DataTypes.JSON);
-    }
+  it('should create foreign key array', async () => {
+    const field = await db.getRepository('fields').findOne({
+      filter: {
+        collectionName: 'users',
+        name: 'tag_ids',
+      },
+    });
+    expect(field).toBeDefined();
+    expect(field.type).toBe('set');
+    expect(field.options.dataType).toBe('array');
+    expect(field.options.elementType).toBe('bigInt');
+    const fieldModel = db.getCollection('users').getField('tag_ids');
+    expect(fieldModel.dataType).toEqual(DataTypes.ARRAY(DataTypes.BIGINT));
   });
 
   it('should list appends belongsToArray', async () => {
@@ -120,13 +131,13 @@ describe('belongs-to-array', () => {
       ]);
     }
     const users2 = await db.getRepository('users').find({
-      appends: ['tag_ids'],
+      appends: ['tags'],
     });
     expect(users2).toMatchObject([
       {
         id: 1,
         username: 'a',
-        tag_ids: [
+        tags: [
           { id: 1, title: 'a' },
           { id: 2, title: 'b' },
         ],
@@ -134,7 +145,7 @@ describe('belongs-to-array', () => {
       {
         id: 2,
         username: 'b',
-        tag_ids: [
+        tags: [
           { id: 2, title: 'b' },
           { id: 3, title: 'c' },
         ],
@@ -159,12 +170,12 @@ describe('belongs-to-array', () => {
     }
     const users2 = await db.getRepository('users').findOne({
       filterByTk: 1,
-      appends: ['tag_ids'],
+      appends: ['tags'],
     });
     expect(users2).toMatchObject({
       id: 1,
       username: 'a',
-      tag_ids: [
+      tags: [
         { id: 1, title: 'a' },
         { id: 2, title: 'b' },
       ],
@@ -177,7 +188,7 @@ describe('belongs-to-array', () => {
     }
     const users = await db.getRepository('users').find({
       filter: {
-        'tag_ids.title': {
+        'tags.title': {
           $includes: ['a'],
         },
       },
@@ -185,7 +196,7 @@ describe('belongs-to-array', () => {
     expect(users.length).toBe(1);
     const users2 = await db.getRepository('users').find({
       filter: {
-        'tag_ids.title': {
+        'tags.title': {
           $includes: ['b'],
         },
       },
@@ -198,7 +209,7 @@ describe('belongs-to-array', () => {
       values: {
         id: 3,
         username: 'c',
-        tag_ids: [{ id: 1 }, { id: 3 }],
+        tags: [{ id: 1 }, { id: 3 }],
       },
     });
     if (db.sequelize.getDialect() === 'postgres') {
@@ -210,7 +221,7 @@ describe('belongs-to-array', () => {
       values: {
         id: 4,
         username: 'd',
-        tag_ids: [1, 3],
+        tags: [1, 3],
       },
     });
     if (db.sequelize.getDialect() === 'postgres') {
@@ -225,34 +236,34 @@ describe('belongs-to-array', () => {
       values: {
         id: 5,
         username: 'e',
-        tag_ids: [1, 3],
+        tags: [1, 3],
       },
     });
     user = await db.getRepository('users').update({
       filterByTk: 5,
       values: {
-        tag_ids: [2, 3],
+        tags: [2, 3],
       },
     });
     expect(user[0].tag_ids).toMatchObject([2, 3]);
     user = await db.getRepository('users').update({
       filterByTk: 5,
       values: {
-        tag_ids: [{ id: 1 }, { id: 3 }],
+        tags: [{ id: 1 }, { id: 3 }],
       },
     });
     expect(user[0].tag_ids).toMatchObject([1, 3]);
     user = await db.getRepository('users').update({
       filterByTk: 5,
       values: {
-        tag_ids: null,
+        tags: null,
       },
     });
     expect(user[0].tag_ids).toMatchObject([]);
   });
 
   it('should list belongsToArray using relation', async () => {
-    const repo = db.getRepository('users.tag_ids', 1) as BelongsToArrayRepository;
+    const repo = db.getRepository('users.tags', 1) as BelongsToArrayRepository;
     const tags = await repo.find();
     expect(tags).toMatchObject([
       { id: 1, title: 'a' },
@@ -261,7 +272,7 @@ describe('belongs-to-array', () => {
   });
 
   it('should get belongsToArray using relation', async () => {
-    const repo = db.getRepository('users.tag_ids', 1) as BelongsToArrayRepository;
+    const repo = db.getRepository('users.tags', 1) as BelongsToArrayRepository;
     const tags = await repo.findOne({
       filterByTk: 1,
     });
