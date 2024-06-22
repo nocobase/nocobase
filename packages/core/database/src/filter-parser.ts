@@ -13,7 +13,7 @@ import { ModelStatic } from 'sequelize';
 import { Collection } from './collection';
 import { Database } from './database';
 import { Model } from './model';
-import { RecordSetAssociation } from './relation-repository/record-set-repository';
+import { BelongsToArrayAssociation } from './relation-repository/belongs-to-array-repository';
 
 const debug = require('debug')('noco-database');
 
@@ -186,7 +186,7 @@ export default class FilterParser {
             attributes: [], // out put empty fields by default
           };
           if (association.associationType === 'BelongsToArray') {
-            const { as, targetKey, source, foreignKey } = association as any as RecordSetAssociation;
+            const { as, targetKey, source, foreignKey } = association as any as BelongsToArrayAssociation;
             includeOptions['on'] = this.database.sequelize.literal(
               `${as}.${targetKey}=any(${source.collection.name}.${foreignKey})`,
             );
