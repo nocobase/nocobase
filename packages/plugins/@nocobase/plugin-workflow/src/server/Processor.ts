@@ -371,14 +371,22 @@ export default class Processor {
    */
   public getScope(sourceNodeId: number) {
     const node = this.nodesMap.get(sourceNodeId);
-    const systemFns = {};
     const scope = {
       execution: this.execution,
       node,
     };
-    for (const [name, fn] of this.options.plugin.functions.getEntities()) {
-      systemFns[name] = fn.bind(scope);
+    function bindScope(mapEntries) {
+      const result = {};
+      for (const [name, fn] of mapEntries) {
+        if (typeof fn === 'function') {
+          result[name] = fn.bind(scope);
+        } else if (typeof fn.entries === 'function') {
+          result[name] = bindScope(fn.entries());
+        }
+      }
+      return result;
     }
+    const systemFns = bindScope(this.options.plugin.functions.getEntities());
 
     const $scopes = {};
     for (let n = this.findBranchParentNode(node); n; n = this.findBranchParentNode(n)) {
