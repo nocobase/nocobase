@@ -10,7 +10,7 @@
 import { ISchema, useFieldSchema } from '@formily/react';
 import _ from 'lodash';
 import { useCallback, useContext } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigateNoUpdate } from '../../../application/CustomRouterContextProvider';
 import {
   CollectionRecord,
   useAssociationName,
@@ -101,7 +101,7 @@ export const getPopupPathFromParams = (params: PopupParams) => {
 };
 
 export const usePagePopup = () => {
-  const navigate = useNavigate();
+  const navigate = useNavigateNoUpdate();
   const fieldSchema = useFieldSchema();
   const dataSourceKey = useDataSourceKey();
   const record = useCollectionRecord();

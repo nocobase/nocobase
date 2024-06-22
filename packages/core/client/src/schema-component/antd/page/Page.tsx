@@ -16,10 +16,11 @@ import classNames from 'classnames';
 import React, { memo, useContext, useEffect, useMemo, useState } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { useTranslation } from 'react-i18next';
-import { Outlet, useNavigate, useOutletContext, useParams, useSearchParams } from 'react-router-dom';
+import { Outlet, useOutletContext, useParams, useSearchParams } from 'react-router-dom';
 import { FormDialog } from '..';
 import { useStyles as useAClStyles } from '../../../acl/style';
 import { useRequest } from '../../../api-client';
+import { useNavigateNoUpdate } from '../../../application/CustomRouterContextProvider';
 import { useAppSpin } from '../../../application/hooks/useAppSpin';
 import { useDocumentTitle } from '../../../document-title';
 import { useGlobalTheme } from '../../../global-theme';
@@ -63,7 +64,7 @@ export const Page = (props) => {
   const enablePageTabs = fieldSchema['x-component-props']?.enablePageTabs;
   const hidePageTitle = fieldSchema['x-component-props']?.hidePageTitle;
   const options = useContext(SchemaOptionsContext);
-  const navigate = useNavigate();
+  const navigate = useNavigateNoUpdate();
   const [searchParams] = useSearchParams();
   const [loading, setLoading] = useState(false);
   const activeKey = useMemo(

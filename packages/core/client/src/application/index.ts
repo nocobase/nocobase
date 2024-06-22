@@ -8,6 +8,7 @@
  */
 
 export * from './Application';
+export * from './CustomRouterContextProvider';
 export * from './Plugin';
 export * from './PluginSettingsManager';
 export * from './RouterManager';

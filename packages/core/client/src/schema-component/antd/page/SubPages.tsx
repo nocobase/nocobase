@@ -10,7 +10,8 @@
 import { useFieldSchema } from '@formily/react';
 import React, { FC, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Outlet, useNavigate, useParams } from 'react-router-dom';
+import { Outlet, useParams } from 'react-router-dom';
+import { useNavigateNoUpdate } from '../../../application/CustomRouterContextProvider';
 import {
   useCollectionParentRecord,
   useCollectionRecord,
@@ -43,7 +44,7 @@ const SubPageVariablesProvider: FC = (props) => {
 };
 
 const SubPageTabsPropsProvider: FC<{ params: SubPageParams }> = (props) => {
-  const navigate = useNavigate();
+  const navigate = useNavigateNoUpdate();
   const onTabClick = useCallback((key: string) => {
     let pathname = window.location.pathname.split('/tab/')[0];
     if (pathname.endsWith('/')) {
@@ -111,7 +112,7 @@ export const getSubPagePathFromParams = (params: SubPageParams) => {
 };
 
 export const useNavigateTOSubPage = () => {
-  const navigate = useNavigate();
+  const navigate = useNavigateNoUpdate();
   const fieldSchema = useFieldSchema();
   const dataSourceKey = useDataSourceKey();
   const record = useCollectionRecord();

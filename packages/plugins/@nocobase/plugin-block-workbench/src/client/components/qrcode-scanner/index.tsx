@@ -7,8 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { useNavigateNoUpdate } from '@nocobase/client';
 import { Html5QrcodeScanner } from 'html5-qrcode';
-import { useNavigate } from 'react-router-dom';
 import React, { useEffect } from 'react';
 
 const qrcodeRegionId = 'html5qr-code-full-region';
@@ -32,7 +32,7 @@ const createConfig = (props) => {
 };
 
 export const QRCodeScanner = (props) => {
-  const navigate = useNavigate();
+  const navigate = useNavigateNoUpdate();
   useEffect(() => {
     // when component mounts
     const config = createConfig(props);

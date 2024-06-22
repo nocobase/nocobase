@@ -12,7 +12,7 @@ import { useSessionStorageState } from 'ahooks';
 import { App, ConfigProvider, Divider, Layout } from 'antd';
 import { createGlobalStyle } from 'antd-style';
 import React, { FC, createContext, memo, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { Link, Outlet, useLocation, useMatch, useNavigate, useParams } from 'react-router-dom';
+import { Link, Outlet, useLocation, useMatch, useParams } from 'react-router-dom';
 import {
   ACLRolesCheckProvider,
   CurrentAppInfoProvider,
@@ -33,6 +33,7 @@ import {
   useSystemSettings,
   useToken,
 } from '../../../';
+import { useNavigateNoUpdate } from '../../../application/CustomRouterContextProvider';
 import { Plugin } from '../../../application/Plugin';
 import { useAppSpin } from '../../../application/hooks/useAppSpin';
 import { useMenuTranslation } from '../../../schema-component/antd/menu/locale';
@@ -80,7 +81,7 @@ const MenuEditor = (props) => {
   const { t } = useMenuTranslation();
   const { setTitle: _setTitle } = useDocumentTitle();
   const setTitle = useCallback((title) => _setTitle(t(title)), []);
-  const navigate = useNavigate();
+  const navigate = useNavigateNoUpdate();
   const params = useParams<any>();
   const location = useLocation();
   const isMatchAdmin = useMatch('/admin');

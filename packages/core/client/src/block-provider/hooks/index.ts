@@ -19,7 +19,6 @@ import omit from 'lodash/omit';
 import qs from 'qs';
 import { ChangeEvent, useCallback, useContext, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
 import { useReactToPrint } from 'react-to-print';
 import {
   AssociationFilter,
@@ -30,6 +29,7 @@ import {
   useTableBlockContext,
 } from '../..';
 import { useAPIClient, useRequest } from '../../api-client';
+import { useNavigateNoUpdate } from '../../application/CustomRouterContextProvider';
 import { useFormBlockContext } from '../../block-provider/FormBlockProvider';
 import { useCollectionManager_deprecated, useCollection_deprecated } from '../../collection-manager';
 import { DataBlock, useFilterBlock } from '../../filter-provider/FilterProvider';
@@ -206,7 +206,7 @@ export const useCreateActionProps = () => {
   const form = useForm();
   const { field, resource } = useBlockRequestContext();
   const { setVisible, setSubmitted, setFormValueChanged } = useActionContext();
-  const navigate = useNavigate();
+  const navigate = useNavigateNoUpdate();
   const actionSchema = useFieldSchema();
   const actionField = useField();
   const compile = useCompile();
@@ -548,7 +548,7 @@ export const useCustomizeUpdateActionProps = () => {
   const { resource, __parent, service } = useBlockRequestContext();
   const filterByTk = useFilterByTk();
   const actionSchema = useFieldSchema();
-  const navigate = useNavigate();
+  const navigate = useNavigateNoUpdate();
   const compile = useCompile();
   const form = useForm();
   const { modal } = App.useApp();
@@ -643,7 +643,7 @@ export const useCustomizeBulkUpdateActionProps = () => {
   const { rowKey } = tableBlockContext;
   const selectedRecordKeys =
     tableBlockContext.field?.data?.selectedRowKeys ?? expressionScope?.selectedRecordKeys ?? {};
-  const navigate = useNavigate();
+  const navigate = useNavigateNoUpdate();
   const compile = useCompile();
   const { t } = useTranslation();
   const actionField = useField();
@@ -754,7 +754,7 @@ export const useCustomizeBulkUpdateActionProps = () => {
 
 export const useCustomizeRequestActionProps = () => {
   const apiClient = useAPIClient();
-  const navigate = useNavigate();
+  const navigate = useNavigateNoUpdate();
   const filterByTk = useFilterByTk();
   const actionSchema = useFieldSchema();
   const compile = useCompile();
@@ -850,7 +850,7 @@ export const useUpdateActionProps = () => {
   const { field, resource, __parent } = useBlockRequestContext();
   const { setVisible, setSubmitted, setFormValueChanged } = useActionContext();
   const actionSchema = useFieldSchema();
-  const navigate = useNavigate();
+  const navigate = useNavigateNoUpdate();
   const { fields, getField, name } = useCollection_deprecated();
   const compile = useCompile();
   const actionField = useField();
@@ -1527,7 +1527,7 @@ export function appendQueryStringToUrl(url: string, queryString: string) {
 }
 
 export function useLinkActionProps() {
-  const navigate = useNavigate();
+  const navigate = useNavigateNoUpdate();
   const fieldSchema = useFieldSchema();
   const { t } = useTranslation();
   const url = fieldSchema?.['x-component-props']?.['url'];
