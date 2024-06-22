@@ -8,13 +8,13 @@
  */
 
 import React, { FC } from 'react';
-import { NavBar, Tabs, TabsProps } from 'antd-mobile';
+import { NavBar } from 'antd-mobile';
 import { Affix } from 'antd';
-import { useParams, useLocation, useNavigate } from 'react-router-dom';
+import { useFieldSchema } from '@formily/react';
 
-import { useMobileTabContext, useMobileTitle } from '../mobile-providers';
+import { useMobileTitle } from '../mobile-providers';
 import { useMobilePage } from '../mobile-page/context';
-import { MobilePageTabInitializer, MobilePageTabSettings } from './tab';
+import { SchemaComponent } from '@nocobase/client';
 
 export const MobileNavigationBar: FC = () => {
   const { title } = useMobileTitle();
@@ -23,43 +23,20 @@ export const MobileNavigationBar: FC = () => {
     enableNavigationBarTabs = false,
     enableNavigationBarTitle = true,
   } = useMobilePage();
-  const { activeTabBarItem, activePageTab } = useMobileTabContext();
-  const { pathname } = useLocation();
-  const navigate = useNavigate();
-  const { tabId } = useParams<{ tabId: string }>();
-  const [activeKey, setActiveKey] = React.useState<string>(() => {
-    return tabId ? pathname : activeTabBarItem.children[0]?.url;
-  });
-  const handleChange: TabsProps['onChange'] = (url) => {
-    if (!url) {
-      return;
-    }
-    setActiveKey(url);
-    navigate(url);
-  };
-
+  const fieldSchema = useFieldSchema();
   if (!enableNavigationBar) return null;
 
   return (
     <Affix offsetTop={0} style={{ borderBottom: '1px solid var(--adm-color-border)' }}>
       <div>
-        <NavBar backArrow={false}>{enableNavigationBarTitle ? title : null}</NavBar>
-        {enableNavigationBarTabs && (
-          <Tabs activeKey={activeKey} onChange={handleChange}>
-            {activeTabBarItem.children?.map((item) => (
-              <Tabs.Tab
-                title={
-                  <div>
-                    <MobilePageTabSettings tab={item} />
-                    {item.options.title}
-                  </div>
-                }
-                key={String(item.url)}
-              ></Tabs.Tab>
-            ))}
-            <Tabs.Tab title={<MobilePageTabInitializer />} key={''}></Tabs.Tab>
-          </Tabs>
-        )}
+        <NavBar
+          backArrow={false}
+          left={<SchemaComponent name="leftActions" schema={fieldSchema.properties['leftActions']} />}
+          right={<SchemaComponent name="rightActions" schema={fieldSchema.properties['rightActions']} />}
+        >
+          {enableNavigationBarTitle ? title : null}
+        </NavBar>
+        {enableNavigationBarTabs && <MobileNavigationBar />}
       </div>
     </Affix>
   );

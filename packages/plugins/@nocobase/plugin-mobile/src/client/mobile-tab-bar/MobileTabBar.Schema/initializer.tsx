@@ -83,9 +83,21 @@ function getPageSchema(pageSchemaId: string, firstTabSchemaId: string) {
       draggable: false,
     },
     properties: {
-      navigationBar: {
+      [uid()]: {
         type: 'void',
         'x-component': 'MobileNavigationBar',
+        properties: {
+          leftActions: {
+            type: 'void',
+            'x-component': 'ActionBar',
+            'x-initializer': 'mobile:navigation-bar',
+          },
+          rightActions: {
+            type: 'void',
+            'x-component': 'ActionBar',
+            'x-initializer': 'mobile:navigation-bar',
+          },
+        },
       },
       [uid()]: {
         type: 'void',

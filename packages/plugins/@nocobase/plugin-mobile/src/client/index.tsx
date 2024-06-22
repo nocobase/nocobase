@@ -15,7 +15,14 @@ import { Mobile } from './mobile';
 import { MobileLayout } from './mobile-layout';
 import { MobileSchemaPage } from './mobile-schema-page';
 import { MobilePage, mobilePageSettings } from './mobile-page';
-import { MobileNavigationBar, mobilePageTabInitializer, mobilePageTabSettings } from './mobile-navigation-bar';
+import {
+  MobileNavigationBar,
+  mobilePageTabInitializer,
+  mobilePageTabSettings,
+  mobileNavigationBarInitializer,
+  mobileNavigationBarLinkSettings,
+  useMobileNavigationBarLink,
+} from './mobile-navigation-bar';
 import { MobileContent, mobileAddBlockInitializer } from './mobile-content';
 import {
   MobileTabBar,
@@ -41,10 +48,22 @@ export class PluginMobileClient extends Plugin {
     this.addRoutes();
     this.addInitializers();
     this.addSettings();
+    this.addScopes();
+  }
+
+  addScopes() {
+    this.app.addScopes({
+      useMobileNavigationBarLink,
+    });
   }
 
   addInitializers() {
-    this.app.schemaInitializerManager.add(mobileAddBlockInitializer, mobileTabBarInitializer, mobilePageTabInitializer);
+    this.app.schemaInitializerManager.add(
+      mobileAddBlockInitializer,
+      mobileTabBarInitializer,
+      mobilePageTabInitializer,
+      mobileNavigationBarInitializer,
+    );
   }
 
   addSettings() {
@@ -54,6 +73,7 @@ export class PluginMobileClient extends Plugin {
       mobileTabBarSchemaSettings,
       mobileTabBarLinkSettings,
       mobilePageTabSettings,
+      mobileNavigationBarLinkSettings,
     );
   }
 
