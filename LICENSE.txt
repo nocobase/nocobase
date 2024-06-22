@@ -1,4 +1,4 @@
-Updated Date: May 29, 2024
+Updated Date: June 19, 2024
 
 NocoBase License Agreement
 
@@ -97,9 +97,9 @@ Except for Third-Party Open Source Software, the Company owns all copyrights, tr
 
 7.2 It is not allowed to sell, transfer, lease, share, or give away the Commercial License.
 
-7.3 It is not allowed to sell, transfer, lease, share, or give away any form of no-code, zero-code, low-code platform, or developer tools developed based on Software, except for bulk licenses obtained through an Enterprise License, with the terms of bulk licensing separately agreed upon in the contract.
+7.3 It is not allowed to sell, transfer, lease, share, or give away any form of no-code, zero-code, low-code platform, or developer tools developed based on Software.
 
-7.4 It is not allowed to provide any form of no-code, zero-code, low-code platform SaaS products to the public using the original or modified Software, except for bulk licenses obtained through an Enterprise License, with the terms of bulk licensing separately agreed upon in the contract.
+7.4 It is not allowed to provide any form of no-code, zero-code, low-code platform SaaS products to the public using the original or modified Software.
 
 7.5 It is not allowed to use reverse engineering, decompilation, and other means to try to discover the source code of Commercial Plugins that have not obtained source code license.
 

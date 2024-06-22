@@ -59,6 +59,10 @@ export const InternalSubTable = observer(
                   margin: 0px !important;
                 }
               }
+              .ant-table-body {
+                max-height: 100% !important;
+                min-height: 100% !important;
+              }
             `}
             layout={'vertical'}
             bordered={false}

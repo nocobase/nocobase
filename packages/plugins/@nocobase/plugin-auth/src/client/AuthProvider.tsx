@@ -7,21 +7,21 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { useAPIClient } from '@nocobase/client';
+import { useApp } from '@nocobase/client';
 import React, { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 
 export const AuthProvider: React.FC = (props) => {
   const location = useLocation();
-  const api = useAPIClient();
+  const app = useApp();
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const authenticator = params.get('authenticator');
     const token = params.get('token');
     if (token) {
-      api.auth.setToken(token);
-      api.auth.setAuthenticator(authenticator);
+      app.apiClient.auth.setToken(token);
+      app.apiClient.auth.setAuthenticator(authenticator);
     }
   });
   return <>{props.children}</>;

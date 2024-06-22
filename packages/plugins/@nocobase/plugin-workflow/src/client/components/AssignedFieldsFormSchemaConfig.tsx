@@ -124,7 +124,7 @@ export function AssignedFieldsFormSchemaConfig(props) {
           <FormProvider form={form}>
             <FormLayout layout={'vertical'}>
               <VariableScopeProvider scope={scope}>
-                <SchemaComponentProvider form={form} designable>
+                <SchemaComponentProvider form={form} designable={!nodeForm.disabled}>
                   <SchemaComponentOptions {...schemaOptions}>
                     <SchemaComponent schema={schema} onChange={onChange} />
                   </SchemaComponentOptions>
