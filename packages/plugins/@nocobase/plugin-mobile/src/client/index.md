@@ -99,6 +99,7 @@ mobilePlugin.mobileRouter.add('mobile.my', {
 - 响应式 ipad、mobile
 - 删除 items 的时候，是否需要删除对应的 Schema
 - packages/presets/nocobase/src/server/index.ts
+- 配置解决是否需要 /mobile？以及配置界面样子描述（链接点击跳转到单独的配置节目还是嵌入）
 
 ```js
 {

@@ -7,11 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { FC } from 'react';
+import React from 'react';
 import { useFieldSchema } from '@formily/react';
+import { useParams } from 'react-router-dom';
 import { RemoteSchemaComponent } from '@nocobase/client';
 
 export const MobileContent = () => {
-  const fieldSchema = useFieldSchema();
-  return <RemoteSchemaComponent uid={fieldSchema['x-uid']} onlyRenderProperties />;
+  const { tabId } = useParams();
+  const schema = useFieldSchema();
+  const firstTabSchemaId = schema['x-first-tab-schema-id'];
+  return <RemoteSchemaComponent uid={tabId || firstTabSchemaId} memoized={false} />;
 };

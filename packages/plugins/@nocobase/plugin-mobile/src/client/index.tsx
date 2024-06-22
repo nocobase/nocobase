@@ -15,7 +15,7 @@ import { Mobile } from './mobile';
 import { MobileLayout } from './mobile-layout';
 import { MobileSchemaPage } from './mobile-schema-page';
 import { MobilePage, mobilePageSettings } from './mobile-page';
-import { MobileNavigationBar } from './mobile-navigation-bar';
+import { MobileNavigationBar, mobilePageTabInitializer, mobilePageTabSettings } from './mobile-navigation-bar';
 import { MobileContent, mobileAddBlockInitializer } from './mobile-content';
 import {
   MobileTabBar,
@@ -44,7 +44,7 @@ export class PluginMobileClient extends Plugin {
   }
 
   addInitializers() {
-    this.app.schemaInitializerManager.add(mobileAddBlockInitializer, mobileTabBarInitializer);
+    this.app.schemaInitializerManager.add(mobileAddBlockInitializer, mobileTabBarInitializer, mobilePageTabInitializer);
   }
 
   addSettings() {
@@ -53,6 +53,7 @@ export class PluginMobileClient extends Plugin {
       mobilePageSettings,
       mobileTabBarSchemaSettings,
       mobileTabBarLinkSettings,
+      mobilePageTabSettings,
     );
   }
 

@@ -106,7 +106,7 @@ export const MobileTabContextProvider = ({ children }) => {
   const tabList = useMemo(() => data?.data || [], [data]);
   const { activeTabBarItem, activeTabBarItemTab } = useActiveTabBar(tabList);
 
-  useTitle(activeTabBarItemTab);
+  useTitle(activeTabBarItem);
 
   useHomeNavigate(tabList);
 

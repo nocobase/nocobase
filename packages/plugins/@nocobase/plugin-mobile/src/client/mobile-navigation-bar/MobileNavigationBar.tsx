@@ -14,6 +14,7 @@ import { useParams, useLocation, useNavigate } from 'react-router-dom';
 
 import { useMobileTabContext, useMobileTitle } from '../mobile-providers';
 import { useMobilePage } from '../mobile-page/context';
+import { MobilePageTabInitializer } from './tab';
 
 export const MobileNavigationBar: FC = () => {
   const { title } = useMobileTitle();
@@ -26,11 +27,14 @@ export const MobileNavigationBar: FC = () => {
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const { tabId } = useParams<{ tabId: string }>();
-  const defaultActiveKey = useMemo(
-    () => (tabId ? pathname : activeTabBarItemTab.children[0]?.url),
-    [tabId, pathname, activeTabBarItemTab],
-  );
+  const [activeKey, setActiveKey] = React.useState<string>(() => {
+    return tabId ? pathname : activeTabBarItemTab.children[0]?.url;
+  });
   const handleChange: TabsProps['onChange'] = (url) => {
+    if (!url) {
+      return;
+    }
+    setActiveKey(url);
     navigate(url);
   };
 
@@ -40,10 +44,11 @@ export const MobileNavigationBar: FC = () => {
     <Affix offsetTop={0} style={{ borderBottom: '1px solid var(--adm-color-border)' }}>
       <NavBar backArrow={false}>{enableNavigationBarTitle ? title : null}</NavBar>
       {enableNavigationBarTabs && (
-        <Tabs defaultActiveKey={defaultActiveKey} onChange={handleChange}>
+        <Tabs activeKey={activeKey} onChange={handleChange}>
           {activeTabBarItem.children?.map((item) => (
             <Tabs.Tab title={item.options.title} key={String(item.url)}></Tabs.Tab>
           ))}
+          <Tabs.Tab title={<MobilePageTabInitializer />} key={''}></Tabs.Tab>
         </Tabs>
       )}
     </Affix>
