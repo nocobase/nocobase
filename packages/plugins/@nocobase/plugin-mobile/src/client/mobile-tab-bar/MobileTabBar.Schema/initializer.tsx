@@ -56,6 +56,7 @@ export function getMobileTabBarItemTabData(options: GetMobileTabBarItemTabDataOp
     parentId,
     options: {
       title: title || 'Unnamed',
+      schemaId,
     },
   };
 }
@@ -89,7 +90,6 @@ function getPageSchema(pageSchemaId: string, firstTabSchemaId: string) {
       [uid()]: {
         type: 'void',
         'x-component': 'MobileContent',
-        'x-first-tab-schema-id': firstTabSchemaId,
         properties: {
           [firstTabSchemaId]: getPageContentSchema(firstTabSchemaId),
         },

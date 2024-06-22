@@ -8,13 +8,13 @@
  */
 
 import React from 'react';
-import { useFieldSchema } from '@formily/react';
 import { useParams } from 'react-router-dom';
 import { RemoteSchemaComponent } from '@nocobase/client';
+import { useMobileTabContext } from '../mobile-providers';
 
 export const MobileContent = () => {
   const { tabId } = useParams();
-  const schema = useFieldSchema();
-  const firstTabSchemaId = schema['x-first-tab-schema-id'];
-  return <RemoteSchemaComponent uid={tabId || firstTabSchemaId} memoized={false} />;
+  const { activeTabBarItem } = useMobileTabContext();
+  // 如果 URL 中有 tabId，则使用 tabId，否则使用第一个 tab 的 schemaId
+  return <RemoteSchemaComponent uid={tabId || activeTabBarItem.children?.[0]?.options?.schemaId} memoized={false} />;
 };

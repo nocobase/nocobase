@@ -17,7 +17,7 @@ import { getNewSchema, useHookDefault } from './util';
 export interface CreateModalSchemaSettingsItemProps {
   name: string;
   title: string | ((t: TFunction<'translation', undefined>) => string);
-  parentSchemaKey: string;
+  parentSchemaKey?: string;
   defaultValue?: any;
   useDefaultValue?: () => any;
   schema: (defaultValue: any) => ISchema;
@@ -54,7 +54,7 @@ export function createModalSettingsItem(options: CreateModalSchemaSettingsItemPr
       const fieldSchema = useFieldSchema();
       const { deepMerge } = useDesignable();
       const defaultValue = useDefaultValue(propsDefaultValue);
-      const values = _.get(fieldSchema, parentSchemaKey);
+      const values = parentSchemaKey ? _.get(fieldSchema, parentSchemaKey) : undefined;
       const compile = useCompile();
       const { t } = useTranslation();
       const onSubmit = useSubmit();

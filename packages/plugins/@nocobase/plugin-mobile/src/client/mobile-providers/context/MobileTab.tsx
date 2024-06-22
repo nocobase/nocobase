@@ -13,25 +13,33 @@ import { useLocation, useNavigate } from 'react-router-dom';
 
 import { PluginMobileClient } from '../../index';
 import { useMobileTitle } from './MobileTitle';
-import { useAPIClient, usePlugin, useRequest } from '@nocobase/client';
+import { ISchema, useAPIClient, usePlugin, useRequest } from '@nocobase/client';
 import { IResource } from '@nocobase/sdk';
 
-export interface TabItem {
+export interface TabBarItem {
   id: number;
   url?: string;
   title: string;
-  options: any;
+  options: ISchema;
   parentId?: number;
-  children?: TabItem[];
+  children?: PageTabItem[];
+}
+
+export interface PageTabItem {
+  id: number;
+  url?: string;
+  title: string;
+  options: { title: string; schemaId: string };
+  parentId?: number;
 }
 
 export interface MobileTabContextValue {
-  tabList?: TabItem[];
+  tabList?: TabBarItem[];
   refresh: () => Promise<any>;
   resource: IResource;
   schemaResource: IResource;
-  activeTabBarItem?: TabItem;
-  activeTabBarItemTab?: TabItem;
+  activeTabBarItem?: TabBarItem;
+  activePageTab?: PageTabItem;
 }
 
 export const MobileTabContext = createContext<MobileTabContextValue>(null);
@@ -41,7 +49,7 @@ export const useMobileTabContext = () => {
   return useContext(MobileTabContext);
 };
 
-function useHomeNavigate(tabList: TabItem[]) {
+function useHomeNavigate(tabList: TabBarItem[]) {
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const mobilePlugin = usePlugin(PluginMobileClient);
@@ -59,7 +67,7 @@ function useHomeNavigate(tabList: TabItem[]) {
   }, [pathname, tabList]);
 }
 
-function useActiveTabBar(tabList: TabItem[]) {
+function useActiveTabBar(tabList: TabBarItem[]) {
   const { pathname } = useLocation();
   const urlMap = tabList.reduce((map, item) => {
     if (!item.url) {
@@ -78,11 +86,11 @@ function useActiveTabBar(tabList: TabItem[]) {
 
   return {
     activeTabBarItem, // 第一层
-    activeTabBarItemTab: urlMap[pathname] || activeTabBarItem, // 任意层
+    activePageTab: urlMap[pathname] || activeTabBarItem, // 任意层
   };
 }
 
-function useTitle(activeTabBar: TabItem) {
+function useTitle(activeTabBar: TabBarItem) {
   const { setTitle } = useMobileTitle();
   useEffect(() => {
     if (activeTabBar) {
@@ -102,9 +110,9 @@ export const MobileTabContextProvider = ({ children }) => {
     data,
     runAsync: refresh,
     loading,
-  } = useRequest<{ data: TabItem[] }>(() => resource.list({ tree: true }).then((res) => res.data));
+  } = useRequest<{ data: TabBarItem[] }>(() => resource.list({ tree: true }).then((res) => res.data));
   const tabList = useMemo(() => data?.data || [], [data]);
-  const { activeTabBarItem, activeTabBarItemTab } = useActiveTabBar(tabList);
+  const { activeTabBarItem, activePageTab } = useActiveTabBar(tabList);
 
   useTitle(activeTabBarItem);
 
@@ -118,9 +126,7 @@ export const MobileTabContextProvider = ({ children }) => {
     );
   }
   return (
-    <MobileTabContext.Provider
-      value={{ activeTabBarItem, activeTabBarItemTab, tabList, refresh, resource, schemaResource }}
-    >
+    <MobileTabContext.Provider value={{ activeTabBarItem, activePageTab, tabList, refresh, resource, schemaResource }}>
       {children}
     </MobileTabContext.Provider>
   );

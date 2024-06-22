@@ -12,7 +12,7 @@ import { generatePluginTranslationTemplate } from '../../locale';
 
 export const getMobileTabBarItemSchemaFields = (values: any = {}): Record<string, ISchema> => ({
   title: {
-    title: generatePluginTranslationTemplate('title'),
+    title: generatePluginTranslationTemplate('Title'),
     type: 'string',
     default: values.title,
     'x-decorator': 'FormItem',
