@@ -7,11 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { FC } from 'react';
-import { NavigateFunction, NavigateOptions, useNavigate } from 'react-router-dom';
+import React, { FC, useEffect } from 'react';
+import { Location, NavigateFunction, NavigateOptions, useLocation, useNavigate } from 'react-router-dom';
 
 const NavigateNoUpdateContext = React.createContext<NavigateFunction>(null);
 const LocationNoUpdateContext = React.createContext<Location>(null);
+const LocationSearchContext = React.createContext<string>('');
 
 /**
  * When the URL changes, components that use `useNavigate` will re-render.
@@ -37,8 +38,24 @@ const NavigateNoUpdateProvider: FC = ({ children }) => {
   );
 };
 
+/**
+ * When the URL changes, components that use `useLocation` will re-render.
+ * This provider provides a `useLocationNoUpdate` method that can avoid re-rendering.
+ **/
 const LocationNoUpdateProvider: FC = ({ children }) => {
-  return <LocationNoUpdateContext.Provider value={window.location}>{children}</LocationNoUpdateContext.Provider>;
+  const location = useLocation();
+  const locationRef = React.useRef(location);
+
+  useEffect(() => {
+    Object.assign(locationRef.current, location);
+  }, [location]);
+
+  return <LocationNoUpdateContext.Provider value={locationRef.current}>{children}</LocationNoUpdateContext.Provider>;
+};
+
+const LocationSearchProvider: FC = ({ children }) => {
+  const location = useLocation();
+  return <LocationSearchContext.Provider value={location.search}>{children}</LocationSearchContext.Provider>;
 };
 
 /**
@@ -57,10 +74,16 @@ export const useLocationNoUpdate = () => {
   return React.useContext(LocationNoUpdateContext);
 };
 
+export const useLocationSearch = () => {
+  return React.useContext(LocationSearchContext);
+};
+
 export const CustomRouterContextProvider: FC = ({ children }) => {
   return (
     <NavigateNoUpdateProvider>
-      <LocationNoUpdateProvider>{children}</LocationNoUpdateProvider>
+      <LocationNoUpdateProvider>
+        <LocationSearchProvider>{children}</LocationSearchProvider>
+      </LocationNoUpdateProvider>
     </NavigateNoUpdateProvider>
   );
 };

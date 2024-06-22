@@ -12,7 +12,7 @@ import { useSessionStorageState } from 'ahooks';
 import { App, ConfigProvider, Divider, Layout } from 'antd';
 import { createGlobalStyle } from 'antd-style';
 import React, { FC, createContext, memo, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { Link, Outlet, useLocation, useMatch, useParams } from 'react-router-dom';
+import { Link, Outlet, useMatch, useParams } from 'react-router-dom';
 import {
   ACLRolesCheckProvider,
   CurrentAppInfoProvider,
@@ -33,7 +33,7 @@ import {
   useSystemSettings,
   useToken,
 } from '../../../';
-import { useNavigateNoUpdate } from '../../../application/CustomRouterContextProvider';
+import { useLocationNoUpdate, useNavigateNoUpdate } from '../../../application/CustomRouterContextProvider';
 import { Plugin } from '../../../application/Plugin';
 import { useAppSpin } from '../../../application/hooks/useAppSpin';
 import { useMenuTranslation } from '../../../schema-component/antd/menu/locale';
@@ -77,13 +77,13 @@ const useMenuProps = () => {
 
 const MenuEditor = (props) => {
   const { notification } = App.useApp();
-  const [hasNotice, setHasNotice] = useSessionStorageState('plugin-notice', { defaultValue: false });
+  const [, setHasNotice] = useSessionStorageState('plugin-notice', { defaultValue: false });
   const { t } = useMenuTranslation();
   const { setTitle: _setTitle } = useDocumentTitle();
   const setTitle = useCallback((title) => _setTitle(t(title)), []);
   const navigate = useNavigateNoUpdate();
   const params = useParams<any>();
-  const location = useLocation();
+  const location = useLocationNoUpdate();
   const isMatchAdmin = useMatch('/admin');
   const isMatchAdminName = useMatch('/admin/:name');
   const defaultSelectedUid = params.name;
@@ -92,12 +92,12 @@ const MenuEditor = (props) => {
   const ctx = useACLRoleContext();
   const [current, setCurrent] = useState(null);
 
-  const onSelect = ({ item }) => {
+  const onSelect = useCallback(({ item }) => {
     const schema = item.props.schema;
     setTitle(schema.title);
     setCurrent(schema);
     navigate(`/admin/${schema['x-uid']}`);
-  };
+  }, []);
   const { render } = useAppSpin();
   const adminSchemaUid = useAdminSchemaUid();
   const { data, loading } = useRequest<{
@@ -212,17 +212,16 @@ const MenuEditor = (props) => {
     },
   );
 
+  const scope = useMemo(() => {
+    return { useMenuProps, onSelect, sideMenuRef, defaultSelectedUid };
+  }, []);
+
   if (loading) {
     return render();
   }
   return (
     <SchemaIdContext.Provider value={defaultSelectedUid}>
-      <SchemaComponent
-        distributed
-        memoized
-        scope={{ useMenuProps, onSelect, sideMenuRef, defaultSelectedUid }}
-        schema={schema}
-      />
+      <SchemaComponent distributed memoized scope={scope} schema={schema} />
     </SchemaIdContext.Provider>
   );
 };

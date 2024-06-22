@@ -12,7 +12,7 @@ import _ from 'lodash';
 import qs from 'qs';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useLocation } from 'react-router-dom';
+import { useLocationSearch } from '../../../application/CustomRouterContextProvider';
 import { useFlag } from '../../../flag-provider/hooks/useFlag';
 import { Option } from '../type';
 import { getLabelWithTooltip } from './useBaseVariable';
@@ -64,9 +64,9 @@ export const useURLSearchParamsCtx = (search: string) => {
 export const useURLSearchParamsVariable = (props: any = {}) => {
   const variableName = '$nURLSearchParams';
   const { t } = useTranslation();
-  const location = useLocation();
+  const searchString = useLocationSearch();
   const { isVariableParsedInOtherContext } = useFlag();
-  const urlSearchParamsCtx = useURLSearchParamsCtx(location.search);
+  const urlSearchParamsCtx = useURLSearchParamsCtx(searchString);
   const disabled = useMemo(() => _.isEmpty(urlSearchParamsCtx), [urlSearchParamsCtx]);
   const urlSearchParamsSettings: Option = useMemo(() => {
     return {

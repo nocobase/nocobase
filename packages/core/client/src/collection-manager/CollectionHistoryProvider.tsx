@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { createContext, useContext, useEffect } from 'react';
+import React, { createContext, useCallback, useContext, useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useAPIClient, useRequest } from '../api-client';
 import { useAppSpin } from '../application/hooks/useAppSpin';
@@ -23,25 +23,22 @@ const CollectionHistoryContext = createContext<CollectionHistoryContextValue>({
 });
 CollectionHistoryContext.displayName = 'CollectionHistoryContext';
 
+const options = {
+  resource: 'collectionsHistory',
+  action: 'list',
+  params: {
+    paginate: false,
+    appends: ['fields'],
+    filter: {
+      // inherit: false,
+    },
+    sort: ['sort'],
+  },
+};
+
 export const CollectionHistoryProvider: React.FC = (props) => {
   const api = useAPIClient();
-
-  const options = {
-    resource: 'collectionsHistory',
-    action: 'list',
-    params: {
-      paginate: false,
-      appends: ['fields'],
-      filter: {
-        // inherit: false,
-      },
-      sort: ['sort'],
-    },
-  };
-
   const location = useLocation();
-
-  // console.log('location', location);
 
   const isAdminPage = location.pathname.startsWith('/admin');
   const token = api.auth.getToken() || '';
@@ -55,26 +52,24 @@ export const CollectionHistoryProvider: React.FC = (props) => {
   });
 
   // 刷新 collecionHistory
-  const refreshCH = async () => {
+  const refreshCH = useCallback(async () => {
     const { data } = await api.request(options);
     service.mutate(data);
     return data?.data || [];
-  };
+  }, [service]);
+
+  const value = useMemo(() => {
+    return {
+      historyCollections: service.data?.data,
+      refreshCH,
+    };
+  }, [refreshCH, service.data?.data]);
 
   if (service.loading) {
     return render();
   }
 
-  return (
-    <CollectionHistoryContext.Provider
-      value={{
-        historyCollections: service.data?.data,
-        refreshCH,
-      }}
-    >
-      {props.children}
-    </CollectionHistoryContext.Provider>
-  );
+  return <CollectionHistoryContext.Provider value={value}>{props.children}</CollectionHistoryContext.Provider>;
 };
 
 export const useHistoryCollectionsByNames = (collectionNames: string[]) => {
