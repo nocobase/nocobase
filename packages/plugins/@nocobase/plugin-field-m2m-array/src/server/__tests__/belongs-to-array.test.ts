@@ -199,7 +199,7 @@ describe('belongs-to-array', () => {
       });
     });
 
-    it.only('should filter with the fields of belongsToArray', async () => {
+    it('should filter with the fields of belongsToArray', async () => {
       const search = db.getRepository('users').find({
         filter: {
           'tags.title': {
