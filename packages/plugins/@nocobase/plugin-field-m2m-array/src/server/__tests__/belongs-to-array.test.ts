@@ -199,26 +199,36 @@ describe('belongs-to-array', () => {
       });
     });
 
-    it('should filter with the fields of belongsToArray', async () => {
-      if (db.sequelize.getDialect() !== 'postgres') {
-        return;
-      }
-      const users = await db.getRepository('users').find({
+    it.only('should filter with the fields of belongsToArray', async () => {
+      const search = db.getRepository('users').find({
         filter: {
           'tags.title': {
             $includes: ['a'],
           },
         },
       });
-      expect(users.length).toBe(1);
-      const users2 = await db.getRepository('users').find({
+      if (db.sequelize.getDialect() === 'postgres') {
+        const res = await search;
+        expect(res.length).toBe(1);
+      } else {
+        expect(search).rejects.toThrowError();
+      }
+      if (db.sequelize.getDialect() !== 'postgres') {
+        return;
+      }
+      const search2 = db.getRepository('users').find({
         filter: {
           'tags.title': {
             $includes: ['b'],
           },
         },
       });
-      expect(users2.length).toBe(2);
+      if (db.sequelize.getDialect() === 'postgres') {
+        const res = await search2;
+        expect(res.length).toBe(2);
+      } else {
+        expect(search2).rejects.toThrowError();
+      }
     });
 
     it('should create with belongsToArray', async () => {

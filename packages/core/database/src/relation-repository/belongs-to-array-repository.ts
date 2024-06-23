@@ -52,6 +52,17 @@ export class BelongsToArrayAssociation {
   get target() {
     return this.db.getModel(this.targetName);
   }
+
+  generateInclude() {
+    if (this.db.sequelize.getDialect() !== 'postgres') {
+      throw new Error('Filtering by many to many (array) associations is only supported on postgres');
+    }
+    return {
+      on: this.db.sequelize.literal(
+        `${this.as}.${this.targetKey}=any(${this.source.collection.name}.${this.foreignKey})`,
+      ),
+    };
+  }
 }
 
 export class BelongsToArrayRepository extends MultipleRelationRepository {
