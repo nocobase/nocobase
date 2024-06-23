@@ -7,11 +7,22 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { getDayRange } from '@nocobase/utils';
+import { getDayRange, utc2unit } from '@nocobase/utils';
 import Plugin from '..';
 import type { ExecutionModel, FlowNodeModel } from '../types';
 
 export type CustomFunction = (this: { execution: ExecutionModel; node?: FlowNodeModel }) => any;
+
+function getTimezone() {
+  const timezoneOffset = 0 - new Date().getTimezoneOffset() / 60;
+  const timezoneString = `${
+    Math.abs(timezoneOffset) > 10 ? Math.abs(timezoneOffset) : `0${Math.abs(timezoneOffset)}`
+  }:00`;
+  const timezone = `${timezoneOffset > 0 ? '+' : '-'}${timezoneString}`;
+  return timezone;
+}
+const getRangeByDay = (offset: number) =>
+  utc2unit({ now: new Date(), unit: 'day', offset: offset, timezone: getTimezone() });
 
 function now() {
   return new Date();
@@ -19,20 +30,19 @@ function now() {
 
 const dateRangeFns = {
   yesterday() {
-    const yd = getDayRange({ now: new Date(), offset: -2, timezone: '+08:00' });
-    return yd;
+    return getRangeByDay(-1);
   },
   today() {
-    const td = getDayRange({ now: new Date(), offset: -1, timezone: '+08:00' });
-    return td;
+    return getRangeByDay(0);
   },
 };
 
 export default function ({ functions }: Plugin, more: { [key: string]: CustomFunction } = {}) {
-  const dateRangeOptions = new Map(Object.entries(dateRangeFns));
-
   functions.register('now', now);
-  functions.register('dateRange', dateRangeOptions);
+
+  Object.keys(dateRangeFns).forEach((key) => {
+    functions.register(`dateRange.${key}`, dateRangeFns[key]);
+  });
 
   for (const [name, fn] of Object.entries(more)) {
     functions.register(name, fn);

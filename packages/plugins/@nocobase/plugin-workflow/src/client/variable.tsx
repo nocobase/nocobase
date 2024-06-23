@@ -232,7 +232,7 @@ export const systemOptions = {
               [fieldNames.value]: 'now',
             },
             {
-              key: 'dateTime',
+              key: 'dateRange',
               [fieldNames.label]: lang('Date range'),
               [fieldNames.value]: 'dateRange',
               children: getDateOptions(t),

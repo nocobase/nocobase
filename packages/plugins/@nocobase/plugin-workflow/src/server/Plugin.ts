@@ -50,7 +50,7 @@ type CachedEvent = [WorkflowModel, any, EventOptions];
 export default class PluginWorkflowServer extends Plugin {
   instructions: Registry<InstructionInterface> = new Registry();
   triggers: Registry<Trigger> = new Registry();
-  functions: Registry<CustomFunction | Map<string, CustomFunction>> = new Registry();
+  functions: Registry<CustomFunction> = new Registry();
   enabledCache: Map<number, WorkflowModel> = new Map();
 
   private ready = false;

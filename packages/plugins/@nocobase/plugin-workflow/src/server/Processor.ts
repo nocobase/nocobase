@@ -11,6 +11,7 @@ import { Model, Transaction, Transactionable } from '@nocobase/database';
 import { appendArrayColumn } from '@nocobase/evaluators';
 import { Logger } from '@nocobase/logger';
 import { parse } from '@nocobase/utils';
+import set from 'lodash/set';
 import type Plugin from './Plugin';
 import { EXECUTION_STATUS, JOB_STATUS } from './constants';
 import { Runner } from './instructions';
@@ -371,22 +372,14 @@ export default class Processor {
    */
   public getScope(sourceNodeId: number) {
     const node = this.nodesMap.get(sourceNodeId);
+    const systemFns = {};
     const scope = {
       execution: this.execution,
       node,
     };
-    function bindScope(mapEntries) {
-      const result = {};
-      for (const [name, fn] of mapEntries) {
-        if (typeof fn === 'function') {
-          result[name] = fn.bind(scope);
-        } else if (typeof fn.entries === 'function') {
-          result[name] = bindScope(fn.entries());
-        }
-      }
-      return result;
+    for (const [name, fn] of this.options.plugin.functions.getEntities()) {
+      set(systemFns, name, fn.bind(scope));
     }
-    const systemFns = bindScope(this.options.plugin.functions.getEntities());
 
     const $scopes = {};
     for (let n = this.findBranchParentNode(node); n; n = this.findBranchParentNode(n)) {
