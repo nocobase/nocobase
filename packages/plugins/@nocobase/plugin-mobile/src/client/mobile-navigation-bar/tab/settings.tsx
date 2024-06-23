@@ -19,7 +19,7 @@ import {
   useSchemaToolbar,
 } from '@nocobase/client';
 import { generatePluginTranslationTemplate, usePluginTranslation } from '../../locale';
-import { PageTabItem, useMobileTabContext } from '../../mobile-providers';
+import { TabItem, useMobileTabContext } from '../../mobile-providers';
 
 export const remove = createTextSettingsItem({
   name: 'remove',
@@ -88,7 +88,7 @@ export const mobilePageTabSettings = new SchemaSettings({
 });
 
 interface MobilePageTabSettingsProps {
-  tab: PageTabItem;
+  tab: TabItem;
 }
 
 export const MobilePageTabSettings: FC<MobilePageTabSettingsProps> = ({ tab }) => {

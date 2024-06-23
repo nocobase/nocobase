@@ -21,13 +21,13 @@ export interface TabBarItem {
   url?: string;
   options: ISchema;
   parentId?: number;
-  children?: PageTabItem[];
+  children?: TabItem[];
 }
 
-export interface PageTabItem {
+export interface TabItem {
   id: number;
   url?: string;
-  options: { title: string; pageSchemaUid: string };
+  options: { title: string; tabSchemaUid: string };
   parentId?: number;
 }
 
@@ -37,7 +37,7 @@ export interface MobileTabContextValue {
   resource: IResource;
   schemaResource: IResource;
   activeTabBarItem?: TabBarItem;
-  activePageTab?: PageTabItem;
+  activePageTab?: TabItem;
 }
 
 export const MobileTabContext = createContext<MobileTabContextValue>(null);

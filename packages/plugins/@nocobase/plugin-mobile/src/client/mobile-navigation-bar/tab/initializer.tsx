@@ -32,18 +32,18 @@ export const mobilePageTabInitializer = new SchemaInitializer({
         buttonText={generatePluginTranslationTemplate('Add Tab')}
         onSubmit={async ({ title }) => {
           // 创建 Tab
-          const pageSchemaUid = uid();
+          const tabSchemaUid = uid();
           await resource.create({
             values: getMobileTabBarItemTabData({
               pageUrl: activeTabBarItem.url,
-              pageSchemaUid,
+              tabSchemaUid,
               parentId: activeTabBarItem.id,
               title,
             }),
           });
 
           // 创建 Schema
-          insert(getPageContentSchema(pageSchemaUid));
+          insert(getPageContentSchema(tabSchemaUid));
 
           await refresh();
         }}

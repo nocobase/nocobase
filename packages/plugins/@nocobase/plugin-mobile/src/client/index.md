@@ -64,24 +64,250 @@ mobileRouter.add('mobile.schema.tabs.page', {
 ## 路由数据
 
 ```ts
+// 核心是 URL 和 options
+export interface TabBarItem {
+  id: number;
+  url?: string;
+  options: ISchema;
+  parentId?: number;
+  children?: TabItem[];
+}
 
+// 核心是 URL 和 options
+export interface TabItem {
+  id: number;
+  url?: string;
+  options: { title: string; pageSchemaUid: string };
+  parentId?: number;
+}
+```
+
+为了统一 Schema 链接和普通的 URL 链接，我们都将 `url` 放到了最外层，这样方便查找和匹配。
+
+```json
+[
+    {
+        "id": 3,
+        "parentId": null,
+        "url": "/schema/3bz0ki59s8f",
+        "options": {
+            "type": "void",
+            "x-decorator": "BlockItem",
+            "x-toolbar-props": {
+                "draggable": false
+            },
+            "x-settings": "mobile:tab-bar:schema",
+            "x-component": "MobileTabBar.Schema",
+            "x-component-props": {
+                "title": "Home",
+                "icon": "alipayoutlined",
+                "selectedIcon": "alipaycircleoutlined",
+                "pageSchemaUid": "3bz0ki59s8f"
+            }
+        },
+        "children": [
+            {
+                "id": 4,
+                "parentId": 3,
+                "url": "/schema/3bz0ki59s8f/tabs/aql952klkmw",
+                "options": {
+                    "title": "Unnamed",
+                    "pageSchemaUid": "aql952klkmw"
+                },
+                "__index": "0.children.0"
+            }
+        ],
+        "__index": "0"
+    },
+    {
+        "id": 5,
+        "parentId": null,
+        "url": "/schema/e3t0g3kql0u",
+        "options": {
+            "type": "void",
+            "x-decorator": "BlockItem",
+            "x-toolbar-props": {
+                "draggable": false
+            },
+            "x-settings": "mobile:tab-bar:schema",
+            "x-component": "MobileTabBar.Schema",
+            "x-component-props": {
+                "title": "Message",
+                "icon": "aliwangwangoutlined",
+                "pageSchemaUid": "e3t0g3kql0u"
+            }
+        },
+        "children": [
+            {
+                "id": 6,
+                "parentId": 5,
+                "url": "/schema/e3t0g3kql0u/tabs/5av5oolwlve",
+                "options": {
+                    "title": "未读消息",
+                    "pageSchemaUid": "5av5oolwlve"
+                },
+                "__index": "1.children.0"
+            },
+            {
+                "id": 8,
+                "parentId": 5,
+                "url": "/schema/e3t0g3kql0u/tabs/2w3k326y33n",
+                "options": {
+                    "title": "已读消息",
+                    "pageSchemaUid": "2w3k326y33n"
+                },
+                "__index": "1.children.1"
+            }
+        ],
+        "__index": "1"
+    },
+    {
+        "id": 7,
+        "parentId": null,
+        "url": null,
+        "options": {
+            "_isJSONSchemaObject": true,
+            "version": "2.0",
+            "name": "7",
+            "type": "void",
+            "x-decorator": "BlockItem",
+            "x-toolbar-props": {
+                "draggable": false
+            },
+            "x-settings": "mobile:tab-bar:link",
+            "x-component": "MobileTabBar.Link",
+            "x-component-props": {
+                "title": "Github",
+                "link": "https://github.com",
+                "icon": "githuboutlined"
+            }
+        },
+        "__index": "2"
+    }
+]
 ```
 
 ## Schema
 
-## Schema
+### TabBarItem Schema
 
-
-```ts
-
+```json
+{
+  "type": "void",
+  "x-decorator": "BlockItem",
+  "x-toolbar-props": {
+      "draggable": false
+  },
+  "x-settings": "mobile:tab-bar:link",
+  "x-component": "MobileTabBar.Link",
+  "x-component-props": {
+      "title": "Github",
+      "link": "https://github.com",
+      "icon": "githuboutlined"
+  }
+}
 ```
+
+### Page Schema
+
+```json
+{
+    "type": "void",
+    "x-component": "MobilePage",
+    "x-settings": "mobile:page",
+    "x-decorator": "BlockItem",
+    "x-component-props": {
+        "enableNavigationBarTabs": true
+    },
+    "properties": {
+        "navigationBar": {
+            "type": "void",
+            "x-component": "MobileNavigationBar",
+            "properties": {
+                "leftActions": {
+                    "type": "void",
+                    "x-component": "ActionBar",
+                    "x-initializer": "mobile:navigation-bar",
+                    "properties": {
+                        "action1": {
+                            "type": "void",
+                            "x-component": "Action",
+                            "x-toolbar": "ActionSchemaToolbar",
+                            "x-settings": "navigationBar:actionSettings:link",
+                            "x-use-component-props": "useMobileNavigationBarLink",
+                            "x-component-props": {
+                                "link": "/",
+                                "title": "Home",
+                                "style": {
+                                    "border": "none"
+                                }
+                            }
+                        }
+                    },
+                },
+                "rightActions": {
+                    "type": "void",
+                    "x-component": "ActionBar",
+                    "x-initializer": "mobile:navigation-bar",
+                }
+            }
+        },
+        "content": {
+            "type": "void",
+            "x-component": "MobileContent",
+            "properties": {
+              "tab1": {
+                  "type": "void",
+                  "x-component": "Grid",
+                  "x-async": true,
+                  "x-initializer": "mobile:addBlock",
+                  "properties": {}
+              },
+              "tab2": {
+                  "type": "void",
+                  "x-async": true,
+                  "x-component": "Grid",
+                  "x-initializer": "mobile:addBlock",
+                  "properties": {}
+              }
+            }
+        }
+    }
+}
+```
+
+其中 `tab1` 和 `tab2` 的 `x-async` 为 true，表示是异步加载的。
+
 
 ## 待确定的事或者有争议的事
 
-
+- 插件列表 presets 变更，怎么改？packages/presets/nocobase/src/server/index.ts
+- Settings 配置页面的样式和规划
+  - `basename` 是否需要可配置，如果不需要，则是一个链接，打开配置页面
+  - 如果需要配置，settings 配置页面按照原来的设计，还是独立的一个页面
+- TabBar 的需要设置吗？（目前看来没什么设置项，是否需要显示的问题，如果没注册到 TabBar 上则默认不显示，似乎是能满足要求的）
+- 目前设计图中的 TabBar 类型只完成了 2 种类型，其他的类型是否这次做？
+- 将 `navigationBar title` 是否显示，放到了 Page Settings 中，而不是 `navigationBar` 的设置中，`navigationBar` 没有设置项
+- `navigationBar` 左右两侧的 initializer 使用的是同一个，还是分开命名？
+- `navigationBar` 的操作按钮目前只实现了一个 Link，计划实现 `back`，其他的是否这次做？
+- Schema 的 name 到底是具体的名字好，还是 Uid() 好
+- 删除 tabBar 的时候，是否关联的资源都删除，还是不用管？
 
 ## 待做任务
 
+- settings 页面
+- tabBar 样式优化
+- navigationBar 样式优化
+- 主题色
+- 多应用的支持
+- JS bridge
+- 各个部分的文档
+- package.json 的描述
+- 更新文档
+- Readme
+- 新移动端 Tab 的插件开发示例
+- 响应式 ipad、mobile 效果都比较 OK
+- 未登录情况下直接访问，有 BUG
 
 
 ## Schema
@@ -108,19 +334,6 @@ mobileRouter.add('mobile.schema.tabs.page', {
 
 ## 问题
 
-- 如果 TabBar 单独设置，则需要单独存储配置的东西，他不是 Schema（当然也可以没有设置，显示与否用是否有子项，其他的背景或者颜色之类的如果不需要设置的话）
-- 从过 tab 创建 Schema 需要一个根节点（mobile）
-- 2 种 TabBar Item 的 Schema 定义方式
-- 完全自定义的 TabBar Item，例如闲鱼的 【发布闲置】 按钮
-- 主题
-- 子系统
-- 响应式 ipad、mobile
-- 删除 items 的时候，是否需要删除对应的 Schema
-- packages/presets/nocobase/src/server/index.ts
-- 配置解决是否需要 /mobile？以及配置界面样子描述（链接点击跳转到单独的配置节目还是嵌入）
-- Schema 的 name 到底是具体的名字好，还是 Uid() 好
-- 搜索/tabs 下面放 initailzer 或者 settings，还是坚持放上面？
-- 预览、JS briage
 
 ```js
 {

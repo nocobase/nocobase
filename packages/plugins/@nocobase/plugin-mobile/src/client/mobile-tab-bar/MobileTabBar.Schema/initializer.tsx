@@ -43,39 +43,39 @@ export function getMobileTabBarItemData(options: GetMobileTabBarItemDataOptions)
 }
 
 export interface GetMobileTabBarItemTabDataOptions {
-  pageSchemaUid: string;
+  tabSchemaUid: string;
   pageUrl?: string;
   parentId: number;
   title?: string;
 }
 
 export function getMobileTabBarItemTabData(options: GetMobileTabBarItemTabDataOptions) {
-  const { pageSchemaUid, pageUrl, parentId, title } = options;
+  const { tabSchemaUid, pageUrl, parentId, title } = options;
   return {
-    url: `${pageUrl}/tabs/${pageSchemaUid}`,
+    url: `${pageUrl}/tabs/${tabSchemaUid}`,
     parentId,
     options: {
       title: title || 'Unnamed',
-      pageSchemaUid,
+      tabSchemaUid,
     },
   };
 }
 
-export function getPageContentSchema(uid: string) {
+export function getPageContentSchema(pageSchemaUid: string) {
   return {
     type: 'void',
-    'x-uid': uid,
+    'x-uid': pageSchemaUid,
     'x-async': true, // 异步
     'x-component': 'Grid',
     'x-initializer': 'mobile:addBlock',
   };
 }
 
-function getPageSchema(pageSchemaId: string, firstTabSchemaId: string) {
+function getPageSchema(pageSchemaUId: string, firstTabSchemaUid: string) {
   const pageSchema = {
     type: 'void',
-    name: pageSchemaId,
-    'x-uid': pageSchemaId,
+    name: pageSchemaUId,
+    'x-uid': pageSchemaUId,
     'x-component': 'MobilePage',
     'x-settings': 'mobile:page',
     'x-decorator': 'BlockItem',
@@ -103,7 +103,7 @@ function getPageSchema(pageSchemaId: string, firstTabSchemaId: string) {
         type: 'void',
         'x-component': 'MobileContent',
         properties: {
-          [firstTabSchemaId]: getPageContentSchema(firstTabSchemaId),
+          [firstTabSchemaUid]: getPageContentSchema(firstTabSchemaUid),
         },
       },
     },
@@ -129,26 +129,26 @@ export const mobileTabBarSchemaInitializerItem: SchemaInitializerItemActionModal
           return;
         }
 
-        const pageSchemaId = uid();
-        const firstTabSchemaId = uid();
-        const url = `/schema/${pageSchemaId}`;
+        const pageSchemaUId = uid();
+        const firstTabSchemaUid = uid();
+        const url = `/schema/${pageSchemaUId}`;
 
         // 先创建 TabBar item
         const { data } = await resource.create({
-          values: getMobileTabBarItemData({ url, pageSchemaUid: pageSchemaId, values }),
+          values: getMobileTabBarItemData({ url, pageSchemaUid: pageSchemaUId, values }),
         });
 
         // 创建空页面
         await schemaResource.insertAdjacent({
           resourceIndex: 'mobile',
           position: 'beforeEnd',
-          values: getPageSchema(pageSchemaId, firstTabSchemaId),
+          values: getPageSchema(pageSchemaUId, firstTabSchemaUid),
         });
 
         // 创建 TabBar item 的第一个 tab
         const parentId = data.data.id;
         await resource.create({
-          values: getMobileTabBarItemTabData({ pageUrl: url, pageSchemaUid: firstTabSchemaId, parentId }),
+          values: getMobileTabBarItemTabData({ pageUrl: url, tabSchemaUid: firstTabSchemaUid, parentId }),
         });
 
         // 刷新 tabs
