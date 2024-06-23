@@ -45,29 +45,27 @@ interface DistributedProps {
 }
 
 const RecursionSchemaComponent = memo((props: ISchemaFieldProps & SchemaComponentOnChange & DistributedProps) => {
-  const { components, scope, schema, distributed, ...others } = props;
+  const { components, scope, schema: _schema, distributed, ...others } = props;
   const ctx = useContext(SchemaComponentContext);
-  const s = useMemo(() => toSchema(schema), [schema]);
+  const schema = useMemo(() => toSchema(_schema), [_schema]);
   const refresh = useUpdate();
 
-  const schemaComponentValue = useMemo(() => {
-    return {
-      ...ctx,
-      distributed: ctx.distributed == false ? false : distributed,
-      refresh: () => {
-        refresh();
-        if (ctx.distributed === false || distributed === false) {
-          ctx.refresh?.();
-        }
-        props.onChange?.(s);
-      },
-    };
-  }, [ctx, distributed, refresh, props.onChange, s]);
-
   return (
-    <SchemaComponentContext.Provider value={schemaComponentValue}>
+    <SchemaComponentContext.Provider
+      value={{
+        ...ctx,
+        distributed: ctx.distributed == false ? false : distributed,
+        refresh: () => {
+          refresh();
+          if (ctx.distributed === false || distributed === false) {
+            ctx.refresh?.();
+          }
+          props.onChange?.(schema);
+        },
+      }}
+    >
       <SchemaComponentOptions inherit components={components} scope={scope}>
-        <RecursionField {...others} schema={s} />
+        <RecursionField {...others} schema={schema} />
       </SchemaComponentOptions>
     </SchemaComponentContext.Provider>
   );
