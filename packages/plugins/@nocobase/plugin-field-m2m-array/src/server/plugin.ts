@@ -10,6 +10,7 @@
 import { Plugin } from '@nocobase/server';
 import { BelongsToArrayField } from './belongs-to-array-field';
 import { createForeignKey } from './hooks/create-foreign-key';
+import { beforeDestroyForeignKey } from './hooks/before-destroy-foreign-key';
 
 export class PluginFieldM2MArrayServer extends Plugin {
   async afterAdd() {}
@@ -21,6 +22,7 @@ export class PluginFieldM2MArrayServer extends Plugin {
       belongsToArray: BelongsToArrayField,
     });
     this.db.on('fields.afterCreate', createForeignKey(this.db));
+    this.db.on('fields.beforeDestroy', beforeDestroyForeignKey(this.db));
   }
 
   async install() {}

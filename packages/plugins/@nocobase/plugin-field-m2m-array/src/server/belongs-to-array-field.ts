@@ -7,44 +7,56 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { BaseColumnFieldOptions, BelongsToArrayAssociation, Field, Model, RelationField } from '@nocobase/database';
+import { BaseColumnFieldOptions, BelongsToArrayAssociation, Model, RelationField } from '@nocobase/database';
 
 export class BelongsToArrayField extends RelationField {
   get dataType() {
     return 'BelongsToArray';
   }
 
+  private setForeignKeyArray = async (model: Model, { values, transaction }) => {
+    const { name, foreignKey, target, targetKey } = this.options;
+    if (values[name] === undefined) {
+      return;
+    }
+    const value: any[] = values[name] || [];
+    const tks = [];
+    for (const item of value) {
+      if (typeof item !== 'object') {
+        tks.push(item);
+        continue;
+      }
+      let tk = item[targetKey];
+      if (!tk) {
+        const newInstance = await this.database.getRepository(target).create({
+          values: item,
+          transaction,
+        });
+        tk = newInstance.get(targetKey);
+      }
+      tks.push(tk);
+    }
+    model.set(foreignKey, tks);
+  };
+
   init() {
     super.init();
-    const { name, foreignKey, ...opts } = this.options;
+    const { name, ...opts } = this.options;
     this.collection.model.associations[name] = new BelongsToArrayAssociation({
       db: this.database,
       source: this.collection.model,
       as: name,
-      foreignKey,
       ...opts,
     }) as any;
-
-    this.listener = async (model: Model, options) => {
-      const { values } = options;
-      if (values[name] === undefined) {
-        return;
-      }
-      const value: any[] = values[name] || [];
-      const tks = value
-        .map((item) => (typeof item === 'object' ? item[this.options.targetKey] : item))
-        .filter((v) => v);
-      model.set(foreignKey, tks);
-    };
   }
 
   bind() {
-    this.on('beforeSave', this.listener);
+    this.on('beforeSave', this.setForeignKeyArray);
   }
 
   unbind() {
     delete this.collection.model.associations[this.name];
-    this.off('beforeSave', this.listener);
+    this.off('beforeSave', this.setForeignKeyArray);
   }
 }
 
