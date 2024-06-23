@@ -15,7 +15,7 @@ import { withDynamicSchemaProps } from '../hoc/withDynamicSchemaProps';
 import { useTableBlockParams } from '../modules/blocks/data-blocks/table';
 import { FixedBlockWrapper, SchemaComponentOptions } from '../schema-component';
 import { BlockProvider, useBlockRequestContext } from './BlockProvider';
-
+import { useBlockHeightProps } from './hooks';
 /**
  * @internal
  */
@@ -67,6 +67,7 @@ const InternalTableBlockProvider = (props: Props) => {
   const { resource, service } = useBlockRequestContext();
   const fieldSchema = useFieldSchema();
   const [expandFlag, setExpandFlag] = useState(fieldNames || propsExpandFlag ? true : false);
+  const { heightProps } = useBlockHeightProps();
 
   useEffect(() => {
     setExpandFlag(fieldNames || propsExpandFlag);
@@ -104,6 +105,7 @@ const InternalTableBlockProvider = (props: Props) => {
           childrenColumnName,
           allIncludesChildren,
           setExpandFlag: setExpandFlagValue,
+          heightProps,
         }}
       >
         {props.children}
@@ -147,7 +149,6 @@ export const TableBlockProvider = withDynamicSchemaProps((props) => {
   const collection = getCollection(props.collection, props.dataSource);
   const { treeTable } = fieldSchema?.['x-decorator-props'] || {};
   const { params, parseVariableLoading } = useTableBlockParamsCompat(props);
-
   let childrenColumnName = 'children';
 
   if (treeTable) {

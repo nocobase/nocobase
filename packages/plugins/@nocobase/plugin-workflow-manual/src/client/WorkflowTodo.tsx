@@ -244,7 +244,7 @@ export const WorkflowTodo: React.FC & { Drawer: React.FC; Decorator: React.FC } 
             'x-component': 'ActionBar',
             'x-component-props': {
               style: {
-                marginBottom: 16,
+                marginBottom: 'var(--nb-spacing)',
               },
             },
             properties: {

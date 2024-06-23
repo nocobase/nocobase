@@ -13,6 +13,7 @@ import WorkflowPlugin from '@nocobase/plugin-workflow/client';
 import DynamicCalculation from './DynamicCalculation';
 import { DynamicExpression } from './DynamicExpression';
 import { ExpressionFieldInterface } from './expression';
+import { ExpressionCollectionTemplate } from './ExpressionCollectionTemplate';
 
 export default class extends Plugin {
   async afterAdd() {
@@ -27,6 +28,9 @@ export default class extends Plugin {
     this.app.addComponents({
       DynamicExpression,
     });
+
+    this.dataSourceManager.addCollectionTemplates([ExpressionCollectionTemplate]);
+
     const workflow = this.app.pm.get('workflow') as WorkflowPlugin;
     const dynamicCalculation = new DynamicCalculation();
     workflow.instructions.register(dynamicCalculation.type, dynamicCalculation);
