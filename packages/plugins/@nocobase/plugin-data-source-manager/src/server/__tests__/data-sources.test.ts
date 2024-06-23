@@ -564,7 +564,7 @@ describe('data source', async () => {
       expect(collection.getField('comments')).toBeFalsy();
     });
 
-    it('should create collection field', async () => {
+    it('should update collection with field', async () => {
       const dataSource = app.dataSourceManager.dataSources.get('mockInstance1');
       const collection = dataSource.collectionManager.getCollection('comments');
 
