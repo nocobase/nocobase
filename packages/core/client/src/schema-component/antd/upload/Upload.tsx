@@ -22,7 +22,7 @@ import 'react-image-lightbox/style.css'; // This only needs to be imported once 
 import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
 import { useProps } from '../../hooks/useProps';
 import {
-  FILE_SIZE_LIMI_MAX,
+  FILE_SIZE_LIMIT_DEFAULT,
   isImage,
   isPdf,
   normalizeFile,
@@ -79,7 +79,7 @@ export const Upload: ComposedUpload = connect(
 Upload.ReadPretty = ReadPretty;
 
 function useSizeHint(size: number) {
-  const s = size ?? FILE_SIZE_LIMI_MAX;
+  const s = size ?? FILE_SIZE_LIMIT_DEFAULT;
   const { t, i18n } = useTranslation();
   const sizeString = filesize(s, { base: 2, standard: 'jedec', locale: i18n.language });
   return s !== 0 ? t('File size should not exceed {{size}}.', { size: sizeString }) : '';
