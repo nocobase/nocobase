@@ -14,13 +14,13 @@ import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { useMobileTabContext } from '../mobile-providers';
 import { MobilePageTabInitializer, MobilePageTabSettings } from './tab';
 
-export const MobileNavigationBar: FC = () => {
+export const MobileNavigationBarTabs: FC = () => {
   const { activeTabBarItem } = useMobileTabContext();
   const { pathname } = useLocation();
   const navigate = useNavigate();
-  const { tabId } = useParams<{ tabId: string }>();
+  const { tabSchemaUid } = useParams<{ tabSchemaUid: string }>();
   const [activeKey, setActiveKey] = React.useState<string>(() => {
-    return tabId ? pathname : activeTabBarItem.children[0]?.url;
+    return tabSchemaUid ? pathname : activeTabBarItem.children[0]?.url;
   });
   const handleChange: TabsProps['onChange'] = (url) => {
     if (!url) {

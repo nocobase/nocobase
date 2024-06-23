@@ -1,6 +1,5 @@
 # Client
 
-
 <code src="./demos/Demo.tsx"></code>
 
 ## 嵌套关系
@@ -19,19 +18,6 @@
 ```
 
 ```tsx | pure
-<MobileSchemaPage> // react-router 匹配的 Schema 页面 router.add('/schema/:schemaId', { Component: 'MobileSchemaPage' })
-  <RemoteSchemaComponent uid={params.schemaId}> // 通过 URL 获取 uid，加载整个页面的 Schema
-    <MobilePage>
-      <MobileNavigationBar />
-      <MobileContent />
-    </MobilePage>
-  </RemoteSchemaComponent>
-</MobileSchemaPage>
-```
-
-## 路由嵌套关系
-
-```tsx | pure
 // 首先是将 `/mobile` 路由添加根项目的路由中，这样所有访问 `/mobile` 的请求都会进入到 mobile 路由中
 app.router.add('mobile', {
   path: '/mobile/*',
@@ -46,25 +32,57 @@ mobileRouter.add('mobile', {
 });
 ```
 
+
 ```tsx | pure
-// schema 页面的路由
-mobileRouter.add('mobile.schema', {
-  element: <Outlet />,
+<MobileSchemaPage> // react-router 匹配的 Schema 页面 router.add('/schema/:pageSchemaUid', { Component: 'MobileSchemaPage' })
+  <RemoteSchemaComponent uid={params.pageSchemaUid}> // 通过 URL 获取 uid，加载整个页面的 Schema
+    <MobilePage>
+      <MobileNavigationBar />
+      <MobileContent>
+        <RemoteSchemaComponent uid={params.tabSchemaId} /> // Tab 的 Schema
+      </MobileContent>
+    </MobilePage>
+  </RemoteSchemaComponent>
+</MobileSchemaPage>
+```
+
+```tsx | pure
+// schema 页面路由
+mobileRouter.add('mobile.schema.page', {
+  path: '/schema/:pageSchemaUid',
+  Component: 'MobileSchemaPage',
 });
 
-mobileRouter.add('mobile.schema.page', {
-  path: '/schema/:schemaId',
+
+// Tab 路由
+mobileRouter.add('mobile.schema.tabs.page', {
+  path: '/schema/:pageSchemaUid/tabs/:tabSchemaUid',
   Component: 'MobileSchemaPage',
 });
 ```
 
-```tsx | pure
-// 自定义页面的路由
-mobilePlugin.mobileRouter.add('mobile.my', {
-  path: '/my',
-  element: <MyPage />,
-});
+## 路由数据
+
+```ts
+
 ```
+
+## Schema
+
+## Schema
+
+
+```ts
+
+```
+
+## 待确定的事或者有争议的事
+
+
+
+## 待做任务
+
+
 
 ## Schema
 
@@ -101,6 +119,8 @@ mobilePlugin.mobileRouter.add('mobile.my', {
 - packages/presets/nocobase/src/server/index.ts
 - 配置解决是否需要 /mobile？以及配置界面样子描述（链接点击跳转到单独的配置节目还是嵌入）
 - Schema 的 name 到底是具体的名字好，还是 Uid() 好
+- 搜索/tabs 下面放 initailzer 或者 settings，还是坚持放上面？
+- 预览、JS briage
 
 ```js
 {

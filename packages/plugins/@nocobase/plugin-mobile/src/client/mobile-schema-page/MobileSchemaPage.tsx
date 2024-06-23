@@ -16,6 +16,6 @@ export interface MobileSchemaPageProps {
 }
 
 export const MobileSchemaPage: FC<MobileSchemaPageProps> = ({ children }) => {
-  const { schemaId } = useParams<{ schemaId: string }>();
-  return <RemoteSchemaComponent uid={schemaId} memoized={false} />;
+  const { pageSchemaUid } = useParams<{ pageSchemaUid: string }>();
+  return <RemoteSchemaComponent uid={pageSchemaUid} memoized={false} />;
 };

@@ -13,8 +13,13 @@ import { RemoteSchemaComponent } from '@nocobase/client';
 import { useMobileTabContext } from '../mobile-providers';
 
 export const MobileContent = () => {
-  const { tabId } = useParams();
+  const { tabSchemaUid } = useParams();
   const { activeTabBarItem } = useMobileTabContext();
-  // 如果 URL 中有 tabId，则使用 tabId，否则使用第一个 tab 的 schemaId
-  return <RemoteSchemaComponent uid={tabId || activeTabBarItem.children?.[0]?.options?.schemaId} memoized={false} />;
+  // 如果 URL 中有 tabSchemaUid，则使用 tabSchemaUid，否则使用第一个 tab 的 pageSchemaUid
+  return (
+    <RemoteSchemaComponent
+      uid={tabSchemaUid || activeTabBarItem.children?.[0]?.options?.pageSchemaUid}
+      memoized={false}
+    />
+  );
 };

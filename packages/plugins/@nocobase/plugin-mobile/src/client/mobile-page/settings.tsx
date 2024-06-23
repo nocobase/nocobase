@@ -14,19 +14,19 @@ export const mobilePageSettings = new SchemaSettings({
   name: 'mobile:page',
   items: [
     createSwitchSettingsItem({
-      name: 'navigationBar',
+      name: 'enableNavigationBar',
       title: generatePluginTranslationTemplate('Enable Navigation Bar'),
       defaultValue: true,
       schemaKey: 'x-component-props.enableNavigationBar',
     }),
     createSwitchSettingsItem({
-      name: 'navigationBarTitle',
+      name: 'enableNavigationBarTitle',
       title: generatePluginTranslationTemplate('Enable Navigation Bar Title'),
       defaultValue: true,
       schemaKey: 'x-component-props.enableNavigationBarTitle',
     }),
     createSwitchSettingsItem({
-      name: 'navigationBarTabs',
+      name: 'enableNavigationBarTabs',
       title: generatePluginTranslationTemplate('Enable Navigation Bar Tabs'),
       defaultValue: false,
       schemaKey: 'x-component-props.enableNavigationBarTabs',

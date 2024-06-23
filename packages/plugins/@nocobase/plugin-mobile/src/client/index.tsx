@@ -104,14 +104,14 @@ export class PluginMobileClient extends Plugin {
       element: <Outlet />,
     });
     this.mobileRouter.add('mobile.schema.page', {
-      path: '/schema/:schemaId',
+      path: '/schema/:pageSchemaUid',
       Component: 'MobileSchemaPage',
     });
     this.mobileRouter.add('mobile.schema.tabs', {
       element: <Outlet />,
     });
     this.mobileRouter.add('mobile.schema.tabs.page', {
-      path: '/schema/:schemaId/tabs/:tabId',
+      path: '/schema/:pageSchemaUid/tabs/:tabSchemaUid',
       Component: 'MobileSchemaPage',
     });
   }

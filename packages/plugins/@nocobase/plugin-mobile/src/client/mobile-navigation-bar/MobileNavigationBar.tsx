@@ -15,6 +15,7 @@ import { useFieldSchema } from '@formily/react';
 import { useMobileTitle } from '../mobile-providers';
 import { useMobilePage } from '../mobile-page/context';
 import { SchemaComponent } from '@nocobase/client';
+import { MobileNavigationBarTabs } from './MobileNavigationBarTabs';
 
 export const MobileNavigationBar: FC = () => {
   const { title } = useMobileTitle();
@@ -25,7 +26,6 @@ export const MobileNavigationBar: FC = () => {
   } = useMobilePage();
   const fieldSchema = useFieldSchema();
   if (!enableNavigationBar) return null;
-
   return (
     <Affix offsetTop={0} style={{ borderBottom: '1px solid var(--adm-color-border)' }}>
       <div>
@@ -36,7 +36,7 @@ export const MobileNavigationBar: FC = () => {
         >
           {enableNavigationBarTitle ? title : null}
         </NavBar>
-        {enableNavigationBarTabs && <MobileNavigationBar />}
+        {enableNavigationBarTabs && <MobileNavigationBarTabs />}
       </div>
     </Affix>
   );

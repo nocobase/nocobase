@@ -87,7 +87,7 @@ const app = mockApp({
               title: 'Home',
               icon: 'AppleOutlined',
               selectedIcon: 'AppstoreOutlined',
-              schemaId: 'home',
+              pageSchemaUid: 'home',
             },
           },
           children: [
@@ -96,7 +96,7 @@ const app = mockApp({
               parentId: 1,
               options: {
                 title: 'Tab1',
-                schemaId: 'tab1',
+                pageSchemaUid: 'tab1',
               },
             },
             {
@@ -104,7 +104,7 @@ const app = mockApp({
               parentId: 1,
               options: {
                 title: 'Tab2',
-                schemaId: 'tab2',
+                pageSchemaUid: 'tab2',
               },
             },
           ],
@@ -124,7 +124,7 @@ const app = mockApp({
             'x-component-props': {
               title: 'Message',
               icon: 'MessageOutlined',
-              schemaId: 'message',
+              pageSchemaUid: 'message',
             },
             'x-settings': 'mobile:tab-bar:schema',
           },

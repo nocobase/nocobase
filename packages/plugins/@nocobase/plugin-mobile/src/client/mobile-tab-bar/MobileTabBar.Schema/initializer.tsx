@@ -16,13 +16,13 @@ import { getMobileTabBarItemSchemaFields } from '../MobileTabBar.Item';
 import { useMobileTabContext } from '../../mobile-providers';
 
 export interface GetMobileTabBarItemDataOptions {
-  schemaId: string;
+  pageSchemaUid: string;
   url?: string;
   values: any;
 }
 
 export function getMobileTabBarItemData(options: GetMobileTabBarItemDataOptions) {
-  const { schemaId, url, values } = options;
+  const { pageSchemaUid, url, values } = options;
   return {
     url,
     parentId: null,
@@ -36,27 +36,27 @@ export function getMobileTabBarItemData(options: GetMobileTabBarItemDataOptions)
       'x-component': 'MobileTabBar.Schema',
       'x-component-props': {
         ...values,
-        schemaId: schemaId,
+        pageSchemaUid: pageSchemaUid,
       },
     },
   };
 }
 
 export interface GetMobileTabBarItemTabDataOptions {
-  schemaId: string;
+  pageSchemaUid: string;
   pageUrl?: string;
   parentId: number;
   title?: string;
 }
 
 export function getMobileTabBarItemTabData(options: GetMobileTabBarItemTabDataOptions) {
-  const { schemaId, pageUrl, parentId, title } = options;
+  const { pageSchemaUid, pageUrl, parentId, title } = options;
   return {
-    url: `${pageUrl}/tabs/${schemaId}`,
+    url: `${pageUrl}/tabs/${pageSchemaUid}`,
     parentId,
     options: {
       title: title || 'Unnamed',
-      schemaId,
+      pageSchemaUid,
     },
   };
 }
@@ -135,7 +135,7 @@ export const mobileTabBarSchemaInitializerItem: SchemaInitializerItemActionModal
 
         // 先创建 TabBar item
         const { data } = await resource.create({
-          values: getMobileTabBarItemData({ url, schemaId: pageSchemaId, values }),
+          values: getMobileTabBarItemData({ url, pageSchemaUid: pageSchemaId, values }),
         });
 
         // 创建空页面
@@ -148,7 +148,7 @@ export const mobileTabBarSchemaInitializerItem: SchemaInitializerItemActionModal
         // 创建 TabBar item 的第一个 tab
         const parentId = data.data.id;
         await resource.create({
-          values: getMobileTabBarItemTabData({ pageUrl: url, schemaId: firstTabSchemaId, parentId }),
+          values: getMobileTabBarItemTabData({ pageUrl: url, pageSchemaUid: firstTabSchemaId, parentId }),
         });
 
         // 刷新 tabs

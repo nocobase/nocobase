@@ -19,7 +19,6 @@ import { IResource } from '@nocobase/sdk';
 export interface TabBarItem {
   id: number;
   url?: string;
-  title: string;
   options: ISchema;
   parentId?: number;
   children?: PageTabItem[];
@@ -28,8 +27,7 @@ export interface TabBarItem {
 export interface PageTabItem {
   id: number;
   url?: string;
-  title: string;
-  options: { title: string; schemaId: string };
+  options: { title: string; pageSchemaUid: string };
   parentId?: number;
 }
 
@@ -94,8 +92,7 @@ function useTitle(activeTabBar: TabBarItem) {
   const { setTitle } = useMobileTitle();
   useEffect(() => {
     if (activeTabBar) {
-      const title =
-        activeTabBar.title || activeTabBar.options.title || activeTabBar.options?.['x-component-props']?.title;
+      const title = activeTabBar.options.title || activeTabBar.options?.['x-component-props']?.title;
       setTitle(title);
       document.title = title;
     }

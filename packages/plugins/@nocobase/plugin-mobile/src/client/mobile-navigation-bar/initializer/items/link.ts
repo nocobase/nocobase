@@ -47,7 +47,12 @@ export const getNavigationBarLinkSchema = (values: any): ISchema => ({
   'x-toolbar': 'ActionSchemaToolbar',
   'x-settings': mobileNavigationBarLinkSettings.name,
   'x-use-component-props': 'useMobileNavigationBarLink',
-  'x-component-props': values,
+  'x-component-props': {
+    ...values,
+    style: {
+      border: 'none',
+    },
+  },
 });
 
 export const navigationBarLinkInitializerItem: SchemaInitializerItemActionModalType = {
@@ -76,7 +81,6 @@ export const navigationBarLinkInitializerItem: SchemaInitializerItemActionModalT
         icon: {
           type: 'string',
           title: t('Icon'),
-          default: 'LinkOutlined',
           'x-decorator': 'FormItem',
           'x-component': 'IconPicker',
         },
