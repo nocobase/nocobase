@@ -149,6 +149,9 @@ export const Action: ComposedAction = withDynamicSchemaProps(
                   service?.refresh?.();
                 }
               });
+            } else if (isBulkEditAction(fieldSchema)) {
+              setVisible(true);
+              run();
             } else {
               openPopup({
                 onFail() {
@@ -327,3 +330,8 @@ Action.Container = ActionContainer;
 Action.Page = ActionPage;
 
 export default Action;
+
+// TODO: Plugin-related code should not exist in the core. It would be better to implement it by modifying the schema, but it would cause incompatibility.
+function isBulkEditAction(fieldSchema) {
+  return fieldSchema['x-action'] === 'customize:bulkEdit';
+}
