@@ -273,9 +273,12 @@ export const useCollectionManager_deprecated = (dataSourceName?: string) => {
   );
 
   // 是否可以作为标题字段
-  const isTitleField = useCallback((field) => {
-    return getInterface(field.interface)?.titleUsable;
-  }, []);
+  const isTitleField = useCallback(
+    (field) => {
+      return getInterface(field.interface)?.titleUsable;
+    },
+    [getInterface],
+  );
 
   const getParentCollectionFields = useCallback(
     (parentCollection, currentCollection, customDataSource?: string) => {

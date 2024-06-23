@@ -20,5 +20,8 @@ export * from './schema-initializer';
 export * from './schema-settings';
 export * from './schema-settings/context/SchemaSettingItemContext';
 export * from './schema-settings/hooks/useSchemaSettingsRender';
+export * from './schema-settings/utils/createModalSettingsItem';
+export * from './schema-settings/utils/createSelectSettingsItem';
+export * from './schema-settings/utils/createSwitchSettingsItem';
 export * from './schema-toolbar';
 export * from './utils';
