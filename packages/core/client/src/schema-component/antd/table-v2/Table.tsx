@@ -493,7 +493,7 @@ export const Table: any = withDynamicSchemaProps(
       [rowKey, defaultRowKey],
     );
 
-    const dataSourceKeys = field?.value?.map(getRowKey);
+    const dataSourceKeys = field?.value?.map?.(getRowKey);
     const memoizedDataSourceKeys = useMemo(() => dataSourceKeys, [JSON.stringify(dataSourceKeys)]);
     const dataSource = useMemo(
       () => [...(field?.value || [])].filter(Boolean),
