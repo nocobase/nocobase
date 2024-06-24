@@ -53,7 +53,6 @@ export class PresetNocoBase extends Plugin {
     'action-duplicate',
     'action-print',
     'collection-sql',
-    'mobile',
   ];
 
   localPlugins = [
@@ -63,6 +62,7 @@ export class PresetNocoBase extends Plugin {
     // 'snapshot-field>=0.8.1-alpha.3',
     'graph-collection-manager>=0.9.0-alpha.1',
     // 'multi-app-share-collection>=0.9.2-alpha.1',
+    'mobile',
     // 'mobile-client>=0.10.0-alpha.2',
     'api-keys>=0.10.1-alpha.1',
     'localization>=0.11.1-alpha.1',

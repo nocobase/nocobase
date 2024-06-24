@@ -32,7 +32,6 @@ mobileRouter.add('mobile', {
 });
 ```
 
-
 ```tsx | pure
 <MobileSchemaPage> // react-router 匹配的 Schema 页面 router.add('/schema/:pageSchemaUid', { Component: 'MobileSchemaPage' })
   <RemoteSchemaComponent uid={params.pageSchemaUid}> // 通过 URL 获取 uid，加载整个页面的 Schema
@@ -112,7 +111,7 @@ export interface TabItem {
                 "url": "/schema/3bz0ki59s8f/tabs/aql952klkmw",
                 "options": {
                     "title": "Unnamed",
-                    "pageSchemaUid": "aql952klkmw"
+                    "tabSchemaId": "aql952klkmw"
                 },
                 "__index": "0.children.0"
             }
@@ -231,6 +230,7 @@ export interface TabItem {
                     "properties": {
                         "action1": {
                             "type": "void",
+                            "x-align": "left|right|bottom|center",
                             "x-component": "Action",
                             "x-toolbar": "ActionSchemaToolbar",
                             "x-settings": "navigationBar:actionSettings:link",
@@ -286,12 +286,16 @@ export interface TabItem {
   - `basename` 是否需要可配置，如果不需要，则是一个链接，打开配置页面
   - 如果需要配置，settings 配置页面按照原来的设计，还是独立的一个页面
 - TabBar 的需要设置吗？（目前看来没什么设置项，是否需要显示的问题，如果没注册到 TabBar 上则默认不显示，似乎是能满足要求的）
-- 目前设计图中的 TabBar 类型只完成了 2 种类型，其他的类型是否这次做？
+- 目前设计图中的 TabBar 类型只完成了 2 种类型，其他的类型是否这次做？先不做
 - 将 `navigationBar title` 是否显示，放到了 Page Settings 中，而不是 `navigationBar` 的设置中，`navigationBar` 没有设置项
-- `navigationBar` 左右两侧的 initializer 使用的是同一个，还是分开命名？
-- `navigationBar` 的操作按钮目前只实现了一个 Link，计划实现 `back`，其他的是否这次做？
-- Schema 的 name 到底是具体的名字好，还是 Uid() 好
-- 删除 tabBar 的时候，是否关联的资源都删除，还是不用管？
+- 数据表字段是否需要预览一些字段？
+- `navigationBar` 左右两侧的 initializer 使用的是同一个，还是分开命名？【同一个】
+- `navigationBar` 的操作按钮目前只实现了一个 Link，计划实现 `back`，其他的是否这次做？【自动处理，页面级别控制】
+  - ActionSheet
+  - 弹出层
+- Schema 的 name 到底是具体的名字，还是 Uid() 好
+- 删除 tabBar 的时候，是否关联的资源都删除，还是不用管？【尽量删】
+- loading 效果
 
 ## 待做任务
 
@@ -308,6 +312,8 @@ export interface TabItem {
 - 新移动端 Tab 的插件开发示例
 - 响应式 ipad、mobile 效果都比较 OK
 - 未登录情况下直接访问，有 BUG
+
+
 
 
 ## Schema
