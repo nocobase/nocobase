@@ -31,6 +31,7 @@ import {
   mobileTabBarSchemaSettings,
   mobileTabBarSettings,
 } from './mobile-tab-bar';
+import { generatePluginTranslationTemplate } from './locale';
 export * from './mobile-providers';
 
 const mobilePath = '/mobile';
@@ -49,6 +50,12 @@ export class PluginMobileClient extends Plugin {
     this.addInitializers();
     this.addSettings();
     this.addScopes();
+
+    this.app.pluginSettingsManager.add('mobile', {
+      title: generatePluginTranslationTemplate('Mobile'),
+      icon: 'MobileOutlined',
+      link: mobilePath,
+    });
   }
 
   addScopes() {
