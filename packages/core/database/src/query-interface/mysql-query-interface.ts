@@ -115,8 +115,9 @@ export default class MysqlQueryInterface extends QueryInterface {
 
     if (currentVal === null) {
       // use max value of field instead
-      const maxSql = `SELECT MAX(${fieldName}) as currentVal
-                      FROM ${tableInfo.tableName};`;
+      const maxSql = `SELECT MAX(\`${fieldName}\`) as currentVal
+                      FROM \`${tableInfo.tableName}\`;`;
+
       const maxResults = await this.db.sequelize.query(maxSql, { type: 'SELECT', transaction });
       currentVal = maxResults[0]['currentVal'] as number;
     }
@@ -135,7 +136,9 @@ export default class MysqlQueryInterface extends QueryInterface {
   }): Promise<void> {
     const { tableInfo, columnName, seqName, currentVal, transaction } = options;
 
-    const sql = `ALTER TABLE ${this.quoteIdentifier(tableInfo.tableName)} AUTO_INCREMENT = ${currentVal};`;
-    await this.db.sequelize.query(sql, { transaction });
+    if (currentVal) {
+      const sql = `ALTER TABLE ${this.quoteIdentifier(tableInfo.tableName)} AUTO_INCREMENT = ${currentVal};`;
+      await this.db.sequelize.query(sql, { transaction });
+    }
   }
 }
