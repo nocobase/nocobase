@@ -598,6 +598,20 @@ describe('data source', async () => {
 
       expect(destroyResp.status).toBe(200);
       expect(collection.getField('post')).toBeFalsy();
+
+      // reload data source manager
+      const refreshResp = await app.agent().resource('dataSources').refresh({
+        filterByTk: 'mockInstance1',
+      });
+
+      expect(refreshResp.status).toBe(200);
+      expect(refreshResp.body.data.status).toBe('reloading');
+
+      await waitSecond(2000);
+
+      const dataSource2 = app.dataSourceManager.dataSources.get('mockInstance1');
+      const collection2 = dataSource2.collectionManager.getCollection('comments');
+      expect(collection2.getField('post')).toBeFalsy();
     });
   });
 });
