@@ -84,9 +84,11 @@ const PagePopupsItemProvider: FC<{ params: PopupParams }> = ({ params, children 
       _setVisible(false);
 
       if (process.env.__E2E__) {
-        closePopup();
-        // Deleting here ensures that the next time the same popup is opened, it will generate another random key.
-        deleteRandomNestedSchemaKey(params.popupUid);
+        setTimeout(() => {
+          closePopup();
+          // Deleting here ensures that the next time the same popup is opened, it will generate another random key.
+          deleteRandomNestedSchemaKey(params.popupUid);
+        });
         return;
       }
 
