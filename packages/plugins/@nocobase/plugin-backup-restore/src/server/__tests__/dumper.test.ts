@@ -69,6 +69,52 @@ describe('dumper', () => {
     });
   });
 
+  it('should dump with table named by reserved word', async () => {
+    await db.getRepository('collections').create({
+      values: {
+        name: 'update',
+        tableName: 'update',
+        autoGenId: false,
+        fields: [
+          {
+            type: 'bigInt',
+            name: 'id',
+          },
+          {
+            type: 'string',
+            name: 'name',
+          },
+        ],
+      },
+      context: {},
+    });
+
+    await db.getRepository('update').create({
+      values: {
+        name: 'test',
+      },
+    });
+    const dumper = new Dumper(app);
+
+    db.getCollection('update').model['rawAttributes']['id'].autoIncrement = true;
+
+    const result = await dumper.dump({
+      groups: new Set(['required', 'custom']),
+    });
+
+    const restorer = new Restorer(app, {
+      backUpFilePath: result.filePath,
+    });
+
+    await restorer.restore({
+      groups: new Set(['required', 'custom']),
+    });
+
+    const testCollection = app.db.getCollection('update');
+    const items = await testCollection.repository.find();
+    expect(items.length).toBe(1);
+  });
+
   it('should dump and restore date field', async () => {
     await db.getRepository('collections').create({
       values: {
