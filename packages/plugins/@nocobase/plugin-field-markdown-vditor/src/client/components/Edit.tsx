@@ -8,11 +8,13 @@
  */
 
 import { useAPIClient, useApp, withDynamicSchemaProps } from '@nocobase/client';
-import React, { useEffect, useLayoutEffect, useRef } from 'react';
+import React, { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import Vditor from 'vditor';
 import { defaultToolbar } from '../interfaces/markdown-vditor';
 import { useCDN } from './const';
 import useStyle from './style';
+
+const locales = ['en_US', 'fr_FR', 'pt_BR', 'ja_JP', 'ko_KR', 'ru_RU', 'sv_SE', 'zh_CN', 'zh_TW'];
 
 export const Edit = withDynamicSchemaProps((props) => {
   const { disabled, onChange, value, fileCollection, toolbar } = props;
@@ -25,13 +27,22 @@ export const Edit = withDynamicSchemaProps((props) => {
   const apiClient = useAPIClient();
   const cdn = useCDN();
   const { wrapSSR, hashId, componentCls: containerClassName } = useStyle();
+  const locale = apiClient.auth.locale;
+
+  const lang: any = useMemo(() => {
+    const currentLang = locale.replace(/-/g, '_');
+    if (locales.includes(currentLang)) {
+      return currentLang;
+    }
+    return 'en_US';
+  }, [locale]);
 
   useEffect(() => {
     const uploadFileCollection = fileCollection || 'attachments';
     const toolbarConfig = toolbar ?? defaultToolbar;
     const vditor = new Vditor(containerRef.current, {
       value: value ?? '',
-      lang: apiClient.auth.locale.replaceAll('-', '_') as any,
+      lang,
       cache: {
         enable: false,
       },

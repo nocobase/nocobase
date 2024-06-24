@@ -1053,13 +1053,13 @@ export const useDetailPrintActionProps = () => {
   const printHandler = useReactToPrint({
     content: () => formBlockRef.current,
     pageStyle: `@media print {
-      * {
-        margin: 0;
-      }
-      :not(.ant-formily-item-control-content-component) > div.ant-formily-layout>div:first-child {
-        overflow: hidden; height: 0;
-      }
-    }`,
+       * {
+         margin: 0;
+       }
+       :not(.ant-formily-item-control-content-component) > div.ant-formily-layout>div:first-child {
+         overflow: hidden; height: 0;
+       }
+     }`,
   });
   return {
     async onClick() {
@@ -1524,7 +1524,10 @@ async function resetFormCorrectly(form: Form) {
 }
 
 export function appendQueryStringToUrl(url: string, queryString: string) {
-  return url + (url.includes('?') ? '&' : '?') + queryString;
+  if (queryString) {
+    return url + (url.includes('?') ? '&' : '?') + queryString;
+  }
+  return url;
 }
 
 export function useLinkActionProps() {
@@ -1549,7 +1552,8 @@ export function useLinkActionProps() {
         localVariables,
         replaceVariableValue,
       });
-      const link = appendQueryStringToUrl(url, queryString);
+      const targetUrl = await replaceVariableValue(url, variables, localVariables);
+      const link = appendQueryStringToUrl(targetUrl, queryString);
       if (link) {
         if (isURL(link)) {
           window.open(link, '_blank');
