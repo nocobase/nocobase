@@ -11,6 +11,7 @@ import React, { FC } from 'react';
 import { Outlet } from 'react-router-dom';
 
 import { MobileTabBar } from '../mobile-tab-bar';
+import { MobileProviders } from '../mobile-providers';
 
 export interface MobileLayoutProps {
   children?: React.ReactNode;
@@ -18,9 +19,9 @@ export interface MobileLayoutProps {
 
 export const MobileLayout: FC<MobileLayoutProps> = () => {
   return (
-    <>
+    <MobileProviders>
       <Outlet />
       <MobileTabBar />
-    </>
+    </MobileProviders>
   );
 };

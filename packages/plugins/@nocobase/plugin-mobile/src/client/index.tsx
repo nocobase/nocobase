@@ -100,6 +100,23 @@ export class PluginMobileClient extends Plugin {
       path: '/',
       Component: 'MobileLayout',
     });
+
+    // 跳转到主应用的登录页
+    this.mobileRouter.add('signin', {
+      path: '/signin',
+      Component: () => {
+        window.location.href = '/signin';
+        return null;
+      },
+    });
+    this.mobileRouter.add('signup', {
+      path: '/signup',
+      Component: () => {
+        window.location.href = '/signup';
+        return null;
+      },
+    });
+
     this.mobileRouter.add('mobile.schema', {
       element: <Outlet />,
     });

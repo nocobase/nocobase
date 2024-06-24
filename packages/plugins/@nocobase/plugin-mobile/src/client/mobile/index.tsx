@@ -8,12 +8,11 @@
  */
 
 import React from 'react';
-import { MobileProviders } from '../mobile-providers';
 import { usePlugin } from '@nocobase/client';
 import { PluginMobileClient } from '../index';
 
 export const Mobile = () => {
   const mobilePlugin = usePlugin(PluginMobileClient);
   const RouterComponent = mobilePlugin.getRouterComponent();
-  return <RouterComponent BaseLayout={MobileProviders} />;
+  return <RouterComponent />;
 };

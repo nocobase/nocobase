@@ -6,14 +6,14 @@
 
 ```tsx | pure
 <Mobile> //  提供各种 Providers 和 Routes
-  <MobileProviders>
-    <Routers>
-      <MobileLayout> // react-router 最顶部路由的 Layout `router.add('mobile', {  Component: 'MobileLayout'  })`
+  <Routers>
+    <MobileLayout> // react-router 最顶部路由的 Layout `router.add('mobile', {  Component: 'MobileLayout'  })`
+      <MobileProviders>
         <Outlet /> // 自定义的路由组件
         <MobileTabBar />
-      </MobileLayout>
-    </Routes>
-  </MobileProviders>
+      </MobileProviders>
+    </MobileLayout>
+  </Routes>
 </Mobile>
 ```
 
@@ -311,7 +311,6 @@ export interface TabItem {
 - Readme
 - 新移动端 Tab 的插件开发示例
 - 响应式 ipad、mobile 效果都比较 OK
-- 未登录情况下直接访问，有 BUG
 
 
 
