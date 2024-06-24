@@ -40,7 +40,7 @@ export function isObject(value) {
   return typeof value === 'object' && value !== null;
 }
 
-interface ButtonListProps {
+export interface ButtonListProps {
   value: any;
   setBtnHover: any;
   setRecord: any;

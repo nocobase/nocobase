@@ -16,7 +16,7 @@ import { useCompile } from '../../hooks';
 import { useActionContext } from '../action';
 import { usePagePopup } from '../page/pagePopupUtils';
 import { transformNestedData } from './InternalCascadeSelect';
-import { ReadPrettyInternalViewer, isObject } from './InternalViewer';
+import { ButtonListProps, ReadPrettyInternalViewer, isObject } from './InternalViewer';
 import { useAssociationFieldContext, useFieldNames, useInsertSchema } from './hooks';
 import schema from './schema';
 import { getTabFormatValue, useLabelUiSchema } from './util';
@@ -32,10 +32,10 @@ const toValue = (value, placeholder) => {
   return value;
 };
 
-const ButtonTabList: React.FC<{ value: any; setBtnHover: any; setRecord: any }> = (props) => {
+const ButtonTabList: React.FC<ButtonListProps> = (props) => {
   const fieldSchema = useFieldSchema();
   const { enableLink, tagColorField } = fieldSchema['x-component-props'];
-  const fieldNames = useFieldNames(props);
+  const fieldNames = useFieldNames({ fieldNames: props.fieldNames });
   const insertViewer = useInsertSchema('Viewer');
   const { options: collectionField } = useAssociationFieldContext();
   const compile = useCompile();
