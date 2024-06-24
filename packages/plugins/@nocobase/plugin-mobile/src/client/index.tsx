@@ -44,6 +44,7 @@ export class PluginMobileClient extends Plugin {
   }
 
   async load() {
+    this.setMobileMeta();
     this.addComponents();
     this.addAppRoutes();
     this.addRoutes();
@@ -56,6 +57,15 @@ export class PluginMobileClient extends Plugin {
       icon: 'MobileOutlined',
       link: mobilePath,
     });
+  }
+
+  setMobileMeta() {
+    if (window.location.pathname.startsWith(mobilePath)) {
+      const meta = document.createElement('meta');
+      meta.name = 'viewport';
+      meta.content = 'width=device-width,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no';
+      document.head.appendChild(meta);
+    }
   }
 
   addScopes() {
