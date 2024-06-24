@@ -11,7 +11,7 @@ import { observer, RecursionField, useField, useFieldSchema, useForm } from '@fo
 import { isPortalInBody } from '@nocobase/utils/client';
 import { App, Button } from 'antd';
 import classnames from 'classnames';
-import { default as lodash } from 'lodash';
+import _, { default as lodash } from 'lodash';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { useTranslation } from 'react-i18next';
@@ -44,10 +44,15 @@ import { ActionModal } from './Action.Modal';
 import { ActionPage } from './Action.Page';
 import useStyles from './Action.style';
 import { ActionContextProvider } from './context';
-import { useA } from './hooks';
 import { useGetAriaLabelOfAction } from './hooks/useGetAriaLabelOfAction';
 import { ActionProps, ComposedAction } from './types';
 import { linkageAction, setInitialActionState } from './utils';
+
+const useA = () => {
+  return {
+    async run() {},
+  };
+};
 
 const handleError = (err) => console.log(err);
 
@@ -82,7 +87,7 @@ export const Action: ComposedAction = withDynamicSchemaProps(
     const [formValueChanged, setFormValueChanged] = useState(false);
     const Designer = useDesigner();
     const field = useField<any>();
-    const { run, element, disabled: disableAction } = useAction(actionCallback);
+    const { run, element, disabled: disableAction } = _.isFunction(useAction) ? useAction(actionCallback) : ({} as any);
     const fieldSchema = useFieldSchema();
     const compile = useCompile();
     const form = useForm();
@@ -151,14 +156,14 @@ export const Action: ComposedAction = withDynamicSchemaProps(
               });
             } else if (isBulkEditAction(fieldSchema)) {
               setVisible(true);
-              run();
+              run?.();
             } else {
-              openPopup({
-                onFail() {
-                  setVisible(true);
-                },
-              });
-              run();
+              if (['view', 'update', 'create', 'customize:popup'].includes(fieldSchema['x-action'])) {
+                openPopup({});
+              } else {
+                setVisible(true);
+                run?.();
+              }
             }
           };
           if (confirm?.content) {

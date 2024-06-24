@@ -132,20 +132,10 @@ export const usePagePopup = () => {
 
   const openPopup = useCallback(
     ({
-      onFail,
       recordData,
     }: {
-      /**
-       * Callback when opening the popup fails through routing
-       * @returns
-       */
-      onFail?: () => void;
       recordData?: Record<string, any>;
     } = {}) => {
-      if (!fieldSchema['x-uid']) {
-        return onFail?.();
-      }
-
       recordData = recordData || record?.data;
       const filterByTK = recordData?.[collection.getPrimaryKey()];
       const sourceId = parentRecord?.data?.[cm.getCollection(association?.split('.')[0])?.getPrimaryKey()];
