@@ -9,6 +9,8 @@
 
 import { ISchema } from '@formily/react';
 import { Collection, CollectionFieldInterface } from '@nocobase/client';
+import { tval } from '@nocobase/utils/client';
+import { NAMESPACE } from './locale';
 
 function getUniqueKeyFromCollection(collection: Collection) {
   return collection?.filterTargetKey || collection?.getPrimaryKey() || 'id';
@@ -19,8 +21,8 @@ export class MBMFieldInterface extends CollectionFieldInterface {
   type = 'object';
   group = 'relation';
   order = 6;
-  title = '{{t("Many to many (array)")}}';
-  description = '{{t("Record set description")}}';
+  title = tval('Many to many (array)', { ns: NAMESPACE });
+  description = tval('Many to many (array) description', { ns: NAMESPACE });
   isAssociation = true;
   default = {
     type: 'belongsToArray',
