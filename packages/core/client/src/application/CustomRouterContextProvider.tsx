@@ -12,7 +12,7 @@ import { Location, NavigateFunction, NavigateOptions, useLocation, useNavigate }
 
 const NavigateNoUpdateContext = React.createContext<NavigateFunction>(null);
 const LocationNoUpdateContext = React.createContext<Location>(null);
-const LocationSearchContext = React.createContext<string>('');
+export const LocationSearchContext = React.createContext<string>('');
 
 /**
  * When the URL changes, components that use `useNavigate` will re-render.

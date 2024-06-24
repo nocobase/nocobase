@@ -15,6 +15,7 @@ import React, { createRef, forwardRef, useEffect, useMemo } from 'react';
 import { Collection, useDesignable } from '../../';
 import { useACLActionParamsContext, useACLRolesCheck, useRecordPkValue } from '../../acl/ACLProvider';
 import { useCollectionManager_deprecated, useCollection_deprecated } from '../../collection-manager';
+import { useTreeParentRecord } from '../../modules/blocks/data-blocks/table/TreeRecordProvider';
 import { useRecord } from '../../record-provider';
 import { useCompile } from '../../schema-component';
 import { linkageAction } from '../../schema-component/antd/action/utils';
@@ -70,6 +71,7 @@ const InternalCreateRecordAction = (props: any, ref) => {
   const variables = useVariables();
   const localVariables = useLocalVariables({ currentForm: { values } as any });
   const { openPopup } = usePagePopup();
+  const treeRecordData = useTreeParentRecord();
 
   useEffect(() => {
     field.stateOfLinkageRules = {};
@@ -96,7 +98,13 @@ const InternalCreateRecordAction = (props: any, ref) => {
       <CreateAction
         {...props}
         onClick={(collection: Collection) => {
-          openPopup();
+          if (treeRecordData) {
+            openPopup({
+              recordData: treeRecordData,
+            });
+          } else {
+            openPopup();
+          }
         }}
       />
     </div>

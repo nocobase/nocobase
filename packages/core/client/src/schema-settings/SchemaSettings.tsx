@@ -43,10 +43,9 @@ import React, {
 } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
-import { Router } from 'react-router-dom';
 import { APIClientProvider } from '../api-client/APIClientProvider';
 import { useAPIClient } from '../api-client/hooks/useAPIClient';
-import { ApplicationContext, useApp } from '../application';
+import { ApplicationContext, LocationSearchContext, useApp, useLocationSearch } from '../application';
 import {
   BlockContext,
   BlockRequestContext_deprecated,
@@ -743,6 +742,7 @@ export const SchemaSettingsModalItem: FC<SchemaSettingsModalItemProps> = (props)
   const { association } = useDataBlockProps() || {};
   const formCtx = useFormBlockContext();
   const blockOptions = useBlockContext();
+  const locationSearch = useLocationSearch();
 
   // 解决变量`当前对象`值在弹窗中丢失的问题
   const { formValue: subFormValue, collection: subFormCollection } = useSubFormValue();
@@ -778,7 +778,7 @@ export const SchemaSettingsModalItem: FC<SchemaSettingsModalItemProps> = (props)
                           name="form"
                           getActiveFieldsName={upLevelActiveFields?.getActiveFieldsName}
                         >
-                          <Router location={location} navigator={null}>
+                          <LocationSearchContext.Provider value={locationSearch}>
                             <BlockRequestContext_deprecated.Provider value={ctx}>
                               <DataSourceApplicationProvider dataSourceManager={dm} dataSource={dataSourceKey}>
                                 <AssociationOrCollectionProvider
@@ -813,7 +813,7 @@ export const SchemaSettingsModalItem: FC<SchemaSettingsModalItemProps> = (props)
                                 </AssociationOrCollectionProvider>
                               </DataSourceApplicationProvider>
                             </BlockRequestContext_deprecated.Provider>
-                          </Router>
+                          </LocationSearchContext.Provider>
                         </FormActiveFieldsProvider>
                       </SubFormProvider>
                     </FormBlockContext.Provider>

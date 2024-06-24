@@ -100,8 +100,7 @@ export const useURLSearchParamsVariable = (props: any = {}) => {
     /** 变量值 */
     urlSearchParamsCtx,
     /**
-     * 这里是用于当通过该变量解析出来的值是一个 undefined 时，最终应该返回的值。
-     * 默认返回的是 null，这样会导致数据范围中的 filter 条件不会被清除掉，而 URL search params 变量的值为空时，应该清除掉 filter 条件，
+     * 这里的默认值是 null，这样会导致数据范围中的 filter 条件不会被清除掉，而 URL search params 变量的值为空时，应该清除掉 filter 条件，
      * 所以这里把 defaultValue 设置为 undefined，这样在解析出来的值是 undefined 时，会返回 undefined，从而清除掉 filter 条件。
      */
     defaultValue: undefined,

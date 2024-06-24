@@ -197,7 +197,7 @@ export const Page = (props) => {
     options.scope,
     options.components,
     pageUid,
-    fieldSchema.mapProperties((schema) => schema.title).join(),
+    fieldSchema.mapProperties((schema) => schema.title || t('Unnamed')).join(),
     enablePageTabs,
   ]);
 
