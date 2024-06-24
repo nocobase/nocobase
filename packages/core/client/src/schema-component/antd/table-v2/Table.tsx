@@ -495,10 +495,10 @@ export const Table: any = withDynamicSchemaProps(
 
     const dataSourceKeys = field?.value?.map?.(getRowKey);
     const memoizedDataSourceKeys = useMemo(() => dataSourceKeys, [JSON.stringify(dataSourceKeys)]);
-    const dataSource = useMemo(
-      () => [...(field?.value || [])].filter(Boolean),
-      [field?.value, field?.value?.length, memoizedDataSourceKeys],
-    );
+    const dataSource = useMemo(() => {
+      const value = Array.isArray(field?.value) ? field.value : [];
+      return value.filter(Boolean);
+    }, [field?.value, field?.value?.length, memoizedDataSourceKeys]);
 
     const bodyWrapperComponent = useMemo(() => {
       return (props) => {
