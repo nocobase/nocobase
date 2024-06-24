@@ -37,7 +37,7 @@ export interface MobileTabContextValue {
   resource: IResource;
   schemaResource: IResource;
   activeTabBarItem?: TabBarItem;
-  activePageTab?: TabItem;
+  activeTabItem?: TabItem;
 }
 
 export const MobileTabContext = createContext<MobileTabContextValue>(null);
@@ -84,7 +84,7 @@ function useActiveTabBar(tabList: TabBarItem[]) {
 
   return {
     activeTabBarItem, // 第一层
-    activePageTab: urlMap[pathname] || activeTabBarItem, // 任意层
+    activeTabItem: urlMap[pathname] || activeTabBarItem, // 任意层
   };
 }
 
@@ -109,7 +109,7 @@ export const MobileTabContextProvider = ({ children }) => {
     loading,
   } = useRequest<{ data: TabBarItem[] }>(() => resource.list({ tree: true }).then((res) => res.data));
   const tabList = useMemo(() => data?.data || [], [data]);
-  const { activeTabBarItem, activePageTab } = useActiveTabBar(tabList);
+  const { activeTabBarItem, activeTabItem } = useActiveTabBar(tabList);
 
   useTitle(activeTabBarItem);
 
@@ -123,7 +123,7 @@ export const MobileTabContextProvider = ({ children }) => {
     );
   }
   return (
-    <MobileTabContext.Provider value={{ activeTabBarItem, activePageTab, tabList, refresh, resource, schemaResource }}>
+    <MobileTabContext.Provider value={{ activeTabBarItem, activeTabItem, tabList, refresh, resource, schemaResource }}>
       {children}
     </MobileTabContext.Provider>
   );

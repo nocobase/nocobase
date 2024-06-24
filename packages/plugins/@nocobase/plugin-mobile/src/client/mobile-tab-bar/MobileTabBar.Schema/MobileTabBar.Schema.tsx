@@ -20,12 +20,12 @@ export const MobileTabBarSchema: FC<MobileTabBarSchemaProps> = (props) => {
   const { pageSchemaUid, ...rests } = props;
   const navigate = useNavigate();
   const location = useLocation();
-
+  const url = `/schema/${pageSchemaUid}`;
   const handleClick = () => {
-    navigate(`/schema/${pageSchemaUid}`);
+    navigate(url);
   };
 
-  const selected = location.pathname === `/schema/${pageSchemaUid}`;
+  const selected = location.pathname.startsWith(url);
 
   return <MobileTabBarItem {...rests} onClick={handleClick} selected={selected} />;
 };
