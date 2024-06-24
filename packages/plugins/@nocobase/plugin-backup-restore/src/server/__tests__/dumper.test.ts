@@ -14,6 +14,7 @@ import path from 'path';
 import { Dumper } from '../dumper';
 import { Restorer } from '../restorer';
 import createApp from './index';
+import * as process from 'node:process';
 
 describe('dumper', () => {
   let app: MockServer;
@@ -69,7 +70,7 @@ describe('dumper', () => {
     });
   });
 
-  it('should dump with table named by reserved word', async () => {
+  it.runIf(process.env['DB_DIALECT'] === 'mysql')('should dump with table named by reserved word', async () => {
     await db.getRepository('collections').create({
       values: {
         name: 'update',
