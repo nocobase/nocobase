@@ -33,10 +33,10 @@ interface PopupsProviderProps {
   popupParams: PopupParams;
 }
 
-export const PopupsVisibleProviderContext = React.createContext<PopupsVisibleProviderProps>(null);
-export const PopupsProviderContext = React.createContext<PopupsProviderProps>(null);
-PopupsVisibleProviderContext.displayName = 'PopupsVisibleProviderContext';
-PopupsProviderContext.displayName = 'PopupsProviderContext';
+export const PopupVisibleProviderContext = React.createContext<PopupsVisibleProviderProps>(null);
+export const PopupParamsProviderContext = React.createContext<PopupsProviderProps>(null);
+PopupVisibleProviderContext.displayName = 'PopupVisibleProviderContext';
+PopupParamsProviderContext.displayName = 'PopupParamsProviderContext';
 
 /**
  * The difference between this component and ActionContextProvider is that
@@ -44,19 +44,19 @@ PopupsProviderContext.displayName = 'PopupsProviderContext';
  * @param param0
  * @returns
  */
-export const PopupsVisibleProvider: FC<PopupsVisibleProviderProps> = ({ children, visible, setVisible }) => {
+export const PopupVisibleProvider: FC<PopupsVisibleProviderProps> = ({ children, visible, setVisible }) => {
   return (
-    <PopupsVisibleProviderContext.Provider value={{ visible, setVisible }}>
+    <PopupVisibleProviderContext.Provider value={{ visible, setVisible }}>
       {children}
-    </PopupsVisibleProviderContext.Provider>
+    </PopupVisibleProviderContext.Provider>
   );
 };
 
-const PopupsProvider: FC<PopupsProviderProps> = (props) => {
+const PopupParamsProvider: FC<PopupsProviderProps> = (props) => {
   return (
-    <PopupsProviderContext.Provider value={{ popupParams: props.popupParams }}>
+    <PopupParamsProviderContext.Provider value={{ popupParams: props.popupParams }}>
       {props.children}
-    </PopupsProviderContext.Provider>
+    </PopupParamsProviderContext.Provider>
   );
 };
 
@@ -82,6 +82,14 @@ const PagePopupsItemProvider: FC<{ params: PopupParams }> = ({ params, children 
   const setVisible = (visible: boolean) => {
     if (!visible) {
       _setVisible(false);
+
+      if (process.env.__E2E__) {
+        closePopup();
+        // Deleting here ensures that the next time the same popup is opened, it will generate another random key.
+        deleteRandomNestedSchemaKey(params.popupUid);
+        return;
+      }
+
       // Leave some time to refresh the block data
       setTimeout(() => {
         closePopup();
@@ -97,8 +105,8 @@ const PagePopupsItemProvider: FC<{ params: PopupParams }> = ({ params, children 
   }
 
   return (
-    <PopupsProvider popupParams={storedParams}>
-      <PopupsVisibleProvider visible={visible} setVisible={setVisible}>
+    <PopupParamsProvider popupParams={storedParams}>
+      <PopupVisibleProvider visible={visible} setVisible={setVisible}>
         <DataBlockProvider
           dataSource={storedParams.datasource}
           collection={storedParams.collection}
@@ -117,8 +125,8 @@ const PagePopupsItemProvider: FC<{ params: PopupParams }> = ({ params, children 
             </PopupTabsPropsProvider>
           </BlockRequestContext.Provider>
         </DataBlockProvider>
-      </PopupsVisibleProvider>
-    </PopupsProvider>
+      </PopupVisibleProvider>
+    </PopupParamsProvider>
   );
 };
 
@@ -165,7 +173,9 @@ export const PagePopups = () => {
       );
       const schemas = await Promise.all(waitList);
       const clonedSchemas = schemas.map((schema) => {
-        return _.cloneDeep(_.omit(schema, 'parent'));
+        const result = _.cloneDeep(_.omit(schema, 'parent'));
+        result['x-read-pretty'] = true;
+        return result;
       });
       const rootSchema = clonedSchemas[0];
       for (let i = 1; i < clonedSchemas.length; i++) {

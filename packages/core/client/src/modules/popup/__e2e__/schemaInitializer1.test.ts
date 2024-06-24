@@ -27,7 +27,7 @@ test.describe('where to open a popup and what can be added to it', () => {
     await page.getByLabel('schema-initializer-Tabs-').click();
     await page.getByRole('textbox').click();
     await page.getByRole('textbox').fill('test123');
-    await page.getByLabel('action-Action-Submit-general-table').click();
+    await page.getByLabel('action-Action-Submit-general').click();
 
     await expect(page.getByText('test123')).toBeVisible();
 
@@ -54,7 +54,7 @@ test.describe('where to open a popup and what can be added to it', () => {
     await page.getByLabel('schema-initializer-Tabs-').click();
     await page.getByRole('textbox').click();
     await page.getByRole('textbox').fill('test7');
-    await page.getByLabel('action-Action-Submit-general-table').click();
+    await page.getByLabel('action-Action-Submit-general').click();
 
     await expect(page.getByText('test7')).toBeVisible();
 
@@ -83,7 +83,7 @@ test.describe('where to open a popup and what can be added to it', () => {
     await page.getByLabel('schema-initializer-Tabs-').click();
     await page.getByRole('textbox').click();
     await page.getByRole('textbox').fill('test8');
-    await page.getByLabel('action-Action-Submit-general-table-0').click();
+    await page.getByLabel('action-Action-Submit-general').click();
 
     await expect(page.getByText('test8')).toBeVisible();
 
@@ -140,7 +140,7 @@ test.describe('where to open a popup and what can be added to it', () => {
     await page.getByLabel('schema-initializer-Tabs-').click();
     await page.getByRole('textbox').click();
     await page.getByRole('textbox').fill('test1');
-    await page.getByLabel('action-Action-Submit-general-table').click();
+    await page.getByLabel('action-Action-Submit-general').click();
 
     await expect(page.getByText('test1')).toBeVisible();
 
@@ -170,7 +170,7 @@ test.describe('where to open a popup and what can be added to it', () => {
     await page.getByLabel('schema-initializer-Tabs-').click();
     await page.getByRole('textbox').click();
     await page.getByRole('textbox').fill('test8');
-    await page.getByLabel('action-Action-Submit-general-details').click();
+    await page.getByLabel('action-Action-Submit-general').click();
 
     await expect(page.getByText('test8')).toBeVisible();
 

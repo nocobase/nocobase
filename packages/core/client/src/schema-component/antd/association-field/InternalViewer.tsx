@@ -19,7 +19,7 @@ import { RecordProvider, useRecord } from '../../../record-provider';
 import { useCompile } from '../../hooks';
 import { ActionContextProvider, useActionContext } from '../action';
 import { EllipsisWithTooltip } from '../input/EllipsisWithTooltip';
-import { PopupsVisibleProvider } from '../page/PagePopups';
+import { PopupVisibleProvider } from '../page/PagePopups';
 import { usePagePopup } from '../page/pagePopupUtils';
 import { useAssociationFieldContext, useFieldNames, useInsertSchema } from './hooks';
 import { transformNestedData } from './InternalCascadeSelect';
@@ -40,11 +40,21 @@ export function isObject(value) {
   return typeof value === 'object' && value !== null;
 }
 
-const ButtonLinkList: FC<{ value: any; setBtnHover: any; setRecord: any }> = (props) => {
+interface ButtonListProps {
+  value: any;
+  setBtnHover: any;
+  setRecord: any;
+  fieldNames?: {
+    label: string;
+    value: string;
+  };
+}
+
+const ButtonLinkList: FC<ButtonListProps> = (props) => {
   const fieldSchema = useFieldSchema();
   const cm = useCollectionManager();
   const { enableLink } = fieldSchema['x-component-props'] || {};
-  const fieldNames = useFieldNames(props);
+  const fieldNames = useFieldNames({ fieldNames: props.fieldNames });
   const insertViewer = useInsertSchema('Viewer');
   const { options: collectionField } = useAssociationFieldContext();
   const compile = useCompile();
@@ -111,12 +121,12 @@ const ButtonLinkList: FC<{ value: any; setBtnHover: any; setRecord: any }> = (pr
 };
 
 interface ReadPrettyInternalViewerProps {
-  ButtonList: FC<{
-    value: any;
-    setBtnHover: any;
-    setRecord: any;
-  }>;
+  ButtonList: FC<ButtonListProps>;
   value: any;
+  fieldNames?: {
+    label: string;
+    value: string;
+  };
 }
 
 export const ReadPrettyInternalViewer: React.FC = observer(
@@ -139,7 +149,7 @@ export const ReadPrettyInternalViewer: React.FC = observer(
 
     const btnElement = (
       <EllipsisWithTooltip ellipsis={true} ref={ellipsisWithTooltipRef}>
-        <ButtonList setBtnHover={setBtnHover} setRecord={setRecord} value={value} />
+        <ButtonList setBtnHover={setBtnHover} setRecord={setRecord} value={value} fieldNames={props.fieldNames} />
       </EllipsisWithTooltip>
     );
 
@@ -188,7 +198,7 @@ export const ReadPrettyInternalViewer: React.FC = observer(
     };
 
     return (
-      <PopupsVisibleProvider visible={false}>
+      <PopupVisibleProvider visible={false}>
         <ActionContextProvider
           value={{
             visible: visible || visibleWithURL,
@@ -203,7 +213,7 @@ export const ReadPrettyInternalViewer: React.FC = observer(
         >
           {renderRecordProvider()}
         </ActionContextProvider>
-      </PopupsVisibleProvider>
+      </PopupVisibleProvider>
     );
   },
   { displayName: 'ReadPrettyInternalViewer' },

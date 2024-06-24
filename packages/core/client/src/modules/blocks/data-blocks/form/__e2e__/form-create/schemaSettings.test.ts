@@ -203,7 +203,6 @@ test.describe('set default value', () => {
     // https://nocobase.height.app/T-4028/description
     // 刷新页面后，默认值应该依然存在
     await page.reload();
-    await page.getByRole('button', { name: 'Add new' }).click();
     await page
       .getByTestId('drawer-Action.Container-general-Add record')
       .getByRole('button', { name: 'Add new' })

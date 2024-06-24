@@ -33,7 +33,7 @@ import { useLocalVariables, useVariables } from '../../../variables';
 import { SortableItem } from '../../common';
 import { useCompile, useComponent, useDesigner } from '../../hooks';
 import { useProps } from '../../hooks/useProps';
-import { PopupsVisibleProvider } from '../page/PagePopups';
+import { PopupVisibleProvider } from '../page/PagePopups';
 import { usePagePopup } from '../page/pagePopupUtils';
 import { useNavigateTOSubPage } from '../page/SubPages';
 import ActionContainer from './Action.Container';
@@ -235,7 +235,7 @@ export const Action: ComposedAction = withDynamicSchemaProps(
     // }
 
     const result = (
-      <PopupsVisibleProvider visible={false}>
+      <PopupVisibleProvider visible={false}>
         <ActionContextProvider
           button={buttonElement}
           visible={visible || visibleWithURL}
@@ -262,7 +262,7 @@ export const Action: ComposedAction = withDynamicSchemaProps(
           </DeclareVariable>
           {element}
         </ActionContextProvider>
-      </PopupsVisibleProvider>
+      </PopupVisibleProvider>
     );
 
     // fix https://nocobase.height.app/T-3235/description

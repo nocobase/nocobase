@@ -21,7 +21,7 @@ import {
   useDataBlockRequest,
   useDataSourceKey,
 } from '../../../data-source';
-import { PopupsProviderContext, PopupsVisibleProviderContext } from './PagePopups';
+import { PopupParamsProviderContext, PopupVisibleProviderContext } from './PagePopups';
 
 export interface PopupParams {
   /** popup uid */
@@ -109,8 +109,8 @@ export const usePagePopup = () => {
   const collection = useCollection();
   const cm = useCollectionManager();
   const association = useAssociationName();
-  const { visible, setVisible } = useContext(PopupsVisibleProviderContext) || { visible: false, setVisible: () => {} };
-  const { popupParams } = useContext(PopupsProviderContext) || {};
+  const { visible, setVisible } = useContext(PopupVisibleProviderContext) || { visible: false, setVisible: () => {} };
+  const { popupParams } = useContext(PopupParamsProviderContext) || {};
   const service = useDataBlockRequest();
 
   const getNewPathname = useCallback(

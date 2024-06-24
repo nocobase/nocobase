@@ -19,7 +19,6 @@ export const AssociationFieldProvider = observer(
   (props) => {
     const field = useField<Field>();
     const cm = useCollectionManager();
-    const dm = useCollectionManager();
     const fieldSchema = useFieldSchema();
 
     // 这里有点奇怪，在 Table 切换显示的组件时，这个组件并不会触发重新渲染，所以增加这个 Hooks 让其重新渲染
@@ -34,7 +33,7 @@ export const AssociationFieldProvider = observer(
       [fieldSchema['x-collection-field'], fieldSchema.name],
     );
     const isFileCollection = useMemo(
-      () => dm.getCollection(collectionField?.target)?.template === 'file',
+      () => cm.getCollection(collectionField?.target)?.template === 'file',
       // eslint-disable-next-line react-hooks/exhaustive-deps
       [fieldSchema['x-collection-field']],
     );
