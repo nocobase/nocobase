@@ -70,4 +70,6 @@ export * from './modules/blocks/data-blocks/table-selector';
 export * from './modules/blocks/index';
 export * from './modules/blocks/useParentRecordCommon';
 
+export { CollectionFieldInitializer } from './modules/fields/initializer/CollectionFieldInitializer';
+export { TableCollectionFieldInitializer } from './modules/fields/initializer/TableCollectionFieldInitializer';
 export { DeclareVariable } from './modules/variable/DeclareVariable';

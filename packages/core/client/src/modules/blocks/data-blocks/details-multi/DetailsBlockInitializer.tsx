@@ -62,7 +62,7 @@ export const DetailsBlockInitializer = ({
       hideSearch={hideSearch}
       filter={filterCollections}
       templateWrap={templateWrap}
-      showAssociationFields={showAssociationFields}
+      showMoreOptions={showAssociationFields}
       hideChildrenIfSingleCollection={hideChildrenIfSingleCollection}
     />
   );

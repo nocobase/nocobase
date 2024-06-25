@@ -8,11 +8,11 @@
  */
 
 import { Plugin } from '@nocobase/server';
+import * as process from 'node:process';
 import { resolve } from 'path';
 import { getAntdLocale } from './antd';
 import { getCronLocale } from './cron';
 import { getCronstrueLocale } from './cronstrue';
-import * as process from 'node:process';
 
 async function getLang(ctx) {
   const SystemSetting = ctx.db.getRepository('systemSettings');
@@ -39,7 +39,7 @@ export class PluginClientServer extends Plugin {
       'x-uid': 'nocobase-admin-menu',
       'x-component': 'Menu',
       'x-designer': 'Menu.Designer',
-      'x-initializer': 'MenuItemInitializers',
+      'x-initializer': 'header:addMenuItem',
       'x-component-props': {
         mode: 'mix',
         theme: 'dark',

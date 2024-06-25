@@ -59,7 +59,7 @@ export const GridCardBlockInitializer = ({
       onlyCurrentDataSource={onlyCurrentDataSource}
       hideSearch={hideSearch}
       filter={filterCollections}
-      showAssociationFields={showAssociationFields}
+      showMoreOptions={showAssociationFields}
     />
   );
 };

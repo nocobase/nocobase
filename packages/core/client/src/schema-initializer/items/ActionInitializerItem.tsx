@@ -10,9 +10,16 @@
 import { merge } from '@formily/shared';
 import React from 'react';
 
-import { SchemaInitializerItem, useSchemaInitializer, useSchemaInitializerItem } from '../../application';
+import { ISchema, SchemaInitializerItem, useSchemaInitializer, useSchemaInitializerItem } from '../../application';
 
-export const ActionInitializerItem = (props) => {
+interface ActionInitializerItemProps {
+  /**
+   * 被创建的操作按钮的 schema
+   */
+  schema?: ISchema;
+}
+
+export const ActionInitializerItem = (props: ActionInitializerItemProps) => {
   const itemConfig = useSchemaInitializerItem();
   const { insert } = useSchemaInitializer();
 

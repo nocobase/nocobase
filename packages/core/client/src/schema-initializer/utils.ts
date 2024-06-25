@@ -1029,11 +1029,13 @@ export const useCollectionDataSourceItems = ({
       collection.dataSource,
       collection.name,
       componentName,
+      currentText,
       dataBlockInitializerProps,
       filterOtherRecordsCollection,
       hideOtherRecordsInPopup,
       noAssociationMenu,
       onClick,
+      otherText,
       t,
     ]);
   }

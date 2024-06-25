@@ -8,12 +8,13 @@
  */
 
 import { SchemaInitializer } from '../../application/schema-initializer/SchemaInitializer';
+import { GroupItem } from './GroupItem';
 import { LinkMenuItem } from './LinkMenuItem';
 import { PageMenuItem } from './PageMenuItem';
-import { GroupItem } from './GroupItem';
 
 /**
  * @deprecated
+ * use `menuItemInitializer` instead
  */
 export const menuItemInitializer_deprecated = new SchemaInitializer({
   name: 'MenuItemInitializers',
@@ -40,10 +41,13 @@ export const menuItemInitializer_deprecated = new SchemaInitializer({
 });
 
 export const menuItemInitializer = new SchemaInitializer({
-  name: 'menuInitializers:menuItem',
+  name: 'header:addMenuItem',
   insertPosition: 'beforeEnd',
   icon: 'PlusOutlined',
   title: '{{t("Add menu item")}}',
+  style: {
+    width: '100%',
+  },
   items: [
     {
       name: 'group',

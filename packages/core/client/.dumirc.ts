@@ -1,4 +1,3 @@
-import _ from 'lodash'
 import { getUmiConfig } from '@nocobase/devtools/umiConfig';
 import { defineConfig } from 'dumi';
 import { defineThemeConfig } from 'dumi-theme-nocobase';
@@ -44,13 +43,13 @@ export default defineConfig({
         link: '/components/action',
       },
       {
+        title: 'UI Schema',
+        link: '/ui-schema/schema-initializer/page-add-block',
+      },
+      {
         title: 'Home site',
         link: lang === 'zh-CN' ? 'https://docs-cn.nocobase.com' : 'https://docs.nocobase.com',
       }
-      // {
-      //   title: 'UI Schema',
-      //   link: '/ui-schema',
-      // },
     ],
     sidebarEnhance: {
       '/core': [
@@ -400,7 +399,216 @@ export default defineConfig({
             },
           ]
         },
-      ]
+      ],
+      '/ui-schema': [
+        {
+          title: 'SchemaInitializer 实例',
+          type: 'group',
+          children: [
+            {
+              title: '概述',
+              link: '/ui-schema/schema-initializer/overview',
+            },
+            {
+              title: '区块相关',
+              children: [
+                '/ui-schema/schema-initializer/page-add-block',
+                '/ui-schema/schema-initializer/mobile-page-add-block',
+                '/ui-schema/schema-initializer/charts-add-block',
+                '/ui-schema/schema-initializer/popup-common-add-block',
+                '/ui-schema/schema-initializer/popup-add-new-add-block',
+                '/ui-schema/schema-initializer/popup-table-selector-add-block',
+                '/ui-schema/schema-initializer/popup-bulk-edit-add-block',
+                '/ui-schema/schema-initializer/workflow-manual-popup-configure-user-interface-add-block',
+              ]
+            },
+            {
+              title: '操作相关',
+              children: [
+                '/ui-schema/schema-initializer/create-form-configure-actions',
+                '/ui-schema/schema-initializer/edit-form-configure-actions',
+                '/ui-schema/schema-initializer/details-configure-actions',
+                '/ui-schema/schema-initializer/grid-card-configure-actions',
+                '/ui-schema/schema-initializer/gantt-configure-actions',
+                '/ui-schema/schema-initializer/kanban-configure-actions',
+                '/ui-schema/schema-initializer/calendar-configure-actions',
+                '/ui-schema/schema-initializer/filter-form-configure-actions',
+                '/ui-schema/schema-initializer/bulk-edit-form-configure-actions',
+                '/ui-schema/schema-initializer/chart-filter-form-configure-actions',
+              ]
+            },
+            {
+              title: '字段相关',
+              children: [
+                '/ui-schema/schema-initializer/form-configure-fields',
+                '/ui-schema/schema-initializer/details-configure-fields',
+                '/ui-schema/schema-initializer/table-configure-columns',
+                '/ui-schema/schema-initializer/assign-field-values-form-configure-fields',
+                '/ui-schema/schema-initializer/filter-form-configure-fields',
+                '/ui-schema/schema-initializer/filter-collapse-configure-fields',
+                '/ui-schema/schema-initializer/chart-filter-form-configure-fields',
+                '/ui-schema/schema-initializer/bulk-edit-form-configure-fields',
+              ]
+            },
+            {
+              title: '菜单相关',
+              children: [
+                '/ui-schema/schema-initializer/header-add-menu-item'
+              ]
+            }
+          ],
+        },
+        {
+          title: 'SchemaInitializerItem 组件',
+          type: 'group',
+          children: [
+            {
+              title: '概述',
+              link: '/ui-schema/schema-initializer-item/overview',
+            },
+            '/ui-schema/schema-initializer-item/action-initializer-item',
+            '/ui-schema/schema-initializer-item/collection-field-initializer',
+            '/ui-schema/schema-initializer-item/data-block-initializer',
+            '/ui-schema/schema-initializer-item/table-collection-field-initializer',
+            {
+              title: '其它基本组件',
+              link: '/ui-schema/schema-initializer-item/others'
+            }
+          ],
+        },
+        {
+          title: 'SchemaSettings 实例',
+          type: 'group',
+          children: [
+            {
+              title: '概述',
+              link: '/ui-schema/schema-settings/overview',
+            },
+            {
+              title: '区块相关',
+              children: [
+                '/ui-schema/schema-settings/block-settings-calendar',
+                '/ui-schema/schema-settings/block-settings-comment',
+                '/ui-schema/schema-settings/block-settings-create-form',
+                '/ui-schema/schema-settings/block-settings-details-with-pagination',
+                '/ui-schema/schema-settings/block-settings-details',
+                '/ui-schema/schema-settings/block-settings-edit-form',
+                '/ui-schema/schema-settings/block-settings-filter-collapse',
+                '/ui-schema/schema-settings/block-settings-filter-form',
+                '/ui-schema/schema-settings/block-settings-gantt',
+                '/ui-schema/schema-settings/block-settings-grid-card',
+                '/ui-schema/schema-settings/block-settings-iframe',
+                '/ui-schema/schema-settings/block-settings-kanban',
+                '/ui-schema/schema-settings/block-settings-list',
+                '/ui-schema/schema-settings/block-settings-map',
+                '/ui-schema/schema-settings/block-settings-markdown',
+                '/ui-schema/schema-settings/block-settings-table-selector',
+                '/ui-schema/schema-settings/block-settings-table',
+              ]
+            },
+            {
+              title: '操作相关',
+              children: [
+                '/ui-schema/schema-settings/action-settings-add-child',
+                '/ui-schema/schema-settings/action-settings-add-new',
+                '/ui-schema/schema-settings/action-settings-bulk-delete',
+                '/ui-schema/schema-settings/action-settings-bulk-edit',
+                '/ui-schema/schema-settings/action-settings-bulk-update',
+                '/ui-schema/schema-settings/action-settings-create-submit',
+                '/ui-schema/schema-settings/action-settings-custom-request',
+                '/ui-schema/schema-settings/action-settings-delete',
+                '/ui-schema/schema-settings/action-settings-disassociate',
+                '/ui-schema/schema-settings/action-settings-duplicate',
+                '/ui-schema/schema-settings/action-settings-edit',
+                '/ui-schema/schema-settings/action-settings-expendable',
+                '/ui-schema/schema-settings/action-settings-export',
+                '/ui-schema/schema-settings/action-settings-filter',
+                '/ui-schema/schema-settings/action-settings-import',
+                '/ui-schema/schema-settings/action-settings-popup',
+                '/ui-schema/schema-settings/action-settings-print',
+                '/ui-schema/schema-settings/action-settings-refresh',
+                '/ui-schema/schema-settings/action-settings-save-record',
+                '/ui-schema/schema-settings/action-settings-submit-to-workflow',
+                '/ui-schema/schema-settings/action-settings-submit',
+                '/ui-schema/schema-settings/action-settings-update-record',
+                '/ui-schema/schema-settings/action-settings-update-submit',
+                '/ui-schema/schema-settings/action-settings-view',
+              ]
+            },
+            {
+              title: '字段相关',
+              children: [
+                '/ui-schema/schema-settings/field-settings-bulk-edit-form-item',
+                '/ui-schema/schema-settings/field-settings-filter-collapse-item',
+                '/ui-schema/schema-settings/field-settings-filter-form-item',
+                '/ui-schema/schema-settings/field-settings-form-item',
+                '/ui-schema/schema-settings/field-settings-table-column',
+              ]
+            },
+            {
+              title: '字段组件相关',
+              children: [
+                '/ui-schema/schema-settings/field-settings-component-cascade-select',
+                '/ui-schema/schema-settings/field-settings-component-date-picker',
+                '/ui-schema/schema-settings/field-settings-component-department-owners-field',
+                '/ui-schema/schema-settings/field-settings-component-file-manager',
+                '/ui-schema/schema-settings/field-settings-component-formula-result',
+                '/ui-schema/schema-settings/field-settings-component-input-number',
+                '/ui-schema/schema-settings/field-settings-component-input-preview',
+                '/ui-schema/schema-settings/field-settings-component-input-url',
+                '/ui-schema/schema-settings/field-settings-component-nester',
+                '/ui-schema/schema-settings/field-settings-component-picker',
+                '/ui-schema/schema-settings/field-settings-component-popover-nester',
+                '/ui-schema/schema-settings/field-settings-component-preview',
+                '/ui-schema/schema-settings/field-settings-component-select',
+                '/ui-schema/schema-settings/field-settings-component-sub-table',
+                '/ui-schema/schema-settings/field-settings-component-tag',
+                '/ui-schema/schema-settings/field-settings-component-unix-timestamp',
+                '/ui-schema/schema-settings/field-settings-component-upload-attachment',
+                '/ui-schema/schema-settings/field-settings-component-user-departments-field',
+                '/ui-schema/schema-settings/field-settings-component-user-main-department-field',
+              ],
+            }
+          ],
+        },
+        {
+          title: 'SchemaSettingsItem 组件',
+          type: 'group',
+          children: [
+            {
+              title: '概述',
+              link: '/ui-schema/schema-settings-item/overview',
+            },
+            {
+              title: '区块相关',
+              children: [
+                '/ui-schema/schema-settings-item/edit-block-title',
+                '/ui-schema/schema-settings-item/set-the-block-height',
+                '/ui-schema/schema-settings-item/set-the-data-scope',
+                '/ui-schema/schema-settings-item/set-data-loading-mode',
+                '/ui-schema/schema-settings-item/connect-data-blocks',
+                '/ui-schema/schema-settings-item/linkage-rules',
+                '/ui-schema/schema-settings-item/data-templates',
+                '/ui-schema/schema-settings-item/convert-reference-to-duplicate',
+                '/ui-schema/schema-settings-item/delete',
+                '/ui-schema/schema-settings-item/set-default-sorting-rules',
+              ],
+            },
+            {
+              title: '操作相关',
+              children: [
+                '/ui-schema/schema-settings-item/edit-block-title',
+              ],
+            },
+            {
+              title: '字段相关',
+              children: [
+                '/ui-schema/schema-settings-item/edit-block-title',
+              ],
+            },
+          ],
+        }
+      ],
       // '/ui-schema': [
       //   {
       //     title: 'Overview',

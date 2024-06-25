@@ -265,42 +265,83 @@ export function useMenuSearch({
 }
 
 export interface DataBlockInitializerProps {
+  /**
+   * 选项的唯一标识
+   */
+  name: string;
+  /**
+   * 在页面上显示出来的标题
+   */
+  title: string;
+  /**
+   * 用来标识当前区块的类型，在区块模板中有使用
+   */
+  componentType: string;
+  /**
+   * 处理区块模板
+   * @param templateSchema
+   * @param options
+   * @returns
+   */
   templateWrap?: (
     templateSchema: any,
-    {
-      item,
-      fromOthersInPopup,
-    }: {
+    options: {
       item: any;
       fromOthersInPopup?: boolean;
     },
   ) => any;
+  /**
+   * 用于自定义创建区块的方法
+   * @param args
+   * @returns
+   */
   onCreateBlockSchema?: (args: any) => void;
-  createBlockSchema?: (args: any) => any;
+  /**
+   * 选项左侧的图标
+   */
   icon?: string | React.ReactNode;
-  name: string;
-  title: string;
   /**
    * 用来筛选弹窗中的 “Current record” 和 “Associated records” 选项中的数据表
    */
   filter?: (options: { collection: Collection; associationField: CollectionFieldOptions }) => boolean;
+  /**
+   * 用来筛选数据源
+   * @param dataSource
+   * @returns
+   */
   filterDataSource?: (dataSource: DataSource) => boolean;
   /**
    * 用来筛选弹窗中的 “Other records” 选项中的数据表
    */
   filterOtherRecordsCollection?: (collection: Collection) => boolean;
-  componentType: string;
+  /**
+   * 是否只显示当前上下文中的数据源
+   */
   onlyCurrentDataSource?: boolean;
+  /**
+   * 是否隐藏搜索框
+   */
   hideSearch?: boolean;
-  showAssociationFields?: boolean;
+  /**
+   * 是否显示关联字段
+   */
+  showMoreOptions?: boolean;
   /** 如果只有一项数据表时，不显示 children 列表 */
   hideChildrenIfSingleCollection?: boolean;
+  /**
+   * 用于自定义子选项列表的内容
+   */
   items?: ReturnType<typeof useCollectionDataSourceItems>[];
   /**
    * 隐藏弹窗中的 Other records 选项
    */
   hideOtherRecordsInPopup?: boolean;
-  onClick?: (args: any) => void;
+  /**
+   * 处理点击事件
+   * @param options
+   * @returns
+   */
+  onClick?: (options: { item: any; fromOthersInPopup?: boolean }) => void;
   /** 用于更改 Current record 的文案 */
   currentText?: string;
   /** 用于更改 Other records 的文案 */
@@ -319,7 +360,7 @@ export const DataBlockInitializer: FC<DataBlockInitializerProps> = (props) => {
     filter,
     onlyCurrentDataSource,
     hideSearch,
-    showAssociationFields,
+    showMoreOptions: showAssociationFields,
     hideChildrenIfSingleCollection,
     filterDataSource,
     items: itemsFromProps,
@@ -333,7 +374,7 @@ export const DataBlockInitializer: FC<DataBlockInitializerProps> = (props) => {
   const compile = useCompile();
   const { getTemplateSchemaByMode } = useSchemaTemplateManager();
   const onClick = useCallback(
-    async (options) => {
+    async (options: { item: any; fromOthersInPopup?: boolean }) => {
       const { item, fromOthersInPopup } = options;
 
       if (propsOnClick) {

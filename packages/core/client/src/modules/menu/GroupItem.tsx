@@ -11,9 +11,9 @@ import { FormLayout } from '@formily/antd-v5';
 import { SchemaOptionsContext } from '@formily/react';
 import React, { useCallback, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FormDialog, SchemaComponent, SchemaComponentOptions } from '../../schema-component';
 import { SchemaInitializerItem, useSchemaInitializer } from '../../application';
 import { useGlobalTheme } from '../../global-theme';
+import { FormDialog, SchemaComponent, SchemaComponentOptions } from '../../schema-component';
 import { useStyles } from '../../schema-component/antd/menu/MenuItemInitializers';
 
 export const GroupItem = () => {
