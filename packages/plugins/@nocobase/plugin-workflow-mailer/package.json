@@ -9,10 +9,8 @@
   "main": "./dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/workflow-smtp-mailer",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/workflow-smtp-mailer",
-  "dependencies": {
-    "nodemailer": "6.9.13"
-  },
   "devDependencies": {
+    "nodemailer": "6.9.13",
     "antd": "5.x",
     "react": "18.x"
   },

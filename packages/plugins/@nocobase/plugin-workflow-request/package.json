@@ -9,11 +9,9 @@
   "main": "./dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/workflow-request",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/workflow-request",
-  "dependencies": {
-    "axios": "^0.26.1"
-  },
   "devDependencies": {
     "antd": "5.x",
+    "axios": "^0.26.1",
     "react": "18.x",
     "react-i18next": "^11.15.1"
   },
