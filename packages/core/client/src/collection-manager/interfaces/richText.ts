@@ -26,7 +26,7 @@ export class RichTextFieldInterface extends CollectionFieldInterface {
       'x-component': 'RichText',
     },
   };
-  availableTypes = ['text', 'json'];
+  availableTypes = ['text', 'json', 'string'];
   hasDefaultValue = true;
   properties = {
     ...defaultProps,
