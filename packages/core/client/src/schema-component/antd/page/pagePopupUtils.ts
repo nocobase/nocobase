@@ -10,7 +10,7 @@
 import { ISchema, useFieldSchema } from '@formily/react';
 import _ from 'lodash';
 import { useCallback, useContext } from 'react';
-import { useNavigateNoUpdate } from '../../../application/CustomRouterContextProvider';
+import { useLocationNoUpdate, useNavigateNoUpdate } from '../../../application';
 import {
   CollectionRecord,
   useAssociationName,
@@ -102,6 +102,7 @@ export const getPopupPathFromParams = (params: PopupParams) => {
 
 export const usePagePopup = () => {
   const navigate = useNavigateNoUpdate();
+  const location = useLocationNoUpdate();
   const fieldSchema = useFieldSchema();
   const dataSourceKey = useDataSourceKey();
   const record = useCollectionRecord();
@@ -140,7 +141,7 @@ export const usePagePopup = () => {
       const filterByTK = recordData?.[collection.getPrimaryKey()];
       const sourceId = parentRecord?.data?.[cm.getCollection(association?.split('.')[0])?.getPrimaryKey()];
       const pathname = getNewPathname({ popupUid: fieldSchema['x-uid'], recordData });
-      let url = window.location.pathname;
+      let url = location.pathname;
       if (_.last(url) === '/') {
         url = url.slice(0, -1);
       }
@@ -159,23 +160,35 @@ export const usePagePopup = () => {
       });
       navigate(`${url}${pathname}`);
     },
-    [association, cm, collection, dataSourceKey, fieldSchema, getNewPathname, navigate, parentRecord, record, service],
+    [
+      association,
+      cm,
+      collection,
+      dataSourceKey,
+      fieldSchema,
+      getNewPathname,
+      navigate,
+      parentRecord,
+      record,
+      service,
+      location,
+    ],
   );
 
   const closePopup = useCallback(() => {
-    navigate(removeLastPopupPath(window.location.pathname));
-  }, [navigate]);
+    navigate(removeLastPopupPath(location.pathname));
+  }, [navigate, location]);
 
   const changeTab = useCallback(
     (key: string) => {
       const pathname = getNewPathname({ tabKey: key, popupUid: popupParams?.popupUid, recordData: record?.data });
-      let url = removeLastPopupPath(window.location.pathname);
+      let url = removeLastPopupPath(location.pathname);
       if (_.last(url) === '/') {
         url = url.slice(0, -1);
       }
       navigate(`${url}${pathname}`);
     },
-    [getNewPathname, navigate, popupParams?.popupUid, record?.data],
+    [getNewPathname, navigate, popupParams?.popupUid, record?.data, location],
   );
 
   return {
