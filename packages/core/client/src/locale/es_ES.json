@@ -620,6 +620,7 @@
   "Current collection": "Colección actual",
   "Other collections": "Otras colecciones",
   "Current popup record": "Registro actual del popup",
+  "Parent popup record": "Registro padre del popup",
   "Associated records": "Registros asociados",
   "Parent record": "Registro padre",
   "Current time": "Hora actual",
