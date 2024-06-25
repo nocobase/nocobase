@@ -10,6 +10,7 @@
 import React from 'react';
 import { Outlet } from 'react-router-dom';
 import { Plugin, RouterManager, createRouterManager } from '@nocobase/client';
+import { isDesktop } from 'react-device-detect';
 
 import { Mobile } from './mobile';
 import { MobileLayout } from './mobile-layout';
@@ -60,7 +61,7 @@ export class PluginMobileClient extends Plugin {
   }
 
   setMobileMeta() {
-    if (window.location.pathname.startsWith(mobilePath)) {
+    if (window.location.pathname.startsWith(mobilePath) && !isDesktop) {
       const meta = document.createElement('meta');
       meta.name = 'viewport';
       meta.content = 'width=device-width,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no';

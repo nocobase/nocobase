@@ -49,7 +49,6 @@ export const mobileTabBarLinkInitializerItem: SchemaInitializerItemActionModalTy
 
     return {
       isItem: true,
-      width: '90%',
       title: generatePluginTranslationTemplate('Add Link page'),
       buttonText: generatePluginTranslationTemplate('Link'),
       schema: {

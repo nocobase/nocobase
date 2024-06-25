@@ -20,7 +20,9 @@ export interface MobileLayoutProps {
 export const MobileLayout: FC<MobileLayoutProps> = () => {
   return (
     <MobileProviders>
-      <Outlet />
+      <div style={{ minHeight: '90%', overflowX: 'hidden' }}>
+        <Outlet />
+      </div>
       <MobileTabBar />
     </MobileProviders>
   );

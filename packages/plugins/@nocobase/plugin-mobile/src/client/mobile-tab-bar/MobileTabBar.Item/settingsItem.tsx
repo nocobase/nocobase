@@ -22,7 +22,6 @@ export const editTabItemSettingsItem = (getMoreFields?: (values: any) => Record<
     title: generatePluginTranslationTemplate('Edit tabBar item'),
     name: 'tabBarItem',
     parentSchemaKey: 'x-component-props',
-    width: '90%',
     schema: (defaultValues) => ({
       type: 'object',
       title: 'Edit tabBar item',

@@ -27,17 +27,15 @@ export const MobileNavigationBar: FC = () => {
   const fieldSchema = useFieldSchema();
   if (!enableNavigationBar) return null;
   return (
-    <Affix offsetTop={0} style={{ borderBottom: '1px solid var(--adm-color-border)' }}>
-      <div>
-        <NavBar
-          backArrow={false}
-          left={<SchemaComponent name="leftActions" schema={fieldSchema.properties['leftActions']} />}
-          right={<SchemaComponent name="rightActions" schema={fieldSchema.properties['rightActions']} />}
-        >
-          {enableNavigationBarTitle ? title : null}
-        </NavBar>
-        {enableNavigationBarTabs && <MobileNavigationBarTabs />}
-      </div>
-    </Affix>
+    <div style={{ borderBottom: '1px solid var(--adm-color-border)', position: 'sticky', top: 0, zIndex: 1000 }}>
+      <NavBar
+        backArrow={false}
+        left={<SchemaComponent name="leftActions" schema={fieldSchema.properties['leftActions']} />}
+        right={<SchemaComponent name="rightActions" schema={fieldSchema.properties['rightActions']} />}
+      >
+        {enableNavigationBarTitle ? title : null}
+      </NavBar>
+      {enableNavigationBarTabs && <MobileNavigationBarTabs />}
+    </div>
   );
 };

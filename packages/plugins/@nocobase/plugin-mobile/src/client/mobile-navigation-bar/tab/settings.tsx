@@ -62,7 +62,6 @@ const editTitle: SchemaSettingsItemType = {
     const { refresh, resource } = useMobileTabContext();
     return {
       title: t('Title'),
-      width: '90%',
       schema: {
         type: 'object',
         properties: {

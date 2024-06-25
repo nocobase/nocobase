@@ -120,7 +120,6 @@ export const mobileTabBarSchemaInitializerItem: SchemaInitializerItemActionModal
     const navigate = useNavigate();
     return {
       isItem: true,
-      width: '90%',
       title: generatePluginTranslationTemplate('Add page'),
       buttonText: generatePluginTranslationTemplate('Page'),
       schema: getMobileTabBarItemSchemaFields(),

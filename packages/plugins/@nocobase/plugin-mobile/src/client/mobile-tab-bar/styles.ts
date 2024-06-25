@@ -11,7 +11,7 @@ import { createStyles } from 'antd-style';
 
 export const useStyles = createStyles(({ token, css }) => ({
   mobileTabBar: {
-    position: 'fixed',
+    position: 'sticky',
     bottom: 0,
     left: 0,
     right: 0,

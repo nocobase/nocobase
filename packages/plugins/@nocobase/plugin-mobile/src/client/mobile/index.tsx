@@ -10,9 +10,14 @@
 import React from 'react';
 import { usePlugin } from '@nocobase/client';
 import { PluginMobileClient } from '../index';
+import { DesktopMode } from '../desktop-mode/DesktopMode';
 
 export const Mobile = () => {
   const mobilePlugin = usePlugin(PluginMobileClient);
   const RouterComponent = mobilePlugin.getRouterComponent();
-  return <RouterComponent />;
+  return (
+    <DesktopMode>
+      <RouterComponent />
+    </DesktopMode>
+  );
 };
