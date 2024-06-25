@@ -9,7 +9,7 @@
 
 import { useField, useFieldSchema } from '@formily/react';
 import { Select } from 'antd';
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SchemaInitializerItem, SchemaInitializerSelect } from '../application';
 import { useDesignable } from '../schema-component';
@@ -18,6 +18,7 @@ import { SchemaSettingsSelectItem } from '../schema-settings';
 interface Options {
   openMode?: boolean;
   openSize?: boolean;
+  modeOptions?: { label: string; value: string }[];
 }
 export const SchemaInitializerOpenModeSchemaItems: React.FC<Options> = (options) => {
   const { openMode = true, openSize = true } = options;
@@ -93,24 +94,30 @@ export const SchemaInitializerOpenModeSchemaItems: React.FC<Options> = (options)
   );
 };
 
-export const SchemaSettingOpenModeSchemaItems: React.FC<Options> = (options) => {
-  const { openMode = true, openSize = true } = options;
+export const SchemaSettingOpenModeSchemaItems: React.FC<Options> = (props) => {
+  const { openMode = true, openSize = true, modeOptions } = props;
   const fieldSchema = useFieldSchema();
   const field = useField();
   const { t } = useTranslation();
   const { dn } = useDesignable();
   const openModeValue = fieldSchema?.['x-component-props']?.['openMode'] || 'drawer';
 
+  const _modeOptions = useMemo(() => {
+    return (
+      modeOptions || [
+        { label: t('Drawer'), value: 'drawer' },
+        { label: t('Dialog'), value: 'modal' },
+        { label: t('Page'), value: 'page' },
+      ]
+    );
+  }, [modeOptions, t]);
+
   return (
     <>
       {openMode ? (
         <SchemaSettingsSelectItem
           title={t('Open mode')}
-          options={[
-            { label: t('Drawer'), value: 'drawer' },
-            { label: t('Dialog'), value: 'modal' },
-            { label: t('Page'), value: 'page' },
-          ]}
+          options={_modeOptions}
           value={openModeValue}
           onChange={(value) => {
             field.componentProps.openMode = value;
