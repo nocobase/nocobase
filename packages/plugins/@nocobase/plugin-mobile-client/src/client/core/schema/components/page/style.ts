@@ -30,8 +30,8 @@ const useStyles = createStyles(({ token, css }) => {
       flex-direction: column;
       width: 100%;
       height: 100%;
-      overflow-x: hidden;
-      overflow-y: auto;
+      // overflow-x: hidden;
+      // overflow-y: auto;
       padding-bottom: var(--nb-spacing);
     `,
 
