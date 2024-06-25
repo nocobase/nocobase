@@ -381,5 +381,76 @@ describe('workflow > actions > workflows', () => {
       expect(e1.key).not.toBe(e2.key);
       expect(e2.workflowId).toBe(w2.id);
     });
+
+    it('duplicate sync workflow', async () => {
+      const w1 = await WorkflowModel.create({
+        enabled: true,
+        type: 'collection',
+        config: {
+          mode: 1,
+          collection: 'posts',
+        },
+        sync: true,
+      });
+
+      const p1 = await PostRepo.create({ values: { title: 't1' } });
+
+      const { body, status } = await agent.resource(`workflows`).revision({
+        filterByTk: w1.id,
+      });
+
+      expect(status).toBe(200);
+      const { data: w2 } = body;
+      expect(w2.config).toMatchObject(w1.config);
+      expect(w2.key).not.toBe(w1.key);
+      expect(w2.current).toBeTruthy();
+      expect(w2.enabled).toBe(false);
+      expect(w2.allExecuted).toBe(0);
+      expect(w2.sync).toBe(true);
+
+      // stop w1
+      await WorkflowModel.update(
+        {
+          enabled: false,
+        },
+        {
+          where: {
+            id: w1.id,
+          },
+          individualHooks: true,
+        },
+      );
+
+      await WorkflowModel.update(
+        {
+          enabled: true,
+        },
+        {
+          where: {
+            id: w2.id,
+          },
+          individualHooks: true,
+        },
+      );
+
+      const p2 = await PostRepo.create({ values: { title: 't2' } });
+
+      const [w1next, w2next] = await WorkflowModel.findAll({
+        order: [['id', 'ASC']],
+      });
+
+      expect(w1next.enabled).toBe(false);
+      expect(w1next.current).toBe(true);
+      expect(w1next.executed).toBe(1);
+      expect(w1next.allExecuted).toBe(1);
+      expect(w2next.enabled).toBe(true);
+      expect(w2next.executed).toBe(1);
+      expect(w2next.allExecuted).toBe(1);
+
+      const [e1] = await w1next.getExecutions();
+      const [e2] = await w2next.getExecutions();
+      expect(e1.key).not.toBe(e2.key);
+      expect(e2.workflowId).toBe(w2.id);
+    });
   });
 });

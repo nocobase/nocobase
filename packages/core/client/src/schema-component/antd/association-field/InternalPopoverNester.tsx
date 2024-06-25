@@ -29,7 +29,7 @@ const InternalPopoverNesterContentCss = css`
   }
 `;
 
-export const InternaPopoverNester = observer(
+export const InternalPopoverNester = observer(
   (props) => {
     const { options } = useAssociationFieldContext();
     const [visible, setVisible] = useState(false);
@@ -102,5 +102,5 @@ export const InternaPopoverNester = observer(
       </ActionContextProvider>
     );
   },
-  { displayName: 'InternaPopoverNester' },
+  { displayName: 'InternalPopoverNester' },
 );

@@ -22,7 +22,7 @@ import 'react-image-lightbox/style.css'; // This only needs to be imported once 
 import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
 import { useProps } from '../../hooks/useProps';
 import {
-  FILE_SIZE_LIMI_MAX,
+  FILE_SIZE_LIMIT_DEFAULT,
   isImage,
   isPdf,
   normalizeFile,
@@ -79,7 +79,7 @@ export const Upload: ComposedUpload = connect(
 Upload.ReadPretty = ReadPretty;
 
 function useSizeHint(size: number) {
-  const s = size ?? FILE_SIZE_LIMI_MAX;
+  const s = size ?? FILE_SIZE_LIMIT_DEFAULT;
   const { t, i18n } = useTranslation();
   const sizeString = filesize(s, { base: 2, standard: 'jedec', locale: i18n.language });
   return s !== 0 ? t('File size should not exceed {{size}}.', { size: sizeString }) : '';
@@ -106,7 +106,13 @@ function AttachmentListItem(props) {
 
   const item = [
     <span key="thumbnail" className={`${prefixCls}-list-item-thumbnail`}>
-      {file.imageUrl && <img src={file.imageUrl} alt={file.title} className={`${prefixCls}-list-item-image`} />}
+      {file.imageUrl && (
+        <img
+          src={`${file.imageUrl}${file.thumbnailRule || ''}`}
+          alt={file.title}
+          className={`${prefixCls}-list-item-image`}
+        />
+      )}
     </span>,
     <span key="title" className={`${prefixCls}-list-item-name`} title={file.title}>
       {file.status === 'uploading' ? t('Uploading') : file.title}

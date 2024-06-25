@@ -37,5 +37,6 @@ export function tarPlugin(cwd: string, log: PkgLog) {
   const tarFiles = fg.sync(files, { cwd });
 
   fs.mkdirpSync(path.dirname(tarball));
+  fs.rmSync(tarball, { force: true });
   return tar.c({ gzip: true, file: tarball, cwd }, tarFiles);
 }

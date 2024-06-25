@@ -84,7 +84,6 @@ export async function revision(context: Context, next) {
           title: origin.title,
           triggerTitle: origin.triggerTitle,
           allExecuted: origin.allExecuted,
-          sync: origin.sync,
         }
       : values;
 
@@ -93,6 +92,7 @@ export async function revision(context: Context, next) {
         title: `${origin.title} copy`,
         description: origin.description,
         ...revisionData,
+        sync: origin.sync,
         type: origin.type,
         config:
           typeof trigger.duplicateConfig === 'function'

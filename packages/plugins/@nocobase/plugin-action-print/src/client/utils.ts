@@ -14,10 +14,19 @@ export const useDetailPrintActionProps = () => {
   const context = useFormBlockContext();
   const { formBlockRef } = useDetailsBlockContext();
   const printHandler = useReactToPrint({
-    content: () => context?.formBlockRef?.current || formBlockRef?.current,
+    content: () => {
+      const content = context?.formBlockRef?.current || formBlockRef?.current;
+      if (!content || !content.querySelector('.nb-grid')) {
+        return null;
+      }
+      return content.querySelector('.nb-grid');
+    },
     pageStyle: `@media print {
         * {
           margin: 0;
+        }
+        .nb-grid {
+          padding-top: 20px !important;
         }
          :not(.ant-formily-item-control-content-component) > div.ant-formily-layout div.nb-action-bar { {
           overflow: hidden; height: 0;
