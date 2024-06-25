@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { getDayRange, utc2unit } from '@nocobase/utils';
+import { utc2unit, getDateVars } from '@nocobase/utils';
 import dayjs, { Dayjs } from 'dayjs';
 import Plugin from '..';
 import type { ExecutionModel, FlowNodeModel } from '../types';
@@ -30,100 +30,70 @@ const getOffsetFromMS = (start, end) => Math.floor((end - start) / 1000 / 60 / 6
 function now() {
   return new Date();
 }
-
+const dateVars = getDateVars();
 const dateRangeFns = {
   yesterday() {
-    return getRangeByDay(-1);
+    return dateVars.yesterday({ now: new Date(), timezone: getTimezone() });
   },
   today() {
-    return getRangeByDay(0);
+    return dateVars.today({ now: new Date(), timezone: getTimezone() });
   },
   tomorrow() {
-    return getRangeByDay(1);
+    return dateVars.tomorrow({ now: new Date(), timezone: getTimezone() });
   },
   lastIsoWeek() {
-    const start = dayjs().subtract(1, 'w').startOf('w');
-    return getDayRange({ now: start, offset: 7, timezone: getTimezone() });
+    return dateVars.lastIsoWeek({ now: new Date(), timezone: getTimezone() });
   },
   thisIsoWeek() {
-    const start = dayjs().startOf('w');
-    return getDayRange({ now: start, offset: 7, timezone: getTimezone() });
+    return dateVars.thisIsoWeek({ now: new Date(), timezone: getTimezone() });
   },
   nextIsoWeek() {
-    const start = dayjs().add(1, 'w').startOf('w');
-    return getDayRange({ now: start, offset: 7, timezone: getTimezone() });
+    return dateVars.nextIsoWeek({ now: new Date(), timezone: getTimezone() });
   },
   lastMonth() {
-    const start = dayjs().subtract(1, 'month').startOf('month');
-    return getDayRange({ now: start, offset: start.daysInMonth(), timezone: getTimezone() });
+    return dateVars.lastMonth({ now: new Date(), timezone: getTimezone() });
   },
   thisMonth() {
-    const start = dayjs().startOf('month');
-    return getDayRange({ now: start, offset: start.daysInMonth(), timezone: getTimezone() });
+    return dateVars.thisMonth({ now: new Date(), timezone: getTimezone() });
   },
   nextMonth() {
-    const start = dayjs().add(1, 'month').startOf('month');
-    return getDayRange({ now: start, offset: start.daysInMonth(), timezone: getTimezone() });
+    return dateVars.nextMonth({ now: new Date(), timezone: getTimezone() });
   },
   lastQuarter() {
-    const quarter = dayjs().subtract(1, 'quarter');
-    const start = quarter.clone().startOf('quarter');
-    const end = quarter.clone().endOf('quarter');
-    return getDayRange({ now: start, offset: getOffsetFromMS(start, end), timezone: getTimezone() });
+    return dateVars.lastQuarter({ now: new Date(), timezone: getTimezone() });
   },
   thisQuarter() {
-    const quarter = dayjs().subtract(1, 'quarter');
-    const start = quarter.clone().startOf('quarter');
-    const end = quarter.clone().endOf('quarter');
-    return getDayRange({ now: start, offset: getOffsetFromMS(start, end), timezone: getTimezone() });
+    return dateVars.thisQuarter({ now: new Date(), timezone: getTimezone() });
   },
   nextQuarter() {
-    const quarter = dayjs().subtract(1, 'quarter');
-    const start = quarter.clone().startOf('quarter');
-    const end = quarter.clone().endOf('quarter');
-    return getDayRange({ now: start, offset: getOffsetFromMS(start, end), timezone: getTimezone() });
+    return dateVars.nextQuarter({ now: new Date(), timezone: getTimezone() });
   },
   lastYear() {
-    const quarter = dayjs().subtract(1, 'year');
-    const start = quarter.clone().startOf('year');
-    const end = quarter.clone().endOf('year');
-    return getDayRange({ now: start, offset: getOffsetFromMS(start, end), timezone: getTimezone() });
+    return dateVars.lastYear({ now: new Date(), timezone: getTimezone() });
   },
   thisYear() {
-    const quarter = dayjs();
-    const start = quarter.clone().startOf('year');
-    const end = quarter.clone().endOf('year');
-    return getDayRange({ now: start, offset: getOffsetFromMS(start, end), timezone: getTimezone() });
+    return dateVars.thisYear({ now: new Date(), timezone: getTimezone() });
   },
   nextYear() {
-    const quarter = dayjs().add(1, 'year');
-    const start = quarter.clone().startOf('year');
-    const end = quarter.clone().endOf('year');
-    return getDayRange({ now: start, offset: getOffsetFromMS(start, end), timezone: getTimezone() });
+    return dateVars.nextYear({ now: new Date(), timezone: getTimezone() });
   },
   last7Days() {
-    const now = new Date();
-    return getDayRange({ now: now, offset: -7, timezone: getTimezone() });
+    return dateVars.last7Days({ now: new Date(), timezone: getTimezone() });
   },
   next7Days() {
-    const now = new Date();
-    return getDayRange({ now: now, offset: 7, timezone: getTimezone() });
+    return dateVars.next7Days({ now: new Date(), timezone: getTimezone() });
   },
   last30Days() {
-    const now = new Date();
-    return getDayRange({ now: now, offset: -30, timezone: getTimezone() });
+    return dateVars.last30Days({ now: new Date(), timezone: getTimezone() });
   },
   next30Days() {
-    const now = new Date();
-    return getDayRange({ now: now, offset: 30, timezone: getTimezone() });
+    return dateVars.next30Days({ now: new Date(), timezone: getTimezone() });
   },
   last90Days() {
-    const now = new Date();
-    return getDayRange({ now: now, offset: -90, timezone: getTimezone() });
+    return dateVars.last90Days({ now: new Date(), timezone: getTimezone() });
   },
   next90Days() {
-    const now = new Date();
-    return getDayRange({ now: now, offset: 90, timezone: getTimezone() });
+    return dateVars.next90Days({ now: new Date(), timezone: getTimezone() });
   },
 };
 
