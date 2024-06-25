@@ -207,8 +207,7 @@ const sync = async (ctx: Context, next: Next) => {
 };
 
 const publish = async (ctx: Context, next: Next) => {
-  const resources = await getResourcesInstance(ctx);
-  ctx.body = await resources.resetCache(ctx.get('X-Locale') || 'en-US');
+  ctx.app.localeManager.reload();
   await next();
 };
 
