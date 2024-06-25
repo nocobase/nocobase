@@ -5,7 +5,7 @@
     "types": "./lib/index.d.ts",
     "license": "AGPL-3.0",
     "dependencies": {
-        "@formily/json-schema": "2.2.27",
+        "@formily/json-schema": "2.x",
         "@hapi/topo": "^6.0.0",
         "@koa/cors": "^3.1.0",
         "@koa/multer": "^3.0.2",
