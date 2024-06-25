@@ -16,17 +16,17 @@ export const useDetailPrintActionProps = () => {
   const printHandler = useReactToPrint({
     content: () => {
       const content = context?.formBlockRef?.current || formBlockRef?.current;
-      if (!content || !content.querySelector('.nb-grid-container')) {
+      if (!content || !content.querySelector('.nb-grid')) {
         return null;
       }
-      return content.querySelector('.nb-grid-container');
+      return content.querySelector('.nb-grid');
     },
     pageStyle: `@media print {
         * {
           margin: 0;
         }
-        .nb-grid-container {
-          margin-top: 20px !important;
+        .nb-grid {
+          padding-top: 20px !important;
         }
          :not(.ant-formily-item-control-content-component) > div.ant-formily-layout div.nb-action-bar { {
           overflow: hidden; height: 0;
