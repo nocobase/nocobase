@@ -15,7 +15,7 @@ import { useDesignable } from '../../';
 import { BlockAssociationContext, WithoutTableFieldResource } from '../../../block-provider';
 import { CollectionProvider_deprecated, useCollectionManager_deprecated } from '../../../collection-manager';
 import { Collection } from '../../../data-source';
-import { DeclareVariable } from '../../../modules/variable/DeclareVariable';
+import { CurrentPopupRecordProvider } from '../../../modules/variable/variablesProvider/CurrentPopupRecordProvider';
 import { RecordProvider, useRecord } from '../../../record-provider';
 import { FormProvider } from '../../core';
 import { useCompile } from '../../hooks';
@@ -121,12 +121,7 @@ export const ReadPrettyInternalViewer: React.FC = observer(
       return btnElement;
     }
     const renderWithoutTableFieldResourceProvider = () => (
-      <DeclareVariable
-        name="$nPopupRecord"
-        title={t('Current popup record')}
-        value={record}
-        collection={targetCollection as Collection}
-      >
+      <CurrentPopupRecordProvider recordData={record} collection={targetCollection as Collection}>
         <WithoutTableFieldResource.Provider value={true}>
           <FormProvider>
             <RecursionField
@@ -139,7 +134,7 @@ export const ReadPrettyInternalViewer: React.FC = observer(
             />
           </FormProvider>
         </WithoutTableFieldResource.Provider>
-      </DeclareVariable>
+      </CurrentPopupRecordProvider>
     );
 
     const renderRecordProvider = () => {

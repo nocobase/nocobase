@@ -12,7 +12,7 @@ import { FormLayout } from '@formily/antd-v5';
 import { observer, RecursionField, useFieldSchema } from '@formily/react';
 import {
   ActionContextProvider,
-  DeclareVariable,
+  CurrentPopupRecordProvider,
   DndContext,
   RecordProvider,
   useCollection,
@@ -133,14 +133,9 @@ export const KanbanCard: any = observer(
         {cardViewerSchema && (
           <ActionContextProvider value={actionContextValue}>
             <RecordProvider record={card} parent={parentRecordData}>
-              <DeclareVariable
-                name="$nPopupRecord"
-                title={t('Current popup record')}
-                value={card}
-                collection={collection}
-              >
+              <CurrentPopupRecordProvider recordData={card} collection={collection}>
                 <MemorizedRecursionField basePath={cardViewerBasePath} schema={cardViewerSchema} onlyRenderProperties />
-              </DeclareVariable>
+              </CurrentPopupRecordProvider>
             </RecordProvider>
           </ActionContextProvider>
         )}

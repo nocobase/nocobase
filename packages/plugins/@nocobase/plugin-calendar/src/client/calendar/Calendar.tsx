@@ -11,13 +11,13 @@ import { LeftOutlined, RightOutlined } from '@ant-design/icons';
 import { RecursionField, Schema, observer, useFieldSchema } from '@formily/react';
 import {
   ActionContextProvider,
-  DeclareVariable,
+  CurrentPopupRecordProvider,
   RecordProvider,
+  getLabelFormatValue,
   useCollection,
   useCollectionParentRecordData,
   useProps,
   withDynamicSchemaProps,
-  getLabelFormatValue,
 } from '@nocobase/client';
 import { parseExpression } from 'cron-parser';
 import type { Dayjs } from 'dayjs';
@@ -186,14 +186,9 @@ const CalendarRecordViewer = (props) => {
       <DeleteEventContext.Provider value={{ close }}>
         <ActionContextProvider value={{ visible, setVisible }}>
           <RecordProvider record={record} parent={parentRecordData}>
-            <DeclareVariable
-              name="$nPopupRecord"
-              title={t('Current popup record')}
-              value={record}
-              collection={collection}
-            >
+            <CurrentPopupRecordProvider recordData={record} collection={collection}>
               <RecursionField schema={eventSchema} name={eventSchema.name} />
-            </DeclareVariable>
+            </CurrentPopupRecordProvider>
           </RecordProvider>
         </ActionContextProvider>
       </DeleteEventContext.Provider>

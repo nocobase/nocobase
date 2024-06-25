@@ -78,8 +78,8 @@ import { useFilterBlock } from '../filter-provider/FilterProvider';
 import { FlagProvider } from '../flag-provider';
 import { useGlobalTheme } from '../global-theme';
 import { useCollectMenuItem, useCollectMenuItems, useMenuItem } from '../hooks/useMenuItem';
-import { DeclareVariable } from '../modules/variable/DeclareVariable';
 import { useVariable } from '../modules/variable/useVariable';
+import { CurrentPopupRecordProvider } from '../modules/variable/variablesProvider/CurrentPopupRecordProvider';
 import { useRecord } from '../record-provider';
 import { ActionContextProvider } from '../schema-component/antd/action/context';
 import { SubFormProvider, useSubFormValue } from '../schema-component/antd/association-field/hooks';
@@ -765,10 +765,8 @@ export const SchemaSettingsModalItem: FC<SchemaSettingsModalItemProps> = (props)
           () => {
             return (
               <BlockContext.Provider value={blockOptions}>
-                <DeclareVariable
-                  name="$nPopupRecord"
-                  title={popupRecordVariable.title}
-                  value={popupRecordVariable.value}
+                <CurrentPopupRecordProvider
+                  recordData={popupRecordVariable.value}
                   collection={popupRecordVariable.collection}
                 >
                   <CollectionRecordProvider record={noRecord ? null : record}>
@@ -818,7 +816,7 @@ export const SchemaSettingsModalItem: FC<SchemaSettingsModalItemProps> = (props)
                       </SubFormProvider>
                     </FormBlockContext.Provider>
                   </CollectionRecordProvider>
-                </DeclareVariable>
+                </CurrentPopupRecordProvider>
               </BlockContext.Provider>
             );
           },

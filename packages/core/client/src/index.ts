@@ -71,3 +71,4 @@ export * from './modules/blocks/index';
 export * from './modules/blocks/useParentRecordCommon';
 
 export { DeclareVariable } from './modules/variable/DeclareVariable';
+export { CurrentPopupRecordProvider } from './modules/variable/variablesProvider/CurrentPopupRecordProvider';
