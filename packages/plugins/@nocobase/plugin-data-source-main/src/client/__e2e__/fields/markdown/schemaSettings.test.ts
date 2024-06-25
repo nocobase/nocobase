@@ -63,7 +63,7 @@ test.describe('form item & create form', () => {
           .hover();
       },
       supportedVariables: ['Constant', 'Current user', 'Current role', 'Date variables', 'Current form'],
-      unsupportedVariables: ['Current popup record'],
+      unsupportedVariables: ['Current popup record', 'Parent popup record'],
       constantValue: 'test markdown',
       expectConstantValue: async () => {
         await expect(
