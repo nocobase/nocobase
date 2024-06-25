@@ -101,7 +101,7 @@ function useTitle(activeTabBar: TabBarItem) {
 
 export const MobileTabContextProvider = ({ children }) => {
   const api = useAPIClient();
-  const resource = useMemo(() => api.resource('mobile-tabs'), [api]);
+  const resource = useMemo(() => api.resource('mobileTabs'), [api]);
   const schemaResource = useMemo(() => api.resource('uiSchemas'), [api]);
   const {
     data,

@@ -299,19 +299,19 @@ export interface TabItem {
 
 ## 待做任务
 
-- settings 页面
+- [x] settings 页面
 - tabBar 样式优化
 - navigationBar 样式优化
 - 主题色
 - 多应用的支持
 - JS bridge
+- 多语言
 - 各个部分的文档
 - package.json 的描述
 - 更新文档
 - Readme
 - 新移动端 Tab 的插件开发示例
 - 响应式 ipad、mobile 效果都比较 OK
-
 
 
 

@@ -9,8 +9,8 @@
 
 import { defineCollection } from '@nocobase/database';
 export default defineCollection({
-  name: 'mobile-tabs',
-  title: 'mobile-tabs',
+  name: 'mobileTabs',
+  title: 'mobileTabs',
   inherit: false,
   hidden: false,
   description: null,

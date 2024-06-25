@@ -35,7 +35,7 @@ import {
 import { generatePluginTranslationTemplate } from './locale';
 export * from './mobile-providers';
 
-const mobilePath = '/mobile';
+const mobilePath = '/m';
 
 export class PluginMobileClient extends Plugin {
   mobileRouter?: RouterManager;

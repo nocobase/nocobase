@@ -38,8 +38,8 @@ class DemoPlugin extends Plugin {
       config: {
         router: {
           type: 'memory',
-          basename: '/mobile',
-          initialEntries: ['/mobile'],
+          basename: '/m',
+          initialEntries: ['/m'],
         },
         skipLogin: true,
       },
@@ -65,7 +65,7 @@ const app = mockApp({
   plugins: [DemoPlugin, PluginBlockIframeClient],
   router: {
     type: 'memory',
-    initialEntries: ['/mobile'],
+    initialEntries: ['/m'],
   },
   apis: {
     'mobile-tabs:list': {
