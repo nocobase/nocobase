@@ -7,9 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { PageConfig } from '@nocobase/test/e2e';
-
-export const oneTableWithTagField: PageConfig = {
+export const oneTableWithTagField = {
   pageSchema: {
     _isJSONSchemaObject: true,
     version: '2.0',
