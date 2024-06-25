@@ -158,8 +158,11 @@ export const Action: ComposedAction = withDynamicSchemaProps(
               setVisible(true);
               run?.();
             } else {
-              if (['view', 'update', 'create', 'customize:popup'].includes(fieldSchema['x-action'])) {
-                openPopup({});
+              if (
+                ['view', 'update', 'create', 'customize:popup'].includes(fieldSchema['x-action']) &&
+                fieldSchema['x-uid']
+              ) {
+                openPopup();
               } else {
                 setVisible(true);
                 run?.();
