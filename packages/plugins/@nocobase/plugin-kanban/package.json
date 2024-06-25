@@ -14,7 +14,7 @@
     "@nocobase/server": "1.x",
     "@nocobase/test": "1.x"
   },
-  "dependencies": {
+  "devDependencies": {
     "react-intersection-observer": "^9.8.1"
   },
   "gitHead": "d0b4efe4be55f8c79a98a331d99d9f8cf99021a1",

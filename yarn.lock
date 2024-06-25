@@ -3507,15 +3507,6 @@
     classnames "^2.2.6"
     react-sticky-box "^1.0.2"
 
-"@formily/core@2.2.27":
-  version "2.2.27"
-  resolved "https://registry.npmmirror.com/@formily/core/-/core-2.2.27.tgz#9ccb51650a713f27997e6823a5a980c9e013f461"
-  integrity sha512-f8e4f/WlimOA7zN1ARmiRKMlIpsIH00XxT7NWAE7EV3DO2B6sq6gSq9GDc5JLwHqhiyJBAIPzUdfmIpRLwPxyQ==
-  dependencies:
-    "@formily/reactive" "2.2.27"
-    "@formily/shared" "2.2.27"
-    "@formily/validator" "2.2.27"
-
 "@formily/core@2.3.0", "@formily/core@2.x", "@formily/core@^2.2.0", "@formily/core@^2.2.27":
   version "2.3.0"
   resolved "https://registry.npmmirror.com/@formily/core/-/core-2.3.0.tgz#2d9c09ec7579dc11cfd4d8f2f20fb0a56504e180"
@@ -3533,15 +3524,6 @@
     "@formily/reactive" "2.3.0"
     "@juggle/resize-observer" "^3.3.1"
 
-"@formily/json-schema@2.2.27":
-  version "2.2.27"
-  resolved "https://registry.npmmirror.com/@formily/json-schema/-/json-schema-2.2.27.tgz#553ae190bf847944f3c3567516a263bdea6c3dfd"
-  integrity sha512-YqtpPp9bmXO28iw10ZLT5KCAqipr2SwPrzfskUJ/Oa8O3xZi64+9TMVPylX73cBe49lVaOgFiQPNAljLudeveg==
-  dependencies:
-    "@formily/core" "2.2.27"
-    "@formily/reactive" "2.2.27"
-    "@formily/shared" "2.2.27"
-
 "@formily/json-schema@2.3.0", "@formily/json-schema@2.x", "@formily/json-schema@^2.2.0", "@formily/json-schema@^2.2.27":
   version "2.3.0"
   resolved "https://registry.npmmirror.com/@formily/json-schema/-/json-schema-2.3.0.tgz#95bd78533540093da526628520d21b2a470d5180"
@@ -3550,11 +3532,6 @@
     "@formily/core" "2.3.0"
     "@formily/reactive" "2.3.0"
     "@formily/shared" "2.3.0"
-
-"@formily/path@2.2.27":
-  version "2.2.27"
-  resolved "https://registry.npmmirror.com/@formily/path/-/path-2.2.27.tgz#384f207533a2bdc84d700d4b7ef46ca6d664db15"
-  integrity sha512-svpYARx1N72Rzg4l9D10SpDljUjCqkFD3ogbnsLNUxO8Rh2oSmn0dw63VDYOw43RX61qHmD3VYAnGxdCv5HJ8w==
 
 "@formily/path@2.3.0":
   version "2.3.0"
@@ -3587,28 +3564,10 @@
     "@formily/reactive" "2.3.0"
     hoist-non-react-statics "^3.3.2"
 
-"@formily/reactive@2.2.27":
-  version "2.2.27"
-  resolved "https://registry.npmmirror.com/@formily/reactive/-/reactive-2.2.27.tgz#b67e6a0573910f0e57729b235a7bd1fe9b3e20ad"
-  integrity sha512-ksdA4uIw3WMo0FmHcGsyqZgPwhujVgtXqxiWPSV+Tc2eEoJrInZhr15Q0IeTQ6glMh8izNsb19YK+PphBHwXGg==
-
 "@formily/reactive@2.3.0", "@formily/reactive@2.x", "@formily/reactive@^2.2.0", "@formily/reactive@^2.2.27":
   version "2.3.0"
   resolved "https://registry.npmmirror.com/@formily/reactive/-/reactive-2.3.0.tgz#95582dfcf97c42410454ef7df0c247514bd4446e"
   integrity sha512-8QYApPL/GvATIP/9K3UeICJNuCaLq99NLlNLEuBsE7cIk2hFiFhWP7vnLtWBdorqeQZNYZ6lzSuau2Ndogu+Dw==
-
-"@formily/shared@2.2.27":
-  version "2.2.27"
-  resolved "https://registry.npmmirror.com/@formily/shared/-/shared-2.2.27.tgz#cc7dd95a4abc15d6d4d541f863052afedb1c72ca"
-  integrity sha512-3gMvcx0318VLkIgwdqYhHVE9uU6K5D0MKr75esDRL908jZ1wWy+/Qt/UNmBfdDdCtWBP6F/E/VGSBUBOue7Bqw==
-  dependencies:
-    "@formily/path" "2.2.27"
-    camel-case "^4.1.1"
-    lower-case "^2.0.1"
-    no-case "^3.0.4"
-    param-case "^3.0.4"
-    pascal-case "^3.1.1"
-    upper-case "^2.0.1"
 
 "@formily/shared@2.3.0", "@formily/shared@2.x", "@formily/shared@^2.2.0", "@formily/shared@^2.2.27":
   version "2.3.0"
@@ -3622,13 +3581,6 @@
     param-case "^3.0.4"
     pascal-case "^3.1.1"
     upper-case "^2.0.1"
-
-"@formily/validator@2.2.27":
-  version "2.2.27"
-  resolved "https://registry.npmmirror.com/@formily/validator/-/validator-2.2.27.tgz#e970108b5f39ad2a7a265eb782d3973e36a6cd3a"
-  integrity sha512-RSkNQY/IGtVKTYxqz6/64UO5RPAWBLOtKb2oRTLlWwEAaoMFkkZkdKERzv1z05oMCp53hGt6f9psgfLXaNUmMQ==
-  dependencies:
-    "@formily/shared" "2.2.27"
 
 "@formily/validator@2.3.0", "@formily/validator@^2.2.27":
   version "2.3.0"
