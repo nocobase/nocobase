@@ -15,7 +15,7 @@ import { useDesignable } from '../../';
 import { BlockAssociationContext, WithoutTableFieldResource } from '../../../block-provider';
 import { CollectionProvider_deprecated, useCollectionManager_deprecated } from '../../../collection-manager';
 import { Collection } from '../../../data-source';
-import { CurrentPopupRecordProvider } from '../../../modules/variable/variablesProvider/CurrentPopupRecordProvider';
+import { VariablePopupRecordProvider } from '../../../modules/variable/variablesProvider/CurrentPopupRecordProvider';
 import { RecordProvider, useRecord } from '../../../record-provider';
 import { FormProvider } from '../../core';
 import { useCompile } from '../../hooks';
@@ -121,7 +121,7 @@ export const ReadPrettyInternalViewer: React.FC = observer(
       return btnElement;
     }
     const renderWithoutTableFieldResourceProvider = () => (
-      <CurrentPopupRecordProvider recordData={record} collection={targetCollection as Collection}>
+      <VariablePopupRecordProvider recordData={record} collection={targetCollection as Collection}>
         <WithoutTableFieldResource.Provider value={true}>
           <FormProvider>
             <RecursionField
@@ -134,7 +134,7 @@ export const ReadPrettyInternalViewer: React.FC = observer(
             />
           </FormProvider>
         </WithoutTableFieldResource.Provider>
-      </CurrentPopupRecordProvider>
+      </VariablePopupRecordProvider>
     );
 
     const renderRecordProvider = () => {

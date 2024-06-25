@@ -22,7 +22,7 @@ import { useCollectionParentRecordData, useCollectionRecordData, useDataBlockReq
 import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
 import { Icon } from '../../../icon';
 import { TreeRecordProvider } from '../../../modules/blocks/data-blocks/table/TreeRecordProvider';
-import { CurrentPopupRecordProvider } from '../../../modules/variable/variablesProvider/CurrentPopupRecordProvider';
+import { VariablePopupRecordProvider } from '../../../modules/variable/variablesProvider/CurrentPopupRecordProvider';
 import { RecordProvider } from '../../../record-provider';
 import { useLocalVariables, useVariables } from '../../../variables';
 import { SortableItem } from '../../common';
@@ -214,7 +214,7 @@ export const Action: ComposedAction = withDynamicSchemaProps(
       >
         {popover && <RecursionField basePath={field.address} onlyRenderProperties schema={fieldSchema} />}
         {!popover && renderButton()}
-        <CurrentPopupRecordProvider>{!popover && props.children}</CurrentPopupRecordProvider>
+        <VariablePopupRecordProvider>{!popover && props.children}</VariablePopupRecordProvider>
         {element}
       </ActionContextProvider>
     );

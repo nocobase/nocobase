@@ -79,7 +79,7 @@ import { FlagProvider } from '../flag-provider';
 import { useGlobalTheme } from '../global-theme';
 import { useCollectMenuItem, useCollectMenuItems, useMenuItem } from '../hooks/useMenuItem';
 import { useVariable } from '../modules/variable/useVariable';
-import { CurrentPopupRecordProvider } from '../modules/variable/variablesProvider/CurrentPopupRecordProvider';
+import { VariablePopupRecordProvider } from '../modules/variable/variablesProvider/CurrentPopupRecordProvider';
 import { useRecord } from '../record-provider';
 import { ActionContextProvider } from '../schema-component/antd/action/context';
 import { SubFormProvider, useSubFormValue } from '../schema-component/antd/association-field/hooks';
@@ -765,7 +765,7 @@ export const SchemaSettingsModalItem: FC<SchemaSettingsModalItemProps> = (props)
           () => {
             return (
               <BlockContext.Provider value={blockOptions}>
-                <CurrentPopupRecordProvider
+                <VariablePopupRecordProvider
                   recordData={popupRecordVariable.value}
                   collection={popupRecordVariable.collection}
                 >
@@ -816,7 +816,7 @@ export const SchemaSettingsModalItem: FC<SchemaSettingsModalItemProps> = (props)
                       </SubFormProvider>
                     </FormBlockContext.Provider>
                   </CollectionRecordProvider>
-                </CurrentPopupRecordProvider>
+                </VariablePopupRecordProvider>
               </BlockContext.Provider>
             );
           },

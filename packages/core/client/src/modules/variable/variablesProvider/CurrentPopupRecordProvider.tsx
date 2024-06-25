@@ -14,7 +14,7 @@ import { Collection } from '../../../data-source/collection/Collection';
 import { useCollection } from '../../../data-source/collection/CollectionProvider';
 import { DeclareVariable } from '../DeclareVariable';
 
-export const CurrentPopupRecordProvider: FC<{
+export const VariablePopupRecordProvider: FC<{
   recordData?: Record<string, any>;
   collection?: Collection;
 }> = (props) => {
