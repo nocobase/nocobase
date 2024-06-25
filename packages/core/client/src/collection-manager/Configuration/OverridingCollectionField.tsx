@@ -113,7 +113,7 @@ const getIsOverriding = (currentFields, record) => {
 export const OverridingFieldAction = (props) => {
   const { scope, getContainer, item: record, parentItem: parentRecord, children, currentCollection } = props;
   const { target, through } = record;
-  const { getInterface, getCurrentCollectionFields, getChildrenCollections, collections } =
+  const { getInterface, getCollection, getCurrentCollectionFields, getChildrenCollections, collections } =
     useCollectionManager_deprecated();
   const [visible, setVisible] = useState(false);
   const [schema, setSchema] = useState({});
@@ -171,6 +171,23 @@ export const OverridingFieldAction = (props) => {
       },
     };
   };
+
+  const scopeKeyOptions = useMemo(() => {
+    return (
+      record?.fields ||
+      getCollection(record.collectionName)
+        ?.options.fields.filter((v) => {
+          return ['string', 'bigInt', 'integer'].includes(v.type);
+        })
+        .map((k) => {
+          return {
+            value: k.name,
+            label: compile(k.uiSchema?.title),
+          };
+        })
+    );
+  }, [record.name]);
+
   return (
     <RecordProvider record={{ ...record, collectionName: parentRecord.name }} parent={parentRecord}>
       <ActionContextProvider value={{ visible, setVisible }}>
@@ -221,6 +238,7 @@ export const OverridingFieldAction = (props) => {
             isOverride: true,
             targetScope: { target: getFilterCollections(target), through: getFilterCollections(through) },
             collections: currentCollections,
+            scopeKeyOptions,
             ...scope,
           }}
         />
