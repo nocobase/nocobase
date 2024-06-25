@@ -70,5 +70,4 @@ export * from './modules/blocks/data-blocks/table-selector';
 export * from './modules/blocks/index';
 export * from './modules/blocks/useParentRecordCommon';
 
-export { DeclareVariable } from './modules/variable/DeclareVariable';
-export { VariablePopupRecordProvider as CurrentPopupRecordProvider } from './modules/variable/variablesProvider/CurrentPopupRecordProvider';
+export { VariablePopupRecordProvider } from './modules/variable/variablesProvider/VariablePopupRecordProvider';

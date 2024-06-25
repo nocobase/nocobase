@@ -22,7 +22,7 @@ import { useCollectionParentRecordData, useCollectionRecordData, useDataBlockReq
 import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
 import { Icon } from '../../../icon';
 import { TreeRecordProvider } from '../../../modules/blocks/data-blocks/table/TreeRecordProvider';
-import { VariablePopupRecordProvider } from '../../../modules/variable/variablesProvider/CurrentPopupRecordProvider';
+import { VariablePopupRecordProvider } from '../../../modules/variable/variablesProvider/VariablePopupRecordProvider';
 import { RecordProvider } from '../../../record-provider';
 import { useLocalVariables, useVariables } from '../../../variables';
 import { SortableItem } from '../../common';

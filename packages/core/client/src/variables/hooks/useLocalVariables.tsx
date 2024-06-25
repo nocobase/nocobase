@@ -14,6 +14,7 @@ import { useBlockCollection } from '../../schema-settings/VariableInput/hooks/us
 import { useDatetimeVariable } from '../../schema-settings/VariableInput/hooks/useDateVariable';
 import { useCurrentFormVariable } from '../../schema-settings/VariableInput/hooks/useFormVariable';
 import { useCurrentObjectVariable } from '../../schema-settings/VariableInput/hooks/useIterationVariable';
+import { useParentPopupVariable } from '../../schema-settings/VariableInput/hooks/useParentPopupVariable';
 import { useCurrentParentRecordVariable } from '../../schema-settings/VariableInput/hooks/useParentRecordVariable';
 import { usePopupVariable } from '../../schema-settings/VariableInput/hooks/usePopupVariable';
 import { useCurrentRecordVariable } from '../../schema-settings/VariableInput/hooks/useRecordVariable';
@@ -37,6 +38,11 @@ const useLocalVariables = (props?: Props) => {
     collectionName: collectionNameOfPopupRecord,
     dataSource: popupDataSource,
   } = usePopupVariable();
+  const {
+    parentPopupRecordCtx,
+    collectionName: collectionNameOfParentPopupRecord,
+    dataSource: parentPopupDataSource,
+  } = useParentPopupVariable();
   const { datetimeCtx } = useDatetimeVariable();
   const { currentFormCtx } = useCurrentFormVariable({ form: props?.currentForm });
   const { name: currentCollectionName } = useCollection_deprecated();
@@ -92,6 +98,12 @@ const useLocalVariables = (props?: Props) => {
           ctx: popupRecordCtx,
           collectionName: collectionNameOfPopupRecord,
           dataSource: popupDataSource,
+        },
+        {
+          name: '$nParentPopupRecord',
+          ctx: parentPopupRecordCtx,
+          collectionName: collectionNameOfParentPopupRecord,
+          dataSource: parentPopupDataSource,
         },
         {
           name: '$nForm',

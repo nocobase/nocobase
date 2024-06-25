@@ -8,7 +8,7 @@
  */
 
 import { useFlag } from '../../../flag-provider/hooks/useFlag';
-import { useVariable } from '../../../modules/variable/useVariable';
+import { useParentPopupRecord } from '../../../modules/variable/variablesProvider/VariablePopupRecordProvider';
 import { useBaseVariable } from './useBaseVariable';
 
 /**
@@ -17,7 +17,7 @@ import { useBaseVariable } from './useBaseVariable';
  * @returns
  */
 export const useParentPopupVariable = (props: any = {}) => {
-  const { value, title, collection } = useVariable('$nParentPopupRecord');
+  const { value, title, collection } = useParentPopupRecord() || {};
   const { isVariableParsedInOtherContext } = useFlag();
   const settings = useBaseVariable({
     collectionField: props.collectionField,

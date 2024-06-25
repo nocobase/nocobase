@@ -11,8 +11,8 @@ import { LeftOutlined, RightOutlined } from '@ant-design/icons';
 import { RecursionField, Schema, observer, useFieldSchema } from '@formily/react';
 import {
   ActionContextProvider,
-  CurrentPopupRecordProvider,
   RecordProvider,
+  VariablePopupRecordProvider,
   getLabelFormatValue,
   useCollection,
   useCollectionParentRecordData,
@@ -186,9 +186,9 @@ const CalendarRecordViewer = (props) => {
       <DeleteEventContext.Provider value={{ close }}>
         <ActionContextProvider value={{ visible, setVisible }}>
           <RecordProvider record={record} parent={parentRecordData}>
-            <CurrentPopupRecordProvider recordData={record} collection={collection}>
+            <VariablePopupRecordProvider recordData={record} collection={collection}>
               <RecursionField schema={eventSchema} name={eventSchema.name} />
-            </CurrentPopupRecordProvider>
+            </VariablePopupRecordProvider>
           </RecordProvider>
         </ActionContextProvider>
       </DeleteEventContext.Provider>

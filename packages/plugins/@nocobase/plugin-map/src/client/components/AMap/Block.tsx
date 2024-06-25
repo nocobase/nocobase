@@ -11,8 +11,8 @@ import { CheckOutlined, EnvironmentOutlined, ExpandOutlined } from '@ant-design/
 import { RecursionField, useFieldSchema } from '@formily/react';
 import {
   ActionContextProvider,
-  CurrentPopupRecordProvider,
   RecordProvider,
+  VariablePopupRecordProvider,
   css,
   getLabelFormatValue,
   useCollection,
@@ -345,9 +345,9 @@ const MapBlockDrawer = (props) => {
     schema && (
       <ActionContextProvider value={{ visible: !!record, setVisible }}>
         <RecordProvider record={record} parent={parentRecordData}>
-          <CurrentPopupRecordProvider recordData={record} collection={collection}>
+          <VariablePopupRecordProvider recordData={record} collection={collection}>
             <RecursionField schema={schema} name={schema.name} />
-          </CurrentPopupRecordProvider>
+          </VariablePopupRecordProvider>
         </RecordProvider>
       </ActionContextProvider>
     )
