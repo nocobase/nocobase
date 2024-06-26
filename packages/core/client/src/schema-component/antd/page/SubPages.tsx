@@ -27,8 +27,9 @@ import { TabsContextProvider } from '../tabs/context';
 import { useSubPagesStyle } from './SubPages.style';
 import { PopupParams } from './pagePopupUtils';
 
-export interface SubPageParams extends Omit<PopupParams, 'popupUid'> {
-  subPageUid: string;
+export interface SubPageParams extends Omit<PopupParams, 'popupuid'> {
+  /** sub page uid */
+  subpageuid: string;
 }
 
 const SubPageVariablesProvider: FC = (props) => {
@@ -89,9 +90,9 @@ export const SubPage = () => {
 };
 
 export const getSubPagePathFromParams = (params: SubPageParams) => {
-  const { subPageUid, tab, datasource, filterbytk, collection, association, sourceid } = params;
+  const { subpageuid, tab, datasource, filterbytk, collection, association, sourceid } = params;
   const popupPath = [
-    subPageUid,
+    subpageuid,
     'datasource',
     datasource,
     'filterbytk',
