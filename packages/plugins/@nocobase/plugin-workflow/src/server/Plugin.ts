@@ -250,7 +250,10 @@ export default class PluginWorkflowServer extends Plugin {
     //   * load all workflows in db
     //   * add all hooks for enabled workflows
     //   * add hooks for create/update[enabled]/delete workflow to add/remove specific hooks
-    this.app.on('beforeStart', async () => {
+    this.app.on('afterStart', async () => {
+      this.app.setMaintainingMessage('check for not started executions');
+      this.ready = true;
+
       const collection = db.getCollection('workflows');
       const workflows = await collection.repository.find({
         filter: { enabled: true },
@@ -263,11 +266,7 @@ export default class PluginWorkflowServer extends Plugin {
       this.checker = setInterval(() => {
         this.dispatch();
       }, 300_000);
-    });
 
-    this.app.on('afterStart', () => {
-      this.app.setMaintainingMessage('check for not started executions');
-      this.ready = true;
       // check for not started executions
       this.dispatch();
     });
