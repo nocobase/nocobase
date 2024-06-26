@@ -116,7 +116,7 @@ export class PluginLocalizationServer extends Plugin {
 
     this.registerUISchemahook();
 
-    this.app.localeManager.registerResourceSource('plugin-localization', {
+    this.app.localeManager.registerResourceStorer('plugin-localization', {
       getResources: (lang: string) => this.resources.getResources(lang),
     });
   }
