@@ -32,35 +32,15 @@ export const useFormBlockHeight = () => {
 
   const hasFormActions = Object.keys(actionSchema?.properties || {}).length > 0;
   const isFormBlock = schema?.parent?.['x-decorator']?.includes?.('FormBlockProvider');
-  const actionBarPadding = () => {
-    if (isFormBlock) {
-      return designable ? 2 : 2;
-    }
-    return 2;
-  };
-
   const actionBarHeight =
     hasFormActions || designable
-      ? token.controlHeight + actionBarPadding() * token.marginLG
-      : (isFormBlock ? 2 : 1) * token.marginLG;
+      ? token.controlHeight + (isFormBlock ? 1 : 2) * token.marginLG
+      : (isFormBlock ? 1 : 2) * token.marginLG;
   const blockTitleHeaderHeight = title ? token.fontSizeLG * token.lineHeightLG + token.padding * 2 - 1 : 0;
   const { data } = useDataBlockRequest() || {};
   const { count, pageSize } = (data as any)?.meta || ({} as any);
   const hasPagination = count > pageSize;
-  const paginationHeight = hasPagination ? token.controlHeightSM + (designable ? 1 : 1) * token.paddingLG : 0;
+  const paginationHeight = hasPagination ? token.controlHeightSM + 1 * token.paddingLG : 0;
   const dataTemplateHeight = display && enabled ? token.controlHeight + 2 * token.padding + token.margin : 0;
-  const blockBottomPadding = () => {
-    if (!isFormBlock && !hasPagination) {
-      return designable ? 1 : 1;
-    }
-    return 1;
-  };
-  return (
-    height -
-    actionBarHeight -
-    blockBottomPadding() * token.paddingLG -
-    blockTitleHeaderHeight -
-    paginationHeight -
-    dataTemplateHeight
-  );
+  return height - actionBarHeight - token.paddingLG - blockTitleHeaderHeight - paginationHeight - dataTemplateHeight;
 };
