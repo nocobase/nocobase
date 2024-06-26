@@ -93,7 +93,7 @@ const PagePopupsItemProvider: FC<{ params: PopupParams }> = ({ params, children 
         setTimeout(() => {
           closePopup();
           // Deleting here ensures that the next time the same popup is opened, it will generate another random key.
-          deleteRandomNestedSchemaKey(params.popupUid);
+          deleteRandomNestedSchemaKey(params.popupuid);
         });
         return;
       }
@@ -102,12 +102,12 @@ const PagePopupsItemProvider: FC<{ params: PopupParams }> = ({ params, children 
       setTimeout(() => {
         closePopup();
         // Deleting here ensures that the next time the same popup is opened, it will generate another random key.
-        deleteRandomNestedSchemaKey(params.popupUid);
+        deleteRandomNestedSchemaKey(params.popupuid);
       }, 300);
     }
   };
   const _params: PopupParamsStorage = params;
-  const storedParams = { ...getStoredPopupParams(params.popupUid) };
+  const storedParams = { ...getStoredPopupParams(params.popupuid) };
   if (storedParams) {
     Object.assign(storedParams, _params);
   }
@@ -157,7 +157,7 @@ export const insertToPopupSchema = (childSchema: ISchema, params: PopupParams, p
   };
 
   // If we don't use a random name, it will cause the component's parameters not to be updated when reopening the popup
-  const nestedPopupKey = getRandomNestedSchemaKey(params.popupUid);
+  const nestedPopupKey = getRandomNestedSchemaKey(params.popupuid);
 
   if (parentSchema.properties) {
     const popupSchema = _.get(parentSchema.properties, Object.keys(parentSchema.properties)[0]);
@@ -177,7 +177,7 @@ export const PagePopups = () => {
   useEffect(() => {
     const run = async () => {
       const waitList = popupParams.map(
-        (params) => getStoredPopupParams(params.popupUid)?.schema || requestSchema(params.popupUid),
+        (params) => getStoredPopupParams(params.popupuid)?.schema || requestSchema(params.popupuid),
       );
       const schemas = await Promise.all(waitList);
       const clonedSchemas = schemas.map((schema) => {

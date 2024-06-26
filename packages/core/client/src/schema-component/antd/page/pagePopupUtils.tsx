@@ -27,7 +27,7 @@ import { usePopupSettings } from './PopupSettingsProvider';
 
 export interface PopupParams {
   /** popup uid */
-  popupUid: string;
+  popupuid: string;
   /** data source */
   datasource: string;
   /** tab uid */
@@ -75,14 +75,14 @@ export const getPopupParamsFromPath = _.memoize((path: string) => {
     }
 
     return {
-      popupUid,
+      popupuid: popupUid,
       ...obj,
     } as PopupParams;
   });
 });
 
 export const getPopupPathFromParams = (params: PopupParams) => {
-  const { popupUid, tab, datasource, filterbytk, collection, association, sourceid } = params;
+  const { popupuid: popupUid, tab, datasource, filterbytk, collection, association, sourceid } = params;
   const popupPath = [
     popupUid,
     'datasource',
@@ -123,7 +123,7 @@ export const usePagePopup = () => {
       const filterByTK = recordData?.[collection.getPrimaryKey()];
       const sourceId = parentRecord?.data?.[cm.getCollection(association?.split('.')[0])?.getPrimaryKey()];
       return getPopupPathFromParams({
-        popupUid: popupUid,
+        popupuid: popupUid,
         datasource: dataSourceKey,
         filterbytk: filterByTK,
         collection: association ? undefined : collection.name,
@@ -156,7 +156,7 @@ export const usePagePopup = () => {
 
       storePopupParams(fieldSchema['x-uid'], {
         schema: fieldSchema,
-        popupUid: fieldSchema['x-uid'],
+        popupuid: fieldSchema['x-uid'],
         datasource: dataSourceKey,
         filterbytk: filterByTK,
         collection: collection.name,
@@ -194,14 +194,14 @@ export const usePagePopup = () => {
 
   const changeTab = useCallback(
     (key: string) => {
-      const pathname = getNewPathname({ tabKey: key, popupUid: popupParams?.popupUid, recordData: record?.data });
+      const pathname = getNewPathname({ tabKey: key, popupUid: popupParams?.popupuid, recordData: record?.data });
       let url = removeLastPopupPath(location.pathname);
       if (_.last(url) === '/') {
         url = url.slice(0, -1);
       }
       navigate(`${url}${pathname}`);
     },
-    [getNewPathname, navigate, popupParams?.popupUid, record?.data, location],
+    [getNewPathname, navigate, popupParams?.popupuid, record?.data, location],
   );
 
   return {
