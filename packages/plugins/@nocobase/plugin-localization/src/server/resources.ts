@@ -20,6 +20,9 @@ export default class Resources {
   }
 
   async getTexts(transaction?: Transaction) {
+    if (!(await this.db.collectionExistsInDb('localizationTexts'))) {
+      return [];
+    }
     return await this.cache.wrap(`texts`, async () => {
       return await this.db.getRepository('localizationTexts').find({
         fields: ['id', 'module', 'text'],
@@ -30,6 +33,9 @@ export default class Resources {
   }
 
   async getTranslations(locale: string) {
+    if (!(await this.db.collectionExistsInDb('localizationTranslations'))) {
+      return [];
+    }
     return await this.cache.wrap(`translations:${locale}`, async () => {
       return await this.db.getRepository('localizationTranslations').find({
         fields: ['textId', 'translation'],

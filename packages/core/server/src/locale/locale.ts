@@ -58,7 +58,7 @@ export class Locale {
     this.localeFn.set(name, fn);
   }
 
-  registerResourceSource(name: string, storer: ResourceStorer) {
+  registerResourceStorer(name: string, storer: ResourceStorer) {
     this.resourceStorers.register(name, storer);
   }
 

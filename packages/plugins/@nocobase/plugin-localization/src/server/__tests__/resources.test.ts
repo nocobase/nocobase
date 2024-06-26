@@ -18,6 +18,7 @@ describe('resources', () => {
     const cache = await cacheManager.createCache({ name: 'locale', store: 'memory' });
     resources = new Resources(
       {
+        collectionExistsInDb: () => true,
         getRepository: (name: string) => {
           if (name === 'localizationTexts') {
             return {
