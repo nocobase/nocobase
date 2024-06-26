@@ -8,21 +8,21 @@
  */
 
 import { useFlag } from '../../../flag-provider/hooks/useFlag';
-import { useCurrentPopupRecord } from '../../../modules/variable/variablesProvider/VariablePopupRecordProvider';
+import { useParentPopupRecord } from '../../../modules/variable/variablesProvider/VariablePopupRecordProvider';
 import { useBaseVariable } from './useBaseVariable';
 
 /**
- * 变量：`Current popup record`
+ * 变量：`Parent popup record`
  * @param props
  * @returns
  */
-export const usePopupVariable = (props: any = {}) => {
-  const { value, title, collection } = useCurrentPopupRecord() || {};
+export const useParentPopupVariable = (props: any = {}) => {
+  const { value, title, collection } = useParentPopupRecord() || {};
   const { isVariableParsedInOtherContext } = useFlag();
   const settings = useBaseVariable({
     collectionField: props.collectionField,
     uiSchema: props.schema,
-    name: '$nPopupRecord',
+    name: '$nParentPopupRecord',
     title,
     collectionName: collection?.name,
     noDisabled: props.noDisabled,
@@ -34,9 +34,9 @@ export const usePopupVariable = (props: any = {}) => {
     /** 变量配置 */
     settings,
     /** 变量值 */
-    popupRecordCtx: value,
+    parentPopupRecordCtx: value,
     /** 用于判断是否需要显示配置项 */
-    shouldDisplayPopupRecord: !!value && !isVariableParsedInOtherContext,
+    shouldDisplayParentPopupRecord: !!value && !isVariableParsedInOtherContext,
     /** 当前记录对应的 collection name */
     collectionName: collection?.name,
     dataSource: collection?.dataSource,

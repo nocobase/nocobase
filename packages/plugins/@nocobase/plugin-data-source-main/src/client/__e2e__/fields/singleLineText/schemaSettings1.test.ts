@@ -61,7 +61,7 @@ test.describe('form item & create form', () => {
           .hover();
       },
       supportedVariables: ['Constant', 'Current user', 'Current role', 'Date variables', 'Current form'],
-      unsupportedVariables: ['Current popup record'],
+      unsupportedVariables: ['Current popup record', 'Parent popup record'],
       constantValue: 'test single line text',
       variableValue: ['Current user', 'Email'], // 值为 admin@nocobase.com
       expectConstantValue: async () => {

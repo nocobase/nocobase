@@ -63,7 +63,7 @@ test.describe('form item & create form', () => {
             .hover();
         })(page, 'phone'),
       supportedVariables: ['Constant', 'Current user', 'Current role', 'Date variables', 'Current form'],
-      unsupportedVariables: ['Current popup record'],
+      unsupportedVariables: ['Current popup record', 'Parent popup record'],
       constantValue: '17777777777',
       variableValue: ['Current user', 'ID'], // 值为 1
       expectConstantValue: async () => {

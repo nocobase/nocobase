@@ -14,6 +14,7 @@ import { CollectionFieldOptions_deprecated } from '../../../collection-manager';
 import { useDatetimeVariable } from './useDateVariable';
 import { useCurrentFormVariable } from './useFormVariable';
 import { useCurrentObjectVariable } from './useIterationVariable';
+import { useParentPopupVariable } from './useParentPopupVariable';
 import { useCurrentParentRecordVariable } from './useParentRecordVariable';
 import { usePopupVariable } from './usePopupVariable';
 import { useCurrentRecordVariable } from './useRecordVariable';
@@ -96,6 +97,12 @@ export const useVariableOptions = ({
     noDisabled,
     targetFieldSchema,
   });
+  const { settings: parentPopupRecordSettings, shouldDisplayParentPopupRecord } = useParentPopupVariable({
+    schema: uiSchema,
+    collectionField,
+    noDisabled,
+    targetFieldSchema,
+  });
   const { currentParentRecordSettings, shouldDisplayCurrentParentRecord } = useCurrentParentRecordVariable({
     schema: uiSchema,
     collectionName: blockParentCollectionName,
@@ -115,6 +122,7 @@ export const useVariableOptions = ({
       shouldDisplayCurrentRecord && currentRecordSettings,
       shouldDisplayCurrentParentRecord && currentParentRecordSettings,
       shouldDisplayPopupRecord && popupRecordSettings,
+      shouldDisplayParentPopupRecord && parentPopupRecordSettings,
       shouldDisplayURLSearchParams && urlSearchParamsSettings,
     ].filter(Boolean);
   }, [

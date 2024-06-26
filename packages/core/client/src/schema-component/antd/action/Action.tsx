@@ -13,20 +13,16 @@ import { App, Button } from 'antd';
 import classnames from 'classnames';
 import { default as lodash } from 'lodash';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { ErrorBoundary } from 'react-error-boundary';
 import { useTranslation } from 'react-i18next';
 import { ErrorFallback, StablePopover, useActionContext } from '../..';
 import { useDesignable } from '../../';
 import { useACLActionParamsContext } from '../../../acl';
-import {
-  useCollection,
-  useCollectionParentRecordData,
-  useCollectionRecordData,
-  useDataBlockRequest,
-} from '../../../data-source';
+import { useCollectionParentRecordData, useCollectionRecordData, useDataBlockRequest } from '../../../data-source';
 import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
 import { Icon } from '../../../icon';
 import { TreeRecordProvider } from '../../../modules/blocks/data-blocks/table/TreeRecordProvider';
-import { DeclareVariable } from '../../../modules/variable/DeclareVariable';
+import { VariablePopupRecordProvider } from '../../../modules/variable/variablesProvider/VariablePopupRecordProvider';
 import { RecordProvider } from '../../../record-provider';
 import { useLocalVariables, useVariables } from '../../../variables';
 import { SortableItem } from '../../common';
@@ -44,7 +40,6 @@ import { useA } from './hooks';
 import { useGetAriaLabelOfAction } from './hooks/useGetAriaLabelOfAction';
 import { ActionProps, ComposedAction } from './types';
 import { linkageAction, setInitialActionState } from './utils';
-import { ErrorBoundary } from 'react-error-boundary';
 
 const handleError = (err) => console.log(err);
 
@@ -85,7 +80,6 @@ export const Action: ComposedAction = withDynamicSchemaProps(
     const form = useForm();
     const recordData = useCollectionRecordData();
     const parentRecordData = useCollectionParentRecordData();
-    const collection = useCollection();
     const designerProps = fieldSchema['x-toolbar-props'] || fieldSchema['x-designer-props'];
     const openMode = fieldSchema?.['x-component-props']?.['openMode'];
     const openSize = fieldSchema?.['x-component-props']?.['openSize'];
@@ -220,14 +214,7 @@ export const Action: ComposedAction = withDynamicSchemaProps(
       >
         {popover && <RecursionField basePath={field.address} onlyRenderProperties schema={fieldSchema} />}
         {!popover && renderButton()}
-        <DeclareVariable
-          name="$nPopupRecord"
-          title={t('Current popup record')}
-          value={recordData}
-          collection={collection}
-        >
-          {!popover && props.children}
-        </DeclareVariable>
+        <VariablePopupRecordProvider>{!popover && props.children}</VariablePopupRecordProvider>
         {element}
       </ActionContextProvider>
     );

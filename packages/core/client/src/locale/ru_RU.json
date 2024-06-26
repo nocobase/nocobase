@@ -455,6 +455,7 @@
   "Current collection": "Текущая коллекция",
   "Other collections": "Другие коллекции",
   "Current popup record": "Текущая запись всплывающего окна",
+  "Parent popup record": "Родительская запись всплывающего окна",
   "Associated records": "Связанные записи",
   "Parent record": "Родительская запись",
   "Popup close method": "Метод закрытия всплывающего окна",
