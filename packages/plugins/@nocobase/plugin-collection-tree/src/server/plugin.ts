@@ -8,9 +8,9 @@
  */
 
 import { Plugin } from '@nocobase/server';
-import { Collection, CreateOptions } from '@nocobase/database';
-import { CollectionModel } from '@nocobase/plugin-data-source-main/dist/server/models';
+import { Collection, Model } from '@nocobase/database';
 import { AdjacencyListRepository } from '@nocobase/database/lib/repositories/tree-repository/adjacency-list-repository';
+import { SequelizeCollectionManager, SequelizeDataSource } from '@nocobase/data-source-manager';
 
 class PluginCollectionTreeServer extends Plugin {
   async beforeLoad() {
@@ -22,83 +22,92 @@ class PluginCollectionTreeServer extends Plugin {
       condition,
     });
 
-    this.db.on('collections.beforeCreate', async (collection: CollectionModel, options: CreateOptions | undefined) => {
-      const dataSource = 'main';
-      let pathCollectionName = `${collection.get('name')}`;
-      if (!pathCollectionName.endsWith('_path')) {
-        pathCollectionName = `${dataSource}_${collection.get('name')}_path`;
+    this.app.dataSourceManager.afterAddDataSource((dataSource: DataSource) => {
+      if (dataSource instanceof SequelizeDataSource) {
+        const collectionManager = dataSource.collectionManager as SequelizeCollectionManager;
+        collectionManager.db.on('afterDefineCollection', (collection: Model) => {
+          if (!collection.options.tree) {
+            return;
+          }
+          const name = `${dataSource.name}_${collection.name}_path`;
+          this.db.collection({
+            name,
+            autoGenId: false,
+            timestamps: false,
+            fields: [
+              { type: 'integer', name: 'nodePk' },
+              { type: 'jsonb', name: 'path' },
+            ],
+          });
+
+          const getTreePath = async (model: Model, path: string, transaction: any) => {
+            if (model.dataValues?.parentId !== null) {
+              const parent = await model.constructor.findByPk(model.dataValues?.parentId, { transaction });
+              if (parent) {
+                path = `/${parent.dataValues?.id}${path}`;
+              }
+              if (parent.dataValues?.parentId !== null) {
+                path = await getTreePath(parent, path, transaction);
+              }
+            }
+            return path;
+          };
+
+          collectionManager.db.on(`${collection.name}.afterSync`, async ({ transaction }) => {
+            await this.db.getCollection(name).sync({ transaction });
+          });
+
+          //afterCreate
+          this.db.on(`${collection.name}.afterCreate`, async (model: Model, options) => {
+            const { transaction } = options;
+            let path = `/${model.dataValues?.id}`;
+            path = await getTreePath(model, path, transaction);
+            await this.app.db.getRepository(name).create({
+              values: {
+                nodePk: model.dataValues?.id,
+                path: path,
+              },
+              transaction,
+            });
+          });
+
+          //afterUpdate
+          this.db.on(`${collection.name}.afterUpdate`, async (model, options) => {
+            const { transaction } = options;
+            let path = `/${model.dataValues?.id}`;
+            path = await getTreePath(model, path, transaction);
+            await this.app.db.getRepository(name).update({
+              values: {
+                path,
+              },
+              filter: {
+                nodePk: model.dataValues?.id,
+              },
+              transaction,
+            });
+          });
+
+          //afterDestroy
+          this.db.on(`${collection.name}.afterDestroy`, async (model: Model, options) => {
+            const { transaction } = options;
+            this.app.db.getRepository(name).destroy({
+              filter: {
+                nodePk: model.dataValues?.id,
+              },
+              // transaction,
+            });
+          });
+        });
       }
-      const { transaction } = options;
-      if (!condition(collection.options)) {
-        return;
-      }
-
-      this.app.db.getRepository('collections').create({
-        values: {
-          name: `${pathCollectionName}`,
-          title: `${pathCollectionName}`,
-          autoGenId: false,
-          hidden: false,
-          timestamps: false,
-          dumpRules: 'required',
-          origin: '@nocobase/database',
-          fields: [
-            {
-              type: 'text',
-              name: 'fullPath',
-            },
-          ],
-        },
-        transaction,
-      });
-
-      this.app.db.collection({
-        name: pathCollectionName,
-        autoGenId: false,
-        timestamps: false,
-        dumpRules: 'required',
-        origin: '@nocobase/database',
-        fields: [
-          {
-            type: 'text',
-            name: 'fullPath',
-          },
-        ],
-      });
-      const collectionTree = this.app.db.getCollection(`${pathCollectionName}`);
-      if (collectionTree) {
-        // @ts-ignore
-        collectionTree.model.refreshAttributes();
-
-        // @ts-ignore
-        collectionTree.model._findAutoIncrementAttribute();
-        await collectionTree.model.sync();
-      }
-
-      // 关联字段
-      options.fields.push({
-        type: 'hasOne',
-        name: 'path',
-        foreignKey: 'nodePk',
-        target: `${pathCollectionName}`,
-      });
     });
 
-    this.db.on('collections.afterDestroy', async (collection: CollectionModel, options) => {
-      const dataSource = 'main';
-      const pathCollectionName = `${dataSource}_${collection.get('name')}_path`;
-      const { transaction } = options;
+    this.db.on('collections.afterDestroy', async (collection: Model, { transaction }) => {
+      const name = `main_${collection.get('name')}_path`;
       if (!condition(collection.options)) {
         return;
       }
 
-      // 删掉 path 表
-      this.db.getRepository('collections').destroy({
-        filter: {
-          name: `${pathCollectionName}`,
-        },
-        transaction,
-      });
+      await this.db.getCollection(name).removeFromDb({ transaction });
     });
   }
 }
