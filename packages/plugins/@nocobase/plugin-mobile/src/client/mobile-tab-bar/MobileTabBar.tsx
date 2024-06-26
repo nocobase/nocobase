@@ -35,10 +35,12 @@ export const MobileTabBar: FC & {
   return (
     <div className={styles.mobileTabBar}>
       <MobileTabBarSettings />
-      <div className={styles.mobileTabBarList}>
-        {tabList.map((item) => {
-          return <SchemaComponent key={item.id} schema={Object.assign({ name: item.id }, item.options)} />;
-        })}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1em' }}>
+        <div className={styles.mobileTabBarList}>
+          {tabList.map((item) => {
+            return <SchemaComponent key={item.id} schema={Object.assign({ name: item.id }, item.options)} />;
+          })}
+        </div>
         <MobileTabBarInitializer />
       </div>
 

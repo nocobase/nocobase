@@ -27,7 +27,7 @@ export const MobileNavigationBar: FC = () => {
   const fieldSchema = useFieldSchema();
   if (!enableNavigationBar) return null;
   return (
-    <div style={{ borderBottom: '1px solid var(--adm-color-border)', position: 'sticky', top: 0, zIndex: 1000 }}>
+    <div style={{ borderBottom: '1px solid var(--adm-color-border)', position: 'sticky', top: 0 }}>
       <NavBar
         backArrow={false}
         left={<SchemaComponent name="leftActions" schema={fieldSchema.properties['leftActions']} />}

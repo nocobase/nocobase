@@ -23,27 +23,26 @@ export const MobileNavigationBarTabs: FC = () => {
     return tabSchemaUid ? pathname : activeTabBarItem.children[0]?.url;
   });
   const handleChange: TabsProps['onChange'] = (url) => {
-    if (!url) {
-      return;
-    }
     setActiveKey(url);
     navigate(url);
   };
 
   return (
-    <Tabs activeKey={activeKey} onChange={handleChange}>
-      {activeTabBarItem.children?.map((item) => (
-        <Tabs.Tab
-          title={
-            <div>
-              <MobilePageTabSettings tab={item} />
-              {item.options.title}
-            </div>
-          }
-          key={String(item.url)}
-        ></Tabs.Tab>
-      ))}
-      <Tabs.Tab title={<MobilePageTabInitializer />} key={''}></Tabs.Tab>
-    </Tabs>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1em' }}>
+      <Tabs activeKey={activeKey} onChange={handleChange} style={{ flex: 1 }}>
+        {activeTabBarItem.children?.map((item) => (
+          <Tabs.Tab
+            title={
+              <div>
+                <MobilePageTabSettings tab={item} />
+                {item.options.title}
+              </div>
+            }
+            key={String(item.url)}
+          ></Tabs.Tab>
+        ))}
+      </Tabs>
+      <MobilePageTabInitializer />
+    </div>
   );
 };

@@ -16,12 +16,13 @@ export const useStyles = createStyles(({ token, css }) => ({
     left: 0,
     right: 0,
     zIndex: 1000,
-    background: '#fff',
     borderTop: '1px solid var(--adm-color-border)',
   },
   mobileTabBarList: {
     display: 'flex',
+    background: '#fff',
     justifyContent: 'space-around',
+    flex: 1,
     padding: '8px 0',
     alignItems: 'center',
     '.ant-btn-icon': {
