@@ -389,6 +389,10 @@ describe('workflow > triggers > schedule > static mode', () => {
         },
       });
 
+      const n1 = workflow.createNode({
+        type: 'echo',
+      });
+
       (app.pm.get('workflow') as Plugin).trigger(
         workflow,
         { date: start },
@@ -399,6 +403,40 @@ describe('workflow > triggers > schedule > static mode', () => {
 
       const e1s = await workflow.getExecutions();
       expect(e1s.length).toBe(1);
+      const j1s = await e1s[0].getJobs();
+      expect(j1s.length).toBe(1);
+    });
+
+    it.only('toggle same workflow on should not be triggered in same time more than once', async () => {
+      await sleepToEvenSecond();
+
+      const start = new Date();
+      start.setMilliseconds(0);
+      start.setSeconds(start.getSeconds() + 2);
+
+      const workflow = await WorkflowRepo.create({
+        values: {
+          enabled: true,
+          type: 'schedule',
+          config: {
+            mode: 0,
+            startsOn: start.toISOString(),
+          },
+        },
+      });
+
+      const n1 = workflow.createNode({
+        type: 'echo',
+      });
+
+      (app.pm.get('workflow') as Plugin).toggle(workflow);
+
+      await sleep(3000);
+
+      const e1s = await workflow.getExecutions();
+      expect(e1s.length).toBe(1);
+      const j1s = await e1s[0].getJobs();
+      expect(j1s.length).toBe(1);
     });
   });
 });
