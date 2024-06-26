@@ -15,7 +15,8 @@ import { useAPIClient } from '../../../api-client';
 import { DataBlockProvider } from '../../../data-source/data-block/DataBlockProvider';
 import { BlockRequestContext } from '../../../data-source/data-block/DataBlockRequestProvider';
 import { SchemaComponent } from '../../core';
-import { TabsPropsProvider } from './TabsPropsProvider';
+import { TabsContextProvider } from '../tabs/context';
+import { usePopupSettings } from './PopupSettingsProvider';
 import { deleteRandomNestedSchemaKey, getRandomNestedSchemaKey } from './nestedSchemaKeyStorage';
 import {
   PopupParams,
@@ -68,11 +69,16 @@ const PopupTabsPropsProvider: FC<{ params: PopupParamsStorage }> = ({ children, 
     },
     [changeTab],
   );
+  const { isPopupVisibleControlledByURL } = usePopupSettings();
+
+  if (!isPopupVisibleControlledByURL) {
+    return <>{children}</>;
+  }
 
   return (
-    <TabsPropsProvider activeKey={params.tab} onTabClick={onTabClick}>
+    <TabsContextProvider activeKey={params.tab} onTabClick={onTabClick}>
       {children}
-    </TabsPropsProvider>
+    </TabsContextProvider>
   );
 };
 

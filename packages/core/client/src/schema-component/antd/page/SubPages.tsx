@@ -23,8 +23,8 @@ import { DataBlockProvider } from '../../../data-source/data-block/DataBlockProv
 import { useDataSourceKey } from '../../../data-source/data-source/DataSourceProvider';
 import { VariablePopupRecordProvider } from '../../../modules/variable/variablesProvider/VariablePopupRecordProvider';
 import { RemoteSchemaComponent } from '../../core/RemoteSchemaComponent';
+import { TabsContextProvider } from '../tabs/context';
 import { useSubPagesStyle } from './SubPages.style';
-import { TabsPropsProvider } from './TabsPropsProvider';
 import { PopupParams } from './pagePopupUtils';
 
 export interface SubPageParams extends Omit<PopupParams, 'popupUid'> {
@@ -52,9 +52,9 @@ const SubPageTabsPropsProvider: FC<{ params: SubPageParams }> = (props) => {
   }, []);
 
   return (
-    <TabsPropsProvider activeKey={props.params.tab} onTabClick={onTabClick}>
+    <TabsContextProvider activeKey={props.params.tab} onTabClick={onTabClick}>
       {props.children}
-    </TabsPropsProvider>
+    </TabsContextProvider>
   );
 };
 

@@ -21,7 +21,9 @@ import {
   useDataBlockRequest,
   useDataSourceKey,
 } from '../../../data-source';
+import { ActionContext } from '../action/context';
 import { PopupParamsProviderContext, PopupVisibleProviderContext } from './PagePopups';
+import { usePopupSettings } from './PopupSettingsProvider';
 
 export interface PopupParams {
   /** popup uid */
@@ -113,6 +115,8 @@ export const usePagePopup = () => {
   const { visible, setVisible } = useContext(PopupVisibleProviderContext) || { visible: false, setVisible: () => {} };
   const { popupParams } = useContext(PopupParamsProviderContext) || {};
   const service = useDataBlockRequest();
+  const { isPopupVisibleControlledByURL } = usePopupSettings();
+  const { setVisible: setVisibleFromAction } = useContext(ActionContext);
 
   const getNewPathname = useCallback(
     ({ tabKey, popupUid, recordData }: { tabKey?: string; popupUid: string; recordData: Record<string, any> }) => {
@@ -137,6 +141,10 @@ export const usePagePopup = () => {
     }: {
       recordData?: Record<string, any>;
     } = {}) => {
+      if (!isPopupVisibleControlledByURL) {
+        return setVisibleFromAction?.(true);
+      }
+
       recordData = recordData || record?.data;
       const filterByTK = recordData?.[collection.getPrimaryKey()];
       const sourceId = parentRecord?.data?.[cm.getCollection(association?.split('.')[0])?.getPrimaryKey()];
@@ -172,12 +180,17 @@ export const usePagePopup = () => {
       record,
       service,
       location,
+      isPopupVisibleControlledByURL,
     ],
   );
 
   const closePopup = useCallback(() => {
+    if (!isPopupVisibleControlledByURL) {
+      return setVisibleFromAction?.(false);
+    }
+
     navigate(removeLastPopupPath(location.pathname));
-  }, [navigate, location]);
+  }, [navigate, location, isPopupVisibleControlledByURL]);
 
   const changeTab = useCallback(
     (key: string) => {

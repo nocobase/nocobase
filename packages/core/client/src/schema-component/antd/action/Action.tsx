@@ -30,6 +30,7 @@ import { useCompile, useComponent, useDesigner } from '../../hooks';
 import { useProps } from '../../hooks/useProps';
 import { PopupVisibleProvider } from '../page/PagePopups';
 import { usePagePopup } from '../page/pagePopupUtils';
+import { usePopupSettings } from '../page/PopupSettingsProvider';
 import { useNavigateTOSubPage } from '../page/SubPages';
 import ActionContainer from './Action.Container';
 import { ActionDesigner } from './Action.Designer';
@@ -93,6 +94,7 @@ export const Action: ComposedAction = withDynamicSchemaProps(
     const openSize = fieldSchema?.['x-component-props']?.['openSize'];
     const refreshDataBlockRequest = fieldSchema?.['x-component-props']?.['refreshDataBlockRequest'];
     const { navigateToSubPage } = useNavigateTOSubPage();
+    const { isPopupVisibleControlledByURL } = usePopupSettings();
 
     const disabled = form.disabled || field.disabled || field.data?.disabled || propsDisabled || disableAction;
     const linkageRules = useMemo(() => fieldSchema?.['x-linkage-rules'] || [], [fieldSchema?.['x-linkage-rules']]);
@@ -148,7 +150,7 @@ export const Action: ComposedAction = withDynamicSchemaProps(
                   service?.refresh?.();
                 }
               });
-            } else if (isBulkEditAction(fieldSchema)) {
+            } else if (isBulkEditAction(fieldSchema) || !isPopupVisibleControlledByURL) {
               setVisible(true);
               run?.();
             } else {
