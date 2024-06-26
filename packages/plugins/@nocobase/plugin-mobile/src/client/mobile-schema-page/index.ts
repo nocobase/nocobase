@@ -8,3 +8,4 @@
  */
 
 export * from './MobileSchemaPage';
+export * from './schema';

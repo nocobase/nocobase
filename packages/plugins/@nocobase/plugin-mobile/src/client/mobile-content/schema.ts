@@ -7,7 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from './MobileTabBar.Schema';
-export * from './settings';
-export * from './initializer';
-export * from './schema';
+export function getPageContentSchema(pageSchemaUid: string) {
+  return {
+    type: 'void',
+    'x-uid': pageSchemaUid,
+    'x-async': true, // 异步
+    'x-component': 'Grid',
+    'x-initializer': 'mobile:addBlock',
+  };
+}

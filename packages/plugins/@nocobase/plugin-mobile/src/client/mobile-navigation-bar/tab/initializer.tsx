@@ -17,8 +17,9 @@ import {
 } from '@nocobase/client';
 
 import { useMobileTabContext } from '../../mobile-providers';
-import { getMobileTabBarItemTabData, getPageContentSchema } from '../../mobile-tab-bar';
 import { generatePluginTranslationTemplate } from '../../locale';
+import { getPageContentSchema } from '../../mobile-content';
+import { getMobileNavigationBarTabData } from './schema';
 
 export const mobilePageTabInitializer = new SchemaInitializer({
   name: 'mobile:page-tab',
@@ -34,7 +35,7 @@ export const mobilePageTabInitializer = new SchemaInitializer({
           // 创建 Tab
           const tabSchemaUid = uid();
           await resource.create({
-            values: getMobileTabBarItemTabData({
+            values: getMobileNavigationBarTabData({
               pageUrl: activeTabBarItem.url,
               tabSchemaUid,
               parentId: activeTabBarItem.id,

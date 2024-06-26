@@ -14,113 +14,9 @@ import { uid } from '@formily/shared';
 import { generatePluginTranslationTemplate } from '../../locale';
 import { getMobileTabBarItemSchemaFields } from '../MobileTabBar.Item';
 import { useMobileTabContext } from '../../mobile-providers';
-
-export interface GetMobileTabBarItemDataOptions {
-  pageSchemaUid: string;
-  url?: string;
-  values: any;
-}
-
-export function getMobileTabBarItemData(options: GetMobileTabBarItemDataOptions) {
-  const { pageSchemaUid, url, values } = options;
-  return {
-    url,
-    parentId: null,
-    options: {
-      type: 'void',
-      'x-decorator': 'BlockItem',
-      'x-toolbar-props': {
-        draggable: false,
-      },
-      'x-settings': 'mobile:tab-bar:schema',
-      'x-component': 'MobileTabBar.Schema',
-      'x-component-props': {
-        ...values,
-        pageSchemaUid: pageSchemaUid,
-      },
-    },
-  };
-}
-
-export interface GetMobileTabBarItemTabDataOptions {
-  tabSchemaUid: string;
-  pageUrl?: string;
-  parentId: number;
-  title?: string;
-}
-
-export function getMobileTabBarItemTabData(options: GetMobileTabBarItemTabDataOptions) {
-  const { tabSchemaUid, pageUrl, parentId, title } = options;
-  return {
-    url: `${pageUrl}/tabs/${tabSchemaUid}`,
-    parentId,
-    options: {
-      title: title || 'Unnamed',
-      tabSchemaUid,
-    },
-  };
-}
-
-export function getPageContentSchema(pageSchemaUid: string) {
-  return {
-    type: 'void',
-    'x-uid': pageSchemaUid,
-    'x-async': true, // 异步
-    'x-component': 'Grid',
-    'x-initializer': 'mobile:addBlock',
-  };
-}
-
-function getPageSchema(pageSchemaUId: string, firstTabSchemaUid: string) {
-  const pageSchema = {
-    type: 'void',
-    name: pageSchemaUId,
-    'x-uid': pageSchemaUId,
-    'x-component': 'MobilePage',
-    'x-settings': 'mobile:page',
-    'x-decorator': 'BlockItem',
-    'x-toolbar-props': {
-      draggable: false,
-    },
-    properties: {
-      [uid()]: {
-        type: 'void',
-        'x-component': 'MobileNavigationBar',
-        properties: {
-          leftActions: {
-            type: 'void',
-            'x-component': 'ActionBar',
-            'x-initializer': 'mobile:navigation-bar',
-            'x-initializer-props': {
-              style: {
-                marginLeft: 8,
-              },
-            },
-          },
-          rightActions: {
-            type: 'void',
-            'x-component': 'ActionBar',
-            'x-initializer-props': {
-              style: {
-                marginRight: 15,
-              },
-            },
-            'x-initializer': 'mobile:navigation-bar',
-          },
-        },
-      },
-      [uid()]: {
-        type: 'void',
-        'x-component': 'MobileContent',
-        properties: {
-          [firstTabSchemaUid]: getPageContentSchema(firstTabSchemaUid),
-        },
-      },
-    },
-  };
-
-  return { schema: pageSchema };
-}
+import { getMobileTabBarItemData } from './schema';
+import { getMobilePageSchema } from '../../mobile-schema-page';
+import { getMobileNavigationBarTabData } from '../../mobile-navigation-bar';
 
 export const mobileTabBarSchemaInitializerItem: SchemaInitializerItemActionModalType = {
   name: 'schema',
@@ -151,13 +47,13 @@ export const mobileTabBarSchemaInitializerItem: SchemaInitializerItemActionModal
         await schemaResource.insertAdjacent({
           resourceIndex: 'mobile',
           position: 'beforeEnd',
-          values: getPageSchema(pageSchemaUId, firstTabSchemaUid),
+          values: getMobilePageSchema(pageSchemaUId, firstTabSchemaUid),
         });
 
         // 创建 TabBar item 的第一个 tab
         const parentId = data.data.id;
         await resource.create({
-          values: getMobileTabBarItemTabData({ pageUrl: url, tabSchemaUid: firstTabSchemaUid, parentId }),
+          values: getMobileNavigationBarTabData({ pageUrl: url, tabSchemaUid: firstTabSchemaUid, parentId }),
         });
 
         // 刷新 tabs

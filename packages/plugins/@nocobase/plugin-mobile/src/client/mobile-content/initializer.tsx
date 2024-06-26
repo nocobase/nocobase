@@ -7,7 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-// import { Button } from 'antd-mobile';
 import { SchemaInitializer, gridRowColWrap } from '@nocobase/client';
 
 export const mobileAddBlockInitializer = new SchemaInitializer({

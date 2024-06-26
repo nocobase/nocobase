@@ -9,3 +9,4 @@
 
 export * from './initializer';
 export * from './settings';
+export * from './schema';

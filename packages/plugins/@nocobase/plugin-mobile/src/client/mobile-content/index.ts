@@ -9,3 +9,4 @@
 
 export * from './MobileContent';
 export * from './initializer';
+export * from './schema';
