@@ -116,28 +116,8 @@ export class PluginLocalizationServer extends Plugin {
 
     this.registerUISchemahook();
 
-    this.app.resourceManager.use(async (ctx, next) => {
-      await next();
-      const { resourceName, actionName } = ctx.action.params;
-      if (resourceName === 'app' && actionName === 'getLang') {
-        const custom = await this.resources.getResources(ctx.body.lang || 'en-US');
-        const appLang = ctx.body;
-        const resources = { ...appLang.resources };
-        Object.keys(custom).forEach((key) => {
-          const module = key.replace('resources.', '');
-          const resource = appLang.resources[module];
-          const customResource = custom[key];
-          resources[module] = resource ? deepmerge(resource, customResource) : customResource;
-          const pkgName = `${OFFICIAL_PLUGIN_PREFIX}${module}`;
-          if (appLang.resources[pkgName]) {
-            resources[pkgName] = { ...resources[module] };
-          }
-        });
-        ctx.body = {
-          ...appLang,
-          resources,
-        };
-      }
+    this.app.localeManager.registerResourceSource('plugin-localization', {
+      getResources: (lang: string) => this.resources.getResources(lang),
     });
   }
 

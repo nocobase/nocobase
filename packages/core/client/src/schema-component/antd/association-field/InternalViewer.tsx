@@ -14,7 +14,7 @@ import { useTranslation } from 'react-i18next';
 import { useDesignable } from '../../';
 import { WithoutTableFieldResource } from '../../../block-provider';
 import { Collection, useCollectionManager } from '../../../data-source';
-import { DeclareVariable } from '../../../modules/variable/DeclareVariable';
+import { VariablePopupRecordProvider } from '../../../modules/variable/variablesProvider/VariablePopupRecordProvider';
 import { RecordProvider, useRecord } from '../../../record-provider';
 import { useCompile } from '../../hooks';
 import { ActionContextProvider, useActionContext } from '../action';
@@ -158,12 +158,7 @@ export const ReadPrettyInternalViewer: React.FC = observer(
     }
 
     const renderWithoutTableFieldResourceProvider = () => (
-      <DeclareVariable
-        name="$nPopupRecord"
-        title={t('Current popup record')}
-        value={record}
-        collection={targetCollection as Collection}
-      >
+      <VariablePopupRecordProvider recordData={record} collection={targetCollection as Collection}>
         <WithoutTableFieldResource.Provider value={true}>
           <RecursionField
             schema={fieldSchema}
@@ -174,7 +169,7 @@ export const ReadPrettyInternalViewer: React.FC = observer(
             }}
           />
         </WithoutTableFieldResource.Provider>
-      </DeclareVariable>
+      </VariablePopupRecordProvider>
     );
 
     const renderRecordProvider = () => {

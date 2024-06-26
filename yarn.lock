@@ -15255,9 +15255,9 @@ humps@^2.0.1:
   integrity sha512-E0eIbrFWUhwfXJmsbdjRQFQPrl5pTEoKlz163j1mTqqUnU9PgR4AgB8AIITzuB3vLBdxZXyZ9TDIrwB2OASz4g==
 
 i18next-http-backend@^2.1.1:
-  version "2.4.2"
-  resolved "https://registry.npmmirror.com/i18next-http-backend/-/i18next-http-backend-2.4.2.tgz#bd53cacaed671e9f38bdcfd46ac9d1763a898186"
-  integrity sha512-wKrgGcaFQ4EPjfzBTjzMU0rbFTYpa0S5gv9N/d8WBmWS64+IgJb7cHddMvV+tUkse7vUfco3eVs2lB+nJhPo3w==
+  version "2.5.2"
+  resolved "https://registry.npmmirror.com/i18next-http-backend/-/i18next-http-backend-2.5.2.tgz#3d846cc239987fe7700d1cf0f17975807bfd25d3"
+  integrity sha512-+K8HbDfrvc1/2X8jpb7RLhI9ZxBDpx3xogYkQwGKlWAUXLSEGXzgdt3EcUjLlBCdMwdQY+K+EUF6oh8oB6rwHw==
   dependencies:
     cross-fetch "4.0.0"
 
