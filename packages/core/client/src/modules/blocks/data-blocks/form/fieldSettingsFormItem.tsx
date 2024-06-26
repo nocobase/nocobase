@@ -26,7 +26,7 @@ import { ActionType } from '../../../../schema-settings/LinkageRules/type';
 import { SchemaSettingsDefaultValue } from '../../../../schema-settings/SchemaSettingsDefaultValue';
 import { useIsAllowToSetDefaultValue } from '../../../../schema-settings/hooks/useIsAllowToSetDefaultValue';
 import { SchemaSettingsLinkageRules } from '../../../../schema-settings';
-
+import { useIsFieldReadPretty } from '../../../../schema-component/antd/form-item/FormItem.Settings';
 export const fieldSettingsFormItem = new SchemaSettings({
   name: 'fieldSettings:FormItem',
   items: [
@@ -451,8 +451,8 @@ export const fieldSettingsFormItem = new SchemaSettings({
               return <SchemaSettingsLinkageRules {...localProps} />;
             },
             useVisible() {
-              const field: any = useField();
-              return field.readPretty;
+              const isFieldReadPretty = useIsFieldReadPretty();
+              return isFieldReadPretty;
             },
             useComponentProps() {
               const { name } = useCollection();

@@ -12,5 +12,5 @@ import { useSatisfiedActionValues } from '../../../../../schema-settings/Linkage
 export function useDataFormItemProps() {
   const form = useForm();
   const { valueMap: style } = useSatisfiedActionValues({ category: 'style', formValues: form?.values });
-  return { style };
+  return { wrapperStyle: style };
 }

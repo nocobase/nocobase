@@ -26,6 +26,7 @@ import { useEnsureOperatorsValid } from './SchemaSettingOptions';
 import useLazyLoadDisplayAssociationFieldsOfForm from './hooks/useLazyLoadDisplayAssociationFieldsOfForm';
 import useParseDefaultValue from './hooks/useParseDefaultValue';
 import { useVariables, useContextVariable } from '../../../variables';
+import { useDataFormItemProps } from '../../../modules/blocks/data-blocks/form/hooks/useDataFormItemProps';
 
 Item.displayName = 'FormilyFormItem';
 
@@ -48,7 +49,7 @@ export const FormItem: any = withDynamicSchemaProps(
     const schema = useFieldSchema();
     const { addActiveFieldName } = useFormActiveFields() || {};
     const form = useForm();
-    const { style } = props;
+    const { wrapperStyle } = useDataFormItemProps();
     const variables = useVariables();
     const contextVariable = useContextVariable();
     useEffect(() => {
@@ -84,7 +85,7 @@ export const FormItem: any = withDynamicSchemaProps(
       <CollectionFieldProvider allowNull={true}>
         <BlockItem className={'nb-form-item'}>
           <ACLCollectionFieldProvider>
-            <Item className={className} {...props} extra={extra} wrapperStyle={style} />
+            <Item className={className} {...props} extra={extra} wrapperStyle={wrapperStyle} />
           </ACLCollectionFieldProvider>
         </BlockItem>
       </CollectionFieldProvider>
