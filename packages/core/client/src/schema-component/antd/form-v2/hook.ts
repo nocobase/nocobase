@@ -33,9 +33,7 @@ export const useFormBlockHeight = () => {
   const hasFormActions = Object.keys(actionSchema?.properties || {}).length > 0;
   const isFormBlock = schema?.parent?.['x-decorator']?.includes?.('FormBlockProvider');
   const actionBarHeight =
-    hasFormActions || designable
-      ? token.controlHeight + (isFormBlock ? 1 : 2) * token.marginLG
-      : (isFormBlock ? 1 : 2) * token.marginLG;
+    hasFormActions || designable ? token.controlHeight + (isFormBlock ? 1 : 2) * token.marginLG : token.marginLG;
   const blockTitleHeaderHeight = title ? token.fontSizeLG * token.lineHeightLG + token.padding * 2 - 1 : 0;
   const { data } = useDataBlockRequest() || {};
   const { count, pageSize } = (data as any)?.meta || ({} as any);
