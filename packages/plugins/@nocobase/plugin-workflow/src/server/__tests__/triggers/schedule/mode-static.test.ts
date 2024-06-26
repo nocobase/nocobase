@@ -407,7 +407,7 @@ describe('workflow > triggers > schedule > static mode', () => {
       expect(j1s.length).toBe(1);
     });
 
-    it.only('toggle same workflow on should not be triggered in same time more than once', async () => {
+    it('toggle same workflow on should not be triggered in same time more than once', async () => {
       await sleepToEvenSecond();
 
       const start = new Date();
@@ -429,7 +429,8 @@ describe('workflow > triggers > schedule > static mode', () => {
         type: 'echo',
       });
 
-      (app.pm.get('workflow') as Plugin).toggle(workflow);
+      const trigger = (app.pm.get('workflow') as Plugin).triggers.get(workflow.type);
+      trigger.on(workflow);
 
       await sleep(3000);
 
