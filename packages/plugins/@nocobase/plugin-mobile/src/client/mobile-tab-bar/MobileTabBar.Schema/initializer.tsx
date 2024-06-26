@@ -91,10 +91,20 @@ function getPageSchema(pageSchemaUId: string, firstTabSchemaUid: string) {
             type: 'void',
             'x-component': 'ActionBar',
             'x-initializer': 'mobile:navigation-bar',
+            'x-initializer-props': {
+              style: {
+                marginLeft: 8,
+              },
+            },
           },
           rightActions: {
             type: 'void',
             'x-component': 'ActionBar',
+            'x-initializer-props': {
+              style: {
+                marginRight: 15,
+              },
+            },
             'x-initializer': 'mobile:navigation-bar',
           },
         },

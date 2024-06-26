@@ -30,6 +30,7 @@ export const MobileNavigationBar: FC = () => {
     <div style={{ borderBottom: '1px solid var(--adm-color-border)', position: 'sticky', top: 0 }}>
       <NavBar
         backArrow={false}
+        back={null}
         left={<SchemaComponent name="leftActions" schema={fieldSchema.properties['leftActions']} />}
         right={<SchemaComponent name="rightActions" schema={fieldSchema.properties['rightActions']} />}
       >

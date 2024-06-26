@@ -7,11 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { SchemaInitializer } from '@nocobase/client';
-import { navigationBarLinkInitializerItem } from './items';
+import { createStyles } from 'antd-style';
 
-export const mobileNavigationBarInitializer = new SchemaInitializer({
-  name: 'mobile:navigation-bar',
-  icon: 'PlusOutlined',
-  items: [navigationBarLinkInitializerItem],
-});
+export const useStyles = createStyles(({ token, css }) => ({
+  mobilePage: {
+    paddingBottom: 20,
+  },
+}));

@@ -9,15 +9,16 @@
 
 import React, { FC } from 'react';
 import { MobilePageContextProps, MobilePageProvider } from './context';
+import { useStyles } from './styles';
 
 export interface MobilePageProps extends MobilePageContextProps {
   children?: React.ReactNode;
 }
 
 export const MobilePage: FC<MobilePageProps> = ({ children, ...props }) => {
-  // <div style={{ minHeight: '100vh', maxWidth: '100%', overflowX: 'hidden' }}>
+  const { styles } = useStyles();
   return (
-    <div style={{ paddingBottom: 20 }}>
+    <div className={styles.mobilePage}>
       <MobilePageProvider {...props}>{children}</MobilePageProvider>
     </div>
   );
