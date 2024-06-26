@@ -182,6 +182,11 @@ export class PluginDataSourceManagerServer extends Plugin {
         isDBInstance: !!dataSource?.collectionManager.db,
       };
 
+      const publicOptions = dataSource?.publicOptions();
+      if (publicOptions) {
+        item['options'] = publicOptions;
+      }
+
       if (dataSourceStatus === 'loading-failed' || dataSourceStatus === 'reloading-failed') {
         item['errorMessage'] = plugin.dataSourceErrors[dataSourceModel.get('key')].message;
       }
