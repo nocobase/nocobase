@@ -102,9 +102,13 @@ export default class Processor {
   }
 
   public async prepare() {
-    const { execution, transaction } = this;
+    const {
+      execution,
+      transaction,
+      options: { plugin },
+    } = this;
     if (!execution.workflow) {
-      execution.workflow = await execution.getWorkflow({ transaction });
+      execution.workflow = plugin.enabledCache.get(execution.workflowId);
     }
 
     const nodes = await execution.workflow.getNodes({ transaction });
