@@ -79,7 +79,7 @@ export function ModalActionSchemaInitializerItem(props) {
         },
       },
     };
-  }, []);
+  }, [visible]);
 
   return (
     <>
