@@ -222,7 +222,6 @@ const CascadeSelect = connect((props) => {
   );
 });
 const AssociationCascadeSelect = connect((props: any) => {
-  console.log(props.value);
   return (
     <div>
       <CascadeSelect {...props} />
@@ -234,12 +233,11 @@ export const InternalCascadeSelect = observer(
   (props: any) => {
     const { options: collectionField } = useAssociationFieldContext();
     const selectForm = useMemo(() => createForm(), []);
-
     const { t } = useTranslation();
     const field: any = useField();
     const fieldSchema = useFieldSchema();
-    const { loading: formLoading, data: formData } = useDataBlockRequest() || {};
-    const value = formData?.data?.[fieldSchema.name];
+    const { loading, data: formData } = useDataBlockRequest() || {};
+    const initialValue = formData?.data?.[fieldSchema.name];
     useEffect(() => {
       const id = uid();
       selectForm.addEffects(id, () => {
@@ -248,7 +246,6 @@ export const InternalCascadeSelect = observer(
             const value = extractLastNonNullValueObjects(form.values?.[fieldSchema.name]);
             setTimeout(() => {
               form.setValuesIn(fieldSchema.name, value);
-              props.onChange(value);
               field.value = value;
             });
           } else {
@@ -257,7 +254,6 @@ export const InternalCascadeSelect = observer(
             );
             setTimeout(() => {
               field.value = value;
-              props.onChange(value);
             });
           }
         });
@@ -268,8 +264,8 @@ export const InternalCascadeSelect = observer(
     }, []);
 
     const toValue = () => {
-      if (Array.isArray(value) && value.length > 0) {
-        return value;
+      if (Array.isArray(initialValue) && initialValue.length > 0) {
+        return initialValue;
       }
       return [{}];
     };
@@ -317,15 +313,16 @@ export const InternalCascadeSelect = observer(
         },
       },
     };
+
     return (
-      !formLoading && (
+      !loading && (
         <FormProvider form={selectForm}>
           {collectionField.interface === 'm2o' ? (
             <SchemaComponent
               components={{ FormItem }}
               schema={{
                 ...fieldSchema,
-                default: value,
+                default: initialValue,
                 title: '',
                 'x-component': AssociationCascadeSelect,
                 'x-component-props': {
