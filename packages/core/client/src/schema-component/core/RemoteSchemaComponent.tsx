@@ -60,11 +60,12 @@ const RequestSchemaComponent: React.FC<RemoteSchemaComponentProps> = (props) => 
       reset && reset();
     },
   });
-  if (loading) {
-    return <Spin />;
-  }
-  if (hidden) {
-    return <Spin />;
+  if (loading || hidden) {
+    return (
+      <div style={{ textAlign: 'center', marginTop: 20 }}>
+        <Spin />
+      </div>
+    );
   }
   return noForm ? (
     <SchemaComponent

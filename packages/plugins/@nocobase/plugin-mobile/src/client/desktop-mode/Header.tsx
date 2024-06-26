@@ -34,7 +34,7 @@ export const DesktopModeHeader: FC = () => {
             display: 'flex',
             justifyContent: 'center',
             alignItems: 'center',
-            border: '1px solid #eee',
+            border: '1px solid var(--adm-color-border)',
             padding: '0.3em 0.7em',
             borderRadius: '0.3em',
             gap: '0.3em',
@@ -45,7 +45,7 @@ export const DesktopModeHeader: FC = () => {
               setActiveType('pad');
               setSize({ width: 768, height: size.height });
             }}
-            style={{ color: activeType == 'pad' ? token.colorPrimary : '', cursor: 'pointer' }}
+            style={{ color: activeType == 'pad' ? 'var(--adm-color-primary)' : '', cursor: 'pointer' }}
             xmlns="http://www.w3.org/2000/svg"
             width="24"
             height="24"
@@ -65,7 +65,7 @@ export const DesktopModeHeader: FC = () => {
               setActiveType('mobile');
               setSize({ width: 375, height: size.height });
             }}
-            style={{ color: activeType == 'mobile' ? token.colorPrimary : '', cursor: 'pointer' }}
+            style={{ color: activeType == 'mobile' ? 'var(--adm-color-primary)' : '', cursor: 'pointer' }}
             xmlns="http://www.w3.org/2000/svg"
             width="24"
             height="24"

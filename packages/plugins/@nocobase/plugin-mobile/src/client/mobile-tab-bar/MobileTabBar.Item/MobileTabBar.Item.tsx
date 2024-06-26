@@ -12,8 +12,6 @@ import { Icon } from '@nocobase/client';
 import { Badge } from 'antd-mobile';
 import classnames from 'classnames';
 
-import { useStyles } from './styles';
-
 export interface MobileTabBarItemProps {
   // 图标
   icon?: string;
@@ -32,24 +30,30 @@ export interface MobileTabBarItemProps {
 function getIcon(item: MobileTabBarItemProps, selected?: boolean) {
   const { icon, selectedIcon } = item;
   const res = selected && selectedIcon ? selectedIcon : icon;
+  if (!res) return undefined;
   if (typeof res === 'string') return <Icon type={res} />;
   return icon;
 }
 
 export const MobileTabBarItem: FC<MobileTabBarItemProps> = (props) => {
   const { title, onClick, selected, badge } = props;
-  const { styles } = useStyles();
-
+  const icon = getIcon(props, selected);
   return (
     <Badge content={badge}>
       <div
         onClick={onClick}
-        className={classnames(styles.mobileTabBarItem, {
-          [styles.mobileTabBarItemActive]: selected,
+        className={classnames('adm-tab-bar-item', {
+          ['adm-tab-bar-item-active']: selected,
         })}
       >
-        <span className={styles.mobileTabBarItemIcon}>{getIcon(props, selected)}</span>
-        <span className={styles.mobileTabBarItemTitle}>{title}</span>
+        <span className={'adm-tab-bar-item-icon'}>{icon}</span>
+        <span
+          className={classnames('adm-tab-bar-item-title', {
+            ['adm-tab-bar-item-title-with-icon']: icon,
+          })}
+        >
+          {title}
+        </span>
       </div>
     </Badge>
   );

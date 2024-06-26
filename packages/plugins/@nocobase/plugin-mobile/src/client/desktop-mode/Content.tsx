@@ -39,7 +39,7 @@ export const DesktopModeContent: FC<DesktopModeContentProps> = ({ children }) =>
             height: '100%',
             minHeight: '100%',
             overflowX: 'hidden',
-            border: '1px solid #eee',
+            border: '1px solid var(--adm-color-border)',
             borderRadius: '1em',
           }}
         >

@@ -8,7 +8,7 @@
  */
 
 import React, { createContext, useContext, useEffect, useMemo } from 'react';
-import { SpinLoading } from 'antd-mobile';
+import { Spin } from 'antd';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 import { PluginMobileClient } from '../../index';
@@ -118,7 +118,7 @@ export const MobileTabContextProvider = ({ children }) => {
   if (loading) {
     return (
       <div style={{ textAlign: 'center', margin: '20px 0' }}>
-        <SpinLoading />
+        <Spin />
       </div>
     );
   }

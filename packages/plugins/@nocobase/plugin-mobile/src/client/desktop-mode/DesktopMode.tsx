@@ -25,7 +25,7 @@ export const DesktopMode: FC<DesktopModeProps> = ({ children }) => {
   }
   return (
     <SizeContextProvider>
-      <Layout style={{ height: '100%' }}>
+      <Layout style={{ height: '100%', background: '#fafbfc' }}>
         <Layout.Header style={{ height: 46 }}>
           <DesktopModeHeader />
         </Layout.Header>

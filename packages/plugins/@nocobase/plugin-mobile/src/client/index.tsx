@@ -66,6 +66,9 @@ export class PluginMobileClient extends Plugin {
       meta.name = 'viewport';
       meta.content = 'width=device-width,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no';
       document.head.appendChild(meta);
+
+      // 设置 body 背景色 background: '#fafbfc'
+      (document.querySelector('#root') as HTMLDivElement).style.backgroundColor = '#fafbfc';
     }
   }
 

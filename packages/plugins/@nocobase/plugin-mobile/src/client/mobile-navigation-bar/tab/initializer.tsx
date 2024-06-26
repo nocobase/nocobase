@@ -30,7 +30,7 @@ export const mobilePageTabInitializer = new SchemaInitializer({
     return (
       <SchemaInitializerActionModal
         title={generatePluginTranslationTemplate('Add Tab')}
-        buttonText={generatePluginTranslationTemplate('Add Tab')}
+        btnStyles={{ width: 32, padding: 0, marginRight: 13 }}
         onSubmit={async ({ title }) => {
           // 创建 Tab
           const tabSchemaUid = uid();

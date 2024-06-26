@@ -9,18 +9,24 @@
 
 import { createStyles } from 'antd-style';
 
-export const useStyles = createStyles(({ token, css }) => ({
+export const useStyles = createStyles(() => ({
   mobileTabBar: {
     position: 'sticky',
     bottom: 0,
     left: 0,
     right: 0,
     zIndex: 1000,
-    borderTop: '1px solid var(--adm-color-border)',
+    borderTop: '1px solid var(--adm-color-background)',
+    backgroundColor: 'var(--adm-color-background)',
+  },
+  mobileTabBarContent: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: '1em',
   },
   mobileTabBarList: {
     display: 'flex',
-    background: '#fff',
     justifyContent: 'space-around',
     flex: 1,
     padding: '8px 0',

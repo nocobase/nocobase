@@ -8,14 +8,14 @@
  */
 
 import React, { FC } from 'react';
-import { NavBar } from 'antd-mobile';
-import { Affix } from 'antd';
+import { NavBar, SafeArea } from 'antd-mobile';
 import { useFieldSchema } from '@formily/react';
 
 import { useMobileTitle } from '../mobile-providers';
 import { useMobilePage } from '../mobile-page/context';
 import { SchemaComponent } from '@nocobase/client';
 import { MobileNavigationBarTabs } from './MobileNavigationBarTabs';
+import { useStyles } from './styles';
 
 export const MobileNavigationBar: FC = () => {
   const { title } = useMobileTitle();
@@ -25,9 +25,11 @@ export const MobileNavigationBar: FC = () => {
     enableNavigationBarTitle = true,
   } = useMobilePage();
   const fieldSchema = useFieldSchema();
+  const { styles } = useStyles();
   if (!enableNavigationBar) return null;
   return (
-    <div style={{ borderBottom: '1px solid var(--adm-color-border)', position: 'sticky', top: 0 }}>
+    <div className={styles.mobileNavigationBar} style={{ borderBottom: enableNavigationBarTabs ? 'none' : 'auto' }}>
+      <SafeArea position="top" />
       <NavBar
         backArrow={false}
         back={null}

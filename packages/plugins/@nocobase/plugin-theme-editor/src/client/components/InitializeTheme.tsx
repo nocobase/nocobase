@@ -76,7 +76,11 @@ const InitializeTheme: React.FC = ({ children }) => {
   }, [api.auth, currentUser?.data?.data?.systemSettings?.themeId, data, run, setTheme, defaultTheme]);
 
   if (loading && !data) {
-    return <Spin />;
+    return (
+      <div style={{ textAlign: 'center', marginTop: 20 }}>
+        <Spin />
+      </div>
+    );
   }
 
   return (

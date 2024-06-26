@@ -14,6 +14,9 @@ import { mobileTabBarLinkInitializerItem } from './MobileTabBar.Link/initializer
 export const mobileTabBarInitializer = new SchemaInitializer({
   name: 'mobile:tab-bar',
   icon: 'PlusOutlined',
+  style: {
+    marginRight: 12,
+  },
   items: [mobileTabBarSchemaInitializerItem, mobileTabBarLinkInitializerItem],
 });
 

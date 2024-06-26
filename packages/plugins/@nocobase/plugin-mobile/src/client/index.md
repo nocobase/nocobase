@@ -281,10 +281,10 @@ export interface TabItem {
 
 ## 待确定的事或者有争议的事
 
-- 插件列表 presets 变更，怎么改？packages/presets/nocobase/src/server/index.ts
-- Settings 配置页面的样式和规划
-  - `basename` 是否需要可配置，如果不需要，则是一个链接，打开配置页面
-  - 如果需要配置，settings 配置页面按照原来的设计，还是独立的一个页面
+- [x] 插件列表 presets 变更，怎么改？packages/presets/nocobase/src/server/index.ts
+- [-] Settings 配置页面的样式和规划
+  - [x] `basename` 是否需要可配置，如果不需要，则是一个链接，打开配置页面
+  - [-] 如果需要配置，settings 配置页面按照原来的设计，还是独立的一个页面
 - TabBar 的需要设置吗？（目前看来没什么设置项，是否需要显示的问题，如果没注册到 TabBar 上则默认不显示，似乎是能满足要求的）
 - 目前设计图中的 TabBar 类型只完成了 2 种类型，其他的类型是否这次做？先不做
 - 将 `navigationBar title` 是否显示，放到了 Page Settings 中，而不是 `navigationBar` 的设置中，`navigationBar` 没有设置项
@@ -295,14 +295,15 @@ export interface TabItem {
   - 弹出层
 - Schema 的 name 到底是具体的名字，还是 Uid() 好
 - 删除 tabBar 的时候，是否关联的资源都删除，还是不用管？【尽量删】
-- loading 效果
 
 ## 待做任务
 
 - [x] settings 页面
-- tabBar 样式优化
-- navigationBar 样式优化
-- 主题色
+- [x] tabBar 样式优化
+- [x] navigationBar 样式优化
+- [x] 主题色
+- [x] loading 效果
+- MobileNavigationBar Actions
 - 多应用的支持
 - JS bridge
 - 多语言

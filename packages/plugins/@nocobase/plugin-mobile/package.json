@@ -8,6 +8,7 @@
     "@nocobase/test": "1.x"
   },
   "devDependencies": {
+    "antd-mobile": "^5.36.1",
     "react-device-detect": "2.2.3",
     "re-resizable": "6.6.0",
     "dumi-theme-mobile": "2.3.5"

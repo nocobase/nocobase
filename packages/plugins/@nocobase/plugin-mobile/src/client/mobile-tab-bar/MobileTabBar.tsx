@@ -17,7 +17,6 @@ import { MobileTabBarItem } from './MobileTabBar.Item';
 import { MobileTabBarSchema } from './MobileTabBar.Schema';
 import { MobileTabBarLink } from './MobileTabBar.Link';
 import { SchemaComponent } from '@nocobase/client';
-import { useMobileTitle } from '../mobile-providers';
 import { MobileTabBarInitializer } from './initializer';
 import { MobileTabBarSettings } from './settings';
 
@@ -35,7 +34,7 @@ export const MobileTabBar: FC & {
   return (
     <div className={styles.mobileTabBar}>
       <MobileTabBarSettings />
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1em' }}>
+      <div className={styles.mobileTabBarContent}>
         <div className={styles.mobileTabBarList}>
           {tabList.map((item) => {
             return <SchemaComponent key={item.id} schema={Object.assign({ name: item.id }, item.options)} />;
