@@ -167,9 +167,9 @@ export const insertToPopupSchema = (childSchema: ISchema, params: PopupParams, p
   }
 };
 
-export const PagePopups = () => {
+export const PagePopups = (props: { paramsList?: PopupParams[] }) => {
   const params = useParams();
-  const popupParams = getPopupParamsFromPath(params['*']);
+  const popupParams = props.paramsList || getPopupParamsFromPath(params['*']);
   const firstParams = popupParams[0];
   const { requestSchema } = useRequestSchema();
   const [rootSchema, setRootSchema] = useState<ISchema>(null);

@@ -66,7 +66,7 @@ export const storePopupParams = (popupUid: string, params: PopupParamsStorage) =
 
 export const getPopupParamsFromPath = _.memoize((path: string) => {
   const popupPaths = path.split('popups');
-  return popupPaths.map((popupPath) => {
+  return popupPaths.filter(Boolean).map((popupPath) => {
     const [popupUid, ...popupParams] = popupPath.split('/').filter(Boolean);
     const obj = {};
 

@@ -316,37 +316,9 @@ export class NocoBaseBuildInPlugin extends Plugin {
       path: '/admin/:name/tabs/:tabUid/popups/*',
       Component: PagePopups,
     });
-    this.router.add('admin.subpageWithoutAssociationAndTab', {
-      path: '/admin/subpages/:subPageUid/datasource/:datasource/filterbytk/:filterbytk/collection/:collection',
+    this.router.add('admin.subPage', {
+      path: '/admin/subpages/*',
       Component: SubPage,
-    });
-    this.router.add('admin.subpageWithoutAssociationAndTab.popup', {
-      path: '/admin/subpages/:subPageUid/datasource/:datasource/filterbytk/:filterbytk/collection/:collection/popups/*',
-      Component: PagePopups,
-    });
-    this.router.add('admin.subpageWithoutAssociation', {
-      path: '/admin/subpages/:subPageUid/datasource/:datasource/filterbytk/:filterbytk/collection/:collection/tab/:tab',
-      Component: SubPage,
-    });
-    this.router.add('admin.subpageWithoutAssociation.popup', {
-      path: '/admin/subpages/:subPageUid/datasource/:datasource/filterbytk/:filterbytk/collection/:collection/tab/:tab/popups/*',
-      Component: PagePopups,
-    });
-    this.router.add('admin.subpageWithAssociationWithoutTab', {
-      path: '/admin/subpages/:subPageUid/datasource/:datasource/filterbytk/:filterbytk/association/:association/sourceid/:sourceid',
-      Component: SubPage,
-    });
-    this.router.add('admin.subpageWithAssociationWithoutTab.popup', {
-      path: '/admin/subpages/:subPageUid/datasource/:datasource/filterbytk/:filterbytk/association/:association/sourceid/:sourceid/popups/*',
-      Component: PagePopups,
-    });
-    this.router.add('admin.subpageWithAssociation', {
-      path: '/admin/subpages/:subPageUid/datasource/:datasource/filterbytk/:filterbytk/association/:association/sourceid/:sourceid/tab/:tab',
-      Component: SubPage,
-    });
-    this.router.add('admin.subpageWithAssociation.popup', {
-      path: '/admin/subpages/:subPageUid/datasource/:datasource/filterbytk/:filterbytk/association/:association/sourceid/:sourceid/tab/:tab/popups/*',
-      Component: PagePopups,
     });
   }
 

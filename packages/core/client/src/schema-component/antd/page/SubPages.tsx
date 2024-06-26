@@ -8,8 +8,9 @@
  */
 
 import { useFieldSchema } from '@formily/react';
+import _ from 'lodash';
 import React, { FC, useCallback } from 'react';
-import { Outlet, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { useNavigateNoUpdate } from '../../../application/CustomRouterContextProvider';
 import {
   useCollectionParentRecord,
@@ -24,8 +25,9 @@ import { useDataSourceKey } from '../../../data-source/data-source/DataSourcePro
 import { VariablePopupRecordProvider } from '../../../modules/variable/variablesProvider/VariablePopupRecordProvider';
 import { RemoteSchemaComponent } from '../../core/RemoteSchemaComponent';
 import { TabsContextProvider } from '../tabs/context';
+import { PagePopups } from './PagePopups';
 import { useSubPagesStyle } from './SubPages.style';
-import { PopupParams } from './pagePopupUtils';
+import { PopupParams, getPopupParamsFromPath } from './pagePopupUtils';
 
 export interface SubPageParams extends Omit<PopupParams, 'popupuid'> {
   /** sub page uid */
@@ -78,13 +80,15 @@ const SubPageProvider: FC<{ params: SubPageParams }> = (props) => {
 
 export const SubPage = () => {
   const params: any = useParams();
+  const { subPageParams, popupParams } = getSubPageParamsAndPopupsParams(params['*']);
   const { styles } = useSubPagesStyle();
+
   return (
     <div className={styles.container}>
-      <SubPageProvider params={params}>
-        <RemoteSchemaComponent uid={params.subPageUid} onlyRenderProperties />
+      <SubPageProvider params={subPageParams}>
+        <RemoteSchemaComponent uid={subPageParams.subpageuid} onlyRenderProperties />
       </SubPageProvider>
-      <Outlet />
+      {_.isEmpty(popupParams) ? null : <PagePopups paramsList={popupParams} />}
     </div>
   );
 };
@@ -95,7 +99,7 @@ export const getSubPagePathFromParams = (params: SubPageParams) => {
     subpageuid,
     'datasource',
     datasource,
-    'filterbytk',
+    filterbytk && 'filterbytk',
     filterbytk,
     collection && 'collection',
     collection,
@@ -109,6 +113,20 @@ export const getSubPagePathFromParams = (params: SubPageParams) => {
 
   return `/subpages/${popupPath.join('/')}`;
 };
+
+export const getSubPageParamsFromPath = _.memoize((path: string) => {
+  const [subPageUid, ...subPageParams] = path.split('/').filter(Boolean);
+  const result = {};
+
+  for (let i = 0; i < subPageParams.length; i += 2) {
+    result[subPageParams[i]] = subPageParams[i + 1];
+  }
+
+  return {
+    subpageuid: subPageUid,
+    ...result,
+  } as SubPageParams;
+});
 
 export const useNavigateTOSubPage = () => {
   const navigate = useNavigateNoUpdate();
@@ -130,7 +148,7 @@ export const useNavigateTOSubPage = () => {
     const sourceId = parentRecord?.data?.[cm.getCollection(association?.split('.')[0])?.getPrimaryKey()];
     const params = {
       schema: fieldSchema,
-      subPageUid,
+      subpageuid: subPageUid,
       datasource: dataSourceKey,
       filterbytk: filterByTK,
       collection: association ? undefined : collection.name,
@@ -146,3 +164,11 @@ export const useNavigateTOSubPage = () => {
 
   return { navigateToSubPage };
 };
+
+export const getSubPageParamsAndPopupsParams = _.memoize((path: string) => {
+  const [pagePath, ...popupsPath] = path.split('/popups/');
+  const subPageParams = getSubPageParamsFromPath(pagePath);
+  const popupParams = getPopupParamsFromPath(popupsPath.join('/popups/'));
+
+  return { subPageParams, popupParams };
+});

@@ -17,7 +17,7 @@ describe('getPopupParamsFromPath', () => {
 
     expect(result).toEqual([
       {
-        popupUid: 'popupUid',
+        popupuid: 'popupUid',
         tab: 'tabValue',
         datasource: 'datasourceValue',
         filterbytk: 'filterValue',
@@ -35,7 +35,7 @@ describe('getPopupParamsFromPath', () => {
 
     expect(result).toEqual([
       {
-        popupUid: 'popupUid1',
+        popupuid: 'popupUid1',
         tab: 'tabValue1',
         datasource: 'datasourceValue1',
         filterbytk: 'filterValue1',
@@ -44,7 +44,7 @@ describe('getPopupParamsFromPath', () => {
         sourceid: 'sourceidValue1',
       },
       {
-        popupUid: 'popupUid2',
+        popupuid: 'popupUid2',
         tab: 'tabValue2',
         datasource: 'datasourceValue2',
         filterbytk: 'filterValue2',
@@ -59,7 +59,7 @@ describe('getPopupParamsFromPath', () => {
 describe('getPopupPathFromParams', () => {
   it('should generate the popup path from the parameters', () => {
     const params = {
-      popupUid: 'popupUid',
+      popupuid: 'popupUid',
       tab: 'tabValue',
       datasource: 'datasourceValue',
       filterbytk: 'filterValue',
@@ -76,7 +76,7 @@ describe('getPopupPathFromParams', () => {
 
   it('should handle optional parameters', () => {
     const params = {
-      popupUid: 'popupUid',
+      popupuid: 'popupUid',
       tab: 'tabValue',
       datasource: 'datasourceValue',
       filterbytk: 'filterValue',
