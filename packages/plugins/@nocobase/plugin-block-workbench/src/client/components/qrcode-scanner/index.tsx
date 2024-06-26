@@ -82,10 +82,11 @@ export const QRCodeScannerInner = (props) => {
             width: '40px',
             display: 'flex',
             flexDirection: 'column',
+            alignItems: 'center',
           }}
         >
           <FileImageOutlined style={imageBtnStyle} onClick={onImgBtnClick} />
-          相册
+          {t('Album')}
           <input
             ref={imgUploaderRef}
             type="file"
