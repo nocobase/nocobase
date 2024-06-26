@@ -32,7 +32,9 @@ const SchemaField = createSchemaField({
 });
 
 const CascadeSelect = connect((props) => {
-  const { data, mapOptions, onChange, value } = props;
+  const { loading: formLoading, data: formData } = useDataBlockRequest() || {};
+  const fieldSchema = useFieldSchema();
+  const { data, mapOptions, onChange } = props;
   const field: any = useField();
   const [selectedOptions, setSelectedOptions] = useState<{ key: string; children: any; value?: any }[]>([
     { key: undefined, children: [], value: null },
@@ -57,10 +59,10 @@ const CascadeSelect = connect((props) => {
     return '$includes';
   }, [targetField]);
   useEffect(() => {
-    if (value) {
-      const values = Array.isArray(value)
-        ? extractLastNonNullValueObjects(value?.filter((v) => v.value), true)
-        : transformNestedData(value);
+    if (formData?.data?.[fieldSchema.name]) {
+      const values = Array.isArray(formData?.data?.[fieldSchema.name])
+        ? extractLastNonNullValueObjects(formData?.data?.[fieldSchema.name]?.filter((v) => v.value), true)
+        : transformNestedData(formData?.data?.[fieldSchema.name]);
       const options = values?.map?.((v) => {
         return {
           key: v.parentId,
@@ -70,7 +72,7 @@ const CascadeSelect = connect((props) => {
       });
       setSelectedOptions(options);
     }
-  }, []);
+  }, [formLoading]);
   const mapOptionsToTags = useCallback(
     (options) => {
       try {
@@ -236,7 +238,6 @@ export const InternalCascadeSelect = observer(
     const { t } = useTranslation();
     const field: any = useField();
     const fieldSchema = useFieldSchema();
-    const { data, loading } = useDataBlockRequest() || {};
     useEffect(() => {
       const id = uid();
       selectForm.addEffects(id, () => {
@@ -312,9 +313,7 @@ export const InternalCascadeSelect = observer(
         },
       },
     };
-    if (loading) {
-      return <Spin />;
-    }
+
     return (
       <FormProvider form={selectForm}>
         {collectionField.interface === 'm2o' ? (
@@ -322,7 +321,7 @@ export const InternalCascadeSelect = observer(
             components={{ FormItem }}
             schema={{
               ...fieldSchema,
-              default: data?.data?.[fieldSchema.name],
+              default: field.value,
               title: '',
               'x-component': AssociationCascadeSelect,
               'x-component-props': {
