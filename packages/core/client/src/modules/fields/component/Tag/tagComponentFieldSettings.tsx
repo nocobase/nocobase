@@ -22,14 +22,12 @@ import { useCollectionField } from '../../../../data-source';
 const enableLink = {
   name: 'enableLink',
   type: 'switch',
-  useVisible() {
-    const field = useField();
-    return field.readPretty;
-  },
   useComponentProps() {
     const { t } = useTranslation();
     const field = useField<Field>();
-    const fieldSchema = useFieldSchema();
+    const { fieldSchema: tableColumnSchema } = useColumnSchema();
+    const schema = useFieldSchema();
+    const fieldSchema = tableColumnSchema || schema;
     const { dn } = useDesignable();
     return {
       title: t('Enable link'),

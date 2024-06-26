@@ -184,7 +184,7 @@ const quickCreate: any = {
           }, null);
 
           if (!hasAddNew) {
-            const addNewActionschema = {
+            const addNewActionSchema = {
               'x-action': 'create',
               'x-acl-action': 'create',
               title: "{{t('Add new')}}",
@@ -199,7 +199,7 @@ const quickCreate: any = {
                 component: 'CreateRecordAction',
               },
             };
-            insertAdjacent('afterBegin', addNewActionschema);
+            insertAdjacent('afterBegin', addNewActionSchema);
           }
         }
         const schema = {
@@ -364,6 +364,7 @@ export const selectComponentFieldSettings = new SchemaSettings({
       useVisible() {
         const isAssociationField = useIsAssociationField();
         const IsShowMultipleSwitch = useIsShowMultipleSwitch();
+        console.log(isAssociationField, IsShowMultipleSwitch());
         return isAssociationField && IsShowMultipleSwitch();
       },
     },

@@ -99,8 +99,9 @@ export class PresetNocoBase extends Plugin {
   async allPlugins() {
     return (
       await Promise.all(
-        this.getBuiltInPlugins().map(async (name) => {
-          const packageJson = await this.getPackageJson(name);
+        this.getBuiltInPlugins().map(async (pkgOrName) => {
+          const { name } = await PluginManager.parseName(pkgOrName);
+          const packageJson = await this.getPackageJson(pkgOrName);
           return {
             name,
             packageName: packageJson.name,
@@ -113,8 +114,8 @@ export class PresetNocoBase extends Plugin {
     ).concat(
       await Promise.all(
         this.getLocalPlugins().map(async (plugin) => {
-          const name = plugin[0];
-          const packageJson = await this.getPackageJson(name);
+          const { name } = await PluginManager.parseName(plugin[0]);
+          const packageJson = await this.getPackageJson(plugin[0]);
           return { name, packageName: packageJson.name, version: packageJson.version };
         }),
       ),
@@ -125,8 +126,9 @@ export class PresetNocoBase extends Plugin {
     const repository = this.app.db.getRepository<any>('applicationPlugins');
     const items = (await repository.find()).map((item) => item.name);
     const plugins = await Promise.all(
-      this.getBuiltInPlugins().map(async (name) => {
-        const packageJson = await this.getPackageJson(name);
+      this.getBuiltInPlugins().map(async (pkgOrName) => {
+        const { name } = await PluginManager.parseName(pkgOrName);
+        const packageJson = await this.getPackageJson(pkgOrName);
         return {
           name,
           packageName: packageJson.name,
@@ -143,8 +145,9 @@ export class PresetNocoBase extends Plugin {
           continue;
         }
       }
-      const name = plugin[0];
-      const packageJson = await this.getPackageJson(name);
+      const pkgOrName = plugin[0];
+      const { name } = await PluginManager.parseName(pkgOrName);
+      const packageJson = await this.getPackageJson(pkgOrName);
       plugins.push({ name, packageName: packageJson.name, version: packageJson.version });
     }
     return plugins;

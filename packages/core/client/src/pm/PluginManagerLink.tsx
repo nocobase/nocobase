@@ -9,7 +9,7 @@
 
 import { ApiOutlined, SettingOutlined } from '@ant-design/icons';
 import { Button, Dropdown, Tooltip } from 'antd';
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
 import { useApp } from '../application';
@@ -52,6 +52,13 @@ export const SettingsCenterDropdown = () => {
         };
       });
   }, [app, t]);
+
+  useEffect(() => {
+    return () => {
+      app.pluginSettingsManager.clearCache();
+    };
+  }, [app.pluginSettingsManager]);
+
   return (
     <Dropdown
       menu={{

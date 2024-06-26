@@ -11,9 +11,10 @@ import { CheckOutlined, EnvironmentOutlined, ExpandOutlined } from '@ant-design/
 import { RecursionField, Schema, useFieldSchema } from '@formily/react';
 import {
   ActionContextProvider,
-  DeclareVariable,
   RecordProvider,
+  VariablePopupRecordProvider,
   css,
+  getLabelFormatValue,
   useCollection,
   useCollectionManager_deprecated,
   useCollectionParentRecordData,
@@ -21,7 +22,6 @@ import {
   useCompile,
   useFilterAPI,
   useProps,
-  getLabelFormatValue,
 } from '@nocobase/client';
 import { useMemoizedFn } from 'ahooks';
 import { Button, Space } from 'antd';
@@ -394,14 +394,9 @@ const MapBlockDrawer = (props) => {
     schema && (
       <ActionContextProvider value={{ visible: !!record, setVisible }}>
         <RecordProvider record={record} parent={parentRecordData}>
-          <DeclareVariable
-            name="$nPopupRecord"
-            title={t('Current popup record')}
-            value={record}
-            collection={collection}
-          >
+          <VariablePopupRecordProvider recordData={record} collection={collection}>
             <RecursionField schema={schema} name={schema.name} />
-          </DeclareVariable>
+          </VariablePopupRecordProvider>
         </RecordProvider>
       </ActionContextProvider>
     )

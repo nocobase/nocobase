@@ -62,7 +62,7 @@ test.describe('form item & create form', () => {
           .hover();
       },
       supportedVariables: ['Constant', 'Current user', 'Current role', 'Date variables', 'Current form'],
-      unsupportedVariables: ['Current popup record'],
+      unsupportedVariables: ['Current popup record', 'Parent popup record'],
       inputConstantValue: async () => {
         await page.getByLabel('block-item-VariableInput-').getByPlaceholder('Select time').click();
         await page.getByText('Now').click();

@@ -51,10 +51,12 @@ export class PluginErrorHandlerServer extends Plugin {
       (err, ctx) => {
         ctx.body = {
           errors: err.errors.map((err) => {
+            const t = ctx.i18n.t;
+            const title = findFieldTitle(err.instance, err.path, t, ctx);
             return {
-              message: ctx.i18n.t(err.type, {
+              message: t(err.type, {
                 ns: this.i18nNs,
-                field: findFieldTitle(err.instance, err.path, ctx.i18n.t, ctx),
+                field: t(title, { ns: 'lm-collections' }),
               }),
             };
           }),

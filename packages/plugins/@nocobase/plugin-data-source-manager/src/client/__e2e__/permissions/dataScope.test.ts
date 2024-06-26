@@ -39,5 +39,6 @@ test.describe('data scope in action permission', () => {
     await expect(page.getByRole('menuitemcheckbox', { name: 'Current role' })).toBeVisible();
     await expect(page.getByRole('menuitemcheckbox', { name: 'Current form' })).not.toBeVisible();
     await expect(page.getByRole('menuitemcheckbox', { name: 'Current popup record' })).not.toBeVisible();
+    await expect(page.getByRole('menuitemcheckbox', { name: 'Parent popup record' })).not.toBeVisible();
   });
 });
