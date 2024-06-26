@@ -78,8 +78,11 @@ import { useFilterBlock } from '../filter-provider/FilterProvider';
 import { FlagProvider } from '../flag-provider';
 import { useGlobalTheme } from '../global-theme';
 import { useCollectMenuItem, useCollectMenuItems, useMenuItem } from '../hooks/useMenuItem';
-import { DeclareVariable } from '../modules/variable/DeclareVariable';
-import { useVariable } from '../modules/variable/useVariable';
+import {
+  VariablePopupRecordProvider,
+  useCurrentPopupRecord,
+  useParentPopupRecord,
+} from '../modules/variable/variablesProvider/VariablePopupRecordProvider';
 import { useRecord } from '../record-provider';
 import { ActionContextProvider } from '../schema-component/antd/action/context';
 import { SubFormProvider, useSubFormValue } from '../schema-component/antd/association-field/hooks';
@@ -747,8 +750,9 @@ export const SchemaSettingsModalItem: FC<SchemaSettingsModalItemProps> = (props)
   // 解决变量`当前对象`值在弹窗中丢失的问题
   const { formValue: subFormValue, collection: subFormCollection } = useSubFormValue();
 
-  // 解决变量`$nPopupRecord`值在弹窗中丢失的问题
-  const popupRecordVariable = useVariable('$nPopupRecord');
+  // 解决弹窗变量丢失的问题
+  const popupRecordVariable = useCurrentPopupRecord();
+  const parentPopupRecordVariable = useParentPopupRecord();
 
   if (hidden) {
     return null;
@@ -765,11 +769,13 @@ export const SchemaSettingsModalItem: FC<SchemaSettingsModalItemProps> = (props)
           () => {
             return (
               <BlockContext.Provider value={blockOptions}>
-                <DeclareVariable
-                  name="$nPopupRecord"
-                  title={popupRecordVariable.title}
-                  value={popupRecordVariable.value}
-                  collection={popupRecordVariable.collection}
+                <VariablePopupRecordProvider
+                  recordData={popupRecordVariable?.value}
+                  collection={popupRecordVariable?.collection}
+                  parent={{
+                    recordData: parentPopupRecordVariable?.value,
+                    collection: parentPopupRecordVariable?.collection,
+                  }}
                 >
                   <CollectionRecordProvider record={noRecord ? null : record}>
                     <FormBlockContext.Provider value={formCtx}>
@@ -818,7 +824,7 @@ export const SchemaSettingsModalItem: FC<SchemaSettingsModalItemProps> = (props)
                       </SubFormProvider>
                     </FormBlockContext.Provider>
                   </CollectionRecordProvider>
-                </DeclareVariable>
+                </VariablePopupRecordProvider>
               </BlockContext.Provider>
             );
           },

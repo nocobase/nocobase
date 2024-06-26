@@ -20,7 +20,7 @@ import { InternalNester } from './InternalNester';
 import { ReadPrettyInternalViewer } from './InternalViewer';
 import { useAssociationFieldContext } from './hooks';
 
-const InternaPopoverNesterContentCss = css`
+const InternalPopoverNesterContentCss = css`
   min-width: 600px;
   max-height: 440px;
   overflow: auto;
@@ -29,7 +29,7 @@ const InternaPopoverNesterContentCss = css`
   }
 `;
 
-export const InternaPopoverNester = observer(
+export const InternalPopoverNester = observer(
   (props) => {
     const { options } = useAssociationFieldContext();
     const [visible, setVisible] = useState(false);
@@ -45,7 +45,7 @@ export const InternaPopoverNester = observer(
       <div
         ref={ref}
         style={{ minWidth: '600px', maxWidth: '800px', maxHeight: '440px', overflow: 'auto' }}
-        className={InternaPopoverNesterContentCss}
+        className={InternalPopoverNesterContentCss}
       >
         <InternalNester {...nesterProps} />
       </div>
@@ -102,5 +102,5 @@ export const InternaPopoverNester = observer(
       </ActionContextProvider>
     );
   },
-  { displayName: 'InternaPopoverNester' },
+  { displayName: 'InternalPopoverNester' },
 );

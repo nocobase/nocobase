@@ -65,7 +65,7 @@ test.describe('form item & create form', () => {
           .hover();
       },
       supportedVariables: ['Constant', 'Current user', 'Current role', 'Date variables', 'Current form'],
-      unsupportedVariables: ['Current popup record'],
+      unsupportedVariables: ['Current popup record', 'Parent popup record'],
       inputConstantValue: async () => {
         // 默认应该是没有被选中的，点击后应该被选中
         await page.getByLabel('block-item-VariableInput-').getByRole('checkbox').click();

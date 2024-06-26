@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-gantt",
-  "version": "1.2.7-alpha",
+  "version": "1.2.8-alpha",
   "displayName": "Block: Gantt",
   "displayName.zh-CN": "区块：甘特图",
   "description": "Provides Gantt block.",
@@ -9,7 +9,7 @@
   "main": "dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/block-gantt",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/block-gantt",
-  "dependencies": {
+  "devDependencies": {
     "antd-style": "3.4.5"
   },
   "peerDependencies": {

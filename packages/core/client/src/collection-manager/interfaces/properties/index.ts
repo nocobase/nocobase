@@ -86,6 +86,17 @@ export const autoIncrement = {
   'x-decorator': 'FormItem',
   'x-component': 'Checkbox',
   'x-disabled': '{{ !createMainOnly }}',
+  'x-reactions': [
+    {
+      dependencies: ['primaryKey'],
+      when: '{{$deps[0]&&createMainOnly}}',
+      fulfill: {
+        state: {
+          value: true,
+        },
+      },
+    },
+  ],
 };
 
 export const autoFill = {

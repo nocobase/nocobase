@@ -64,7 +64,7 @@ test.describe('form item & create form', () => {
             .hover();
         })(page, 'percent'),
       supportedVariables: ['Constant', 'Current user', 'Current role', 'Date variables', 'Current form'],
-      unsupportedVariables: ['Current popup record'],
+      unsupportedVariables: ['Current popup record', 'Parent popup record'],
       inputConstantValue: async () => {
         await page.getByLabel('block-item-VariableInput-').getByRole('spinbutton').click();
         await page.getByLabel('block-item-VariableInput-').getByRole('spinbutton').fill('11.22');

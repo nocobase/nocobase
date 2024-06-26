@@ -63,7 +63,7 @@ test.describe('form item & create form', () => {
             .hover();
         })(page, 'icon'),
       supportedVariables: ['Constant', 'Current user', 'Current role', 'Date variables', 'Current form'],
-      unsupportedVariables: ['Current popup record'],
+      unsupportedVariables: ['Current popup record', 'Parent popup record'],
       inputConstantValue: async () => {
         await page.getByLabel('block-item-VariableInput-').getByRole('button', { name: 'Select icon' }).click();
         await page.getByLabel('account-book').locator('svg').click();
