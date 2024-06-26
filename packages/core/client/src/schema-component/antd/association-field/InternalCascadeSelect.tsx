@@ -9,7 +9,7 @@
 
 import { ArrayItems, FormItem } from '@formily/antd-v5';
 import { createForm, onFormValuesChange } from '@formily/core';
-import { FormProvider, connect, createSchemaField, observer, useField, useFieldSchema } from '@formily/react';
+import { FormProvider, connect, createSchemaField, observer, useField, useFieldSchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
 import { Select as AntdSelect, Input, Space, Spin, Tag } from 'antd';
 import dayjs from 'dayjs';
@@ -19,6 +19,7 @@ import { useAPIClient, useCollectionManager_deprecated } from '../../../';
 import { mergeFilter } from '../../../filter-provider/utils';
 import { SchemaComponent, useCompile } from '../../../schema-component';
 import useServiceOptions, { useAssociationFieldContext } from './hooks';
+import { useDataBlockRequest } from '../../../data-source';
 
 const EMPTY = 'N/A';
 const SchemaField = createSchemaField({
@@ -32,6 +33,7 @@ const SchemaField = createSchemaField({
 
 const CascadeSelect = connect((props) => {
   const { data, mapOptions, onChange, value } = props;
+  const field: any = useField();
   const [selectedOptions, setSelectedOptions] = useState<{ key: string; children: any; value?: any }[]>([
     { key: undefined, children: [], value: null },
   ]);
@@ -54,7 +56,6 @@ const CascadeSelect = connect((props) => {
     }
     return '$includes';
   }, [targetField]);
-  const field: any = useField();
   useEffect(() => {
     if (value) {
       const values = Array.isArray(value)
@@ -235,6 +236,7 @@ export const InternalCascadeSelect = observer(
     const { t } = useTranslation();
     const field: any = useField();
     const fieldSchema = useFieldSchema();
+    const { data, loading } = useDataBlockRequest() || {};
     useEffect(() => {
       const id = uid();
       selectForm.addEffects(id, () => {
@@ -310,6 +312,9 @@ export const InternalCascadeSelect = observer(
         },
       },
     };
+    if (loading) {
+      return <Spin />;
+    }
     return (
       <FormProvider form={selectForm}>
         {collectionField.interface === 'm2o' ? (
@@ -317,7 +322,7 @@ export const InternalCascadeSelect = observer(
             components={{ FormItem }}
             schema={{
               ...fieldSchema,
-              default: field.value,
+              default: data?.data?.[fieldSchema.name],
               title: '',
               'x-component': AssociationCascadeSelect,
               'x-component-props': {
