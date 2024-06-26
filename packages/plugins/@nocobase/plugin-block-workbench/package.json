@@ -1,6 +1,10 @@
 {
   "name": "@nocobase/plugin-block-workbench",
   "version": "1.2.8-alpha",
+  "displayName": "Block: Workbench",
+  "displayName.zh-CN": "区块：工作台",
+  "description": "Add buttons for actions, links, etc. in the workbench block to quickly initiate actions and jump pages.",
+  "description.zh-CN": "在工作台区块中添加操作、链接等按钮，以便快捷发起操作和跳转页面。",
   "main": "dist/server/index.js",
   "peerDependencies": {
     "@nocobase/client": "1.x",
@@ -10,5 +14,8 @@
   "devDependencies": {
     "html5-qrcode": "^2.3.8",
     "react-router-dom": "^6.x"
-  }
+  },
+  "keywords": [
+    "Blocks"
+  ]
 }
