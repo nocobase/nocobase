@@ -19,6 +19,7 @@ import { useAPIClient, useCollectionManager_deprecated } from '../../../';
 import { mergeFilter } from '../../../filter-provider/utils';
 import { SchemaComponent, useCompile } from '../../../schema-component';
 import useServiceOptions, { useAssociationFieldContext } from './hooks';
+import { useDataBlockRequest } from '../../../data-source';
 
 const EMPTY = 'N/A';
 const SchemaField = createSchemaField({
@@ -235,6 +236,8 @@ export const InternalCascadeSelect = observer(
     const { t } = useTranslation();
     const field: any = useField();
     const fieldSchema = useFieldSchema();
+    const { loading, data: formData } = useDataBlockRequest() || {};
+    const initialValue = formData?.data?.[fieldSchema.name];
     useEffect(() => {
       const id = uid();
       selectForm.addEffects(id, () => {
@@ -243,7 +246,6 @@ export const InternalCascadeSelect = observer(
             const value = extractLastNonNullValueObjects(form.values?.[fieldSchema.name]);
             setTimeout(() => {
               form.setValuesIn(fieldSchema.name, value);
-              props.onChange(value);
               field.value = value;
             });
           } else {
@@ -252,7 +254,6 @@ export const InternalCascadeSelect = observer(
             );
             setTimeout(() => {
               field.value = value;
-              props.onChange(value);
             });
           }
         });
@@ -261,12 +262,14 @@ export const InternalCascadeSelect = observer(
         selectForm.removeEffects(id);
       };
     }, []);
+
     const toValue = () => {
-      if (Array.isArray(field.value) && field.value.length > 0) {
-        return field.value;
+      if (Array.isArray(initialValue) && initialValue.length > 0) {
+        return initialValue;
       }
       return [{}];
     };
+
     const defaultValue = toValue();
     const schema = {
       type: 'object',
@@ -310,25 +313,28 @@ export const InternalCascadeSelect = observer(
         },
       },
     };
+
     return (
-      <FormProvider form={selectForm}>
-        {collectionField.interface === 'm2o' ? (
-          <SchemaComponent
-            components={{ FormItem }}
-            schema={{
-              ...fieldSchema,
-              default: field.value,
-              title: '',
-              'x-component': AssociationCascadeSelect,
-              'x-component-props': {
-                ...props,
-              },
-            }}
-          />
-        ) : (
-          <SchemaField schema={schema} />
-        )}
-      </FormProvider>
+      !loading && (
+        <FormProvider form={selectForm}>
+          {collectionField.interface === 'm2o' ? (
+            <SchemaComponent
+              components={{ FormItem }}
+              schema={{
+                ...fieldSchema,
+                default: initialValue,
+                title: '',
+                'x-component': AssociationCascadeSelect,
+                'x-component-props': {
+                  ...props,
+                },
+              }}
+            />
+          ) : (
+            <SchemaField schema={schema} />
+          )}
+        </FormProvider>
+      )
     );
   },
   { displayName: 'InternalCascadeSelect' },
