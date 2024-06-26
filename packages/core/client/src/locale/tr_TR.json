@@ -455,6 +455,7 @@
   "Current collection": "Seçili koleksiyon",
   "Other collections": "Diğer koleksiyonlar",
   "Current popup record": "Açılır pencere kaydı",
+  "Parent popup record": "Üst açılır pencere kaydı",
   "Associated records": "İlişkili kayıtlar",
   "Parent record": "Üst kayıt",
   "Popup close method": "Açılır pencere kapatma metodu",
