@@ -39,9 +39,6 @@ describe('createCreateFormBlockUISchema', () => {
                 "x-component": "ActionBar",
                 "x-component-props": {
                   "layout": "one-column",
-                  "style": {
-                    "marginTop": "var(--nb-spacing)",
-                  },
                 },
                 "x-initializer": "createForm:configureActions",
               },
