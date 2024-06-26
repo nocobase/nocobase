@@ -9,7 +9,6 @@
 
 import { useFieldSchema } from '@formily/react';
 import React, { FC, useCallback } from 'react';
-import { useTranslation } from 'react-i18next';
 import { Outlet, useParams } from 'react-router-dom';
 import { useNavigateNoUpdate } from '../../../application/CustomRouterContextProvider';
 import {
@@ -22,7 +21,7 @@ import { useCollectionManager } from '../../../data-source/collection/Collection
 import { useCollection } from '../../../data-source/collection/CollectionProvider';
 import { DataBlockProvider } from '../../../data-source/data-block/DataBlockProvider';
 import { useDataSourceKey } from '../../../data-source/data-source/DataSourceProvider';
-import { DeclareVariable } from '../../../modules/variable/DeclareVariable';
+import { VariablePopupRecordProvider } from '../../../modules/variable/variablesProvider/VariablePopupRecordProvider';
 import { RemoteSchemaComponent } from '../../core/RemoteSchemaComponent';
 import { useSubPagesStyle } from './SubPages.style';
 import { TabsPropsProvider } from './TabsPropsProvider';
@@ -33,13 +32,12 @@ export interface SubPageParams extends Omit<PopupParams, 'popupUid'> {
 }
 
 const SubPageVariablesProvider: FC = (props) => {
-  const { t } = useTranslation();
   const collection = useCollection();
   const recordData = useCollectionRecordData();
   return (
-    <DeclareVariable name="$nPopupRecord" title={t('Current popup record')} value={recordData} collection={collection}>
+    <VariablePopupRecordProvider recordData={recordData} collection={collection}>
       {props.children}
-    </DeclareVariable>
+    </VariablePopupRecordProvider>
   );
 };
 
