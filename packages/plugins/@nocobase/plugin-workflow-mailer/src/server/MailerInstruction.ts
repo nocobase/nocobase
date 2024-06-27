@@ -21,6 +21,7 @@ export default class extends Instruction {
       to = [],
       cc,
       bcc,
+      subject,
       html,
       text,
       ignoreFail,
@@ -36,6 +37,7 @@ export default class extends Instruction {
     const payload = {
       ...options,
       ...(contentType === 'html' ? { html } : { text }),
+      subject: subject?.trim(),
       to: to
         .flat()
         .map((item) => item?.trim())
