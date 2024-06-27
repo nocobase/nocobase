@@ -18,7 +18,11 @@ export const useStyles = genStyleHook('nb-action-drawer', (token) => {
       '&.reset': {
         '&.nb-action-popup': {
           '.ant-drawer-header': { display: 'none' },
-          '.ant-drawer-body': { paddingTop: token.paddingContentVerticalLG, backgroundColor: token.colorBgLayout },
+          '.ant-drawer-body': {
+            paddingTop: token.paddingContentVerticalLG,
+            backgroundColor: token.colorBgLayout,
+            paddingBottom: 0,
+          },
         },
         '&.nb-record-picker-selector': {
           '.ant-drawer-wrapper-body': {
@@ -55,10 +59,10 @@ export const useStyles = genStyleHook('nb-action-drawer', (token) => {
         marginRight: token.paddingPageHorizontal - token.paddingLG,
       },
 
-      '.ant-tabs-content-holder': {
-        padding: `${token.paddingPopupVertical}px ${token.paddingPopupHorizontal}px`,
-        margin: `-${token.size}px -${token.paddingLG}px -${token.paddingLG}px`,
-      },
+      // '.ant-tabs-content-holder': {
+      //   padding: `${token.paddingPopupVertical}px ${token.paddingPopupHorizontal}px 0`,
+      //   margin: `-${token.paddingPopupVertical}px -${token.paddingPopupHorizontal}px`,
+      // },
     },
   };
 });

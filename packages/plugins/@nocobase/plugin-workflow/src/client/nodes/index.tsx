@@ -11,7 +11,7 @@ import { CloseOutlined, DeleteOutlined } from '@ant-design/icons';
 import { createForm } from '@formily/core';
 import { toJS } from '@formily/reactive';
 import { ISchema, useForm } from '@formily/react';
-import { App, Button, Dropdown, Input, Tag, Tooltip, message } from 'antd';
+import { Alert, App, Button, Dropdown, Input, Tag, Tooltip, message } from 'antd';
 import { cloneDeep, get } from 'lodash';
 import React, { useCallback, useContext, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -160,7 +160,7 @@ export function Node({ data }) {
   const { styles } = useStyles();
   const { getAriaLabel } = useGetAriaLabelOfAddButton(data);
   const workflowPlugin = usePlugin(WorkflowPlugin);
-  const { Component = NodeDefaultView, end } = workflowPlugin.instructions.get(data.type);
+  const { Component = NodeDefaultView, end } = workflowPlugin.instructions.get(data.type) ?? {};
   return (
     <NodeContext.Provider value={data}>
       <div className={cx(styles.nodeBlockClass)}>
@@ -308,9 +308,8 @@ export function NodeDefaultView(props) {
   const workflowPlugin = usePlugin(WorkflowPlugin);
   const instruction = workflowPlugin.instructions.get(data.type);
   const detailText = workflow.executed ? '{{t("View")}}' : '{{t("Configure")}}';
-  const typeTitle = compile(instruction.title);
 
-  const [editingTitle, setEditingTitle] = useState<string>(data.title ?? typeTitle);
+  const [editingTitle, setEditingTitle] = useState<string>(data.title);
   const [editingConfig, setEditingConfig] = useState(false);
   const [formValueChanged, setFormValueChanged] = useState(false);
 
@@ -334,7 +333,7 @@ export function NodeDefaultView(props) {
 
   const onChangeTitle = useCallback(
     async function (next) {
-      const title = next || typeTitle;
+      const title = next || compile(instruction?.title);
       setEditingTitle(title);
       if (title === data.title) {
         return;
@@ -347,7 +346,7 @@ export function NodeDefaultView(props) {
       });
       refresh();
     },
-    [data],
+    [data, instruction],
   );
 
   const onOpenDrawer = useCallback(function (ev) {
@@ -364,6 +363,35 @@ export function NodeDefaultView(props) {
       }
     }
   }, []);
+
+  if (!instruction) {
+    return (
+      <div className={cx(styles.nodeClass, `workflow-node-type-${data.type}`)}>
+        <Tooltip
+          title={lang(
+            'Node with unknown type will cause error. Please delete it or check plugin which provide this type.',
+          )}
+        >
+          <div
+            role="button"
+            aria-label={`_untyped-${editingTitle}`}
+            className={cx(styles.nodeCardClass, 'invalid')}
+            onClick={onOpenDrawer}
+          >
+            <div className={cx(styles.nodeMetaClass, 'workflow-node-meta')}>
+              <Tag color="error">{lang('Unknown node')}</Tag>
+              <span className="workflow-node-id">{data.id}</span>
+            </div>
+            <Input.TextArea value={editingTitle} disabled autoSize />
+            <RemoveButton />
+            <JobButton />
+          </div>
+        </Tooltip>
+      </div>
+    );
+  }
+
+  const typeTitle = compile(instruction.title);
 
   return (
     <div className={cx(styles.nodeClass, `workflow-node-type-${data.type}`)}>

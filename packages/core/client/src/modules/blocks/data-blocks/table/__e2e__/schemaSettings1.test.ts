@@ -373,7 +373,12 @@ test.describe('table block schema settings', () => {
         .dragTo(page.getByLabel('block-item-CardItem-roles-table'));
 
       // 3. 创建的详情区块应该立即出现在 Connect data blocks 的下拉菜单中
-      await page.getByLabel('block-item-CardItem-roles-table').hover();
+      await page.getByLabel('block-item-CardItem-roles-table').hover({
+        position: {
+          x: 10,
+          y: 10,
+        },
+      });
       await page.getByLabel('designer-schema-settings-CardItem-blockSettings:table-roles').hover();
       await page.getByRole('menuitem', { name: 'Connect data blocks right' }).hover();
       await page.getByRole('menuitem', { name: 'Roles #' }).click();

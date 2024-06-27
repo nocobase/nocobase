@@ -127,10 +127,9 @@ export default class ScheduleTrigger {
   }
 
   async reload() {
-    const WorkflowRepo = this.workflow.app.db.getRepository('workflows');
-    const workflows = await WorkflowRepo.find({
-      filter: { enabled: true, type: 'schedule', 'config.mode': SCHEDULE_MODE.DATE_FIELD },
-    });
+    const workflows = Array.from(this.workflow.enabledCache.values()).filter(
+      (item) => item.type === 'schedule' && item.config.mode === SCHEDULE_MODE.DATE_FIELD,
+    );
 
     // NOTE: clear cached jobs in last cycle
     this.cache = new Map();
