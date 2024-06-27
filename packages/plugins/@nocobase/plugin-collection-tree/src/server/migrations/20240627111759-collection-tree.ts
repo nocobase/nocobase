@@ -51,6 +51,15 @@ export default class extends Migration {
       const treeExistsInDb = await this.app.db.getCollection(name).existsInDb();
       if (!treeExistsInDb) {
         await this.db.getCollection(name).sync();
+        this.db.collection({
+          name: treeCollection.name,
+          autoGenId: false,
+          timestamps: false,
+          fields: [
+            { type: 'integer', name: 'id' },
+            { type: 'integer', name: 'parentId' },
+          ],
+        });
         const existDatas = await this.app.db.getRepository(treeCollection.name).find({});
         for (const data of existDatas) {
           let path = `/${data.dataValues?.id}`;
