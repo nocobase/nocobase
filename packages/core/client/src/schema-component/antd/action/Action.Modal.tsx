@@ -12,12 +12,12 @@ import { observer, RecursionField, useField, useFieldSchema } from '@formily/rea
 import { Modal, ModalProps } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
+import { ErrorBoundary, FallbackProps } from 'react-error-boundary';
 import { useToken } from '../../../style';
+import { ErrorFallback } from '../error-fallback';
+import { useActionContext } from './hooks';
 import { useSetAriaLabelForModal } from './hooks/useSetAriaLabelForModal';
 import { ActionDrawerProps, ComposedActionDrawer, OpenSize } from './types';
-import { useActionContext } from './hooks';
-import { ErrorBoundary, FallbackProps } from 'react-error-boundary';
-import { ErrorFallback } from '../error-fallback';
 
 const ModalErrorFallback: React.FC<FallbackProps> = (props) => {
   const { visible, setVisible } = useActionContext();
@@ -77,6 +77,7 @@ export const InternalActionModal: React.FC<ActionDrawerProps<ModalProps>> = obse
               .ant-modal-content {
                 background: var(--nb-box-bg);
                 border: 1px solid rgba(255, 255, 255, 0.1);
+                padding-bottom: 0;
               }
 
               // 这里的样式是为了保证页面 tabs 标签下面的分割线和页面内容对齐（页面内边距可以通过主题编辑器调节）
@@ -85,11 +86,6 @@ export const InternalActionModal: React.FC<ActionDrawerProps<ModalProps>> = obse
                 padding-right: ${token.paddingLG - token.paddingPageHorizontal}px;
                 margin-left: ${token.paddingPageHorizontal - token.paddingLG}px;
                 margin-right: ${token.paddingPageHorizontal - token.paddingLG}px;
-              }
-
-              .ant-tabs-content-holder {
-                padding: ${token.paddingPopupVertical}px ${token.paddingPopupHorizontal}px;
-                margin: -${token.size}px -${token.paddingLG}px -${token.paddingLG}px;
               }
 
               .ant-modal-footer {

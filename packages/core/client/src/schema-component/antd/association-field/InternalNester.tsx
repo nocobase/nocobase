@@ -9,11 +9,11 @@
 
 import { css, cx } from '@emotion/css';
 import { FormLayout } from '@formily/antd-v5';
-import { RecursionField, useField, useFieldSchema, observer } from '@formily/react';
+import { RecursionField, observer, useField, useFieldSchema } from '@formily/react';
 import React, { useEffect } from 'react';
+import { ACLCollectionProvider, useACLActionParamsContext } from '../../../acl';
 import { CollectionProvider_deprecated } from '../../../collection-manager';
 import { useAssociationFieldContext, useInsertSchema } from './hooks';
-import { ACLCollectionProvider, useACLActionParamsContext } from '../../../acl';
 import schema from './schema';
 
 const InternalNesterCss = css`
@@ -61,7 +61,6 @@ export const InternalNester = observer(
                 css`
                   .nb-grid-container {
                     height: 100% !important;
-                    margin-bottom: 0px;
                   }
                 `,
               )}
