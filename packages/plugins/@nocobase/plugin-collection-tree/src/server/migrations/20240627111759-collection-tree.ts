@@ -22,14 +22,18 @@ export default class extends Migration {
       },
     });
 
-    const getTreePath = async (model: Model, path: string) => {
+    const getTreePath = async (model: Model, path: string, collectionName: string) => {
       if (model.dataValues?.parentId !== null) {
-        const parent = await model.constructor.findByPk(model.dataValues?.parentId);
+        const parent = await this.app.db.getRepository(collectionName).findOne({
+          filter: {
+            id: model.dataValues?.parentId,
+          },
+        });
         if (parent) {
           path = `/${parent.dataValues?.id}${path}`;
         }
         if (parent.dataValues?.parentId !== null) {
-          path = await getTreePath(parent, path);
+          path = await getTreePath(parent, path, collectionName);
         }
       }
       return path;
@@ -63,7 +67,7 @@ export default class extends Migration {
         const existDatas = await this.app.db.getRepository(treeCollection.name).find({});
         for (const data of existDatas) {
           let path = `/${data.dataValues?.id}`;
-          path = await getTreePath(data, path);
+          path = await getTreePath(data, path, treeCollection.name);
           await this.app.db.getRepository(name).create({
             values: {
               nodePk: data.dataValues?.id,
