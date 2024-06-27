@@ -67,7 +67,7 @@ export function useParsedFilter({ filterOption }: { filterOption: any }) {
       });
       return flat;
     }, run);
-  }, [JSON.stringify(filterOption), parseVariableLoading]);
+  }, [JSON.stringify(filterOption), parseVariableLoading, parseFilter, findVariable]);
 
   return {
     /** 数据范围的筛选参数 */
