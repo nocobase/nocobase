@@ -10,7 +10,7 @@
 import { useForm, useField } from '@formily/react';
 import { action } from '@formily/reactive';
 import { uid } from '@formily/shared';
-import React, { useContext, useMemo, useState } from 'react';
+import React, { useContext, useMemo, useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router-dom';
 import {
@@ -96,25 +96,12 @@ export const ConfigurationTable = () => {
   const { name } = useParams();
   const data = useContext(CollectionCategroriesContext);
   const api = useAPIClient();
-  const resource = api.resource('dbViews');
   const compile = useCompile();
   const loadCategories = async () => {
     return data.data.map((item: any) => ({
       label: compile(item.name),
       value: item.id,
     }));
-  };
-
-  const loadDBViews = async () => {
-    return resource.list().then(({ data }) => {
-      return data?.data?.map((item: any) => {
-        const schema = item.schema;
-        return {
-          label: schema ? `${schema}.${compile(item.name)}` : item.name,
-          value: schema ? `${schema}_${item.name}` : item.name,
-        };
-      });
-    });
   };
 
   const loadStorages = async () => {
@@ -164,8 +151,27 @@ export const ConfigurationTable = () => {
   const collectionSchema = useMemo(() => {
     return getCollectionSchema(name);
   }, [name]);
+
+  const resource = api.resource('dataSources', name);
+  const [dataSourceData, setDataSourceData] = useState({});
+
+  useEffect(() => {
+    try {
+      // eslint-disable-next-line promise/catch-or-return
+      resource
+        .get({
+          filterByTk: name,
+        })
+        .then((data) => {
+          setDataSourceData(data?.data);
+        });
+    } catch (error) {
+      console.log(error);
+    }
+  }, [name]);
+
   return (
-    <SchemaComponentContext.Provider value={{ ...ctx, designable: false }}>
+    <SchemaComponentContext.Provider value={{ ...ctx, designable: false, dataSourceData }}>
       <SchemaComponent
         schema={collectionSchema}
         components={{
@@ -182,7 +188,6 @@ export const ConfigurationTable = () => {
           useSelectedRowKeys,
           useAsyncDataSource,
           loadCategories,
-          loadDBViews,
           loadStorages,
           useNewId,
           useCancelAction,
