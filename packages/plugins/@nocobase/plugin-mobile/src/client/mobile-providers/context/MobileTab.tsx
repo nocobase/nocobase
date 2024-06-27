@@ -13,7 +13,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 
 import { PluginMobileClient } from '../../index';
 import { useMobileTitle } from './MobileTitle';
-import { ISchema, useAPIClient, usePlugin, useRequest } from '@nocobase/client';
+import { APIClient, ISchema, useAPIClient, usePlugin, useRequest } from '@nocobase/client';
 import { IResource } from '@nocobase/sdk';
 
 export interface TabBarItem {
@@ -38,6 +38,7 @@ export interface MobileTabContextValue {
   schemaResource: IResource;
   activeTabBarItem?: TabBarItem;
   activeTabItem?: TabItem;
+  api: APIClient;
 }
 
 export const MobileTabContext = createContext<MobileTabContextValue>(null);
@@ -123,7 +124,9 @@ export const MobileTabContextProvider = ({ children }) => {
     );
   }
   return (
-    <MobileTabContext.Provider value={{ activeTabBarItem, activeTabItem, tabList, refresh, resource, schemaResource }}>
+    <MobileTabContext.Provider
+      value={{ api, activeTabBarItem, activeTabItem, tabList, refresh, resource, schemaResource }}
+    >
       {children}
     </MobileTabContext.Provider>
   );

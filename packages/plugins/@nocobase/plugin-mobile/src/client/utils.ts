@@ -7,6 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from './MobileTabBar.Link';
-export * from './settings';
-export * from './schema';
+export function isInnerLink(url: string) {
+  return url.startsWith('/') && !url.startsWith('//');
+}

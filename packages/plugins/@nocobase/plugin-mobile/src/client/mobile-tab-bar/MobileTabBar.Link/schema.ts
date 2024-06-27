@@ -7,14 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export interface GetMobileTabBarSchemaItemDataOptions {
-  pageSchemaUid: string;
+export interface GetMobileTabBarLinkItemDataOptions {
   url?: string;
   values: any;
 }
 
-export function getMobileTabBarSchemaItemData(options: GetMobileTabBarSchemaItemDataOptions) {
-  const { pageSchemaUid, url, values } = options;
+export function getMobileTabBarLinkItemData(options: GetMobileTabBarLinkItemDataOptions) {
+  const { url, values } = options;
   return {
     url,
     parentId: null,
@@ -24,11 +23,10 @@ export function getMobileTabBarSchemaItemData(options: GetMobileTabBarSchemaItem
       'x-toolbar-props': {
         draggable: false,
       },
-      'x-settings': 'mobile:tab-bar:schema',
-      'x-component': 'MobileTabBar.Schema',
+      'x-settings': 'mobile:tab-bar:link',
+      'x-component': 'MobileTabBar.Link',
       'x-component-props': {
         ...values,
-        pageSchemaUid: pageSchemaUid,
       },
     },
   };

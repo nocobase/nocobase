@@ -14,31 +14,7 @@ import { generatePluginTranslationTemplate } from '../../locale';
 import { getMobileTabBarItemSchemaFields } from '../MobileTabBar.Item';
 import { useMobileTabContext } from '../../mobile-providers';
 import { editLinkSchema } from './settings';
-
-export interface GetMobileTabBarItemDataOptions {
-  url?: string;
-  values: any;
-}
-
-export function getMobileTabBarItemData(options: GetMobileTabBarItemDataOptions) {
-  const { url, values } = options;
-  return {
-    url,
-    parentId: null,
-    options: {
-      type: 'void',
-      'x-decorator': 'BlockItem',
-      'x-toolbar-props': {
-        draggable: false,
-      },
-      'x-settings': 'mobile:tab-bar:link',
-      'x-component': 'MobileTabBar.Link',
-      'x-component-props': {
-        ...values,
-      },
-    },
-  };
-}
+import { getMobileTabBarLinkItemData } from './schema';
 
 export const mobileTabBarLinkInitializerItem: SchemaInitializerItemActionModalType = {
   name: 'link',
@@ -64,7 +40,7 @@ export const mobileTabBarLinkInitializerItem: SchemaInitializerItemActionModalTy
 
         // 先创建 tab item
         await resource.create({
-          values: getMobileTabBarItemData({ url: isRelative ? values.link : undefined, values }),
+          values: getMobileTabBarLinkItemData({ url: isRelative ? values.link : undefined, values }),
         });
 
         // 刷新 tabs

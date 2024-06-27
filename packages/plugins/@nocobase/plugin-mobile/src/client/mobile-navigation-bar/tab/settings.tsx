@@ -27,7 +27,7 @@ export const remove = createTextSettingsItem({
   useTextClick: () => {
     const { t } = usePluginTranslation();
     const { tab } = useSchemaToolbar();
-    const { refresh, resource, activeTabBarItem } = useMobileTabContext();
+    const { refresh, resource, activeTabBarItem, api } = useMobileTabContext();
     const navigate = useNavigate();
     const { modal, message } = App.useApp();
     return async () => {
@@ -35,8 +35,13 @@ export const remove = createTextSettingsItem({
         title: t('Delete Tab'),
         content: t('Are you sure you want to delete it?'),
         onOk: async () => {
+          // 删除 tab
           await resource.destroy({ filterByTk: tab.id });
           await refresh();
+
+          // 删除 schema
+          await api.request({ url: `/uiSchemas:remove/${tab.options.tabSchemaUid}`, method: 'delete' });
+
           // 跳转到第一个 tab
           const url = activeTabBarItem.children.find((item) => item.id !== tab.id)?.url;
           navigate(url);

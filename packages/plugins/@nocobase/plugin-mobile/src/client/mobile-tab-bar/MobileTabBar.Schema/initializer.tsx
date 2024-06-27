@@ -14,7 +14,7 @@ import { uid } from '@formily/shared';
 import { generatePluginTranslationTemplate } from '../../locale';
 import { getMobileTabBarItemSchemaFields } from '../MobileTabBar.Item';
 import { useMobileTabContext } from '../../mobile-providers';
-import { getMobileTabBarItemData } from './schema';
+import { getMobileTabBarSchemaItemData } from './schema';
 import { getMobilePageSchema } from '../../mobile-schema-page';
 import { getMobileNavigationBarTabData } from '../../mobile-navigation-bar';
 
@@ -40,7 +40,7 @@ export const mobileTabBarSchemaInitializerItem: SchemaInitializerItemActionModal
 
         // 先创建 TabBar item
         const { data } = await resource.create({
-          values: getMobileTabBarItemData({ url, pageSchemaUid: pageSchemaUId, values }),
+          values: getMobileTabBarSchemaItemData({ url, pageSchemaUid: pageSchemaUId, values }),
         });
 
         // 创建空页面

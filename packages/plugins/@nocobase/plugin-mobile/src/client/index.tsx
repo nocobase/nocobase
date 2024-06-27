@@ -33,6 +33,7 @@ import {
   mobileTabBarSettings,
 } from './mobile-tab-bar';
 import { generatePluginTranslationTemplate } from './locale';
+import { MobileHomePage } from './mobile-home-page';
 export * from './mobile-providers';
 
 const mobilePath = '/m';
@@ -99,7 +100,7 @@ export class PluginMobileClient extends Plugin {
   }
 
   addComponents() {
-    this.app.addComponents({ MobilePage, MobileNavigationBar, MobileContent, MobileTabBar });
+    this.app.addComponents({ MobilePage, MobileNavigationBar, MobileHomePage, MobileContent, MobileTabBar });
   }
 
   setMobileRouter() {
@@ -119,7 +120,7 @@ export class PluginMobileClient extends Plugin {
 
     this.mobileRouter.add('mobile.home', {
       path: '/',
-      Component: 'MobileLayout',
+      Component: 'MobileHomePage',
     });
 
     // 跳转到主应用的登录页

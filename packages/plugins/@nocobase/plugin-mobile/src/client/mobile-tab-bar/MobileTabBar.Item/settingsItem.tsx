@@ -39,7 +39,7 @@ export const removeTabItemSettingsItem = createTextSettingsItem({
   useTextClick: () => {
     const schema = useFieldSchema();
     const id = Number(schema.toJSON().name);
-    const { refresh, tabList, resource } = useMobileTabContext();
+    const { refresh, tabList, resource, api } = useMobileTabContext();
     const navigate = useNavigate();
     const { t } = usePluginTranslation();
     const { modal, message } = App.useApp();
@@ -48,9 +48,18 @@ export const removeTabItemSettingsItem = createTextSettingsItem({
         title: t('Delete TabBar Item'),
         content: t('Are you sure you want to delete it?'),
         onOk: async () => {
+          // 删除 tabBarItem
           await resource.destroy({ filterByTk: id });
+
+          // 删除所有的子节点
+          await resource.destroy({ filter: { parentId: id } });
+
+          // 删除 tabBar 对应的页面 schema
+          const schemaUid = schema['x-component-props'].pageSchemaUid;
+          await api.request({ url: `/uiSchemas:remove/${schemaUid}`, method: 'delete' });
+
           await refresh();
-          // 跳转到第一个 tab
+          // 跳转到第一个 tabBar item
           const url = tabList.find((item) => item.id !== id && item.url)?.url || '/';
           navigate(url);
           message.success({

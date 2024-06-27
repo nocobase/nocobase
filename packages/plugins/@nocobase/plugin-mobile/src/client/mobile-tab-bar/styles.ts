@@ -16,6 +16,7 @@ export const useStyles = createStyles(() => ({
     left: 0,
     right: 0,
     zIndex: 1000,
+    height: 64,
     borderTop: '1px solid var(--adm-color-background)',
     backgroundColor: 'var(--adm-color-background)',
   },
@@ -24,6 +25,7 @@ export const useStyles = createStyles(() => ({
     justifyContent: 'space-between',
     alignItems: 'center',
     gap: '1em',
+    height: '100%',
   },
   mobileTabBarList: {
     display: 'flex',

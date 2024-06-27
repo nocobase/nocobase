@@ -22,7 +22,7 @@ export function getMobilePageSchema(pageSchemaUId: string, firstTabSchemaUid: st
       draggable: false,
     },
     properties: {
-      [uid()]: {
+      navigationBar: {
         type: 'void',
         'x-component': 'MobileNavigationBar',
         properties: {
@@ -48,7 +48,7 @@ export function getMobilePageSchema(pageSchemaUId: string, firstTabSchemaUid: st
           },
         },
       },
-      [uid()]: {
+      content: {
         type: 'void',
         'x-component': 'MobileContent',
         properties: {
