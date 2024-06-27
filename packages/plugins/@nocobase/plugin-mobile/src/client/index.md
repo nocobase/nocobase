@@ -233,7 +233,7 @@ export interface TabItem {
                             "x-align": "left|right|bottom|center",
                             "x-component": "Action",
                             "x-toolbar": "ActionSchemaToolbar",
-                            "x-settings": "navigationBar:actionSettings:link",
+                            "x-settings": "mobile:navigationBar:actionBar:link",
                             "x-use-component-props": "useMobileNavigationBarLink",
                             "x-component-props": {
                                 "link": "/",
@@ -289,14 +289,15 @@ export interface TabItem {
 - [x] 将 `navigationBar title` 是否显示，放到了 Page Settings 中，而不是 `navigationBar` 的设置中，`navigationBar` 没有设置项
 - [x] Schema 的 name 到底是具体的名字，还是 Uid() 好
 - [x] 删除 tabBar 的时候，是否关联的资源都删除，还是不用管？【尽量删】
+- [x] `navigationBar` 左右两侧的 initializer 使用的是同一个，还是分开命名？【同一个】
 - back 问题和内页，内页是没有 schema 的，所以想要自己实现页面也需要自己写 navigateBar
 - TabBar 的需要设置吗？（目前看来没什么设置项，是否需要显示的问题，如果没注册到 TabBar 上则默认不显示，似乎是能满足要求的）
-- `navigationBar` 左右两侧的 initializer 使用的是同一个，还是分开命名？【同一个】
 - `navigationBar` 的操作按钮目前只实现了一个 Link，计划实现 `back`，其他的是否这次做？【自动处理，页面级别控制】
   - ActionSheet
   - 弹出层
 - 数据表字段是否需要预览一些字段？
 - preset 中老的依赖是否删除，目前看如果删除，则原来的项目会报错
+- 内容区块的间距和布局问题（参考原来的）
 
 ## 待做任务
 
@@ -310,7 +311,8 @@ export interface TabItem {
 - [x] 多应用的支持
 - [x] 404 页面
 - [x] JS bridge
-- MobileNavigationBar Actions
+- [x] MobileNavigationBar Actions schema 处理
+- navigationBar Action 样式
 - 真机演示，并且提示测试人员要多种机型测试
 - 多语言
 - 各个部分的文档

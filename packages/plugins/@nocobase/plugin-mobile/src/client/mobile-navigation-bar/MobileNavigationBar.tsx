@@ -15,6 +15,7 @@ import { useMobileTitle } from '../mobile-providers';
 import { useMobilePage } from '../mobile-page/context';
 import { SchemaComponent } from '@nocobase/client';
 import { MobileNavigationBarTabs } from './MobileNavigationBarTabs';
+import { getActionBarSchemaByPosition } from './schema';
 import { useStyles } from './styles';
 
 export const MobileNavigationBar: FC = () => {
@@ -33,11 +34,16 @@ export const MobileNavigationBar: FC = () => {
       <NavBar
         backArrow={false}
         back={null}
-        left={<SchemaComponent name="leftActions" schema={fieldSchema.properties['leftActions']} />}
-        right={<SchemaComponent name="rightActions" schema={fieldSchema.properties['rightActions']} />}
+        left={<SchemaComponent schema={getActionBarSchemaByPosition(fieldSchema, 'left', { marginLeft: 5 })} />}
+        right={
+          <SchemaComponent
+            schema={getActionBarSchemaByPosition(fieldSchema, 'right', { marginLeft: 5, marginRight: 15 })}
+          />
+        }
       >
         {enableNavigationBarTitle ? title : null}
       </NavBar>
+      <SchemaComponent schema={getActionBarSchemaByPosition(fieldSchema, 'bottom', {}, false)} />
       {enableNavigationBarTabs && <MobileNavigationBarTabs />}
     </div>
   );

@@ -25,3 +25,13 @@ export function getMobileNavigationBarTabData(options: GetMobileNavigationBarTab
     },
   };
 }
+
+export function getNavigationBarTabPageSchema(pageSchemaUid: string) {
+  return {
+    type: 'void',
+    'x-uid': pageSchemaUid,
+    'x-async': true, // 异步
+    'x-component': 'Grid',
+    'x-initializer': 'mobile:addBlock',
+  };
+}

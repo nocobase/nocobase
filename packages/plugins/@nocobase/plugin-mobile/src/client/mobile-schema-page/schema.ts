@@ -7,8 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { uid } from '@formily/shared';
 import { getPageContentSchema } from '../mobile-content';
+import { mobileNavigationBarSchema } from '../mobile-navigation-bar';
 
 export function getMobilePageSchema(pageSchemaUId: string, firstTabSchemaUid: string) {
   const pageSchema = {
@@ -22,39 +22,8 @@ export function getMobilePageSchema(pageSchemaUId: string, firstTabSchemaUid: st
       draggable: false,
     },
     properties: {
-      navigationBar: {
-        type: 'void',
-        'x-component': 'MobileNavigationBar',
-        properties: {
-          leftActions: {
-            type: 'void',
-            'x-component': 'ActionBar',
-            'x-initializer': 'mobile:navigation-bar',
-            'x-initializer-props': {
-              style: {
-                marginLeft: 8,
-              },
-            },
-          },
-          rightActions: {
-            type: 'void',
-            'x-component': 'ActionBar',
-            'x-initializer-props': {
-              style: {
-                marginRight: 15,
-              },
-            },
-            'x-initializer': 'mobile:navigation-bar',
-          },
-        },
-      },
-      content: {
-        type: 'void',
-        'x-component': 'MobileContent',
-        properties: {
-          [firstTabSchemaUid]: getPageContentSchema(firstTabSchemaUid),
-        },
-      },
+      navigationBar: mobileNavigationBarSchema,
+      content: getPageContentSchema(firstTabSchemaUid),
     },
   };
 

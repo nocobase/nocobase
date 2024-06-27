@@ -7,18 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import {
-  ISchema,
-  SchemaInitializerItemActionModalType,
-  SchemaInitializerItemType,
-  SchemaSettings,
-  useSchemaInitializer,
-} from '@nocobase/client';
+import { ISchema, SchemaInitializerItemActionModalType, SchemaSettings, useSchemaInitializer } from '@nocobase/client';
 import { useNavigate } from 'react-router-dom';
 import { usePluginTranslation } from '../../../locale';
 
 export const mobileNavigationBarLinkSettings = new SchemaSettings({
-  name: `navigationBar:actionSettings:link`,
+  name: `mobile:navigationBar:actionBar:link`,
   items: [
     {
       name: 'remove',

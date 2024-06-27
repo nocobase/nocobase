@@ -18,8 +18,8 @@ import {
 
 import { useMobileTabContext } from '../../mobile-providers';
 import { generatePluginTranslationTemplate } from '../../locale';
-import { getPageContentSchema } from '../../mobile-content';
 import { getMobileNavigationBarTabData } from './schema';
+import { getPageContentTabSchema } from '../../mobile-content';
 
 export const mobilePageTabInitializer = new SchemaInitializer({
   name: 'mobile:page-tab',
@@ -44,7 +44,7 @@ export const mobilePageTabInitializer = new SchemaInitializer({
           });
 
           // 创建 Schema
-          insert(getPageContentSchema(tabSchemaUid));
+          insert(getPageContentTabSchema(tabSchemaUid));
 
           await refresh();
         }}

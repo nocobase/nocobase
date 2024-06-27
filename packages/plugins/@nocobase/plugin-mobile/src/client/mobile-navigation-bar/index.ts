@@ -10,3 +10,4 @@
 export * from './MobileNavigationBar';
 export * from './tab';
 export * from './initializer';
+export * from './schema';

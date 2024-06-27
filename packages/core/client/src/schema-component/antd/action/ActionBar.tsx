@@ -79,7 +79,7 @@ export const ActionBar = withDynamicSchemaProps(
             >
               {props.children && (
                 <div>
-                  <Space {...spaceProps} style={{ flexWrap: 'wrap' }}>
+                  <Space {...spaceProps} style={{ flexWrap: 'wrap', ...(spaceProps.style || {}) }}>
                     {fieldSchema.mapProperties((schema, key) => {
                       return <RecursionField key={key} name={key} schema={schema} />;
                     })}
@@ -129,7 +129,7 @@ export const ActionBar = withDynamicSchemaProps(
                 return <RecursionField key={key} name={key} schema={schema} />;
               })}
             </Space>
-            <Space {...spaceProps} style={{ flexWrap: 'wrap' }}>
+            <Space {...spaceProps} style={{ flexWrap: 'wrap', ...(spaceProps.style || {}) }}>
               {fieldSchema.mapProperties((schema, key) => {
                 if (schema['x-align'] === 'left') {
                   return null;

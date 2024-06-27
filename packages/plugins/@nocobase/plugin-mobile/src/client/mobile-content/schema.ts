@@ -7,12 +7,24 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export function getPageContentSchema(pageSchemaUid: string) {
+import { mobileAddBlockInitializer } from './initializer';
+
+export function getPageContentSchema(firstTabSchemaUid: string) {
+  return {
+    type: 'void',
+    'x-component': 'MobileContent',
+    properties: {
+      [firstTabSchemaUid]: getPageContentTabSchema(firstTabSchemaUid),
+    },
+  };
+}
+
+export function getPageContentTabSchema(pageSchemaUid: string) {
   return {
     type: 'void',
     'x-uid': pageSchemaUid,
-    'x-async': true, // 异步
+    'x-async': true,
     'x-component': 'Grid',
-    'x-initializer': 'mobile:addBlock',
+    'x-initializer': mobileAddBlockInitializer.name,
   };
 }
