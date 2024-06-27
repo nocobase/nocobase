@@ -32,7 +32,7 @@ test.describe('field schema settings', () => {
     await page.getByRole('button', { name: 'OK' }).click();
     const cell = await page
       .getByLabel('block-item-CollectionField-general-details-general.singleLineText-singleLineText')
-      .locator('div.ant-formily-item');
+      .locator('div.ant-formily-item-control-content-component');
     await expect(cell).toHaveCSS('color', 'rgb(163, 79, 204)');
   });
   test('linkage style background color', async ({ page, mockPage, mockRecord }) => {
@@ -57,7 +57,7 @@ test.describe('field schema settings', () => {
     await page.getByRole('button', { name: 'OK' }).click();
     const cell = await page
       .getByLabel('block-item-CollectionField-general-details-general.singleLineText-singleLineText')
-      .locator('div.ant-formily-item');
+      .locator('div.ant-formily-item-control-content-component');
     await expect(cell).toHaveCSS('background-color', 'rgb(163, 79, 204)');
   });
 });
