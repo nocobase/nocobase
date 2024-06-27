@@ -22,7 +22,7 @@ import {
   useRecord,
   useResourceContext,
 } from '@nocobase/client';
-import { Alert, message } from 'antd';
+import { message } from 'antd';
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router-dom';
@@ -34,9 +34,9 @@ import { FieldType } from './components/FieldType';
 import { TitleField } from './components/TitleField';
 import { UnSupportFields } from './components/UnSupportFields';
 import { EditCollectionField } from './EditFieldAction';
+import { FilterTargetKeyAlert } from './FilterTargetKeyAlert';
 import { useBulkDestroyActionAndRefreshCM, useDestroyActionAndRefreshCM } from './hooks';
 import { collection, fieldsTableSchema } from './schema/collectionFields';
-import { SetFilterTargetKey } from './SetFilterTargetKey';
 
 const RemoteCollectionContext = createContext<{
   targetCollection: Collection;
@@ -60,7 +60,7 @@ export const CollectionFields = () => {
   const collectionResource = useResourceContext();
   const { targetKey } = collectionResource || {};
   const targetCollection = useRecord();
-  const { filterTargetKey, [targetKey]: filterByTk, titleField: targetField, name } = targetCollection;
+  const { [targetKey]: filterByTk, titleField: targetField, name } = targetCollection;
   const [titleField, setTitleField] = useState(targetField);
   const useDataSource = (options) => {
     const service = useContext(ResourceActionContext);
@@ -187,7 +187,7 @@ export const CollectionFields = () => {
         targetCollection,
       }}
     >
-      {!filterTargetKey && <Alert style={{ marginBottom: 16 }} type="warning" message={<SetFilterTargetKey />} />}
+      <FilterTargetKeyAlert collectionName={name} />
       <ResourceActionProvider {...resourceActionProps}>
         <FormContext.Provider value={form}>
           <FieldContext.Provider value={f}>

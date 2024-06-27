@@ -27,7 +27,6 @@ import {
   useAttach,
   useBulkDestroyActionAndRefreshCM,
   useCollectionManager_deprecated,
-  useCollectionRecordData,
   useCompile,
   useCurrentAppInfo,
   useDestroyActionAndRefreshCM,
@@ -36,11 +35,11 @@ import {
   useResourceContext,
   ViewCollectionField,
 } from '@nocobase/client';
-import { Alert, message, Space, Switch, Table, TableColumnProps, Tag, Tooltip } from 'antd';
+import { message, Space, Switch, Table, TableColumnProps, Tag, Tooltip } from 'antd';
 import React, { createContext, useContext, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { SetFilterTargetKey } from '../../CollectionsManager/SetFilterTargetKey';
+import { FilterTargetKeyAlert } from '../../CollectionsManager/FilterTargetKeyAlert';
 import { collection } from './schemas/collectionFields';
 const resourceActionProps = {
   association: {
@@ -61,7 +60,7 @@ const resourceActionProps = {
   },
 };
 
-const CollectionListContext = createContext(null);
+export const CollectionListContext = createContext(null);
 
 const CollectionFieldsProvider = (props) => {
   return (
@@ -438,13 +437,10 @@ const CollectionFieldsInternal = () => {
   );
   const addProps = { type: 'primary', database };
   const syncProps = { type: 'primary' };
-  const recordData = useCollectionRecordData();
   return (
     <FormContext.Provider value={form}>
       <FieldContext.Provider value={f}>
-        {!recordData.filterTargetKey && (
-          <Alert style={{ marginBottom: 16 }} type="warning" message={<SetFilterTargetKey />} />
-        )}
+        <FilterTargetKeyAlert collectionName={name} />
         <Space
           align={'end'}
           className={css`

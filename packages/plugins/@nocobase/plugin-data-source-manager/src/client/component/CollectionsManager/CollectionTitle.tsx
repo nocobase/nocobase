@@ -10,30 +10,18 @@
 import { ExclamationCircleTwoTone } from '@ant-design/icons';
 import { useCollectionRecordData, useCompile } from '@nocobase/client';
 import { Popover } from 'antd';
-import React, { useState } from 'react';
+import React from 'react';
 import { SetFilterTargetKey } from './SetFilterTargetKey';
 
 export const CollectionTitle = () => {
   const record = useCollectionRecordData();
   const compile = useCompile();
-  const [open, setOpen] = useState(false);
-  const [changed, setChanged] = useState(false);
   if (record.filterTargetKey) {
     return compile(record.title);
   }
   return (
     <div style={{ display: 'inline' }}>
-      <Popover
-        trigger={['click']}
-        open={open}
-        onOpenChange={(visible) => {
-          if (changed) {
-            return;
-          }
-          setOpen(visible);
-        }}
-        content={<SetFilterTargetKey style={{ textAlign: 'center', width: '16em' }} />}
-      >
+      <Popover trigger={['click']} content={<SetFilterTargetKey style={{ textAlign: 'center', width: '16em' }} />}>
         <ExclamationCircleTwoTone style={{ marginRight: '0.3em' }} twoToneColor="#faad14" />
       </Popover>
       {compile(record.title)}

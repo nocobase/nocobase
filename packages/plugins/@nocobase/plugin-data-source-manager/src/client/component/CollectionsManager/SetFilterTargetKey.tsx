@@ -9,8 +9,9 @@
 
 import { useAPIClient, useApp, useCollectionRecordData, useCompile, useResourceActionContext } from '@nocobase/client';
 import { Button, Popconfirm, Select, Space, Tooltip } from 'antd';
-import React, { useMemo, useState } from 'react';
+import React, { useContext, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
+import { CollectionListContext } from '../MainDataSourceManager/Configuration/CollectionFields';
 
 export const SetFilterTargetKey = (props) => {
   const { style } = props;
@@ -21,10 +22,13 @@ export const SetFilterTargetKey = (props) => {
   const [filterTargetKey, setFilterTargetKey] = useState();
   const [title, setTitle] = useState();
   const compile = useCompile();
+  const collection = useMemo(() => {
+    const cm = app.getCollectionManager(dataSourceKey);
+    return cm.getCollection(record.name);
+  }, [app, dataSourceKey, record.name]);
   const options = useMemo(() => {
     const cm = app.getCollectionManager(dataSourceKey);
     const fields = cm.getCollectionFields(record.name);
-
     return fields
       .filter((field) => {
         if (!field.interface) {
@@ -44,6 +48,8 @@ export const SetFilterTargetKey = (props) => {
       }));
   }, [app, compile, dataSourceKey, record.name]);
   const { refresh } = useResourceActionContext();
+  const ctx = useContext(CollectionListContext);
+
   return (
     <div style={{ ...style }}>
       当前表未配置
@@ -65,17 +71,26 @@ export const SetFilterTargetKey = (props) => {
           placement="bottom"
           title={<div style={{ width: '15em' }}>你确定将 {title} 字段设置为主键吗？设置成功后不可修改。</div>}
           onConfirm={async () => {
-            await api.request({
-              url: `dataSources/${dataSourceKey}/collections:update?filterByTk=${record.name}`,
-              method: 'post',
-              data: {
-                filterTargetKey,
-              },
-            });
+            if (dataSourceKey === 'main') {
+              await api.request({
+                url: `collections:update?filterByTk=${record.name}`,
+                method: 'post',
+                data: {
+                  filterTargetKey,
+                },
+              });
+            } else {
+              await api.request({
+                url: `dataSources/${dataSourceKey}/collections:update?filterByTk=${record.name}`,
+                method: 'post',
+                data: {
+                  filterTargetKey,
+                },
+              });
+            }
+            ctx?.refresh?.();
             refresh();
             // await app.dataSourceManager.getDataSource(dataSourceKey).reload();
-            const cm = app.getCollectionManager(dataSourceKey);
-            const collection = cm.getCollection(record.name);
             collection.setOption('filterTargetKey', filterTargetKey);
           }}
         >
