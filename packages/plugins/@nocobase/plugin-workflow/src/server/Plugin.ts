@@ -43,7 +43,7 @@ type EventOptions = {
   eventKey?: string;
   context?: any;
   deferred?: boolean;
-  // [key: string]: any;
+  [key: string]: any;
 } & Transactionable;
 
 type CachedEvent = [WorkflowModel, any, EventOptions];
