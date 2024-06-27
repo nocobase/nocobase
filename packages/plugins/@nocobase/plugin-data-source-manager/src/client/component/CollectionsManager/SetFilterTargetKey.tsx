@@ -8,13 +8,14 @@
  */
 
 import { useAPIClient, useApp, useCollectionRecordData, useCompile, useResourceActionContext } from '@nocobase/client';
-import { Button, Popconfirm, Select, Space, Tooltip } from 'antd';
+import { Button, Popconfirm, Select, Space } from 'antd';
 import React, { useContext, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
+import { useDSMTranslation } from '../../locale';
 import { CollectionListContext } from '../MainDataSourceManager/Configuration/CollectionFields';
 
 export const SetFilterTargetKey = (props) => {
-  const { style } = props;
+  const { size, style } = props;
   const api = useAPIClient();
   const { name: dataSourceKey = 'main' } = useParams();
   const record = useCollectionRecordData();
@@ -49,28 +50,42 @@ export const SetFilterTargetKey = (props) => {
   }, [app, compile, dataSourceKey, record.name]);
   const { refresh } = useResourceActionContext();
   const ctx = useContext(CollectionListContext);
+  const { t } = useDSMTranslation();
 
   return (
     <div style={{ ...style }}>
-      当前表未配置
-      <Tooltip title={'业务系统中用于唯一标识业务对象或记录的字段。'}>
-        <a>主键</a>
-      </Tooltip>
-      ，无法在区块中使用，你需要指定一个字段作为主键。
+      {/* 当数据表没有主键（Primary key）时，你需要配置记录唯一标识符（Record unique
+      key），用于在区块中定位行记录，不配置将无法创建该表的数据区块。 */}
+      {t(
+        `If a collection lacks a primary key, you must configure a unique record key to locate row records within a block, failure to configure this will prevent the creation of data blocks for the collection.`,
+      )}
+      {size === 'small' ? <br /> : ' '}
       <Space.Compact style={{ marginTop: 5 }}>
         <Select
           onChange={(value, option) => {
             setFilterTargetKey(value);
             setTitle(option['label']);
           }}
-          placeholder={'选择字段'}
+          placeholder={t('Select field')}
           size={'small'}
           options={options}
         />
         <Popconfirm
           placement="bottom"
-          title={<div style={{ width: '15em' }}>你确定将 {title} 字段设置为主键吗？设置成功后不可修改。</div>}
+          title={
+            <div style={{ width: '15em' }}>
+              {title
+                ? t(
+                    'Are you sure you want to set the "{{title}}" field as a record unique key? This setting cannot be changed after it\'s been set.',
+                    { title },
+                  )
+                : t('Please select a field.')}
+            </div>
+          }
           onConfirm={async () => {
+            if (!filterTargetKey) {
+              return;
+            }
             if (dataSourceKey === 'main') {
               await api.request({
                 url: `collections:update?filterByTk=${record.name}`,
@@ -95,7 +110,7 @@ export const SetFilterTargetKey = (props) => {
           }}
         >
           <Button type={'primary'} size={'small'}>
-            OK
+            {t('OK')}
           </Button>
         </Popconfirm>
       </Space.Compact>

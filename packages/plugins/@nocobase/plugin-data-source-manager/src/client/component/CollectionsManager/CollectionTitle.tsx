@@ -21,7 +21,7 @@ export const CollectionTitle = () => {
   }
   return (
     <div style={{ display: 'inline' }}>
-      <Popover trigger={['click']} content={<SetFilterTargetKey style={{ textAlign: 'center', width: '16em' }} />}>
+      <Popover trigger={['click']} content={<SetFilterTargetKey size={'small'} style={{ width: '20em' }} />}>
         <ExclamationCircleTwoTone style={{ marginRight: '0.3em' }} twoToneColor="#faad14" />
       </Popover>
       {compile(record.title)}
