@@ -28,7 +28,8 @@ describe('IconPicker', () => {
     const button = container.querySelector('button') as HTMLButtonElement;
     await userEvent.click(button);
 
-    const icon = screen.queryAllByRole('img')[0];
+    // [0] is the icon of search input
+    const icon = screen.queryAllByRole('img')[1];
     await userEvent.click(icon);
 
     const icons = screen.queryAllByRole('img');
