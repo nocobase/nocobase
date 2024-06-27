@@ -10,7 +10,7 @@
 import React from 'react';
 import { useAPIClient, useRequest } from '../api-client';
 import { CollectionManagerSchemaComponentProvider } from './CollectionManagerSchemaComponentProvider';
-import { CollectionCategroriesContext } from './context';
+import { CollectionCategoriesContext } from './context';
 import { CollectionManagerOptions } from './types';
 import { CollectionManagerProvider } from '../data-source/collection/CollectionManagerProvider';
 import { useDataSourceManager } from '../data-source/data-source/DataSourceManagerProvider';
@@ -60,16 +60,16 @@ export const RemoteCollectionManagerProvider = (props: any) => {
     return data?.data || [];
   };
   return (
-    <CollectionCategroriesProvider service={{ ...result }} refreshCategory={refreshCategory}>
+    <CollectionCategoriesProvider service={{ ...result }} refreshCategory={refreshCategory}>
       <CollectionManagerProvider_deprecated {...props}></CollectionManagerProvider_deprecated>
-    </CollectionCategroriesProvider>
+    </CollectionCategoriesProvider>
   );
 };
 
-export const CollectionCategroriesProvider = (props) => {
+export const CollectionCategoriesProvider = (props) => {
   const { service, refreshCategory } = props;
   return (
-    <CollectionCategroriesContext.Provider
+    <CollectionCategoriesContext.Provider
       value={{
         data: service?.data?.data,
         refresh: refreshCategory,
@@ -77,6 +77,6 @@ export const CollectionCategroriesProvider = (props) => {
       }}
     >
       {props.children}
-    </CollectionCategroriesContext.Provider>
+    </CollectionCategoriesContext.Provider>
   );
 };

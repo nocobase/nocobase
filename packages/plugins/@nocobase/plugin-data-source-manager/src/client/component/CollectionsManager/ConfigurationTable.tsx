@@ -20,7 +20,7 @@ import {
   SchemaComponent,
   SchemaComponentContext,
   useCompile,
-  CollectionCategroriesContext,
+  CollectionCategoriesContext,
   useCollectionManager_deprecated,
   useCancelAction,
   AddSubFieldAction,
@@ -94,7 +94,7 @@ export const ConfigurationTable = () => {
   const ds = useDataSourceManager();
   const ctx = useContext(SchemaComponentContext);
   const { name } = useParams();
-  const data = useContext(CollectionCategroriesContext);
+  const data = useContext(CollectionCategoriesContext);
   const api = useAPIClient();
   const compile = useCompile();
   const loadCategories = async () => {

@@ -29,7 +29,7 @@ import {
   SyncSQLFieldsAction,
   DeleteCollection,
   DeleteCollectionAction,
-  CollectionCategroriesProvider,
+  CollectionCategoriesProvider,
   usePlugin,
 } from '@nocobase/client';
 import { useLocation } from 'react-router-dom';
@@ -55,7 +55,7 @@ export const CollectionManagerPage = () => {
     <SchemaComponent
       schema={schema2}
       components={{
-        CollectionCategroriesProvider,
+        CollectionCategoriesProvider,
         ConfigurationTable,
         ConfigurationTabs,
         AddFieldAction,
