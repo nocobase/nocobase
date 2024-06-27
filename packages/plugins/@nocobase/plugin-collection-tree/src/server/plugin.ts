@@ -38,7 +38,6 @@ class PluginCollectionTreeServer extends Plugin {
               { type: 'integer', name: 'nodePk' },
               { type: 'jsonb', name: 'path' },
               { type: 'integer', name: 'rootPK' },
-              { type: 'integer', name: 'depth' },
             ],
           });
 
@@ -69,7 +68,6 @@ class PluginCollectionTreeServer extends Plugin {
                 nodePk: model.dataValues?.id,
                 path: path,
                 rootPK: path.split('/')[1],
-                depth: path.split('/').length - 1,
               },
               transaction,
             });
@@ -84,7 +82,6 @@ class PluginCollectionTreeServer extends Plugin {
               values: {
                 path,
                 rootPK: path.split('/')[1],
-                depth: path.split('/').length - 1,
               },
               filter: {
                 nodePk: model.dataValues?.id,

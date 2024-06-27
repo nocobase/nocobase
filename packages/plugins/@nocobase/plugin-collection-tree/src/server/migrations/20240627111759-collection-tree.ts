@@ -49,7 +49,6 @@ export default class extends Migration {
           { type: 'integer', name: 'nodePk' },
           { type: 'jsonb', name: 'path' },
           { type: 'integer', name: 'rootPK' },
-          { type: 'integer', name: 'depth' },
         ],
       });
       const treeExistsInDb = await this.app.db.getCollection(name).existsInDb();
@@ -73,7 +72,6 @@ export default class extends Migration {
               nodePk: data.dataValues?.id,
               path: path,
               rootPK: path.split('/')[1],
-              depth: path.split('/').length - 1,
             },
           });
         }
