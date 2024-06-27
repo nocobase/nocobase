@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-collection-tree",
-  "version": "1.2.6-alpha",
+  "version": "1.2.9-alpha",
   "main": "dist/server/index.js",
   "dependencies": {},
   "peerDependencies": {
