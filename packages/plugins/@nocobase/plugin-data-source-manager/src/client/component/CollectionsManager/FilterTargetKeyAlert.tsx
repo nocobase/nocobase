@@ -15,13 +15,13 @@ import { SetFilterTargetKey } from './SetFilterTargetKey';
 
 export const FilterTargetKeyAlert = ({ collectionName }) => {
   const app = useApp();
-  const { name: dataSourceKey } = useParams();
+  const { name: dataSourceKey = 'main' } = useParams();
   const collection = useMemo(() => {
     const cm = app.getCollectionManager(dataSourceKey);
     return cm.getCollection(collectionName);
   }, [app, dataSourceKey, collectionName]);
   return (
-    !collection.filterTargetKey && (
+    !collection?.filterTargetKey && (
       <Alert style={{ marginBottom: 16 }} type="warning" message={<SetFilterTargetKey />} />
     )
   );
