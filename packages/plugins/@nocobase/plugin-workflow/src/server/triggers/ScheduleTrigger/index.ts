@@ -7,10 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Transactionable } from 'sequelize';
 import Trigger from '..';
 import type Plugin from '../../Plugin';
-import { WorkflowModel } from '../../types';
 import DateFieldScheduleTrigger from './DateFieldScheduleTrigger';
 import StaticScheduleTrigger from './StaticScheduleTrigger';
 import { SCHEDULE_MODE } from './utils';

@@ -50,6 +50,30 @@ const collection = {
       } as ISchema,
     },
     {
+      type: 'boolean',
+      name: 'sync',
+      interface: 'select',
+      uiSchema: {
+        title: `{{t("Mode", { ns: "${NAMESPACE}" })}}`,
+        type: 'boolean',
+        'x-decorator': 'FormItem',
+        'x-component': 'Select',
+        enum: [
+          {
+            label: `{{ t("Asynchronously", { ns: "${NAMESPACE}" }) }}`,
+            value: false,
+            color: 'cyan',
+          },
+          {
+            label: `{{ t("Synchronously", { ns: "${NAMESPACE}" }) }}`,
+            value: true,
+            color: 'orange',
+          },
+        ],
+        required: true,
+      } as ISchema,
+    },
+    {
       type: 'string',
       name: 'description',
       interface: 'textarea',
@@ -326,6 +350,18 @@ export const workflowSchema: ISchema = {
               properties: {
                 type: {
                   type: 'string',
+                  'x-component': 'CollectionField',
+                  'x-read-pretty': true,
+                },
+              },
+            },
+            sync: {
+              type: 'void',
+              'x-decorator': 'Table.Column.Decorator',
+              'x-component': 'Table.Column',
+              properties: {
+                sync: {
+                  type: 'boolean',
                   'x-component': 'CollectionField',
                   'x-read-pretty': true,
                 },

@@ -364,7 +364,6 @@ export const selectComponentFieldSettings = new SchemaSettings({
       useVisible() {
         const isAssociationField = useIsAssociationField();
         const IsShowMultipleSwitch = useIsShowMultipleSwitch();
-        console.log(isAssociationField, IsShowMultipleSwitch());
         return isAssociationField && IsShowMultipleSwitch();
       },
     },
