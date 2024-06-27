@@ -37,6 +37,8 @@ class PluginCollectionTreeServer extends Plugin {
             fields: [
               { type: 'integer', name: 'nodePk' },
               { type: 'jsonb', name: 'path' },
+              { type: 'integer', name: 'rootPK' },
+              { type: 'integer', name: 'depth' },
             ],
           });
 
@@ -66,6 +68,8 @@ class PluginCollectionTreeServer extends Plugin {
               values: {
                 nodePk: model.dataValues?.id,
                 path: path,
+                rootPK: path.split('/')[1],
+                depth: path.split('/').length - 1,
               },
               transaction,
             });
@@ -79,6 +83,8 @@ class PluginCollectionTreeServer extends Plugin {
             await this.app.db.getRepository(name).update({
               values: {
                 path,
+                rootPK: path.split('/')[1],
+                depth: path.split('/').length - 1,
               },
               filter: {
                 nodePk: model.dataValues?.id,
