@@ -7,42 +7,40 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { useFieldSchema } from '@formily/react';
+import { RecursionField, useFieldSchema } from '@formily/react';
 import _ from 'lodash';
-import React, { FC, useCallback } from 'react';
+import React, { FC, useCallback, useContext, useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useNavigateNoUpdate } from '../../../application/CustomRouterContextProvider';
 import {
   useCollectionParentRecord,
   useCollectionRecord,
-  useCollectionRecordData,
 } from '../../../data-source/collection-record/CollectionRecordProvider';
 import { useAssociationName } from '../../../data-source/collection/AssociationProvider';
 import { useCollectionManager } from '../../../data-source/collection/CollectionManagerProvider';
 import { useCollection } from '../../../data-source/collection/CollectionProvider';
 import { DataBlockProvider } from '../../../data-source/data-block/DataBlockProvider';
 import { useDataSourceKey } from '../../../data-source/data-source/DataSourceProvider';
-import { VariablePopupRecordProvider } from '../../../modules/variable/variablesProvider/VariablePopupRecordProvider';
-import { RemoteSchemaComponent } from '../../core/RemoteSchemaComponent';
+import {
+  VariablePopupRecordProvider,
+  useParentPopupRecord,
+} from '../../../modules/variable/variablesProvider/VariablePopupRecordProvider';
+import { ActionContext } from '../action/context';
 import { TabsContextProvider } from '../tabs/context';
-import { PagePopups } from './PagePopups';
+import { PagePopups, useRequestSchema } from './PagePopups';
+import { usePopupSettings } from './PopupSettingsProvider';
 import { useSubPagesStyle } from './SubPages.style';
 import { PopupParams, getPopupParamsFromPath } from './pagePopupUtils';
+import {
+  SubPageContext,
+  getSubPageContextFromPopupSchema,
+  usePopupContextInActionOrAssociationField,
+} from './usePopupContextInActionOrAssociationField';
 
 export interface SubPageParams extends Omit<PopupParams, 'popupuid'> {
   /** sub page uid */
   subpageuid: string;
 }
-
-const SubPageVariablesProvider: FC = (props) => {
-  const collection = useCollection();
-  const recordData = useCollectionRecordData();
-  return (
-    <VariablePopupRecordProvider recordData={recordData} collection={collection}>
-      {props.children}
-    </VariablePopupRecordProvider>
-  );
-};
 
 const SubPageTabsPropsProvider: FC<{ params: SubPageParams }> = (props) => {
   const navigate = useNavigateNoUpdate();
@@ -61,55 +59,78 @@ const SubPageTabsPropsProvider: FC<{ params: SubPageParams }> = (props) => {
   );
 };
 
-const SubPageProvider: FC<{ params: SubPageParams }> = (props) => {
-  return (
+const SubPageProvider: FC<{ params: SubPageParams; context: SubPageContext | undefined }> = (props) => {
+  const { params, context } = props;
+
+  if (!context) {
+    return null;
+  }
+
+  const commonElements = (
     <DataBlockProvider
-      dataSource={props.params.datasource}
-      collection={props.params.collection}
-      association={props.params.association}
-      filterByTk={props.params.filterbytk}
-      sourceId={props.params.sourceid}
+      dataSource={context.dataSource}
+      collection={context.collection}
+      association={context.association}
+      sourceId={context.sourceId}
+      filterByTk={params.filterbytk}
       action="get"
     >
       <SubPageTabsPropsProvider params={props.params}>
-        <SubPageVariablesProvider>{props.children}</SubPageVariablesProvider>
+        <VariablePopupRecordProvider>{props.children}</VariablePopupRecordProvider>
       </SubPageTabsPropsProvider>
     </DataBlockProvider>
   );
+
+  if (context.parentPopupRecord) {
+    return (
+      <DataBlockProvider
+        dataSource={context.dataSource}
+        collection={context.parentPopupRecord.collection}
+        filterByTk={context.parentPopupRecord.filterByTk}
+        action="get"
+      >
+        <VariablePopupRecordProvider>{commonElements}</VariablePopupRecordProvider>
+      </DataBlockProvider>
+    );
+  }
+
+  return commonElements;
 };
 
 export const SubPage = () => {
   const params: any = useParams();
   const { subPageParams, popupParams } = getSubPageParamsAndPopupsParams(params['*']);
   const { styles } = useSubPagesStyle();
+  const { requestSchema } = useRequestSchema();
+  const [subPageSchema, setSubPageSchema] = useState(null);
+
+  useEffect(() => {
+    const run = async () => {
+      const schema = await requestSchema(subPageParams.subpageuid);
+      setSubPageSchema(schema);
+    };
+    run();
+  }, [subPageParams.subpageuid]);
+
+  if (!subPageSchema || subPageSchema['x-uid'] !== subPageParams.subpageuid) {
+    return null;
+  }
+
+  const context = getSubPageContextFromPopupSchema(subPageSchema) as SubPageContext;
 
   return (
     <div className={styles.container}>
-      <SubPageProvider params={subPageParams}>
-        <RemoteSchemaComponent uid={subPageParams.subpageuid} onlyRenderProperties />
+      <SubPageProvider params={subPageParams} context={context}>
+        <RecursionField schema={subPageSchema} onlyRenderProperties />
+        {_.isEmpty(popupParams) ? null : <PagePopups paramsList={popupParams} />}
       </SubPageProvider>
-      {_.isEmpty(popupParams) ? null : <PagePopups paramsList={popupParams} />}
     </div>
   );
 };
 
 export const getSubPagePathFromParams = (params: SubPageParams) => {
-  const { subpageuid, tab, datasource, filterbytk, collection, association, sourceid } = params;
-  const popupPath = [
-    subpageuid,
-    'datasource',
-    datasource,
-    filterbytk && 'filterbytk',
-    filterbytk,
-    collection && 'collection',
-    collection,
-    association && 'association',
-    association,
-    sourceid && 'sourceid',
-    sourceid,
-    tab && 'tab',
-    tab,
-  ].filter(Boolean);
+  const { subpageuid, tab, filterbytk } = params;
+  const popupPath = [subpageuid, filterbytk && 'filterbytk', filterbytk, tab && 'tab', tab].filter(Boolean);
 
   return `/subpages/${popupPath.join('/')}`;
 };
@@ -137,30 +158,45 @@ export const useNavigateTOSubPage = () => {
   const collection = useCollection();
   const cm = useCollectionManager();
   const association = useAssociationName();
+  const { updatePopupContext } = usePopupContextInActionOrAssociationField();
+  const { value: parentPopupRecordData, collection: parentPopupRecordCollection } = useParentPopupRecord() || {};
+  const { isPopupVisibleControlledByURL } = usePopupSettings();
+  const { setVisible: setVisibleFromAction } = useContext(ActionContext);
 
   const navigateToSubPage = useCallback(() => {
     if (!fieldSchema['x-uid']) {
       return;
     }
 
+    if (!isPopupVisibleControlledByURL) {
+      return setVisibleFromAction?.(true);
+    }
+
     const subPageUid = fieldSchema.properties[Object.keys(fieldSchema.properties)[0]]['x-uid'];
     const filterByTK = record?.data?.[collection.getPrimaryKey()];
     const sourceId = parentRecord?.data?.[cm.getCollection(association?.split('.')[0])?.getPrimaryKey()];
     const params = {
-      schema: fieldSchema,
       subpageuid: subPageUid,
-      datasource: dataSourceKey,
       filterbytk: filterByTK,
-      collection: association ? undefined : collection.name,
-      association,
-      sourceid: sourceId,
-      record,
-      parentRecord,
     };
-    const pathname = getSubPagePathFromParams(params);
 
+    updatePopupContext({
+      dataSource: dataSourceKey,
+      collection: association ? undefined : collection.name,
+      association: association,
+      sourceId,
+      // @ts-ignore
+      parentPopupRecord: parentPopupRecordData
+        ? {
+            collection: parentPopupRecordCollection?.name,
+            filterByTk: parentPopupRecordData[parentPopupRecordCollection.getPrimaryKey()],
+          }
+        : undefined,
+    });
+
+    const pathname = getSubPagePathFromParams(params);
     navigate(`/admin${pathname}`);
-  }, [fieldSchema, navigate, dataSourceKey, record, parentRecord, collection, cm, association]);
+  }, [fieldSchema, navigate, dataSourceKey, record, parentRecord, collection, cm, association, parentPopupRecordData]);
 
   return { navigateToSubPage };
 };

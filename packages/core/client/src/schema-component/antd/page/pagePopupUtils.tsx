@@ -21,32 +21,22 @@ import {
   useDataBlockRequest,
   useDataSourceKey,
 } from '../../../data-source';
+import { useParentPopupRecord } from '../../../modules/variable/variablesProvider/VariablePopupRecordProvider';
 import { ActionContext } from '../action/context';
 import { PopupParamsProviderContext, PopupVisibleProviderContext } from './PagePopups';
 import { usePopupSettings } from './PopupSettingsProvider';
+import { usePopupContextInActionOrAssociationField } from './usePopupContextInActionOrAssociationField';
 
 export interface PopupParams {
   /** popup uid */
   popupuid: string;
-  /** data source */
-  datasource: string;
-  /** tab uid */
-  tab?: string;
   /** record id */
   filterbytk?: string;
-  /** collection name */
-  collection?: string;
-  /**
-   * e.g. 'user.roles'
-   */
-  association?: string;
-  /**
-   * used to get parent record
-   */
-  sourceid?: string;
+  /** tab uid */
+  tab?: string;
 }
 
-export interface PopupParamsStorage extends PopupParams {
+export interface PopupParamsStorage {
   schema?: ISchema;
   record?: CollectionRecord;
   parentRecord?: CollectionRecord;
@@ -54,14 +44,14 @@ export interface PopupParamsStorage extends PopupParams {
   service?: any;
 }
 
-const popupParamsStorage: Record<string, PopupParamsStorage> = {};
+const popupsContextStorage: Record<string, PopupParamsStorage> = {};
 
-export const getStoredPopupParams = (popupUid: string) => {
-  return popupParamsStorage[popupUid];
+export const getStoredPopupContext = (popupUid: string) => {
+  return popupsContextStorage[popupUid];
 };
 
-export const storePopupParams = (popupUid: string, params: PopupParamsStorage) => {
-  popupParamsStorage[popupUid] = params;
+export const storePopupContext = (popupUid: string, params: PopupParamsStorage) => {
+  popupsContextStorage[popupUid] = params;
 };
 
 export const getPopupParamsFromPath = _.memoize((path: string) => {
@@ -82,22 +72,8 @@ export const getPopupParamsFromPath = _.memoize((path: string) => {
 });
 
 export const getPopupPathFromParams = (params: PopupParams) => {
-  const { popupuid: popupUid, tab, datasource, filterbytk, collection, association, sourceid } = params;
-  const popupPath = [
-    popupUid,
-    'datasource',
-    datasource,
-    filterbytk && 'filterbytk',
-    filterbytk,
-    collection && 'collection',
-    collection,
-    association && 'association',
-    association,
-    sourceid && 'sourceid',
-    sourceid,
-    tab && 'tab',
-    tab,
-  ].filter(Boolean);
+  const { popupuid: popupUid, tab, filterbytk } = params;
+  const popupPath = [popupUid, filterbytk && 'filterbytk', filterbytk, tab && 'tab', tab].filter(Boolean);
 
   return `/popups/${popupPath.join('/')}`;
 };
@@ -113,10 +89,12 @@ export const usePagePopup = () => {
   const cm = useCollectionManager();
   const association = useAssociationName();
   const { visible, setVisible } = useContext(PopupVisibleProviderContext) || { visible: false, setVisible: () => {} };
-  const { popupParams } = useContext(PopupParamsProviderContext) || {};
+  const { params: popupParams } = useContext(PopupParamsProviderContext) || {};
   const service = useDataBlockRequest();
   const { isPopupVisibleControlledByURL } = usePopupSettings();
   const { setVisible: setVisibleFromAction } = useContext(ActionContext);
+  const { updatePopupContext } = usePopupContextInActionOrAssociationField();
+  const { value: parentPopupRecordData, collection: parentPopupRecordCollection } = useParentPopupRecord() || {};
 
   const getNewPathname = useCallback(
     ({ tabKey, popupUid, recordData }: { tabKey?: string; popupUid: string; recordData: Record<string, any> }) => {
@@ -124,11 +102,7 @@ export const usePagePopup = () => {
       const sourceId = parentRecord?.data?.[cm.getCollection(association?.split('.')[0])?.getPrimaryKey()];
       return getPopupPathFromParams({
         popupuid: popupUid,
-        datasource: dataSourceKey,
         filterbytk: filterByTK,
-        collection: association ? undefined : collection.name,
-        association,
-        sourceid: sourceId,
         tab: tabKey,
       });
     },
@@ -146,7 +120,6 @@ export const usePagePopup = () => {
       }
 
       recordData = recordData || record?.data;
-      const filterByTK = recordData?.[collection.getPrimaryKey()];
       const sourceId = parentRecord?.data?.[cm.getCollection(association?.split('.')[0])?.getPrimaryKey()];
       const pathname = getNewPathname({ popupUid: fieldSchema['x-uid'], recordData });
       let url = location.pathname;
@@ -154,18 +127,27 @@ export const usePagePopup = () => {
         url = url.slice(0, -1);
       }
 
-      storePopupParams(fieldSchema['x-uid'], {
+      storePopupContext(fieldSchema['x-uid'], {
         schema: fieldSchema,
-        popupuid: fieldSchema['x-uid'],
-        datasource: dataSourceKey,
-        filterbytk: filterByTK,
-        collection: collection.name,
-        association,
-        sourceid: sourceId,
         record: new CollectionRecord({ isNew: false, data: recordData }),
         parentRecord,
         service,
       });
+
+      updatePopupContext({
+        dataSource: dataSourceKey,
+        collection: association ? undefined : collection.name,
+        association,
+        sourceId,
+        // @ts-ignore
+        parentPopupRecord: parentPopupRecordData
+          ? {
+              collection: parentPopupRecordCollection?.name,
+              filterByTk: parentPopupRecordData[parentPopupRecordCollection.getPrimaryKey()],
+            }
+          : undefined,
+      });
+
       navigate(`${url}${pathname}`);
     },
     [
@@ -181,6 +163,7 @@ export const usePagePopup = () => {
       service,
       location,
       isPopupVisibleControlledByURL,
+      parentPopupRecordData,
     ],
   );
 

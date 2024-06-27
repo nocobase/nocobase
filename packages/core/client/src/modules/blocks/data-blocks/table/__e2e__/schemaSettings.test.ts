@@ -2673,6 +2673,50 @@ test.describe('actions schema settings', () => {
           .getByLabel('block-item-CollectionField-users-form-users.username-Username')
           .getByRole('textbox'),
       ).toHaveValue('nocobase');
+
+      // -----------------------------------------------------------------------------------
+
+      // 关闭弹窗后，将子页面中的 Open mode 调整为 page
+      await page.goBack();
+      await page.getByLabel('action-Action.Link-View role-view-roles-table-admin').hover();
+      await page
+        .getByRole('button', { name: 'designer-schema-settings-Action.Link-actionSettings:view-roles' })
+        .hover();
+      await page.getByRole('menuitem', { name: 'Open mode Drawer' }).click();
+      await page.getByRole('option', { name: 'Page' }).click();
+
+      // 点击按钮跳转到子页面
+      await page.getByLabel('action-Action.Link-View role-view-roles-table-admin').click();
+
+      // 详情区块
+      await expect(page.getByLabel('block-item-CollectionField-roles-details-roles.title-Role name')).toHaveText(
+        'Role name:Admin',
+      );
+
+      // 使用变量 `Parent popup record` 设置数据范围
+      await expect(
+        page.getByLabel('block-item-CardItem-roles-table').getByRole('button', { name: 'Admin', exact: true }),
+      ).toBeVisible();
+      await expect(
+        page.getByLabel('block-item-CardItem-roles-table').getByRole('button', { name: 'Member', exact: true }),
+      ).toBeVisible();
+      await expect(
+        page.getByLabel('block-item-CardItem-roles-table').getByRole('button', { name: 'Root', exact: true }),
+      ).toBeVisible();
+
+      // 使用变量 `Current popup record` 和 `Parent popup record` 设置默认值
+      await expect(
+        page
+          .getByLabel('block-item-CardItem-users-form')
+          .getByLabel('block-item-CollectionField-users-form-users.nickname-Nickname')
+          .getByRole('textbox'),
+      ).toHaveValue('admin');
+      await expect(
+        page
+          .getByLabel('block-item-CardItem-users-form')
+          .getByLabel('block-item-CollectionField-users-form-users.username-Username')
+          .getByRole('textbox'),
+      ).toHaveValue('nocobase');
     });
   });
 

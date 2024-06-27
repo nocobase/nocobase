@@ -13,25 +13,19 @@ describe('getSubPagePathFromParams', () => {
   it('should generate the correct subpage path', () => {
     const params = {
       subpageuid: 'subPage1',
-      tab: 'tab1',
-      datasource: 'datasource1',
       filterbytk: 'filterbytk1',
-      collection: 'collection1',
-      association: 'association1',
-      sourceid: 'sourceid1',
+      tab: 'tab1',
     };
-    const expectedPath =
-      '/subpages/subPage1/datasource/datasource1/filterbytk/filterbytk1/collection/collection1/association/association1/sourceid/sourceid1/tab/tab1';
+    const expectedPath = '/subpages/subPage1/filterbytk/filterbytk1/tab/tab1';
     expect(getSubPagePathFromParams(params)).toBe(expectedPath);
   });
 
   it('should generate the correct subpage path without optional parameters', () => {
     const params = {
       subpageuid: 'subPage1',
-      datasource: 'datasource1',
       filterbytk: 'filterbytk1',
     };
-    const expectedPath = '/subpages/subPage1/datasource/datasource1/filterbytk/filterbytk1';
+    const expectedPath = '/subpages/subPage1/filterbytk/filterbytk1';
     expect(getSubPagePathFromParams(params)).toBe(expectedPath);
   });
 });

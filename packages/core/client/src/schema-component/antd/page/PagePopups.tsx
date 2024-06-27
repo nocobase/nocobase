@@ -9,7 +9,7 @@
 
 import { ISchema } from '@formily/json-schema';
 import _ from 'lodash';
-import { FC, default as React, useCallback, useEffect, useMemo, useState } from 'react';
+import { FC, default as React, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useAPIClient } from '../../../api-client';
 import { DataBlockProvider } from '../../../data-source/data-block/DataBlockProvider';
@@ -18,24 +18,24 @@ import { SchemaComponent } from '../../core';
 import { TabsContextProvider } from '../tabs/context';
 import { usePopupSettings } from './PopupSettingsProvider';
 import { deleteRandomNestedSchemaKey, getRandomNestedSchemaKey } from './nestedSchemaKeyStorage';
+import { PopupParams, getPopupParamsFromPath, getStoredPopupContext, usePagePopup } from './pagePopupUtils';
 import {
-  PopupParams,
-  PopupParamsStorage,
-  getPopupParamsFromPath,
-  getStoredPopupParams,
-  usePagePopup,
-} from './pagePopupUtils';
+  PopupContext,
+  getPopupContextFromActionOrAssociationFieldSchema,
+} from './usePopupContextInActionOrAssociationField';
 
 interface PopupsVisibleProviderProps {
   visible: boolean;
   setVisible?: (value: boolean) => void;
 }
-interface PopupsProviderProps {
-  popupParams: PopupParams;
+
+interface PopupProps {
+  params: PopupParams;
+  context: PopupContext;
 }
 
 export const PopupVisibleProviderContext = React.createContext<PopupsVisibleProviderProps>(null);
-export const PopupParamsProviderContext = React.createContext<PopupsProviderProps>(null);
+export const PopupParamsProviderContext = React.createContext<PopupProps>(null);
 PopupVisibleProviderContext.displayName = 'PopupVisibleProviderContext';
 PopupParamsProviderContext.displayName = 'PopupParamsProviderContext';
 
@@ -53,15 +53,14 @@ export const PopupVisibleProvider: FC<PopupsVisibleProviderProps> = ({ children,
   );
 };
 
-const PopupParamsProvider: FC<PopupsProviderProps> = (props) => {
-  return (
-    <PopupParamsProviderContext.Provider value={{ popupParams: props.popupParams }}>
-      {props.children}
-    </PopupParamsProviderContext.Provider>
-  );
+const PopupParamsProvider: FC<PopupProps> = (props) => {
+  const value = useMemo(() => {
+    return { params: props.params, context: props.context };
+  }, [props.params, props.context]);
+  return <PopupParamsProviderContext.Provider value={value}>{props.children}</PopupParamsProviderContext.Provider>;
 };
 
-const PopupTabsPropsProvider: FC<{ params: PopupParamsStorage }> = ({ children, params }) => {
+const PopupTabsPropsProvider: FC<{ params: PopupParams }> = ({ children, params }) => {
   const { changeTab } = usePagePopup();
   const onTabClick = useCallback(
     (key: string) => {
@@ -82,7 +81,7 @@ const PopupTabsPropsProvider: FC<{ params: PopupParamsStorage }> = ({ children, 
   );
 };
 
-const PagePopupsItemProvider: FC<{ params: PopupParams }> = ({ params, children }) => {
+const PagePopupsItemProvider: FC<{ params: PopupParams; context: PopupContext }> = ({ params, context, children }) => {
   const { closePopup } = usePagePopup();
   const [visible, _setVisible] = useState(true);
   const setVisible = (visible: boolean) => {
@@ -106,29 +105,25 @@ const PagePopupsItemProvider: FC<{ params: PopupParams }> = ({ params, children 
       }, 300);
     }
   };
-  const _params: PopupParamsStorage = params;
-  const storedParams = { ...getStoredPopupParams(params.popupuid) };
-  if (storedParams) {
-    Object.assign(storedParams, _params);
-  }
+  const storedContext = { ...getStoredPopupContext(params.popupuid) };
 
   return (
-    <PopupParamsProvider popupParams={storedParams}>
+    <PopupParamsProvider params={params} context={context}>
       <PopupVisibleProvider visible={visible} setVisible={setVisible}>
         <DataBlockProvider
-          dataSource={storedParams.datasource}
-          collection={storedParams.collection}
-          association={storedParams.association}
-          filterByTk={storedParams.filterbytk}
-          sourceId={storedParams.sourceid}
+          dataSource={context.dataSource}
+          collection={context.collection}
+          association={context.association}
+          sourceId={context.sourceId}
+          filterByTk={params.filterbytk}
           // @ts-ignore
-          record={storedParams.record}
-          parentRecord={storedParams.parentRecord}
+          record={storedContext.record}
+          parentRecord={storedContext.parentRecord}
           action="get"
         >
           {/* Pass the service of the block where the button is located down, to refresh the block's data when the popup is closed */}
-          <BlockRequestContext.Provider value={storedParams.service}>
-            <PopupTabsPropsProvider params={storedParams}>
+          <BlockRequestContext.Provider value={storedContext.service}>
+            <PopupTabsPropsProvider params={params}>
               <div style={{ display: 'none' }}>{children}</div>
             </PopupTabsPropsProvider>
           </BlockRequestContext.Provider>
@@ -141,15 +136,18 @@ const PagePopupsItemProvider: FC<{ params: PopupParams }> = ({ params, children 
 /**
  * insert childSchema to parentSchema to render the nested popups
  * @param childSchema
- * @param params
+ * @param props
  * @param parentSchema
  */
-export const insertToPopupSchema = (childSchema: ISchema, params: PopupParams, parentSchema: ISchema) => {
+export const insertToPopupSchema = (childSchema: ISchema, props: PopupProps, parentSchema: ISchema) => {
+  const { params, context } = props;
+
   const componentSchema = {
     type: 'void',
     'x-component': 'PagePopupsItemProvider',
     'x-component-props': {
       params,
+      context,
     },
     properties: {
       popupAction: childSchema,
@@ -170,14 +168,14 @@ export const insertToPopupSchema = (childSchema: ISchema, params: PopupParams, p
 export const PagePopups = (props: { paramsList?: PopupParams[] }) => {
   const params = useParams();
   const popupParams = props.paramsList || getPopupParamsFromPath(params['*']);
-  const firstParams = popupParams[0];
   const { requestSchema } = useRequestSchema();
   const [rootSchema, setRootSchema] = useState<ISchema>(null);
+  const popupPropsRef = useRef<PopupProps[]>([]);
 
   useEffect(() => {
     const run = async () => {
       const waitList = popupParams.map(
-        (params) => getStoredPopupParams(params.popupuid)?.schema || requestSchema(params.popupuid),
+        (params) => getStoredPopupContext(params.popupuid)?.schema || requestSchema(params.popupuid),
       );
       const schemas = await Promise.all(waitList);
       const clonedSchemas = schemas.map((schema) => {
@@ -185,9 +183,16 @@ export const PagePopups = (props: { paramsList?: PopupParams[] }) => {
         result['x-read-pretty'] = true;
         return result;
       });
+      popupPropsRef.current = clonedSchemas.map((schema, index) => {
+        const schemaContext = getPopupContextFromActionOrAssociationFieldSchema(schema);
+        return {
+          params: popupParams[index],
+          context: schemaContext,
+        };
+      });
       const rootSchema = clonedSchemas[0];
       for (let i = 1; i < clonedSchemas.length; i++) {
-        insertToPopupSchema(clonedSchemas[i], popupParams[i], clonedSchemas[i - 1]);
+        insertToPopupSchema(clonedSchemas[i], popupPropsRef.current[i], clonedSchemas[i - 1]);
       }
       setRootSchema(rootSchema);
     };
@@ -201,13 +206,13 @@ export const PagePopups = (props: { paramsList?: PopupParams[] }) => {
   }
 
   return (
-    <PagePopupsItemProvider params={firstParams}>
+    <PagePopupsItemProvider params={popupPropsRef.current[0].params} context={popupPropsRef.current[0].context}>
       <SchemaComponent components={components} schema={rootSchema} onlyRenderProperties />;
     </PagePopupsItemProvider>
   );
 };
 
-const useRequestSchema = () => {
+export const useRequestSchema = () => {
   const api = useAPIClient();
 
   const requestSchema = useCallback(async (uid: string) => {

@@ -11,46 +11,33 @@ import { getPopupParamsFromPath, getPopupPathFromParams, removeLastPopupPath } f
 
 describe('getPopupParamsFromPath', () => {
   it('should parse the path and return the popup parameters', () => {
-    const path =
-      'popupUid/tab/tabValue/datasource/datasourceValue/filterbytk/filterValue/collection/collectionValue/association/associationValue/sourceid/sourceidValue';
+    const path = 'popupUid/filterbytk/filterByTKValue/tab/tabValue';
     const result = getPopupParamsFromPath(path);
 
     expect(result).toEqual([
       {
         popupuid: 'popupUid',
+        filterbytk: 'filterByTKValue',
         tab: 'tabValue',
-        datasource: 'datasourceValue',
-        filterbytk: 'filterValue',
-        collection: 'collectionValue',
-        association: 'associationValue',
-        sourceid: 'sourceidValue',
       },
     ]);
   });
 
   it('should handle multiple popups in the path', () => {
     const path =
-      'popupUid1/tab/tabValue1/datasource/datasourceValue1/filterbytk/filterValue1/collection/collectionValue1/association/associationValue1/sourceid/sourceidValue1/popups/popupUid2/tab/tabValue2/datasource/datasourceValue2/filterbytk/filterValue2/collection/collectionValue2/association/associationValue2/sourceid/sourceidValue2';
+      'popupUid1/filterbytk/filterByTKValue1/tab/tabValue1/popups/popupUid2/filterbytk/filterByTKValue2/tab/tabValue2';
     const result = getPopupParamsFromPath(path);
 
     expect(result).toEqual([
       {
         popupuid: 'popupUid1',
+        filterbytk: 'filterByTKValue1',
         tab: 'tabValue1',
-        datasource: 'datasourceValue1',
-        filterbytk: 'filterValue1',
-        collection: 'collectionValue1',
-        association: 'associationValue1',
-        sourceid: 'sourceidValue1',
       },
       {
         popupuid: 'popupUid2',
+        filterbytk: 'filterByTKValue2',
         tab: 'tabValue2',
-        datasource: 'datasourceValue2',
-        filterbytk: 'filterValue2',
-        collection: 'collectionValue2',
-        association: 'associationValue2',
-        sourceid: 'sourceidValue2',
       },
     ]);
   });
@@ -60,35 +47,24 @@ describe('getPopupPathFromParams', () => {
   it('should generate the popup path from the parameters', () => {
     const params = {
       popupuid: 'popupUid',
+      filterbytk: 'filterByTKValue',
       tab: 'tabValue',
-      datasource: 'datasourceValue',
-      filterbytk: 'filterValue',
-      collection: 'collectionValue',
-      association: 'associationValue',
-      sourceid: 'sourceidValue',
     };
     const result = getPopupPathFromParams(params);
 
-    expect(result).toBe(
-      '/popups/popupUid/datasource/datasourceValue/filterbytk/filterValue/collection/collectionValue/association/associationValue/sourceid/sourceidValue/tab/tabValue',
-    );
+    expect(result).toBe('/popups/popupUid/filterbytk/filterByTKValue/tab/tabValue');
   });
 
   it('should handle optional parameters', () => {
     const params = {
       popupuid: 'popupUid',
+      filterbytk: 'filterByTKValue',
       tab: 'tabValue',
-      datasource: 'datasourceValue',
-      filterbytk: 'filterValue',
-      collection: undefined,
-      association: 'associationValue',
-      sourceid: undefined,
+      empty: undefined,
     };
     const result = getPopupPathFromParams(params);
 
-    expect(result).toBe(
-      '/popups/popupUid/datasource/datasourceValue/filterbytk/filterValue/association/associationValue/tab/tabValue',
-    );
+    expect(result).toBe('/popups/popupUid/filterbytk/filterByTKValue/tab/tabValue');
   });
 });
 
