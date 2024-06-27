@@ -45,6 +45,7 @@ export function createModalSettingsItem(options: CreateModalSchemaSettingsItemPr
   return {
     name,
     type: 'actionModal',
+    useVisible,
     useComponentProps() {
       const fieldSchema = useFieldSchema();
       const { deepMerge } = useDesignable();
@@ -55,7 +56,6 @@ export function createModalSettingsItem(options: CreateModalSchemaSettingsItemPr
 
       return {
         title: typeof title === 'function' ? title(t) : compile(title),
-        useVisible,
         schema: schema({ ...defaultValue, ...values }),
         onSubmit(values) {
           deepMerge(getNewSchema({ fieldSchema, schemaKey: parentSchemaKey, value: values, valueKeys }));

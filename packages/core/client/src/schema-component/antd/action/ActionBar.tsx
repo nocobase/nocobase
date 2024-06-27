@@ -73,7 +73,7 @@ export const ActionBar = withDynamicSchemaProps(
         <Portal>
           <DndContext>
             <div
-              style={{ display: 'flex', alignItems: 'center', gap: 8, ...style, marginTop: token.marginLG }}
+              style={{ display: 'flex', alignItems: 'center', gap: 8, ...style, marginTop: 0 }}
               {...others}
               className={cx(others.className, 'nb-action-bar')}
             >
