@@ -35,13 +35,18 @@ import {
 import { generatePluginTranslationTemplate } from './locale';
 import { MobileHomePage } from './mobile-home-page';
 import { MobileNotFoundPage } from './mobile-not-found-page';
+
+// 导出 JSBridge，会挂在到 window 上
+import './js-bridge';
+import { MobileJSBridgeCheckerProvider } from './mobile-jsbridge-checker-provider';
+
 export * from './mobile-providers';
 
 export class PluginMobileClient extends Plugin {
   mobileRouter?: RouterManager;
   mobilePath = '/m';
   get mobileBasename() {
-    return `${this.router.getBasename()}m`; // `/m` or `/apps/aaa/m`
+    return `${this.router.getBasename()}m`; // `/m` or `/apps/aaa/m`（多应用）
   }
 
   async afterAdd(): Promise<void> {
@@ -56,6 +61,7 @@ export class PluginMobileClient extends Plugin {
     this.addInitializers();
     this.addSettings();
     this.addScopes();
+    this.app.addProvider(MobileJSBridgeCheckerProvider);
 
     this.app.pluginSettingsManager.add('mobile', {
       title: generatePluginTranslationTemplate('Mobile'),

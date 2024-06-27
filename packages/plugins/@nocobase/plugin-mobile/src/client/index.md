@@ -307,9 +307,9 @@ export interface TabItem {
 - [x] loading 效果
 - [x] 响应式 ipad、mobile 效果都比较 OK
 - [x] 多应用的支持
+- [x] 404 页面
+- [x] JS bridge
 - MobileNavigationBar Actions
-- 404 页面
-- JS bridge
 - 真机演示，并且提示测试人员要多种机型测试
 - 多语言
 - 各个部分的文档
