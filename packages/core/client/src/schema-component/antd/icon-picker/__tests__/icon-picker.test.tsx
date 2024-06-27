@@ -42,7 +42,7 @@ describe('IconPicker', () => {
     expect(screen.queryAllByRole('img').length).toBe(0);
   }, 300000);
 
-  it.only('should filter the displayed icons when changing the value of search input', async () => {
+  it('should filter the displayed icons when changing the value of search input', async () => {
     const { container } = render(<App />);
 
     const button = container.querySelector('button') as HTMLButtonElement;
