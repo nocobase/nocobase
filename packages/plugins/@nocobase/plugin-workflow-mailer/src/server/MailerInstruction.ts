@@ -75,6 +75,8 @@ export default class extends Instruction {
         });
       })
       .catch((error) => {
+        processor.logger.warn(`smtp-mailer (#${node.id}) sent failed: ${error.message}`);
+
         job.set({
           status: JOB_STATUS.FAILED,
           result: error,
