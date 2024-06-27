@@ -300,13 +300,15 @@ export interface TabItem {
 ## 待做任务
 
 - [x] settings 页面
+  - header 的样式？
 - [x] tabBar 样式优化
 - [x] navigationBar 样式优化
 - [x] 主题色
 - [x] loading 效果
 - [x] 响应式 ipad、mobile 效果都比较 OK
+- [x] 多应用的支持
 - MobileNavigationBar Actions
-- 多应用的支持
+- 404 页面
 - JS bridge
 - 真机演示，并且提示测试人员要多种机型测试
 - 多语言

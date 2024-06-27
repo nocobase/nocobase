@@ -36,10 +36,12 @@ import { generatePluginTranslationTemplate } from './locale';
 import { MobileHomePage } from './mobile-home-page';
 export * from './mobile-providers';
 
-const mobilePath = '/m';
-
 export class PluginMobileClient extends Plugin {
   mobileRouter?: RouterManager;
+  mobilePath = '/m';
+  get mobileBasename() {
+    return `${this.router.getBasename()}m`; // `/m` or `/apps/aaa/m`
+  }
 
   async afterAdd(): Promise<void> {
     this.setMobileRouter();
@@ -57,12 +59,12 @@ export class PluginMobileClient extends Plugin {
     this.app.pluginSettingsManager.add('mobile', {
       title: generatePluginTranslationTemplate('Mobile'),
       icon: 'MobileOutlined',
-      link: mobilePath,
+      link: this.mobileBasename,
     });
   }
 
   setMobileMeta() {
-    if (window.location.pathname.startsWith(mobilePath) && !isDesktop) {
+    if (window.location.pathname.startsWith(this.mobileBasename) && !isDesktop) {
       const meta = document.createElement('meta');
       meta.name = 'viewport';
       meta.content = 'width=device-width,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no';
@@ -105,7 +107,7 @@ export class PluginMobileClient extends Plugin {
 
   setMobileRouter() {
     const router = createRouterManager(
-      this.options?.config?.router || { type: 'browser', basename: mobilePath },
+      this.options?.config?.router || { type: 'browser', basename: this.mobileBasename },
       this.app,
     );
     this.mobileRouter = router;
@@ -127,14 +129,9 @@ export class PluginMobileClient extends Plugin {
     this.mobileRouter.add('signin', {
       path: '/signin',
       Component: () => {
-        window.location.href = '/signin';
-        return null;
-      },
-    });
-    this.mobileRouter.add('signup', {
-      path: '/signup',
-      Component: () => {
-        window.location.href = '/signup';
+        window.location.href = window.location.href
+          .replace(this.mobilePath, '')
+          .replace('redirect=', `redirect=${this.mobilePath}`);
         return null;
       },
     });
@@ -157,9 +154,8 @@ export class PluginMobileClient extends Plugin {
 
   addAppRoutes() {
     this.app.addComponents({ Mobile });
-
     this.app.router.add('mobile', {
-      path: `${mobilePath}/*`,
+      path: `${this.mobilePath}/*`,
       Component: 'Mobile',
     });
   }
