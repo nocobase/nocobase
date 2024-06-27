@@ -35,35 +35,21 @@ interface IconPickerReadPrettyProps {
 }
 
 const useStyle = (isSearchable: IconPickerProps['searchable']) =>
-  createStyles(({ token, css }) => {
+  createStyles(({ css }) => {
     return {
       popoverContent: css`
         width: 26em;
         ${!isSearchable && 'max-'}height: 20em;
         overflow-y: auto;
       `,
-      searchbarDivider: css`
-        margin-top: ${token.marginXS}px;
-        margin-bottom: ${token.margin}px;
-
-        &::after {
-          position: relative;
-          top: 12px;
-          display: block;
-          width: calc(100% - 20px);
-          height: 1px;
-          background: ${token.colorSplit};
-          content: '';
-        }
-      `,
     };
   })();
 
 function IconField(props: IconPickerProps) {
-  const { fontSizeXL } = theme.useToken().token;
+  const { fontSizeHeading3 } = theme.useToken().token;
   const availableIcons = [...icons.keys()];
   const layout = useFormLayout();
-  const { value, onChange, disabled, iconSize = fontSizeXL, searchable = true } = props;
+  const { value, onChange, disabled, iconSize = fontSizeHeading3, searchable = true } = props;
   const [visible, setVisible] = useState(false);
   const [filteredIcons, setFilteredIcons] = useState(availableIcons);
   const { t } = useTranslation();
@@ -115,16 +101,15 @@ function IconField(props: IconPickerProps) {
             <div>
               <div>{t('Icon')}</div>
               {searchable && (
-                <div className={styles.searchbarDivider}>
-                  <Search
-                    role="search"
-                    name="icon-search"
-                    placeholder={t('Search') + '...'}
-                    allowClear
-                    onSearch={filterIcons}
-                    onChange={(event) => filterIcons(event.target?.value)}
-                  />
-                </div>
+                <Search
+                  style={{ marginTop: 8 }}
+                  role="search"
+                  name="icon-search"
+                  placeholder={t('Search')}
+                  allowClear
+                  onSearch={filterIcons}
+                  onChange={(event) => filterIcons(event.target?.value)}
+                />
               )}
             </div>
           }

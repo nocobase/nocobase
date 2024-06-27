@@ -22,7 +22,7 @@ describe('IconPicker', () => {
     expect(screen.queryAllByRole('img').length).toBe(422);
   });
 
-  it.skip('should display the selected icon', async () => {
+  it('should display the selected icon', async () => {
     const { container } = render(<App />);
 
     const button = container.querySelector('button') as HTMLButtonElement;
@@ -45,13 +45,18 @@ describe('IconPicker', () => {
   it.only('should filter the displayed icons when changing the value of search input', async () => {
     const { container } = render(<App />);
 
-    await waitFor(() => {
-      const button = container.querySelector('button') as HTMLButtonElement;
-      userEvent.click(button);
-    });
+    const button = container.querySelector('button') as HTMLButtonElement;
+    await userEvent.click(button);
 
     const searchInput = screen.queryByRole('search') as HTMLInputElement;
+    await waitFor(() => expect(searchInput).toBeInTheDocument());
+    expect(screen.queryAllByRole('img').length).toBe(422);
     await userEvent.type(searchInput, 'left');
-    expect(screen.queryAllByRole('img').length).toBeLessThan(422);
+    await waitFor(() => expect(screen.queryAllByRole('img').length).toBeLessThan(422));
+    await userEvent.clear(searchInput);
+    await userEvent.type(searchInput, 'abcd');
+    await waitFor(() => {
+      expect(screen.getByText('No data')).toBeInTheDocument();
+    });
   });
 });
