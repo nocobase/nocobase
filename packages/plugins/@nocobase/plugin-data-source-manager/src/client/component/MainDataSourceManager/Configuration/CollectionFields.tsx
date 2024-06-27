@@ -10,9 +10,6 @@
 import { css } from '@emotion/css';
 import { createForm, Field } from '@formily/core';
 import { FieldContext, FormContext, useField } from '@formily/react';
-import { Space, Switch, Table, TableColumnProps, Tag, Tooltip, message } from 'antd';
-import React, { createContext, useContext, useMemo, useState } from 'react';
-import { useTranslation } from 'react-i18next';
 import {
   Action,
   AddCollectionField,
@@ -26,9 +23,11 @@ import {
   SchemaComponent,
   SyncFieldsAction,
   SyncSQLFieldsAction,
+  useAPIClient,
   useAttach,
   useBulkDestroyActionAndRefreshCM,
   useCollectionManager_deprecated,
+  useCollectionRecordData,
   useCompile,
   useCurrentAppInfo,
   useDestroyActionAndRefreshCM,
@@ -36,9 +35,12 @@ import {
   useResourceActionContext,
   useResourceContext,
   ViewCollectionField,
-  useAPIClient,
 } from '@nocobase/client';
+import { Alert, message, Space, Switch, Table, TableColumnProps, Tag, Tooltip } from 'antd';
+import React, { createContext, useContext, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 
+import { SetFilterTargetKey } from '../../CollectionsManager/SetFilterTargetKey';
 import { collection } from './schemas/collectionFields';
 const resourceActionProps = {
   association: {
@@ -436,9 +438,13 @@ const CollectionFieldsInternal = () => {
   );
   const addProps = { type: 'primary', database };
   const syncProps = { type: 'primary' };
+  const recordData = useCollectionRecordData();
   return (
     <FormContext.Provider value={form}>
       <FieldContext.Provider value={f}>
+        {!recordData.filterTargetKey && (
+          <Alert style={{ marginBottom: 16 }} type="warning" message={<SetFilterTargetKey />} />
+        )}
         <Space
           align={'end'}
           className={css`

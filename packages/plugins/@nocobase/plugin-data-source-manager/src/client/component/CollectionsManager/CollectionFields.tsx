@@ -8,34 +8,35 @@
  */
 
 import { createForm, Field } from '@formily/core';
-import { FieldContext, FormContext, useField, RecursionField } from '@formily/react';
-import { message } from 'antd';
-import React, { useContext, useMemo, useEffect, createContext, useState } from 'react';
-import { useTranslation } from 'react-i18next';
-import { useParams } from 'react-router-dom';
+import { FieldContext, FormContext, RecursionField, useField } from '@formily/react';
 import {
-  useAPIClient,
-  SchemaComponentOptions,
-  useRecord,
-  useAttach,
+  Collection,
   ResourceActionContext,
   ResourceActionProvider,
-  useResourceContext,
-  useCompile,
+  SchemaComponentOptions,
   Select,
-  Collection,
+  useAPIClient,
+  useAttach,
+  useCompile,
   useDataSourceManager,
+  useRecord,
+  useResourceContext,
 } from '@nocobase/client';
-import { collection, fieldsTableSchema } from './schema/collectionFields';
-import { TitleField } from './components/TitleField';
-import { CollectionFieldInterfaceSelect } from './components/CollectionFieldInterfaceSelect';
+import { Alert, message } from 'antd';
+import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { useParams } from 'react-router-dom';
 import { AddCollectionField } from './AddFieldAction';
+import { ForeignKey, SourceCollection, SourceKey, TargetKey, ThroughCollection } from './components';
+import { CollectionFieldInterfaceSelect } from './components/CollectionFieldInterfaceSelect';
 import { FieldTitleInput } from './components/FieldTitleInput';
-import { useBulkDestroyActionAndRefreshCM, useDestroyActionAndRefreshCM } from './hooks';
-import { EditCollectionField } from './EditFieldAction';
-import { SourceCollection, TargetKey, SourceKey, ForeignKey, ThroughCollection } from './components';
 import { FieldType } from './components/FieldType';
+import { TitleField } from './components/TitleField';
 import { UnSupportFields } from './components/UnSupportFields';
+import { EditCollectionField } from './EditFieldAction';
+import { useBulkDestroyActionAndRefreshCM, useDestroyActionAndRefreshCM } from './hooks';
+import { collection, fieldsTableSchema } from './schema/collectionFields';
+import { SetFilterTargetKey } from './SetFilterTargetKey';
 
 const RemoteCollectionContext = createContext<{
   targetCollection: Collection;
@@ -59,7 +60,7 @@ export const CollectionFields = () => {
   const collectionResource = useResourceContext();
   const { targetKey } = collectionResource || {};
   const targetCollection = useRecord();
-  const { [targetKey]: filterByTk, titleField: targetField, name } = targetCollection;
+  const { filterTargetKey, [targetKey]: filterByTk, titleField: targetField, name } = targetCollection;
   const [titleField, setTitleField] = useState(targetField);
   const useDataSource = (options) => {
     const service = useContext(ResourceActionContext);
@@ -186,6 +187,7 @@ export const CollectionFields = () => {
         targetCollection,
       }}
     >
+      {!filterTargetKey && <Alert style={{ marginBottom: 16 }} type="warning" message={<SetFilterTargetKey />} />}
       <ResourceActionProvider {...resourceActionProps}>
         <FormContext.Provider value={form}>
           <FieldContext.Provider value={f}>
