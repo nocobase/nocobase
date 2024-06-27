@@ -18,7 +18,3 @@ export function usePluginTranslation() {
 export function generatePluginTranslationTemplate(key: string) {
   return `{{t('${key}', { ns: '${pkg.name}', nsMode: 'fallback' })}}`;
 }
-
-export function generateCommonTranslationTemplate(key: string) {
-  return `{{t('${key}')}}`;
-}

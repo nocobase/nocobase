@@ -12,7 +12,7 @@ import { Schema } from '@formily/react';
 import { Spin } from 'antd';
 import React, { useMemo } from 'react';
 import { useRequest } from '../../api-client';
-import { useSchemaComponentContext } from '../hooks';
+import { useComponent, useSchemaComponentContext } from '../hooks';
 import { FormProvider } from './FormProvider';
 import { SchemaComponent } from './SchemaComponent';
 
@@ -30,6 +30,7 @@ export interface RemoteSchemaComponentProps {
    * @default true
    */
   memoized?: boolean;
+  NotFoundPage?: React.ComponentType | string;
 }
 
 const defaultTransform = (s: Schema) => s;
@@ -44,6 +45,7 @@ const RequestSchemaComponent: React.FC<RemoteSchemaComponentProps> = (props) => 
     memoized,
     components,
     onSuccess,
+    NotFoundPage,
     schemaTransform = defaultTransform,
   } = props;
   const { reset } = useSchemaComponentContext();
@@ -60,6 +62,7 @@ const RequestSchemaComponent: React.FC<RemoteSchemaComponentProps> = (props) => 
       reset && reset();
     },
   });
+  const NotFoundComponent = useComponent(NotFoundPage);
   if (loading || hidden) {
     return (
       <div style={{ textAlign: 'center', marginTop: 20 }}>
@@ -67,6 +70,11 @@ const RequestSchemaComponent: React.FC<RemoteSchemaComponentProps> = (props) => 
       </div>
     );
   }
+
+  if (Object.keys(data?.data).length === 0) {
+    return NotFoundComponent ? <NotFoundComponent /> : null;
+  }
+
   return noForm ? (
     <SchemaComponent
       memoized={memoized}

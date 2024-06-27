@@ -34,6 +34,7 @@ import {
 } from './mobile-tab-bar';
 import { generatePluginTranslationTemplate } from './locale';
 import { MobileHomePage } from './mobile-home-page';
+import { MobileNotFoundPage } from './mobile-not-found-page';
 export * from './mobile-providers';
 
 export class PluginMobileClient extends Plugin {
@@ -102,7 +103,14 @@ export class PluginMobileClient extends Plugin {
   }
 
   addComponents() {
-    this.app.addComponents({ MobilePage, MobileNavigationBar, MobileHomePage, MobileContent, MobileTabBar });
+    this.app.addComponents({
+      MobilePage,
+      MobileNavigationBar,
+      MobileHomePage,
+      MobileContent,
+      MobileTabBar,
+      MobileNotFoundPage,
+    });
   }
 
   setMobileRouter() {
@@ -149,6 +157,11 @@ export class PluginMobileClient extends Plugin {
     this.mobileRouter.add('mobile.schema.tabs.page', {
       path: '/schema/:pageSchemaUid/tabs/:tabSchemaUid',
       Component: 'MobileSchemaPage',
+    });
+
+    this.mobileRouter.add('not-found', {
+      path: '*',
+      Component: 'MobileNotFoundPage',
     });
   }
 

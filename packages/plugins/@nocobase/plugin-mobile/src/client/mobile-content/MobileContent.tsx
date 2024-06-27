@@ -20,6 +20,7 @@ export const MobileContent = () => {
     <RemoteSchemaComponent
       uid={tabSchemaUid || activeTabBarItem.children?.[0]?.options?.tabSchemaUid}
       memoized={false}
+      NotFoundPage={'MobileNotFoundPage'}
     />
   );
 };

@@ -15,7 +15,7 @@ export interface MobileSchemaPageProps {
   children?: React.ReactNode;
 }
 
-export const MobileSchemaPage: FC<MobileSchemaPageProps> = ({ children }) => {
+export const MobileSchemaPage: FC<MobileSchemaPageProps> = () => {
   const { pageSchemaUid } = useParams<{ pageSchemaUid: string }>();
-  return <RemoteSchemaComponent uid={pageSchemaUid} memoized={false} />;
+  return <RemoteSchemaComponent uid={pageSchemaUid} memoized={false} NotFoundPage={'MobileNotFoundPage'} />;
 };
