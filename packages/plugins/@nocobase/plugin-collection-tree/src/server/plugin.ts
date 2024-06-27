@@ -8,9 +8,8 @@
  */
 
 import { Plugin } from '@nocobase/server';
-import { Collection, Model } from '@nocobase/database';
-import { AdjacencyListRepository } from '@nocobase/database/lib/repositories/tree-repository/adjacency-list-repository';
-import { SequelizeCollectionManager, SequelizeDataSource } from '@nocobase/data-source-manager';
+import { Collection, Model, SyncOptions, AdjacencyListRepository } from '@nocobase/database';
+import { DataSource, SequelizeCollectionManager, SequelizeDataSource } from '@nocobase/data-source-manager';
 
 class PluginCollectionTreeServer extends Plugin {
   async beforeLoad() {
@@ -41,28 +40,32 @@ class PluginCollectionTreeServer extends Plugin {
             ],
           });
 
-          const getTreePath = async (model: Model, path: string, transaction: any) => {
+          const getTreePath = async (model: Model, path: string, collectionName: string) => {
             if (model.dataValues?.parentId !== null) {
-              const parent = await model.constructor.findByPk(model.dataValues?.parentId, { transaction });
+              const parent = await this.app.db.getRepository(collectionName).findOne({
+                filter: {
+                  id: model.dataValues?.parentId,
+                },
+              });
               if (parent) {
                 path = `/${parent.dataValues?.id}${path}`;
               }
               if (parent.dataValues?.parentId !== null) {
-                path = await getTreePath(parent, path, transaction);
+                path = await getTreePath(parent, path, collectionName);
               }
             }
             return path;
           };
 
-          collectionManager.db.on(`${collection.name}.afterSync`, async ({ transaction }) => {
-            await this.db.getCollection(name).sync({ transaction });
+          collectionManager.db.on(`${collection.name}.afterSync`, async (transaction: SyncOptions) => {
+            await this.db.getCollection(name).sync(transaction);
           });
 
           //afterCreate
           this.db.on(`${collection.name}.afterCreate`, async (model: Model, options) => {
             const { transaction } = options;
             let path = `/${model.dataValues?.id}`;
-            path = await getTreePath(model, path, transaction);
+            path = await getTreePath(model, path, collection.name);
             await this.app.db.getRepository(name).create({
               values: {
                 nodePk: model.dataValues?.id,
@@ -77,7 +80,7 @@ class PluginCollectionTreeServer extends Plugin {
           this.db.on(`${collection.name}.afterUpdate`, async (model, options) => {
             const { transaction } = options;
             let path = `/${model.dataValues?.id}`;
-            path = await getTreePath(model, path, transaction);
+            path = await getTreePath(model, path, collection.name);
             await this.app.db.getRepository(name).update({
               values: {
                 path,
