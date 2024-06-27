@@ -41,6 +41,7 @@
     "@nocobase/plugin-logger": "1.2.9-alpha",
     "@nocobase/plugin-map": "1.2.9-alpha",
     "@nocobase/plugin-mobile": "1.2.9-alpha",
+    "@nocobase/plugin-mobile-client": "1.2.9-alpha",
     "@nocobase/plugin-mock-collections": "1.2.9-alpha",
     "@nocobase/plugin-multi-app-manager": "1.2.9-alpha",
     "@nocobase/plugin-multi-app-share-collection": "1.2.9-alpha",

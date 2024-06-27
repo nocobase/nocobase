@@ -296,6 +296,7 @@ export interface TabItem {
   - ActionSheet
   - 弹出层
 - 数据表字段是否需要预览一些字段？
+- preset 中老的依赖是否删除，目前看如果删除，则原来的项目会报错
 
 ## 待做任务
 
