@@ -50,7 +50,6 @@ export const CollectionManagerPage = () => {
   const location = useLocation();
   const dataSourceType = new URLSearchParams(location.search).get('type');
   const type = dataSourceType && plugin.types.get(dataSourceType);
-  console.log(type?.allowCollectionCreate);
   return (
     <SchemaComponent
       schema={schema2}
