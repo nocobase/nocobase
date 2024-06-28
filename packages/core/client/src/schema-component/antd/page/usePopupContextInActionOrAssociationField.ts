@@ -38,7 +38,7 @@ export interface SubPageContext extends PopupContext {
   };
 }
 
-const CONTEXT_SCHEMA_KEY = 'x-nb-popup-context';
+export const CONTEXT_SCHEMA_KEY = 'x-nb-popup-context';
 
 /**
  * support only in Action or AssociationField, because it depends on a specific schema structure

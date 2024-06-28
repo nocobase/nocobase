@@ -21,6 +21,7 @@ import { ActionContextProvider, useActionContext } from '../action';
 import { EllipsisWithTooltip } from '../input/EllipsisWithTooltip';
 import { PopupVisibleProvider } from '../page/PagePopups';
 import { usePagePopup } from '../page/pagePopupUtils';
+import { CONTEXT_SCHEMA_KEY } from '../page/usePopupContextInActionOrAssociationField';
 import { useAssociationFieldContext, useFieldNames, useInsertSchema } from './hooks';
 import { transformNestedData } from './InternalCascadeSelect';
 import schema from './schema';
@@ -64,7 +65,7 @@ const ButtonLinkList: FC<ButtonListProps> = (props) => {
   const isTreeCollection = targetCollection?.template === 'tree';
   const ellipsisWithTooltipRef = useRef<IEllipsisWithTooltipRef>();
   const getLabelUiSchema = useLabelUiSchemaV2();
-  const { openPopup } = usePagePopup();
+  const { openPopup, getPopupContext } = usePagePopup();
 
   const renderRecords = () =>
     toArr(props.value).map((record, index, arr) => {
@@ -97,7 +98,9 @@ const ButtonLinkList: FC<ButtonListProps> = (props) => {
                   e.stopPropagation();
                   e.preventDefault();
                   if (designable) {
-                    insertViewer(schema.Viewer);
+                    const viewerSchema = { ...schema.Viewer };
+                    viewerSchema[CONTEXT_SCHEMA_KEY] = getPopupContext();
+                    insertViewer(viewerSchema);
                   }
                   openPopup({
                     recordData: record,
