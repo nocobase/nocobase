@@ -16,8 +16,6 @@ import {
   AddCollectionAction,
   AddCollectionField,
   AddFieldAction,
-  EditCollection,
-  EditCollectionAction,
   EditCollectionField,
   EditFieldAction,
   OverridingCollectionField,
@@ -36,6 +34,7 @@ import { useLocation } from 'react-router-dom';
 import { ConfigurationTable } from './ConfigurationTable';
 import { ConfigurationTabs } from './ConfigurationTabs';
 import PluginDatabaseConnectionsClient from '../../';
+import { EditCollection } from './EditCollectionAction';
 
 const schema2: ISchema = {
   type: 'object',
@@ -51,6 +50,7 @@ export const CollectionManagerPage = () => {
   const location = useLocation();
   const dataSourceType = new URLSearchParams(location.search).get('type');
   const type = dataSourceType && plugin.types.get(dataSourceType);
+  console.log(type?.allowCollectionCreate);
   return (
     <SchemaComponent
       schema={schema2}
@@ -63,7 +63,6 @@ export const CollectionManagerPage = () => {
         AddCollection: type?.AddCollection || AddCollection,
         AddCollectionAction,
         EditCollection: type?.EditCollection || EditCollection,
-        EditCollectionAction,
         DeleteCollection: type?.DeleteCollection || DeleteCollection,
         DeleteCollectionAction,
         EditFieldAction,
@@ -77,9 +76,10 @@ export const CollectionManagerPage = () => {
         SyncSQLFieldsAction,
       }}
       scope={{
-        allowCollectionDeletion: type?.allowCollectionDeletion,
-        disabledCongigureFields: type?.disabledCongigureFields,
+        allowCollectionDeletion: !!type?.allowCollectionDeletion,
+        disabledConfigureFields: type?.disabledConfigureFields,
         disableAddFields: type?.disableAddFields,
+        allowCollectionCreate: !!type?.allowCollectionCreate,
       }}
     />
   );

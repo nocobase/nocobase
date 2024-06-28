@@ -177,7 +177,7 @@ export const collectionTableSchema: ISchema = {
           'x-component-props': {
             type: 'primary',
           },
-          // 'x-visible': false,
+          'x-visible': '{{allowCollectionCreate}}',
         },
       },
     },
@@ -298,7 +298,7 @@ export const collectionTableSchema: ISchema = {
                       },
                     },
                   },
-                  'x-hidden': '{{disabledCongigureFields}}',
+                  'x-hidden': '{{disabledConfigureFields}}',
                 },
                 update: {
                   type: 'void',
