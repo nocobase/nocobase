@@ -10,7 +10,6 @@
 import React from 'react';
 import { Outlet } from 'react-router-dom';
 import { Plugin, RouterManager, createRouterManager } from '@nocobase/client';
-import { isDesktop } from 'react-device-detect';
 
 import { Mobile } from './mobile';
 import { MobileLayout } from './mobile-layout';
@@ -55,7 +54,6 @@ export class PluginMobileClient extends Plugin {
   }
 
   async load() {
-    this.setMobileMeta();
     this.addComponents();
     this.addAppRoutes();
     this.addRoutes();
@@ -69,18 +67,6 @@ export class PluginMobileClient extends Plugin {
       icon: 'MobileOutlined',
       link: this.mobileBasename,
     });
-  }
-
-  setMobileMeta() {
-    if (window.location.pathname.startsWith(this.mobileBasename) && !isDesktop) {
-      const meta = document.createElement('meta');
-      meta.name = 'viewport';
-      meta.content = 'width=device-width,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no';
-      document.head.appendChild(meta);
-
-      // 设置 body 背景色 background: '#fafbfc'
-      (document.querySelector('#root') as HTMLDivElement).style.backgroundColor = '#fafbfc';
-    }
   }
 
   addScopes() {

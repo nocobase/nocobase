@@ -9,12 +9,35 @@
 
 import React from 'react';
 import { usePlugin } from '@nocobase/client';
+import { isDesktop } from 'react-device-detect';
+
 import { PluginMobileClient } from '../index';
 import { DesktopMode } from '../desktop-mode/DesktopMode';
 
 export const Mobile = () => {
   const mobilePlugin = usePlugin(PluginMobileClient);
   const RouterComponent = mobilePlugin.getRouterComponent();
+
+  // 设置的移动端 meta
+  React.useEffect(() => {
+    if (!isDesktop) {
+      let viewportMeta = document.querySelector('meta[name="viewport"]');
+      if (!viewportMeta) {
+        viewportMeta = document.createElement('meta');
+        viewportMeta.setAttribute('name', 'viewport');
+        document.head.appendChild(viewportMeta);
+      }
+      viewportMeta.setAttribute('content', 'width=device-width,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no');
+
+      document.body.style.backgroundColor = '#fafbfc';
+
+      // 触发视图重绘
+      const fakeBody = document.createElement('div');
+      document.body.appendChild(fakeBody);
+      document.body.removeChild(fakeBody);
+    }
+  }, [isDesktop]);
+
   return (
     <DesktopMode>
       <RouterComponent />

@@ -19,7 +19,7 @@ export const useStyles = createStyles(() => ({
     zIndex: 1000,
     height: NavigationBarHeight,
     boxSizing: 'border-box',
-    borderTop: '1px solid var(--adm-color-background)',
+    borderTop: '1px solid var(--adm-color-border)',
     backgroundColor: 'var(--adm-color-background)',
   },
   mobileTabBarContent: {
