@@ -34,7 +34,7 @@ let fieldSchemaMock = null;
 let dnMock = null;
 
 describe('usePopupContextInActionOrAssociationField', () => {
-  test('updatePopupContext should update the x-nb-popup-context field in the popup schema', () => {
+  test('updatePopupContext should update the x-action-context field in the popup schema', () => {
     fieldSchemaMock = {
       properties: {
         drawer: {
@@ -61,8 +61,8 @@ describe('usePopupContextInActionOrAssociationField', () => {
 
     expect(dnMock.emit).toHaveBeenCalledWith('patch', {
       schema: {
-        'x-uid': fieldSchemaMock.properties.drawer['x-uid'],
-        'x-nb-popup-context': context,
+        'x-uid': fieldSchemaMock['x-uid'],
+        'x-action-context': context,
       },
     });
     expect(dnMock.emit).toHaveBeenCalledTimes(1);
@@ -70,9 +70,9 @@ describe('usePopupContextInActionOrAssociationField', () => {
       properties: {
         drawer: {
           'x-uid': 'drawer',
-          'x-nb-popup-context': context,
         },
       },
+      'x-action-context': context,
       'x-uid': 'fieldSchemaMock',
     });
 
@@ -88,8 +88,8 @@ describe('usePopupContextInActionOrAssociationField', () => {
     });
     expect(dnMock.emit).toHaveBeenCalledWith('patch', {
       schema: {
-        'x-uid': fieldSchemaMock.properties.drawer['x-uid'],
-        'x-nb-popup-context': {
+        'x-uid': fieldSchemaMock['x-uid'],
+        'x-action-context': {
           dataSource: 'dataSource',
           association: 'association',
         },

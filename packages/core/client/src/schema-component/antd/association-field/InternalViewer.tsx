@@ -21,7 +21,6 @@ import { ActionContextProvider, useActionContext } from '../action';
 import { EllipsisWithTooltip } from '../input/EllipsisWithTooltip';
 import { PopupVisibleProvider } from '../page/PagePopups';
 import { usePagePopup } from '../page/pagePopupUtils';
-import { CONTEXT_SCHEMA_KEY } from '../page/usePopupContextInActionOrAssociationField';
 import { useAssociationFieldContext, useFieldNames, useInsertSchema } from './hooks';
 import { transformNestedData } from './InternalCascadeSelect';
 import schema from './schema';
@@ -98,9 +97,7 @@ const ButtonLinkList: FC<ButtonListProps> = (props) => {
                   e.stopPropagation();
                   e.preventDefault();
                   if (designable) {
-                    const viewerSchema = { ...schema.Viewer };
-                    viewerSchema[CONTEXT_SCHEMA_KEY] = getPopupContext();
-                    insertViewer(viewerSchema);
+                    insertViewer(schema.Viewer);
                   }
                   openPopup({
                     recordData: record,

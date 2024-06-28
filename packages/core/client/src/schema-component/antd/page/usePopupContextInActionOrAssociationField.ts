@@ -38,7 +38,7 @@ export interface SubPageContext extends PopupContext {
   };
 }
 
-export const CONTEXT_SCHEMA_KEY = 'x-nb-popup-context';
+export const CONTEXT_SCHEMA_KEY = 'x-action-context';
 
 /**
  * support only in Action or AssociationField, because it depends on a specific schema structure
@@ -48,30 +48,24 @@ export const usePopupContextInActionOrAssociationField = () => {
   const fieldSchema = useFieldSchema();
   const { dn } = useDesignable();
 
-  const popupSchema = getPopupSchemaFromActionOrAssociationFieldSchema(fieldSchema);
-
   const updatePopupContext = useCallback(
     (context: PopupContext) => {
-      if (!popupSchema) {
-        return;
-      }
-
       context = _.omitBy(context, _.isNil) as PopupContext;
 
       if (_.isEqual(context, getPopupContextFromActionOrAssociationFieldSchema(fieldSchema))) {
         return;
       }
 
-      popupSchema[CONTEXT_SCHEMA_KEY] = context;
+      fieldSchema[CONTEXT_SCHEMA_KEY] = context;
 
       return dn.emit('patch', {
         schema: {
-          'x-uid': popupSchema['x-uid'],
+          'x-uid': fieldSchema['x-uid'],
           [CONTEXT_SCHEMA_KEY]: context,
         },
       });
     },
-    [popupSchema, dn],
+    [fieldSchema, dn],
   );
 
   return {
@@ -86,18 +80,6 @@ export const usePopupContextInActionOrAssociationField = () => {
  * @param fieldSchema support only schema of Action or AssociationField, because it depends on a specific schema structure
  * @returns
  */
-function getPopupSchemaFromActionOrAssociationFieldSchema(fieldSchema: ISchema) {
-  if (!fieldSchema?.properties) {
-    return;
-  }
-
-  return fieldSchema.properties[Object.keys(fieldSchema.properties)[0]] as ISchema;
-}
-
-/**
- * @param fieldSchema support only schema of Action or AssociationField, because it depends on a specific schema structure
- * @returns
- */
 export function getPopupContextFromActionOrAssociationFieldSchema(fieldSchema: ISchema) {
-  return getPopupSchemaFromActionOrAssociationFieldSchema(fieldSchema)?.[CONTEXT_SCHEMA_KEY] as PopupContext;
+  return fieldSchema[CONTEXT_SCHEMA_KEY] as PopupContext;
 }
