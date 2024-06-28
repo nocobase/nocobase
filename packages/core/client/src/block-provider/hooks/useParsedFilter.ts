@@ -39,35 +39,41 @@ export function useParsedFilter({ filterOption }: { filterOption: any }) {
     _run();
     const run = _.debounce(_run, DEBOUNCE_WAIT);
 
-    reaction(() => {
-      // 这一步主要是为了使 reaction 能够收集到依赖
-      const flat = flatten(filterOption, {
-        breakOn({ key }) {
-          return key.startsWith('$') && key !== '$and' && key !== '$or';
-        },
-        transformValue(value) {
-          if (!isVariable(value)) {
-            return value;
-          }
-          const variableName = getVariableName(value);
-          const variable = findVariable(variableName);
+    reaction(
+      () => {
+        // 这一步主要是为了使 reaction 能够收集到依赖
+        const flat = flatten(filterOption, {
+          breakOn({ key }) {
+            return key.startsWith('$') && key !== '$and' && key !== '$or';
+          },
+          transformValue(value) {
+            if (!isVariable(value)) {
+              return value;
+            }
+            const variableName = getVariableName(value);
+            const variable = findVariable(variableName);
 
-          if (process.env.NODE_ENV !== 'production' && !variable) {
-            throw new Error(`useParsedFilter: can not find variable ${variableName}`);
-          }
+            if (process.env.NODE_ENV !== 'production' && !variable) {
+              throw new Error(`useParsedFilter: can not find variable ${variableName}`);
+            }
 
-          const result = getValuesByPath(
-            {
-              [variableName]: variable?.ctx || {},
-            },
-            getPath(value),
-          );
-          return result;
-        },
-      });
-      return flat;
-    }, run);
-  }, [JSON.stringify(filterOption), parseVariableLoading, parseFilter, findVariable]);
+            const result = getValuesByPath(
+              {
+                [variableName]: variable?.ctx || {},
+              },
+              getPath(value),
+            );
+            return result;
+          },
+        });
+        return flat;
+      },
+      run,
+      {
+        equals: _.isEqual,
+      },
+    );
+  }, [JSON.stringify(filterOption), parseFilter, findVariable]);
 
   return {
     /** 数据范围的筛选参数 */
