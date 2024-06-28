@@ -69,12 +69,13 @@ export const CreateDatabaseConnectAction = () => {
                         type: 'void',
                         'x-component': 'Action.Drawer.Footer',
                         properties: {
-                          testConnectiion: {
+                          testConnection: {
                             title: `{{ t("Test Connection",{ ns: "${NAMESPACE}" }) }}`,
                             'x-component': 'Action',
                             'x-component-props': {
                               useAction: '{{ useTestConnectionAction }}',
                             },
+                            'x-hidden': type?.disableTestConnection,
                           },
                           cancel: {
                             title: '{{t("Cancel")}}',
