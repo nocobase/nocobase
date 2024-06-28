@@ -101,7 +101,3 @@ function getPopupSchemaFromActionOrAssociationFieldSchema(fieldSchema: ISchema) 
 export function getPopupContextFromActionOrAssociationFieldSchema(fieldSchema: ISchema) {
   return getPopupSchemaFromActionOrAssociationFieldSchema(fieldSchema)?.[CONTEXT_SCHEMA_KEY] as PopupContext;
 }
-
-export function getSubPageContextFromPopupSchema(fieldSchema: ISchema) {
-  return fieldSchema?.[CONTEXT_SCHEMA_KEY] as SubPageContext;
-}

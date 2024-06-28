@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { RecursionField, useFieldSchema } from '@formily/react';
+import { ISchema, RecursionField, useFieldSchema } from '@formily/react';
 import _ from 'lodash';
 import React, { FC, useCallback, useContext, useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
@@ -34,7 +34,7 @@ import { useSubPagesStyle } from './SubPages.style';
 import { PopupParams, getPopupParamsFromPath, getStoredPopupContext, storePopupContext } from './pagePopupUtils';
 import {
   SubPageContext,
-  getSubPageContextFromPopupSchema,
+  getPopupContextFromActionOrAssociationFieldSchema,
   usePopupContextInActionOrAssociationField,
 } from './usePopupContextInActionOrAssociationField';
 
@@ -103,28 +103,29 @@ export const SubPage = () => {
   const { subPageParams, popupParams } = getSubPageParamsAndPopupsParams(params['*']);
   const { styles } = useSubPagesStyle();
   const { requestSchema } = useRequestSchema();
-  const [subPageSchema, setSubPageSchema] = useState(null);
+  const [actionSchema, setActionSchema] = useState(null);
 
   useEffect(() => {
     const run = async () => {
       const stored = getStoredPopupContext(subPageParams.subpageuid);
 
       if (stored) {
-        return setSubPageSchema(stored.schema);
+        return setActionSchema(stored.schema);
       }
 
       const schema = await requestSchema(subPageParams.subpageuid);
-      setSubPageSchema(schema);
+      setActionSchema(schema);
     };
     run();
   }, [subPageParams.subpageuid]);
 
   // When the URL changes, this component may be re-rendered, because at this time the Schema is still old, so there may be some issues, so here is a judgment.
-  if (!subPageSchema || subPageSchema['x-uid'] !== subPageParams.subpageuid) {
+  if (!actionSchema || actionSchema['x-uid'] !== subPageParams.subpageuid) {
     return null;
   }
 
-  const context = getSubPageContextFromPopupSchema(subPageSchema) as SubPageContext;
+  const subPageSchema = Object.values(actionSchema.properties)[0] as ISchema;
+  const context = getPopupContextFromActionOrAssociationFieldSchema(actionSchema) as SubPageContext;
 
   return (
     <div className={styles.container}>
@@ -181,22 +182,15 @@ export const useNavigateTOSubPage = () => {
       return setVisibleFromAction?.(true);
     }
 
-    const subPageSchema = fieldSchema.properties[Object.keys(fieldSchema.properties)[0]];
-
-    if (!subPageSchema) {
-      return;
-    }
-
-    const subPageUid = subPageSchema['x-uid'];
     const filterByTK = record?.data?.[collection.getPrimaryKey()];
     const sourceId = parentRecord?.data?.[cm.getCollection(association?.split('.')[0])?.getPrimaryKey()];
     const params = {
-      subpageuid: subPageUid,
+      subpageuid: fieldSchema['x-uid'],
       filterbytk: filterByTK,
     };
 
-    storePopupContext(subPageSchema['x-uid'], {
-      schema: subPageSchema,
+    storePopupContext(fieldSchema['x-uid'], {
+      schema: fieldSchema,
       record,
       parentRecord,
       service,
