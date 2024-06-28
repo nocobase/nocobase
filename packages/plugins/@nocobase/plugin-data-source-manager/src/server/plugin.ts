@@ -363,11 +363,15 @@ export class PluginDataSourceManagerServer extends Plugin {
       });
     });
 
-    this.app.db.on('dataSourcesCollections.afterSaveWithAssociations', async (model: DataSourcesCollectionModel) => {
-      model.load({
-        app: this.app,
-      });
-    });
+    this.app.db.on(
+      'dataSourcesCollections.afterSaveWithAssociations',
+      async (model: DataSourcesCollectionModel, { transaction }) => {
+        await model.load({
+          app: this.app,
+          transaction,
+        });
+      },
+    );
 
     this.app.db.on('dataSources.afterDestroy', async (model: DataSourceModel) => {
       this.app.dataSourceManager.dataSources.delete(model.get('key'));

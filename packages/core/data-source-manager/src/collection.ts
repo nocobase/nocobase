@@ -28,8 +28,11 @@ export class Collection implements ICollection {
   }
 
   updateOptions(options: CollectionOptions, mergeOptions?: any) {
-    let newOptions = lodash.cloneDeep(options);
-    newOptions = merge(this.options, newOptions, mergeOptions);
+    const newOptions = {
+      ...this.options,
+      ...lodash.cloneDeep(options),
+    };
+
     this.options = newOptions;
 
     this.setFields(newOptions.fields || []);
