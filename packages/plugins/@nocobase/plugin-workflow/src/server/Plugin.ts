@@ -481,7 +481,7 @@ export default class PluginWorkflowServer extends Plugin {
     try {
       const execution = await this.createExecution(...event);
       // NOTE: cache first execution for most cases
-      if (execution?.status == EXECUTION_STATUS.QUEUEING && !this.executing && !this.pending.length) {
+      if (execution?.status === EXECUTION_STATUS.QUEUEING && !this.executing && !this.pending.length) {
         this.pending.push([execution]);
       }
     } catch (err) {
