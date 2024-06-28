@@ -11,28 +11,59 @@ import { CloseOutlined, LoadingOutlined } from '@ant-design/icons';
 import { useFormLayout } from '@formily/antd-v5';
 import { connect, mapProps, mapReadPretty } from '@formily/react';
 import { isValid } from '@formily/shared';
-import { Button, Space } from 'antd';
+import { Button, Empty, Space, Input, theme } from 'antd';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Icon, hasIcon, icons } from '../../../icon';
 import { StablePopover } from '../popover';
+import { debounce } from 'lodash';
+import { createStyles } from 'antd-style';
+
+const { Search } = Input;
 
 export interface IconPickerProps {
   value?: string;
   onChange?: (value: string) => void;
   disabled?: boolean;
   suffix?: React.ReactNode;
+  iconSize?: number;
+  searchable?: boolean;
 }
 
 interface IconPickerReadPrettyProps {
   value?: string;
 }
 
+const useStyle = (isSearchable: IconPickerProps['searchable']) =>
+  createStyles(({ css }) => {
+    return {
+      popoverContent: css`
+        width: 26em;
+        ${!isSearchable && 'max-'}height: 20em;
+        overflow-y: auto;
+      `,
+    };
+  })();
+
 function IconField(props: IconPickerProps) {
+  const { fontSizeHeading3 } = theme.useToken().token;
+  const availableIcons = [...icons.keys()];
   const layout = useFormLayout();
-  const { value, onChange, disabled } = props;
+  const { value, onChange, disabled, iconSize = fontSizeHeading3, searchable = true } = props;
   const [visible, setVisible] = useState(false);
+  const [filteredIcons, setFilteredIcons] = useState(availableIcons);
   const { t } = useTranslation();
+  const { styles } = useStyle(searchable);
+
+  const filterIcons = debounce((value) => {
+    const searchValue = value?.trim() ?? '';
+    setFilteredIcons(
+      searchValue.length
+        ? availableIcons.filter((i) => i.split(' ').some((val) => val.includes(searchValue)))
+        : availableIcons,
+    );
+  }, 250);
+
   return (
     <div>
       <Space.Compact>
@@ -46,22 +77,42 @@ function IconField(props: IconPickerProps) {
             setVisible(val);
           }}
           content={
-            <div style={{ width: '26em', maxHeight: '20em', overflowY: 'auto' }}>
-              {[...icons.keys()].map((key) => (
-                <span
-                  key={key}
-                  style={{ fontSize: 18, marginRight: 10, cursor: 'pointer' }}
-                  onClick={() => {
-                    onChange(key);
-                    setVisible(false);
-                  }}
-                >
-                  <Icon type={key} />
-                </span>
-              ))}
+            <div className={styles.popoverContent}>
+              {filteredIcons.length === 0 ? (
+                <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />
+              ) : (
+                filteredIcons.map((key) => (
+                  <span
+                    key={key}
+                    title={key.replace(/outlined|filled|twotone$/i, '')}
+                    style={{ fontSize: iconSize, marginRight: 10, cursor: 'pointer' }}
+                    onClick={() => {
+                      onChange(key);
+                      setVisible(false);
+                    }}
+                  >
+                    <Icon type={key} />
+                  </span>
+                ))
+              )}
             </div>
           }
-          title={t('Icon')}
+          title={
+            <div>
+              <div>{t('Icon')}</div>
+              {searchable && (
+                <Search
+                  style={{ marginTop: 8 }}
+                  role="search"
+                  name="icon-search"
+                  placeholder={t('Search')}
+                  allowClear
+                  onSearch={filterIcons}
+                  onChange={(event) => filterIcons(event.target?.value)}
+                />
+              )}
+            </div>
+          }
           trigger="click"
         >
           <Button size={layout.size as any} disabled={disabled}>

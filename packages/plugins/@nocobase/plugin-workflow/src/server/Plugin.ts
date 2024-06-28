@@ -42,6 +42,7 @@ type Pending = [ExecutionModel, JobModel?];
 type EventOptions = {
   eventKey?: string;
   context?: any;
+  deferred?: boolean;
   [key: string]: any;
 } & Transactionable;
 
@@ -355,7 +356,7 @@ export default class PluginWorkflowServer extends Plugin {
   private async triggerSync(
     workflow: WorkflowModel,
     context: object,
-    options: EventOptions = {},
+    { deferred, ...options }: EventOptions = {},
   ): Promise<Processor | null> {
     let execution;
     try {
@@ -384,6 +385,18 @@ export default class PluginWorkflowServer extends Plugin {
     this.dispatch();
   }
 
+  /**
+   * Start a deferred execution
+   * @experimental
+   */
+  public start(execution: ExecutionModel) {
+    if (execution.status !== EXECUTION_STATUS.STARTED) {
+      return;
+    }
+    this.pending.push([execution]);
+    this.dispatch();
+  }
+
   public createProcessor(execution: ExecutionModel, options = {}): Processor {
     return new Processor(execution, { ...options, plugin: this });
   }
@@ -393,7 +406,7 @@ export default class PluginWorkflowServer extends Plugin {
     context,
     options: EventOptions,
   ): Promise<ExecutionModel | null> {
-    const { transaction = await this.db.sequelize.transaction() } = options;
+    const { transaction = await this.db.sequelize.transaction(), deferred } = options;
     const trigger = this.triggers.get(workflow.type);
     const valid = await trigger.validateEvent(workflow, context, { ...options, transaction });
     if (!valid) {
@@ -410,7 +423,7 @@ export default class PluginWorkflowServer extends Plugin {
           context,
           key: workflow.key,
           eventKey: options.eventKey ?? randomUUID(),
-          status: EXECUTION_STATUS.QUEUEING,
+          status: deferred ? EXECUTION_STATUS.STARTED : EXECUTION_STATUS.QUEUEING,
         },
         { transaction },
       );
@@ -468,7 +481,7 @@ export default class PluginWorkflowServer extends Plugin {
     try {
       const execution = await this.createExecution(...event);
       // NOTE: cache first execution for most cases
-      if (execution && !this.executing && !this.pending.length) {
+      if (execution?.status === EXECUTION_STATUS.QUEUEING && !this.executing && !this.pending.length) {
         this.pending.push([execution]);
       }
     } catch (err) {

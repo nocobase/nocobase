@@ -15,6 +15,7 @@ import { reaction } from '@formily/reactive';
 import { uid } from '@formily/shared';
 import { getValuesByPath } from '@nocobase/utils/client';
 import { ConfigProvider, Spin, theme } from 'antd';
+import _ from 'lodash';
 import React, { useEffect, useMemo } from 'react';
 import { useActionContext } from '..';
 import { useAttach, useComponent, useDesignable } from '../..';
@@ -180,7 +181,7 @@ const WithForm = (props: WithFormProps) => {
                     return result;
                   },
                   getSubscriber(action, field, rule, variables, localVariables),
-                  { fireImmediately: true },
+                  { fireImmediately: true, equals: _.isEqual },
                 ),
               );
             });
