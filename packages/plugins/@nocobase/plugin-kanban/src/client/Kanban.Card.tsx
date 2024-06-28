@@ -61,10 +61,10 @@ const cardCss = css`
     wordbreak: break-all;
     wordwrap: break-word;
   }
-  .ant-formily-item-label {
-    color: #8c8c8c;
-    fontweight: normal;
-  }
+  // .ant-formily-item-label {
+  //   color: #8c8c8c;
+  //   fontweight: normal;
+  // }
 `;
 
 const MemorizedRecursionField = React.memo(RecursionField);

@@ -11,10 +11,9 @@ import { TinyColor } from '@ctrl/tinycolor';
 import { useDndContext, useDndMonitor, useDraggable, useDroppable } from '@dnd-kit/core';
 import { ISchema, RecursionField, Schema, observer, useField, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
+import { theme } from 'antd';
 import cls from 'classnames';
 import _ from 'lodash';
-import { css } from '@emotion/css';
-import { theme } from 'antd';
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { SchemaComponent, useDesignable, useSchemaInitializerRender } from '../../../';
 import { useFormBlockContext, useFormBlockType } from '../../../block-provider/FormBlockProvider';
@@ -362,11 +361,11 @@ export const Grid: any = observer(
           <div
             className={cls(
               'nb-grid-container',
-              css`
-                & {
-                  margin-bottom: ${designable ? 0 : -token.marginLG}px;
-                }
-              `,
+              // css`
+              //   & {
+              //     margin-bottom: ${designable ? 0 : -token.marginLG}px;
+              //   }
+              // `,
             )}
           >
             <div className={cls(`nb-grid ${styles.container}`)} style={{ position: 'relative' }} ref={gridRef}>
@@ -410,7 +409,11 @@ export const Grid: any = observer(
                     );
                   })}
                 </DndWrapper>
-                {render()}
+                {render({
+                  style: {
+                    marginBottom: token.marginLG,
+                  },
+                })}
               </div>
             </div>
           </div>

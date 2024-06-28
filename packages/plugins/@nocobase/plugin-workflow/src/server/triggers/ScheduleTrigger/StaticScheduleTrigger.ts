@@ -20,10 +20,9 @@ export default class StaticScheduleTrigger {
 
   constructor(public workflow: Plugin) {
     workflow.app.on('afterStart', async () => {
-      const WorkflowRepo = this.workflow.app.db.getRepository('workflows');
-      const workflows = await WorkflowRepo.find({
-        filter: { enabled: true, type: 'schedule', 'config.mode': SCHEDULE_MODE.STATIC },
-      });
+      const workflows = Array.from(this.workflow.enabledCache.values()).filter(
+        (item) => item.type === 'schedule' && item.config.mode === SCHEDULE_MODE.STATIC,
+      );
 
       this.inspect(workflows);
     });

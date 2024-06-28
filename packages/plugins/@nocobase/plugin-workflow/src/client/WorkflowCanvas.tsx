@@ -10,7 +10,7 @@
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
-import { App, Breadcrumb, Button, Dropdown, Result, Spin, Switch, Tooltip, message } from 'antd';
+import { App, Breadcrumb, Button, Dropdown, Result, Spin, Switch, Tag, Tooltip, message } from 'antd';
 import { DownOutlined, EllipsisOutlined, RightOutlined } from '@ant-design/icons';
 import {
   ActionContextProvider,
@@ -177,6 +177,11 @@ export function WorkflowCanvas() {
           />
         </header>
         <aside>
+          {workflow.sync ? (
+            <Tag color="orange">{lang('Synchronously')}</Tag>
+          ) : (
+            <Tag color="cyan">{lang('Asynchronously')}</Tag>
+          )}
           <Dropdown
             className="workflow-versions"
             trigger={['click']}
@@ -221,6 +226,14 @@ export function WorkflowCanvas() {
             menu={{
               items: [
                 {
+                  key: 'key',
+                  label: `Key: ${workflow.key}`,
+                  disabled: true,
+                },
+                {
+                  type: 'divider',
+                },
+                {
                   role: 'button',
                   'aria-label': 'history',
                   key: 'history',
@@ -234,7 +247,10 @@ export function WorkflowCanvas() {
                   label: lang('Copy to new version'),
                   disabled: !revisionable,
                 },
-                { role: 'button', 'aria-label': 'delete', key: 'delete', label: t('Delete') },
+                {
+                  type: 'divider',
+                },
+                { role: 'button', 'aria-label': 'delete', danger: true, key: 'delete', label: t('Delete') },
               ] as any[],
               onClick: onMenuCommand,
             }}

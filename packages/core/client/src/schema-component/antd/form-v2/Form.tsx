@@ -55,8 +55,10 @@ const FormComponent: React.FC<FormProps> = (props) => {
               .nb-grid-container {
                 height: ${height ? height + 'px' : '100%'};
                 overflow-y: auto;
-                margin: 0px -${token.marginLG}px ${designable ? 0 : -token.marginLG}px;
-                padding: 0px ${token.paddingLG}px;
+                margin-left: -${token.marginLG}px;
+                margin-right: -${token.marginLG}px;
+                padding-left: ${token.marginLG}px;
+                padding-right: ${token.marginLG}px;
               }
             `}
           >

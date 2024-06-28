@@ -46,6 +46,7 @@ export const createSelectSchemaSettingsItem = (
   return {
     name,
     type: 'select',
+    useVisible,
     useComponentProps() {
       const filedSchema = useFieldSchema();
       const { deepMerge } = useDesignable();
@@ -57,7 +58,6 @@ export const createSelectSchemaSettingsItem = (
       return {
         title: typeof title === 'function' ? title(t) : compile(title),
         options,
-        useVisible,
         value: _.get(filedSchema, schemaKey, defaultValue),
         onChange(v) {
           deepMerge(getNewSchema({ fieldSchema: filedSchema, schemaKey, value: v }));

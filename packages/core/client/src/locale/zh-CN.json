@@ -932,7 +932,9 @@
   "Separator": "分隔符",
   "Prefix": "前缀",
   "Suffix": "后缀",
+  "Record unique key": "记录唯一标识符",
   "Filter target key": "筛选目标键",
+  "If a collection lacks a primary key, you must configure a unique record key to locate row records within a block, failure to configure this will prevent the creation of data blocks for the collection.": "当数据表没有主键时，你需要配置记录唯一标识符，用于在区块中定位行记录，不配置将无法创建该表的数据区块。",
   "Filter data based on the specific field, with the requirement that the field value must be unique.": "根据特定的字段筛选数据，字段值必须具备唯一性。",
   "Multiply by": "乘以",
   "Divide by": "除以",
@@ -956,8 +958,9 @@
   "Search parameters": "URL 查询参数",
   "Do not concatenate search params in the URL": "查询参数不要在 URL 里拼接",
   "The value of this variable is derived from the query string of the page URL. This variable can only be used normally when the page has a query string.": "该变量的值是根据页面 URL 的 query string 得来的，只有当页面存在 query string 的时候，该变量才能正常使用。",
-  "Edit link":"编辑链接",
-  "Add parameter":"添加参数",
+  "Edit link": "编辑链接",
+  "Add parameter": "添加参数",
   "URL search params": "URL 查询参数",
-  "Expand All": "展开全部"
+  "Expand All": "展开全部",
+  "Search": "搜索"
 }
