@@ -17,6 +17,14 @@ export interface PopupContext {
   collection?: string;
   association?: string;
   sourceId?: string;
+  /**
+   * Context for the parent popup record variable
+   */
+  parentPopupRecord?: {
+    /** collection name */
+    collection: string;
+    filterByTk: string;
+  };
 }
 
 export interface SubPageContext extends PopupContext {
@@ -45,7 +53,7 @@ export const usePopupContextInActionOrAssociationField = () => {
   const updatePopupContext = useCallback(
     (context: PopupContext) => {
       if (!popupSchema) {
-        throw new Error('Popup schema not found');
+        return;
       }
 
       context = _.omitBy(context, _.isNil) as PopupContext;

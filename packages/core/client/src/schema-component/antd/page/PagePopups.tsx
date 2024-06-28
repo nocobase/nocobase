@@ -107,6 +107,10 @@ const PagePopupsItemProvider: FC<{ params: PopupParams; context: PopupContext }>
   };
   const storedContext = { ...getStoredPopupContext(params.popupuid) };
 
+  if (!context) {
+    context = storedContext;
+  }
+
   return (
     <PopupParamsProvider params={params} context={context}>
       <PopupVisibleProvider visible={visible} setVisible={setVisible}>

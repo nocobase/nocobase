@@ -25,7 +25,7 @@ import { useParentPopupRecord } from '../../../modules/variable/variablesProvide
 import { ActionContext } from '../action/context';
 import { PopupParamsProviderContext, PopupVisibleProviderContext } from './PagePopups';
 import { usePopupSettings } from './PopupSettingsProvider';
-import { usePopupContextInActionOrAssociationField } from './usePopupContextInActionOrAssociationField';
+import { PopupContext, usePopupContextInActionOrAssociationField } from './usePopupContextInActionOrAssociationField';
 
 export interface PopupParams {
   /** popup uid */
@@ -36,7 +36,7 @@ export interface PopupParams {
   tab?: string;
 }
 
-export interface PopupParamsStorage {
+export interface PopupContextStorage extends PopupContext {
   schema?: ISchema;
   record?: CollectionRecord;
   parentRecord?: CollectionRecord;
@@ -44,13 +44,13 @@ export interface PopupParamsStorage {
   service?: any;
 }
 
-const popupsContextStorage: Record<string, PopupParamsStorage> = {};
+const popupsContextStorage: Record<string, PopupContextStorage> = {};
 
 export const getStoredPopupContext = (popupUid: string) => {
   return popupsContextStorage[popupUid];
 };
 
-export const storePopupContext = (popupUid: string, params: PopupParamsStorage) => {
+export const storePopupContext = (popupUid: string, params: PopupContextStorage) => {
   popupsContextStorage[popupUid] = params;
 };
 
@@ -132,6 +132,16 @@ export const usePagePopup = () => {
         record: new CollectionRecord({ isNew: false, data: recordData }),
         parentRecord,
         service,
+        dataSource: dataSourceKey,
+        collection: collection.name,
+        association,
+        sourceId,
+        parentPopupRecord: parentPopupRecordData
+          ? {
+              collection: parentPopupRecordCollection?.name,
+              filterByTk: parentPopupRecordData[parentPopupRecordCollection.getPrimaryKey()],
+            }
+          : undefined,
       });
 
       updatePopupContext({
@@ -139,7 +149,6 @@ export const usePagePopup = () => {
         collection: association ? undefined : collection.name,
         association,
         sourceId,
-        // @ts-ignore
         parentPopupRecord: parentPopupRecordData
           ? {
               collection: parentPopupRecordCollection?.name,
