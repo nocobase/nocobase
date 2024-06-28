@@ -12,17 +12,16 @@ import { Outlet } from 'react-router-dom';
 
 import { MobileTabBar } from '../mobile-tab-bar';
 import { MobileProviders } from '../mobile-providers';
+import { NavigationBarHeight } from '../constants';
 
 export interface MobileLayoutProps {
   children?: React.ReactNode;
 }
 
-const tabBarHeight = 66;
-
 export const MobileLayout: FC<MobileLayoutProps> = () => {
   return (
     <MobileProviders>
-      <div style={{ minHeight: `calc(100% - ${tabBarHeight}px)`, overflowX: 'hidden' }}>
+      <div style={{ minHeight: `calc(100% - ${NavigationBarHeight}px)`, overflowX: 'hidden' }}>
         <Outlet />
       </div>
       <MobileTabBar />

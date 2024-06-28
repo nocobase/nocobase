@@ -9,11 +9,25 @@
 
 import { ISchema, SchemaInitializerItemActionModalType, SchemaSettings, useSchemaInitializer } from '@nocobase/client';
 import { useNavigate } from 'react-router-dom';
-import { usePluginTranslation } from '../../../locale';
+import { generatePluginTranslationTemplate, usePluginTranslation } from '../../../locale';
+import { editAction } from '../actionCommonSettings';
 
 export const mobileNavigationBarLinkSettings = new SchemaSettings({
   name: `mobile:navigationBar:actionBar:link`,
   items: [
+    editAction((values) => {
+      console.log('values', values);
+      return {
+        link: {
+          type: 'string',
+          default: values.link,
+          title: generatePluginTranslationTemplate('Link'),
+          required: true,
+          'x-decorator': 'FormItem',
+          'x-component': 'Input.URL',
+        },
+      };
+    }),
     {
       name: 'remove',
       type: 'remove',
@@ -43,9 +57,7 @@ export const getNavigationBarLinkSchema = (values: any): ISchema => ({
   'x-use-component-props': 'useMobileNavigationBarLink',
   'x-component-props': {
     ...values,
-    style: {
-      border: 'none',
-    },
+    component: 'MobileNavigationBarAction',
   },
 });
 

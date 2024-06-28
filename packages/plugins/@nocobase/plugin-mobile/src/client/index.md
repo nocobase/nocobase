@@ -312,7 +312,7 @@ export interface TabItem {
 - [x] 404 页面
 - [x] JS bridge
 - [x] MobileNavigationBar Actions schema 处理
-- navigationBar Action 样式
+- [x] navigationBar Action 样式
 - 真机演示，并且提示测试人员要多种机型测试
 - 多语言
 - 各个部分的文档

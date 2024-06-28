@@ -23,6 +23,7 @@ import {
   mobileNavigationBarInitializer,
   mobileNavigationBarLinkSettings,
   useMobileNavigationBarLink,
+  MobileNavigationBarAction,
 } from './mobile-navigation-bar';
 import { MobileContent, mobileAddBlockInitializer } from './mobile-content';
 import {
@@ -111,6 +112,7 @@ export class PluginMobileClient extends Plugin {
   addComponents() {
     this.app.addComponents({
       MobilePage,
+      MobileNavigationBarAction,
       MobileNavigationBar,
       MobileHomePage,
       MobileContent,

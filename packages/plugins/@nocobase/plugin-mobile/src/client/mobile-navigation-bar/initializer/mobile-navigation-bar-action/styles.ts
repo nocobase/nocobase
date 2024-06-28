@@ -7,6 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from './items';
-export * from './mobileNavigationBarInitializer';
-export * from './mobile-navigation-bar-action';
+import { createStyles } from 'antd-style';
+
+export const useStyles = createStyles(() => ({
+  mobileNavigationBarAction: {
+    display: 'inline-block',
+    cursor: 'pointer',
+    '&:active': {
+      opacity: 0.5,
+    },
+  },
+}));

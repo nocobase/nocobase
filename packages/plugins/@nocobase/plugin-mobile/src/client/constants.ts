@@ -8,3 +8,4 @@
  */
 
 export const PluginName = 'mobile';
+export const NavigationBarHeight = 66;

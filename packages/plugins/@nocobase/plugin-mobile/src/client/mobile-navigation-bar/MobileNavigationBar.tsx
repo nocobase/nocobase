@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { FC } from 'react';
+import React, { FC, useMemo } from 'react';
 import { NavBar, SafeArea } from 'antd-mobile';
 import { useFieldSchema } from '@formily/react';
 
@@ -27,23 +27,30 @@ export const MobileNavigationBar: FC = () => {
   } = useMobilePage();
   const fieldSchema = useFieldSchema();
   const { styles } = useStyles();
+
+  const leftSchema = useMemo(() => getActionBarSchemaByPosition(fieldSchema, 'left', { marginLeft: 8 }), [fieldSchema]);
+  const rightSchema = useMemo(
+    () => getActionBarSchemaByPosition(fieldSchema, 'right', { marginLeft: 8, marginRight: 15 }),
+    [fieldSchema],
+  );
+  const bottomSchema = useMemo(() => getActionBarSchemaByPosition(fieldSchema, 'bottom', {}, false), [fieldSchema]);
+
   if (!enableNavigationBar) return null;
   return (
     <div className={styles.mobileNavigationBar} style={{ borderBottom: enableNavigationBarTabs ? 'none' : 'auto' }}>
       <SafeArea position="top" />
+
       <NavBar
         backArrow={false}
         back={null}
-        left={<SchemaComponent schema={getActionBarSchemaByPosition(fieldSchema, 'left', { marginLeft: 5 })} />}
-        right={
-          <SchemaComponent
-            schema={getActionBarSchemaByPosition(fieldSchema, 'right', { marginLeft: 5, marginRight: 15 })}
-          />
-        }
+        left={<SchemaComponent schema={leftSchema} />}
+        right={<SchemaComponent schema={rightSchema} />}
       >
         {enableNavigationBarTitle ? title : null}
       </NavBar>
-      <SchemaComponent schema={getActionBarSchemaByPosition(fieldSchema, 'bottom', {}, false)} />
+
+      <SchemaComponent schema={bottomSchema} />
+
       {enableNavigationBarTabs && <MobileNavigationBarTabs />}
     </div>
   );
