@@ -126,7 +126,7 @@ export const usePagePopup = () => {
         : undefined,
     };
 
-    return _.omitBy(context, _.isNil);
+    return _.omitBy(context, _.isNil) as PopupContext;
   }, [dataSourceKey, collection, association, sourceId, parentPopupRecordData, parentPopupRecordCollection]);
 
   const openPopup = useCallback(
