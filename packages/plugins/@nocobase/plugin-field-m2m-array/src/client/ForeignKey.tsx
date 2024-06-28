@@ -10,9 +10,10 @@
 import { observer, useField } from '@formily/react';
 import { Select, AutoComplete } from 'antd';
 import React, { useState, useEffect } from 'react';
-import { useRecord, useCompile, useCollectionManager_deprecated } from '@nocobase/client';
+import { useRecord, useCompile, useCollectionManager_deprecated, CollectionFieldOptions } from '@nocobase/client';
 
-const supportTypes = ['array'];
+const isValidField = (field: CollectionFieldOptions) => field.type === 'string' && field.interface === 'json';
+
 export const ForeignKey = observer(
   (props: any) => {
     const { disabled } = props;
@@ -29,8 +30,8 @@ export const ForeignKey = observer(
       const fields = getCollection(effectField)?.fields;
       if (fields) {
         const sourceOptions = fields
-          ?.filter((v) => {
-            return supportTypes.includes(v.type);
+          ?.filter((f) => {
+            return isValidField(f);
           })
           .map((k) => {
             return {
@@ -45,10 +46,10 @@ export const ForeignKey = observer(
         }
       }
     }, [type]);
-    const Compoent = template === 'view' ? Select : AutoComplete;
+    const Component = template === 'view' ? Select : AutoComplete;
     return (
       <div>
-        <Compoent
+        <Component
           disabled={disabled}
           value={initialValue}
           options={options}
@@ -59,8 +60,8 @@ export const ForeignKey = observer(
               const fields = getCollection(effectField)?.fields || [];
               setOptions(
                 fields
-                  ?.filter((v) => {
-                    return supportTypes.includes(v.type);
+                  ?.filter((f) => {
+                    return isValidField(f);
                   })
                   .map((k) => {
                     return {

@@ -33,6 +33,7 @@
     "@nocobase/plugin-field-formula": "1.2.11-alpha",
     "@nocobase/plugin-field-markdown-vditor": "1.2.11-alpha",
     "@nocobase/plugin-field-sequence": "1.2.11-alpha",
+    "@nocobase/plugin-field-m2m-array": "1.2.11-alpha",
     "@nocobase/plugin-file-manager": "1.2.11-alpha",
     "@nocobase/plugin-gantt": "1.2.11-alpha",
     "@nocobase/plugin-graph-collection-manager": "1.2.11-alpha",
