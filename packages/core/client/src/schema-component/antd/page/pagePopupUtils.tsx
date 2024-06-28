@@ -99,7 +99,6 @@ export const usePagePopup = () => {
   const getNewPathname = useCallback(
     ({ tabKey, popupUid, recordData }: { tabKey?: string; popupUid: string; recordData: Record<string, any> }) => {
       const filterByTK = recordData?.[collection.getPrimaryKey()];
-      const sourceId = parentRecord?.data?.[cm.getCollection(association?.split('.')[0])?.getPrimaryKey()];
       return getPopupPathFromParams({
         popupuid: popupUid,
         filterbytk: filterByTK,

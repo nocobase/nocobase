@@ -20,6 +20,7 @@ import { useAssociationName } from '../../../data-source/collection/AssociationP
 import { useCollectionManager } from '../../../data-source/collection/CollectionManagerProvider';
 import { useCollection } from '../../../data-source/collection/CollectionProvider';
 import { DataBlockProvider } from '../../../data-source/data-block/DataBlockProvider';
+import { useDataBlockRequest } from '../../../data-source/data-block/DataBlockRequestProvider';
 import { useDataSourceKey } from '../../../data-source/data-source/DataSourceProvider';
 import {
   VariablePopupRecordProvider,
@@ -30,7 +31,7 @@ import { TabsContextProvider } from '../tabs/context';
 import { PagePopups, useRequestSchema } from './PagePopups';
 import { usePopupSettings } from './PopupSettingsProvider';
 import { useSubPagesStyle } from './SubPages.style';
-import { PopupParams, getPopupParamsFromPath } from './pagePopupUtils';
+import { PopupParams, getPopupParamsFromPath, getStoredPopupContext, storePopupContext } from './pagePopupUtils';
 import {
   SubPageContext,
   getSubPageContextFromPopupSchema,
@@ -106,12 +107,19 @@ export const SubPage = () => {
 
   useEffect(() => {
     const run = async () => {
+      const stored = getStoredPopupContext(subPageParams.subpageuid);
+
+      if (stored) {
+        return setSubPageSchema(stored.schema);
+      }
+
       const schema = await requestSchema(subPageParams.subpageuid);
       setSubPageSchema(schema);
     };
     run();
   }, [subPageParams.subpageuid]);
 
+  // When the URL changes, this component may be re-rendered, because at this time the Schema is still old, so there may be some issues, so here is a judgment.
   if (!subPageSchema || subPageSchema['x-uid'] !== subPageParams.subpageuid) {
     return null;
   }
@@ -162,6 +170,7 @@ export const useNavigateTOSubPage = () => {
   const { value: parentPopupRecordData, collection: parentPopupRecordCollection } = useParentPopupRecord() || {};
   const { isPopupVisibleControlledByURL } = usePopupSettings();
   const { setVisible: setVisibleFromAction } = useContext(ActionContext);
+  const service = useDataBlockRequest();
 
   const navigateToSubPage = useCallback(() => {
     if (!fieldSchema['x-uid']) {
@@ -172,7 +181,13 @@ export const useNavigateTOSubPage = () => {
       return setVisibleFromAction?.(true);
     }
 
-    const subPageUid = fieldSchema.properties[Object.keys(fieldSchema.properties)[0]]['x-uid'];
+    const subPageSchema = fieldSchema.properties[Object.keys(fieldSchema.properties)[0]];
+
+    if (!subPageSchema) {
+      return;
+    }
+
+    const subPageUid = subPageSchema['x-uid'];
     const filterByTK = record?.data?.[collection.getPrimaryKey()];
     const sourceId = parentRecord?.data?.[cm.getCollection(association?.split('.')[0])?.getPrimaryKey()];
     const params = {
@@ -180,12 +195,28 @@ export const useNavigateTOSubPage = () => {
       filterbytk: filterByTK,
     };
 
+    storePopupContext(subPageSchema['x-uid'], {
+      schema: subPageSchema,
+      record,
+      parentRecord,
+      service,
+      dataSource: dataSourceKey,
+      collection: collection.name,
+      association,
+      sourceId,
+      parentPopupRecord: parentPopupRecordData
+        ? {
+            collection: parentPopupRecordCollection?.name,
+            filterByTk: parentPopupRecordData[parentPopupRecordCollection.getPrimaryKey()],
+          }
+        : undefined,
+    });
+
     updatePopupContext({
       dataSource: dataSourceKey,
       collection: association ? undefined : collection.name,
       association: association,
       sourceId,
-      // @ts-ignore
       parentPopupRecord: parentPopupRecordData
         ? {
             collection: parentPopupRecordCollection?.name,
@@ -196,7 +227,19 @@ export const useNavigateTOSubPage = () => {
 
     const pathname = getSubPagePathFromParams(params);
     navigate(`/admin${pathname}`);
-  }, [fieldSchema, navigate, dataSourceKey, record, parentRecord, collection, cm, association, parentPopupRecordData]);
+  }, [
+    fieldSchema,
+    navigate,
+    dataSourceKey,
+    record,
+    parentRecord,
+    collection,
+    cm,
+    association,
+    parentPopupRecordData,
+    isPopupVisibleControlledByURL,
+    service,
+  ]);
 
   return { navigateToSubPage };
 };
