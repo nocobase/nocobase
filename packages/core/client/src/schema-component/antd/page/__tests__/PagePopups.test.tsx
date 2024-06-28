@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { insertToPopupSchema } from '../PagePopups';
+import { insertChildToParentSchema } from '../PagePopups';
 
 vi.mock('@formily/shared', async (importOriginal) => {
   const actual: any = await importOriginal();
@@ -25,8 +25,11 @@ describe('insertToPopupSchema', () => {
       type: 'string',
       'x-component': 'Input',
     };
-    const params = {
+    const params: any = {
       foo: 'bar',
+    };
+    const context: any = {
+      bar: 'foo',
     };
     const parentSchema = {
       type: 'object',
@@ -38,7 +41,7 @@ describe('insertToPopupSchema', () => {
       },
     };
 
-    insertToPopupSchema(childSchema, params as any, parentSchema);
+    insertChildToParentSchema(childSchema, { params, context }, parentSchema);
 
     expect(parentSchema).toEqual({
       type: 'object',
@@ -51,6 +54,7 @@ describe('insertToPopupSchema', () => {
               'x-component': 'PagePopupsItemProvider',
               'x-component-props': {
                 params,
+                context,
               },
               properties: {
                 popupAction: childSchema,

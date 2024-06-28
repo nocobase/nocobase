@@ -143,7 +143,7 @@ const PagePopupsItemProvider: FC<{ params: PopupParams; context: PopupContext }>
  * @param props
  * @param parentSchema
  */
-export const insertToPopupSchema = (childSchema: ISchema, props: PopupProps, parentSchema: ISchema) => {
+export const insertChildToParentSchema = (childSchema: ISchema, props: PopupProps, parentSchema: ISchema) => {
   const { params, context } = props;
 
   const componentSchema = {
@@ -196,7 +196,7 @@ export const PagePopups = (props: { paramsList?: PopupParams[] }) => {
       });
       const rootSchema = clonedSchemas[0];
       for (let i = 1; i < clonedSchemas.length; i++) {
-        insertToPopupSchema(clonedSchemas[i], popupPropsRef.current[i], clonedSchemas[i - 1]);
+        insertChildToParentSchema(clonedSchemas[i], popupPropsRef.current[i], clonedSchemas[i - 1]);
       }
       setRootSchema(rootSchema);
     };
