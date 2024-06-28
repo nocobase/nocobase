@@ -13,32 +13,34 @@ import { Plugin, RouterManager, createRouterManager } from '@nocobase/client';
 
 import { Mobile } from './mobile';
 import { MobileLayout } from './mobile-layout';
-import { MobileSchemaPage } from './mobile-schema-page';
-import { MobilePage, mobilePageSettings } from './mobile-page';
 import {
-  MobileNavigationBar,
-  mobilePageTabInitializer,
+  MobileHomePage,
+  MobilePage,
+  MobileNotFoundPage,
+  MobilePageContent,
+  MobilePageProvider,
+  mobilePageSettings,
+  MobileNavigationBarAction,
+  mobileAddBlockInitializer,
+  useMobileNavigationBarLink,
   mobilePageTabSettings,
+  MobilePageNavigationBar,
+  mobilePageTabInitializer,
   mobileNavigationBarInitializer,
   mobileNavigationBarLinkSettings,
-  useMobileNavigationBarLink,
-  MobileNavigationBarAction,
-} from './mobile-navigation-bar';
-import { MobileContent, mobileAddBlockInitializer } from './mobile-content';
+} from './pages';
 import {
   MobileTabBar,
+  mobileTabBarSettings,
   mobileTabBarInitializer,
   mobileTabBarLinkSettings,
   mobileTabBarSchemaSettings,
-  mobileTabBarSettings,
 } from './mobile-tab-bar';
 import { generatePluginTranslationTemplate } from './locale';
-import { MobileHomePage } from './mobile-home-page';
-import { MobileNotFoundPage } from './mobile-not-found-page';
 
 // 导出 JSBridge，会挂在到 window 上
 import './js-bridge';
-import { MobileJSBridgeCheckerProvider } from './mobile-jsbridge-checker-provider';
+import { MobileCheckerProvider } from './providers';
 
 export * from './mobile-providers';
 
@@ -60,7 +62,7 @@ export class PluginMobileClient extends Plugin {
     this.addInitializers();
     this.addSettings();
     this.addScopes();
-    this.app.addProvider(MobileJSBridgeCheckerProvider);
+    this.app.addProvider(MobileCheckerProvider);
 
     this.app.pluginSettingsManager.add('mobile', {
       title: generatePluginTranslationTemplate('Mobile'),
@@ -97,11 +99,11 @@ export class PluginMobileClient extends Plugin {
 
   addComponents() {
     this.app.addComponents({
-      MobilePage,
+      MobilePageProvider,
       MobileNavigationBarAction,
-      MobileNavigationBar,
+      MobilePageNavigationBar,
       MobileHomePage,
-      MobileContent,
+      MobilePageContent,
       MobileTabBar,
       MobileNotFoundPage,
     });
@@ -116,7 +118,7 @@ export class PluginMobileClient extends Plugin {
   }
 
   addRoutes() {
-    this.app.addComponents({ MobileLayout, MobileSchemaPage });
+    this.app.addComponents({ MobileLayout, MobilePage });
 
     this.mobileRouter.add('mobile', {
       Component: 'MobileLayout',
@@ -142,15 +144,15 @@ export class PluginMobileClient extends Plugin {
       element: <Outlet />,
     });
     this.mobileRouter.add('mobile.schema.page', {
-      path: '/schema/:pageSchemaUid',
-      Component: 'MobileSchemaPage',
+      path: '/schema/:schemaPageUid',
+      Component: 'MobilePage',
     });
     this.mobileRouter.add('mobile.schema.tabs', {
       element: <Outlet />,
     });
     this.mobileRouter.add('mobile.schema.tabs.page', {
-      path: '/schema/:pageSchemaUid/tabs/:tabSchemaUid',
-      Component: 'MobileSchemaPage',
+      path: '/schema/:schemaPageUid/tabs/:tabSchemaUid',
+      Component: 'MobilePage',
     });
 
     this.mobileRouter.add('not-found', {

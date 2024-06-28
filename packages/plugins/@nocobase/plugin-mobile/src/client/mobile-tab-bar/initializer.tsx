@@ -8,8 +8,7 @@
  */
 
 import { SchemaInitializer, useSchemaInitializerRender } from '@nocobase/client';
-import { mobileTabBarSchemaInitializerItem } from './MobileTabBar.Schema';
-import { mobileTabBarLinkInitializerItem } from './MobileTabBar.Link/initializer';
+import { mobileTabBarSchemaInitializerItem, mobileTabBarLinkInitializerItem } from './types';
 
 export const mobileTabBarInitializer = new SchemaInitializer({
   name: 'mobile:tab-bar',

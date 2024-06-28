@@ -15,7 +15,7 @@ import { App } from 'antd';
 import { generatePluginTranslationTemplate, usePluginTranslation } from '../../locale';
 import { useUpdateTabBarItem } from './useUpdateTabBarItem';
 import { getMobileTabBarItemSchemaFields } from './schemaFormFields';
-import { useMobileTabContext } from '../../mobile-providers';
+import { useMobileRoutesContext } from '../../mobile-providers';
 
 export const editTabItemSettingsItem = (getMoreFields?: (values: any) => Record<string, ISchema>) =>
   createModalSettingsItem({
@@ -39,7 +39,7 @@ export const removeTabItemSettingsItem = createTextSettingsItem({
   useTextClick: () => {
     const schema = useFieldSchema();
     const id = Number(schema.toJSON().name);
-    const { refresh, tabList, resource, api } = useMobileTabContext();
+    const { refresh, routeList, resource, api } = useMobileRoutesContext();
     const navigate = useNavigate();
     const { t } = usePluginTranslation();
     const { modal, message } = App.useApp();
@@ -55,12 +55,12 @@ export const removeTabItemSettingsItem = createTextSettingsItem({
           await resource.destroy({ filter: { parentId: id } });
 
           // 删除 tabBar 对应的页面 schema
-          const schemaUid = schema['x-component-props'].pageSchemaUid;
+          const schemaUid = schema['x-component-props'].schemaPageUid;
           await api.request({ url: `/uiSchemas:remove/${schemaUid}`, method: 'delete' });
 
           await refresh();
           // 跳转到第一个 tabBar item
-          const url = tabList.find((item) => item.id !== id && item.url)?.url || '/';
+          const url = routeList.find((item) => item.id !== id && item.url)?.url || '/';
           navigate(url);
           message.success({
             content: 'Delete successfully',

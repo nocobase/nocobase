@@ -87,7 +87,7 @@ const app = mockApp({
               title: 'Home',
               icon: 'AppleOutlined',
               selectedIcon: 'AppstoreOutlined',
-              pageSchemaUid: 'home',
+              schemaPageUid: 'home',
             },
           },
           children: [
@@ -96,7 +96,7 @@ const app = mockApp({
               parentId: 1,
               options: {
                 title: 'Tab1',
-                pageSchemaUid: 'tab1',
+                schemaPageUid: 'tab1',
               },
             },
             {
@@ -104,7 +104,7 @@ const app = mockApp({
               parentId: 1,
               options: {
                 title: 'Tab2',
-                pageSchemaUid: 'tab2',
+                schemaPageUid: 'tab2',
               },
             },
           ],
@@ -124,7 +124,7 @@ const app = mockApp({
             'x-component-props': {
               title: 'Message',
               icon: 'MessageOutlined',
-              pageSchemaUid: 'message',
+              schemaPageUid: 'message',
             },
             'x-settings': 'mobile:tab-bar:schema',
           },
@@ -184,11 +184,11 @@ const app = mockApp({
         properties: {
           navigationBar: {
             type: 'void',
-            'x-component': 'MobileNavigationBar',
+            'x-component': 'MobilePageNavigationBar',
           },
           content: {
             type: 'void',
-            'x-component': 'MobileContent',
+            'x-component': 'MobilePageContent',
             'x-decorator': 'Grid',
             'x-initializer': 'mobile:addBlock',
             properties: {
@@ -254,11 +254,11 @@ const app = mockApp({
         properties: {
           navigationBar: {
             type: 'void',
-            'x-component': 'MobileNavigationBar',
+            'x-component': 'MobilePageNavigationBar',
           },
           content: {
             type: 'void',
-            'x-component': 'MobileContent',
+            'x-component': 'MobilePageContent',
             'x-decorator': 'Grid',
             'x-initializer': 'mobile:addBlock',
           },

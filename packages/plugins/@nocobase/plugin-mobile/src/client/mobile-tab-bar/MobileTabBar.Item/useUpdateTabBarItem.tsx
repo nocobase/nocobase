@@ -8,10 +8,10 @@
  */
 
 import { useFieldSchema } from '@formily/react';
-import { useMobileTabContext } from '../../mobile-providers';
+import { useMobileRoutesContext } from '../../mobile-providers';
 
 export function useUpdateTabBarItem() {
-  const { refresh, resource } = useMobileTabContext();
+  const { refresh, resource } = useMobileRoutesContext();
   const fieldSchema = useFieldSchema();
   return async () => {
     const schema = fieldSchema.toJSON();

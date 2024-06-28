@@ -7,8 +7,4 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from './MobileTabBar';
-export * from './MobileTabBar.Item';
-export * from './initializer';
-export * from './settings';
-export * from './types';
+export * from './MobileCheckerProvider';

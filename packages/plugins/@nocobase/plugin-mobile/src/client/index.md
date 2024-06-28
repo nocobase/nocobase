@@ -1,15 +1,54 @@
 # Client
 
-<code src="./demos/Demo.tsx"></code>
+## 目录
+
+- `providers`：主应用的 providers
+  - `MobileCheckerProvider`：如果当前路径为 `/admin` 且是移动端，则跳转到 `/mobile` ？
+- `mobile-providers`：移动端内置的 `providers`
+  - `context`：mobile 的全局上下文
+    - `mobileTitle`：用于设置 mobile title
+    - `mobileRoutes`：增删改查移动端路由
+  - `MobileProviders`：组件
+    - `AdminProvider`
+    - `MobileTitleProvider` 对应上面的 `mobileTitle`
+    - `MobileRoutesProvider` 对应上面的 `mobileRoutes`
+- `desktop-mode`：桌面模式
+- `js-bridge`：JS Bridge
+- `mobile`：移动端入口组件
+  - `<DesktopMode>
+      <RouterComponent /> // 移动端路由实例
+    </DesktopMode>`
+- `mobile-layout`：移动端 Layout
+  - `MobileProviders` 对应 `mobile-providers`
+  - `Outlet`： 页面实际内容
+  - `MobileTabBar`：底部 TabBar
+- `mobile-tab-bar`：底部 TabBar
+  - `MobileTabBar`：组件
+  - `types`：内置的 TabBar 类型
+    - `MobileTabBar.Link`：链接类型
+    - `MobileTabBar.Schema`：Schema 类型
+  - `MobileTabBar.Item`：基础 Item，供其他类型继承
+- `pages`：页面
+  - `not-found`：404 页面
+  - `home`: `/` 页面
+  - `dynamic-page`：动态 schema 页面
+    - `MobilePage`：读取 URL 中 uid，渲染页面
+      - `content`：`MobilePageContent`：页面内容区域
+      - `navigationBar`：`MobilePageNavigationBar`：页面导航栏
+        - `actions-initializer`：内置的 actions
+          - `link`：链接
 
 ## 嵌套关系
 
+
+### 全局嵌套关系
+
 ```tsx | pure
-<Mobile> //  提供各种 Providers 和 Routes
+<Mobile> // 主要作用：渲染 Routes
   <Routers>
-    <MobileLayout> // react-router 最顶部路由的 Layout `router.add('mobile', {  Component: 'MobileLayout'  })`
+    <MobileLayout> // 主要作用：提供移动端上下文和布局
       <MobileProviders>
-        <Outlet /> // 自定义的路由组件
+        <Outlet /> // 主要的页面内容
         <MobileTabBar />
       </MobileProviders>
     </MobileLayout>
@@ -32,35 +71,37 @@ mobileRouter.add('mobile', {
 });
 ```
 
+### 动态 schema 页面的嵌套关系
+
 ```tsx | pure
-<MobileSchemaPage> // react-router 匹配的 Schema 页面 router.add('/schema/:pageSchemaUid', { Component: 'MobileSchemaPage' })
-  <RemoteSchemaComponent uid={params.pageSchemaUid}> // 通过 URL 获取 uid，加载整个页面的 Schema
-    <MobilePage>
-      <MobileNavigationBar />
-      <MobileContent>
-        <RemoteSchemaComponent uid={params.tabSchemaId} /> // Tab 的 Schema
-      </MobileContent>
-    </MobilePage>
+<MobilePage> // react-router 匹配的 Schema 页面 router.add('/schema/:schemaPageUid', { Component: 'MobilePage' })
+  <RemoteSchemaComponent uid={params.schemaPageUid}> // 通过 URL 获取 uid，加载整个页面的 Schema
+    <MobilePageProvider> // 提供页面级别的上下文
+      <MobilePageNavigationBar /> // 顶部导航栏
+      <MobilePageContent> // 页面内容区
+        <RemoteSchemaComponent uid={params.tabSchemaId} /> // `/schema/:schemaPageUid/tabs/:tabSchemaUid` 读取 `tabSchemaUid` 渲染对应的 Tab 页面
+      </MobilePageContent>
+    </MobilePageProvider>
   </RemoteSchemaComponent>
-</MobileSchemaPage>
+</MobilePage>
 ```
 
 ```tsx | pure
 // schema 页面路由
 mobileRouter.add('mobile.schema.page', {
-  path: '/schema/:pageSchemaUid',
-  Component: 'MobileSchemaPage',
+  path: '/schema/:schemaPageUid',
+  Component: 'MobilePage',
 });
 
 
 // Tab 路由
 mobileRouter.add('mobile.schema.tabs.page', {
-  path: '/schema/:pageSchemaUid/tabs/:tabSchemaUid',
-  Component: 'MobileSchemaPage',
+  path: '/schema/:schemaPageUid/tabs/:tabSchemaUid',
+  Component: 'MobilePage',
 });
 ```
 
-## 路由数据
+## 路由接口
 
 ```ts
 // 核心是 URL 和 options
@@ -76,7 +117,7 @@ export interface TabBarItem {
 export interface TabItem {
   id: number;
   url?: string;
-  options: { title: string; pageSchemaUid: string };
+  options: { title: string; schemaPageUid: string };
   parentId?: number;
 }
 ```
@@ -101,7 +142,7 @@ export interface TabItem {
                 "title": "Home",
                 "icon": "alipayoutlined",
                 "selectedIcon": "alipaycircleoutlined",
-                "pageSchemaUid": "3bz0ki59s8f"
+                "schemaPageUid": "3bz0ki59s8f"
             }
         },
         "children": [
@@ -133,7 +174,7 @@ export interface TabItem {
             "x-component-props": {
                 "title": "Message",
                 "icon": "aliwangwangoutlined",
-                "pageSchemaUid": "e3t0g3kql0u"
+                "schemaPageUid": "e3t0g3kql0u"
             }
         },
         "children": [
@@ -143,7 +184,7 @@ export interface TabItem {
                 "url": "/schema/e3t0g3kql0u/tabs/5av5oolwlve",
                 "options": {
                     "title": "未读消息",
-                    "pageSchemaUid": "5av5oolwlve"
+                    "schemaPageUid": "5av5oolwlve"
                 },
                 "__index": "1.children.0"
             },
@@ -153,7 +194,7 @@ export interface TabItem {
                 "url": "/schema/e3t0g3kql0u/tabs/2w3k326y33n",
                 "options": {
                     "title": "已读消息",
-                    "pageSchemaUid": "2w3k326y33n"
+                    "schemaPageUid": "2w3k326y33n"
                 },
                 "__index": "1.children.1"
             }
@@ -212,7 +253,7 @@ export interface TabItem {
 ```json
 {
     "type": "void",
-    "x-component": "MobilePage",
+    "x-component": "MobilePageProvider",
     "x-settings": "mobile:page",
     "x-decorator": "BlockItem",
     "x-component-props": {
@@ -221,40 +262,31 @@ export interface TabItem {
     "properties": {
         "navigationBar": {
             "type": "void",
-            "x-component": "MobileNavigationBar",
+            "x-component": "MobilePageNavigationBar",
             "properties": {
-                "leftActions": {
-                    "type": "void",
-                    "x-component": "ActionBar",
-                    "x-initializer": "mobile:navigation-bar",
-                    "properties": {
-                        "action1": {
-                            "type": "void",
-                            "x-align": "left|right|bottom|center",
-                            "x-component": "Action",
-                            "x-toolbar": "ActionSchemaToolbar",
-                            "x-settings": "mobile:navigationBar:actionBar:link",
-                            "x-use-component-props": "useMobileNavigationBarLink",
-                            "x-component-props": {
-                                "link": "/",
-                                "title": "Home",
-                                "style": {
-                                    "border": "none"
-                                }
-                            }
-                        }
-                    },
+                "type": "void",
+                "x-component": "ActionBar",
+                "x-initializer": "mobile:navigation-bar",
+                "properties": {
+                    "iaoxln0kidb": {
+                      "x-position": "right",
+                      "type": "void",
+                      "x-component": "Action",
+                      "x-toolbar": "ActionSchemaToolbar",
+                      "x-settings": "mobile:navigation-bar:link",
+                      "x-use-component-props": "useMobileNavigationBarLink",
+                      "x-component-props": {
+                          "link": "https://baidu.com",
+                          "title": "Baidu",
+                          "component": "MobileNavigationBarAction"
+                      }
+                    }
                 },
-                "rightActions": {
-                    "type": "void",
-                    "x-component": "ActionBar",
-                    "x-initializer": "mobile:navigation-bar",
-                }
             }
         },
         "content": {
             "type": "void",
-            "x-component": "MobileContent",
+            "x-component": "MobilePageContent",
             "properties": {
               "tab1": {
                   "type": "void",
@@ -278,7 +310,6 @@ export interface TabItem {
 
 其中 `tab1` 和 `tab2` 的 `x-async` 为 true，表示是异步加载的。
 
-
 ## 待确定的事或者有争议的事
 
 - [x] 插件列表 presets 变更，怎么改？packages/presets/nocobase/src/server/index.ts
@@ -298,6 +329,10 @@ export interface TabItem {
 - 数据表字段是否需要预览一些字段？
 - preset 中老的依赖是否删除，目前看如果删除，则原来的项目会报错
 - 内容区块的间距和布局问题（参考原来的）
+- MobileCheckerProvider 的逻辑待确认
+- 移动端是否需要自己的 providers manager ？是将 application 的抽象成 ProvidersManager 还是复制粘贴代码？
+- `api.resource('mobileRoutes')` 开启配置后，变成下划线，是否会影响接口？
+- header 的定位问题
 
 ## 待做任务
 
@@ -311,7 +346,7 @@ export interface TabItem {
 - [x] 多应用的支持
 - [x] 404 页面
 - [x] JS bridge
-- [x] MobileNavigationBar Actions schema 处理
+- [x] MobilePageNavigationBar Actions schema 处理
 - [x] navigationBar Action 样式
 - 真机演示，并且提示测试人员要多种机型测试
 - 内容超过一屏幕，以及没有内容的情况
@@ -322,117 +357,4 @@ export interface TabItem {
 - Readme
 - 新移动端 Tab 的插件开发示例
 
-
-## Schema
-
-```tsx | pure
-{
- 'x-component': 'MobilePage',
- 'x-settings': 'MobilePage:settings',
- 'properties': {
-  'navigationBar': {
-    'type': 'void',
-    'x-component': 'MobileNavigationBar',
-    'x-initializer': 'MobileNavigationBar:initializer',
-    properties: {
-    }
-  },
-  'content': {
-    'type': 'void',
-    'x-component': 'MobileContent',
-  }
- }
-}
-```
-
-## 问题
-
-
-```js
-{
-  'x-component': 'Mobile',
-  properties: {
-    'content': {
-      'x-component': 'MobilePage',
-      'x-settings': 'MobilePage:settings',
-      'properties': {
-        'navigationBar': {
-          'type': 'void',
-          'x-component': 'MobileNavigationBar',
-          'x-initializer': 'MobileNavigationBar:initializer',
-          properties: {
-            // 更多子项查看 ./navigation-bar/index.md
-          }
-        },
-        'content': {
-          'type': 'void',
-          'x-component': 'MobileContent',
-          'x-initializer': 'MobileContent:initializer',
-          properties: {
-            // 页面的区块（异步）
-          }
-        },
-      }
-    },
-    'tabBar': {
-      type: 'array',
-      'x-component': 'MobileTabBar',
-      'x-settings': 'MobileTabBar:settings',
-      // 更多子项查看 ./tab-bar/index.md
-    }
-  }
-}
-```
-
-![Mobile](https://res.wx.qq.com/wxdoc/dist/assets/img/config.344358b1.jpg)
-
-需要说明的：
-
-你之前的设计是：Header + Content + Footer，现在的设计是：Content（NavigationBar + Page） + TabBar。
-
-核心原因是 Header 和 Footer 之间的关系是一对一的，而 TabBar 则是公共的。
-
-## Components
-
-### Mobile
-
-全局样式以及提供上下文的作用。
-
-```tsx ｜ pure
-const Mobile = <MobileProviders>
-  <Layout>
-    <SchemaComponent scopes={{xxx}} components={{ xxx }} schema={schema} onlyProperties />
-  </Layout>
-</MobileProviders>
-```
-
-### MobileContent
-
-页面内容区域。
-
-```ts
-interface MobileContentProps {
-  backgroundColor?: string;
-}
-```
-
-```tsx | pure
-const MobileContent = ({ backgroundColor, children }) => {
-  return <div style={{ backgroundColor }}>
-    {settings}
-    {children}
-  </div>
-}
-```
-
-#### MobileContent:settings
-
-- `backgroundColor` 页面背景色
-- `enable title` 是否启用标题（原设计图是放到 navbar 的 initializer 中）
-- `enable navigationBar` 是否启用导航栏
-- `enable navigationBar Tabs` 是否启用导航栏 Tabs
-
-#### MobilePage
-
-就是 `Add Block` 的页面。
 

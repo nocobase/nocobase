@@ -11,8 +11,7 @@ import React, { FC } from 'react';
 import { AdminProvider, usePlugin } from '@nocobase/client';
 
 import { PluginMobileClient } from '../index';
-import { MobileTabContextProvider } from './context/MobileTab';
-import { MobileTitleProvider } from './context/MobileTitle';
+import { MobileTitleProvider, MobileRoutesContextProvider } from './context';
 
 export interface MobileProvidersProps {
   children?: React.ReactNode;
@@ -25,7 +24,7 @@ export const MobileProviders: FC<MobileProvidersProps> = ({ children }) => {
   return (
     <AdminProviderComponent>
       <MobileTitleProvider>
-        <MobileTabContextProvider>{children}</MobileTabContextProvider>
+        <MobileRoutesContextProvider>{children}</MobileRoutesContextProvider>
       </MobileTitleProvider>
     </AdminProviderComponent>
   );
