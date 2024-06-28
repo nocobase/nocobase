@@ -225,9 +225,15 @@ export class Collection {
     return this.options.resource;
   }
 
+  setOption(key: string, value: any) {
+    this.options[key] = value;
+    return this;
+  }
+
   getOptions() {
     return this.options;
   }
+
   getOption<K extends keyof CollectionOptions>(key: K): CollectionOptions[K] {
     return this.options[key];
   }

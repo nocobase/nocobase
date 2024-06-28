@@ -147,6 +147,7 @@ test.describe('where to open a popup and what can be added to it', () => {
     // add blocks
     await page.getByLabel('schema-initializer-Grid-popup:bulkEdit:addBlock-general').hover();
     await page.getByText('Form').click();
+    await page.mouse.move(300, 0);
     await page.getByLabel('schema-initializer-Grid-popup:bulkEdit:addBlock-general').hover();
     await page.getByRole('menuitem', { name: 'Markdown' }).click();
     await page.mouse.move(300, 0);

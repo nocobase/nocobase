@@ -10,7 +10,7 @@
 import { i18n } from '@nocobase/client';
 import { useTranslation } from 'react-i18next';
 
-export const NAMESPACE = '@nocobase/plugin-bulk-edit';
+export const NAMESPACE = 'action-bulk-edit';
 
 export function lang(key: string) {
   return i18n.t(key, { ns: NAMESPACE });

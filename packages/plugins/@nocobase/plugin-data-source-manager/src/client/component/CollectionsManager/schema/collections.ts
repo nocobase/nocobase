@@ -9,9 +9,10 @@
 
 import { ISchema, Schema } from '@formily/react';
 import { uid } from '@formily/shared';
+import { CollectionOptions, i18n, useAPIClient } from '@nocobase/client';
 import { message } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { useAPIClient, i18n, CollectionOptions } from '@nocobase/client';
+import { CollectionTitle } from '../CollectionTitle';
 
 export const compile = (source) => {
   return Schema.compile(source, { t: i18n.t });
@@ -30,7 +31,7 @@ export const collection: CollectionOptions = {
       uiSchema: {
         title: '{{ t("Collection display name") }}',
         type: 'number',
-        'x-component': 'Input',
+        'x-component': CollectionTitle,
         required: true,
       },
     },
