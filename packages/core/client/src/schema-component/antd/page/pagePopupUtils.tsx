@@ -113,7 +113,7 @@ export const usePagePopup = () => {
   );
 
   const getPopupContext = useCallback(() => {
-    return {
+    const context = {
       dataSource: dataSourceKey,
       collection: association ? undefined : collection.name,
       association,
@@ -125,6 +125,8 @@ export const usePagePopup = () => {
           }
         : undefined,
     };
+
+    return _.omitBy(context, _.isNil);
   }, [dataSourceKey, collection, association, sourceId, parentPopupRecordData, parentPopupRecordCollection]);
 
   const openPopup = useCallback(
