@@ -91,8 +91,12 @@ export class BelongsToArrayRepository extends MultipleRelationRepository {
       [targetKey]: tks,
     };
 
+    if (options?.filterByTk) {
+      addFilter[targetKey] = options.filterByTk;
+    }
+
     const findOptions = {
-      ...omit(options, ['where', 'values', 'attributes']),
+      ...omit(options, ['filterByTk', 'where', 'values', 'attributes']),
       filter: {
         $and: [options.filter || {}, addFilter],
       },
