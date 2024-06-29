@@ -1179,7 +1179,9 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       useACL: options.acl,
     });
 
-    this._dataSourceManager = new DataSourceManager();
+    this._dataSourceManager = new DataSourceManager({
+      logger: this.logger,
+    });
 
     // can not use await here
     this.dataSourceManager.dataSources.set('main', mainDataSourceInstance);
