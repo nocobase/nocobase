@@ -277,7 +277,7 @@ export const toUnit = (unit, offset?: number) => {
 };
 
 const toDays = (offset: number) => {
-  return ({ now, timezone, field }) => {
+  return ({ now, timezone, field }: ToUnitParams) => {
     if (field?.timezone) {
       timezone = field?.timezone;
     }
