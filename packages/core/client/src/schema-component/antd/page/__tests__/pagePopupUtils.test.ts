@@ -41,6 +41,27 @@ describe('getPopupParamsFromPath', () => {
       },
     ]);
   });
+
+  it('when exist popups in path', () => {
+    const path = `popupUid1/filterbytk/${window.btoa('popups')}/tab/${window.btoa(
+      'popups',
+    )}/popups/popupUid2/filterbytk/filterByTKValue2/tab/tabValue2`;
+
+    const result = getPopupParamsFromPath(path);
+
+    expect(result).toEqual([
+      {
+        popupuid: 'popupUid1',
+        filterbytk: 'popups',
+        tab: 'popups',
+      },
+      {
+        popupuid: 'popupUid2',
+        filterbytk: 'filterByTKValue2',
+        tab: 'tabValue2',
+      },
+    ]);
+  });
 });
 
 describe('getPopupPathFromParams', () => {
@@ -65,6 +86,18 @@ describe('getPopupPathFromParams', () => {
     const result = getPopupPathFromParams(params);
 
     expect(result).toBe('/popups/popupUid/filterbytk/filterByTKValue/tab/tabValue');
+  });
+
+  it('when exist popups in path', () => {
+    const params = {
+      popupuid: 'popupUid',
+      filterbytk: 'popups',
+      tab: 'popups',
+    };
+
+    const result = getPopupPathFromParams(params);
+
+    expect(result).toBe(`/popups/popupUid/filterbytk/${window.btoa('popups')}/tab/${window.btoa('popups')}`);
   });
 });
 

@@ -35,6 +35,8 @@ import { usePopupSettings } from './PopupSettingsProvider';
 import { useSubPagesStyle } from './SubPages.style';
 import {
   PopupParams,
+  decodePathValue,
+  encodePathValue,
   getPopupParamsFromPath,
   getStoredPopupContext,
   storePopupContext,
@@ -160,7 +162,7 @@ export const getSubPagePathFromParams = (params: SubPageParams) => {
   const { subpageuid, tab, filterbytk } = params;
   const popupPath = [subpageuid, filterbytk && 'filterbytk', filterbytk, tab && 'tab', tab].filter(Boolean);
 
-  return `/subpages/${popupPath.join('/')}`;
+  return `/subpages/${popupPath.map((item) => encodePathValue(item)).join('/')}`;
 };
 
 export const getSubPageParamsFromPath = _.memoize((path: string) => {
@@ -168,7 +170,7 @@ export const getSubPageParamsFromPath = _.memoize((path: string) => {
   const result = {};
 
   for (let i = 0; i < subPageParams.length; i += 2) {
-    result[subPageParams[i]] = subPageParams[i + 1];
+    result[subPageParams[i]] = decodePathValue(subPageParams[i + 1]);
   }
 
   return {

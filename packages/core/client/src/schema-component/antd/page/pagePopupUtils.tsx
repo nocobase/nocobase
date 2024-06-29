@@ -55,13 +55,13 @@ export const storePopupContext = (popupUid: string, params: PopupContextStorage)
 };
 
 export const getPopupParamsFromPath = _.memoize((path: string) => {
-  const popupPaths = path.split('popups');
+  const popupPaths = path.split('/popups/');
   return popupPaths.filter(Boolean).map((popupPath) => {
     const [popupUid, ...popupParams] = popupPath.split('/').filter(Boolean);
     const obj = {};
 
     for (let i = 0; i < popupParams.length; i += 2) {
-      obj[popupParams[i]] = popupParams[i + 1];
+      obj[popupParams[i]] = decodePathValue(popupParams[i + 1]);
     }
 
     return {
@@ -75,7 +75,7 @@ export const getPopupPathFromParams = (params: PopupParams) => {
   const { popupuid: popupUid, tab, filterbytk } = params;
   const popupPath = [popupUid, filterbytk && 'filterbytk', filterbytk, tab && 'tab', tab].filter(Boolean);
 
-  return `/popups/${popupPath.join('/')}`;
+  return `/popups/${popupPath.map((item) => encodePathValue(item)).join('/')}`;
 };
 
 export const usePagePopup = () => {
@@ -233,4 +233,29 @@ export function removeLastPopupPath(path: string) {
 
 export function withSearchParams(path: string) {
   return `${path}${window.location.search}`;
+}
+
+/**
+ * Prevent problems when "popups" appears in the path
+ * @param value
+ * @returns
+ */
+export function encodePathValue(value: string) {
+  const encodedValue = encodeURIComponent(value);
+  if (encodedValue === 'popups') {
+    return window.btoa(value);
+  }
+  return encodedValue;
+}
+
+/**
+ * Prevent problems when "popups" appears in the path
+ * @param value
+ * @returns
+ */
+export function decodePathValue(value: string) {
+  if (value === window.btoa('popups')) {
+    return 'popups';
+  }
+  return decodeURIComponent(value);
 }

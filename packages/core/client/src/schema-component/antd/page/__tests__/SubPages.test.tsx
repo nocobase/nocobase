@@ -28,6 +28,16 @@ describe('getSubPagePathFromParams', () => {
     const expectedPath = '/subpages/subPage1/filterbytk/filterbytk1';
     expect(getSubPagePathFromParams(params)).toBe(expectedPath);
   });
+
+  it('when exist popups in path', () => {
+    const params = {
+      subpageuid: 'subPage1',
+      filterbytk: 'popups',
+      tab: 'popups',
+    };
+    const expectedPath = `/subpages/subPage1/filterbytk/${window.btoa('popups')}/tab/${window.btoa('popups')}`;
+    expect(getSubPagePathFromParams(params)).toBe(expectedPath);
+  });
 });
 
 describe('getSubPageParamsAndPopupsParams', () => {
@@ -71,6 +81,16 @@ describe('getSubPageParamsFromPath', () => {
       subpageuid: 'subPage1',
       datasource: 'datasource1',
       filterbytk: 'filterbytk1',
+    };
+    expect(getSubPageParamsFromPath(path)).toEqual(expectedSubPageParams);
+  });
+
+  it('when exist popups in path', () => {
+    const path = `subPage1/datasource/datasource1/filterbytk/${window.btoa('popups')}`;
+    const expectedSubPageParams = {
+      subpageuid: 'subPage1',
+      datasource: 'datasource1',
+      filterbytk: 'popups',
     };
     expect(getSubPageParamsFromPath(path)).toEqual(expectedSubPageParams);
   });
