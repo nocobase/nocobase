@@ -21,7 +21,7 @@ import {
   useDataBlockRequest,
   useDataSourceKey,
 } from '../../../data-source';
-import { useParentPopupRecord } from '../../../modules/variable/variablesProvider/VariablePopupRecordProvider';
+import { useCurrentPopupRecord } from '../../../modules/variable/variablesProvider/VariablePopupRecordProvider';
 import { ActionContext } from '../action/context';
 import { PopupParamsProviderContext, PopupVisibleProviderContext } from './PagePopups';
 import { usePopupSettings } from './PopupSettingsProvider';
@@ -94,7 +94,7 @@ export const usePagePopup = () => {
   const { isPopupVisibleControlledByURL } = usePopupSettings();
   const { setVisible: setVisibleFromAction } = useContext(ActionContext);
   const { updatePopupContext } = usePopupContextInActionOrAssociationField();
-  const { value: parentPopupRecordData, collection: parentPopupRecordCollection } = useParentPopupRecord() || {};
+  const { value: parentPopupRecordData, collection: parentPopupRecordCollection } = useCurrentPopupRecord() || {};
   const sourceId = useMemo(
     () => parentRecord?.data?.[cm.getCollection(association?.split('.')[0])?.getPrimaryKey()],
     [parentRecord, association],

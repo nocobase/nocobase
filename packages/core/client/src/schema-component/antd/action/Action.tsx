@@ -196,10 +196,8 @@ export const Action: ComposedAction = withDynamicSchemaProps(
           fieldSchema={fieldSchema}
         >
           {popover && <RecursionField basePath={field.address} onlyRenderProperties schema={fieldSchema} />}
-          <VariablePopupRecordProvider>
-            {!popover && <RenderButton {...buttonProps} />}
-            {!popover && props.children}
-          </VariablePopupRecordProvider>
+          {!popover && <RenderButton {...buttonProps} />}
+          <VariablePopupRecordProvider>{!popover && props.children}</VariablePopupRecordProvider>
           {element}
         </ActionContextProvider>
       </PopupVisibleProvider>

@@ -26,7 +26,7 @@ import { useDataSourceKey } from '../../../data-source/data-source/DataSourcePro
 import { TreeRecordProvider, useTreeParentRecord } from '../../../modules/blocks/data-blocks/table/TreeRecordProvider';
 import {
   VariablePopupRecordProvider,
-  useParentPopupRecord,
+  useCurrentPopupRecord,
 } from '../../../modules/variable/variablesProvider/VariablePopupRecordProvider';
 import { ActionContext } from '../action/context';
 import { TabsContextProvider } from '../tabs/context';
@@ -189,7 +189,7 @@ export const useNavigateTOSubPage = () => {
   const cm = useCollectionManager();
   const association = useAssociationName();
   const { updatePopupContext } = usePopupContextInActionOrAssociationField();
-  const { value: parentPopupRecordData, collection: parentPopupRecordCollection } = useParentPopupRecord() || {};
+  const { value: parentPopupRecordData, collection: parentPopupRecordCollection } = useCurrentPopupRecord() || {};
   const { isPopupVisibleControlledByURL } = usePopupSettings();
   const { setVisible: setVisibleFromAction } = useContext(ActionContext);
   const service = useDataBlockRequest();
