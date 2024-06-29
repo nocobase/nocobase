@@ -15,12 +15,11 @@ import type { ExecutionModel, FlowNodeModel } from '../types';
 export type CustomFunction = (this: { execution: ExecutionModel; node?: FlowNodeModel }) => any;
 
 function getTimezone() {
-  const timezoneOffset = 0 - new Date().getTimezoneOffset() / 60;
-  const timezoneString = `${
-    Math.abs(timezoneOffset) > 10 ? Math.abs(timezoneOffset) : `0${Math.abs(timezoneOffset)}`
-  }:00`;
-  const timezone = `${timezoneOffset > 0 ? '+' : '-'}${timezoneString}`;
-  return timezone;
+  const offset = new Date().getTimezoneOffset();
+  const hours = String(Math.floor(Math.abs(offset) / 60)).padStart(2, '0');
+  const minutes = String(Math.abs(offset) % 60).padStart(2, '0');
+  const sign = offset <= 0 ? '+' : '-';
+  return `${sign}${hours}:${minutes}`;
 }
 const getRangeByDay = (offset: number) =>
   utc2unit({ now: new Date(), unit: 'day', offset: offset, timezone: getTimezone() });
