@@ -13,6 +13,7 @@ export const useStyles = createStyles(() => ({
   mobileNavigationBar: {
     position: 'sticky',
     top: 0,
+    zIndex: 998,
     borderBottom: '1px solid var(--adm-color-border)',
     backgroundColor: 'var(--adm-color-background)',
   },

@@ -331,8 +331,6 @@ export interface TabItem {
 - 内容区块的间距和布局问题（参考原来的）
 - MobileCheckerProvider 的逻辑待确认
 - 移动端是否需要自己的 providers manager ？是将 application 的抽象成 ProvidersManager 还是复制粘贴代码？
-- `api.resource('mobileRoutes')` 开启配置后，变成下划线，是否会影响接口？
-- header 的定位问题
 
 ## 待做任务
 
@@ -348,8 +346,8 @@ export interface TabItem {
 - [x] JS bridge
 - [x] MobilePageNavigationBar Actions schema 处理
 - [x] navigationBar Action 样式
-- 真机演示，并且提示测试人员要多种机型测试
-- 内容超过一屏幕，以及没有内容的情况
+- [x] 真机演示
+- [x] 内容超过一屏幕，以及没有内容的情况
 - 多语言
 - 各个部分的文档
 - package.json 的描述

@@ -21,7 +21,7 @@ export interface MobileLayoutProps {
 export const MobileLayout: FC<MobileLayoutProps> = () => {
   return (
     <MobileProviders>
-      <div style={{ minHeight: `calc(100% - ${NavigationBarHeight}px)`, overflowX: 'hidden' }}>
+      <div style={{ minHeight: `calc(100% - ${NavigationBarHeight}px)`, maxWidth: '100%' }}>
         <Outlet />
       </div>
       <MobileTabBar />

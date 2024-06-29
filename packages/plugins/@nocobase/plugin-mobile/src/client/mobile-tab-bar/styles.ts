@@ -16,7 +16,7 @@ export const useStyles = createStyles(() => ({
     bottom: 0,
     left: 0,
     right: 0,
-    zIndex: 1000,
+    zIndex: 998,
     height: NavigationBarHeight,
     boxSizing: 'border-box',
     borderTop: '1px solid var(--adm-color-border)',

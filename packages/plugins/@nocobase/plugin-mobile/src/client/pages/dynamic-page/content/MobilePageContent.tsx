@@ -17,10 +17,12 @@ export const MobilePageContent = () => {
   const { activeTabBarItem } = useMobileRoutesContext();
   // 如果 URL 中有 tabSchemaUid，则使用 tabSchemaUid，否则使用第一个 tab 的 schemaPageUid
   return (
-    <RemoteSchemaComponent
-      uid={tabSchemaUid || activeTabBarItem.children?.[0]?.options?.tabSchemaUid}
-      memoized={false}
-      NotFoundPage={'MobileNotFoundPage'}
-    />
+    <div style={{ maxWidth: '100%', overflowX: 'hidden' }}>
+      <RemoteSchemaComponent
+        uid={tabSchemaUid || activeTabBarItem.children?.[0]?.options?.tabSchemaUid}
+        memoized={false}
+        NotFoundPage={'MobileNotFoundPage'}
+      />
+    </div>
   );
 };
