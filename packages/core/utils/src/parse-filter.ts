@@ -261,10 +261,10 @@ export function utc2unit(options: Utc2unitOptions) {
   return timezone ? r + timezone : r;
 }
 type ToUnitParams = {
-  now: any;
+  now?: any;
   timezone?: string | number;
   field?: {
-    timezone: string | number;
+    timezone?: string | number;
   };
 };
 export const toUnit = (unit, offset?: number) => {
