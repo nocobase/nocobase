@@ -15,6 +15,7 @@ import { useNavigateNoUpdate } from '../../../application/CustomRouterContextPro
 import {
   useCollectionParentRecord,
   useCollectionRecord,
+  useCollectionRecordData,
 } from '../../../data-source/collection-record/CollectionRecordProvider';
 import { useAssociationName } from '../../../data-source/collection/AssociationProvider';
 import { useCollectionManager } from '../../../data-source/collection/CollectionManagerProvider';
@@ -22,6 +23,7 @@ import { useCollection } from '../../../data-source/collection/CollectionProvide
 import { DataBlockProvider } from '../../../data-source/data-block/DataBlockProvider';
 import { useDataBlockRequest } from '../../../data-source/data-block/DataBlockRequestProvider';
 import { useDataSourceKey } from '../../../data-source/data-source/DataSourceProvider';
+import { TreeRecordProvider, useTreeParentRecord } from '../../../modules/blocks/data-blocks/table/TreeRecordProvider';
 import {
   VariablePopupRecordProvider,
   useParentPopupRecord,
@@ -60,12 +62,24 @@ const SubPageTabsPropsProvider: FC<{ params: SubPageParams }> = (props) => {
   );
 };
 
-const SubPageProvider: FC<{ params: SubPageParams; context: SubPageContext | undefined }> = (props) => {
+const TreeRecordProviderInSubPage: FC = (props) => {
+  const recordData = useCollectionRecordData();
+  return <TreeRecordProvider parent={recordData}>{props.children}</TreeRecordProvider>;
+};
+
+const SubPageProvider: FC<{ params: SubPageParams; context: SubPageContext | undefined; actionType: string }> = (
+  props,
+) => {
   const { params, context } = props;
 
   if (!context) {
     return null;
   }
+
+  const nodes = {
+    addChild: <TreeRecordProviderInSubPage>{props.children}</TreeRecordProviderInSubPage>,
+    '': <VariablePopupRecordProvider>{props.children}</VariablePopupRecordProvider>,
+  };
 
   const commonElements = (
     <DataBlockProvider
@@ -76,9 +90,7 @@ const SubPageProvider: FC<{ params: SubPageParams; context: SubPageContext | und
       filterByTk={params.filterbytk}
       action="get"
     >
-      <SubPageTabsPropsProvider params={props.params}>
-        <VariablePopupRecordProvider>{props.children}</VariablePopupRecordProvider>
-      </SubPageTabsPropsProvider>
+      <SubPageTabsPropsProvider params={props.params}>{nodes[props.actionType]}</SubPageTabsPropsProvider>
     </DataBlockProvider>
   );
 
@@ -126,10 +138,11 @@ export const SubPage = () => {
 
   const subPageSchema = Object.values(actionSchema.properties)[0] as ISchema;
   const context = getPopupContextFromActionOrAssociationFieldSchema(actionSchema) as SubPageContext;
+  const addChild = actionSchema?.['x-component-props']?.addChild;
 
   return (
     <div className={styles.container}>
-      <SubPageProvider params={subPageParams} context={context}>
+      <SubPageProvider params={subPageParams} context={context} actionType={addChild ? 'addChild' : ''}>
         <RecursionField schema={subPageSchema} onlyRenderProperties />
         {_.isEmpty(popupParams) ? null : <PagePopups paramsList={popupParams} />}
       </SubPageProvider>
@@ -172,6 +185,7 @@ export const useNavigateTOSubPage = () => {
   const { isPopupVisibleControlledByURL } = usePopupSettings();
   const { setVisible: setVisibleFromAction } = useContext(ActionContext);
   const service = useDataBlockRequest();
+  const treeParentRecord = useTreeParentRecord();
 
   const navigateToSubPage = useCallback(() => {
     if (!fieldSchema['x-uid']) {
@@ -182,7 +196,7 @@ export const useNavigateTOSubPage = () => {
       return setVisibleFromAction?.(true);
     }
 
-    const filterByTK = record?.data?.[collection.getPrimaryKey()];
+    const filterByTK = (record?.data || treeParentRecord)?.[collection.getPrimaryKey()];
     const sourceId = parentRecord?.data?.[cm.getCollection(association?.split('.')[0])?.getPrimaryKey()];
     const params = {
       subpageuid: fieldSchema['x-uid'],
