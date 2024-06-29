@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { PageConfig } from '@nocobase/test/e2e';
+import { PageConfig, tree } from '@nocobase/test/e2e';
 
 export const T2183 = {
   pageSchema: {
@@ -5760,6 +5760,7 @@ export const testingWithPageMode = {
   },
 };
 export const testingOfOpenModeForAddChild = {
+  collections: tree,
   pageSchema: {
     _isJSONSchemaObject: true,
     version: '2.0',

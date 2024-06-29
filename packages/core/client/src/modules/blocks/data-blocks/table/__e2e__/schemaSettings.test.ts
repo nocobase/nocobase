@@ -56,7 +56,7 @@ test.describe('actions schema settings', () => {
       await page.getByRole('button', { name: 'designer-schema-settings-Action-Action.Designer-general' }).hover();
     };
 
-    test('supported options', async ({ page, mockPage, mockRecord }) => {
+    test('supported options', async ({ page, mockPage }) => {
       await mockPage(oneEmptyTableBlockWithActions).goto();
 
       await expectSettingsMenu({
@@ -66,7 +66,7 @@ test.describe('actions schema settings', () => {
       });
     });
 
-    test('edit button', async ({ page, mockPage, mockRecord }) => {
+    test('edit button', async ({ page, mockPage }) => {
       await mockPage(oneEmptyTableBlockWithActions).goto();
 
       await showMenu(page);
@@ -78,7 +78,7 @@ test.describe('actions schema settings', () => {
       await expect(page.getByRole('button', { name: '1234' })).toBeVisible();
     });
 
-    test('open mode', async ({ page, mockPage, mockRecord }) => {
+    test('open mode', async ({ page, mockPage }) => {
       await mockPage(oneEmptyTableBlockWithActions).goto();
       await showMenu(page);
 
@@ -129,7 +129,7 @@ test.describe('actions schema settings', () => {
       await expect(page.getByRole('button', { name: 'option3' })).toHaveCount(1);
     });
 
-    test('popup size', async ({ page, mockPage, mockRecord }) => {
+    test('popup size', async ({ page, mockPage }) => {
       await mockPage(oneEmptyTableBlockWithActions).goto();
 
       await showMenu(page);
@@ -158,7 +158,7 @@ test.describe('actions schema settings', () => {
       expect(drawerWidth2).toBeGreaterThanOrEqual(800);
     });
 
-    test('delete', async ({ page, mockPage, mockRecord }) => {
+    test('delete', async ({ page, mockPage }) => {
       await mockPage(oneEmptyTableBlockWithActions).goto();
 
       await showMenu(page);
@@ -191,7 +191,7 @@ test.describe('actions schema settings', () => {
       await page.getByLabel('designer-schema-settings-Filter.Action-Filter.Action.Designer-general').hover();
     };
 
-    test('supported options', async ({ page, mockPage, mockRecord }) => {
+    test('supported options', async ({ page, mockPage }) => {
       await mockPage(oneEmptyTableBlockWithActions).goto();
 
       await expectSettingsMenu({
@@ -359,7 +359,7 @@ test.describe('actions schema settings', () => {
       );
     });
 
-    test('open mode: page', async ({ page, mockPage, mockRecord }) => {
+    test('open mode: page', async ({ page, mockPage }) => {
       await mockPage(testingWithPageMode).goto();
 
       // 打开弹窗
@@ -885,7 +885,7 @@ test.describe('actions schema settings', () => {
       await page.getByLabel('designer-schema-settings-Action.Link-actionSettings:addChild-tree').hover();
     };
 
-    test('supported options', async ({ page, mockPage, mockRecord }) => {
+    test('supported options', async ({ page, mockPage }) => {
       const nocoPage = await mockPage(oneEmptyTableWithTreeCollection).waitForInit();
       await nocoPage.goto();
       await page.getByLabel('block-item-CardItem-treeCollection-table').hover();
@@ -938,9 +938,13 @@ test.describe('actions schema settings', () => {
       ).toBeVisible();
     });
 
-    test('open mode', async ({ page, mockPage, mockRecord }) => {
+    test('open mode', async ({ page, mockPage }) => {
       const nocoPage = await mockPage(testingOfOpenModeForAddChild).waitForInit();
       await nocoPage.goto();
+
+      // add a record
+      await page.getByLabel('action-Action-Add new-create-').click();
+      await page.getByLabel('action-Action-Submit-submit-').click();
 
       // open popup with drawer mode
       await page.getByLabel('action-Action.Link-Add child-').click();
@@ -970,7 +974,7 @@ test.describe('actions schema settings', () => {
       await page.getByRole('button', { name: 'designer-schema-settings-Action-Action.Designer-general' }).hover();
     };
 
-    test('supported options', async ({ page, mockPage, mockRecord }) => {
+    test('supported options', async ({ page, mockPage }) => {
       await mockPage(oneEmptyTableBlockWithActions).goto();
 
       await expectSettingsMenu({
