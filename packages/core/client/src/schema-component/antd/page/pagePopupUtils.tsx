@@ -165,7 +165,7 @@ export const usePagePopup = () => {
 
       updatePopupContext(getPopupContext());
 
-      navigate(`${url}${pathname}`);
+      navigate(withSearchParams(`${url}${pathname}`));
     },
     [
       association,
@@ -191,7 +191,7 @@ export const usePagePopup = () => {
       return setVisibleFromAction?.(false);
     }
 
-    navigate(removeLastPopupPath(location.pathname));
+    navigate(withSearchParams(removeLastPopupPath(location.pathname)));
   }, [navigate, location, isPopupVisibleControlledByURL]);
 
   const changeTab = useCallback(
@@ -229,4 +229,8 @@ export function removeLastPopupPath(path: string) {
     return path;
   }
   return path.split('popups').slice(0, -1).join('popups');
+}
+
+export function withSearchParams(path: string) {
+  return `${path}${window.location.search}`;
 }

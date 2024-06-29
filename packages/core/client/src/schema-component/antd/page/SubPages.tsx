@@ -33,7 +33,13 @@ import { TabsContextProvider } from '../tabs/context';
 import { PagePopups, useRequestSchema } from './PagePopups';
 import { usePopupSettings } from './PopupSettingsProvider';
 import { useSubPagesStyle } from './SubPages.style';
-import { PopupParams, getPopupParamsFromPath, getStoredPopupContext, storePopupContext } from './pagePopupUtils';
+import {
+  PopupParams,
+  getPopupParamsFromPath,
+  getStoredPopupContext,
+  storePopupContext,
+  withSearchParams,
+} from './pagePopupUtils';
 import {
   SubPageContext,
   getPopupContextFromActionOrAssociationFieldSchema,
@@ -234,7 +240,7 @@ export const useNavigateTOSubPage = () => {
     });
 
     const pathname = getSubPagePathFromParams(params);
-    navigate(`/admin${pathname}`);
+    navigate(withSearchParams(`/admin${pathname}`));
   }, [
     fieldSchema,
     navigate,
