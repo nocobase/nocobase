@@ -71,18 +71,18 @@ const getDateOptions = (t) => [
     label: t('Tomorrow'),
   },
   {
-    key: 'lastIsoWeek',
-    value: 'lastIsoWeek',
+    key: 'lastWeek',
+    value: 'lastWeek',
     label: t('Last week'),
   },
   {
-    key: 'thisIsoWeek',
-    value: 'thisIsoWeek',
+    key: 'thisWeek',
+    value: 'thisWeek',
     label: t('This week'),
   },
   {
-    key: 'nextIsoWeek',
-    value: 'nextIsoWeek',
+    key: 'nextWeek',
+    value: 'nextWeek',
     label: t('Next week'),
   },
   {

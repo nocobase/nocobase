@@ -30,7 +30,7 @@ function now() {
   return new Date();
 }
 const dateVars = getDateVars();
-const dateRangeFns = {
+export const dateRangeFns = {
   yesterday() {
     return dateVars.yesterday({ now: new Date(), timezone: getTimezone() });
   },
@@ -40,14 +40,14 @@ const dateRangeFns = {
   tomorrow() {
     return dateVars.tomorrow({ now: new Date(), timezone: getTimezone() });
   },
-  lastIsoWeek() {
-    return dateVars.lastIsoWeek({ now: new Date(), timezone: getTimezone() });
+  lastWeek() {
+    return dateVars.lastWeek({ now: new Date(), timezone: getTimezone() });
   },
-  thisIsoWeek() {
-    return dateVars.thisIsoWeek({ now: new Date(), timezone: getTimezone() });
+  thisWeek() {
+    return dateVars.thisWeek({ now: new Date(), timezone: getTimezone() });
   },
-  nextIsoWeek() {
-    return dateVars.nextIsoWeek({ now: new Date(), timezone: getTimezone() });
+  nextWeek() {
+    return dateVars.nextWeek({ now: new Date(), timezone: getTimezone() });
   },
   lastMonth() {
     return dateVars.lastMonth({ now: new Date(), timezone: getTimezone() });
