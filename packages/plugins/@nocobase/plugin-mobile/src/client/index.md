@@ -378,11 +378,11 @@ export interface TabItem {
 - [x] navigationBar Action 样式
 - [x] 真机演示
 - [x] 内容超过一屏幕，以及没有内容的情况
+- [x] package.json 的描述
 - [x] unit test
 - e2e test
 - 多语言
 - 各个部分的文档
-- package.json 的描述
 - 更新文档
 - Readme
 - 新移动端 Tab 的插件开发示例

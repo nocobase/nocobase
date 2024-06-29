@@ -1,6 +1,6 @@
 # Mobile
 
-English | [中文](./README.zh-CN.md)
+[English](./README.md) | 中文
 
 多应用管理插件。
 
