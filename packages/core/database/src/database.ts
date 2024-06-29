@@ -181,7 +181,6 @@ export class Database extends EventEmitter implements AsyncEmitter {
   modelHook: ModelHook;
   delayCollectionExtend = new Map<string, { collectionOptions: CollectionOptions; mergeOptions?: any }[]>();
   logger: Logger;
-  collectionGroupManager = new CollectionGroupManager(this);
   interfaceManager = new InterfaceManager(this);
 
   collectionFactory: CollectionFactory = new CollectionFactory(this);
