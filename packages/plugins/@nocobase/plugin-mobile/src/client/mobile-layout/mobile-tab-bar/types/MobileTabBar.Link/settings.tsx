@@ -9,7 +9,7 @@
 
 import { SchemaSettings } from '@nocobase/client';
 import { editTabItemSettingsItem, removeTabItemSettingsItem } from '../../MobileTabBar.Item';
-import { generatePluginTranslationTemplate } from '../../../locale';
+import { generatePluginTranslationTemplate } from '../../../../locale';
 
 export const editLinkSchema = (value?: any) => ({
   title: generatePluginTranslationTemplate('Link'),

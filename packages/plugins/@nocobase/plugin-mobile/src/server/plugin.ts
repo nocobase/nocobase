@@ -19,19 +19,30 @@ export class PluginMobileServer extends Plugin {
   async install() {
     const uiSchemas = this.db.getRepository<any>('uiSchemas');
     await uiSchemas.insert({
-      type: 'void',
+      name: 'nocobase-mobile',
       'x-uid': 'nocobase-mobile',
-      'x-component': 'Menu',
-      'x-designer': 'Menu.Designer',
-      'x-initializer': 'MenuItemInitializers',
-      'x-component-props': {
-        mode: 'mix',
-        theme: 'dark',
-        // defaultSelectedUid: 'u8',
-        onSelect: '{{ onSelect }}',
-        sideMenuRefScopeKey: 'sideMenuRef',
+      type: 'void',
+      properties: {
+        pageOutlet: {
+          type: 'void',
+          'x-component': 'MobilePageOutlet',
+        },
+        tabBar: {
+          type: 'void',
+          'x-component': 'MobileTabBar',
+          'x-decorator': 'BlockItem',
+          'x-decorator-props': {
+            style: {
+              position: 'sticky',
+              bottom: 0,
+            },
+          },
+          'x-settings': 'mobile:tab-bar',
+          'x-toolbar-props': {
+            draggable: false,
+          },
+        },
       },
-      properties: {},
     });
   }
 

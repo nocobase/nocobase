@@ -19,15 +19,13 @@
       <RouterComponent /> // 移动端路由实例
     </DesktopMode>`
 - `mobile-layout`：移动端 Layout
-  - `MobileProviders` 对应 `mobile-providers`
-  - `Outlet`： 页面实际内容
-  - `MobileTabBar`：底部 TabBar
-- `mobile-tab-bar`：底部 TabBar
-  - `MobileTabBar`：组件
-  - `types`：内置的 TabBar 类型
-    - `MobileTabBar.Link`：链接类型
-    - `MobileTabBar.Schema`：Schema 类型
-  - `MobileTabBar.Item`：基础 Item，供其他类型继承
+  - `MobilePageOutlet`：页面内容区域
+  - `mobile-tab-bar`：底部 TabBar
+    - `MobileTabBar`：组件
+    - `types`：内置的 TabBar 类型
+      - `MobileTabBar.Link`：链接类型
+      - `MobileTabBar.Schema`：Schema 类型
+    - `MobileTabBar.Item`：基础 Item，供其他类型继承
 - `pages`：页面
   - `not-found`：404 页面
   - `home`: `/` 页面
@@ -48,7 +46,7 @@
   <Routers>
     <MobileLayout> // 主要作用：提供移动端上下文和布局
       <MobileProviders>
-        <Outlet /> // 主要的页面内容
+        <MobilePageOutlet /> // 主要的页面内容
         <MobileTabBar />
       </MobileProviders>
     </MobileLayout>
@@ -229,6 +227,37 @@ export interface TabItem {
 
 ## Schema
 
+## 入口 schema
+
+```json
+{
+    "type": "void",
+    "name": "nocobase-mobile",
+    "x-uid": "nocobase-mobile",
+    "properties": {
+        "pageOutlet": {
+            "type": "void",
+            "x-component": "MobilePageOutlet",
+        },
+        "tabBar": {
+            "type": "void",
+            "x-component": "MobileTabBar",
+            "x-decorator": "BlockItem",
+            "x-decorator-props": {
+                "style": {
+                    "position": "sticky",
+                    "bottom": 0
+                }
+            },
+            "x-settings": "mobile:tab-bar",
+            "x-toolbar-props": {
+                "draggable": false
+            },
+        }
+    },
+}
+```
+
 ### TabBarItem Schema
 
 ```json
@@ -321,8 +350,8 @@ export interface TabItem {
 - [x] Schema 的 name 到底是具体的名字，还是 Uid() 好
 - [x] 删除 tabBar 的时候，是否关联的资源都删除，还是不用管？【尽量删】
 - [x] `navigationBar` 左右两侧的 initializer 使用的是同一个，还是分开命名？【同一个】
+- [x] TabBar 的需要设置吗？（目前看来没什么设置项，是否需要显示的问题，如果没注册到 TabBar 上则默认不显示，似乎是能满足要求的）
 - back 问题和内页，内页是没有 schema 的，所以想要自己实现页面也需要自己写 navigateBar
-- TabBar 的需要设置吗？（目前看来没什么设置项，是否需要显示的问题，如果没注册到 TabBar 上则默认不显示，似乎是能满足要求的）
 - `navigationBar` 的操作按钮目前只实现了一个 Link，计划实现 `back`，其他的是否这次做？【自动处理，页面级别控制】
   - ActionSheet
   - 弹出层
@@ -331,6 +360,7 @@ export interface TabItem {
 - 内容区块的间距和布局问题（参考原来的）
 - MobileCheckerProvider 的逻辑待确认
 - 移动端是否需要自己的 providers manager ？是将 application 的抽象成 ProvidersManager 还是复制粘贴代码？
+- add block grid 样式？
 
 ## 待做任务
 
@@ -348,6 +378,8 @@ export interface TabItem {
 - [x] navigationBar Action 样式
 - [x] 真机演示
 - [x] 内容超过一屏幕，以及没有内容的情况
+- [x] unit test
+- e2e test
 - 多语言
 - 各个部分的文档
 - package.json 的描述

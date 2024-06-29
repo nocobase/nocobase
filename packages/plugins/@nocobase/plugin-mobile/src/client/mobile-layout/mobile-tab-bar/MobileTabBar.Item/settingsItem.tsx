@@ -12,10 +12,10 @@ import { useFieldSchema } from '@formily/react';
 import { useNavigate } from 'react-router-dom';
 import { App } from 'antd';
 
-import { generatePluginTranslationTemplate, usePluginTranslation } from '../../locale';
+import { generatePluginTranslationTemplate, usePluginTranslation } from '../../../locale';
 import { useUpdateTabBarItem } from './useUpdateTabBarItem';
 import { getMobileTabBarItemSchemaFields } from './schemaFormFields';
-import { useMobileRoutesContext } from '../../mobile-providers';
+import { useMobileRoutesContext } from '../../../mobile-providers';
 
 export const editTabItemSettingsItem = (getMoreFields?: (values: any) => Record<string, ISchema>) =>
   createModalSettingsItem({

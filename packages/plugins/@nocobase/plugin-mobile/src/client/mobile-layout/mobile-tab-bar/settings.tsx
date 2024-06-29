@@ -7,24 +7,17 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React from 'react';
-import { SchemaSettings, SchemaToolbar } from '@nocobase/client';
+import { SchemaSettings, createSwitchSettingsItem } from '@nocobase/client';
+import { generatePluginTranslationTemplate } from '../../locale';
 
 export const mobileTabBarSettings = new SchemaSettings({
   name: 'mobile:tab-bar',
   items: [
-    {
-      name: 'test',
-      type: 'item',
-      useComponentProps() {
-        return {
-          title: 'Test',
-        };
-      },
-    },
+    createSwitchSettingsItem({
+      name: 'enableTabBar',
+      title: generatePluginTranslationTemplate('Enable TabBar'),
+      defaultValue: true,
+      schemaKey: 'x-component-props.enableTabBar',
+    }),
   ],
 });
-
-export const MobileTabBarSettings = () => {
-  return <SchemaToolbar settings={mobileTabBarSettings} draggable={false} />;
-};

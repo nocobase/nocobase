@@ -8,7 +8,7 @@
  */
 
 import { useFieldSchema } from '@formily/react';
-import { useMobileRoutesContext } from '../../mobile-providers';
+import { useMobileRoutesContext } from '../../../mobile-providers';
 
 export function useUpdateTabBarItem() {
   const { refresh, resource } = useMobileRoutesContext();

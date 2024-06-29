@@ -10,9 +10,9 @@
 import { SchemaInitializerItemActionModalType } from '@nocobase/client';
 import { useNavigate } from 'react-router-dom';
 
-import { generatePluginTranslationTemplate } from '../../../locale';
+import { generatePluginTranslationTemplate } from '../../../../locale';
 import { getMobileTabBarItemSchemaFields } from '../../MobileTabBar.Item';
-import { useMobileRoutesContext } from '../../../mobile-providers';
+import { useMobileRoutesContext } from '../../../../mobile-providers';
 import { editLinkSchema } from './settings';
 import { getMobileTabBarLinkItemData } from './schema';
 

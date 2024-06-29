@@ -11,11 +11,11 @@ import { SchemaInitializerItemActionModalType } from '@nocobase/client';
 import { useNavigate } from 'react-router-dom';
 import { uid } from '@formily/shared';
 
-import { generatePluginTranslationTemplate } from '../../../locale';
+import { generatePluginTranslationTemplate } from '../../../../locale';
 import { getMobileTabBarItemSchemaFields } from '../../MobileTabBar.Item';
-import { useMobileRoutesContext } from '../../../mobile-providers';
+import { useMobileRoutesContext } from '../../../../mobile-providers';
 import { getMobileTabBarSchemaItemData } from './schema';
-import { getMobilePageNavigationBarTabData, getMobilePageSchema } from '../../../pages';
+import { getMobilePageNavigationBarTabData, getMobilePageSchema } from '../../../../pages';
 
 export const mobileTabBarSchemaInitializerItem: SchemaInitializerItemActionModalType = {
   name: 'schema',

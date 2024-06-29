@@ -12,7 +12,6 @@ import { Outlet } from 'react-router-dom';
 import { Plugin, RouterManager, createRouterManager } from '@nocobase/client';
 
 import { Mobile } from './mobile';
-import { MobileLayout } from './mobile-layout';
 import {
   MobileHomePage,
   MobilePage,
@@ -31,11 +30,13 @@ import {
 } from './pages';
 import {
   MobileTabBar,
+  MobileLayout,
+  MobilePageOutlet,
   mobileTabBarSettings,
   mobileTabBarInitializer,
   mobileTabBarLinkSettings,
   mobileTabBarSchemaSettings,
-} from './mobile-tab-bar';
+} from './mobile-layout';
 import { generatePluginTranslationTemplate } from './locale';
 
 // 导出 JSBridge，会挂在到 window 上
@@ -100,6 +101,7 @@ export class PluginMobileClient extends Plugin {
   addComponents() {
     this.app.addComponents({
       MobilePageProvider,
+      MobilePageOutlet,
       MobileNavigationBarAction,
       MobilePageNavigationBar,
       MobileHomePage,

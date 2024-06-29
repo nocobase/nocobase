@@ -8,18 +8,14 @@
  */
 
 import React, { FC } from 'react';
+import { Outlet } from 'react-router-dom';
 
-import { MobileProviders } from '../mobile-providers';
-import { RemoteSchemaComponent } from '@nocobase/client';
+import { NavigationBarHeight } from '../constants';
 
-export interface MobileLayoutProps {
-  children?: React.ReactNode;
-}
-
-export const MobileLayout: FC<MobileLayoutProps> = () => {
+export const MobilePageOutlet: FC = () => {
   return (
-    <MobileProviders>
-      <RemoteSchemaComponent uid="nocobase-mobile" />
-    </MobileProviders>
+    <div style={{ minHeight: `calc(100% - ${NavigationBarHeight}px)`, maxWidth: '100%' }}>
+      <Outlet />
+    </div>
   );
 };

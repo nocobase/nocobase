@@ -8,7 +8,7 @@
  */
 
 import { ISchema } from '@nocobase/client';
-import { generatePluginTranslationTemplate } from '../../locale';
+import { generatePluginTranslationTemplate } from '../../../locale';
 
 export const getMobileTabBarItemSchemaFields = (values: any = {}): Record<string, ISchema> => ({
   title: {
