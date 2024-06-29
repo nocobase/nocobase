@@ -44,7 +44,7 @@ const NavigateNoUpdateProvider: FC = ({ children }) => {
  **/
 const LocationNoUpdateProvider: FC = ({ children }) => {
   const location = useLocation();
-  const locationRef = React.useRef(location);
+  const locationRef = React.useRef<any>({});
 
   useEffect(() => {
     Object.assign(locationRef.current, location);

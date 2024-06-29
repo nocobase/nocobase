@@ -155,7 +155,7 @@ const MenuEditor = (props) => {
         sideMenuRef.current.style.display = 'block';
       }
     }
-  }, [data?.data, params.name, sideMenuRef]);
+  }, [data?.data, params.name, sideMenuRef, location?.pathname]);
 
   const schema = useMemo(() => {
     const s = filterByACL(data?.data, ctx);

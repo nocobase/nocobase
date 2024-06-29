@@ -34,4 +34,20 @@ test.describe('router', () => {
     await expect(page.getByText('This is tab1.')).toBeVisible();
     expect(page.url()).toMatch(new RegExp(pageUrl));
   });
+
+  test('side menu should not hide when go back from settings page', async ({ page, mockPage }) => {
+    await mockPage({
+      type: 'group',
+    }).goto();
+
+    // 最初是有侧边菜单的
+    await expect(page.getByTestId('schema-initializer-Menu-side')).toBeVisible();
+
+    // 跳转到插件设置页面后再返回，侧边菜单应该还在
+    await page.getByTestId('plugin-settings-button').hover();
+    await page.getByRole('link', { name: 'API keys' }).click();
+    await expect(page.getByText('API keys').first()).toBeVisible();
+    await page.goBack();
+    await expect(page.getByTestId('schema-initializer-Menu-side')).toBeVisible();
+  });
 });
