@@ -5759,7 +5759,7 @@ export const testingWithPageMode = {
     'x-index': 1,
   },
 };
-const testingOfOpenModeForAddChild = {
+export const testingOfOpenModeForAddChild = {
   pageSchema: {
     _isJSONSchemaObject: true,
     version: '2.0',

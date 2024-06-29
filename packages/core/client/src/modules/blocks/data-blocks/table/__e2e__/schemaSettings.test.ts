@@ -17,7 +17,13 @@ import {
   oneTableBlockWithAddNewAndViewAndEditAndBasicFields,
   test,
 } from '@nocobase/test/e2e';
-import { T3843, oneTableWithColumnFixed, oneTableWithUpdateRecord, testingWithPageMode } from './templatesOfBug';
+import {
+  T3843,
+  oneTableWithColumnFixed,
+  oneTableWithUpdateRecord,
+  testingOfOpenModeForAddChild,
+  testingWithPageMode,
+} from './templatesOfBug';
 
 const addSomeCustomActions = async (page: Page) => {
   // 先删除掉之前的 actions
@@ -933,7 +939,7 @@ test.describe('actions schema settings', () => {
     });
 
     test('open mode', async ({ page, mockPage, mockRecord }) => {
-      const nocoPage = await mockPage(testingOfAddChildForOpenMode).waitForInit();
+      const nocoPage = await mockPage(testingOfOpenModeForAddChild).waitForInit();
       await nocoPage.goto();
 
       // open popup with drawer mode
