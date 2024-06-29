@@ -80,19 +80,8 @@ describe('workflow > functions > system variable', () => {
     app = await getApp();
 
     db = app.db;
-    WorkflowModel = db.getCollection('workflows').model;
     PostCollection = db.getCollection('posts');
     PostRepo = PostCollection.repository;
-
-    workflow = await WorkflowModel.create({
-      title: 'test workflow',
-      enabled: true,
-      type: 'collection',
-      config: {
-        mode: 1,
-        collection: 'posts',
-      },
-    });
 
     last2days = dayjs().tz(timezone).subtract(2, 'day');
 

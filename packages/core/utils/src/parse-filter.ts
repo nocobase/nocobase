@@ -260,9 +260,15 @@ export function utc2unit(options: Utc2unitOptions) {
   const r = fn[unit]?.();
   return timezone ? r + timezone : r;
 }
-
+type ToUnitParams = {
+  now: any;
+  timezone?: string | number;
+  field?: {
+    timezone: string | number;
+  };
+};
 export const toUnit = (unit, offset?: number) => {
-  return ({ now, timezone, field }) => {
+  return ({ now, timezone, field }: ToUnitParams) => {
     if (field?.timezone) {
       timezone = field?.timezone;
     }
