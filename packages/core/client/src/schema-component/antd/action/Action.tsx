@@ -81,6 +81,7 @@ export const Action: ComposedAction = withDynamicSchemaProps(
     const { visibleWithURL, setVisibleWithURL } = usePagePopup();
     const [visible, setVisible] = useState(false);
     const [formValueChanged, setFormValueChanged] = useState(false);
+    const { setSubmitted: setParentSubmitted } = useActionContext();
     const Designer = useDesigner();
     const field = useField<any>();
     const { run, element, disabled: disableAction } = _.isFunction(useAction) ? useAction(actionCallback) : ({} as any);
@@ -194,6 +195,7 @@ export const Action: ComposedAction = withDynamicSchemaProps(
           openSize={openSize}
           containerRefKey={containerRefKey}
           fieldSchema={fieldSchema}
+          setSubmitted={setParentSubmitted}
         >
           {popover && <RecursionField basePath={field.address} onlyRenderProperties schema={fieldSchema} />}
           {!popover && <RenderButton {...buttonProps} />}

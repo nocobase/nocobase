@@ -8,7 +8,8 @@
  */
 
 import { expect, test } from '@nocobase/test/e2e';
-import { OneTableWithDelete } from './templates';
+import { OneTableWithDelete, shouldRefreshBlockDataAfterMultiplePopupsClosed } from './templates';
+
 test.describe('action settings', () => {
   test('refresh data on action', async ({ page, mockPage, mockRecords }) => {
     await mockPage(OneTableWithDelete).goto();
@@ -43,5 +44,25 @@ test.describe('action settings', () => {
     await page.getByRole('button', { name: 'OK' }).click();
     await page.waitForTimeout(500);
     expect(requestMade).toBeFalsy();
+  });
+
+  test('should refresh block data after multiple popups closed', async ({ page, mockPage, mockRecords }) => {
+    await mockPage(shouldRefreshBlockDataAfterMultiplePopupsClosed).goto();
+
+    await page.getByLabel('action-Action.Link-Edit-').click();
+    await page.getByLabel('action-Action.Link-Edit-update-roles-table-admin').click();
+    await page.getByLabel('block-item-CollectionField-').getByRole('textbox').clear();
+    await page.getByLabel('block-item-CollectionField-').getByRole('textbox').fill('abc123');
+    await page.getByLabel('action-Action-Submit-submit-').click();
+
+    // the first popup
+    await expect(page.getByRole('button', { name: 'abc123', exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Admin', exact: true })).not.toBeVisible();
+
+    // close the first popup
+    await page.getByLabel('drawer-Action.Container-users-Edit record-mask').click();
+    await expect(
+      page.getByLabel('block-item-CardItem-users-').getByRole('button', { name: 'Root,Member,abc123' }),
+    ).toBeVisible();
   });
 });
