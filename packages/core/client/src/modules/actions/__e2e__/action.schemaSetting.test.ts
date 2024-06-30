@@ -46,23 +46,23 @@ test.describe('action settings', () => {
     expect(requestMade).toBeFalsy();
   });
 
-  test('should refresh block data after multiple popups closed', async ({ page, mockPage, mockRecords }) => {
-    await mockPage(shouldRefreshBlockDataAfterMultiplePopupsClosed).goto();
+  test('should refresh block data after multiple popups closed', async ({ page, mockPage, mockRecord }) => {
+    const nocoPage = await mockPage(shouldRefreshBlockDataAfterMultiplePopupsClosed).waitForInit();
+    await mockRecord('users', { username: 'Test', roles: [{ title: 'Test role' }] });
+    await nocoPage.goto();
 
-    await page.getByLabel('action-Action.Link-Edit-').click();
-    await page.getByLabel('action-Action.Link-Edit-update-roles-table-admin').click();
-    await page.getByLabel('block-item-CollectionField-').getByRole('textbox').clear();
+    await page.getByLabel('action-Action.Link-Edit-update-users-table-1').click();
+    await page.getByTestId('drawer-Action.Container-users-Edit record').getByLabel('action-Action.Link-Edit-').click();
     await page.getByLabel('block-item-CollectionField-').getByRole('textbox').fill('abc123');
     await page.getByLabel('action-Action-Submit-submit-').click();
 
     // the first popup
-    await expect(page.getByRole('button', { name: 'abc123', exact: true })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Admin', exact: true })).not.toBeVisible();
+    await expect(
+      page.getByTestId('drawer-Action.Container-users-Edit record').getByRole('button', { name: 'abc123' }),
+    ).toBeVisible();
 
     // close the first popup
     await page.getByLabel('drawer-Action.Container-users-Edit record-mask').click();
-    await expect(
-      page.getByLabel('block-item-CardItem-users-').getByRole('button', { name: 'Root,Member,abc123' }),
-    ).toBeVisible();
+    await expect(page.getByLabel('block-item-CardItem-users-').getByRole('button', { name: 'abc123' })).toBeVisible();
   });
 });
