@@ -225,6 +225,16 @@ export class EagerLoadingTree {
             throw new Error(`Model ${node.model.name} does not have primary key`);
           }
 
+          includeForFilter.forEach((include: { association: string }, index: number) => {
+            const association = node.model.associations[include.association];
+            if (association?.associationType == 'BelongsToArray') {
+              includeForFilter[index] = {
+                ...include,
+                ...association.generateInclude(),
+              };
+            }
+          });
+
           // find all ids
           const ids = (
             await node.model.findAll({

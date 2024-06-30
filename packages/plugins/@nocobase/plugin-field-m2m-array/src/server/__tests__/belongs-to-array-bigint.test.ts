@@ -11,7 +11,7 @@ import { MockDatabase, MockServer, createMockServer } from '@nocobase/test';
 import { DataTypes } from 'sequelize';
 import { BelongsToArrayRepository } from '@nocobase/database';
 
-describe('belongs-to-array', () => {
+describe('belongs-to-array, bigInt targetKey', () => {
   let app: MockServer;
   let db: MockDatabase;
 
@@ -78,7 +78,7 @@ describe('belongs-to-array', () => {
   });
 
   afterEach(async () => {
-    // await db.clean({ drop: true });
+    await db.clean({ drop: true });
     await app.destroy();
   });
 

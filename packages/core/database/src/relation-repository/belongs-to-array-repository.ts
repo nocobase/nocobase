@@ -57,10 +57,15 @@ export class BelongsToArrayAssociation {
     if (this.db.sequelize.getDialect() !== 'postgres') {
       throw new Error('Filtering by many to many (array) associations is only supported on postgres');
     }
+    const targetCollection = this.db.getCollection(this.targetName);
+    const targetField = targetCollection.getField(this.targetKey);
+    const sourceCollection = this.db.getCollection(this.source.name);
+    const foreignField = sourceCollection.getField(this.foreignKey);
+    const queryInterface = this.db.sequelize.getQueryInterface();
+    const left = queryInterface.quoteIdentifiers(`${this.as}.${targetField.columnName()}`);
+    const right = queryInterface.quoteIdentifiers(`${this.source.collection.name}.${foreignField.columnName()}`);
     return {
-      on: this.db.sequelize.literal(
-        `${this.as}.${this.targetKey}=any(${this.source.collection.name}.${this.foreignKey})`,
-      ),
+      on: this.db.sequelize.literal(`${left}=any(${right})`),
     };
   }
 }
