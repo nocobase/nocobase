@@ -23,6 +23,8 @@ export interface SchemaInitializerActionModalProps {
   buttonText?: any;
   component?: any;
   isItem?: boolean;
+  width?: string;
+  btnStyles?: React.CSSProperties;
 }
 
 const SchemaInitializerActionModalItemComponent = React.forwardRef((props: any, ref: any) => {
@@ -31,7 +33,7 @@ const SchemaInitializerActionModalItemComponent = React.forwardRef((props: any, 
 });
 
 export const SchemaInitializerActionModal: FC<SchemaInitializerActionModalProps> = (props) => {
-  const { title, icon, schema, buttonText, isItem, component, onCancel, onSubmit } = props;
+  const { title, icon, width, schema, buttonText, btnStyles, isItem, component, onCancel, onSubmit } = props;
   const useCancelAction = useCallback(() => {
     // eslint-disable-next-line react-hooks/rules-of-hooks
     const form = useForm();
@@ -92,6 +94,7 @@ export const SchemaInitializerActionModal: FC<SchemaInitializerActionModalProps>
                   style: {
                     borderColor: 'var(--colorSettings)',
                     color: 'var(--colorSettings)',
+                    ...(btnStyles || {}),
                   },
                   title: buttonText,
                   type: 'dashed',
@@ -101,8 +104,9 @@ export const SchemaInitializerActionModal: FC<SchemaInitializerActionModalProps>
               'x-decorator': 'Form',
               'x-component': 'Action.Modal',
               'x-component-props': {
+                width: width,
                 style: {
-                  maxWidth: '520px',
+                  maxWidth: width ? width : '520px',
                   width: '100%',
                 },
               },

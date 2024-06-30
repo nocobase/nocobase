@@ -12,7 +12,7 @@ import { Schema } from '@formily/react';
 import { Spin } from 'antd';
 import React, { useMemo } from 'react';
 import { useRequest } from '../../api-client';
-import { useSchemaComponentContext } from '../hooks';
+import { useComponent, useSchemaComponentContext } from '../hooks';
 import { FormProvider } from './FormProvider';
 import { SchemaComponent } from './SchemaComponent';
 
@@ -26,6 +26,11 @@ export interface RemoteSchemaComponentProps {
   hidden?: any;
   onlyRenderProperties?: boolean;
   noForm?: boolean;
+  /**
+   * @default true
+   */
+  memoized?: boolean;
+  NotFoundPage?: React.ComponentType | string;
 }
 
 const defaultTransform = (s: Schema) => s;
@@ -37,8 +42,10 @@ const RequestSchemaComponent: React.FC<RemoteSchemaComponentProps> = (props) => 
     hidden,
     scope,
     uid,
+    memoized,
     components,
     onSuccess,
+    NotFoundPage,
     schemaTransform = defaultTransform,
   } = props;
   const { reset } = useSchemaComponentContext();
@@ -55,17 +62,34 @@ const RequestSchemaComponent: React.FC<RemoteSchemaComponentProps> = (props) => 
       reset && reset();
     },
   });
-  if (loading) {
-    return <Spin />;
+  const NotFoundComponent = useComponent(NotFoundPage);
+  if (loading || hidden) {
+    return (
+      <div style={{ textAlign: 'center', marginTop: 20 }}>
+        <Spin />
+      </div>
+    );
   }
-  if (hidden) {
-    return <Spin />;
+
+  if (Object.keys(data?.data).length === 0) {
+    return NotFoundComponent ? <NotFoundComponent /> : null;
   }
+
   return noForm ? (
-    <SchemaComponent memoized components={components} scope={scope} schema={schemaTransform(data?.data || {})} />
+    <SchemaComponent
+      memoized={memoized}
+      components={components}
+      scope={scope}
+      schema={schemaTransform(data?.data || {})}
+    />
   ) : (
     <FormProvider form={form}>
-      <SchemaComponent memoized components={components} scope={scope} schema={schemaTransform(data?.data || {})} />
+      <SchemaComponent
+        memoized={memoized}
+        components={components}
+        scope={scope}
+        schema={schemaTransform(data?.data || {})}
+      />
     </FormProvider>
   );
 };

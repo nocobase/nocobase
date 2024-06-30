@@ -32,12 +32,14 @@ export interface PluginSettingOptions {
    */
   sort?: number;
   aclSnippet?: string;
+  link?: string;
   [index: string]: any;
 }
 
 export interface PluginSettingsPageType {
   label?: string | React.ReactElement;
   title: string | React.ReactElement;
+  link?: string;
   key: string;
   icon: any;
   path: string;

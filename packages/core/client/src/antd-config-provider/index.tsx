@@ -59,7 +59,11 @@ export function AntdConfigProvider(props) {
     },
   );
   if (loading) {
-    return <Spin />;
+    return (
+      <div style={{ textAlign: 'center', marginTop: 20 }}>
+        <Spin />
+      </div>
+    );
   }
   return (
     <AppLangContext.Provider value={data?.data}>

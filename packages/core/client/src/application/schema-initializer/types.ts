@@ -21,7 +21,7 @@ import type {
 
 export type InsertType = (s: ISchema) => void;
 
-type SchemaInitializerItemBuiltInType<T = {}> = T & {
+type SchemaInitializerItemBuiltInType<T = {}> = Partial<T> & {
   name: string;
   sort?: number;
   componentProps?: Omit<T, 'children'>;

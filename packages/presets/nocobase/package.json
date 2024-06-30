@@ -5,6 +5,7 @@
   "main": "./lib/server/index.js",
   "dependencies": {
     "@formily/json-schema": "2.x",
+    "@nocobase/plugin-mobile": "1.2.10-alpha",
     "@nocobase/plugin-acl": "1.2.11-alpha",
     "@nocobase/plugin-action-bulk-edit": "1.2.11-alpha",
     "@nocobase/plugin-action-bulk-update": "1.2.11-alpha",

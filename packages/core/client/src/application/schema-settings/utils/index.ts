@@ -10,3 +10,4 @@
 export * from './createSelectSettingsItem';
 export * from './createSwitchSettingsItem';
 export * from './createModalSettingsItem';
+export * from './createTextSettingsItem';
