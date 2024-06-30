@@ -92,4 +92,5 @@ const sqlite = {
   json: ['json', 'array'],
 };
 
-export default { postgres, mysql, sqlite, mariadb: mysql };
+const fieldTypeMap = { postgres, mysql, sqlite, mariadb: mysql };
+export default fieldTypeMap;
