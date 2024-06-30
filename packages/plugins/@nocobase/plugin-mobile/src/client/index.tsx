@@ -165,7 +165,7 @@ export class PluginMobileClient extends Plugin {
 
   addAppRoutes() {
     this.app.addComponents({ Mobile });
-    this.app.router.add('mobile', {
+    this.app.router.add('m', {
       path: `${this.mobilePath}/*`,
       Component: 'Mobile',
     });
