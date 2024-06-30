@@ -9,6 +9,7 @@
 
 import React, { FC } from 'react';
 import { SafeArea } from 'antd-mobile';
+import 'antd-mobile/es/components/tab-bar/tab-bar.css'
 
 import { useStyles } from './styles';
 import { useMobileRoutesContext } from '../../mobile-providers';
