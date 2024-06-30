@@ -185,7 +185,14 @@ export default function useServiceOptions(props) {
   }, [collectionField?.target, action, filter, service]);
 }
 
-export const useFieldNames = (props) => {
+export const useFieldNames = (
+  props: {
+    fieldNames?: {
+      label: string;
+      value: string;
+    };
+  } = {},
+) => {
   const fieldSchema = useFieldSchema();
   const fieldNames =
     fieldSchema['x-component-props']?.['field']?.['uiSchema']?.['x-component-props']?.['fieldNames'] ||

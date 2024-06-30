@@ -7,8 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from './Page';
 export * from './FixedBlock';
-export * from './PageTab.Settings';
-export * from './Page.Settings';
 export * from './FixedBlockDesignerItem';
+export * from './Page';
+export * from './Page.Settings';
+export * from './PageTab.Settings';
+export { PopupSettingsProvider } from './PopupSettingsProvider';

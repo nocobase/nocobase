@@ -159,7 +159,7 @@ export const TableBlockProvider = withDynamicSchemaProps((props) => {
       }
       params['tree'] = true;
     } else {
-      const f = collection.fields.find((f) => f.treeChildren);
+      const f = collection?.fields.find((f) => f.treeChildren);
       if (f) {
         childrenColumnName = f.name;
       }

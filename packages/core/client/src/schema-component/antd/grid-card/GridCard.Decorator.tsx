@@ -32,7 +32,8 @@ const InternalGridCardBlockProvider = (props) => {
 
   useEffect(() => {
     if (!service?.loading) {
-      form.setValuesIn(field.address.concat('list').toString(), service?.data?.data);
+      // @ts-ignore
+      form.fields[field.address.concat('list').toString()]?.setValue(service?.data?.data);
     }
   }, [field.address, form, service?.data?.data, service?.loading]);
 

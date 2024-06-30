@@ -9,9 +9,12 @@
 
 import React from 'react';
 import { useSchemaInitializerItem } from '../../../application';
+import { usePagePopup } from '../../../schema-component/antd/page/pagePopupUtils';
+import { CONTEXT_SCHEMA_KEY } from '../../../schema-component/antd/page/usePopupContextInActionOrAssociationField';
 import { BlockInitializer } from '../../../schema-initializer/items';
 
 export const PopupActionInitializer = (props) => {
+  const { getPopupContext } = usePagePopup();
   const schema = {
     type: 'void',
     title: '{{ t("Popup") }}',
@@ -58,6 +61,7 @@ export const PopupActionInitializer = (props) => {
         },
       },
     },
+    [CONTEXT_SCHEMA_KEY]: getPopupContext(),
   };
 
   const itemConfig = useSchemaInitializerItem();

@@ -37,6 +37,7 @@ test.describe('where single data details block can be added', () => {
     await nocoPage.goto();
 
     // 1.打开弹窗
+    await page.getByRole('button', { name: '2', exact: true }).getByText('2').hover();
     await page.getByRole('button', { name: '2', exact: true }).getByText('2').click();
 
     // 2.通过 Current record 创建一个详情区块
@@ -121,7 +122,7 @@ test.describe('configure actions', () => {
 
     // create delete ------------------------------------------------------------------------------------
     await createAction(page, 'Delete');
-    await expect(page.getByLabel('action-Action-Delete-destroy-general-details-')).toBeVisible();
+    await expect(page.getByLabel('action-Action-Delete-destroy-general-details')).toBeVisible();
 
     // create print
     await createAction(page, 'Print');

@@ -8,20 +8,19 @@
  */
 
 import { DownOutlined } from '@ant-design/icons';
-import { observer, RecursionField, useField, useFieldSchema, useForm } from '@formily/react';
+import { observer, useField, useFieldSchema, useForm } from '@formily/react';
 import { Button, Dropdown, MenuProps } from 'antd';
-import React, { useEffect, useMemo, useState, forwardRef, createRef } from 'react';
 import { composeRef } from 'rc-util/lib/ref';
-import { useDesignable } from '../../';
-import { useACLRolesCheck, useRecordPkValue, useACLActionParamsContext } from '../../acl/ACLProvider';
-import {
-  CollectionProvider_deprecated,
-  useCollection_deprecated,
-  useCollectionManager_deprecated,
-} from '../../collection-manager';
+import React, { createRef, forwardRef, useEffect, useMemo } from 'react';
+import { Collection, useDesignable } from '../../';
+import { useACLActionParamsContext, useACLRolesCheck, useRecordPkValue } from '../../acl/ACLProvider';
+import { useCollectionManager_deprecated, useCollection_deprecated } from '../../collection-manager';
+import { useTreeParentRecord } from '../../modules/blocks/data-blocks/table/TreeRecordProvider';
 import { useRecord } from '../../record-provider';
-import { ActionContextProvider, useActionContext, useCompile } from '../../schema-component';
+import { useCompile } from '../../schema-component';
 import { linkageAction } from '../../schema-component/antd/action/utils';
+import { useNavigateTOSubPage } from '../../schema-component/antd/page/SubPages';
+import { usePagePopup } from '../../schema-component/antd/page/pagePopupUtils';
 import { parseVariables } from '../../schema-component/common/utils/uitls';
 import { useLocalVariables, useVariables } from '../../variables';
 
@@ -66,17 +65,17 @@ function useAclCheckFn() {
 }
 
 const InternalCreateRecordAction = (props: any, ref) => {
-  const [visible, setVisible] = useState(false);
-  const collection = useCollection_deprecated();
   const fieldSchema = useFieldSchema();
+  const openMode = fieldSchema?.['x-component-props']?.['openMode'];
   const field: any = useField();
-  const [currentCollection, setCurrentCollection] = useState(collection.name);
-  const [currentCollectionDataSource, setCurrentCollectionDataSource] = useState(collection.dataSource);
   const linkageRules: any[] = fieldSchema?.['x-linkage-rules'] || [];
   const values = useRecord();
-  const ctx = useActionContext();
   const variables = useVariables();
   const localVariables = useLocalVariables({ currentForm: { values } as any });
+  const { openPopup } = usePagePopup();
+  const { navigateToSubPage } = useNavigateTOSubPage();
+  const treeRecordData = useTreeParentRecord();
+
   useEffect(() => {
     field.stateOfLinkageRules = {};
     linkageRules
@@ -95,26 +94,26 @@ const InternalCreateRecordAction = (props: any, ref) => {
   }, [field, linkageRules, localVariables, variables]);
   const internalRef = createRef<HTMLButtonElement | HTMLAnchorElement>();
   const buttonRef = composeRef(ref, internalRef);
+
   return (
     //@ts-ignore
     <div ref={buttonRef as React.Ref<HTMLButtonElement>}>
       <CreateAction
         {...props}
-        onClick={(collectionData) => {
-          if (collectionData.name === collection.name) {
-            ctx?.setVisible(true);
-          } else {
-            setVisible(true);
+        onClick={(collection: Collection) => {
+          if (openMode === 'page') {
+            return navigateToSubPage();
           }
-          setCurrentCollection(collectionData.name);
-          setCurrentCollectionDataSource(collectionData.dataSource);
+
+          if (treeRecordData) {
+            openPopup({
+              recordData: treeRecordData,
+            });
+          } else {
+            openPopup();
+          }
         }}
       />
-      <ActionContextProvider value={{ ...ctx, fieldSchema, visible, setVisible }}>
-        <CollectionProvider_deprecated name={currentCollection} dataSource={currentCollectionDataSource}>
-          <RecursionField schema={fieldSchema} basePath={field.address} onlyRenderProperties />
-        </CollectionProvider_deprecated>
-      </ActionContextProvider>
     </div>
   );
 };

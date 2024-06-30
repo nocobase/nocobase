@@ -73,7 +73,7 @@ export function useParsedFilter({ filterOption }: { filterOption: any }) {
         equals: _.isEqual,
       },
     );
-  }, [JSON.stringify(filterOption)]);
+  }, [JSON.stringify(filterOption), parseFilter, findVariable]);
 
   return {
     /** 数据范围的筛选参数 */
