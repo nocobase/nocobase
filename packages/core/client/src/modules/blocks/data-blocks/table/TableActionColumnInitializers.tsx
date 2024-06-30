@@ -16,7 +16,6 @@ import { useAPIClient } from '../../../../api-client';
 import { CompatibleSchemaInitializer } from '../../../../application/schema-initializer/CompatibleSchemaInitializer';
 import { SchemaInitializerActionModal } from '../../../../application/schema-initializer/components/SchemaInitializerActionModal';
 import { SchemaInitializerItem } from '../../../../application/schema-initializer/components/SchemaInitializerItem';
-import { useSchemaInitializer } from '../../../../application/schema-initializer/context';
 import { useCollection_deprecated } from '../../../../collection-manager';
 import { SelectWithTitle } from '../../../../common/SelectWithTitle';
 import { useDataBlockProps } from '../../../../data-source';

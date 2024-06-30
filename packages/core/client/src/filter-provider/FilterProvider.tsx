@@ -40,7 +40,7 @@ export interface ForeignKeyField {
 type Collection = ReturnType<typeof useCollection_deprecated>;
 
 export interface DataBlock {
-  /** 唯一标识符，schema 中的 name 值 */
+  /** 唯一标识符，schema 中的 x-uid 值 */
   uid: string;
   /** 用户自行设置的区块名称 */
   title?: string;

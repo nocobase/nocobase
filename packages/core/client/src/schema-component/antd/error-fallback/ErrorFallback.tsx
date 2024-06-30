@@ -7,19 +7,19 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { useFieldSchema } from '@formily/react';
 import { Button, Result, Typography } from 'antd';
 import React, { FC } from 'react';
 import { FallbackProps } from 'react-error-boundary';
 import { Trans, useTranslation } from 'react-i18next';
-import { ErrorFallbackModal } from './ErrorFallbackModal';
 import { useAPIClient } from '../../../api-client';
-import { useFieldSchema } from '@formily/react';
-import { useLocation } from 'react-router-dom';
+import { useLocationNoUpdate } from '../../../application';
+import { ErrorFallbackModal } from './ErrorFallbackModal';
 
 const { Paragraph, Text, Link } = Typography;
 
 export const useDownloadLogs = (error: any, data: Record<string, any> = {}) => {
-  const location = useLocation();
+  const location = useLocationNoUpdate();
   const [loading, setLoading] = React.useState(false);
   const api = useAPIClient();
   return {

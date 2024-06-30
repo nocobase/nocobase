@@ -9,9 +9,12 @@
 
 import React from 'react';
 import { useSchemaInitializerItem } from '../../../application';
+import { usePagePopup } from '../../../schema-component/antd/page/pagePopupUtils';
+import { CONTEXT_SCHEMA_KEY } from '../../../schema-component/antd/page/usePopupContextInActionOrAssociationField';
 import { ActionInitializerItem } from '../../../schema-initializer/items/ActionInitializerItem';
 
 export const CreateActionInitializer = () => {
+  const { getPopupContext } = usePagePopup();
   const schema = {
     type: 'void',
     'x-action': 'create',
@@ -65,6 +68,7 @@ export const CreateActionInitializer = () => {
         },
       },
     },
+    [CONTEXT_SCHEMA_KEY]: getPopupContext(),
   };
   const itemConfig = useSchemaInitializerItem();
   return <ActionInitializerItem {...itemConfig} item={itemConfig} schema={schema} />;
