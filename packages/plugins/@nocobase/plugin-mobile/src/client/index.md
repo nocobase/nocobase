@@ -342,7 +342,7 @@ export interface TabItem {
 ## 待确定的事或者有争议的事
 
 - [x] 插件列表 presets 变更，怎么改？packages/presets/nocobase/src/server/index.ts
-- [-] Settings 配置页面的样式和规划
+- [x] Settings 配置页面的样式和规划
   - [x] `basename` 是否需要可配置，如果不需要，则是一个链接，打开配置页面
   - [x] 如果需要配置，settings 配置页面按照原来的设计，还是独立的一个页面
 - [x] 目前设计图中的 TabBar 类型只完成了 2 种类型，其他的类型是否这次做？先不做
@@ -351,16 +351,16 @@ export interface TabItem {
 - [x] 删除 tabBar 的时候，是否关联的资源都删除，还是不用管？【尽量删】
 - [x] `navigationBar` 左右两侧的 initializer 使用的是同一个，还是分开命名？【同一个】
 - [x] TabBar 的需要设置吗？（目前看来没什么设置项，是否需要显示的问题，如果没注册到 TabBar 上则默认不显示，似乎是能满足要求的）
-- back 问题和内页，内页是没有 schema 的，所以想要自己实现页面也需要自己写 navigateBar
-- `navigationBar` 的操作按钮目前只实现了一个 Link，计划实现 `back`，其他的是否这次做？【自动处理，页面级别控制】
+- back 问题和内页，内页是没有 schema 的，所以想要自己实现页面直接使用原始的 navigateBar 就行了
+- `navigationBar` 的操作按钮目前只实现了一个 Link，计划实现 `back`，其他的是否这次做？【自动处理，页面级别控制】（根据实际场景列举出来）
   - ActionSheet
   - 弹出层
-- 数据表字段是否需要预览一些字段？
 - preset 中老的依赖是否删除，目前看如果删除，则原来的项目会报错
 - 内容区块的间距和布局问题（参考原来的）
 - MobileCheckerProvider 的逻辑待确认
 - 移动端是否需要自己的 providers manager ？是将 application 的抽象成 ProvidersManager 还是复制粘贴代码？
-- add block grid 样式？
+- 内容区 padding/margin 是否需要，让其距离顶部和底部都有些距离？
+- add block 需要添加哪些区块，还是空着？
 
 ## 待做任务
 
@@ -378,13 +378,12 @@ export interface TabItem {
 - [x] navigationBar Action 样式
 - [x] 真机演示
 - [x] 内容超过一屏幕，以及没有内容的情况
-- [x] package.json 的描述
-- [x] unit test
-- e2e test
+- [x] package.json & Readme 的描述
 - 多语言
 - 各个部分的文档
 - 更新文档
-- Readme
+- unit test
+- e2e test
 - 新移动端 Tab 的插件开发示例
 
 

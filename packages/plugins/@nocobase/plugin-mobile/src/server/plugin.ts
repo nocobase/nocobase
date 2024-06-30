@@ -18,6 +18,7 @@ export class PluginMobileServer extends Plugin {
 
   async install() {
     const uiSchemas = this.db.getRepository<any>('uiSchemas');
+    await uiSchemas.remove('nocobase-mobile');
     await uiSchemas.insert({
       name: 'nocobase-mobile',
       'x-uid': 'nocobase-mobile',
