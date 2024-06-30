@@ -21,21 +21,27 @@ export class BelongsToArrayField extends RelationField {
     }
     const value: any[] = values[name] || [];
     const tks = [];
+    const items = [];
     for (const item of value) {
       if (typeof item !== 'object') {
         tks.push(item);
         continue;
       }
-      let tk = item[targetKey];
-      if (!tk) {
-        const newInstance = await this.database.getRepository(target).create({
-          values: item,
-          transaction,
-        });
-        tk = newInstance.get(targetKey);
-      }
-      tks.push(tk);
+      items.push(item);
     }
+    const repo = this.database.getRepository(target);
+    const itemTks = items.map((item) => item[targetKey]).filter((tk) => tk);
+    const instances = await repo.find({
+      filter: {
+        [targetKey]: itemTks,
+      },
+      transaction,
+    });
+    tks.push(...instances.map((instance: Model) => instance[targetKey]));
+    const toCreate = items.filter((item) => !item[targetKey] || !tks.includes(item[targetKey]));
+    const m = this.database.getModel(target);
+    const newInstances = await m.bulkCreate(toCreate, { transaction });
+    tks.push(...newInstances.map((instance: Model) => instance[targetKey]));
     model.set(foreignKey, tks);
   };
 
