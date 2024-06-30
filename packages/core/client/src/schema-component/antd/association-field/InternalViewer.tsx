@@ -10,12 +10,10 @@
 import { observer, RecursionField, useField, useFieldSchema } from '@formily/react';
 import { toArr } from '@formily/shared';
 import React, { FC, Fragment, useRef, useState } from 'react';
-import { useTranslation } from 'react-i18next';
 import { useDesignable } from '../../';
 import { WithoutTableFieldResource } from '../../../block-provider';
-import { Collection, useCollectionManager } from '../../../data-source';
+import { useCollectionManager, useCollectionRecordData } from '../../../data-source';
 import { VariablePopupRecordProvider } from '../../../modules/variable/variablesProvider/VariablePopupRecordProvider';
-import { RecordProvider, useRecord } from '../../../record-provider';
 import { useCompile } from '../../hooks';
 import { ActionContextProvider, useActionContext } from '../action';
 import { EllipsisWithTooltip } from '../input/EllipsisWithTooltip';
@@ -43,7 +41,6 @@ export function isObject(value) {
 export interface ButtonListProps {
   value: any;
   setBtnHover: any;
-  setRecord: any;
   fieldNames?: {
     label: string;
     value: string;
@@ -64,7 +61,8 @@ const ButtonLinkList: FC<ButtonListProps> = (props) => {
   const isTreeCollection = targetCollection?.template === 'tree';
   const ellipsisWithTooltipRef = useRef<IEllipsisWithTooltipRef>();
   const getLabelUiSchema = useLabelUiSchemaV2();
-  const { openPopup, getPopupContext } = usePagePopup();
+  const { openPopup } = usePagePopup();
+  const recordData = useCollectionRecordData();
 
   const renderRecords = () =>
     toArr(props.value).map((record, index, arr) => {
@@ -101,8 +99,8 @@ const ButtonLinkList: FC<ButtonListProps> = (props) => {
                   }
                   openPopup({
                     recordData: record,
+                    parentRecordData: recordData,
                   });
-                  props.setRecord(record);
                   ellipsisWithTooltipRef?.current?.setPopoverVisible(false);
                 }}
               >
@@ -133,23 +131,18 @@ export const ReadPrettyInternalViewer: React.FC = observer(
   (props: ReadPrettyInternalViewerProps) => {
     const { value, ButtonList = ButtonLinkList } = props;
     const fieldSchema = useFieldSchema();
-    const recordCtx = useRecord();
-    const cm = useCollectionManager();
     const { enableLink } = fieldSchema['x-component-props'] || {};
     // value 做了转换，但 props.value 和原来 useField().value 的值不一致
     const field = useField();
     const [visible, setVisible] = useState(false);
     const { options: collectionField } = useAssociationFieldContext();
-    const [record, setRecord] = useState({});
-    const targetCollection = cm.getCollection(collectionField?.target);
     const ellipsisWithTooltipRef = useRef<IEllipsisWithTooltipRef>();
-    const { t } = useTranslation();
     const { visibleWithURL, setVisibleWithURL } = usePagePopup();
     const [btnHover, setBtnHover] = useState(!!visibleWithURL);
 
     const btnElement = (
       <EllipsisWithTooltip ellipsis={true} ref={ellipsisWithTooltipRef}>
-        <ButtonList setBtnHover={setBtnHover} setRecord={setRecord} value={value} fieldNames={props.fieldNames} />
+        <ButtonList setBtnHover={setBtnHover} value={value} fieldNames={props.fieldNames} />
       </EllipsisWithTooltip>
     );
 
@@ -158,7 +151,8 @@ export const ReadPrettyInternalViewer: React.FC = observer(
     }
 
     const renderWithoutTableFieldResourceProvider = () => (
-      <VariablePopupRecordProvider recordData={record} collection={targetCollection as Collection}>
+      // The recordData here is only provided when the popup is opened, not the current row record
+      <VariablePopupRecordProvider>
         <WithoutTableFieldResource.Provider value={true}>
           <RecursionField
             schema={fieldSchema}
@@ -171,26 +165,6 @@ export const ReadPrettyInternalViewer: React.FC = observer(
         </WithoutTableFieldResource.Provider>
       </VariablePopupRecordProvider>
     );
-
-    const renderRecordProvider = () => {
-      const collectionFieldNames = fieldSchema?.['x-collection-field']?.split('.');
-
-      return collectionFieldNames && collectionFieldNames.length > 2 ? (
-        <>
-          <RecordProvider record={record} parent={recordCtx[collectionFieldNames[1]]}>
-            {btnElement}
-          </RecordProvider>
-          {renderWithoutTableFieldResourceProvider()}
-        </>
-      ) : (
-        <>
-          <RecordProvider record={record} parent={recordCtx}>
-            {btnElement}
-          </RecordProvider>
-          {renderWithoutTableFieldResourceProvider()}
-        </>
-      );
-    };
 
     return (
       <PopupVisibleProvider visible={false}>
@@ -206,7 +180,8 @@ export const ReadPrettyInternalViewer: React.FC = observer(
             fieldSchema: fieldSchema,
           }}
         >
-          {renderRecordProvider()}
+          {btnElement}
+          {renderWithoutTableFieldResourceProvider()}
         </ActionContextProvider>
       </PopupVisibleProvider>
     );

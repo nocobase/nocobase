@@ -39,6 +39,11 @@ export const PopupParamsProviderContext = React.createContext<PopupProps>(null);
 PopupVisibleProviderContext.displayName = 'PopupVisibleProviderContext';
 PopupParamsProviderContext.displayName = 'PopupParamsProviderContext';
 
+export const usePopupContextAndParams = () => {
+  const context = React.useContext(PopupParamsProviderContext);
+  return (context || {}) as PopupProps;
+};
+
 /**
  * The difference between this component and ActionContextProvider is that
  * this component is only used to control the popups in the PagePopupsItem component (excluding the nested popups within it).

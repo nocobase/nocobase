@@ -9,7 +9,7 @@
 
 import { ISchema, useFieldSchema } from '@formily/react';
 import _ from 'lodash';
-import { useCallback, useContext, useMemo } from 'react';
+import { useCallback, useContext } from 'react';
 import { useLocationNoUpdate, useNavigateNoUpdate } from '../../../application';
 import {
   CollectionRecord,
@@ -23,7 +23,7 @@ import {
 } from '../../../data-source';
 import { useCurrentPopupRecord } from '../../../modules/variable/variablesProvider/VariablePopupRecordProvider';
 import { ActionContext } from '../action/context';
-import { PopupParamsProviderContext, PopupVisibleProviderContext } from './PagePopups';
+import { PopupVisibleProviderContext, usePopupContextAndParams } from './PagePopups';
 import { usePopupSettings } from './PopupSettingsProvider';
 import { PopupContext, usePopupContextInActionOrAssociationField } from './usePopupContextInActionOrAssociationField';
 
@@ -89,51 +89,61 @@ export const usePagePopup = () => {
   const cm = useCollectionManager();
   const association = useAssociationName();
   const { visible, setVisible } = useContext(PopupVisibleProviderContext) || { visible: false, setVisible: () => {} };
-  const { params: popupParams } = useContext(PopupParamsProviderContext) || {};
+  const { params: popupParams } = usePopupContextAndParams();
   const service = useDataBlockRequest();
   const { isPopupVisibleControlledByURL } = usePopupSettings();
   const { setVisible: setVisibleFromAction } = useContext(ActionContext);
   const { updatePopupContext } = usePopupContextInActionOrAssociationField();
   const { value: parentPopupRecordData, collection: parentPopupRecordCollection } = useCurrentPopupRecord() || {};
-  const sourceId = useMemo(
-    () => parentRecord?.data?.[cm.getCollection(association?.split('.')[0])?.getPrimaryKey()],
+  const getSourceId = useCallback(
+    (_parentRecordData?: Record<string, any>) =>
+      (_parentRecordData || parentRecord?.data)?.[cm.getCollection(association?.split('.')[0])?.getPrimaryKey()],
     [parentRecord, association],
   );
 
   const getNewPathname = useCallback(
     ({ tabKey, popupUid, recordData }: { tabKey?: string; popupUid: string; recordData: Record<string, any> }) => {
-      const filterByTK = recordData?.[collection.getPrimaryKey()];
+      let _collection = collection;
+      if (association) {
+        _collection = cm.getCollection(association);
+      }
+      const filterByTK = recordData?.[_collection.getPrimaryKey()];
       return getPopupPathFromParams({
         popupuid: popupUid,
         filterbytk: filterByTK,
         tab: tabKey,
       });
     },
-    [association, cm, collection, dataSourceKey, parentRecord?.data],
+    [association, cm, collection, dataSourceKey, parentRecord?.data, association],
   );
 
-  const getPopupContext = useCallback(() => {
-    const context = {
-      dataSource: dataSourceKey,
-      collection: association ? undefined : collection.name,
-      association,
-      sourceId,
-      parentPopupRecord: parentPopupRecordData
-        ? {
-            collection: parentPopupRecordCollection?.name,
-            filterByTk: parentPopupRecordData[parentPopupRecordCollection.getPrimaryKey()],
-          }
-        : undefined,
-    };
+  const getPopupContext = useCallback(
+    (sourceId?: string) => {
+      const context = {
+        dataSource: dataSourceKey,
+        collection: association ? undefined : collection.name,
+        association,
+        sourceId: sourceId || getSourceId(),
+        parentPopupRecord: !_.isEmpty(parentPopupRecordData)
+          ? {
+              collection: parentPopupRecordCollection?.name,
+              filterByTk: parentPopupRecordData[parentPopupRecordCollection.getPrimaryKey()],
+            }
+          : undefined,
+      };
 
-    return _.omitBy(context, _.isNil) as PopupContext;
-  }, [dataSourceKey, collection, association, sourceId, parentPopupRecordData, parentPopupRecordCollection]);
+      return _.omitBy(context, _.isNil) as PopupContext;
+    },
+    [dataSourceKey, collection, association, getSourceId, parentPopupRecordData, parentPopupRecordCollection],
+  );
 
   const openPopup = useCallback(
     ({
       recordData,
+      parentRecordData,
     }: {
       recordData?: Record<string, any>;
+      parentRecordData?: Record<string, any>;
     } = {}) => {
       if (!isPopupVisibleControlledByURL) {
         return setVisibleFromAction?.(true);
@@ -146,10 +156,12 @@ export const usePagePopup = () => {
         url = url.slice(0, -1);
       }
 
+      const sourceId = getSourceId(parentRecordData);
+
       storePopupContext(fieldSchema['x-uid'], {
         schema: fieldSchema,
         record: new CollectionRecord({ isNew: false, data: recordData }),
-        parentRecord,
+        parentRecord: parentRecordData ? new CollectionRecord({ isNew: false, data: parentRecordData }) : parentRecord,
         service,
         dataSource: dataSourceKey,
         collection: collection.name,
@@ -163,7 +175,7 @@ export const usePagePopup = () => {
           : undefined,
       });
 
-      updatePopupContext(getPopupContext());
+      updatePopupContext(getPopupContext(sourceId));
 
       navigate(withSearchParams(`${url}${pathname}`));
     },
@@ -181,7 +193,7 @@ export const usePagePopup = () => {
       location,
       isPopupVisibleControlledByURL,
       parentPopupRecordData,
-      sourceId,
+      getSourceId,
       getPopupContext,
     ],
   );

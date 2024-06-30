@@ -12,6 +12,7 @@ import { toArr } from '@formily/shared';
 import React, { Fragment, useRef } from 'react';
 import { useDesignable } from '../../';
 import { useCollectionManager_deprecated } from '../../../collection-manager';
+import { useCollectionRecordData } from '../../../data-source/collection-record/CollectionRecordProvider';
 import { useCompile } from '../../hooks';
 import { useActionContext } from '../action';
 import { usePagePopup } from '../page/pagePopupUtils';
@@ -47,6 +48,7 @@ const ButtonTabList: React.FC<ButtonListProps> = (props) => {
   const targetCollection = getCollection(collectionField?.target);
   const isTreeCollection = targetCollection?.template === 'tree';
   const { openPopup } = usePagePopup();
+  const recordData = useCollectionRecordData();
 
   const renderRecords = () =>
     toArr(props.value).map((record, index, arr) => {
@@ -79,8 +81,8 @@ const ButtonTabList: React.FC<ButtonListProps> = (props) => {
                   }
                   openPopup({
                     recordData: record,
+                    parentRecordData: recordData,
                   });
-                  props.setRecord(record);
                   ellipsisWithTooltipRef?.current?.setPopoverVisible(false);
                 }}
               >

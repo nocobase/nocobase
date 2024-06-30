@@ -20,6 +20,7 @@ import { oneEmptyTableWithUsers } from '../../../details-multi/__e2e__/templates
 import {
   T2174,
   T3871,
+  currentPopupRecordInPopupThatOpenedByAssociationField,
   oneFormAndOneTableWithUsers,
   oneTableWithNestPopups,
   parentPopupRecordInSubPageTheFirstLevelIsASubpageAndTheSecondLevelIsAPopup,
@@ -367,6 +368,27 @@ test.describe('set default value', () => {
         .getByLabel('block-item-CardItem-users-table')
         .getByRole('button', { name: 'Super Admin' }),
     ).toBeVisible();
+  });
+
+  test('Current popup record in popup that opened by association field', async ({ mockPage, page }) => {
+    await mockPage(currentPopupRecordInPopupThatOpenedByAssociationField).goto();
+
+    await page.getByText('Member').click();
+
+    // Current popup record in the first popup
+    await expect(page.getByLabel('block-item-CollectionField-').getByRole('textbox')).toHaveValue('Member');
+
+    // Current popup record and Parent popup record in the second popup
+    await page.getByLabel('action-Action-Edit-update-').click();
+    await expect(
+      page
+        .getByTestId('drawer-Action.Container-roles-Edit record')
+        .getByLabel('block-item-CollectionField-users-form-users.nickname-Current popup record')
+        .getByRole('textbox'),
+    ).toHaveValue('Member');
+    await expect(
+      page.getByLabel('block-item-CollectionField-users-form-users.username-Parent popup record').getByRole('textbox'),
+    ).toHaveValue('Member');
   });
 
   test('Parent popup record', async ({ page, mockPage }) => {
