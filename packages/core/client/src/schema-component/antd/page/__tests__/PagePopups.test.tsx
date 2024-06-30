@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { insertChildToParentSchema } from '../PagePopups';
+import { getPopupPath, insertChildToParentSchema } from '../PagePopups';
 
 vi.mock('@formily/shared', async (importOriginal) => {
   const actual: any = await importOriginal();
@@ -64,5 +64,38 @@ describe('insertToPopupSchema', () => {
         },
       },
     });
+  });
+});
+
+describe('getPopupPath', () => {
+  it('should return the popup path', () => {
+    const location: any = {
+      pathname: '/Users/Apple/Projects/nocobase/packages/core/client/src/schema-component/antd/page/popups/nestedPopup',
+    };
+
+    const result = getPopupPath(location);
+
+    expect(result).toEqual('nestedPopup');
+  });
+
+  it('should return the nested popup path', () => {
+    const location: any = {
+      pathname:
+        '/Users/Apple/Projects/nocobase/packages/core/client/src/schema-component/antd/page/popups/nestedPopup/abc/def/popups/nestedPopup2/abc2/def2',
+    };
+
+    const result = getPopupPath(location);
+
+    expect(result).toEqual('nestedPopup/abc/def/popups/nestedPopup2/abc2/def2');
+  });
+
+  it('should return an empty string if there is no popup path', () => {
+    const location: any = {
+      pathname: '/Users/Apple/Projects/nocobase/packages/core/client/src/schema-component/antd/page',
+    };
+
+    const result = getPopupPath(location);
+
+    expect(result).toEqual('');
   });
 });

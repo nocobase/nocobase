@@ -10,7 +10,7 @@
 import { ISchema, RecursionField, useFieldSchema } from '@formily/react';
 import _ from 'lodash';
 import React, { FC, useCallback, useContext, useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { Location, useLocation } from 'react-router-dom';
 import { useNavigateNoUpdate } from '../../../application/CustomRouterContextProvider';
 import {
   useCollectionParentRecord,
@@ -119,8 +119,8 @@ const SubPageProvider: FC<{ params: SubPageParams; context: SubPageContext | und
 };
 
 export const SubPage = () => {
-  const params: any = useParams();
-  const { subPageParams, popupParams } = getSubPageParamsAndPopupsParams(params['*']);
+  const location = useLocation();
+  const { subPageParams, popupParams } = getSubPageParamsAndPopupsParams(getSubPagePath(location));
   const { styles } = useSubPagesStyle();
   const { requestSchema } = useRequestSchema();
   const [actionSchema, setActionSchema] = useState(null);
@@ -267,3 +267,13 @@ export const getSubPageParamsAndPopupsParams = _.memoize((path: string) => {
 
   return { subPageParams, popupParams };
 });
+
+/**
+ * The reason why we don't use the decoded data returned by useParams here is because we need the raw values.
+ * @param location
+ * @returns
+ */
+export function getSubPagePath(location: Location) {
+  const [, subPagePath] = location.pathname.split('/admin/subpages/');
+  return subPagePath || '';
+}

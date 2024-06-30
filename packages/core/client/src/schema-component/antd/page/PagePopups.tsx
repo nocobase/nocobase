@@ -10,7 +10,7 @@
 import { ISchema } from '@formily/json-schema';
 import _ from 'lodash';
 import { FC, default as React, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { Location, useLocation } from 'react-router-dom';
 import { useAPIClient } from '../../../api-client';
 import { DataBlockProvider } from '../../../data-source/data-block/DataBlockProvider';
 import { BlockRequestContext } from '../../../data-source/data-block/DataBlockRequestProvider';
@@ -175,8 +175,8 @@ export const insertChildToParentSchema = (childSchema: ISchema, props: PopupProp
 };
 
 export const PagePopups = (props: { paramsList?: PopupParams[] }) => {
-  const params = useParams();
-  const popupParams = props.paramsList || getPopupParamsFromPath(params['*']);
+  const location = useLocation();
+  const popupParams = props.paramsList || getPopupParamsFromPath(getPopupPath(location));
   const { requestSchema } = useRequestSchema();
   const [rootSchema, setRootSchema] = useState<ISchema>(null);
   const popupPropsRef = useRef<PopupProps[]>([]);
@@ -232,4 +232,14 @@ export const useRequestSchema = () => {
   }, []);
 
   return { requestSchema };
+};
+
+/**
+ * The reason why we don't use the decoded data returned by useParams here is because we need the raw values.
+ * @param location
+ * @returns
+ */
+export const getPopupPath = (location: Location) => {
+  const [, ...popupsPath] = location.pathname.split('/popups/');
+  return popupsPath.join('/popups/');
 };

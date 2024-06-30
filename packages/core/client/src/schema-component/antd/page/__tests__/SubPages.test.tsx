@@ -7,7 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { getSubPageParamsAndPopupsParams, getSubPageParamsFromPath, getSubPagePathFromParams } from '../SubPages';
+import {
+  getSubPageParamsAndPopupsParams,
+  getSubPageParamsFromPath,
+  getSubPagePath,
+  getSubPagePathFromParams,
+} from '../SubPages';
 
 describe('getSubPagePathFromParams', () => {
   it('should generate the correct subpage path', () => {
@@ -93,5 +98,23 @@ describe('getSubPageParamsFromPath', () => {
       filterbytk: 'popups',
     };
     expect(getSubPageParamsFromPath(path)).toEqual(expectedSubPageParams);
+  });
+});
+
+describe('getSubPagePath', () => {
+  it('should return the subpage path', () => {
+    const location: any = {
+      pathname: '/admin/subpages/subPage1/filterbytk/filterbytk1/tab/tab1',
+    };
+    const expectedPath = 'subPage1/filterbytk/filterbytk1/tab/tab1';
+    expect(getSubPagePath(location)).toBe(expectedPath);
+  });
+
+  it('should return an empty string if subpage path is not found', () => {
+    const location: any = {
+      pathname: '/admin',
+    };
+    const expectedPath = '';
+    expect(getSubPagePath(location)).toBe(expectedPath);
   });
 });
