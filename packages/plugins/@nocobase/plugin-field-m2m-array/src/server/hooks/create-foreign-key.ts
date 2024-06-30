@@ -41,7 +41,7 @@ export const createForeignKey = (db: Database) => {
           name: foreignKey,
           type: 'set',
           dataType: 'array',
-          elementType: targetField.type,
+          elementType: targetField.dataType,
           isForeignKey: true,
           uiSchema: {
             type: 'object',
