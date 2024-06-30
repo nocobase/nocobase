@@ -11,7 +11,6 @@ import {
   ButtonEditor,
   ISchema,
   SchemaSettings,
-  useActionContext,
   useSchemaInitializer,
   useSchemaInitializerItem,
 } from '@nocobase/client';
@@ -45,14 +44,6 @@ export function WorkbenchScanActionSchemaInitializerItem(props) {
   // 调用插入功能
   const { insert } = useSchemaInitializer();
   const { t } = useTranslation();
-  const useCancelAction = () => {
-    const { setVisible } = useActionContext();
-    return {
-      run() {
-        setVisible(false);
-      },
-    };
-  };
 
   return (
     <ModalActionSchemaInitializerItem
@@ -96,33 +87,8 @@ export function WorkbenchScanActionSchemaInitializerItem(props) {
           properties: {
             modal: {
               type: 'void',
-              'x-component': 'Action.Modal',
+              'x-component': 'QRCodeScanner',
               title: t('Scan QR code', { ns: 'block-workbench' }),
-              'x-decorator': 'FormV2',
-              properties: {
-                scanner: {
-                  'x-component': 'QRCodeScanner',
-                  'x-component-props': {
-                    fps: 10,
-                    qrbox: 250,
-                    disableFlip: false,
-                  },
-                },
-                footer: {
-                  type: 'void',
-                  'x-component': 'Action.Modal.Footer',
-                  properties: {
-                    close: {
-                      title: 'Close',
-                      'x-component': 'Action',
-                      'x-component-props': {
-                        type: 'default',
-                        useAction: useCancelAction,
-                      },
-                    },
-                  },
-                },
-              },
             },
           },
         } as ISchema);
