@@ -8,6 +8,7 @@ on:
   push:
     branches:
       - 'main'
+      - 'next'
     paths:
       - 'packages/**'
       - 'docker/nocobase/**'
@@ -36,6 +37,11 @@ jobs:
           ref: main
           path: packages/pro-plugins
           ssh-key: ${{ secrets.SUBMODULE_SSH_KEY }}
+      - name: Fetch all branches
+        run: cd packages/pro-plugins && git fetch --all
+      - name: git checkout ${{ github.head_ref }}
+        run: cd packages/pro-plugins && git checkout ${{ github.head_ref }}
+        continue-on-error: true
       - name: rm .git
         run: rm -rf packages/pro-plugins/.git &&  git config --global user.email "you@example.com"  &&  git config --global user.name "Your Name" && git add -A && git commit -m "tmp commit"
       - name: Set up QEMU
