@@ -97,14 +97,15 @@ export class ApprovalTriggerNode {
   configureFieldsButton: Locator;
   configureActionsButton: Locator;
   saveDraftSwitch: Locator;
+  preloadAssociationsDropDown: Locator;
   submitButton: Locator;
   cancelButton: Locator;
   addNodeButton: Locator;
   constructor(page: Page, triggerName: string, collectionName: string) {
     this.page = page;
-    this.node = page.getByText('TriggeraConfigure');
-    this.nodeTitle = page.locator('textarea').filter({ hasText: triggerName });
-    this.nodeConfigure = page.getByRole('button', { name: 'Configure' });
+    this.node = page.getByLabel(`Trigger-${triggerName}`);
+    this.nodeTitle = page.getByLabel(`Trigger-${triggerName}`).getByRole('textbox');
+    this.nodeConfigure = page.getByLabel(`Trigger-${triggerName}`).getByRole('button', { name: 'Configure' });
     this.collectionDropDown = page
       .getByLabel('block-item-DataSourceCollectionCascader-workflows-Collection')
       .locator('.ant-select-selection-search-input');
@@ -117,10 +118,9 @@ export class ApprovalTriggerNode {
     this.addBlockButton = page.getByLabel(`schema-initializer-Grid-ApprovalApplyAddBlockButton-${collectionName}`);
     this.addApplyFormMenu = page.getByRole('menuitem', { name: 'Apply form' });
     this.configureFieldsButton = page.getByLabel(`schema-initializer-Grid-form:configureFields-${collectionName}`);
-    this.configureActionsButton = page.getByLabel(
-      `schema-initializer-ActionBar-ApprovalApplyAddActionButton-${collectionName}`,
-    );
+    this.configureActionsButton = page.getByLabel(`schema-initializer-ActionBar-ApprovalApplyAddActionButton-${collectionName}`);
     this.saveDraftSwitch = page.getByRole('menuitem', { name: 'Save draft' }).getByRole('switch');
+    this.preloadAssociationsDropDown = page.getByTestId('select-field-Preload associations');
     this.submitButton = page.getByLabel('action-Action-Submit-workflows');
     this.cancelButton = page.getByLabel('action-Action-Cancel-workflows');
     this.addNodeButton = this.addNodeButton = page.getByLabel('add-button', { exact: true });
@@ -133,10 +133,13 @@ export class ApprovalPassthroughModeNode {
   nodeTitle: Locator;
   nodeConfigure: Locator;
   addAssigneesButton: Locator;
+  addSelectAssigneesMenu: Locator;
+  addQueryAssigneesMenu: Locator;
   assigneesDropDown: Locator;
   OrRadio: Locator;
   AndRadio: Locator;
   votingRadio: Locator;
+  votingThresholdEditBox: Locator;
   parallellyRadio: Locator;
   sequentiallyRadio: Locator;
   goToconfigureButton: Locator;
@@ -161,18 +164,19 @@ export class ApprovalPassthroughModeNode {
       .getByLabel(`Approval-${nodeName}`, { exact: true })
       .getByRole('button', { name: 'Configure' });
     this.addAssigneesButton = page.getByRole('button', { name: 'plus Add assignee' });
+    this.addSelectAssigneesMenu = page.getByRole('button', { name: 'Select assignees' });
+    this.addQueryAssigneesMenu = page.getByRole('button', { name: 'Query assignees' });
     this.assigneesDropDown = page.getByTestId('select-single');
     this.OrRadio = page.getByLabel('Or', { exact: true });
     this.AndRadio = page.getByLabel('And', { exact: true });
     this.votingRadio = page.getByLabel('Voting', { exact: true });
+    this.votingThresholdEditBox = page.getByLabel('block-item-NegotiationConfig-workflows-Negotiation mode').getByRole('spinbutton');
     this.parallellyRadio = page.getByLabel('Parallelly', { exact: true });
     this.sequentiallyRadio = page.getByLabel('Sequentially', { exact: true });
     this.goToconfigureButton = page.getByRole('button', { name: 'Go to configure' });
     this.addBlockButton = page.getByLabel('schema-initializer-Grid-ApprovalProcessAddBlockButton-workflows');
     this.addDetailsMenu = page.getByRole('menuitem', { name: 'Details' });
-    this.detailsConfigureFieldsButton = page.getByLabel(
-      `schema-initializer-Grid-ReadPrettyFormItemInitializers-${collectionName}`,
-    );
+    this.detailsConfigureFieldsButton = page.getByLabel(`schema-initializer-Grid-details:configureFields-${collectionName}`);
     this.addActionsMenu = page.getByRole('menuitem', { name: 'Actions' }).getByRole('switch');
     this.actionsConfigureFieldsButton = page.getByLabel('schema-initializer-Grid-FormItemInitializers-approvalRecords');
     this.actionsConfigureActionsButton = page.getByLabel(
@@ -185,6 +189,79 @@ export class ApprovalPassthroughModeNode {
     this.submitButton = page.getByLabel('action-Action-Submit-workflows');
     this.cancelButton = page.getByLabel('action-Action-Cancel-workflows');
     this.addNodeButton = page.getByLabel(`add-button-calculation-${nodeName}`, { exact: true });
+  }
+}
+
+export class ApprovalBranchModeNode {
+  readonly page: Page;
+  node: Locator;
+  nodeTitle: Locator;
+  nodeConfigure: Locator;
+  addAssigneesButton: Locator;
+  addSelectAssigneesMenu: Locator;
+  addQueryAssigneesMenu: Locator;
+  assigneesDropDown: Locator;
+  OrRadio: Locator;
+  AndRadio: Locator;
+  votingRadio: Locator;
+  votingThresholdEditBox: Locator;
+  parallellyRadio: Locator;
+  sequentiallyRadio: Locator;
+  goToconfigureButton: Locator;
+  addBlockButton: Locator;
+  addDetailsMenu: Locator;
+  detailsConfigureFieldsButton: Locator;
+  addActionsMenu: Locator;
+  actionsConfigureFieldsButton: Locator;
+  actionsConfigureActionsButton: Locator;
+  addApproveButton: Locator;
+  addRejectButton: Locator;
+  addReturnButton: Locator;
+  addNodeResult: Locator;
+  submitButton: Locator;
+  cancelButton: Locator;
+  addNodeButton: Locator;
+  addReturnBranchNodeButton: Locator;
+  addRejectBranchNodeButton: Locator;
+  addApproveBranchNodeButton: Locator;
+  endOnRejectCheckbox: Locator;
+  constructor(page: Page, nodeName: string, collectionName: string) {
+    this.page = page;
+    this.node = page.getByLabel(`Approval-${nodeName}`, { exact: true });
+    this.nodeTitle = page.getByLabel(`Approval-${nodeName}`, { exact: true }).getByRole('textbox');
+    this.nodeConfigure = page
+      .getByLabel(`Approval-${nodeName}`, { exact: true })
+      .getByRole('button', { name: 'Configure' });
+    this.addAssigneesButton = page.getByRole('button', { name: 'plus Add assignee' });
+    this.addSelectAssigneesMenu = page.getByRole('button', { name: 'Select assignees' });
+    this.addQueryAssigneesMenu = page.getByRole('button', { name: 'Query assignees' });
+    this.assigneesDropDown = page.getByTestId('select-single');
+    this.OrRadio = page.getByLabel('Or', { exact: true });
+    this.AndRadio = page.getByLabel('And', { exact: true });
+    this.votingRadio = page.getByLabel('Voting', { exact: true });
+    this.votingThresholdEditBox = page.getByLabel('block-item-NegotiationConfig-workflows-Negotiation mode').getByRole('spinbutton');
+    this.parallellyRadio = page.getByLabel('Parallelly', { exact: true });
+    this.sequentiallyRadio = page.getByLabel('Sequentially', { exact: true });
+    this.goToconfigureButton = page.getByRole('button', { name: 'Go to configure' });
+    this.addBlockButton = page.getByLabel('schema-initializer-Grid-ApprovalProcessAddBlockButton-workflows');
+    this.addDetailsMenu = page.getByRole('menuitem', { name: 'Details' });
+    this.detailsConfigureFieldsButton = page.getByLabel(`schema-initializer-Grid-details:configureFields-${collectionName}`);
+    this.addActionsMenu = page.getByRole('menuitem', { name: 'Actions' }).getByRole('switch');
+    this.actionsConfigureFieldsButton = page.getByLabel('schema-initializer-Grid-FormItemInitializers-approvalRecords');
+    this.actionsConfigureActionsButton = page.getByLabel(
+      'schema-initializer-ActionBar-ApprovalProcessAddActionButton-approvalRecords',
+    );
+    this.addApproveButton = page.getByRole('menuitem', { name: 'Approve' }).getByRole('switch');
+    this.addRejectButton = page.getByRole('menuitem', { name: 'Reject' }).getByRole('switch');
+    this.addReturnButton = page.getByRole('menuitem', { name: 'Return' }).getByRole('switch');
+    this.addNodeResult = page.getByRole('menuitem', { name: 'Node result right' });
+    this.submitButton = page.getByLabel('action-Action-Submit-workflows');
+    this.cancelButton = page.getByLabel('action-Action-Cancel-workflows');
+    this.addNodeButton = page.getByLabel(`add-button-calculation-${nodeName}`, { exact: true });
+    this.addReturnBranchNodeButton = page.getByLabel(`add-button-approval-${nodeName}-1`);
+    this.addApproveBranchNodeButton = page.getByLabel(`add-button-approval-${nodeName}-2`);
+    this.addRejectBranchNodeButton = page.getByLabel(`add-button-approval-${nodeName}--1`);
+    this.endOnRejectCheckbox = page.getByLabel('End the workflow after');
   }
 }
 
@@ -656,4 +733,5 @@ export default module.exports = {
   ConditionBranchNode,
   SQLNode,
   ParallelBranchNode,
+  ApprovalBranchModeNode
 };
