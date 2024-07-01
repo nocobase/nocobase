@@ -214,7 +214,7 @@ jobs:
           name: e2e-report-${{ github.job }} # 为了防止在多个任务中存在冲突
           path: ./storage/playwright/tests-report-blob/blob-*/*
 
-    timeout-minutes: 60
+    timeout-minutes: 120
 
   plugin-data-source-main:
     name: plugin-data-source-main
