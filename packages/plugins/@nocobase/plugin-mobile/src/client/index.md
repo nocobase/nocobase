@@ -365,7 +365,7 @@ export interface TabItem {
 - [x] `.Schema` -> `.Page`
 - [x] 加排序字段
 - [x] tabBar 拖拽
-- tabs 拖拽
+- [x] tabs 拖拽
 - 原 admin 弹窗改为子页面（等中合），back 等一起开发
 - page 和 第一个区块覆盖的问题
 

@@ -63,13 +63,13 @@ export const MobileTabBar: FC<MobileTabBarProps> & {
   return (
     <div className={styles.mobileTabBar}>
       <div className={styles.mobileTabBarContent}>
-        <div className={styles.mobileTabBarList}>
-          <DndContext onDragEnd={handleDragEnd}>
+        <DndContext onDragEnd={handleDragEnd}>
+          <div className={styles.mobileTabBarList}>
             {routeList.map((item) => {
               return <SchemaComponent key={item.id} schema={Object.assign({ name: item.id }, item.options)} />;
             })}
-          </DndContext>
-        </div>
+          </div>
+        </DndContext>
         <MobileTabBarInitializer />
       </div>
 

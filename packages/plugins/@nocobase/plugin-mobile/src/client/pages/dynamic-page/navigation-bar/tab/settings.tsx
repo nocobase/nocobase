@@ -99,7 +99,7 @@ interface MobilePageTabSettingsProps {
 export const MobilePageTabSettings: FC<MobilePageTabSettingsProps> = ({ tab }) => {
   return (
     <SchemaToolbarProvider tab={tab}>
-      <SchemaToolbar settings={mobilePageTabSettings} draggable={false} />
+      <SchemaToolbar settings={mobilePageTabSettings} />
     </SchemaToolbarProvider>
   );
 };
