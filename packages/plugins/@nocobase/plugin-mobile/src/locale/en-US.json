@@ -1,1 +1,18 @@
-{}
+{
+  "Info": "Info",
+  "Back": "Back",
+  "Page": "Page",
+  "Link": "Link",
+  "Remove": "Remove",
+  "Add page": "Add page",
+  "Title": "Title",
+  "Icon": "Icon",
+  "Selected icon": "Selected icon",
+  "Add Link": "Add Link",
+  "Edit tabBar item": "Edit tabBar item",
+  "Enable Navigation Bar": "Enable Navigation Bar",
+  "Enable Navigation Bar Title": "Enable Navigation Bar Title",
+  "Enable Navigation Bar Tabs": "Enable Navigation Bar Tabs",
+  "Add Tab": "Add Tab",
+  "Mobile": "Mobile"
+}

@@ -9,6 +9,7 @@
 
 import { SchemaSettings, createSwitchSettingsItem } from '@nocobase/client';
 import { generatePluginTranslationTemplate } from '../../locale';
+import { useFieldSchema } from '@formily/react';
 
 export const mobilePageSettings = new SchemaSettings({
   name: 'mobile:page',
@@ -24,12 +25,20 @@ export const mobilePageSettings = new SchemaSettings({
       title: generatePluginTranslationTemplate('Enable Navigation Bar Title'),
       defaultValue: true,
       schemaKey: 'x-component-props.enableNavigationBarTitle',
+      useVisible() {
+        const schema = useFieldSchema();
+        return schema['x-component-props']['enableNavigationBar']
+      },
     }),
     createSwitchSettingsItem({
       name: 'enableNavigationBarTabs',
       title: generatePluginTranslationTemplate('Enable Navigation Bar Tabs'),
       defaultValue: false,
       schemaKey: 'x-component-props.enableNavigationBarTabs',
+      useVisible() {
+        const schema = useFieldSchema();
+        return schema['x-component-props']['enableNavigationBar']
+      },
     }),
   ],
 });

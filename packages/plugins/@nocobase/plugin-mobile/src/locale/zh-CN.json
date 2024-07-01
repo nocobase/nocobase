@@ -1,3 +1,18 @@
 {
-  "Info": "信息"
+  "Info": "信息",
+  "Back": "返回",
+  "Page": "页面",
+  "Link": "链接",
+  "Remove": "删除",
+  "Add page": "添加页面",
+  "Title": "标题",
+  "Icon": "图标",
+  "Selected icon": "选中时图标",
+  "Add Link": "添加链接",
+  "Edit tabBar item": "编辑标签栏子项",
+  "Enable Navigation Bar": "启用导航栏",
+  "Enable Navigation Bar Title": "启用导航栏标题",
+  "Enable Navigation Bar Tabs": "启用导航栏标签页",
+  "Add Tab": "添加标签页",
+  "Mobile": "移动端"
 }

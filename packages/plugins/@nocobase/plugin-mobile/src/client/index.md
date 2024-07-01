@@ -366,6 +366,7 @@ export interface TabItem {
 - [x] 加排序字段
 - [x] tabBar 拖拽
 - [x] tabs 拖拽
+- url 校验的问题
 - 原 admin 弹窗改为子页面（等中合），back 等一起开发
 - page 和 第一个区块覆盖的问题
 

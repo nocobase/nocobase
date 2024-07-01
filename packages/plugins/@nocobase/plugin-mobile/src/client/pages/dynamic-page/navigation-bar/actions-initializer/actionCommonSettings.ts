@@ -12,12 +12,12 @@ import { generatePluginTranslationTemplate } from '../../../../locale';
 
 export const editAction = (extraProperties?: (values: any) => Record<string, ISchema>) => {
   return createModalSettingsItem({
-    title: generatePluginTranslationTemplate('Edit action'),
+    title: generatePluginTranslationTemplate('Edit'),
     name: 'action',
     parentSchemaKey: 'x-component-props',
     schema: (values) => ({
       type: 'object',
-      title: generatePluginTranslationTemplate('Edit action'),
+      title: generatePluginTranslationTemplate('Edit'),
       properties: {
         ...(extraProperties ? extraProperties(values) : {}),
         title: {

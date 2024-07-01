@@ -51,7 +51,7 @@ export const mobilePageTabInitializer = new SchemaInitializer({
         schema={{
           title: {
             type: 'string',
-            title: 'Title',
+            title: generatePluginTranslationTemplate('Title'),
             required: true,
             'x-component': 'Input',
             'x-decorator': 'FormItem',

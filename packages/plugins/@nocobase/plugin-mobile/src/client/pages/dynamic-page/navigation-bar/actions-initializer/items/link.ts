@@ -16,7 +16,6 @@ export const mobileNavigationBarLinkSettings = new SchemaSettings({
   name: `mobile:navigation-bar:link`,
   items: [
     editAction((values) => {
-      console.log('values', values);
       return {
         link: {
           type: 'string',

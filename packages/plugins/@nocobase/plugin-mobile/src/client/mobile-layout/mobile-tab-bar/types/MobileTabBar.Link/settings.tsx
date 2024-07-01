@@ -18,7 +18,6 @@ export const editLinkSchema = (value?: any) => ({
   'x-decorator': 'FormItem',
   'x-component': 'Input',
   required: true,
-  description: 'URL starts with `http://` or `https://` or internal path starts with `/`',
 });
 
 export const mobileTabBarLinkSettings = new SchemaSettings({

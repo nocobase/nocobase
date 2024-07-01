@@ -1,0 +1,17 @@
+{
+  "Info": "情報",
+  "Back": "戻る",
+  "Page": "ページ",
+  "Link": "リンク",
+  "Remove": "削除",
+  "Add page": "ページを追加",
+  "Title": "タイトル",
+  "Icon": "アイコン",
+  "Selected icon": "選択されたアイコン",
+  "Add Link": "リンクを追加",
+  "Edit tabBar item": "タブバー項目を編集",
+  "Enable Navigation Bar": "ナビゲーションバーを有効にする",
+  "Enable Navigation Bar Title": "ナビゲーションバーのタイトルを有効にする",
+  "Enable Navigation Bar Tabs": "ナビゲーションバーのタブを有効にする",
+  "Add Tab": "タブを追加"
+}
