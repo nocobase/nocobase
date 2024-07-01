@@ -82,7 +82,7 @@ const app = mockApp({
               draggable: false,
             },
             'x-settings': 'mobile:tab-bar:schema',
-            'x-component': 'MobileTabBar.Schema',
+            'x-component': 'MobileTabBar.Page',
             'x-component-props': {
               title: 'Home',
               icon: 'AppleOutlined',
@@ -120,7 +120,7 @@ const app = mockApp({
             'x-toolbar-props': {
               draggable: false,
             },
-            'x-component': 'MobileTabBar.Schema',
+            'x-component': 'MobileTabBar.Page',
             'x-component-props': {
               title: 'Message',
               icon: 'MessageOutlined',

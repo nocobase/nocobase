@@ -7,13 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export interface GetMobileTabBarSchemaItemDataOptions {
+export interface GetMobileTabBarPageItemDataOptions {
   schemaPageUid: string;
   url?: string;
   values: any;
 }
 
-export function getMobileTabBarSchemaItemData(options: GetMobileTabBarSchemaItemDataOptions) {
+export function getMobileTabBarPageItemData(options: GetMobileTabBarPageItemDataOptions) {
   const { schemaPageUid, url, values } = options;
   return {
     url,
@@ -25,7 +25,7 @@ export function getMobileTabBarSchemaItemData(options: GetMobileTabBarSchemaItem
         draggable: false,
       },
       'x-settings': 'mobile:tab-bar:schema',
-      'x-component': 'MobileTabBar.Schema',
+      'x-component': 'MobileTabBar.Page',
       'x-component-props': {
         ...values,
         schemaPageUid: schemaPageUid,

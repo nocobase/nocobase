@@ -14,7 +14,7 @@
     - `MobileRoutesProvider` 对应上面的 `mobileRoutes`
 - `desktop-mode`：桌面模式
 - `js-bridge`：JS Bridge
-- `mobile`：移动端入口组件
+- `mobile`：移动端入口组件，主要是渲染 `Routes`
   - `<DesktopMode>
       <RouterComponent /> // 移动端路由实例
     </DesktopMode>`
@@ -24,7 +24,7 @@
     - `MobileTabBar`：组件
     - `types`：内置的 TabBar 类型
       - `MobileTabBar.Link`：链接类型
-      - `MobileTabBar.Schema`：Schema 类型
+      - `MobileTabBar.Page`：Page 类型
     - `MobileTabBar.Item`：基础 Item，供其他类型继承
 - `pages`：页面
   - `not-found`：404 页面
@@ -135,7 +135,7 @@ export interface TabItem {
                 "draggable": false
             },
             "x-settings": "mobile:tab-bar:schema",
-            "x-component": "MobileTabBar.Schema",
+            "x-component": "MobileTabBar.Page",
             "x-component-props": {
                 "title": "Home",
                 "icon": "alipayoutlined",
@@ -168,7 +168,7 @@ export interface TabItem {
                 "draggable": false
             },
             "x-settings": "mobile:tab-bar:schema",
-            "x-component": "MobileTabBar.Schema",
+            "x-component": "MobileTabBar.Page",
             "x-component-props": {
                 "title": "Message",
                 "icon": "aliwangwangoutlined",
@@ -351,17 +351,23 @@ export interface TabItem {
 - [x] 删除 tabBar 的时候，是否关联的资源都删除，还是不用管？【尽量删】
 - [x] `navigationBar` 左右两侧的 initializer 使用的是同一个，还是分开命名？【同一个】
 - [x] TabBar 的需要设置吗？（目前看来没什么设置项，是否需要显示的问题，如果没注册到 TabBar 上则默认不显示，似乎是能满足要求的）
-- 明明没启用，为什么 PR 环境会默认安装 mobile-client 老的插件？
-- preset 中 `mobile-client 依赖` 是否删除，目前看如果删除，则原来的项目会报错
-- back 问题和内页，内页是没有 schema 的，所以想要自己实现页面直接使用原始的 navigateBar 就行了
-- `navigationBar` 的操作按钮目前只实现了一个 Link，计划实现 `back`，其他的是否这次做？【自动处理，页面级别控制】（根据实际场景列举出来）
+- [x] 明明没启用，为什么 PR 环境会默认安装 mobile-client 老的插件？
+- [x] preset 中 `mobile-client 依赖` 是否删除，目前看如果删除，则原来的项目会报错（包不删）
+
+- 功能：back 问题和内页，内页是没有 schema 的，所以想要自己实现页面直接使用原始的 navigateBar 就行了
+- 功能：`navigationBar` 的操作按钮目前只实现了一个 Link，计划实现 `back`，其他的是否这次做？【自动处理，页面级别控制】（根据实际场景列举出来）
   - ActionSheet
   - 弹出层
-- 内容区块的间距和布局问题（参考原来的）
-- MobileCheckerProvider 的逻辑待确认
-- 移动端是否需要自己的 providers manager ？是将 application 的抽象成 ProvidersManager 还是复制粘贴代码？
-- 内容区 padding/margin 是否需要，让其距离顶部和底部都有些距离？
-- add block 需要添加哪些区块，还是空着？
+- 代码设计：移动端是否需要自己的 providers manager ？是将 application 的抽象成 ProvidersManager 还是复制粘贴代码？
+- 样式：内容区 padding/margin 是否需要，让其距离顶部和底部都有些距离？
+- 样式：add block 需要添加哪些区块，还是空着？
+
+- `.Schema` -> `.Page`
+- tabBar 拖拽
+- tabs 拖拽
+- 原 admin 弹窗改为子页面（等中合），back 等一起开发
+- 加排序字段
+- page 和 第一个区块覆盖的问题
 
 ## 待做任务
 
@@ -369,22 +375,20 @@ export interface TabItem {
   - header 的样式？
 - [x] tabBar 样式优化
 - [x] navigationBar 样式优化
-- [x] 主题色
 - [x] loading 效果
 - [x] 响应式 ipad、mobile 效果都比较 OK
 - [x] 多应用的支持
 - [x] 404 页面
-- [x] JS bridge
 - [x] MobilePageNavigationBar Actions schema 处理
 - [x] navigationBar Action 样式
-- [x] 真机演示
+- [x] 真机验证
 - [x] 内容超过一屏幕，以及没有内容的情况
 - [x] package.json & Readme 的描述
+- [x] 主题色
+- [-] JS bridge(没测)
 - 多语言
 - 各个部分的文档
 - 更新文档
 - unit test
 - e2e test
 - 新移动端 Tab 的插件开发示例
-
-

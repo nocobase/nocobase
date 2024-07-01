@@ -8,4 +8,4 @@
  */
 
 export * from './MobileTabBar.Link';
-export * from './MobileTabBar.Schema';
+export * from './MobileTabBar.Page';

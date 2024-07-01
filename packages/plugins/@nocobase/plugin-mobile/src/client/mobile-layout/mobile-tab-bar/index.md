@@ -18,7 +18,7 @@
         type: 'void',
         'title': '首页',
         'x-decorator': 'MobileTabBar.Item',
-        'x-component': 'MobileTabBar.Schema',
+        'x-component': 'MobileTabBar.Page',
         'x-component-props': {
           'icon': 'AppleOutlined',
           'selectedIcon': 'AppstoreOutlined',
@@ -26,20 +26,20 @@
         },
         'x-link': '/schema/home',
         'x-index': 1,
-        'x-settings': 'MobileTabBar.Schema:settings',
+        'x-settings': 'MobileTabBar.Page:settings',
       },
       'tab2-schema': {
         type: 'void',
         'title': 'Message',
         'x-decorator': 'MobileTabBar.Item',
-        'x-component': 'MobileTabBar.Schema',
+        'x-component': 'MobileTabBar.Page',
         'x-component-props': {
           'icon': 'MessageOutlined',
           'pageSchemaId': 'message',
         },
         'x-index': 2,
         'x-link': '/schema/message',
-        'x-settings': 'MobileTabBar.Schema:settings',
+        'x-settings': 'MobileTabBar.Page:settings',
       },
       'tab3-link': {
         type: 'void',
@@ -137,7 +137,7 @@ interface MobileTabBarProps {
 需要讨论的点：
 
 - items 是数组还是对象？
-- `MobileTabBar.Schema` 这种点击后怎么联动到页面？
+- `MobileTabBar.Page` 这种点击后怎么联动到页面？
   - 链接从 `/mobile/:name` 改为 `/mobile/schema/:name`：`/mobile/schema/${pageSchemaId}` 读取 `params.pageSchemaId`
 - 技术上，怎么操作 `items`？
 
@@ -168,12 +168,12 @@ interface MobileTabBarCommonProps {
 }
 ```
 
-### MobileTabBar.Schema
+### MobileTabBar.Page
 
 用于渲染 Schema 的 TabBar.Item。
 
 ```ts
-interface MobileTabBarSchemaProps extends Omit<MobileTabBarCommonProps, 'onClick'> {
+interface MobileTabBarPageProps extends Omit<MobileTabBarCommonProps, 'onClick'> {
   // 页面的 schema id
   pageSchemaId: string;
 }
@@ -213,7 +213,7 @@ interface MobileTabBarScanProps extends Omit<MobileTabBarCommonProps, 'onClick'>
 
 ### MobileTabBar:settings
 
-### MobileTabBar.Schema:settings
+### MobileTabBar.Page:settings
 
 ### MobileTabBar.Link:settings
 

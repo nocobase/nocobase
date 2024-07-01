@@ -12,11 +12,11 @@ import { useNavigate, useLocation } from 'react-router-dom';
 
 import { MobileTabBarItemProps, MobileTabBarItem } from '../../MobileTabBar.Item';
 
-export interface MobileTabBarSchemaProps extends Omit<MobileTabBarItemProps, 'onClick' | 'selected'> {
+export interface MobileTabBarPageProps extends Omit<MobileTabBarItemProps, 'onClick' | 'selected'> {
   schemaPageUid: string;
 }
 
-export const MobileTabBarSchema: FC<MobileTabBarSchemaProps> = (props) => {
+export const MobileTabBarPage: FC<MobileTabBarPageProps> = (props) => {
   const { schemaPageUid, ...rests } = props;
   const navigate = useNavigate();
   const location = useLocation();

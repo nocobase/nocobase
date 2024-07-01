@@ -15,7 +15,7 @@ import { useStyles } from './styles';
 import { useMobileRoutesContext } from '../../mobile-providers';
 
 import { MobileTabBarItem } from './MobileTabBar.Item';
-import { MobileTabBarSchema, MobileTabBarLink } from './types';
+import { MobileTabBarPage, MobileTabBarLink } from './types';
 import { SchemaComponent, useDesignable } from '@nocobase/client';
 import { MobileTabBarInitializer } from './initializer';
 
@@ -28,7 +28,7 @@ export interface MobileTabBarProps {
 
 export const MobileTabBar: FC<MobileTabBarProps> & {
   Item: typeof MobileTabBarItem;
-  Schema: typeof MobileTabBarSchema;
+  Page: typeof MobileTabBarPage;
   Link: typeof MobileTabBarLink;
 } = ({ enableTabBar = true }) => {
   const { styles } = useStyles();
@@ -64,4 +64,4 @@ export const MobileTabBar: FC<MobileTabBarProps> & {
 
 MobileTabBar.Item = MobileTabBarItem;
 MobileTabBar.Link = MobileTabBarLink;
-MobileTabBar.Schema = MobileTabBarSchema;
+MobileTabBar.Page = MobileTabBarPage;

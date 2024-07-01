@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from './MobileTabBar.Schema';
+export * from './MobileTabBar.Page';
 export * from './settings';
 export * from './initializer';
 export * from './schema';
