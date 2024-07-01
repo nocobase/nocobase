@@ -46,10 +46,10 @@ const useStyle = (isSearchable: IconPickerProps['searchable']) =>
   })();
 
 function IconField(props: IconPickerProps) {
-  const { fontSizeHeading3 } = theme.useToken().token;
+  const { fontSizeXL } = theme.useToken().token;
   const availableIcons = [...icons.keys()];
   const layout = useFormLayout();
-  const { value, onChange, disabled, iconSize = fontSizeHeading3, searchable = true } = props;
+  const { value, onChange, disabled, iconSize = fontSizeXL, searchable = true } = props;
   const [visible, setVisible] = useState(false);
   const [filteredIcons, setFilteredIcons] = useState(availableIcons);
   const { t } = useTranslation();
