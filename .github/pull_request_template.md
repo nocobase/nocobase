@@ -1,24 +1,39 @@
-<!-- Note -->
-<!-- This is a template for submitting a new feature. 
-Use the bug fix template if you're submitting a bug fix pull request by adding `template=bug_fix.md` to your pull request URL. -->
+<!--
+First of all, thank you for your contribution! 
+For bug fixes or other non-feature modifications, please base your branch on the main branch.
+For new features or API modifications, please make sure your branch is based on the next branch. 
+Thank you!
+-->
 
-# Description
-<!-- Describe the new feature or modification to an existing feature clearly and consciously. -->
+### This is a ...
+- [ ] New feature
+- [ ] Bug fix
+- [ ] Others
 
-# Motivation
-<!-- Explain the reason for adding or modifying this feature. -->
+### Motivation
+<!-- Please explain the reason of the changes made in this PR. -->
 
-# Key changes
-<!-- Provide a technically detailed description of the key changes made. -->
-- Frontend
-- Backend
+### Description 
+<!-- 
+Please describe the key changes made in this PR clearly and concisely, 
+mention any potential risks, 
+and provide some testing suggestions. 
+-->
 
-# Test plan
-## Suggestions
-<!-- Provide any suggestions or recommendations for improvements in the testing plan. -->
+### Showcase
+<!-- Including any screenshots of the changes. -->
 
-## Underlying risk
-<!-- Identify any potential risks or issues that may arise from the new feature or modification. -->
+### Changelog
 
-# Showcase
-<!-- Including any screenshots of the new feature or modification. -->
+| Language   | Changelog |
+| ---------- | --------- |
+| 🇺🇸 English |           |
+| 🇨🇳 Chinese |           |
+
+### Checklists
+- [ ] All changes have been self-tested and work as expected
+- [ ] Test cases are updated/provided or not needed
+- [ ] Doc is updated/provided or not needed
+- [ ] Component demo is updated/provided or not needed
+- [ ] Changelog is provided or not needed
+- [ ] Request a code review if it is necessary
