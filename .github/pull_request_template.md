@@ -37,4 +37,3 @@ and provide some testing suggestions.
 - [ ] Component demo is updated/provided or not needed
 - [ ] Changelog is provided or not needed
 - [ ] Request a code review if it is necessary
-- [ ] Sign Contribution License Agreement
