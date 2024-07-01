@@ -405,7 +405,9 @@ const formatRelationEdgeData = (data, targetTables, tableData) => {
         const sCellId2 = sourceTable.id;
         const tCellId2 = targetTable.id;
         const sPortId2 = sourceTable.ports.find((v) => v.name === data[i].sourceKey)?.id;
-        const tPortId2 = targetTable.ports.find((v) => v.name === data[i].foreignKey)?.id;
+        const tPortId2 = targetTable.ports.find(
+          (v) => v.name === data[i].foreignKey || v.foreignKey === data[i].foreignKey,
+        )?.id;
         const id1 = sCellId1 + sPortId1 + tCellId1 + tPortId1;
         const id2 = sCellId2 + sPortId2 + tCellId2 + tPortId2;
         isuniq(tCellId1 + tPortId1 + sCellId1 + sPortId1) &&
