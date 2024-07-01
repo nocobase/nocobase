@@ -153,6 +153,13 @@ export class CollectionManager {
     collectionOrAssociation: string | Collection,
     collectionRecordOrAssociationRecord: Record<string, any>,
   ) {
+    if (!collectionOrAssociation || !collectionRecordOrAssociationRecord) {
+      console.error(
+        '@nocobase/client]: CollectionManager.getFilterByTK() collectionOrAssociation or collectionRecordOrAssociationRecord is invalid',
+      );
+      return;
+    }
+
     if (collectionOrAssociation instanceof Collection) {
       const key = collectionOrAssociation.filterTargetKey || collectionOrAssociation.getPrimaryKey() || 'id';
       return collectionRecordOrAssociationRecord[key];

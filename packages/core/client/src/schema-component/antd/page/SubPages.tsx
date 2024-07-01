@@ -204,8 +204,8 @@ export const useNavigateTOSubPage = () => {
       return setVisibleFromAction?.(true);
     }
 
-    const filterByTK = (record?.data || treeParentRecord)?.[collection.getPrimaryKey()];
-    const sourceId = parentRecord?.data?.[cm.getCollection(association?.split('.')[0])?.getPrimaryKey()];
+    const filterByTK = cm.getFilterByTK(association || collection, record?.data || treeParentRecord);
+    const sourceId = parentRecord?.data?.[cm.getSourceKeyByAssociation(association)];
     const params = {
       subpageuid: fieldSchema['x-uid'],
       filterbytk: filterByTK,
@@ -222,8 +222,9 @@ export const useNavigateTOSubPage = () => {
       sourceId,
       parentPopupRecord: parentPopupRecordData
         ? {
+            // TODO: 这里应该需要 association 的 值
             collection: parentPopupRecordCollection?.name,
-            filterByTk: parentPopupRecordData[parentPopupRecordCollection.getPrimaryKey()],
+            filterByTk: cm.getFilterByTK(parentPopupRecordCollection, parentPopupRecordData),
           }
         : undefined,
     });
@@ -236,7 +237,7 @@ export const useNavigateTOSubPage = () => {
       parentPopupRecord: parentPopupRecordData
         ? {
             collection: parentPopupRecordCollection?.name,
-            filterByTk: parentPopupRecordData[parentPopupRecordCollection.getPrimaryKey()],
+            filterByTk: cm.getFilterByTK(parentPopupRecordCollection, parentPopupRecordData),
           }
         : undefined,
     });
