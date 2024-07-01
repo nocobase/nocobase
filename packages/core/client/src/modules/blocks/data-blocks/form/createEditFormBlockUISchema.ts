@@ -66,9 +66,6 @@ export function createEditFormBlockUISchema(options: EditFormBlockOptions): ISch
             'x-component': 'ActionBar',
             'x-component-props': {
               layout: 'one-column',
-              style: {
-                marginTop: 'var(--nb-spacing)',
-              },
             },
           },
         },

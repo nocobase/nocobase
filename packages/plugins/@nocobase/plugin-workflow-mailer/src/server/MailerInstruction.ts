@@ -21,6 +21,7 @@ export default class extends Instruction {
       to = [],
       cc,
       bcc,
+      subject,
       html,
       text,
       ignoreFail,
@@ -33,12 +34,31 @@ export default class extends Instruction {
     const transporter = nodemailer.createTransport(provider);
     const send = promisify(transporter.sendMail.bind(transporter));
 
+    const payload = {
+      ...options,
+      ...(contentType === 'html' ? { html } : { text }),
+      subject: subject?.trim(),
+      to: to
+        .flat()
+        .map((item) => item?.trim())
+        .filter(Boolean),
+      cc: cc
+        ? cc
+            .flat()
+            .map((item) => item?.trim())
+            .filter(Boolean)
+        : null,
+      bcc: bcc
+        ? bcc
+            .flat()
+            .map((item) => item?.trim())
+            .filter(Boolean)
+        : null,
+    };
+
     if (sync) {
       try {
-        const result = await send({
-          ...options,
-          ...(contentType === 'html' ? { html } : { text }),
-        });
+        const result = await send(payload);
         return {
           status: JOB_STATUS.RESOLVED,
           result,
@@ -59,13 +79,7 @@ export default class extends Instruction {
     });
 
     // eslint-disable-next-line promise/catch-or-return
-    send({
-      ...options,
-      ...(contentType === 'html' ? { html } : { text }),
-      to: to.flat().filter(Boolean),
-      cc: cc ? cc.flat().filter(Boolean) : null,
-      bcc: bcc ? bcc.flat().filter(Boolean) : null,
-    })
+    send(payload)
       .then((response) => {
         processor.logger.info(`smtp-mailer (#${node.id}) sent successfully.`);
 
@@ -75,6 +89,8 @@ export default class extends Instruction {
         });
       })
       .catch((error) => {
+        processor.logger.warn(`smtp-mailer (#${node.id}) sent failed: ${error.message}`);
+
         job.set({
           status: JOB_STATUS.FAILED,
           result: error,

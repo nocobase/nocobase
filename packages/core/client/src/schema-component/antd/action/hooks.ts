@@ -14,12 +14,6 @@ import { useTranslation } from 'react-i18next';
 import { useIsDetailBlock } from '../../../block-provider/FormBlockProvider';
 import { ActionContext } from './context';
 
-export const useA = () => {
-  return {
-    async run() {},
-  };
-};
-
 export const useActionContext = () => {
   const ctx = useContext(ActionContext);
   const { t } = useTranslation();

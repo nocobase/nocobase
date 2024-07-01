@@ -100,7 +100,8 @@ test.describe('create collection', () => {
     await collectionSettings.change('Store the last update time of each record', false);
     await collectionSettings.submit();
 
-    await expect(page.getByRole('cell', { name: collectionDisplayName, exact: true })).toBeVisible();
+    await expect(page.getByRole('cell', { name: collectionDisplayName })).toBeVisible();
+    await expect(page.getByRole('cell', { name: collectionName, exact: true })).toBeVisible();
 
     await collectionManagerPage.deleteItem(collectionName);
   });

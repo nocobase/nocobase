@@ -64,7 +64,7 @@ test.describe('form item & create form', () => {
             .hover();
         })(page, 'integer'),
       supportedVariables: ['Constant', 'Current user', 'Current role', 'Date variables', 'Current form'],
-      unsupportedVariables: ['Current popup record'],
+      unsupportedVariables: ['Current popup record', 'Parent popup record'],
       variableValue: ['Current user', 'ID'], // 值为 1
       inputConstantValue: async () => {
         await page.getByLabel('block-item-VariableInput-').getByRole('spinbutton').click();

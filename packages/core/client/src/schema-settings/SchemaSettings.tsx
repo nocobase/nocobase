@@ -43,10 +43,9 @@ import React, {
 } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
-import { Router } from 'react-router-dom';
 import { APIClientProvider } from '../api-client/APIClientProvider';
 import { useAPIClient } from '../api-client/hooks/useAPIClient';
-import { ApplicationContext, useApp } from '../application';
+import { ApplicationContext, LocationSearchContext, useApp, useLocationSearch } from '../application';
 import {
   BlockContext,
   BlockRequestContext_deprecated,
@@ -78,8 +77,11 @@ import { useFilterBlock } from '../filter-provider/FilterProvider';
 import { FlagProvider } from '../flag-provider';
 import { useGlobalTheme } from '../global-theme';
 import { useCollectMenuItem, useCollectMenuItems, useMenuItem } from '../hooks/useMenuItem';
-import { DeclareVariable } from '../modules/variable/DeclareVariable';
-import { useVariable } from '../modules/variable/useVariable';
+import {
+  VariablePopupRecordProvider,
+  useCurrentPopupRecord,
+  useParentPopupRecord,
+} from '../modules/variable/variablesProvider/VariablePopupRecordProvider';
 import { useRecord } from '../record-provider';
 import { ActionContextProvider } from '../schema-component/antd/action/context';
 import { SubFormProvider, useSubFormValue } from '../schema-component/antd/association-field/hooks';
@@ -99,6 +101,7 @@ import { EnableChildCollections } from './EnableChildCollections';
 import { ChildDynamicComponent } from './EnableChildCollections/DynamicComponent';
 import { FormLinkageRules } from './LinkageRules';
 import { useLinkageCollectionFieldOptions } from './LinkageRules/action-hooks';
+import { LinkageRuleDataKeyMap, LinkageRuleCategory } from './LinkageRules/type';
 
 export interface SchemaSettingsProps {
   title?: any;
@@ -743,12 +746,14 @@ export const SchemaSettingsModalItem: FC<SchemaSettingsModalItemProps> = (props)
   const { association } = useDataBlockProps() || {};
   const formCtx = useFormBlockContext();
   const blockOptions = useBlockContext();
+  const locationSearch = useLocationSearch();
 
   // 解决变量`当前对象`值在弹窗中丢失的问题
   const { formValue: subFormValue, collection: subFormCollection } = useSubFormValue();
 
-  // 解决变量`$nPopupRecord`值在弹窗中丢失的问题
-  const popupRecordVariable = useVariable('$nPopupRecord');
+  // 解决弹窗变量丢失的问题
+  const popupRecordVariable = useCurrentPopupRecord();
+  const parentPopupRecordVariable = useParentPopupRecord();
 
   if (hidden) {
     return null;
@@ -765,11 +770,13 @@ export const SchemaSettingsModalItem: FC<SchemaSettingsModalItemProps> = (props)
           () => {
             return (
               <BlockContext.Provider value={blockOptions}>
-                <DeclareVariable
-                  name="$nPopupRecord"
-                  title={popupRecordVariable.title}
-                  value={popupRecordVariable.value}
-                  collection={popupRecordVariable.collection}
+                <VariablePopupRecordProvider
+                  recordData={popupRecordVariable?.value}
+                  collection={popupRecordVariable?.collection}
+                  parent={{
+                    recordData: parentPopupRecordVariable?.value,
+                    collection: parentPopupRecordVariable?.collection,
+                  }}
                 >
                   <CollectionRecordProvider record={noRecord ? null : record}>
                     <FormBlockContext.Provider value={formCtx}>
@@ -778,7 +785,7 @@ export const SchemaSettingsModalItem: FC<SchemaSettingsModalItemProps> = (props)
                           name="form"
                           getActiveFieldsName={upLevelActiveFields?.getActiveFieldsName}
                         >
-                          <Router location={location} navigator={null}>
+                          <LocationSearchContext.Provider value={locationSearch}>
                             <BlockRequestContext_deprecated.Provider value={ctx}>
                               <DataSourceApplicationProvider dataSourceManager={dm} dataSource={dataSourceKey}>
                                 <AssociationOrCollectionProvider
@@ -813,12 +820,12 @@ export const SchemaSettingsModalItem: FC<SchemaSettingsModalItemProps> = (props)
                                 </AssociationOrCollectionProvider>
                               </DataSourceApplicationProvider>
                             </BlockRequestContext_deprecated.Provider>
-                          </Router>
+                          </LocationSearchContext.Provider>
                         </FormActiveFieldsProvider>
                       </SubFormProvider>
                     </FormBlockContext.Provider>
                   </CollectionRecordProvider>
-                </DeclareVariable>
+                </VariablePopupRecordProvider>
               </BlockContext.Provider>
             );
           },
@@ -977,23 +984,35 @@ export const SchemaSettingsLinkageRules = function LinkageRules(props) {
   const localVariables = useLocalVariables();
   const record = useRecord();
   const { type: formBlockType } = useFormBlockType();
-  const type = props?.type || fieldSchema?.['x-action'] ? 'button' : 'field';
+  const category = props?.category ?? LinkageRuleCategory.default;
+  const elementType = ['Action', 'Action.Link'].includes(fieldSchema['x-component']) ? 'button' : 'field';
+
   const gridSchema = findGridSchema(fieldSchema) || fieldSchema;
   const options = useLinkageCollectionFilterOptions(collectionName);
   const linkageOptions = useLinkageCollectionFieldOptions(collectionName, readPretty);
+  const titleMap = {
+    [LinkageRuleCategory.default]: t('Linkage rules'),
+    [LinkageRuleCategory.style]: t('Style'),
+  };
+  const dataKey = LinkageRuleDataKeyMap[category];
+  const getRules = useCallback(() => {
+    return gridSchema?.[dataKey] || fieldSchema?.[dataKey] || [];
+  }, [gridSchema, fieldSchema, dataKey]);
+  const title = titleMap[category];
   const schema = useMemo<ISchema>(
     () => ({
       type: 'object',
-      title: t('Linkage rules'),
+      title,
       properties: {
         fieldReaction: {
           'x-component': FormLinkageRules,
           'x-use-component-props': () => {
             return {
               options,
-              defaultValues: gridSchema?.['x-linkage-rules'] || fieldSchema?.['x-linkage-rules'],
-              type,
+              defaultValues: getRules(),
               linkageOptions,
+              category,
+              elementType,
               collectionName,
               form,
               variables,
@@ -1005,7 +1024,7 @@ export const SchemaSettingsLinkageRules = function LinkageRules(props) {
         },
       },
     }),
-    [collectionName, fieldSchema, form, gridSchema, localVariables, record, t, type, variables],
+    [collectionName, fieldSchema, form, gridSchema, localVariables, record, t, variables, getRules],
   );
   const components = useMemo(() => ({ ArrayCollapse, FormLayout }), []);
   const onSubmit = useCallback(
@@ -1019,25 +1038,18 @@ export const SchemaSettingsLinkageRules = function LinkageRules(props) {
       const schema = {
         ['x-uid']: uid,
       };
-
-      gridSchema['x-linkage-rules'] = rules;
-      schema['x-linkage-rules'] = rules;
+      gridSchema[dataKey] = rules;
+      schema[dataKey] = rules;
       dn.emit('patch', {
         schema,
       });
       dn.refresh();
     },
-    [dn, getTemplateById, gridSchema],
+    [dn, getTemplateById, gridSchema, dataKey],
   );
 
   return (
-    <SchemaSettingsModalItem
-      title={t('Linkage rules')}
-      components={components}
-      width={770}
-      schema={schema}
-      onSubmit={onSubmit}
-    />
+    <SchemaSettingsModalItem title={title} components={components} width={770} schema={schema} onSubmit={onSubmit} />
   );
 };
 

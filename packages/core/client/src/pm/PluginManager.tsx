@@ -44,6 +44,13 @@ export interface AllowedActions {
   destroy: number[];
 }
 
+function hasIntersection(arr1: any[], arr2: any[]) {
+  if (!Array.isArray(arr1) || !Array.isArray(arr2)) {
+    return false;
+  }
+  return arr1.some((item) => arr2.includes(item));
+}
+
 const LocalPlugins = () => {
   const { t } = useTranslation();
   const { theme } = useStyles();
@@ -101,7 +108,7 @@ const LocalPlugins = () => {
   const keyWordsfilterList = useMemo(() => {
     const list = keyWordlists.map((i) => {
       if (i === 'Others') {
-        const result = data?.data.filter((v) => !v.keywords || !v.keywords.every((k) => keyWordlists.includes(k)));
+        const result = data?.data.filter((v) => !hasIntersection(v.keywords, keyWordlists));
         return {
           key: i,
           list: result,

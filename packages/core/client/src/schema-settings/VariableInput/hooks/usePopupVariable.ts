@@ -8,7 +8,7 @@
  */
 
 import { useFlag } from '../../../flag-provider/hooks/useFlag';
-import { useVariable } from '../../../modules/variable/useVariable';
+import { useCurrentPopupRecord } from '../../../modules/variable/variablesProvider/VariablePopupRecordProvider';
 import { useBaseVariable } from './useBaseVariable';
 
 /**
@@ -17,7 +17,7 @@ import { useBaseVariable } from './useBaseVariable';
  * @returns
  */
 export const usePopupVariable = (props: any = {}) => {
-  const { value, title, collection } = useVariable('$nPopupRecord');
+  const { value, title, collection } = useCurrentPopupRecord() || {};
   const { isVariableParsedInOtherContext } = useFlag();
   const settings = useBaseVariable({
     collectionField: props.collectionField,
@@ -40,5 +40,6 @@ export const usePopupVariable = (props: any = {}) => {
     /** 当前记录对应的 collection name */
     collectionName: collection?.name,
     dataSource: collection?.dataSource,
+    defaultValue: undefined,
   };
 };

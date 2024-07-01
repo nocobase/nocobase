@@ -50,6 +50,7 @@ test.describe('form item & sub form', () => {
         'Current object',
         'Current popup record',
       ],
+      unsupportedVariables: ['Parent popup record'],
       variableValue: ['Current user', 'Nickname'],
       expectVariableValue: async () => {
         await page
@@ -132,6 +133,7 @@ test.describe('table column & sub-table in edit form', () => {
         'Current object',
         'Current popup record',
       ],
+      unsupportedVariables: ['Parent popup record'],
       variableValue: ['Current user', 'Nickname'],
       expectVariableValue: async () => {
         await page.getByRole('button', { name: 'Add new' }).click();

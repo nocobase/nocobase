@@ -11,6 +11,7 @@ import { Model, Transaction, Transactionable } from '@nocobase/database';
 import { appendArrayColumn } from '@nocobase/evaluators';
 import { Logger } from '@nocobase/logger';
 import { parse } from '@nocobase/utils';
+import set from 'lodash/set';
 import type Plugin from './Plugin';
 import { EXECUTION_STATUS, JOB_STATUS } from './constants';
 import { Runner } from './instructions';
@@ -102,9 +103,13 @@ export default class Processor {
   }
 
   public async prepare() {
-    const { execution, transaction } = this;
+    const {
+      execution,
+      transaction,
+      options: { plugin },
+    } = this;
     if (!execution.workflow) {
-      execution.workflow = await execution.getWorkflow({ transaction });
+      execution.workflow = plugin.enabledCache.get(execution.workflowId);
     }
 
     const nodes = await execution.workflow.getNodes({ transaction });
@@ -377,7 +382,7 @@ export default class Processor {
       node,
     };
     for (const [name, fn] of this.options.plugin.functions.getEntities()) {
-      systemFns[name] = fn.bind(scope);
+      set(systemFns, name, fn.bind(scope));
     }
 
     const $scopes = {};

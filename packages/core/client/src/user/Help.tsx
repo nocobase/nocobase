@@ -49,7 +49,7 @@ const SettingsMenu: React.FC<{
       key: 'homePage',
       label: (
         <a
-          href={isSimplifiedChinese ? 'https://cn.nocobase.com/' : 'https://www.nocobase.com'}
+          href={isSimplifiedChinese ? 'https://www.nocobase.com/cn/' : 'https://www.nocobase.com'}
           target="_blank"
           rel="noreferrer"
         >
@@ -73,11 +73,7 @@ const SettingsMenu: React.FC<{
       key: 'license',
       label: (
         <a
-          href={
-            isSimplifiedChinese
-              ? 'https://cn.nocobase.com/agreement-cn.html'
-              : 'https://www.nocobase.com/agreement.html'
-          }
+          href={isSimplifiedChinese ? 'https://www.nocobase.com/cn/agreement' : 'https://www.nocobase.com/en/agreement'}
           target="_blank"
           rel="noreferrer"
         >

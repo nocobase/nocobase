@@ -63,6 +63,10 @@ export class PluginSettingsManager {
     });
   }
 
+  clearCache() {
+    this.cachedList = {};
+  }
+
   setAclSnippets(aclSnippets: string[]) {
     this.aclSnippets = aclSnippets;
   }

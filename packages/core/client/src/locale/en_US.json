@@ -426,6 +426,7 @@
   "Option value": "Option value",
   "Option label": "Option label",
   "Color": "Color",
+  "Background Color": "Background Color",
   "Add option": "Add option",
   "Related collection": "Related collection",
   "Allow linking to multiple records": "Allow linking to multiple records",
@@ -552,6 +553,7 @@
   "Add condition group": "Add condition group",
   "exists": "exists",
   "not exists": "not exists",
+  "Style": "Style",
   "=": "=",
   "≠": "≠",
   ">": ">",
@@ -631,6 +633,7 @@
   "Current collection": "Current collection",
   "Other collections": "Other collections",
   "Current popup record": "Current popup record",
+  "Parent popup record": "Parent popup record",
   "Associated records": "Associated records",
   "Parent record": "Parent record",
   "Current time": "Current time",
@@ -829,5 +832,6 @@
   "This variable has been deprecated and can be replaced with \"Current form\"": "This variable has been deprecated and can be replaced with \"Current form\"",
   "The value of this variable is derived from the query string of the page URL. This variable can only be used normally when the page has a query string.": "The value of this variable is derived from the query string of the page URL. This variable can only be used normally when the page has a query string.",
   "URL search params": "URL search params",
-  "Expand All": "Expand All"
+  "Expand All": "Expand All",
+  "Search": "Search"
 }

@@ -31,5 +31,10 @@
   "Data source synchronization in progress": "数据源同步中",
   "Data source synchronization successful": "数据源同步成功",
   "Filter target key":"筛选目标键",
+  "Select field": "选择字段",
+  "OK": "确定",
+  "Please select a field.": "请选择一个字段。",
+  "Are you sure you want to set the \"{{title}}\" field as a record unique key? This setting cannot be changed after it's been set.": "你确定将 “{{title}}” 字段设置为主键吗？设置成功后不可修改。",
+  "If a collection lacks a primary key, you must configure a unique record key to locate row records within a block, failure to configure this will prevent the creation of data blocks for the collection.": "当数据表没有主键时，你需要配置记录唯一标识符，用于在区块中定位行记录，不配置将无法创建该表的数据区块。",
   "Filter data based on the specific field, with the requirement that the field value must be unique.": "根据特定的字段筛选数据，字段值必须具备唯一性。"
 }

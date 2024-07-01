@@ -9,6 +9,8 @@ interface IconPickerProps {
   value?: string;
   disabled?: boolean;
   suffix?: React.ReactNode;
+  iconSize?: number;
+  searchable?: boolean;
 }
 ```
 

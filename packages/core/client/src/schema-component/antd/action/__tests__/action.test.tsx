@@ -82,7 +82,6 @@ describe('Action', () => {
       expect(document.querySelector('.nb-action-page')).not.toBeInTheDocument();
     });
     await waitFor(async () => {
-      await userEvent.click(getByText('Close'));
       // page
       await userEvent.click(getByText('Page'));
       await userEvent.click(getByText('Open'));

@@ -144,6 +144,9 @@ const useParseDefaultValue = () => {
           return value;
         },
         () => run({ forceUpdate: true }),
+        {
+          equals: _.isEqual,
+        },
       );
 
       return dispose;
