@@ -13,6 +13,7 @@ import Database from '../../database';
 import { Collection } from '../../collection';
 import { Model } from '../../model';
 import { FindAndCountOptions, QueryTypes } from 'sequelize';
+import { assign } from '@nocobase/utils';
 
 export class AdjacencyListRepository extends Repository {
   static queryParentSQL(options: {
@@ -174,6 +175,14 @@ export class AdjacencyListRepository extends Repository {
   }
 
   async findAndCount(options?: FindAndCountOptions): Promise<[Model[], number]> {
+    if (Object.values(lodash.get(options, 'filter', {})).length === 0) {
+      options = lodash.omit(options, ['filterByTk']);
+      assign(options, {
+        filter: {
+          parentId: null,
+        },
+      });
+    }
     const filterDatas = await this.find(options);
     return [filterDatas, filterDatas.length];
   }
