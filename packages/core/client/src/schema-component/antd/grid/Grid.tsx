@@ -358,16 +358,7 @@ export const Grid: any = observer(
     return (
       <FilterBlockProvider>
         <GridContext.Provider value={gridContextValue}>
-          <div
-            className={cls(
-              'nb-grid-container',
-              // css`
-              //   & {
-              //     margin-bottom: ${designable ? 0 : -token.marginLG}px;
-              //   }
-              // `,
-            )}
-          >
+          <div className={cls('nb-grid-container')}>
             <div className={cls(`nb-grid ${styles.container}`)} style={{ position: 'relative' }} ref={gridRef}>
               <div className="nb-grid-warp">
                 <DndWrapper dndContext={props.dndContext}>
