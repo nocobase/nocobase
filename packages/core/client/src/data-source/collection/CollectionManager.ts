@@ -140,19 +140,48 @@ export class CollectionManager {
     return this.getCollection(collectionName)?.getFields(predicate) || [];
   }
 
-  getFilterByTk(collectionOrassociation: string) {
-    if (collectionOrassociation.includes('.')) {
-      const field = this.getCollectionField(collectionOrassociation);
+  /**
+   * @example
+   * getFilterByTK('users', { id: 1 }); // 1
+   * getFilterByTK('users.profile', { name: 'name' }); // name
+   *
+   * @param collectionOrAssociation - collection name or association name
+   * @param collectionRecordOrAssociationRecord - collection record or association record
+   * @returns the value of the filterByTK
+   */
+  getFilterByTK(
+    collectionOrAssociation: string | Collection,
+    collectionRecordOrAssociationRecord: Record<string, any>,
+  ) {
+    if (collectionOrAssociation instanceof Collection) {
+      const key = collectionOrAssociation.filterTargetKey || collectionOrAssociation.getPrimaryKey() || 'id';
+      return collectionRecordOrAssociationRecord[key];
+    }
+
+    if (collectionOrAssociation.includes('.')) {
+      const field = this.getCollectionField(collectionOrAssociation);
       // 字段不存在，返回空
       if (!field) {
+        console.error(
+          `[@nocobase/client]: CollectionManager.getFilterByTK() field "${collectionOrAssociation}" is invalid`,
+        );
         return;
       }
       if (field.targetKey) {
-        return field.targetKey;
+        return collectionRecordOrAssociationRecord[field.targetKey];
       }
     }
-    const targetCollection = this.getCollection(collectionOrassociation);
-    return targetCollection.filterTargetKey || targetCollection.getPrimaryKey() || 'id';
+    const targetCollection = this.getCollection(collectionOrAssociation);
+
+    if (!targetCollection) {
+      console.error(
+        `[@nocobase/client]: CollectionManager.getFilterByTK() collection "${collectionOrAssociation}" is invalid`,
+      );
+      return;
+    }
+
+    const key = targetCollection?.filterTargetKey || targetCollection?.getPrimaryKey() || 'id';
+    return collectionRecordOrAssociationRecord[key];
   }
 
   getSourceKeyByAssociation(associationName: string) {
