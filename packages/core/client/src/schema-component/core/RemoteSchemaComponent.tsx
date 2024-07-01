@@ -10,11 +10,11 @@
 import { createForm } from '@formily/core';
 import { Schema } from '@formily/react';
 import { Spin } from 'antd';
-import React, { useMemo } from 'react';
-import { useRequest } from '../../api-client';
+import React, { memo, useMemo } from 'react';
 import { useSchemaComponentContext } from '../hooks';
 import { FormProvider } from './FormProvider';
 import { SchemaComponent } from './SchemaComponent';
+import { useRequestSchema } from './useRequestSchema';
 
 export interface RemoteSchemaComponentProps {
   scope?: any;
@@ -42,15 +42,15 @@ const RequestSchemaComponent: React.FC<RemoteSchemaComponentProps> = (props) => 
     schemaTransform = defaultTransform,
   } = props;
   const { reset } = useSchemaComponentContext();
+  const type = onlyRenderProperties ? 'getProperties' : 'getJsonSchema';
   const conf = {
-    url: `/uiSchemas:${onlyRenderProperties ? 'getProperties' : 'getJsonSchema'}/${uid}`,
+    url: `/uiSchemas:${type}/${uid}`,
   };
   const form = useMemo(() => createForm(), [uid]);
-  const { data, loading } = useRequest<{
-    data: any;
-  }>(conf, {
-    refreshDeps: [uid],
-    onSuccess(data) {
+  const { schema, loading } = useRequestSchema({
+    uid,
+    type,
+    onSuccess: (data) => {
       onSuccess && onSuccess(data);
       reset && reset();
     },
@@ -62,14 +62,15 @@ const RequestSchemaComponent: React.FC<RemoteSchemaComponentProps> = (props) => 
     return <Spin />;
   }
   return noForm ? (
-    <SchemaComponent memoized components={components} scope={scope} schema={schemaTransform(data?.data || {})} />
+    <SchemaComponent memoized components={components} scope={scope} schema={schemaTransform(schema || {})} />
   ) : (
     <FormProvider form={form}>
-      <SchemaComponent memoized components={components} scope={scope} schema={schemaTransform(data?.data || {})} />
+      <SchemaComponent memoized components={components} scope={scope} schema={schemaTransform(schema || {})} />
     </FormProvider>
   );
 };
 
-export const RemoteSchemaComponent: React.FC<RemoteSchemaComponentProps> = (props) => {
+export const RemoteSchemaComponent: React.FC<RemoteSchemaComponentProps> = memo((props) => {
   return props.uid ? <RequestSchemaComponent {...props} /> : null;
-};
+});
+RemoteSchemaComponent.displayName = 'RemoteSchemaComponent';
