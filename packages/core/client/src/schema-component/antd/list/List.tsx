@@ -75,46 +75,47 @@ const InternalList = (props) => {
           componentCls,
           hashId,
           css`
-            .ant-spin-nested-loading {
+            .nb-list-container {
               height: ${height ? height + 'px' : '100%'};
-              overflow-y: ${height ? 'auto' : 'null'};
-              .ant-spin-container {
-                width: 100%;
-                overflow-x: clip;
-                padding-right: ${token.paddingSM + 'px'};
-              }
+              overflow-y: auto;
+              margin-left: -${token.marginLG}px;
+              margin-right: -${token.marginLG}px;
+              padding-left: ${token.marginLG}px;
+              padding-right: ${token.marginLG}px;
             }
           `,
         )}
       >
-        <AntdList
-          {...props}
-          pagination={
-            !meta || meta.count <= meta.pageSize
-              ? false
-              : {
-                  onChange: onPaginationChange,
-                  total: meta?.count || 0,
-                  pageSize: meta?.pageSize || 10,
-                  current: meta?.page || 1,
-                }
-          }
-          loading={service?.loading}
-        >
-          {field.value?.length
-            ? field.value.map((item, index) => {
-                return (
-                  <RecursionField
-                    basePath={field.address}
-                    key={index}
-                    name={index}
-                    onlyRenderProperties
-                    schema={getSchema(index)}
-                  ></RecursionField>
-                );
-              })
-            : null}
-        </AntdList>
+        <div className="nb-list-container">
+          <AntdList
+            {...props}
+            pagination={
+              !meta || meta.count <= meta.pageSize
+                ? false
+                : {
+                    onChange: onPaginationChange,
+                    total: meta?.count || 0,
+                    pageSize: meta?.pageSize || 10,
+                    current: meta?.page || 1,
+                  }
+            }
+            loading={service?.loading}
+          >
+            {field.value?.length
+              ? field.value.map((item, index) => {
+                  return (
+                    <RecursionField
+                      basePath={field.address}
+                      key={index}
+                      name={index}
+                      onlyRenderProperties
+                      schema={getSchema(index)}
+                    ></RecursionField>
+                  );
+                })
+              : null}
+          </AntdList>
+        </div>
         <Designer />
       </SortableItem>
     </SchemaComponentOptions>,
