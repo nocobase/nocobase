@@ -184,7 +184,8 @@ export class AdjacencyListRepository extends Repository {
       });
     }
     const filterDatas = await this.find(options);
-    return [filterDatas, filterDatas.length];
+    const [_, totalCount] = await super.findAndCount(options);
+    return [filterDatas, totalCount];
   }
 
   private async queryRootIDS(nodePks, collection) {
