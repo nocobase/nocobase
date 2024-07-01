@@ -16,6 +16,7 @@ import {
   useAPIClient,
   withDynamicSchemaProps,
   useProps,
+  useDataSourceManager,
 } from '@nocobase/client';
 import { useRemoteCollectionContext } from '../CollectionFields';
 
@@ -24,7 +25,7 @@ export const TitleField = withDynamicSchemaProps(
     const { t } = useTranslation();
     const { isTitleField } = useCollectionManager_deprecated();
     const [loadingRecord, setLoadingRecord] = React.useState(null);
-
+    const dm = useDataSourceManager();
     // 新版 UISchema（1.0 之后）中已经废弃了 useProps，这里之所以继续保留是为了兼容旧版的 UISchema
     const { setTitleField, filterByTk, dataSourceKey } = useProps(props);
 
@@ -41,6 +42,7 @@ export const TitleField = withDynamicSchemaProps(
       message.success(t('Saved successfully'));
       refreshRM();
       setTitleField(checked ? record.name : 'id');
+      await dm.getDataSource(dataSourceKey).reload();
       setLoadingRecord(null);
     };
     return isTitleField(record) ? (
