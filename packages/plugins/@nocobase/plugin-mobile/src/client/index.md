@@ -362,11 +362,11 @@ export interface TabItem {
 - 样式：内容区 padding/margin 是否需要，让其距离顶部和底部都有些距离？
 - 样式：add block 需要添加哪些区块，还是空着？
 
-- `.Schema` -> `.Page`
-- tabBar 拖拽
+- [x] `.Schema` -> `.Page`
+- [x] 加排序字段
+- [x] tabBar 拖拽
 - tabs 拖拽
 - 原 admin 弹窗改为子页面（等中合），back 等一起开发
-- 加排序字段
 - page 和 第一个区块覆盖的问题
 
 ## 待做任务

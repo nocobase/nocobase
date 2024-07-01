@@ -22,7 +22,7 @@ export function getMobileTabBarPageItemData(options: GetMobileTabBarPageItemData
       type: 'void',
       'x-decorator': 'BlockItem',
       'x-toolbar-props': {
-        draggable: false,
+        // draggable: false,
       },
       'x-settings': 'mobile:tab-bar:schema',
       'x-component': 'MobileTabBar.Page',

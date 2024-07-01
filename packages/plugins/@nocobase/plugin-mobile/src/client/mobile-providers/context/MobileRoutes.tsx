@@ -20,6 +20,7 @@ import { PluginMobileClient } from '../../index';
 export interface TabBarItem {
   id: number;
   url?: string;
+  sort?: number;
   options: ISchema;
   parentId?: number;
   children?: TabItem[];
@@ -28,6 +29,7 @@ export interface TabBarItem {
 export interface TabItem {
   id: number;
   url?: string;
+  sort?: number;
   options: { title: string; tabSchemaUid: string };
   parentId?: number;
 }
@@ -109,7 +111,7 @@ export const MobileRoutesContextProvider = ({ children }) => {
     data,
     runAsync: refresh,
     loading,
-  } = useRequest<{ data: TabBarItem[] }>(() => resource.list({ tree: true }).then((res) => res.data));
+  } = useRequest<{ data: TabBarItem[] }>(() => resource.list({ tree: true, sort: 'sort' }).then((res) => res.data));
   const routeList = useMemo(() => data?.data || [], [data]);
   const { activeTabBarItem, activeTabItem } = useActiveTabBar(routeList);
 
