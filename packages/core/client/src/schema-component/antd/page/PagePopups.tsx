@@ -123,7 +123,7 @@ const PagePopupsItemProvider: FC<{ params: PopupParams; context: PopupContext }>
           dataSource={context.dataSource}
           collection={context.collection}
           association={context.association}
-          sourceId={context.sourceId}
+          sourceId={params.sourceid}
           filterByTk={params.filterbytk}
           // @ts-ignore
           record={storedContext.record}

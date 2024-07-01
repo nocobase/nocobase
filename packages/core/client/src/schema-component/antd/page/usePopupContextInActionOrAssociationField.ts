@@ -16,7 +16,6 @@ export interface PopupContext {
   dataSource: string;
   collection?: string;
   association?: string;
-  sourceId?: string;
   /**
    * Context for the parent popup record variable
    */

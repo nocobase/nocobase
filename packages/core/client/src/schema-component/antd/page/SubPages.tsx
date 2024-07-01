@@ -94,7 +94,7 @@ const SubPageProvider: FC<{ params: SubPageParams; context: SubPageContext | und
       dataSource={context.dataSource}
       collection={context.collection}
       association={context.association}
-      sourceId={context.sourceId}
+      sourceId={params.sourceid}
       filterByTk={params.filterbytk}
       action="get"
     >
@@ -232,7 +232,6 @@ export const useNavigateTOSubPage = () => {
       dataSource: dataSourceKey,
       collection: association ? undefined : collection.name,
       association: association,
-      sourceId,
       parentPopupRecord: parentPopupRecordData
         ? {
             collection: parentPopupRecordCollection?.name,
