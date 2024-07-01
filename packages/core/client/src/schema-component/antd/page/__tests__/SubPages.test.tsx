@@ -20,8 +20,9 @@ describe('getSubPagePathFromParams', () => {
       subpageuid: 'subPage1',
       filterbytk: 'filterbytk1',
       tab: 'tab1',
+      sourceid: 'sourceid1',
     };
-    const expectedPath = '/subpages/subPage1/filterbytk/filterbytk1/tab/tab1';
+    const expectedPath = '/subpages/subPage1/filterbytk/filterbytk1/sourceid/sourceid1/tab/tab1';
     expect(getSubPagePathFromParams(params)).toBe(expectedPath);
   });
 
@@ -81,11 +82,12 @@ describe('getSubPageParamsAndPopupsParams', () => {
 
 describe('getSubPageParamsFromPath', () => {
   it('should return the correct subPageParams from path without popups', () => {
-    const path = 'subPage1/datasource/datasource1/filterbytk/filterbytk1';
+    const path = 'subPage1/datasource/datasource1/filterbytk/filterbytk1/sourceid/sourceid1';
     const expectedSubPageParams = {
       subpageuid: 'subPage1',
       datasource: 'datasource1',
       filterbytk: 'filterbytk1',
+      sourceid: 'sourceid1',
     };
     expect(getSubPageParamsFromPath(path)).toEqual(expectedSubPageParams);
   });
