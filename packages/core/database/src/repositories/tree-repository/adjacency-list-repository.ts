@@ -11,6 +11,8 @@ import lodash from 'lodash';
 import { FindOptions, Repository } from '../../repository';
 import Database from '../../database';
 import { Collection } from '../../collection';
+import { Model } from '../../model';
+import { FindAndCountOptions, QueryTypes } from 'sequelize';
 
 export class AdjacencyListRepository extends Repository {
   static queryParentSQL(options: {
@@ -48,9 +50,9 @@ export class AdjacencyListRepository extends Repository {
   }
 
   async find(options: FindOptions & { addIndex?: boolean } = {}): Promise<any> {
-    if (options.raw || !options.tree) {
-      return await super.find(options);
-    }
+    // if (options.raw || !options.tree) {
+    //   return await super.find(options);
+    // }
 
     const collection = this.collection;
     const primaryKey = collection.model.primaryKeyAttribute;
@@ -76,7 +78,8 @@ export class AdjacencyListRepository extends Repository {
       return parentNodes;
     }
 
-    const sql = this.querySQL(parentIds, collection);
+    const rootIds = await this.queryRootIDS(parentIds, collection);
+    const sql = this.querySQL(rootIds, collection);
 
     const childNodes = await this.database.sequelize.query(sql, {
       type: 'SELECT',
@@ -167,6 +170,31 @@ export class AdjacencyListRepository extends Repository {
 
     treeArray.forEach((tree, i) => {
       traverse(tree, i);
+    });
+  }
+
+  async findAndCount(options?: FindAndCountOptions): Promise<[Model[], number]> {
+    const filterDatas = await this.find(options);
+    return [filterDatas, filterDatas.length];
+  }
+
+  private async queryRootIDS(nodePks, collection) {
+    const pathTableName = `main_${collection.name}_path`;
+    const queryInterface = this.database.sequelize.getQueryInterface();
+    const q = queryInterface.quoteIdentifier.bind(queryInterface);
+    const datas = await this.database.sequelize.query(
+      `
+      SELECT DISTINCT(${q('rootPK')}) as ${q('rootId')}
+      FROM ${pathTableName}
+      WHERE ${q('nodePk')} IN (${nodePks.join(',')}) ;
+      `,
+      {
+        type: QueryTypes.SELECT,
+        raw: true,
+      },
+    );
+    return datas.map((data) => {
+      return data.rootId;
     });
   }
 

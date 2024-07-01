@@ -49,9 +49,9 @@ class PluginCollectionTreeServer extends Plugin {
               });
               if (parent) {
                 path = `/${parent.dataValues?.id}${path}`;
-              }
-              if (parent.dataValues?.parentId !== null) {
-                path = await getTreePath(parent, path, collectionName);
+                if (parent.dataValues?.parentId !== null) {
+                  path = await getTreePath(parent, path, collectionName);
+                }
               }
             }
             return path;
