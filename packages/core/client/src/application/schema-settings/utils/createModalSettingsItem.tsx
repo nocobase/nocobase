@@ -7,12 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { SchemaSettingsItemType, useCompile, useDesignable } from '@nocobase/client';
-import { ISchema, useFieldSchema } from '@formily/react';
 import _ from 'lodash';
+import { ISchema, useFieldSchema } from '@formily/react';
 import { TFunction, useTranslation } from 'react-i18next';
 
+import { SchemaSettingsItemType } from '../types';
 import { getNewSchema, useHookDefault } from './util';
+import { useCompile } from '../../../schema-component/hooks/useCompile';
+import { useDesignable } from '../../../schema-component/hooks/useDesignable';
 
 export interface CreateModalSchemaSettingsItemProps {
   name: string;

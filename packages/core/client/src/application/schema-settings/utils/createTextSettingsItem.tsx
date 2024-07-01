@@ -8,9 +8,10 @@
  */
 
 import { TFunction, useTranslation } from 'react-i18next';
-import { useCompile } from '../../../schema-component';
+
 import { useHookDefault } from './util';
 import { SchemaSettingsItemType } from '../types';
+import { useCompile } from '../../../schema-component/hooks/useCompile';
 
 export interface CreateTextSchemaSettingsItemProps {
   name: string;

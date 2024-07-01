@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from './createSelectSettingsItem';
-export * from './createSwitchSettingsItem';
 export * from './createModalSettingsItem';
 export * from './createTextSettingsItem';
+export * from './createSelectSettingsItem';
+export { createSwitchSettingsItem } from './createSwitchSettingsItem';
