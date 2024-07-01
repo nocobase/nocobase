@@ -140,6 +140,21 @@ export class CollectionManager {
     return this.getCollection(collectionName)?.getFields(predicate) || [];
   }
 
+  getFilterByTk(collectionOrassociation: string) {
+    if (collectionOrassociation.includes('.')) {
+      const field = this.getCollectionField(collectionOrassociation);
+      // 字段不存在，返回空
+      if (!field) {
+        return;
+      }
+      if (field.targetKey) {
+        return field.targetKey;
+      }
+    }
+    const targetCollection = this.getCollection(collectionOrassociation);
+    return targetCollection.filterTargetKey || targetCollection.getPrimaryKey() || 'id';
+  }
+
   getSourceKeyByAssociation(associationName: string) {
     if (!associationName) {
       return;
