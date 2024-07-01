@@ -9,6 +9,11 @@
 
 import { Database, Model } from '@nocobase/database';
 
+const typeMap = {
+  nanoid: 'string',
+  sequence: 'string',
+};
+
 export const createForeignKey = (db: Database) => {
   return async (model: Model, { transaction }) => {
     const { type, collectionName, target, targetKey, foreignKey } = model.get();
@@ -41,7 +46,7 @@ export const createForeignKey = (db: Database) => {
           name: foreignKey,
           type: 'set',
           dataType: 'array',
-          elementType: targetField.dataType,
+          elementType: typeMap[targetField.type] || targetField.type,
           isForeignKey: true,
           uiSchema: {
             type: 'object',

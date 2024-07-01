@@ -12,7 +12,7 @@ import { BaseColumnFieldOptions, Field } from './field';
 
 export class ArrayField extends Field {
   get dataType() {
-    const { dataType, elementType = 'integer' } = this.options;
+    const { dataType, elementType = '' } = this.options;
     if (this.database.sequelize.getDialect() === 'postgres') {
       if (dataType === 'array') {
         return new DataTypes.ARRAY(DataTypes[elementType.toUpperCase()]);

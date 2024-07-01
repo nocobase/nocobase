@@ -89,7 +89,7 @@ describe('belongs-to-array, bigInt targetKey', () => {
         name: 'tag_ids',
       },
     });
-    expect(field).toBeDefined();
+    expect(field).toBeTruthy();
     expect(field.type).toBe('set');
     expect(field.options.dataType).toBe('array');
     expect(field.options.elementType).toBe('bigInt');
