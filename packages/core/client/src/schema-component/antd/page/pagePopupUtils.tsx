@@ -32,6 +32,8 @@ export interface PopupParams {
   popupuid: string;
   /** record id */
   filterbytk?: string;
+  /** source id */
+  sourceid?: string;
   /** tab uid */
   tab?: string;
 }
@@ -42,6 +44,7 @@ export interface PopupContextStorage extends PopupContext {
   parentRecord?: CollectionRecord;
   /** used to refresh data for block */
   service?: any;
+  sourceId?: string;
 }
 
 const popupsContextStorage: Record<string, PopupContextStorage> = {};
@@ -72,8 +75,16 @@ export const getPopupParamsFromPath = _.memoize((path: string) => {
 });
 
 export const getPopupPathFromParams = (params: PopupParams) => {
-  const { popupuid: popupUid, tab, filterbytk } = params;
-  const popupPath = [popupUid, filterbytk && 'filterbytk', filterbytk, tab && 'tab', tab].filter(Boolean);
+  const { popupuid: popupUid, tab, filterbytk, sourceid } = params;
+  const popupPath = [
+    popupUid,
+    filterbytk && 'filterbytk',
+    filterbytk,
+    sourceid && 'sourceid',
+    sourceid,
+    tab && 'tab',
+    tab,
+  ].filter(Boolean);
 
   return `/popups/${popupPath.map((item) => encodePathValue(item)).join('/')}`;
 };
@@ -102,7 +113,17 @@ export const usePagePopup = () => {
   );
 
   const getNewPathname = useCallback(
-    ({ tabKey, popupUid, recordData }: { tabKey?: string; popupUid: string; recordData: Record<string, any> }) => {
+    ({
+      tabKey,
+      popupUid,
+      recordData,
+      sourceId,
+    }: {
+      popupUid: string;
+      recordData: Record<string, any>;
+      sourceId: string;
+      tabKey?: string;
+    }) => {
       let _collection = collection;
       if (association) {
         _collection = cm.getCollection(association);
@@ -111,31 +132,28 @@ export const usePagePopup = () => {
       return getPopupPathFromParams({
         popupuid: popupUid,
         filterbytk: filterByTK,
+        sourceid: sourceId,
         tab: tabKey,
       });
     },
     [association, cm, collection, dataSourceKey, parentRecord?.data, association],
   );
 
-  const getPopupContext = useCallback(
-    (sourceId?: string) => {
-      const context = {
-        dataSource: dataSourceKey,
-        collection: association ? undefined : collection.name,
-        association,
-        sourceId: sourceId || getSourceId(),
-        parentPopupRecord: !_.isEmpty(parentPopupRecordData)
-          ? {
-              collection: parentPopupRecordCollection?.name,
-              filterByTk: parentPopupRecordData[parentPopupRecordCollection.getPrimaryKey()],
-            }
-          : undefined,
-      };
+  const getPopupContext = useCallback(() => {
+    const context = {
+      dataSource: dataSourceKey,
+      collection: association ? undefined : collection.name,
+      association,
+      parentPopupRecord: !_.isEmpty(parentPopupRecordData)
+        ? {
+            collection: parentPopupRecordCollection?.name,
+            filterByTk: parentPopupRecordData[parentPopupRecordCollection.getPrimaryKey()],
+          }
+        : undefined,
+    };
 
-      return _.omitBy(context, _.isNil) as PopupContext;
-    },
-    [dataSourceKey, collection, association, getSourceId, parentPopupRecordData, parentPopupRecordCollection],
-  );
+    return _.omitBy(context, _.isNil) as PopupContext;
+  }, [dataSourceKey, collection, association, parentPopupRecordData, parentPopupRecordCollection]);
 
   const openPopup = useCallback(
     ({
@@ -149,14 +167,14 @@ export const usePagePopup = () => {
         return setVisibleFromAction?.(true);
       }
 
+      const sourceId = getSourceId(parentRecordData);
+
       recordData = recordData || record?.data;
-      const pathname = getNewPathname({ popupUid: fieldSchema['x-uid'], recordData });
+      const pathname = getNewPathname({ popupUid: fieldSchema['x-uid'], recordData, sourceId });
       let url = location.pathname;
       if (_.last(url) === '/') {
         url = url.slice(0, -1);
       }
-
-      const sourceId = getSourceId(parentRecordData);
 
       storePopupContext(fieldSchema['x-uid'], {
         schema: fieldSchema,
@@ -175,7 +193,7 @@ export const usePagePopup = () => {
           : undefined,
       });
 
-      updatePopupContext(getPopupContext(sourceId));
+      updatePopupContext(getPopupContext());
 
       navigate(withSearchParams(`${url}${pathname}`));
     },
@@ -208,7 +226,13 @@ export const usePagePopup = () => {
 
   const changeTab = useCallback(
     (key: string) => {
-      const pathname = getNewPathname({ tabKey: key, popupUid: popupParams?.popupuid, recordData: record?.data });
+      const sourceId = getSourceId();
+      const pathname = getNewPathname({
+        tabKey: key,
+        popupUid: popupParams?.popupuid,
+        recordData: record?.data,
+        sourceId,
+      });
       let url = removeLastPopupPath(location.pathname);
       if (_.last(url) === '/') {
         url = url.slice(0, -1);

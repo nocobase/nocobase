@@ -349,6 +349,12 @@ export class NocoPage {
     await this._waitForInit;
     return this.uid;
   }
+  /**
+   * If you are using mockRecords, then you need to use this method.
+   * Wait until the mockRecords create the records successfully before navigating to the page.
+   * @param this
+   * @returns
+   */
   async waitForInit(this: NocoPage) {
     await this._waitForInit;
     return this;
