@@ -16,13 +16,24 @@ import {
   IRepository,
   MergeOptions,
 } from './types';
+import { DataSource } from './data-source';
+import { Repository } from './repository';
 
 export class CollectionManager implements ICollectionManager {
+  public dataSource: DataSource;
   protected collections = new Map<string, ICollection>();
   protected repositories = new Map<string, IRepository>();
   protected models = new Map<string, any>();
 
-  constructor(options = {}) {}
+  constructor(options: any = {}) {
+    if (options.dataSource) {
+      this.dataSource = options.dataSource;
+    }
+
+    this.registerRepositories({
+      Repository: Repository,
+    });
+  }
 
   /* istanbul ignore next -- @preserve */
   getRegisteredFieldType(type) {}
@@ -102,6 +113,10 @@ export class CollectionManager implements ICollectionManager {
   }
 
   async sync() {}
+
+  removeCollection(name: string): void {
+    this.collections.delete(name);
+  }
 
   protected newCollection(options): ICollection {
     // @ts-ignore

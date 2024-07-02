@@ -16,8 +16,6 @@ import {
   AddCollectionAction,
   AddCollectionField,
   AddFieldAction,
-  EditCollection,
-  EditCollectionAction,
   EditCollectionField,
   EditFieldAction,
   OverridingCollectionField,
@@ -29,10 +27,14 @@ import {
   SyncSQLFieldsAction,
   DeleteCollection,
   DeleteCollectionAction,
-  CollectionCategroriesProvider,
+  CollectionCategoriesProvider,
+  usePlugin,
 } from '@nocobase/client';
+import { useLocation } from 'react-router-dom';
 import { ConfigurationTable } from './ConfigurationTable';
 import { ConfigurationTabs } from './ConfigurationTabs';
+import PluginDatabaseConnectionsClient from '../../';
+import { EditCollection } from './EditCollectionAction';
 
 const schema2: ISchema = {
   type: 'object',
@@ -44,20 +46,23 @@ const schema2: ISchema = {
 };
 
 export const CollectionManagerPage = () => {
+  const plugin = usePlugin(PluginDatabaseConnectionsClient);
+  const location = useLocation();
+  const dataSourceType = new URLSearchParams(location.search).get('type');
+  const type = dataSourceType && plugin.types.get(dataSourceType);
   return (
     <SchemaComponent
       schema={schema2}
       components={{
-        CollectionCategroriesProvider,
+        CollectionCategoriesProvider,
         ConfigurationTable,
         ConfigurationTabs,
         AddFieldAction,
         AddCollectionField,
-        AddCollection,
+        AddCollection: type?.AddCollection || AddCollection,
         AddCollectionAction,
-        EditCollection,
-        EditCollectionAction,
-        DeleteCollection,
+        EditCollection: type?.EditCollection || EditCollection,
+        DeleteCollection: type?.DeleteCollection || DeleteCollection,
         DeleteCollectionAction,
         EditFieldAction,
         EditCollectionField,
@@ -68,6 +73,12 @@ export const CollectionManagerPage = () => {
         SyncFieldsAction,
         SyncFieldsActionCom,
         SyncSQLFieldsAction,
+      }}
+      scope={{
+        allowCollectionDeletion: !!type?.allowCollectionDeletion,
+        disabledConfigureFields: type?.disabledConfigureFields,
+        disableAddFields: type?.disableAddFields,
+        allowCollectionCreate: !!type?.allowCollectionCreate,
       }}
     />
   );

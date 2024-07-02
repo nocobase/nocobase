@@ -21,14 +21,14 @@ import {
   useCompile,
   useResourceActionContext,
   useCancelAction,
-  CollectionCategroriesContext,
+  CollectionCategoriesContext,
 } from '@nocobase/client';
 import { collectionCategoryEditSchema } from './schemas/collections';
 
 const useEditCategry = () => {
   const form = useForm();
   const ctx = useActionContext();
-  const { refresh } = useContext(CollectionCategroriesContext);
+  const { refresh } = useContext(CollectionCategoriesContext);
   const { refresh: refreshCM } = useResourceActionContext();
 
   const api = useAPIClient();

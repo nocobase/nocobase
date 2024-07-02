@@ -9,7 +9,7 @@
 
 import { useFieldSchema } from '@formily/react';
 import { CompatibleSchemaInitializer } from '../../../../application/schema-initializer/CompatibleSchemaInitializer';
-import { useCollection_deprecated } from '../../../../collection-manager/hooks/useCollection_deprecated';
+import { useCollection } from '../../../../data-source';
 
 const commonOptions = {
   title: "{{t('Configure actions')}}",
@@ -40,8 +40,12 @@ const commonOptions = {
         },
       },
       useVisible() {
-        const collection = useCollection_deprecated();
-        return !['view', 'file', 'sql'].includes(collection.template) || collection?.writableView;
+        const collection = useCollection() || ({} as any);
+        const { unavailableActions } = collection?.options || {};
+        if (unavailableActions) {
+          return !unavailableActions?.includes?.('create');
+        }
+        return true;
       },
     },
     {
@@ -54,8 +58,12 @@ const commonOptions = {
         'x-decorator': 'ACLActionProvider',
       },
       useVisible() {
-        const collection = useCollection_deprecated();
-        return !['view', 'sql'].includes(collection.template) || collection?.writableView;
+        const collection = useCollection() || ({} as any);
+        const { unavailableActions } = collection?.options || {};
+        if (unavailableActions) {
+          return !unavailableActions?.includes?.('destroy');
+        }
+        return true;
       },
     },
     {
@@ -90,7 +98,7 @@ const commonOptions = {
       },
       useVisible() {
         const schema = useFieldSchema();
-        const collection = useCollection_deprecated();
+        const collection = useCollection();
         const { treeTable } = schema?.parent?.['x-decorator-props'] || {};
         return collection.tree && treeTable;
       },

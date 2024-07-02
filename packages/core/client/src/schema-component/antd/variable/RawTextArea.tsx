@@ -10,7 +10,7 @@
 import React, { useRef, useState } from 'react';
 import { css } from '@emotion/css';
 import { Button, Input } from 'antd';
-import { cloneDeep } from 'lodash';
+import { last } from 'lodash';
 
 import { VariableSelect } from './VariableSelect';
 
@@ -32,11 +32,12 @@ export function RawTextArea(props): JSX.Element {
   const [options, setOptions] = useState(scope ? scope : []);
 
   function onInsert(selected) {
+    const selectedData = props?.lastNodeOnly ? [last(selected)] : selected;
     if (!inputRef.current) {
       return;
     }
 
-    const variable = `{{${selected.join('.')}}}`;
+    const variable = `{{${selectedData.join('.')}}}`;
 
     const { textArea } = inputRef.current.resizableTextArea;
     const nextValue =

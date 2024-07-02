@@ -91,6 +91,8 @@ export class SequelizeCollectionManager implements ICollectionManager {
     return this.db.getCollection(name);
   }
 
+  removeCollection(name: string) {}
+
   getCollections() {
     const collectionsFilter = this.collectionsFilter();
 

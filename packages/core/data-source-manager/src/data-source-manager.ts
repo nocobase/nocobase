@@ -10,8 +10,13 @@
 import { ToposortOptions } from '@nocobase/utils';
 import { DataSource } from './data-source';
 import { DataSourceFactory } from './data-source-factory';
+import { createConsoleLogger, createLogger, Logger, LoggerOptions } from '@nocobase/logger';
 
 type DataSourceHook = (dataSource: DataSource) => void;
+
+type DataSourceManagerOptions = {
+  logger?: LoggerOptions | Logger;
+};
 
 export class DataSourceManager {
   dataSources: Map<string, DataSource>;
@@ -22,7 +27,7 @@ export class DataSourceManager {
   protected middlewares = [];
   private onceHooks: Array<DataSourceHook> = [];
 
-  constructor(public options = {}) {
+  constructor(public options: DataSourceManagerOptions = {}) {
     this.dataSources = new Map();
     this.middlewares = [];
   }
@@ -32,6 +37,20 @@ export class DataSourceManager {
   }
 
   async add(dataSource: DataSource, options: any = {}) {
+    let logger;
+
+    if (this.options.logger) {
+      if (typeof this.options.logger['log'] === 'function') {
+        logger = this.options.logger as Logger;
+      } else {
+        logger = createLogger(this.options.logger);
+      }
+    } else {
+      logger = createConsoleLogger();
+    }
+
+    dataSource.setLogger(logger);
+
     await dataSource.load(options);
     this.dataSources.set(dataSource.name, dataSource);
 

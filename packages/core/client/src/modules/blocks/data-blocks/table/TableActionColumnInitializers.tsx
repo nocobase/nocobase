@@ -16,11 +16,11 @@ import { useAPIClient } from '../../../../api-client';
 import { CompatibleSchemaInitializer } from '../../../../application/schema-initializer/CompatibleSchemaInitializer';
 import { SchemaInitializerActionModal } from '../../../../application/schema-initializer/components/SchemaInitializerActionModal';
 import { SchemaInitializerItem } from '../../../../application/schema-initializer/components/SchemaInitializerItem';
-import { useCollection_deprecated } from '../../../../collection-manager';
 import { SelectWithTitle } from '../../../../common/SelectWithTitle';
 import { useDataBlockProps } from '../../../../data-source';
 import { createDesignable, useDesignable } from '../../../../schema-component';
 import { useGetAriaLabelOfDesigner } from '../../../../schema-settings/hooks/useGetAriaLabelOfDesigner';
+import { useCollection } from '../../../../data-source';
 
 export const Resizable = () => {
   const { t } = useTranslation();
@@ -161,6 +161,14 @@ const commonOptions = {
         'x-action': 'view',
         'x-decorator': 'ACLActionProvider',
       },
+      useVisible() {
+        const collection = useCollection() || ({} as any);
+        const { unavailableActions } = collection?.options || {};
+        if (unavailableActions) {
+          return !unavailableActions?.includes?.('get');
+        }
+        return true;
+      },
     },
     {
       type: 'item',
@@ -173,8 +181,12 @@ const commonOptions = {
         'x-decorator': 'ACLActionProvider',
       },
       useVisible() {
-        const collection = useCollection_deprecated();
-        return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
+        const collection = useCollection() || ({} as any);
+        const { unavailableActions } = collection?.options || {};
+        if (unavailableActions) {
+          return !unavailableActions?.includes?.('update');
+        }
+        return true;
       },
     },
     {
@@ -188,8 +200,12 @@ const commonOptions = {
         'x-decorator': 'ACLActionProvider',
       },
       useVisible() {
-        const collection = useCollection_deprecated();
-        return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
+        const collection = useCollection() || ({} as any);
+        const { unavailableActions } = collection?.options || {};
+        if (unavailableActions) {
+          return !unavailableActions?.includes?.('destroy');
+        }
+        return true;
       },
     },
     {
@@ -200,17 +216,17 @@ const commonOptions = {
       schema: {
         'x-component': 'Action.Link',
         'x-action': 'disassociate',
-        'x-acl-action': 'destroy',
+        'x-acl-action': 'update',
         'x-decorator': 'ACLActionProvider',
       },
       useVisible() {
         const props = useDataBlockProps();
-        const collection = useCollection_deprecated();
-        return (
-          !!props?.association &&
-          (collection.template !== 'view' || collection?.writableView) &&
-          collection.template !== 'sql'
-        );
+        const collection = useCollection() || ({} as any);
+        const { unavailableActions } = collection?.options || {};
+        if (unavailableActions) {
+          return !!props?.association && !unavailableActions?.includes?.('update');
+        }
+        return true;
       },
     },
     {
@@ -225,7 +241,7 @@ const commonOptions = {
       },
       useVisible() {
         const fieldSchema = useFieldSchema();
-        const collection = useCollection_deprecated();
+        const collection = useCollection();
         const { treeTable } = fieldSchema?.parent?.parent['x-decorator-props'] || {};
         return collection.tree && treeTable;
       },
@@ -242,8 +258,12 @@ const commonOptions = {
       name: 'updateRecord',
       Component: 'UpdateRecordActionInitializer',
       useVisible() {
-        const collection = useCollection_deprecated();
-        return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
+        const collection = useCollection() || ({} as any);
+        const { unavailableActions } = collection?.options || {};
+        if (unavailableActions) {
+          return !unavailableActions?.includes?.('update');
+        }
+        return true;
       },
     },
     {
@@ -252,10 +272,6 @@ const commonOptions = {
       Component: 'CustomRequestInitializer',
       schema: {
         'x-action': 'customize:table:request',
-      },
-      useVisible() {
-        const collection = useCollection_deprecated();
-        return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
       },
     },
     {

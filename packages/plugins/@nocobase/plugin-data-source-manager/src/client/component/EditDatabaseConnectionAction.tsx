@@ -103,6 +103,7 @@ export const EditDatabaseConnectionAction = () => {
                             'x-component-props': {
                               useAction: '{{ useTestConnectionAction }}',
                             },
+                            'x-hidden': type?.disableTestConnection,
                           },
                           submit: {
                             title: '{{t("Submit")}}',

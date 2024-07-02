@@ -29,7 +29,7 @@ import {
   SyncSQLFieldsAction,
   DeleteCollection,
   DeleteCollectionAction,
-  CollectionCategroriesProvider,
+  CollectionCategoriesProvider,
 } from '@nocobase/client';
 import {
   AddCategory,
@@ -55,7 +55,7 @@ export const MainDataSourceManager = () => {
     <SchemaComponent
       schema={schema2}
       components={{
-        CollectionCategroriesProvider,
+        CollectionCategoriesProvider,
         ConfigurationTable,
         ConfigurationTabs,
         AddFieldAction,

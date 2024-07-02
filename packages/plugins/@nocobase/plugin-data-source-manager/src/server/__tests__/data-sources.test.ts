@@ -400,7 +400,10 @@ describe('data source', async () => {
         },
       });
 
-      await waitSecond(1000);
+      await waitSecond(2000);
+
+      const dataSource = app.dataSourceManager.dataSources.get('mockInstance1');
+      expect(dataSource).toBeDefined();
     });
 
     it('should get data source collections', async () => {
@@ -515,7 +518,53 @@ describe('data source', async () => {
       expect(field.options.title).toBe('标题 Field');
     });
 
-    it('should create collection field', async () => {
+    it('should update fields through collection', async () => {
+      const dataSource = app.dataSourceManager.dataSources.get('mockInstance1');
+      const collection = dataSource.collectionManager.getCollection('posts');
+
+      const updateResp = await app
+        .agent()
+        .resource('dataSources.collections', 'mockInstance1')
+        .update({
+          filterByTk: 'posts',
+          values: {
+            fields: [
+              {
+                type: 'string',
+                name: 'title',
+                uiSchema: {
+                  test: 'value',
+                },
+              },
+              {
+                type: 'text',
+                name: 'content',
+              },
+            ],
+          },
+        });
+
+      expect(updateResp.status).toBe(200);
+
+      const fieldsOptions = [...collection.fields.values()].map((f) => f.options);
+      // remove a field
+      const newFieldsOptions = fieldsOptions.filter((f) => f.name === 'title');
+
+      const updateResp2 = await app
+        .agent()
+        .resource('dataSources.collections', 'mockInstance1')
+        .update({
+          filterByTk: 'posts',
+          values: {
+            fields: newFieldsOptions,
+          },
+        });
+
+      expect(updateResp2.status).toBe(200);
+      expect(collection.getField('comments')).toBeFalsy();
+    });
+
+    it('should update collection with field', async () => {
       const dataSource = app.dataSourceManager.dataSources.get('mockInstance1');
       const collection = dataSource.collectionManager.getCollection('comments');
 
@@ -549,6 +598,20 @@ describe('data source', async () => {
 
       expect(destroyResp.status).toBe(200);
       expect(collection.getField('post')).toBeFalsy();
+
+      // reload data source manager
+      const refreshResp = await app.agent().resource('dataSources').refresh({
+        filterByTk: 'mockInstance1',
+      });
+
+      expect(refreshResp.status).toBe(200);
+      expect(refreshResp.body.data.status).toBe('reloading');
+
+      await waitSecond(2000);
+
+      const dataSource2 = app.dataSourceManager.dataSources.get('mockInstance1');
+      const collection2 = dataSource2.collectionManager.getCollection('comments');
+      expect(collection2.getField('post')).toBeFalsy();
     });
   });
 });

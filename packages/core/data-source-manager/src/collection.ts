@@ -21,17 +21,22 @@ export class Collection implements ICollection {
     protected collectionManager: ICollectionManager,
   ) {
     this.setRepository(options.repository);
+
     if (options.fields) {
       this.setFields(options.fields);
     }
   }
 
   updateOptions(options: CollectionOptions, mergeOptions?: any) {
-    let newOptions = lodash.cloneDeep(options);
-    newOptions = merge(this.options, newOptions, mergeOptions);
+    const newOptions = {
+      ...this.options,
+      ...lodash.cloneDeep(options),
+    };
+
     this.options = newOptions;
 
     this.setFields(newOptions.fields || []);
+
     if (options.repository) {
       this.setRepository(options.repository);
     }
@@ -40,6 +45,11 @@ export class Collection implements ICollection {
   }
 
   setFields(fields: any[]) {
+    const fieldNames = this.fields.keys();
+    for (const fieldName of fieldNames) {
+      this.removeField(fieldName);
+    }
+
     for (const field of fields) {
       this.setField(field.name, field);
     }
@@ -64,6 +74,7 @@ export class Collection implements ICollection {
   }
 
   protected setRepository(repository: any) {
-    this.repository = this.collectionManager.getRegisteredRepository(repository || 'Repository');
+    const RepositoryClass = this.collectionManager.getRegisteredRepository(repository || 'Repository');
+    this.repository = new RepositoryClass(this);
   }
 }
