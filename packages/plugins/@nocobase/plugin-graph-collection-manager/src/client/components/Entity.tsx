@@ -258,7 +258,9 @@ const PopoverContent = React.forwardRef((props: any, ref) => {
         id={property.id}
         style={{
           background:
-            targetPort || sourcePort === property.id || associated?.includes(property.name) ? '#e6f7ff' : null,
+            targetPort === property.id || sourcePort === property.id || associated?.includes(property.name)
+              ? '#e6f7ff'
+              : null,
         }}
         onMouseEnter={() => {
           setIsHovered(true);
