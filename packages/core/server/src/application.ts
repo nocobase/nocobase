@@ -61,6 +61,7 @@ import validateFilterParams from './middlewares/validate-filter-params';
 import path from 'path';
 import { parseVariables } from './middlewares';
 import { dataTemplate } from './middlewares/data-template';
+import { SyncManager } from './sync-manager';
 
 export type PluginType = string | typeof Plugin;
 export type PluginConfiguration = PluginType | [PluginType, any];
@@ -213,7 +214,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   public perfHistograms = new Map<string, RecordableHistogram>();
   protected plugins = new Map<string, Plugin>();
   protected _appSupervisor: AppSupervisor = AppSupervisor.getInstance();
-  protected _started: boolean;
+  protected _started: Date | null = null;
   private _authenticated = false;
   private _maintaining = false;
   private _maintainingCommandStatus: MaintainingCommandStatus;
@@ -223,6 +224,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   /**
    * @internal
    */
+  public syncManager: SyncManager;
   public requestLogger: Logger;
   private sqlLogger: Logger;
   protected _logger: SystemLogger;
@@ -234,6 +236,13 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this.init();
 
     this._appSupervisor.addApp(this);
+  }
+
+  /**
+   * @experimental
+   */
+  get started() {
+    return this._started;
   }
 
   get logger() {
@@ -755,7 +764,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       return;
     }
 
-    this._started = true;
+    this._started = new Date();
 
     if (options.checkInstall && !(await this.isInstalled())) {
       throw new ApplicationNotInstall(
@@ -791,7 +800,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   }
 
   async isStarted() {
-    return this._started;
+    return Boolean(this._started);
   }
 
   /**
@@ -812,7 +821,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     this.log.info('restarting...');
 
-    this._started = false;
+    this._started = null;
     await this.emitAsync('beforeStop');
     await this.reload(options);
     await this.start(options);
@@ -862,7 +871,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     this.stopped = true;
     log.info(`app has stopped`, { method: 'stop' });
-    this._started = false;
+    this._started = null;
   }
 
   async destroy(options: any = {}) {
@@ -1108,6 +1117,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     this._cli = this.createCLI();
     this._i18n = createI18n(options);
+    this.syncManager = new SyncManager(this);
     this.context.db = this.db;
 
     /**

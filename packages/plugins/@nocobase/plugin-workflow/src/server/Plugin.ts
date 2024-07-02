@@ -110,6 +110,29 @@ export default class PluginWorkflowServer extends Plugin {
     }
   };
 
+  private onSync = async (message) => {
+    if (message.type === 'enabledCache') {
+      console.log('--------', message);
+      const { repository } = this.db.getCollection('workflows');
+      const workflows: WorkflowModel[] = await repository.find({
+        filter: { enabled: true },
+      });
+
+      const nextMap = new Map(workflows.map((workflow) => [workflow.id, workflow]));
+      for (const cached of this.enabledCache.values()) {
+        if (!nextMap.has(cached.id)) {
+          this.toggle(cached, false, true);
+        }
+      }
+
+      for (const next of nextMap.values()) {
+        if (!this.enabledCache.has(next.id)) {
+          this.toggle(next, true, true);
+        }
+      }
+    }
+  };
+
   /**
    * @experimental
    */
@@ -244,8 +267,13 @@ export default class PluginWorkflowServer extends Plugin {
     });
 
     db.on('workflows.beforeSave', this.onBeforeSave);
-    db.on('workflows.afterSave', (model: WorkflowModel) => this.toggle(model));
-    db.on('workflows.afterDestroy', (model: WorkflowModel) => this.toggle(model, false));
+    db.on('workflows.afterCreate', (model: WorkflowModel) => {
+      if (model.enabled) {
+        this.toggle(model);
+      }
+    });
+    db.on('workflows.afterUpdate', (model: WorkflowModel) => this.toggle(model));
+    db.on('workflows.beforeDestroy', (model: WorkflowModel) => this.toggle(model, false));
 
     // [Life Cycle]:
     //   * load all workflows in db
@@ -254,6 +282,7 @@ export default class PluginWorkflowServer extends Plugin {
     this.app.on('afterStart', async () => {
       this.app.setMaintainingMessage('check for not started executions');
       this.ready = true;
+      this.app.syncManager.subscribe('workflow', this.onSync);
 
       const collection = db.getCollection('workflows');
       const workflows = await collection.repository.find({
@@ -273,14 +302,11 @@ export default class PluginWorkflowServer extends Plugin {
     });
 
     this.app.on('beforeStop', async () => {
-      const repository = db.getRepository('workflows');
-      const workflows = await repository.find({
-        filter: { enabled: true },
-      });
-
-      workflows.forEach((workflow: WorkflowModel) => {
+      for (const workflow of this.enabledCache.values()) {
         this.toggle(workflow, false);
-      });
+      }
+
+      this.app.syncManager.unsubscribe('workflow', this.onSync);
 
       this.ready = false;
       if (this.events.length) {
@@ -296,7 +322,7 @@ export default class PluginWorkflowServer extends Plugin {
     });
   }
 
-  private toggle(workflow: WorkflowModel, enable?: boolean) {
+  private toggle(workflow: WorkflowModel, enable?: boolean, silent = false) {
     const type = workflow.get('type');
     const trigger = this.triggers.get(type);
     if (!trigger) {
@@ -314,6 +340,9 @@ export default class PluginWorkflowServer extends Plugin {
     } else {
       trigger.off(workflow);
       this.enabledCache.delete(workflow.id);
+    }
+    if (!silent) {
+      this.app.syncManager.publish('workflow', { type: 'enabledCache' });
     }
   }
 
