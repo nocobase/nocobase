@@ -16,7 +16,7 @@ export class BelongsToArrayField extends RelationField {
 
   private setForeignKeyArray = async (model: Model, { values, transaction }) => {
     const { name, foreignKey, target, targetKey } = this.options;
-    if (values[name] === undefined) {
+    if (!values || values[name] === undefined) {
       return;
     }
     const value: any[] = values[name] || [];
