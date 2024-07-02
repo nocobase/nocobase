@@ -35,7 +35,7 @@ import {
   mobileTabBarSettings,
   mobileTabBarInitializer,
   mobileTabBarLinkSettings,
-  mobileTabBarSchemaSettings,
+  mobileTabBarPageSettings,
 } from './mobile-layout';
 import { generatePluginTranslationTemplate } from './locale';
 
@@ -44,6 +44,11 @@ import './js-bridge';
 import { MobileCheckerProvider } from './providers';
 
 export * from './mobile-providers';
+export * from './mobile';
+export * from './mobile-layout';
+export * from './providers';
+export * from './pages';
+export * from './desktop-mode';
 
 export class PluginMobileClient extends Plugin {
   mobileRouter?: RouterManager;
@@ -91,7 +96,7 @@ export class PluginMobileClient extends Plugin {
     this.app.schemaSettingsManager.add(
       mobileTabBarSettings,
       mobilePageSettings,
-      mobileTabBarSchemaSettings,
+      mobileTabBarPageSettings,
       mobileTabBarLinkSettings,
       mobilePageTabSettings,
       mobileNavigationBarLinkSettings,
@@ -146,14 +151,14 @@ export class PluginMobileClient extends Plugin {
       element: <Outlet />,
     });
     this.mobileRouter.add('mobile.schema.page', {
-      path: '/schema/:schemaPageUid',
+      path: '/schema/:pageSchemaUid',
       Component: 'MobilePage',
     });
     this.mobileRouter.add('mobile.schema.tabs', {
       element: <Outlet />,
     });
     this.mobileRouter.add('mobile.schema.tabs.page', {
-      path: '/schema/:schemaPageUid/tabs/:tabSchemaUid',
+      path: '/schema/:pageSchemaUid/tabs/:tabSchemaUid',
       Component: 'MobilePage',
     });
 

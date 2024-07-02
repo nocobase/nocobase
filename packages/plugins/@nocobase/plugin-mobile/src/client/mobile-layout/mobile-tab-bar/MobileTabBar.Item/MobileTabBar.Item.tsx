@@ -14,7 +14,7 @@ import classnames from 'classnames';
 
 export interface MobileTabBarItemProps {
   // 图标
-  icon?: string;
+  icon?: string | React.ReactNode;
   // 选中时的图标
   selectedIcon?: string;
   // 标题

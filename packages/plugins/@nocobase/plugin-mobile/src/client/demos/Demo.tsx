@@ -23,7 +23,7 @@ const ConfigPage = () => {
 
   useEffect(() => {
     setTitle('Config');
-  }, []);
+  }, [setTitle]);
 
   return (
     <div>
@@ -81,13 +81,13 @@ const app = mockApp({
             'x-toolbar-props': {
               draggable: false,
             },
-            'x-settings': 'mobile:tab-bar:schema',
+            'x-settings': 'mobile:tab-bar:page',
             'x-component': 'MobileTabBar.Page',
             'x-component-props': {
               title: 'Home',
               icon: 'AppleOutlined',
               selectedIcon: 'AppstoreOutlined',
-              schemaPageUid: 'home',
+              pageSchemaUid: 'home',
             },
           },
           children: [
@@ -96,7 +96,7 @@ const app = mockApp({
               parentId: 1,
               options: {
                 title: 'Tab1',
-                schemaPageUid: 'tab1',
+                pageSchemaUid: 'tab1',
               },
             },
             {
@@ -104,7 +104,7 @@ const app = mockApp({
               parentId: 1,
               options: {
                 title: 'Tab2',
-                schemaPageUid: 'tab2',
+                pageSchemaUid: 'tab2',
               },
             },
           ],
@@ -124,9 +124,9 @@ const app = mockApp({
             'x-component-props': {
               title: 'Message',
               icon: 'MessageOutlined',
-              schemaPageUid: 'message',
+              pageSchemaUid: 'message',
             },
-            'x-settings': 'mobile:tab-bar:schema',
+            'x-settings': 'mobile:tab-bar:page',
           },
         },
         {

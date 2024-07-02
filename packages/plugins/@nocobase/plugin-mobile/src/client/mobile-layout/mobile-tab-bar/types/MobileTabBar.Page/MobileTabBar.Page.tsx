@@ -7,23 +7,23 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { FC } from 'react';
+import React, { FC, useCallback, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 import { MobileTabBarItemProps, MobileTabBarItem } from '../../MobileTabBar.Item';
 
 export interface MobileTabBarPageProps extends Omit<MobileTabBarItemProps, 'onClick' | 'selected'> {
-  schemaPageUid: string;
+  pageSchemaUid: string;
 }
 
 export const MobileTabBarPage: FC<MobileTabBarPageProps> = (props) => {
-  const { schemaPageUid, ...rests } = props;
+  const { pageSchemaUid, ...rests } = props;
   const navigate = useNavigate();
   const location = useLocation();
-  const url = `/schema/${schemaPageUid}`;
-  const handleClick = () => {
+  const url = useMemo(() => `/schema/${pageSchemaUid}`, [pageSchemaUid]);
+  const handleClick = useCallback(() => {
     navigate(url);
-  };
+  }, [url, navigate]);
 
   const selected = location.pathname.startsWith(url);
 

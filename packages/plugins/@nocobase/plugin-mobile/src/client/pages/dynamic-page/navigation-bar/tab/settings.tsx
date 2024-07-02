@@ -19,7 +19,7 @@ import {
   SchemaSettingsItemType,
 } from '@nocobase/client';
 
-import { TabItem, useMobileRoutesContext } from '../../../../mobile-providers';
+import { TabItem, useMobileRoutes } from '../../../../mobile-providers';
 import { generatePluginTranslationTemplate, usePluginTranslation } from '../../../../locale';
 
 const remove = createTextSettingsItem({
@@ -28,7 +28,7 @@ const remove = createTextSettingsItem({
   useTextClick: () => {
     const { t } = usePluginTranslation();
     const { tab } = useSchemaToolbar();
-    const { refresh, resource, activeTabBarItem, api } = useMobileRoutesContext();
+    const { refresh, resource, activeTabBarItem, api } = useMobileRoutes();
     const navigate = useNavigate();
     const { modal, message } = App.useApp();
     return async () => {
@@ -54,7 +54,7 @@ const remove = createTextSettingsItem({
     };
   },
   useVisible() {
-    const { activeTabBarItem } = useMobileRoutesContext();
+    const { activeTabBarItem } = useMobileRoutes();
     return activeTabBarItem.children?.length > 1;
   },
 });
@@ -65,7 +65,7 @@ const editTitle: SchemaSettingsItemType = {
   useComponentProps() {
     const { t } = usePluginTranslation();
     const { tab } = useSchemaToolbar();
-    const { refresh, resource } = useMobileRoutesContext();
+    const { refresh, resource } = useMobileRoutes();
     return {
       title: t('Title'),
       schema: {

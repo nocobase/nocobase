@@ -8,27 +8,24 @@
  */
 
 export interface GetMobileTabBarPageItemDataOptions {
-  schemaPageUid: string;
+  pageSchemaUid: string;
   url?: string;
   values: any;
 }
 
 export function getMobileTabBarPageItemData(options: GetMobileTabBarPageItemDataOptions) {
-  const { schemaPageUid, url, values } = options;
+  const { pageSchemaUid, url, values } = options;
   return {
     url,
     parentId: null,
     options: {
       type: 'void',
       'x-decorator': 'BlockItem',
-      'x-toolbar-props': {
-        // draggable: false,
-      },
-      'x-settings': 'mobile:tab-bar:schema',
+      'x-settings': 'mobile:tab-bar:page',
       'x-component': 'MobileTabBar.Page',
       'x-component-props': {
         ...values,
-        schemaPageUid: schemaPageUid,
+        pageSchemaUid: pageSchemaUid,
       },
     },
   };

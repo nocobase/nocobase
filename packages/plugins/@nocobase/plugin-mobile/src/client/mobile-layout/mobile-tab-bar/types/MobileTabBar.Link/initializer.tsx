@@ -12,7 +12,7 @@ import { useNavigate } from 'react-router-dom';
 
 import { generatePluginTranslationTemplate } from '../../../../locale';
 import { getMobileTabBarItemSchemaFields } from '../../MobileTabBar.Item';
-import { useMobileRoutesContext } from '../../../../mobile-providers';
+import { useMobileRoutes } from '../../../../mobile-providers';
 import { editLinkSchema } from './settings';
 import { getMobileTabBarLinkItemData } from './schema';
 
@@ -20,7 +20,7 @@ export const mobileTabBarLinkInitializerItem: SchemaInitializerItemActionModalTy
   name: 'link',
   type: 'actionModal',
   useComponentProps() {
-    const { resource, refresh } = useMobileRoutesContext();
+    const { resource, refresh } = useMobileRoutes();
     const navigate = useNavigate();
 
     return {

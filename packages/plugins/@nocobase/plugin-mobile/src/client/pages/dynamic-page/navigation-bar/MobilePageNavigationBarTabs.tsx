@@ -11,12 +11,12 @@ import React, { FC, useCallback } from 'react';
 import { Tabs, TabsProps } from 'antd-mobile';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 
-import { useMobileRoutesContext } from '../../../mobile-providers';
+import { useMobileRoutes } from '../../../mobile-providers';
 import { MobilePageTabInitializer, MobilePageTabSettings } from './tab';
 import { DndContext, DndContextProps, SortableItem } from '@nocobase/client';
 
 export const MobilePageNavigationBarTabs: FC = () => {
-  const { activeTabBarItem, resource, refresh } = useMobileRoutesContext();
+  const { activeTabBarItem, resource, refresh } = useMobileRoutes();
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const { tabSchemaUid } = useParams<{ tabSchemaUid: string }>();
@@ -28,17 +28,20 @@ export const MobilePageNavigationBarTabs: FC = () => {
     navigate(url);
   };
 
-  const handleDragEnd: DndContextProps['onDragEnd'] = useCallback(async (event) => {
-    const { active, over } = event;
-    const activeId = active?.id;
-    const overId = over?.id;
+  const handleDragEnd: DndContextProps['onDragEnd'] = useCallback(
+    async (event) => {
+      const { active, over } = event;
+      const activeId = active?.id;
+      const overId = over?.id;
 
-    if ((!activeId || !overId) || (activeId === overId)) {
-      return;
-    }
-    await resource.move({ sourceId: activeId, targetId: overId, sortField: 'sort' })
-    await refresh();
-  }, [resource, refresh])
+      if (!activeId || !overId || activeId === overId) {
+        return;
+      }
+      await resource.move({ sourceId: activeId, targetId: overId, sortField: 'sort' });
+      await refresh();
+    },
+    [resource, refresh],
+  );
 
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1em' }}>

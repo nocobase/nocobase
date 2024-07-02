@@ -25,6 +25,7 @@ export const DesktopModeContent: FC<DesktopModeContentProps> = ({ children }) =>
           boxShadow: 'rgba(0, 0, 0, 0.2) 0px 0px 20px',
           borderRadius: '1em',
         }}
+        data-testid="desktop-mode-resizable"
         size={{ width: size.width, height: size.height }}
         onResizeStop={(e, direction, ref, d) => {
           setSize({

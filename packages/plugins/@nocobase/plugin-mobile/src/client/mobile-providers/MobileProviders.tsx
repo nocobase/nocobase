@@ -8,23 +8,22 @@
  */
 
 import React, { FC } from 'react';
-import { AdminProvider, usePlugin } from '@nocobase/client';
+import { AdminProvider } from '@nocobase/client';
 
-import { PluginMobileClient } from '../index';
-import { MobileTitleProvider, MobileRoutesContextProvider } from './context';
+import { MobileTitleProvider, MobileRoutesProvider } from './context';
 
 export interface MobileProvidersProps {
   children?: React.ReactNode;
+  skipLogin?: boolean;
 }
 
-export const MobileProviders: FC<MobileProvidersProps> = ({ children }) => {
-  const mobilePlugin = usePlugin(PluginMobileClient);
-  const AdminProviderComponent = mobilePlugin.options?.config?.skipLogin ? React.Fragment : AdminProvider;
+export const MobileProviders: FC<MobileProvidersProps> = ({ children, skipLogin }) => {
+  const AdminProviderComponent = skipLogin ? React.Fragment : AdminProvider;
 
   return (
     <AdminProviderComponent>
       <MobileTitleProvider>
-        <MobileRoutesContextProvider>{children}</MobileRoutesContextProvider>
+        <MobileRoutesProvider>{children}</MobileRoutesProvider>
       </MobileTitleProvider>
     </AdminProviderComponent>
   );

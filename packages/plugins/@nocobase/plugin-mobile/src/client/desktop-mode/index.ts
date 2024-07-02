@@ -8,3 +8,5 @@
  */
 
 export * from './DesktopMode';
+export * from './Header';
+export * from './Content';

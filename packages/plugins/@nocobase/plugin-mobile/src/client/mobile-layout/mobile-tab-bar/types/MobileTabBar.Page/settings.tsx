@@ -10,7 +10,7 @@
 import { SchemaSettings } from '@nocobase/client';
 import { editTabItemSettingsItem, removeTabItemSettingsItem } from '../../MobileTabBar.Item';
 
-export const mobileTabBarSchemaSettings = new SchemaSettings({
-  name: 'mobile:tab-bar:schema',
+export const mobileTabBarPageSettings = new SchemaSettings({
+  name: 'mobile:tab-bar:page',
   items: [editTabItemSettingsItem(), removeTabItemSettingsItem],
 });

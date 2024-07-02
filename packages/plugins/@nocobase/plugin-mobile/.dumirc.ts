@@ -8,8 +8,7 @@ export default defineConfig({
   mfsu: false,
   cacheDirectoryPath: `node_modules/.docs-mobile-cache`,
   alias: {
-    ...umiConfig.alias,
-    "demos": require('path').resolve(__dirname, 'src/client/demoUtils'),
+    ...umiConfig.alias
   },
   resolve: {
     atomDirs: [

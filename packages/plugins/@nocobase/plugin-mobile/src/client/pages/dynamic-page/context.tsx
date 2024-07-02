@@ -28,7 +28,7 @@ export const MobilePageContext = createContext<MobilePageContextProps>(null);
 MobilePageContext.displayName = 'MobilePageContext';
 
 export interface MobilePageProviderProps extends MobilePageContextProps {
-  children: React.ReactNode;
+  children?: React.ReactNode;
 }
 
 export const MobilePageProvider: FC<MobilePageProviderProps> = ({ children, ...props }) => {

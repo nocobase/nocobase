@@ -16,7 +16,7 @@ import { DesktopMode } from '../desktop-mode/DesktopMode';
 
 export const Mobile = () => {
   const mobilePlugin = usePlugin(PluginMobileClient);
-  const RouterComponent = mobilePlugin.getRouterComponent();
+  const MobileRouter = mobilePlugin.getRouterComponent();
 
   // 设置的移动端 meta
   React.useEffect(() => {
@@ -36,11 +36,11 @@ export const Mobile = () => {
       document.body.appendChild(fakeBody);
       document.body.removeChild(fakeBody);
     }
-  }, [isDesktop]);
+  }, []);
 
   return (
     <DesktopMode>
-      <RouterComponent />
+      <MobileRouter />
     </DesktopMode>
   );
 };

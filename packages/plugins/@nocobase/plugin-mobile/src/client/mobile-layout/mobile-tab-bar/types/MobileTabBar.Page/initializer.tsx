@@ -13,7 +13,7 @@ import { uid } from '@formily/shared';
 
 import { generatePluginTranslationTemplate } from '../../../../locale';
 import { getMobileTabBarItemSchemaFields } from '../../MobileTabBar.Item';
-import { useMobileRoutesContext } from '../../../../mobile-providers';
+import { useMobileRoutes } from '../../../../mobile-providers';
 import { getMobileTabBarPageItemData } from './schema';
 import { getMobilePageNavigationBarTabData, getMobilePageSchema } from '../../../../pages';
 
@@ -21,7 +21,7 @@ export const mobileTabBarSchemaInitializerItem: SchemaInitializerItemActionModal
   name: 'schema',
   type: 'actionModal',
   useComponentProps() {
-    const { resource, refresh, schemaResource } = useMobileRoutesContext();
+    const { resource, refresh, schemaResource } = useMobileRoutes();
     const navigate = useNavigate();
     return {
       isItem: true,
@@ -33,20 +33,20 @@ export const mobileTabBarSchemaInitializerItem: SchemaInitializerItemActionModal
           return;
         }
 
-        const schemaPageUid = uid();
+        const pageSchemaUid = uid();
         const firstTabUid = uid();
-        const url = `/schema/${schemaPageUid}`;
+        const url = `/schema/${pageSchemaUid}`;
 
         // 先创建 TabBar item
         const { data } = await resource.create({
-          values: getMobileTabBarPageItemData({ url, schemaPageUid: schemaPageUid, values }),
+          values: getMobileTabBarPageItemData({ url, pageSchemaUid: pageSchemaUid, values }),
         });
 
         // 创建空页面
         await schemaResource.insertAdjacent({
           resourceIndex: 'mobile',
           position: 'beforeEnd',
-          values: getMobilePageSchema(schemaPageUid, firstTabUid),
+          values: getMobilePageSchema(pageSchemaUid, firstTabUid),
         });
 
         // 创建 TabBar item 的第一个 tab

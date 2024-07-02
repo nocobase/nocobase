@@ -10,12 +10,12 @@
 import React from 'react';
 import { useParams } from 'react-router-dom';
 import { RemoteSchemaComponent } from '@nocobase/client';
-import { useMobileRoutesContext } from '../../../mobile-providers';
+import { useMobileRoutes } from '../../../mobile-providers';
 
 export const MobilePageContent = () => {
   const { tabSchemaUid } = useParams();
-  const { activeTabBarItem } = useMobileRoutesContext();
-  // 如果 URL 中有 tabSchemaUid，则使用 tabSchemaUid，否则使用第一个 tab 的 schemaPageUid
+  const { activeTabBarItem } = useMobileRoutes();
+  // 如果 URL 中有 tabSchemaUid，则使用 tabSchemaUid，否则使用第一个 tab 的 pageSchemaUid
   return (
     <div style={{ maxWidth: '100%', overflowX: 'hidden' }}>
       <RemoteSchemaComponent

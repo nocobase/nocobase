@@ -19,10 +19,10 @@ export function getMobilePageContentSchema(firstTabUid: string) {
   };
 }
 
-export function getPageContentTabSchema(schemaPageUid: string) {
+export function getPageContentTabSchema(pageSchemaUid: string) {
   return {
     type: 'void',
-    'x-uid': schemaPageUid,
+    'x-uid': pageSchemaUid,
     'x-async': true,
     'x-component': 'Grid',
     'x-initializer': mobileAddBlockInitializer.name,

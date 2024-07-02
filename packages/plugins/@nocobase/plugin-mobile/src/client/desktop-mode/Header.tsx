@@ -14,13 +14,12 @@ import { QrcodeOutlined } from '@ant-design/icons';
 
 import { usePluginTranslation } from '../locale';
 import { useSize } from './sizeContext';
-import { DesignableSwitch, useToken } from '@nocobase/client';
+import { DesignableSwitch } from '@nocobase/client';
 
 export const DesktopModeHeader: FC = () => {
   const { t } = usePluginTranslation();
   const { size, setSize } = useSize();
   const [activeType, setActiveType] = React.useState('mobile');
-  const { token } = useToken();
 
   return (
     <div
@@ -39,12 +38,14 @@ export const DesktopModeHeader: FC = () => {
             borderRadius: '0.3em',
             gap: '0.3em',
           }}
+          data-testid="desktop-mode-size-switch"
         >
           <svg
             onClick={() => {
               setActiveType('pad');
               setSize({ width: 768, height: size.height });
             }}
+            data-testid="desktop-mode-size-pad"
             style={{ color: activeType == 'pad' ? 'var(--adm-color-primary)' : '', cursor: 'pointer' }}
             xmlns="http://www.w3.org/2000/svg"
             width="24"
@@ -65,6 +66,7 @@ export const DesktopModeHeader: FC = () => {
               setActiveType('mobile');
               setSize({ width: 375, height: size.height });
             }}
+            data-testid="desktop-mode-size-mobile"
             style={{ color: activeType == 'mobile' ? 'var(--adm-color-primary)' : '', cursor: 'pointer' }}
             xmlns="http://www.w3.org/2000/svg"
             width="24"
@@ -81,7 +83,7 @@ export const DesktopModeHeader: FC = () => {
           </svg>
         </div>
         <Popover content={<QRCode value={window.location.href} bordered={false} />}>
-          <QrcodeOutlined style={{ fontSize: '24px', cursor: 'pointer' }} />
+          <QrcodeOutlined style={{ fontSize: '24px', cursor: 'pointer' }} data-testid="desktop-mode-qrcode" />
         </Popover>
       </div>
     </div>

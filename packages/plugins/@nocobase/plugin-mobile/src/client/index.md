@@ -3,7 +3,6 @@
 ## 目录
 
 - `providers`：主应用的 providers
-  - `MobileCheckerProvider`：如果当前路径为 `/admin` 且是移动端，则跳转到 `/mobile` ？
 - `mobile-providers`：移动端内置的 `providers`
   - `context`：mobile 的全局上下文
     - `mobileTitle`：用于设置 mobile title
@@ -14,10 +13,7 @@
     - `MobileRoutesProvider` 对应上面的 `mobileRoutes`
 - `desktop-mode`：桌面模式
 - `js-bridge`：JS Bridge
-- `mobile`：移动端入口组件，主要是渲染 `Routes`
-  - `<DesktopMode>
-      <RouterComponent /> // 移动端路由实例
-    </DesktopMode>`
+- `mobile`：移动端入口组件，主要是渲染移动端 `Routes`
 - `mobile-layout`：移动端 Layout
   - `MobilePageOutlet`：页面内容区域
   - `mobile-tab-bar`：底部 TabBar
@@ -38,19 +34,20 @@
 
 ## 嵌套关系
 
-
 ### 全局嵌套关系
 
 ```tsx | pure
-<Mobile> // 主要作用：渲染 Routes
-  <Routers>
-    <MobileLayout> // 主要作用：提供移动端上下文和布局
+<Mobile> // 渲染移动端 Routes
+  <MobileRouter>
+    <MobileLayout> // 提供移动端上下文和布局
       <MobileProviders>
-        <MobilePageOutlet /> // 主要的页面内容
-        <MobileTabBar />
+        <RemoteSchemaComponent uid='nocobase-mobile'>
+          <MobilePageOutlet /> // 页面内容
+          <MobileTabBar /> // 底部 TabBar
+        </RemoteSchemaComponent>
       </MobileProviders>
     </MobileLayout>
-  </Routes>
+  </MobileRouter>
 </Mobile>
 ```
 
@@ -72,12 +69,12 @@ mobileRouter.add('mobile', {
 ### 动态 schema 页面的嵌套关系
 
 ```tsx | pure
-<MobilePage> // react-router 匹配的 Schema 页面 router.add('/schema/:schemaPageUid', { Component: 'MobilePage' })
-  <RemoteSchemaComponent uid={params.schemaPageUid}> // 通过 URL 获取 uid，加载整个页面的 Schema
+<MobilePage> // react-router 匹配的 Schema 页面 router.add('/schema/:pageSchemaUid', { Component: 'MobilePage' })
+  <RemoteSchemaComponent uid={params.pageSchemaUid}> // 通过 URL 获取 uid，加载整个页面的 Schema
     <MobilePageProvider> // 提供页面级别的上下文
       <MobilePageNavigationBar /> // 顶部导航栏
       <MobilePageContent> // 页面内容区
-        <RemoteSchemaComponent uid={params.tabSchemaId} /> // `/schema/:schemaPageUid/tabs/:tabSchemaUid` 读取 `tabSchemaUid` 渲染对应的 Tab 页面
+        <RemoteSchemaComponent uid={params.tabSchemaId} /> // `/schema/:pageSchemaUid/tabs/:tabSchemaUid` 读取 `tabSchemaUid` 渲染对应的 Tab 页面
       </MobilePageContent>
     </MobilePageProvider>
   </RemoteSchemaComponent>
@@ -87,14 +84,14 @@ mobileRouter.add('mobile', {
 ```tsx | pure
 // schema 页面路由
 mobileRouter.add('mobile.schema.page', {
-  path: '/schema/:schemaPageUid',
+  path: '/schema/:pageSchemaUid',
   Component: 'MobilePage',
 });
 
 
 // Tab 路由
 mobileRouter.add('mobile.schema.tabs.page', {
-  path: '/schema/:schemaPageUid/tabs/:tabSchemaUid',
+  path: '/schema/:pageSchemaUid/tabs/:tabSchemaUid',
   Component: 'MobilePage',
 });
 ```
@@ -102,25 +99,28 @@ mobileRouter.add('mobile.schema.tabs.page', {
 ## 路由接口
 
 ```ts
-// 核心是 URL 和 options
 export interface TabBarItem {
   id: number;
   url?: string;
+  sort?: number;
   options: ISchema;
   parentId?: number;
   children?: TabItem[];
 }
 
-// 核心是 URL 和 options
 export interface TabItem {
   id: number;
   url?: string;
-  options: { title: string; schemaPageUid: string };
+  sort?: number;
+  options: { title: string; pageSchemaUid: string };
   parentId?: number;
 }
 ```
 
-为了统一 Schema 链接和普通的 URL 链接，我们都将 `url` 放到了最外层，这样方便查找和匹配。
+数据结构中 `url` 和 `options` 是关键，`url` 用于匹配路由，`options` 用于渲染具体的内容。
+
+对于 `TabBar` 而言，`options` 是 `TabBarItem` 对应的 `schema`。
+对于 `Tabs` 而言，`options` 只要是存着对应的页面 `schemaUid` 和 `title`。
 
 ```json
 [
@@ -134,13 +134,13 @@ export interface TabItem {
             "x-toolbar-props": {
                 "draggable": false
             },
-            "x-settings": "mobile:tab-bar:schema",
+            "x-settings": "mobile:tab-bar:page",
             "x-component": "MobileTabBar.Page",
             "x-component-props": {
                 "title": "Home",
                 "icon": "alipayoutlined",
                 "selectedIcon": "alipaycircleoutlined",
-                "schemaPageUid": "3bz0ki59s8f"
+                "pageSchemaUid": "3bz0ki59s8f"
             }
         },
         "children": [
@@ -152,10 +152,8 @@ export interface TabItem {
                     "title": "Unnamed",
                     "tabSchemaId": "aql952klkmw"
                 },
-                "__index": "0.children.0"
             }
         ],
-        "__index": "0"
     },
     {
         "id": 5,
@@ -167,12 +165,12 @@ export interface TabItem {
             "x-toolbar-props": {
                 "draggable": false
             },
-            "x-settings": "mobile:tab-bar:schema",
+            "x-settings": "mobile:tab-bar:page",
             "x-component": "MobileTabBar.Page",
             "x-component-props": {
                 "title": "Message",
                 "icon": "aliwangwangoutlined",
-                "schemaPageUid": "e3t0g3kql0u"
+                "pageSchemaUid": "e3t0g3kql0u"
             }
         },
         "children": [
@@ -182,9 +180,8 @@ export interface TabItem {
                 "url": "/schema/e3t0g3kql0u/tabs/5av5oolwlve",
                 "options": {
                     "title": "未读消息",
-                    "schemaPageUid": "5av5oolwlve"
+                    "pageSchemaUid": "5av5oolwlve"
                 },
-                "__index": "1.children.0"
             },
             {
                 "id": 8,
@@ -192,12 +189,10 @@ export interface TabItem {
                 "url": "/schema/e3t0g3kql0u/tabs/2w3k326y33n",
                 "options": {
                     "title": "已读消息",
-                    "schemaPageUid": "2w3k326y33n"
+                    "pageSchemaUid": "2w3k326y33n"
                 },
-                "__index": "1.children.1"
             }
         ],
-        "__index": "1"
     },
     {
         "id": 7,
@@ -220,7 +215,6 @@ export interface TabItem {
                 "icon": "githuboutlined"
             }
         },
-        "__index": "2"
     }
 ]
 ```
@@ -360,20 +354,20 @@ export interface TabItem {
   - 弹出层
 - 代码设计：移动端是否需要自己的 providers manager ？是将 application 的抽象成 ProvidersManager 还是复制粘贴代码？
 - 样式：内容区 padding/margin 是否需要，让其距离顶部和底部都有些距离？
-- 样式：add block 需要添加哪些区块，还是空着？
 
 - [x] `.Schema` -> `.Page`
 - [x] 加排序字段
 - [x] tabBar 拖拽
 - [x] tabs 拖拽
-- url 校验的问题
+- header 的样式？
 - 原 admin 弹窗改为子页面（等中合），back 等一起开发
 - page 和 第一个区块覆盖的问题
+- 功能：add block 需要添加哪些区块，还是空着？
+
 
 ## 待做任务
 
 - [x] settings 页面
-  - header 的样式？
 - [x] tabBar 样式优化
 - [x] navigationBar 样式优化
 - [x] loading 效果
@@ -386,10 +380,11 @@ export interface TabItem {
 - [x] 内容超过一屏幕，以及没有内容的情况
 - [x] package.json & Readme 的描述
 - [x] 主题色
+- [x] 多语言
+- [x] API 文档
 - [-] JS bridge(没测)
-- 多语言
-- 各个部分的文档
 - 更新文档
+- 使用文档
 - unit test
 - e2e test
 - 新移动端 Tab 的插件开发示例

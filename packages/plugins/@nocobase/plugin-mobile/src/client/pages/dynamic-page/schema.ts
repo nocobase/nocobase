@@ -11,11 +11,11 @@ import { getMobilePageContentSchema } from './content';
 import { mobilePageNavigationBarSchema } from './navigation-bar';
 import { mobilePageSettings } from './settings';
 
-export function getMobilePageSchema(schemaPageUid: string, firstTabUid: string) {
+export function getMobilePageSchema(pageSchemaUid: string, firstTabUid: string) {
   const pageSchema = {
     type: 'void',
-    name: schemaPageUid,
-    'x-uid': schemaPageUid,
+    name: pageSchemaUid,
+    'x-uid': pageSchemaUid,
     'x-component': 'MobilePageProvider',
     'x-settings': mobilePageSettings.name,
     'x-decorator': 'BlockItem',

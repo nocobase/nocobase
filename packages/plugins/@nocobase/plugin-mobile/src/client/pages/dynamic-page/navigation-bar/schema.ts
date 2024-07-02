@@ -36,9 +36,27 @@ export const getActionBarSchemaByPosition = (
   style = {},
   showInitializer = true,
 ) => {
-  const actionBar = schema.properties['actionBar']; // 对应上面 schema 的 actionBar 结构
+  const actionBar = schema?.properties?.['actionBar']; // 对应上面 schema 的 actionBar 结构
+  if (!actionBar) {
+    return {};
+  }
+  const properties = Object.keys(actionBar.properties || {}).reduce((properties, key) => {
+    const actionSchema = actionBar.properties[key];
+    if ((actionSchema['x-position'] || 'left') === position) {
+      properties[key] = actionSchema;
+    }
+    return properties;
+  }, {});
+
+  if (!showInitializer) {
+    return {
+      type: 'void',
+      properties,
+    };
+  }
+
   return {
-    ...(showInitializer ? actionBar : omit(actionBar, ['x-initializer'])),
+    ...actionBar,
     'x-initializer-props': {
       style,
       wrap(actionSchema: ISchema) {
@@ -48,12 +66,6 @@ export const getActionBarSchemaByPosition = (
         };
       },
     },
-    properties: Object.keys(actionBar.properties || {}).reduce((properties, key) => {
-      const actionSchema = actionBar.properties[key];
-      if ((actionSchema['x-position'] || 'left') === position) {
-        properties[key] = actionSchema;
-      }
-      return properties;
-    }, {}),
+    properties,
   };
 };

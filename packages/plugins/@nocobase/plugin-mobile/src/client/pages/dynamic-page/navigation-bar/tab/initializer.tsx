@@ -18,13 +18,13 @@ import {
 
 import { getPageContentTabSchema } from '../../content';
 import { getMobilePageNavigationBarTabData } from './schema';
-import { useMobileRoutesContext } from '../../../../mobile-providers';
+import { useMobileRoutes } from '../../../../mobile-providers';
 import { generatePluginTranslationTemplate } from '../../../../locale';
 
 export const mobilePageTabInitializer = new SchemaInitializer({
   name: 'mobile:page:tab',
   Component: () => {
-    const { refresh, resource, activeTabBarItem } = useMobileRoutesContext();
+    const { refresh, resource, activeTabBarItem } = useMobileRoutes();
     const { insert } = useSchemaInitializer();
 
     return (

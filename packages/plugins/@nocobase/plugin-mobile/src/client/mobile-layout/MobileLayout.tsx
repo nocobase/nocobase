@@ -8,17 +8,20 @@
  */
 
 import React, { FC } from 'react';
+import { RemoteSchemaComponent, usePlugin } from '@nocobase/client';
 
+import { PluginMobileClient } from '../index';
 import { MobileProviders } from '../mobile-providers';
-import { RemoteSchemaComponent } from '@nocobase/client';
 
 export interface MobileLayoutProps {
   children?: React.ReactNode;
 }
 
 export const MobileLayout: FC<MobileLayoutProps> = () => {
+  const mobilePlugin = usePlugin(PluginMobileClient);
+
   return (
-    <MobileProviders>
+    <MobileProviders skipLogin={mobilePlugin?.options?.config?.skipLogin}>
       <RemoteSchemaComponent uid="nocobase-mobile" />
     </MobileProviders>
   );

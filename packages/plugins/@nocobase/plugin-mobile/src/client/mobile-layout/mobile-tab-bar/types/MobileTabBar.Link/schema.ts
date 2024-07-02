@@ -20,9 +20,6 @@ export function getMobileTabBarLinkItemData(options: GetMobileTabBarLinkItemData
     options: {
       type: 'void',
       'x-decorator': 'BlockItem',
-      'x-toolbar-props': {
-        // draggable: false,
-      },
       'x-settings': 'mobile:tab-bar:link',
       'x-component': 'MobileTabBar.Link',
       'x-component-props': {

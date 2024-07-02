@@ -8,14 +8,13 @@
  */
 
 import { Spin } from 'antd';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import React, { createContext, useContext, useEffect, useMemo } from 'react';
-import { APIClient, ISchema, useAPIClient, usePlugin, useRequest } from '@nocobase/client';
+import { APIClient, ISchema, useAPIClient, useRequest } from '@nocobase/client';
 
 import type { IResource } from '@nocobase/sdk';
 
 import { useMobileTitle } from './MobileTitle';
-import { PluginMobileClient } from '../../index';
 
 export interface TabBarItem {
   id: number;
@@ -47,27 +46,9 @@ export interface MobileRoutesContextValue {
 export const MobileRoutesContext = createContext<MobileRoutesContextValue>(null);
 MobileRoutesContext.displayName = 'MobileRoutesContext';
 
-export const useMobileRoutesContext = () => {
+export const useMobileRoutes = () => {
   return useContext(MobileRoutesContext);
 };
-
-function useHomeNavigate(routeList: TabBarItem[]) {
-  const { pathname } = useLocation();
-  const navigate = useNavigate();
-  const mobilePlugin = usePlugin(PluginMobileClient);
-
-  // 如果是根路径且没有自定义首页，则跳转到第一个 tab
-  useEffect(() => {
-    if (!routeList.length || pathname !== '/') return;
-    const routesObject = mobilePlugin.mobileRouter.getRoutes();
-    const hasCustomHomePage = Object.values(routesObject).find((route) => {
-      return route.path === '/' && (route.Component !== 'MobileLayout' || route.element);
-    });
-    if (!hasCustomHomePage) {
-      navigate(routeList[0].url);
-    }
-  }, [pathname, routeList]);
-}
 
 function useActiveTabBar(routeList: TabBarItem[]) {
   const { pathname } = useLocation();
@@ -93,17 +74,18 @@ function useActiveTabBar(routeList: TabBarItem[]) {
 }
 
 function useTitle(activeTabBar: TabBarItem) {
-  const { setTitle } = useMobileTitle();
+  const context = useMobileTitle();
   useEffect(() => {
+    if (!context) return;
     if (activeTabBar) {
       const title = activeTabBar.options.title || activeTabBar.options?.['x-component-props']?.title;
-      setTitle(title);
+      context.setTitle(title);
       document.title = title;
     }
-  }, [activeTabBar]);
+  }, [activeTabBar, context]);
 }
 
-export const MobileRoutesContextProvider = ({ children }) => {
+export const MobileRoutesProvider = ({ children }) => {
   const api = useAPIClient();
   const resource = useMemo(() => api.resource('mobileRoutes'), [api]);
   const schemaResource = useMemo(() => api.resource('uiSchemas'), [api]);
@@ -116,8 +98,6 @@ export const MobileRoutesContextProvider = ({ children }) => {
   const { activeTabBarItem, activeTabItem } = useActiveTabBar(routeList);
 
   useTitle(activeTabBarItem);
-
-  useHomeNavigate(routeList);
 
   if (loading) {
     return (

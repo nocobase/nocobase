@@ -18,11 +18,12 @@ export const MobileTitleContext = createContext<MobileTitleContextProps>(null);
 MobileTitleContext.displayName = 'MobileTitleContext';
 
 export interface MobileTitleProviderProps {
-  children: React.ReactNode;
+  children?: React.ReactNode;
+  title?: string;
 }
 
-export const MobileTitleProvider: FC<MobileTitleProviderProps> = ({ children }) => {
-  const [title, setTitle] = React.useState<string | undefined>(undefined);
+export const MobileTitleProvider: FC<MobileTitleProviderProps> = ({ children, title: defaultTitle }) => {
+  const [title, setTitle] = React.useState<string | undefined>(defaultTitle);
   return <MobileTitleContext.Provider value={{ title, setTitle }}>{children}</MobileTitleContext.Provider>;
 };
 

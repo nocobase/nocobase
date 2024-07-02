@@ -9,11 +9,11 @@
 
 import React from 'react';
 import { Navigate } from 'react-router-dom';
-import { useMobileRoutesContext } from '../../mobile-providers';
+import { useMobileRoutes } from '../../mobile-providers';
 import { isInnerLink } from '../../utils';
 
 export const MobileHomePage = () => {
-  const { routeList } = useMobileRoutesContext();
+  const { routeList } = useMobileRoutes();
   const firstValidTabBar = routeList.find((tab) => tab.url && isInnerLink(tab.url));
   if (firstValidTabBar) {
     return <Navigate to={firstValidTabBar.url} replace={true} />;
