@@ -6,51 +6,177 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
+import { LeftOutlined, FileImageOutlined } from '@ant-design/icons';
+import { Html5Qrcode } from 'html5-qrcode';
+import React, { useState, useEffect, useRef } from 'react';
+import { useActionContext } from '@nocobase/client';
+import { useTranslation } from 'react-i18next';
+import { ScanBox } from './ScanBox';
+import { useScanner } from './useScanner';
 
-import { Html5QrcodeScanner } from 'html5-qrcode';
-import { useNavigate } from 'react-router-dom';
-import React, { useEffect } from 'react';
+const qrcodeEleId = 'qrcode';
+export const QRCodeScannerInner = (props) => {
+  const containerRef = useRef<HTMLDivElement>();
+  const imgUploaderRef = useRef<HTMLInputElement>();
+  const { t } = useTranslation('block-workbench');
+  const [originVideoSize, setOriginVideoSize] = useState({ width: 0, height: 0 });
+  const vw = Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0);
+  const vh = Math.max(document.documentElement.clientHeight || 0, window.innerHeight || 0);
 
-const qrcodeRegionId = 'html5qr-code-full-region';
+  const { startScanFile } = useScanner({
+    onScannerSizeChanged: setOriginVideoSize,
+    elementId: qrcodeEleId,
+  });
 
-// Creates the configuration object for Html5QrcodeScanner.
-const createConfig = (props) => {
-  const config: any = {};
-  if (props.fps) {
-    config.fps = props.fps;
-  }
-  if (props.qrbox) {
-    config.qrbox = props.qrbox;
-  }
-  if (props.aspectRatio) {
-    config.aspectRatio = props.aspectRatio;
-  }
-  if (props.disableFlip !== undefined) {
-    config.disableFlip = props.disableFlip;
-  }
-  return config;
+  const getBoxStyle = (): React.CSSProperties => {
+    const size = Math.floor(Math.min(vw, vh) * 0.6);
+    return {
+      left: `${(vw - size) / 2}px`,
+      top: `${(vh - size) / 2}px`,
+      position: 'fixed',
+      width: `${size}px`,
+      height: `${size}px`,
+    };
+  };
+
+  const onImgBtnClick = () => {
+    if (imgUploaderRef.current) imgUploaderRef.current.click();
+  };
+  const onImgUploaded = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (files.length > 0) {
+      const file = files[0];
+      if (file.size < 1000000) startScanFile(file);
+      else alert(t('The image size is too large. Please compress it to below 1MB before uploading'));
+    }
+  };
+
+  useEffect(() => {
+    document.documentElement.style.overscrollBehavior = 'none';
+    return () => {
+      document.documentElement.style.overscrollBehavior = 'default';
+    };
+  }, []);
+
+  useEffect(() => {
+    const { width, height } = originVideoSize;
+    const vw = Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0);
+    const vh = Math.max(document.documentElement.clientHeight || 0, window.innerHeight || 0);
+    if (width > 0 && height > 0 && height < vh) {
+      const zoomRatio = vh / height;
+      const zoomedWidth = Math.floor(zoomRatio * width);
+      const video = document.getElementsByTagName('video')[0];
+      video.style.height = `${vh}px`;
+      video.style.width = `${zoomedWidth}px`;
+      containerRef.current.style.left = `${(vw - zoomedWidth) / 2}px`;
+      containerRef.current.style.position = `absolute`;
+    }
+  }, [originVideoSize]);
+
+  const ToolBar = () => {
+    return (
+      <div style={{ position: 'absolute', bottom: '20px', left: '20px', padding: '10px 60px' }}>
+        <div
+          style={{
+            color: 'white',
+            width: '40px',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+          }}
+        >
+          <FileImageOutlined style={imageBtnStyle} onClick={onImgBtnClick} />
+          {t('Album')}
+          <input
+            ref={imgUploaderRef}
+            type="file"
+            accept="image/*"
+            onChange={onImgUploaded}
+            style={{ visibility: 'hidden' }}
+          />
+        </div>
+      </div>
+    );
+  };
+  const imageBtnStyle: React.CSSProperties = {
+    zIndex: '1003',
+    fontSize: '1.8em',
+    fontWeight: 'bold',
+  };
+
+  return (
+    <>
+      <div ref={containerRef} id={qrcodeEleId} style={{ position: 'absolute' }} />
+      <ScanBox style={{ ...getBoxStyle() }} />
+      <ToolBar />
+    </>
+  );
 };
 
 export const QRCodeScanner = (props) => {
-  const navigate = useNavigate();
+  const { visible, setVisible } = useActionContext();
+  const [cameraAvaliable, setCameraAvaliable] = useState(false);
+  const { t } = useTranslation('block-workbench');
+
   useEffect(() => {
-    // when component mounts
-    const config = createConfig(props);
-    const verbose = props.verbose === true;
-    // Suceess callback is required.
-    const qrCodeSuccessCallback = (decodedText, decodedResult) => {
-      navigate(decodedText);
+    const getCameras = async () => {
+      try {
+        const res = await Html5Qrcode.getCameras();
+        if (res.length === 0) alert(t('No camera device detected'));
+        else setCameraAvaliable(true);
+      } catch (error) {
+        const errMsgMap = {
+          NotFoundError: t('No camera device detected'),
+          NotAllowedError: t('You have not granted permission to use the camera'),
+        };
+        console.log(error);
+        const msg = errMsgMap[error.name];
+        alert(msg ?? error);
+        setCameraAvaliable(false);
+        setVisible(false);
+      }
     };
-    const html5QrcodeScanner = new Html5QrcodeScanner(qrcodeRegionId, config, verbose);
-    html5QrcodeScanner.render(qrCodeSuccessCallback, props.qrCodeErrorCallback);
+    if (visible && !cameraAvaliable) getCameras();
+  }, [visible, cameraAvaliable, setVisible, t]);
 
-    // cleanup function when component will unmount
-    return () => {
-      html5QrcodeScanner.clear().catch((error) => {
-        console.error('Failed to clear html5QrcodeScanner. ', error);
-      });
-    };
-  }, [navigate, props]);
+  const style: React.CSSProperties = {
+    position: 'fixed',
+    width: '100%',
+    height: '100%',
+    background: 'black',
+    zIndex: '1001',
+    top: 0,
+    left: 0,
+    overflow: 'hidden',
+  };
+  const backIconStyle: React.CSSProperties = {
+    position: 'absolute',
+    top: '22px',
+    left: '20px',
+    zIndex: '1003',
+    color: 'white',
+    fontSize: '1.8em',
+    fontWeight: 'bold',
+  };
 
-  return <div id={qrcodeRegionId} />;
+  const titleStyle: React.CSSProperties = {
+    position: 'absolute',
+    color: 'white',
+    fontSize: '1.5em',
+    left: 0,
+    right: 0,
+    top: '20px',
+    zIndex: '1002',
+    marginLeft: 'auto',
+    marginRight: 'auto',
+    textAlign: 'center',
+  };
+
+  return visible && cameraAvaliable ? (
+    <div style={style}>
+      <QRCodeScannerInner />
+      <LeftOutlined style={backIconStyle} onClick={() => setVisible(false)} />
+      <div style={titleStyle}>{t('Scan QR code')}</div>
+    </div>
+  ) : null;
 };
