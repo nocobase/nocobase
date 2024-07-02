@@ -20,6 +20,8 @@ export abstract class SyncAdapter {
 
 export type SyncMessageData = Record<string, any>;
 
+export type SyncEventCallback = (message: SyncMessageData) => void;
+
 export type SyncMessage = {
   namespace: string;
   nodeId: string;
@@ -41,13 +43,12 @@ export class SyncManager {
     const uniqueMessages = uniqWith(
       this.buffer.concat(
         messages
-          .filter((item) => item.message.nodeId !== this.nodeId)
-          .map(({ message: { nodeId, ...message } }) => message),
+          .filter((item) => item.message.nodeId !== this.nodeId && item.message.appName === this.app.name)
+          .map(({ message: { nodeId, appName, ...message } }) => message),
       ),
       isEqual,
     );
     this.buffer = uniqueMessages;
-    console.log('------- buffer', this.buffer);
 
     this.flushTimer = setTimeout(() => {
       this.buffer.forEach(({ namespace, ...message }) => {
@@ -58,7 +59,7 @@ export class SyncManager {
 
   constructor(app: Application) {
     this.app = app;
-    this.nodeId = process.env.NODE_ID || randomUUID();
+    this.nodeId = `${process.env.NODE_ID || randomUUID()}-${process.pid}`;
   }
 
   public async use(adapter: SyncAdapter) {
@@ -72,24 +73,21 @@ export class SyncManager {
     this.adapter.onSync(this.onSync);
   }
 
-  public subscribe(namespace, callback) {
+  public subscribe(namespace: string, callback: SyncEventCallback) {
     this.eventEmitter.on(namespace, callback);
   }
 
-  public unsubscribe(namespace, callback) {
+  public unsubscribe(namespace: string, callback: SyncEventCallback) {
     this.eventEmitter.off(namespace, callback);
   }
 
   /**
    * Publish a message to the sync manager
-   * @param namespace {string}
-   * @param data {SyncMessageData}
-   * @returns {void}
    */
   public publish(namespace: string, data: SyncMessageData) {
     if (!this.adapter) {
       return;
     }
-    this.adapter.publish({ ...data, nodeId: this.nodeId, namespace });
+    this.adapter.publish({ ...data, nodeId: this.nodeId, appName: this.app.name, namespace });
   }
 }
