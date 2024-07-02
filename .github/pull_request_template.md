@@ -23,6 +23,8 @@ and provide some testing suggestions.
 ### Showcase
 <!-- Including any screenshots of the changes. -->
 
+### Related issues
+
 ### Changelog
 
 | Language   | Changelog |
