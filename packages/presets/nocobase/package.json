@@ -24,6 +24,7 @@
     "@nocobase/plugin-calendar": "1.2.11-alpha",
     "@nocobase/plugin-charts": "1.2.11-alpha",
     "@nocobase/plugin-client": "1.2.11-alpha",
+    "@nocobase/plugin-collection-tree": "1.2.11-alpha",
     "@nocobase/plugin-collection-sql": "1.2.11-alpha",
     "@nocobase/plugin-data-source-main": "1.2.11-alpha",
     "@nocobase/plugin-data-source-manager": "1.2.11-alpha",

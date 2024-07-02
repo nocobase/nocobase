@@ -11,6 +11,9 @@ import lodash from 'lodash';
 import { FindOptions, Repository } from '../../repository';
 import Database from '../../database';
 import { Collection } from '../../collection';
+import { Model } from '../../model';
+import { FindAndCountOptions, QueryTypes } from 'sequelize';
+import { assign } from '@nocobase/utils';
 
 export class AdjacencyListRepository extends Repository {
   static queryParentSQL(options: {
@@ -48,9 +51,9 @@ export class AdjacencyListRepository extends Repository {
   }
 
   async find(options: FindOptions & { addIndex?: boolean } = {}): Promise<any> {
-    if (options.raw || !options.tree) {
-      return await super.find(options);
-    }
+    // if (options.raw || !options.tree) {
+    //   return await super.find(options);
+    // }
 
     const collection = this.collection;
     const primaryKey = collection.model.primaryKeyAttribute;
@@ -167,6 +170,156 @@ export class AdjacencyListRepository extends Repository {
 
     treeArray.forEach((tree, i) => {
       traverse(tree, i);
+    });
+  }
+
+  async findAndCount(options?: FindAndCountOptions): Promise<[Model[], number]> {
+    let totalCount = 0;
+    let datas = [];
+    if (Object.values(lodash.get(options, 'filter', {})).length === 0) {
+      options = lodash.omit(options, ['filterByTk']);
+      assign(options, {
+        filter: {
+          parentId: null,
+        },
+      });
+      const [_, totalCountTmp] = await super.findAndCount(options);
+      totalCount = totalCountTmp;
+      datas = await this.find(options);
+    } else {
+      const limit = options.limit;
+      const offset = options.offset;
+      const optionsTmp = lodash.omit(options, ['limit', 'offset', 'filterByTk']);
+      const collection = this.collection;
+      const primaryKey = collection.model.primaryKeyAttribute;
+      const childrenKey = collection.treeChildrenField?.name ?? 'children';
+      const filterNodes = await super.find(optionsTmp);
+      const filterIds = filterNodes.map((node) => node[primaryKey]);
+      let rootIds: any[] = [];
+      if (filterIds.length > 0) {
+        rootIds = await this.queryRootIDs(filterIds, collection);
+      }
+      totalCount = rootIds.length;
+      options = lodash.omit(optionsTmp, ['filter']);
+      assign(options, {
+        filter: {
+          [primaryKey]: {
+            $in: rootIds,
+          },
+        },
+      });
+      assign(options, {
+        limit: limit,
+        offset: offset,
+      });
+      datas = await this.find(options);
+
+      const nodeIds = [];
+      for (const id of filterIds) {
+        if (!rootIds.includes(id)) {
+          nodeIds.push(id);
+        }
+      }
+
+      const treeNodes = this.flattenTree(datas, rootIds, filterIds, childrenKey);
+      const nodeIdMap = {};
+      for (const node of treeNodes) {
+        delete node.dataValues[childrenKey];
+        nodeIdMap[node.dataValues.id] = node;
+      }
+
+      const nodeDatas = await this.queryRootDatas(nodeIds);
+      const nodeRootPkNodesMap = {};
+      for (const nodeData of nodeDatas) {
+        if (nodeRootPkNodesMap[nodeData.dataValues.rootPK]) {
+          nodeRootPkNodesMap[nodeData.dataValues.rootPK] = [
+            ...nodeRootPkNodesMap[nodeData.dataValues.rootPK],
+            nodeIdMap[nodeData.dataValues.nodePk],
+          ];
+        } else {
+          nodeRootPkNodesMap[nodeData.dataValues.rootPK] = [nodeIdMap[nodeData.dataValues.nodePk]];
+        }
+      }
+
+      for (const node of datas) {
+        if (nodeRootPkNodesMap[node.dataValues.id]) {
+          for (let index = 0; index < nodeRootPkNodesMap[node.dataValues.id].length; index++) {
+            if (
+              nodeRootPkNodesMap[node.dataValues.id][index].dataValues &&
+              nodeRootPkNodesMap[node.dataValues.id][index].dataValues.__index
+            ) {
+              const nodeTmp = lodash.cloneDeep(nodeRootPkNodesMap[node.dataValues.id][index]);
+              nodeRootPkNodesMap[node.dataValues.id][index] = {
+                ...nodeTmp.dataValues,
+                __index: `${node.dataValues.__index}.${childrenKey}.${index}`,
+              };
+            }
+            index = index++;
+          }
+          node.setDataValue(childrenKey, nodeRootPkNodesMap[node.dataValues.id]);
+        }
+      }
+    }
+    return [datas, totalCount];
+  }
+
+  private flattenTree(tree: any[], rootIds: any[], filterNodeIds: any[], childrenKey = 'children') {
+    const result = [];
+    for (let i = 0; i < tree.length; i++) {
+      const node = {
+        ...tree[i],
+        isRootPk: rootIds.includes(tree[i].dataValues.id),
+      };
+
+      if (tree[i].dataValues[childrenKey] && tree[i].dataValues[childrenKey].length > 0) {
+        const childNodes = this.flattenTree(tree[i].dataValues[childrenKey], rootIds, filterNodeIds, childrenKey);
+        for (const nodeData of childNodes) {
+          if (nodeData.isRootPk || filterNodeIds.includes(nodeData.dataValues.id)) {
+            result.push(nodeData);
+          }
+        }
+      }
+
+      if (node.isRootPk || filterNodeIds.includes(node.dataValues.id)) {
+        result.push(node);
+      }
+    }
+    return result;
+  }
+
+  private async queryRootDatas(nodePks) {
+    const collection = this.collection;
+    const pathTableName = `main_${collection.name}_path`;
+    const treeRepository = this.database.getRepository(pathTableName);
+    if (treeRepository) {
+      return await treeRepository.find({
+        filter: {
+          nodePk: {
+            $in: nodePks,
+          },
+        },
+      });
+    }
+    return [];
+  }
+
+  private async queryRootIDs(nodePks, collection) {
+    const pathTableName = `main_${collection.name}_path`;
+    const queryInterface = this.database.sequelize.getQueryInterface();
+    const q = queryInterface.quoteIdentifier.bind(queryInterface);
+    const datas = await this.database.sequelize.query(
+      `
+      SELECT DISTINCT(${q('rootPK')}) as ${q('rootId')}
+      FROM ${pathTableName}
+      WHERE ${q('nodePk')} IN (${nodePks.join(',')}) ;
+      `,
+      {
+        type: QueryTypes.SELECT,
+        raw: true,
+      },
+    );
+    return datas.map((data: any) => {
+      return data.rootId;
     });
   }
 
