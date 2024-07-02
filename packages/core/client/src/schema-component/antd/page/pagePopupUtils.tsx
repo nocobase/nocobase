@@ -108,7 +108,7 @@ export const usePagePopup = () => {
   const { value: parentPopupRecordData, collection: parentPopupRecordCollection } = useCurrentPopupRecord() || {};
   const getSourceId = useCallback(
     (_parentRecordData?: Record<string, any>) =>
-      (_parentRecordData || parentRecord?.data)?.[cm.getCollection(association?.split('.')[0])?.getPrimaryKey()],
+      (_parentRecordData || parentRecord?.data)?.[cm.getSourceKeyByAssociation(association)],
     [parentRecord, association],
   );
 
@@ -124,11 +124,7 @@ export const usePagePopup = () => {
       sourceId: string;
       tabKey?: string;
     }) => {
-      let _collection = collection;
-      if (association) {
-        _collection = cm.getCollection(association);
-      }
-      const filterByTK = recordData?.[_collection.getPrimaryKey()];
+      const filterByTK = cm.getFilterByTK(association || collection, recordData);
       return getPopupPathFromParams({
         popupuid: popupUid,
         filterbytk: filterByTK,
@@ -146,14 +142,15 @@ export const usePagePopup = () => {
       association,
       parentPopupRecord: !_.isEmpty(parentPopupRecordData)
         ? {
+            // TODO: 这里应该需要 association 的 值
             collection: parentPopupRecordCollection?.name,
-            filterByTk: parentPopupRecordData[parentPopupRecordCollection.getPrimaryKey()],
+            filterByTk: cm.getFilterByTK(parentPopupRecordCollection, parentPopupRecordData),
           }
         : undefined,
     };
 
     return _.omitBy(context, _.isNil) as PopupContext;
-  }, [dataSourceKey, collection, association, parentPopupRecordData, parentPopupRecordCollection]);
+  }, [dataSourceKey, collection, association, parentPopupRecordData, parentPopupRecordCollection, cm]);
 
   const openPopup = useCallback(
     ({
@@ -187,8 +184,9 @@ export const usePagePopup = () => {
         sourceId,
         parentPopupRecord: parentPopupRecordData
           ? {
+              // TODO: 这里应该需要 association 的 值
               collection: parentPopupRecordCollection?.name,
-              filterByTk: parentPopupRecordData[parentPopupRecordCollection.getPrimaryKey()],
+              filterByTk: cm.getFilterByTK(parentPopupRecordCollection, parentPopupRecordData),
             }
           : undefined,
       });
