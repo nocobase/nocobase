@@ -194,6 +194,7 @@ export class AdjacencyListRepository extends Repository {
       const filterIds = filterNodes.map((node) => node[primaryKey]);
       const rootIds = await this.queryRootIDS(filterIds, collection);
       totalCount = rootIds.length;
+      options = lodash.omit(optionsTmp, ['filter']);
       assign(options, {
         filter: {
           [primaryKey]: {
