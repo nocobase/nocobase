@@ -68,7 +68,7 @@ export class JsonFieldInterface extends CollectionFieldInterface {
       'x-disabled': `{{ disabledJSONB }}`,
     },
   };
-  filterable = {
-    operators: operators.string,
-  };
+  // filterable = {
+  //   operators: operators.string,
+  // };
 }
