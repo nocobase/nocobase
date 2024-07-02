@@ -79,8 +79,7 @@ export class AdjacencyListRepository extends Repository {
       return parentNodes;
     }
 
-    const rootIds = await this.queryRootIDS(parentIds, collection);
-    const sql = this.querySQL(rootIds, collection);
+    const sql = this.querySQL(parentIds, collection);
 
     const childNodes = await this.database.sequelize.query(sql, {
       type: 'SELECT',
@@ -175,6 +174,7 @@ export class AdjacencyListRepository extends Repository {
   }
 
   async findAndCount(options?: FindAndCountOptions): Promise<[Model[], number]> {
+    let totalCount = 0;
     if (Object.values(lodash.get(options, 'filter', {})).length === 0) {
       options = lodash.omit(options, ['filterByTk']);
       assign(options, {
@@ -182,10 +182,32 @@ export class AdjacencyListRepository extends Repository {
           parentId: null,
         },
       });
+      const [_, totalCountTmp] = await super.findAndCount(options);
+      totalCount = totalCountTmp;
+    } else {
+      const limit = options.limit;
+      const offset = options.offset;
+      const optionsTmp = lodash.omit(options, ['limit', 'offset', 'filterByTk']);
+      const collection = this.collection;
+      const primaryKey = collection.model.primaryKeyAttribute;
+      const filterNodes = await super.find(optionsTmp);
+      const filterIds = filterNodes.map((node) => node[primaryKey]);
+      const rootIds = await this.queryRootIDS(filterIds, collection);
+      totalCount = rootIds.length;
+      assign(options, {
+        filter: {
+          [primaryKey]: {
+            $in: rootIds,
+          },
+        },
+      });
+      assign(options, {
+        limit: limit,
+        offset: offset,
+      });
     }
-    const filterDatas = await this.find(options);
-    const [_, totalCount] = await super.findAndCount(options);
-    return [filterDatas, totalCount];
+    const filterData = await this.find(options);
+    return [filterData, totalCount];
   }
 
   private async queryRootIDS(nodePks, collection) {
@@ -203,7 +225,7 @@ export class AdjacencyListRepository extends Repository {
         raw: true,
       },
     );
-    return datas.map((data) => {
+    return datas.map((data: any) => {
       return data.rootId;
     });
   }
