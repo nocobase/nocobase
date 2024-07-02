@@ -71,7 +71,7 @@ export const moment2str = (value?: Dayjs | null, options: Moment2strOptions = {}
   if (typeof gmt === 'boolean') {
     return gmt ? toGmtByPicker(value, picker) : toLocalByPicker(value, picker);
   }
-  return toGmtByPicker(value, picker);
+  return toLocalByPicker(value, picker);
 };
 
 export const mapDatePicker = function () {

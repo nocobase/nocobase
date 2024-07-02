@@ -76,6 +76,12 @@ describe('moment2str', () => {
     expect(str).toBe(dayjs('2023-06-21 10:10:00').toISOString());
   });
 
+  test('gmt not configured', () => {
+    const d = dayjs('2024-06-30');
+    const str = moment2str(d);
+    expect(str).toBe(dayjs('2024-06-30 00:00:00').toISOString());
+  });
+
   test('with time', () => {
     const m = dayjs('2023-06-21 10:10:00');
     const str = moment2str(m, { showTime: true });
