@@ -17,6 +17,7 @@ import {
 } from './block';
 import antd from './chart/antd';
 import g2plot from './chart/g2plot';
+import echarts from './chart/echarts';
 import { ChartGroup } from './chart/group';
 import {
   chartFilterActionInitializers,
@@ -30,7 +31,7 @@ class PluginDataVisualiztionClient extends Plugin {
   public charts: ChartGroup = new ChartGroup();
 
   async load() {
-    this.charts.setGroup('Built-in', [...g2plot, ...antd]);
+    this.charts.setGroup('Built-in', [...echarts, ...antd]);
 
     this.app.addComponents({
       ChartV2BlockInitializer,
