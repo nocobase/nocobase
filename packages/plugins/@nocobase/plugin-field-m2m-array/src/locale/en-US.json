@@ -1,0 +1,4 @@
+{
+  "Many to many (array)": "Many to many (array)",
+  "Many to many (array) description": "Allows to create many to many relationships between two models by storing an array of unique keys of the target model."
+}

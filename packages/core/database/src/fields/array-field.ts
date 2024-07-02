@@ -12,7 +12,11 @@ import { BaseColumnFieldOptions, Field } from './field';
 
 export class ArrayField extends Field {
   get dataType() {
+    const { dataType, elementType = '' } = this.options;
     if (this.database.sequelize.getDialect() === 'postgres') {
+      if (dataType === 'array') {
+        return new DataTypes.ARRAY(DataTypes[elementType.toUpperCase()]);
+      }
       return DataTypes.JSONB;
     }
 
@@ -44,4 +48,6 @@ export class ArrayField extends Field {
 
 export interface ArrayFieldOptions extends BaseColumnFieldOptions {
   type: 'array';
+  dataType?: 'array' | 'json';
+  elementType: DataTypes.DataType;
 }

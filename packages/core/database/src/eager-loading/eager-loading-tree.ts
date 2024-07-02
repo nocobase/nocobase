@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import lodash from 'lodash';
+import lodash, { flatten } from 'lodash';
 import { Association, HasOne, HasOneOptions, Includeable, Model, ModelStatic, Op, Transaction } from 'sequelize';
 import Database from '../database';
 import { appendChildCollectionNameAfterRepositoryFind } from '../listeners/append-child-collection-name-after-repository-find';
@@ -225,6 +225,16 @@ export class EagerLoadingTree {
             throw new Error(`Model ${node.model.name} does not have primary key`);
           }
 
+          includeForFilter.forEach((include: { association: string }, index: number) => {
+            const association = node.model.associations[include.association];
+            if (association?.associationType == 'BelongsToArray') {
+              includeForFilter[index] = {
+                ...include,
+                ...association.generateInclude(),
+              };
+            }
+          });
+
           // find all ids
           const ids = (
             await node.model.findAll({
@@ -256,10 +266,13 @@ export class EagerLoadingTree {
 
         // clear filter association value
         const associations = node.model.associations;
-        for (const association of Object.keys(associations)) {
+        for (const [name, association] of Object.entries(associations)) {
+          // if ((association as any).associationType === 'belongsToArray') {
+          //   continue;
+          // }
           for (const instance of instances) {
-            delete instance[association];
-            delete instance.dataValues[association];
+            delete instance[name];
+            delete instance.dataValues[name];
           }
         }
       } else if (ids.length > 0) {
@@ -285,6 +298,30 @@ export class EagerLoadingTree {
           const foreignKeyValues = node.parent.instances.map((instance) => instance.get(association.sourceKey));
 
           let where: any = { [foreignKey]: foreignKeyValues };
+
+          if (node.where) {
+            where = {
+              [Op.and]: [where, node.where],
+            };
+          }
+
+          const findOptions = {
+            where,
+            attributes: node.attributes,
+            order: params.order || orderOption(association),
+            transaction,
+          };
+
+          instances = await node.model.findAll(findOptions);
+        }
+
+        if (associationType === 'BelongsToArray') {
+          const targetKey = association.targetKey;
+          const targetKeyValues = node.parent.instances.map((instance) => {
+            return instance.get(association.foreignKey);
+          });
+
+          let where: any = { [targetKey]: Array.from(new Set(flatten(targetKeyValues))) };
 
           if (node.where) {
             where = {
@@ -405,6 +442,10 @@ export class EagerLoadingTree {
         const setParentAccessor = (parentInstance) => {
           const key = association.as;
 
+          if (!key) {
+            return;
+          }
+
           const children = parentInstance.getDataValue(association.as);
 
           if (association.isSingleAssociation) {
@@ -441,6 +482,23 @@ export class EagerLoadingTree {
               }
             }
           }
+        }
+
+        if (associationType === 'BelongsToArray') {
+          const { foreignKey, targetKey } = association;
+
+          const instanceMap = node.instances.reduce((mp: { [targetKey: string]: Model }, instance: Model) => {
+            mp[instance.get(targetKey)] = instance;
+            return mp;
+          }, {});
+
+          node.parent.instances.forEach((parentInstance: Model) => {
+            const targetKeys = parentInstance.getDataValue(foreignKey);
+            parentInstance.setDataValue(
+              association.as,
+              targetKeys?.map((targetKey: any) => instanceMap[targetKey]).filter(Boolean),
+            );
+          });
         }
 
         if (associationType == 'BelongsTo') {

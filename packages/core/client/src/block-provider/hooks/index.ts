@@ -1402,7 +1402,8 @@ export const useAssociationNames = (dataSource?: string) => {
       const collectionField = s['x-collection-field'] && getCollectionJoinField(s['x-collection-field'], dataSource);
       const isAssociationSubfield = s.name.includes('.');
       const isAssociationField =
-        collectionField && ['hasOne', 'hasMany', 'belongsTo', 'belongsToMany'].includes(collectionField.type);
+        collectionField &&
+        ['hasOne', 'hasMany', 'belongsTo', 'belongsToMany', 'belongsToArray'].includes(collectionField.type);
 
       // 根据联动规则中条件的字段获取一些 appends
       if (s['x-linkage-rules']) {

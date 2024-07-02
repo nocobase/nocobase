@@ -305,7 +305,7 @@ export const useFormItemInitializerFields = (options?: any) => {
       const targetCollection = getCollection(field.target);
       const isFileCollection = field?.target && getCollection(field?.target)?.template === 'file';
       const isAssociationField = targetCollection;
-      const fieldNames = field?.uiSchema['x-component-props']?.['fieldNames'];
+      const fieldNames = field?.uiSchema?.['x-component-props']?.['fieldNames'];
       const schema = {
         type: 'string',
         name: field.name,
