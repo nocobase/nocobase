@@ -165,7 +165,6 @@ export const useBlockHeight = () => {
   return height;
 };
 export const useTableSize = () => {
-  const [height, setTableHeight] = useState<number>();
   const [width, setTableWidth] = useState<number>();
   const elementRef = useRef<HTMLDivElement>(null);
   const targetHeight = useTableHeight();
@@ -176,7 +175,6 @@ export const useTableSize = () => {
       const tableContentRect = elementRef.current.querySelector('.ant-table')?.getBoundingClientRect();
       if (!tableContentRect) return;
       setTableWidth(clientRect.width);
-      setTableHeight(targetHeight);
     }, 100),
     [targetHeight],
   );
@@ -190,8 +188,7 @@ export const useTableSize = () => {
   );
 
   useEventListener('resize', calcTableSize);
-
-  return { height, width, tableSizeRefCallback };
+  return { height: targetHeight, width, tableSizeRefCallback };
 };
 
 const hasActionContainerInParentChain = (schema) => {
