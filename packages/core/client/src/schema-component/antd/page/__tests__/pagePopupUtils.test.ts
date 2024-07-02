@@ -25,7 +25,7 @@ describe('getPopupParamsFromPath', () => {
 
   it('should handle multiple popups in the path', () => {
     const path =
-      'popupUid1/filterbytk/filterByTKValue1/tab/tabValue1/popups/popupUid2/filterbytk/filterByTKValue2/tab/tabValue2';
+      'popupUid1/filterbytk/filterByTKValue1/sourceid/sourceIdValue/tab/tabValue1/popups/popupUid2/filterbytk/filterByTKValue2/tab/tabValue2';
     const result = getPopupParamsFromPath(path);
 
     expect(result).toEqual([
@@ -33,6 +33,7 @@ describe('getPopupParamsFromPath', () => {
         popupuid: 'popupUid1',
         filterbytk: 'filterByTKValue1',
         tab: 'tabValue1',
+        sourceid: 'sourceIdValue',
       },
       {
         popupuid: 'popupUid2',
@@ -70,10 +71,11 @@ describe('getPopupPathFromParams', () => {
       popupuid: 'popupUid',
       filterbytk: 'filterByTKValue',
       tab: 'tabValue',
+      sourceid: 'sourceIdValue',
     };
     const result = getPopupPathFromParams(params);
 
-    expect(result).toBe('/popups/popupUid/filterbytk/filterByTKValue/tab/tabValue');
+    expect(result).toBe('/popups/popupUid/filterbytk/filterByTKValue/sourceid/sourceIdValue/tab/tabValue');
   });
 
   it('should handle optional parameters', () => {

@@ -94,7 +94,7 @@ const SubPageProvider: FC<{ params: SubPageParams; context: SubPageContext | und
       dataSource={context.dataSource}
       collection={context.collection}
       association={context.association}
-      sourceId={context.sourceId}
+      sourceId={params.sourceid}
       filterByTk={params.filterbytk}
       action="get"
     >
@@ -159,8 +159,16 @@ export const SubPage = () => {
 };
 
 export const getSubPagePathFromParams = (params: SubPageParams) => {
-  const { subpageuid, tab, filterbytk } = params;
-  const popupPath = [subpageuid, filterbytk && 'filterbytk', filterbytk, tab && 'tab', tab].filter(Boolean);
+  const { subpageuid, tab, filterbytk, sourceid } = params;
+  const popupPath = [
+    subpageuid,
+    filterbytk && 'filterbytk',
+    filterbytk,
+    sourceid && 'sourceid',
+    sourceid,
+    tab && 'tab',
+    tab,
+  ].filter(Boolean);
 
   return `/subpages/${popupPath.map((item) => encodePathValue(item)).join('/')}`;
 };
@@ -206,9 +214,10 @@ export const useNavigateTOSubPage = () => {
 
     const filterByTK = (record?.data || treeParentRecord)?.[collection.getPrimaryKey()];
     const sourceId = parentRecord?.data?.[cm.getCollection(association?.split('.')[0])?.getPrimaryKey()];
-    const params = {
+    const params: SubPageParams = {
       subpageuid: fieldSchema['x-uid'],
       filterbytk: filterByTK,
+      sourceid: sourceId,
     };
 
     storePopupContext(fieldSchema['x-uid'], {
@@ -232,7 +241,6 @@ export const useNavigateTOSubPage = () => {
       dataSource: dataSourceKey,
       collection: association ? undefined : collection.name,
       association: association,
-      sourceId,
       parentPopupRecord: parentPopupRecordData
         ? {
             collection: parentPopupRecordCollection?.name,
