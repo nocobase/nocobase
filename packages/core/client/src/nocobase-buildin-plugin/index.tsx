@@ -27,7 +27,6 @@ import { AdminLayoutPlugin, RouteSchemaComponent } from '../route-switch';
 import { AntdSchemaComponentPlugin, PageTabs, SchemaComponentPlugin } from '../schema-component';
 import { ErrorFallback } from '../schema-component/antd/error-fallback';
 import { PagePopups } from '../schema-component/antd/page/PagePopups';
-import { SubPage } from '../schema-component/antd/page/SubPages';
 import { AssociationFilterPlugin, SchemaInitializerPlugin } from '../schema-initializer';
 import { SchemaSettingsPlugin } from '../schema-settings';
 import { BlockTemplateDetails, BlockTemplatePage } from '../schema-templates';
@@ -315,10 +314,6 @@ export class NocoBaseBuildInPlugin extends Plugin {
     this.router.add('admin.page.tab.popup', {
       path: '/admin/:name/tabs/:tabUid/popups/*',
       Component: PagePopups,
-    });
-    this.router.add('admin.subPage', {
-      path: '/admin/subpages/*',
-      Component: SubPage,
     });
   }
 

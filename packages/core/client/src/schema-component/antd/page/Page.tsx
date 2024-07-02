@@ -202,7 +202,7 @@ export const Page = (props) => {
   ]);
 
   return wrapSSR(
-    <div className={`${componentCls} ${hashId} ${aclStyles.styles}`}>
+    <div id="nb-page-without-header-and-side" className={`${componentCls} ${hashId} ${aclStyles.styles}`}>
       <PageDesigner title={fieldSchema.title || title} />
       <div
         ref={(ref) => {
