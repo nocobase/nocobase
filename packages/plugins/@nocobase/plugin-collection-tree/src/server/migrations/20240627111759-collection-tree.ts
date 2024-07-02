@@ -12,7 +12,7 @@ import { Model } from '@nocobase/database';
 
 export default class extends Migration {
   on = 'afterLoad'; // 'beforeLoad' or 'afterLoad'
-  appVersion = '<=1.2.9-alpha';
+  appVersion = '<=1.2.11-alpha';
 
   async up() {
     const treeCollections = await this.app.db.getRepository('collections').find({
