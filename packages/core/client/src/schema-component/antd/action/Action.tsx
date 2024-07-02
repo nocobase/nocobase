@@ -31,7 +31,6 @@ import { useProps } from '../../hooks/useProps';
 import { PopupVisibleProvider } from '../page/PagePopups';
 import { usePagePopup } from '../page/pagePopupUtils';
 import { usePopupSettings } from '../page/PopupSettingsProvider';
-import { useNavigateTOSubPage } from '../page/SubPages';
 import ActionContainer from './Action.Container';
 import { ActionDesigner } from './Action.Designer';
 import { ActionDrawer } from './Action.Drawer';
@@ -306,7 +305,6 @@ function RenderButton({
   modal,
 }) {
   const { t } = useTranslation();
-  const { navigateToSubPage } = useNavigateTOSubPage();
   const { isPopupVisibleControlledByURL } = usePopupSettings();
   const { openPopup } = usePagePopup();
 
@@ -320,9 +318,6 @@ function RenderButton({
 
       if (!disabled && aclCtx) {
         const onOk = () => {
-          if (openMode === 'page') {
-            return navigateToSubPage();
-          }
           if (onClick) {
             onClick(e, () => {
               if (refreshDataBlockRequest !== false) {
