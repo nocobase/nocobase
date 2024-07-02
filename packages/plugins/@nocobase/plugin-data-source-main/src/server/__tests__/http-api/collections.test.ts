@@ -582,4 +582,13 @@ describe('collections repository', () => {
       ),
     ).not.toBeDefined();
   });
+
+  it('should get collection list with unavailableActions', async () => {
+    const response = await app.agent().resource('collections').list();
+    expect(response.statusCode).toBe(200);
+    const data = response.body.data;
+    const firstCollection = data[0];
+    const collectionInMemory = app.db.getCollection(firstCollection.name);
+    expect(firstCollection.unavailableActions).toEqual(collectionInMemory.unavailableActions());
+  });
 });

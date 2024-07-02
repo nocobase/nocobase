@@ -146,7 +146,12 @@ function useRecordBlocks() {
         };
       },
       useVisible() {
-        return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
+        const collection = useCollection() || ({} as any);
+        const { unavailableActions } = collection?.options || {};
+        if (unavailableActions) {
+          return !unavailableActions?.includes?.('update');
+        }
+        return true;
       },
     },
     {

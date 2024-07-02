@@ -831,6 +831,14 @@ export class Collection<
     return false;
   }
 
+  unavailableActions() {
+    if (this.options.template === 'file') {
+      return ['create', 'update', 'destroy'];
+    }
+
+    return [];
+  }
+
   protected sequelizeModelOptions() {
     const { name } = this.options;
     return {

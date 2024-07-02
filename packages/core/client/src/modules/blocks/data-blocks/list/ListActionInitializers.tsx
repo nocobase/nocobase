@@ -8,7 +8,7 @@
  */
 
 import { CompatibleSchemaInitializer } from '../../../../application/schema-initializer/CompatibleSchemaInitializer';
-import { useCollection_deprecated } from '../../../../collection-manager';
+import { useCollection } from '../../../../data-source';
 
 const commonOptions = {
   title: "{{t('Configure actions')}}",
@@ -37,12 +37,12 @@ const commonOptions = {
         },
       },
       useVisible() {
-        const collection = useCollection_deprecated();
-        return (
-          (collection.template !== 'view' || collection?.writableView) &&
-          collection.template !== 'file' &&
-          collection.template !== 'sql'
-        );
+        const collection = useCollection() || ({} as any);
+        const { unavailableActions } = collection?.options || {};
+        if (unavailableActions) {
+          return !unavailableActions?.includes?.('create');
+        }
+        return true;
       },
     },
     {
@@ -66,8 +66,12 @@ const commonOptions = {
         },
       },
       useVisible() {
-        const collection = useCollection_deprecated();
-        return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
+        const collection = useCollection() || ({} as any);
+        const { unavailableActions } = collection?.options || {};
+        if (unavailableActions) {
+          return !unavailableActions?.includes?.('create');
+        }
+        return true;
       },
     },
     {
