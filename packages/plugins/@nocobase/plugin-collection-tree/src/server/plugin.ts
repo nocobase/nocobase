@@ -95,6 +95,7 @@ class PluginCollectionTreeServer extends Plugin {
       const treeCollectionName = options.modelName;
       if (this.db.getCollection(name)) {
         const treeExistsInDb = await this.app.db.getCollection(name).existsInDb();
+        const treeCollectionInDb = await this.app.db.getCollection(treeCollectionName).existsInDb();
         if (!treeExistsInDb) {
           await this.db.getCollection(name).sync();
           if (treeCollectionInDb) {
