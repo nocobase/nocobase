@@ -78,6 +78,7 @@ describe('load field', async () => {
     } catch (error) {
       expect(error.message).toBe('MockField not implemented.');
     }
+
     const instance = await fieldsRepository.findOne({
       filter: {
         name: 'mock',
