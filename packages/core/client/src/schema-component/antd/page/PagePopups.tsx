@@ -35,13 +35,28 @@ interface PopupProps {
   /**
    * Used to identify the level of the current popup, where 0 represents the first level.
    */
-  index: number;
+  currentLevel: number;
+  /**
+   * Total number of levels
+   */
+  totalLevels: number;
 }
 
 export const PopupVisibleProviderContext = React.createContext<PopupsVisibleProviderProps>(null);
 export const PopupParamsProviderContext = React.createContext<PopupProps>(null);
+export const LastPopupInfoProviderContext = React.createContext<{
+  /**
+   * Whether the last popup is a subpage
+   */
+  isSubpageLast: boolean;
+}>(null);
 PopupVisibleProviderContext.displayName = 'PopupVisibleProviderContext';
 PopupParamsProviderContext.displayName = 'PopupParamsProviderContext';
+LastPopupInfoProviderContext.displayName = 'LastPopupInfoProviderContext';
+
+export const useLastPopupInfo = () => {
+  return React.useContext(LastPopupInfoProviderContext) || { isSubpageLast: false };
+};
 
 export const usePopupContextAndParams = () => {
   const context = React.useContext(PopupParamsProviderContext);
@@ -64,7 +79,12 @@ export const PopupVisibleProvider: FC<PopupsVisibleProviderProps> = ({ children,
 
 const PopupParamsProvider: FC<PopupProps> = (props) => {
   const value = useMemo(() => {
-    return { params: props.params, context: props.context, index: props.index };
+    return {
+      params: props.params,
+      context: props.context,
+      currentLevel: props.currentLevel,
+      totalLevels: props.totalLevels,
+    };
   }, [props.params, props.context]);
   return <PopupParamsProviderContext.Provider value={value}>{props.children}</PopupParamsProviderContext.Provider>;
 };
@@ -90,12 +110,12 @@ const PopupTabsPropsProvider: FC<{ params: PopupParams }> = ({ children, params 
   );
 };
 
-const PagePopupsItemProvider: FC<{ params: PopupParams; context: PopupContext; index: number }> = ({
-  params,
-  context,
-  index,
-  children,
-}) => {
+const PagePopupsItemProvider: FC<{
+  params: PopupParams;
+  context: PopupContext;
+  currentLevel: number;
+  totalLevels: number;
+}> = ({ params, context, currentLevel, totalLevels, children }) => {
   const { closePopup } = usePagePopup();
   const [visible, _setVisible] = useState(true);
   const setVisible = (visible: boolean) => {
@@ -126,7 +146,7 @@ const PagePopupsItemProvider: FC<{ params: PopupParams; context: PopupContext; i
   }
 
   return (
-    <PopupParamsProvider params={params} context={context} index={index}>
+    <PopupParamsProvider params={params} context={context} currentLevel={currentLevel} totalLevels={totalLevels}>
       <PopupVisibleProvider visible={visible} setVisible={setVisible}>
         <DataBlockProvider
           dataSource={context.dataSource}
@@ -158,7 +178,7 @@ const PagePopupsItemProvider: FC<{ params: PopupParams; context: PopupContext; i
  * @param parentSchema
  */
 export const insertChildToParentSchema = (childSchema: ISchema, props: PopupProps, parentSchema: ISchema) => {
-  const { params, context, index } = props;
+  const { params, context, currentLevel, totalLevels } = props;
 
   const componentSchema = {
     type: 'void',
@@ -166,7 +186,8 @@ export const insertChildToParentSchema = (childSchema: ISchema, props: PopupProp
     'x-component-props': {
       params,
       context,
-      index,
+      currentLevel,
+      totalLevels,
     },
     properties: {
       popupAction: childSchema,
@@ -190,6 +211,7 @@ export const PagePopups = (props: { paramsList?: PopupParams[] }) => {
   const { requestSchema } = useRequestSchema();
   const [rootSchema, setRootSchema] = useState<ISchema>(null);
   const popupPropsRef = useRef<PopupProps[]>([]);
+  const isSubPageLast = useRef(false);
 
   useEffect(() => {
     const run = async () => {
@@ -202,12 +224,18 @@ export const PagePopups = (props: { paramsList?: PopupParams[] }) => {
         result['x-read-pretty'] = true;
         return result;
       });
-      popupPropsRef.current = clonedSchemas.map((schema, index) => {
+      popupPropsRef.current = clonedSchemas.map((schema, index, items) => {
         const schemaContext = getPopupContextFromActionOrAssociationFieldSchema(schema);
+
+        if (index === items.length - 1) {
+          isSubPageLast.current = isSubPageSchema(schema);
+        }
+
         return {
           params: popupParams[index],
           context: schemaContext,
-          index,
+          currentLevel: index + 1,
+          totalLevels: items.length,
         };
       });
       const rootSchema = clonedSchemas[0];
@@ -226,13 +254,16 @@ export const PagePopups = (props: { paramsList?: PopupParams[] }) => {
   }
 
   return (
-    <PagePopupsItemProvider
-      params={popupPropsRef.current[0].params}
-      context={popupPropsRef.current[0].context}
-      index={0}
-    >
-      <SchemaComponent components={components} schema={rootSchema} onlyRenderProperties />;
-    </PagePopupsItemProvider>
+    <LastPopupInfoProviderContext.Provider value={{ isSubpageLast: isSubPageLast.current }}>
+      <PagePopupsItemProvider
+        params={popupPropsRef.current[0].params}
+        context={popupPropsRef.current[0].context}
+        currentLevel={1}
+        totalLevels={popupPropsRef.current.length}
+      >
+        <SchemaComponent components={components} schema={rootSchema} onlyRenderProperties />;
+      </PagePopupsItemProvider>
+    </LastPopupInfoProviderContext.Provider>
   );
 };
 
@@ -258,3 +289,8 @@ export const getPopupPath = (location: Location) => {
   const [, ...popupsPath] = location.pathname.split('/popups/');
   return popupsPath.join('/popups/');
 };
+
+function isSubPageSchema(schema: ISchema) {
+  const openMode = _.get(schema, 'x-component-props.openMode');
+  return openMode === 'page';
+}

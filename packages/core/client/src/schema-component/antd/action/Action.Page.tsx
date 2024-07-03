@@ -22,14 +22,14 @@ export const ActionPage: ComposedActionDrawer = observer(
     const ctx = useActionContext();
     const { getContainerDOM } = usePopupOrSubpagesContainerDOM();
     const { styles } = useActionPageStyle();
-    const { index } = usePopupContextAndParams();
+    const { currentLevel } = usePopupContextAndParams();
 
     const style = useMemo(() => {
       return {
         // 20 is the z-index value of the main page
-        zIndex: 20 + index,
+        zIndex: 20 + currentLevel,
       };
-    }, [index]);
+    }, [currentLevel]);
 
     if (!ctx.visible) {
       return null;

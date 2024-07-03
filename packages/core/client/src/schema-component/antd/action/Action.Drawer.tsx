@@ -10,12 +10,12 @@
 import { observer, RecursionField, useField, useFieldSchema } from '@formily/react';
 import { Drawer } from 'antd';
 import classNames from 'classnames';
-import React from 'react';
+import React, { useMemo } from 'react';
 import { ErrorBoundary, FallbackProps } from 'react-error-boundary';
 import { ErrorFallback } from '../error-fallback';
+import { useLastPopupInfo } from '../page/PagePopups';
 import { useStyles } from './Action.Drawer.style';
 import { useActionContext } from './hooks';
-import { usePopupOrSubpagesContainerDOM } from './hooks/usePopupSlotDOM';
 import { useSetAriaLabelForDrawer } from './hooks/useSetAriaLabelForDrawer';
 import { ActionDrawerProps, ComposedActionDrawer, OpenSize } from './types';
 
@@ -46,7 +46,14 @@ export const InternalActionDrawer: React.FC<ActionDrawerProps> = observer(
       }
       return buf;
     });
-    const { getContainerDOM } = usePopupOrSubpagesContainerDOM();
+    const { isSubpageLast } = useLastPopupInfo();
+    const rootStyle: React.CSSProperties = useMemo(() => {
+      return {
+        ...drawerProps?.style,
+        ...others?.style,
+        visibility: isSubpageLast ? 'hidden' : 'visible',
+      };
+    }, [isSubpageLast, drawerProps?.style, others?.style]);
 
     if (process.env.__E2E__) {
       useSetAriaLabelForDrawer(visible);
@@ -54,15 +61,11 @@ export const InternalActionDrawer: React.FC<ActionDrawerProps> = observer(
 
     return (
       <Drawer
-        getContainer={getContainerDOM}
         width={openSizeWidthMap.get(openSize)}
         title={field.title}
         {...others}
         {...drawerProps}
-        rootStyle={{
-          ...drawerProps?.style,
-          ...others?.style,
-        }}
+        rootStyle={rootStyle}
         destroyOnClose
         open={visible}
         onClose={() => setVisible(false, true)}
