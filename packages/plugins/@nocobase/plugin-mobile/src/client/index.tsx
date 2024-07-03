@@ -53,6 +53,11 @@ export * from './desktop-mode';
 export class PluginMobileClient extends Plugin {
   mobileRouter?: RouterManager;
   mobilePath = '/m';
+
+  get desktopMode() {
+    return this.options?.config?.desktopMode ?? true;
+  }
+
   get mobileBasename() {
     return `${this.router.getBasename()}m`; // `/m` or `/apps/aaa/m`（多应用）
   }

@@ -1,5 +1,5 @@
 import React from 'react';
-import { MobileTitleProvider, useMobileTitle } from '../mobile-providers';
+import { MobileTitleProvider, useMobileTitle } from '@nocobase/plugin-mobile/client';
 
 const InnerPage = () => {
   const { title, setTitle } = useMobileTitle();

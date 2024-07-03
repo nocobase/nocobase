@@ -38,9 +38,11 @@ export const Mobile = () => {
     }
   }, []);
 
+  const DesktopComponent = mobilePlugin.desktopMode === false ? React.Fragment : DesktopMode;
+
   return (
-    <DesktopMode>
+    <DesktopComponent>
       <MobileRouter />
-    </DesktopMode>
+    </DesktopComponent>
   );
 };

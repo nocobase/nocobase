@@ -22,6 +22,7 @@ export const MobileTabBarLink: FC<MobileTabBarLinkProps> = (props) => {
   const location = useLocation();
 
   const handleClick = () => {
+    if (!link) return;
     if (link.startsWith('http') || link.startsWith('//')) {
       window.open(link);
     } else {

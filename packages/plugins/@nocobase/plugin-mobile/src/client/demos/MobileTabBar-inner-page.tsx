@@ -12,6 +12,7 @@ class DemoPlugin extends Plugin {
           initialEntries: ['/m/custom-page'],
         },
         skipLogin: true,
+        desktopMode: false,
       },
     });
   }
@@ -110,7 +111,7 @@ const app = mockApp({
               parentId: 30,
               url: '/schema/erat7aqqo00/tabs/woov9ps6qvf',
               options: {
-                title: '未读数据',
+                title: 'Unread Message',
                 tabSchemaUid: 'woov9ps6qvf',
               },
               createdById: 1,
@@ -124,7 +125,7 @@ const app = mockApp({
               parentId: 30,
               url: '/schema/erat7aqqo00/tabs/3lkq3980t66',
               options: {
-                title: '已读数据',
+                title: 'Read Message',
                 tabSchemaUid: '3lkq3980t66',
               },
               createdById: 1,

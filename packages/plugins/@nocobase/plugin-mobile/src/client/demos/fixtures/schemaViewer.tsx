@@ -8,7 +8,7 @@ function ShowSchema({ children, schemaKey }) {
   const key = schemaKey ? `properties.schema.${schemaKey}` : `properties.schema`;
   return (
     <>
-      <pre>{JSON.stringify(_.get(filedSchema.toJSON(), key), null, 2)}</pre>
+      <pre data-testid="schema-json">{JSON.stringify(_.get(filedSchema.toJSON(), key), null, 2)}</pre>
       {children}
     </>
   );

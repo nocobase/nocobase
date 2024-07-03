@@ -27,7 +27,7 @@ export const DesktopModeContent: FC<DesktopModeContentProps> = ({ children }) =>
         }}
         data-testid="desktop-mode-resizable"
         size={{ width: size.width, height: size.height }}
-        onResizeStop={(e, direction, ref, d) => {
+        onResizeStop={(_e, _direction, _ref, d) => {
           setSize({
             width: size.width + d.width,
             height: size.height + d.height,

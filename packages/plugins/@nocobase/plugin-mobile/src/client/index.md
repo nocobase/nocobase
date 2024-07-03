@@ -383,8 +383,9 @@ export interface TabItem {
 - [x] 多语言
 - [x] API 文档
 - [-] JS bridge(没测)
+- [-] unit test
+- 反馈修复
 - 更新文档
 - 使用文档
-- unit test
 - e2e test
 - 新移动端 Tab 的插件开发示例

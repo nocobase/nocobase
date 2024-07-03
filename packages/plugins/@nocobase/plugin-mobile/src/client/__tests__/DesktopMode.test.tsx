@@ -17,11 +17,14 @@ describe('DesktopMode', () => {
     render(<App />);
     await waitForApp();
 
+    // back
     expect(screen.queryByRole('link')).toHaveAttribute('href', '/admin');
 
+    // ui-editor
     expect(screen.queryByTestId('ui-editor-button')).toBeInTheDocument();
-    expect(screen.queryByTestId('desktop-mode-size-switch')).toBeInTheDocument();
 
+    // size
+    expect(screen.queryByTestId('desktop-mode-size-switch')).toBeInTheDocument();
     await act(async () => {
       await userEvent.click(screen.queryByTestId('desktop-mode-size-pad'));
     });
@@ -35,8 +38,16 @@ describe('DesktopMode', () => {
       expect(screen.queryByTestId('desktop-mode-resizable').style.width).toBe('375px');
     });
 
+    // qrcode
     expect(screen.queryByTestId('desktop-mode-qrcode')).toBeInTheDocument();
+    await act(async () => {
+      await userEvent.hover(screen.queryByTestId('desktop-mode-qrcode'));
+    });
+    await waitFor(() => {
+      expect(document.querySelector('canvas')).toBeInTheDocument();
+    });
 
+    // content
     expect(screen.queryByText('demo content')).toBeInTheDocument();
   });
 });

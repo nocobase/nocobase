@@ -2,7 +2,13 @@ import React from 'react';
 import { MobileTabBar } from '@nocobase/plugin-mobile/client';
 
 const Demo = () => {
-  return <MobileTabBar.Item title="Test" icon="AppstoreOutlined" onClick={() => alert('test')}></MobileTabBar.Item>;
+  const [clicked, setClicked] = React.useState(false);
+  return (
+    <>
+      {clicked && 'Clicked'}
+      <MobileTabBar.Item title="Test" icon="AppstoreOutlined" onClick={() => setClicked(true)}></MobileTabBar.Item>
+    </>
+  );
 };
 
 export default Demo;

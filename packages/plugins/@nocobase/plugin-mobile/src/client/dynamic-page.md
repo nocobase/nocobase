@@ -25,6 +25,10 @@
 
 <code src="./demos/pages-dynamic-page-404.tsx"></code>
 
+### Schema
+
+<code src="./demos/pages-dynamic-page-schema.tsx"></code>
+
 ### Settings
 
 <code src="./demos/pages-dynamic-page-settings.tsx"></code>

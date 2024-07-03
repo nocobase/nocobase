@@ -53,7 +53,7 @@ const app = mockApp({
         type: 'void',
         name: 'test',
         'x-uid': 'test',
-        'x-content': 'Schema Test Page',
+        'x-content': 'First Route Content',
       },
     },
   },

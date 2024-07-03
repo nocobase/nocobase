@@ -7,6 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { mobileTabBarPageSettings } from './settings';
+
 export interface GetMobileTabBarPageItemDataOptions {
   pageSchemaUid: string;
   url?: string;
@@ -21,7 +23,7 @@ export function getMobileTabBarPageItemData(options: GetMobileTabBarPageItemData
     options: {
       type: 'void',
       'x-decorator': 'BlockItem',
-      'x-settings': 'mobile:tab-bar:page',
+      'x-settings': mobileTabBarPageSettings.name,
       'x-component': 'MobileTabBar.Page',
       'x-component-props': {
         ...values,

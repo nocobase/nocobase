@@ -176,6 +176,10 @@ interface MobileTabBarItemProps {
 
 <code src="../demos/MobileTabBar.Page-selected.tsx"></code>
 
+### Schema
+
+<code src="../demos/MobileTabBar.Page-schema.tsx"></code>
+
 ### Settings
 
 <code src="../demos/MobileTabBar.Page-settings.tsx"></code>
@@ -195,13 +199,17 @@ interface MobileTabBarItemProps {
 
 <code src="../demos/MobileTabBar.Link-inner.tsx"></code>
 
+#### outer page
+
+<code src="../demos/MobileTabBar.Link-outer.tsx"></code>
+
 #### selected
 
 <code src="../demos/MobileTabBar.Link-selected.tsx"></code>
 
-#### outer page
+### Schema
 
-<code src="../demos/MobileTabBar.Link-outer.tsx"></code>
+<code src="../demos/MobileTabBar.Link-schema.tsx"></code>
 
 ### Settings
 

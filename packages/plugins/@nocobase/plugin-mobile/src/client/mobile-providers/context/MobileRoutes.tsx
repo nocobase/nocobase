@@ -101,7 +101,7 @@ export const MobileRoutesProvider = ({ children }) => {
 
   if (loading) {
     return (
-      <div style={{ textAlign: 'center', margin: '20px 0' }}>
+      <div data-testid="mobile-loading" style={{ textAlign: 'center', margin: '20px 0' }}>
         <Spin />
       </div>
     );
