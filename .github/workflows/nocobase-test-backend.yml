@@ -64,9 +64,9 @@ jobs:
     strategy:
       matrix:
         node_version: ['20']
-#        underscored: [true, false]
-#        schema: [public, nocobase]
-#        collection_schema: [public, user_schema]
+        underscored: [true, false]
+        schema: [public, nocobase]
+        collection_schema: [public, user_schema]
     runs-on: ubuntu-latest
     container: node:${{ matrix.node_version }}
     services:
@@ -107,9 +107,9 @@ jobs:
           DB_USER: nocobase
           DB_PASSWORD: password
           DB_DATABASE: nocobase
-#          DB_UNDERSCORED: ${{ matrix.underscored }}
-#          DB_SCHEMA: ${{ matrix.schema }}
-#          COLLECTION_MANAGER_SCHEMA: ${{ matrix.collection_schema }}
+          DB_UNDERSCORED: ${{ matrix.underscored }}
+          DB_SCHEMA: ${{ matrix.schema }}
+          COLLECTION_MANAGER_SCHEMA: ${{ matrix.collection_schema }}
           DB_TEST_DISTRIBUTOR_PORT: 23450
           DB_TEST_PREFIX: test_
     timeout-minutes: 60
