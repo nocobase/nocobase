@@ -33,5 +33,7 @@ export const BackButtonUsedInSubPage = () => {
     };
   }, [token.paddingXS]);
 
-  return <Button type="text" icon={<ArrowLeftOutlined />} style={resetStyle} onClick={closePopup} />;
+  return (
+    <Button aria-label="back-button" type="text" icon={<ArrowLeftOutlined />} style={resetStyle} onClick={closePopup} />
+  );
 };
