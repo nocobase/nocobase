@@ -57,7 +57,7 @@ export const createForeignKey = (db: Database) => {
         },
         transaction,
       });
-      await field.load();
+      await field.load({ transaction });
     }
   };
 };
