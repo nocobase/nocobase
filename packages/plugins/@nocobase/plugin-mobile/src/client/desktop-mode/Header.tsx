@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { FC } from 'react';
+import React, { FC, useMemo, useRef, useState } from 'react';
 import { QRCode, Popover } from 'antd';
 import { Link } from 'react-router-dom';
 import { QrcodeOutlined } from '@ant-design/icons';
@@ -20,6 +20,10 @@ export const DesktopModeHeader: FC = () => {
   const { t } = usePluginTranslation();
   const { size, setSize } = useSize();
   const [activeType, setActiveType] = React.useState('mobile');
+  const [open, setOpen] = useState(false);
+  const handleQrcodeOpen = (newOpen: boolean) => {
+    setOpen(newOpen);
+  };
 
   return (
     <div
@@ -82,7 +86,12 @@ export const DesktopModeHeader: FC = () => {
             <path d="M12 18h.01"></path>
           </svg>
         </div>
-        <Popover content={<QRCode value={window.location.href} bordered={false} />}>
+        <Popover
+          trigger={'hover'}
+          open={open}
+          onOpenChange={handleQrcodeOpen}
+          content={open ? <QRCode value={window.location.href} bordered={false} /> : ' '}
+        >
           <QrcodeOutlined style={{ fontSize: '24px', cursor: 'pointer' }} data-testid="desktop-mode-qrcode" />
         </Popover>
       </div>
