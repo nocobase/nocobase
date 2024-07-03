@@ -51,9 +51,9 @@ export class AdjacencyListRepository extends Repository {
   }
 
   async find(options: FindOptions & { addIndex?: boolean } = {}): Promise<any> {
-    // if (options.raw || !options.tree) {
-    //   return await super.find(options);
-    // }
+    if (options.raw || !options.tree) {
+      return await super.find(options);
+    }
 
     const collection = this.collection;
     const primaryKey = collection.model.primaryKeyAttribute;
