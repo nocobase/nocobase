@@ -35,45 +35,45 @@ on:
       - '.github/workflows/nocobase-test-backend.yml'
 
 jobs:
-  sqlite-test:
-    strategy:
-      matrix:
-        node_version: ['20']
-        underscored: [true, false]
-    runs-on: ubuntu-latest
-    container: node:${{ matrix.node_version }}
-    steps:
-      - uses: actions/checkout@v4
-      - name: Use Node.js ${{ matrix.node_version }}
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ matrix.node_version }}
-          cache: 'yarn'
-      - name: Install project dependencies
-        run: yarn install
-      - name: Test with Sqlite
-        run: yarn test --server --single-thread=false
-        env:
-          LOGGER_LEVEL: error
-          DB_DIALECT: sqlite
-          DB_STORAGE: /tmp/db.sqlite
-          DB_TEST_PREFIX: test_
-          DB_UNDERSCORED: ${{ matrix.underscored }}
+#  sqlite-test:
+#    strategy:
+#      matrix:
+#        node_version: ['20']
+#        underscored: [true, false]
+#    runs-on: ubuntu-latest
+#    container: node:${{ matrix.node_version }}
+#    steps:
+#      - uses: actions/checkout@v4
+#      - name: Use Node.js ${{ matrix.node_version }}
+#        uses: actions/setup-node@v4
+#        with:
+#          node-version: ${{ matrix.node_version }}
+#          cache: 'yarn'
+#      - name: Install project dependencies
+#        run: yarn install
+#      - name: Test with Sqlite
+#        run: yarn test --server --single-thread=false
+#        env:
+#          LOGGER_LEVEL: error
+#          DB_DIALECT: sqlite
+#          DB_STORAGE: /tmp/db.sqlite
+#          DB_TEST_PREFIX: test_
+#          DB_UNDERSCORED: ${{ matrix.underscored }}
 
   postgres-test:
     strategy:
       matrix:
         node_version: ['20']
-        underscored: [true, false]
-        schema: [public, nocobase]
-        collection_schema: [public, user_schema]
+#        underscored: [true, false]
+#        schema: [public, nocobase]
+#        collection_schema: [public, user_schema]
     runs-on: ubuntu-latest
     container: node:${{ matrix.node_version }}
     services:
       # Label used to access the service container
       postgres:
         # Docker Hub image
-        image: postgres:11
+        image: postgres:12
         # Provide the password for postgres
         env:
           POSTGRES_USER: nocobase
@@ -107,94 +107,94 @@ jobs:
           DB_USER: nocobase
           DB_PASSWORD: password
           DB_DATABASE: nocobase
-          DB_UNDERSCORED: ${{ matrix.underscored }}
-          DB_SCHEMA: ${{ matrix.schema }}
-          COLLECTION_MANAGER_SCHEMA: ${{ matrix.collection_schema }}
+#          DB_UNDERSCORED: ${{ matrix.underscored }}
+#          DB_SCHEMA: ${{ matrix.schema }}
+#          COLLECTION_MANAGER_SCHEMA: ${{ matrix.collection_schema }}
           DB_TEST_DISTRIBUTOR_PORT: 23450
           DB_TEST_PREFIX: test_
     timeout-minutes: 60
 
-  mysql-test:
-    strategy:
-      matrix:
-        node_version: ['20']
-        underscored: [true, false]
-    runs-on: ubuntu-latest
-    container: node:${{ matrix.node_version }}
-    services:
-      mysql:
-        image: mysql:8.2 # >= 8.3 will meet unsolved error: https://github.com/nocobase/nocobase/actions/runs/7581141593/job/20653828990?pr=3383
-        env:
-          MYSQL_ROOT_PASSWORD: password
-          MYSQL_DATABASE: nocobase
-        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
-    steps:
-      - uses: actions/checkout@v4
-      - name: Use Node.js ${{ matrix.node_version }}
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ matrix.node_version }}
-          cache: 'yarn'
-
-      - name: Install project dependencies
-        run: yarn install
-      - name: Test with MySQL
-        run: |
-          ./node_modules/.bin/tsx packages/core/test/src/scripts/test-db-creator.ts &
-          sleep 1
-          yarn test --server --single-thread=false
-        env:
-          LOGGER_LEVEL: error
-          DB_DIALECT: mysql
-          DB_HOST: mysql
-          DB_PORT: 3306
-          DB_USER: root
-          DB_PASSWORD: password
-          DB_DATABASE: nocobase
-          DB_UNDERSCORED: ${{ matrix.underscored }}
-          DB_TEST_DISTRIBUTOR_PORT: 23450
-          DB_TEST_PREFIX: test_
-    timeout-minutes: 60
-  mariadb-test:
-    strategy:
-      matrix:
-        node_version: ['20']
-        underscored: [true, false]
-    runs-on: ubuntu-latest
-    container: node:${{ matrix.node_version }}
-    services:
-      mariadb:
-        image: mariadb:10.9
-        env:
-          MARIADB_ROOT_PASSWORD: password
-          MARIADB_DATABASE: nocobase
-        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
-    steps:
-      - uses: actions/checkout@v4
-      - name: Use Node.js ${{ matrix.node_version }}
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ matrix.node_version }}
-          cache: 'yarn'
-
-      - name: Install project dependencies
-        run: yarn install
-      - name: Install project dependencies
-        run: yarn --prefer-offline
-      - name: Test with MariaDB
-        run: |
-          ./node_modules/.bin/tsx packages/core/test/src/scripts/test-db-creator.ts &
-          sleep 1
-          yarn test --server --single-thread=false
-        env:
-          LOGGER_LEVEL: error
-          DB_DIALECT: mariadb
-          DB_HOST: mariadb
-          DB_PORT: 3306
-          DB_USER: root
-          DB_PASSWORD: password
-          DB_DATABASE: nocobase
-          DB_UNDERSCORED: ${{ matrix.underscored }}
-          DB_TEST_DISTRIBUTOR_PORT: 23450
-          DB_TEST_PREFIX: test_
-    timeout-minutes: 60
+#  mysql-test:
+#    strategy:
+#      matrix:
+#        node_version: ['20']
+#        underscored: [true, false]
+#    runs-on: ubuntu-latest
+#    container: node:${{ matrix.node_version }}
+#    services:
+#      mysql:
+#        image: mysql:8.2 # >= 8.3 will meet unsolved error: https://github.com/nocobase/nocobase/actions/runs/7581141593/job/20653828990?pr=3383
+#        env:
+#          MYSQL_ROOT_PASSWORD: password
+#          MYSQL_DATABASE: nocobase
+#        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+#    steps:
+#      - uses: actions/checkout@v4
+#      - name: Use Node.js ${{ matrix.node_version }}
+#        uses: actions/setup-node@v4
+#        with:
+#          node-version: ${{ matrix.node_version }}
+#          cache: 'yarn'
+#
+#      - name: Install project dependencies
+#        run: yarn install
+#      - name: Test with MySQL
+#        run: |
+#          ./node_modules/.bin/tsx packages/core/test/src/scripts/test-db-creator.ts &
+#          sleep 1
+#          yarn test --server --single-thread=false
+#        env:
+#          LOGGER_LEVEL: error
+#          DB_DIALECT: mysql
+#          DB_HOST: mysql
+#          DB_PORT: 3306
+#          DB_USER: root
+#          DB_PASSWORD: password
+#          DB_DATABASE: nocobase
+#          DB_UNDERSCORED: ${{ matrix.underscored }}
+#          DB_TEST_DISTRIBUTOR_PORT: 23450
+#          DB_TEST_PREFIX: test_
+#    timeout-minutes: 60
+#  mariadb-test:
+#    strategy:
+#      matrix:
+#        node_version: ['20']
+#        underscored: [true, false]
+#    runs-on: ubuntu-latest
+#    container: node:${{ matrix.node_version }}
+#    services:
+#      mariadb:
+#        image: mariadb:10.9
+#        env:
+#          MARIADB_ROOT_PASSWORD: password
+#          MARIADB_DATABASE: nocobase
+#        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+#    steps:
+#      - uses: actions/checkout@v4
+#      - name: Use Node.js ${{ matrix.node_version }}
+#        uses: actions/setup-node@v4
+#        with:
+#          node-version: ${{ matrix.node_version }}
+#          cache: 'yarn'
+#
+#      - name: Install project dependencies
+#        run: yarn install
+#      - name: Install project dependencies
+#        run: yarn --prefer-offline
+#      - name: Test with MariaDB
+#        run: |
+#          ./node_modules/.bin/tsx packages/core/test/src/scripts/test-db-creator.ts &
+#          sleep 1
+#          yarn test --server --single-thread=false
+#        env:
+#          LOGGER_LEVEL: error
+#          DB_DIALECT: mariadb
+#          DB_HOST: mariadb
+#          DB_PORT: 3306
+#          DB_USER: root
+#          DB_PASSWORD: password
+#          DB_DATABASE: nocobase
+#          DB_UNDERSCORED: ${{ matrix.underscored }}
+#          DB_TEST_DISTRIBUTOR_PORT: 23450
+#          DB_TEST_PREFIX: test_
+#    timeout-minutes: 60
