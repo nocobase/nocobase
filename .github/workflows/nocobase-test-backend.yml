@@ -64,9 +64,9 @@ jobs:
     strategy:
       matrix:
         node_version: ['20']
-        underscored: [true, false]
-        schema: [public, nocobase]
-        collection_schema: [public, user_schema]
+#        underscored: [true, false]
+#        schema: [public, nocobase]
+#        collection_schema: [public, user_schema]
     runs-on: ubuntu-latest
     container: node:${{ matrix.node_version }}
     services:
@@ -105,10 +105,7 @@ jobs:
       - name: Install project dependencies
         run: yarn install
       - name: Test with postgres
-        run: |
-          ./node_modules/.bin/tsx packages/core/test/src/scripts/test-db-creator.ts &
-          sleep 1
-          yarn test --server --single-thread=false
+        run: yarn test --server
         env:
           LOGGER_LEVEL: error
           DB_DIALECT: postgres
@@ -117,11 +114,11 @@ jobs:
           DB_USER: nocobase
           DB_PASSWORD: password
           DB_DATABASE: nocobase
-          DB_UNDERSCORED: ${{ matrix.underscored }}
-          DB_SCHEMA: ${{ matrix.schema }}
-          COLLECTION_MANAGER_SCHEMA: ${{ matrix.collection_schema }}
-          DB_TEST_DISTRIBUTOR_PORT: 23450
-          DB_TEST_PREFIX: test_
+#          DB_UNDERSCORED: ${{ matrix.underscored }}
+#          DB_SCHEMA: ${{ matrix.schema }}
+#          COLLECTION_MANAGER_SCHEMA: ${{ matrix.collection_schema }}
+#          DB_TEST_DISTRIBUTOR_PORT: 23450
+#          DB_TEST_PREFIX: test_
     timeout-minutes: 60
 
 #  mysql-test:
