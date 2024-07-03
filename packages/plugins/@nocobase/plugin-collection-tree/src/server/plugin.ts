@@ -40,13 +40,11 @@ class PluginCollectionTreeServer extends Plugin {
             ],
           });
 
+          //sync exisit tree collection path table
+          this.syncExistTreeCollectionPathTable();
+
           collectionManager.db.on(`${collection.name}.afterSync`, async ({ transaction }) => {
             await this.db.getCollection(name).sync(transaction);
-          });
-
-          //afterSync
-          this.db.on(`${name}.afterSync`, async (options: SyncOptions) => {
-            this.syncExistTreeCollectionPathTable();
           });
 
           //afterCreate
