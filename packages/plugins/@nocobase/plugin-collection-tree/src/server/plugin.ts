@@ -28,7 +28,7 @@ class PluginCollectionTreeServer extends Plugin {
           if (!collection.options.tree) {
             return;
           }
-          const name = `${dataSource.name}_${collection.name}_path`;
+          const name = `${dataSource.name}_${collection.options.name}_path`;
           this.db.collection({
             name,
             autoGenId: false,
@@ -56,10 +56,6 @@ class PluginCollectionTreeServer extends Plugin {
             }
             return path;
           };
-
-          collectionManager.db.on(`${collection.name}.afterSync`, async (transaction: SyncOptions) => {
-            await this.db.getCollection(name).sync(transaction);
-          });
 
           //afterCreate
           this.db.on(`${collection.name}.afterCreate`, async (model: Model, options) => {
@@ -104,6 +100,52 @@ class PluginCollectionTreeServer extends Plugin {
             });
           });
         });
+      }
+    });
+
+    this.db.on('afterSync', async (options) => {
+      if (!condition(options)) {
+        return;
+      }
+
+      const getTreePath = async (model: Model, path: string, collectionName: string) => {
+        if (model.dataValues?.parentId !== null) {
+          const parent = await this.app.db.getRepository(collectionName).findOne({
+            filter: {
+              id: model.dataValues?.parentId,
+            },
+          });
+          if (parent) {
+            path = `/${parent.dataValues?.id}${path}`;
+          }
+          if (parent.dataValues?.parentId !== null) {
+            path = await getTreePath(parent, path, collectionName);
+          }
+        }
+        return path;
+      };
+
+      const name = `main_${options.tableName}_path`;
+      const treeCollectionName = options.modelName;
+      if (this.db.getCollection(name)) {
+        const treeExistsInDb = await this.app.db.getCollection(name).existsInDb();
+        if (!treeExistsInDb) {
+          await this.db.getCollection(name).sync();
+          if (treeCollectionInDb) {
+            const existDatas = await this.app.db.getRepository(treeCollectionName).find({});
+            for (const data of existDatas) {
+              let path = `/${data.dataValues?.id}`;
+              path = await getTreePath(data, path, treeCollectionName);
+              this.app.db.getRepository(name).create({
+                values: {
+                  nodePk: data.dataValues?.id,
+                  path: path,
+                  rootPK: path.split('/')[1],
+                },
+              });
+            }
+          }
+        }
       }
     });
 
