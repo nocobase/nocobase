@@ -16,6 +16,7 @@ import { DataBlockProvider } from '../../../data-source/data-block/DataBlockProv
 import { BlockRequestContext } from '../../../data-source/data-block/DataBlockRequestProvider';
 import { SchemaComponent } from '../../core';
 import { TabsContextProvider } from '../tabs/context';
+import { BackButtonUsedInSubPage } from './BackButtonUsedInSubPage';
 import { usePopupSettings } from './PopupSettingsProvider';
 import { deleteRandomNestedSchemaKey, getRandomNestedSchemaKey } from './nestedSchemaKeyStorage';
 import { PopupParams, getPopupParamsFromPath, getStoredPopupContext, usePagePopup } from './pagePopupUtils';
@@ -40,6 +41,10 @@ interface PopupProps {
    * Used to identify the level of the current popup, where 0 represents the first level.
    */
   currentLevel: number;
+  /**
+   * Whether the current popup is a subpage.
+   */
+  isSubPage?: boolean;
 }
 
 export const PopupVisibleProviderContext = React.createContext<PopupsVisibleProviderProps>(null);
@@ -98,13 +103,15 @@ const PopupTabsPropsProvider: FC<{ params: PopupParams }> = ({ children, params 
     [changeTab],
   );
   const { isPopupVisibleControlledByURL } = usePopupSettings();
+  const { isSubPage } = useCurrentPopupContext();
+  const tabBarExtraContent = useMemo(() => (isSubPage ? <BackButtonUsedInSubPage /> : null), [isSubPage]);
 
   if (!isPopupVisibleControlledByURL) {
     return <>{children}</>;
   }
 
   return (
-    <TabsContextProvider activeKey={params.tab} onTabClick={onTabClick}>
+    <TabsContextProvider activeKey={params.tab} onTabClick={onTabClick} tabBarExtraContent={tabBarExtraContent}>
       {children}
     </TabsContextProvider>
   );
@@ -212,7 +219,6 @@ export const PagePopups = (props: { paramsList?: PopupParams[] }) => {
   const { requestSchema } = useRequestSchema();
   const [rootSchema, setRootSchema] = useState<ISchema>(null);
   const popupPropsRef = useRef<PopupProps[]>([]);
-  const isSubPageLast = useRef(false);
 
   useEffect(() => {
     const run = async () => {
@@ -242,6 +248,7 @@ export const PagePopups = (props: { paramsList?: PopupParams[] }) => {
           context: schemaContext,
           hidden,
           currentLevel: index + 1,
+          isSubPage: isSubPageSchema(schema),
         };
       });
       const rootSchema = clonedSchemas[0];
