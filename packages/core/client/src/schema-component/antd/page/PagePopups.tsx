@@ -33,34 +33,35 @@ interface PopupProps {
   params: PopupParams;
   context: PopupContext;
   /**
+   * When set to true, the current popup will be hidden.
+   */
+  hidden: boolean;
+  /**
    * Used to identify the level of the current popup, where 0 represents the first level.
    */
   currentLevel: number;
-  /**
-   * Total number of levels
-   */
-  totalLevels: number;
 }
 
 export const PopupVisibleProviderContext = React.createContext<PopupsVisibleProviderProps>(null);
-export const PopupParamsProviderContext = React.createContext<PopupProps>(null);
-export const LastPopupInfoProviderContext = React.createContext<{
-  /**
-   * Whether the last popup is a subpage
-   */
-  isSubpageLast: boolean;
-}>(null);
+export const PopupParamsProviderContext = React.createContext<Omit<PopupProps, 'hidden'>>(null);
+
+// Provides the context information for all levels of popups.
+export const AllPopupsPropsProviderContext = React.createContext<PopupProps[]>(null);
+
 PopupVisibleProviderContext.displayName = 'PopupVisibleProviderContext';
 PopupParamsProviderContext.displayName = 'PopupParamsProviderContext';
-LastPopupInfoProviderContext.displayName = 'LastPopupInfoProviderContext';
+AllPopupsPropsProviderContext.displayName = 'AllPopupsPropsProviderContext';
 
-export const useLastPopupInfo = () => {
-  return React.useContext(LastPopupInfoProviderContext) || { isSubpageLast: false };
-};
-
-export const usePopupContextAndParams = () => {
+/**
+ * @internal
+ * Because the data returned by this hook is not real-time (props will not be updated when nested schemas with the same name are re-rendered, possibly due to a bug in Formily),
+ * it is not recommended to use it externally. If you need to access the popup context, please use "useCurrentPopupContext" instead.
+ *
+ * @returns
+ */
+const usePopupContextAndParams = () => {
   const context = React.useContext(PopupParamsProviderContext);
-  return (context || {}) as PopupProps;
+  return (context || {}) as Omit<PopupProps, 'hidden'>;
 };
 
 /**
@@ -77,13 +78,12 @@ export const PopupVisibleProvider: FC<PopupsVisibleProviderProps> = ({ children,
   );
 };
 
-const PopupParamsProvider: FC<PopupProps> = (props) => {
+const PopupParamsProvider: FC<Omit<PopupProps, 'hidden'>> = (props) => {
   const value = useMemo(() => {
     return {
       params: props.params,
       context: props.context,
       currentLevel: props.currentLevel,
-      totalLevels: props.totalLevels,
     };
   }, [props.params, props.context]);
   return <PopupParamsProviderContext.Provider value={value}>{props.children}</PopupParamsProviderContext.Provider>;
@@ -113,9 +113,11 @@ const PopupTabsPropsProvider: FC<{ params: PopupParams }> = ({ children, params 
 const PagePopupsItemProvider: FC<{
   params: PopupParams;
   context: PopupContext;
+  /**
+   * Used to identify the level of the current popup, where 0 represents the first level.
+   */
   currentLevel: number;
-  totalLevels: number;
-}> = ({ params, context, currentLevel, totalLevels, children }) => {
+}> = ({ params, context, currentLevel, children }) => {
   const { closePopup } = usePagePopup();
   const [visible, _setVisible] = useState(true);
   const setVisible = (visible: boolean) => {
@@ -146,7 +148,7 @@ const PagePopupsItemProvider: FC<{
   }
 
   return (
-    <PopupParamsProvider params={params} context={context} currentLevel={currentLevel} totalLevels={totalLevels}>
+    <PopupParamsProvider params={params} context={context} currentLevel={currentLevel}>
       <PopupVisibleProvider visible={visible} setVisible={setVisible}>
         <DataBlockProvider
           dataSource={context.dataSource}
@@ -178,7 +180,7 @@ const PagePopupsItemProvider: FC<{
  * @param parentSchema
  */
 export const insertChildToParentSchema = (childSchema: ISchema, props: PopupProps, parentSchema: ISchema) => {
-  const { params, context, currentLevel, totalLevels } = props;
+  const { params, context, currentLevel } = props;
 
   const componentSchema = {
     type: 'void',
@@ -187,7 +189,6 @@ export const insertChildToParentSchema = (childSchema: ISchema, props: PopupProp
       params,
       context,
       currentLevel,
-      totalLevels,
     },
     properties: {
       popupAction: childSchema,
@@ -226,16 +227,21 @@ export const PagePopups = (props: { paramsList?: PopupParams[] }) => {
       });
       popupPropsRef.current = clonedSchemas.map((schema, index, items) => {
         const schemaContext = getPopupContextFromActionOrAssociationFieldSchema(schema);
+        let hidden = false;
 
-        if (index === items.length - 1) {
-          isSubPageLast.current = isSubPageSchema(schema);
+        for (let i = index + 1; i < items.length; i++) {
+          if (isSubPageSchema(items[i])) {
+            // Because the popup has a higher z-index, if the popup is not hidden, there will be an issue where the subpage is displayed below the popup.
+            hidden = true;
+            break;
+          }
         }
 
         return {
           params: popupParams[index],
           context: schemaContext,
+          hidden,
           currentLevel: index + 1,
-          totalLevels: items.length,
         };
       });
       const rootSchema = clonedSchemas[0];
@@ -254,16 +260,15 @@ export const PagePopups = (props: { paramsList?: PopupParams[] }) => {
   }
 
   return (
-    <LastPopupInfoProviderContext.Provider value={{ isSubpageLast: isSubPageLast.current }}>
+    <AllPopupsPropsProviderContext.Provider value={popupPropsRef.current}>
       <PagePopupsItemProvider
         params={popupPropsRef.current[0].params}
         context={popupPropsRef.current[0].context}
         currentLevel={1}
-        totalLevels={popupPropsRef.current.length}
       >
         <SchemaComponent components={components} schema={rootSchema} onlyRenderProperties />;
       </PagePopupsItemProvider>
-    </LastPopupInfoProviderContext.Provider>
+    </AllPopupsPropsProviderContext.Provider>
   );
 };
 
@@ -294,3 +299,9 @@ function isSubPageSchema(schema: ISchema) {
   const openMode = _.get(schema, 'x-component-props.openMode');
   return openMode === 'page';
 }
+
+export const useCurrentPopupContext = (): PopupProps => {
+  const { currentLevel } = usePopupContextAndParams();
+  const allPopupsProps = React.useContext(AllPopupsPropsProviderContext);
+  return allPopupsProps?.[currentLevel - 1] || ({} as PopupProps);
+};

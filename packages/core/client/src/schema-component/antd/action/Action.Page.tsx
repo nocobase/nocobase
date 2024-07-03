@@ -11,7 +11,7 @@ import { RecursionField, observer, useFieldSchema } from '@formily/react';
 import React, { useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { useActionContext } from '.';
-import { usePopupContextAndParams } from '../page/PagePopups';
+import { useCurrentPopupContext } from '../page/PagePopups';
 import { useActionPageStyle } from './Action.Page.style';
 import { usePopupOrSubpagesContainerDOM } from './hooks/usePopupSlotDOM';
 import { ComposedActionDrawer } from './types';
@@ -22,7 +22,7 @@ export const ActionPage: ComposedActionDrawer = observer(
     const ctx = useActionContext();
     const { getContainerDOM } = usePopupOrSubpagesContainerDOM();
     const { styles } = useActionPageStyle();
-    const { currentLevel } = usePopupContextAndParams();
+    const { currentLevel } = useCurrentPopupContext();
 
     const style = useMemo(() => {
       return {

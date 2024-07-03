@@ -23,7 +23,7 @@ import {
 } from '../../../data-source';
 import { useCurrentPopupRecord } from '../../../modules/variable/variablesProvider/VariablePopupRecordProvider';
 import { ActionContext } from '../action/context';
-import { PopupVisibleProviderContext, usePopupContextAndParams } from './PagePopups';
+import { PopupVisibleProviderContext, useCurrentPopupContext } from './PagePopups';
 import { usePopupSettings } from './PopupSettingsProvider';
 import { PopupContext, usePopupContextInActionOrAssociationField } from './usePopupContextInActionOrAssociationField';
 
@@ -100,7 +100,7 @@ export const usePagePopup = () => {
   const cm = useCollectionManager();
   const association = useAssociationName();
   const { visible, setVisible } = useContext(PopupVisibleProviderContext) || { visible: false, setVisible: () => {} };
-  const { params: popupParams } = usePopupContextAndParams();
+  const { params: popupParams } = useCurrentPopupContext();
   const service = useDataBlockRequest();
   const { isPopupVisibleControlledByURL } = usePopupSettings();
   const { setVisible: setVisibleFromAction } = useContext(ActionContext);
@@ -257,7 +257,7 @@ export const usePagePopup = () => {
   };
 };
 
-// e.g. /popups/popupUid/popups/popupUid2 -> /popups/popupUid
+// e.g. /popups/popupUid/popups/popupUid2 -> /popups/popupUid/
 export function removeLastPopupPath(path: string) {
   if (!path.includes('popups')) {
     return path;

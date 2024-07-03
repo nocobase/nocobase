@@ -13,7 +13,7 @@ import classNames from 'classnames';
 import React, { useMemo } from 'react';
 import { ErrorBoundary, FallbackProps } from 'react-error-boundary';
 import { ErrorFallback } from '../error-fallback';
-import { useLastPopupInfo } from '../page/PagePopups';
+import { useCurrentPopupContext } from '../page/PagePopups';
 import { useStyles } from './Action.Drawer.style';
 import { useActionContext } from './hooks';
 import { useSetAriaLabelForDrawer } from './hooks/useSetAriaLabelForDrawer';
@@ -46,14 +46,14 @@ export const InternalActionDrawer: React.FC<ActionDrawerProps> = observer(
       }
       return buf;
     });
-    const { isSubpageLast } = useLastPopupInfo();
+    const { hidden } = useCurrentPopupContext();
     const rootStyle: React.CSSProperties = useMemo(() => {
       return {
         ...drawerProps?.style,
         ...others?.style,
-        display: isSubpageLast ? 'none' : 'block',
+        display: hidden ? 'none' : 'block',
       };
-    }, [isSubpageLast, drawerProps?.style, others?.style]);
+    }, [hidden, drawerProps?.style, others?.style]);
 
     if (process.env.__E2E__) {
       useSetAriaLabelForDrawer(visible);

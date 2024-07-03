@@ -15,7 +15,7 @@ import React, { useMemo } from 'react';
 import { ErrorBoundary, FallbackProps } from 'react-error-boundary';
 import { useToken } from '../../../style';
 import { ErrorFallback } from '../error-fallback';
-import { useLastPopupInfo } from '../page/PagePopups';
+import { useCurrentPopupContext } from '../page/PagePopups';
 import { useActionContext } from './hooks';
 import { useSetAriaLabelForModal } from './hooks/useSetAriaLabelForModal';
 import { ActionDrawerProps, ComposedActionDrawer, OpenSize } from './types';
@@ -49,17 +49,17 @@ export const InternalActionModal: React.FC<ActionDrawerProps<ModalProps>> = obse
       }
       return buf;
     });
-    const { isSubpageLast } = useLastPopupInfo();
+    const { hidden } = useCurrentPopupContext();
     const styles: any = useMemo(() => {
       return {
         mask: {
-          display: isSubpageLast ? 'none' : 'block',
+          display: hidden ? 'none' : 'block',
         },
         content: {
-          display: isSubpageLast ? 'none' : 'block',
+          display: hidden ? 'none' : 'block',
         },
       };
-    }, [isSubpageLast]);
+    }, [hidden]);
 
     const showFooter = !!footerSchema;
     if (process.env.__E2E__) {
