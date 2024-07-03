@@ -219,7 +219,7 @@ export const usePagePopup = () => {
       return setVisibleFromAction?.(false);
     }
 
-    navigate(withSearchParams(removeLastPopupPath(location.pathname)));
+    navigate(-1);
   }, [navigate, location, isPopupVisibleControlledByURL]);
 
   const changeTab = useCallback(
@@ -235,7 +235,9 @@ export const usePagePopup = () => {
       if (_.last(url) === '/') {
         url = url.slice(0, -1);
       }
-      navigate(`${url}${pathname}`);
+      navigate(`${url}${pathname}`, {
+        replace: true,
+      });
     },
     [getNewPathname, navigate, popupParams?.popupuid, record?.data, location],
   );
