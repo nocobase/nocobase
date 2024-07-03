@@ -32,6 +32,10 @@ interface PopupsVisibleProviderProps {
 interface PopupProps {
   params: PopupParams;
   context: PopupContext;
+  /**
+   * Used to identify the level of the current popup, where 0 represents the first level.
+   */
+  index: number;
 }
 
 export const PopupVisibleProviderContext = React.createContext<PopupsVisibleProviderProps>(null);
@@ -60,7 +64,7 @@ export const PopupVisibleProvider: FC<PopupsVisibleProviderProps> = ({ children,
 
 const PopupParamsProvider: FC<PopupProps> = (props) => {
   const value = useMemo(() => {
-    return { params: props.params, context: props.context };
+    return { params: props.params, context: props.context, index: props.index };
   }, [props.params, props.context]);
   return <PopupParamsProviderContext.Provider value={value}>{props.children}</PopupParamsProviderContext.Provider>;
 };
@@ -86,7 +90,12 @@ const PopupTabsPropsProvider: FC<{ params: PopupParams }> = ({ children, params 
   );
 };
 
-const PagePopupsItemProvider: FC<{ params: PopupParams; context: PopupContext }> = ({ params, context, children }) => {
+const PagePopupsItemProvider: FC<{ params: PopupParams; context: PopupContext; index: number }> = ({
+  params,
+  context,
+  index,
+  children,
+}) => {
   const { closePopup } = usePagePopup();
   const [visible, _setVisible] = useState(true);
   const setVisible = (visible: boolean) => {
@@ -117,7 +126,7 @@ const PagePopupsItemProvider: FC<{ params: PopupParams; context: PopupContext }>
   }
 
   return (
-    <PopupParamsProvider params={params} context={context}>
+    <PopupParamsProvider params={params} context={context} index={index}>
       <PopupVisibleProvider visible={visible} setVisible={setVisible}>
         <DataBlockProvider
           dataSource={context.dataSource}
@@ -149,7 +158,7 @@ const PagePopupsItemProvider: FC<{ params: PopupParams; context: PopupContext }>
  * @param parentSchema
  */
 export const insertChildToParentSchema = (childSchema: ISchema, props: PopupProps, parentSchema: ISchema) => {
-  const { params, context } = props;
+  const { params, context, index } = props;
 
   const componentSchema = {
     type: 'void',
@@ -157,6 +166,7 @@ export const insertChildToParentSchema = (childSchema: ISchema, props: PopupProp
     'x-component-props': {
       params,
       context,
+      index,
     },
     properties: {
       popupAction: childSchema,
@@ -197,6 +207,7 @@ export const PagePopups = (props: { paramsList?: PopupParams[] }) => {
         return {
           params: popupParams[index],
           context: schemaContext,
+          index,
         };
       });
       const rootSchema = clonedSchemas[0];
@@ -215,7 +226,11 @@ export const PagePopups = (props: { paramsList?: PopupParams[] }) => {
   }
 
   return (
-    <PagePopupsItemProvider params={popupPropsRef.current[0].params} context={popupPropsRef.current[0].context}>
+    <PagePopupsItemProvider
+      params={popupPropsRef.current[0].params}
+      context={popupPropsRef.current[0].context}
+      index={0}
+    >
       <SchemaComponent components={components} schema={rootSchema} onlyRenderProperties />;
     </PagePopupsItemProvider>
   );

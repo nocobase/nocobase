@@ -11,27 +11,37 @@ import { RecursionField, observer, useFieldSchema } from '@formily/react';
 import React, { useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { useActionContext } from '.';
+import { usePopupContextAndParams } from '../page/PagePopups';
 import { useActionPageStyle } from './Action.Page.style';
+import { usePopupOrSubpagesContainerDOM } from './hooks/usePopupSlotDOM';
 import { ComposedActionDrawer } from './types';
 
 export const ActionPage: ComposedActionDrawer = observer(
-  (props: any) => {
+  () => {
     const filedSchema = useFieldSchema();
-    const { visible } = useActionContext();
-    const pageDOM = useMemo(() => document.querySelector('#nb-page-without-header-and-side'), []);
+    const ctx = useActionContext();
+    const { getContainerDOM } = usePopupOrSubpagesContainerDOM();
     const { styles } = useActionPageStyle();
+    const { index } = usePopupContextAndParams();
 
-    if (!visible) {
+    const style = useMemo(() => {
+      return {
+        // 20 is the z-index value of the main page
+        zIndex: 20 + index,
+      };
+    }, [index]);
+
+    if (!ctx.visible) {
       return null;
     }
 
     const actionPageNode = (
-      <div className={styles.container}>
+      <div className={styles.container} style={style}>
         <RecursionField schema={filedSchema} onlyRenderProperties />
       </div>
     );
 
-    return createPortal(actionPageNode, pageDOM);
+    return createPortal(actionPageNode, getContainerDOM());
   },
   { displayName: 'ActionPage' },
 );

@@ -15,6 +15,7 @@ import { ErrorBoundary, FallbackProps } from 'react-error-boundary';
 import { ErrorFallback } from '../error-fallback';
 import { useStyles } from './Action.Drawer.style';
 import { useActionContext } from './hooks';
+import { usePopupOrSubpagesContainerDOM } from './hooks/usePopupSlotDOM';
 import { useSetAriaLabelForDrawer } from './hooks/useSetAriaLabelForDrawer';
 import { ActionDrawerProps, ComposedActionDrawer, OpenSize } from './types';
 
@@ -45,6 +46,7 @@ export const InternalActionDrawer: React.FC<ActionDrawerProps> = observer(
       }
       return buf;
     });
+    const { getContainerDOM } = usePopupOrSubpagesContainerDOM();
 
     if (process.env.__E2E__) {
       useSetAriaLabelForDrawer(visible);
@@ -52,6 +54,7 @@ export const InternalActionDrawer: React.FC<ActionDrawerProps> = observer(
 
     return (
       <Drawer
+        getContainer={getContainerDOM}
         width={openSizeWidthMap.get(openSize)}
         title={field.title}
         {...others}

@@ -16,6 +16,7 @@ import { ErrorBoundary, FallbackProps } from 'react-error-boundary';
 import { useToken } from '../../../style';
 import { ErrorFallback } from '../error-fallback';
 import { useActionContext } from './hooks';
+import { usePopupOrSubpagesContainerDOM } from './hooks/usePopupSlotDOM';
 import { useSetAriaLabelForModal } from './hooks/useSetAriaLabelForModal';
 import { ActionDrawerProps, ComposedActionDrawer, OpenSize } from './types';
 
@@ -33,6 +34,13 @@ const openSizeWidthMap = new Map<OpenSize, string>([
   ['middle', '60%'],
   ['large', '80%'],
 ]);
+
+const modalRootStyle = css`
+  position: absolute !important;
+  top: var(--nb-header-height);
+  z-index: 20; // Keep the same z-index as the sub pages
+`;
+
 export const InternalActionModal: React.FC<ActionDrawerProps<ModalProps>> = observer(
   (props) => {
     const { footerNodeName = 'Action.Modal.Footer', width, ...others } = props;
@@ -47,6 +55,7 @@ export const InternalActionModal: React.FC<ActionDrawerProps<ModalProps>> = obse
       }
       return buf;
     });
+    const { getContainerDOM } = usePopupOrSubpagesContainerDOM();
     const showFooter = !!footerSchema;
     if (process.env.__E2E__) {
       useSetAriaLabelForModal(visible);
@@ -54,6 +63,7 @@ export const InternalActionModal: React.FC<ActionDrawerProps<ModalProps>> = obse
 
     return (
       <Modal
+        getContainer={getContainerDOM}
         width={actualWidth}
         title={field.title}
         {...(others as ModalProps)}
@@ -65,6 +75,7 @@ export const InternalActionModal: React.FC<ActionDrawerProps<ModalProps>> = obse
         destroyOnClose
         open={visible}
         onCancel={() => setVisible(false, true)}
+        rootClassName={modalRootStyle}
         className={classNames(
           others.className,
           modalProps?.className,

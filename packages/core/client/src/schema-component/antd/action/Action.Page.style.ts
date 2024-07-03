@@ -12,13 +12,13 @@ import { createStyles } from 'antd-style';
 export const useActionPageStyle = createStyles(({ css, token }: any) => {
   return {
     container: css`
-      position: absolute;
-      top: 0;
+      position: absolute !important;
+      top: var(--nb-header-height);
       left: 0;
       right: 0;
       bottom: 0;
-      z-index: 999;
       background-color: ${token.colorBgLayout};
+      overflow: auto;
 
       .ant-tabs-nav {
         background: ${token.colorBgContainer};

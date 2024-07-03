@@ -14,6 +14,9 @@ export const useStyles = genStyleHook('nb-action-drawer', (token) => {
 
   return {
     [componentCls]: {
+      position: 'absolute !important',
+      top: 'var(--nb-header-height)',
+      zIndex: 20, // Keep the same z-index as the sub pages
       overflow: 'hidden',
       '&.reset': {
         '&.nb-action-popup': {
@@ -64,5 +67,5 @@ export const useStyles = genStyleHook('nb-action-drawer', (token) => {
       //   margin: `-${token.paddingPopupVertical}px -${token.paddingPopupHorizontal}px`,
       // },
     },
-  };
+  } as any;
 });
