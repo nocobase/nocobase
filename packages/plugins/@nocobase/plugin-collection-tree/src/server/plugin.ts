@@ -40,28 +40,11 @@ class PluginCollectionTreeServer extends Plugin {
             ],
           });
 
-          const getTreePath = async (model: Model, path: string, collectionName: string) => {
-            if (model.dataValues?.parentId !== null) {
-              const parent = await this.app.db.getRepository(collectionName).findOne({
-                filter: {
-                  id: model.dataValues?.parentId,
-                },
-              });
-              if (parent) {
-                path = `/${parent.dataValues?.id}${path}`;
-                if (parent.dataValues?.parentId !== null) {
-                  path = await getTreePath(parent, path, collectionName);
-                }
-              }
-            }
-            return path;
-          };
-
           //afterCreate
           this.db.on(`${collection.name}.afterCreate`, async (model: Model, options) => {
             const { transaction } = options;
             let path = `/${model.dataValues?.id}`;
-            path = await getTreePath(model, path, collection.name);
+            path = await this.getTreePath(model, path, collection.name);
             await this.app.db.getRepository(name).create({
               values: {
                 nodePk: model.dataValues?.id,
@@ -108,23 +91,6 @@ class PluginCollectionTreeServer extends Plugin {
         return;
       }
 
-      const getTreePath = async (model: Model, path: string, collectionName: string) => {
-        if (model.dataValues?.parentId !== null) {
-          const parent = await this.app.db.getRepository(collectionName).findOne({
-            filter: {
-              id: model.dataValues?.parentId,
-            },
-          });
-          if (parent) {
-            path = `/${parent.dataValues?.id}${path}`;
-          }
-          if (parent.dataValues?.parentId !== null) {
-            path = await getTreePath(parent, path, collectionName);
-          }
-        }
-        return path;
-      };
-
       const name = `main_${options.tableName}_path`;
       const treeCollectionName = options.modelName;
       if (this.db.getCollection(name)) {
@@ -135,7 +101,7 @@ class PluginCollectionTreeServer extends Plugin {
             const existDatas = await this.app.db.getRepository(treeCollectionName).find({});
             for (const data of existDatas) {
               let path = `/${data.dataValues?.id}`;
-              path = await getTreePath(data, path, treeCollectionName);
+              path = await this.getTreePath(data, path, treeCollectionName);
               this.app.db.getRepository(name).create({
                 values: {
                   nodePk: data.dataValues?.id,
@@ -157,6 +123,23 @@ class PluginCollectionTreeServer extends Plugin {
 
       await this.db.getCollection(name).removeFromDb({ transaction });
     });
+  }
+
+  private async getTreePath(model, path, collectionName) {
+    if (model.dataValues?.parentId !== null) {
+      const parent = await this.app.db.getRepository(collectionName).findOne({
+        filter: {
+          id: model.dataValues?.parentId,
+        },
+      });
+      if (parent) {
+        path = `/${parent.dataValues?.id}${path}`;
+        if (parent.dataValues?.parentId !== null) {
+          path = await this.getTreePath(parent, path, collectionName);
+        }
+      }
+    }
+    return path;
   }
 }
 
