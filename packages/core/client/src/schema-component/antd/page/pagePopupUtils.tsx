@@ -262,7 +262,10 @@ export function removeLastPopupPath(path: string) {
   if (!path.includes('popups')) {
     return path;
   }
-  return path.split('popups').slice(0, -1).join('popups');
+
+  const result = path.split('popups').slice(0, -1).join('popups');
+
+  return result.endsWith('/') ? result.slice(0, -1) : result;
 }
 
 export function withSearchParams(path: string) {
