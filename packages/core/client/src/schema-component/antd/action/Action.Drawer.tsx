@@ -51,7 +51,7 @@ export const InternalActionDrawer: React.FC<ActionDrawerProps> = observer(
       return {
         ...drawerProps?.style,
         ...others?.style,
-        visibility: isSubpageLast ? 'hidden' : 'visible',
+        display: isSubpageLast ? 'none' : 'block',
       };
     }, [isSubpageLast, drawerProps?.style, others?.style]);
 

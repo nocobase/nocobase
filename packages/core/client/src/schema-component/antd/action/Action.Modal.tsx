@@ -53,10 +53,10 @@ export const InternalActionModal: React.FC<ActionDrawerProps<ModalProps>> = obse
     const styles: any = useMemo(() => {
       return {
         mask: {
-          visibility: isSubpageLast ? 'hidden' : 'visible',
+          display: isSubpageLast ? 'none' : 'block',
         },
-        wrapper: {
-          visibility: isSubpageLast ? 'hidden' : 'visible',
+        content: {
+          display: isSubpageLast ? 'none' : 'block',
         },
       };
     }, [isSubpageLast]);
