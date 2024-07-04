@@ -40,6 +40,29 @@ describe('MobileTabBar.Item', () => {
 
     expect(screen.getByText('Test')).toBeInTheDocument();
     expect(screen.queryByRole('img')).toBeInTheDocument();
-    expect(screen.queryByTestId('schema-json')).toMatchInlineSnapshot();
+    expect(screen.queryByTestId('schema-json')).toMatchInlineSnapshot(`
+      <pre
+        data-testid="schema-json"
+      >
+        {
+        "_isJSONSchemaObject": true,
+        "version": "2.0",
+        "type": "void",
+        "x-decorator": "BlockItem",
+        "x-settings": "mobile:tab-bar:page",
+        "x-component": "MobileTabBar.Page",
+        "x-toolbar-props": {
+          "showBorder": false,
+          "showBackground": true
+        },
+        "x-component-props": {
+          "title": "Test",
+          "icon": "AppstoreOutlined",
+          "pageSchemaUid": "page1"
+        },
+        "name": "schema"
+      }
+      </pre>
+    `);
   });
 });
