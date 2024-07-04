@@ -90,7 +90,7 @@ jobs:
         run: yarn install
       - name: Test with postgres
         run: |
-          yarn test --server --single-thread=true
+          yarn test --server
         env:
           LOGGER_LEVEL: error
           DB_DIALECT: postgres
