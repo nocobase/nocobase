@@ -37,7 +37,7 @@ const InternalIcons = () => {
       <DndContext>
         <Space wrap>
           {fieldSchema.mapProperties((s, key) => (
-            <RecursionField name={key} schema={s} />
+            <RecursionField name={key} schema={s} key={key} />
           ))}
         </Space>
       </DndContext>
