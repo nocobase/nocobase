@@ -8,7 +8,7 @@
  */
 
 import { useFieldSchema } from '@formily/react';
-import React, { createContext, useEffect, useRef, useState } from 'react';
+import React, { createContext, useEffect, useState } from 'react';
 import { useDataBlockRequest } from '../../../data-source';
 import { useCurrentPopupContext } from '../page/PagePopups';
 import { getBlockService, storeBlockService } from '../page/pagePopupUtils';
@@ -18,43 +18,47 @@ export const ActionContext = createContext<ActionContextProps>({});
 ActionContext.displayName = 'ActionContext';
 
 export const ActionContextProvider: React.FC<ActionContextProps & { value?: ActionContextProps }> = (props) => {
-  const { params } = useCurrentPopupContext();
-  const popupUidWithoutOpened = useFieldSchema()?.['x-uid'];
   const [submitted, setSubmitted] = useState(false); //是否有提交记录
   const { visible } = { ...props, ...props.value } || {};
-  const isFirstRender = useRef(!params?.popupuid); // 使用ref跟踪是否为首次渲染
-  const service = useDataBlockRequest();
   const { setSubmitted: setParentSubmitted } = { ...props, ...props.value };
-  const currentPopupUid = params?.popupuid;
+  const service = useBlockServiceInActionButton();
 
   useEffect(() => {
-    // Block services in both pages and popups (including sub-pages) need to be stored.
-    if (popupUidWithoutOpened && currentPopupUid !== popupUidWithoutOpened) {
-      storeBlockService(popupUidWithoutOpened, { service });
+    if (visible === false && submitted && service) {
+      service.refresh();
+      setParentSubmitted?.(true); //传递给上一层
     }
-  }, [popupUidWithoutOpened, service, currentPopupUid]);
 
-  useEffect(() => {
-    const _service: any = currentPopupUid ? getBlockService(currentPopupUid)?.service || service : service;
-
-    if (visible !== undefined) {
-      if (isFirstRender.current) {
-        isFirstRender.current = false;
-      } else {
-        if (visible === false && submitted && _service) {
-          _service.refresh();
-          setParentSubmitted?.(true); //传递给上一层
-        }
-      }
-    }
     return () => {
       setSubmitted(false);
     };
-  }, [visible, currentPopupUid]);
+  }, [visible, service]);
 
   return (
     <ActionContext.Provider value={{ ...props, ...props?.value, submitted, setSubmitted }}>
       {props.children}
     </ActionContext.Provider>
   );
+};
+
+const useBlockServiceInActionButton = () => {
+  const { params } = useCurrentPopupContext();
+  const popupUidWithoutOpened = useFieldSchema()?.['x-uid'];
+  const service = useDataBlockRequest();
+  const currentPopupUid = params?.popupuid;
+
+  // By using caching, we solve the problem of not being able to obtain the correct service when closing a popup through a URL
+  useEffect(() => {
+    // This case refers to when the current button is rendered on a page or in a popup
+    if (popupUidWithoutOpened && currentPopupUid !== popupUidWithoutOpened) {
+      storeBlockService(popupUidWithoutOpened, { service });
+    }
+  }, [popupUidWithoutOpened, service, currentPopupUid]);
+
+  // This case refers to when the current button is closed as a popup (the button's uid is the same as the popup's uid)
+  if (currentPopupUid === popupUidWithoutOpened) {
+    return getBlockService(currentPopupUid)?.service || service;
+  }
+
+  return service;
 };
