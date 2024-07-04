@@ -24,28 +24,35 @@ class PluginCollectionTreeServer extends Plugin {
     this.app.dataSourceManager.afterAddDataSource((dataSource: DataSource) => {
       const collectionManager = dataSource.collectionManager;
       if (collectionManager instanceof SequelizeCollectionManager) {
+        collectionManager.db.on('afterSync', async (collection: Model) => {
+          if (!collection.tree) {
+            return;
+          }
+          const name = `${dataSource.name}_${collection.modelName}_path`;
+          const collectionTree = await this.db.getCollection(name);
+          if (!collectionTree) {
+            this.db.collection({
+              name,
+              autoGenId: false,
+              timestamps: false,
+              fields: [
+                { type: 'integer', name: 'nodePk' },
+                { type: 'jsonb', name: 'path' },
+                { type: 'integer', name: 'rootPK' },
+              ],
+            });
+            await this.db.getCollection(name).sync(collection.transaction);
+          }
+        });
+
         collectionManager.db.on('afterDefineCollection', (collection: Model) => {
           if (!collection.options.tree) {
             return;
           }
           const name = `${dataSource.name}_${collection.options.name}_path`;
-          this.db.collection({
-            name,
-            autoGenId: false,
-            timestamps: false,
-            fields: [
-              { type: 'integer', name: 'nodePk' },
-              { type: 'jsonb', name: 'path' },
-              { type: 'integer', name: 'rootPK' },
-            ],
-          });
 
           //sync exisit tree collection path table
           this.syncExistTreeCollectionPathTable();
-
-          collectionManager.db.on(`${collection.name}.afterSync`, async ({ transaction }) => {
-            await this.db.getCollection(name).sync(transaction);
-          });
 
           //afterCreate
           this.db.on(`${collection.name}.afterCreate`, async (model: Model, options) => {
@@ -99,7 +106,10 @@ class PluginCollectionTreeServer extends Plugin {
         return;
       }
 
-      await this.db.getCollection(name).removeFromDb({ transaction });
+      const collectionTree = await this.db.getCollection(name);
+      if (collectionTree) {
+        await this.db.getCollection(name).removeFromDb({ transaction });
+      }
     });
   }
 
