@@ -7,39 +7,18 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { FC, useMemo } from 'react';
-
-interface PopupSettings {
-  /**
-   * @default true
-   */
-  isPopupVisibleControlledByURL: boolean;
-}
-
-const PopupSettingsContext = React.createContext<PopupSettings>(null);
-
-/**
- * Provider component for the popup settings.
- * @param props - The popup settings.
- */
-export const PopupSettingsProvider: FC<PopupSettings> = (props) => {
-  const { isPopupVisibleControlledByURL } = props;
-
-  const value = useMemo(() => {
-    return { isPopupVisibleControlledByURL };
-  }, [isPopupVisibleControlledByURL]);
-
-  return <PopupSettingsContext.Provider value={value}>{props.children}</PopupSettingsContext.Provider>;
-};
+import { useCallback } from 'react';
 
 /**
  * Hook for accessing the popup settings.
  * @returns The popup settings.
  */
 export const usePopupSettings = () => {
-  return (
-    React.useContext(PopupSettingsContext) || {
-      isPopupVisibleControlledByURL: true,
-    }
-  );
+  const isPopupVisibleControlledByURL = useCallback(() => {
+    const pathname = window.location.pathname;
+    const hash = window.location.hash;
+    return pathname?.includes('/admin/') && !hash?.includes('/mobile');
+  }, []);
+
+  return { isPopupVisibleControlledByURL };
 };

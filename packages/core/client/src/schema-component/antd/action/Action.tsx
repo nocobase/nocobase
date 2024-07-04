@@ -324,7 +324,7 @@ function RenderButton({
                 service?.refresh?.();
               }
             });
-          } else if (isBulkEditAction(fieldSchema) || !isPopupVisibleControlledByURL) {
+          } else if (isBulkEditAction(fieldSchema) || !isPopupVisibleControlledByURL()) {
             setVisible(true);
             run?.();
           } else {

@@ -172,7 +172,7 @@ export const usePagePopup = () => {
       recordData?: Record<string, any>;
       parentRecordData?: Record<string, any>;
     } = {}) => {
-      if (!isPopupVisibleControlledByURL) {
+      if (!isPopupVisibleControlledByURL()) {
         return setVisibleFromAction?.(true);
       }
 
@@ -221,7 +221,7 @@ export const usePagePopup = () => {
 
   const closePopup = useCallback(
     (currentPopupUid: string) => {
-      if (!isPopupVisibleControlledByURL) {
+      if (!isPopupVisibleControlledByURL()) {
         return setVisibleFromAction?.(false);
       }
 

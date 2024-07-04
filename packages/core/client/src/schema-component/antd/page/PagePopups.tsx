@@ -96,7 +96,7 @@ const PopupTabsPropsProvider: FC<{ params: PopupParams }> = ({ children, params 
   const { isSubPage } = useCurrentPopupContext();
   const tabBarExtraContent = useMemo(() => (isSubPage ? <BackButtonUsedInSubPage /> : null), [isSubPage]);
 
-  if (!isPopupVisibleControlledByURL) {
+  if (!isPopupVisibleControlledByURL()) {
     return <>{children}</>;
   }
 
