@@ -52,8 +52,28 @@ export const getStoredPopupContext = (popupUid: string) => {
   return popupsContextStorage[popupUid];
 };
 
+/**
+ * Used to store the context of the current popup when a button is clicked.
+ * @param popupUid
+ * @param params
+ */
 export const storePopupContext = (popupUid: string, params: PopupContextStorage) => {
   popupsContextStorage[popupUid] = params;
+};
+
+const blockServicesStorage: Record<string, { service: any }> = {};
+
+export const getBlockService = (popupUid: string) => {
+  return blockServicesStorage[popupUid];
+};
+
+/**
+ * Used to store the service of the block when rendering the button.
+ * @param popupUid
+ * @param value
+ */
+export const storeBlockService = (popupUid: string, value: { service: any }) => {
+  blockServicesStorage[popupUid] = value;
 };
 
 export const getPopupParamsFromPath = _.memoize((path: string) => {
