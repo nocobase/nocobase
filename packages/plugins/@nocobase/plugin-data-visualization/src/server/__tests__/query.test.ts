@@ -182,6 +182,31 @@ describe('query', () => {
       ]);
     });
 
+    it('should throw error if invalid aggregation function', async () => {
+      const measures = [
+        {
+          field: ['price'],
+          aggregation: 'if(1=2,sleep(1),sleep(3)) and sum',
+        },
+      ];
+      const context = {
+        ...ctx,
+        action: {
+          params: {
+            values: {
+              collection: 'orders',
+              measures,
+            },
+          },
+        },
+      };
+      try {
+        await compose([parseFieldAndAssociations, parseBuilder])(context, async () => {});
+      } catch (error) {
+        expect(error.message).toBe('Invalid aggregation function: if(1=2,sleep(1),sleep(3)) and sum');
+      }
+    });
+
     it('should parse dimensions', async () => {
       vi.spyOn(formatter, 'formatter').mockReturnValue('formatted-field');
       const dimensions = [
