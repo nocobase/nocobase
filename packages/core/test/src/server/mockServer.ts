@@ -106,8 +106,6 @@ export class MockServer extends Application {
 
   async destroy(options: any = {}): Promise<void> {
     await super.destroy(options);
-    // drop
-    await super.db.clean({ drop: true });
     Gateway.getInstance().destroy();
     await AppSupervisor.getInstance().destroy();
   }
