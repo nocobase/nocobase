@@ -50,7 +50,7 @@ export const InternalNester = observer(
     }, []);
     return (
       <CollectionProvider_deprecated name={collectionField.target}>
-        <ACLCollectionProvider actionPath={`${collectionField.target}:${actionName}`}>
+        <ACLCollectionProvider actionPath={`${collectionField.target}:${actionName || 'view'}`}>
           <FormLayout layout={'vertical'}>
             <div
               className={cx(

@@ -30,9 +30,14 @@ export default (app: Application) => {
         `${dayjs().format('YYYYMMDDHHmmss')}-${name}.ts`,
       );
       const version = app.getVersion();
-      const keys: any[] = version.split('.');
-      keys.push(1 * keys.pop() + 1);
-      const nextVersion = keys.join('.');
+      // 匹配主版本号、次版本号、小版本号和后缀的正则表达式
+      const regex = /(\d+)\.(\d+)\.(\d+)(-[\w.]+)?/;
+      const nextVersion = version.replace(regex, (match, major, minor, patch, suffix) => {
+        // 将小版本号转换为整数并加1
+        const newPatch = parseInt(patch) + 1;
+        // 返回新的版本号
+        return `${major}.${minor}.${newPatch}${suffix || ''}`;
+      });
       const from = pkg === '@nocobase/server' ? `../migration` : '@nocobase/server';
       const data = `import { Migration } from '${from}';
 
