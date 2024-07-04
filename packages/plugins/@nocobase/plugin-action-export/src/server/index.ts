@@ -13,6 +13,10 @@ import { exportXlsx } from './actions';
 export class PluginActionExportServer extends Plugin {
   beforeLoad() {
     this.app.on('afterInstall', async () => {
+      if (!this.app.db.getRepository('roles')) {
+        return;
+      }
+
       const roleNames = ['admin', 'member'];
       const roles = await this.app.db.getRepository('roles').find({
         filter: {

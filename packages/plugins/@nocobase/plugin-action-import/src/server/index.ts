@@ -19,6 +19,9 @@ export class PluginActionImportServer extends Plugin {
     this.app.i18n.addResources('en-US', namespace, enUS);
 
     this.app.on('afterInstall', async () => {
+      if (!this.app.db.getRepository('roles')) {
+        return;
+      }
       const roleNames = ['admin', 'member'];
       const roles = await this.app.db.getRepository('roles').find({
         filter: {
