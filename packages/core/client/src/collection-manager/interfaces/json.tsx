@@ -33,7 +33,7 @@ export class JsonFieldInterface extends CollectionFieldInterface {
   group = 'advanced';
   order = 4;
   title = '{{t("JSON")}}';
-  sortable = true;
+  sortable = false;
   default = {
     type: 'json',
     // name,
