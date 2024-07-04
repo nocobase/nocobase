@@ -59,6 +59,13 @@ jobs:
           DB_STORAGE: /tmp/db.sqlite
           DB_TEST_PREFIX: test_
           DB_UNDERSCORED: ${{ matrix.underscored }}
+      - name: Clean up disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /opt/ghc
+          sudo apt-get clean
+          sudo rm -rf /var/lib/apt/lists/*
+          docker system prune -a -f
 
   postgres-test:
     strategy:
@@ -112,6 +119,13 @@ jobs:
           COLLECTION_MANAGER_SCHEMA: ${{ matrix.collection_schema }}
           DB_TEST_DISTRIBUTOR_PORT: 23450
           DB_TEST_PREFIX: test_
+      - name: Clean up disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /opt/ghc
+          sudo apt-get clean
+          sudo rm -rf /var/lib/apt/lists/*
+          docker system prune -a -f
     timeout-minutes: 60
 
   mysql-test:
@@ -154,6 +168,13 @@ jobs:
           DB_UNDERSCORED: ${{ matrix.underscored }}
           DB_TEST_DISTRIBUTOR_PORT: 23450
           DB_TEST_PREFIX: test_
+      - name: Clean up disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /opt/ghc
+          sudo apt-get clean
+          sudo rm -rf /var/lib/apt/lists/*
+          docker system prune -a -f
     timeout-minutes: 60
   mariadb-test:
     strategy:
@@ -197,4 +218,11 @@ jobs:
           DB_UNDERSCORED: ${{ matrix.underscored }}
           DB_TEST_DISTRIBUTOR_PORT: 23450
           DB_TEST_PREFIX: test_
+      - name: Clean up disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /opt/ghc
+          sudo apt-get clean
+          sudo rm -rf /var/lib/apt/lists/*
+          docker system prune -a -f
     timeout-minutes: 60
