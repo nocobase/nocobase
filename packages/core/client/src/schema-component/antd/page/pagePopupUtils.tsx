@@ -111,6 +111,7 @@ export const usePagePopup = () => {
       (_parentRecordData || parentRecord?.data)?.[cm.getSourceKeyByAssociation(association)],
     [parentRecord, association],
   );
+  const uid = fieldSchema['x-uid'];
 
   const getNewPathname = useCallback(
     ({
@@ -167,13 +168,13 @@ export const usePagePopup = () => {
       const sourceId = getSourceId(parentRecordData);
 
       recordData = recordData || record?.data;
-      const pathname = getNewPathname({ popupUid: fieldSchema['x-uid'], recordData, sourceId });
+      const pathname = getNewPathname({ popupUid: uid, recordData, sourceId });
       let url = location.pathname;
       if (_.last(url) === '/') {
         url = url.slice(0, -1);
       }
 
-      storePopupContext(fieldSchema['x-uid'], {
+      storePopupContext(uid, {
         schema: fieldSchema,
         record: new CollectionRecord({ isNew: false, data: recordData }),
         parentRecord: parentRecordData ? new CollectionRecord({ isNew: false, data: parentRecordData }) : parentRecord,
@@ -211,6 +212,7 @@ export const usePagePopup = () => {
       parentPopupRecordData,
       getSourceId,
       getPopupContext,
+      uid,
     ],
   );
 
@@ -219,8 +221,15 @@ export const usePagePopup = () => {
       return setVisibleFromAction?.(false);
     }
 
-    navigate(-1);
-  }, [navigate, location, isPopupVisibleControlledByURL]);
+    // 1. If there is a value in the cache, it means that the current popup was opened by manual click, so we can simply return to the previous record;
+    // 2. If there is no value in the cache, it means that the current popup was opened by clicking the URL elsewhere, and since there is no history,
+    //    we need to construct the URL of the previous record to return to;
+    if (getStoredPopupContext(uid)) {
+      navigate(-1);
+    } else {
+      navigate(withSearchParams(removeLastPopupPath(location.pathname)), { replace: true });
+    }
+  }, [navigate, location, isPopupVisibleControlledByURL, uid]);
 
   const changeTab = useCallback(
     (key: string) => {
