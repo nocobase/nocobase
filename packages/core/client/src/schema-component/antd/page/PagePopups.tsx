@@ -58,29 +58,17 @@ PopupParamsProviderContext.displayName = 'PopupParamsProviderContext';
 AllPopupsPropsProviderContext.displayName = 'AllPopupsPropsProviderContext';
 
 /**
- * @internal
- * Because the data returned by this hook is not real-time (props will not be updated when nested schemas with the same name are re-rendered, possibly due to a bug in Formily),
- * it is not recommended to use it externally. If you need to access the popup context, please use "useCurrentPopupContext" instead.
- *
- * @returns
- */
-const usePopupContextAndParams = () => {
-  const context = React.useContext(PopupParamsProviderContext);
-  return (context || {}) as Omit<PopupProps, 'hidden'>;
-};
-
-/**
  * The difference between this component and ActionContextProvider is that
  * this component is only used to control the popups in the PagePopupsItem component (excluding the nested popups within it).
  * @param param0
  * @returns
  */
 export const PopupVisibleProvider: FC<PopupsVisibleProviderProps> = ({ children, visible, setVisible }) => {
-  return (
-    <PopupVisibleProviderContext.Provider value={{ visible, setVisible }}>
-      {children}
-    </PopupVisibleProviderContext.Provider>
-  );
+  const value = useMemo(() => {
+    return { visible, setVisible };
+  }, [visible, setVisible]);
+
+  return <PopupVisibleProviderContext.Provider value={value}>{children}</PopupVisibleProviderContext.Provider>;
 };
 
 const PopupParamsProvider: FC<Omit<PopupProps, 'hidden'>> = (props) => {
@@ -308,7 +296,7 @@ function isSubPageSchema(schema: ISchema) {
 }
 
 export const useCurrentPopupContext = (): PopupProps => {
-  const { currentLevel } = usePopupContextAndParams();
+  const { currentLevel } = React.useContext(PopupParamsProviderContext) || ({} as Omit<PopupProps, 'hidden'>);
   const allPopupsProps = React.useContext(AllPopupsPropsProviderContext);
   return allPopupsProps?.[currentLevel - 1] || ({} as PopupProps);
 };

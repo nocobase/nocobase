@@ -21,7 +21,6 @@ import {
   useDataBlockRequest,
   useDataSourceKey,
 } from '../../../data-source';
-import { useCurrentPopupRecord } from '../../../modules/variable/variablesProvider/VariablePopupRecordProvider';
 import { ActionContext } from '../action/context';
 import { PopupVisibleProviderContext, useCurrentPopupContext } from './PagePopups';
 import { usePopupSettings } from './PopupSettingsProvider';
@@ -105,7 +104,6 @@ export const usePagePopup = () => {
   const { isPopupVisibleControlledByURL } = usePopupSettings();
   const { setVisible: setVisibleFromAction } = useContext(ActionContext);
   const { updatePopupContext } = usePopupContextInActionOrAssociationField();
-  const { value: parentPopupRecordData, collection: parentPopupRecordCollection } = useCurrentPopupRecord() || {};
   const getSourceId = useCallback(
     (_parentRecordData?: Record<string, any>) =>
       (_parentRecordData || parentRecord?.data)?.[cm.getSourceKeyByAssociation(association)],
@@ -141,17 +139,10 @@ export const usePagePopup = () => {
       dataSource: dataSourceKey,
       collection: association ? undefined : collection.name,
       association,
-      parentPopupRecord: !_.isEmpty(parentPopupRecordData)
-        ? {
-            // TODO: 这里应该需要 association 的 值
-            collection: parentPopupRecordCollection?.name,
-            filterByTk: cm.getFilterByTK(parentPopupRecordCollection, parentPopupRecordData),
-          }
-        : undefined,
     };
 
     return _.omitBy(context, _.isNil) as PopupContext;
-  }, [dataSourceKey, collection, association, parentPopupRecordData, parentPopupRecordCollection, cm]);
+  }, [dataSourceKey, collection, association]);
 
   const openPopup = useCallback(
     ({
@@ -183,13 +174,6 @@ export const usePagePopup = () => {
         collection: collection.name,
         association,
         sourceId,
-        parentPopupRecord: parentPopupRecordData
-          ? {
-              // TODO: 这里应该需要 association 的 值
-              collection: parentPopupRecordCollection?.name,
-              filterByTk: cm.getFilterByTK(parentPopupRecordCollection, parentPopupRecordData),
-            }
-          : undefined,
       });
 
       updatePopupContext(getPopupContext());
@@ -209,7 +193,6 @@ export const usePagePopup = () => {
       service,
       location,
       isPopupVisibleControlledByURL,
-      parentPopupRecordData,
       getSourceId,
       getPopupContext,
       uid,
