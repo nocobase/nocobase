@@ -42,7 +42,7 @@ jobs:
         underscored: [true]
         # schema: [public]
         # collection_schema: [public]
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     container: node:${{ matrix.node_version }}
     services:
       # Label used to access the service container
@@ -65,7 +65,7 @@ jobs:
         with:
           # this might remove tools that are actually needed,
           # if set to "true" but frees about 6 GB
-          tool-cache: false
+          tool-cache: true
           # all of these default to true, but feel free to set to
           # "false" if necessary for your workflow
           android: true
