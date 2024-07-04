@@ -22,8 +22,8 @@ class PluginCollectionTreeServer extends Plugin {
     });
 
     this.app.dataSourceManager.afterAddDataSource((dataSource: DataSource) => {
-      if (dataSource instanceof SequelizeDataSource) {
-        const collectionManager = dataSource.collectionManager as SequelizeCollectionManager;
+      const collectionManager = dataSource.collectionManager;
+      if (collectionManager instanceof SequelizeCollectionManager) {
         collectionManager.db.on('afterDefineCollection', (collection: Model) => {
           if (!collection.options.tree) {
             return;
