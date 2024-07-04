@@ -36,6 +36,11 @@ abstract class BaseClient<Client> {
 
     await this._createDB(name);
     this.createdDBs.add(name);
+
+    // remove db after 3 minutes
+    setTimeout(async () => {
+      await this.removeDB(name);
+    }, 3 * 60 * 1000);
   }
 
   async releaseAll() {
@@ -57,7 +62,6 @@ abstract class BaseClient<Client> {
       return;
     }
     if (this.createdDBs.has(name)) {
-      console.log(`Removing database: ${name}`);
       await this._removeDB(name);
       this.createdDBs.delete(name);
     }
