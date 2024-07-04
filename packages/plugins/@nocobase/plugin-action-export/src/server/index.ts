@@ -11,7 +11,30 @@ import { Plugin } from '@nocobase/server';
 import { exportXlsx } from './actions';
 
 export class PluginActionExportServer extends Plugin {
-  beforeLoad() {}
+  beforeLoad() {
+    this.app.on('afterInstall', async () => {
+      const roleNames = ['admin', 'member'];
+      const roles = await this.app.db.getRepository('roles').find({
+        filter: {
+          name: roleNames,
+        },
+      });
+
+      for (const role of roles) {
+        await this.app.db.getRepository('roles').update({
+          filter: {
+            name: role.name,
+          },
+          values: {
+            strategy: {
+              ...role.strategy,
+              actions: [...role.strategy.actions, 'export'],
+            },
+          },
+        });
+      }
+    });
+  }
 
   async load() {
     this.app.dataSourceManager.afterAddDataSource((dataSource) => {
