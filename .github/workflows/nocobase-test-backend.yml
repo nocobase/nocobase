@@ -60,6 +60,10 @@ jobs:
           --health-timeout 5s
           --health-retries 5
     steps:
+      - name: rm
+        run: |
+          rm -rf "/usr/local/share/boost"
+          rm -rf "$AGENT_TOOLSDIRECTORY"
       - name: Free Disk Space
         uses: jlumbroso/free-disk-space@main
         with:
