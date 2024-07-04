@@ -97,6 +97,11 @@ export function mockDatabase(options: IDatabaseOptions = {}): MockDatabase {
         const url = `http://127.0.0.1:${process.env['DB_TEST_DISTRIBUTOR_PORT']}/acquire?via=${db.instanceId}&name=${config.database}`;
         await fetch(url);
       };
+
+      dbOptions.hooks.afterDisconnect = async (config) => {
+        const url = `http://127.0.0.1:${process.env['DB_TEST_DISTRIBUTOR_PORT']}/release?via=${db.instanceId}&name=${config.database}`;
+        await fetch(url);
+      };
     }
   }
 

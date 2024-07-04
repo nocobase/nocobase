@@ -51,6 +51,17 @@ abstract class BaseClient<Client> {
       this.createdDBs.delete(name);
     }
   }
+
+  async removeDB(name: string) {
+    if (!this._client) {
+      return;
+    }
+    if (this.createdDBs.has(name)) {
+      console.log(`Removing database: ${name}`);
+      await this._removeDB(name);
+      this.createdDBs.delete(name);
+    }
+  }
 }
 
 class PostgresClient extends BaseClient<pg.Client> {
@@ -156,8 +167,9 @@ const server = http.createServer((req, res) => {
         res.end(JSON.stringify({ error }));
       });
   } else if (trimmedPath === 'release') {
+    const name = parsedUrl.query.name as string | undefined;
     dbClient
-      .releaseAll()
+      .removeDB(name)
       .then(() => {
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end();
