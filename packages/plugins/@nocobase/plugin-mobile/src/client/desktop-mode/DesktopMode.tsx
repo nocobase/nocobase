@@ -14,6 +14,7 @@ import { isDesktop } from 'react-device-detect';
 import { DesktopModeHeader } from './Header';
 import { DesktopModeContent } from './Content';
 import { SizeContextProvider } from './sizeContext';
+import { PageBackgroundColor } from '../constants';
 
 interface DesktopModeProps {
   children?: React.ReactNode;
@@ -25,7 +26,7 @@ export const DesktopMode: FC<DesktopModeProps> = ({ children }) => {
   }
   return (
     <SizeContextProvider>
-      <Layout style={{ height: '100%', background: '#fafbfc' }}>
+      <Layout style={{ height: '100%', background: PageBackgroundColor }}>
         <Layout.Header style={{ height: 46 }}>
           <DesktopModeHeader />
         </Layout.Header>

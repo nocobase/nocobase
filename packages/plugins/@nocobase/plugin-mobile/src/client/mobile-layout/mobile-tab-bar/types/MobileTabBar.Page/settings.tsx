@@ -12,5 +12,12 @@ import { editTabItemSettingsItem, removeTabItemSettingsItem } from '../../Mobile
 
 export const mobileTabBarPageSettings = new SchemaSettings({
   name: 'mobile:tab-bar:page',
-  items: [editTabItemSettingsItem(), removeTabItemSettingsItem],
+  items: [
+    editTabItemSettingsItem(),
+    {
+      name: 'divider',
+      type: 'divider',
+    },
+    removeTabItemSettingsItem,
+  ],
 });

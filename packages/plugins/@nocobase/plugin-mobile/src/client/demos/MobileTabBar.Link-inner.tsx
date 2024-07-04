@@ -4,7 +4,7 @@ import { MobileTabBar } from '@nocobase/plugin-mobile/client';
 import { mockApp } from '@nocobase/client/demo-utils';
 
 const Demo = () => {
-  return <MobileTabBar.Link title="Test" icon="AppstoreOutlined" link="/test" />;
+  return <MobileTabBar.Link title="Test" icon="AppstoreOutlined" url="/test" />;
 };
 
 class MyPlugin extends Plugin {

@@ -24,7 +24,6 @@ describe('DesktopMode', () => {
     expect(screen.queryByTestId('ui-editor-button')).toBeInTheDocument();
 
     // size
-    expect(screen.queryByTestId('desktop-mode-size-switch')).toBeInTheDocument();
     await act(async () => {
       await userEvent.click(screen.queryByTestId('desktop-mode-size-pad'));
     });

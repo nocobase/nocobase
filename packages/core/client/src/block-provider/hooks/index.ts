@@ -1529,12 +1529,13 @@ export function appendQueryStringToUrl(url: string, queryString: string) {
   return url;
 }
 
-export function useLinkActionProps() {
+export function useLinkActionProps(componentProps) {
   const navigate = useNavigate();
   const fieldSchema = useFieldSchema();
+  const componentPropsValue = fieldSchema?.['x-component-props'] || componentProps;
   const { t } = useTranslation();
-  const url = fieldSchema?.['x-component-props']?.['url'];
-  const searchParams = fieldSchema?.['x-component-props']?.['params'] || [];
+  const url = componentPropsValue?.['url'];
+  const searchParams = componentPropsValue?.['params'] || [];
   const variables = useVariables();
   const localVariables = useLocalVariables();
 

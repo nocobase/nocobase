@@ -33,8 +33,13 @@ export const useStyles = createStyles(() => ({
     display: 'flex',
     justifyContent: 'space-around',
     flex: 1,
-    padding: '8px 0',
     alignItems: 'center',
+    '&>div': {
+      flex: 1,
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
     '.ant-btn-icon': {
       marginInlineEnd: '0 !important',
     },

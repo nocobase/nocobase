@@ -7,27 +7,27 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { SchemaSettings } from '@nocobase/client';
-import { editTabItemSettingsItem, removeTabItemSettingsItem } from '../../MobileTabBar.Item';
-import { generatePluginTranslationTemplate } from '../../../../locale';
-
-export const editLinkSchema = (value?: any) => ({
-  title: generatePluginTranslationTemplate('Link'),
-  type: 'string',
-  default: value,
-  'x-decorator': 'FormItem',
-  'x-component': 'Input',
-  required: true,
-});
+import { SchemaSettings, SchemaSettingsActionLinkItem } from '@nocobase/client';
+import { editTabItemSettingsItem, removeTabItemSettingsItem, useUpdateTabBarItem } from '../../MobileTabBar.Item';
 
 export const mobileTabBarLinkSettings = new SchemaSettings({
   name: 'mobile:tab-bar:link',
   items: [
-    editTabItemSettingsItem((values) => {
-      return {
-        link: editLinkSchema(values.link),
-      };
-    }),
+    editTabItemSettingsItem(),
+    {
+      name: 'editLink',
+      Component: SchemaSettingsActionLinkItem,
+      useComponentProps() {
+        const afterSubmit = useUpdateTabBarItem();
+        return {
+          afterSubmit,
+        };
+      },
+    },
+    {
+      name: 'divider',
+      type: 'divider',
+    },
     removeTabItemSettingsItem,
   ],
 });

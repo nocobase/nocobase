@@ -71,10 +71,14 @@ describe('MobileTabBar.Item', () => {
         "x-decorator": "BlockItem",
         "x-settings": "mobile:tab-bar:link",
         "x-component": "MobileTabBar.Link",
+        "x-toolbar-props": {
+          "showBorder": false,
+          "showBackground": true
+        },
         "x-component-props": {
           "title": "Test",
           "icon": "AppstoreOutlined",
-          "link": "/test"
+          "url": "/test"
         },
         "name": "schema"
       }

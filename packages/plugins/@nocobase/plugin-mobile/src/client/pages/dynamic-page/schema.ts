@@ -10,6 +10,24 @@
 import { getMobilePageContentSchema } from './content';
 import { mobilePageNavigationBarSchema } from './navigation-bar';
 import { mobilePageSettings } from './settings';
+import { css } from '@nocobase/client';
+
+const spaceClassName = css(`
+&:first-child {
+  .ant-space-item {
+    width: 30px;
+    height: 30px;
+    transform: rotate(45deg);
+    span {
+      position: relative;
+      bottom: -15px;
+      right: -8px;
+      transform: rotate(-45deg);
+      font-size: 10px;
+    }
+  }
+}
+`);
 
 export function getMobilePageSchema(pageSchemaUid: string, firstTabUid: string) {
   const pageSchema = {
@@ -21,6 +39,11 @@ export function getMobilePageSchema(pageSchemaUid: string, firstTabUid: string) 
     'x-decorator': 'BlockItem',
     'x-toolbar-props': {
       draggable: false,
+      spaceWrapperStyle: { right: -15, top: -15 },
+      spaceClassName,
+      toolbarStyle: {
+        overflow: 'hidden',
+      },
     },
     properties: {
       navigationBar: mobilePageNavigationBarSchema,

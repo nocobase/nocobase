@@ -8,29 +8,20 @@
  */
 
 import React, { FC } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 
 import { MobileTabBarItemProps, MobileTabBarItem } from '../../MobileTabBar.Item';
+import { useLinkActionProps } from '@nocobase/client';
 
 export interface MobileTabBarLinkProps extends Omit<MobileTabBarItemProps, 'onClick' | 'selected'> {
-  link: string;
+  url: string;
 }
 
 export const MobileTabBarLink: FC<MobileTabBarLinkProps> = (props) => {
-  const { link, ...rests } = props;
-  const navigate = useNavigate();
   const location = useLocation();
+  const { onClick } = useLinkActionProps(props);
 
-  const handleClick = () => {
-    if (!link) return;
-    if (link.startsWith('http') || link.startsWith('//')) {
-      window.open(link);
-    } else {
-      navigate(link);
-    }
-  };
+  const selected = location.pathname === props.url;
 
-  const selected = location.pathname === link;
-
-  return <MobileTabBarItem {...rests} onClick={handleClick} selected={selected} />;
+  return <MobileTabBarItem {...props} onClick={onClick} selected={selected} />;
 };

@@ -13,6 +13,7 @@ import { isDesktop } from 'react-device-detect';
 
 import { PluginMobileClient } from '../index';
 import { DesktopMode } from '../desktop-mode/DesktopMode';
+import { PageBackgroundColor } from '../constants';
 
 export const Mobile = () => {
   const mobilePlugin = usePlugin(PluginMobileClient);
@@ -29,7 +30,7 @@ export const Mobile = () => {
       }
       viewportMeta.setAttribute('content', 'width=device-width,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no');
 
-      document.body.style.backgroundColor = '#fafbfc';
+      document.body.style.backgroundColor = PageBackgroundColor;
 
       // 触发视图重绘
       const fakeBody = document.createElement('div');

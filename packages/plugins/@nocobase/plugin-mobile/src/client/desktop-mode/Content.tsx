@@ -22,8 +22,7 @@ export const DesktopModeContent: FC<DesktopModeContentProps> = ({ children }) =>
       <Resizable
         style={{
           position: 'relative',
-          boxShadow: 'rgba(0, 0, 0, 0.2) 0px 0px 20px',
-          borderRadius: '1em',
+          boxShadow: '0 0 15px rgba(0, 0, 0, 0.3)',
         }}
         data-testid="desktop-mode-resizable"
         size={{ width: size.width, height: size.height }}
@@ -40,8 +39,6 @@ export const DesktopModeContent: FC<DesktopModeContentProps> = ({ children }) =>
             height: '100%',
             minHeight: '100%',
             overflowX: 'hidden',
-            border: '1px solid var(--adm-color-border)',
-            borderRadius: '1em',
           }}
         >
           {children}

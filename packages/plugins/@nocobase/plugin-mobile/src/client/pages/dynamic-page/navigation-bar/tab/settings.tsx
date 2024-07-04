@@ -99,7 +99,7 @@ interface MobilePageTabSettingsProps {
 export const MobilePageTabSettings: FC<MobilePageTabSettingsProps> = ({ tab }) => {
   return (
     <SchemaToolbarProvider tab={tab}>
-      <SchemaToolbar settings={mobilePageTabSettings} />
+      <SchemaToolbar settings={mobilePageTabSettings} showBackground showBorder={false} />
     </SchemaToolbarProvider>
   );
 };

@@ -8,12 +8,10 @@
  */
 
 import { SchemaInitializerItemActionModalType } from '@nocobase/client';
-import { useNavigate } from 'react-router-dom';
 
 import { generatePluginTranslationTemplate } from '../../../../locale';
 import { getMobileTabBarItemSchemaFields } from '../../MobileTabBar.Item';
 import { useMobileRoutes } from '../../../../mobile-providers';
-import { editLinkSchema } from './settings';
 import { getMobileTabBarLinkItemData } from './schema';
 
 export const mobileTabBarLinkInitializerItem: SchemaInitializerItemActionModalType = {
@@ -21,35 +19,24 @@ export const mobileTabBarLinkInitializerItem: SchemaInitializerItemActionModalTy
   type: 'actionModal',
   useComponentProps() {
     const { resource, refresh } = useMobileRoutes();
-    const navigate = useNavigate();
 
     return {
       isItem: true,
       title: generatePluginTranslationTemplate('Add Link'),
       buttonText: generatePluginTranslationTemplate('Link'),
-      schema: {
-        ...getMobileTabBarItemSchemaFields(),
-        link: editLinkSchema(),
-      },
+      schema: getMobileTabBarItemSchemaFields(),
       async onSubmit(values) {
         if (!values.title && !values.icon) {
           return;
         }
 
-        const isRelative = !values.link.startsWith('http') && !values.link.startsWith('//');
-
         // 先创建 tab item
         await resource.create({
-          values: getMobileTabBarLinkItemData({ url: isRelative ? values.link : undefined, values }),
+          values: getMobileTabBarLinkItemData({ url: undefined, values }),
         });
 
         // 刷新 tabs
         await refresh();
-
-        // 再跳转到页面
-        if (isRelative) {
-          navigate(values.link);
-        }
       },
     };
   },

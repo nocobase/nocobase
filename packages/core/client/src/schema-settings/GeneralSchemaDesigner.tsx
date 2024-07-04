@@ -189,6 +189,12 @@ export interface SchemaToolbarProps {
    */
   showBorder?: boolean;
   showBackground?: boolean;
+  toolbarClassName?: string;
+  toolbarStyle?: React.CSSProperties;
+  spaceWrapperClassName?: string;
+  spaceWrapperStyle?: React.CSSProperties;
+  spaceClassName?: string;
+  spaceStyle?: React.CSSProperties;
 }
 
 const InternalSchemaToolbar: FC<SchemaToolbarProps> = (props) => {
@@ -198,8 +204,14 @@ const InternalSchemaToolbar: FC<SchemaToolbarProps> = (props) => {
     initializer,
     settings,
     showBackground,
+    spaceWrapperClassName,
+    spaceWrapperStyle,
     showBorder = true,
     draggable = true,
+    spaceClassName,
+    spaceStyle,
+    toolbarClassName,
+    toolbarStyle = {},
   } = {
     ...props,
     ...(fieldSchema?.['x-toolbar-props'] || {}),
@@ -316,8 +328,8 @@ const InternalSchemaToolbar: FC<SchemaToolbarProps> = (props) => {
   return (
     <div
       ref={toolbarRef}
-      className={styles.toolbar}
-      style={{ border: showBorder ? 'auto' : 0, background: showBackground ? 'auto' : 0 }}
+      className={classNames(styles.toolbar, toolbarClassName)}
+      style={{ border: showBorder ? 'auto' : 0, background: showBackground ? 'auto' : 0, ...toolbarStyle }}
     >
       {titleArr && (
         <div className={styles.toolbarTitle}>
@@ -333,8 +345,8 @@ const InternalSchemaToolbar: FC<SchemaToolbarProps> = (props) => {
           </Space>
         </div>
       )}
-      <div className={styles.toolbarIcons}>
-        <Space size={3} align={'center'}>
+      <div className={classNames(styles.toolbarIcons, spaceWrapperClassName)} style={spaceWrapperStyle}>
+        <Space size={3} align={'center'} className={spaceClassName} style={spaceStyle}>
           {dragElement}
           {initializerElement}
           {settingsElement}

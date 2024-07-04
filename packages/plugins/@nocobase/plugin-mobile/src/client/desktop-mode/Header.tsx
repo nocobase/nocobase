@@ -7,14 +7,54 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { FC, useMemo, useRef, useState } from 'react';
-import { QRCode, Popover } from 'antd';
-import { Link } from 'react-router-dom';
+import React, { FC, useState } from 'react';
+import { QRCode, Popover, Button } from 'antd';
 import { QrcodeOutlined } from '@ant-design/icons';
 
 import { usePluginTranslation } from '../locale';
 import { useSize } from './sizeContext';
-import { DesignableSwitch } from '@nocobase/client';
+import { css, DesignableSwitch, Icon } from '@nocobase/client';
+import { CustomIconComponentProps } from '@ant-design/icons/lib/components/Icon';
+
+const PadSvg = () => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={2}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <title>pad icon</title>
+    <rect width="16" height="20" x="4" y="2" rx="2" ry="2"></rect>
+    <line x1="12" x2="12.01" y1="18" y2="18"></line>
+  </svg>
+);
+
+const MobileSvg = () => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={2}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <title>mobile icon</title>
+    <rect width="14" height="20" x="5" y="2" rx="2" ry="2"></rect>
+    <path d="M12 18h.01"></path>
+  </svg>
+);
+
+const PadIcon = (props: Partial<CustomIconComponentProps>) => <Icon type={''} component={PadSvg} {...props} />;
+
+const MobileIcon = (props: Partial<CustomIconComponentProps>) => <Icon type={''} component={MobileSvg} {...props} />;
 
 export const DesktopModeHeader: FC = () => {
   const { t } = usePluginTranslation();
@@ -28,71 +68,62 @@ export const DesktopModeHeader: FC = () => {
   return (
     <div
       style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: 'white', height: '100%' }}
-    >
-      <Link to="/admin">{t('Back')}</Link>
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '1em' }}>
-        <DesignableSwitch />
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            border: '1px solid var(--adm-color-border)',
-            padding: '0.3em 0.7em',
-            borderRadius: '0.3em',
-            gap: '0.3em',
-          }}
-          data-testid="desktop-mode-size-switch"
-        >
-          <svg
-            onClick={() => {
-              setActiveType('pad');
-              setSize({ width: 768, height: size.height });
-            }}
-            data-testid="desktop-mode-size-pad"
-            style={{ color: activeType == 'pad' ? 'var(--adm-color-primary)' : '', cursor: 'pointer' }}
-            xmlns="http://www.w3.org/2000/svg"
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth={2}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <rect width="16" height="20" x="4" y="2" rx="2" ry="2"></rect>
-            <line x1="12" x2="12.01" y1="18" y2="18"></line>
-          </svg>
+      className={css`
+        .ant-btn {
+          border: 0;
+          height: 46px;
+          width: 46px;
+          border-radius: 0;
+          background: none;
+          color: rgba(255, 255, 255, 0.65);
+          padding: 0;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          &:hover {
+            background: rgba(255, 255, 255, 0.1) !important;
+          }
 
-          <svg
-            onClick={() => {
-              setActiveType('mobile');
-              setSize({ width: 375, height: size.height });
-            }}
-            data-testid="desktop-mode-size-mobile"
-            style={{ color: activeType == 'mobile' ? 'var(--adm-color-primary)' : '', cursor: 'pointer' }}
-            xmlns="http://www.w3.org/2000/svg"
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth={2}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <rect width="14" height="20" x="5" y="2" rx="2" ry="2"></rect>
-            <path d="M12 18h.01"></path>
-          </svg>
-        </div>
+          svg {
+            width: 20px !important;
+            height
+          }
+        }
+        .ant-btn-default {
+          box-shadow: none;
+        }
+      `}
+    >
+      <Button style={{ color: 'white' }} href="/admin">
+        {t('Back')}
+      </Button>
+      <div style={{ display: 'flex', alignItems: 'center' }}>
+        <DesignableSwitch />
+        <Button
+          onClick={() => {
+            setActiveType('pad');
+            setSize({ width: 768, height: size.height });
+          }}
+          data-testid="desktop-mode-size-pad"
+          icon={<PadIcon />}
+        ></Button>
+        <Button
+          onClick={() => {
+            setActiveType('mobile');
+            setSize({ width: 375, height: size.height });
+          }}
+          data-testid="desktop-mode-size-mobile"
+          icon={<MobileIcon />}
+        ></Button>
         <Popover
           trigger={'hover'}
           open={open}
           onOpenChange={handleQrcodeOpen}
           content={open ? <QRCode value={window.location.href} bordered={false} /> : ' '}
         >
-          <QrcodeOutlined style={{ fontSize: '24px', cursor: 'pointer' }} data-testid="desktop-mode-qrcode" />
+          <Button
+            icon={<QrcodeOutlined style={{ fontSize: '24px', cursor: 'pointer' }} data-testid="desktop-mode-qrcode" />}
+          ></Button>
         </Popover>
       </div>
     </div>

@@ -25,6 +25,10 @@ export function getMobileTabBarPageItemData(options: GetMobileTabBarPageItemData
       'x-decorator': 'BlockItem',
       'x-settings': mobileTabBarPageSettings.name,
       'x-component': 'MobileTabBar.Page',
+      'x-toolbar-props': {
+        showBorder: false,
+        showBackground: true,
+      },
       'x-component-props': {
         ...values,
         pageSchemaUid: pageSchemaUid,

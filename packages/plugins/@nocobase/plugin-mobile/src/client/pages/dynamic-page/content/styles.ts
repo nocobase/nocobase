@@ -10,21 +10,17 @@
 import { createStyles } from 'antd-style';
 
 export const useStyles = createStyles(() => ({
-  mobileNavigationBar: {
-    position: 'sticky',
-    top: 0,
-    zIndex: 998,
-    borderBottom: '1px solid var(--adm-color-border)',
-    backgroundColor: 'var(--adm-color-background)',
-  },
-  mobileNavigationBarTabsWrapper: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  mobileNavigationBarTabs: {
-    '.adm-tabs-header': {
-      borderBottomWidth: 0,
+  mobilePageContent: {
+    maxWidth: '100%',
+    overflowX: 'hidden',
+    '.ant-card': {
+      marginBottom: '20px !important',
+      borderRadius: '0 !important',
+      boxShadow: 'none',
+      borderBottom: '1px solid var(--adm-color-border)',
+    },
+    '.ant-nb-card-item': {
+      marginBottom: '20px !important',
     },
   },
 }));

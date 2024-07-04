@@ -11,7 +11,7 @@ const Demo = () => {
       schema={schemaViewer(
         getMobileTabBarLinkItemData({
           url: '/test',
-          values: { title: 'Test', icon: 'AppstoreOutlined', link: '/test' },
+          values: { title: 'Test', icon: 'AppstoreOutlined', url: '/test' },
         }).options,
       )}
     />

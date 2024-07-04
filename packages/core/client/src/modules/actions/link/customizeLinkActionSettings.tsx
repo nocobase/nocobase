@@ -10,7 +10,7 @@ import { css } from '@emotion/css';
 import { ArrayItems } from '@formily/antd-v5';
 import { useField, useFieldSchema } from '@formily/react';
 import _ from 'lodash';
-import React from 'react';
+import React, { FC } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCollectionRecord, useDesignable, useFormBlockContext, useRecord } from '../../../';
 import { useSchemaToolbar } from '../../../application';
@@ -20,7 +20,11 @@ import { ButtonEditor, RemoveButton } from '../../../schema-component/antd/actio
 import { SchemaSettingsLinkageRules, SchemaSettingsModalItem } from '../../../schema-settings';
 import { useVariableOptions } from '../../../schema-settings/VariableInput/hooks/useVariableOptions';
 
-export function SchemaSettingsActionLinkItem() {
+interface SchemaSettingsActionLinkItemProps {
+  afterSubmit?: () => void;
+}
+
+export const SchemaSettingsActionLinkItem: FC<SchemaSettingsActionLinkItemProps> = ({ afterSubmit }) => {
   const field = useField();
   const fieldSchema = useFieldSchema();
   const { dn } = useDesignable();
@@ -120,6 +124,7 @@ export function SchemaSettingsActionLinkItem() {
       onSubmit={({ url, params }) => {
         const componentProps = fieldSchema['x-component-props'] || {};
         componentProps.url = url;
+        console.log('componentProps', componentProps);
         fieldSchema['x-component-props'] = componentProps;
         field.componentProps.url = url;
         componentProps.params = params;
@@ -132,10 +137,11 @@ export function SchemaSettingsActionLinkItem() {
           },
         });
         dn.refresh();
+        afterSubmit?.();
       }}
     />
   );
-}
+};
 
 export const customizeLinkActionSettings = new SchemaSettings({
   name: 'actionSettings:link',

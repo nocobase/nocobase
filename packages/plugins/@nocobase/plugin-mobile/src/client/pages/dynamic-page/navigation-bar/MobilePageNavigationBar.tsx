@@ -30,14 +30,14 @@ export const MobilePageNavigationBar: FC = () => {
 
   const leftSchema = useMemo(() => getActionBarSchemaByPosition(fieldSchema, 'left', { marginLeft: 8 }), [fieldSchema]);
   const rightSchema = useMemo(
-    () => getActionBarSchemaByPosition(fieldSchema, 'right', { marginLeft: 8, marginRight: 15 }),
+    () => getActionBarSchemaByPosition(fieldSchema, 'right', { marginLeft: 8 }),
     [fieldSchema],
   );
   const bottomSchema = useMemo(() => getActionBarSchemaByPosition(fieldSchema, 'bottom', {}, false), [fieldSchema]);
 
   if (!enableNavigationBar) return null;
   return (
-    <div className={styles.mobileNavigationBar} style={{ borderBottom: enableNavigationBarTabs ? 'none' : 'auto' }}>
+    <div className={styles.mobileNavigationBar}>
       <SafeArea position="top" />
 
       <NavBar

@@ -14,11 +14,13 @@ import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { useMobileRoutes } from '../../../mobile-providers';
 import { MobilePageTabInitializer, MobilePageTabSettings } from './tab';
 import { DndContext, DndContextProps, SortableItem } from '@nocobase/client';
+import { useStyles } from './styles';
 
 export const MobilePageNavigationBarTabs: FC = () => {
   const { activeTabBarItem, resource, refresh } = useMobileRoutes();
   const { pathname } = useLocation();
   const navigate = useNavigate();
+  const { styles } = useStyles();
   const { tabSchemaUid } = useParams<{ tabSchemaUid: string }>();
   const [activeKey, setActiveKey] = React.useState<string>(() => {
     return tabSchemaUid ? pathname : activeTabBarItem.children[0]?.url;
@@ -44,9 +46,9 @@ export const MobilePageNavigationBarTabs: FC = () => {
   );
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1em' }}>
+    <div className={styles.mobileNavigationBarTabsWrapper}>
       <DndContext onDragEnd={handleDragEnd}>
-        <Tabs activeKey={activeKey} onChange={handleChange} style={{ flex: 1 }}>
+        <Tabs activeKey={activeKey} onChange={handleChange} className={styles.mobileNavigationBarTabs}>
           {activeTabBarItem.children?.map((item) => (
             <Tabs.Tab
               title={
@@ -60,7 +62,9 @@ export const MobilePageNavigationBarTabs: FC = () => {
           ))}
         </Tabs>
       </DndContext>
-      <MobilePageTabInitializer />
+      <div>
+        <MobilePageTabInitializer />
+      </div>
     </div>
   );
 };

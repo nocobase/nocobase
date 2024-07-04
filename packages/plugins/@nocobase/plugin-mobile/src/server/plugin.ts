@@ -36,6 +36,7 @@ export class PluginMobileServer extends Plugin {
             style: {
               position: 'sticky',
               bottom: 0,
+              zIndex: 1000,
             },
           },
           'x-settings': 'mobile:tab-bar',

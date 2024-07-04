@@ -39,22 +39,23 @@ export const MobileTabBarItem: FC<MobileTabBarItemProps> = (props) => {
   const { title, onClick, selected, badge } = props;
   const icon = getIcon(props, selected);
   return (
-    <Badge content={badge}>
-      <div
-        onClick={onClick}
-        className={classnames('adm-tab-bar-item', {
-          ['adm-tab-bar-item-active']: selected,
+    <div
+      onClick={onClick}
+      className={classnames('adm-tab-bar-item', {
+        ['adm-tab-bar-item-active']: selected,
+      })}
+      style={{ lineHeight: 1 }}
+    >
+      <Badge content={badge}>
+        <span className={'adm-tab-bar-item-icon'}>{icon}</span>
+      </Badge>
+      <span
+        className={classnames('adm-tab-bar-item-title', {
+          ['adm-tab-bar-item-title-with-icon']: icon,
         })}
       >
-        <span className={'adm-tab-bar-item-icon'}>{icon}</span>
-        <span
-          className={classnames('adm-tab-bar-item-title', {
-            ['adm-tab-bar-item-title-with-icon']: icon,
-          })}
-        >
-          {title}
-        </span>
-      </div>
-    </Badge>
+        {title}
+      </span>
+    </div>
   );
 };

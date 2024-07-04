@@ -27,7 +27,7 @@ export const mobilePageSettings = new SchemaSettings({
       schemaKey: 'x-component-props.enableNavigationBarTitle',
       useVisible() {
         const schema = useFieldSchema();
-        return schema['x-component-props']?.['enableNavigationBar'];
+        return schema['x-component-props']?.['enableNavigationBar'] !== false;
       },
     }),
     createSwitchSettingsItem({
@@ -37,7 +37,7 @@ export const mobilePageSettings = new SchemaSettings({
       schemaKey: 'x-component-props.enableNavigationBarTabs',
       useVisible() {
         const schema = useFieldSchema();
-        return schema['x-component-props']?.['enableNavigationBar'];
+        return schema['x-component-props']?.['enableNavigationBar'] !== false;
       },
     }),
   ],

@@ -17,6 +17,7 @@ export const getMobileTabBarItemSchemaFields = (values: any = {}): Record<string
     default: values.title,
     'x-decorator': 'FormItem',
     'x-component': 'Input',
+    required: true,
   },
   icon: {
     title: generatePluginTranslationTemplate('Icon'),
@@ -24,12 +25,13 @@ export const getMobileTabBarItemSchemaFields = (values: any = {}): Record<string
     default: values.icon,
     'x-decorator': 'FormItem',
     'x-component': 'IconPicker',
+    required: true,
   },
-  selectedIcon: {
-    title: generatePluginTranslationTemplate('Selected icon'),
-    type: 'string',
-    default: values.selectedIcon,
-    'x-decorator': 'FormItem',
-    'x-component': 'IconPicker',
-  },
+  // selectedIcon: {
+  //   title: generatePluginTranslationTemplate('Selected icon'),
+  //   type: 'string',
+  //   default: values.selectedIcon,
+  //   'x-decorator': 'FormItem',
+  //   'x-component': 'IconPicker',
+  // },
 });

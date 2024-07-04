@@ -15,7 +15,7 @@ const Demo = () => {
   return (
     <div>
       <MobileProviders skipLogin={true}>
-        <SchemaComponent schema={schemaViewer({ type: 'void', properties: { test: schema } }, 'x-component-props')} />
+        <SchemaComponent schema={schemaViewer({ type: 'void', properties: { test: schema } })} />
       </MobileProviders>
     </div>
   );
