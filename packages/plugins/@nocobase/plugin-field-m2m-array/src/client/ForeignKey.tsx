@@ -12,7 +12,7 @@ import { Select, AutoComplete } from 'antd';
 import React, { useState, useEffect } from 'react';
 import { useRecord, useCompile, useCollectionManager_deprecated, CollectionFieldOptions } from '@nocobase/client';
 
-const isValidField = (field: CollectionFieldOptions) => field.type === 'string' && field.interface === 'json';
+const isValidField = (field: CollectionFieldOptions) => field.interface === 'json';
 
 export const ForeignKey = observer(
   (props: any) => {
