@@ -12,6 +12,7 @@ import { uid } from '@formily/shared';
 import { Result } from 'antd';
 import _ from 'lodash';
 import { FC, default as React, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Location, useLocation } from 'react-router-dom';
 import { useAPIClient } from '../../../api-client';
 import { DataBlockProvider } from '../../../data-source/data-block/DataBlockProvider';
@@ -80,7 +81,7 @@ const PopupParamsProvider: FC<Omit<PopupProps, 'hidden'>> = (props) => {
       context: props.context,
       currentLevel: props.currentLevel,
     };
-  }, [props.params, props.context]);
+  }, [props.params, props.context, props.currentLevel]);
   return <PopupParamsProviderContext.Provider value={value}>{props.children}</PopupParamsProviderContext.Provider>;
 };
 
@@ -373,8 +374,11 @@ function get404Schema() {
                     _isJSONSchemaObject: true,
                     version: '2.0',
                     type: 'void',
-                    'x-component': () => {
-                      return <Result status="404" title="404" subTitle="Sorry, the page you visited does not exist." />;
+                    'x-component': function Com() {
+                      const { t } = useTranslation();
+                      return (
+                        <Result status="404" title="404" subTitle={t('Sorry, the page you visited does not exist.')} />
+                      );
                     },
                     'x-uid': uid(),
                     'x-async': false,
