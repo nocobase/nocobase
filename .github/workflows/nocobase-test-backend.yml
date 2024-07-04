@@ -42,7 +42,7 @@ jobs:
         underscored: [true]
         # schema: [public]
         # collection_schema: [public]
-    runs-on: 
+    runs-on: ubuntu-latest
     container: node:${{ matrix.node_version }}
     services:
       # Label used to access the service container
