@@ -92,7 +92,7 @@ const MenuEditor = (props) => {
   const ctx = useACLRoleContext();
   const [current, setCurrent] = useState(null);
 
-  const onSelect = useCallback(({ item }) => {
+  const onSelect = useCallback(({ item }: { item; key; keyPath; domEvent }) => {
     const schema = item.props.schema;
     setTitle(schema.title);
     setCurrent(schema);
