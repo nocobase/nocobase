@@ -36,6 +36,7 @@ test.describe('where edit form block can be added', () => {
     await nocoPage.goto();
 
     // 1.打开弹窗
+    await page.getByRole('button', { name: '2', exact: true }).getByText('2').hover();
     await page.getByRole('button', { name: '2', exact: true }).getByText('2').click();
 
     // 2.创建一个编辑表单区块

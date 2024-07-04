@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { genStyleHook } from './../__builtins__';
+import { genStyleHook } from '../__builtins__';
 
 export const useStyles = genStyleHook('nb-page', (token) => {
   const { componentCls } = token;

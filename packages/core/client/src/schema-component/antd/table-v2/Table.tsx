@@ -37,11 +37,11 @@ import {
 import { useACLFieldWhitelist } from '../../../acl/ACLProvider';
 import { isNewRecord } from '../../../data-source/collection-record/isNewRecord';
 import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
+import { useSatisfiedActionValues } from '../../../schema-settings/LinkageRules/useActionValues';
 import { useToken } from '../__builtins__';
 import { SubFormProvider } from '../association-field/hooks';
 import { ColumnFieldProvider } from './components/ColumnFieldProvider';
 import { extractIndex, isCollectionFieldComponent, isColumnComponent } from './utils';
-
 const MemoizedAntdTable = React.memo(AntdTable);
 
 const useArrayField = (props) => {
@@ -144,6 +144,9 @@ const useTableColumns = (props: { showDel?: boolean; isSubTable?: boolean }) => 
                 </RecordIndexProvider>
               </SubFormProvider>
             );
+          },
+          onCell: (record) => {
+            return { record, schema: s };
           },
         } as TableColumnProps<any>;
 
@@ -529,16 +532,17 @@ export const Table: any = withDynamicSchemaProps(
     const BodyCellComponent = useCallback(
       (props) => {
         const isIndex = props.className?.includes('selection-column');
-
+        const { record, schema } = props;
         const { ref, inView } = useInView({
           threshold: 0,
           triggerOnce: true,
           initialInView: isIndex || !!process.env.__E2E__ || dataSource.length <= 10,
           skip: isIndex || !!process.env.__E2E__,
         });
+        const { valueMap: style } = useSatisfiedActionValues({ formValues: record, category: 'style', schema });
 
         return (
-          <td {...props} ref={ref} className={classNames(props.className, cellClass)}>
+          <td {...props} ref={ref} className={classNames(props.className, cellClass)} style={style}>
             {inView || isIndex ? props.children : <Skeleton.Button style={{ height: '100%' }} />}
           </td>
         );

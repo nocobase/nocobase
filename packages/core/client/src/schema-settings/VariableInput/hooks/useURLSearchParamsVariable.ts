@@ -12,7 +12,7 @@ import _ from 'lodash';
 import qs from 'qs';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useLocation } from 'react-router-dom';
+import { useLocationSearch } from '../../../application/CustomRouterContextProvider';
 import { useFlag } from '../../../flag-provider/hooks/useFlag';
 import { Option } from '../type';
 import { getLabelWithTooltip } from './useBaseVariable';
@@ -64,9 +64,9 @@ export const useURLSearchParamsCtx = (search: string) => {
 export const useURLSearchParamsVariable = (props: any = {}) => {
   const variableName = '$nURLSearchParams';
   const { t } = useTranslation();
-  const location = useLocation();
+  const searchString = useLocationSearch();
   const { isVariableParsedInOtherContext } = useFlag();
-  const urlSearchParamsCtx = useURLSearchParamsCtx(location.search);
+  const urlSearchParamsCtx = useURLSearchParamsCtx(searchString);
   const disabled = useMemo(() => _.isEmpty(urlSearchParamsCtx), [urlSearchParamsCtx]);
   const urlSearchParamsSettings: Option = useMemo(() => {
     return {
@@ -100,8 +100,7 @@ export const useURLSearchParamsVariable = (props: any = {}) => {
     /** 变量值 */
     urlSearchParamsCtx,
     /**
-     * 这里是用于当通过该变量解析出来的值是一个 undefined 时，最终应该返回的值。
-     * 默认返回的是 null，这样会导致数据范围中的 filter 条件不会被清除掉，而 URL search params 变量的值为空时，应该清除掉 filter 条件，
+     * 这里的默认值是 null，这样会导致数据范围中的 filter 条件不会被清除掉，而 URL search params 变量的值为空时，应该清除掉 filter 条件，
      * 所以这里把 defaultValue 设置为 undefined，这样在解析出来的值是 undefined 时，会返回 undefined，从而清除掉 filter 条件。
      */
     defaultValue: undefined,

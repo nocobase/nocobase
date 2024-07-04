@@ -40,5 +40,6 @@ export const usePopupVariable = (props: any = {}) => {
     /** 当前记录对应的 collection name */
     collectionName: collection?.name,
     dataSource: collection?.dataSource,
+    defaultValue: undefined,
   };
 };

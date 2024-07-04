@@ -118,7 +118,9 @@ export class ApprovalTriggerNode {
     this.addBlockButton = page.getByLabel(`schema-initializer-Grid-ApprovalApplyAddBlockButton-${collectionName}`);
     this.addApplyFormMenu = page.getByRole('menuitem', { name: 'Apply form' });
     this.configureFieldsButton = page.getByLabel(`schema-initializer-Grid-form:configureFields-${collectionName}`);
-    this.configureActionsButton = page.getByLabel(`schema-initializer-ActionBar-ApprovalApplyAddActionButton-${collectionName}`);
+    this.configureActionsButton = page.getByLabel(
+      `schema-initializer-ActionBar-ApprovalApplyAddActionButton-${collectionName}`,
+    );
     this.saveDraftSwitch = page.getByRole('menuitem', { name: 'Save draft' }).getByRole('switch');
     this.preloadAssociationsDropDown = page.getByTestId('select-field-Preload associations');
     this.submitButton = page.getByLabel('action-Action-Submit-workflows');
@@ -170,13 +172,17 @@ export class ApprovalPassthroughModeNode {
     this.OrRadio = page.getByLabel('Or', { exact: true });
     this.AndRadio = page.getByLabel('And', { exact: true });
     this.votingRadio = page.getByLabel('Voting', { exact: true });
-    this.votingThresholdEditBox = page.getByLabel('block-item-NegotiationConfig-workflows-Negotiation mode').getByRole('spinbutton');
+    this.votingThresholdEditBox = page
+      .getByLabel('block-item-NegotiationConfig-workflows-Negotiation mode')
+      .getByRole('spinbutton');
     this.parallellyRadio = page.getByLabel('Parallelly', { exact: true });
     this.sequentiallyRadio = page.getByLabel('Sequentially', { exact: true });
     this.goToconfigureButton = page.getByRole('button', { name: 'Go to configure' });
     this.addBlockButton = page.getByLabel('schema-initializer-Grid-ApprovalProcessAddBlockButton-workflows');
     this.addDetailsMenu = page.getByRole('menuitem', { name: 'Details' });
-    this.detailsConfigureFieldsButton = page.getByLabel(`schema-initializer-Grid-details:configureFields-${collectionName}`);
+    this.detailsConfigureFieldsButton = page.getByLabel(
+      `schema-initializer-Grid-details:configureFields-${collectionName}`,
+    );
     this.addActionsMenu = page.getByRole('menuitem', { name: 'Actions' }).getByRole('switch');
     this.actionsConfigureFieldsButton = page.getByLabel('schema-initializer-Grid-FormItemInitializers-approvalRecords');
     this.actionsConfigureActionsButton = page.getByLabel(
@@ -239,13 +245,17 @@ export class ApprovalBranchModeNode {
     this.OrRadio = page.getByLabel('Or', { exact: true });
     this.AndRadio = page.getByLabel('And', { exact: true });
     this.votingRadio = page.getByLabel('Voting', { exact: true });
-    this.votingThresholdEditBox = page.getByLabel('block-item-NegotiationConfig-workflows-Negotiation mode').getByRole('spinbutton');
+    this.votingThresholdEditBox = page
+      .getByLabel('block-item-NegotiationConfig-workflows-Negotiation mode')
+      .getByRole('spinbutton');
     this.parallellyRadio = page.getByLabel('Parallelly', { exact: true });
     this.sequentiallyRadio = page.getByLabel('Sequentially', { exact: true });
     this.goToconfigureButton = page.getByRole('button', { name: 'Go to configure' });
     this.addBlockButton = page.getByLabel('schema-initializer-Grid-ApprovalProcessAddBlockButton-workflows');
     this.addDetailsMenu = page.getByRole('menuitem', { name: 'Details' });
-    this.detailsConfigureFieldsButton = page.getByLabel(`schema-initializer-Grid-details:configureFields-${collectionName}`);
+    this.detailsConfigureFieldsButton = page.getByLabel(
+      `schema-initializer-Grid-details:configureFields-${collectionName}`,
+    );
     this.addActionsMenu = page.getByRole('menuitem', { name: 'Actions' }).getByRole('switch');
     this.actionsConfigureFieldsButton = page.getByLabel('schema-initializer-Grid-FormItemInitializers-approvalRecords');
     this.actionsConfigureActionsButton = page.getByLabel(
@@ -733,5 +743,5 @@ export default module.exports = {
   ConditionBranchNode,
   SQLNode,
   ParallelBranchNode,
-  ApprovalBranchModeNode
+  ApprovalBranchModeNode,
 };

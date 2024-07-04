@@ -1020,5 +1020,5 @@ export default module.exports = {
   apiCreateRecordTriggerActionEvent,
   apiApplyApprovalEvent,
   userLogin,
-  apiCreateField
+  apiCreateField,
 };

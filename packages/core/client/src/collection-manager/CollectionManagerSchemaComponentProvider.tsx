@@ -9,21 +9,22 @@
 
 import React from 'react';
 import { SchemaComponentOptions } from '..';
-import { CollectionProvider_deprecated, ResourceActionProvider, useDataSourceFromRAC } from '.';
+import { CollectionProvider_deprecated } from './CollectionProvider_deprecated';
+import { ResourceActionProvider, useDataSourceFromRAC } from './ResourceActionProvider';
 import * as hooks from './action-hooks';
-import { DataSourceProvider_deprecated, ds, SubFieldDataSourceProvider_deprecated } from './sub-table';
+import { DataSourceProvider_deprecated, SubFieldDataSourceProvider_deprecated, ds } from './sub-table';
+
+const scope = { cm: { ...hooks, useDataSourceFromRAC }, ds };
+const components = {
+  SubFieldDataSourceProvider_deprecated,
+  DataSourceProvider_deprecated,
+  CollectionProvider_deprecated,
+  ResourceActionProvider,
+};
 
 export const CollectionManagerSchemaComponentProvider: React.FC = (props) => {
   return (
-    <SchemaComponentOptions
-      scope={{ cm: { ...hooks, useDataSourceFromRAC }, ds }}
-      components={{
-        SubFieldDataSourceProvider_deprecated,
-        DataSourceProvider_deprecated,
-        CollectionProvider_deprecated,
-        ResourceActionProvider,
-      }}
-    >
+    <SchemaComponentOptions scope={scope} components={components}>
       {props.children}
     </SchemaComponentOptions>
   );
