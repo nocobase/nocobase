@@ -8,6 +8,8 @@
  */
 
 import { ISchema } from '@formily/json-schema';
+import { uid } from '@formily/shared';
+import { Result } from 'antd';
 import _ from 'lodash';
 import { FC, default as React, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Location, useLocation } from 'react-router-dom';
@@ -142,6 +144,14 @@ const PagePopupsItemProvider: FC<{
     context = storedContext;
   }
 
+  if (_.isEmpty(context)) {
+    return (
+      <PopupVisibleProvider visible={visible} setVisible={setVisible}>
+        <div style={{ display: 'none' }}>{children}</div>
+      </PopupVisibleProvider>
+    );
+  }
+
   return (
     <PopupParamsProvider params={params} context={context} currentLevel={currentLevel}>
       <PopupVisibleProvider visible={visible} setVisible={setVisible}>
@@ -215,6 +225,10 @@ export const PagePopups = (props: { paramsList?: PopupParams[] }) => {
       );
       const schemas = await Promise.all(waitList);
       const clonedSchemas = schemas.map((schema) => {
+        if (_.isEmpty(schema)) {
+          return get404Schema();
+        }
+
         const result = _.cloneDeep(_.omit(schema, 'parent'));
         result['x-read-pretty'] = true;
         return result;
@@ -271,10 +285,15 @@ export const useRequestSchema = () => {
   const api = useAPIClient();
 
   const requestSchema = useCallback(async (uid: string) => {
-    const data = await api.request({
-      url: `/uiSchemas:getJsonSchema/${uid}`,
-    });
-    return data.data?.data as ISchema;
+    try {
+      const data = await api.request({
+        url: `/uiSchemas:getJsonSchema/${uid}`,
+      });
+      return data.data?.data as ISchema;
+    } catch (error) {
+      console.error(error);
+      return null;
+    }
   }, []);
 
   return { requestSchema };
@@ -300,3 +319,87 @@ export const useCurrentPopupContext = (): PopupProps => {
   const allPopupsProps = React.useContext(AllPopupsPropsProviderContext);
   return allPopupsProps?.[currentLevel - 1] || ({} as PopupProps);
 };
+
+/**
+ * Used to display a message to the user indicating that the popup schema has been deleted
+ */
+function get404Schema() {
+  return {
+    _isJSONSchemaObject: true,
+    version: '2.0',
+    type: 'void',
+    title: '{{ t("Error message") }}',
+    'x-action': 'view',
+    'x-toolbar': 'ActionSchemaToolbar',
+    'x-settings': 'actionSettings:view',
+    'x-component': 'Action.Link',
+    'x-component-props': {
+      openMode: 'drawer',
+    },
+    'x-action-context': {},
+    'x-decorator': 'ACLActionProvider',
+    'x-designer-props': {
+      linkageAction: true,
+    },
+    properties: {
+      drawer: {
+        _isJSONSchemaObject: true,
+        version: '2.0',
+        type: 'void',
+        title: 'Error message',
+        'x-component': 'Action.Container',
+        'x-component-props': {
+          className: 'nb-action-popup',
+        },
+        properties: {
+          tabs: {
+            _isJSONSchemaObject: true,
+            version: '2.0',
+            type: 'void',
+            'x-component': 'Tabs',
+            'x-component-props': {},
+            'x-initializer': 'popup:addTab',
+            properties: {
+              tab1: {
+                _isJSONSchemaObject: true,
+                version: '2.0',
+                type: 'void',
+                title: '404',
+                'x-component': 'Tabs.TabPane',
+                'x-designer': 'Tabs.Designer',
+                'x-component-props': {},
+                properties: {
+                  grid: {
+                    _isJSONSchemaObject: true,
+                    version: '2.0',
+                    type: 'void',
+                    'x-component': () => {
+                      return <Result status="404" title="404" subTitle="Sorry, the page you visited does not exist." />;
+                    },
+                    'x-uid': uid(),
+                    'x-async': false,
+                    'x-index': 1,
+                  },
+                },
+                'x-uid': uid(),
+                'x-async': false,
+                'x-index': 1,
+              },
+            },
+            'x-uid': uid(),
+            'x-async': false,
+            'x-index': 1,
+          },
+        },
+        'x-uid': uid(),
+        'x-async': false,
+        'x-index': 1,
+      },
+    },
+    name: uid(),
+    'x-uid': uid(),
+    'x-async': false,
+    'x-index': 2,
+    'x-read-pretty': true,
+  };
+}

@@ -19,7 +19,7 @@ ActionContext.displayName = 'ActionContext';
 
 export const ActionContextProvider: React.FC<ActionContextProps & { value?: ActionContextProps }> = (props) => {
   const { params } = useCurrentPopupContext();
-  const popupUidWithoutOpened = useFieldSchema()['x-uid'];
+  const popupUidWithoutOpened = useFieldSchema()?.['x-uid'];
   const [submitted, setSubmitted] = useState(false); //是否有提交记录
   const { visible } = { ...props, ...props.value } || {};
   const isFirstRender = useRef(!params?.popupuid); // 使用ref跟踪是否为首次渲染
@@ -29,7 +29,7 @@ export const ActionContextProvider: React.FC<ActionContextProps & { value?: Acti
 
   useEffect(() => {
     // Block services in both pages and popups (including sub-pages) need to be stored.
-    if (currentPopupUid !== popupUidWithoutOpened) {
+    if (popupUidWithoutOpened && currentPopupUid !== popupUidWithoutOpened) {
       storeBlockService(popupUidWithoutOpened, { service });
     }
   }, [popupUidWithoutOpened, service, currentPopupUid]);
