@@ -62,6 +62,7 @@ jobs:
     steps:
       - name: rm
         run: |
+          apt-get update && apt-get install -y sudo
           rm -rf "/usr/local/share/boost"
           rm -rf "$AGENT_TOOLSDIRECTORY"
       - name: Free Disk Space
