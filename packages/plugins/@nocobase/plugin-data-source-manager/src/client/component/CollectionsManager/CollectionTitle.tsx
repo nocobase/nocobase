@@ -14,9 +14,9 @@ import React from 'react';
 import { SetFilterTargetKey } from './SetFilterTargetKey';
 
 export const CollectionTitle = () => {
-  const record = useCollectionRecordData();
+  const record = useCollectionRecordData() || {};
   const compile = useCompile();
-  if (record.filterTargetKey) {
+  if (record?.filterTargetKey) {
     return compile(record.title);
   }
   return (
