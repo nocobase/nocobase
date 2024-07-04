@@ -170,6 +170,19 @@ export const ConfigurationTable = () => {
     }
   }, [name]);
 
+  const loadFilterTargetKeys = async (field) => {
+    const { fields } = field.form.values;
+    return Promise.resolve({
+      data: fields,
+    }).then(({ data }) => {
+      return data?.map((item: any) => {
+        return {
+          label: compile(item.uiSchema?.title) || item.name,
+          value: item.name,
+        };
+      });
+    });
+  };
   return (
     <SchemaComponentContext.Provider value={{ ...ctx, designable: false, dataSourceData }}>
       <SchemaComponent
@@ -187,6 +200,7 @@ export const ConfigurationTable = () => {
           useBulkDestroySubField,
           useSelectedRowKeys,
           useAsyncDataSource,
+          loadFilterTargetKeys,
           loadCategories,
           loadStorages,
           useNewId,
