@@ -9,8 +9,9 @@
 
 import { ArrowLeftOutlined } from '@ant-design/icons';
 import { Button } from 'antd';
-import React, { useMemo } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { useToken } from '../../../style';
+import { useCurrentPopupContext } from './PagePopups';
 import { usePagePopup } from './pagePopupUtils';
 
 /**
@@ -18,6 +19,7 @@ import { usePagePopup } from './pagePopupUtils';
  * @returns
  */
 export const BackButtonUsedInSubPage = () => {
+  const { params } = useCurrentPopupContext();
   const { closePopup } = usePagePopup();
   const { token } = useToken();
   // tab item gutter, this is fixed value in antd
@@ -33,7 +35,17 @@ export const BackButtonUsedInSubPage = () => {
     };
   }, [token.paddingXS]);
 
+  const handleClick = useCallback(() => {
+    closePopup(params.popupuid);
+  }, [params.popupuid]);
+
   return (
-    <Button aria-label="back-button" type="text" icon={<ArrowLeftOutlined />} style={resetStyle} onClick={closePopup} />
+    <Button
+      aria-label="back-button"
+      type="text"
+      icon={<ArrowLeftOutlined />}
+      style={resetStyle}
+      onClick={handleClick}
+    />
   );
 };
