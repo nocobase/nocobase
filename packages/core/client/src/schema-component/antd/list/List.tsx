@@ -77,7 +77,7 @@ const InternalList = (props) => {
           css`
             .nb-list-container {
               height: ${height ? height + 'px' : '100%'};
-              overflow-y: auto;
+              overflow-y: ${height ? 'auto' : null};
               margin-left: -${token.marginLG}px;
               margin-right: -${token.marginLG}px;
               padding-left: ${token.marginLG}px;
