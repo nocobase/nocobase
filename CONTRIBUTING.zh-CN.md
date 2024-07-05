@@ -12,8 +12,8 @@
 - [反馈缺陷](#反馈缺陷)
 - 开发[新插件](#新插件)
 - [贡献源代码](#贡献源代码)
-- 撰写文档和文章
-- 翻译
+- 撰写[文档](#撰写文档)和[文章](#撰写文章)
+- [翻译](#翻译)
 - 帮助他人解决和 NocoBase 有关的问题
 
 ## 反馈缺陷
@@ -24,7 +24,7 @@
 
 ### 安全漏洞
 
-如果你确定自己发现了一个安全漏洞，请通过提交[安全漏洞](https://github.com/nocobase/nocobase/security/advisories/new)的方式来报告。
+如果你发现的是一个安全漏洞，请通过提交[安全漏洞](https://github.com/nocobase/nocobase/security/advisories/new)的方式来报告。
 
 ## 新插件
 
@@ -32,7 +32,7 @@
 
 你可以参考[开发文档](https://docs-cn.nocobase.com/development/)来开发你的第一个插件。
 
-其中一些模块相关的插件开发，你还可以查阅以下文档获得更多的信息：
+对于其中一些模块的插件开发，你还可以查阅以下文档获得更多的信息：
 
 - [用户认证](https://docs-cn.nocobase.com/handbook/auth/dev/guide)
 - [工作流](https://docs-cn.nocobase.com/handbook/workflow/development)
