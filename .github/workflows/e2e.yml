@@ -382,6 +382,7 @@ jobs:
     needs:
       - core-and-plugins
       - plugin-workflow
+      - plugin-workflow-approval
       - plugin-data-source-main
     if: ${{ !cancelled() && github.event.pull_request.number }}
     steps:
