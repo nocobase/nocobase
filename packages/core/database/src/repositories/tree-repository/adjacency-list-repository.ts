@@ -231,13 +231,13 @@ export class AdjacencyListRepository extends Repository {
       const nodeDatas = await this.queryRootDatas(nodeIds);
       const nodeRootPkNodesMap = {};
       for (const nodeData of nodeDatas) {
-        if (nodeRootPkNodesMap[nodeData.dataValues.rootPK]) {
-          nodeRootPkNodesMap[nodeData.dataValues.rootPK] = [
-            ...nodeRootPkNodesMap[nodeData.dataValues.rootPK],
+        if (nodeRootPkNodesMap[nodeData.dataValues.rootPk]) {
+          nodeRootPkNodesMap[nodeData.dataValues.rootPk] = [
+            ...nodeRootPkNodesMap[nodeData.dataValues.rootPk],
             nodeIdMap[nodeData.dataValues.nodePk],
           ];
         } else {
-          nodeRootPkNodesMap[nodeData.dataValues.rootPK] = [nodeIdMap[nodeData.dataValues.nodePk]];
+          nodeRootPkNodesMap[nodeData.dataValues.rootPk] = [nodeIdMap[nodeData.dataValues.nodePk]];
         }
       }
 
@@ -309,7 +309,7 @@ export class AdjacencyListRepository extends Repository {
     const q = queryInterface.quoteIdentifier.bind(queryInterface);
     const datas = await this.database.sequelize.query(
       `
-      SELECT DISTINCT(${q('rootPK')}) as ${q('rootId')}
+      SELECT DISTINCT(${q('rootPk')}) as ${q('rootId')}
       FROM ${pathTableName}
       WHERE ${q('nodePk')} IN (${nodePks.join(',')}) ;
       `,
