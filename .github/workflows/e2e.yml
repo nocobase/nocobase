@@ -86,6 +86,11 @@ jobs:
           ref: main
           path: packages/pro-plugins
           ssh-key: ${{ secrets.SUBMODULE_SSH_KEY }}
+      - name: Fetch all branches
+        run: cd packages/pro-plugins && git fetch --all
+      - name: git checkout ${{ github.head_ref }}
+        run: cd packages/pro-plugins && git checkout ${{ github.head_ref }}
+        continue-on-error: true
       - name: Set variables
         continue-on-error: true # 外部开发者提交 PR 的时候因为没有权限这里会报错，为了能够继续执行后续步骤，所以这里设置为 continue-on-error: true
         run: |
