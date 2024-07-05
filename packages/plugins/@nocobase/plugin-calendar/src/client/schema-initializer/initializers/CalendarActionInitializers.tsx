@@ -78,6 +78,14 @@ const commonOptions = {
       schema: {
         'x-align': 'right',
       },
+      useVisible() {
+        const collection = useCollection() || ({} as any);
+        const { unAvailableFunctions } = collection?.options || {};
+        if (unAvailableFunctions) {
+          return !unAvailableFunctions?.includes?.('filter');
+        }
+        return true;
+      },
     },
     {
       name: 'addNew',

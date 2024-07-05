@@ -14,6 +14,7 @@ import { useFormBlockContext, useTableBlockContext } from '../block-provider';
 import { useCollection_deprecated } from '../collection-manager';
 import { useDesignable, removeNullCondition } from '../schema-component';
 import { SchemaSettingsDataScope } from './SchemaSettingsDataScope';
+import { useCollection } from '../data-source';
 
 export const setTheDataScopeSchemaSettingsItem: SchemaSettingsItemType = {
   name: 'SetTheDataScope',
@@ -50,5 +51,13 @@ export const setTheDataScopeSchemaSettingsItem: SchemaSettingsItemType = {
       form: form,
       onSubmit: onDataScopeSubmit,
     };
+  },
+  useVisible() {
+    const collection = useCollection() || ({} as any);
+    const { unAvailableFunctions } = collection?.options || {};
+    if (unAvailableFunctions) {
+      return !unAvailableFunctions?.includes?.('filter');
+    }
+    return true;
   },
 };
