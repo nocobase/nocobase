@@ -22,23 +22,21 @@ export const useActionContext = () => {
   return {
     ...ctx,
     setVisible(visible: boolean, confirm = false) {
-      if (ctx?.openMode !== 'page') {
-        if (!visible) {
-          if (confirm && ctx.formValueChanged) {
-            modal.confirm({
-              title: t('Unsaved changes'),
-              content: t("Are you sure you don't want to save?"),
-              async onOk() {
-                ctx.setFormValueChanged(false);
-                ctx.setVisible?.(false);
-              },
-            });
-          } else {
-            ctx?.setVisible?.(false);
-          }
+      if (!visible) {
+        if (confirm && ctx.formValueChanged) {
+          modal.confirm({
+            title: t('Unsaved changes'),
+            content: t("Are you sure you don't want to save?"),
+            async onOk() {
+              ctx.setFormValueChanged(false);
+              ctx.setVisible?.(false);
+            },
+          });
         } else {
-          ctx?.setVisible?.(visible);
+          ctx?.setVisible?.(false);
         }
+      } else {
+        ctx?.setVisible?.(visible);
       }
     },
   };

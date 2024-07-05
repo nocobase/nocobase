@@ -10,9 +10,10 @@
 import { observer, RecursionField, useField, useFieldSchema } from '@formily/react';
 import { Drawer } from 'antd';
 import classNames from 'classnames';
-import React from 'react';
+import React, { useMemo } from 'react';
 import { ErrorBoundary, FallbackProps } from 'react-error-boundary';
 import { ErrorFallback } from '../error-fallback';
+import { useCurrentPopupContext } from '../page/PagePopups';
 import { useStyles } from './Action.Drawer.style';
 import { useActionContext } from './hooks';
 import { useSetAriaLabelForDrawer } from './hooks/useSetAriaLabelForDrawer';
@@ -45,6 +46,14 @@ export const InternalActionDrawer: React.FC<ActionDrawerProps> = observer(
       }
       return buf;
     });
+    const { hidden } = useCurrentPopupContext();
+    const rootStyle: React.CSSProperties = useMemo(() => {
+      return {
+        ...drawerProps?.style,
+        ...others?.style,
+        display: hidden ? 'none' : 'block',
+      };
+    }, [hidden, drawerProps?.style, others?.style]);
 
     if (process.env.__E2E__) {
       useSetAriaLabelForDrawer(visible);
@@ -56,10 +65,7 @@ export const InternalActionDrawer: React.FC<ActionDrawerProps> = observer(
         title={field.title}
         {...others}
         {...drawerProps}
-        rootStyle={{
-          ...drawerProps?.style,
-          ...others?.style,
-        }}
+        rootStyle={rootStyle}
         destroyOnClose
         open={visible}
         onClose={() => setVisible(false, true)}

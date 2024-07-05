@@ -36,7 +36,6 @@ import {
 import { DataBlockCollector } from '../filter-provider/FilterProvider';
 import { useSourceId } from '../modules/blocks/useSourceId';
 import { RecordProvider, useRecordIndex } from '../record-provider';
-import { usePagePopup } from '../schema-component/antd/page/pagePopupUtils';
 import { useAssociationNames } from './hooks';
 import { useDataBlockParentRecord } from './hooks/useDataBlockParentRecord';
 
@@ -300,11 +299,6 @@ export const useFilterByTk = () => {
   const { getCollectionField } = useCollectionManager_deprecated();
   const assoc = useBlockAssociationContext();
   const withoutTableFieldResource = useContext(WithoutTableFieldResource);
-  const { popupParams } = usePagePopup();
-
-  if (popupParams?.filterbytk) {
-    return popupParams.filterbytk;
-  }
 
   if (!withoutTableFieldResource) {
     if (resource instanceof TableFieldResource || __parent?.block === 'TableField') {

@@ -7,15 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import {
-  ActionContextProvider,
-  AdminProvider,
-  css,
-  cx,
-  PopupSettingsProvider,
-  RemoteSchemaComponent,
-  useViewport,
-} from '@nocobase/client';
+import { ActionContextProvider, AdminProvider, css, cx, RemoteSchemaComponent, useViewport } from '@nocobase/client';
 import { DrawerProps, ModalProps } from 'antd';
 import React, { useMemo } from 'react';
 import { Outlet, useParams } from 'react-router-dom';
@@ -101,37 +93,35 @@ const MApplication: React.FC = (props) => {
   return (
     <Provider>
       <MobileCore>
-        <PopupSettingsProvider isPopupVisibleControlledByURL={false}>
-          <OpenInNewTab />
-          <ActionContextProvider modalProps={modalProps as ModalProps} drawerProps={drawerProps}>
-            <div
-              className={cx(
-                'nb-mobile-application',
-                commonDesignerCSS,
-                commonCSSVariables,
-                commonCSSOverride,
-                css`
-                  display: flex;
-                  flex-direction: column;
-                  width: 100%;
-                  height: 100%;
-                  position: relative;
-                  overflow: hidden;
-                `,
-              )}
-            >
-              {params.name && !params.name.startsWith('tab_') ? (
-                <Outlet />
-              ) : (
-                <RemoteSchemaComponent key={mobileSchemaUid} uid={mobileSchemaUid}>
-                  {props.children}
-                </RemoteSchemaComponent>
-              )}
-              {/* Global action will insert here */}
-              <div id="nb-position-container"></div>
-            </div>
-          </ActionContextProvider>
-        </PopupSettingsProvider>
+        <OpenInNewTab />
+        <ActionContextProvider modalProps={modalProps as ModalProps} drawerProps={drawerProps}>
+          <div
+            className={cx(
+              'nb-mobile-application',
+              commonDesignerCSS,
+              commonCSSVariables,
+              commonCSSOverride,
+              css`
+                display: flex;
+                flex-direction: column;
+                width: 100%;
+                height: 100%;
+                position: relative;
+                overflow: hidden;
+              `,
+            )}
+          >
+            {params.name && !params.name.startsWith('tab_') ? (
+              <Outlet />
+            ) : (
+              <RemoteSchemaComponent key={mobileSchemaUid} uid={mobileSchemaUid}>
+                {props.children}
+              </RemoteSchemaComponent>
+            )}
+            {/* Global action will insert here */}
+            <div id="nb-position-container"></div>
+          </div>
+        </ActionContextProvider>
       </MobileCore>
     </Provider>
   );
