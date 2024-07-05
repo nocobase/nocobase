@@ -21,6 +21,7 @@ export class DataSourceManager {
   factory: DataSourceFactory = new DataSourceFactory();
   protected middlewares = [];
   private onceHooks: Array<DataSourceHook> = [];
+  private beforeAddHooks: Array<DataSourceHook> = [];
 
   constructor(public options = {}) {
     this.dataSources = new Map();
@@ -32,6 +33,10 @@ export class DataSourceManager {
   }
 
   async add(dataSource: DataSource, options: any = {}) {
+    for (const hook of this.beforeAddHooks) {
+      hook(dataSource);
+    }
+
     await dataSource.load(options);
     this.dataSources.set(dataSource.name, dataSource);
 
@@ -69,6 +74,13 @@ export class DataSourceManager {
 
   buildDataSourceByType(type: string, options: any = {}): DataSource {
     return this.factory.create(type, options);
+  }
+
+  beforeAddDataSource(hook: DataSourceHook) {
+    this.beforeAddHooks.push(hook);
+    for (const dataSource of this.dataSources.values()) {
+      hook(dataSource);
+    }
   }
 
   afterAddDataSource(hook: DataSourceHook) {
