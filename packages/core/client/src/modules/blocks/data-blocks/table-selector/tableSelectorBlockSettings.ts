@@ -23,6 +23,7 @@ import {
 import { removeNullCondition, useDesignable } from '../../../../schema-component';
 import { SchemaSettingsDataScope } from '../../../../schema-settings/SchemaSettingsDataScope';
 import { setDataLoadingModeSettingsItem, useDataLoadingMode } from '../details-multi/setDataLoadingModeSettingsItem';
+import { useCollection } from '../../../../data-source';
 
 export const tableSelectorBlockSettings = new SchemaSettings({
   name: 'blockSettings:tableSelector',
@@ -270,6 +271,14 @@ export const tableSelectorBlockSettings = new SchemaSettings({
             });
           },
         };
+      },
+      useVisible() {
+        const collection = useCollection() || ({} as any);
+        const { unAvailableFunctions } = collection?.options || {};
+        if (unAvailableFunctions) {
+          return !unAvailableFunctions?.includes?.('pagination');
+        }
+        return true;
       },
     },
     {

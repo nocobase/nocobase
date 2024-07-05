@@ -24,6 +24,7 @@ import { SchemaSettingsTemplate } from '../../../../schema-settings/SchemaSettin
 import { setDefaultSortingRulesSchemaSettingsItem } from '../../../../schema-settings/setDefaultSortingRulesSchemaSettingsItem';
 import { setTheDataScopeSchemaSettingsItem } from '../../../../schema-settings/setTheDataScopeSchemaSettingsItem';
 import { setDataLoadingModeSettingsItem } from '../details-multi/setDataLoadingModeSettingsItem';
+import { useCollection } from '../../../../data-source';
 
 export const tableBlockSettings = new SchemaSettings({
   name: 'blockSettings:table',
@@ -137,6 +138,14 @@ export const tableBlockSettings = new SchemaSettings({
           },
         };
       },
+      useVisible() {
+        const collection = useCollection() || ({} as any);
+        const { unAvailableFunctions } = collection?.options || {};
+        if (unAvailableFunctions) {
+          return !unAvailableFunctions?.includes?.('sort');
+        }
+        return true;
+      },
     },
     {
       name: 'SortField',
@@ -183,6 +192,14 @@ export const tableBlockSettings = new SchemaSettings({
             });
           },
         };
+      },
+      useVisible() {
+        const collection = useCollection() || ({} as any);
+        const { unAvailableFunctions } = collection?.options || {};
+        if (unAvailableFunctions) {
+          return !unAvailableFunctions?.includes?.('pagination');
+        }
+        return true;
       },
     },
     {
