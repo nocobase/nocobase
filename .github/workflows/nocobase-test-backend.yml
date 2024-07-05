@@ -112,7 +112,7 @@ jobs:
           DB_SCHEMA: ${{ matrix.schema }}
           COLLECTION_MANAGER_SCHEMA: ${{ matrix.collection_schema }}
           DB_TEST_DISTRIBUTOR_PORT: 23450
-          DB_TEST_PREFIX: test_
+          DB_TEST_PREFIX: test
     timeout-minutes: 60
 
   mysql-test:

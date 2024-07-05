@@ -381,7 +381,7 @@ export class PluginACLServer extends Plugin {
             name: 'member',
             title: '{{t("Member")}}',
             allowNewMenu: true,
-            strategy: { actions: ['view', 'update:own', 'destroy:own', 'create', 'importXlsx', 'export'] },
+            strategy: { actions: ['view', 'update:own', 'destroy:own', 'create'] },
             default: true,
             snippets: ['!ui.*', '!pm', '!pm.*'],
           },

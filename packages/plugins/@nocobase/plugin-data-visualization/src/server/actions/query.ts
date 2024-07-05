@@ -55,6 +55,8 @@ type QueryParams = Partial<{
   refresh: boolean;
 }>;
 
+const AllowedAggFuncs = ['sum', 'count', 'avg', 'min', 'max'];
+
 const getDB = (ctx: Context, dataSource: string) => {
   const ds = ctx.app.dataSourceManager.dataSources.get(dataSource);
   return ds?.collectionManager.db;
@@ -119,6 +121,9 @@ export const parseBuilder = async (ctx: Context, next: Next) => {
     const attribute = [];
     const col = sequelize.col(field);
     if (aggregation) {
+      if (!AllowedAggFuncs.includes(aggregation)) {
+        throw new Error(`Invalid aggregation function: ${aggregation}`);
+      }
       hasAgg = true;
       attribute.push(sequelize.fn(aggregation, col));
     } else {
