@@ -31,7 +31,6 @@ import { useProps } from '../../hooks/useProps';
 import { PopupVisibleProvider } from '../page/PagePopups';
 import { usePagePopup } from '../page/pagePopupUtils';
 import { usePopupSettings } from '../page/PopupSettingsProvider';
-import { useNavigateTOSubPage } from '../page/SubPages';
 import ActionContainer from './Action.Container';
 import { ActionDesigner } from './Action.Designer';
 import { ActionDrawer } from './Action.Drawer';
@@ -306,7 +305,6 @@ function RenderButton({
   modal,
 }) {
   const { t } = useTranslation();
-  const { navigateToSubPage } = useNavigateTOSubPage();
   const { isPopupVisibleControlledByURL } = usePopupSettings();
   const { openPopup } = usePagePopup();
 
@@ -320,20 +318,18 @@ function RenderButton({
 
       if (!disabled && aclCtx) {
         const onOk = () => {
-          if (openMode === 'page') {
-            return navigateToSubPage();
-          }
           if (onClick) {
             onClick(e, () => {
               if (refreshDataBlockRequest !== false) {
                 service?.refresh?.();
               }
             });
-          } else if (isBulkEditAction(fieldSchema) || !isPopupVisibleControlledByURL) {
+          } else if (isBulkEditAction(fieldSchema) || !isPopupVisibleControlledByURL()) {
             setVisible(true);
             run?.();
           } else {
             if (
+              // Currently, only buttons of these types can control the visibility of popups through URLs.
               ['view', 'update', 'create', 'customize:popup'].includes(fieldSchema['x-action']) &&
               fieldSchema['x-uid']
             ) {

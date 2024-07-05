@@ -230,7 +230,7 @@ const HeaderMenu = ({
   }, [children, designable]);
 
   const handleSelect = useCallback(
-    (info: any) => {
+    (info: { item; key; keyPath; domEvent }) => {
       const s = schema.properties?.[info.key];
 
       if (!s) {
@@ -274,7 +274,7 @@ const HeaderMenu = ({
       <AntdMenu
         {...others}
         className={headerMenuClass}
-        onSelect={handleSelect}
+        onClick={handleSelect}
         mode={mode === 'mix' ? 'horizontal' : mode}
         defaultOpenKeys={defaultOpenKeys}
         defaultSelectedKeys={defaultSelectedKeys}
@@ -352,7 +352,7 @@ const SideMenu = ({
           mode={'inline'}
           openKeys={openKeys}
           selectedKeys={selectedKeys}
-          onSelect={onSelect}
+          onClick={onSelect}
           onOpenChange={setOpenKeys}
           className={sideMenuClass}
           items={items as MenuProps['items']}

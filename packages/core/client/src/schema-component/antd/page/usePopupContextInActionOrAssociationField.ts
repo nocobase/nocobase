@@ -16,25 +16,6 @@ export interface PopupContext {
   dataSource: string;
   collection?: string;
   association?: string;
-  /**
-   * Context for the parent popup record variable
-   */
-  parentPopupRecord?: {
-    /** collection name */
-    collection: string;
-    filterByTk: string;
-  };
-}
-
-export interface SubPageContext extends PopupContext {
-  /**
-   * Context for the parent popup record variable
-   */
-  parentPopupRecord: {
-    /** collection name */
-    collection: string;
-    filterByTk: string;
-  };
 }
 
 export const CONTEXT_SCHEMA_KEY = 'x-action-context';
