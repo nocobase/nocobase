@@ -16,6 +16,7 @@ import { findFilterTargets } from '../../../../../block-provider/hooks';
 import { useFilterBlock } from '../../../../../filter-provider/FilterProvider';
 import { mergeFilter } from '../../../../../filter-provider/utils';
 import { removeNullCondition } from '../../../../../schema-component';
+import { useCollection } from '../../../../../data-source';
 
 export const useTableBlockProps = () => {
   const field = useField<ArrayField>();
@@ -25,7 +26,12 @@ export const useTableBlockProps = () => {
   const { getDataBlocks } = useFilterBlock();
   const isLoading = ctx?.service?.loading;
   const params = useMemo(() => ctx?.service?.params, [JSON.stringify(ctx?.service?.params)]);
+  const collection = useCollection() || ({} as any);
+  const { unavailableFunctions } = collection?.options || {};
 
+  const isSupportPaginate = !unavailableFunctions?.includes?.('pagination');
+
+  console.log(isSupportPaginate);
   useEffect(() => {
     if (!isLoading) {
       const serviceResponse = ctx?.service?.data;
@@ -57,7 +63,11 @@ export const useTableBlockProps = () => {
     showIndex: ctx.showIndex,
     dragSort: ctx.dragSort && ctx.dragSortBy,
     rowKey: ctx.rowKey || 'id',
-    pagination: fieldSchema?.['x-component-props']?.pagination === false ? false : field.componentProps.pagination,
+    pagination: isSupportPaginate
+      ? fieldSchema?.['x-component-props']?.pagination === false
+        ? false
+        : field.componentProps.pagination
+      : false,
     onRowSelectionChange: useCallback((selectedRowKeys) => {
       ctx.field.data = ctx?.field?.data || {};
       ctx.field.data.selectedRowKeys = selectedRowKeys;
