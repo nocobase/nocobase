@@ -80,9 +80,9 @@ const commonOptions = {
       },
       useVisible() {
         const collection = useCollection() || ({} as any);
-        const { unAvailableFunctions } = collection?.options || {};
-        if (unAvailableFunctions) {
-          return !unAvailableFunctions?.includes?.('filter');
+        const { unavailableFunctions } = collection?.options || {};
+        if (unavailableFunctions) {
+          return !unavailableFunctions?.includes?.('filter');
         }
         return true;
       },

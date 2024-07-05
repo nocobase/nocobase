@@ -136,9 +136,9 @@ export const setDefaultSortingRulesSchemaSettingsItem: SchemaSettingsItemType = 
     const field = useField();
     const { dragSort } = field.decoratorProps;
     const collection = useCollection() || ({} as any);
-    const { unAvailableFunctions } = collection?.options || {};
-    if (unAvailableFunctions) {
-      return !unAvailableFunctions?.includes?.('sort');
+    const { unavailableFunctions } = collection?.options || {};
+    if (unavailableFunctions) {
+      return !unavailableFunctions?.includes?.('sort');
     }
     return !dragSort;
   },

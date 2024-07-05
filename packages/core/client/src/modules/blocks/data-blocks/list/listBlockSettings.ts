@@ -207,9 +207,9 @@ export const listBlockSettings = new SchemaSettings({
       },
       useVisible() {
         const collection = useCollection() || ({} as any);
-        const { unAvailableFunctions } = collection?.options || {};
-        if (unAvailableFunctions) {
-          return !unAvailableFunctions?.includes?.('pagination');
+        const { unavailableFunctions } = collection?.options || {};
+        if (unavailableFunctions) {
+          return !unavailableFunctions?.includes?.('pagination');
         }
         return true;
       },
