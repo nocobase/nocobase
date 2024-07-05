@@ -204,7 +204,7 @@ export class PluginDataSourceManagerServer extends Plugin {
 
           const fields = [...collection.fields.values()].map((field) => field.options);
 
-          return {
+          const results = {
             ...collectionOptions,
             fields,
             unavailableActions:
@@ -212,6 +212,12 @@ export class PluginDataSourceManagerServer extends Plugin {
                 ? collectionInstance.unavailableActions()
                 : [],
           };
+
+          if (collectionInstance && collectionInstance.unavailableFunctions) {
+            results['unavailableFunctions'] = collectionInstance.unavailableFunctions();
+          }
+
+          return results;
         });
       }
 

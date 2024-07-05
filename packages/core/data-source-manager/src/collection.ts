@@ -9,17 +9,13 @@
 
 import { CollectionOptions, ICollection, ICollectionManager, IField, IRepository } from './types';
 import { default as lodash } from 'lodash';
-import merge from 'deepmerge';
 import { CollectionField } from './collection-field';
 
 export class Collection implements ICollection {
   repository: IRepository;
   fields: Map<string, IField> = new Map<string, IField>();
 
-  constructor(
-    protected options: CollectionOptions,
-    protected collectionManager: ICollectionManager,
-  ) {
+  constructor(protected options: CollectionOptions, protected collectionManager: ICollectionManager) {
     this.setRepository(options.repository);
 
     if (options.fields) {

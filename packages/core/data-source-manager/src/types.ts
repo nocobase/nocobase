@@ -68,6 +68,7 @@ export interface ICollection {
   [key: string]: any;
 
   unavailableActions?: () => string[];
+  unavailableFunctions?: () => string[];
 }
 
 export interface IModel {
