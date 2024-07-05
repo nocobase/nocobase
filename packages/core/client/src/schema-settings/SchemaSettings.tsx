@@ -446,12 +446,13 @@ export const SchemaSettingsDivider = function Divider() {
 };
 
 export interface SchemaSettingsRemoveProps {
+  disabled?: boolean;
   confirm?: ModalFuncProps;
   removeParentsIfNoChildren?: boolean;
   breakRemoveOn?: ISchema | ((s: ISchema) => boolean);
 }
 export const SchemaSettingsRemove: FC<SchemaSettingsRemoveProps> = (props) => {
-  const { confirm, removeParentsIfNoChildren, breakRemoveOn } = props;
+  const { disabled, confirm, removeParentsIfNoChildren, breakRemoveOn } = props;
   const { dn, template } = useSchemaSettings();
   const { t } = useTranslation();
   const field = useField<Field>();
@@ -464,6 +465,7 @@ export const SchemaSettingsRemove: FC<SchemaSettingsRemoveProps> = (props) => {
 
   return (
     <SchemaSettingsItem
+      disabled={disabled}
       title="Delete"
       eventKey="remove"
       onClick={() => {
