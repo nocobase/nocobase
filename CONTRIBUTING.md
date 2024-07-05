@@ -73,3 +73,14 @@ We really welcome to contributions of articles, including but not limited to:
 If you are interested, please contact us.
 
 ## Translations
+
+NocoBase's localization resources are stored in the following locations:
+
+- `packages/core/client/src/locale`
+- `packages/plugins/**/src/locale`
+
+You can:
+- Correct existing translation files
+- Add a new language resource by copying `en-US.json` and renaming it to the desired language culture name.
+
+As you're finished, please create a pull request.
