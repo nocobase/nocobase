@@ -80,7 +80,7 @@ NocoBase's localization resources are stored in the following locations:
 - `packages/plugins/**/src/locale`
 
 You can:
-- Correct existing translation files
+- Correct existing translation files.
 - Add a new language resource by copying `en-US.json` and renaming it to the desired language culture name.
 
 As you're finished, please create a pull request.
