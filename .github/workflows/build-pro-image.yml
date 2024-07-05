@@ -39,6 +39,9 @@ jobs:
           ssh-key: ${{ secrets.SUBMODULE_SSH_KEY }}
       - name: Fetch all branches
         run: cd packages/pro-plugins && git fetch --all
+      - name: git checkout ${{ github.event.pull_request.base.ref }}
+        run: cd packages/pro-plugins && git checkout ${{ github.event.pull_request.base.ref }}
+        continue-on-error: true
       - name: git checkout ${{ github.head_ref }}
         run: cd packages/pro-plugins && git checkout ${{ github.head_ref }}
         continue-on-error: true
