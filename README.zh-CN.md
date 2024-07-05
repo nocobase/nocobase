@@ -74,3 +74,9 @@ NocoBase 支持三种安装方式：
 - <a target="_blank" href="https://docs-cn.nocobase.com/welcome/getting-started/installation/git-clone">Git 源码安装</a>
 
    如果你想体验最新未发布版本，或者想参与贡献，需要在源码上进行修改、调试，建议选择这种安装方式，对开发技术水平要求较高，如果代码有更新，可以走 git 流程拉取最新代码。
+
+## 贡献
+
+感谢你有兴趣为 NocoBase 做出贡献！ 💖   
+
+你可以通过阅读[贡献指南](./CONTRIBUTING.zh-CN.md)开始。
