@@ -360,6 +360,7 @@ test.describe('actions schema settings', () => {
     });
 
     test('open mode: page', async ({ page, mockPage }) => {
+      test.slow();
       await mockPage(testingWithPageMode).goto();
 
       // 打开弹窗

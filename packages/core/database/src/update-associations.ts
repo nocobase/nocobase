@@ -490,6 +490,10 @@ export async function updateMultipleAssociation(
       accessorOptions['through'] = throughValue;
     }
 
+    if (pk !== targetKey && !isUndefinedOrNull(item[pk]) && isUndefinedOrNull(item[targetKey])) {
+      throw new Error(`${targetKey} field value is empty`);
+    }
+
     if (isUndefinedOrNull(item[targetKey])) {
       // create new record
       const instance = await model[createAccessor](item, accessorOptions);
