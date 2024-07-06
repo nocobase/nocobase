@@ -42,7 +42,7 @@ export function getMobilePageSchema(pageSchemaUid: string, firstTabUid: string) 
       spaceWrapperStyle: { right: -15, top: -15 },
       spaceClassName,
       toolbarStyle: {
-        overflow: 'hidden',
+        overflowX: 'hidden',
       },
     },
     properties: {

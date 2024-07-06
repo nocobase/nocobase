@@ -37,7 +37,7 @@ export const MobilePageNavigationBar: FC = () => {
 
   if (!enableNavigationBar) return null;
   return (
-    <div className={styles.mobileNavigationBar}>
+    <div className={styles.mobileNavigationBar} data-testid='mobile-page-navigation-bar'>
       <SafeArea position="top" />
 
       <NavBar

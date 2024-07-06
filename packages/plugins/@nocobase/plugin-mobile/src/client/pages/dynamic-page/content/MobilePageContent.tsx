@@ -20,9 +20,9 @@ export const MobilePageContent = () => {
 
   // 如果 URL 中有 tabSchemaUid，则使用 tabSchemaUid，否则使用第一个 tab 的 pageSchemaUid
   return (
-    <div className={styles.mobilePageContent}>
+    <div className={styles.mobilePageContent} data-testid='mobile-page-content'>
       <RemoteSchemaComponent
-        uid={tabSchemaUid || activeTabBarItem.children?.[0]?.options?.tabSchemaUid}
+        uid={tabSchemaUid || activeTabBarItem?.children?.[0]?.options?.tabSchemaUid}
         memoized={false}
         NotFoundPage={'MobileNotFoundPage'}
       />

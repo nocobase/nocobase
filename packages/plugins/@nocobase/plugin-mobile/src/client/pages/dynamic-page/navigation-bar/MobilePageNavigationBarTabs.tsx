@@ -7,9 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { FC, useCallback } from 'react';
+import React, { FC, useCallback, useEffect } from 'react';
 import { Tabs, TabsProps } from 'antd-mobile';
-import { useParams, useLocation, useNavigate } from 'react-router-dom';
+import { useParams, useLocation, useNavigate, Navigate } from 'react-router-dom';
 
 import { useMobileRoutes } from '../../../mobile-providers';
 import { MobilePageTabInitializer, MobilePageTabSettings } from './tab';
@@ -23,7 +23,7 @@ export const MobilePageNavigationBarTabs: FC = () => {
   const { styles } = useStyles();
   const { tabSchemaUid } = useParams<{ tabSchemaUid: string }>();
   const [activeKey, setActiveKey] = React.useState<string>(() => {
-    return tabSchemaUid ? pathname : activeTabBarItem.children[0]?.url;
+    return tabSchemaUid ? pathname : activeTabBarItem?.children[0]?.url;
   });
   const handleChange: TabsProps['onChange'] = (url) => {
     setActiveKey(url);
@@ -44,13 +44,15 @@ export const MobilePageNavigationBarTabs: FC = () => {
     },
     [resource, refresh],
   );
+  if (!activeTabBarItem) return <Navigate replace to='/' />
 
   return (
-    <div className={styles.mobileNavigationBarTabsWrapper}>
+    <div className={styles.mobileNavigationBarTabsWrapper} data-testid='mobile-mobile-page-navigation-bar-tabs'>
       <DndContext onDragEnd={handleDragEnd}>
         <Tabs activeKey={activeKey} onChange={handleChange} className={styles.mobileNavigationBarTabs}>
           {activeTabBarItem.children?.map((item) => (
             <Tabs.Tab
+              data-testid={`mobile-mobile-page-navigation-bar-tabs-${item.options.title}`}
               title={
                 <SortableItem id={item.id as any}>
                   <MobilePageTabSettings tab={item} />

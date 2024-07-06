@@ -34,7 +34,7 @@ export const MobileTabBar: FC<MobileTabBarProps> & {
   const { styles } = useStyles();
   const { designable } = useDesignable();
   const { routeList, activeTabBarItem, resource, refresh } = useMobileRoutes();
-
+  const validRouteList = routeList.filter((item) => item.url);
   const handleDragEnd: DndContextProps['onDragEnd'] = useCallback(
     async (event) => {
       const { active, over } = event;
@@ -61,7 +61,7 @@ export const MobileTabBar: FC<MobileTabBarProps> & {
   }
 
   // 如果是 routeList 中的 pathname 则显示 tabBar，如果是内页则不显示
-  if (!activeTabBarItem && routeList.length > 0) return null;
+  if (!activeTabBarItem && validRouteList.length > 0) return null;
 
   return (
     <div className={styles.mobileTabBar}>

@@ -41,6 +41,7 @@ export const MobileTabBarItem: FC<MobileTabBarItemProps> = (props) => {
   return (
     <div
       onClick={onClick}
+      data-testid={`mobile-tab-bar-${title}`}
       className={classnames('adm-tab-bar-item', {
         ['adm-tab-bar-item-active']: selected,
       })}
