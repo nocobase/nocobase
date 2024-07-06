@@ -9,6 +9,7 @@ on:
     branches:
       - 'main'
       - 'next'
+      - 'next'
     paths:
       - '.github/workflows/e2e.yml'
       - 'packages/**'
