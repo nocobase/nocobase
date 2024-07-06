@@ -10,7 +10,6 @@ on:
       - 'main'
       - 'develop'
       - 'next'
-      - 'next'
     paths:
       - '.github/workflows/e2e.yml'
       - 'packages/**'
