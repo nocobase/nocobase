@@ -28,6 +28,7 @@ import { CollectionModel, FieldModel } from './models';
 import collectionActions from './resourcers/collections';
 import viewResourcer from './resourcers/views';
 import { FieldNameExistsError } from './errors/field-name-exists-error';
+import { beforeDestoryField } from './hooks/beforeDestoryField';
 
 export class PluginDataSourceMainServer extends Plugin {
   public schema: string;
@@ -243,6 +244,7 @@ export class PluginDataSourceMainServer extends Plugin {
     });
 
     // before field remove
+    this.app.db.on('fields.beforeDestroy', beforeDestoryField(this.app.db));
     this.app.db.on('fields.beforeDestroy', beforeDestroyForeignKey(this.app.db));
 
     const mutex = new Mutex();
