@@ -12,4 +12,3 @@ export * from './FixedBlockDesignerItem';
 export * from './Page';
 export * from './Page.Settings';
 export * from './PageTab.Settings';
-export { PopupSettingsProvider } from './PopupSettingsProvider';

@@ -35,11 +35,18 @@ export const useSchemaInitializerStyles = genStyleHook('nb-schema-initializer', 
           // height: token.controlHeight,
           lineHeight: `${token.controlHeight}px`,
           color: token.colorText,
-          cursor: 'pointer',
 
-          '&:hover': {
-            borderRadius: token.borderRadiusSM,
-            backgroundColor: token.colorBgTextHover,
+          [`&:not(${componentCls}-menu-item-disabled)`]: {
+            cursor: 'pointer',
+            [`&:hover`]: {
+              borderRadius: token.borderRadiusSM,
+              backgroundColor: token.colorBgTextHover,
+            },
+          },
+
+          [`&${componentCls}-menu-item-disabled`]: {
+            cursor: 'not-allowed',
+            color: token.colorTextDisabled,
           },
         },
       },

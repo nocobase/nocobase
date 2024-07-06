@@ -64,5 +64,22 @@ test.describe('action settings', () => {
     // close the first popup
     await page.getByLabel('drawer-Action.Container-users-Edit record-mask').click();
     await expect(page.getByLabel('block-item-CardItem-users-').getByRole('button', { name: 'abc123' })).toBeVisible();
+
+    // 重复上面的步骤，中间加上刷新页面的操作 -----------------------------------------------------------------------------------
+    await page.getByLabel('action-Action.Link-Edit-update-users-table-1').click();
+    await page.getByTestId('drawer-Action.Container-users-Edit record').getByLabel('action-Action.Link-Edit-').click();
+
+    // 刷新页面后依然正常
+    await page.reload();
+
+    await page.getByLabel('block-item-CollectionField-').getByRole('textbox').fill('abc456');
+    await page.getByLabel('action-Action-Submit-submit-').click();
+
+    // the first popup
+    await expect(page.getByRole('button', { name: 'abc456' })).toBeVisible();
+
+    // close the first popup
+    await page.locator('.ant-drawer-mask').click();
+    await expect(page.getByLabel('block-item-CardItem-users-').getByRole('button', { name: 'abc456' })).toBeVisible();
   });
 });

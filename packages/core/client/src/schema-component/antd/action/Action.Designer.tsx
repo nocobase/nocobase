@@ -321,6 +321,7 @@ export function AfterSuccess() {
 export function RemoveButton(
   props: {
     onConfirmOk?: ModalProps['onOk'];
+    disabled?: boolean;
   } = {},
 ) {
   const { t } = useTranslation();
@@ -335,6 +336,7 @@ export function RemoveButton(
           breakRemoveOn={(s) => {
             return s['x-component'] === 'Space' || s['x-component'].endsWith('ActionBar');
           }}
+          disabled={props.disabled}
           confirm={{
             title: t('Delete action'),
             onOk: props.onConfirmOk,

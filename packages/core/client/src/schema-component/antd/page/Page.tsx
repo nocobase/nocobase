@@ -111,7 +111,7 @@ export const Page = (props) => {
           }}
           onTabClick={(activeKey) => {
             setLoading(true);
-            navigate(`/admin/${pageUid}/tabs/${activeKey}`);
+            navigate(`/admin/${pageUid}/tabs/${activeKey}`, { replace: true });
             setTimeout(() => {
               setLoading(false);
             }, 50);
