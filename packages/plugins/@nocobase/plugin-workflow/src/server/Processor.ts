@@ -168,10 +168,7 @@ export default class Processor {
           err instanceof Error
             ? {
                 message: err.message,
-                stack:
-                  process.env.NODE_ENV === 'production'
-                    ? 'Error stack will not be shown under "production" environment, please check logs.'
-                    : err.stack,
+                ...err,
               }
             : err,
         status: JOB_STATUS.ERROR,
