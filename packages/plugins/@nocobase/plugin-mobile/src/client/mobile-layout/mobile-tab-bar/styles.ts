@@ -12,7 +12,7 @@ import { NavigationBarHeight } from '../../constants';
 
 export const useStyles = createStyles(() => ({
   mobileTabBar: {
-    position: 'sticky',
+    position: 'relative',
     bottom: 0,
     left: 0,
     right: 0,
