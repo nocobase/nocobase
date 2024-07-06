@@ -385,6 +385,7 @@ export interface TabItem {
 - [-] JS bridge(没测)
 - [-] unit test
 - 反馈修复
+- change package.json
 - 更新文档
 - 使用文档
 - e2e test
