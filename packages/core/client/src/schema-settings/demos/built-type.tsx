@@ -1,5 +1,3 @@
-
-
 import React from 'react';
 import { Input } from 'antd';
 import {
@@ -117,6 +115,17 @@ const mySchemaSetting = new SchemaSettings({
         onSubmit() {
           alert(123);
         },
+      },
+    },
+    {
+      name: 'demo10', // 唯一标识
+      type: 'item', // 文本类型
+      componentProps: {
+        title: 'Disabled title',
+        onClick() {
+          alert('Disabled');
+        },
+        disabled: true,
       },
     },
   ],

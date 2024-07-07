@@ -30,7 +30,7 @@ export const SchemaInitializerOpenModeSchemaItems: React.FC<Options> = (options)
   const { isPopupVisibleControlledByURL } = usePopupSettings();
   const openModeValue = fieldSchema?.['x-component-props']?.['openMode'] || 'drawer';
   const modeOptions = useMemo(() => {
-    if (isPopupVisibleControlledByURL) {
+    if (isPopupVisibleControlledByURL()) {
       return [
         { label: t('Drawer'), value: 'drawer' },
         { label: t('Dialog'), value: 'modal' },
@@ -42,7 +42,7 @@ export const SchemaInitializerOpenModeSchemaItems: React.FC<Options> = (options)
       { label: t('Drawer'), value: 'drawer' },
       { label: t('Dialog'), value: 'modal' },
     ];
-  }, [t, isPopupVisibleControlledByURL]);
+  }, [t, isPopupVisibleControlledByURL()]);
 
   return (
     <>
@@ -120,7 +120,7 @@ export const SchemaSettingOpenModeSchemaItems: React.FC<Options> = (props) => {
       return modeOptions;
     }
 
-    if (isPopupVisibleControlledByURL) {
+    if (isPopupVisibleControlledByURL()) {
       return [
         { label: t('Drawer'), value: 'drawer' },
         { label: t('Dialog'), value: 'modal' },
