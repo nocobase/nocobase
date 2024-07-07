@@ -231,7 +231,7 @@ export const usePagePopup = () => {
       if (getStoredPopupContext(currentPopupUid)) {
         navigate(-1);
       } else {
-        navigate(withSearchParams(removeLastPopupPath(location.pathname)), { replace: true });
+        navigate(withSearchParams(removeLastPopupPath(location.pathname)));
       }
     },
     [navigate, location, isPopupVisibleControlledByURL],
