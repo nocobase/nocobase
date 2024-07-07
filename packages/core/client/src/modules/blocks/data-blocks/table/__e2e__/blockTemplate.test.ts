@@ -21,7 +21,7 @@ test.describe('block template', () => {
     // ensure the block templates are cleared at the end of the test
     await clearBlockTemplates();
 
-    // Save the data block on the page as a template -------------------------------------------
+    // Save the table block on the page as a template -------------------------------------------
     await page.getByLabel('block-item-CardItem-roles-').hover();
     await page.getByLabel('designer-schema-settings-CardItem-blockSettings:table-roles').hover();
     await page.getByRole('menuitem', { name: 'Save as template' }).click();
@@ -42,18 +42,36 @@ test.describe('block template', () => {
     await page.getByRole('menuitem', { name: 'Roles right' }).hover();
     await page.getByRole('menuitem', { name: 'Duplicate template right' }).hover();
     await expect(page.getByRole('menuitem', { name: 'Roles_Table' })).toBeVisible();
+    await page.mouse.move(300, 0);
+
+    // Save the details block on the drawer as a template -------------------------------------------
+    await page.getByLabel('block-item-CardItem-roles-details').hover();
+    await page.getByLabel('designer-schema-settings-CardItem-blockSettings:detailsWithPagination-roles').hover();
+    await page.getByRole('menuitem', { name: 'Save as template' }).click();
+    await page.getByRole('button', { name: 'OK', exact: true }).click();
+    await page.mouse.move(300, 0);
+    // make more stable
+    await page.waitForTimeout(500);
+
+    await page.getByLabel('schema-initializer-Grid-popup').hover();
+    await page.getByRole('menuitem', { name: 'table Details right' }).hover();
+    await page.getByRole('menuitem', { name: 'Associated records right' }).hover();
+    await page.getByRole('menuitem', { name: 'Roles right' }).hover();
+    await page.getByRole('menuitem', { name: 'Duplicate template right' }).hover();
+    await expect(page.getByRole('menuitem', { name: 'Roles_Details' })).toBeVisible();
+    await page.mouse.move(300, 0);
 
     // Save the association block on the drawer as a template -------------------------------------------
     await page
       .getByTestId('drawer-Action.Container-users-View record')
-      .getByLabel('block-item-CardItem-roles-')
+      .getByLabel('block-item-CardItem-roles-table')
       .hover();
     await page
       .getByTestId('drawer-Action.Container-users-View record')
       .getByLabel('designer-schema-settings-CardItem-blockSettings:table-roles')
       .hover();
     await page.getByRole('menuitem', { name: 'Save as template' }).click();
-    await page.getByRole('textbox').fill('association_block');
+    await page.getByLabel('Save as template').getByRole('textbox').fill('association_block');
     await page.getByRole('button', { name: 'OK', exact: true }).click();
 
     // close the drawer
@@ -66,5 +84,21 @@ test.describe('block template', () => {
     await page.getByRole('menuitem', { name: 'Duplicate template right' }).hover();
     await expect(page.getByRole('menuitem', { name: 'Roles_Table' })).toBeVisible();
     await expect(page.getByRole('menuitem', { name: 'association_block' })).not.toBeVisible();
+    await page.mouse.move(300, 0);
+
+    // Click on the association field to open the drawer --------------------------------------
+    await page.getByText('member').click();
+    await page.getByLabel('block-item-CardItem-roles-details').hover();
+    await page.getByLabel('designer-schema-settings-CardItem-blockSettings:details-roles').hover();
+    await page.getByRole('menuitem', { name: 'Save as block template' }).click();
+    await page.getByRole('textbox').fill('association_block_detail_item');
+    await page.getByRole('button', { name: 'OK', exact: true }).click();
+
+    await page.getByLabel('schema-initializer-Grid-popup').hover();
+    await page.getByRole('menuitem', { name: 'table Details right' }).hover();
+    await page.getByRole('menuitem', { name: 'Current record right' }).hover();
+    await page.getByRole('menuitem', { name: 'Duplicate template right' }).hover();
+    await expect(page.getByRole('menuitem', { name: 'association_block_detail_item' })).toBeVisible();
+    await page.mouse.move(300, 0);
   });
 });
