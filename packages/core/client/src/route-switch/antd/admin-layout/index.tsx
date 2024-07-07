@@ -327,7 +327,7 @@ const layoutContentClass = css`
   display: flex;
   flex-direction: column;
   position: relative;
-  overflow-y: hidden;
+  overflow-y: auto;
   height: 100vh;
   > div {
     position: relative;
