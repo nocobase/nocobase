@@ -1,5 +1,4 @@
 import { Database } from '@nocobase/database';
-import collection from 'packages/core/server/src/plugin-manager/options/collection';
 
 export function beforeDestoryField(db: Database) {
   return async (model, opts) => {
