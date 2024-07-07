@@ -11,6 +11,7 @@ import { observer, useField } from '@formily/react';
 import { Select, AutoComplete } from 'antd';
 import React, { useState, useEffect } from 'react';
 import { useRecord, useCompile, useCollectionManager_deprecated, CollectionFieldOptions } from '@nocobase/client';
+import { useParams } from 'react-router-dom';
 
 const isValidField = (field: CollectionFieldOptions) =>
   ['set', 'array'].includes(field.type) && field.interface === 'json';
@@ -19,6 +20,7 @@ export const ForeignKey = observer(
   (props: any) => {
     const { disabled } = props;
     const [options, setOptions] = useState([]);
+    const { name: dataSourceKey } = useParams();
     const { getCollection } = useCollectionManager_deprecated();
     const record = useRecord();
     const field: any = useField();
@@ -28,7 +30,7 @@ export const ForeignKey = observer(
     const [initialValue, setInitialValue] = useState(value || (template === 'view' ? null : field.initialValue));
     useEffect(() => {
       const effectField = collectionName;
-      const fields = getCollection(effectField)?.fields;
+      const fields = getCollection(effectField, dataSourceKey)?.fields;
       if (fields) {
         const sourceOptions = fields
           ?.filter((f) => {
@@ -58,7 +60,7 @@ export const ForeignKey = observer(
           onDropdownVisibleChange={async (open) => {
             const effectField = collectionName || name;
             if (effectField && open) {
-              const fields = getCollection(effectField)?.fields || [];
+              const fields = getCollection(effectField, dataSourceKey)?.fields || [];
               setOptions(
                 fields
                   ?.filter((f) => {
