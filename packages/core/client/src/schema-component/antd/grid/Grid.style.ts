@@ -14,6 +14,7 @@ const useStyles = createStyles(({ token, css, cx }: any) => {
   const important = token.marginBlock === token.marginLG ? ' !important' : '';
 
   return {
+    wrapper: css``,
     container: css`
       .ColDivider {
         flex-shrink: 0;
@@ -53,6 +54,13 @@ const useStyles = createStyles(({ token, css, cx }: any) => {
 
       .showDivider {
         margin: 0 calc(-1 * ${token.marginBlock}px) ${important};
+      }
+
+      .nb-grid-warp > button:last-child {
+        margin-bottom: ${token.marginBlock}px;
+      }
+      .nb-grid-warp .nb-grid-warp > button:last-child {
+        margin-bottom: ${token.margin}px;
       }
     `,
   };
