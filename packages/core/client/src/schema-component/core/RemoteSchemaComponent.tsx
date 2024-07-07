@@ -10,7 +10,7 @@
 import { createForm } from '@formily/core';
 import { Schema } from '@formily/react';
 import { Spin } from 'antd';
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useRequest } from '../../api-client';
 import { useSchemaComponentContext } from '../hooks';
 import { FormProvider } from './FormProvider';
@@ -42,19 +42,30 @@ const RequestSchemaComponent: React.FC<RemoteSchemaComponentProps> = (props) => 
     schemaTransform = defaultTransform,
   } = props;
   const { reset } = useSchemaComponentContext();
+  const [loading, setLoading] = useState(false);
   const conf = {
     url: `/uiSchemas:${onlyRenderProperties ? 'getProperties' : 'getJsonSchema'}/${uid}`,
   };
   const form = useMemo(() => createForm(), [uid]);
-  const { data, loading } = useRequest<{
+  const { data, run } = useRequest<{
     data: any;
   }>(conf, {
-    refreshDeps: [uid],
+    manual: true,
     onSuccess(data) {
       onSuccess && onSuccess(data);
       reset && reset();
+      setLoading(false);
     },
   });
+  useEffect(() => {
+    setLoading(true);
+  }, [uid]);
+  useEffect(() => {
+    if (loading) {
+      run();
+    }
+  }, [loading]);
+
   if (loading) {
     return <Spin />;
   }
