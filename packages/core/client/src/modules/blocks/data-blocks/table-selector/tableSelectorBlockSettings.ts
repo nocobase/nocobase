@@ -272,14 +272,6 @@ export const tableSelectorBlockSettings = new SchemaSettings({
           },
         };
       },
-      useVisible() {
-        const collection = useCollection() || ({} as any);
-        const { unavailableFunctions } = collection?.options || {};
-        if (unavailableFunctions) {
-          return !unavailableFunctions?.includes?.('pagination');
-        }
-        return true;
-      },
     },
     {
       name: 'divider',

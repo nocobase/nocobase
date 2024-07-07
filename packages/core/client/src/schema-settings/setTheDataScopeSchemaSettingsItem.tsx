@@ -52,12 +52,4 @@ export const setTheDataScopeSchemaSettingsItem: SchemaSettingsItemType = {
       onSubmit: onDataScopeSubmit,
     };
   },
-  useVisible() {
-    const collection = useCollection() || ({} as any);
-    const { unavailableFunctions } = collection?.options || {};
-    if (unavailableFunctions) {
-      return !unavailableFunctions?.includes?.('filter');
-    }
-    return true;
-  },
 };

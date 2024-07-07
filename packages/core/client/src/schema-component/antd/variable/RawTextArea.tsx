@@ -32,12 +32,11 @@ export function RawTextArea(props): JSX.Element {
   const [options, setOptions] = useState(scope ? scope : []);
 
   function onInsert(selected) {
-    const selectedData = props?.lastNodeOnly ? [last(selected)] : selected;
     if (!inputRef.current) {
       return;
     }
 
-    const variable = `{{${selectedData.join('.')}}}`;
+    const variable = `{{${selected.join('.')}}}`;
 
     const { textArea } = inputRef.current.resizableTextArea;
     const nextValue =
