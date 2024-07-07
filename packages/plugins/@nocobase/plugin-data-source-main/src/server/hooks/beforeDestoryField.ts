@@ -20,18 +20,26 @@ export function beforeDestoryField(db: Database) {
             ['options.targetKey']: name,
             ['options.target']: collectionName,
           },
-          {
-            ['options.otherKey']: name,
-            ['options.target']: collectionName,
-          },
         ],
       },
       transaction,
     });
 
     for (const field of relatedFields) {
-      const keys = ['sourceKey', 'targetKey', 'otherKey'];
-      const usedAs = keys.find((key) => field.options[key] === name);
+      const keys = [
+        {
+          name: 'sourceKey',
+          condition: (associationField) =>
+            associationField.options['sourceKey'] === name && associationField.collectionName === collectionName,
+        },
+        {
+          name: 'targetKey',
+          condition: (associationField) =>
+            associationField.options['targetKey'] === name && associationField.options['target'] === collectionName,
+        },
+      ];
+
+      const usedAs = keys.find((key) => key.condition(field))['name'];
 
       throw new Error(
         `Can't delete field ${name}, it is used by field ${field.get('name')} in collection ${field.get(
