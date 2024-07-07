@@ -3,7 +3,7 @@ import { Database } from '@nocobase/database';
 export function beforeDestoryField(db: Database) {
   return async (model, opts) => {
     const { transaction } = opts;
-    const { name, type } = model.get();
+    const { name, type, collectionName } = model.get();
 
     if (['belongsTo', 'hasOne', 'hasMany', 'belongsToMany'].includes(type)) {
       return;
@@ -14,12 +14,15 @@ export function beforeDestoryField(db: Database) {
         $or: [
           {
             ['options.sourceKey']: name,
+            collectionName,
           },
           {
             ['options.targetKey']: name,
+            ['options.target']: collectionName,
           },
           {
             ['options.otherKey']: name,
+            ['options.target']: collectionName,
           },
         ],
       },
