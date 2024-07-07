@@ -1,4 +1,5 @@
 import { Database } from '@nocobase/database';
+import collection from 'packages/core/server/src/plugin-manager/options/collection';
 
 export function beforeDestoryField(db: Database) {
   return async (model, opts) => {
@@ -42,9 +43,9 @@ export function beforeDestoryField(db: Database) {
       const usedAs = keys.find((key) => key.condition(field))['name'];
 
       throw new Error(
-        `Can't delete field ${name}, it is used by field ${field.get('name')} in collection ${field.get(
-          'collectionName',
-        )} as ${usedAs}`,
+        `Can't delete field ${name} of ${collectionName}, it is used by field ${field.get(
+          'name',
+        )} in collection ${field.get('collectionName')} as ${usedAs}`,
       );
     }
   };

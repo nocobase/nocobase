@@ -176,7 +176,16 @@ describe('destory key that used by association field', () => {
 
     expect(error).toBeTruthy();
     expect(error.message).toBe(
-      `Can't delete field title, it is used by field comments in collection posts as sourceKey`,
+      `Can't delete field title of posts, it is used by field comments in collection posts as sourceKey`,
     );
+
+    // it should destroy posts collection
+    await db.getRepository('collections').destroy({
+      filter: {
+        name: 'posts',
+      },
+      cascade: true,
+      context: {},
+    });
   });
 });
