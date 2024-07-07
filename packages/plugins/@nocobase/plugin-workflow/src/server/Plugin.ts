@@ -111,23 +111,25 @@ export default class PluginWorkflowServer extends Plugin {
   };
 
   private onSync = async (message) => {
-    if (message.type === 'enabledCache') {
-      console.log('--------', message);
-      const { repository } = this.db.getCollection('workflows');
-      const workflows: WorkflowModel[] = await repository.find({
-        filter: { enabled: true },
-      });
-
-      const nextMap = new Map(workflows.map((workflow) => [workflow.id, workflow]));
-      for (const cached of this.enabledCache.values()) {
-        if (!nextMap.has(cached.id)) {
-          this.toggle(cached, false, true);
+    if (message.type === 'statusChange') {
+      const workflowId = Number.parseInt(message.workflowId, 10);
+      const enabled = Number.parseInt(message.enabled, 10);
+      if (enabled) {
+        let workflow = this.enabledCache.get(workflowId);
+        if (workflow) {
+          await workflow.reload();
+        } else {
+          workflow = await this.db.getRepository('workflows').findOne({
+            filterByTk: workflowId,
+          });
         }
-      }
-
-      for (const next of nextMap.values()) {
-        if (!this.enabledCache.has(next.id)) {
-          this.toggle(next, true, true);
+        if (workflow) {
+          this.toggle(workflow, true, true);
+        }
+      } else {
+        const workflow = this.enabledCache.get(workflowId);
+        if (workflow) {
+          this.toggle(workflow, false, true);
         }
       }
     }
@@ -282,7 +284,7 @@ export default class PluginWorkflowServer extends Plugin {
     this.app.on('afterStart', async () => {
       this.app.setMaintainingMessage('check for not started executions');
       this.ready = true;
-      this.app.syncManager.subscribe('workflow', this.onSync);
+      this.app.syncManager.subscribe(this.name, this.onSync);
 
       const collection = db.getCollection('workflows');
       const workflows = await collection.repository.find({
@@ -329,7 +331,8 @@ export default class PluginWorkflowServer extends Plugin {
       this.getLogger(workflow.id).error(`trigger type ${workflow.type} of workflow ${workflow.id} is not implemented`);
       return;
     }
-    if (enable ?? workflow.get('enabled')) {
+    const next = enable ?? workflow.get('enabled');
+    if (next) {
       // NOTE: remove previous listener if config updated
       const prev = workflow.previous();
       if (prev.config) {
@@ -342,7 +345,11 @@ export default class PluginWorkflowServer extends Plugin {
       this.enabledCache.delete(workflow.id);
     }
     if (!silent) {
-      this.app.syncManager.publish('workflow', { type: 'enabledCache' });
+      this.app.syncManager.publish(this.name, {
+        type: 'statusChange',
+        workflowId: `${workflow.id}`,
+        enabled: `${Number(next)}`,
+      });
     }
   }
 
