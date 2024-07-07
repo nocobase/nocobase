@@ -9,6 +9,7 @@
 
 import { PlusOutlined } from '@ant-design/icons';
 import { PageHeader as AntdPageHeader } from '@ant-design/pro-layout';
+import { css } from '@emotion/css';
 import { FormLayout } from '@formily/antd-v5';
 import { Schema, SchemaOptionsContext, useFieldSchema } from '@formily/react';
 import { Button, Tabs } from 'antd';
@@ -252,7 +253,18 @@ function PageContent(
     })
   ) : (
     <FixedBlock height={`calc(${height}px + 46px + ${token.paddingPageVertical}px * 2)`}>
-      <div className={`pageWithFixedBlockCss nb-page-content`}>
+      <div
+        className={classNames(
+          `pageWithFixedBlockCss nb-page-content`,
+          css`
+            > .nb-grid-container:not(:last-child) {
+              > .nb-grid > .nb-grid-warp > button:last-child {
+                display: none;
+              }
+            }
+          `,
+        )}
+      >
         <SchemaComponent schema={fieldSchema} distributed />
       </div>
     </FixedBlock>
