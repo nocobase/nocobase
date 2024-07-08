@@ -16,15 +16,13 @@ import { DataSource } from '@nocobase/data-source-manager';
 
 const mutex = new Mutex();
 
-const IMPORT_LIMIT_COUNT = 2000;
-
 async function importXlsxAction(ctx: Context, next: Next) {
   let columns = (ctx.request.body as any).columns as any[];
   if (typeof columns === 'string') {
     columns = JSON.parse(columns);
   }
 
-  let readLimit = IMPORT_LIMIT_COUNT;
+  let readLimit = process.env['IMPORT_LIMIT'] ? parseInt(process.env['IMPORT_LIMIT']) : 2000;
 
   // add header raw
   readLimit += 1;
