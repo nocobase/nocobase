@@ -80,7 +80,7 @@ export function Result(props) {
   }, [value]);
 
   useFormEffects(() => {
-    const delayedOnChange = debounce(props.onChange, 300); // 设置 debounce 时间
+    const delayedOnChange = debounce(props.onChange, 300);
     onFormValuesChange((form) => {
       if (
         (fieldSchema.name as string).indexOf('.') >= 0 ||
