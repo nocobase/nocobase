@@ -8,9 +8,12 @@
  */
 
 import React from 'react';
+import { usePagePopup } from '../../../schema-component/antd/page/pagePopupUtils';
+import { CONTEXT_SCHEMA_KEY } from '../../../schema-component/antd/page/usePopupContextInActionOrAssociationField';
 import { ActionInitializerItem } from '../../../schema-initializer/items/ActionInitializerItem';
 
 export const UpdateActionInitializer = (props) => {
+  const { getPopupContext } = usePagePopup();
   const schema = {
     type: 'void',
     title: '{{ t("Edit") }}',
@@ -57,6 +60,7 @@ export const UpdateActionInitializer = (props) => {
         },
       },
     },
+    [CONTEXT_SCHEMA_KEY]: getPopupContext(),
   };
   return <ActionInitializerItem {...props} schema={schema} />;
 };

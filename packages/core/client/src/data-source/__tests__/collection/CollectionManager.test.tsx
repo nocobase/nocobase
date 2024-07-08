@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Application, CollectionManager, CollectionTemplate, Collection } from '@nocobase/client';
+import { Application, Collection, CollectionManager, CollectionTemplate } from '@nocobase/client';
 import collections from '../collections.json';
 
 describe('CollectionManager', () => {
@@ -299,6 +299,26 @@ describe('CollectionManager', () => {
 
         const result = collectionManager.getSourceKeyByAssociation('users.roles');
         expect(result).toBe('id');
+      });
+    });
+
+    describe('getFilterByTK', () => {
+      it('should return the value of the filterByTK', () => {
+        const result = collectionManager.getFilterByTK('users', { id: 1 });
+        expect(result).toBe(1);
+
+        const result2 = collectionManager.getFilterByTK('users.roles', { name: 'rolesName' });
+        expect(result2).toBe('rolesName');
+      });
+
+      it('should return undefined when collectionOrAssociation is not provided', () => {
+        const result = collectionManager.getFilterByTK('', { id: 1 });
+        expect(result).toBeUndefined();
+      });
+
+      it('should return undefined when collectionOrAssociation is invalid', () => {
+        const result = collectionManager.getFilterByTK('uses.invalid', { id: 1 });
+        expect(result).toBeUndefined();
       });
     });
   });

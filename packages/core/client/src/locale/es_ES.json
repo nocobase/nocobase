@@ -762,5 +762,6 @@
   "This variable has been deprecated and can be replaced with \"Current form\"": "La variable ha sido obsoleta; \"Formulario actual\" puede ser utilizada como sustituto",
   "The value of this variable is derived from the query string of the page URL. This variable can only be used normally when the page has a query string.": "El valor de esta variable se deriva de la cadena de consulta de la URL de la página. Esta variable sólo puede utilizarse normalmente cuando la página tiene una cadena de consulta.",
   "URL search params": "Parámetros de búsqueda de URL",
-  "Expand All": "Expandir todo"
+  "Expand All": "Expandir todo",
+  "Sorry, the page you visited does not exist.": "Lo siento, la página que visitaste no existe."
 }

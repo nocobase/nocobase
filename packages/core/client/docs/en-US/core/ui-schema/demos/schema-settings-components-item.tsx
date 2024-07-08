@@ -26,6 +26,12 @@ const mySettings = new SchemaSettings({
       name: 'markdown',
       Component: MarkdownEdit,
     },
+    {
+      name: 'disabled',
+      Component() {
+        return <SchemaSettingsItem title="Disabled" disabled />;
+      },
+    },
   ],
 });
 

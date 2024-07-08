@@ -38,7 +38,7 @@ function useCurrentRequest<T>(options: Omit<AllDataBlockProps, 'type'>) {
           }
           const paramsValue = params.filterByTk === undefined ? _.omit(params, 'filterByTk') : params;
 
-          return resource[action]({ ...paramsValue, ...customParams }).then((res) => res.data);
+          return resource[action]?.({ ...paramsValue, ...customParams }).then((res) => res.data);
         };
   }, [resource, action, JSON.stringify(params), JSON.stringify(record), requestService]);
 
@@ -129,7 +129,16 @@ export const BlockRequestProvider: FC = ({ children }) => {
   });
 
   const memoizedParentRecord = useMemo(() => {
-    return parentRequest.data?.data && new CollectionRecord({ isNew: false, data: parentRequest.data?.data });
+    return (
+      parentRequest.data?.data &&
+      new CollectionRecord({
+        isNew: false,
+        data:
+          parentRequest.data?.data instanceof CollectionRecord
+            ? parentRequest.data?.data.data
+            : parentRequest.data?.data,
+      })
+    );
   }, [parentRequest.data?.data]);
 
   return (
@@ -137,13 +146,13 @@ export const BlockRequestProvider: FC = ({ children }) => {
       {action !== 'list' ? (
         <CollectionRecordProvider
           isNew={action == null}
-          record={currentRequest.data?.data}
-          parentRecord={memoizedParentRecord}
+          record={currentRequest.data?.data || record}
+          parentRecord={memoizedParentRecord || parentRecord}
         >
           {children}
         </CollectionRecordProvider>
       ) : (
-        <CollectionRecordProvider isNew={false} record={null} parentRecord={memoizedParentRecord}>
+        <CollectionRecordProvider isNew={false} record={null} parentRecord={memoizedParentRecord || parentRecord}>
           {children}
         </CollectionRecordProvider>
       )}
