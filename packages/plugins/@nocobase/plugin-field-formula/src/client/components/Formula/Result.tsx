@@ -10,7 +10,6 @@
 import { onFormValuesChange } from '@formily/core';
 import { useField, useFieldSchema, useFormEffects } from '@formily/react';
 import { toJS } from '@formily/reactive';
-import type { CollectionOptions } from '@nocobase/client';
 import {
   Checkbox,
   DatePicker,
@@ -82,7 +81,6 @@ export function Result(props) {
 
   useFormEffects(() => {
     const delayedOnChange = debounce(props.onChange, 300); // 设置 debounce 时间
-
     onFormValuesChange((form) => {
       if (
         (fieldSchema.name as string).indexOf('.') >= 0 ||
