@@ -11,6 +11,7 @@ import { dayjs } from '@nocobase/utils/client';
 import { useMemo } from 'react';
 import { DEFAULT_DATA_SOURCE_KEY } from '../../data-source/data-source/DataSourceManager';
 import { useCurrentUserVariable, useDatetimeVariable } from '../../schema-settings';
+import { useCurrentTokenVariable } from '../../schema-settings/VariableInput/hooks/useCurrentTokenVariable';
 import { useCurrentRoleVariable } from '../../schema-settings/VariableInput/hooks/useRoleVariable';
 import { useURLSearchParamsVariable } from '../../schema-settings/VariableInput/hooks/useURLSearchParamsVariable';
 import { VariableOption } from '../types';
@@ -22,6 +23,7 @@ import { VariableOption } from '../types';
 const useBuiltInVariables = () => {
   const { currentUserCtx } = useCurrentUserVariable();
   const { currentRoleCtx } = useCurrentRoleVariable();
+  const { currentTokenCtx } = useCurrentTokenVariable();
   const { datetimeCtx } = useDatetimeVariable();
   const { urlSearchParamsCtx, name: urlSearchParamsName, defaultValue } = useURLSearchParamsVariable();
   const builtinVariables: VariableOption[] = useMemo(() => {
@@ -36,6 +38,10 @@ const useBuiltInVariables = () => {
         name: '$nRole',
         ctx: currentRoleCtx as any,
         collectionName: 'roles',
+      },
+      {
+        name: '$nToken',
+        ctx: currentTokenCtx as any,
       },
       /**
        * @deprecated

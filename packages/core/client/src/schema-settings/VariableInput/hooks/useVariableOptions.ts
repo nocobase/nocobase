@@ -11,6 +11,7 @@ import { Form } from '@formily/core';
 import { ISchema, Schema } from '@formily/react';
 import { useMemo } from 'react';
 import { CollectionFieldOptions_deprecated } from '../../../collection-manager';
+import { useCurrentTokenVariable } from './useCurrentTokenVariable';
 import { useDatetimeVariable } from './useDateVariable';
 import { useCurrentFormVariable } from './useFormVariable';
 import { useCurrentObjectVariable } from './useIterationVariable';
@@ -71,6 +72,7 @@ export const useVariableOptions = ({
     noDisabled,
     targetFieldSchema,
   });
+  const { currentTokenSettings } = useCurrentTokenVariable({ noDisabled });
   const { datetimeSettings } = useDatetimeVariable({ operator, schema: uiSchema, noDisabled });
   const { currentFormSettings, shouldDisplayCurrentForm } = useCurrentFormVariable({
     schema: uiSchema,
@@ -116,6 +118,7 @@ export const useVariableOptions = ({
     return [
       currentUserSettings,
       currentRoleSettings,
+      currentTokenSettings,
       datetimeSettings,
       shouldDisplayCurrentForm && currentFormSettings,
       shouldDisplayCurrentObject && currentObjectSettings,
@@ -128,6 +131,7 @@ export const useVariableOptions = ({
   }, [
     currentUserSettings,
     currentRoleSettings,
+    currentTokenSettings,
     datetimeSettings,
     shouldDisplayCurrentForm,
     currentFormSettings,

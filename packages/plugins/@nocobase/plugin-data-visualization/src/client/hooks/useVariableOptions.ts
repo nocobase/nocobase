@@ -10,6 +10,7 @@
 import { ISchema, useField } from '@formily/react';
 import {
   useCurrentRoleVariable,
+  useCurrentTokenVariable,
   useCurrentUserVariable,
   useDatetimeVariable,
   useURLSearchParamsVariable,
@@ -28,12 +29,20 @@ export const useGeneralVariableOptions = (
     uiSchema: schema,
   });
   const { currentRoleSettings } = useCurrentRoleVariable({ uiSchema: schema });
+  const { currentTokenSettings } = useCurrentTokenVariable({ noDisabled: true });
   const { datetimeSettings } = useDatetimeVariable({ operator, schema, noDisabled: true });
   const { urlSearchParamsSettings } = useURLSearchParamsVariable();
 
   const result = useMemo(
-    () => [currentUserSettings, currentRoleSettings, datetimeSettings, urlSearchParamsSettings].filter(Boolean),
-    [datetimeSettings, currentUserSettings, currentRoleSettings, urlSearchParamsSettings],
+    () =>
+      [
+        currentUserSettings,
+        currentRoleSettings,
+        currentTokenSettings,
+        datetimeSettings,
+        urlSearchParamsSettings,
+      ].filter(Boolean),
+    [datetimeSettings, currentUserSettings, currentRoleSettings, urlSearchParamsSettings, currentTokenSettings],
   );
 
   if (!schema) return [];
