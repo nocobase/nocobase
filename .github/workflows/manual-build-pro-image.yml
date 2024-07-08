@@ -26,12 +26,16 @@ jobs:
         with:
           ssh-key: ${{ secrets.SUBMODULE_SSH_KEY }}
           submodules: true
+      - name: Set PR branch
+        id: set_pr_branch
+        run: echo "::set-output name=pr_branch::refs/pull/${{ github.event.inputs.pr_number }}/head"
+        if: inputs.pr_number != 'main'
       - name: Checkout pro-plugins
         uses: actions/checkout@v3
         with:
           repository: nocobase/pro-plugins
           path: packages/pro-plugins
-          ref: ${{ inputs.pr_number != 'main' && 'refs/pull/' + inputs.pr_number + '/head' || 'main' }}
+          ref: ${{ steps.set_pr_branch.outputs.pr_branch || 'main' }}
           ssh-key: ${{ secrets.SUBMODULE_SSH_KEY }}
       - name: rm .git
         run: rm -rf packages/pro-plugins/.git &&  git config --global user.email "you@example.com"  &&  git config --global user.name "Your Name" && git add -A && git commit -m "tmp commit"
