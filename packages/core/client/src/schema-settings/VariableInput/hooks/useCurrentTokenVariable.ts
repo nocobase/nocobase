@@ -7,7 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { useTranslation } from 'react-i18next';
 import { useAPIClient } from '../../../api-client/hooks/useAPIClient';
 import { useBaseVariable } from './useBaseVariable';
 
@@ -16,24 +15,23 @@ import { useBaseVariable } from './useBaseVariable';
  * @param param0
  * @returns
  */
-export const useCurrentTokenVariable = ({
+export const useAPITokenVariable = ({
   noDisabled,
 }: {
   noDisabled?: boolean;
 } = {}) => {
-  const { t } = useTranslation();
   const apiClient = useAPIClient();
-  const currentTokenSettings = useBaseVariable({
+  const apiTokenSettings = useBaseVariable({
     name: '$nToken',
-    title: t('Current token'),
+    title: 'API Token',
     noDisabled,
     noChildren: true,
   });
 
   return {
     /** 变量配置项 */
-    currentTokenSettings,
+    apiTokenSettings,
     /** 变量的值 */
-    currentTokenCtx: apiClient.auth?.token,
+    apiTokenCtx: apiClient.auth?.token,
   };
 };
