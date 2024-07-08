@@ -189,7 +189,8 @@ export class AdjacencyListRepository extends Repository {
     } else {
       const limit = options.limit;
       const offset = options.offset;
-      const optionsTmp = lodash.omit(options, ['limit', 'offset', 'filterByTk']);
+      const optionsClone = lodash.clone(options);
+      const optionsTmp = lodash.omit(optionsClone, ['limit', 'offset', 'filterByTk']);
       const collection = this.collection;
       const primaryKey = collection.model.primaryKeyAttribute;
       const childrenKey = collection.treeChildrenField?.name ?? 'children';
@@ -198,6 +199,8 @@ export class AdjacencyListRepository extends Repository {
       let rootIds: any[] = [];
       if (filterIds.length > 0) {
         rootIds = await this.queryRootIDs(filterIds, collection);
+      } else {
+        return [[], 0];
       }
       totalCount = rootIds.length;
       options = lodash.omit(optionsTmp, ['filter']);
