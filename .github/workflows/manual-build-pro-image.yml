@@ -34,7 +34,7 @@ jobs:
       - name: Set PR branch
         id: set_pro_pr_branch
         if: inputs.pr_number != 'main'
-        run: echo "::set-output name=pr_branch::refs/pull/${{ github.event.inputs.pr_number }}/head" >> $GITHUB_OUTPUT
+        run: echo "pr_branch=refs/pull/${{ github.event.inputs.pr_number }}/head" >> $GITHUB_OUTPUT
       - name: Echo PR branch
         run: echo "${{ steps.set_pro_pr_branch.outputs.pr_branch }}"
       - name: Checkout pro-plugins
