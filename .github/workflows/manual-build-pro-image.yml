@@ -33,8 +33,10 @@ jobs:
           submodules: true
       - name: Set PR branch
         id: set_pro_pr_branch
-        run: echo "::set-output name=pr_branch::refs/pull/${{ github.event.inputs.pr_number }}/head" >> $GITHUB_OUTPUT
         if: inputs.pr_number != 'main'
+        run: echo "::set-output name=pr_branch::refs/pull/${{ github.event.inputs.pr_number }}/head" >> $GITHUB_OUTPUT
+      - name: Echo PR branch
+        run: echo "${{ steps.set_pro_pr_branch.outputs.pr_branch }}"
       - name: Checkout pro-plugins
         uses: actions/checkout@v3
         with:
