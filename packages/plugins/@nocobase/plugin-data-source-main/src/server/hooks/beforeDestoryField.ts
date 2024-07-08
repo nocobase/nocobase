@@ -1,4 +1,5 @@
 import { Database } from '@nocobase/database';
+import { FieldIsDependedOnByOtherError } from '../errors/field-is-depended-on-by-other';
 
 export function beforeDestoryField(db: Database) {
   return async (model, opts) => {
@@ -41,11 +42,13 @@ export function beforeDestoryField(db: Database) {
 
       const usedAs = keys.find((key) => key.condition(field))['name'];
 
-      throw new Error(
-        `Can't delete field ${name} of ${collectionName}, it is used by field ${field.get(
-          'name',
-        )} in collection ${field.get('collectionName')} as ${usedAs}`,
-      );
+      throw new FieldIsDependedOnByOtherError({
+        fieldName: name,
+        fieldCollectionName: collectionName,
+        dependedFieldName: field.get('name'),
+        dependedFieldCollectionName: field.get('collectionName'),
+        dependedFieldAs: usedAs,
+      });
     }
   };
 }
