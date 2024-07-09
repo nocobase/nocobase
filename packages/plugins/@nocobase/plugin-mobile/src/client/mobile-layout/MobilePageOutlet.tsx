@@ -10,19 +10,6 @@
 import React, { FC } from 'react';
 import { Outlet } from 'react-router-dom';
 
-import { NavigationBarHeight } from '../constants';
-
 export const MobilePageOutlet: FC = () => {
-  return (
-    <div
-      style={{
-        height: `calc(100% - ${NavigationBarHeight}px)`,
-        maxWidth: '100%',
-        overflowY: 'auto',
-        overflowX: 'hidden',
-      }}
-    >
-      <Outlet />
-    </div>
-  );
+  return <Outlet />;
 };

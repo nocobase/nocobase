@@ -11,9 +11,11 @@ import { createStyles } from 'antd-style';
 
 export const useStyles = createStyles(() => ({
   mobileNavigationBar: {
-    position: 'sticky',
+    position: 'absolute',
     top: 0,
     zIndex: 998,
+    left: 0,
+    right: 0,
     borderBottom: '1px solid var(--adm-color-border)',
     backgroundColor: 'var(--adm-color-background)',
     // '.adm-nav-bar-left': {

@@ -16,7 +16,7 @@ import { useMobileRoutes } from '../../mobile-providers';
 
 import { getMobileTabBarItemSchema, MobileTabBarItem } from './MobileTabBar.Item';
 import { MobileTabBarPage, MobileTabBarLink } from './types';
-import { DndContext, DndContextProps, SchemaComponent, useDesignable } from '@nocobase/client';
+import { cx, DndContext, DndContextProps, SchemaComponent, useDesignable } from '@nocobase/client';
 import { MobileTabBarInitializer } from './initializer';
 import { isInnerLink } from '../../utils';
 
@@ -65,7 +65,7 @@ export const MobileTabBar: FC<MobileTabBarProps> & {
   // 判断内页的方法：没有激活的 activeTabBarItem 并且 routeList 中有数据
   if (!activeTabBarItem && validRouteList.length > 0) return null;
   return (
-    <div className={styles.mobileTabBar}>
+    <div className={cx(styles.mobileTabBar, 'mobile-tab-bar')}>
       <div className={styles.mobileTabBarContent}>
         <DndContext onDragEnd={handleDragEnd}>
           <div className={styles.mobileTabBarList}>

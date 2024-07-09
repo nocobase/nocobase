@@ -364,8 +364,8 @@ function getMobileTabBarItemSchema(routeItem: MobileRouteItem) {
 - [x] action Icon and Title
 - [x] routes 结构变更
 - [x] routes 结构变更导致的 e2e utils、文档、demos、单测
+- [x] 滚动区域问题
 - 原 admin 弹窗改为子页面（等中合），back 等一起开发
-- 滚动区域问题
 - Action initailzer 无法关闭问题【先临时解决】
 - TabBar Settings 从底部放到顶部
 - 最小 Demo 复现 schema 缓存问题

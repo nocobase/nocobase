@@ -37,6 +37,11 @@ export function getMobilePageSchema(pageSchemaUid: string, firstTabUid: string) 
     'x-component': 'MobilePageProvider',
     'x-settings': mobilePageSettings.name,
     'x-decorator': 'BlockItem',
+    'x-decorator-props': {
+      style: {
+        height: '100%',
+      },
+    },
     'x-toolbar-props': {
       draggable: false,
       spaceWrapperStyle: { right: -15, top: -15 },
