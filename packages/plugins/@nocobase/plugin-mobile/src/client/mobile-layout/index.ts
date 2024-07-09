@@ -8,5 +8,4 @@
  */
 
 export * from './MobileLayout';
-export * from './MobilePageOutlet';
 export * from './mobile-tab-bar';

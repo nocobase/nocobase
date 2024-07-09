@@ -6,9 +6,11 @@ import React from 'react';
 
 const Demo = () => {
   return (
-    <MobileRoutesProvider>
-      <MobileHomePage />
-    </MobileRoutesProvider>
+    <div style={{ position: 'relative' }}>
+      <MobileRoutesProvider>
+        <MobileHomePage />
+      </MobileRoutesProvider>
+    </div>
   );
 };
 
@@ -33,7 +35,7 @@ const app = mockApp({
           type: 'link',
           options: {
             url: '/test',
-          }
+          },
         },
       ],
     },

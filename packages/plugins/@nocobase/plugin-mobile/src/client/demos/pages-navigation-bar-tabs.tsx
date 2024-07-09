@@ -18,14 +18,16 @@ const schema = {
 const Demo = () => {
   const { pathname } = useLocation();
   return (
-    <MobileTitleProvider title="Title">
-      <MobileRoutesProvider>
-        <MobilePageProvider enableNavigationBarTabs={true}>
-          <SchemaComponent schema={schema} />
-          <div>{pathname}</div>
-        </MobilePageProvider>
-      </MobileRoutesProvider>
-    </MobileTitleProvider>
+    <div style={{ position: 'relative' }}>
+      <MobileTitleProvider title="Title">
+        <MobileRoutesProvider>
+          <MobilePageProvider enableNavigationBarTabs={true}>
+            <SchemaComponent schema={schema} />
+            <div>{pathname}</div>
+          </MobilePageProvider>
+        </MobileRoutesProvider>
+      </MobileTitleProvider>
+    </div>
   );
 };
 

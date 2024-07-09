@@ -14,6 +14,7 @@
 - `desktop-mode`：桌面模式
 - `js-bridge`：JS Bridge
 - `mobile`：移动端入口组件，主要是渲染移动端 `Routes`
+  - `MobileAppContext`：移动端全局上下文
 - `mobile-layout`：移动端 Layout
   - `MobilePageOutlet`：页面内容区域
   - `mobile-tab-bar`：底部 TabBar
@@ -38,16 +39,18 @@
 
 ```tsx | pure
 <Mobile> // 渲染移动端 Routes
-  <MobileRouter>
-    <MobileLayout> // 提供移动端上下文和布局
-      <MobileProviders>
-        <RemoteSchemaComponent uid='nocobase-mobile'>
-          <MobilePageOutlet /> // 页面内容
-          <MobileTabBar /> // 底部 TabBar
-        </RemoteSchemaComponent>
-      </MobileProviders>
-    </MobileLayout>
-  </MobileRouter>
+  <MobileAppContext>
+    <MobileRouter>
+      <MobileLayout> // 提供移动端上下文和布局
+        <MobileProviders>
+          <RemoteSchemaComponent uid='nocobase-mobile'>
+            <MobilePageOutlet /> // 页面内容
+            <MobileTabBar /> // 底部 TabBar
+          </RemoteSchemaComponent>
+        </MobileProviders>
+      </MobileLayout>
+    </MobileRouter>
+  </MobileAppContext>
 </Mobile>
 ```
 
@@ -173,36 +176,6 @@ export interface MobileRouteItem {
 
 ## Schema
 
-## 入口 schema
-
-```json
-{
-    "type": "void",
-    "name": "nocobase-mobile",
-    "x-uid": "nocobase-mobile",
-    "properties": {
-        "pageOutlet": {
-            "type": "void",
-            "x-component": "MobilePageOutlet",
-        },
-        "tabBar": {
-            "type": "void",
-            "x-component": "MobileTabBar",
-            "x-decorator": "BlockItem",
-            "x-decorator-props": {
-                "style": {
-                    "position": "sticky",
-                    "bottom": 0
-                }
-            },
-            "x-settings": "mobile:tab-bar",
-            "x-toolbar-props": {
-                "draggable": false
-            },
-        }
-    },
-}
-```
 
 ### MobileTabBarItem Schema
 
@@ -368,9 +341,8 @@ function getMobileTabBarItemSchema(routeItem: MobileRouteItem) {
 - [x] Action initailzer 无法关闭问题【先临时解决】
 - [x] e2e 文件 eslint 报错
 - [x] 多语言再次检查一遍
+- [x] TabBar Settings 从底部放到顶部
 - 原 admin 弹窗改为子页面（等中合），back 等一起开发
-- TabBar Settings 从底部放到顶部
-- 最小 Demo 复现 schema 缓存问题
 - link 的 e2e
 - settings 的单测？
 

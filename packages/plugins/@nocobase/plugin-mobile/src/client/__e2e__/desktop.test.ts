@@ -24,14 +24,14 @@ test.describe('desktop-mode', () => {
 
   test('ui editor should work', async ({ page }) => {
     // 默认 designer 开启
-    await expect(page.getByLabel('schema-initializer-MobileTabBar')).toBeVisible();
+    await expect(page.getByTestId('schema-initializer-MobileTabBar')).toBeVisible();
 
     // 再次点击应该隐藏
     await page.getByTestId('ui-editor-button').click();
-    await expect(page.getByLabel('schema-initializer-MobileTabBar')).not.toBeVisible();
+    await expect(page.getByTestId('schema-initializer-MobileTabBar')).not.toBeVisible();
 
     await page.getByTestId('ui-editor-button').click();
-    await expect(page.getByLabel('schema-initializer-MobileTabBar')).toBeVisible();
+    await expect(page.getByTestId('schema-initializer-MobileTabBar')).toBeVisible();
   });
 
   test('change mobile size', async ({ page }) => {

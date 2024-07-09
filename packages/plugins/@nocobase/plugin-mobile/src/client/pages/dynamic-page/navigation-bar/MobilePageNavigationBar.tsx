@@ -26,7 +26,6 @@ export const MobilePageNavigationBar: FC = ({ children }) => {
   } = useMobilePage();
   const fieldSchema = useFieldSchema();
   const { styles } = useStyles();
-
   if (!enableNavigationBar) return null;
 
   return (

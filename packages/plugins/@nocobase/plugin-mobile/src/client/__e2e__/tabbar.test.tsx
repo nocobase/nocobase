@@ -19,8 +19,8 @@ test.describe('TabBar', () => {
     await page.goto('/m');
 
     // hover initializer
-    await expect(page.getByLabel('schema-initializer-MobileTabBar')).toBeVisible();
-    await page.getByLabel('schema-initializer-MobileTabBar').click();
+    await expect(page.getByTestId('schema-initializer-MobileTabBar')).toBeVisible();
+    await page.getByTestId('schema-initializer-MobileTabBar').click();
 
     // 添加页面
     const Title = randomStr();
@@ -67,8 +67,8 @@ test.describe('TabBar', () => {
     await removeAllMobileRoutes();
 
     // hover initializer
-    await expect(page.getByLabel('schema-initializer-MobileTabBar')).toBeVisible();
-    await page.getByLabel('schema-initializer-MobileTabBar').hover();
+    await expect(page.getByTestId('schema-initializer-MobileTabBar')).toBeVisible();
+    await page.getByTestId('schema-initializer-MobileTabBar').hover();
 
     // 添加页面
     const Title = randomStr();
@@ -130,8 +130,8 @@ test.describe('TabBar', () => {
   // test('enable TabBar Settings', async ({ page, mockMobilePage }) => {
   //   const nocoPage = mockMobilePage({});
   //   await nocoPage.goto();
-  //   await expect(page.getByLabel('schema-initializer-MobileTabBar')).toBeVisible();
-  //   await page.getByLabel('schema-initializer-MobileTabBar').hover();
+  //   await expect(page.getByTestId('schema-initializer-MobileTabBar')).toBeVisible();
+  //   await page.getByTestId('schema-initializer-MobileTabBar').hover();
   //   const countShow1 = await page.locator(`text=${nocoPage.getTitle()}`).count();
   //   await expect(countShow1).toBe(2);
 

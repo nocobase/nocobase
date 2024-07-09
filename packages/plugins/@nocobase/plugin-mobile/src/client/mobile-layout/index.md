@@ -34,7 +34,6 @@
           "bottom": 0
         }
       },
-      "x-settings": "mobile:tab-bar",
       "x-toolbar-props": {
         "draggable": false
       },
@@ -100,10 +99,6 @@ interface MobileTabBarProps {
 如果是内页，会自动隐藏 `TabBar`。
 
 <code src="../demos/MobileTabBar-inner-page.tsx"></code>
-
-### Settings
-
-<code src="../demos/MobileTabBar-settings.tsx"></code>
 
 ### Initializer
 

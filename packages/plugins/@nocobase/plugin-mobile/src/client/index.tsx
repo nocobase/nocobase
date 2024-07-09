@@ -11,6 +11,9 @@ import React from 'react';
 import { Outlet } from 'react-router-dom';
 import { Plugin, RouterManager, createRouterManager } from '@nocobase/client';
 
+// @ts-ignore
+import { name } from '../../package.json';
+
 import { Mobile } from './mobile';
 import {
   MobileHomePage,
@@ -32,7 +35,6 @@ import {
 import {
   MobileTabBar,
   MobileLayout,
-  MobilePageOutlet,
   mobileTabBarSettings,
   mobileTabBarInitializer,
   mobileTabBarLinkSettings,
@@ -61,6 +63,33 @@ export class PluginMobileClient extends Plugin {
 
   get mobileBasename() {
     return `${this.router.getBasename()}m`; // `/m` or `/apps/aaa/m`（多应用）
+  }
+
+  async updateOptions(value: { showTabBar?: boolean }) {
+    if (!this.options) {
+      this.options = {};
+    }
+
+    this.options.options = {
+      ...this.options?.options,
+      ...value,
+    };
+    return this.app.apiClient.request({
+      url: 'applicationPlugins:update',
+      method: 'post',
+      params: {
+        filter: {
+          packageName: name,
+        },
+      },
+      data: {
+        options: this.options.options,
+      },
+    });
+  }
+
+  getPluginOptions() {
+    return this.options?.options;
   }
 
   async afterAdd(): Promise<void> {
@@ -112,7 +141,6 @@ export class PluginMobileClient extends Plugin {
   addComponents() {
     this.app.addComponents({
       MobilePageProvider,
-      MobilePageOutlet,
       MobileNavigationBarAction,
       MobilePageNavigationBar,
       MobileHomePage,

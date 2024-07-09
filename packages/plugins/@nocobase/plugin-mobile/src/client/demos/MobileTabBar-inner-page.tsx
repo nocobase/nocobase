@@ -1,6 +1,7 @@
 import { Plugin } from '@nocobase/client';
 import PluginMobileClient, { Mobile } from '@nocobase/plugin-mobile/client';
 import { mockApp } from '@nocobase/client/demo-utils';
+import React from 'react';
 
 class DemoPlugin extends Plugin {
   async beforeLoad(): Promise<void> {
@@ -18,7 +19,14 @@ class DemoPlugin extends Plugin {
   }
 
   async load() {
-    this.app.router.add('root', { path: '/', Component: Mobile });
+    this.app.router.add('root', {
+      path: '/',
+      element: (
+        <div style={{ position: 'relative' }}>
+          <Mobile />
+        </div>
+      ),
+    });
     const mobileClient = this.app.pluginManager.get(PluginMobileClient);
     mobileClient.mobileRouter.add('mobile.inner-page', {
       path: '/inner-page',
@@ -103,42 +111,6 @@ const app = mockApp({
           __index: '1',
         },
       ],
-    },
-    'uiSchemas:getJsonSchema/nocobase-mobile': {
-      data: {
-        type: 'void',
-        properties: {
-          pageOutlet: {
-            type: 'void',
-            'x-component': 'MobilePageOutlet',
-            'x-uid': '5dix5scrv77',
-            'x-async': false,
-            'x-index': 1,
-          },
-          tabBar: {
-            type: 'void',
-            'x-component': 'MobileTabBar',
-            'x-decorator': 'BlockItem',
-            'x-decorator-props': {
-              style: {
-                position: 'sticky',
-                bottom: 0,
-                zIndex: 1000,
-              },
-            },
-            'x-settings': 'mobile:tab-bar',
-            'x-toolbar-props': {
-              draggable: false,
-            },
-            'x-uid': 'cwf8ti4suno',
-            'x-async': false,
-            'x-index': 2,
-          },
-        },
-        name: 'nocobase-mobile',
-        'x-uid': 'nocobase-mobile',
-        'x-async': false,
-      },
     },
     'uiSchemas:getJsonSchema/d4o6esth2ik': {
       data: {

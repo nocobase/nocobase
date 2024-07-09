@@ -21,5 +21,5 @@ export const mobileTabBarInitializer = new SchemaInitializer({
 
 export const MobileTabBarInitializer = () => {
   const { render } = useSchemaInitializerRender(mobileTabBarInitializer.name);
-  return render();
+  return render({ 'data-testid': 'schema-initializer-MobileTabBar' });
 };

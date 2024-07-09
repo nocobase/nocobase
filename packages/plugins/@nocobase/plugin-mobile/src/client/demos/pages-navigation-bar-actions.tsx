@@ -72,11 +72,13 @@ const schema = {
 
 const Demo = () => {
   return (
-    <MobileTitleProvider title="Title">
-      <MobilePageProvider>
-        <SchemaComponent schema={schema} />
-      </MobilePageProvider>
-    </MobileTitleProvider>
+    <div style={{ position: 'relative' }}>
+      <MobileTitleProvider title="Title">
+        <MobilePageProvider>
+          <SchemaComponent schema={schema} />
+        </MobilePageProvider>
+      </MobileTitleProvider>
+    </div>
   );
 };
 

@@ -65,7 +65,7 @@ export const MobileTabBar: FC<MobileTabBarProps> & {
   // 判断内页的方法：没有激活的 activeTabBarItem 并且 routeList 中有数据
   if (!activeTabBarItem && validRouteList.length > 0) return null;
   return (
-    <div className={cx(styles.mobileTabBar, 'mobile-tab-bar')}>
+    <div className={cx(styles.mobileTabBar, 'mobile')}>
       <div className={styles.mobileTabBarContent}>
         <DndContext onDragEnd={handleDragEnd}>
           <div className={styles.mobileTabBarList}>

@@ -8,10 +8,13 @@
  */
 
 import React, { FC } from 'react';
-import { RemoteSchemaComponent, usePlugin } from '@nocobase/client';
+import { usePlugin } from '@nocobase/client';
+import { Outlet } from 'react-router-dom';
 
 import { PluginMobileClient } from '../index';
 import { MobileProviders } from '../mobile-providers';
+import { MobileTabBar } from './mobile-tab-bar';
+import { useMobileApp } from '../mobile';
 
 export interface MobileLayoutProps {
   children?: React.ReactNode;
@@ -19,10 +22,11 @@ export interface MobileLayoutProps {
 
 export const MobileLayout: FC<MobileLayoutProps> = () => {
   const mobilePlugin = usePlugin(PluginMobileClient);
-
+  const { showTabBar } = useMobileApp();
   return (
     <MobileProviders skipLogin={mobilePlugin?.options?.config?.skipLogin}>
-      <RemoteSchemaComponent uid="nocobase-mobile" />
+      <Outlet />
+      <MobileTabBar enableTabBar={showTabBar} />
     </MobileProviders>
   );
 };

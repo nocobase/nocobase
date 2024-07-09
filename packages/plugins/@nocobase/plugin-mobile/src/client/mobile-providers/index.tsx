@@ -7,6 +7,5 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from './context/MobileTitle';
-export * from './context/MobileRoutes';
 export * from './MobileProviders';
+export * from './context';

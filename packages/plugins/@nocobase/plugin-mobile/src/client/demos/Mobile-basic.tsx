@@ -98,41 +98,8 @@ const app = mockApp({
         },
       ],
     },
-    'uiSchemas:getJsonSchema/nocobase-mobile': {
-      data: {
-        type: 'void',
-        properties: {
-          pageOutlet: {
-            type: 'void',
-            'x-component': 'MobilePageOutlet',
-            'x-uid': '5dix5scrv77',
-            'x-async': false,
-            'x-index': 1,
-          },
-          tabBar: {
-            type: 'void',
-            'x-component': 'MobileTabBar',
-            'x-decorator': 'BlockItem',
-            'x-decorator-props': {
-              style: {
-                position: 'sticky',
-                bottom: 0,
-                zIndex: 1000,
-              },
-            },
-            'x-settings': 'mobile:tab-bar',
-            'x-toolbar-props': {
-              draggable: false,
-            },
-            'x-uid': 'cwf8ti4suno',
-            'x-async': false,
-            'x-index': 2,
-          },
-        },
-        name: 'nocobase-mobile',
-        'x-uid': 'nocobase-mobile',
-        'x-async': false,
-      },
+    'applicationPlugins:update': {
+      data: {},
     },
     'uiSchemas:getJsonSchema/d4o6esth2ik': {
       data: {
