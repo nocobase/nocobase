@@ -81,6 +81,8 @@ const { apiClient, mockRequest } = mockAPIClient();
 
 // 用于解析 `$nRole` 的值
 apiClient.auth.role = 'root';
+// 用于解析 `$nToken` 的值
+apiClient.auth.token = 'token';
 
 mockRequest.onGet('/auth:check').reply(() => {
   return [
@@ -247,6 +249,7 @@ describe('useVariables', () => {
             "yesterday": [Function],
           },
           "$nRole": "root",
+          "$nToken": "token",
           "$nURLSearchParams": {},
           "$system": {
             "now": [Function],
@@ -474,6 +477,7 @@ describe('useVariables', () => {
             "yesterday": [Function],
           },
           "$nRole": "root",
+          "$nToken": "token",
           "$nURLSearchParams": {},
           "$system": {
             "now": [Function],
@@ -559,6 +563,7 @@ describe('useVariables', () => {
             "yesterday": [Function],
           },
           "$nRole": "root",
+          "$nToken": "token",
           "$nURLSearchParams": {},
           "$new": {
             "name": "new variable",

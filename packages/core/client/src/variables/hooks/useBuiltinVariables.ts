@@ -11,7 +11,7 @@ import { dayjs } from '@nocobase/utils/client';
 import { useMemo } from 'react';
 import { DEFAULT_DATA_SOURCE_KEY } from '../../data-source/data-source/DataSourceManager';
 import { useCurrentUserVariable, useDatetimeVariable } from '../../schema-settings';
-import { useAPITokenVariable } from '../../schema-settings/VariableInput/hooks/useCurrentTokenVariable';
+import { useAPITokenVariable } from '../../schema-settings/VariableInput/hooks/useAPITokenVariable';
 import { useCurrentRoleVariable } from '../../schema-settings/VariableInput/hooks/useRoleVariable';
 import { useURLSearchParamsVariable } from '../../schema-settings/VariableInput/hooks/useURLSearchParamsVariable';
 import { VariableOption } from '../types';

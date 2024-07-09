@@ -11,7 +11,7 @@ import { Form } from '@formily/core';
 import { ISchema, Schema } from '@formily/react';
 import { useMemo } from 'react';
 import { CollectionFieldOptions_deprecated } from '../../../collection-manager';
-import { useAPITokenVariable } from './useCurrentTokenVariable';
+import { useAPITokenVariable } from './useAPITokenVariable';
 import { useDatetimeVariable } from './useDateVariable';
 import { useCurrentFormVariable } from './useFormVariable';
 import { useCurrentObjectVariable } from './useIterationVariable';

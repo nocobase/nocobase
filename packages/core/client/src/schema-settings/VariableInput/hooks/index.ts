@@ -7,8 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+export * from './useAPITokenVariable';
 export * from './useBaseVariable';
-export * from './useCurrentTokenVariable';
 export * from './useDateVariable';
 export * from './useRoleVariable';
 export * from './useURLSearchParamsVariable';
