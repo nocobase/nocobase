@@ -35,7 +35,7 @@ export const useMBMFields = () => {
           if (field) {
             const interfaceConfig = getInterface(f.interface);
             return (
-              (field.elementType === f.type || interfaceConfig.availableTypes.includes(field.elementType)) && isTarget
+              (field.elementType === f.type || interfaceConfig?.availableTypes.includes(field.elementType)) && isTarget
             );
           }
         }
@@ -51,7 +51,7 @@ export const useMBMFields = () => {
         const field = targetFields.find((f) => f.name === targetKey);
         if (field) {
           const interfaceConfig = getInterface(field.interface);
-          return isArray && (field.type === f.elementType || interfaceConfig.availableTypes.includes(f.elementType));
+          return isArray && (field.type === f.elementType || interfaceConfig?.availableTypes.includes(f.elementType));
         }
       }
       return isArray;
