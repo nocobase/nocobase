@@ -17,30 +17,30 @@ describe('invoke function', () => {
   it('should invoke scan correctly', () => {
     const cb = vitest.fn();
     invoke({ action: 'scan' }, cb);
-    await expect((window as any).JsBridge.invoke).toHaveBeenCalledWith({ action: 'scan' }, cb);
+    expect((window as any).JsBridge.invoke).toHaveBeenCalledWith({ action: 'scan' }, cb);
   });
 
   it('should invoke moveTaskToBack correctly', () => {
     invoke({ action: 'moveTaskToBack' });
-    await expect((window as any).JsBridge.invoke).toHaveBeenCalledWith({ action: 'moveTaskToBack' }, undefined);
+    expect((window as any).JsBridge.invoke).toHaveBeenCalledWith({ action: 'moveTaskToBack' }, undefined);
   });
 
   it('should handle callbacks on moveTaskToBack action', () => {
     const cb = vitest.fn();
     invoke({ action: 'moveTaskToBack' }, cb);
-    await expect((window as any).JsBridge.invoke).toHaveBeenCalledWith({ action: 'moveTaskToBack' }, cb);
+    expect((window as any).JsBridge.invoke).toHaveBeenCalledWith({ action: 'moveTaskToBack' }, cb);
   });
 });
 
 describe('isJSBridge function', () => {
   it('should return true if JsBridge is available', () => {
-    await expect(isJSBridge()).toBe(true);
+    expect(isJSBridge()).toBe(true);
   });
 
   it('should return false if JsBridge is not defined', () => {
     const originalJsBridge = (window as any).JsBridge;
     delete (window as any).JsBridge;
-    await expect(isJSBridge()).toBe(false);
+    expect(isJSBridge()).toBe(false);
     (window as any).JsBridge = originalJsBridge; // Restore original state
   });
 });

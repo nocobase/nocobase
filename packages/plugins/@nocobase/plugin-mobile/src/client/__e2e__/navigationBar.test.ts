@@ -51,7 +51,7 @@ test.describe('NavBar', () => {
       await page.getByLabel('block-item-MobilePageProvider').click();
       await page.getByLabel('designer-schema-settings-MobilePageProvider-mobile:page').click();
       await page.getByRole('menuitem', { name: 'Enable Navigation Bar Title' }).click();
-      await expect(page.getByTestId('mobile-page-navigation-bar')).not.toContainText(nocoPage.getTitle());
+      await expect(page.getByTestId('mobile-page-navigation-bar')).toContainText(nocoPage.getTitle());
     });
 
     test('NavBar tabs: hide and show', async ({ page, mockMobilePage }) => {
@@ -123,7 +123,7 @@ test.describe('NavBar', () => {
         .getByLabel('designer-schema-settings-MobilePageNavigationBar')
         .click();
       await page.getByRole('menuitem', { name: 'Edit' }).click();
-      await expect(page.getByRole('textbox')).toHaveText(newTitle);
+      await expect(page.getByRole('textbox')).toHaveValue(newTitle);
     });
 
     test('add and remove', async ({ page }) => {

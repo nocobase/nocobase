@@ -367,9 +367,12 @@ function getMobileTabBarItemSchema(routeItem: MobileRouteItem) {
 - [x] 滚动区域问题
 - [x] Action initailzer 无法关闭问题【先临时解决】
 - [x] e2e 文件 eslint 报错
+- [x] 多语言再次检查一遍
 - 原 admin 弹窗改为子页面（等中合），back 等一起开发
 - TabBar Settings 从底部放到顶部
 - 最小 Demo 复现 schema 缓存问题
+- link 的 e2e
+- settings 的单测？
 
 ## 待做任务
 

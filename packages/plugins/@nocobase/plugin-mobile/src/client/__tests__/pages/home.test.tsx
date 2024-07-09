@@ -19,15 +19,15 @@ describe('Home page', () => {
     await waitForApp();
 
     await waitFor(() => {
-      await expect(screen.queryByText('Test Page')).toBeInTheDocument();
+      expect(screen.queryByText('Test Page')).toBeInTheDocument();
     });
   });
 
   it('if custom home page, not rewrite', async () => {
     render(<CustomApp />);
     await waitFor(() => {
-      await expect(screen.queryByTestId('mobile-loading')).not.toBeInTheDocument();
-      await expect(screen.queryByText('Custom Home Page')).toBeInTheDocument();
+      expect(screen.queryByTestId('mobile-loading')).not.toBeInTheDocument();
+      expect(screen.queryByText('Custom Home Page')).toBeInTheDocument();
     });
   });
 
@@ -36,7 +36,7 @@ describe('Home page', () => {
     await waitForApp();
 
     await waitFor(() => {
-      await expect(document.querySelector('.ant-app').innerHTML).toHaveLength(0);
+      expect(document.querySelector('.ant-app').innerHTML).toHaveLength(0);
     });
   });
 });

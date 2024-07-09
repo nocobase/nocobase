@@ -148,6 +148,11 @@ const app = mockApp({
         'x-component': 'MobilePageProvider',
         'x-settings': 'mobile:page',
         'x-decorator': 'BlockItem',
+        'x-decorator-props': {
+          style: {
+            height: '100%',
+          },
+        },
         'x-toolbar-props': {
           draggable: false,
           spaceWrapperStyle: {

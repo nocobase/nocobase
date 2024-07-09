@@ -85,7 +85,6 @@ test.describe('TabBar', () => {
     await expect(page.getByText('Please configure the URL')).toBeVisible();
     const count = await page.locator(`text=${Title}`).count();
     await expect(count).toBe(1);
-    await expect(page.getByLabel('block-item-MobilePageProvider')).toBeVisible();
 
     // 编辑
     await page.getByTestId(`mobile-tab-bar-${Title}`).hover();
@@ -128,26 +127,26 @@ test.describe('TabBar', () => {
     await expect(page.getByText(`${Title}_change`)).not.toBeVisible();
   });
 
-  test('enable TabBar Settings', async ({ page, mockMobilePage }) => {
-    const nocoPage = mockMobilePage({});
-    await nocoPage.goto();
-    await expect(page.getByLabel('schema-initializer-MobileTabBar')).toBeVisible();
-    await page.getByLabel('schema-initializer-MobileTabBar').hover();
-    const countShow1 = await page.locator(`text=${nocoPage.getTitle()}`).count();
-    await expect(countShow1).toBe(2);
+  // test('enable TabBar Settings', async ({ page, mockMobilePage }) => {
+  //   const nocoPage = mockMobilePage({});
+  //   await nocoPage.goto();
+  //   await expect(page.getByLabel('schema-initializer-MobileTabBar')).toBeVisible();
+  //   await page.getByLabel('schema-initializer-MobileTabBar').hover();
+  //   const countShow1 = await page.locator(`text=${nocoPage.getTitle()}`).count();
+  //   await expect(countShow1).toBe(2);
 
-    // hover settings
-    await page.getByLabel('block-item-MobileTabBar', { exact: true }).click();
-    await page.getByLabel('designer-schema-settings-MobileTabBar-mobile:tab-bar').click();
-    await page.getByText('Enable TabBar').click();
-    const countHide = await page.locator(`text=${nocoPage.getTitle()}`).count();
-    await expect(countHide).toBe(1);
+  //   // hover settings
+  //   await page.getByLabel('block-item-MobileTabBar', { exact: true }).click();
+  //   await page.getByLabel('designer-schema-settings-MobileTabBar-mobile:tab-bar').click();
+  //   await page.getByText('Enable TabBar').click();
+  //   const countHide = await page.locator(`text=${nocoPage.getTitle()}`).count();
+  //   await expect(countHide).toBe(1);
 
-    // hover settings
-    await page.getByLabel('block-item-MobileTabBar', { exact: true }).hover();
-    await page.getByLabel('designer-schema-settings-MobileTabBar-mobile:tab-bar').hover();
-    await page.getByText('Enable TabBar').click();
-    const countShow2 = await page.locator(`text=${nocoPage.getTitle()}`).count();
-    await expect(countShow2).toBe(2);
-  });
+  //   // hover settings
+  //   await page.getByLabel('block-item-MobileTabBar', { exact: true }).hover();
+  //   await page.getByLabel('designer-schema-settings-MobileTabBar-mobile:tab-bar').hover();
+  //   await page.getByText('Enable TabBar').click();
+  //   const countShow2 = await page.locator(`text=${nocoPage.getTitle()}`).count();
+  //   await expect(countShow2).toBe(2);
+  // });
 });

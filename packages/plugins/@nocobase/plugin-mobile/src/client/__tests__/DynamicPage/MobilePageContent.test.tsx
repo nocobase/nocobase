@@ -19,7 +19,7 @@ describe('MobilePageContent', () => {
     await waitForApp();
 
     await waitFor(() => {
-      await expect(screen.queryByText('Schema Test Page')).toBeInTheDocument();
+      expect(screen.queryByText('Schema Test Page')).toBeInTheDocument();
     });
   });
 
@@ -28,7 +28,7 @@ describe('MobilePageContent', () => {
     await waitForApp();
 
     await waitFor(() => {
-      await expect(screen.queryByText('First Route Content')).toBeInTheDocument();
+      expect(screen.queryByText('First Route Content')).toBeInTheDocument();
     });
   });
 
@@ -37,7 +37,7 @@ describe('MobilePageContent', () => {
     await waitForApp();
 
     await waitFor(() => {
-      await expect(screen.queryByText('404')).toBeInTheDocument();
+      expect(screen.queryByText('404')).toBeInTheDocument();
     });
 
     await act(async () => {
@@ -45,7 +45,7 @@ describe('MobilePageContent', () => {
     });
 
     await waitFor(() => {
-      await expect(screen.queryByText('404')).not.toBeInTheDocument();
+      expect(screen.queryByText('404')).not.toBeInTheDocument();
     });
   });
 });

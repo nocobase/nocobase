@@ -17,30 +17,30 @@ describe('MobileTabBar.Item', () => {
   test('Basic', async () => {
     render(<BasicApp />);
     await waitForApp();
-    await expect(screen.getByText('Test')).toBeInTheDocument();
-    await expect(screen.queryByRole('img')).toBeInTheDocument();
+    expect(screen.getByText('Test')).toBeInTheDocument();
+    expect(screen.queryByRole('img')).toBeInTheDocument();
 
     await userEvent.click(screen.getByText('Test'));
 
     await waitFor(() => {
-      await expect(screen.getByText('Schema Test Page')).toBeInTheDocument();
+      expect(screen.getByText('Schema Test Page')).toBeInTheDocument();
     });
   });
 
   test('Selected', async () => {
     render(<SelectedApp />);
     await waitForApp();
-    await expect(screen.getByText('Test')).toBeInTheDocument();
-    await expect(document.querySelector('.adm-tab-bar-item-active')).toBeInTheDocument();
+    expect(screen.getByText('Test')).toBeInTheDocument();
+    expect(document.querySelector('.adm-tab-bar-item-active')).toBeInTheDocument();
   });
 
   test('Schema', async () => {
     render(<SchemaApp />);
     await waitForApp();
 
-    await expect(screen.getByText('Test')).toBeInTheDocument();
-    await expect(screen.queryByRole('img')).toBeInTheDocument();
-    await expect(screen.queryByTestId('schema-json')).toMatchInlineSnapshot(`
+    expect(screen.getByText('Test')).toBeInTheDocument();
+    expect(screen.queryByRole('img')).toBeInTheDocument();
+    expect(screen.queryByTestId('schema-json')).toMatchInlineSnapshot(`
       <pre
         data-testid="schema-json"
       >

@@ -18,21 +18,21 @@ describe('MobileTabBar.Item', () => {
   test('Inner Link', async () => {
     render(<InnerApp />);
     await waitForApp();
-    await expect(screen.getByText('Test')).toBeInTheDocument();
-    await expect(screen.queryByRole('img')).toBeInTheDocument();
+    expect(screen.getByText('Test')).toBeInTheDocument();
+    expect(screen.queryByRole('img')).toBeInTheDocument();
 
     await userEvent.click(screen.getByText('Test'));
 
     await waitFor(() => {
-      await expect(screen.getByText('Test Page')).toBeInTheDocument();
+      expect(screen.getByText('Test Page')).toBeInTheDocument();
     });
   });
 
   test('Outer Link', async () => {
     render(<OuterApp />);
     await waitForApp();
-    await expect(screen.getByText('Test')).toBeInTheDocument();
-    await expect(screen.queryByRole('img')).toBeInTheDocument();
+    expect(screen.getByText('Test')).toBeInTheDocument();
+    expect(screen.queryByRole('img')).toBeInTheDocument();
 
     const originOpen = window.open;
     const origin = vitest.fn();
@@ -41,7 +41,7 @@ describe('MobileTabBar.Item', () => {
     await userEvent.click(screen.getByText('Test'));
 
     await waitFor(() => {
-      await expect(origin).toBeCalled();
+      expect(origin).toBeCalled();
     });
 
     window.open = originOpen;
@@ -50,17 +50,17 @@ describe('MobileTabBar.Item', () => {
   test('Selected', async () => {
     render(<SelectedApp />);
     await waitForApp();
-    await expect(screen.getByText('Test')).toBeInTheDocument();
-    await expect(document.querySelector('.adm-tab-bar-item-active')).toBeInTheDocument();
+    expect(screen.getByText('Test')).toBeInTheDocument();
+    expect(document.querySelector('.adm-tab-bar-item-active')).toBeInTheDocument();
   });
 
   test('Schema', async () => {
     render(<SchemaApp />);
     await waitForApp();
 
-    await expect(screen.getByText('Link')).toBeInTheDocument();
-    await expect(screen.queryByRole('img')).toBeInTheDocument();
-    await expect(screen.queryByTestId('schema-json')).toMatchInlineSnapshot(`
+    expect(screen.getByText('Link')).toBeInTheDocument();
+    expect(screen.queryByRole('img')).toBeInTheDocument();
+    expect(screen.queryByTestId('schema-json')).toMatchInlineSnapshot(`
       <pre
         data-testid="schema-json"
       >

@@ -20,7 +20,7 @@ describe('MobilePageNavigationBar', () => {
     await waitForApp();
 
     await waitFor(() => {
-      await expect(screen.queryByText('Title')).toBeInTheDocument();
+      expect(screen.queryByText('Title')).toBeInTheDocument();
     });
   });
 
@@ -29,7 +29,7 @@ describe('MobilePageNavigationBar', () => {
     await waitForApp();
 
     await waitFor(() => {
-      await expect(screen.queryByText('Title')).not.toBeInTheDocument();
+      expect(screen.queryByText('Title')).not.toBeInTheDocument();
     });
   });
 
@@ -38,7 +38,7 @@ describe('MobilePageNavigationBar', () => {
     await waitForApp();
 
     await waitFor(() => {
-      await expect(screen.queryByText('Title')).not.toBeInTheDocument();
+      expect(screen.queryByText('Title')).not.toBeInTheDocument();
     });
   });
 
@@ -47,20 +47,20 @@ describe('MobilePageNavigationBar', () => {
     await waitForApp();
 
     await waitFor(() => {
-      await expect(screen.queryByText('Page1')).toBeInTheDocument();
-      await expect(screen.queryByText('Tab1')).toBeInTheDocument();
-      await expect(screen.queryByText('Tab2')).toBeInTheDocument();
-      await expect(screen.queryByText('/page/page1/tabs/tab1')).toBeInTheDocument();
+      expect(screen.queryByText('Page1')).toBeInTheDocument();
+      expect(screen.queryByText('Tab1')).toBeInTheDocument();
+      expect(screen.queryByText('Tab2')).toBeInTheDocument();
+      expect(screen.queryByText('/page/page1/tabs/tab1')).toBeInTheDocument();
     });
 
     await act(async () => {
       await userEvent.click(screen.getByText('Tab2'));
     });
     await waitFor(() => {
-      await expect(screen.queryByText('Page1')).toBeInTheDocument();
-      await expect(screen.queryByText('Tab1')).toBeInTheDocument();
-      await expect(screen.queryByText('Tab2')).toBeInTheDocument();
-      await expect(screen.queryByText('/page/page1/tabs/tab2')).toBeInTheDocument();
+      expect(screen.queryByText('Page1')).toBeInTheDocument();
+      expect(screen.queryByText('Tab1')).toBeInTheDocument();
+      expect(screen.queryByText('Tab2')).toBeInTheDocument();
+      expect(screen.queryByText('/page/page1/tabs/tab2')).toBeInTheDocument();
     });
   });
 });

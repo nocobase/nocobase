@@ -17,22 +17,22 @@ describe('Mobile', () => {
     await waitForApp();
 
     await waitFor(() => {
-      await expect(screen.queryByTestId('ui-editor-button')).toBeInTheDocument();
+      expect(screen.queryByTestId('ui-editor-button')).toBeInTheDocument();
     });
 
     await waitFor(() => {
-      await expect(screen.queryAllByText('Test1')).toHaveLength(2);
-      await expect(screen.queryByText('Test2')).toBeInTheDocument();
-      await expect(screen.queryByText('Tab1')).toBeInTheDocument();
-      await expect(screen.queryByText('Tab2')).toBeInTheDocument();
-      await expect(screen.queryByText('Tab1 Content')).toBeInTheDocument();
+      expect(screen.queryAllByText('Test1')).toHaveLength(2);
+      expect(screen.queryByText('Test2')).toBeInTheDocument();
+      expect(screen.queryByText('Tab1')).toBeInTheDocument();
+      expect(screen.queryByText('Tab2')).toBeInTheDocument();
+      expect(screen.queryByText('Tab1 Content')).toBeInTheDocument();
     });
 
     await act(async () => {
       await userEvent.click(screen.queryByText('Tab2'));
     });
     await waitFor(() => {
-      await expect(screen.queryByText('Tab2 Content')).toBeInTheDocument();
+      expect(screen.queryByText('Tab2 Content')).toBeInTheDocument();
     });
   });
 });

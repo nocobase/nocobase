@@ -18,8 +18,8 @@ describe('MobileTabBar', () => {
     render(<BasicApp />);
     await waitForApp();
     await waitFor(() => {
-      await expect(screen.queryByText('Test1')).toBeInTheDocument(); // title
-      await expect(screen.queryByText('Test2')).toBeInTheDocument(); // title
+      expect(screen.queryByText('Test1')).toBeInTheDocument(); // title
+      expect(screen.queryByText('Test2')).toBeInTheDocument(); // title
     });
   });
 
@@ -27,8 +27,8 @@ describe('MobileTabBar', () => {
     render(<FalseApp />);
     await waitForApp();
     await waitFor(() => {
-      await expect(screen.queryByText('Test1')).not.toBeInTheDocument(); // title
-      await expect(screen.queryByText('Test2')).not.toBeInTheDocument(); // title
+      expect(screen.queryByText('Test1')).not.toBeInTheDocument(); // title
+      expect(screen.queryByText('Test2')).not.toBeInTheDocument(); // title
     });
   });
 
@@ -36,9 +36,9 @@ describe('MobileTabBar', () => {
     render(<InnerPageApp />);
     await waitForApp();
     await waitFor(() => {
-      await expect(screen.queryByText('inner page')).toBeInTheDocument(); // custom page content
-      await expect(screen.queryByText('Test1')).not.toBeInTheDocument();
-      await expect(screen.queryByText('Test2')).not.toBeInTheDocument();
+      expect(screen.queryByText('inner page')).toBeInTheDocument(); // custom page content
+      expect(screen.queryByText('Test1')).not.toBeInTheDocument();
+      expect(screen.queryByText('Test2')).not.toBeInTheDocument();
     });
   });
 });
