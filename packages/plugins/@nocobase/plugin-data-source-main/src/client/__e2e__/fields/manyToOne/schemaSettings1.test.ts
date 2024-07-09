@@ -75,7 +75,7 @@ test.describe('form item & create form', () => {
             .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.${fieldName}`)
             .hover();
         })(page, 'manyToOne'),
-      supportedVariables: ['Constant', 'Current user', 'Current role', 'Date variables', 'Current form'],
+      supportedVariables: ['Constant', 'Current user', 'Current role', 'API token', 'Date variables', 'Current form'],
       unsupportedVariables: ['Current popup record', 'Parent popup record'],
       inputConstantValue: async () => {
         await page
@@ -175,6 +175,7 @@ test.describe('form item & create form', () => {
       'Constant',
       'Current user',
       'Current role',
+      'API token',
       'Date variables',
       'Current form',
     ]);

@@ -158,6 +158,10 @@ export class CollectionModel extends MagicAttributeModel {
       } else if (field.get('through') && field.get('through') === name) {
         await field.destroy({ transaction });
       }
+
+      if (field.get('collectionName') === name) {
+        await field.destroy({ transaction });
+      }
     }
 
     await collection.removeFromDb(options);

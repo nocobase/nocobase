@@ -28,6 +28,8 @@ import { CollectionModel, FieldModel } from './models';
 import collectionActions from './resourcers/collections';
 import viewResourcer from './resourcers/views';
 import { FieldNameExistsError } from './errors/field-name-exists-error';
+import { beforeDestoryField } from './hooks/beforeDestoryField';
+import { FieldIsDependedOnByOtherError } from './errors/field-is-depended-on-by-other';
 
 export class PluginDataSourceMainServer extends Plugin {
   public schema: string;
@@ -85,7 +87,7 @@ export class PluginDataSourceMainServer extends Plugin {
         removeOptions['transaction'] = options.transaction;
       }
 
-      const cascade = lodash.get(options, 'context.action.params.cascade', false);
+      const cascade = options.cascade || lodash.get(options, 'context.action.params.cascade', false);
 
       if (cascade === true || cascade === 'true') {
         removeOptions['cascade'] = true;
@@ -243,6 +245,7 @@ export class PluginDataSourceMainServer extends Plugin {
     });
 
     // before field remove
+    this.app.db.on('fields.beforeDestroy', beforeDestoryField(this.app.db));
     this.app.db.on('fields.beforeDestroy', beforeDestroyForeignKey(this.app.db));
 
     const mutex = new Mutex();
@@ -330,6 +333,27 @@ export class PluginDataSourceMainServer extends Plugin {
       },
       (err, ctx) => {
         return ctx.throw(400, ctx.t(`The value of ${Object.keys(err.fields)} field duplicated`));
+      },
+    );
+
+    errorHandlerPlugin.errorHandler.register(
+      (err) => err instanceof FieldIsDependedOnByOtherError,
+      (err, ctx) => {
+        ctx.status = 400;
+        ctx.body = {
+          errors: [
+            {
+              message: ctx.i18n.t('field-is-depended-on-by-other', {
+                fieldName: err.options.fieldName,
+                fieldCollectionName: err.options.fieldCollectionName,
+                dependedFieldName: err.options.dependedFieldName,
+                dependedFieldCollectionName: err.options.dependedFieldCollectionName,
+                dependedFieldAs: err.options.dependedFieldAs,
+                ns: 'data-source-main',
+              }),
+            },
+          ],
+        };
       },
     );
 

@@ -9,6 +9,7 @@
 
 import { ISchema, useField } from '@formily/react';
 import {
+  useAPITokenVariable,
   useCurrentRoleVariable,
   useCurrentUserVariable,
   useDatetimeVariable,
@@ -28,12 +29,16 @@ export const useGeneralVariableOptions = (
     uiSchema: schema,
   });
   const { currentRoleSettings } = useCurrentRoleVariable({ uiSchema: schema });
+  const { apiTokenSettings } = useAPITokenVariable({ noDisabled: true });
   const { datetimeSettings } = useDatetimeVariable({ operator, schema, noDisabled: true });
   const { urlSearchParamsSettings } = useURLSearchParamsVariable();
 
   const result = useMemo(
-    () => [currentUserSettings, currentRoleSettings, datetimeSettings, urlSearchParamsSettings].filter(Boolean),
-    [datetimeSettings, currentUserSettings, currentRoleSettings, urlSearchParamsSettings],
+    () =>
+      [currentUserSettings, currentRoleSettings, apiTokenSettings, datetimeSettings, urlSearchParamsSettings].filter(
+        Boolean,
+      ),
+    [datetimeSettings, currentUserSettings, currentRoleSettings, urlSearchParamsSettings, apiTokenSettings],
   );
 
   if (!schema) return [];

@@ -21,6 +21,7 @@ import { deepGet } from './utils/deep-get';
 
 type ExportColumn = {
   dataIndex: Array<string>;
+  title?: string;
   defaultTitle: string;
 };
 
@@ -146,6 +147,10 @@ class XlsxExporter {
   private renderHeaders() {
     return this.options.columns.map((col) => {
       const field = this.findFieldByDataIndex(col.dataIndex);
+      if (col.title) {
+        return col.title;
+      }
+
       return field?.options.title || col.defaultTitle;
     });
   }
