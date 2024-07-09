@@ -17,7 +17,15 @@ import {
   test,
 } from '@nocobase/test/e2e';
 import { oneEmptyTableWithUsers } from '../../../details-multi/__e2e__/templatesOfBug';
-import { T2174, T3871, oneFormAndOneTableWithUsers, oneTableWithNestPopups } from './templatesOfBug';
+import {
+  T2174,
+  T3871,
+  currentPopupRecordInPopupThatOpenedByAssociationField,
+  oneFormAndOneTableWithUsers,
+  oneTableWithNestPopups,
+  parentPopupRecordInSubPageTheFirstLevelIsASubpageAndTheSecondLevelIsAPopup,
+  parentPopupRecordInSubPageTheFirstLevelIsASubpageAndTheSecondLevelIsASubpageToo,
+} from './templatesOfBug';
 
 test.describe('set default value', () => {
   test('basic fields', async ({ page, mockPage }) => {
@@ -203,7 +211,6 @@ test.describe('set default value', () => {
     // https://nocobase.height.app/T-4028/description
     // 刷新页面后，默认值应该依然存在
     await page.reload();
-    await page.getByRole('button', { name: 'Add new' }).click();
     await page
       .getByTestId('drawer-Action.Container-general-Add record')
       .getByRole('button', { name: 'Add new' })
@@ -363,11 +370,51 @@ test.describe('set default value', () => {
     ).toBeVisible();
   });
 
+  test('Current popup record in popup that opened by association field', async ({ mockPage, page }) => {
+    await mockPage(currentPopupRecordInPopupThatOpenedByAssociationField).goto();
+
+    await page.getByText('Member').click();
+
+    // Current popup record in the first popup
+    await expect(page.getByLabel('block-item-CollectionField-').getByRole('textbox')).toHaveValue('Member');
+
+    // Current popup record and Parent popup record in the second popup
+    await page.getByLabel('action-Action-Edit-update-').click();
+    await expect(
+      page
+        .getByTestId('drawer-Action.Container-roles-Edit record')
+        .getByLabel('block-item-CollectionField-users-form-users.nickname-Current popup record')
+        .getByRole('textbox'),
+    ).toHaveValue('Member');
+    await expect(
+      page.getByLabel('block-item-CollectionField-users-form-users.username-Parent popup record').getByRole('textbox'),
+    ).toHaveValue('Member');
+  });
+
   test('Parent popup record', async ({ page, mockPage }) => {
     await mockPage(oneTableWithNestPopups).goto();
 
     // 1. 表单字段默认值中使用 `Parent popup record`
     await page.getByLabel('action-Action.Link-View').click();
+
+    // 在第一级弹窗中，不应该包含 Parent popup record 变量
+    await page
+      .getByTestId('drawer-Action.Container-users-View record')
+      .getByLabel('block-item-CardItem-users-')
+      .hover();
+    await page
+      .getByTestId('drawer-Action.Container-users-View record')
+      .getByLabel('designer-schema-settings-CardItem-blockSettings:table-users')
+      .hover();
+    await page.getByRole('menuitem', { name: 'Set the data scope' }).click();
+    await page.getByText('Add condition', { exact: true }).click();
+    await page.getByLabel('variable-button').click();
+    await expect(page.getByRole('menuitemcheckbox', { name: 'Current popup record right' })).toBeVisible();
+    await expect(page.getByRole('menuitemcheckbox', { name: 'Parent popup record right' })).not.toBeVisible();
+
+    // 关闭数据范围设置弹窗
+    await page.getByRole('button', { name: 'Close', exact: true }).click();
+
     await page.getByLabel('action-Action.Link-View in popup').click();
     await page.getByLabel('schema-initializer-Grid-popup').nth(1).hover();
     await page.getByRole('menuitem', { name: 'form Form (Add new) right' }).hover();
@@ -462,9 +509,271 @@ test.describe('set default value', () => {
     await page.getByLabel('designer-schema-settings-CollectionField-fieldSettings:FormItem-users-users.').hover();
     await page.getByRole('menuitem', { name: 'Set default value' }).click();
     await page.getByLabel('variable-button').click();
+    await expect(page.getByRole('menuitemcheckbox', { name: 'Current popup record right' })).not.toBeVisible();
     await page.getByRole('menuitemcheckbox', { name: 'Parent popup record right' }).click();
     await page.getByRole('menuitemcheckbox', { name: 'Nickname' }).click();
     await page.getByRole('button', { name: 'OK', exact: true }).click();
+    await expect(page.getByLabel('block-item-CollectionField-').getByRole('textbox')).toHaveValue('Super Admin');
+  });
+
+  test('Parent popup record in sub page. The first level is a subpage, and the second level is a popup', async ({
+    page,
+    mockPage,
+  }) => {
+    await mockPage(parentPopupRecordInSubPageTheFirstLevelIsASubpageAndTheSecondLevelIsAPopup).goto();
+
+    // 1. 表单字段默认值中使用 `Parent popup record`
+    await page.getByLabel('action-Action.Link-View').click();
+
+    // 在第一级弹窗中，不应该包含 Parent popup record 变量
+    await page.getByText('UsersAdd newConfigure').hover();
+    await page.getByRole('button', { name: 'designer-schema-settings-' }).hover();
+    await page.getByRole('menuitem', { name: 'Set the data scope' }).click();
+    await page.getByText('Add condition', { exact: true }).click();
+    await page.getByLabel('variable-button').click();
+    await expect(page.getByRole('menuitemcheckbox', { name: 'Current popup record right' })).toBeVisible();
+    await expect(page.getByRole('menuitemcheckbox', { name: 'Parent popup record right' })).not.toBeVisible();
+
+    // 关闭数据范围设置弹窗
+    await page.getByRole('button', { name: 'Close', exact: true }).click();
+
+    await page.getByLabel('action-Action.Link-View in popup').click();
+    await page.getByLabel('schema-initializer-Grid-popup').nth(1).hover();
+    await page.getByRole('menuitem', { name: 'form Form (Add new) right' }).hover();
+    await page.getByRole('menuitem', { name: 'Other records right' }).hover();
+    await page.getByRole('menuitem', { name: 'Users' }).click();
+    await page.mouse.move(300, 0);
+    await page.getByLabel('schema-initializer-Grid-form:').hover();
+    await page.getByRole('menuitem', { name: 'Nickname' }).click();
+    await page.getByLabel('block-item-CollectionField-').hover();
+    await page.getByLabel('designer-schema-settings-CollectionField-fieldSettings:FormItem-users-users.').hover();
+    await page.getByRole('menuitem', { name: 'Set default value' }).click();
+    await page.getByLabel('variable-button').click();
+    await page.getByRole('menuitemcheckbox', { name: 'Parent popup record right' }).click();
+    await page.getByRole('menuitemcheckbox', { name: 'Nickname' }).click();
+    await page.getByRole('button', { name: 'OK', exact: true }).click();
+    await expect(page.getByLabel('block-item-CollectionField-').getByRole('textbox')).toHaveValue('Super Admin');
+
+    await page.reload();
+    await expect(page.getByLabel('block-item-CollectionField-').getByRole('textbox')).toHaveValue('Super Admin');
+
+    // 2. 表单联动规则中使用 `Parent popup record`
+    // 创建 Username 字段
+    await page.getByLabel('schema-initializer-Grid-form:').hover();
+    await page.getByRole('menuitem', { name: 'Username' }).click();
+    // 设置联动规则
+    await page.getByLabel('block-item-CardItem-users-form').hover();
+    await page.getByLabel('designer-schema-settings-CardItem-blockSettings:createForm-users').hover();
+    await page.getByRole('menuitem', { name: 'Linkage rules' }).click();
+    await page.mouse.move(300, 0);
+    await page.getByRole('button', { name: 'plus Add linkage rule' }).click();
+    await page.getByText('Add property').click();
+    await page.getByTestId('select-linkage-property-field').click();
+    await page.getByTitle('Username').click();
+    await page.getByTestId('select-linkage-action-field').click();
+    await page.getByRole('option', { name: 'Value', exact: true }).click();
+    await page.getByTestId('select-linkage-value-type').click();
+    await page.getByTitle('Expression').click();
+    await page.getByLabel('variable-button').click();
+    await page.getByRole('menuitemcheckbox', { name: 'Parent popup record right' }).click();
+    await page.getByRole('menuitemcheckbox', { name: 'Username' }).click();
+    await page.getByRole('button', { name: 'OK', exact: true }).click();
+    // 需正确显示变量的值
+    await expect(
+      page.getByLabel('block-item-CollectionField-users-form-users.username-Username').getByRole('textbox'),
+    ).toHaveValue('nocobase');
+
+    await page.reload();
+    await expect(
+      page.getByLabel('block-item-CollectionField-users-form-users.username-Username').getByRole('textbox'),
+    ).toHaveValue('nocobase');
+
+    // 3. Table 数据选择器中使用 `Parent popup record`
+    // 创建 Table 区块
+    await page.getByLabel('schema-initializer-Grid-popup').nth(1).hover();
+    await page.getByRole('menuitem', { name: 'table Table right' }).hover();
+    await page.getByRole('menuitem', { name: 'Other records right' }).hover();
+    await page.getByRole('menuitem', { name: 'Users' }).click();
+    await page.mouse.move(300, 0);
+    // 显示 Nickname 字段
+    await page
+      .getByTestId('drawer-Action.Container-users-View record')
+      .getByLabel('schema-initializer-TableV2-')
+      .hover();
+    await page.getByRole('menuitem', { name: 'Nickname' }).click();
+    await page.mouse.move(300, 0);
+    // 设置数据范围（使用 `Parent popup record` 变量）
+    await page
+      .getByTestId('drawer-Action.Container-users-View record')
+      .getByLabel('block-item-CardItem-users-table')
+      .hover();
+    await page
+      .getByTestId('drawer-Action.Container-users-View record')
+      .getByLabel('designer-schema-settings-CardItem-blockSettings:table-users')
+      .hover();
+    await page.getByRole('menuitem', { name: 'Set the data scope' }).click();
+    await page.getByText('Add condition', { exact: true }).click();
+    await page.getByTestId('select-filter-field').click();
+    await page.getByRole('menuitemcheckbox', { name: 'Nickname' }).click();
+    await page.getByLabel('variable-button').click();
+    await page.getByRole('menuitemcheckbox', { name: 'Parent popup record right' }).click();
+    await page.getByRole('menuitemcheckbox', { name: 'Nickname' }).click();
+    await page.getByRole('button', { name: 'OK', exact: true }).click();
+    // 数据需显示正确
+    await expect(
+      page
+        .getByTestId('drawer-Action.Container-users-View record')
+        .getByLabel('block-item-CardItem-users-table')
+        .getByRole('button', { name: 'Super Admin' }),
+    ).toBeVisible();
+
+    await page.reload();
+    await expect(
+      page
+        .getByTestId('drawer-Action.Container-users-View record')
+        .getByLabel('block-item-CardItem-users-table')
+        .getByRole('button', { name: 'Super Admin' }),
+    ).toBeVisible();
+
+    // 4. 退出二级弹窗，在第一级弹窗中点击 Add new 按钮
+    await page.goBack();
+    await page.getByLabel('action-Action-Add new-create-').click();
+
+    // 5. 在新增表单中使用 `Parent popup record`
+    await page.getByLabel('block-item-CollectionField-').hover();
+    await page.getByLabel('designer-schema-settings-CollectionField-fieldSettings:FormItem-users-users.').hover();
+    await page.getByRole('menuitem', { name: 'Set default value' }).click();
+    await page.getByLabel('variable-button').click();
+    await expect(page.getByRole('menuitemcheckbox', { name: 'Current popup record right' })).not.toBeVisible();
+    await page.getByRole('menuitemcheckbox', { name: 'Parent popup record right' }).click();
+    await page.getByRole('menuitemcheckbox', { name: 'Nickname' }).click();
+    await page.getByRole('button', { name: 'OK', exact: true }).click();
+    await expect(page.getByLabel('block-item-CollectionField-').getByRole('textbox')).toHaveValue('Super Admin');
+
+    await page.reload();
+    await expect(page.getByLabel('block-item-CollectionField-').getByRole('textbox')).toHaveValue('Super Admin');
+  });
+
+  test('Parent popup record in sub page. The first level is a subpage, and the second level is a subpage too', async ({
+    page,
+    mockPage,
+  }) => {
+    await mockPage(parentPopupRecordInSubPageTheFirstLevelIsASubpageAndTheSecondLevelIsASubpageToo).goto();
+
+    // 1. 表单字段默认值中使用 `Parent popup record`
+    await page.getByLabel('action-Action.Link-View').click();
+
+    // 在第一级弹窗中，不应该包含 Parent popup record 变量
+    await page.getByText('UsersAdd newConfigure').hover();
+    await page.getByRole('button', { name: 'designer-schema-settings-' }).hover();
+    await page.getByRole('menuitem', { name: 'Set the data scope' }).click();
+    await page.getByText('Add condition', { exact: true }).click();
+    await page.getByLabel('variable-button').click();
+    await expect(page.getByRole('menuitemcheckbox', { name: 'Current popup record right' })).toBeVisible();
+    await expect(page.getByRole('menuitemcheckbox', { name: 'Parent popup record right' })).not.toBeVisible();
+
+    // 关闭数据范围设置弹窗
+    await page.getByRole('button', { name: 'Close', exact: true }).click();
+
+    await page.getByLabel('action-Action.Link-View in').click();
+    await page.getByLabel('schema-initializer-Grid-popup').nth(1).hover();
+    await page.getByRole('menuitem', { name: 'form Form (Add new) right' }).hover();
+    await page.getByRole('menuitem', { name: 'Other records right' }).hover();
+    await page.getByRole('menuitem', { name: 'Users' }).click();
+    await page.mouse.move(300, 0);
+    await page.getByLabel('schema-initializer-Grid-form:').hover();
+    await page.getByRole('menuitem', { name: 'Nickname' }).click();
+    await page.getByLabel('block-item-CollectionField-').hover();
+    await page.getByLabel('designer-schema-settings-CollectionField-fieldSettings:FormItem-users-users.').hover();
+    await page.getByRole('menuitem', { name: 'Set default value' }).click();
+    await page.getByLabel('variable-button').click();
+    await page.getByRole('menuitemcheckbox', { name: 'Parent popup record right' }).click();
+    await page.getByRole('menuitemcheckbox', { name: 'Nickname' }).click();
+    await page.getByRole('button', { name: 'OK', exact: true }).click();
+    await expect(page.getByLabel('block-item-CollectionField-').getByRole('textbox')).toHaveValue('Super Admin');
+
+    await page.reload();
+    await expect(page.getByLabel('block-item-CollectionField-').getByRole('textbox')).toHaveValue('Super Admin');
+
+    // 2. 表单联动规则中使用 `Parent popup record`
+    // 创建 Username 字段
+    await page.getByLabel('schema-initializer-Grid-form:').hover();
+    await page.getByRole('menuitem', { name: 'Username' }).click();
+    // 设置联动规则
+    await page.getByLabel('block-item-CardItem-users-form').hover();
+    await page.getByLabel('designer-schema-settings-CardItem-blockSettings:createForm-users').hover();
+    await page.getByRole('menuitem', { name: 'Linkage rules' }).click();
+    await page.mouse.move(300, 0);
+    await page.getByRole('button', { name: 'plus Add linkage rule' }).click();
+    await page.getByText('Add property').click();
+    await page.getByTestId('select-linkage-property-field').click();
+    await page.getByTitle('Username').click();
+    await page.getByTestId('select-linkage-action-field').click();
+    await page.getByRole('option', { name: 'Value', exact: true }).click();
+    await page.getByTestId('select-linkage-value-type').click();
+    await page.getByTitle('Expression').click();
+    await page.getByLabel('variable-button').click();
+    await page.getByRole('menuitemcheckbox', { name: 'Parent popup record right' }).click();
+    await page.getByRole('menuitemcheckbox', { name: 'Username' }).click();
+    await page.getByRole('button', { name: 'OK', exact: true }).click();
+    // 需正确显示变量的值
+    await expect(
+      page.getByLabel('block-item-CollectionField-users-form-users.username-Username').getByRole('textbox'),
+    ).toHaveValue('nocobase');
+
+    await page.reload();
+    await expect(
+      page.getByLabel('block-item-CollectionField-users-form-users.username-Username').getByRole('textbox'),
+    ).toHaveValue('nocobase');
+
+    // 3. Table 数据选择器中使用 `Parent popup record`
+    // 创建 Table 区块
+    await page.getByLabel('schema-initializer-Grid-popup').first().hover();
+    await page.getByRole('menuitem', { name: 'table Table right' }).hover();
+    await page.getByRole('menuitem', { name: 'Other records right' }).hover();
+    await page.getByRole('menuitem', { name: 'Users' }).click();
+    await page.mouse.move(300, 0);
+    // 显示 Nickname 字段
+    await page.getByLabel('schema-initializer-TableV2-').nth(1).hover();
+    await page.getByRole('menuitem', { name: 'Nickname' }).click();
+    await page.mouse.move(300, 0);
+    // 设置数据范围（使用 `Parent popup record` 变量）
+    await page.getByLabel('block-item-CardItem-users-table').nth(1).hover();
+    await page.getByRole('button', { name: 'designer-schema-settings-' }).hover();
+    await page.getByRole('menuitem', { name: 'Set the data scope' }).click();
+    await page.getByText('Add condition', { exact: true }).click();
+    await page.getByTestId('select-filter-field').click();
+    await page.getByRole('menuitemcheckbox', { name: 'Nickname' }).click();
+    await page.getByLabel('variable-button').click();
+    await page.getByRole('menuitemcheckbox', { name: 'Parent popup record right' }).click();
+    await page.getByRole('menuitemcheckbox', { name: 'Nickname' }).click();
+    await page.getByRole('button', { name: 'OK', exact: true }).click();
+    // 数据需显示正确
+    await expect(
+      page.getByLabel('block-item-CardItem-users-table').getByRole('button', { name: 'Super Admin' }),
+    ).toBeVisible();
+
+    await page.reload();
+    await expect(
+      page.getByLabel('block-item-CardItem-users-table').getByRole('button', { name: 'Super Admin' }),
+    ).toBeVisible();
+
+    // 4. 退出二级弹窗，在第一级弹窗中点击 Add new 按钮
+    await page.goBack();
+    await page.getByLabel('action-Action-Add new-create-').click();
+
+    // 5. 在新增表单中使用 `Parent popup record`
+    await page.getByLabel('block-item-CollectionField-').hover();
+    await page.getByLabel('designer-schema-settings-CollectionField-fieldSettings:FormItem-users-users.').hover();
+    await page.getByRole('menuitem', { name: 'Set default value' }).click();
+    await page.getByLabel('variable-button').click();
+    await expect(page.getByRole('menuitemcheckbox', { name: 'Current popup record right' })).not.toBeVisible();
+    await page.getByRole('menuitemcheckbox', { name: 'Parent popup record right' }).click();
+    await page.getByRole('menuitemcheckbox', { name: 'Nickname' }).click();
+    await page.getByRole('button', { name: 'OK', exact: true }).click();
+    await expect(page.getByLabel('block-item-CollectionField-').getByRole('textbox')).toHaveValue('Super Admin');
+
+    await page.reload();
     await expect(page.getByLabel('block-item-CollectionField-').getByRole('textbox')).toHaveValue('Super Admin');
   });
 });

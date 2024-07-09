@@ -157,8 +157,8 @@ export class UpdateGuard {
           return value;
         }
 
-        const associationKeyName = (<any>associationObj).targetKey
-          ? (<any>associationObj).targetKey
+        const associationKeyName = associationObj?.['options']?.targetKey
+          ? associationObj['options'].targetKey
           : associationObj.target.primaryKeyAttribute;
 
         if (value[associationKeyName]) {

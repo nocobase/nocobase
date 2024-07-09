@@ -48,13 +48,13 @@ test.describe('association form block', () => {
   test('association table block add new ', async ({ page, mockPage, mockRecord }) => {
     await mockPage(T3979).goto();
     await mockRecord('general');
-    await expect(await page.getByLabel('block-item-CardItem-general-')).toBeVisible();
+    await expect(page.getByLabel('block-item-CardItem-general-')).toBeVisible();
     // 1. 打开关系字段弹窗
     await page.getByLabel('block-item-CardItem-general-').locator('a').click();
     await page.getByLabel('block-item-CardItem-roles-').click();
 
     // 2. 提交后，Table 会显示新增的数据
-    await page.getByLabel('action-Action-Add new-create-roles-table-').click();
+    await page.getByLabel('action-Action-Add new-create-roles-table').click();
 
     // 3. 区块数据表为关系字段的区块
     await page
@@ -64,6 +64,6 @@ test.describe('association form block', () => {
 
     await page.getByRole('menuitem', { name: 'form Form' }).hover();
     await page.getByRole('menuitem', { name: 'Current collection' }).click();
-    await expect(await page.getByLabel('block-item-CardItem-roles-form')).toBeVisible();
+    await expect(page.getByLabel('block-item-CardItem-roles-form')).toBeVisible();
   });
 });

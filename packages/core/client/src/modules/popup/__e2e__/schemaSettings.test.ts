@@ -31,6 +31,9 @@ test.describe('tabs schema settings', () => {
     await page.goto(commonPageUrl);
     await page.getByRole('button', { name: 'Add new' }).click();
 
+    // There will be a prompt at the top, wait for it to disappear
+    await page.waitForTimeout(1000);
+
     await showSettings(page);
     await page.getByRole('menuitem', { name: 'Edit', exact: true }).click();
     await page.mouse.move(300, 0);
@@ -47,6 +50,9 @@ test.describe('tabs schema settings', () => {
   test('delete', async ({ page }) => {
     await page.goto(commonPageUrl);
     await page.getByRole('button', { name: 'Add new' }).click();
+
+    // There will be a prompt at the top, wait for it to disappear
+    await page.waitForTimeout(1000);
 
     await showSettings(page);
     await page.getByRole('menuitem', { name: 'Delete', exact: true }).click();

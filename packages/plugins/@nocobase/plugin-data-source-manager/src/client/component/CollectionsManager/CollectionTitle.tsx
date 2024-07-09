@@ -8,15 +8,20 @@
  */
 
 import { ExclamationCircleTwoTone } from '@ant-design/icons';
-import { useCollectionRecordData, useCompile } from '@nocobase/client';
+import { useCollectionRecordData, useCompile, Input } from '@nocobase/client';
+import { useField } from '@formily/react';
 import { Popover } from 'antd';
 import React from 'react';
 import { SetFilterTargetKey } from './SetFilterTargetKey';
 
-export const CollectionTitle = () => {
-  const record = useCollectionRecordData();
+export const CollectionTitle = (props) => {
+  const record = useCollectionRecordData() || {};
   const compile = useCompile();
-  if (record.filterTargetKey) {
+  const field = useField();
+  if (field.editable) {
+    return <Input {...props} />;
+  }
+  if (record?.filterTargetKey) {
     return compile(record.title);
   }
   return (

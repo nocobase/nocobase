@@ -7,7 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { useFieldSchema } from '@formily/react';
 import React, { FC, ReactNode, createContext, useContext, useMemo } from 'react';
 
 import { ACLCollectionProvider } from '../../acl/ACLProvider';

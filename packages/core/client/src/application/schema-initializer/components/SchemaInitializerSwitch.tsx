@@ -24,7 +24,8 @@ export const SchemaInitializerSwitch: FC<SchemaInitializerSwitchItemProps> = (pr
   return (
     <SchemaInitializerItem {...resets} closeInitializerMenuWhenClick={false}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        {compile(title)} <Switch style={{ marginLeft: 20 }} size={'small'} checked={checked} />
+        {compile(title)}
+        <Switch disabled={props.disabled} style={{ marginLeft: 20 }} size={'small'} checked={checked} />
       </div>
     </SchemaInitializerItem>
   );
