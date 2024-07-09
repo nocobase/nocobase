@@ -15,9 +15,9 @@ import { useParams } from 'react-router-dom';
 export const useMBMFields = () => {
   const { collectionName, name } = useRecord();
   const { name: dataSourceKey } = useParams();
-  const { getCollection, getInterface } = useCollectionManager_deprecated();
+  const { getCollection } = useCollectionManager_deprecated();
   const form = useForm();
-  const { targetKey, foreignKey, target } = form.values || {};
+  const { target } = form.values || {};
 
   const collectionFields = useMemo(() => {
     return getCollection(collectionName || name, dataSourceKey)?.fields;
@@ -30,33 +30,17 @@ export const useMBMFields = () => {
     () =>
       targetFields?.filter((f) => {
         const isTarget = (f.primaryKey || f.unique) && f.interface;
-        if (collectionFields) {
-          const field = collectionFields.find((f) => f.name === foreignKey);
-          if (field) {
-            const interfaceConfig = getInterface(f.interface);
-            return (
-              (field.elementType === f.type || interfaceConfig?.availableTypes?.includes(field.elementType)) && isTarget
-            );
-          }
-        }
         return isTarget;
       }),
-    [collectionFields, foreignKey, targetFields],
+    [targetFields],
   );
 
   const foreignKeys = useMemo(() => {
     return collectionFields?.filter((f) => {
       const isArray = ['set', 'array'].includes(f.type) && f.interface === 'json';
-      if (targetKey) {
-        const field = targetFields.find((f) => f.name === targetKey);
-        if (field) {
-          const interfaceConfig = getInterface(field.interface);
-          return isArray && (field.type === f.elementType || interfaceConfig?.availableTypes?.includes(f.elementType));
-        }
-      }
       return isArray;
     });
-  }, [collectionFields, targetFields, targetKey]);
+  }, [collectionFields]);
 
   return { targetKeys, foreignKeys };
 };

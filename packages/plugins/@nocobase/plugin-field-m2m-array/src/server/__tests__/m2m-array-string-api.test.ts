@@ -11,7 +11,7 @@ import { MockDatabase, MockServer, createMockServer } from '@nocobase/test';
 import { DataTypes } from 'sequelize';
 import { BelongsToArrayRepository } from '@nocobase/database';
 
-describe('belongs-to-array, string targetKey', () => {
+describe('m2m array api, string targetKey', () => {
   let app: MockServer;
   let db: MockDatabase;
 

@@ -9,6 +9,11 @@
 
 import { BaseColumnFieldOptions, BelongsToArrayAssociation, Model, RelationField } from '@nocobase/database';
 
+export const elementTypeMap = {
+  nanoid: 'string',
+  sequence: 'string',
+};
+
 export class BelongsToArrayField extends RelationField {
   get dataType() {
     return 'BelongsToArray';
@@ -56,7 +61,43 @@ export class BelongsToArrayField extends RelationField {
     }) as any;
   }
 
+  checkAssociationKeys() {
+    const { foreignKey, target, targetKey } = this.options;
+
+    if (!targetKey) {
+      throw new Error('Target key is required in the options of many to many (array) field.');
+    }
+
+    const targetField = this.database.getCollection(target)?.getField(targetKey);
+    if (!targetField) {
+      throw new Error(`Target key "${targetKey}" not found in collection "${target}"`);
+    }
+
+    const foreignField = this.collection.getField(foreignKey);
+    if (!foreignField) {
+      return;
+    }
+
+    if (!['array', 'set'].includes(foreignField.type)) {
+      throw new Error(
+        `Foreign key "${foreignKey}" must be an array or set field in collection "${this.collection.name}"`,
+      );
+    }
+
+    if (this.database.sequelize.getDialect() !== 'postgres') {
+      return;
+    }
+
+    const targetFieldType = elementTypeMap[targetField.type] || targetField.type;
+    if (foreignField.options.dataType === 'array' && foreignField.options.elementType !== targetFieldType) {
+      throw new Error(
+        `The element type "${foreignField.options.elementType}" of foreign key "${foreignKey}" does not match the type "${targetFieldType}" of target key "${targetKey}" in collection "${target}"`,
+      );
+    }
+  }
+
   bind() {
+    this.checkAssociationKeys();
     this.on('beforeSave', this.setForeignKeyArray);
   }
 
