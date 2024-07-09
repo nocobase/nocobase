@@ -23,7 +23,7 @@ export const useAPITokenVariable = ({
   const apiClient = useAPIClient();
   const apiTokenSettings = useBaseVariable({
     name: '$nToken',
-    title: 'API Token',
+    title: 'API token',
     noDisabled,
     noChildren: true,
   });

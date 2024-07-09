@@ -72,7 +72,7 @@ export const useVariableOptions = ({
     noDisabled,
     targetFieldSchema,
   });
-  const { currentTokenSettings } = useAPITokenVariable({ noDisabled });
+  const { apiTokenSettings } = useAPITokenVariable({ noDisabled });
   const { datetimeSettings } = useDatetimeVariable({ operator, schema: uiSchema, noDisabled });
   const { currentFormSettings, shouldDisplayCurrentForm } = useCurrentFormVariable({
     schema: uiSchema,
@@ -118,7 +118,7 @@ export const useVariableOptions = ({
     return [
       currentUserSettings,
       currentRoleSettings,
-      currentTokenSettings,
+      apiTokenSettings,
       datetimeSettings,
       shouldDisplayCurrentForm && currentFormSettings,
       shouldDisplayCurrentObject && currentObjectSettings,
@@ -131,7 +131,7 @@ export const useVariableOptions = ({
   }, [
     currentUserSettings,
     currentRoleSettings,
-    currentTokenSettings,
+    apiTokenSettings,
     datetimeSettings,
     shouldDisplayCurrentForm,
     currentFormSettings,

@@ -547,6 +547,7 @@ test.describe('actions schema settings', () => {
         'Constant',
         'Current user',
         'Current role',
+        'API token',
         'Date variables',
         'Current form',
       ]);
