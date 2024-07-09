@@ -55,9 +55,9 @@ interface GetOptionsParams {
 
 interface BaseProps {
   // 当前字段
-  collectionField: CollectionFieldOptions_deprecated;
+  collectionField?: CollectionFieldOptions_deprecated;
   /** 当前字段的 `uiSchema`，和 `collectionField.uiSchema` 不同，该值也包含操作符中 schema（参见 useValues） */
-  uiSchema: any;
+  uiSchema?: any;
   /** 消费变量值的字段 */
   targetFieldSchema?: Schema;
   maxDepth?: number;
@@ -66,7 +66,7 @@ interface BaseProps {
   /**
    * 变量所对应的 collectionName，例如：$user 对应的 collectionName 是 users
    */
-  collectionName: string;
+  collectionName?: string;
   /**
    * 不需要禁用选项，一般会在表达式中使用
    */

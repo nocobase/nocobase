@@ -165,7 +165,7 @@ test.describe('table block schema settings', () => {
       await page.getByTestId('select-filter-field').click();
       await page.getByRole('menuitemcheckbox', { name: 'singleLineText' }).click();
       await page.getByLabel('variable-button').click();
-      await expectSupportedVariables(page, ['Constant', 'Current user', 'Current role', 'Date variables']);
+      await expectSupportedVariables(page, ['Constant', 'Current user', 'Current role', 'API token', 'Date variables']);
       await page.getByRole('menuitemcheckbox', { name: 'Current user' }).click();
       await page.getByRole('menuitemcheckbox', { name: 'Nickname' }).click();
       await page.getByRole('button', { name: 'OK', exact: true }).click();
