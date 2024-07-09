@@ -197,7 +197,7 @@ export class AdjacencyListRepository extends Repository {
       const optionsClone = lodash.clone(options);
       const optionsTmp = lodash.omit(optionsClone, ['limit', 'offset', 'filterByTk']);
       const collection = this.collection;
-      const primaryKey = collection.model.primaryKeyAttribute;
+      const primaryKey = collection.model?.primaryKeyAttribute ?? 'id';
       const childrenKey = collection.treeChildrenField?.name ?? 'children';
       const filterNodes = await super.find(optionsTmp);
       const filterIds = filterNodes.map((node) => node[primaryKey]);

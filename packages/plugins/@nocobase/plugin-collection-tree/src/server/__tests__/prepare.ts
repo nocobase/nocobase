@@ -27,3 +27,12 @@ export async function prepareApp(): Promise<MockServer> {
 
   return app;
 }
+
+export async function createApp(options: any = {}) {
+  const app = await createMockServer({
+    acl: false,
+    ...options,
+    plugins: ['error-handler', 'data-source-main', 'users', 'ui-schema-storage', 'collection-tree', 'nocobase'],
+  });
+  return app;
+}
