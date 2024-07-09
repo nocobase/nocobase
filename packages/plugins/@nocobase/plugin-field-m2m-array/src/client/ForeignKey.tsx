@@ -8,10 +8,10 @@
  */
 
 import { observer, useField } from '@formily/react';
-import { Select, AutoComplete } from 'antd';
+import { AutoComplete, Select } from 'antd';
 import React, { useState, useEffect } from 'react';
-import { useRecord, useCompile, useCollectionManager_deprecated, CollectionFieldOptions } from '@nocobase/client';
-import { useParams } from 'react-router-dom';
+import { useRecord, useCompile, CollectionFieldOptions } from '@nocobase/client';
+import { useMBMFields } from './hooks';
 
 const isValidField = (field: CollectionFieldOptions) =>
   ['set', 'array'].includes(field.type) && field.interface === 'json';
@@ -20,28 +20,22 @@ export const ForeignKey = observer(
   (props: any) => {
     const { disabled } = props;
     const [options, setOptions] = useState([]);
-    const { name: dataSourceKey } = useParams();
-    const { getCollection } = useCollectionManager_deprecated();
     const record = useRecord();
     const field: any = useField();
-    const { collectionName, type, name, template } = record;
+    const { type, template } = record;
     const value = record[field.props.name];
     const compile = useCompile();
     const [initialValue, setInitialValue] = useState(value || (template === 'view' ? null : field.initialValue));
+    const { foreignKeys } = useMBMFields();
     useEffect(() => {
-      const effectField = collectionName;
-      const fields = getCollection(effectField, dataSourceKey)?.fields;
+      const fields = foreignKeys;
       if (fields) {
-        const sourceOptions = fields
-          ?.filter((f) => {
-            return isValidField(f);
-          })
-          .map((k) => {
-            return {
-              value: k.name,
-              label: compile(k.uiSchema?.title || k.name),
-            };
-          });
+        const sourceOptions = fields.map((k) => {
+          return {
+            value: k.name,
+            label: compile(k.uiSchema?.title || k.name),
+          };
+        });
         setOptions(sourceOptions);
         if (value) {
           const option = sourceOptions.find((v) => v.value === value);
@@ -58,9 +52,8 @@ export const ForeignKey = observer(
           options={options}
           showSearch
           onDropdownVisibleChange={async (open) => {
-            const effectField = collectionName || name;
-            if (effectField && open) {
-              const fields = getCollection(effectField, dataSourceKey)?.fields || [];
+            const fields = foreignKeys;
+            if (fields && open) {
               setOptions(
                 fields
                   ?.filter((f) => {
@@ -83,5 +76,5 @@ export const ForeignKey = observer(
       </div>
     );
   },
-  { displayName: 'ForeignKey' },
+  { displayName: 'MBMForeignKey' },
 );

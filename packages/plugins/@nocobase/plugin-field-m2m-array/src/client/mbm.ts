@@ -143,7 +143,7 @@ export class MBMFieldInterface extends CollectionFieldInterface {
                   type: 'string',
                   title: '{{t("Target key")}}',
                   'x-decorator': 'FormItem',
-                  'x-component': 'TargetKey',
+                  'x-component': 'MBMTargetKey',
                   'x-disabled': '{{ !createOnly }}',
                   description: "{{t('Field values must be unique.')}}",
                 },
