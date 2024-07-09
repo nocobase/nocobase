@@ -12,19 +12,20 @@ class DemoPlugin extends Plugin {
           initialEntries: ['/m'],
         },
         skipLogin: true,
+        desktopMode: false,
       },
     });
   }
 
   async load() {
-    this.app.router.add('root', { path: '/m', Component: Mobile });
+    this.app.router.add('root', { path: '/', Component: Mobile });
   }
 }
 
 const app = mockApp({
   router: {
     type: 'memory',
-    initialEntries: ['/m'],
+    initialEntries: ['/m/page/d4o6esth2ik'],
   },
   plugins: [DemoPlugin],
   apis: {
@@ -115,6 +116,9 @@ const app = mockApp({
             "type": "void",
             "x-component": "MobileTabBar",
             "x-decorator": "BlockItem",
+            'x-component-props': {
+              'enableTabBar': false,
+            },
             "x-decorator-props": {
               "style": {
                 "position": "sticky",
@@ -230,8 +234,11 @@ const app = mockApp({
                     "x-decorator-props": {
                       "name": "markdown"
                     },
-                    "x-component": "div",
-                    "x-content": "Tab2 Content",
+                    "x-component": "Markdown.Void",
+                    "x-editable": false,
+                    "x-component-props": {
+                      "content": "Tab2 Content"
+                    },
                     "x-app-version": "1.2.12-alpha",
                     "x-async": false,
                     "x-index": 1
@@ -283,8 +290,11 @@ const app = mockApp({
                     "x-decorator-props": {
                       "name": "markdown"
                     },
-                    "x-component": "div",
-                    "x-content": "Tab1 Content",
+                    "x-component": "Markdown.Void",
+                    "x-editable": false,
+                    "x-component-props": {
+                      "content": "Tab1 content"
+                    },
                     "x-app-version": "1.2.12-alpha",
                     "x-async": false,
                     "x-index": 1

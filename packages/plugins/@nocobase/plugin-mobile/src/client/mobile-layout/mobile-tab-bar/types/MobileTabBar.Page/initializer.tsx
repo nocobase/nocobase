@@ -13,9 +13,8 @@ import { uid } from '@formily/shared';
 
 import { generatePluginTranslationTemplate } from '../../../../locale';
 import { getMobileTabBarItemSchemaFields } from '../../MobileTabBar.Item';
-import { useMobileRoutes } from '../../../../mobile-providers';
-import { getMobileTabBarPageItemData } from './schema';
-import { getMobilePageNavigationBarTabData, getMobilePageSchema } from '../../../../pages';
+import { MobileRouteItem, useMobileRoutes } from '../../../../mobile-providers';
+import { getMobilePageSchema } from '../../../../pages';
 
 export const mobileTabBarSchemaInitializerItem: SchemaInitializerItemActionModalType = {
   name: 'schema',
@@ -35,11 +34,16 @@ export const mobileTabBarSchemaInitializerItem: SchemaInitializerItemActionModal
 
         const pageSchemaUid = uid();
         const firstTabUid = uid();
-        const url = `/schema/${pageSchemaUid}`;
+        const url = `/page/${pageSchemaUid}`;
 
         // 先创建 TabBar item
         const { data } = await resource.create({
-          values: getMobileTabBarPageItemData({ url, pageSchemaUid: pageSchemaUid, values }),
+          values: {
+            type: 'page',
+            schemaUid: pageSchemaUid,
+            title: values.title,
+            icon: values.icon,
+          } as MobileRouteItem,
         });
 
         // 创建空页面
@@ -52,7 +56,12 @@ export const mobileTabBarSchemaInitializerItem: SchemaInitializerItemActionModal
         // 创建 TabBar item 的第一个 tab
         const parentId = data.data.id;
         await resource.create({
-          values: getMobilePageNavigationBarTabData({ pageUrl: url, tabSchemaUid: firstTabUid, parentId }),
+          values: {
+            type: 'tabs',
+            parentId,
+            title: 'Unnamed',
+            schemaUid: firstTabUid,
+          } as MobileRouteItem,
         });
 
         // 刷新 tabs

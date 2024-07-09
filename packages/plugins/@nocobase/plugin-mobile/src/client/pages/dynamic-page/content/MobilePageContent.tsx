@@ -22,9 +22,9 @@ export const MobilePageContent = () => {
   return (
     <div className={styles.mobilePageContent} data-testid='mobile-page-content'>
       <RemoteSchemaComponent
-        uid={tabSchemaUid || activeTabBarItem?.children?.[0]?.options?.tabSchemaUid}
-        memoized={false}
+        uid={tabSchemaUid || activeTabBarItem?.children?.[0]?.schemaUid}
         NotFoundPage={'MobileNotFoundPage'}
+        memoized={false}
       />
     </div>
   );

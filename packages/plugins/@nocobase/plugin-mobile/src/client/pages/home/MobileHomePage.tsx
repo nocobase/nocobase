@@ -14,9 +14,11 @@ import { isInnerLink } from '../../utils';
 
 export const MobileHomePage = () => {
   const { routeList } = useMobileRoutes();
-  const firstValidTabBar = routeList.find((tab) => tab.url && isInnerLink(tab.url));
-  if (firstValidTabBar) {
-    return <Navigate to={firstValidTabBar.url} replace={true} />;
+  const firstValidTabBar = routeList.find((tab) => tab.schemaUid || isInnerLink(tab.options?.url));
+  if (!firstValidTabBar) return null;
+  const url = firstValidTabBar?.options?.url || `/${firstValidTabBar.type}/${firstValidTabBar.schemaUid}`;
+  if (url) {
+    return <Navigate to={url} replace={true} />;
   }
 
   return null;

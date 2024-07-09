@@ -58,7 +58,7 @@ describe('MobileTabBar.Item', () => {
     render(<SchemaApp />);
     await waitForApp();
 
-    expect(screen.getByText('Test')).toBeInTheDocument();
+    expect(screen.getByText('Link')).toBeInTheDocument();
     expect(screen.queryByRole('img')).toBeInTheDocument();
     expect(screen.queryByTestId('schema-json')).toMatchInlineSnapshot(`
       <pre
@@ -67,6 +67,7 @@ describe('MobileTabBar.Item', () => {
         {
         "_isJSONSchemaObject": true,
         "version": "2.0",
+        "name": "schema",
         "type": "void",
         "x-decorator": "BlockItem",
         "x-settings": "mobile:tab-bar:link",
@@ -76,11 +77,10 @@ describe('MobileTabBar.Item', () => {
           "showBackground": true
         },
         "x-component-props": {
-          "title": "Test",
+          "title": "Link",
           "icon": "AppstoreOutlined",
-          "url": "/test"
-        },
-        "name": "schema"
+          "url": "https://github.com"
+        }
       }
       </pre>
     `);

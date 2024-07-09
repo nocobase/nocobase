@@ -38,32 +38,15 @@ export const mobileAddBlockInitializer = new SchemaInitializer({
           title: '{{t("Details")}}',
           Component: 'DetailsBlockInitializer',
         },
-        {
-          name: 'list',
-          title: '{{t("List")}}',
-          Component: 'ListBlockInitializer',
-        },
+        // {
+        //   name: 'list',
+        //   title: '{{t("List")}}',
+        //   Component: 'ListBlockInitializer',
+        // },
         {
           name: 'gridCard',
           title: '{{t("Grid Card")}}',
           Component: 'GridCardBlockInitializer',
-        },
-      ],
-    },
-    {
-      name: 'filterBlocks',
-      title: '{{t("Filter blocks")}}',
-      type: 'itemGroup',
-      children: [
-        {
-          name: 'filterForm',
-          title: '{{t("Form")}}',
-          Component: 'FilterFormBlockInitializer',
-        },
-        {
-          name: 'filterCollapse',
-          title: '{{t("Collapse")}}',
-          Component: 'FilterCollapseBlockInitializer',
         },
       ],
     },

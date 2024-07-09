@@ -42,7 +42,7 @@ const RequestSchemaComponent: React.FC<RemoteSchemaComponentProps> = (props) => 
     hidden,
     scope,
     uid,
-    memoized,
+    memoized = true,
     components,
     onSuccess,
     NotFoundPage,
@@ -71,7 +71,7 @@ const RequestSchemaComponent: React.FC<RemoteSchemaComponentProps> = (props) => 
     );
   }
 
-  if (Object.keys(schema).length === 0) {
+  if (!schema || Object.keys(schema).length === 0) {
     return NotFoundComponent ? <NotFoundComponent /> : null;
   }
 

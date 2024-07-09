@@ -47,6 +47,7 @@ describe('MobileTabBar.Item', () => {
         {
         "_isJSONSchemaObject": true,
         "version": "2.0",
+        "name": "schema",
         "type": "void",
         "x-decorator": "BlockItem",
         "x-settings": "mobile:tab-bar:page",
@@ -58,9 +59,8 @@ describe('MobileTabBar.Item', () => {
         "x-component-props": {
           "title": "Test",
           "icon": "AppstoreOutlined",
-          "pageSchemaUid": "page1"
-        },
-        "name": "schema"
+          "schemaUid": "test"
+        }
       }
       </pre>
     `);

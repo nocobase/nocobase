@@ -27,11 +27,4 @@ export const getMobileTabBarItemSchemaFields = (values: any = {}): Record<string
     'x-component': 'IconPicker',
     required: true,
   },
-  // selectedIcon: {
-  //   title: generatePluginTranslationTemplate('Selected icon'),
-  //   type: 'string',
-  //   default: values.selectedIcon,
-  //   'x-decorator': 'FormItem',
-  //   'x-component': 'IconPicker',
-  // },
 });

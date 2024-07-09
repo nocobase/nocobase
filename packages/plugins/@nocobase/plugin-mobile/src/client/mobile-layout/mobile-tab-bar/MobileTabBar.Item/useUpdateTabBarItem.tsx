@@ -8,6 +8,7 @@
  */
 
 import { useFieldSchema } from '@formily/react';
+import { omit } from 'lodash'
 import { useMobileRoutes } from '../../../mobile-providers';
 
 export function useUpdateTabBarItem() {
@@ -16,7 +17,10 @@ export function useUpdateTabBarItem() {
   return async () => {
     const schema = fieldSchema.toJSON();
     const id = Number(schema.name);
-    await resource.update({ filterByTk: id, values: { options: schema } });
+    const title = schema['x-component-props'].title;
+    const icon = schema['x-component-props'].icon;
+    const options = omit(schema['x-component-props'], 'title', 'icon');
+    await resource.update({ filterByTk: id, values: { title, icon, options } });
     refresh();
   };
 }

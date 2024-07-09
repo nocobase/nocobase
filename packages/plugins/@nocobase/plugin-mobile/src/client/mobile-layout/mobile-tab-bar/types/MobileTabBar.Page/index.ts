@@ -10,4 +10,3 @@
 export * from './MobileTabBar.Page';
 export * from './settings';
 export * from './initializer';
-export * from './schema';

@@ -21,19 +21,18 @@ describe('Mobile', () => {
     });
 
     await waitFor(() => {
-      expect(screen.queryByText('Home')).toBeInTheDocument();
-    });
-    await waitFor(() => {
-      expect(screen.queryByText('Message')).toBeInTheDocument();
-      expect(screen.queryByText('Github')).toBeInTheDocument();
+      expect(screen.queryAllByText('Test1')).toHaveLength(2);
+      expect(screen.queryByText('Test2')).toBeInTheDocument();
+      expect(screen.queryByText('Tab1')).toBeInTheDocument();
+      expect(screen.queryByText('Tab2')).toBeInTheDocument();
+      expect(screen.queryByText('Tab1 Content')).toBeInTheDocument();
     });
 
     await act(async () => {
-      await userEvent.click(screen.queryByText('Message'));
+      await userEvent.click(screen.queryByText('Tab2'));
     });
     await waitFor(() => {
-      expect(screen.queryByText('Unread Message')).toBeInTheDocument();
-      expect(screen.queryByText('Read Message')).toBeInTheDocument();
+      expect(screen.queryByText('Tab2 Content')).toBeInTheDocument();
     });
   });
 });

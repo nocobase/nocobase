@@ -4,22 +4,25 @@ import { SchemaComponent, Plugin } from '@nocobase/client';
 import {
   mobileTabBarPageSettings,
   MobileProviders,
-  getMobileTabBarPageItemData,
   MobileTabBar,
+  getMobileTabBarItemSchema,
 } from '@nocobase/plugin-mobile/client';
 
 import { schemaViewer } from './fixtures/schemaViewer';
-const schema = getMobileTabBarPageItemData({
-  pageSchemaUid: 'test',
-  url: 'test',
-  values: { title: 'test', icon: 'GithubOutlined' },
-}).options;
+
+const schema = getMobileTabBarItemSchema({
+  id: 1,
+  type: 'page',
+  title: 'Test',
+  icon: 'GithubOutlined',
+  schemaUid: 'test',
+});
 
 const Demo = () => {
   return (
     <div>
       <MobileProviders skipLogin={true}>
-        <SchemaComponent schema={schemaViewer({ type: 'void', properties: { test: schema } }, 'x-component-props')} />
+        <SchemaComponent schema={schemaViewer(schema, 'x-component-props')} />
       </MobileProviders>
     </div>
   );

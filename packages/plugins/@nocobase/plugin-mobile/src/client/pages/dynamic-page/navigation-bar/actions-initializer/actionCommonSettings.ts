@@ -12,7 +12,7 @@ import { generatePluginTranslationTemplate } from '../../../../locale';
 
 export const editAction = (extraProperties?: (values: any) => Record<string, ISchema>) => {
   return createModalSettingsItem({
-    title: generatePluginTranslationTemplate('Edit'),
+    title: generatePluginTranslationTemplate('Edit button'),
     name: 'action',
     parentSchemaKey: 'x-component-props',
     schema: (values) => ({
@@ -26,6 +26,14 @@ export const editAction = (extraProperties?: (values: any) => Record<string, ISc
           default: values.title,
           'x-decorator': 'FormItem',
           'x-component': 'Input',
+          'x-reactions': {
+            target: 'icon',
+            fulfill: {
+              state: {
+                required: '{{!$self.value}}',
+              },
+            },
+          }
         },
         icon: {
           title: generatePluginTranslationTemplate('Icon'),
@@ -33,6 +41,14 @@ export const editAction = (extraProperties?: (values: any) => Record<string, ISc
           default: values.icon,
           'x-decorator': 'FormItem',
           'x-component': 'IconPicker',
+          'x-reactions': {
+            target: 'title',
+            fulfill: {
+              state: {
+                required: '{{!$self.value}}',
+              },
+            },
+          }
         },
       },
     }),

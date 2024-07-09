@@ -8,7 +8,7 @@
  */
 
 import React from 'react';
-import { act, render, screen, userEvent, waitFor, waitForApp } from '@nocobase/test/client';
+import { act, render, screen, userEvent } from '@nocobase/test/client';
 import BasicApp from '../demos/MobileTabBar.Item-basic';
 import OnClickApp from '../demos/MobileTabBar.Item-on-click';
 import SelectedApp from '../demos/MobileTabBar.Item-selected';

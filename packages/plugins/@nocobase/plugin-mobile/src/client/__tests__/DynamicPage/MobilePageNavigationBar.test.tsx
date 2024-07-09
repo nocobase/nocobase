@@ -50,7 +50,7 @@ describe('MobilePageNavigationBar', () => {
       expect(screen.queryByText('Page1')).toBeInTheDocument();
       expect(screen.queryByText('Tab1')).toBeInTheDocument();
       expect(screen.queryByText('Tab2')).toBeInTheDocument();
-      expect(screen.queryByText('/schema/page1/tabs/tab1')).toBeInTheDocument();
+      expect(screen.queryByText('/page/page1/tabs/tab1')).toBeInTheDocument();
     });
 
     await act(async () => {
@@ -60,7 +60,7 @@ describe('MobilePageNavigationBar', () => {
       expect(screen.queryByText('Page1')).toBeInTheDocument();
       expect(screen.queryByText('Tab1')).toBeInTheDocument();
       expect(screen.queryByText('Tab2')).toBeInTheDocument();
-      expect(screen.queryByText('/schema/page1/tabs/tab2')).toBeInTheDocument();
+      expect(screen.queryByText('/page/page1/tabs/tab2')).toBeInTheDocument();
     });
   });
 });

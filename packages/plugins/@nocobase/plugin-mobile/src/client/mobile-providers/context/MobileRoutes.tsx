@@ -10,36 +10,31 @@
 import { Spin } from 'antd';
 import { useLocation } from 'react-router-dom';
 import React, { createContext, useContext, useEffect, useMemo } from 'react';
-import { APIClient, ISchema, useAPIClient, useRequest } from '@nocobase/client';
+import { APIClient, useAPIClient, useRequest } from '@nocobase/client';
 
 import type { IResource } from '@nocobase/sdk';
 
 import { useMobileTitle } from './MobileTitle';
 
-export interface TabBarItem {
+export interface MobileRouteItem {
   id: number;
-  url?: string;
-  sort?: number;
-  options: ISchema;
+  schemaUid?: string;
+  type: 'page' | 'link' | 'tabs';
+  options?: any;
+  title?: string;
+  icon?: string;
   parentId?: number;
-  children?: TabItem[];
+  children?: MobileRouteItem[];
 }
 
-export interface TabItem {
-  id: number;
-  url?: string;
-  sort?: number;
-  options: { title: string; tabSchemaUid: string };
-  parentId?: number;
-}
 
 export interface MobileRoutesContextValue {
-  routeList?: TabBarItem[];
+  routeList?: MobileRouteItem[];
   refresh: () => Promise<any>;
   resource: IResource;
   schemaResource: IResource;
-  activeTabBarItem?: TabBarItem;
-  activeTabItem?: TabItem;
+  activeTabBarItem?: MobileRouteItem;
+  activeTabItem?: MobileRouteItem;
   api: APIClient;
 }
 
@@ -50,22 +45,32 @@ export const useMobileRoutes = () => {
   return useContext(MobileRoutesContext);
 };
 
-function useActiveTabBar(routeList: TabBarItem[]) {
+function useActiveTabBar(routeList: MobileRouteItem[]) {
   const { pathname } = useLocation();
-  const urlMap = routeList.reduce((map, item) => {
-    if (!item.url) {
-      map[item.url] = item;
+  const urlMap = routeList.reduce<Record<string, MobileRouteItem>>((map, item) => {
+    const url = item.schemaUid ? `/${item.type}/${item.schemaUid}` : item.options?.url;
+    if (url) {
+      map[url] = item;
     }
     if (item.children) {
       item.children.forEach((child) => {
-        if (child.url) {
-          map[child.url] = child;
+        const childUrl = child.schemaUid ? `${url}/${child.type}/${child.schemaUid}` : child.options?.url;
+        if (childUrl) {
+          map[childUrl] = child;
         }
       });
     }
     return map;
   }, {});
-  const activeTabBarItem = routeList.find((item) => pathname.startsWith(item.url));
+  const activeTabBarItem = Object.values(urlMap).find((item) => {
+    if (item.schemaUid) {
+      return pathname.includes(`/${item.schemaUid}`);
+    }
+    if (item.options.url) {
+      return pathname.includes(item.options.url);
+    }
+    return false;
+  });
 
   return {
     activeTabBarItem, // 第一层
@@ -73,14 +78,13 @@ function useActiveTabBar(routeList: TabBarItem[]) {
   };
 }
 
-function useTitle(activeTabBar: TabBarItem) {
+function useTitle(activeTabBar: MobileRouteItem) {
   const context = useMobileTitle();
   useEffect(() => {
     if (!context) return;
     if (activeTabBar) {
-      const title = activeTabBar.options.title || activeTabBar.options?.['x-component-props']?.title;
-      context.setTitle(title);
-      document.title = title;
+      context.setTitle(activeTabBar.title);
+      document.title = activeTabBar.title;
     }
   }, [activeTabBar, context]);
 }
@@ -93,7 +97,7 @@ export const MobileRoutesProvider = ({ children }) => {
     data,
     runAsync: refresh,
     loading,
-  } = useRequest<{ data: TabBarItem[] }>(() => resource.list({ tree: true, sort: 'sort' }).then((res) => res.data));
+  } = useRequest<{ data: MobileRouteItem[] }>(() => resource.list({ tree: true, sort: 'sort' }).then((res) => res.data));
   const routeList = useMemo(() => data?.data || [], [data]);
   const { activeTabBarItem, activeTabItem } = useActiveTabBar(routeList);
 

@@ -1,6 +1,6 @@
 import React from 'react';
 import { mockApp } from '@nocobase/client/demo-utils';
-import { SchemaComponent, Plugin, Grid, BlockItem, ActionBar } from '@nocobase/client';
+import { SchemaComponent, Plugin, Grid, BlockItem, MobileNavigationActionBar } from '@nocobase/client';
 import PluginMobileClient, { MobileProviders, getMobilePageSchema } from '@nocobase/plugin-mobile/client';
 
 import { schemaViewer } from './fixtures/schemaViewer';
@@ -17,17 +17,17 @@ class DemoPlugin extends Plugin {
   async load() {
     // this.app.router.add('root', { path: '/', Component: Demo });
     this.app.router.add('schema', {
-      path: '/schema',
+      path: '/page',
     });
     this.app.router.add('schema.page', {
-      path: '/schema/:pageSchemaUid',
+      path: '/page/:pageSchemaUid',
       Component: Demo,
     });
     this.app.router.add('schema.page.tabs', {
-      path: '/schema/:pageSchemaUid/tabs',
+      path: '/page/:pageSchemaUid/tabs',
     });
     this.app.router.add('schema.page.tabs.page', {
-      path: '/schema/:pageSchemaUid/tabs/:tabSchemaUid',
+      path: '/page/:pageSchemaUid/tabs/:tabSchemaUid',
       Component: Demo,
     });
   }
@@ -36,13 +36,13 @@ class DemoPlugin extends Plugin {
 const app = mockApp({
   router: {
     type: 'memory',
-    initialEntries: ['/schema/page1/tabs/tab1'],
+    initialEntries: ['/page/page1/tabs/tab1'],
   },
   plugins: [DemoPlugin, PluginMobileClient],
   components: {
     Grid,
     BlockItem,
-    ActionBar,
+    MobileNavigationActionBar,
   },
   designable: true,
   apis: {

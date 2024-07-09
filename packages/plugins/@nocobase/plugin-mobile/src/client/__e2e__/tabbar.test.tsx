@@ -32,7 +32,7 @@ test.describe('TabBar', () => {
     // 编辑
     await page.getByTestId(`mobile-tab-bar-${Title}`).click();
     await page.getByLabel('designer-schema-settings-MobileTabBar.Page-mobile:tab-bar:page').click();
-    await page.getByRole('menuitem', { name: 'Edit tabBar item' }).click();
+    await page.getByRole('menuitem', { name: 'Edit button' }).click();
     await page.getByRole('textbox').fill(`${Title}_change`);
     await page.getByRole('button', { name: 'Submit' }).click();
     expect(page.getByTestId('modal-Action.Modal-Add page')).not.toBeVisible();
@@ -44,9 +44,9 @@ test.describe('TabBar', () => {
     // 删除
     await page.getByTestId(`mobile-tab-bar-${Title}_change`).click();
     await page.getByLabel('designer-schema-settings-MobileTabBar.Page-mobile:tab-bar:page').click();
-    await page.getByText('Remove').click();
+    await page.getByText('Delete').click();
     await page.getByRole('button', { name: 'OK' }).click();
-    expect(page.getByText('Delete TabBar Item')).not.toBeVisible();
+    expect(page.getByText('Delete action')).not.toBeVisible();
 
     // 确认删除成功
     await page.waitForTimeout(1000);
@@ -81,7 +81,7 @@ test.describe('TabBar', () => {
     // 编辑
     await page.getByTestId(`mobile-tab-bar-${Title}`).hover();
     await page.getByLabel('designer-schema-settings-MobileTabBar.Link-mobile:tab-bar:link').click();
-    await page.getByRole('menuitem', { name: 'Edit tabBar item' }).click();
+    await page.getByRole('menuitem', { name: 'Edit button' }).click();
     await page.getByRole('textbox').fill(`${Title}_change`);
     await page.getByRole('button', { name: 'Submit' }).click();
     expect(page.getByTestId('modal-Action.Modal-Add page')).not.toBeVisible();
@@ -107,9 +107,9 @@ test.describe('TabBar', () => {
     // 删除
     await page.getByTestId(`mobile-tab-bar-${Title}_change`).hover();
     await page.getByLabel('designer-schema-settings-MobileTabBar.Link-mobile:tab-bar:link').click();
-    await page.getByText('Remove').click();
+    await page.getByText('Delete').click();
     await page.getByRole('button', { name: 'OK' }).click();
-    expect(page.getByText('Delete TabBar Item')).not.toBeVisible();
+    expect(page.getByText('Delete action')).not.toBeVisible();
 
     // 确认删除成功
     await page.waitForTimeout(1000);

@@ -7,18 +7,17 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { FC, useMemo } from 'react';
+import React, { FC } from 'react';
 import { NavBar, SafeArea } from 'antd-mobile';
-import { useFieldSchema } from '@formily/react';
-import { SchemaComponent } from '@nocobase/client';
+import { RecursionField, useFieldSchema } from '@formily/react';
 
 import { useStyles } from './styles';
 import { useMobilePage } from '../context';
-import { getActionBarSchemaByPosition } from './schema';
 import { useMobileTitle } from '../../../mobile-providers';
 import { MobilePageNavigationBarTabs } from './MobilePageNavigationBarTabs';
+import { SchemaToolbarProvider } from '@nocobase/client';
 
-export const MobilePageNavigationBar: FC = () => {
+export const MobilePageNavigationBar: FC = ({ children }) => {
   const { title } = useMobileTitle();
   const {
     enableNavigationBar = true,
@@ -28,28 +27,41 @@ export const MobilePageNavigationBar: FC = () => {
   const fieldSchema = useFieldSchema();
   const { styles } = useStyles();
 
-  const leftSchema = useMemo(() => getActionBarSchemaByPosition(fieldSchema, 'left', { marginLeft: 8 }), [fieldSchema]);
-  const rightSchema = useMemo(
-    () => getActionBarSchemaByPosition(fieldSchema, 'right', { marginLeft: 8 }),
-    [fieldSchema],
-  );
-  const bottomSchema = useMemo(() => getActionBarSchemaByPosition(fieldSchema, 'bottom', {}, false), [fieldSchema]);
 
   if (!enableNavigationBar) return null;
+
   return (
     <div className={styles.mobileNavigationBar} data-testid='mobile-page-navigation-bar'>
       <SafeArea position="top" />
-
       <NavBar
         backArrow={false}
         back={null}
-        left={<SchemaComponent schema={leftSchema} />}
-        right={<SchemaComponent schema={rightSchema} />}
+        left={<SchemaToolbarProvider position='left'>
+          <RecursionField
+            name='actionBarLeft'
+            schema={fieldSchema}
+            onlyRenderProperties
+          />
+        </SchemaToolbarProvider>}
+        right={
+          <SchemaToolbarProvider position='right'>
+            <RecursionField
+              name='actionBarRight'
+              schema={fieldSchema}
+              onlyRenderProperties
+            />
+          </SchemaToolbarProvider>}
       >
         {enableNavigationBarTitle ? title : null}
       </NavBar>
 
-      <SchemaComponent schema={bottomSchema} />
+      <SchemaToolbarProvider position='bottom'>
+        <RecursionField
+          name='actionBarBottom'
+          schema={fieldSchema}
+          onlyRenderProperties
+        />
+      </SchemaToolbarProvider>
 
       {enableNavigationBarTabs && <MobilePageNavigationBarTabs />}
     </div>

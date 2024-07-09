@@ -18,16 +18,15 @@ import { useStyles } from './styles';
 
 export const MobilePageNavigationBarTabs: FC = () => {
   const { activeTabBarItem, resource, refresh } = useMobileRoutes();
-  const { pathname } = useLocation();
   const navigate = useNavigate();
   const { styles } = useStyles();
   const { tabSchemaUid } = useParams<{ tabSchemaUid: string }>();
   const [activeKey, setActiveKey] = React.useState<string>(() => {
-    return tabSchemaUid ? pathname : activeTabBarItem?.children[0]?.url;
+    return tabSchemaUid || activeTabBarItem?.children[0]?.schemaUid;
   });
-  const handleChange: TabsProps['onChange'] = (url) => {
-    setActiveKey(url);
-    navigate(url);
+  const handleChange: TabsProps['onChange'] = (schemaUid) => {
+    setActiveKey(schemaUid);
+    navigate(`/${activeTabBarItem.type}/${activeTabBarItem.schemaUid}/tabs/${schemaUid}`);
   };
 
   const handleDragEnd: DndContextProps['onDragEnd'] = useCallback(
@@ -52,14 +51,14 @@ export const MobilePageNavigationBarTabs: FC = () => {
         <Tabs activeKey={activeKey} onChange={handleChange} className={styles.mobileNavigationBarTabs}>
           {activeTabBarItem.children?.map((item) => (
             <Tabs.Tab
-              data-testid={`mobile-mobile-page-navigation-bar-tabs-${item.options.title}`}
+              data-testid={`mobile-mobile-page-navigation-bar-tabs-${item.title}`}
               title={
                 <SortableItem id={item.id as any}>
                   <MobilePageTabSettings tab={item} />
-                  {item.options.title}
+                  {item.title}
                 </SortableItem>
               }
-              key={String(item.url)}
+              key={String(item.schemaUid)}
             ></Tabs.Tab>
           ))}
         </Tabs>

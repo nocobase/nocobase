@@ -4,7 +4,7 @@ import { MobileTabBar } from '@nocobase/plugin-mobile/client';
 import { mockApp } from '@nocobase/client/demo-utils';
 
 const Demo = () => {
-  return <MobileTabBar.Page title="Test" icon="AppstoreOutlined" pageSchemaUid="test" />;
+  return <MobileTabBar.Page title="Test" icon="AppstoreOutlined" schemaUid="test" />;
 };
 
 class MyPlugin extends Plugin {
@@ -15,11 +15,11 @@ class MyPlugin extends Plugin {
     });
 
     this.app.router.add('schema', {
-      path: '/schema',
+      path: '/page',
     });
 
     this.app.router.add('schema.test', {
-      path: '/schema/test',
+      path: '/page/test',
       Component: () => {
         return <div>Schema Test Page</div>;
       },

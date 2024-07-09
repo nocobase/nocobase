@@ -19,21 +19,21 @@ import {
   SchemaSettingsItemType,
 } from '@nocobase/client';
 
-import { TabItem, useMobileRoutes } from '../../../../mobile-providers';
+import { MobileRouteItem, useMobileRoutes } from '../../../../mobile-providers';
 import { generatePluginTranslationTemplate, usePluginTranslation } from '../../../../locale';
 
 const remove = createTextSettingsItem({
   name: 'remove',
-  title: generatePluginTranslationTemplate('Remove'),
+  title: generatePluginTranslationTemplate('Delete'),
   useTextClick: () => {
     const { t } = usePluginTranslation();
-    const { tab } = useSchemaToolbar();
+    const { tab } = useSchemaToolbar<{ tab: MobileRouteItem }>();
     const { refresh, resource, activeTabBarItem, api } = useMobileRoutes();
     const navigate = useNavigate();
     const { modal, message } = App.useApp();
     return async () => {
       modal.confirm({
-        title: t('Delete Tab'),
+        title: t('Delete action'),
         content: t('Are you sure you want to delete it?'),
         onOk: async () => {
           // 删除 tab
@@ -41,11 +41,11 @@ const remove = createTextSettingsItem({
           await refresh();
 
           // 删除 schema
-          await api.request({ url: `/uiSchemas:remove/${tab.options.tabSchemaUid}`, method: 'delete' });
+          await api.request({ url: `/uiSchemas:remove/${tab.schemaUid}`, method: 'delete' });
 
           // 跳转到第一个 tab
-          const url = activeTabBarItem.children.find((item) => item.id !== tab.id)?.url;
-          navigate(url);
+          const firstTab = activeTabBarItem.children.find((item) => item.id !== tab.id);
+          navigate(`/${activeTabBarItem.type}/${activeTabBarItem.schemaUid}/${firstTab.type}/${firstTab.schemaUid}`);
           message.success({
             content: 'Delete successfully',
           });
@@ -67,20 +67,20 @@ const editTitle: SchemaSettingsItemType = {
     const { tab } = useSchemaToolbar();
     const { refresh, resource } = useMobileRoutes();
     return {
-      title: t('Title'),
+      title: t('Edit'),
       schema: {
         type: 'object',
         properties: {
           title: {
             type: 'string',
-            default: tab.options.title,
+            default: tab.title,
             'x-decorator': 'FormItem',
             'x-component': 'Input',
           },
         },
       },
       async onSubmit({ title }) {
-        await resource.update({ filterByTk: tab.id, values: { options: { ...tab.options, title } } });
+        await resource.update({ filterByTk: tab.id, values: { title } });
         refresh();
       },
     };
@@ -93,13 +93,13 @@ export const mobilePageTabSettings = new SchemaSettings({
 });
 
 interface MobilePageTabSettingsProps {
-  tab: TabItem;
+  tab: MobileRouteItem;
 }
 
 export const MobilePageTabSettings: FC<MobilePageTabSettingsProps> = ({ tab }) => {
   return (
     <SchemaToolbarProvider tab={tab}>
-      <SchemaToolbar settings={mobilePageTabSettings} showBackground showBorder={false} />
+      <SchemaToolbar settings={mobilePageTabSettings} showBackground showBorder={false} toolbarStyle={{ inset: -10 }} />
     </SchemaToolbarProvider>
   );
 };

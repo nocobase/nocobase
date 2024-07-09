@@ -10,15 +10,25 @@
 import React from 'react';
 import { render, screen, waitFor, waitForApp } from '@nocobase/test/client';
 import BasicApp from '../demos/MobileTabBar-basic';
+import FalseApp from '../demos/MobileTabBar-false';
 import InnerPageApp from '../demos/MobileTabBar-inner-page';
 
-describe('MobileLayout', () => {
-  test('enableTabBar: false', async () => {
+describe('MobileTabBar', () => {
+  test('basic', async () => {
     render(<BasicApp />);
     await waitForApp();
     await waitFor(() => {
-      expect(screen.queryByText('Home')).toBeInTheDocument(); // title
-      expect(screen.queryByText('Message')).not.toBeInTheDocument(); // tabBar 内容 item
+      expect(screen.queryByText('Test1')).toBeInTheDocument(); // title
+      expect(screen.queryByText('Test2')).toBeInTheDocument(); // title
+    });
+  });
+
+  test('enableTabBar: false', async () => {
+    render(<FalseApp />);
+    await waitForApp();
+    await waitFor(() => {
+      expect(screen.queryByText('Test1')).not.toBeInTheDocument(); // title
+      expect(screen.queryByText('Test2')).not.toBeInTheDocument(); // title
     });
   });
 
@@ -26,8 +36,9 @@ describe('MobileLayout', () => {
     render(<InnerPageApp />);
     await waitForApp();
     await waitFor(() => {
-      expect(screen.queryByText('custom-page')).toBeInTheDocument(); // custom page content
-      expect(screen.queryByText('Message')).not.toBeInTheDocument(); // tabBar 内容 item
+      expect(screen.queryByText('inner page')).toBeInTheDocument(); // custom page content
+      expect(screen.queryByText('Test1')).not.toBeInTheDocument();
+      expect(screen.queryByText('Test2')).not.toBeInTheDocument();
     });
   });
 });

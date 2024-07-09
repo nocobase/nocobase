@@ -13,5 +13,5 @@ import { RemoteSchemaComponent } from '@nocobase/client';
 
 export const MobilePage = () => {
   const { pageSchemaUid } = useParams<{ pageSchemaUid: string }>();
-  return <RemoteSchemaComponent uid={pageSchemaUid} memoized={false} NotFoundPage={'MobileNotFoundPage'} />;
+  return <RemoteSchemaComponent uid={pageSchemaUid} NotFoundPage={'MobileNotFoundPage'} memoized={false} />;
 };

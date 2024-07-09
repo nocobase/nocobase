@@ -11,7 +11,9 @@ import { createStyles } from 'antd-style';
 
 export const useStyles = createStyles(() => ({
   mobileNavigationBarAction: {
-    display: 'inline-block',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.5em',
     cursor: 'pointer',
     '&:active': {
       opacity: 0.5,

@@ -6,7 +6,7 @@
 通过读取 URL 的参数，获取 schema，并渲染成页面，如果不存在则渲染 404 页面。
 
 ```bash
-/schema/:pageSchemaUid/tabs/:tabSchemaUid
+/page/:pageSchemaUid/tabs/:tabSchemaUid
 ```
 
 ## MobilePage
@@ -115,7 +115,7 @@ interface MobilePageContextProps {
   "x-component": "MobilePageNavigationBar",
   "properties": {
       "type": "void",
-      "x-component": "ActionBar",
+      "x-component": "MobileNavigationActionBar",
       "x-initializer": "mobile:navigation-bar",
       "properties": {
           "action1": {

@@ -16,7 +16,7 @@ const schema = {
       height: 100,
     },
   },
-  'x-content': 'test',
+  'x-content': 'Settings',
 };
 
 const Demo = () => {

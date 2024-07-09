@@ -8,5 +8,6 @@
  */
 
 export function isInnerLink(url: string) {
+  if (!url) return false;
   return url.startsWith('/') && !url.startsWith('//');
 }

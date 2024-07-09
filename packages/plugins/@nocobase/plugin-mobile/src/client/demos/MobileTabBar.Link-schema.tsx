@@ -1,6 +1,6 @@
 import React from 'react';
 import { BlockItem, Plugin, SchemaComponent } from '@nocobase/client';
-import { MobileTabBar, getMobileTabBarLinkItemData } from '@nocobase/plugin-mobile/client';
+import { MobileTabBar, getMobileTabBarItemSchema } from '@nocobase/plugin-mobile/client';
 import { mockApp } from '@nocobase/client/demo-utils';
 
 import { schemaViewer } from './fixtures/schemaViewer';
@@ -9,10 +9,15 @@ const Demo = () => {
   return (
     <SchemaComponent
       schema={schemaViewer(
-        getMobileTabBarLinkItemData({
-          url: '/test',
-          values: { title: 'Test', icon: 'AppstoreOutlined', url: '/test' },
-        }).options,
+        getMobileTabBarItemSchema({
+          id: 1,
+          type: 'link',
+          title: 'Link',
+          icon: 'AppstoreOutlined',
+          options: {
+            url: 'https://github.com'
+          }
+        }),
       )}
     />
   );

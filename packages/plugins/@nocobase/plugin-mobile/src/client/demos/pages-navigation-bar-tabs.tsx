@@ -33,16 +33,16 @@ class DemoPlugin extends Plugin {
   async load() {
     this.app.addComponents({ MobilePageNavigationBar });
     this.app.router.add('schema', {
-      path: '/schema',
+      path: '/page',
     });
     this.app.router.add('schema.page', {
-      path: '/schema/:pageSchemaUid',
+      path: '/page/:pageSchemaUid',
     });
     this.app.router.add('schema.page.tabs', {
-      path: '/schema/:pageSchemaUid/tabs',
+      path: '/page/:pageSchemaUid/tabs',
     });
     this.app.router.add('schema.page.tabs.page', {
-      path: '/schema/:pageSchemaUid/tabs/:tabSchemaUid',
+      path: '/page/:pageSchemaUid/tabs/:tabSchemaUid',
       Component: Demo,
     });
   }
@@ -51,7 +51,7 @@ class DemoPlugin extends Plugin {
 const app = mockApp({
   router: {
     type: 'memory',
-    initialEntries: ['/schema/page1/tabs/tab1'],
+    initialEntries: ['/page/page1/tabs/tab1'],
   },
   plugins: [DemoPlugin],
   apis: {
@@ -59,28 +59,23 @@ const app = mockApp({
       data: [
         {
           id: 1,
-          url: '/schema/page1',
-          options: {
-            title: 'Page1',
-          },
+          title: 'Page1',
+          schemaUid: 'page1',
+          type: 'page',
           children: [
             {
               id: 2,
               parentId: 1,
-              url: '/schema/page1/tabs/tab1',
-              options: {
-                title: 'Tab1',
-                tabSchemaUid: 'tab1',
-              },
+              schemaUid: 'tab1',
+              title: 'Tab1',
+              type: 'tabs',
             },
             {
               id: 3,
               parentId: 1,
-              url: '/schema/page1/tabs/tab2',
-              options: {
-                title: 'Tab2',
-                tabSchemaUid: 'tab2',
-              },
+              schemaUid: 'tab2',
+              title: 'Tab2',
+              type: 'tabs',
             },
           ],
         },

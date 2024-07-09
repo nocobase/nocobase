@@ -11,3 +11,4 @@ export * from './tab';
 export * from './schema';
 export * from './actions-initializer';
 export * from './MobilePageNavigationBar';
+export * from './MobileNavigationActionBar';

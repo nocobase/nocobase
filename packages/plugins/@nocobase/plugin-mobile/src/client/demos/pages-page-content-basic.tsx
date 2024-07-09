@@ -15,16 +15,16 @@ const Demo = () => {
 class DemoPlugin extends Plugin {
   async load() {
     this.app.router.add('schema', {
-      path: '/schema',
+      path: '/page',
     });
     this.app.router.add('schema.page', {
-      path: '/schema/:pageSchemaUid',
+      path: '/page/:pageSchemaUid',
     });
     this.app.router.add('schema.page.tabs', {
-      path: '/schema/:pageSchemaUid/tabs',
+      path: '/page/:pageSchemaUid/tabs',
     });
     this.app.router.add('schema.page.tabs.page', {
-      path: '/schema/:pageSchemaUid/tabs/:tabSchemaUid',
+      path: '/page/:pageSchemaUid/tabs/:tabSchemaUid',
       Component: Demo,
     });
   }
@@ -33,7 +33,7 @@ class DemoPlugin extends Plugin {
 const app = mockApp({
   router: {
     type: 'memory',
-    initialEntries: ['/schema/test/tabs/tab1'],
+    initialEntries: ['/page/test/tabs/tab1'],
   },
   plugins: [DemoPlugin],
   apis: {

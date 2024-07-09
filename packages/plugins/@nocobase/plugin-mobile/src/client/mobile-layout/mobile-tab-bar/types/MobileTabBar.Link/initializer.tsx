@@ -11,8 +11,7 @@ import { SchemaInitializerItemActionModalType } from '@nocobase/client';
 
 import { generatePluginTranslationTemplate } from '../../../../locale';
 import { getMobileTabBarItemSchemaFields } from '../../MobileTabBar.Item';
-import { useMobileRoutes } from '../../../../mobile-providers';
-import { getMobileTabBarLinkItemData } from './schema';
+import { MobileRouteItem, useMobileRoutes } from '../../../../mobile-providers';
 
 export const mobileTabBarLinkInitializerItem: SchemaInitializerItemActionModalType = {
   name: 'link',
@@ -32,7 +31,11 @@ export const mobileTabBarLinkInitializerItem: SchemaInitializerItemActionModalTy
 
         // 先创建 tab item
         await resource.create({
-          values: getMobileTabBarLinkItemData({ url: undefined, values }),
+          values: {
+            type: 'link',
+            title: values.title,
+            icon: values.icon,
+          } as MobileRouteItem,
         });
 
         // 刷新 tabs

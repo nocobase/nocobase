@@ -1,19 +1,23 @@
 import React from 'react';
 import { BlockItem, Plugin, SchemaComponent } from '@nocobase/client';
-import { MobileTabBar, getMobileTabBarPageItemData } from '@nocobase/plugin-mobile/client';
+import { getMobileTabBarItemSchema, MobileTabBar } from '@nocobase/plugin-mobile/client';
 import { mockApp } from '@nocobase/client/demo-utils';
 
 import { schemaViewer } from './fixtures/schemaViewer';
+
+const schema = getMobileTabBarItemSchema({
+  id: 1,
+  type: 'page',
+  title: 'Test',
+  schemaUid: 'test',
+  icon: 'AppstoreOutlined',
+});
 
 const Demo = () => {
   return (
     <SchemaComponent
       schema={schemaViewer(
-        getMobileTabBarPageItemData({
-          pageSchemaUid: 'page1',
-          url: '/schema/page1',
-          values: { title: 'Test', icon: 'AppstoreOutlined' },
-        }).options,
+        schema,
       )}
     />
   );
@@ -23,11 +27,11 @@ class MyPlugin extends Plugin {
   async load() {
     this.app.addComponents({ BlockItem, MobileTabBar });
     this.app.router.add('schema', {
-      path: '/schema',
+      path: '/page',
     });
 
     this.app.router.add('schema.test', {
-      path: '/schema/test',
+      path: '/page/test',
       Component: Demo,
     });
   }
@@ -36,7 +40,7 @@ class MyPlugin extends Plugin {
 const app = mockApp({
   router: {
     type: 'memory',
-    initialEntries: ['/schema/test'],
+    initialEntries: ['/page/test'],
   },
   plugins: [MyPlugin],
 });

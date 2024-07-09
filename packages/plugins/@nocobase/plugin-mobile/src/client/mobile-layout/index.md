@@ -66,6 +66,8 @@
 
 其采用 `position: sticky` 吸附在底部。
 
+<code src="../demos/MobileTabBar-basic.tsx"></code>
+
 ### 类型
 
 ```ts
@@ -83,18 +85,21 @@ interface MobileTabBarProps {
 
 - `enableTabBar`：`false`
 
+会隐藏 `TabBar`。
+
 ```json
 "x-component-props": {
   "enableTabBar": false,
 }
 ```
 
-<code src="../demos/MobileTabBar-basic.tsx"></code>
+<code src="../demos/MobileTabBar-false.tsx"></code>
 
 - 内页会自定隐藏
 
-<code src="../demos/MobileTabBar-inner-page.tsx"></code>
+如果是内页，会自动隐藏 `TabBar`。
 
+<code src="../demos/MobileTabBar-inner-page.tsx"></code>
 
 ### Settings
 
@@ -164,7 +169,7 @@ interface MobileTabBarItemProps {
 
 其继承自 `MobileTabBar.Item`，并自定义了 `onClick` 事件，添加了 `pageSchemaId` 属性。
 
-其点击效果是跳转到 `/schema/${pageSchemaId}` 页面。
+其点击效果是跳转到 `/page/${pageSchemaId}` 页面。
 
 ### Examples
 

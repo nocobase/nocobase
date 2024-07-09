@@ -7,26 +7,20 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ISchema, SchemaInitializerItemActionModalType, SchemaSettings, useSchemaInitializer } from '@nocobase/client';
-import { useNavigate } from 'react-router-dom';
-import { generatePluginTranslationTemplate, usePluginTranslation } from '../../../../../locale';
+import { ISchema, SchemaInitializerItemActionModalType, SchemaSettings, SchemaSettingsActionLinkItem, useSchemaInitializer } from '@nocobase/client';
+import { App } from 'antd';
+import { usePluginTranslation } from '../../../../../locale';
 import { editAction } from '../actionCommonSettings';
+import { useLinkActionProps } from '@nocobase/client';
 
 export const mobileNavigationBarLinkSettings = new SchemaSettings({
   name: `mobile:navigation-bar:link`,
   items: [
-    editAction((values) => {
-      return {
-        link: {
-          type: 'string',
-          default: values.link,
-          title: generatePluginTranslationTemplate('Link'),
-          required: true,
-          'x-decorator': 'FormItem',
-          'x-component': 'Input.URL',
-        },
-      };
-    }),
+    editAction(),
+    {
+      name: 'editLink',
+      Component: SchemaSettingsActionLinkItem,
+    },
     {
       name: 'remove',
       type: 'remove',
@@ -34,17 +28,10 @@ export const mobileNavigationBarLinkSettings = new SchemaSettings({
   ],
 });
 
-export const useMobileNavigationBarLink = (props) => {
-  const { link } = props;
-  const navigate = useNavigate();
+export const useMobileNavigationBarLink = () => {
+  const { onClick } = useLinkActionProps();
   return {
-    onClick() {
-      if (link.startsWith('http') || link.startsWith('//')) {
-        window.open(link);
-      } else {
-        navigate(link);
-      }
-    },
+    onClick,
   };
 };
 
@@ -66,32 +53,46 @@ export const mobileNavigationBarLinkInitializerItem: SchemaInitializerItemAction
   useComponentProps() {
     const { insert } = useSchemaInitializer();
     const { t } = usePluginTranslation();
+    const { message } = App.useApp();
     return {
       title: t('Add Link'),
       buttonText: t('Link'),
       schema: {
-        link: {
-          type: 'string',
-          title: t('Link'),
-          required: true,
-          'x-decorator': 'FormItem',
-          'x-component': 'Input.URL',
-        },
         title: {
           type: 'string',
           title: t('Title'),
           'x-decorator': 'FormItem',
           'x-component': 'Input',
+          'x-reactions': {
+            target: 'icon',
+            fulfill: {
+              state: {
+                required: '{{!$self.value}}',
+              },
+            },
+          }
         },
         icon: {
           type: 'string',
           title: t('Icon'),
           'x-decorator': 'FormItem',
           'x-component': 'IconPicker',
+          'x-reactions': {
+            target: 'title',
+            fulfill: {
+              state: {
+                required: '{{!$self.value}}',
+              },
+            },
+          }
         },
       },
       isItem: true,
       onSubmit(values) {
+        if (!values.title && !values.icon) {
+          message.error(t('Please enter title or select icon'));
+          return;
+        }
         insert(getMobileNavigationBarLinkSchema(values));
       },
     };

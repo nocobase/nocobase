@@ -797,7 +797,7 @@ const createMobilePage = async (options?: CreateMobilePageOptions) => {
   const state = await api.storageState();
   const headers = getHeaders(state);
   const pageSchemaUid = name || uid();
-  const schemaUrl = `/schema/${pageSchemaUid}`;
+  const schemaUrl = `/page/${pageSchemaUid}`;
   const firstTabUid = uid();
   const title = name || randomStr();
 
@@ -805,18 +805,12 @@ const createMobilePage = async (options?: CreateMobilePageOptions) => {
   const routerResponse: any = await api.post(`/api/mobileRoutes:create`, {
     headers,
     data: {
-      url: type === 'page' ? schemaUrl : url,
+      type: type,
+      schemaUid: pageSchemaUid,
+      title: title,
+      icon: "appstoreoutlined",
       options: {
-        "type": "void",
-        "x-decorator": "BlockItem",
-        "x-settings": type === 'page' ? "mobile:tab-bar:page" : "mobile:tab-bar:link",
-        "x-component": type === 'page' ? "MobileTabBar.Page" : "MobileTabBar.Link",
-        "x-toolbar-props": { "showBorder": false, "showBackground": true },
-        "x-component-props": {
-          title,
-          "icon": "appstoreoutlined",
-          ...(type === 'page' ? { pageSchemaUid } : { url })
-        },
+        url,
       }
     },
   });
@@ -857,7 +851,7 @@ const createMobilePage = async (options?: CreateMobilePageOptions) => {
             "properties": {
               "actionBar": {
                 "type": "void",
-                "x-component": "ActionBar",
+                "x-component": "MobileNavigationActionBar",
                 "x-initializer": "mobile:navigation-bar",
                 "x-component-props": {
                   "spaceProps": {
@@ -899,12 +893,10 @@ const createMobilePage = async (options?: CreateMobilePageOptions) => {
   const createTabResponse = await api.post(`/api/mobileRoutes:create`, {
     headers,
     data: {
-      url: `${schemaUrl}/tabs/${firstTabUid}`,
       parentId: routeId,
-      options: {
-        "title": "Unnamed",
-        "tabSchemaUid": firstTabUid,
-      }
+      type: 'tabs',
+      title: 'Unnamed',
+      schemaUid: firstTabUid,
     },
   });
 

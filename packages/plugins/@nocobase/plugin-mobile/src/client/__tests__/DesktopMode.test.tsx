@@ -8,7 +8,6 @@
  */
 
 import React from 'react';
-import 'antd-mobile/es/global';
 import App from '../demos/DesktopMode-basic';
 import { act, render, screen, userEvent, waitFor, waitForApp } from '@nocobase/test/client';
 

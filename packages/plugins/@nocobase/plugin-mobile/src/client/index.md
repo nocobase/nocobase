@@ -69,12 +69,12 @@ mobileRouter.add('mobile', {
 ### 动态 schema 页面的嵌套关系
 
 ```tsx | pure
-<MobilePage> // react-router 匹配的 Schema 页面 router.add('/schema/:pageSchemaUid', { Component: 'MobilePage' })
+<MobilePage> // react-router 匹配的 Schema 页面 router.add('/page/:pageSchemaUid', { Component: 'MobilePage' })
   <RemoteSchemaComponent uid={params.pageSchemaUid}> // 通过 URL 获取 uid，加载整个页面的 Schema
     <MobilePageProvider> // 提供页面级别的上下文
       <MobilePageNavigationBar /> // 顶部导航栏
       <MobilePageContent> // 页面内容区
-        <RemoteSchemaComponent uid={params.tabSchemaId} /> // `/schema/:pageSchemaUid/tabs/:tabSchemaUid` 读取 `tabSchemaUid` 渲染对应的 Tab 页面
+        <RemoteSchemaComponent uid={params.tabSchemaId} /> // `/page/:pageSchemaUid/tabs/:tabSchemaUid` 读取 `tabSchemaUid` 渲染对应的 Tab 页面
       </MobilePageContent>
     </MobilePageProvider>
   </RemoteSchemaComponent>
@@ -84,14 +84,14 @@ mobileRouter.add('mobile', {
 ```tsx | pure
 // schema 页面路由
 mobileRouter.add('mobile.schema.page', {
-  path: '/schema/:pageSchemaUid',
+  path: '/page/:pageSchemaUid',
   Component: 'MobilePage',
 });
 
 
 // Tab 路由
 mobileRouter.add('mobile.schema.tabs.page', {
-  path: '/schema/:pageSchemaUid/tabs/:tabSchemaUid',
+  path: '/page/:pageSchemaUid/tabs/:tabSchemaUid',
   Component: 'MobilePage',
 });
 ```
@@ -99,123 +99,75 @@ mobileRouter.add('mobile.schema.tabs.page', {
 ## 路由接口
 
 ```ts
-export interface TabBarItem {
+export interface MobileRouteItem {
   id: number;
-  url?: string;
-  sort?: number;
-  options: ISchema;
+  schemaUid?: string;
+  type: 'page' | 'link' | 'tabs';
+  options: any;
+  title?: string;
+  icon?: string;
   parentId?: number;
-  children?: TabItem[];
-}
-
-export interface TabItem {
-  id: number;
-  url?: string;
-  sort?: number;
-  options: { title: string; pageSchemaUid: string };
-  parentId?: number;
+  children?: MobileRouteItem[];
 }
 ```
 
-数据结构中 `url` 和 `options` 是关键，`url` 用于匹配路由，`options` 用于渲染具体的内容。
-
-对于 `TabBar` 而言，`options` 是 `TabBarItem` 对应的 `schema`。
+对于 `TabBar` 而言，`options` 是 `MobileRouteItem` 对应的 `schema`。
 对于 `Tabs` 而言，`options` 只要是存着对应的页面 `schemaUid` 和 `title`。
 
 ```json
 [
-    {
-        "id": 3,
-        "parentId": null,
-        "url": "/schema/3bz0ki59s8f",
-        "options": {
-            "type": "void",
-            "x-decorator": "BlockItem",
-            "x-toolbar-props": {
-                "draggable": false
-            },
-            "x-settings": "mobile:tab-bar:page",
-            "x-component": "MobileTabBar.Page",
-            "x-component-props": {
-                "title": "Home",
-                "icon": "alipayoutlined",
-                "selectedIcon": "alipaycircleoutlined",
-                "pageSchemaUid": "3bz0ki59s8f"
-            }
-        },
-        "children": [
-            {
-                "id": 4,
-                "parentId": 3,
-                "url": "/schema/3bz0ki59s8f/tabs/aql952klkmw",
-                "options": {
-                    "title": "Unnamed",
-                    "tabSchemaId": "aql952klkmw"
-                },
-            }
-        ],
-    },
-    {
-        "id": 5,
-        "parentId": null,
-        "url": "/schema/e3t0g3kql0u",
-        "options": {
-            "type": "void",
-            "x-decorator": "BlockItem",
-            "x-toolbar-props": {
-                "draggable": false
-            },
-            "x-settings": "mobile:tab-bar:page",
-            "x-component": "MobileTabBar.Page",
-            "x-component-props": {
-                "title": "Message",
-                "icon": "aliwangwangoutlined",
-                "pageSchemaUid": "e3t0g3kql0u"
-            }
-        },
-        "children": [
-            {
-                "id": 6,
-                "parentId": 5,
-                "url": "/schema/e3t0g3kql0u/tabs/5av5oolwlve",
-                "options": {
-                    "title": "未读消息",
-                    "pageSchemaUid": "5av5oolwlve"
-                },
-            },
-            {
-                "id": 8,
-                "parentId": 5,
-                "url": "/schema/e3t0g3kql0u/tabs/2w3k326y33n",
-                "options": {
-                    "title": "已读消息",
-                    "pageSchemaUid": "2w3k326y33n"
-                },
-            }
-        ],
-    },
-    {
-        "id": 7,
-        "parentId": null,
-        "url": null,
-        "options": {
-            "_isJSONSchemaObject": true,
-            "version": "2.0",
-            "name": "7",
-            "type": "void",
-            "x-decorator": "BlockItem",
-            "x-toolbar-props": {
-                "draggable": false
-            },
-            "x-settings": "mobile:tab-bar:link",
-            "x-component": "MobileTabBar.Link",
-            "x-component-props": {
-                "title": "Github",
-                "link": "https://github.com",
-                "icon": "githuboutlined"
-            }
-        },
-    }
+  {
+      "id": 10,
+      "parentId": null,
+      "title": "Test1",
+      "icon": "AppstoreOutlined",
+      "schemaUid": "d4o6esth2ik",
+      "type": "page",
+      "options": null,
+      "sort": 1,
+      "children": [
+          {
+              "id": 11,
+              "parentId": 10,
+              "title": "Tab1",
+              "icon": null,
+              "schemaUid": "pm65m9y0o2y",
+              "type": "tabs",
+              "options": null,
+              "sort": 2,
+              "__index": "0.children.0"
+          },
+          {
+              "id": 12,
+              "parentId": 10,
+              "title": "Tab2",
+              "icon": null,
+              "schemaUid": "1mcth1tfcb6",
+              "type": "tabs",
+              "options": null,
+              "sort": 3,
+              "__index": "0.children.1"
+          }
+      ],
+      "__index": "0"
+  },
+  {
+      "id": 13,
+      "parentId": null,
+      "title": "Test2",
+      "icon": "aliwangwangoutlined",
+      "schemaUid": null,
+      "type": "link",
+      "options": {
+          "schemaUid": null,
+          "url": "https://github.com",
+          "params": [
+              {}
+          ]
+      },
+      "sort": 4,
+      "__index": "1"
+  }
 ]
 ```
 
@@ -252,22 +204,70 @@ export interface TabItem {
 }
 ```
 
-### TabBarItem Schema
+### MobileTabBarItem Schema
 
-```json
-{
-  "type": "void",
-  "x-decorator": "BlockItem",
-  "x-toolbar-props": {
-      "draggable": false
-  },
-  "x-settings": "mobile:tab-bar:link",
-  "x-component": "MobileTabBar.Link",
-  "x-component-props": {
-      "title": "Github",
-      "link": "https://github.com",
-      "icon": "githuboutlined"
+```ts
+function getMobileTabBarItemSchema(routeItem: MobileRouteItem) {
+  return {
+    name: routeItem.id,
+    type: 'void',
+    'x-decorator': 'BlockItem',
+    'x-settings': `mobile:tab-bar:${routeItem.type}`,
+    'x-component': `MobileTabBar.${upperFirst(routeItem.type)}`,
+    'x-toolbar-props': {
+      showBorder: false,
+      showBackground: true,
+    },
+    'x-component-props': {
+      title: routeItem.title,
+      icon: routeItem.icon,
+      schemaUid: routeItem.schemaUid,
+      ...(routeItem.options || {}),
+    },
   }
+}
+```
+
+#### `page` type：
+
+```ts
+{
+  name: 1,
+  type: 'void',
+  'x-decorator': 'BlockItem',
+  'x-settings': `mobile:tab-bar:page`,
+  'x-component': `MobileTabBar.Page`,
+  'x-toolbar-props': {
+    showBorder: false,
+    showBackground: true,
+  },
+  'x-component-props': {
+    title: 'Test',
+    icon: 'AppstoreOutlined',
+    schemaUid: 'd4o6esth2ik',
+  },
+}
+```
+
+#### `link` type：
+
+```ts
+{
+  name: 1,
+  type: 'void',
+  'x-decorator': 'BlockItem',
+  'x-settings': `mobile:tab-bar:link`,
+  'x-component': `MobileTabBar.Link`,
+  'x-toolbar-props': {
+    showBorder: false,
+    showBackground: true,
+  },
+  'x-component-props': {
+    title: 'Test',
+    icon: 'AppstoreOutlined',
+    schemaUid: 'd4o6esth2ik',
+    url: 'https://github.com',
+  },
 }
 ```
 
@@ -288,7 +288,7 @@ export interface TabItem {
             "x-component": "MobilePageNavigationBar",
             "properties": {
                 "type": "void",
-                "x-component": "ActionBar",
+                "x-component": "MobileNavigationActionBar",
                 "x-initializer": "mobile:navigation-bar",
                 "properties": {
                     "iaoxln0kidb": {
@@ -353,17 +353,22 @@ export interface TabItem {
   - ActionSheet
   - 弹出层
 - 代码设计：移动端是否需要自己的 providers manager ？是将 application 的抽象成 ProvidersManager 还是复制粘贴代码？
-- 样式：内容区 padding/margin 是否需要，让其距离顶部和底部都有些距离？
-
+- [x] 样式：内容区 padding/margin 是否需要，让其距离顶部和底部都有些距离？
 - [x] `.Schema` -> `.Page`
 - [x] 加排序字段
 - [x] tabBar 拖拽
 - [x] tabs 拖拽
-- header 的样式？
+- [x] header 的样式？
+- [x] 功能：add block 需要添加哪些区块，还是空着？【和原来移动端的出了 Menu 和 Settings 其他都要】
+- [x] action 添加和删除
+- [x] action Icon and Title
+- [x] routes 结构变更
+- [x] routes 结构变更导致的 e2e utils、文档、demos、单测
 - 原 admin 弹窗改为子页面（等中合），back 等一起开发
-- page 和 第一个区块覆盖的问题
-- 功能：add block 需要添加哪些区块，还是空着？
-
+- 滚动区域问题
+- Action initailzer 无法关闭问题【先临时解决】
+- TabBar Settings 从底部放到顶部
+- 最小 Demo 复现 schema 缓存问题
 
 ## 待做任务
 
@@ -383,10 +388,10 @@ export interface TabItem {
 - [x] 多语言
 - [x] API 文档
 - [-] JS bridge(没测)
-- [-] unit test
-- 反馈修复
+- [x] e2e test
+- [x] unit test
+- [x] 反馈修复
 - change package.json
 - 更新文档
 - 使用文档
-- e2e test
 - 新移动端 Tab 的插件开发示例

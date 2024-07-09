@@ -24,7 +24,7 @@
           'selectedIcon': 'AppstoreOutlined',
           'pageSchemaId': 'home',
         },
-        'x-link': '/schema/home',
+        'x-link': '/page/home',
         'x-index': 1,
         'x-settings': 'MobileTabBar.Page:settings',
       },
@@ -38,7 +38,7 @@
           'pageSchemaId': 'message',
         },
         'x-index': 2,
-        'x-link': '/schema/message',
+        'x-link': '/page/message',
         'x-settings': 'MobileTabBar.Page:settings',
       },
       'tab3-link': {
@@ -48,7 +48,7 @@
         'x-component': 'MobileTabBar.Link',
         'x-component-props': {
           'icon': 'GithubOutlined',
-          'link': 'https://www.github.com',
+          'link': 'https://github.com',
         },
         'x-settings': 'MobileTabBar.Link:settings',
         'x-index': 3,
@@ -138,7 +138,7 @@ interface MobileTabBarProps {
 
 - items 是数组还是对象？
 - `MobileTabBar.Page` 这种点击后怎么联动到页面？
-  - 链接从 `/mobile/:name` 改为 `/mobile/schema/:name`：`/mobile/schema/${pageSchemaId}` 读取 `params.pageSchemaId`
+  - 链接从 `/mobile/:name` 改为 `/mobile/page/:name`：`/mobile/page/${pageSchemaId}` 读取 `params.pageSchemaId`
 - 技术上，怎么操作 `items`？
 
 ### MobileTabBar.Item

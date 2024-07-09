@@ -30,7 +30,10 @@ const app = mockApp({
       data: [
         {
           id: 28,
-          url: '/test',
+          type: 'link',
+          options: {
+            url: '/test',
+          }
         },
       ],
     },

@@ -10,7 +10,7 @@ const schema = {
   properties: {
     actionBar: {
       type: 'void',
-      'x-component': 'ActionBar',
+      'x-component': 'MobileNavigationActionBar',
       'x-component-props': {
         spaceProps: {
           style: {

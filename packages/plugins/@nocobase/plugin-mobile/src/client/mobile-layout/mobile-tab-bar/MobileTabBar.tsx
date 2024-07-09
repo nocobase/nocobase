@@ -14,10 +14,11 @@ import 'antd-mobile/es/components/tab-bar/tab-bar.css';
 import { useStyles } from './styles';
 import { useMobileRoutes } from '../../mobile-providers';
 
-import { MobileTabBarItem } from './MobileTabBar.Item';
+import { getMobileTabBarItemSchema, MobileTabBarItem } from './MobileTabBar.Item';
 import { MobileTabBarPage, MobileTabBarLink } from './types';
 import { DndContext, DndContextProps, SchemaComponent, useDesignable } from '@nocobase/client';
 import { MobileTabBarInitializer } from './initializer';
+import { isInnerLink } from '../../utils';
 
 export interface MobileTabBarProps {
   /**
@@ -34,7 +35,7 @@ export const MobileTabBar: FC<MobileTabBarProps> & {
   const { styles } = useStyles();
   const { designable } = useDesignable();
   const { routeList, activeTabBarItem, resource, refresh } = useMobileRoutes();
-  const validRouteList = routeList.filter((item) => item.url);
+  const validRouteList = routeList.filter((item) => item.schemaUid || isInnerLink(item.options?.url));
   const handleDragEnd: DndContextProps['onDragEnd'] = useCallback(
     async (event) => {
       const { active, over } = event;
@@ -61,15 +62,15 @@ export const MobileTabBar: FC<MobileTabBarProps> & {
   }
 
   // 如果是 routeList 中的 pathname 则显示 tabBar，如果是内页则不显示
+  // 判断内页的方法：没有激活的 activeTabBarItem 并且 routeList 中有数据
   if (!activeTabBarItem && validRouteList.length > 0) return null;
-
   return (
     <div className={styles.mobileTabBar}>
       <div className={styles.mobileTabBarContent}>
         <DndContext onDragEnd={handleDragEnd}>
           <div className={styles.mobileTabBarList}>
             {routeList.map((item) => {
-              return <SchemaComponent key={item.id} schema={Object.assign({ name: item.id }, item.options)} />;
+              return <SchemaComponent key={item.id} schema={getMobileTabBarItemSchema(item)} />;
             })}
           </div>
         </DndContext>

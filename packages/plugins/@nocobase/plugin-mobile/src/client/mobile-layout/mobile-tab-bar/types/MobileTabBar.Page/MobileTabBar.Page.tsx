@@ -13,14 +13,14 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { MobileTabBarItemProps, MobileTabBarItem } from '../../MobileTabBar.Item';
 
 export interface MobileTabBarPageProps extends Omit<MobileTabBarItemProps, 'onClick' | 'selected'> {
-  pageSchemaUid: string;
+  schemaUid: string;
 }
 
 export const MobileTabBarPage: FC<MobileTabBarPageProps> = (props) => {
-  const { pageSchemaUid, ...rests } = props;
+  const { schemaUid, ...rests } = props;
   const navigate = useNavigate();
   const location = useLocation();
-  const url = useMemo(() => `/schema/${pageSchemaUid}`, [pageSchemaUid]);
+  const url = useMemo(() => `/page/${schemaUid}`, [schemaUid]);
   const handleClick = useCallback(() => {
     navigate(url);
   }, [url, navigate]);

@@ -6,10 +6,10 @@ import { mockApp } from '@nocobase/client/demo-utils';
 class DemoPlugin extends Plugin {
   async load() {
     this.app.router.add('schema', {
-      path: '/schema',
+      path: '/page',
     });
     this.app.router.add('schema.page', {
-      path: '/schema/:pageSchemaUid',
+      path: '/page/:pageSchemaUid',
       Component: MobilePage,
     });
   }
@@ -18,7 +18,7 @@ class DemoPlugin extends Plugin {
 const app = mockApp({
   router: {
     type: 'memory',
-    initialEntries: ['/schema/test'],
+    initialEntries: ['/page/test'],
   },
   plugins: [DemoPlugin],
   apis: {

@@ -19,12 +19,12 @@ import { useMobileRoutes } from '../../../mobile-providers';
 
 export const editTabItemSettingsItem = (getMoreFields?: (values: any) => Record<string, ISchema>) =>
   createModalSettingsItem({
-    title: generatePluginTranslationTemplate('Edit tabBar item'),
+    title: generatePluginTranslationTemplate('Edit button'),
     name: 'tabBarItem',
     parentSchemaKey: 'x-component-props',
     schema: (defaultValues) => ({
       type: 'object',
-      title: 'Edit tabBar item',
+      title: 'Edit button',
       properties: {
         ...getMobileTabBarItemSchemaFields(defaultValues),
         ...(getMoreFields ? getMoreFields(defaultValues) : {}),
@@ -35,17 +35,17 @@ export const editTabItemSettingsItem = (getMoreFields?: (values: any) => Record<
 
 export const removeTabItemSettingsItem = createTextSettingsItem({
   name: 'remove',
-  title: generatePluginTranslationTemplate('Remove'),
+  title: generatePluginTranslationTemplate('Delete'),
   useTextClick: () => {
     const schema = useFieldSchema();
     const id = Number(schema.toJSON().name);
-    const { refresh, routeList, resource, api } = useMobileRoutes();
+    const { refresh, resource, routeList, api } = useMobileRoutes();
     const navigate = useNavigate();
     const { t } = usePluginTranslation();
     const { modal, message } = App.useApp();
     return async () => {
       modal.confirm({
-        title: t('Delete TabBar Item'),
+        title: t('Delete action'),
         content: t('Are you sure you want to delete it?'),
         onOk: async () => {
           // 删除 tabBarItem
@@ -55,13 +55,13 @@ export const removeTabItemSettingsItem = createTextSettingsItem({
           await resource.destroy({ filter: { parentId: id } });
 
           // 删除 tabBar 对应的页面 schema
-          const schemaUid = schema['x-component-props'].pageSchemaUid;
-          await api.request({ url: `/uiSchemas:remove/${schemaUid}`, method: 'delete' });
+          const routeItem = routeList.find((item) => item.id === id);
+          await api.request({ url: `/uiSchemas:remove/${routeItem.schemaUid}`, method: 'delete' });
 
           await refresh();
-          // 跳转到第一个 tabBar item
-          const url = routeList.find((item) => item.id !== id && item.url)?.url || '/';
-          navigate(url);
+
+          // 跳转到首页
+          navigate('/');
           message.success({
             content: 'Delete successfully',
           });

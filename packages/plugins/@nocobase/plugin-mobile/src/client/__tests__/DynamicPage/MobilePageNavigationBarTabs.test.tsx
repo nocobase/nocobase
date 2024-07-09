@@ -8,7 +8,7 @@
  */
 
 import React from 'react';
-import { act, render, screen, userEvent, waitFor, waitForApp } from '@nocobase/test/client';
+import { render, screen, waitFor, waitForApp } from '@nocobase/test/client';
 import Basic from '../../demos/pages-navigation-bar-actions';
 
 describe('MobilePage', () => {

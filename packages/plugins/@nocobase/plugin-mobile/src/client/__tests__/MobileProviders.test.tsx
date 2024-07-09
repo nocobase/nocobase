@@ -31,8 +31,8 @@ describe('MobileProviders', () => {
     await waitForApp();
 
     await waitFor(() => {
-      expect(screen.queryByText('Home')).toBeInTheDocument();
-      expect(screen.queryByText('3')).toBeInTheDocument();
+      expect(screen.queryByText('Test1')).toBeInTheDocument();
+      expect(screen.queryByText('2')).toBeInTheDocument();
     });
   });
 });

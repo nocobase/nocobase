@@ -7,8 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-// Necessary imports
-import { invoke, isJSBridge, getJsBridge, JSBridgeFunctions } from '../js-bridge';
+import { invoke, isJSBridge } from '../js-bridge';
 
 describe('invoke function', () => {
   beforeAll(() => {

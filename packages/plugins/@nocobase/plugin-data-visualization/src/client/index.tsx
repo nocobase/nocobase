@@ -50,6 +50,10 @@ class PluginDataVisualiztionClient extends Plugin {
       title: lang('Charts'),
       Component: 'ChartV2BlockInitializer',
     });
+    this.app.schemaInitializerManager.addItem('mobile:addBlock', 'dataBlocks.chartV2', {
+      title: lang('Charts'),
+      Component: 'ChartV2BlockInitializer',
+    });
   }
 }
 

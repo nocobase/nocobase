@@ -10,7 +10,7 @@
 import { defineCollection } from '@nocobase/database';
 
 export default defineCollection({
-  "key": "mobileRoutes",
+  "key": "d1za29o7irk",
   "name": "mobileRoutes",
   "title": "mobileRoutes",
   "inherit": false,
@@ -18,7 +18,7 @@ export default defineCollection({
   "description": null,
   "fields": [
     {
-      "key": "zl1wao0hdd5",
+      "key": "ymgf0jxu1kg",
       "name": "parentId",
       "type": "bigInt",
       "interface": "integer",
@@ -35,7 +35,7 @@ export default defineCollection({
       }
     },
     {
-      "key": "ldcl6u6ulqx",
+      "key": "b07aqgs2shv",
       "name": "parent",
       "type": "belongsTo",
       "interface": "m2o",
@@ -61,7 +61,7 @@ export default defineCollection({
       "targetKey": "id"
     },
     {
-      "key": "4ty6d0c1fa5",
+      "key": "p8sxllsgin1",
       "name": "children",
       "type": "hasMany",
       "interface": "o2m",
@@ -88,7 +88,7 @@ export default defineCollection({
       "sourceKey": "id"
     },
     {
-      "key": "ldbpm4xqm17",
+      "key": "7y601o9bmih",
       "name": "id",
       "type": "bigInt",
       "interface": "integer",
@@ -107,7 +107,7 @@ export default defineCollection({
       }
     },
     {
-      "key": "z4yqdpc5p7r",
+      "key": "m8s9b94amz3",
       "name": "createdAt",
       "type": "date",
       "interface": "createdAt",
@@ -125,7 +125,7 @@ export default defineCollection({
       }
     },
     {
-      "key": "o9d4pquz0hv",
+      "key": "p3p69woziuu",
       "name": "createdBy",
       "type": "belongsTo",
       "interface": "createdBy",
@@ -150,7 +150,7 @@ export default defineCollection({
       "targetKey": "id"
     },
     {
-      "key": "6ak0czllpm3",
+      "key": "s0gw1blo4hm",
       "name": "updatedAt",
       "type": "date",
       "interface": "updatedAt",
@@ -168,7 +168,7 @@ export default defineCollection({
       }
     },
     {
-      "key": "ivmllnkgfbf",
+      "key": "d1l988n09gd",
       "name": "updatedBy",
       "type": "belongsTo",
       "interface": "updatedBy",
@@ -193,8 +193,8 @@ export default defineCollection({
       "targetKey": "id"
     },
     {
-      "key": "0nvp30wglyv",
-      "name": "url",
+      "key": "bo7btzkbyan",
+      "name": "title",
       "type": "string",
       "interface": "input",
       "description": null,
@@ -204,11 +204,56 @@ export default defineCollection({
       "uiSchema": {
         "type": "string",
         "x-component": "Input",
-        "title": "url"
+        "title": "title"
       }
     },
     {
-      "key": "gjfpzxpp6n4",
+      "key": "ozl5d8t2d5e",
+      "name": "icon",
+      "type": "string",
+      "interface": "input",
+      "description": null,
+      "collectionName": "mobileRoutes",
+      "parentKey": null,
+      "reverseKey": null,
+      "uiSchema": {
+        "type": "string",
+        "x-component": "Input",
+        "title": "icon"
+      }
+    },
+    {
+      "key": "6bbyhv00bp4",
+      "name": "schemaUid",
+      "type": "string",
+      "interface": "input",
+      "description": null,
+      "collectionName": "mobileRoutes",
+      "parentKey": null,
+      "reverseKey": null,
+      "uiSchema": {
+        "type": "string",
+        "x-component": "Input",
+        "title": "schemaUid"
+      }
+    },
+    {
+      "key": "m0k5qbaktab",
+      "name": "type",
+      "type": "string",
+      "interface": "input",
+      "description": null,
+      "collectionName": "mobileRoutes",
+      "parentKey": null,
+      "reverseKey": null,
+      "uiSchema": {
+        "type": "string",
+        "x-component": "Input",
+        "title": "type"
+      }
+    },
+    {
+      "key": "ssuml1j2v1b",
       "name": "options",
       "type": "json",
       "interface": "json",
@@ -230,7 +275,7 @@ export default defineCollection({
       }
     },
     {
-      "key": "bwnegw1biq6",
+      "key": "jjmosjqhz8l",
       "name": "sort",
       "type": "sort",
       "interface": "sort",

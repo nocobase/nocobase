@@ -28,17 +28,18 @@ export const MobileNavigationBarAction: FC<MobileNavigationBarActionProps> = Rea
   const { icon, title, children, style = {}, className, onClick } = props;
   const { styles } = useStyles();
 
-  const contentLength = [icon, title, children].filter(Boolean).length;
+  const contentLength = [icon, title].filter(Boolean).length;
   const iconElement = useMemo(() => (typeof icon === 'string' ? <Icon type={icon} /> : icon), [icon]);
   return (
     <div ref={ref} onClick={onClick} className={cx(styles.mobileNavigationBarAction, className)} style={style}>
+      {children}
       {contentLength > 1 ? (
         <Space>
           {iconElement}
-          <span>{title || children}</span>
+          <span>{title}</span>
         </Space>
       ) : (
-        iconElement || title || children
+          iconElement || title
       )}
     </div>
   );

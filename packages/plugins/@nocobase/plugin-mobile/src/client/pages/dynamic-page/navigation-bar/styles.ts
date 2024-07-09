@@ -16,6 +16,24 @@ export const useStyles = createStyles(() => ({
     zIndex: 998,
     borderBottom: '1px solid var(--adm-color-border)',
     backgroundColor: 'var(--adm-color-background)',
+    // '.adm-nav-bar-left': {
+    //   flex: '0 0 auto',
+    //   width: '40%',
+    // },
+
+    // '.adm-nav-bar-title': {
+    //   padding: '0 6px',
+    //   boxSizing: 'border-box',
+    //   width: '20%',
+    //   whiteSpace: 'nowrap',
+    //   overflow: 'hidden',
+    //   textOverflow: 'ellipsis',
+    // },
+
+    // '.adm-nav-bar-right': {
+    //   flex: '0 0 auto',
+    //   width: '40%',
+    // },
   },
   mobileNavigationBarTabsWrapper: {
     display: 'flex',

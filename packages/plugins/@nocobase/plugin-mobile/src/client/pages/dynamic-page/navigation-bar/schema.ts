@@ -7,16 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ISchema } from '@nocobase/client';
-import { omit } from 'lodash';
-
 export const mobilePageNavigationBarSchema = {
   type: 'void',
   'x-component': 'MobilePageNavigationBar',
   properties: {
     actionBar: {
       type: 'void',
-      'x-component': 'ActionBar',
+      'x-component': 'MobileNavigationActionBar',
       'x-initializer': 'mobile:navigation-bar',
       'x-component-props': {
         spaceProps: {
@@ -28,44 +25,4 @@ export const mobilePageNavigationBarSchema = {
       properties: {},
     },
   },
-};
-
-export const getActionBarSchemaByPosition = (
-  schema: ISchema,
-  position: 'left' | 'right' | 'bottom' = 'left',
-  style = {},
-  showInitializer = true,
-) => {
-  const actionBar = schema?.properties?.['actionBar']; // 对应上面 schema 的 actionBar 结构
-  if (!actionBar) {
-    return {};
-  }
-  const properties = Object.keys(actionBar.properties || {}).reduce((properties, key) => {
-    const actionSchema = actionBar.properties[key];
-    if ((actionSchema['x-position'] || 'left') === position) {
-      properties[key] = actionSchema;
-    }
-    return properties;
-  }, {});
-
-  if (!showInitializer) {
-    return {
-      type: 'void',
-      properties,
-    };
-  }
-
-  return {
-    ...actionBar,
-    'x-initializer-props': {
-      style,
-      wrap(actionSchema: ISchema) {
-        return {
-          'x-position': position,
-          ...actionSchema,
-        };
-      },
-    },
-    properties,
-  };
 };

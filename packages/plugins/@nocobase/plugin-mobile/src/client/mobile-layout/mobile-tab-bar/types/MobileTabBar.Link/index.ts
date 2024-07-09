@@ -9,5 +9,4 @@
 
 export * from './MobileTabBar.Link';
 export * from './settings';
-export * from './schema';
 export * from './initializer';

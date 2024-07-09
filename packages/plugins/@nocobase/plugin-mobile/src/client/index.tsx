@@ -27,6 +27,7 @@ import {
   mobilePageTabInitializer,
   mobileNavigationBarInitializer,
   mobileNavigationBarLinkSettings,
+  MobileNavigationActionBar,
 } from './pages';
 import {
   MobileTabBar,
@@ -117,6 +118,7 @@ export class PluginMobileClient extends Plugin {
       MobileHomePage,
       MobilePageContent,
       MobileTabBar,
+      MobileNavigationActionBar,
       MobileNotFoundPage,
     });
   }
@@ -156,14 +158,14 @@ export class PluginMobileClient extends Plugin {
       element: <Outlet />,
     });
     this.mobileRouter.add('mobile.schema.page', {
-      path: '/schema/:pageSchemaUid',
+      path: '/page/:pageSchemaUid',
       Component: 'MobilePage',
     });
     this.mobileRouter.add('mobile.schema.tabs', {
       element: <Outlet />,
     });
     this.mobileRouter.add('mobile.schema.tabs.page', {
-      path: '/schema/:pageSchemaUid/tabs/:tabSchemaUid',
+      path: '/page/:pageSchemaUid/tabs/:tabSchemaUid',
       Component: 'MobilePage',
     });
 
