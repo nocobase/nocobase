@@ -134,7 +134,7 @@ export function getJsonLogic() {
       return a.some((element) => b.includes(element));
     },
     $noneOf: function (a, b) {
-      if (a.length === 0) {
+      if (!a || a?.length === 0) {
         return true;
       }
       if (Array.isArray(a) && Array.isArray(b) && a.some((element) => Array.isArray(element))) {
