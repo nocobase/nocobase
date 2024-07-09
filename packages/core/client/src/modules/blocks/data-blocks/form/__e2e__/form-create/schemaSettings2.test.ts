@@ -86,6 +86,7 @@ test.describe('linkage rules', () => {
       'Constant',
       'Current user',
       'Current role',
+      'API token',
       'Date variables',
       'Current form',
     ]);
@@ -161,7 +162,13 @@ test.describe('linkage rules', () => {
     await page.getByText('Expression').click();
 
     await page.getByText('xSelect a variable').click();
-    await expectSupportedVariables(page, ['Current user', 'Current role', 'Date variables', 'Current form']);
+    await expectSupportedVariables(page, [
+      'Current user',
+      'Current role',
+      'API token',
+      'Date variables',
+      'Current form',
+    ]);
     await page.getByRole('menuitemcheckbox', { name: 'Current form right' }).click();
     await page.getByRole('menuitemcheckbox', { name: 'number' }).click();
     await page.getByRole('button', { name: 'OK', exact: true }).click();

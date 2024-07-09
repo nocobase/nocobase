@@ -7,6 +7,7 @@ Thank you!
 
 ### This is a ...
 - [ ] New feature
+- [ ] Improvement
 - [ ] Bug fix
 - [ ] Others
 
