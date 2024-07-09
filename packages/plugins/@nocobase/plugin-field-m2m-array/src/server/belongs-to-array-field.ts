@@ -61,6 +61,19 @@ export class BelongsToArrayField extends RelationField {
     }) as any;
   }
 
+  checkTargetCollection() {
+    const { target } = this.options;
+    if (!target) {
+      throw new Error('Target is required in the options of many to many (array) field.');
+    }
+    const targetCollection = this.database.getCollection(target);
+    if (!targetCollection) {
+      this.database.addPendingField(this);
+      return false;
+    }
+    return true;
+  }
+
   checkAssociationKeys() {
     const { foreignKey, target, targetKey } = this.options;
 
@@ -97,6 +110,9 @@ export class BelongsToArrayField extends RelationField {
   }
 
   bind() {
+    if (!this.checkTargetCollection()) {
+      return false;
+    }
     this.checkAssociationKeys();
     this.on('beforeSave', this.setForeignKeyArray);
   }
