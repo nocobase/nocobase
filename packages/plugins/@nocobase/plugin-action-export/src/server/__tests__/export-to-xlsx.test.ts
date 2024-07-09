@@ -539,6 +539,71 @@ describe('export to xlsx', () => {
     }
   });
 
+  it('should export with custom title', async () => {
+    const User = app.db.collection({
+      name: 'users',
+      fields: [
+        { type: 'string', name: 'name', title: '姓名' },
+        { type: 'integer', name: 'age', title: '年龄' },
+      ],
+    });
+
+    await app.db.sync();
+    const values = Array.from({ length: 20 }).map((_, index) => {
+      return {
+        name: `user${index}`,
+        age: index % 100,
+      };
+    });
+
+    await User.model.bulkCreate(values);
+
+    const exporter = new XlsxExporter({
+      collectionManager: app.mainDataSource.collectionManager,
+      collection: User,
+      chunkSize: 10,
+      columns: [
+        { dataIndex: ['name'], title: '123', defaultTitle: 'Name' },
+        { dataIndex: ['age'], title: '345', defaultTitle: 'Age' },
+      ],
+      findOptions: {
+        filter: {
+          age: {
+            $gt: 9,
+          },
+        },
+      },
+    });
+
+    const wb = await exporter.run();
+
+    const xlsxFilePath = path.resolve(__dirname, `t_${uid()}.xlsx`);
+    try {
+      await new Promise((resolve, reject) => {
+        XLSX.writeFileAsync(
+          xlsxFilePath,
+          wb,
+          {
+            type: 'array',
+          },
+          () => {
+            resolve(123);
+          },
+        );
+      });
+
+      // read xlsx file
+      const workbook = XLSX.readFile(xlsxFilePath);
+      const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+      const sheetData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+
+      const header = sheetData[0];
+      expect(header).toEqual(['123', '345']);
+    } finally {
+      fs.unlinkSync(xlsxFilePath);
+    }
+  });
+
   it('should export with empty title', async () => {
     const User = app.db.collection({
       name: 'users',
