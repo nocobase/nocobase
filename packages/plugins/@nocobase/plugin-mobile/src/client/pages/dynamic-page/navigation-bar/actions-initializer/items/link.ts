@@ -7,14 +7,20 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ISchema, SchemaInitializerItemActionModalType, SchemaSettings, SchemaSettingsActionLinkItem, useSchemaInitializer } from '@nocobase/client';
+import {
+  ISchema,
+  SchemaInitializerItemActionModalType,
+  SchemaSettings,
+  SchemaSettingsActionLinkItem,
+  useSchemaInitializer,
+} from '@nocobase/client';
 import { App } from 'antd';
 import { usePluginTranslation } from '../../../../../locale';
 import { editAction } from '../actionCommonSettings';
 import { useLinkActionProps } from '@nocobase/client';
 
 export const mobileNavigationBarLinkSettings = new SchemaSettings({
-  name: `mobile:navigation-bar:link`,
+  name: `mobile:navigation-bar:actions:link`,
   items: [
     editAction(),
     {
@@ -70,7 +76,7 @@ export const mobileNavigationBarLinkInitializerItem: SchemaInitializerItemAction
                 required: '{{!$self.value}}',
               },
             },
-          }
+          },
         },
         icon: {
           type: 'string',
@@ -84,7 +90,7 @@ export const mobileNavigationBarLinkInitializerItem: SchemaInitializerItemAction
                 required: '{{!$self.value}}',
               },
             },
-          }
+          },
         },
       },
       isItem: true,

@@ -10,8 +10,8 @@
 import { SchemaInitializer } from '@nocobase/client';
 import { mobileNavigationBarLinkInitializerItem } from './items';
 
-export const mobileNavigationBarInitializer = new SchemaInitializer({
-  name: 'mobile:navigation-bar',
+export const mobileNavigationBarActionsInitializer = new SchemaInitializer({
+  name: 'mobile:navigation-bar:actions',
   icon: 'PlusOutlined',
   items: [mobileNavigationBarLinkInitializerItem],
 });

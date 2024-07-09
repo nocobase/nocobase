@@ -10,7 +10,7 @@
 import { useForm } from '@formily/react';
 import React, { FC, useCallback, useMemo } from 'react';
 import { useActionContext, SchemaComponent } from '../../../schema-component';
-import { useSchemaInitializerItem } from '../context';
+import { useSchemaInitializer, useSchemaInitializerItem } from '../context';
 import { SchemaInitializerItem } from './SchemaInitializerItem';
 import { uid } from '@formily/shared';
 
@@ -34,6 +34,7 @@ const SchemaInitializerActionModalItemComponent = React.forwardRef((props: any, 
 
 export const SchemaInitializerActionModal: FC<SchemaInitializerActionModalProps> = (props) => {
   const { title, icon, width, schema, buttonText, btnStyles, isItem, component, onCancel, onSubmit } = props;
+  const { setVisible: initializerSetVisible } = useSchemaInitializer();
   const useCancelAction = useCallback(() => {
     // eslint-disable-next-line react-hooks/rules-of-hooks
     const form = useForm();
@@ -108,6 +109,9 @@ export const SchemaInitializerActionModal: FC<SchemaInitializerActionModalProps>
                 style: {
                   maxWidth: width ? width : '520px',
                   width: '100%',
+                },
+                afterOpenChange: () => {
+                  initializerSetVisible(false);
                 },
               },
               type: 'void',

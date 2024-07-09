@@ -8,5 +8,5 @@
  */
 
 export * from './items';
-export * from './mobileNavigationBarInitializer';
+export * from './mobileNavigationBarActionsInitializer';
 export * from './mobile-navigation-bar-action';

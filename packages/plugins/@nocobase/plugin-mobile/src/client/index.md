@@ -289,14 +289,14 @@ function getMobileTabBarItemSchema(routeItem: MobileRouteItem) {
             "properties": {
                 "type": "void",
                 "x-component": "MobileNavigationActionBar",
-                "x-initializer": "mobile:navigation-bar",
+                "x-initializer": "mobile:navigation-bar:actions",
                 "properties": {
                     "iaoxln0kidb": {
                       "x-position": "right",
                       "type": "void",
                       "x-component": "Action",
                       "x-toolbar": "ActionSchemaToolbar",
-                      "x-settings": "mobile:navigation-bar:link",
+                      "x-settings": "mobile:navigation-bar:actions:link",
                       "x-use-component-props": "useMobileNavigationBarLink",
                       "x-component-props": {
                           "link": "https://baidu.com",

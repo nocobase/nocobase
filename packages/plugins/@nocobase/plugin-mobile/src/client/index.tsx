@@ -25,7 +25,7 @@ import {
   mobilePageTabSettings,
   MobilePageNavigationBar,
   mobilePageTabInitializer,
-  mobileNavigationBarInitializer,
+  mobileNavigationBarActionsInitializer,
   mobileNavigationBarLinkSettings,
   MobileNavigationActionBar,
 } from './pages';
@@ -94,7 +94,7 @@ export class PluginMobileClient extends Plugin {
       mobileAddBlockInitializer,
       mobileTabBarInitializer,
       mobilePageTabInitializer,
-      mobileNavigationBarInitializer,
+      mobileNavigationBarActionsInitializer,
     );
   }
 

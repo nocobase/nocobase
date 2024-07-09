@@ -7,6 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { mobileNavigationBarActionsInitializer } from './actions-initializer';
+
 export const mobilePageNavigationBarSchema = {
   type: 'void',
   'x-component': 'MobilePageNavigationBar',
@@ -14,7 +16,7 @@ export const mobilePageNavigationBarSchema = {
     actionBar: {
       type: 'void',
       'x-component': 'MobileNavigationActionBar',
-      'x-initializer': 'mobile:navigation-bar',
+      'x-initializer': mobileNavigationBarActionsInitializer.name,
       'x-component-props': {
         spaceProps: {
           style: {
