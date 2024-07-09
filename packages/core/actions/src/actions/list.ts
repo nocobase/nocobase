@@ -21,7 +21,7 @@ function findArgs(ctx: Context) {
   const params = ctx.action.params;
   if (params.tree) {
     if (isValidFilter(params.filter)) {
-      params.tree = false;
+      params.tree = true;
     } else {
       const [collectionName, associationName] = resourceName.split('.');
       const collection = ctx.db.getCollection(resourceName);
