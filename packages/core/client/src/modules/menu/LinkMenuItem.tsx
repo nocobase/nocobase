@@ -11,10 +11,12 @@ import { FormLayout } from '@formily/antd-v5';
 import { SchemaOptionsContext } from '@formily/react';
 import React, { useCallback, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FormDialog, SchemaComponent, SchemaComponentOptions } from '../../schema-component';
+import { Router } from 'react-router-dom';
 import { SchemaInitializerItem, useSchemaInitializer } from '../../application';
 import { useGlobalTheme } from '../../global-theme';
+import { FormDialog, SchemaComponent, SchemaComponentOptions } from '../../schema-component';
 import { useStyles } from '../../schema-component/antd/menu/MenuItemInitializers';
+import { useURLAndParamsSchema } from '../actions/link/useURLAndParamsSchema';
 
 export const LinkMenuItem = () => {
   const { insert } = useSchemaInitializer();
@@ -22,45 +24,45 @@ export const LinkMenuItem = () => {
   const options = useContext(SchemaOptionsContext);
   const { theme } = useGlobalTheme();
   const { styles } = useStyles();
+  const { urlSchema, paramsSchema } = useURLAndParamsSchema();
 
   const handleClick = useCallback(async () => {
     const values = await FormDialog(
       t('Add link'),
       () => {
         return (
-          <SchemaComponentOptions scope={options.scope} components={{ ...options.components }}>
-            <FormLayout layout={'vertical'}>
-              <SchemaComponent
-                schema={{
-                  properties: {
-                    title: {
-                      title: t('Menu item title'),
-                      required: true,
-                      'x-component': 'Input',
-                      'x-decorator': 'FormItem',
+          <Router location={location} navigator={null}>
+            <SchemaComponentOptions scope={options.scope} components={{ ...options.components }}>
+              <FormLayout layout={'vertical'}>
+                <SchemaComponent
+                  schema={{
+                    properties: {
+                      title: {
+                        title: t('Menu item title'),
+                        required: true,
+                        'x-component': 'Input',
+                        'x-decorator': 'FormItem',
+                      },
+                      icon: {
+                        title: t('Icon'),
+                        'x-component': 'IconPicker',
+                        'x-decorator': 'FormItem',
+                      },
+                      href: urlSchema,
+                      params: paramsSchema,
                     },
-                    icon: {
-                      title: t('Icon'),
-                      'x-component': 'IconPicker',
-                      'x-decorator': 'FormItem',
-                    },
-                    href: {
-                      title: t('Link'),
-                      'x-component': 'Input',
-                      'x-decorator': 'FormItem',
-                    },
-                  },
-                }}
-              />
-            </FormLayout>
-          </SchemaComponentOptions>
+                  }}
+                />
+              </FormLayout>
+            </SchemaComponentOptions>
+          </Router>
         );
       },
       theme,
     ).open({
       initialValues: {},
     });
-    const { title, href, icon } = values;
+    const { title, href, params, icon } = values;
     insert({
       type: 'void',
       title,
@@ -69,6 +71,7 @@ export const LinkMenuItem = () => {
       'x-component-props': {
         icon,
         href,
+        params,
       },
       'x-server-hooks': [
         {
