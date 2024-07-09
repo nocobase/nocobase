@@ -51,9 +51,9 @@ export class AdjacencyListRepository extends Repository {
   }
 
   async find(options: FindOptions & { addIndex?: boolean } = {}): Promise<any> {
-    // if (options.raw || !options.tree) {
-    //   return await super.find(options);
-    // }
+    if (options.raw || !options.tree) {
+      return await super.find(options);
+    }
 
     const collection = this.collection;
     const primaryKey = collection.model.primaryKeyAttribute;
@@ -176,7 +176,12 @@ export class AdjacencyListRepository extends Repository {
   async findAndCount(options?: FindAndCountOptions): Promise<[Model[], number]> {
     let totalCount = 0;
     let datas = [];
-    if (Object.values(lodash.get(options, 'filter', {})).length === 0) {
+    const foreignKey = this.collection.treeParentField?.foreignKey || 'parentId';
+    if (options.raw || !options.tree) {
+      datas = await super.find(options);
+      return [datas, datas.length];
+    }
+    if (JSON.stringify(lodash.get(options, ['filter', '$and'], {})) === JSON.stringify([{}, { [foreignKey]: null }])) {
       options = lodash.omit(options, ['filterByTk']);
       assign(options, {
         filter: {
