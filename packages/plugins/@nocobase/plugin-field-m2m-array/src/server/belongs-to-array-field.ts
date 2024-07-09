@@ -82,13 +82,8 @@ export class BelongsToArrayField extends RelationField {
     }
 
     const targetField = this.database.getModel(target).getAttributes()[targetKey];
-    if (!targetField) {
-      throw new Error(`Target key "${targetKey}" not found in collection "${target}"`);
-    }
-    const targetType = targetField.type.constructor.toString();
-
     const foreignField = this.collection.model.getAttributes()[foreignKey];
-    if (!foreignField) {
+    if (!foreignField || !targetField) {
       return;
     }
     const foreignType = foreignField.type.constructor.toString();
@@ -102,6 +97,7 @@ export class BelongsToArrayField extends RelationField {
       return;
     }
 
+    const targetType = targetField.type.constructor.toString();
     const elementType = (foreignField.type as any).type.constructor.toString();
     if (foreignType === 'ARRAY' && elementType !== targetType) {
       throw new Error(

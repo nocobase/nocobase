@@ -98,28 +98,6 @@ describe('belongs to array field', () => {
       }
     });
 
-    it('targetKey should exist', async () => {
-      try {
-        await db.sequelize.transaction(async (transaction) => {
-          const field = await fieldRepo.create({
-            values: {
-              interface: 'mbm',
-              collectionName: 'users',
-              name: 'tags',
-              type: 'belongsToArray',
-              foreignKey: 'tag_ids',
-              target: 'tags',
-              targetKey: 'fake_id',
-            },
-            transaction,
-          });
-          await field.load({ transaction });
-        });
-      } catch (error) {
-        expect(error.message).toContain('Target key "fake_id" not found in collection "tags"');
-      }
-    });
-
     it('foreign field must be an array or set field', async () => {
       try {
         await db.sequelize.transaction(async (transaction) => {
