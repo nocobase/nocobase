@@ -8,10 +8,10 @@
  */
 
 import { IRecursionFieldProps, ISchemaFieldProps, RecursionField, Schema } from '@formily/react';
+import { useUpdate } from 'ahooks';
 import React, { useContext, useMemo } from 'react';
 import { SchemaComponentContext } from '../context';
 import { SchemaComponentOptions } from './SchemaComponentOptions';
-import { useUpdate } from 'ahooks';
 
 type SchemaComponentOnChange = {
   onChange?: (s: Schema) => void;
