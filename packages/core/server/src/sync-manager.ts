@@ -14,7 +14,7 @@ import { isEqual, uniqWith } from 'lodash';
 
 export abstract class SyncAdapter extends EventEmitter {
   abstract get ready(): boolean;
-  public abstract publish(data: Record<string, any>): void;
+  public abstract publish(data: SyncMessage): void | Promise<void>;
 }
 
 export type SyncMessageData = Record<string, string>;
