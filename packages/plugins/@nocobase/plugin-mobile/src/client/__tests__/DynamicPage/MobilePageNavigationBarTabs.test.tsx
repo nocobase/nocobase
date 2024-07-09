@@ -17,13 +17,13 @@ describe('MobilePage', () => {
     await waitForApp();
 
     await waitFor(() => {
-      expect(screen.queryByText('Title')).toBeInTheDocument();
+      await expect(screen.queryByText('Title')).toBeInTheDocument();
 
-      expect(document.querySelector('.adm-nav-bar-left')).toHaveTextContent('Left');
-      expect(document.querySelector('.adm-nav-bar-right')).toHaveTextContent('Right1');
-      expect(document.querySelector('.adm-nav-bar-right')).toHaveTextContent('Right2');
+      await expect(document.querySelector('.adm-nav-bar-left')).toHaveTextContent('Left');
+      await expect(document.querySelector('.adm-nav-bar-right')).toHaveTextContent('Right1');
+      await expect(document.querySelector('.adm-nav-bar-right')).toHaveTextContent('Right2');
 
-      expect(screen.queryByText('Bottom')).toBeInTheDocument();
+      await expect(screen.queryByText('Bottom')).toBeInTheDocument();
     });
   });
 });

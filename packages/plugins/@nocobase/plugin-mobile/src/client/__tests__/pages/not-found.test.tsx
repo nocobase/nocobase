@@ -16,14 +16,14 @@ describe('NotFound page', () => {
     render(<App />);
     await waitForApp();
 
-    expect(screen.queryByText('404')).toBeInTheDocument();
+    await expect(screen.queryByText('404')).toBeInTheDocument();
 
     await act(async () => {
       await userEvent.click(screen.getByText('Back Home'));
     });
 
     await waitFor(() => {
-      expect(screen.queryByText('Home Page')).toBeInTheDocument();
+      await expect(screen.queryByText('Home Page')).toBeInTheDocument();
     });
   });
 });

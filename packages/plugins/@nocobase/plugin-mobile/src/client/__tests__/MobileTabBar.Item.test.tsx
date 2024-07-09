@@ -19,40 +19,40 @@ import WithIconReactNodeApp from '../demos/MobileTabBar.Item-with-icon-node';
 describe('MobileTabBar.Item', () => {
   test('Basic', () => {
     render(<BasicApp />);
-    expect(screen.getByText('Test')).toBeInTheDocument();
+    await expect(screen.getByText('Test')).toBeInTheDocument();
   });
 
   test('With Icon: string', () => {
     render(<WithIconApp />);
-    expect(screen.getByText('Test')).toBeInTheDocument();
-    expect(screen.queryByRole('img')).toBeInTheDocument();
+    await expect(screen.getByText('Test')).toBeInTheDocument();
+    await expect(screen.queryByRole('img')).toBeInTheDocument();
   });
 
   test('With Icon: React.Node', () => {
     render(<WithIconReactNodeApp />);
-    expect(screen.getByText('Test')).toBeInTheDocument();
-    expect(screen.queryByRole('img')).toBeInTheDocument();
+    await expect(screen.getByText('Test')).toBeInTheDocument();
+    await expect(screen.queryByRole('img')).toBeInTheDocument();
   });
 
   test('Selected', () => {
     render(<SelectedApp />);
-    expect(screen.getByText('Test')).toBeInTheDocument();
-    expect(document.querySelector('.adm-tab-bar-item-active')).toBeInTheDocument();
+    await expect(screen.getByText('Test')).toBeInTheDocument();
+    await expect(document.querySelector('.adm-tab-bar-item-active')).toBeInTheDocument();
   });
 
   test('Selected Icon', () => {
     render(<SelectedIconApp />);
-    expect(screen.getByText('Test')).toBeInTheDocument();
-    expect(document.querySelector('.adm-tab-bar-item-active')).toBeInTheDocument();
-    expect(screen.queryByRole('img')).toHaveAttribute('aria-label', 'appstore-add');
+    await expect(screen.getByText('Test')).toBeInTheDocument();
+    await expect(document.querySelector('.adm-tab-bar-item-active')).toBeInTheDocument();
+    await expect(screen.queryByRole('img')).toHaveAttribute('aria-label', 'appstore-add');
   });
 
   test('onClick', async () => {
     render(<OnClickApp />);
-    expect(screen.getByText('Test')).toBeInTheDocument();
+    await expect(screen.getByText('Test')).toBeInTheDocument();
     await act(async () => {
       await userEvent.click(screen.getByText('Test'));
     });
-    expect(screen.getByText('Clicked')).toBeInTheDocument();
+    await expect(screen.getByText('Clicked')).toBeInTheDocument();
   });
 });

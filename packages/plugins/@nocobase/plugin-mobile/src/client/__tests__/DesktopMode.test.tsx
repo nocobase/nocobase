@@ -17,35 +17,35 @@ describe('DesktopMode', () => {
     await waitForApp();
 
     // back
-    expect(screen.queryByRole('link')).toHaveAttribute('href', '/admin');
+    await expect(screen.queryByRole('link')).toHaveAttribute('href', '/admin');
 
     // ui-editor
-    expect(screen.queryByTestId('ui-editor-button')).toBeInTheDocument();
+    await expect(screen.queryByTestId('ui-editor-button')).toBeInTheDocument();
 
     // size
     await act(async () => {
       await userEvent.click(screen.queryByTestId('desktop-mode-size-pad'));
     });
     await waitFor(() => {
-      expect(screen.queryByTestId('desktop-mode-resizable').style.width).toBe('768px');
+      await expect(screen.queryByTestId('desktop-mode-resizable').style.width).toBe('768px');
     });
     await act(async () => {
       await userEvent.click(screen.queryByTestId('desktop-mode-size-mobile'));
     });
     await waitFor(() => {
-      expect(screen.queryByTestId('desktop-mode-resizable').style.width).toBe('375px');
+      await expect(screen.queryByTestId('desktop-mode-resizable').style.width).toBe('375px');
     });
 
     // qrcode
-    expect(screen.queryByTestId('desktop-mode-qrcode')).toBeInTheDocument();
+    await expect(screen.queryByTestId('desktop-mode-qrcode')).toBeInTheDocument();
     await act(async () => {
       await userEvent.hover(screen.queryByTestId('desktop-mode-qrcode'));
     });
     await waitFor(() => {
-      expect(document.querySelector('canvas')).toBeInTheDocument();
+      await expect(document.querySelector('canvas')).toBeInTheDocument();
     });
 
     // content
-    expect(screen.queryByText('demo content')).toBeInTheDocument();
+    await expect(screen.queryByText('demo content')).toBeInTheDocument();
   });
 });

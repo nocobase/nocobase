@@ -16,13 +16,13 @@ describe('MobileProviders', () => {
   test('MobileTitleProvider', async () => {
     render(<MobileTitleProviderApp />);
     await waitFor(() => {
-      expect(screen.queryByText('Set Title')).toBeInTheDocument();
+      await expect(screen.queryByText('Set Title')).toBeInTheDocument();
     });
     await act(async () => {
       await userEvent.click(screen.queryByText('Set Title'));
     });
     await waitFor(() => {
-      expect(screen.queryByText('Hello World')).toBeInTheDocument();
+      await expect(screen.queryByText('Hello World')).toBeInTheDocument();
     });
   });
 
@@ -31,8 +31,8 @@ describe('MobileProviders', () => {
     await waitForApp();
 
     await waitFor(() => {
-      expect(screen.queryByText('Test1')).toBeInTheDocument();
-      expect(screen.queryByText('2')).toBeInTheDocument();
+      await expect(screen.queryByText('Test1')).toBeInTheDocument();
+      await expect(screen.queryByText('2')).toBeInTheDocument();
     });
   });
 });

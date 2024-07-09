@@ -20,7 +20,7 @@ describe('MobilePage', () => {
     await waitForApp();
 
     await waitFor(() => {
-      expect(screen.queryByText('Schema Test Page')).toBeInTheDocument();
+      await expect(screen.queryByText('Schema Test Page')).toBeInTheDocument();
     });
   });
   it('not found', async () => {
@@ -28,7 +28,7 @@ describe('MobilePage', () => {
     await waitForApp();
 
     await waitFor(() => {
-      expect(screen.queryByText('404')).toBeInTheDocument();
+      await expect(screen.queryByText('404')).toBeInTheDocument();
     });
 
     await act(async () => {
@@ -36,7 +36,7 @@ describe('MobilePage', () => {
     });
 
     await waitFor(() => {
-      expect(screen.queryByText('404')).not.toBeInTheDocument();
+      await expect(screen.queryByText('404')).not.toBeInTheDocument();
     });
   });
 
@@ -45,8 +45,8 @@ describe('MobilePage', () => {
     await waitForApp();
 
     await waitFor(() => {
-      expect(screen.queryByText('Tab1 Content')).toBeInTheDocument();
-      expect(screen.queryAllByRole('button')).toHaveLength(4);
+      await expect(screen.queryByText('Tab1 Content')).toBeInTheDocument();
+      await expect(screen.queryAllByRole('button')).toHaveLength(4);
     });
   });
 
@@ -55,7 +55,7 @@ describe('MobilePage', () => {
   //   await waitForApp();
 
   //   await waitFor(() => {
-  //     expect(screen.queryByText('Settings')).toBeInTheDocument();
+  //     await expect(screen.queryByText('Settings')).toBeInTheDocument();
   //   });
 
   //   await act(async () => {
@@ -63,7 +63,7 @@ describe('MobilePage', () => {
   //   });
 
   //   await waitFor(() => {
-  //     expect(document.querySelector('span[aria-label="designer-schema-settings-div-mobile:page"]')).toBeInTheDocument();
+  //     await expect(document.querySelector('span[aria-label="designer-schema-settings-div-mobile:page"]')).toBeInTheDocument();
   //   })
 
   //   await act(async () => {
@@ -71,9 +71,9 @@ describe('MobilePage', () => {
   //   });
 
   //   await waitFor(() => {
-  //     expect(screen.queryByText('Enable Navigation Bar')).toBeInTheDocument();
-  //     expect(screen.queryByText('Enable Navigation Bar Title')).not.toBeInTheDocument();
-  //     expect(screen.queryByText('Enable Navigation Bar Tabs')).not.toBeInTheDocument();
+  //     await expect(screen.queryByText('Enable Navigation Bar')).toBeInTheDocument();
+  //     await expect(screen.queryByText('Enable Navigation Bar Title')).not.toBeInTheDocument();
+  //     await expect(screen.queryByText('Enable Navigation Bar Tabs')).not.toBeInTheDocument();
   //   });
 
   //   await act(async () => {
@@ -81,9 +81,9 @@ describe('MobilePage', () => {
   //   });
 
   //   await waitFor(() => {
-  //     expect(screen.queryByText('Enable Navigation Bar Title')).toBeInTheDocument();
-  //     expect(screen.queryByText('Enable Navigation Bar Tabs')).toBeInTheDocument();
-  //     expect(screen.queryByTestId('schema-json')).toHaveTextContent(JSON.stringify({
+  //     await expect(screen.queryByText('Enable Navigation Bar Title')).toBeInTheDocument();
+  //     await expect(screen.queryByText('Enable Navigation Bar Tabs')).toBeInTheDocument();
+  //     await expect(screen.queryByTestId('schema-json')).toHaveTextContent(JSON.stringify({
   //       "enableNavigationBar": true
   //     }));
   //   });
@@ -93,7 +93,7 @@ describe('MobilePage', () => {
   //   });
 
   //   await waitFor(() => {
-  //     expect(screen.queryByTestId('schema-json')).toHaveTextContent(JSON.stringify({
+  //     await expect(screen.queryByTestId('schema-json')).toHaveTextContent(JSON.stringify({
   //       "enableNavigationBar": true,
   //       "enableNavigationBarTitle": false
   //     }));
@@ -104,7 +104,7 @@ describe('MobilePage', () => {
   //   });
 
   //   await waitFor(() => {
-  //     expect(screen.queryByTestId('schema-json')).toHaveTextContent(JSON.stringify({
+  //     await expect(screen.queryByTestId('schema-json')).toHaveTextContent(JSON.stringify({
   //       "enableNavigationBar": true,
   //       "enableNavigationBarTitle": false,
   //       "enableNavigationBarTabs": true
