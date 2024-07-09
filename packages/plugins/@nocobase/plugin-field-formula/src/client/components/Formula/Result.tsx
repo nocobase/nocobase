@@ -10,7 +10,6 @@
 import { onFormValuesChange } from '@formily/core';
 import { useField, useFieldSchema, useFormEffects } from '@formily/react';
 import { toJS } from '@formily/reactive';
-import type { CollectionOptions } from '@nocobase/client';
 import {
   Checkbox,
   DatePicker,
@@ -21,6 +20,7 @@ import {
   useFormBlockContext,
   ActionContext,
 } from '@nocobase/client';
+import { debounce } from 'lodash';
 import { Evaluator, evaluators } from '@nocobase/evaluators/client';
 import { Registry, toFixedByStep } from '@nocobase/utils/client';
 import React, { useEffect, useState, useContext } from 'react';
@@ -80,6 +80,7 @@ export function Result(props) {
   }, [value]);
 
   useFormEffects(() => {
+    const delayedOnChange = debounce(props.onChange, 300);
     onFormValuesChange((form) => {
       if (
         (fieldSchema.name as string).indexOf('.') >= 0 ||
@@ -101,7 +102,7 @@ export function Result(props) {
         setEditingValue(v);
       }
       setEditingValue(v);
-      props.onChange(v);
+      delayedOnChange(v);
       ctx?.setFormValueChanged?.(false);
     });
   });
