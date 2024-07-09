@@ -10,11 +10,8 @@
 import { observer, useField } from '@formily/react';
 import { AutoComplete, Select } from 'antd';
 import React, { useState, useEffect } from 'react';
-import { useRecord, useCompile, CollectionFieldOptions } from '@nocobase/client';
+import { useRecord, useCompile } from '@nocobase/client';
 import { useMBMFields } from './hooks';
-
-const isValidField = (field: CollectionFieldOptions) =>
-  ['set', 'array'].includes(field.type) && field.interface === 'json';
 
 export const ForeignKey = observer(
   (props: any) => {
@@ -55,16 +52,12 @@ export const ForeignKey = observer(
             const fields = foreignKeys;
             if (fields && open) {
               setOptions(
-                fields
-                  ?.filter((f) => {
-                    return isValidField(f);
-                  })
-                  .map((k) => {
-                    return {
-                      value: k.name,
-                      label: compile(k.uiSchema?.title || k.name),
-                    };
-                  }),
+                fields.map((k) => {
+                  return {
+                    value: k.name,
+                    label: compile(k.uiSchema?.title || k.name),
+                  };
+                }),
               );
             }
           }}
