@@ -87,7 +87,7 @@ export class BelongsToArrayField extends RelationField {
       return;
     }
     const foreignType = foreignField.type.constructor.toString();
-    if (!['ARRAY', 'JSON', 'JSONB'].includes(foreignType)) {
+    if (!['ARRAY', 'JSONTYPE', 'JSON', 'JSONB'].includes(foreignType)) {
       throw new Error(
         `The type of foreign key "${foreignKey}" in collection "${this.collection.name}" must be ARRAY, JSON or JSONB`,
       );
