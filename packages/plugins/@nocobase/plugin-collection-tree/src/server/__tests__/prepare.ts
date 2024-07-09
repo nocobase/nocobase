@@ -32,7 +32,7 @@ export async function createApp(options: any = {}) {
   const app = await createMockServer({
     acl: false,
     ...options,
-    plugins: ['error-handler', 'data-source-main', 'users', 'ui-schema-storage', 'collection-tree', 'nocobase'],
+    plugins: ['nocobase'],
   });
   return app;
 }
