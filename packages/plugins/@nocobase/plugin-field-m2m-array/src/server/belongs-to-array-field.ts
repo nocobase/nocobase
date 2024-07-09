@@ -81,19 +81,20 @@ export class BelongsToArrayField extends RelationField {
       throw new Error('Target key is required in the options of many to many (array) field.');
     }
 
-    const targetField = this.database.getCollection(target)?.getField(targetKey);
+    const targetField = this.database.getModel(target).getAttributes()[targetKey];
     if (!targetField) {
       throw new Error(`Target key "${targetKey}" not found in collection "${target}"`);
     }
+    const targetType = targetField.type.constructor.toString();
 
-    const foreignField = this.collection.getField(foreignKey);
+    const foreignField = this.collection.model.getAttributes()[foreignKey];
     if (!foreignField) {
       return;
     }
-
-    if (!['array', 'set'].includes(foreignField.type)) {
+    const foreignType = foreignField.type.constructor.toString();
+    if (!['ARRAY', 'JSON', 'JSONB'].includes(foreignType)) {
       throw new Error(
-        `Foreign key "${foreignKey}" must be an array or set field in collection "${this.collection.name}"`,
+        `The type of foreign key "${foreignKey}" in collection "${this.collection.name}" must be ARRAY, JSON or JSONB`,
       );
     }
 
@@ -101,10 +102,10 @@ export class BelongsToArrayField extends RelationField {
       return;
     }
 
-    const targetFieldType = elementTypeMap[targetField.type] || targetField.type;
-    if (foreignField.options.dataType === 'array' && foreignField.options.elementType !== targetFieldType) {
+    const elementType = (foreignField.type as any).type.constructor.toString();
+    if (foreignType === 'ARRAY' && elementType !== targetType) {
       throw new Error(
-        `The element type "${foreignField.options.elementType}" of foreign key "${foreignKey}" does not match the type "${targetFieldType}" of target key "${targetKey}" in collection "${target}"`,
+        `The element type "${elementType}" of foreign key "${foreignKey}" does not match the type "${targetType}" of target key "${targetKey}" in collection "${target}"`,
       );
     }
   }

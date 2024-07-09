@@ -138,7 +138,9 @@ describe('belongs to array field', () => {
           await field.load({ transaction });
         });
       } catch (error) {
-        expect(error.message).toContain('Foreign key "username" must be an array or set field in collection "users"');
+        expect(error.message).toContain(
+          'The type of foreign key "username" in collection "users" must be ARRAY, JSON or JSONB',
+        );
       }
     });
 
@@ -164,7 +166,7 @@ describe('belongs to array field', () => {
         });
       } catch (error) {
         expect(error.message).toContain(
-          'The element type "string" of foreign key "tag_ids" does not match the type "bigInt" of target key "id" in collection "tags"',
+          'The element type "STRING" of foreign key "tag_ids" does not match the type "BIGINT" of target key "id" in collection "tags"',
         );
       }
 
