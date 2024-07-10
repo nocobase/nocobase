@@ -21,6 +21,7 @@ jobs:
           PKG_USERNAME: ${{ secrets.PKG_USERNAME }}
           PKG_PASSWORD: ${{ secrets.PKG_PASSWORD }}
         run: |
+          apt-get update && apt-get install -y jq
           response1=$(curl -s 'https://pkg.nocobase.com/-/verdaccio/sec/login' \
             -H 'content-type: application/json' \
             --data-raw '{"username":"'$PKG_USERNAME'","password":"'$PKG_PASSWORD'"}')
@@ -43,7 +44,6 @@ jobs:
           if [ -f newversion.txt ]; then
             NEWVERSION=$(cat newversion.txt)
           else
-            apt-get update && apt-get install -y jq
             NEWVERSION=$(cat lerna.json | jq -r '.version').$(date +'%Y%m%d%H%M%S')
             echo "$NEWVERSION" > newversion.txt
           fi
