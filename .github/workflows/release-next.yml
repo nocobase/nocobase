@@ -34,12 +34,11 @@ jobs:
           echo "PKG_NOCOBASE_TOKEN=$token1" >> $GITHUB_ENV
           echo "PKG_SRC_NOCOBASE_TOKEN=$token2" >> $GITHUB_ENV
       - name: restore cache
-        id: cache1
+        id: cache
         uses: actions/cache@v3
         with:
           path: ./git-ci-cache
-          key: new-next-version-${{ github.run_id }}-v1
-          restore-keys: new-next-version
+          key: new-next-version-${{ github.run_id }}
       - name: Set NEWVERSION variable
         id: set_version
         run: |
@@ -55,22 +54,6 @@ jobs:
         run: echo "The new version is ${{ env.NEWVERSION }}"
       - name: Save NEWVERSION to cache
         run: echo "NEWVERSION=$NEWVERSION" >> ./git-ci-cache/newversion.txt
-      - name: save cache
-        id: cache2
-        uses: actions/cache@v3
-        with:
-          path: ./git-ci-cache
-          key: new-next-version-${{ github.run_id }}-v2
-          restore-keys: new-next-version
-      - name: Clear Cache
-        run: rm -f ./git-ci-cache/newversion.txt  # 删除缓存文件
-      - name: save cache
-        id: cache3
-        uses: actions/cache@v3
-        with:
-          path: ./git-ci-cache
-          key: new-next-version-${{ github.run_id }}-v3
-          restore-keys: new-next-version
       - name: publish npmjs.org
         continue-on-error: true
         run: |
@@ -115,12 +98,3 @@ jobs:
           bash generate-npmignore.sh ignore-src
           npm config set //pkg-src.nocobase.com/:_authToken=${{ env.PKG_SRC_NOCOBASE_TOKEN }}
           # yarn release:force --no-verify-access --no-git-reset --registry https://pkg-src.nocobase.com --dist-tag=next
-      - name: Clear Cache
-        run: rm -f ./git-ci-cache/newversion.txt  # 删除缓存文件
-      - name: Save newversion
-        id: cache4
-        uses: actions/cache/save@v3
-        with:
-          path: ./git-ci-cache
-          key: new-next-version-${{ github.run_id }}-v4
-          restore-keys: new-next-version
