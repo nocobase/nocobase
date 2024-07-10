@@ -19,6 +19,7 @@ jobs:
       - name: Read version from lerna.json and set NEWVERSION
         id: set_version
         run: |
+          apt-get update && apt-get install -y jq
           NEWVERSION=$(cat lerna.json | jq -r '.version').$(date +'%Y%m%d%H%M%S')
           echo "NEWVERSION=$NEWVERSION" >> $GITHUB_ENV
       - name: publish npmjs.org
