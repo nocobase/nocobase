@@ -73,14 +73,23 @@ const editTitle: SchemaSettingsItemType = {
         properties: {
           title: {
             type: 'string',
+            title: generatePluginTranslationTemplate('Title'),
             default: tab.title,
             'x-decorator': 'FormItem',
             'x-component': 'Input',
+            required: true,
+          },
+          icon: {
+            title: generatePluginTranslationTemplate('Icon'),
+            type: 'string',
+            'x-decorator': 'FormItem',
+            default: tab.icon,
+            'x-component': 'IconPicker',
           },
         },
       },
-      async onSubmit({ title }) {
-        await resource.update({ filterByTk: tab.id, values: { title } });
+      async onSubmit({ title, icon }) {
+        await resource.update({ filterByTk: tab.id, values: { title, icon } });
         refresh();
       },
     };

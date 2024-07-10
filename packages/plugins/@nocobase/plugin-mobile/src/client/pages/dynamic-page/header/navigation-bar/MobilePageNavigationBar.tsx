@@ -26,6 +26,7 @@ export const MobilePageNavigationBar: FC = () => {
       <NavBar
         backArrow={false}
         back={null}
+        style={{ height: 49 }}
         left={
           <SchemaToolbarProvider position="left">
             <RecursionField name="actionBarLeft" schema={fieldSchema} onlyRenderProperties />

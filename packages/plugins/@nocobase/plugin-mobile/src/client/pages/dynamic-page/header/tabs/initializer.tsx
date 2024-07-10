@@ -30,13 +30,14 @@ export const mobilePagesTabInitializer = new SchemaInitializer({
       <SchemaInitializerActionModal
         title={generatePluginTranslationTemplate('Add tab')}
         btnStyles={{ width: 32, padding: 0, marginRight: 12 }}
-        onSubmit={async ({ title }) => {
+        onSubmit={async ({ title, icon }) => {
           // 创建 Tab
           const tabSchemaUid = uid();
           await resource.create({
             values: {
               type: 'tabs',
               title,
+              icon,
               schemaUid: tabSchemaUid,
               parentId: activeTabBarItem.id,
             } as MobileRouteItem,
@@ -54,6 +55,12 @@ export const mobilePagesTabInitializer = new SchemaInitializer({
             required: true,
             'x-component': 'Input',
             'x-decorator': 'FormItem',
+          },
+          icon: {
+            title: generatePluginTranslationTemplate('Icon'),
+            type: 'string',
+            'x-decorator': 'FormItem',
+            'x-component': 'IconPicker',
           },
         }}
       ></SchemaInitializerActionModal>

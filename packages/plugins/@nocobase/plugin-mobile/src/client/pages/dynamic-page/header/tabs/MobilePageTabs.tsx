@@ -8,11 +8,11 @@
  */
 
 import React, { FC, useCallback } from 'react';
-import { Tabs, TabsProps } from 'antd-mobile';
+import { Space, Tabs, TabsProps } from 'antd-mobile';
 import { useParams, useNavigate, Navigate } from 'react-router-dom';
 
 import { useMobileRoutes } from '../../../../mobile-providers';
-import { DndContext, DndContextProps, SortableItem } from '@nocobase/client';
+import { DndContext, DndContextProps, Icon, SortableItem } from '@nocobase/client';
 import { useStyles } from './styles';
 import { MobilePageTabsSettings } from './settings';
 import { MobilePageTabInitializer } from './initializer';
@@ -61,7 +61,14 @@ export const MobilePageTabs: FC = () => {
               title={
                 <SortableItem id={item.id as any}>
                   <MobilePageTabsSettings tab={item} />
-                  {item.title}
+                  {item.icon ? (
+                    <Space>
+                      {item.title}
+                      <Icon type={item.icon} />
+                    </Space>
+                  ) : (
+                    item.title
+                  )}
                 </SortableItem>
               }
               key={String(item.schemaUid)}
