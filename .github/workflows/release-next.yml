@@ -28,10 +28,40 @@ jobs:
           git config --global user.email "test@mail.com"
           git config --global user.name "test"
           git config --global --add safe.directory /__w/nocobase/nocobase
+          npm config set access public
+          npm config set registry https://registry.npmjs.org/
+          npm config set //registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}
+          yarn config set access public
           yarn config set registry https://registry.npmjs.org/
+          yarn config set //registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}
           yarn install
           yarn lerna version ${{ env.NEWVERSION }} -y --no-git-tag-version
           echo "# test" >> Release.md
           git add .
           git commit -m "chore(versions): test publish packages xxx"
           cat lerna.json
+          yarn release:force --no-verify-access --no-git-reset --registry https://registry.npmjs.org/ --dist-tag=next
+      - name: Checkout pro-plugins
+        uses: actions/checkout@v3
+        with:
+          repository: nocobase/pro-plugins
+          path: packages/pro-plugins
+          ref: next
+          ssh-key: ${{ secrets.SUBMODULE_SSH_KEY }}
+      - name: Build Pro plugins
+        continue-on-error: true
+        run: |
+          yarn config set registry https://registry.npmjs.org/
+          yarn install
+          yarn build packages/pro-plugins
+      - name: publish pkg.nocobase.com
+        run: |
+          git reset --hard
+          npm config set //pkg.nocobase.com/:_authToken=${{ secrets.PKG_NOCOBASE_TOKEN }}
+          yarn release:force --no-verify-access --no-git-reset --registry https://pkg.nocobase.com --dist-tag=next
+      - name: publish pkg-src.nocobase.com
+        run: |
+          git reset --hard
+          bash generate-npmignore.sh ignore-src
+          npm config set //pkg-src.nocobase.com/:_authToken=${{ secrets.PKG_SRC_NOCOBASE_TOKEN }}
+          yarn release:force --no-verify-access --no-git-reset --registry https://pkg-src.nocobase.com --dist-tag=next
