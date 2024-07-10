@@ -54,6 +54,13 @@ jobs:
         run: echo "The new version is ${{ env.NEWVERSION }}"
       - name: Save NEWVERSION to cache
         run: echo "NEWVERSION=$NEWVERSION" >> ./git-ci-cache/newversion.txt
+      - name: save cache
+        id: save-cache
+        uses: actions/cache/save@v3
+        if: steps.cache.outputs.cache-hit != 'true'
+        with:
+          path: ./git-ci-cache
+          key: new-next-version-${{ github.run_id }}
       - name: publish npmjs.org
         continue-on-error: true
         run: |
@@ -73,7 +80,7 @@ jobs:
           git add .
           git commit -m "chore(versions): test publish packages xxx"
           cat lerna.json
-          # yarn release:force --no-verify-access --no-git-reset --registry https://registry.npmjs.org/ --dist-tag=next
+          yarn release:force --no-verify-access --no-git-reset --registry https://registry.npmjs.org/ --dist-tag=next
       - name: Checkout pro-plugins
         uses: actions/checkout@v3
         with:
@@ -91,10 +98,10 @@ jobs:
         run: |
           git reset --hard
           npm config set //pkg.nocobase.com/:_authToken=${{ env.PKG_NOCOBASE_TOKEN }}
-          # yarn release:force --no-verify-access --no-git-reset --registry https://pkg.nocobase.com --dist-tag=next
+          yarn release:force --no-verify-access --no-git-reset --registry https://pkg.nocobase.com --dist-tag=next
       - name: publish pkg-src.nocobase.com
         run: |
           git reset --hard
           bash generate-npmignore.sh ignore-src
           npm config set //pkg-src.nocobase.com/:_authToken=${{ env.PKG_SRC_NOCOBASE_TOKEN }}
-          # yarn release:force --no-verify-access --no-git-reset --registry https://pkg-src.nocobase.com --dist-tag=next
+          yarn release:force --no-verify-access --no-git-reset --registry https://pkg-src.nocobase.com --dist-tag=next
