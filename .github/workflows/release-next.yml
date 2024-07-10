@@ -54,6 +54,12 @@ jobs:
         run: echo "The new version is ${{ env.NEWVERSION }}"
       - name: Save NEWVERSION to cache
         run: echo "NEWVERSION=$NEWVERSION" >> ./git-ci-cache/newversion.txt
+      - name: Save newversion
+        id: save-cache1
+        uses: actions/cache/save@v3
+        with:
+          path: ./git-ci-cache
+          key: ${{ steps.restore-cache.outputs.cache-primary-key }}
       - name: publish npmjs.org
         continue-on-error: true
         run: |
@@ -101,7 +107,7 @@ jobs:
       - name: Clear Cache
         run: rm -f ./git-ci-cache/newversion.txt  # 删除缓存文件
       - name: Save newversion
-        id: save-cache
+        id: save-cache2
         uses: actions/cache/save@v3
         with:
           path: ./git-ci-cache
