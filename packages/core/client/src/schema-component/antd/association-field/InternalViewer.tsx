@@ -13,6 +13,7 @@ import React, { FC, Fragment, useRef, useState } from 'react';
 import { useDesignable } from '../../';
 import { WithoutTableFieldResource } from '../../../block-provider';
 import { useCollectionManager, useCollectionRecordData } from '../../../data-source';
+import { useOpenMode } from '../../../modules/popup/useOpenMode';
 import { VariablePopupRecordProvider } from '../../../modules/variable/variablesProvider/VariablePopupRecordProvider';
 import { useCompile } from '../../hooks';
 import { ActionContextProvider, useActionContext } from '../action';
@@ -139,6 +140,7 @@ export const ReadPrettyInternalViewer: React.FC = observer(
     const ellipsisWithTooltipRef = useRef<IEllipsisWithTooltipRef>();
     const { visibleWithURL, setVisibleWithURL } = usePagePopup();
     const [btnHover, setBtnHover] = useState(!!visibleWithURL);
+    const { getDefaultOpenMode } = useOpenMode();
 
     const btnElement = (
       <EllipsisWithTooltip ellipsis={true} ref={ellipsisWithTooltipRef}>
@@ -175,7 +177,7 @@ export const ReadPrettyInternalViewer: React.FC = observer(
               setVisible?.(value);
               setVisibleWithURL?.(value);
             },
-            openMode: 'drawer',
+            openMode: getDefaultOpenMode(),
             snapshot: collectionField?.interface === 'snapshot',
             fieldSchema: fieldSchema,
           }}

@@ -33,6 +33,7 @@ import { SchemaSettingsDataScope } from '../../../../schema-settings/SchemaSetti
 import { SchemaSettingsSortingRule } from '../../../../schema-settings/SchemaSettingsSortingRule';
 import { useIsShowMultipleSwitch } from '../../../../schema-settings/hooks/useIsShowMultipleSwitch';
 import { useLocalVariables, useVariables } from '../../../../variables';
+import { useOpenMode } from '../../../popup/useOpenMode';
 
 const enableLink = {
   name: 'enableLink',
@@ -162,6 +163,7 @@ const quickCreate: any = {
   name: 'quickCreate',
   type: 'select',
   useComponentProps() {
+    const { getDefaultOpenMode } = useOpenMode();
     const { t } = useTranslation();
     const field = useField<Field>();
     const fieldSchema = useFieldSchema();
@@ -194,7 +196,7 @@ const quickCreate: any = {
               'x-component': 'Action',
               'x-decorator': 'ACLActionProvider',
               'x-component-props': {
-                openMode: 'drawer',
+                openMode: getDefaultOpenMode(),
                 type: 'default',
                 component: 'CreateRecordAction',
               },
