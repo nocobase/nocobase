@@ -39,6 +39,10 @@ export class SyncManager {
   private outgoingBuffer: [string, SyncMessageData][] = [];
   private flushTimer: NodeJS.Timeout = null;
 
+  public get available() {
+    return this.adapter ? this.adapter.ready : false;
+  }
+
   private onSync = (messages: SyncMessage[]) => {
     this.app.logger.info('sync messages received into buffer:', messages);
     if (this.flushTimer) {
