@@ -36,12 +36,12 @@ jobs:
         id: cache-newversion-restore
         uses: actions/cache/restore@v4
         with:
-          path: newversion.txt
+          path: ./info
           key: newversion-key
       - name: Set NEWVERSION variable
         id: set_version
         run: |
-          ls -a
+          cd ./info
           if [ -f newversion.txt ]; then
             NEWVERSION=$(cat newversion.txt)
           else
@@ -54,12 +54,12 @@ jobs:
       - name: Save NEWVERSION to cache
         run: echo "NEWVERSION=$NEWVERSION" >> newversion.txt
       - name: Clear Cache
-        run: rm -f newversion.txt  # 删除缓存文件
+        run: rm -f ./info/newversion.txt  # 删除缓存文件
       - name: Save newversion
         id: cache-newversion-save
         uses: actions/cache/save@v4
         with:
-          path: newversion.txt
+          path: ./info
           key: newversion-key
       - name: publish npmjs.org
         continue-on-error: true
