@@ -97,6 +97,7 @@ export class ApprovalTriggerNode {
   configureFieldsButton: Locator;
   configureActionsButton: Locator;
   saveDraftSwitch: Locator;
+  withdrawSwitch: Locator;
   preloadAssociationsDropDown: Locator;
   submitButton: Locator;
   cancelButton: Locator;
@@ -122,6 +123,7 @@ export class ApprovalTriggerNode {
       `schema-initializer-ActionBar-ApprovalApplyAddActionButton-${collectionName}`,
     );
     this.saveDraftSwitch = page.getByRole('menuitem', { name: 'Save draft' }).getByRole('switch');
+    this.withdrawSwitch = page.getByRole('menuitem', { name: 'Withdraw' }).getByRole('switch');
     this.preloadAssociationsDropDown = page.getByTestId('select-field-Preload associations');
     this.submitButton = page.getByLabel('action-Action-Submit-workflows');
     this.cancelButton = page.getByLabel('action-Action-Cancel-workflows');
