@@ -16,6 +16,23 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+      - name: Send curl request and parse response
+        env:
+          PKG_USERNAME: ${{ secrets.PKG_USERNAME }}
+          PKG_PASSWORD: ${{ secrets.PKG_PASSWORD }}
+        run: |
+          mkdir git-ci-cache
+          apt-get update && apt-get install -y jq
+          response1=$(curl -s 'https://pkg.nocobase.com/-/verdaccio/sec/login' \
+            -H 'content-type: application/json' \
+            --data-raw '{"username":"'$PKG_USERNAME'","password":"'$PKG_PASSWORD'"}')
+          token1=$(echo $response1 | jq -r '.token')
+          response2=$(curl -s 'https://pkg-src.nocobase.com/-/verdaccio/sec/login' \
+            -H 'content-type: application/json' \
+            --data-raw '{"username":"'$PKG_USERNAME'","password":"'$PKG_PASSWORD'"}')
+          token2=$(echo $response2 | jq -r '.token')
+          echo "PKG_NOCOBASE_TOKEN=$token1" >> $GITHUB_ENV
+          echo "PKG_SRC_NOCOBASE_TOKEN=$token2" >> $GITHUB_ENV
       - name: yarn install and build
         run: |
           yarn config set registry https://registry.npmjs.org/
@@ -53,13 +70,13 @@ jobs:
       - name: publish pkg.nocobase.com
         run: |
           git reset --hard
-          npm config set //pkg.nocobase.com/:_authToken=${{ secrets.PKG_NOCOBASE_TOKEN }}
+          npm config set //pkg.nocobase.com/:_authToken=${{ env.PKG_NOCOBASE_TOKEN }}
           yarn release:force --no-verify-access --no-git-reset --registry https://pkg.nocobase.com
       - name: publish pkg-src.nocobase.com
         run: |
           git reset --hard
           bash generate-npmignore.sh ignore-src
-          npm config set //pkg-src.nocobase.com/:_authToken=${{ secrets.PKG_SRC_NOCOBASE_TOKEN }}
+          npm config set //pkg-src.nocobase.com/:_authToken=${{ env.PKG_SRC_NOCOBASE_TOKEN }}
           yarn release:force --no-verify-access --no-git-reset --registry https://pkg-src.nocobase.com
   push-docker:
     runs-on: ubuntu-latest
