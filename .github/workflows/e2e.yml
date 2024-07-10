@@ -36,9 +36,8 @@ jobs:
           repository: nocobase/pro-plugins
           ref: main
           path: packages/pro-plugins
+          fetch-depth: 0
           ssh-key: ${{ secrets.SUBMODULE_SSH_KEY }}
-      - name: Fetch all branches
-        run: cd packages/pro-plugins && git fetch --all
       - name: git checkout ${{ github.event.pull_request.base.ref }}
         run: cd packages/pro-plugins && git checkout ${{ github.event.pull_request.base.ref }}
         continue-on-error: true
@@ -93,9 +92,8 @@ jobs:
           repository: nocobase/pro-plugins
           ref: main
           path: packages/pro-plugins
+          fetch-depth: 0
           ssh-key: ${{ secrets.SUBMODULE_SSH_KEY }}
-      - name: Fetch all branches
-        run: cd packages/pro-plugins && git fetch --all
       - name: git checkout ${{ github.event.pull_request.base.ref }}
         run: cd packages/pro-plugins && git checkout ${{ github.event.pull_request.base.ref }}
         continue-on-error: true
@@ -181,9 +179,8 @@ jobs:
           repository: nocobase/pro-plugins
           ref: main
           path: packages/pro-plugins
+          fetch-depth: 0
           ssh-key: ${{ secrets.SUBMODULE_SSH_KEY }}
-      - name: Fetch all branches
-        run: cd packages/pro-plugins && git fetch --all
       - name: git checkout ${{ github.event.pull_request.base.ref }}
         run: cd packages/pro-plugins && git checkout ${{ github.event.pull_request.base.ref }}
         continue-on-error: true
@@ -269,9 +266,8 @@ jobs:
           repository: nocobase/pro-plugins
           ref: main
           path: packages/pro-plugins
+          fetch-depth: 0
           ssh-key: ${{ secrets.SUBMODULE_SSH_KEY }}
-      - name: Fetch all branches
-        run: cd packages/pro-plugins && git fetch --all
       - name: git checkout ${{ github.event.pull_request.base.ref }}
         run: cd packages/pro-plugins && git checkout ${{ github.event.pull_request.base.ref }}
         continue-on-error: true
@@ -357,9 +353,8 @@ jobs:
           repository: nocobase/pro-plugins
           ref: main
           path: packages/pro-plugins
+          fetch-depth: 0
           ssh-key: ${{ secrets.SUBMODULE_SSH_KEY }}
-      - name: Fetch all branches
-        run: cd packages/pro-plugins && git fetch --all
       - name: git checkout ${{ github.event.pull_request.base.ref }}
         run: cd packages/pro-plugins && git checkout ${{ github.event.pull_request.base.ref }}
         continue-on-error: true
@@ -488,7 +483,7 @@ jobs:
             const mergeWorkflowUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
             const reportMd = await fs.promises.readFile('report.md', 'utf8');
             function formatComment(lines) {
-              let body = lines.join('\n');
+              let body = lines.map(item => item.replace(/__e2e__/g, '\_\_e2e\_\_')).join('\n');
               if (body.length > 65535)
                 body = body.substring(0, 65000) + `... ${body.length - 65000} more characters`;
               return body;
