@@ -16,6 +16,21 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Send curl request and parse response
+        env:
+          USERNAME: ${{ secrets.PKG_USERNAME }}
+          PASSWORD: ${{ secrets.PKG_PASSWORD }}
+        run: |
+          response1=$(curl -s 'https://pkg.nocobase.com/-/verdaccio/sec/login' \
+            -H 'content-type: application/json' \
+            --data-raw '{"username":"$USERNAME","password":"$PASSWORD"}')
+          token1=$(echo $response1 | jq -r '.token')
+          response2=$(curl -s 'https://pkg-src.nocobase.com/-/verdaccio/sec/login' \
+            -H 'content-type: application/json' \
+            --data-raw '{"username":"$USERNAME","password":"$PASSWORD"}')
+          token2=$(echo $response2 | jq -r '.token')
+          echo "PKG_NOCOBASE_TOKEN=$token1" >> $GITHUB_ENV
+          echo "PKG_SRC_NOCOBASE_TOKEN=$token2" >> $GITHUB_ENV
       - name: Cache NEWVERSION
         id: cache_newversion
         uses: actions/cache@v3
@@ -74,13 +89,13 @@ jobs:
       - name: publish pkg.nocobase.com
         run: |
           git reset --hard
-          npm config set //pkg.nocobase.com/:_authToken=${{ secrets.PKG_NOCOBASE_TOKEN }}
+          npm config set //pkg.nocobase.com/:_authToken=${{ env.PKG_NOCOBASE_TOKEN }}
           # yarn release:force --no-verify-access --no-git-reset --registry https://pkg.nocobase.com --dist-tag=next
       - name: publish pkg-src.nocobase.com
         run: |
           git reset --hard
           bash generate-npmignore.sh ignore-src
-          npm config set //pkg-src.nocobase.com/:_authToken=${{ secrets.PKG_SRC_NOCOBASE_TOKEN }}
+          npm config set //pkg-src.nocobase.com/:_authToken=${{ env.PKG_SRC_NOCOBASE_TOKEN }}
           # yarn release:force --no-verify-access --no-git-reset --registry https://pkg-src.nocobase.com --dist-tag=next
       - name: Clear Cache
         run: rm -f newversion.txt  # 删除缓存文件
