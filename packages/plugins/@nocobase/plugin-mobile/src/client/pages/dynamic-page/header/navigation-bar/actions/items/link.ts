@@ -18,6 +18,7 @@ import { App } from 'antd';
 import { usePluginTranslation, generatePluginTranslationTemplate } from '../../../../../../locale';
 import { editAction } from '../actionCommonSettings';
 import { useLinkActionProps } from '@nocobase/client';
+import { actionCommonInitializerSchema } from '../actionCommonInitializerSchema';
 
 export const mobileNavigationBarLinkSettings = new SchemaSettings({
   name: `mobile:navigation-bar:actions:link`,
@@ -66,36 +67,7 @@ export const mobileNavigationBarLinkInitializerItem: SchemaInitializerItemAction
     return {
       title: t('Add link'),
       buttonText: t('Link'),
-      schema: {
-        title: {
-          type: 'string',
-          title: t('Title'),
-          'x-decorator': 'FormItem',
-          'x-component': 'Input',
-          'x-reactions': {
-            target: 'icon',
-            fulfill: {
-              state: {
-                required: '{{!$self.value}}',
-              },
-            },
-          },
-        },
-        icon: {
-          type: 'string',
-          title: t('Icon'),
-          'x-decorator': 'FormItem',
-          'x-component': 'IconPicker',
-          'x-reactions': {
-            target: 'title',
-            fulfill: {
-              state: {
-                required: '{{!$self.value}}',
-              },
-            },
-          },
-        },
-      },
+      schema: actionCommonInitializerSchema,
       isItem: true,
       onSubmit(values) {
         if (!values.title && !values.icon) {

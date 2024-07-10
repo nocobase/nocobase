@@ -9,6 +9,8 @@
 
 import { ISchema, createModalSettingsItem } from '@nocobase/client';
 import { generatePluginTranslationTemplate } from '../../../../../locale';
+import { ActionColorSelect } from './ActionColorSelect';
+import { ActionFillSelect } from './ActionFillSelect';
 
 export const editAction = (extraProperties?: (values: any) => Record<string, ISchema>) => {
   return createModalSettingsItem({
@@ -49,6 +51,28 @@ export const editAction = (extraProperties?: (values: any) => Record<string, ISc
               },
             },
           },
+        },
+        color: {
+          type: 'string',
+          title: generatePluginTranslationTemplate('Color'),
+          'x-decorator': 'FormItem',
+          'x-component': ActionColorSelect,
+        },
+        fill: {
+          type: 'boolean',
+          title: generatePluginTranslationTemplate('Fill'),
+          'x-decorator': 'FormItem',
+          'x-component': ActionFillSelect,
+          'x-reactions': [
+            {
+              dependencies: ['title', 'icon'],
+              fulfill: {
+                state: {
+                  visible: '{{!!$deps[0] && !!$deps[1]}}',
+                },
+              },
+            },
+          ],
         },
       },
     }),

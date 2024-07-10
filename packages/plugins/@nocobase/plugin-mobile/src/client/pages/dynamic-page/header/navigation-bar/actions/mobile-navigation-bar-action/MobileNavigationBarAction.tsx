@@ -8,12 +8,10 @@
  */
 
 import React, { FC, useMemo } from 'react';
-import { Space } from 'antd-mobile';
-import { Icon, cx } from '@nocobase/client';
+import { Button, ButtonProps, Space } from 'antd-mobile';
+import { BlockItem, Icon, useSchemaToolbar } from '@nocobase/client';
 
-import { useStyles } from './styles';
-
-interface MobileNavigationBarActionProps {
+interface MobileNavigationBarActionProps extends ButtonProps {
   icon?: string | React.ReactNode;
   title?: string;
   style?: React.CSSProperties;
@@ -25,22 +23,42 @@ export const MobileNavigationBarAction: FC<MobileNavigationBarActionProps> = Rea
   any,
   MobileNavigationBarActionProps
 >((props, ref) => {
-  const { icon, title, children, style = {}, className, onClick } = props;
-  const { styles } = useStyles();
-
+  const { icon, color, fill, children, style = {}, className, onClick } = props;
+  const { position } = useSchemaToolbar();
+  const title = children[0];
   const contentLength = [icon, title].filter(Boolean).length;
   const iconElement = useMemo(() => (typeof icon === 'string' ? <Icon type={icon} /> : icon), [icon]);
   return (
-    <div ref={ref} onClick={onClick} className={cx(styles.mobileNavigationBarAction, className)} style={style}>
-      {children}
-      {contentLength > 1 ? (
-        <Space>
-          {iconElement}
-          <span>{title}</span>
-        </Space>
-      ) : (
-        iconElement || title
-      )}
-    </div>
+    <>
+      <BlockItem>
+        <Button
+          ref={ref}
+          onClick={onClick}
+          color={color}
+          size="mini"
+          className={className}
+          style={{ padding: 3, ...style }}
+          fill={contentLength <= 1 ? 'none' : fill}
+        >
+          {contentLength > 1 ? (
+            position === 'left' ? (
+              <Space style={{ '--gap': '4px' }}>
+                {iconElement}
+                <span>{title}</span>
+              </Space>
+            ) : (
+              <Space style={{ '--gap': '4px' }}>
+                <span>{title}</span>
+                {iconElement}
+              </Space>
+            )
+          ) : (
+            iconElement || title
+          )}
+        </Button>
+      </BlockItem>
+    </>
   );
 });
+
+MobileNavigationBarAction.displayName = 'MobileNavigationBarAction';
