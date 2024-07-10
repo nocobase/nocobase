@@ -9,11 +9,10 @@
 
 import { observer, useField } from '@formily/react';
 import {
-  appendQueryStringToUrl,
-  parseVariablesAndChangeParamsToQueryString,
   replaceVariableValue,
   useBlockHeight,
   useLocalVariables,
+  useParseURLAndParams,
   useRequest,
   useVariables,
 } from '@nocobase/client';
@@ -49,7 +48,7 @@ export const Iframe: any = observer(
         ready: mode === 'html' && !!htmlId,
       },
     );
-
+    const { parseURLAndParams } = useParseURLAndParams();
     const [src, setSrc] = useState(null);
 
     useEffect(() => {
@@ -61,15 +60,7 @@ export const Iframe: any = observer(
           setSrc(dataUrl);
         } else {
           try {
-            const tempUrl = await replaceVariableValue(url, variables, localVariables);
-            const queryString = await parseVariablesAndChangeParamsToQueryString({
-              searchParams: params || [],
-              variables,
-              localVariables,
-              replaceVariableValue,
-            });
-
-            const targetUrl = appendQueryStringToUrl(tempUrl, queryString);
+            const targetUrl = parseURLAndParams(url, params || []);
             setSrc(targetUrl);
           } catch (error) {
             console.error('Error fetching target URL:', error);

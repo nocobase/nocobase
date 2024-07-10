@@ -22,6 +22,7 @@ import {
   SchemaSettingsSubMenu,
   useAPIClient,
   useDesignable,
+  useURLAndParamsSchema,
 } from '../../../';
 
 const toItems = (properties = {}) => {
@@ -60,6 +61,7 @@ const InsertMenuItems = (props) => {
   const { t } = useTranslation();
   const { dn } = useDesignable();
   const fieldSchema = useFieldSchema();
+  const { urlSchema, paramsSchema } = useURLAndParamsSchema();
   const isSubMenu = fieldSchema['x-component'] === 'Menu.SubMenu';
   if (!isSubMenu && insertPosition === 'beforeEnd') {
     return null;
@@ -184,15 +186,12 @@ const InsertMenuItems = (props) => {
                 'x-component': 'IconPicker',
                 'x-decorator': 'FormItem',
               },
-              href: {
-                title: t('Link'),
-                'x-component': 'Input',
-                'x-decorator': 'FormItem',
-              },
+              href: urlSchema,
+              params: paramsSchema,
             },
           } as ISchema
         }
-        onSubmit={({ title, icon, href }) => {
+        onSubmit={({ title, icon, href, params }) => {
           dn.insertAdjacent(insertPosition, {
             type: 'void',
             title,
@@ -201,6 +200,7 @@ const InsertMenuItems = (props) => {
             'x-component-props': {
               icon,
               href,
+              params,
             },
             'x-server-hooks': serverHooks,
           });
@@ -220,6 +220,7 @@ export const MenuDesigner = () => {
   const { t } = useTranslation();
   const menuSchema = findMenuSchema(fieldSchema);
   const compile = useCompile();
+  const { urlSchema, paramsSchema } = useURLAndParamsSchema();
   const onSelect = useMemo(
     () => compile(menuSchema?.['x-component-props']?.['onSelect']),
     [menuSchema?.['x-component-props']?.['onSelect']],
@@ -273,15 +274,13 @@ export const MenuDesigner = () => {
     };
   }, [field]);
   if (fieldSchema['x-component'] === 'Menu.URL') {
-    schema.properties['href'] = {
-      title: t('Link'),
-      'x-component': 'Input',
-      'x-decorator': 'FormItem',
-    };
+    schema.properties['href'] = urlSchema;
+    schema.properties['params'] = paramsSchema;
     initialValues['href'] = field.componentProps.href;
+    initialValues['params'] = field.componentProps.params;
   }
   const onEditSubmit: (values: any) => void = useCallback(
-    ({ title, icon, href }) => {
+    ({ title, icon, href, params }) => {
       const schema = {
         ['x-uid']: fieldSchema['x-uid'],
         'x-server-hooks': [
@@ -299,10 +298,12 @@ export const MenuDesigner = () => {
       }
       field.componentProps.icon = icon;
       field.componentProps.href = href;
-      schema['x-component-props'] = { icon, href };
+      field.componentProps.params = params;
+      schema['x-component-props'] = { icon, href, params };
       fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
       fieldSchema['x-component-props']['icon'] = icon;
       fieldSchema['x-component-props']['href'] = href;
+      fieldSchema['x-component-props']['params'] = params;
       onSelect?.({ item: { props: { schema: fieldSchema } } });
       dn.emit('patch', {
         schema,
