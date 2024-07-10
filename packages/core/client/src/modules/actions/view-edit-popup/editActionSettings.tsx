@@ -13,6 +13,7 @@ import { useCollection_deprecated } from '../../../collection-manager';
 import { ButtonEditor } from '../../../schema-component/antd/action/Action.Designer';
 import { SchemaSettingOpenModeSchemaItems } from '../../../schema-items';
 import { SchemaSettingsLinkageRules } from '../../../schema-settings';
+import { useOpenMode } from '../../popup/useOpenMode';
 
 export const editActionSettings = new SchemaSettings({
   name: 'actionSettings:edit',
@@ -40,9 +41,12 @@ export const editActionSettings = new SchemaSettings({
     {
       name: 'openMode',
       Component: SchemaSettingOpenModeSchemaItems,
-      componentProps: {
-        openMode: true,
-        openSize: true,
+      useComponentProps() {
+        const { isOpenModeVisible } = useOpenMode();
+        return {
+          openMode: isOpenModeVisible(),
+          openSize: isOpenModeVisible(),
+        };
       },
     },
     {

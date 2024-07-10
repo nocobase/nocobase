@@ -7,14 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { useFieldSchema } from '@formily/react';
 import { useMemo } from 'react';
 import { useSchemaToolbar } from '../../../application';
 import { SchemaSettings } from '../../../application/schema-settings/SchemaSettings';
 import { useCollection_deprecated, useCollectionManager_deprecated } from '../../../collection-manager';
 import { ButtonEditor } from '../../../schema-component/antd/action/Action.Designer';
 import { SchemaSettingOpenModeSchemaItems } from '../../../schema-items';
-import { SchemaSettingsLinkageRules, SchemaSettingsEnableChildCollections } from '../../../schema-settings';
+import { SchemaSettingsEnableChildCollections, SchemaSettingsLinkageRules } from '../../../schema-settings';
+import { useOpenMode } from '../../popup/useOpenMode';
 
 export const addChildActionSettings = new SchemaSettings({
   name: 'actionSettings:addChild',
@@ -42,9 +42,12 @@ export const addChildActionSettings = new SchemaSettings({
     {
       name: 'openMode',
       Component: SchemaSettingOpenModeSchemaItems,
-      componentProps: {
-        openMode: true,
-        openSize: true,
+      useComponentProps() {
+        const { isOpenModeVisible } = useOpenMode();
+        return {
+          openMode: isOpenModeVisible(),
+          openSize: isOpenModeVisible(),
+        };
       },
     },
     {

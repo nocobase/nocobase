@@ -16,6 +16,7 @@ import {
   SchemaSettingsRemove,
   SchemaSettingsSelectItem,
   useDesignable,
+  useOpenMode,
   useSchemaToolbar,
 } from '@nocobase/client';
 import { ModalProps } from 'antd';
@@ -137,14 +138,15 @@ export const bulkEditActionSettings = new SchemaSettings({
       name: 'openMode',
       Component: SchemaInitializerOpenModeSchemaItems,
       useComponentProps() {
+        const { isOpenModeVisible } = useOpenMode();
         const fieldSchema = useFieldSchema();
         const isPopupAction = ['create', 'update', 'view', 'customize:popup', 'duplicate', 'customize:create'].includes(
           fieldSchema['x-action'] || '',
         );
 
         return {
-          openMode: isPopupAction,
-          openSize: isPopupAction,
+          openMode: isPopupAction && isOpenModeVisible(),
+          openSize: isPopupAction && isOpenModeVisible(),
         };
       },
     },

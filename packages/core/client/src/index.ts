@@ -70,5 +70,6 @@ export * from './modules/blocks/data-blocks/table';
 export * from './modules/blocks/data-blocks/table-selector';
 export * from './modules/blocks/index';
 export * from './modules/blocks/useParentRecordCommon';
+export { useOpenMode } from './modules/popup/useOpenMode';
 
 export { VariablePopupRecordProvider } from './modules/variable/variablesProvider/VariablePopupRecordProvider';
