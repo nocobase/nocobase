@@ -26,7 +26,7 @@ test.describe('Link', () => {
     await page.getByRole('button', { name: 'designer-schema-settings-Action.Link-actionSettings:link-users' }).hover();
     await page.getByRole('menuitem', { name: 'Edit link' }).click();
     await page
-      .getByLabel('block-item-Variable.TextArea-users-table-URL')
+      .getByLabel('block-item-users-table-URL')
       .getByLabel('textbox')
       .fill(await nocoPage.getUrl());
     await page.getByPlaceholder('Name').fill('id');

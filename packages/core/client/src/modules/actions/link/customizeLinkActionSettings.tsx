@@ -25,7 +25,7 @@ export function SchemaSettingsActionLinkItem() {
   const { dn } = useDesignable();
   const { t } = useTranslation();
   const { urlSchema, paramsSchema } = useURLAndParamsSchema();
-  const initialValues = { url: field.componentProps.url, params: field.componentProps.params };
+  const initialValues = { url: field.componentProps.url, params: field.componentProps.params || [{}] };
 
   return (
     <SchemaSettingsModalItem
