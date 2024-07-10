@@ -53,6 +53,8 @@ jobs:
         run: echo "The new version is ${{ env.NEWVERSION }}"
       - name: Save NEWVERSION to cache
         run: echo "NEWVERSION=$NEWVERSION" >> newversion.txt
+      - name: Clear Cache
+        run: rm -f newversion.txt  # 删除缓存文件
       - name: Save newversion
         id: cache-newversion-save
         uses: actions/cache/save@v4
