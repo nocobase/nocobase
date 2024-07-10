@@ -1,0 +1,39 @@
+name: Release Next
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+on:
+  push:
+    branches:
+      - 'next-ci'
+
+jobs:
+  publish-npm:
+    runs-on: ubuntu-latest
+    container: node:18
+    steps:
+      - name: Read version from lerna.json and set NEWVERSION
+        id: set_version
+        run: |
+          NEWVERSION=$(cat lerna.json | jq -r '.version').$(date +'%Y%m%d%H%M%S')
+          echo "NEWVERSION=$NEWVERSION" >> $GITHUB_ENV
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: yarn install and build
+        run: |
+          yarn config set registry https://registry.npmjs.org/
+          yarn install
+          yarn build
+      - name: publish npmjs.org
+        continue-on-error: true
+        run: |
+          git config --global user.email "test@mail.com"
+          git config --global user.name "test"
+          git config --global --add safe.directory /__w/nocobase/nocobase
+          yarn lerna version ${{ env.NEWVERSION }} -y --no-git-tag-version
+          echo "# test" >> Release.md
+          git add .
+          git commit -m "chore(versions): test publish packages xxx"
+          cat lerna.json
