@@ -357,6 +357,7 @@ export const DataBlockInitializer: FC<DataBlockInitializerProps> = (props) => {
     itemsFromProps ||
     // eslint-disable-next-line react-hooks/rules-of-hooks
     useCollectionDataSourceItems({
+      name,
       componentName: componentType,
       filter,
       filterDataSource,

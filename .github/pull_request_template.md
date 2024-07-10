@@ -21,10 +21,10 @@ mention any potential risks,
 and provide some testing suggestions. 
 -->
 
+### Related issues
+
 ### Showcase
 <!-- Including any screenshots of the changes. -->
-
-### Related issues
 
 ### Changelog
 
@@ -32,6 +32,13 @@ and provide some testing suggestions.
 | ---------- | --------- |
 | 🇺🇸 English |           |
 | 🇨🇳 Chinese |           |
+
+### Docs
+
+| Language   | Link |
+| ---------- | --------- |
+| 🇺🇸 English |  <!-- [Title](link) -->    |
+| 🇨🇳 Chinese |  <!-- [标题](link) -->  |
 
 ### Checklists
 - [ ] All changes have been self-tested and work as expected

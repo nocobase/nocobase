@@ -24,7 +24,7 @@ import React, { createContext, useContext, useEffect, useMemo, useRef, useState 
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { createDesignable, DndContext, SortableItem, useDesignable, useDesigner } from '../..';
-import { Icon, useAPIClient, useSchemaInitializerRender } from '../../../';
+import { Icon, useAPIClient, useParseURLAndParams, useSchemaInitializerRender } from '../../../';
 import { useCollectMenuItems, useMenuItem } from '../../../hooks/useMenuItem';
 import { useProps } from '../../hooks/useProps';
 import { useMenuTranslation } from './locale';
@@ -551,9 +551,55 @@ Menu.Item = observer(
   { displayName: 'Menu.Item' },
 );
 
+const MenuURLButton = ({ href, params, icon }) => {
+  const field = useField();
+  const { t } = useMenuTranslation();
+  const Designer = useContext(MenuItemDesignerContext);
+  const { parseURLAndParams } = useParseURLAndParams();
+  const urlRef = useRef(href);
+
+  useEffect(() => {
+    const run = async () => {
+      try {
+        urlRef.current = await parseURLAndParams(href, params || []);
+      } catch (err) {
+        console.error(err);
+        urlRef.current = href;
+      }
+    };
+    run();
+  }, [href, JSON.stringify(params), parseURLAndParams]);
+
+  return (
+    <SortableItem
+      className={designerCss}
+      onClick={(event) => {
+        window.open(urlRef.current, '_blank');
+        event.preventDefault();
+        event.stopPropagation();
+      }}
+      removeParentsIfNoChildren={false}
+      aria-label={t(field.title)}
+    >
+      <Icon type={icon} />
+      <span
+        style={{
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          display: 'inline-block',
+          width: '100%',
+          verticalAlign: 'middle',
+        }}
+      >
+        {t(field.title)}
+      </span>
+      <Designer />
+    </SortableItem>
+  );
+};
+
 Menu.URL = observer(
   (props) => {
-    const { t } = useMenuTranslation();
     const { pushMenuItem } = useCollectMenuItems();
     const { icon, children, ...others } = props;
     const schema = useFieldSchema();
@@ -576,35 +622,12 @@ Menu.URL = observer(
         label: (
           <SchemaContext.Provider value={schema}>
             <FieldContext.Provider value={field}>
-              <SortableItem
-                className={designerCss}
-                onClick={(event) => {
-                  window.open(props.href, '_blank');
-                  event.preventDefault();
-                  event.stopPropagation();
-                }}
-                removeParentsIfNoChildren={false}
-                aria-label={t(field.title)}
-              >
-                <Icon type={icon} />
-                <span
-                  style={{
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    display: 'inline-block',
-                    width: '100%',
-                    verticalAlign: 'middle',
-                  }}
-                >
-                  {t(field.title)}
-                </span>
-                <Designer />
-              </SortableItem>
+              <MenuURLButton icon={icon} href={props.href} params={props.params} />
             </FieldContext.Provider>
           </SchemaContext.Provider>
         ),
       };
-    }, [field.title, icon, props.href, schema, Designer]);
+    }, [field.title, icon, props.href, schema, JSON.stringify(props.params)]);
 
     pushMenuItem(item);
     return null;
