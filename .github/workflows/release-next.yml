@@ -38,12 +38,6 @@ jobs:
       - name: Save NEWVERSION to cache
         if: steps.cache_newversion.outputs.cache-hit != 'true'
         run: echo "NEWVERSION=$NEWVERSION" >> newversion.txt
-      - name: Read version from lerna.json and set NEWVERSION
-        id: set_version
-        run: |
-          apt-get update && apt-get install -y jq
-          NEWVERSION=$(cat lerna.json | jq -r '.version').$(date +'%Y%m%d%H%M%S')
-          echo "NEWVERSION=$NEWVERSION" >> $GITHUB_ENV
       - name: publish npmjs.org
         continue-on-error: true
         run: |
