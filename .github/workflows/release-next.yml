@@ -33,9 +33,9 @@ jobs:
           token2=$(echo $response2 | jq -r '.token')
           echo "PKG_NOCOBASE_TOKEN=$token1" >> $GITHUB_ENV
           echo "PKG_SRC_NOCOBASE_TOKEN=$token2" >> $GITHUB_ENV
-      - name: Restore cached Primes
+      - name: Restore cached
         id: cache-newversion-restore
-        uses: actions/cache/restore@v4
+        uses: actions/cache@v4
         with:
           path: ./info
           key: newversion-key
@@ -58,7 +58,7 @@ jobs:
         run: rm -f ./info/newversion.txt  # 删除缓存文件
       - name: Save newversion
         id: cache-newversion-save
-        uses: actions/cache/save@v4
+        uses: actions/cache@v4
         with:
           path: ./info
           key: newversion-key
