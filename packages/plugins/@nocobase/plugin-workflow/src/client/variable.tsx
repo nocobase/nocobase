@@ -294,7 +294,7 @@ function matchFieldType(field, type: VariableDataType): boolean {
 }
 
 function isAssociationField(field): boolean {
-  return ['belongsTo', 'hasOne', 'hasMany', 'belongsToMany'].includes(field.type);
+  return ['belongsTo', 'hasOne', 'hasMany', 'belongsToMany', 'belongsToArray'].includes(field.type);
 }
 
 function getNextAppends(field, appends: string[] | null): string[] | null {

@@ -72,7 +72,10 @@ export const AssociationFieldProvider = observer(
       if (field.value !== null && field.value !== undefined) {
         // Nester 子表单时，如果没数据初始化一个 [{}] 的占位
         if (['Nester', 'PopoverNester'].includes(currentMode) && Array.isArray(field.value)) {
-          if (field.value.length === 0 && ['belongsToMany', 'hasMany'].includes(collectionField.type)) {
+          if (
+            field.value.length === 0 &&
+            ['belongsToMany', 'hasMany', 'belongsToArray'].includes(collectionField.type)
+          ) {
             field.value = [markRecordAsNew({})];
           }
         }
@@ -82,7 +85,7 @@ export const AssociationFieldProvider = observer(
       if (['Nester'].includes(currentMode)) {
         if (['belongsTo', 'hasOne'].includes(collectionField.type)) {
           field.value = {};
-        } else if (['belongsToMany', 'hasMany'].includes(collectionField.type)) {
+        } else if (['belongsToMany', 'hasMany', 'belongsToArray'].includes(collectionField.type)) {
           field.value = [markRecordAsNew({})];
         }
       }

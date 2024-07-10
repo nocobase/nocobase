@@ -7,10 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ArrayField } from './array-field';
-import { BaseColumnFieldOptions } from './field';
+import { ArrayField, ArrayFieldOptions } from './array-field';
 
-export interface SetFieldOptions extends BaseColumnFieldOptions {
+export interface SetFieldOptions extends Omit<ArrayFieldOptions, 'type'> {
   type: 'set';
 }
 
