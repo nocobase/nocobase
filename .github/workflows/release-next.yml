@@ -34,11 +34,12 @@ jobs:
           echo "PKG_NOCOBASE_TOKEN=$token1" >> $GITHUB_ENV
           echo "PKG_SRC_NOCOBASE_TOKEN=$token2" >> $GITHUB_ENV
       - name: restore cache
-        id: restore-cache
-        uses: actions/cache/restore@v3
+        id: cache1
+        uses: actions/cache@v3
         with:
           path: ./git-ci-cache
-          key: new-next-version
+          key: new-next-version-${{ github.run_id }}-v1
+          restore-keys: new-next-version
       - name: Set NEWVERSION variable
         id: set_version
         run: |
@@ -54,27 +55,22 @@ jobs:
         run: echo "The new version is ${{ env.NEWVERSION }}"
       - name: Save NEWVERSION to cache
         run: echo "NEWVERSION=$NEWVERSION" >> ./git-ci-cache/newversion.txt
-      # - name: Save newversion
-      #   id: save-cache1
-      #   uses: actions/cache/save@v3
-      #   with:
-      #     path: ./git-ci-cache
-      #     key: ${{ steps.restore-cache.outputs.cache-primary-key }}
-      - name: Delete Previous Cache
-        if: steps.restore-cache.outputs.cache-hit == 'true'
-        continue-on-error: true
-        run: |
-          rm -f ./git-ci-cache/newversion.txt
-          gh extension install actions/gh-actions-cache
-          gh actions-cache delete "new-next-version" --confirm
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Save newversion
-        id: save-cache3
-        uses: actions/cache/save@v3
+      - name: save cache
+        id: cache3
+        uses: actions/cache@v3
         with:
           path: ./git-ci-cache
-          key: ${{ steps.restore-cache.outputs.cache-primary-key }}
+          key: new-next-version-${{ github.run_id }}-v2
+          restore-keys: new-next-version
+      - name: Clear Cache
+        run: rm -f ./git-ci-cache/newversion.txt  # 删除缓存文件
+      - name: save cache
+        id: cache3
+        uses: actions/cache@v3
+        with:
+          path: ./git-ci-cache
+          key: new-next-version-${{ github.run_id }}-v3
+          restore-keys: new-next-version
       - name: publish npmjs.org
         continue-on-error: true
         run: |
@@ -122,8 +118,9 @@ jobs:
       - name: Clear Cache
         run: rm -f ./git-ci-cache/newversion.txt  # 删除缓存文件
       - name: Save newversion
-        id: save-cache2
+        id: cache4
         uses: actions/cache/save@v3
         with:
           path: ./git-ci-cache
-          key: ${{ steps.restore-cache.outputs.cache-primary-key }}
+          key: new-next-version-${{ github.run_id }}-v4
+          restore-keys: new-next-version
