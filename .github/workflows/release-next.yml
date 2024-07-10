@@ -54,16 +54,23 @@ jobs:
         run: echo "The new version is ${{ env.NEWVERSION }}"
       - name: Save NEWVERSION to cache
         run: echo "NEWVERSION=$NEWVERSION" >> ./git-ci-cache/newversion.txt
+      # - name: Save newversion
+      #   id: save-cache1
+      #   uses: actions/cache/save@v3
+      #   with:
+      #     path: ./git-ci-cache
+      #     key: ${{ steps.restore-cache.outputs.cache-primary-key }}
+      - name: Delete Previous Cache
+        if: ${{ steps.cache-restore.outputs.cache-hit }}
+        continue-on-error: true
+        run: |
+          rm -f ./git-ci-cache/newversion.txt
+          gh extension install actions/gh-actions-cache
+          gh actions-cache delete "new-next-version" --confirm
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Save newversion
-        id: save-cache1
-        uses: actions/cache/save@v3
-        with:
-          path: ./git-ci-cache
-          key: ${{ steps.restore-cache.outputs.cache-primary-key }}
-      - name: Clear Cache
-        run: rm -f ./git-ci-cache/newversion.txt  # 删除缓存文件
-      - name: Save newversion
-        id: save-cache2
+        id: save-cache3
         uses: actions/cache/save@v3
         with:
           path: ./git-ci-cache
