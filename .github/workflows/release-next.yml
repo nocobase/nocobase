@@ -46,7 +46,7 @@ jobs:
           if [ -f newversion.txt ]; then
             NEWVERSION=$(cat newversion.txt)
           else
-            NEWVERSION=$(cat lerna.json | jq -r '.version').$(date +'%Y%m%d%H%M%S')
+            NEWVERSION=$(cat ../lerna.json | jq -r '.version').$(date +'%Y%m%d%H%M%S')
             echo "$NEWVERSION" > newversion.txt
           fi
           echo "NEWVERSION=$NEWVERSION" >> $GITHUB_ENV
