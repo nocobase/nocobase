@@ -1530,14 +1530,36 @@ export function appendQueryStringToUrl(url: string, queryString: string) {
   return url;
 }
 
+export const useParseURLAndParams = () => {
+  const variables = useVariables();
+  const localVariables = useLocalVariables();
+
+  const parseURLAndParams = useCallback(
+    async (url: string, params: { name: string; value: any }[]) => {
+      const queryString = await parseVariablesAndChangeParamsToQueryString({
+        searchParams: params,
+        variables,
+        localVariables,
+        replaceVariableValue,
+      });
+      const targetUrl = await replaceVariableValue(url, variables, localVariables);
+      const result = appendQueryStringToUrl(targetUrl, queryString);
+
+      return result;
+    },
+    [variables, localVariables],
+  );
+
+  return { parseURLAndParams };
+};
+
 export function useLinkActionProps() {
   const navigate = useNavigateNoUpdate();
   const fieldSchema = useFieldSchema();
   const { t } = useTranslation();
   const url = fieldSchema?.['x-component-props']?.['url'];
   const searchParams = fieldSchema?.['x-component-props']?.['params'] || [];
-  const variables = useVariables();
-  const localVariables = useLocalVariables();
+  const { parseURLAndParams } = useParseURLAndParams();
 
   return {
     type: 'default',
@@ -1546,14 +1568,8 @@ export function useLinkActionProps() {
         message.warning(t('Please configure the URL'));
         return;
       }
-      const queryString = await parseVariablesAndChangeParamsToQueryString({
-        searchParams,
-        variables,
-        localVariables,
-        replaceVariableValue,
-      });
-      const targetUrl = await replaceVariableValue(url, variables, localVariables);
-      const link = appendQueryStringToUrl(targetUrl, queryString);
+      const link = await parseURLAndParams(url, searchParams);
+
       if (link) {
         if (isURL(link)) {
           window.open(link, '_blank');
