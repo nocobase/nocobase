@@ -182,6 +182,57 @@ test.describe('NavBar', () => {
   });
 
   test.describe('actions', () => {
-    test('link', async () => {});
+    test('link', async ({ page, mockMobilePage }) => {
+      const nocoPage = mockMobilePage();
+      await nocoPage.goto();
+      await expect(page.getByTestId('mobile-page-navigation-bar')).toBeVisible();
+      async function doPosition(position: 'left' | 'right') {
+        //  添加左侧 Action
+        await expect(page.getByTestId(`mobile-navigation-action-bar-${position}`)).toBeVisible();
+        const navigationBarPositionElement = page.getByTestId(`mobile-navigation-action-bar-${position}`);
+        await navigationBarPositionElement
+          .getByLabel('schema-initializer-MobileNavigationActionBar-mobile:navigation-bar:actions')
+          .click();
+        await page.getByRole('menuitem', { name: 'Link' }).click();
+        await page.getByRole('textbox').fill('Test');
+        await page.getByRole('button', { name: 'Select icon' }).click();
+        await page.getByTitle('alipaycircle').locator('path').click();
+        await page.getByLabel('action-Action-Submit').click();
+        await expect(navigationBarPositionElement).toContainText('Test');
+
+        // 编辑
+        await navigationBarPositionElement.getByText('Test').click();
+        await navigationBarPositionElement
+          .getByLabel('designer-schema-settings-Action-mobile:navigation-bar:actions:link')
+          .click();
+        await page.getByRole('menuitem', { name: 'Edit button' }).click();
+        await page.getByRole('textbox').fill('Test_changed');
+        await page.getByRole('button', { name: 'Submit' }).click();
+        await expect(navigationBarPositionElement).toContainText('Test_changed');
+
+        // 编辑 URL
+        await navigationBarPositionElement.getByText('Test_changed').click();
+        await navigationBarPositionElement
+          .getByLabel('designer-schema-settings-Action-mobile:navigation-bar:actions:link')
+          .click();
+        await page.getByRole('menuitem', { name: 'Edit link' }).click();
+        await page.getByLabel('block-item-Variable.TextArea-').getByLabel('textbox').fill('https://github.com');
+        await page.getByRole('button', { name: 'OK' }).click();
+
+        // 删除
+        await navigationBarPositionElement.getByText('Test_changed').click();
+        await navigationBarPositionElement
+          .getByLabel('designer-schema-settings-Action-mobile:navigation-bar:actions:link')
+          .click();
+        await page.getByRole('menuitem', { name: 'Delete' }).click();
+        await page.getByText('Delete action').click();
+        await page.getByRole('dialog').getByRole('button', { name: 'OK' }).click();
+        await expect(page.getByRole('dialog')).not.toBeVisible();
+        await expect(navigationBarPositionElement).not.toContainText('Test_changed');
+      }
+
+      await doPosition('left');
+      await doPosition('right');
+    });
   });
 });

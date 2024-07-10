@@ -416,9 +416,7 @@ export class NocoMobilePage extends NocoPage {
       waitList.push(createCollections(collections));
     }
 
-    waitList.push(
-      createMobilePage(this.options),
-    );
+    waitList.push(createMobilePage(this.options));
 
     const result = await Promise.all(waitList);
 
@@ -440,7 +438,7 @@ export class NocoMobilePage extends NocoPage {
 
   async mobileDestroy() {
     // 移除 mobile routes
-    await deleteMobileRoutes(this.routeId)
+    await deleteMobileRoutes(this.routeId);
     // 移除 schema
     await this.destroy();
   }
@@ -808,10 +806,10 @@ const createMobilePage = async (options?: CreateMobilePageOptions) => {
       type: type,
       schemaUid: pageSchemaUid,
       title: title,
-      icon: "appstoreoutlined",
+      icon: 'appstoreoutlined',
       options: {
         url,
-      }
+      },
     },
   });
   const responseData = await routerResponse.json();
@@ -827,62 +825,62 @@ const createMobilePage = async (options?: CreateMobilePageOptions) => {
     headers,
     data: {
       schema: {
-        "type": "void",
-        "name": pageSchemaUid,
-        "x-uid": pageSchemaUid,
-        "x-component": "MobilePageProvider",
-        "x-settings": "mobile:page",
-        "x-decorator": "BlockItem",
-        "x-toolbar-props": {
-          "draggable": false,
-          "spaceWrapperStyle": {
-            "right": -15,
-            "top": -15
+        type: 'void',
+        name: pageSchemaUid,
+        'x-uid': pageSchemaUid,
+        'x-component': 'MobilePageProvider',
+        'x-settings': 'mobile:page',
+        'x-decorator': 'BlockItem',
+        'x-toolbar-props': {
+          draggable: false,
+          spaceWrapperStyle: {
+            right: -15,
+            top: -15,
           },
-          "spaceClassName": "css-m1q7xw",
-          "toolbarStyle": {
-            "overflowX": "hidden"
-          }
+          spaceClassName: 'css-m1q7xw',
+          toolbarStyle: {
+            overflowX: 'hidden',
+          },
         },
-        "properties": {
-          "navigationBar": {
-            "type": "void",
-            "x-component": "MobilePageNavigationBar",
-            "properties": {
-              "actionBar": {
-                "type": "void",
-                "x-component": "MobileNavigationActionBar",
-                "x-initializer": "mobile:navigation-bar",
-                "x-component-props": {
-                  "spaceProps": {
-                    "style": {
-                      "flexWrap": "nowrap"
-                    }
-                  }
-                }
-              }
-            }
+        properties: {
+          navigationBar: {
+            type: 'void',
+            'x-component': 'MobilePageNavigationBar',
+            properties: {
+              actionBar: {
+                type: 'void',
+                'x-component': 'MobileNavigationActionBar',
+                'x-initializer': 'mobile:navigation-bar:actions',
+                'x-component-props': {
+                  spaceProps: {
+                    style: {
+                      flexWrap: 'nowrap',
+                    },
+                  },
+                },
+              },
+            },
           },
-          "content": {
-            "type": "void",
-            "x-component": "MobilePageContent",
-            "properties": {
+          content: {
+            type: 'void',
+            'x-component': 'MobilePageContent',
+            properties: {
               [firstTabUid]: {
                 ...((keepUid ? pageSchema : updateUidOfPageSchema(pageSchema)) || {
-                  "type": "void",
-                  "x-uid": firstTabUid,
-                  "x-async": true,
-                  "x-component": "Grid",
-                  "x-initializer": "mobile:addBlock",
+                  type: 'void',
+                  'x-uid': firstTabUid,
+                  'x-async': true,
+                  'x-component': 'Grid',
+                  'x-initializer': 'mobile:addBlock',
                 }),
                 name: firstTabUid,
                 'x-uid': firstTabUid,
-              }
-            }
-          }
-        }
-      }
-    }
+              },
+            },
+          },
+        },
+      },
+    },
   });
 
   if (!createSchemaResult.ok()) {
@@ -900,13 +898,12 @@ const createMobilePage = async (options?: CreateMobilePageOptions) => {
     },
   });
 
-
   if (!createTabResponse.ok()) {
     throw new Error(await createTabResponse.text());
   }
 
   return { url: schemaUrl, pageSchemaUid, routeId, title };
-}
+};
 
 export const removeAllMobileRoutes = async () => {
   const api = await request.newContext({
@@ -916,14 +913,17 @@ export const removeAllMobileRoutes = async () => {
   const state = await api.storageState();
   const headers = getHeaders(state);
 
-  const result = await api.post(`/api/mobileRoutes:destroy?filter=%7B%22%24and%22%3A%5B%7B%22id%22%3A%7B%22%24ne%22%3A0%7D%7D%5D%7D`, {
-    headers,
-  });
+  const result = await api.post(
+    `/api/mobileRoutes:destroy?filter=%7B%22%24and%22%3A%5B%7B%22id%22%3A%7B%22%24ne%22%3A0%7D%7D%5D%7D`,
+    {
+      headers,
+    },
+  );
 
   if (!result.ok()) {
     throw new Error(await result.text());
   }
-}
+};
 
 /**
  * 根据页面 id 删除一个 Mobile Routes 的页面
@@ -945,14 +945,17 @@ const deleteMobileRoutes = async (mobileRouteId: number) => {
     throw new Error(await result.text());
   }
 
-  const result2 = await api.post(`/api/mobileRoutes:destroy?filter=${encodeURIComponent(JSON.stringify({ parentId: mobileRouteId }))}`, {
-    headers,
-  });
+  const result2 = await api.post(
+    `/api/mobileRoutes:destroy?filter=${encodeURIComponent(JSON.stringify({ parentId: mobileRouteId }))}`,
+    {
+      headers,
+    },
+  );
 
   if (!result2.ok()) {
     throw new Error(await result2.text());
   }
-}
+};
 
 /**
  * 根据页面 uid 删除一个 NocoBase 的页面

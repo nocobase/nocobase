@@ -447,15 +447,17 @@ export const SchemaSettingsDivider = function Divider() {
 
 export interface SchemaSettingsRemoveProps {
   disabled?: boolean;
+  title?: string;
   confirm?: ModalFuncProps;
   removeParentsIfNoChildren?: boolean;
   breakRemoveOn?: ISchema | ((s: ISchema) => boolean);
 }
 export const SchemaSettingsRemove: FC<SchemaSettingsRemoveProps> = (props) => {
-  const { disabled, confirm, removeParentsIfNoChildren, breakRemoveOn } = props;
+  const { disabled, confirm, title, removeParentsIfNoChildren, breakRemoveOn } = props;
   const { dn, template } = useSchemaSettings();
   const { t } = useTranslation();
   const field = useField<Field>();
+  const compile = useCompile();
   const fieldSchema = useFieldSchema();
   const ctx = useBlockTemplateContext();
   const form = useForm();
@@ -470,7 +472,7 @@ export const SchemaSettingsRemove: FC<SchemaSettingsRemoveProps> = (props) => {
       eventKey="remove"
       onClick={() => {
         modal.confirm({
-          title: t('Delete block'),
+          title: title ? compile(title) : t('Delete block'),
           content: t('Are you sure you want to delete it?'),
           ...confirm,
           async onOk() {

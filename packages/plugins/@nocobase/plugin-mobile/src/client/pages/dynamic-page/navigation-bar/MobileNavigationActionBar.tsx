@@ -11,7 +11,13 @@ import { cx } from '@emotion/css';
 import { SpaceProps } from 'antd';
 import React, { CSSProperties, useContext } from 'react';
 import { ISchema, RecursionField, observer, useFieldSchema } from '@formily/react';
-import { DndContext, useProps, useSchemaInitializerRender, useSchemaToolbar, withDynamicSchemaProps } from '@nocobase/client';
+import {
+  DndContext,
+  useProps,
+  useSchemaInitializerRender,
+  useSchemaToolbar,
+  withDynamicSchemaProps,
+} from '@nocobase/client';
 
 export interface ActionBarProps {
   style?: CSSProperties;
@@ -58,18 +64,39 @@ export const MobileNavigationActionBar = withDynamicSchemaProps(
     });
     return (
       <DndContext>
-        {position !== 'bottom' ? <div
-          style={{ display: 'flex', alignItems: 'center', gap: 8, ...style, marginTop: 0, justifyContent: position === 'left' ? 'flex-start' : 'flex-end' }}
-          {...others}
-          className={cx(others.className, 'nb-action-bar')}
-        >
-          {position === 'left' && render({})}
-          {props.children && <div style={{ display: 'flex', gap: 10 }}>
-            <RecursionField onlyRenderProperties schema={fieldSchema} filterProperties={(schema) => schema['x-position'] === position} />
-          </div>}
-          {position === 'right' && render({})}
-        </div> : <RecursionField onlyRenderProperties schema={fieldSchema} filterProperties={(schema) => schema['x-position'] === position} />
-        }
+        {position !== 'bottom' ? (
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              ...style,
+              marginTop: 0,
+              justifyContent: position === 'left' ? 'flex-start' : 'flex-end',
+            }}
+            {...others}
+            data-testid={`mobile-navigation-action-bar-${position}`}
+            className={cx(others.className, 'nb-action-bar')}
+          >
+            {position === 'left' && render({})}
+            {props.children && (
+              <div style={{ display: 'flex', gap: 10 }}>
+                <RecursionField
+                  onlyRenderProperties
+                  schema={fieldSchema}
+                  filterProperties={(schema) => schema['x-position'] === position}
+                />
+              </div>
+            )}
+            {position === 'right' && render({})}
+          </div>
+        ) : (
+          <RecursionField
+            onlyRenderProperties
+            schema={fieldSchema}
+            filterProperties={(schema) => schema['x-position'] === position}
+          />
+        )}
       </DndContext>
     );
   }),

@@ -15,7 +15,7 @@ import {
   useSchemaInitializer,
 } from '@nocobase/client';
 import { App } from 'antd';
-import { usePluginTranslation } from '../../../../../locale';
+import { usePluginTranslation, generatePluginTranslationTemplate } from '../../../../../locale';
 import { editAction } from '../actionCommonSettings';
 import { useLinkActionProps } from '@nocobase/client';
 
@@ -30,6 +30,9 @@ export const mobileNavigationBarLinkSettings = new SchemaSettings({
     {
       name: 'remove',
       type: 'remove',
+      componentProps: {
+        title: generatePluginTranslationTemplate('Delete action'),
+      },
     },
   ],
 });
