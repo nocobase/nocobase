@@ -61,7 +61,7 @@ jobs:
       #     path: ./git-ci-cache
       #     key: ${{ steps.restore-cache.outputs.cache-primary-key }}
       - name: Delete Previous Cache
-        if: ${{ steps.cache-restore.outputs.cache-hit }}
+        if: steps.restore-cache.outputs.cache-hit == 'true'
         continue-on-error: true
         run: |
           rm -f ./git-ci-cache/newversion.txt
