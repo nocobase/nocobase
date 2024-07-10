@@ -52,6 +52,7 @@ jobs:
           yarn config set //registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}
           yarn install
           yarn lerna version ${{ env.NEWVERSION }} -y --no-git-tag-version
+          yarn build
           echo "# test" >> Release.md
           git add .
           git commit -m "chore(versions): test publish packages xxx"
