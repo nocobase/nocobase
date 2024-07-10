@@ -18,16 +18,16 @@ jobs:
         uses: actions/checkout@v4
       - name: Send curl request and parse response
         env:
-          USERNAME: ${{ secrets.PKG_USERNAME }}
-          PASSWORD: ${{ secrets.PKG_PASSWORD }}
+          PKG_USERNAME: ${{ secrets.PKG_USERNAME }}
+          PKG_PASSWORD: ${{ secrets.PKG_PASSWORD }}
         run: |
           response1=$(curl -s 'https://pkg.nocobase.com/-/verdaccio/sec/login' \
             -H 'content-type: application/json' \
-            --data-raw '{"username":"$USERNAME","password":"$PASSWORD"}')
+            --data-raw '{"username":"'$PKG_USERNAME'","password":"'$PKG_PASSWORD'"}')
           token1=$(echo $response1 | jq -r '.token')
           response2=$(curl -s 'https://pkg-src.nocobase.com/-/verdaccio/sec/login' \
             -H 'content-type: application/json' \
-            --data-raw '{"username":"$USERNAME","password":"$PASSWORD"}')
+            --data-raw '{"username":"'$PKG_USERNAME'","password":"'$PKG_PASSWORD'"}')
           token2=$(echo $response2 | jq -r '.token')
           echo "PKG_NOCOBASE_TOKEN=$token1" >> $GITHUB_ENV
           echo "PKG_SRC_NOCOBASE_TOKEN=$token2" >> $GITHUB_ENV
