@@ -22,7 +22,7 @@ jobs:
           PKG_PASSWORD: ${{ secrets.PKG_PASSWORD }}
         run: |
           mkdir git-ci-cache
-          apt-get update && apt-get install -y jq
+          apt-get update && apt-get install -y jq gh
           response1=$(curl -s 'https://pkg.nocobase.com/-/verdaccio/sec/login' \
             -H 'content-type: application/json' \
             --data-raw '{"username":"'$PKG_USERNAME'","password":"'$PKG_PASSWORD'"}')
