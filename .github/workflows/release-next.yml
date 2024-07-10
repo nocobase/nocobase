@@ -1,13 +1,11 @@
-name: Release
+name: Release Next
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 on:
-  push:
-    tags:
-      - 'v*'
+  workflow_dispatch:
 
 jobs:
   publish-npm:
@@ -15,14 +13,15 @@ jobs:
     container: node:18
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+        ref: next
       - name: Send curl request and parse response
         env:
           PKG_USERNAME: ${{ secrets.PKG_USERNAME }}
           PKG_PASSWORD: ${{ secrets.PKG_PASSWORD }}
         run: |
           mkdir git-ci-cache
-          apt-get update && apt-get install -y jq
+          apt-get update && apt-get install -y jq gh
           response1=$(curl -s 'https://pkg.nocobase.com/-/verdaccio/sec/login' \
             -H 'content-type: application/json' \
             --data-raw '{"username":"'$PKG_USERNAME'","password":"'$PKG_PASSWORD'"}')
@@ -33,33 +32,60 @@ jobs:
           token2=$(echo $response2 | jq -r '.token')
           echo "PKG_NOCOBASE_TOKEN=$token1" >> $GITHUB_ENV
           echo "PKG_SRC_NOCOBASE_TOKEN=$token2" >> $GITHUB_ENV
-      - name: yarn install and build
+      - name: restore cache
+        id: cache
+        uses: actions/cache@v3
+        with:
+          path: ./git-ci-cache
+          key: new-next-version-${{ github.run_id }}
+      - name: Set NEWVERSION variable
+        id: set_version
         run: |
-          yarn config set registry https://registry.npmjs.org/
-          yarn install
-          yarn build
+          cd ./git-ci-cache
+          if [ -f newversion.txt ]; then
+            NEWVERSION=$(cat newversion.txt)
+          else
+            NEWVERSION=$(cat ../lerna.json | jq -r '.version').$(date +'%Y%m%d%H%M%S')
+            echo "$NEWVERSION" > newversion.txt
+          fi
+          echo "NEWVERSION=$NEWVERSION" >> $GITHUB_ENV
+      - name: Print NEWVERSION
+        run: echo "The new version is ${{ env.NEWVERSION }}"
+      - name: Save NEWVERSION to cache
+        run: echo "NEWVERSION=$NEWVERSION" >> ./git-ci-cache/newversion.txt
+      - name: save cache
+        id: save-cache
+        uses: actions/cache/save@v3
+        if: steps.cache.outputs.cache-hit != 'true'
+        with:
+          path: ./git-ci-cache
+          key: new-next-version-${{ github.run_id }}
       - name: publish npmjs.org
         continue-on-error: true
         run: |
           git config --global user.email "test@mail.com"
           git config --global user.name "test"
           git config --global --add safe.directory /__w/nocobase/nocobase
-          echo "# test" >> Release.md
-          git add .
-          git commit -m "chore(versions): test publish packages xxx"
           npm config set access public
           npm config set registry https://registry.npmjs.org/
           npm config set //registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}
           yarn config set access public
           yarn config set registry https://registry.npmjs.org/
           yarn config set //registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}
-          npm whoami
-          yarn release:force --no-verify-access --no-git-reset --registry https://registry.npmjs.org/
+          yarn install
+          yarn lerna version ${{ env.NEWVERSION }} -y --no-git-tag-version
+          yarn build
+          echo "# test" >> Release.md
+          git add .
+          git commit -m "chore(versions): test publish packages xxx"
+          cat lerna.json
+          yarn release:force --no-verify-access --no-git-reset --registry https://registry.npmjs.org/ --dist-tag=next
       - name: Checkout pro-plugins
         uses: actions/checkout@v3
         with:
           repository: nocobase/pro-plugins
           path: packages/pro-plugins
+          ref: next
           ssh-key: ${{ secrets.SUBMODULE_SSH_KEY }}
       - name: Build Pro plugins
         continue-on-error: true
@@ -71,49 +97,10 @@ jobs:
         run: |
           git reset --hard
           npm config set //pkg.nocobase.com/:_authToken=${{ env.PKG_NOCOBASE_TOKEN }}
-          yarn release:force --no-verify-access --no-git-reset --registry https://pkg.nocobase.com
+          yarn release:force --no-verify-access --no-git-reset --registry https://pkg.nocobase.com --dist-tag=next
       - name: publish pkg-src.nocobase.com
         run: |
           git reset --hard
           bash generate-npmignore.sh ignore-src
           npm config set //pkg-src.nocobase.com/:_authToken=${{ env.PKG_SRC_NOCOBASE_TOKEN }}
-          yarn release:force --no-verify-access --no-git-reset --registry https://pkg-src.nocobase.com
-  push-docker:
-    runs-on: ubuntu-latest
-    needs: publish-npm
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v2
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
-      - name: Docker meta
-        id: meta
-        uses: docker/metadata-action@v4
-        with:
-          images: |
-            nocobase/nocobase
-          tags: |
-            type=ref,event=branch
-            type=ref,event=pr
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-      - name: Login to Docker Hub
-        uses: docker/login-action@v2
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-      - name: Login to Aliyun Container Registry (Public)
-        uses: docker/login-action@v2
-        with:
-          registry: ${{ secrets.ALI_DOCKER_PUBLIC_REGISTRY }}
-          username: ${{ secrets.ALI_DOCKER_USERNAME }}
-          password: ${{ secrets.ALI_DOCKER_PASSWORD }}
-      - name: Build and push
-        uses: docker/build-push-action@v3
-        with:
-          context: ./docker/nocobase
-          platforms: linux/amd64,linux/arm64
-          push: true
-          tags: nocobase/nocobase:latest,${{ steps.meta.outputs.tags }},${{ secrets.ALI_DOCKER_PUBLIC_REGISTRY }}/nocobase/nocobase:latest,${{ secrets.ALI_DOCKER_PUBLIC_REGISTRY }}/${{ steps.meta.outputs.tags }}
+          yarn release:force --no-verify-access --no-git-reset --registry https://pkg-src.nocobase.com --dist-tag=next
