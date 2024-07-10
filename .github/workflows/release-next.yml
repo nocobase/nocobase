@@ -14,7 +14,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        ref: next
+        with:
+          ref: next
       - name: Send curl request and parse response
         env:
           PKG_USERNAME: ${{ secrets.PKG_USERNAME }}
