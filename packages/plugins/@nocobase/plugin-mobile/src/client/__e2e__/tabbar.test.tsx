@@ -138,13 +138,13 @@ test.describe('TabBar', () => {
     // 点击后隐藏
     await page.getByLabel('block-item-MobilePageProvider').click();
     await page.getByLabel('designer-schema-settings-MobilePageProvider-mobile:page').click();
-    await page.getByRole('menuitem', { name: 'Enable tab bar' }).click();
+    await page.getByRole('menuitem', { name: 'Display tab bar' }).click();
     await expect(page.getByTestId('mobile-tab-bar')).not.toBeVisible();
 
     // 再次点击显示
     await page.getByLabel('block-item-MobilePageProvider').click();
     await page.getByLabel('designer-schema-settings-MobilePageProvider-mobile:page').click();
-    await page.getByRole('menuitem', { name: 'Enable tab bar' }).click();
+    await page.getByRole('menuitem', { name: 'Display tab bar' }).click();
     await expect(page.getByTestId('mobile-tab-bar')).toBeVisible();
   });
 });

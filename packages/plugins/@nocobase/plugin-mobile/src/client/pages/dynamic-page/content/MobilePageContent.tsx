@@ -18,12 +18,12 @@ export const MobilePageContent = () => {
   const { styles } = useStyles();
   const { activeTabBarItem } = useMobileRoutes();
   const [mobileTabBarHeight, setMobileTabBarHeight] = React.useState(0);
-  const [navigationBarHeight, setNavigationBarHeight] = React.useState(0);
+  const [mobilePageHeader, setMobilePageHeader] = React.useState(0);
   useEffect(() => {
     const mobileTabBar = document.querySelector<HTMLDivElement>('.mobile-tab-bar');
-    const navigationBar = document.querySelector<HTMLDivElement>('.mobile-page-navigation-bar');
+    const navigationBar = document.querySelector<HTMLDivElement>('.mobile-page-header');
     setMobileTabBarHeight(mobileTabBar?.offsetHeight);
-    setNavigationBarHeight(navigationBar?.offsetHeight);
+    setMobilePageHeader(navigationBar?.offsetHeight);
     // 这里依赖项要不需要填，每次都刷新
   });
 
@@ -35,7 +35,7 @@ export const MobilePageContent = () => {
       style={{
         height: '100%',
         paddingBottom: mobileTabBarHeight,
-        paddingTop: navigationBarHeight,
+        paddingTop: mobilePageHeader,
         boxSizing: 'border-box',
       }}
     >

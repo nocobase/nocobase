@@ -13,7 +13,7 @@ const Demo = () => {
   return (
     <div style={{ position: 'relative' }}>
       <MobileTitleProvider title="Title">
-        <MobilePageProvider enableNavigationBar={false}>
+        <MobilePageProvider displayNavigationBar={false}>
           <SchemaComponent schema={schema} />
         </MobilePageProvider>
       </MobileTitleProvider>

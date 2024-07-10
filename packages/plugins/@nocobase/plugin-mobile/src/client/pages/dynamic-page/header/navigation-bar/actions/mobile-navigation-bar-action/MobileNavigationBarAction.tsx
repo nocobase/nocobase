@@ -39,7 +39,7 @@ export const MobileNavigationBarAction: FC<MobileNavigationBarActionProps> = Rea
           <span>{title}</span>
         </Space>
       ) : (
-          iconElement || title
+        iconElement || title
       )}
     </div>
   );

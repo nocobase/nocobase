@@ -87,19 +87,24 @@ const editTitle: SchemaSettingsItemType = {
   },
 };
 
-export const mobilePageTabSettings = new SchemaSettings({
-  name: 'mobile:page:tab',
+export const mobilePageTabsSettings = new SchemaSettings({
+  name: 'mobile:page:tabs',
   items: [editTitle, remove],
 });
 
-interface MobilePageTabSettingsProps {
+interface MobilePageTabsSettingsProps {
   tab: MobileRouteItem;
 }
 
-export const MobilePageTabSettings: FC<MobilePageTabSettingsProps> = ({ tab }) => {
+export const MobilePageTabsSettings: FC<MobilePageTabsSettingsProps> = ({ tab }) => {
   return (
     <SchemaToolbarProvider tab={tab}>
-      <SchemaToolbar settings={mobilePageTabSettings} showBackground showBorder={false} toolbarStyle={{ inset: -10 }} />
+      <SchemaToolbar
+        settings={mobilePageTabsSettings}
+        showBackground
+        showBorder={false}
+        toolbarStyle={{ inset: -10 }}
+      />
     </SchemaToolbarProvider>
   );
 };

@@ -253,7 +253,7 @@ function getMobileTabBarItemSchema(routeItem: MobileRouteItem) {
     "x-settings": "mobile:page",
     "x-decorator": "BlockItem",
     "x-component-props": {
-        "enableNavigationBarTabs": true
+        "displayTabs": true
     },
     "properties": {
         "navigationBar": {

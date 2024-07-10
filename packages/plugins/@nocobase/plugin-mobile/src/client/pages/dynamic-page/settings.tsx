@@ -21,7 +21,7 @@ export const mobilePageSettings = new SchemaSettings({
       useComponentProps() {
         const { t } = usePluginTranslation();
         return {
-          title: t('App'),
+          title: t('App settings'),
         };
       },
       useVisible() {
@@ -37,7 +37,7 @@ export const mobilePageSettings = new SchemaSettings({
             const { showTabBar, setShowTabBar } = useMobileApp();
             const { refresh } = useDesignable();
             return {
-              title: t('Enable tab bar'),
+              title: t('Display tab bar'),
               checked: showTabBar,
               onChange(v) {
                 setShowTabBar(v);
@@ -54,34 +54,47 @@ export const mobilePageSettings = new SchemaSettings({
       useComponentProps() {
         const { t } = usePluginTranslation();
         return {
-          title: t('Page'),
+          title: t('Page settings'),
         };
       },
       children: [
         createSwitchSettingsItem({
-          name: 'enableNavigationBar',
-          title: generatePluginTranslationTemplate('Enable navigation bar'),
+          name: 'displayPageHeader',
+          title: generatePluginTranslationTemplate('Display page header'),
           defaultValue: true,
-          schemaKey: 'x-component-props.enableNavigationBar',
+          schemaKey: 'x-component-props.displayPageHeader',
         }),
         createSwitchSettingsItem({
-          name: 'enableNavigationBarTitle',
-          title: generatePluginTranslationTemplate('Enable navigation bar title'),
+          name: 'displayNavigationBar',
+          title: generatePluginTranslationTemplate('Display navigation bar'),
           defaultValue: true,
-          schemaKey: 'x-component-props.enableNavigationBarTitle',
+          schemaKey: 'x-component-props.displayNavigationBar',
           useVisible() {
             const schema = useFieldSchema();
-            return schema['x-component-props']?.['enableNavigationBar'] !== false;
+            return schema['x-component-props']?.['displayPageHeader'] !== false;
           },
         }),
         createSwitchSettingsItem({
-          name: 'enableNavigationBarTabs',
-          title: generatePluginTranslationTemplate('Enable navigation bar tabs'),
-          defaultValue: false,
-          schemaKey: 'x-component-props.enableNavigationBarTabs',
+          name: 'displayPageTitle',
+          title: generatePluginTranslationTemplate('Display page title'),
+          defaultValue: true,
+          schemaKey: 'x-component-props.displayPageTitle',
           useVisible() {
             const schema = useFieldSchema();
-            return schema['x-component-props']?.['enableNavigationBar'] !== false;
+            return (
+              schema['x-component-props']?.['displayNavigationBar'] !== false &&
+              schema['x-component-props']?.['displayPageHeader'] !== false
+            );
+          },
+        }),
+        createSwitchSettingsItem({
+          name: 'displayTabs',
+          title: generatePluginTranslationTemplate('Display tabs'),
+          defaultValue: false,
+          schemaKey: 'x-component-props.displayTabs',
+          useVisible() {
+            const schema = useFieldSchema();
+            return schema['x-component-props']?.['displayPageHeader'] !== false;
           },
         }),
       ],

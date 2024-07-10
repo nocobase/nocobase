@@ -8,32 +8,21 @@
  */
 
 import React, { FC } from 'react';
-import { NavBar, SafeArea } from 'antd-mobile';
+import { NavBar } from 'antd-mobile';
 import { RecursionField, useFieldSchema } from '@formily/react';
 
-import { useStyles } from './styles';
-import { useMobilePage } from '../context';
-import { useMobileTitle } from '../../../mobile-providers';
-import { MobilePageNavigationBarTabs } from './MobilePageNavigationBarTabs';
-import { cx, SchemaToolbarProvider } from '@nocobase/client';
+import { useMobilePage } from '../../context';
+import { useMobileTitle } from '../../../../mobile-providers';
+import { SchemaToolbarProvider } from '@nocobase/client';
 
-export const MobilePageNavigationBar: FC = ({ children }) => {
+export const MobilePageNavigationBar: FC = () => {
   const { title } = useMobileTitle();
-  const {
-    enableNavigationBar = true,
-    enableNavigationBarTabs = false,
-    enableNavigationBarTitle = true,
-  } = useMobilePage();
+  const { displayNavigationBar = true, displayPageTitle = true } = useMobilePage();
   const fieldSchema = useFieldSchema();
-  const { styles } = useStyles();
-  if (!enableNavigationBar) return null;
+  if (!displayNavigationBar) return null;
 
   return (
-    <div
-      className={cx(styles.mobileNavigationBar, 'mobile-page-navigation-bar')}
-      data-testid="mobile-page-navigation-bar"
-    >
-      <SafeArea position="top" />
+    <div className={'mobile-page-navigation-bar'} data-testid="mobile-page-navigation-bar">
       <NavBar
         backArrow={false}
         back={null}
@@ -48,14 +37,12 @@ export const MobilePageNavigationBar: FC = ({ children }) => {
           </SchemaToolbarProvider>
         }
       >
-        {enableNavigationBarTitle ? title : null}
+        {displayPageTitle ? title : null}
       </NavBar>
 
       <SchemaToolbarProvider position="bottom">
         <RecursionField name="actionBarBottom" schema={fieldSchema} onlyRenderProperties />
       </SchemaToolbarProvider>
-
-      {enableNavigationBarTabs && <MobilePageNavigationBarTabs />}
     </div>
   );
 };

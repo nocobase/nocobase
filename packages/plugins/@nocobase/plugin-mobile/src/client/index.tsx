@@ -22,15 +22,17 @@ import {
   MobilePageContent,
   MobilePageProvider,
   mobilePageSettings,
+  MobilePageHeader,
   MobileNavigationBarAction,
   mobileAddBlockInitializer,
   useMobileNavigationBarLink,
-  mobilePageTabSettings,
+  mobilePageTabsSettings,
   MobilePageNavigationBar,
-  mobilePageTabInitializer,
+  mobilePagesTabInitializer,
   mobileNavigationBarActionsInitializer,
   mobileNavigationBarLinkSettings,
   MobileNavigationActionBar,
+  MobilePageTabs,
 } from './pages';
 import {
   MobileTabBar,
@@ -121,7 +123,7 @@ export class PluginMobileClient extends Plugin {
     this.app.schemaInitializerManager.add(
       mobileAddBlockInitializer,
       mobileTabBarInitializer,
-      mobilePageTabInitializer,
+      mobilePagesTabInitializer,
       mobileNavigationBarActionsInitializer,
     );
   }
@@ -131,7 +133,7 @@ export class PluginMobileClient extends Plugin {
       mobilePageSettings,
       mobileTabBarPageSettings,
       mobileTabBarLinkSettings,
-      mobilePageTabSettings,
+      mobilePageTabsSettings,
       mobileNavigationBarLinkSettings,
     );
   }
@@ -144,6 +146,8 @@ export class PluginMobileClient extends Plugin {
       MobileHomePage,
       MobilePageContent,
       MobileTabBar,
+      MobilePageHeader,
+      MobilePageTabs,
       MobileNavigationActionBar,
       MobileNotFoundPage,
     });

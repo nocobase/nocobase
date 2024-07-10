@@ -7,5 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+export * from './MobilePageTabs';
+export * from './styles';
 export * from './settings';
 export * from './initializer';

@@ -20,8 +20,8 @@ import { getPageContentTabSchema } from '../../content';
 import { MobileRouteItem, useMobileRoutes } from '../../../../mobile-providers';
 import { generatePluginTranslationTemplate } from '../../../../locale';
 
-export const mobilePageTabInitializer = new SchemaInitializer({
-  name: 'mobile:page:tab',
+export const mobilePagesTabInitializer = new SchemaInitializer({
+  name: 'mobile:page:tabs',
   Component: () => {
     const { refresh, resource, activeTabBarItem } = useMobileRoutes();
     const { insert } = useSchemaInitializer();
@@ -62,6 +62,6 @@ export const mobilePageTabInitializer = new SchemaInitializer({
 });
 
 export const MobilePageTabInitializer = () => {
-  const { render } = useSchemaInitializerRender(mobilePageTabInitializer.name);
+  const { render } = useSchemaInitializerRender(mobilePagesTabInitializer.name);
   return render();
 };

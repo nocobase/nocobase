@@ -7,8 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from './tab';
-export * from './schema';
-export * from './actions-initializer';
-export * from './MobilePageNavigationBar';
+export * from './items';
+export * from './mobileNavigationBarActionsInitializer';
+export * from './mobile-navigation-bar-action';
 export * from './MobileNavigationActionBar';

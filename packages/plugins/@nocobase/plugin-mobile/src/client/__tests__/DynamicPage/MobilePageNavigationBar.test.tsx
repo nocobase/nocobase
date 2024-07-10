@@ -24,7 +24,7 @@ describe('MobilePageNavigationBar', () => {
     });
   });
 
-  it('enableNavigationBar: false', async () => {
+  it('displayNavigationBar: false', async () => {
     render(<NavFalse />);
     await waitForApp();
 
@@ -33,7 +33,7 @@ describe('MobilePageNavigationBar', () => {
     });
   });
 
-  it('enableNavigationBarTitle: false', async () => {
+  it('displayPageTitle: false', async () => {
     render(<NavTitleFalse />);
     await waitForApp();
 
@@ -42,7 +42,7 @@ describe('MobilePageNavigationBar', () => {
     });
   });
 
-  it('enableNavigationBarTabs: true', async () => {
+  it('displayTabs: true', async () => {
     render(<NavTabs />);
     await waitForApp();
 

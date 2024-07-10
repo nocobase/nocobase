@@ -7,17 +7,21 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { FC, useCallback, useEffect } from 'react';
+import React, { FC, useCallback } from 'react';
 import { Tabs, TabsProps } from 'antd-mobile';
-import { useParams, useLocation, useNavigate, Navigate } from 'react-router-dom';
+import { useParams, useNavigate, Navigate } from 'react-router-dom';
 
-import { useMobileRoutes } from '../../../mobile-providers';
-import { MobilePageTabInitializer, MobilePageTabSettings } from './tab';
+import { useMobileRoutes } from '../../../../mobile-providers';
 import { DndContext, DndContextProps, SortableItem } from '@nocobase/client';
 import { useStyles } from './styles';
+import { MobilePageTabsSettings } from './settings';
+import { MobilePageTabInitializer } from './initializer';
+import { useMobilePage } from '../../context';
 
-export const MobilePageNavigationBarTabs: FC = () => {
+export const MobilePageTabs: FC = () => {
   const { activeTabBarItem, resource, refresh } = useMobileRoutes();
+  const { displayTabs = false } = useMobilePage();
+
   const navigate = useNavigate();
   const { styles } = useStyles();
   const { tabSchemaUid } = useParams<{ tabSchemaUid: string }>();
@@ -43,18 +47,20 @@ export const MobilePageNavigationBarTabs: FC = () => {
     },
     [resource, refresh],
   );
-  if (!activeTabBarItem) return <Navigate replace to='/' />
+
+  if (!activeTabBarItem) return <Navigate replace to="/" />;
+  if (!displayTabs) return null;
 
   return (
-    <div className={styles.mobileNavigationBarTabsWrapper} data-testid='mobile-mobile-page-navigation-bar-tabs'>
+    <div className={styles.mobilePageTabs} data-testid="mobile-page-tabs">
       <DndContext onDragEnd={handleDragEnd}>
-        <Tabs activeKey={activeKey} onChange={handleChange} className={styles.mobileNavigationBarTabs}>
+        <Tabs activeKey={activeKey} onChange={handleChange} className={styles.mobilePageTabsList}>
           {activeTabBarItem.children?.map((item) => (
             <Tabs.Tab
-              data-testid={`mobile-mobile-page-navigation-bar-tabs-${item.title}`}
+              data-testid={`mobile-page-tabs-${item.title}`}
               title={
                 <SortableItem id={item.id as any}>
-                  <MobilePageTabSettings tab={item} />
+                  <MobilePageTabsSettings tab={item} />
                   {item.title}
                 </SortableItem>
               }

@@ -13,15 +13,19 @@ export interface MobilePageContextProps {
   /**
    * @default true
    */
-  enableNavigationBar?: boolean;
+  displayPageHeader?: boolean;
   /**
    * @default true
    */
-  enableNavigationBarTitle?: boolean;
+  displayNavigationBar?: boolean;
+  /**
+   * @default true
+   */
+  displayPageTitle?: boolean;
   /**
    * @default false
    */
-  enableNavigationBarTabs?: boolean;
+  displayTabs?: boolean;
 }
 
 export const MobilePageContext = createContext<MobilePageContextProps>(null);

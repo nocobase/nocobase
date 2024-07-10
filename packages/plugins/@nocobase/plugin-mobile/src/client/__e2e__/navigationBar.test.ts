@@ -22,13 +22,13 @@ test.describe('NavBar', () => {
       // 点击后隐藏
       await page.getByLabel('block-item-MobilePageProvider').click();
       await page.getByLabel('designer-schema-settings-MobilePageProvider-mobile:page').click();
-      await page.getByRole('menuitem', { name: 'Enable navigation bar', exact: true }).click();
+      await page.getByRole('menuitem', { name: 'Display page header', exact: true }).click();
       await expect(page.getByTestId('mobile-page-navigation-bar')).not.toBeVisible();
 
       // 再次点击显示
       await page.getByLabel('block-item-MobilePageProvider').click();
       await page.getByLabel('designer-schema-settings-MobilePageProvider-mobile:page').click();
-      await page.getByRole('menuitem', { name: 'Enable navigation bar' }).click();
+      await page.getByRole('menuitem', { name: 'Display page header' }).click();
       await expect(page.getByTestId('mobile-page-navigation-bar')).toBeVisible();
       await expect(page.getByTestId('mobile-page-navigation-bar')).toContainText(nocoPage.getTitle());
     });
@@ -44,13 +44,13 @@ test.describe('NavBar', () => {
       // 点击后隐藏
       await page.getByLabel('block-item-MobilePageProvider').click();
       await page.getByLabel('designer-schema-settings-MobilePageProvider-mobile:page').click();
-      await page.getByRole('menuitem', { name: 'Enable navigation bar title' }).click();
+      await page.getByRole('menuitem', { name: 'Display page title' }).click();
       await expect(page.getByTestId('mobile-page-navigation-bar')).not.toContainText(nocoPage.getTitle());
 
       // 再次点击显示
       await page.getByLabel('block-item-MobilePageProvider').click();
       await page.getByLabel('designer-schema-settings-MobilePageProvider-mobile:page').click();
-      await page.getByRole('menuitem', { name: 'Enable navigation bar title' }).click();
+      await page.getByRole('menuitem', { name: 'Display page title' }).click();
       await expect(page.getByTestId('mobile-page-navigation-bar')).toContainText(nocoPage.getTitle());
     });
 
@@ -60,20 +60,20 @@ test.describe('NavBar', () => {
 
       // 默认没有 tabs
       await page.getByLabel('block-item-MobilePageProvider').click();
-      await expect(page.getByTestId('mobile-mobile-page-navigation-bar-tabs')).not.toBeVisible();
+      await expect(page.getByTestId('mobile-page-tabs')).not.toBeVisible();
 
       // 点击后现实
       await page.getByLabel('block-item-MobilePageProvider').click();
       await page.getByLabel('designer-schema-settings-MobilePageProvider-mobile:page').click();
-      await page.getByRole('menuitem', { name: 'Enable navigation bar tabs' }).click();
-      await expect(page.getByTestId('mobile-mobile-page-navigation-bar-tabs')).toBeVisible();
-      await expect(page.getByTestId('mobile-mobile-page-navigation-bar-tabs')).toContainText('Unnamed');
+      await page.getByRole('menuitem', { name: 'Display tabs' }).click();
+      await expect(page.getByTestId('mobile-page-tabs')).toBeVisible();
+      await expect(page.getByTestId('mobile-page-tabs')).toContainText('Unnamed');
 
       // 再次点击隐藏
       await page.getByLabel('block-item-MobilePageProvider').click();
       await page.getByLabel('designer-schema-settings-MobilePageProvider-mobile:page').click();
-      await page.getByRole('menuitem', { name: 'Enable navigation bar tabs' }).click();
-      await expect(page.getByTestId('mobile-mobile-page-navigation-bar-tabs')).not.toBeVisible();
+      await page.getByRole('menuitem', { name: 'Display tabs' }).click();
+      await expect(page.getByTestId('mobile-page-tabs')).not.toBeVisible();
     });
   });
 
@@ -83,23 +83,17 @@ test.describe('NavBar', () => {
       await nocoPage.goto();
       await page.getByLabel('block-item-MobilePageProvider').click();
       await page.getByLabel('designer-schema-settings-MobilePageProvider-mobile:page').click();
-      await page.getByRole('menuitem', { name: 'Enable navigation bar tabs' }).click();
-      await expect(page.getByTestId('mobile-mobile-page-navigation-bar-tabs')).toBeVisible();
-      await expect(page.getByTestId('mobile-mobile-page-navigation-bar-tabs')).toContainText('Unnamed');
+      await page.getByRole('menuitem', { name: 'Display tabs' }).click();
+      await expect(page.getByTestId('mobile-page-tabs')).toBeVisible();
+      await expect(page.getByTestId('mobile-page-tabs')).toContainText('Unnamed');
 
-      await page.getByTestId('mobile-mobile-page-navigation-bar-tabs').click();
-      await expect(page.getByRole('menuitem', { name: 'Enable navigation bar tabs' })).not.toBeVisible();
+      await page.getByTestId('mobile-page-tabs').click();
+      await expect(page.getByRole('menuitem', { name: 'Display tabs' })).not.toBeVisible();
     });
 
     test('settings', async ({ page }) => {
-      await page
-        .getByTestId('mobile-mobile-page-navigation-bar-tabs')
-        .getByTestId(`mobile-mobile-page-navigation-bar-tabs-Unnamed`)
-        .click();
-      await page
-        .getByTestId('mobile-mobile-page-navigation-bar-tabs')
-        .getByLabel('designer-schema-settings-MobilePageNavigationBar')
-        .click();
+      await page.getByTestId('mobile-page-tabs').getByTestId(`mobile-page-tabs-Unnamed`).click();
+      await page.getByTestId('mobile-page-tabs').getByLabel('designer-schema-settings-MobilePageNavigationBar').click();
 
       await expect(page.getByRole('menuitem', { name: 'Edit', exact: true })).toBeVisible();
       await expect(page.getByRole('menuitem', { name: 'Remove' })).not.toBeVisible(); // 仅有一项的时候不显示删除
@@ -108,20 +102,12 @@ test.describe('NavBar', () => {
       const newTitle = Math.random().toString(36).substring(2);
       await page.getByRole('textbox').fill(newTitle);
       await page.getByRole('button', { name: 'Submit' }).click();
-      await expect(
-        page
-          .getByTestId('mobile-mobile-page-navigation-bar-tabs')
-          .getByTestId(`mobile-mobile-page-navigation-bar-tabs-${newTitle}`),
-      ).toHaveText(newTitle);
+      await expect(page.getByTestId('mobile-page-tabs').getByTestId(`mobile-page-tabs-${newTitle}`)).toHaveText(
+        newTitle,
+      );
 
-      await page
-        .getByTestId('mobile-mobile-page-navigation-bar-tabs')
-        .getByTestId(`mobile-mobile-page-navigation-bar-tabs-${newTitle}`)
-        .click();
-      await page
-        .getByTestId('mobile-mobile-page-navigation-bar-tabs')
-        .getByLabel('designer-schema-settings-MobilePageNavigationBar')
-        .click();
+      await page.getByTestId('mobile-page-tabs').getByTestId(`mobile-page-tabs-${newTitle}`).click();
+      await page.getByTestId('mobile-page-tabs').getByLabel('designer-schema-settings-MobilePageNavigationBar').click();
       await page.getByRole('menuitem', { name: 'Edit' }).click();
       await expect(page.getByRole('textbox')).toHaveValue(newTitle);
     });
@@ -136,31 +122,21 @@ test.describe('NavBar', () => {
       const title = Math.random().toString(36).substring(2);
       await page.getByRole('textbox').fill(title);
       await page.getByRole('button', { name: 'Submit' }).click();
-      await expect(
-        page
-          .getByTestId('mobile-mobile-page-navigation-bar-tabs')
-          .getByTestId(`mobile-mobile-page-navigation-bar-tabs-${title}`),
-      ).toHaveText(title);
+      await expect(page.getByTestId('mobile-page-tabs').getByTestId(`mobile-page-tabs-${title}`)).toHaveText(title);
 
       // 第一项也显示删除了
+      await page.getByTestId('mobile-page-tabs').getByTestId(`mobile-page-tabs-Unnamed`).click();
       await page
-        .getByTestId('mobile-mobile-page-navigation-bar-tabs')
-        .getByTestId(`mobile-mobile-page-navigation-bar-tabs-Unnamed`)
-        .click();
-      await page
-        .getByTestId('mobile-mobile-page-navigation-bar-tabs-Unnamed')
+        .getByTestId('mobile-page-tabs-Unnamed')
         .getByLabel('designer-schema-settings-MobilePageNavigationBar')
         .click();
       await expect(page.getByRole('menuitem', { name: 'Delete' })).toBeVisible();
       await expect(page.getByRole('menuitem', { name: 'Edit', exact: true })).toBeVisible();
 
       // 新增显示删除和编辑
+      await page.getByTestId('mobile-page-tabs').getByTestId(`mobile-page-tabs-${title}`).click();
       await page
-        .getByTestId('mobile-mobile-page-navigation-bar-tabs')
-        .getByTestId(`mobile-mobile-page-navigation-bar-tabs-${title}`)
-        .click();
-      await page
-        .getByTestId(`mobile-mobile-page-navigation-bar-tabs-${title}`)
+        .getByTestId(`mobile-page-tabs-${title}`)
         .getByLabel('designer-schema-settings-MobilePageNavigationBar')
         .click();
       await expect(page.getByRole('menuitem', { name: 'Delete' })).toBeVisible();
@@ -172,7 +148,7 @@ test.describe('NavBar', () => {
       // 删除
       await page.getByRole('menuitem', { name: 'Delete' }).click();
       await page.getByRole('button', { name: 'OK' }).click();
-      await expect(page.getByTestId('mobile-mobile-page-navigation-bar-tabs')).not.toContainText(title);
+      await expect(page.getByTestId('mobile-page-tabs')).not.toContainText(title);
       // 等待删除完成
       await page.waitForTimeout(500);
 

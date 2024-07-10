@@ -7,9 +7,5 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from './MobilePage';
-export * from './schema';
-export * from './settings';
-export * from './context';
-export * from './content';
-export * from './header';
+export * from './actions';
+export * from './MobilePageNavigationBar';

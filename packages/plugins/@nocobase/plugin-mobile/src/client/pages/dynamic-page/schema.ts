@@ -8,7 +8,7 @@
  */
 
 import { getMobilePageContentSchema } from './content';
-import { mobilePageNavigationBarSchema } from './navigation-bar';
+import { mobilePageHeaderSchema } from './header';
 import { mobilePageSettings } from './settings';
 import { css } from '@nocobase/client';
 
@@ -51,7 +51,7 @@ export function getMobilePageSchema(pageSchemaUid: string, firstTabUid: string) 
       },
     },
     properties: {
-      navigationBar: mobilePageNavigationBarSchema,
+      header: mobilePageHeaderSchema,
       content: getMobilePageContentSchema(firstTabUid),
     },
   };

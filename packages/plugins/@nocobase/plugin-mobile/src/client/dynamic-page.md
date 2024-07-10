@@ -42,15 +42,15 @@ interface MobilePageContextProps {
   /**
    * @default true
    */
-  enableNavigationBar?: boolean;
+  displayNavigationBar?: boolean;
   /**
    * @default true
    */
-  enableNavigationBarTitle?: boolean;
+  displayPageTitle?: boolean;
   /**
    * @default false
    */
-  enableNavigationBarTabs?: boolean;
+  displayTabs?: boolean;
 }
 ```
 
@@ -89,19 +89,19 @@ interface MobilePageContextProps {
 
 <code src="./demos/pages-navigation-bar-basic.tsx"></code>
 
-#### enableNavigationBar: false
+#### displayNavigationBar: false
 
 <code src="./demos/pages-navigation-bar-false.tsx"></code>
 
-#### enableNavigationBarTitle: false
+#### displayPageTitle: false
 
 <code src="./demos/pages-navigation-bar-title-false.tsx"></code>
 
-#### enableNavigationBarTabs: true
+#### displayTabs: true
 
 <code src="./demos/pages-navigation-bar-tabs.tsx"></code>
 
-## MobilePageNavigationBarTabs
+## MobilePageTabs
 
 `MobilePageNavigationBar` 左右以及底部的操作按钮。
 

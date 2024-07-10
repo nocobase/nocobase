@@ -142,8 +142,8 @@ const app = mockApp({
         version: '2.0',
         'x-async': false,
         'x-component-props': {
-          enableNavigationBarTitle: true,
-          enableNavigationBarTabs: true,
+          displayPageTitle: true,
+          displayTabs: true,
         },
         properties: {
           navigationBar: {

@@ -21,7 +21,7 @@ const Demo = () => {
     <div style={{ position: 'relative' }}>
       <MobileTitleProvider title="Title">
         <MobileRoutesProvider>
-          <MobilePageProvider enableNavigationBarTabs={true}>
+          <MobilePageProvider displayTabs={true}>
             <SchemaComponent schema={schema} />
             <div>{pathname}</div>
           </MobilePageProvider>

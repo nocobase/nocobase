@@ -15,7 +15,7 @@ import {
   useSchemaInitializer,
 } from '@nocobase/client';
 import { App } from 'antd';
-import { usePluginTranslation, generatePluginTranslationTemplate } from '../../../../../locale';
+import { usePluginTranslation, generatePluginTranslationTemplate } from '../../../../../../locale';
 import { editAction } from '../actionCommonSettings';
 import { useLinkActionProps } from '@nocobase/client';
 

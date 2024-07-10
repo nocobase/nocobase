@@ -8,7 +8,7 @@
  */
 
 import { ISchema, createModalSettingsItem } from '@nocobase/client';
-import { generatePluginTranslationTemplate } from '../../../../locale';
+import { generatePluginTranslationTemplate } from '../../../../../locale';
 
 export const editAction = (extraProperties?: (values: any) => Record<string, ISchema>) => {
   return createModalSettingsItem({
@@ -33,7 +33,7 @@ export const editAction = (extraProperties?: (values: any) => Record<string, ISc
                 required: '{{!$self.value}}',
               },
             },
-          }
+          },
         },
         icon: {
           title: generatePluginTranslationTemplate('Icon'),
@@ -48,7 +48,7 @@ export const editAction = (extraProperties?: (values: any) => Record<string, ISc
                 required: '{{!$self.value}}',
               },
             },
-          }
+          },
         },
       },
     }),

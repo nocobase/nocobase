@@ -71,43 +71,43 @@ describe('MobilePage', () => {
   //   });
 
   //   await waitFor(() => {
-  //     expect(screen.queryByText('Enable navigation bar')).toBeInTheDocument();
-  //     expect(screen.queryByText('Enable navigation bar title')).not.toBeInTheDocument();
-  //     expect(screen.queryByText('Enable navigation bar tabs')).not.toBeInTheDocument();
+  //     expect(screen.queryByText('Display page header')).toBeInTheDocument();
+  //     expect(screen.queryByText('Display page title')).not.toBeInTheDocument();
+  //     expect(screen.queryByText('Display tabs')).not.toBeInTheDocument();
   //   });
 
   //   await act(async () => {
-  //     await userEvent.click(screen.getByText('Enable navigation bar'));
+  //     await userEvent.click(screen.getByText('Display page header'));
   //   });
 
   //   await waitFor(() => {
-  //     expect(screen.queryByText('Enable navigation bar title')).toBeInTheDocument();
-  //     expect(screen.queryByText('Enable navigation bar tabs')).toBeInTheDocument();
+  //     expect(screen.queryByText('Display page title')).toBeInTheDocument();
+  //     expect(screen.queryByText('Display tabs')).toBeInTheDocument();
   //     expect(screen.queryByTestId('schema-json')).toHaveTextContent(JSON.stringify({
-  //       "enableNavigationBar": true
+  //       "displayNavigationBar": true
   //     }));
   //   });
 
   //   await act(async () => {
-  //     await userEvent.click(screen.getByText('Enable navigation bar title'));
+  //     await userEvent.click(screen.getByText('Display page title'));
   //   });
 
   //   await waitFor(() => {
   //     expect(screen.queryByTestId('schema-json')).toHaveTextContent(JSON.stringify({
-  //       "enableNavigationBar": true,
-  //       "enableNavigationBarTitle": false
+  //       "displayNavigationBar": true,
+  //       "displayPageTitle": false
   //     }));
   //   });
 
   //   await act(async () => {
-  //     await userEvent.click(screen.getByText('Enable navigation bar tabs'));
+  //     await userEvent.click(screen.getByText('Display tabs'));
   //   });
 
   //   await waitFor(() => {
   //     expect(screen.queryByTestId('schema-json')).toHaveTextContent(JSON.stringify({
-  //       "enableNavigationBar": true,
-  //       "enableNavigationBarTitle": false,
-  //       "enableNavigationBarTabs": true
+  //       "displayNavigationBar": true,
+  //       "displayPageTitle": false,
+  //       "displayTabs": true
   //     }));
   //   });
   // });
