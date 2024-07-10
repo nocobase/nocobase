@@ -32,15 +32,16 @@ jobs:
           token2=$(echo $response2 | jq -r '.token')
           echo "PKG_NOCOBASE_TOKEN=$token1" >> $GITHUB_ENV
           echo "PKG_SRC_NOCOBASE_TOKEN=$token2" >> $GITHUB_ENV
-      - name: Cache NEWVERSION
-        id: cache_newversion
-        uses: actions/cache@v3
+      - name: Restore cached Primes
+        id: cache-newversion-restore
+        uses: actions/cache/restore@v4
         with:
           path: newversion.txt
           key: newversion-key
       - name: Set NEWVERSION variable
         id: set_version
         run: |
+          ls -a
           if [ -f newversion.txt ]; then
             NEWVERSION=$(cat newversion.txt)
           else
@@ -51,8 +52,13 @@ jobs:
       - name: Print NEWVERSION
         run: echo "The new version is ${{ env.NEWVERSION }}"
       - name: Save NEWVERSION to cache
-        if: steps.cache_newversion.outputs.cache-hit != 'true'
         run: echo "NEWVERSION=$NEWVERSION" >> newversion.txt
+      - name: Save newversion
+        id: cache-newversion-save
+        uses: actions/cache/save@v4
+        with:
+          path: newversion.txt
+          key: newversion-key
       - name: publish npmjs.org
         continue-on-error: true
         run: |
