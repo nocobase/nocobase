@@ -56,7 +56,7 @@ jobs:
       - name: Save NEWVERSION to cache
         run: echo "NEWVERSION=$NEWVERSION" >> ./git-ci-cache/newversion.txt
       - name: save cache
-        id: cache3
+        id: cache2
         uses: actions/cache@v3
         with:
           path: ./git-ci-cache
