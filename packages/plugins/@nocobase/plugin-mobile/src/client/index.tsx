@@ -35,7 +35,6 @@ import {
 import {
   MobileTabBar,
   MobileLayout,
-  mobileTabBarSettings,
   mobileTabBarInitializer,
   mobileTabBarLinkSettings,
   mobileTabBarPageSettings,
@@ -129,7 +128,6 @@ export class PluginMobileClient extends Plugin {
 
   addSettings() {
     this.app.schemaSettingsManager.add(
-      mobileTabBarSettings,
       mobilePageSettings,
       mobileTabBarPageSettings,
       mobileTabBarLinkSettings,

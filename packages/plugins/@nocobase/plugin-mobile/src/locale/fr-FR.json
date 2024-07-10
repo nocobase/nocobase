@@ -1,0 +1,19 @@
+{
+  "App": "App",
+  "Info": "Info",
+  "Back": "Retour",
+  "Page": "Page",
+  "Link": "Lien",
+  "Remove": "Supprimer",
+  "Add page": "Ajouter une page",
+  "Title": "Titre",
+  "Icon": "Icône",
+  "Selected icon": "Icône sélectionnée",
+  "Add link": "Ajouter un lien",
+  "Enable tab bar": "Activer la barre d'onglets",
+  "Enable navigation bar": "Activer la barre de navigation",
+  "Enable navigation bar title": "Activer le titre de la barre de navigation",
+  "Enable navigation bar tabs": "Activer les onglets de la barre de navigation",
+  "Add tab": "Ajouter un onglet",
+  "Mobile": "Mobile"
+}

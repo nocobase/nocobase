@@ -37,7 +37,7 @@ export const mobilePageSettings = new SchemaSettings({
             const { showTabBar, setShowTabBar } = useMobileApp();
             const { refresh } = useDesignable();
             return {
-              title: t('Enable TabBar'),
+              title: t('Enable tab bar'),
               checked: showTabBar,
               onChange(v) {
                 setShowTabBar(v);
@@ -60,13 +60,13 @@ export const mobilePageSettings = new SchemaSettings({
       children: [
         createSwitchSettingsItem({
           name: 'enableNavigationBar',
-          title: generatePluginTranslationTemplate('Enable Navigation Bar'),
+          title: generatePluginTranslationTemplate('Enable navigation bar'),
           defaultValue: true,
           schemaKey: 'x-component-props.enableNavigationBar',
         }),
         createSwitchSettingsItem({
           name: 'enableNavigationBarTitle',
-          title: generatePluginTranslationTemplate('Enable Navigation Bar Title'),
+          title: generatePluginTranslationTemplate('Enable navigation bar title'),
           defaultValue: true,
           schemaKey: 'x-component-props.enableNavigationBarTitle',
           useVisible() {
@@ -76,7 +76,7 @@ export const mobilePageSettings = new SchemaSettings({
         }),
         createSwitchSettingsItem({
           name: 'enableNavigationBarTabs',
-          title: generatePluginTranslationTemplate('Enable Navigation Bar Tabs'),
+          title: generatePluginTranslationTemplate('Enable navigation bar tabs'),
           defaultValue: false,
           schemaKey: 'x-component-props.enableNavigationBarTabs',
           useVisible() {

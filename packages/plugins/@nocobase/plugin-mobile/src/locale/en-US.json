@@ -9,11 +9,11 @@
   "Title": "Title",
   "Icon": "Icon",
   "Selected icon": "Selected icon",
-  "Add Link": "Add Link",
-  "Edit tabBar item": "Edit tabBar item",
-  "Enable Navigation Bar": "Enable Navigation Bar",
-  "Enable Navigation Bar Title": "Enable Navigation Bar Title",
-  "Enable Navigation Bar Tabs": "Enable Navigation Bar Tabs",
-  "Add Tab": "Add Tab",
+  "Add link": "Add link",
+  "Enable tab bar": "Enable tab bar",
+  "Enable navigation bar": "Enable navigation bar",
+  "Enable navigation bar title": "Enable navigation bar title",
+  "Enable navigation bar tabs": "Enable navigation bar tabs",
+  "Add tab": "Add tab",
   "Mobile": "Mobile"
 }

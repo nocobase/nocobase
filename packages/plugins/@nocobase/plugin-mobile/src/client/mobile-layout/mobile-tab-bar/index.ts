@@ -10,5 +10,4 @@
 export * from './MobileTabBar';
 export * from './MobileTabBar.Item';
 export * from './initializer';
-export * from './settings';
 export * from './types';

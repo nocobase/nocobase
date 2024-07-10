@@ -22,13 +22,13 @@ test.describe('NavBar', () => {
       // 点击后隐藏
       await page.getByLabel('block-item-MobilePageProvider').click();
       await page.getByLabel('designer-schema-settings-MobilePageProvider-mobile:page').click();
-      await page.getByRole('menuitem', { name: 'Enable Navigation Bar', exact: true }).click();
+      await page.getByRole('menuitem', { name: 'Enable navigation bar', exact: true }).click();
       await expect(page.getByTestId('mobile-page-navigation-bar')).not.toBeVisible();
 
       // 再次点击显示
       await page.getByLabel('block-item-MobilePageProvider').click();
       await page.getByLabel('designer-schema-settings-MobilePageProvider-mobile:page').click();
-      await page.getByRole('menuitem', { name: 'Enable Navigation Bar' }).click();
+      await page.getByRole('menuitem', { name: 'Enable navigation bar' }).click();
       await expect(page.getByTestId('mobile-page-navigation-bar')).toBeVisible();
       await expect(page.getByTestId('mobile-page-navigation-bar')).toContainText(nocoPage.getTitle());
     });
@@ -44,13 +44,13 @@ test.describe('NavBar', () => {
       // 点击后隐藏
       await page.getByLabel('block-item-MobilePageProvider').click();
       await page.getByLabel('designer-schema-settings-MobilePageProvider-mobile:page').click();
-      await page.getByRole('menuitem', { name: 'Enable Navigation Bar Title' }).click();
+      await page.getByRole('menuitem', { name: 'Enable navigation bar title' }).click();
       await expect(page.getByTestId('mobile-page-navigation-bar')).not.toContainText(nocoPage.getTitle());
 
       // 再次点击显示
       await page.getByLabel('block-item-MobilePageProvider').click();
       await page.getByLabel('designer-schema-settings-MobilePageProvider-mobile:page').click();
-      await page.getByRole('menuitem', { name: 'Enable Navigation Bar Title' }).click();
+      await page.getByRole('menuitem', { name: 'Enable navigation bar title' }).click();
       await expect(page.getByTestId('mobile-page-navigation-bar')).toContainText(nocoPage.getTitle());
     });
 
@@ -65,14 +65,14 @@ test.describe('NavBar', () => {
       // 点击后现实
       await page.getByLabel('block-item-MobilePageProvider').click();
       await page.getByLabel('designer-schema-settings-MobilePageProvider-mobile:page').click();
-      await page.getByRole('menuitem', { name: 'Enable Navigation Bar Tabs' }).click();
+      await page.getByRole('menuitem', { name: 'Enable navigation bar tabs' }).click();
       await expect(page.getByTestId('mobile-mobile-page-navigation-bar-tabs')).toBeVisible();
       await expect(page.getByTestId('mobile-mobile-page-navigation-bar-tabs')).toContainText('Unnamed');
 
       // 再次点击隐藏
       await page.getByLabel('block-item-MobilePageProvider').click();
       await page.getByLabel('designer-schema-settings-MobilePageProvider-mobile:page').click();
-      await page.getByRole('menuitem', { name: 'Enable Navigation Bar Tabs' }).click();
+      await page.getByRole('menuitem', { name: 'Enable navigation bar tabs' }).click();
       await expect(page.getByTestId('mobile-mobile-page-navigation-bar-tabs')).not.toBeVisible();
     });
   });
@@ -83,12 +83,12 @@ test.describe('NavBar', () => {
       await nocoPage.goto();
       await page.getByLabel('block-item-MobilePageProvider').click();
       await page.getByLabel('designer-schema-settings-MobilePageProvider-mobile:page').click();
-      await page.getByRole('menuitem', { name: 'Enable Navigation Bar Tabs' }).click();
+      await page.getByRole('menuitem', { name: 'Enable navigation bar tabs' }).click();
       await expect(page.getByTestId('mobile-mobile-page-navigation-bar-tabs')).toBeVisible();
       await expect(page.getByTestId('mobile-mobile-page-navigation-bar-tabs')).toContainText('Unnamed');
 
       await page.getByTestId('mobile-mobile-page-navigation-bar-tabs').click();
-      await expect(page.getByRole('menuitem', { name: 'Enable Navigation Bar Tabs' })).not.toBeVisible();
+      await expect(page.getByRole('menuitem', { name: 'Enable navigation bar tabs' })).not.toBeVisible();
     });
 
     test('settings', async ({ page }) => {

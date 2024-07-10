@@ -61,7 +61,7 @@ export const mobileNavigationBarLinkInitializerItem: SchemaInitializerItemAction
     const { t } = usePluginTranslation();
     const { message } = App.useApp();
     return {
-      title: t('Add Link'),
+      title: t('Add link'),
       buttonText: t('Link'),
       schema: {
         title: {

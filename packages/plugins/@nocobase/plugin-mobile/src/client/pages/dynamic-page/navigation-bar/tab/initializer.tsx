@@ -28,7 +28,7 @@ export const mobilePageTabInitializer = new SchemaInitializer({
 
     return (
       <SchemaInitializerActionModal
-        title={generatePluginTranslationTemplate('Add Tab')}
+        title={generatePluginTranslationTemplate('Add tab')}
         btnStyles={{ width: 32, padding: 0, marginRight: 12 }}
         onSubmit={async ({ title }) => {
           // 创建 Tab

@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { expect, removeAllMobileRoutes, request, test } from '@nocobase/test/e2e';
+import { expect, removeAllMobileRoutes, test } from '@nocobase/test/e2e';
 
 function randomStr() {
   return Math.random().toString(36).substring(2);
@@ -96,7 +96,7 @@ test.describe('TabBar', () => {
 
     await page.getByTestId(`mobile-tab-bar-${Title}_change`).click();
     const count_changed = await page.locator(`text=${Title}_change`).count();
-    await expect(count_changed).toBe(1);
+    expect(count_changed).toBe(1);
 
     // 编辑 URL
     await page.getByTestId(`mobile-tab-bar-${Title}_change`).hover();
@@ -112,7 +112,7 @@ test.describe('TabBar', () => {
     const page2Promise = page.waitForEvent('popup');
     await page.getByTestId(`mobile-tab-bar-${Title}_change`).click();
     const page2 = await page2Promise;
-    await expect(page2.url()).toBe(page.url().replace('/m', '/admin'));
+    expect(page2.url()).toBe(page.url().replace('/m', '/admin'));
     await page2.close();
 
     // 删除
@@ -126,27 +126,4 @@ test.describe('TabBar', () => {
     await page.waitForTimeout(1000);
     await expect(page.getByText(`${Title}_change`)).not.toBeVisible();
   });
-
-  // test('enable TabBar Settings', async ({ page, mockMobilePage }) => {
-  //   const nocoPage = mockMobilePage({});
-  //   await nocoPage.goto();
-  //   await expect(page.getByTestId('schema-initializer-MobileTabBar')).toBeVisible();
-  //   await page.getByTestId('schema-initializer-MobileTabBar').hover();
-  //   const countShow1 = await page.locator(`text=${nocoPage.getTitle()}`).count();
-  //   await expect(countShow1).toBe(2);
-
-  //   // hover settings
-  //   await page.getByLabel('block-item-MobileTabBar', { exact: true }).click();
-  //   await page.getByLabel('designer-schema-settings-MobileTabBar-mobile:tab-bar').click();
-  //   await page.getByText('Enable TabBar').click();
-  //   const countHide = await page.locator(`text=${nocoPage.getTitle()}`).count();
-  //   await expect(countHide).toBe(1);
-
-  //   // hover settings
-  //   await page.getByLabel('block-item-MobileTabBar', { exact: true }).hover();
-  //   await page.getByLabel('designer-schema-settings-MobileTabBar-mobile:tab-bar').hover();
-  //   await page.getByText('Enable TabBar').click();
-  //   const countShow2 = await page.locator(`text=${nocoPage.getTitle()}`).count();
-  //   await expect(countShow2).toBe(2);
-  // });
 });

@@ -21,7 +21,7 @@ export const mobileTabBarLinkInitializerItem: SchemaInitializerItemActionModalTy
 
     return {
       isItem: true,
-      title: generatePluginTranslationTemplate('Add Link'),
+      title: generatePluginTranslationTemplate('Add link'),
       buttonText: generatePluginTranslationTemplate('Link'),
       schema: getMobileTabBarItemSchemaFields(),
       async onSubmit(values) {

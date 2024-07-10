@@ -370,4 +370,3 @@ function getMobileTabBarItemSchema(routeItem: MobileRouteItem) {
 - change package.json
 - 更新文档
 - 使用文档
-- 新移动端 Tab 的插件开发示例

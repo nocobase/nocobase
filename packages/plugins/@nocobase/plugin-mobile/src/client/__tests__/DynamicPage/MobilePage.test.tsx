@@ -71,25 +71,25 @@ describe('MobilePage', () => {
   //   });
 
   //   await waitFor(() => {
-  //     expect(screen.queryByText('Enable Navigation Bar')).toBeInTheDocument();
-  //     expect(screen.queryByText('Enable Navigation Bar Title')).not.toBeInTheDocument();
-  //     expect(screen.queryByText('Enable Navigation Bar Tabs')).not.toBeInTheDocument();
+  //     expect(screen.queryByText('Enable navigation bar')).toBeInTheDocument();
+  //     expect(screen.queryByText('Enable navigation bar title')).not.toBeInTheDocument();
+  //     expect(screen.queryByText('Enable navigation bar tabs')).not.toBeInTheDocument();
   //   });
 
   //   await act(async () => {
-  //     await userEvent.click(screen.getByText('Enable Navigation Bar'));
+  //     await userEvent.click(screen.getByText('Enable navigation bar'));
   //   });
 
   //   await waitFor(() => {
-  //     expect(screen.queryByText('Enable Navigation Bar Title')).toBeInTheDocument();
-  //     expect(screen.queryByText('Enable Navigation Bar Tabs')).toBeInTheDocument();
+  //     expect(screen.queryByText('Enable navigation bar title')).toBeInTheDocument();
+  //     expect(screen.queryByText('Enable navigation bar tabs')).toBeInTheDocument();
   //     expect(screen.queryByTestId('schema-json')).toHaveTextContent(JSON.stringify({
   //       "enableNavigationBar": true
   //     }));
   //   });
 
   //   await act(async () => {
-  //     await userEvent.click(screen.getByText('Enable Navigation Bar Title'));
+  //     await userEvent.click(screen.getByText('Enable navigation bar title'));
   //   });
 
   //   await waitFor(() => {
@@ -100,7 +100,7 @@ describe('MobilePage', () => {
   //   });
 
   //   await act(async () => {
-  //     await userEvent.click(screen.getByText('Enable Navigation Bar Tabs'));
+  //     await userEvent.click(screen.getByText('Enable navigation bar tabs'));
   //   });
 
   //   await waitFor(() => {

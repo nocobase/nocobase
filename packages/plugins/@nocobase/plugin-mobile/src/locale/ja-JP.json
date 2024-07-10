@@ -9,10 +9,10 @@
   "Title": "タイトル",
   "Icon": "アイコン",
   "Selected icon": "選択されたアイコン",
-  "Add Link": "リンクを追加",
-  "Edit tabBar item": "タブバー項目を編集",
-  "Enable Navigation Bar": "ナビゲーションバーを有効にする",
-  "Enable Navigation Bar Title": "ナビゲーションバーのタイトルを有効にする",
-  "Enable Navigation Bar Tabs": "ナビゲーションバーのタブを有効にする",
-  "Add Tab": "タブを追加"
+  "Add link": "リンクを追加",
+  "Enable tab bar": "タブバーを有効にする",
+  "Enable navigation bar": "ナビゲーションバーを有効にする",
+  "Enable navigation bar title": "ナビゲーションバーのタイトルを有効にする",
+  "Enable navigation bar tabs": "ナビゲーションバーのタブを有効にする",
+  "Add tab": "タブを追加"
 }
