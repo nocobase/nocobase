@@ -45,7 +45,20 @@ module.exports = (cli) => {
       if (existsSync(appDevDir)) {
         rmSync(appDevDir, { recursive: true, force: true });
       }
-      await run('yarn', ['add', '@nocobase/cli', '@nocobase/devtools', '-W']);
+      const pkg = require('../../package.json');
+      // get latest version
+      const { stdout } = await run('npm', ['info', '@nocobase/cli', 'version'], { stdio: 'pipe' });
+      if (pkg.version === stdout) {
+        await runAppCommand('upgrade');
+        return;
+      }
+      const currentY = 1 * pkg.version.split('.')[1];
+      const latestY = 1 * stdout.split('.')[1];
+      if (currentY > latestY) {
+        await run('yarn', ['add', '@nocobase/cli@next', '@nocobase/devtools@next', '-W']);
+      } else {
+        await run('yarn', ['add', '@nocobase/cli', '@nocobase/devtools', '-W']);
+      }
       await run('yarn', ['install']);
       await runAppCommand('upgrade');
     });
