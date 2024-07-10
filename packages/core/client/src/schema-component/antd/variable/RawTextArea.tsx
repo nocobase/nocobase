@@ -10,8 +10,6 @@
 import React, { useRef, useState } from 'react';
 import { css } from '@emotion/css';
 import { Button, Input } from 'antd';
-import { last } from 'lodash';
-
 import { VariableSelect } from './VariableSelect';
 
 // NOTE: https://stackoverflow.com/questions/23892547/what-is-the-best-way-to-trigger-onchange-event-in-react-js/46012210#46012210
@@ -27,9 +25,9 @@ function setNativeInputValue(input, value) {
 
 export function RawTextArea(props): JSX.Element {
   const inputRef = useRef<any>(null);
-  const { changeOnSelect, component: Component = Input.TextArea, ...others } = props;
-  const scope = typeof props.scope === 'function' ? props.scope() : props.scope;
-  const [options, setOptions] = useState(scope ? scope : []);
+  const { changeOnSelect, component: Component = Input.TextArea, fieldNames, scope, ...others } = props;
+  const dataScope = typeof scope === 'function' ? scope() : scope;
+  const [options, setOptions] = useState(dataScope ? dataScope : []);
 
   function onInsert(selected) {
     if (!inputRef.current) {
@@ -77,7 +75,7 @@ export function RawTextArea(props): JSX.Element {
               background-color: transparent;
             `
           }
-          fieldNames={props.fieldNames}
+          fieldNames={fieldNames}
           options={options}
           setOptions={setOptions}
           onInsert={onInsert}
