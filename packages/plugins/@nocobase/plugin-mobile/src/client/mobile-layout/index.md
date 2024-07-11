@@ -63,8 +63,6 @@
 
 页面底部的 `TabBar`。
 
-其采用 `position: sticky` 吸附在底部。
-
 <code src="../demos/MobileTabBar-basic.tsx"></code>
 
 ### 类型

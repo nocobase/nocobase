@@ -28,10 +28,12 @@
   - `home`: `/` 页面
   - `dynamic-page`：动态 schema 页面
     - `MobilePage`：读取 URL 中 uid，渲染页面
+      - `header`：`MobilePageHeader`：页面头部
+        - `navigationBar`：`MobilePageNavigationBar`：页面导航栏
+          - `actions`：内置的 actions
+            - `link`：链接
+        - `tabs`：`MobilePageTabs`：页面 Tabs
       - `content`：`MobilePageContent`：页面内容区域
-      - `navigationBar`：`MobilePageNavigationBar`：页面导航栏
-        - `actions-initializer`：内置的 actions
-          - `link`：链接
 
 ## 嵌套关系
 
@@ -75,7 +77,10 @@ mobileRouter.add('mobile', {
 <MobilePage> // react-router 匹配的 Schema 页面 router.add('/page/:pageSchemaUid', { Component: 'MobilePage' })
   <RemoteSchemaComponent uid={params.pageSchemaUid}> // 通过 URL 获取 uid，加载整个页面的 Schema
     <MobilePageProvider> // 提供页面级别的上下文
-      <MobilePageNavigationBar /> // 顶部导航栏
+      <MobilePageHeader > // 顶部
+        <MobilePageNavigationBar /> // 页面导航栏
+        <MobilePageTabs /> // 页面 Tabs
+      </MobilePageHeader>
       <MobilePageContent> // 页面内容区
         <RemoteSchemaComponent uid={params.tabSchemaId} /> // `/page/:pageSchemaUid/tabs/:tabSchemaUid` 读取 `tabSchemaUid` 渲染对应的 Tab 页面
       </MobilePageContent>
@@ -90,7 +95,6 @@ mobileRouter.add('mobile.schema.page', {
   path: '/page/:pageSchemaUid',
   Component: 'MobilePage',
 });
-
 
 // Tab 路由
 mobileRouter.add('mobile.schema.tabs.page', {
@@ -248,125 +252,94 @@ function getMobileTabBarItemSchema(routeItem: MobileRouteItem) {
 
 ```json
 {
-    "type": "void",
-    "x-component": "MobilePageProvider",
-    "x-settings": "mobile:page",
-    "x-decorator": "BlockItem",
-    "x-component-props": {
-        "displayTabs": true
-    },
-    "properties": {
-        "navigationBar": {
-            "type": "void",
-            "x-component": "MobilePageNavigationBar",
-            "properties": {
-                "type": "void",
-                "x-component": "MobileNavigationActionBar",
-                "x-initializer": "mobile:navigation-bar:actions",
-                "properties": {
-                    "iaoxln0kidb": {
-                      "x-position": "right",
-                      "type": "void",
-                      "x-component": "Action",
-                      "x-toolbar": "ActionSchemaToolbar",
-                      "x-settings": "mobile:navigation-bar:actions:link",
-                      "x-use-component-props": "useMobileNavigationBarLink",
-                      "x-component-props": {
-                          "link": "https://baidu.com",
-                          "title": "Baidu",
-                          "component": "MobileNavigationBarAction"
-                      }
-                    }
-                },
-            }
-        },
-        "content": {
-            "type": "void",
-            "x-component": "MobilePageContent",
-            "properties": {
-              "tab1": {
-                  "type": "void",
-                  "x-component": "Grid",
-                  "x-async": true,
-                  "x-initializer": "mobile:addBlock",
-                  "properties": {}
-              },
-              "tab2": {
-                  "type": "void",
-                  "x-async": true,
-                  "x-component": "Grid",
-                  "x-initializer": "mobile:addBlock",
-                  "properties": {}
-              }
-            }
-        }
+  "type": "void",
+  "name": "schema",
+  "x-uid": "page1",
+  "x-component": "MobilePageProvider",
+  "x-settings": "mobile:page",
+  "x-decorator": "BlockItem",
+  "x-decorator-props": {
+    "style": {
+      "height": "100%"
     }
+  },
+  "x-toolbar-props": {
+    "draggable": false,
+    "spaceWrapperStyle": {
+      "right": -15,
+      "top": -15
+    },
+    "spaceClassName": "css-m1q7xw",
+    "toolbarStyle": {
+      "overflowX": "hidden"
+    }
+  },
+  "properties": {
+    "header": {
+      "type": "void",
+      "x-component": "MobilePageHeader",
+      "properties": {
+        "pageNavigationBar": {
+          "type": "void",
+          "x-component": "MobilePageNavigationBar",
+          "properties": {
+            "actionBar": {
+              "type": "void",
+              "x-component": "MobileNavigationActionBar",
+              "x-initializer": "mobile:navigation-bar:actions",
+              "x-component-props": {
+                "spaceProps": {
+                  "style": {
+                    "flexWrap": "nowrap"
+                  }
+                }
+              },
+              "name": "actionBar"
+            }
+          },
+          "name": "pageNavigationBar"
+        },
+        "pageTabs": {
+          "type": "void",
+          "x-component": "MobilePageTabs",
+          "name": "pageTabs"
+        }
+      },
+      "name": "header"
+    },
+    "content": {
+      "type": "void",
+      "x-component": "MobilePageContent",
+      "properties": {
+        "tab1": {
+          "type": "void",
+          "x-uid": "tab1",
+          "x-async": true,
+          "x-component": "Grid",
+          "x-initializer": "mobile:addBlock",
+          "name": "tab1"
+        },
+        "tab2": {
+          "type": "void",
+          "x-uid": "tab2",
+          "x-async": true,
+          "x-component": "Grid",
+          "x-initializer": "mobile:addBlock",
+          "name": "tab2"
+        }
+      },
+      "name": "content"
+    }
+  }
 }
 ```
 
 其中 `tab1` 和 `tab2` 的 `x-async` 为 true，表示是异步加载的。
 
-## 待确定的事或者有争议的事
-
-- [x] 插件列表 presets 变更，怎么改？packages/presets/nocobase/src/server/index.ts
-- [x] Settings 配置页面的样式和规划
-  - [x] `basename` 是否需要可配置，如果不需要，则是一个链接，打开配置页面
-  - [x] 如果需要配置，settings 配置页面按照原来的设计，还是独立的一个页面
-- [x] 目前设计图中的 TabBar 类型只完成了 2 种类型，其他的类型是否这次做？先不做
-- [x] 将 `navigationBar title` 是否显示，放到了 Page Settings 中，而不是 `navigationBar` 的设置中，`navigationBar` 没有设置项
-- [x] Schema 的 name 到底是具体的名字，还是 Uid() 好
-- [x] 删除 tabBar 的时候，是否关联的资源都删除，还是不用管？【尽量删】
-- [x] `navigationBar` 左右两侧的 initializer 使用的是同一个，还是分开命名？【同一个】
-- [x] TabBar 的需要设置吗？（目前看来没什么设置项，是否需要显示的问题，如果没注册到 TabBar 上则默认不显示，似乎是能满足要求的）
-- [x] 明明没启用，为什么 PR 环境会默认安装 mobile-client 老的插件？
-- [x] preset 中 `mobile-client 依赖` 是否删除，目前看如果删除，则原来的项目会报错（包不删）
-
-- 功能：back 问题和内页，内页是没有 schema 的，所以想要自己实现页面直接使用原始的 navigateBar 就行了
-- 功能：`navigationBar` 的操作按钮目前只实现了一个 Link，计划实现 `back`，其他的是否这次做？【自动处理，页面级别控制】（根据实际场景列举出来）
-  - ActionSheet
-  - 弹出层
-- 代码设计：移动端是否需要自己的 providers manager ？是将 application 的抽象成 ProvidersManager 还是复制粘贴代码？
-- [x] 样式：内容区 padding/margin 是否需要，让其距离顶部和底部都有些距离？
-- [x] `.Schema` -> `.Page`
-- [x] 加排序字段
-- [x] tabBar 拖拽
-- [x] tabs 拖拽
-- [x] header 的样式？
-- [x] 功能：add block 需要添加哪些区块，还是空着？【和原来移动端的出了 Menu 和 Settings 其他都要】
-- [x] action 添加和删除
-- [x] action Icon and Title
-- [x] routes 结构变更
-- [x] routes 结构变更导致的 e2e utils、文档、demos、单测
-- [x] 滚动区域问题
-- [x] Action initailzer 无法关闭问题【先临时解决】
-- [x] e2e 文件 eslint 报错
-- [x] 多语言再次检查一遍
-- [x] TabBar Settings 从底部放到顶部
-- 原 admin 弹窗改为子页面（等中合），back 等一起开发
-- link 的 e2e
-- settings 的单测？
-
 ## 待做任务
 
-- [x] settings 页面
-- [x] tabBar 样式优化
-- [x] navigationBar 样式优化
-- [x] loading 效果
-- [x] 响应式 ipad、mobile 效果都比较 OK
-- [x] 多应用的支持
-- [x] 404 页面
-- [x] MobilePageNavigationBar Actions schema 处理
-- [x] navigationBar Action 样式
-- [x] 真机验证
-- [x] 内容超过一屏幕，以及没有内容的情况
-- [x] package.json & Readme 的描述
-- [x] 主题色
-- [x] 多语言
-- [x] API 文档
-- [-] JS bridge(没测)
-- [x] e2e test
-- [x] unit test
-- [x] 反馈修复
 - change package.json
 - 更新文档
 - 使用文档
+- 原 admin 弹窗改为子页面（等中合），back 等一起开发
+- settings 的单测？

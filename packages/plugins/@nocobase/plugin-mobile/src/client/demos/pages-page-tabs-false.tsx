@@ -1,27 +1,38 @@
 import React from 'react';
+import { useLocation } from 'react-router-dom';
 import { mockApp } from '@nocobase/client/demo-utils';
-import { SchemaComponent, Plugin, Grid, BlockItem } from '@nocobase/client';
-import PluginMobileClient, { MobileProviders, getMobilePageSchema } from '@nocobase/plugin-mobile/client';
-
-import { schemaViewer } from './fixtures/schemaViewer';
+import { SchemaComponent, Plugin } from '@nocobase/client';
+import {
+  MobilePageNavigationBar,
+  MobilePageProvider,
+  MobilePageTabs,
+  MobileRoutesProvider,
+  MobileTitleProvider,
+} from '@nocobase/plugin-mobile/client';
 
 const Demo = () => {
+  const { pathname } = useLocation();
   return (
-    <MobileProviders skipLogin={true}>
-      <SchemaComponent schema={schemaViewer(getMobilePageSchema('page1', 'tab1').schema)} />
-    </MobileProviders>
+    <div style={{ position: 'relative' }}>
+      <MobileTitleProvider title="Title">
+        <MobileRoutesProvider>
+          <MobilePageProvider displayTabs={false}>
+            <MobilePageTabs />
+          </MobilePageProvider>
+        </MobileRoutesProvider>
+      </MobileTitleProvider>
+    </div>
   );
 };
 
 class DemoPlugin extends Plugin {
   async load() {
-    // this.app.router.add('root', { path: '/', Component: Demo });
+    this.app.addComponents({ MobilePageNavigationBar });
     this.app.router.add('schema', {
       path: '/page',
     });
     this.app.router.add('schema.page', {
       path: '/page/:pageSchemaUid',
-      Component: Demo,
     });
     this.app.router.add('schema.page.tabs', {
       path: '/page/:pageSchemaUid/tabs',
@@ -38,12 +49,7 @@ const app = mockApp({
     type: 'memory',
     initialEntries: ['/page/page1/tabs/tab1'],
   },
-  plugins: [DemoPlugin, PluginMobileClient],
-  components: {
-    Grid,
-    BlockItem,
-  },
-  designable: true,
+  plugins: [DemoPlugin],
   apis: {
     'mobileRoutes:list': {
       data: [
@@ -51,23 +57,25 @@ const app = mockApp({
           id: 1,
           title: 'Page1',
           schemaUid: 'page1',
+          type: 'page',
           children: [
             {
               id: 2,
-              title: 'Tab1',
+              parentId: 1,
               schemaUid: 'tab1',
+              title: 'Tab1',
+              type: 'tabs',
+            },
+            {
+              id: 3,
+              parentId: 1,
+              schemaUid: 'tab2',
+              title: 'Tab2',
+              type: 'tabs',
             },
           ],
         },
       ],
-    },
-    'uiSchemas:getJsonSchema/tab1': {
-      data: Grid.wrap({
-        type: 'void',
-        name: 'test',
-        'x-component': 'div',
-        'x-content': 'Tab1 Content',
-      }),
     },
   },
 });

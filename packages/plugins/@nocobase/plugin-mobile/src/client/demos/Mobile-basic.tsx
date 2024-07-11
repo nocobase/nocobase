@@ -133,29 +133,37 @@ const app = mockApp({
           displayTabs: true,
         },
         properties: {
-          navigationBar: {
+          header: {
             type: 'void',
-            'x-component': 'MobilePageNavigationBar',
+            'x-component': 'MobilePageHeader',
             properties: {
-              actionBar: {
+              pageNavigationBar: {
                 type: 'void',
-                'x-component': 'MobileNavigationActionBar',
-                'x-initializer': 'mobile:navigation-bar:actions',
-                'x-component-props': {
-                  spaceProps: {
-                    style: {
-                      flexWrap: 'nowrap',
+                'x-component': 'MobilePageNavigationBar',
+                properties: {
+                  actionBar: {
+                    type: 'void',
+                    'x-component': 'MobileNavigationActionBar',
+                    'x-initializer': 'mobile:navigation-bar:actions',
+                    'x-component-props': {
+                      spaceProps: {
+                        style: {
+                          flexWrap: 'nowrap',
+                        },
+                      },
                     },
+                    name: 'actionBar',
                   },
                 },
-                'x-uid': '8gu55sjqapn',
-                'x-async': false,
-                'x-index': 1,
+                name: 'pageNavigationBar',
+              },
+              pageTabs: {
+                type: 'void',
+                'x-component': 'MobilePageTabs',
+                name: 'pageTabs',
               },
             },
-            'x-uid': 'jpytr9uq76z',
-            'x-async': false,
-            'x-index': 1,
+            name: 'header',
           },
           content: {
             type: 'void',

@@ -42,6 +42,10 @@ interface MobilePageContextProps {
   /**
    * @default true
    */
+  displayPageHeader?: boolean;
+  /**
+   * @default true
+   */
   displayNavigationBar?: boolean;
   /**
    * @default true
@@ -77,37 +81,45 @@ interface MobilePageContextProps {
 
 <code src="./demos/pages-page-content-404.tsx"></code>
 
-## MobilePageNavigationBar
+## MobilePageHeader
 
-页面导航栏。
+页面顶部。
 
-其会通过 `useMobilePage()` 获取页面配置，并根据配置渲染导航栏。
+根据页面配置的 `displayPageHeader` 控制是否显示。
 
 ### Examples
 
 #### Basic
 
+<code src="./demos/pages-page-header-basic.tsx"></code>
+
+#### displayPageHeader: false
+
+<code src="./demos/pages-page-header-false.tsx"></code>
+
+### MobilePageNavigationBar
+
+页面导航栏。
+
+其会通过 `useMobilePage()` 获取页面配置，并根据配置渲染导航栏。
+
+#### Examples
+
+##### Basic
+
 <code src="./demos/pages-navigation-bar-basic.tsx"></code>
 
-#### displayNavigationBar: false
+##### displayNavigationBar: false
 
 <code src="./demos/pages-navigation-bar-false.tsx"></code>
 
-#### displayPageTitle: false
+##### displayPageTitle: false
 
 <code src="./demos/pages-navigation-bar-title-false.tsx"></code>
 
-#### displayTabs: true
-
-<code src="./demos/pages-navigation-bar-tabs.tsx"></code>
-
-## MobilePageTabs
-
-`MobilePageNavigationBar` 左右以及底部的操作按钮。
+#### Schema
 
 不同位置通过 `x-position` 的值控制。
-
-### Schema
 
 ```json
 {
@@ -155,7 +167,16 @@ interface MobilePageContextProps {
 }
 ```
 
-### Examples
-
 <code src="./demos/pages-navigation-bar-actions.tsx"></code>
 
+### MobilePageTabs
+
+用于显示页面 Tabs。
+
+#### Basic
+
+<code src="./demos/pages-page-tabs.tsx"></code>
+
+#### false
+
+<code src="./demos/pages-page-tabs-false.tsx"></code>

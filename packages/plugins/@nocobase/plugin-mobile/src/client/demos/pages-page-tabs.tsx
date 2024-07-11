@@ -5,15 +5,10 @@ import { SchemaComponent, Plugin } from '@nocobase/client';
 import {
   MobilePageNavigationBar,
   MobilePageProvider,
+  MobilePageTabs,
   MobileRoutesProvider,
   MobileTitleProvider,
 } from '@nocobase/plugin-mobile/client';
-
-const schema = {
-  type: 'void',
-  name: 'test',
-  'x-component': 'MobilePageNavigationBar',
-};
 
 const Demo = () => {
   const { pathname } = useLocation();
@@ -22,7 +17,7 @@ const Demo = () => {
       <MobileTitleProvider title="Title">
         <MobileRoutesProvider>
           <MobilePageProvider displayTabs={true}>
-            <SchemaComponent schema={schema} />
+            <MobilePageTabs />
             <div>{pathname}</div>
           </MobilePageProvider>
         </MobileRoutesProvider>

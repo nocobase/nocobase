@@ -1,34 +1,27 @@
+/**
+ * iframe: true
+ * compact: true
+ */
 import { Plugin } from '@nocobase/client';
-import PluginMobileClient, { Mobile } from '@nocobase/plugin-mobile/client';
+import { MobileProviders, MobileTabBar, mobileTabBarInitializer } from '@nocobase/plugin-mobile/client';
 import { mockApp } from '@nocobase/client/demo-utils';
 import React from 'react';
 
 class DemoPlugin extends Plugin {
-  async beforeLoad(): Promise<void> {
-    await this.app.pluginManager.add(PluginMobileClient, {
-      config: {
-        router: {
-          type: 'memory',
-          basename: '/m',
-          initialEntries: ['/m/inner-page'],
-        },
-        skipLogin: true,
-        desktopMode: false,
-      },
-    });
-  }
-
   async load() {
-    this.app.router.add('root', {
-      path: '/',
+    this.app.router.add('schema', {
+      path: '/page',
+    });
+    this.app.router.add('schema.page', {
+      path: '/page/:pageSchemaUid',
       element: (
-        <div style={{ position: 'relative' }}>
-          <Mobile />
-        </div>
+        <MobileProviders skipLogin={true}>
+          <MobileTabBar />
+        </MobileProviders>
       ),
     });
-    const mobileClient = this.app.pluginManager.get(PluginMobileClient);
-    mobileClient.mobileRouter.add('mobile.inner-page', {
+
+    this.app.router.add('inner-page', {
       path: '/inner-page',
       element: 'inner page',
     });
@@ -38,10 +31,18 @@ class DemoPlugin extends Plugin {
 const app = mockApp({
   router: {
     type: 'memory',
-    initialEntries: ['/m'],
+    initialEntries: ['/inner-page'],
   },
+  designable: false,
   plugins: [DemoPlugin],
+  schemaInitializers: [mobileTabBarInitializer],
+  components: {
+    MobileTabBar,
+  },
   apis: {
+    'applicationPlugins:update': {
+      data: {},
+    },
     'mobileRoutes:list': {
       data: [
         {
@@ -144,29 +145,37 @@ const app = mockApp({
           displayTabs: true,
         },
         properties: {
-          navigationBar: {
+          header: {
             type: 'void',
-            'x-component': 'MobilePageNavigationBar',
+            'x-component': 'MobilePageHeader',
             properties: {
-              actionBar: {
+              pageNavigationBar: {
                 type: 'void',
-                'x-component': 'MobileNavigationActionBar',
-                'x-initializer': 'mobile:navigation-bar:actions',
-                'x-component-props': {
-                  spaceProps: {
-                    style: {
-                      flexWrap: 'nowrap',
+                'x-component': 'MobilePageNavigationBar',
+                properties: {
+                  actionBar: {
+                    type: 'void',
+                    'x-component': 'MobileNavigationActionBar',
+                    'x-initializer': 'mobile:navigation-bar:actions',
+                    'x-component-props': {
+                      spaceProps: {
+                        style: {
+                          flexWrap: 'nowrap',
+                        },
+                      },
                     },
+                    name: 'actionBar',
                   },
                 },
-                'x-uid': '8gu55sjqapn',
-                'x-async': false,
-                'x-index': 1,
+                name: 'pageNavigationBar',
+              },
+              pageTabs: {
+                type: 'void',
+                'x-component': 'MobilePageTabs',
+                name: 'pageTabs',
               },
             },
-            'x-uid': 'jpytr9uq76z',
-            'x-async': false,
-            'x-index': 1,
+            name: 'header',
           },
           content: {
             type: 'void',
