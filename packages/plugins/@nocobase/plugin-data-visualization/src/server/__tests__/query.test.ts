@@ -63,6 +63,10 @@ describe('query', () => {
       };
     });
 
+    afterAll(async () => {
+      await app.destroy();
+    });
+
     it('should check permissions', async () => {
       const context = {
         ...ctx,
