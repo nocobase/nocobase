@@ -843,23 +843,37 @@ const createMobilePage = async (options?: CreateMobilePageOptions) => {
           },
         },
         properties: {
-          navigationBar: {
+          header: {
             type: 'void',
-            'x-component': 'MobilePageNavigationBar',
+            'x-component': 'MobilePageHeader',
             properties: {
-              actionBar: {
+              pageNavigationBar: {
                 type: 'void',
-                'x-component': 'MobileNavigationActionBar',
-                'x-initializer': 'mobile:navigation-bar:actions',
-                'x-component-props': {
-                  spaceProps: {
-                    style: {
-                      flexWrap: 'nowrap',
+                'x-component': 'MobilePageNavigationBar',
+                properties: {
+                  actionBar: {
+                    type: 'void',
+                    'x-component': 'MobileNavigationActionBar',
+                    'x-initializer': 'mobile:navigation-bar:actions',
+                    'x-component-props': {
+                      spaceProps: {
+                        style: {
+                          flexWrap: 'nowrap',
+                        },
+                      },
                     },
+                    name: 'actionBar',
                   },
                 },
+                name: 'pageNavigationBar',
+              },
+              pageTabs: {
+                type: 'void',
+                'x-component': 'MobilePageTabs',
+                name: 'pageTabs',
               },
             },
+            name: 'header',
           },
           content: {
             type: 'void',

@@ -37,9 +37,11 @@ test.describe('desktop-mode', () => {
   test('change mobile size', async ({ page }) => {
     await page.getByTestId('desktop-mode-size-pad').click();
     await expect(page.getByTestId('desktop-mode-resizable')).toHaveCSS('width', '768px');
+    await expect(page.getByTestId('desktop-mode-resizable')).toHaveCSS('height', '667px');
 
     await page.getByTestId('desktop-mode-size-mobile').click();
     await expect(page.getByTestId('desktop-mode-resizable')).toHaveCSS('width', '375px');
+    await expect(page.getByTestId('desktop-mode-resizable')).toHaveCSS('height', '667px');
   });
 
   test('show qrcode', async ({ page }) => {

@@ -104,10 +104,7 @@ test.describe('TabBar', () => {
     await page.getByLabel('designer-schema-settings-MobileTabBar.Link-mobile:tab-bar:link').hover();
     await page.getByRole('menuitem', { name: 'Edit link' }).click();
     console.log('page.url()', page.url());
-    await page
-      .getByLabel('block-item-Variable.TextArea-')
-      .getByLabel('textbox')
-      .fill(page.url().replace('/m', '/admin'));
+    await page.getByLabel('block-item-URL').getByLabel('textbox').fill(page.url().replace('/m', '/admin'));
     await page.getByRole('button', { name: 'OK' }).click();
     const page2Promise = page.waitForEvent('popup');
     await page.getByTestId(`mobile-tab-bar-${Title}_change`).click();
