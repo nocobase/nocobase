@@ -58,8 +58,7 @@ const MobileIcon = (props: Partial<CustomIconComponentProps>) => <Icon type={''}
 
 export const DesktopModeHeader: FC = () => {
   const { t } = usePluginTranslation();
-  const { size, setSize } = useSize();
-  const [activeType, setActiveType] = React.useState('mobile');
+  const { setSize } = useSize();
   const [open, setOpen] = useState(false);
   const handleQrcodeOpen = (newOpen: boolean) => {
     setOpen(newOpen);
@@ -101,16 +100,14 @@ export const DesktopModeHeader: FC = () => {
         <DesignableSwitch />
         <Button
           onClick={() => {
-            setActiveType('pad');
-            setSize({ width: 768, height: size.height });
+            setSize({ width: 768, height: 667 });
           }}
           data-testid="desktop-mode-size-pad"
           icon={<PadIcon />}
         ></Button>
         <Button
           onClick={() => {
-            setActiveType('mobile');
-            setSize({ width: 375, height: size.height });
+            setSize({ width: 375, height: 667 });
           }}
           data-testid="desktop-mode-size-mobile"
           icon={<MobileIcon />}

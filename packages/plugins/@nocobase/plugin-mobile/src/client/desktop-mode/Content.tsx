@@ -18,7 +18,17 @@ interface DesktopModeContentProps {
 export const DesktopModeContent: FC<DesktopModeContentProps> = ({ children }) => {
   const { size, setSize } = useSize();
   return (
-    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+    <div
+      style={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        height: '100%',
+        boxSizing: 'border-box',
+        overflow: 'auto',
+        padding: 100,
+      }}
+    >
       <Resizable
         style={{
           boxShadow: '0 0 15px rgba(0, 0, 0, 0.3)',
