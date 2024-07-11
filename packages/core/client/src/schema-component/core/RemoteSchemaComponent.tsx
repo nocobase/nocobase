@@ -76,10 +76,10 @@ const RequestSchemaComponent: React.FC<RemoteSchemaComponentProps> = (props) => 
   }
 
   return noForm ? (
-    <SchemaComponent memoized={memoized} components={components} scope={scope} schema={schemaTransform(schema || {})} />
+    <SchemaComponent components={components} scope={scope} schema={schemaTransform(schema || {})} />
   ) : (
     <FormProvider form={form}>
-        <SchemaComponent memoized={memoized} components={components} scope={scope} schema={schemaTransform(schema || {})} />
+      <SchemaComponent components={components} scope={scope} schema={schemaTransform(schema || {})} />
     </FormProvider>
   );
 };
