@@ -7,11 +7,17 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { useParams } from 'react-router-dom';
-import React from 'react';
 import { RemoteSchemaComponent } from '@nocobase/client';
+import React from 'react';
+import { Outlet, useParams } from 'react-router-dom';
 
 export const MobilePage = () => {
   const { pageSchemaUid } = useParams<{ pageSchemaUid: string }>();
-  return <RemoteSchemaComponent uid={pageSchemaUid} NotFoundPage={'MobileNotFoundPage'} memoized={false} />;
+  return (
+    <>
+      <RemoteSchemaComponent uid={pageSchemaUid} NotFoundPage={'MobileNotFoundPage'} memoized={false} />
+      {/* 用于渲染子页面 */}
+      <Outlet />
+    </>
+  );
 };

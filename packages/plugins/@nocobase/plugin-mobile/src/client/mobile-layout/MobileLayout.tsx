@@ -7,14 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { FC } from 'react';
 import { usePlugin } from '@nocobase/client';
+import React, { FC } from 'react';
 import { Outlet } from 'react-router-dom';
 
 import { PluginMobileClient } from '../index';
+import { useMobileApp } from '../mobile';
 import { MobileProviders } from '../mobile-providers';
 import { MobileTabBar } from './mobile-tab-bar';
-import { useMobileApp } from '../mobile';
 
 export interface MobileLayoutProps {
   children?: React.ReactNode;

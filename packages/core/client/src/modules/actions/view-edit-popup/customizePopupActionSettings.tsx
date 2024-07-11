@@ -13,7 +13,7 @@ import { useCollection_deprecated } from '../../../collection-manager';
 import { ButtonEditor, RemoveButton } from '../../../schema-component/antd/action/Action.Designer';
 import { SchemaSettingOpenModeSchemaItems } from '../../../schema-items';
 import { SchemaSettingsLinkageRules } from '../../../schema-settings';
-import { useOpenMode } from '../../popup/useOpenMode';
+import { useOpenModeContext } from '../../popup/OpenModeProvider';
 
 export const customizePopupActionSettings = new SchemaSettings({
   name: 'actionSettings:popup',
@@ -42,10 +42,10 @@ export const customizePopupActionSettings = new SchemaSettings({
       name: 'openMode',
       Component: SchemaSettingOpenModeSchemaItems,
       useComponentProps() {
-        const { isOpenModeVisible } = useOpenMode();
+        const { hideOpenMode } = useOpenModeContext();
         return {
-          openMode: isOpenModeVisible(),
-          openSize: isOpenModeVisible(),
+          openMode: !hideOpenMode,
+          openSize: !hideOpenMode,
         };
       },
     },

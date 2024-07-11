@@ -7,13 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { OpenModeProvider, usePlugin } from '@nocobase/client';
 import React from 'react';
-import { usePlugin } from '@nocobase/client';
 import { isDesktop } from 'react-device-detect';
 
-import { PluginMobileClient } from '../index';
-import { DesktopMode } from '../desktop-mode/DesktopMode';
 import { PageBackgroundColor } from '../constants';
+import { DesktopMode } from '../desktop-mode/DesktopMode';
+import { PluginMobileClient } from '../index';
 import { MobileAppProvider } from './MobileAppContext';
 
 export const Mobile = () => {
@@ -44,9 +44,11 @@ export const Mobile = () => {
 
   return (
     <DesktopComponent>
-      <MobileAppProvider>
-        <MobileRouter />
-      </MobileAppProvider>
+      <OpenModeProvider defaultOpenMode="page" hideOpenMode>
+        <MobileAppProvider>
+          <MobileRouter />
+        </MobileAppProvider>
+      </OpenModeProvider>
     </DesktopComponent>
   );
 };

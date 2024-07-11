@@ -23,7 +23,7 @@ import {
 } from '../../../collection-manager';
 import { useCollectionManager } from '../../../data-source';
 import { useFlag } from '../../../flag-provider';
-import { useOpenMode } from '../../../modules/popup/useOpenMode';
+import { useOpenModeContext } from '../../../modules/popup/OpenModeProvider';
 import { useRecord } from '../../../record-provider';
 import { useColumnSchema } from '../../../schema-component/antd/table-v2/Table.Column.Decorator';
 import { generalSettingsItems } from '../../../schema-items/GeneralSettings';
@@ -55,7 +55,7 @@ export const allowAddNew: SchemaSettingsItemType = {
     return !flag?.isInSubTable && !readPretty && isAssociationField && ['Picker'].includes(fieldMode);
   },
   useComponentProps() {
-    const { getDefaultOpenMode } = useOpenMode();
+    const { defaultOpenMode } = useOpenModeContext();
     const { t } = useTranslation();
     const field = useField<Field>();
     const fieldSchema = useFieldSchema();
@@ -85,7 +85,7 @@ export const allowAddNew: SchemaSettingsItemType = {
             'x-component': 'Action',
             'x-decorator': 'ACLActionProvider',
             'x-component-props': {
-              openMode: getDefaultOpenMode(),
+              openMode: defaultOpenMode,
               type: 'default',
               component: 'CreateRecordAction',
             },
@@ -542,7 +542,7 @@ export const formItemSettings = new SchemaSettings({
         return !readPretty && isAssociationField && ['Select'].includes(fieldMode);
       },
       useComponentProps() {
-        const { getDefaultOpenMode } = useOpenMode();
+        const { defaultOpenMode } = useOpenModeContext();
         const { t } = useTranslation();
         const field = useField<Field>();
         const fieldSchema = useFieldSchema();
@@ -575,7 +575,7 @@ export const formItemSettings = new SchemaSettings({
                   'x-component': 'Action',
                   'x-decorator': 'ACLActionProvider',
                   'x-component-props': {
-                    openMode: getDefaultOpenMode(),
+                    openMode: defaultOpenMode,
                     type: 'default',
                     component: 'CreateRecordAction',
                   },

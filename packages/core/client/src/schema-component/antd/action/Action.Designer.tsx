@@ -28,7 +28,7 @@ import {
 import { DataSourceProvider, useDataSourceKey } from '../../../data-source';
 import { FlagProvider } from '../../../flag-provider';
 import { SaveMode } from '../../../modules/actions/submit/createSubmitActionSettings';
-import { useOpenMode } from '../../../modules/popup/useOpenMode';
+import { useOpenModeContext } from '../../../modules/popup/OpenModeProvider';
 import { SchemaSettingOpenModeSchemaItems } from '../../../schema-items';
 import { GeneralSchemaDesigner } from '../../../schema-settings/GeneralSchemaDesigner';
 import {
@@ -657,7 +657,7 @@ export const actionSettingsItems: SchemaSettingOptions['items'] = [
         name: 'openMode',
         Component: SchemaSettingOpenModeSchemaItems,
         useComponentProps() {
-          const { isOpenModeVisible } = useOpenMode();
+          const { hideOpenMode } = useOpenModeContext();
           const fieldSchema = useFieldSchema();
           const isPopupAction = [
             'create',
@@ -669,8 +669,8 @@ export const actionSettingsItems: SchemaSettingOptions['items'] = [
           ].includes(fieldSchema['x-action'] || '');
 
           return {
-            openMode: isPopupAction && isOpenModeVisible(),
-            openSize: isPopupAction && isOpenModeVisible(),
+            openMode: isPopupAction && !hideOpenMode,
+            openSize: isPopupAction && !hideOpenMode,
           };
         },
       },

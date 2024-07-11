@@ -41,7 +41,13 @@ export const ActionPage: ComposedActionDrawer = observer(
       </div>
     );
 
-    return createPortal(actionPageNode, getContainerDOM());
+    const container = getContainerDOM();
+
+    if (container) {
+      return createPortal(actionPageNode, container);
+    }
+
+    return actionPageNode;
   },
   { displayName: 'ActionPage' },
 );

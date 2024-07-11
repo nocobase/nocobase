@@ -14,7 +14,7 @@ import { useCollection_deprecated, useCollectionManager_deprecated } from '../..
 import { ButtonEditor } from '../../../schema-component/antd/action/Action.Designer';
 import { SchemaSettingOpenModeSchemaItems } from '../../../schema-items';
 import { SchemaSettingsEnableChildCollections, SchemaSettingsLinkageRules } from '../../../schema-settings';
-import { useOpenMode } from '../../popup/useOpenMode';
+import { useOpenModeContext } from '../../popup/OpenModeProvider';
 
 export const addChildActionSettings = new SchemaSettings({
   name: 'actionSettings:addChild',
@@ -43,10 +43,10 @@ export const addChildActionSettings = new SchemaSettings({
       name: 'openMode',
       Component: SchemaSettingOpenModeSchemaItems,
       useComponentProps() {
-        const { isOpenModeVisible } = useOpenMode();
+        const { hideOpenMode } = useOpenModeContext();
         return {
-          openMode: isOpenModeVisible(),
-          openSize: isOpenModeVisible(),
+          openMode: !hideOpenMode,
+          openSize: !hideOpenMode,
         };
       },
     },

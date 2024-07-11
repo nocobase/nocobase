@@ -7,9 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { RemoteSchemaComponent } from '@nocobase/client';
 import React, { useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { RemoteSchemaComponent } from '@nocobase/client';
 import { useMobileRoutes } from '../../../mobile-providers';
 import { useStyles } from './styles';
 

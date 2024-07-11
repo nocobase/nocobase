@@ -7,52 +7,52 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { PagePopups, Plugin, RouterManager, createRouterManager } from '@nocobase/client';
 import React from 'react';
 import { Outlet } from 'react-router-dom';
-import { Plugin, RouterManager, createRouterManager } from '@nocobase/client';
 
 // @ts-ignore
 import { name } from '../../package.json';
 
+import { generatePluginTranslationTemplate } from './locale';
 import { Mobile } from './mobile';
 import {
-  MobileHomePage,
-  MobilePage,
-  MobileNotFoundPage,
-  MobilePageContent,
-  MobilePageProvider,
-  mobilePageSettings,
-  MobilePageHeader,
-  MobileNavigationBarAction,
-  mobileAddBlockInitializer,
-  useMobileNavigationBarLink,
-  mobilePageTabsSettings,
-  MobilePageNavigationBar,
-  mobilePagesTabInitializer,
-  mobileNavigationBarActionsInitializer,
-  mobileNavigationBarLinkSettings,
-  MobileNavigationActionBar,
-  MobilePageTabs,
-} from './pages';
-import {
-  MobileTabBar,
   MobileLayout,
+  MobileTabBar,
   mobileTabBarInitializer,
   mobileTabBarLinkSettings,
   mobileTabBarPageSettings,
 } from './mobile-layout';
-import { generatePluginTranslationTemplate } from './locale';
+import {
+  MobileHomePage,
+  MobileNavigationActionBar,
+  MobileNavigationBarAction,
+  MobileNotFoundPage,
+  MobilePage,
+  MobilePageContent,
+  MobilePageHeader,
+  MobilePageNavigationBar,
+  MobilePageProvider,
+  MobilePageTabs,
+  mobileAddBlockInitializer,
+  mobileNavigationBarActionsInitializer,
+  mobileNavigationBarLinkSettings,
+  mobilePageSettings,
+  mobilePageTabsSettings,
+  mobilePagesTabInitializer,
+  useMobileNavigationBarLink,
+} from './pages';
 
 // 导出 JSBridge，会挂在到 window 上
 import './js-bridge';
 import { MobileCheckerProvider } from './providers';
 
-export * from './mobile-providers';
+export * from './desktop-mode';
 export * from './mobile';
 export * from './mobile-layout';
-export * from './providers';
+export * from './mobile-providers';
 export * from './pages';
-export * from './desktop-mode';
+export * from './providers';
 
 export class PluginMobileClient extends Plugin {
   mobileRouter?: RouterManager;
@@ -191,12 +191,20 @@ export class PluginMobileClient extends Plugin {
       path: '/page/:pageSchemaUid',
       Component: 'MobilePage',
     });
+    this.mobileRouter.add('mobile.schema.page.popup', {
+      path: '/page/:pageSchemaUid/popups/*',
+      Component: PagePopups,
+    });
     this.mobileRouter.add('mobile.schema.tabs', {
       element: <Outlet />,
     });
     this.mobileRouter.add('mobile.schema.tabs.page', {
       path: '/page/:pageSchemaUid/tabs/:tabSchemaUid',
       Component: 'MobilePage',
+    });
+    this.mobileRouter.add('mobile.schema.tabs.page.popup', {
+      path: '/page/:pageSchemaUid/tabs/:tabSchemaUid/popups/*',
+      Component: PagePopups,
     });
 
     this.mobileRouter.add('not-found', {

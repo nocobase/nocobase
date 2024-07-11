@@ -11,7 +11,7 @@ import { useSchemaToolbar } from '../../../application';
 import { SchemaSettings } from '../../../application/schema-settings/SchemaSettings';
 import { ButtonEditor, RemoveButton } from '../../../schema-component/antd/action/Action.Designer';
 import { SchemaSettingOpenModeSchemaItems } from '../../../schema-items';
-import { useOpenMode } from '../../popup/useOpenMode';
+import { useOpenModeContext } from '../../popup/OpenModeProvider';
 
 export const customizeAddRecordActionSettings = new SchemaSettings({
   name: 'actionSettings:addRecord',
@@ -28,10 +28,10 @@ export const customizeAddRecordActionSettings = new SchemaSettings({
       name: 'openMode',
       Component: SchemaSettingOpenModeSchemaItems,
       useComponentProps() {
-        const { isOpenModeVisible } = useOpenMode();
+        const { hideOpenMode } = useOpenModeContext();
         return {
-          openMode: isOpenModeVisible(),
-          openSize: isOpenModeVisible(),
+          openMode: !hideOpenMode,
+          openSize: !hideOpenMode,
         };
       },
     },
