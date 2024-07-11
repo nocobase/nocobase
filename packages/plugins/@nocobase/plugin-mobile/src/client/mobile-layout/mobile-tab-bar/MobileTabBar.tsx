@@ -54,10 +54,6 @@ export const MobileTabBar: FC<MobileTabBarProps> & {
   );
 
   if (!enableTabBar) {
-    if (designable) {
-      return <div className={styles.mobileTabBar} style={{ background: 'none', border: 'none' }}></div>;
-    }
-
     return null;
   }
 

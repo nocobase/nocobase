@@ -26,24 +26,25 @@ export const MobilePageContent = () => {
     setMobilePageHeader(navigationBar?.offsetHeight);
     // 这里依赖项要不需要填，每次都刷新
   });
-
   // 如果 URL 中有 tabSchemaUid，则使用 tabSchemaUid，否则使用第一个 tab 的 pageSchemaUid
   return (
-    <div
-      className={styles.mobilePageContent}
-      data-testid="mobile-page-content"
-      style={{
-        height: '100%',
-        paddingBottom: mobileTabBarHeight,
-        paddingTop: mobilePageHeader,
-        boxSizing: 'border-box',
-      }}
-    >
-      <RemoteSchemaComponent
-        uid={tabSchemaUid || activeTabBarItem?.children?.[0]?.schemaUid}
-        NotFoundPage={'MobileNotFoundPage'}
-        memoized={false}
-      />
-    </div>
+    <>
+      {mobilePageHeader && <div style={{ height: mobilePageHeader }}></div>}
+      <div
+        className={styles.mobilePageContent}
+        data-testid="mobile-page-content"
+        style={{
+          height: `calc(100% - ${(mobileTabBarHeight || 0) + (mobilePageHeader || 0)}px)`,
+          boxSizing: 'border-box',
+        }}
+      >
+        <RemoteSchemaComponent
+          uid={tabSchemaUid || activeTabBarItem?.children?.[0]?.schemaUid}
+          NotFoundPage={'MobileNotFoundPage'}
+          memoized={false}
+        />
+      </div>
+      {mobileTabBarHeight && <div style={{ height: mobileTabBarHeight }}></div>}
+    </>
   );
 };
