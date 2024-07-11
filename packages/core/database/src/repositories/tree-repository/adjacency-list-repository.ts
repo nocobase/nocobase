@@ -315,11 +315,14 @@ export class AdjacencyListRepository extends Repository {
     const pathTableName = `main_${collection.name}_path`;
     const queryInterface = this.database.sequelize.getQueryInterface();
     const q = queryInterface.quoteIdentifier.bind(queryInterface);
+    const collectionTreePath = await this.collection.db.getCollection(pathTableName);
+    const rootPkColumnName = collectionTreePath.getField('rootPk').columnName();
+    const nodePkColumnName = collectionTreePath.getField('nodePk').columnName();
     const datas = await this.database.sequelize.query(
       `
-      SELECT DISTINCT(${q('rootPk')}) as ${q('rootId')}
+      SELECT DISTINCT(${q(rootPkColumnName)}) as ${q('rootId')}
       FROM ${pathTableName}
-      WHERE ${q('nodePk')} IN (${nodePks.join(',')}) ;
+      WHERE ${q(nodePkColumnName)} IN (${nodePks.join(',')}) ;
       `,
       {
         type: QueryTypes.SELECT,
