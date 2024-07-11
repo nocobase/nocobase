@@ -19,7 +19,7 @@ describe('destroy', () => {
     await app.destroy();
   });
 
-  it('should not create auto increnment field more than one', async () => {
+  it('should not create auto increment field more than one', async () => {
     if (process.env.DB_DIALECT !== 'mysql') {
       return;
     }
@@ -33,6 +33,7 @@ describe('destroy', () => {
             name: 'id',
             type: 'integer',
             autoIncrement: true,
+            primaryKey: true,
           },
         ],
       },
@@ -59,6 +60,15 @@ describe('destroy', () => {
     }
 
     expect(error).toBeTruthy();
+    expect(
+      await db.getRepository('fields').count({
+        filter: {
+          collectionName: 'posts',
+          name: 'xxx',
+        },
+      }),
+    ).toBe(0);
+
     expect(postCollection.getField('xxx')).toBeFalsy();
   });
 });
