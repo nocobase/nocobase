@@ -1,6 +1,6 @@
 {
   "name": "create-nocobase-app",
-  "version": "1.2.13-alpha",
+  "version": "1.2.14-alpha",
   "main": "src/index.js",
   "license": "AGPL-3.0",
   "dependencies": {
