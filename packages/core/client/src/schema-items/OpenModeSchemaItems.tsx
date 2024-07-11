@@ -31,6 +31,7 @@ export const SchemaInitializerOpenModeSchemaItems: React.FC<Options> = (options)
     <>
       {openMode ? (
         <SchemaInitializerSelect
+          closeInitializerMenuWhenClick={false}
           title={t('Open mode')}
           options={[
             { label: t('Drawer'), value: 'drawer' },
@@ -55,7 +56,7 @@ export const SchemaInitializerOpenModeSchemaItems: React.FC<Options> = (options)
         />
       ) : null}
       {openSize && ['modal', 'drawer'].includes(openModeValue) ? (
-        <SchemaInitializerItem>
+        <SchemaInitializerItem closeInitializerMenuWhenClick={false}>
           <div style={{ alignItems: 'center', display: 'flex', justifyContent: 'space-between' }}>
             {t('Popup size')}
             <Select
