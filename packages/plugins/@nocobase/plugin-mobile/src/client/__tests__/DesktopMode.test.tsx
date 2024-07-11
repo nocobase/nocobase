@@ -28,12 +28,14 @@ describe('DesktopMode', () => {
     });
     await waitFor(() => {
       expect(screen.queryByTestId('desktop-mode-resizable').style.width).toBe('768px');
+      expect(screen.queryByTestId('desktop-mode-resizable').style.height).toBe('667px');
     });
     await act(async () => {
       await userEvent.click(screen.queryByTestId('desktop-mode-size-mobile'));
     });
     await waitFor(() => {
       expect(screen.queryByTestId('desktop-mode-resizable').style.width).toBe('375px');
+      expect(screen.queryByTestId('desktop-mode-resizable').style.height).toBe('667px');
     });
 
     // qrcode

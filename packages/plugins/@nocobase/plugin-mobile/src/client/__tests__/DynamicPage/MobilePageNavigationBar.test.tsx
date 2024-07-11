@@ -12,7 +12,7 @@ import { act, render, screen, userEvent, waitFor, waitForApp } from '@nocobase/t
 import Basic from '../../demos/pages-navigation-bar-basic';
 import NavFalse from '../../demos/pages-navigation-bar-false';
 import NavTitleFalse from '../../demos/pages-navigation-bar-title-false';
-import NavTabs from '../../demos/pages-navigation-bar-tabs';
+import NavTabs from '../../demos/pages-page-tabs';
 
 describe('MobilePageNavigationBar', () => {
   it('basic', async () => {
@@ -47,7 +47,6 @@ describe('MobilePageNavigationBar', () => {
     await waitForApp();
 
     await waitFor(() => {
-      expect(screen.queryByText('Page1')).toBeInTheDocument();
       expect(screen.queryByText('Tab1')).toBeInTheDocument();
       expect(screen.queryByText('Tab2')).toBeInTheDocument();
       expect(screen.queryByText('/page/page1/tabs/tab1')).toBeInTheDocument();
@@ -57,7 +56,6 @@ describe('MobilePageNavigationBar', () => {
       await userEvent.click(screen.getByText('Tab2'));
     });
     await waitFor(() => {
-      expect(screen.queryByText('Page1')).toBeInTheDocument();
       expect(screen.queryByText('Tab1')).toBeInTheDocument();
       expect(screen.queryByText('Tab2')).toBeInTheDocument();
       expect(screen.queryByText('/page/page1/tabs/tab2')).toBeInTheDocument();
