@@ -35,7 +35,7 @@ export const MobileNavigationBarAction: FC<MobileNavigationBarActionProps> = Rea
           ref={ref}
           onClick={onClick}
           color={color}
-          size="mini"
+          size={contentLength <= 1 ? undefined : 'mini'}
           className={className}
           style={{ padding: 3, ...style }}
           fill={contentLength <= 1 ? 'none' : fill}
