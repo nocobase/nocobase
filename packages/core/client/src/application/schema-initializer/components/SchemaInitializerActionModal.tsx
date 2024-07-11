@@ -19,7 +19,7 @@ export interface SchemaInitializerActionModalProps {
   icon?: string | React.ReactNode;
   schema: any;
   onCancel?: () => void;
-  onSubmit?: (values: any) => void;
+  onSubmit?: (values: any) => Promise<any> | void;
   buttonText?: any;
   component?: any;
   isItem?: boolean;
@@ -57,9 +57,13 @@ export const SchemaInitializerActionModal: FC<SchemaInitializerActionModalProps>
     return {
       async run() {
         await form.validate();
-        await onSubmit?.(form.values);
-        ctx.setVisible(false);
-        void form.reset();
+        try {
+          await onSubmit?.(form.values);
+          ctx.setVisible(false);
+          void form.reset();
+        } catch (err) {
+          console.error(err);
+        }
       },
     };
   }, [onSubmit]);

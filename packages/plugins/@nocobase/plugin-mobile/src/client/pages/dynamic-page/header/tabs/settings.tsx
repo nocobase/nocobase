@@ -89,6 +89,9 @@ const editTitle: SchemaSettingsItemType = {
         },
       },
       async onSubmit({ title, icon }) {
+        if (title && title.trim().length == 0) {
+          return Promise.reject(new Error('Title is required'));
+        }
         await resource.update({ filterByTk: tab.id, values: { title, icon } });
         refresh();
       },

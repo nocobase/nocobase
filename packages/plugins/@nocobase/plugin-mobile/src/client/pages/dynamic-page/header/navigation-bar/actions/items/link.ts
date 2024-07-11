@@ -70,9 +70,9 @@ export const mobileNavigationBarLinkInitializerItem: SchemaInitializerItemAction
       schema: actionCommonInitializerSchema,
       isItem: true,
       onSubmit(values) {
-        if (!values.title && !values.icon) {
+        if ((!values.title || values.title.trim().length === 0) && !values.icon) {
           message.error(t('Please enter title or select icon'));
-          return;
+          return Promise.reject(new Error('Please enter title or select icon'));
         }
         insert(getMobileNavigationBarLinkSchema(values));
       },

@@ -1553,7 +1553,7 @@ export const useParseURLAndParams = () => {
   return { parseURLAndParams };
 };
 
-export function useLinkActionProps(componentProps: any) {
+export function useLinkActionProps(componentProps?: any) {
   const navigate = useNavigateNoUpdate();
   const fieldSchema = useFieldSchema();
   const componentPropsValue = fieldSchema?.['x-component-props'] || componentProps;

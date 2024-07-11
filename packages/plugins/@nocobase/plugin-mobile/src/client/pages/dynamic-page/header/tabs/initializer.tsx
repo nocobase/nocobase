@@ -31,6 +31,9 @@ export const mobilePagesTabInitializer = new SchemaInitializer({
         title={generatePluginTranslationTemplate('Add tab')}
         btnStyles={{ width: 32, padding: 0, marginRight: 12 }}
         onSubmit={async ({ title, icon }) => {
+          if (title && title.trim().length == 0) {
+            return Promise.reject(new Error('Title is required'));
+          }
           // 创建 Tab
           const tabSchemaUid = uid();
           await resource.create({

@@ -650,8 +650,12 @@ export const SchemaSettingsActionModalItem: FC<SchemaSettingsActionModalItemProp
 
   const submitHandler = useCallback(async () => {
     await form.submit();
-    onSubmit?.(cloneDeep(form.values));
-    setVisible(false);
+    try {
+      await onSubmit?.(cloneDeep(form.values));
+      setVisible(false);
+    } catch (err) {
+      console.error(err);
+    }
   }, [form, onSubmit]);
 
   const openAssignedFieldValueHandler = useCallback(async () => {
@@ -718,7 +722,7 @@ SchemaSettingsActionModalItem.displayName = 'SchemaSettingsActionModalItem';
 
 export interface SchemaSettingsModalItemProps {
   title: string;
-  onSubmit: (values: any) => void;
+  onSubmit: (values: any) => Promise<any> | void;
   initialValues?: any;
   schema?: ISchema | (() => ISchema);
   modalTip?: string;
