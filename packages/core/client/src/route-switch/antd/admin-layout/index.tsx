@@ -35,9 +35,9 @@ import {
 } from '../../../';
 import { Plugin } from '../../../application/Plugin';
 import { useAppSpin } from '../../../application/hooks/useAppSpin';
+import { useMenuTranslation } from '../../../schema-component/antd/menu/locale';
 import { Help } from '../../../user/Help';
 import { VariablesProvider } from '../../../variables';
-import { useMenuTranslation } from '../../../schema-component/antd/menu/locale';
 
 const filterByACL = (schema, options) => {
   const { allowAll, allowMenuItemIds = [] } = options;
@@ -218,7 +218,6 @@ const MenuEditor = (props) => {
     <SchemaIdContext.Provider value={defaultSelectedUid}>
       <SchemaComponent
         distributed
-        memoized
         scope={{ useMenuProps, onSelect, sideMenuRef, defaultSelectedUid }}
         schema={schema}
       />
