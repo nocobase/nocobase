@@ -14,6 +14,7 @@ import { isDesktop } from 'react-device-detect';
 import { PageBackgroundColor } from '../constants';
 import { DesktopMode } from '../desktop-mode/DesktopMode';
 import { PluginMobileClient } from '../index';
+import { MobileActionPage } from '../pages/mobile-action-page/MobileActionPage';
 import { MobileAppProvider } from './MobileAppContext';
 
 export const Mobile = () => {
@@ -44,7 +45,13 @@ export const Mobile = () => {
 
   return (
     <DesktopComponent>
-      <OpenModeProvider defaultOpenMode="page" hideOpenMode>
+      <OpenModeProvider
+        defaultOpenMode="page"
+        hideOpenMode
+        openModeToComponent={{
+          page: MobileActionPage,
+        }}
+      >
         <MobileAppProvider>
           <MobileRouter />
         </MobileAppProvider>

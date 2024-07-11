@@ -18,6 +18,7 @@ export const MobilePage = () => {
       <RemoteSchemaComponent uid={pageSchemaUid} NotFoundPage={'MobileNotFoundPage'} memoized={false} />
       {/* 用于渲染子页面 */}
       <Outlet />
+      <div className="nb-mobile-subpages-slot"></div>
     </>
   );
 };

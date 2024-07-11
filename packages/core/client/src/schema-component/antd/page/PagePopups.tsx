@@ -94,15 +94,13 @@ const PopupTabsPropsProvider: FC<{ params: PopupParams }> = ({ children, params 
     [changeTab],
   );
   const { isPopupVisibleControlledByURL } = usePopupSettings();
-  const { isSubPage } = useCurrentPopupContext();
-  const tabBarExtraContent = useMemo(() => (isSubPage ? <BackButtonUsedInSubPage /> : null), [isSubPage]);
 
   if (!isPopupVisibleControlledByURL()) {
     return <>{children}</>;
   }
 
   return (
-    <TabsContextProvider activeKey={params.tab} onTabClick={onTabClick} tabBarExtraContent={tabBarExtraContent}>
+    <TabsContextProvider activeKey={params.tab} onTabClick={onTabClick}>
       {children}
     </TabsContextProvider>
   );
@@ -276,7 +274,7 @@ export const PagePopups = (props: { paramsList?: PopupParams[] }) => {
         context={popupPropsRef.current[0].context}
         currentLevel={1}
       >
-        <SchemaComponent components={components} schema={rootSchema} onlyRenderProperties />;
+        <SchemaComponent components={components} schema={rootSchema} onlyRenderProperties />
       </PagePopupsItemProvider>
     </AllPopupsPropsProviderContext.Provider>
   );

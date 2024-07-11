@@ -11,16 +11,18 @@ import { observer, RecursionField, useField, useFieldSchema } from '@formily/rea
 import React from 'react';
 import { useActionContext } from '.';
 import { useOpenModeContext } from '../../../modules/popup/OpenModeProvider';
+import { useCurrentPopupContext } from '../page/PagePopups';
 import { ComposedActionDrawer } from './types';
 
 export const ActionContainer: ComposedActionDrawer = observer(
   (props: any) => {
     const { openMode } = useActionContext();
     const { getComponentByOpenMode } = useOpenModeContext();
+    const { currentLevel } = useCurrentPopupContext();
 
     const Component = getComponentByOpenMode(openMode);
 
-    return <Component footerNodeName={'Action.Container.Footer'} {...props} />;
+    return <Component footerNodeName={'Action.Container.Footer'} {...props} level={currentLevel} />;
   },
   { displayName: 'ActionContainer' },
 );

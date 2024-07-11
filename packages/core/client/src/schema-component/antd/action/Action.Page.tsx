@@ -11,25 +11,26 @@ import { RecursionField, observer, useFieldSchema } from '@formily/react';
 import React, { useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { useActionContext } from '.';
-import { useCurrentPopupContext } from '../page/PagePopups';
+import { BackButtonUsedInSubPage } from '../page/BackButtonUsedInSubPage';
+import { TabsContextProvider, useTabsContext } from '../tabs/context';
 import { useActionPageStyle } from './Action.Page.style';
 import { usePopupOrSubpagesContainerDOM } from './hooks/usePopupSlotDOM';
 import { ComposedActionDrawer } from './types';
 
 export const ActionPage: ComposedActionDrawer = observer(
-  () => {
+  ({ level }) => {
     const filedSchema = useFieldSchema();
     const ctx = useActionContext();
     const { getContainerDOM } = usePopupOrSubpagesContainerDOM();
     const { styles } = useActionPageStyle();
-    const { currentLevel } = useCurrentPopupContext();
+    const tabContext = useTabsContext();
 
     const style = useMemo(() => {
       return {
         // 20 is the z-index value of the main page
-        zIndex: 20 + currentLevel,
+        zIndex: 20 + level,
       };
-    }, [currentLevel]);
+    }, [level]);
 
     if (!ctx.visible) {
       return null;
@@ -37,7 +38,9 @@ export const ActionPage: ComposedActionDrawer = observer(
 
     const actionPageNode = (
       <div className={styles.container} style={style}>
-        <RecursionField schema={filedSchema} onlyRenderProperties />
+        <TabsContextProvider {...tabContext} tabBarExtraContent={<BackButtonUsedInSubPage />}>
+          <RecursionField schema={filedSchema} onlyRenderProperties />
+        </TabsContextProvider>
       </div>
     );
 

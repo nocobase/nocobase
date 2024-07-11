@@ -24,7 +24,7 @@ interface OpenModeProviderProps {
    * @default { drawer: ActionDrawer, page: ActionPage, modal: ActionModal }
    * 根据 open mode 获取对应的组件
    */
-  openModeToComponent?: Record<OpenMode, any>;
+  openModeToComponent?: Partial<Record<OpenMode, any>>;
   /**
    * @default false
    * 隐藏 open mode 的配置选项
