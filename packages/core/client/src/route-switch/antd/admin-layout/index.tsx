@@ -221,7 +221,7 @@ const MenuEditor = (props) => {
   }
   return (
     <SchemaIdContext.Provider value={defaultSelectedUid}>
-      <SchemaComponent distributed memoized scope={scope} schema={schema} />
+      <SchemaComponent distributed scope={scope} schema={schema} />
     </SchemaIdContext.Provider>
   );
 };
