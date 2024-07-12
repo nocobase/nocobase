@@ -311,6 +311,24 @@ export class AdjacencyListRepository extends Repository {
     return [];
   }
 
+  private async findCommonParent(strings: string[]): Promise<string | undefined> {
+    if (strings.length === 0) {
+      return undefined;
+    }
+
+    let prefix = strings[0];
+
+    for (let i = 1; i < strings.length; i++) {
+      while (strings[i].indexOf(prefix) !== 0) {
+        if (prefix.length === 0) {
+          return '';
+        }
+        prefix = prefix.slice(0, -1);
+      }
+    }
+    return prefix;
+  }
+
   private async queryRootIDs(nodePks, collection) {
     const pathTableName = `main_${collection.name}_path`;
     const queryInterface = this.database.sequelize.getQueryInterface();
