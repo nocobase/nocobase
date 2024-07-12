@@ -13,7 +13,6 @@ export const useStyles = createStyles(() => ({
   mobilePageHeader: {
     position: 'absolute',
     top: 0,
-    zIndex: 998,
     left: 0,
     right: 0,
     borderBottom: '1px solid var(--adm-color-border)',

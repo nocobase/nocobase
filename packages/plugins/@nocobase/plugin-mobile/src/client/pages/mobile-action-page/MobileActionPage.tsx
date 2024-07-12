@@ -33,8 +33,7 @@ export const MobileActionPage = ({ level }) => {
 
   const style = useMemo(() => {
     return {
-      // 底部 tab bar 的 z-index 为 998，这里是为了让 ActionPage 能够覆盖底部 tab bar
-      zIndex: 999 + level,
+      zIndex: level,
       '--mobile-action-page-header-height': '49px',
       '--mobile-action-page-tab-height': '44px',
     };
