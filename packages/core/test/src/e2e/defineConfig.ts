@@ -17,7 +17,7 @@ export const defineConfig = (config?: PlaywrightTestConfig) => {
       timeout: 10 * 1000,
     },
 
-    globalTimeout: 100 * 60 * 1000,
+    globalTimeout: 60 * 60 * 1000,
 
     // Look for test files in the "tests" directory, relative to this configuration file.
     testDir: 'packages',
