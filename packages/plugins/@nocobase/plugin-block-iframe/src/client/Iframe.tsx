@@ -60,7 +60,7 @@ export const Iframe: any = observer(
           setSrc(dataUrl);
         } else {
           try {
-            const targetUrl = parseURLAndParams(url, params || []);
+            const targetUrl = await parseURLAndParams(url, params || []);
             setSrc(targetUrl);
           } catch (error) {
             console.error('Error fetching target URL:', error);
