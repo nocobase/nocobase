@@ -24,5 +24,9 @@ export const useStyles = createStyles(() => ({
       height: 49,
       padding: '10px 0 10px',
     },
+
+    '.adm-tabs-tab-wrapper': {
+      overflow: 'hidden',
+    },
   },
 }));
