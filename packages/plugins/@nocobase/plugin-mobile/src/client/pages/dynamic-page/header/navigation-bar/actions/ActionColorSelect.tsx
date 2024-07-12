@@ -12,7 +12,7 @@ import { connect } from '@formily/react';
 import React from 'react';
 import { Button } from 'antd-mobile';
 
-const colors = [undefined, 'primary', 'success', 'danger', 'warning'];
+const colors = ['default', 'primary', 'success', 'danger', 'warning'];
 export const ActionColorSelect = connect((props) => {
   return (
     <Radio.Group {...props}>

@@ -26,38 +26,37 @@ export const MobileNavigationBarAction: FC<MobileNavigationBarActionProps> = Rea
   const { icon, color, fill, children, style = {}, className, onClick } = props;
   const { position } = useSchemaToolbar();
   const title = children[0];
+  const designer = children[1];
   const contentLength = [icon, title].filter(Boolean).length;
   const iconElement = useMemo(() => (typeof icon === 'string' ? <Icon type={icon} /> : icon), [icon]);
   return (
-    <>
-      <BlockItem>
-        <Button
-          ref={ref}
-          onClick={onClick}
-          color={color}
-          size={contentLength <= 1 ? undefined : 'mini'}
-          className={className}
-          style={{ padding: 3, ...style }}
-          fill={contentLength <= 1 ? 'none' : fill}
-        >
-          {contentLength > 1 ? (
-            position === 'left' ? (
-              <Space style={{ '--gap': '4px' }}>
-                {iconElement}
-                <span>{title}</span>
-              </Space>
-            ) : (
-              <Space style={{ '--gap': '4px' }}>
-                <span>{title}</span>
-                {iconElement}
-              </Space>
-            )
+    <div ref={ref}>
+      <Button
+        onClick={onClick}
+        color={color}
+        size={contentLength <= 1 ? undefined : 'mini'}
+        className={className}
+        style={{ padding: 3, ...style }}
+        fill={contentLength <= 1 ? 'none' : fill}
+      >
+        {designer}
+        {contentLength > 1 ? (
+          position === 'left' ? (
+            <Space style={{ '--gap': '4px' }}>
+              {iconElement}
+              <span>{title}</span>
+            </Space>
           ) : (
-            iconElement || title
-          )}
-        </Button>
-      </BlockItem>
-    </>
+            <Space style={{ '--gap': '4px' }}>
+              <span>{title}</span>
+              {iconElement}
+            </Space>
+          )
+        ) : (
+          iconElement || title
+        )}
+      </Button>
+    </div>
   );
 });
 

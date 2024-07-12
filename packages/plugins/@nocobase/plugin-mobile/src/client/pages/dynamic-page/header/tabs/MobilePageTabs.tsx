@@ -63,8 +63,8 @@ export const MobilePageTabs: FC = () => {
                   <MobilePageTabsSettings tab={item} />
                   {item.icon ? (
                     <Space>
-                      {item.title}
                       <Icon type={item.icon} />
+                      {item.title}
                     </Space>
                   ) : (
                     item.title

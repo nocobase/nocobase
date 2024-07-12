@@ -118,7 +118,8 @@ export const MobilePageTabsSettings: FC<MobilePageTabsSettingsProps> = ({ tab })
         settings={mobilePageTabsSettings}
         showBackground
         showBorder={false}
-        toolbarStyle={{ inset: -10 }}
+        toolbarStyle={{ inset: -15 }}
+        spaceWrapperStyle={{ top: 5 }}
       />
     </SchemaToolbarProvider>
   );
