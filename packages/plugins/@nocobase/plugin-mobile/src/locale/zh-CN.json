@@ -17,5 +17,6 @@
   "Display page title": "显示导航栏标题",
   "Display tabs": "显示标签页",
   "Add tab": "添加标签页",
-  "Mobile": "移动端"
+  "Mobile": "移动端",
+  "Title field is required": "标题必填"
 }

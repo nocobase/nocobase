@@ -66,6 +66,8 @@ const editTitle: SchemaSettingsItemType = {
     const { t } = usePluginTranslation();
     const { tab } = useSchemaToolbar();
     const { refresh, resource } = useMobileRoutes();
+    const { message } = App.useApp();
+
     return {
       title: t('Edit'),
       schema: {
@@ -90,7 +92,8 @@ const editTitle: SchemaSettingsItemType = {
       },
       async onSubmit({ title, icon }) {
         if (title && title.trim().length == 0) {
-          return Promise.reject(new Error('Title is required'));
+          message.error(t('Title field is required'));
+          return Promise.reject(new Error('Title field is required'));
         }
         await resource.update({ filterByTk: tab.id, values: { title, icon } });
         refresh();

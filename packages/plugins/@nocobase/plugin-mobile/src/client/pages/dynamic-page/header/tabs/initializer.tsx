@@ -9,6 +9,7 @@
 
 import React from 'react';
 import { uid } from '@formily/shared';
+import { App } from 'antd';
 import {
   SchemaInitializer,
   useSchemaInitializer,
@@ -18,13 +19,15 @@ import {
 
 import { getPageContentTabSchema } from '../../content';
 import { MobileRouteItem, useMobileRoutes } from '../../../../mobile-providers';
-import { generatePluginTranslationTemplate } from '../../../../locale';
+import { generatePluginTranslationTemplate, usePluginTranslation } from '../../../../locale';
 
 export const mobilePagesTabInitializer = new SchemaInitializer({
   name: 'mobile:tabs',
   Component: () => {
     const { refresh, resource, activeTabBarItem } = useMobileRoutes();
     const { insert } = useSchemaInitializer();
+    const { t } = usePluginTranslation();
+    const { message } = App.useApp();
 
     return (
       <SchemaInitializerActionModal
@@ -32,7 +35,8 @@ export const mobilePagesTabInitializer = new SchemaInitializer({
         btnStyles={{ width: 32, padding: 0, marginRight: 12 }}
         onSubmit={async ({ title, icon }) => {
           if (title && title.trim().length == 0) {
-            return Promise.reject(new Error('Title is required'));
+            message.error(t('Title field is required'));
+            return Promise.reject(new Error('Title field is required'));
           }
           // 创建 Tab
           const tabSchemaUid = uid();
