@@ -26,7 +26,7 @@ const JT_VALUE_RE = /^\s*{{\s*([^{}]+)\s*}}\s*$/;
 
 function parseValue(value: any): string | string[] {
   if (value == null) {
-    return '';
+    return 'null';
   }
   const type = typeof value;
   if (type === 'string') {
@@ -42,6 +42,11 @@ function parseValue(value: any): string | string[] {
     // }
   }
   return type === 'object' && value instanceof Date ? 'date' : type;
+}
+
+function NullComponent() {
+  const { t } = useTranslation();
+  return <AntInput style={{ width: '100%' }} readOnly placeholder={`<${t('Null')}>`} className="null-value" />;
 }
 
 const ConstantTypes = {
@@ -76,6 +81,7 @@ const ConstantTypes = {
             { value: false, label: t('False') },
           ]}
           {...otherProps}
+          className={classNames(otherProps.className, 'auto-width')}
         />
       );
     },
@@ -100,15 +106,17 @@ const ConstantTypes = {
       return new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
     })(),
   },
+  // NOTE: keep null option here for compatibility
+  null: {
+    label: '{{t("Null")}}',
+    value: 'null',
+    component: NullComponent,
+    default: null,
+  },
 };
 
-function NullComponent() {
-  const { t } = useTranslation();
-  return <AntInput style={{ width: '100%' }} readOnly placeholder={t('Null')} className="null-value" />;
-}
-
 function getTypedConstantOption(type: string, types: true | string[], fieldNames) {
-  const allTypes = Object.values(ConstantTypes);
+  const allTypes = Object.values(ConstantTypes).filter((item) => item.value !== 'null');
   const children = (
     types ? allTypes.filter((item) => (Array.isArray(types) && types.includes(item.value)) || types === true) : allTypes
   ).map((item) =>
@@ -194,7 +202,7 @@ export function Input(props: VariableInputProps) {
         [names.label]: t('Constant'),
       };
     }
-    if (useTypedConstant && type) {
+    if (useTypedConstant) {
       return getTypedConstantOption(type, useTypedConstant, names);
     }
     return null;
