@@ -745,5 +745,5 @@ export default module.exports = {
   ConditionBranchNode,
   SQLNode,
   ParallelBranchNode,
-  ApprovalBranchModeNode,
+  ApprovalBranchModeNode
 };
