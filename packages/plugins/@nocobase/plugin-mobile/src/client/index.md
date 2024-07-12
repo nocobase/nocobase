@@ -335,11 +335,3 @@ function getMobileTabBarItemSchema(routeItem: MobileRouteItem) {
 ```
 
 其中 `tab1` 和 `tab2` 的 `x-async` 为 true，表示是异步加载的。
-
-## 待做任务
-
-- change package.json
-- 更新文档
-- 使用文档
-- 原 admin 弹窗改为子页面（等中合），back 等一起开发
-- settings 的单测？

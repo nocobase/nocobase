@@ -16,6 +16,7 @@ export const useStyles = createStyles(() => ({
     justifyContent: 'space-between',
   },
   mobilePageTabsList: {
+    height: 49,
     '.adm-tabs-header': {
       borderBottomWidth: 0,
     },
