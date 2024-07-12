@@ -54,12 +54,14 @@ export const editAction = (extraProperties?: (values: any) => Record<string, ISc
         },
         color: {
           type: 'string',
+          default: values.color,
           title: generatePluginTranslationTemplate('Color'),
           'x-decorator': 'FormItem',
           'x-component': ActionColorSelect,
         },
         fill: {
           type: 'boolean',
+          default: values.fill,
           title: generatePluginTranslationTemplate('Fill'),
           'x-decorator': 'FormItem',
           'x-component': ActionFillSelect,

@@ -34,6 +34,15 @@ export const useStyles = createStyles(() => ({
     justifyContent: 'space-around',
     flex: 1,
     alignItems: 'center',
+    '.adm-tab-bar-item': {
+      maxWidth: '100%',
+      '.adm-tab-bar-item-title': {
+        maxWidth: '100%',
+        overflow: 'hidden',
+        whiteSpace: 'nowrap',
+        textOverflow: 'ellipsis',
+      },
+    },
     '&>div': {
       flex: 1,
       display: 'flex',

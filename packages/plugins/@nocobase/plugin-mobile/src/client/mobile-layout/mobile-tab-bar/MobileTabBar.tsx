@@ -16,7 +16,7 @@ import { useMobileRoutes } from '../../mobile-providers';
 
 import { getMobileTabBarItemSchema, MobileTabBarItem } from './MobileTabBar.Item';
 import { MobileTabBarPage, MobileTabBarLink } from './types';
-import { cx, DndContext, DndContextProps, SchemaComponent, useDesignable } from '@nocobase/client';
+import { cx, DndContext, DndContextProps, SchemaComponent, useDesignable, css } from '@nocobase/client';
 import { MobileTabBarInitializer } from './initializer';
 import { isInnerLink } from '../../utils';
 
@@ -64,7 +64,17 @@ export const MobileTabBar: FC<MobileTabBarProps> & {
     <div className={cx(styles.mobileTabBar, 'mobile-tab-bar')} data-testid="mobile-tab-bar">
       <div className={styles.mobileTabBarContent}>
         <DndContext onDragEnd={handleDragEnd}>
-          <div className={styles.mobileTabBarList}>
+          <div
+            className={cx(
+              styles.mobileTabBarList,
+              css({
+                maxWidth: designable ? 'calc(100% - 58px)' : '100%',
+                '.nb-block-item': {
+                  maxWidth: `${100 / routeList.length}%`,
+                },
+              }),
+            )}
+          >
             {routeList.map((item) => {
               return <SchemaComponent key={item.id} schema={getMobileTabBarItemSchema(item)} />;
             })}

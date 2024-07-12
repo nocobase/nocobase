@@ -26,7 +26,7 @@ export const DesktopModeContent: FC<DesktopModeContentProps> = ({ children }) =>
         height: '100%',
         boxSizing: 'border-box',
         overflow: 'auto',
-        padding: 100,
+        padding: 80,
       }}
     >
       <Resizable
