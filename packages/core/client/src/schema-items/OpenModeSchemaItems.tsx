@@ -30,7 +30,7 @@ export const SchemaInitializerOpenModeSchemaItems: React.FC<Options> = (options)
   const { isPopupVisibleControlledByURL } = usePopupSettings();
   const openModeValue = fieldSchema?.['x-component-props']?.['openMode'] || 'drawer';
   const modeOptions = useMemo(() => {
-    if (isPopupVisibleControlledByURL) {
+    if (isPopupVisibleControlledByURL()) {
       return [
         { label: t('Drawer'), value: 'drawer' },
         { label: t('Dialog'), value: 'modal' },
@@ -42,12 +42,13 @@ export const SchemaInitializerOpenModeSchemaItems: React.FC<Options> = (options)
       { label: t('Drawer'), value: 'drawer' },
       { label: t('Dialog'), value: 'modal' },
     ];
-  }, [t, isPopupVisibleControlledByURL]);
+  }, [t, isPopupVisibleControlledByURL()]);
 
   return (
     <>
       {openMode ? (
         <SchemaInitializerSelect
+          closeInitializerMenuWhenClick={false}
           title={t('Open mode')}
           options={modeOptions}
           value={openModeValue}
@@ -69,7 +70,7 @@ export const SchemaInitializerOpenModeSchemaItems: React.FC<Options> = (options)
         />
       ) : null}
       {openSize && ['modal', 'drawer'].includes(openModeValue) ? (
-        <SchemaInitializerItem>
+        <SchemaInitializerItem closeInitializerMenuWhenClick={false}>
           <div style={{ alignItems: 'center', display: 'flex', justifyContent: 'space-between' }}>
             {t('Popup size')}
             <Select
@@ -120,7 +121,7 @@ export const SchemaSettingOpenModeSchemaItems: React.FC<Options> = (props) => {
       return modeOptions;
     }
 
-    if (isPopupVisibleControlledByURL) {
+    if (isPopupVisibleControlledByURL()) {
       return [
         { label: t('Drawer'), value: 'drawer' },
         { label: t('Dialog'), value: 'modal' },

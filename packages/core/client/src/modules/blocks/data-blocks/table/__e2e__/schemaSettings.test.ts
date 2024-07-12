@@ -101,7 +101,6 @@ test.describe('actions schema settings', () => {
 
       // 点击按钮后会跳转到一个页面
       await page.getByLabel('action-Action-Add new-create-').click();
-      expect(page.url()).toContain('/subpages/');
 
       // 配置出一个表单
       await page.getByLabel('schema-initializer-Grid-popup').hover();
@@ -112,16 +111,15 @@ test.describe('actions schema settings', () => {
       await page.getByRole('menuitem', { name: 'Single select' }).click();
       await page.mouse.move(300, 0);
 
-      await page.getByLabel('schema-initializer-ActionBar-').hover();
+      await page.getByLabel('schema-initializer-ActionBar-createForm:configureActions-general').hover();
       await page.getByRole('menuitem', { name: 'Submit' }).click();
 
       // 创建一条数据后返回，列表中应该有这条数据
       await page.getByTestId('select-single').click();
       await page.getByRole('option', { name: 'option3' }).click();
 
+      // 提交后会自动返回
       await page.getByLabel('action-Action-Submit-submit-').click();
-
-      await page.goBack();
 
       await page.getByLabel('schema-initializer-TableV2-').hover();
       await page.getByRole('menuitem', { name: 'Single select' }).click();
@@ -538,7 +536,6 @@ test.describe('actions schema settings', () => {
 
       // 跳转到子页面后，其内容应该和弹窗中的内容一致
       await page.getByLabel('action-Action.Link-View').click();
-      expect(page.url()).toContain('/subpages');
 
       // 详情区块
       await expect(
@@ -732,7 +729,7 @@ test.describe('actions schema settings', () => {
       // 使用变量 `Current popup record` 和 `Parent popup record` 设置默认值
       await expect(
         page
-          .getByLabel('block-item-CardItem-users-form')
+          .getByText("UsersUse 'Current popup")
           .getByLabel('block-item-CollectionField-users-form-users.nickname-Nickname')
           .getByRole('textbox'),
       ).toHaveValue('admin');
@@ -869,6 +866,7 @@ test.describe('actions schema settings', () => {
         'Constant',
         'Current user',
         'Current role',
+        'API token',
         'Date variables',
         'Current record',
       ]);

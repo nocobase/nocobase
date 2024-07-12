@@ -10,7 +10,7 @@
 import { describe } from 'vitest';
 import ws from 'ws';
 
-export { mockDatabase } from '@nocobase/database';
+export { mockDatabase, MockDatabase } from '@nocobase/database';
 export { default as supertest } from 'supertest';
 export * from './mockServer';
 

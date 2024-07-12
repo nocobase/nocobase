@@ -539,7 +539,8 @@ export const Table: any = withDynamicSchemaProps(
           initialInView: isIndex || !!process.env.__E2E__ || dataSource.length <= 10,
           skip: isIndex || !!process.env.__E2E__,
         });
-        const { valueMap: style } = useSatisfiedActionValues({ formValues: record, category: 'style', schema });
+        const { valueMap } = useSatisfiedActionValues({ formValues: record, category: 'style', schema });
+        const style = useMemo(() => Object.assign({ ...props.style }, valueMap), [props.style, valueMap]);
 
         return (
           <td {...props} ref={ref} className={classNames(props.className, cellClass)} style={style}>

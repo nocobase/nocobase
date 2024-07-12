@@ -19,7 +19,6 @@ import { useTreeParentRecord } from '../../modules/blocks/data-blocks/table/Tree
 import { useRecord } from '../../record-provider';
 import { useCompile } from '../../schema-component';
 import { linkageAction } from '../../schema-component/antd/action/utils';
-import { useNavigateTOSubPage } from '../../schema-component/antd/page/SubPages';
 import { usePagePopup } from '../../schema-component/antd/page/pagePopupUtils';
 import { parseVariables } from '../../schema-component/common/utils/uitls';
 import { useLocalVariables, useVariables } from '../../variables';
@@ -73,7 +72,6 @@ const InternalCreateRecordAction = (props: any, ref) => {
   const variables = useVariables();
   const localVariables = useLocalVariables({ currentForm: { values } as any });
   const { openPopup } = usePagePopup();
-  const { navigateToSubPage } = useNavigateTOSubPage();
   const treeRecordData = useTreeParentRecord();
 
   useEffect(() => {
@@ -101,10 +99,6 @@ const InternalCreateRecordAction = (props: any, ref) => {
       <CreateAction
         {...props}
         onClick={(collection: Collection) => {
-          if (openMode === 'page') {
-            return navigateToSubPage();
-          }
-
           if (treeRecordData) {
             openPopup({
               recordData: treeRecordData,

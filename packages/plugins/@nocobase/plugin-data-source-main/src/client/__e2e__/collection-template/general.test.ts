@@ -250,7 +250,7 @@ test.describe('association constraints support selecting non-primary key fields 
     await page.getByRole('button', { name: 'Submit' }).click();
     await page.getByLabel(`action-Action.Link-Configure fields-collections-${collectionName}`).click();
     await page.getByRole('button', { name: 'plus Add field' }).click();
-    await page.getByRole('menuitem', { name: 'Many to many' }).click();
+    await page.getByRole('menuitem', { name: /^Many to many$/ }).click();
 
     await page.getByLabel('block-item-SourceKey-fields-').click();
     // sourceKey 选项符合预期

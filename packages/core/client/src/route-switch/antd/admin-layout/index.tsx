@@ -92,7 +92,7 @@ const MenuEditor = (props) => {
   const ctx = useACLRoleContext();
   const [current, setCurrent] = useState(null);
 
-  const onSelect = useCallback(({ item }) => {
+  const onSelect = useCallback(({ item }: { item; key; keyPath; domEvent }) => {
     const schema = item.props.schema;
     setTitle(schema.title);
     setCurrent(schema);
@@ -221,7 +221,7 @@ const MenuEditor = (props) => {
   }
   return (
     <SchemaIdContext.Provider value={defaultSelectedUid}>
-      <SchemaComponent distributed memoized scope={scope} schema={schema} />
+      <SchemaComponent distributed scope={scope} schema={schema} />
     </SchemaIdContext.Provider>
   );
 };
@@ -322,6 +322,33 @@ const AdminSideBar = ({ sideMenuRef }) => {
 export const AdminDynamicPage = () => {
   return <RouteSchemaComponent />;
 };
+
+const layoutContentClass = css`
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow-y: auto;
+  height: 100vh;
+  > div {
+    position: relative;
+  }
+  .ant-layout-footer {
+    position: absolute;
+    bottom: 0;
+    text-align: center;
+    width: 100%;
+    z-index: 0;
+    padding: 0px 50px;
+  }
+`;
+
+const layoutContentHeaderClass = css`
+  flex-shrink: 0;
+  height: var(--nb-header-height);
+  line-height: var(--nb-header-height);
+  background: transparent;
+  pointer-events: none;
+`;
 
 export const InternalAdminLayout = () => {
   const result = useSystemSettings();
@@ -447,36 +474,9 @@ export const InternalAdminLayout = () => {
         </div>
       </Layout.Header>
       <AdminSideBar sideMenuRef={sideMenuRef} />
-      <Layout.Content
-        className={css`
-          display: flex;
-          flex-direction: column;
-          position: relative;
-          overflow-y: auto;
-          height: 100vh;
-          max-height: 100vh;
-          > div {
-            position: relative;
-          }
-          .ant-layout-footer {
-            position: absolute;
-            bottom: 0;
-            text-align: center;
-            width: 100%;
-            z-index: 0;
-            padding: 0px 50px;
-          }
-        `}
-      >
-        <header
-          className={css`
-            flex-shrink: 0;
-            height: var(--nb-header-height);
-            line-height: var(--nb-header-height);
-            background: transparent;
-            pointer-events: none;
-          `}
-        ></header>
+      {/* Use the "nb-subpages-slot-without-header-and-side" class name to locate the position of the subpages */}
+      <Layout.Content className={`${layoutContentClass} nb-subpages-slot-without-header-and-side`}>
+        <header className={layoutContentHeaderClass}></header>
         <Outlet />
         {/* {service.contentLoading ? render() : <Outlet />} */}
       </Layout.Content>

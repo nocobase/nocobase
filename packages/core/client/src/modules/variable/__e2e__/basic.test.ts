@@ -8,7 +8,7 @@
  */
 
 import { expect, test } from '@nocobase/test/e2e';
-import { tableViewLinkageRulesVariables } from './templates';
+import { APIToken, tableViewLinkageRulesVariables } from './templates';
 
 test.describe('variables', () => {
   test('linkage rules of table view action', async ({ page, mockPage }) => {
@@ -21,8 +21,26 @@ test.describe('variables', () => {
     await page.getByLabel('variable-button').click();
 
     // 2. 断言应该显示的变量
-    ['Constant', 'Current user', 'Current role', 'Date variables', 'Current record'].forEach(async (name) => {
-      await expect(page.getByRole('menuitemcheckbox', { name })).toBeVisible();
+    ['Constant', 'Current user', 'Current role', 'API token', 'Date variables', 'Current record'].forEach(
+      async (name) => {
+        await expect(page.getByRole('menuitemcheckbox', { name })).toBeVisible();
+      },
+    );
+  });
+
+  test('API token', async ({ page, mockPage }) => {
+    await mockPage(APIToken).goto();
+
+    const token = await page.evaluate(() => {
+      return window.localStorage.getItem('NOCOBASE_TOKEN');
     });
+
+    await page.getByLabel('block-item-CollectionField-').hover();
+    await page.getByLabel('designer-schema-settings-CollectionField-fieldSettings:FormItem-users-users.').hover();
+    await page.getByRole('menuitem', { name: 'Set default value' }).click();
+    await page.getByLabel('variable-button').click();
+    await page.getByRole('menuitemcheckbox', { name: 'API token' }).click();
+    await page.getByRole('button', { name: 'OK', exact: true }).click();
+    await expect(page.getByRole('textbox')).toHaveValue(token);
   });
 });

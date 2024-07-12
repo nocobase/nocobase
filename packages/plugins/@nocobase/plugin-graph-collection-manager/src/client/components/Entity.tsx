@@ -307,7 +307,7 @@ const PortsCom = React.memo<any>(({ targetGraph, collectionData, setTargetNode, 
     if (
       v.isForeignKey ||
       v.primaryKey ||
-      ['obo', 'oho', 'o2o', 'o2m', 'm2o', 'm2m', 'linkTo', 'id'].includes(v.interface)
+      ['obo', 'oho', 'o2o', 'o2m', 'm2o', 'm2m', 'linkTo', 'id', 'mbm'].includes(v.interface)
     ) {
       return 'initPorts';
     } else {

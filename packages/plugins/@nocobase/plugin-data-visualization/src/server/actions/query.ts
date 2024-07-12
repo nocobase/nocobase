@@ -8,7 +8,7 @@
  */
 
 import { Context, Next } from '@nocobase/actions';
-import { Field, FilterParser } from '@nocobase/database';
+import { BelongsToArrayAssociation, Field, FilterParser } from '@nocobase/database';
 import { formatter } from './formatter';
 import compose from 'koa-compose';
 import { Cache } from '@nocobase/cache';
@@ -190,6 +190,7 @@ export const parseFieldAndAssociations = async (ctx: Context, next: Next) => {
   const db = getDB(ctx, dataSource) || ctx.db;
   const collection = db.getCollection(collectionName);
   const fields = collection.fields;
+  const associations = collection.model.associations;
   const models: {
     [target: string]: {
       type: string;
@@ -234,11 +235,25 @@ export const parseFieldAndAssociations = async (ctx: Context, next: Next) => {
   const parsedMeasures = measures?.map(parseField) || [];
   const parsedDimensions = dimensions?.map(parseField) || [];
   const parsedOrders = orders?.map(parseField) || [];
-  const include = Object.entries(models).map(([target, { type }]) => ({
-    association: target,
-    attributes: [],
-    ...(type === 'belongsToMany' ? { through: { attributes: [] } } : {}),
-  }));
+  const include = Object.entries(models).map(([target, { type }]) => {
+    let options = {
+      association: target,
+      attributes: [],
+    };
+    if (type === 'belongsToMany') {
+      options['through'] = { attributes: [] };
+    }
+    if (type === 'belongsToArray') {
+      const association = associations[target] as BelongsToArrayAssociation;
+      if (association) {
+        options = {
+          ...options,
+          ...association.generateInclude(),
+        };
+      }
+    }
+    return options;
+  });
 
   const filterParser = new FilterParser(filter, {
     collection,
@@ -290,9 +305,10 @@ export const cacheMiddleware = async (ctx: Context, next: Next) => {
 };
 
 export const checkPermission = (ctx: Context, next: Next) => {
-  const { collection } = ctx.action.params.values as QueryParams;
+  const { collection, dataSource } = ctx.action.params.values as QueryParams;
   const roleName = ctx.state.currentRole || 'anonymous';
-  const can = ctx.app.acl.can({ role: roleName, resource: collection, action: 'list' });
+  const acl = ctx.app.dataSourceManager.get(dataSource)?.acl || ctx.app.acl;
+  const can = acl.can({ role: roleName, resource: collection, action: 'list' });
   if (!can && roleName !== 'root') {
     ctx.throw(403, 'No permissions');
   }

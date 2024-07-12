@@ -40,6 +40,8 @@ const postgres = {
   polygon: 'json',
   circle: 'json',
   uuid: 'uuid',
+  set: 'set',
+  array: 'array',
 };
 
 const mysql = {

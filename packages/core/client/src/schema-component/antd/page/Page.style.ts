@@ -19,6 +19,8 @@ export const useStyles = genStyleHook('nb-page', (token) => {
       flex: 1,
       display: 'flex',
       flexDirection: 'column',
+      overflow: 'auto',
+
       '&:hover': { '> .general-schema-designer': { display: 'block' } },
       '.ant-page-header': { zIndex: 1, position: 'relative' },
       '> .general-schema-designer': {

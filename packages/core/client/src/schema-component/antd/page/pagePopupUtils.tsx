@@ -21,9 +21,8 @@ import {
   useDataBlockRequest,
   useDataSourceKey,
 } from '../../../data-source';
-import { useCurrentPopupRecord } from '../../../modules/variable/variablesProvider/VariablePopupRecordProvider';
 import { ActionContext } from '../action/context';
-import { PopupVisibleProviderContext, usePopupContextAndParams } from './PagePopups';
+import { PopupVisibleProviderContext, useCurrentPopupContext } from './PagePopups';
 import { usePopupSettings } from './PopupSettingsProvider';
 import { PopupContext, usePopupContextInActionOrAssociationField } from './usePopupContextInActionOrAssociationField';
 
@@ -53,8 +52,28 @@ export const getStoredPopupContext = (popupUid: string) => {
   return popupsContextStorage[popupUid];
 };
 
+/**
+ * Used to store the context of the current popup when a button is clicked.
+ * @param popupUid
+ * @param params
+ */
 export const storePopupContext = (popupUid: string, params: PopupContextStorage) => {
   popupsContextStorage[popupUid] = params;
+};
+
+const blockServicesStorage: Record<string, { service: any }> = {};
+
+export const getBlockService = (popupUid: string) => {
+  return blockServicesStorage[popupUid];
+};
+
+/**
+ * Used to store the service of the block when rendering the button.
+ * @param popupUid
+ * @param value
+ */
+export const storeBlockService = (popupUid: string, value: { service: any }) => {
+  blockServicesStorage[popupUid] = value;
 };
 
 export const getPopupParamsFromPath = _.memoize((path: string) => {
@@ -100,17 +119,17 @@ export const usePagePopup = () => {
   const cm = useCollectionManager();
   const association = useAssociationName();
   const { visible, setVisible } = useContext(PopupVisibleProviderContext) || { visible: false, setVisible: () => {} };
-  const { params: popupParams } = usePopupContextAndParams();
+  const { params: popupParams } = useCurrentPopupContext();
   const service = useDataBlockRequest();
   const { isPopupVisibleControlledByURL } = usePopupSettings();
   const { setVisible: setVisibleFromAction } = useContext(ActionContext);
   const { updatePopupContext } = usePopupContextInActionOrAssociationField();
-  const { value: parentPopupRecordData, collection: parentPopupRecordCollection } = useCurrentPopupRecord() || {};
   const getSourceId = useCallback(
     (_parentRecordData?: Record<string, any>) =>
       (_parentRecordData || parentRecord?.data)?.[cm.getSourceKeyByAssociation(association)],
     [parentRecord, association],
   );
+  const currentPopupUidWithoutOpened = fieldSchema['x-uid'];
 
   const getNewPathname = useCallback(
     ({
@@ -140,17 +159,10 @@ export const usePagePopup = () => {
       dataSource: dataSourceKey,
       collection: association ? undefined : collection.name,
       association,
-      parentPopupRecord: !_.isEmpty(parentPopupRecordData)
-        ? {
-            // TODO: 这里应该需要 association 的 值
-            collection: parentPopupRecordCollection?.name,
-            filterByTk: cm.getFilterByTK(parentPopupRecordCollection, parentPopupRecordData),
-          }
-        : undefined,
     };
 
     return _.omitBy(context, _.isNil) as PopupContext;
-  }, [dataSourceKey, collection, association, parentPopupRecordData, parentPopupRecordCollection, cm]);
+  }, [dataSourceKey, collection, association]);
 
   const openPopup = useCallback(
     ({
@@ -160,20 +172,20 @@ export const usePagePopup = () => {
       recordData?: Record<string, any>;
       parentRecordData?: Record<string, any>;
     } = {}) => {
-      if (!isPopupVisibleControlledByURL) {
+      if (!isPopupVisibleControlledByURL()) {
         return setVisibleFromAction?.(true);
       }
 
       const sourceId = getSourceId(parentRecordData);
 
       recordData = recordData || record?.data;
-      const pathname = getNewPathname({ popupUid: fieldSchema['x-uid'], recordData, sourceId });
+      const pathname = getNewPathname({ popupUid: currentPopupUidWithoutOpened, recordData, sourceId });
       let url = location.pathname;
       if (_.last(url) === '/') {
         url = url.slice(0, -1);
       }
 
-      storePopupContext(fieldSchema['x-uid'], {
+      storePopupContext(currentPopupUidWithoutOpened, {
         schema: fieldSchema,
         record: new CollectionRecord({ isNew: false, data: recordData }),
         parentRecord: parentRecordData ? new CollectionRecord({ isNew: false, data: parentRecordData }) : parentRecord,
@@ -182,13 +194,6 @@ export const usePagePopup = () => {
         collection: collection.name,
         association,
         sourceId,
-        parentPopupRecord: parentPopupRecordData
-          ? {
-              // TODO: 这里应该需要 association 的 值
-              collection: parentPopupRecordCollection?.name,
-              filterByTk: cm.getFilterByTK(parentPopupRecordCollection, parentPopupRecordData),
-            }
-          : undefined,
       });
 
       updatePopupContext(getPopupContext());
@@ -208,19 +213,29 @@ export const usePagePopup = () => {
       service,
       location,
       isPopupVisibleControlledByURL,
-      parentPopupRecordData,
       getSourceId,
       getPopupContext,
+      currentPopupUidWithoutOpened,
     ],
   );
 
-  const closePopup = useCallback(() => {
-    if (!isPopupVisibleControlledByURL) {
-      return setVisibleFromAction?.(false);
-    }
+  const closePopup = useCallback(
+    (currentPopupUid: string) => {
+      if (!isPopupVisibleControlledByURL()) {
+        return setVisibleFromAction?.(false);
+      }
 
-    navigate(withSearchParams(removeLastPopupPath(location.pathname)));
-  }, [navigate, location, isPopupVisibleControlledByURL]);
+      // 1. If there is a value in the cache, it means that the current popup was opened by manual click, so we can simply return to the previous record;
+      // 2. If there is no value in the cache, it means that the current popup was opened by clicking the URL elsewhere, and since there is no history,
+      //    we need to construct the URL of the previous record to return to;
+      if (getStoredPopupContext(currentPopupUid)) {
+        navigate(-1);
+      } else {
+        navigate(withSearchParams(removeLastPopupPath(location.pathname)));
+      }
+    },
+    [navigate, location, isPopupVisibleControlledByURL],
+  );
 
   const changeTab = useCallback(
     (key: string) => {
@@ -235,7 +250,9 @@ export const usePagePopup = () => {
       if (_.last(url) === '/') {
         url = url.slice(0, -1);
       }
-      navigate(`${url}${pathname}`);
+      navigate(`${url}${pathname}`, {
+        replace: true,
+      });
     },
     [getNewPathname, navigate, popupParams?.popupuid, record?.data, location],
   );
@@ -257,12 +274,15 @@ export const usePagePopup = () => {
   };
 };
 
-// e.g. /popups/popupUid/popups/popupUid2 -> /popups/popupUid
+// e.g. /popups/popupUid/popups/popupUid2 -> /popups/popupUid/
 export function removeLastPopupPath(path: string) {
   if (!path.includes('popups')) {
     return path;
   }
-  return path.split('popups').slice(0, -1).join('popups');
+
+  const result = path.split('popups').slice(0, -1).join('popups');
+
+  return result.endsWith('/') ? result.slice(0, -1) : result;
 }
 
 export function withSearchParams(path: string) {
