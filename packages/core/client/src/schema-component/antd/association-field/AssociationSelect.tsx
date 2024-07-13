@@ -55,7 +55,7 @@ const InternalAssociationSelect = observer(
     const { objectValue = true, addMode: propsAddMode, ...rest } = props;
     const field: any = useField();
     const fieldSchema = useFieldSchema();
-    const service = useServiceOptions(props);
+    const service = useServiceOptions(fieldSchema?.['x-component-props'] || props);
     const { options: collectionField } = useAssociationFieldContext();
     const initValue = isVariable(props.value) ? undefined : props.value;
     const value = Array.isArray(initValue) ? initValue.filter(Boolean) : initValue;
