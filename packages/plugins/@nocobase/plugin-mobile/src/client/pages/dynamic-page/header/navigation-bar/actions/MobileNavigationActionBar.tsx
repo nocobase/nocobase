@@ -69,7 +69,7 @@ export const MobileNavigationActionBar = withDynamicSchemaProps(
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: 8,
+              gap: 12,
               ...style,
               marginTop: 0,
               justifyContent: position === 'left' ? 'flex-start' : 'flex-end',
@@ -80,7 +80,7 @@ export const MobileNavigationActionBar = withDynamicSchemaProps(
           >
             {position === 'left' && render({})}
             {props.children && (
-              <div style={{ display: 'flex', gap: 10 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                 <RecursionField
                   onlyRenderProperties
                   schema={fieldSchema}

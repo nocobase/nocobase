@@ -328,7 +328,7 @@ const InternalSchemaToolbar: FC<SchemaToolbarProps> = (props) => {
   return (
     <div
       ref={toolbarRef}
-      className={classNames(styles.toolbar, toolbarClassName)}
+      className={classNames(styles.toolbar, toolbarClassName, 'schema-toolbar')}
       style={{ border: showBorder ? 'auto' : 0, background: showBackground ? 'auto' : 0, ...toolbarStyle }}
     >
       {titleArr && (

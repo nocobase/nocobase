@@ -10,19 +10,22 @@
 import { createStyles } from 'antd-style';
 
 export const useStyles = createStyles(() => ({
-  mobilePageTabs: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  mobilePageTabsList: {
-    '.adm-tabs-header': {
-      borderBottomWidth: 0,
-    },
-
-    '.adm-tabs-tab': {
+  mobilePageNavigationBar: {
+    '.adm-nav-bar': {
+      maxWidth: '100%',
       height: 49,
-      padding: '10px 0 10px',
+      overflow: 'hidden',
+
+      '.adm-nav-bar-left': {
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'flex-start',
+      },
+      '.adm-nav-bar-right': {
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'flex-end',
+      },
     },
   },
 }));

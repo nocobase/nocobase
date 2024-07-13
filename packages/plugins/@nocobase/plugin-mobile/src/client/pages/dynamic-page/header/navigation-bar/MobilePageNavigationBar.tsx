@@ -10,23 +10,27 @@
 import React, { FC } from 'react';
 import { NavBar } from 'antd-mobile';
 import { RecursionField, useFieldSchema } from '@formily/react';
+import { cx, SchemaToolbarProvider } from '@nocobase/client';
 
 import { useMobilePage } from '../../context';
 import { useMobileTitle } from '../../../../mobile-providers';
-import { SchemaToolbarProvider } from '@nocobase/client';
+import { useStyles } from './styles';
 
 export const MobilePageNavigationBar: FC = () => {
   const { title } = useMobileTitle();
   const { displayNavigationBar = true, displayPageTitle = true } = useMobilePage();
   const fieldSchema = useFieldSchema();
+  const { styles } = useStyles();
   if (!displayNavigationBar) return null;
 
   return (
-    <div className={'mobile-page-navigation-bar'} data-testid="mobile-page-navigation-bar">
+    <div
+      className={cx('mobile-page-navigation-bar', styles.mobilePageNavigationBar)}
+      data-testid="mobile-page-navigation-bar"
+    >
       <NavBar
         backArrow={false}
         back={null}
-        style={{ height: 49 }}
         left={
           <SchemaToolbarProvider position="left">
             <RecursionField name="actionBarLeft" schema={fieldSchema} onlyRenderProperties />

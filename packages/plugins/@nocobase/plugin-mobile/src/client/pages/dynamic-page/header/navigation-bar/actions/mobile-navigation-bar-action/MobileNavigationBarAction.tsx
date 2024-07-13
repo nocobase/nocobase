@@ -9,7 +9,8 @@
 
 import React, { FC, useMemo } from 'react';
 import { Button, ButtonProps, Space } from 'antd-mobile';
-import { BlockItem, Icon, useSchemaToolbar } from '@nocobase/client';
+import { css, cx, Icon, useSchemaToolbar } from '@nocobase/client';
+import { useStyles } from './styles';
 
 interface MobileNavigationBarActionProps extends ButtonProps {
   icon?: string | React.ReactNode;
@@ -29,14 +30,19 @@ export const MobileNavigationBarAction: FC<MobileNavigationBarActionProps> = Rea
   const designer = children[1];
   const contentLength = [icon, title].filter(Boolean).length;
   const iconElement = useMemo(() => (typeof icon === 'string' ? <Icon type={icon} /> : icon), [icon]);
+  const { styles } = useStyles();
   return (
     <div ref={ref}>
       <Button
         onClick={onClick}
         color={color}
         size={contentLength <= 1 ? undefined : 'mini'}
-        className={className}
-        style={{ padding: 3, ...style }}
+        className={cx(className, {
+          [styles.navigationBarActionIconAndTitle]: contentLength > 1,
+          [styles.navigationBarActionTitle]: contentLength === 1 && title,
+          [styles.navigationBarActionIcon]: contentLength === 1 && icon,
+        })}
+        style={style}
         fill={contentLength <= 1 ? 'none' : fill}
       >
         {designer}
