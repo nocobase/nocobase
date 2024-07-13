@@ -32,7 +32,7 @@ class PluginCollectionTreeServer extends Plugin {
           const collectionTree = await this.db.getCollection(name);
           if (!collectionTree) {
             await this.defineTreePathCollection(name, collectionManager);
-            await this.db.getCollection(name).sync(collection.transaction);
+            await this.db.getCollection(name).sync(collection as SyncOptions);
           }
         });
 

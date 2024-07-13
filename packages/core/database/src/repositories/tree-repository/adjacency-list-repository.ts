@@ -51,6 +51,10 @@ export class AdjacencyListRepository extends Repository {
   }
 
   async find(options: FindOptions & { addIndex?: boolean } = {}): Promise<any> {
+    //for sqlite weired bug
+    if (options.filter && Object.keys(options.filter).length === 1 && options.filter.id === undefined) {
+      return [];
+    }
     if (options.raw || !options.tree) {
       return await super.find(options);
     }
