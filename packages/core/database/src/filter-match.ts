@@ -18,6 +18,10 @@ export function filterMatch(model, where) {
   const operatorFunctions = {
     $eq: (value, condition) => value === condition,
     $not: (value, condition) => !filterMatch(model, condition),
+    $includes: (value, condition) => value.includes(condition),
+    $notIncludes: (value, condition) => !value.includes(condition),
+    $empty: (value) => value === null || value === undefined || value === '',
+    $notEmpty: (value) => value !== null && value !== undefined && value !== '',
     $gt: (value, condition) => value > condition,
     $gte: (value, condition) => value >= condition,
     $lt: (value, condition) => value < condition,
