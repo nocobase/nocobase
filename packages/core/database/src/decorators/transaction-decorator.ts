@@ -54,6 +54,11 @@ export function transactionWrapperBuilder(transactionGenerator) {
           } catch (err) {
             console.error(err);
             await transaction.rollback();
+
+            if (this.database) {
+              await this.database.emitAsync(`transactionRollback:${transaction.id}`);
+              await this.database.removeAllListeners(`transactionRollback:${transaction.id}`);
+            }
             throw err;
           }
         } else {
