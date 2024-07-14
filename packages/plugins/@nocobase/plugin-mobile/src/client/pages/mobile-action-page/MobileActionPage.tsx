@@ -19,6 +19,14 @@ import { ConfigProvider } from 'antd';
 import React, { useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { useMobileActionPageStyle } from './MobileActionPage.style';
+import { MobileTabsForMobileActionPage } from './MobileTabsForMobileActionPage';
+
+const components = { Tabs: MobileTabsForMobileActionPage };
+const theme: any = {
+  token: {
+    marginBlock: 18,
+  },
+};
 
 /**
  * 在移动端通过 Action 按钮打开的页面
@@ -33,9 +41,8 @@ export const MobileActionPage = ({ level }) => {
 
   const style = useMemo(() => {
     return {
-      zIndex: level,
-      '--mobile-action-page-header-height': '49px',
-      '--mobile-action-page-tab-height': '44px',
+      // 10 为基数，是为了要确保能大于 Table 中的悬浮行的 z-index
+      zIndex: 10 + level,
     };
   }, [level]);
 
@@ -45,19 +52,9 @@ export const MobileActionPage = ({ level }) => {
 
   const actionPageNode = (
     <div className={styles.container} style={style}>
-      <div className={styles.header}>
-        <BackButtonUsedInSubPage />
-      </div>
-      <TabsContextProvider {...tabContext} tabBarExtraContent={null} tabBarGutter={48}>
-        <ConfigProvider
-          theme={{
-            token: {
-              // @ts-ignore
-              marginBlock: 18,
-            },
-          }}
-        >
-          <SchemaComponent schema={filedSchema} onlyRenderProperties />
+      <TabsContextProvider {...tabContext} tabBarExtraContent={<BackButtonUsedInSubPage />} tabBarGutter={48}>
+        <ConfigProvider theme={theme}>
+          <SchemaComponent components={components} schema={filedSchema} onlyRenderProperties />
         </ConfigProvider>
       </TabsContextProvider>
     </div>

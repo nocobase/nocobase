@@ -22,7 +22,7 @@ export const ActionContainer: ComposedActionDrawer = observer(
 
     const Component = getComponentByOpenMode(openMode);
 
-    return <Component footerNodeName={'Action.Container.Footer'} {...props} level={currentLevel} />;
+    return <Component footerNodeName={'Action.Container.Footer'} level={currentLevel} {...props} />;
   },
   { displayName: 'ActionContainer' },
 );

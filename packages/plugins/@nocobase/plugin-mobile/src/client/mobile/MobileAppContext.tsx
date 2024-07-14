@@ -7,9 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { usePlugin } from '@nocobase/client';
 import React, { FC, createContext } from 'react';
 import { PluginMobileClient } from '../index';
-import { usePlugin } from '@nocobase/client';
 
 interface MobileAppContextProps {
   showTabBar?: boolean;

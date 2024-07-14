@@ -7,15 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { FC } from 'react';
 import { cx } from '@nocobase/client';
 import { SafeArea } from 'antd-mobile';
+import React, { FC } from 'react';
 
-import { useStyles } from './styles';
 import { useMobilePage } from '../context';
+import { useStyles } from './styles';
 
 export const MobilePageHeader: FC = ({ children }) => {
-  const { displayPageHeader = true } = useMobilePage();
+  const { displayPageHeader = true } = useMobilePage() || {};
   const { styles } = useStyles();
   if (!displayPageHeader) {
     return null;

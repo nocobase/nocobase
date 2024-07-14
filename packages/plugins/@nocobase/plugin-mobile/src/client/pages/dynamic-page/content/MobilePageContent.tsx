@@ -8,43 +8,23 @@
  */
 
 import { RemoteSchemaComponent } from '@nocobase/client';
-import React, { useEffect } from 'react';
+import React from 'react';
 import { useParams } from 'react-router-dom';
 import { useMobileRoutes } from '../../../mobile-providers';
-import { useStyles } from './styles';
+import { MobilePageContentContainer } from './MobilePageContentContainer';
 
 export const MobilePageContent = () => {
   const { tabSchemaUid } = useParams();
-  const { styles } = useStyles();
   const { activeTabBarItem } = useMobileRoutes();
-  const [mobileTabBarHeight, setMobileTabBarHeight] = React.useState(0);
-  const [mobilePageHeader, setMobilePageHeader] = React.useState(0);
-  useEffect(() => {
-    const mobileTabBar = document.querySelector<HTMLDivElement>('.mobile-tab-bar');
-    const navigationBar = document.querySelector<HTMLDivElement>('.mobile-page-header');
-    setMobileTabBarHeight(mobileTabBar?.offsetHeight);
-    setMobilePageHeader(navigationBar?.offsetHeight);
-    // 这里依赖项要不需要填，每次都刷新
-  });
+
   // 如果 URL 中有 tabSchemaUid，则使用 tabSchemaUid，否则使用第一个 tab 的 pageSchemaUid
   return (
-    <>
-      {mobilePageHeader && <div style={{ height: mobilePageHeader }}></div>}
-      <div
-        className={styles.mobilePageContent}
-        data-testid="mobile-page-content"
-        style={{
-          height: `calc(100% - ${(mobileTabBarHeight || 0) + (mobilePageHeader || 0)}px)`,
-          boxSizing: 'border-box',
-        }}
-      >
-        <RemoteSchemaComponent
-          uid={tabSchemaUid || activeTabBarItem?.children?.[0]?.schemaUid}
-          NotFoundPage={'MobileNotFoundPage'}
-          memoized={false}
-        />
-      </div>
-      {mobileTabBarHeight && <div style={{ height: mobileTabBarHeight }}></div>}
-    </>
+    <MobilePageContentContainer>
+      <RemoteSchemaComponent
+        uid={tabSchemaUid || activeTabBarItem?.children?.[0]?.schemaUid}
+        NotFoundPage={'MobileNotFoundPage'}
+        memoized={false}
+      />
+    </MobilePageContentContainer>
   );
 };

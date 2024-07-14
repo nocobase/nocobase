@@ -31,6 +31,7 @@ export interface RemoteSchemaComponentProps {
    */
   memoized?: boolean;
   NotFoundPage?: React.ComponentType | string;
+  onPageNotFind?: () => void;
 }
 
 const defaultTransform = (s: Schema) => s;
@@ -47,6 +48,7 @@ const RequestSchemaComponent: React.FC<RemoteSchemaComponentProps> = (props) => 
     onSuccess,
     NotFoundPage,
     schemaTransform = defaultTransform,
+    onPageNotFind,
   } = props;
   const { reset } = useSchemaComponentContext();
   const type = onlyRenderProperties ? 'getProperties' : 'getJsonSchema';
@@ -72,6 +74,7 @@ const RequestSchemaComponent: React.FC<RemoteSchemaComponentProps> = (props) => 
   }
 
   if (!schema || Object.keys(schema).length === 0) {
+    onPageNotFind && onPageNotFind();
     return NotFoundComponent ? <NotFoundComponent /> : null;
   }
 

@@ -19,7 +19,6 @@ import { DataBlockProvider } from '../../../data-source/data-block/DataBlockProv
 import { BlockRequestContext } from '../../../data-source/data-block/DataBlockRequestProvider';
 import { SchemaComponent } from '../../core';
 import { TabsContextProvider } from '../tabs/context';
-import { BackButtonUsedInSubPage } from './BackButtonUsedInSubPage';
 import { usePopupSettings } from './PopupSettingsProvider';
 import { deleteRandomNestedSchemaKey, getRandomNestedSchemaKey } from './nestedSchemaKeyStorage';
 import { PopupParams, getPopupParamsFromPath, getStoredPopupContext, usePagePopup } from './pagePopupUtils';
@@ -87,7 +86,7 @@ const PopupParamsProvider: FC<Omit<PopupProps, 'hidden'>> = (props) => {
 
 const PopupTabsPropsProvider: FC<{ params: PopupParams }> = ({ children, params }) => {
   const { changeTab } = usePagePopup();
-  const onTabClick = useCallback(
+  const onChange = useCallback(
     (key: string) => {
       changeTab(key);
     },
@@ -100,7 +99,7 @@ const PopupTabsPropsProvider: FC<{ params: PopupParams }> = ({ children, params 
   }
 
   return (
-    <TabsContextProvider activeKey={params.tab} onTabClick={onTabClick}>
+    <TabsContextProvider activeKey={params.tab} onChange={onChange}>
       {children}
     </TabsContextProvider>
   );
@@ -349,6 +348,7 @@ function get404Schema() {
         'x-component': 'Action.Container',
         'x-component-props': {
           className: 'nb-action-popup',
+          level: 99, // 确保在最上层
         },
         properties: {
           tabs: {

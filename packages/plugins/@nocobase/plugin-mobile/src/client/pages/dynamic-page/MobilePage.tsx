@@ -8,14 +8,36 @@
  */
 
 import { RemoteSchemaComponent } from '@nocobase/client';
-import React from 'react';
+import React, { useCallback } from 'react';
 import { Outlet, useParams } from 'react-router-dom';
 
 export const MobilePage = () => {
   const { pageSchemaUid } = useParams<{ pageSchemaUid: string }>();
+  const [pageNotFind, setPageNotFind] = React.useState(false);
+
+  const onPageNotFind = useCallback(() => {
+    setPageNotFind(true);
+  }, []);
+
+  if (pageNotFind) {
+    return (
+      <RemoteSchemaComponent
+        uid={pageSchemaUid}
+        NotFoundPage={'MobileNotFoundPage'}
+        memoized={false}
+        onPageNotFind={onPageNotFind}
+      />
+    );
+  }
+
   return (
     <>
-      <RemoteSchemaComponent uid={pageSchemaUid} NotFoundPage={'MobileNotFoundPage'} memoized={false} />
+      <RemoteSchemaComponent
+        uid={pageSchemaUid}
+        NotFoundPage={'MobileNotFoundPage'}
+        memoized={false}
+        onPageNotFind={onPageNotFind}
+      />
       {/* 用于渲染子页面 */}
       <Outlet />
       <div className="nb-mobile-subpages-slot"></div>

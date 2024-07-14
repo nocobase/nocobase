@@ -50,6 +50,7 @@ export const Mobile = () => {
         hideOpenMode
         openModeToComponent={{
           page: MobileActionPage,
+          drawer: MobileActionPage,
         }}
       >
         <MobileAppProvider>
