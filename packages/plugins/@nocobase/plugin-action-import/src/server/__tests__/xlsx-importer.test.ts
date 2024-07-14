@@ -345,6 +345,148 @@ describe('xlsx importer', () => {
     });
   });
 
+  it('should report validation error message on not null validation', async () => {
+    const User = app.db.collection({
+      name: 'users',
+      fields: [
+        {
+          type: 'string',
+          name: 'name',
+          allowNull: false,
+        },
+        {
+          type: 'string',
+          name: 'email',
+        },
+      ],
+    });
+
+    await app.db.sync();
+
+    const templateCreator = new TemplateCreator({
+      collection: User,
+      columns: [
+        {
+          dataIndex: ['name'],
+          defaultTitle: '姓名',
+        },
+        {
+          dataIndex: ['email'],
+          defaultTitle: '邮箱',
+        },
+      ],
+    });
+
+    const template = await templateCreator.run();
+
+    const worksheet = template.Sheets[template.SheetNames[0]];
+
+    XLSX.utils.sheet_add_aoa(worksheet, [[null, 'test@qq.com']], {
+      origin: 'A2',
+    });
+
+    const importer = new XlsxImporter({
+      collectionManager: app.mainDataSource.collectionManager,
+      collection: User,
+      columns: [
+        {
+          dataIndex: ['name'],
+          defaultTitle: '姓名',
+        },
+        {
+          dataIndex: ['email'],
+          defaultTitle: '邮箱',
+        },
+      ],
+      workbook: template,
+    });
+
+    let error;
+
+    try {
+      await importer.run();
+    } catch (e) {
+      error = e;
+    }
+
+    expect(error).toBeTruthy();
+    console.log(error.message);
+  });
+
+  it('should report validation error message on unique validation', async () => {
+    const User = app.db.collection({
+      name: 'users',
+      fields: [
+        {
+          type: 'string',
+          name: 'name',
+          unique: true,
+        },
+        {
+          type: 'string',
+          name: 'email',
+        },
+      ],
+    });
+
+    await app.db.sync();
+
+    const templateCreator = new TemplateCreator({
+      collection: User,
+      columns: [
+        {
+          dataIndex: ['name'],
+          defaultTitle: '姓名',
+        },
+        {
+          dataIndex: ['email'],
+          defaultTitle: '邮箱',
+        },
+      ],
+    });
+
+    const template = await templateCreator.run();
+
+    const worksheet = template.Sheets[template.SheetNames[0]];
+    XLSX.utils.sheet_add_aoa(
+      worksheet,
+      [
+        ['User1', 'test@test.com'],
+        ['User1', 'test@test.com'],
+      ],
+      {
+        origin: 'A2',
+      },
+    );
+
+    const importer = new XlsxImporter({
+      collectionManager: app.mainDataSource.collectionManager,
+      collection: User,
+      columns: [
+        {
+          dataIndex: ['name'],
+          defaultTitle: '姓名',
+        },
+        {
+          dataIndex: ['email'],
+          defaultTitle: '邮箱',
+        },
+      ],
+      workbook: template,
+    });
+
+    let error;
+
+    try {
+      await importer.run();
+    } catch (e) {
+      error = e;
+    }
+
+    expect(error).toBeTruthy();
+    console.log(error.message);
+  });
+
   it('should import china region field', async () => {
     const Post = app.db.collection({
       name: 'posts',
