@@ -19,11 +19,7 @@ describe('destroy', () => {
     await app.destroy();
   });
 
-  it('should not create auto increment field more than one', async () => {
-    if (process.env.DB_DIALECT !== 'mysql') {
-      return;
-    }
-
+  it.runIf(process.env.DB_DIALECT === 'mysql')('should not create auto increment field more than one', async () => {
     await db.getRepository('collections').create({
       values: {
         name: 'posts',
