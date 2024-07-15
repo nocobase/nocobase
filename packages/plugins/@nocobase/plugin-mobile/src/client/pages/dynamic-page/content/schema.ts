@@ -25,6 +25,9 @@ export function getPageContentTabSchema(pageSchemaUid: string) {
     'x-uid': pageSchemaUid,
     'x-async': true,
     'x-component': 'Grid',
+    'x-component-props': {
+      showDivider: false,
+    },
     'x-initializer': mobileAddBlockInitializer.name,
   };
 }
