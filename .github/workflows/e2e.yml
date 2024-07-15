@@ -39,11 +39,11 @@ jobs:
           fetch-depth: 0
           ssh-key: ${{ secrets.SUBMODULE_SSH_KEY }}
       - run: |
-          cd packages/pro-plugins && git fetch --all &&
-          if git show-ref --quiet refs/heads/${{ github.head_ref || github.ref_name }}; then
+          cd packages/pro-plugins &&
+          if git show-ref --quiet refs/remotes/origin/${{ github.head_ref || github.ref_name }}; then
             git checkout ${{ github.head_ref || github.ref_name }}
           else
-            if git show-ref --quiet refs/heads/${{ github.event.pull_request.base.ref }}; then
+            if git show-ref --quiet refs/remotes/origin/${{ github.event.pull_request.base.ref }}; then
               git checkout ${{ github.event.pull_request.base.ref }}
             else
               git checkout main
@@ -103,11 +103,11 @@ jobs:
           fetch-depth: 0
           ssh-key: ${{ secrets.SUBMODULE_SSH_KEY }}
       - run: |
-          cd packages/pro-plugins && git fetch --all &&
-          if git show-ref --quiet refs/heads/${{ github.head_ref || github.ref_name }}; then
+          cd packages/pro-plugins &&
+          if git show-ref --quiet refs/remotes/origin/${{ github.head_ref || github.ref_name }}; then
             git checkout ${{ github.head_ref || github.ref_name }}
           else
-            if git show-ref --quiet refs/heads/${{ github.event.pull_request.base.ref }}; then
+            if git show-ref --quiet refs/remotes/origin/${{ github.event.pull_request.base.ref }}; then
               git checkout ${{ github.event.pull_request.base.ref }}
             else
               git checkout main
@@ -198,11 +198,11 @@ jobs:
           fetch-depth: 0
           ssh-key: ${{ secrets.SUBMODULE_SSH_KEY }}
       - run: |
-          cd packages/pro-plugins && git fetch --all &&
-          if git show-ref --quiet refs/heads/${{ github.head_ref || github.ref_name }}; then
+          cd packages/pro-plugins &&
+          if git show-ref --quiet refs/remotes/origin/${{ github.head_ref || github.ref_name }}; then
             git checkout ${{ github.head_ref || github.ref_name }}
           else
-            if git show-ref --quiet refs/heads/${{ github.event.pull_request.base.ref }}; then
+            if git show-ref --quiet refs/remotes/origin/${{ github.event.pull_request.base.ref }}; then
               git checkout ${{ github.event.pull_request.base.ref }}
             else
               git checkout main
@@ -293,11 +293,11 @@ jobs:
           fetch-depth: 0
           ssh-key: ${{ secrets.SUBMODULE_SSH_KEY }}
       - run: |
-          cd packages/pro-plugins && git fetch --all &&
-          if git show-ref --quiet refs/heads/${{ github.head_ref || github.ref_name }}; then
+          cd packages/pro-plugins &&
+          if git show-ref --quiet refs/remotes/origin/${{ github.head_ref || github.ref_name }}; then
             git checkout ${{ github.head_ref || github.ref_name }}
           else
-            if git show-ref --quiet refs/heads/${{ github.event.pull_request.base.ref }}; then
+            if git show-ref --quiet refs/remotes/origin/${{ github.event.pull_request.base.ref }}; then
               git checkout ${{ github.event.pull_request.base.ref }}
             else
               git checkout main
@@ -388,11 +388,11 @@ jobs:
           fetch-depth: 0
           ssh-key: ${{ secrets.SUBMODULE_SSH_KEY }}
       - run: |
-          cd packages/pro-plugins && git fetch --all &&
-          if git show-ref --quiet refs/heads/${{ github.head_ref || github.ref_name }}; then
+          cd packages/pro-plugins &&
+          if git show-ref --quiet refs/remotes/origin/${{ github.head_ref || github.ref_name }}; then
             git checkout ${{ github.head_ref || github.ref_name }}
           else
-            if git show-ref --quiet refs/heads/${{ github.event.pull_request.base.ref }}; then
+            if git show-ref --quiet refs/remotes/origin/${{ github.event.pull_request.base.ref }}; then
               git checkout ${{ github.event.pull_request.base.ref }}
             else
               git checkout main
