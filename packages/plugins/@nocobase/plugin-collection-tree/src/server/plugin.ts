@@ -24,18 +24,6 @@ class PluginCollectionTreeServer extends Plugin {
     this.app.dataSourceManager.afterAddDataSource((dataSource: DataSource) => {
       const collectionManager = dataSource.collectionManager;
       if (collectionManager instanceof SequelizeCollectionManager) {
-        collectionManager.db.on('afterSync', async (collection: Model) => {
-          if (!collection.tree) {
-            return;
-          }
-          const name = `${dataSource.name}_${collection.modelName}_path`;
-          const collectionTree = await this.db.getCollection(name);
-          if (!collectionTree) {
-            await this.defineTreePathCollection(name, collectionManager);
-            await this.db.getCollection(name).sync(collection as SyncOptions);
-          }
-        });
-
         collectionManager.db.on('afterDefineCollection', (collection: Model) => {
           if (!collection.options.tree) {
             return;
@@ -45,9 +33,11 @@ class PluginCollectionTreeServer extends Plugin {
           //sync exisit tree collection path table
           this.syncExistTreeCollectionPathTable();
 
-          // collectionManager.db.on(`${collection.name}.afterSync`, async ({ transaction }) => {
-          //   await this.db.getCollection(name).sync(transaction);
-          // });
+          //afterSync
+          collectionManager.db.on(`${collection.name}.afterSync`, async (collection: Model) => {
+            await this.defineTreePathCollection(name, collectionManager);
+            await this.db.getCollection(name).sync({ transaction: collection.transaction } as syncOptions);
+          });
 
           //afterCreate
           this.db.on(`${collection.name}.afterCreate`, async (model: Model, options) => {
