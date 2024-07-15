@@ -39,6 +39,7 @@ jobs:
           fetch-depth: 0
           ssh-key: ${{ secrets.SUBMODULE_SSH_KEY }}
       - name: git checkout ${{ github.event.pull_request.base.ref }}
+        if: ${{ github.event.pull_request.base.ref }}
         run: cd packages/pro-plugins && git checkout ${{ github.event.pull_request.base.ref }}
         continue-on-error: true
       - name: git checkout ${{ github.head_ref || github.ref_name }}
@@ -95,6 +96,7 @@ jobs:
           fetch-depth: 0
           ssh-key: ${{ secrets.SUBMODULE_SSH_KEY }}
       - name: git checkout ${{ github.event.pull_request.base.ref }}
+        if: ${{ github.event.pull_request.base.ref }}
         run: cd packages/pro-plugins && git checkout ${{ github.event.pull_request.base.ref }}
         continue-on-error: true
       - name: git checkout ${{ github.head_ref || github.ref_name }}
@@ -182,6 +184,7 @@ jobs:
           fetch-depth: 0
           ssh-key: ${{ secrets.SUBMODULE_SSH_KEY }}
       - name: git checkout ${{ github.event.pull_request.base.ref }}
+        if: ${{ github.event.pull_request.base.ref }}
         run: cd packages/pro-plugins && git checkout ${{ github.event.pull_request.base.ref }}
         continue-on-error: true
       - name: git checkout ${{ github.head_ref || github.ref_name }}
@@ -269,6 +272,7 @@ jobs:
           fetch-depth: 0
           ssh-key: ${{ secrets.SUBMODULE_SSH_KEY }}
       - name: git checkout ${{ github.event.pull_request.base.ref }}
+        if: ${{ github.event.pull_request.base.ref }}
         run: cd packages/pro-plugins && git checkout ${{ github.event.pull_request.base.ref }}
         continue-on-error: true
       - name: git checkout ${{ github.head_ref || github.ref_name }}
@@ -356,6 +360,7 @@ jobs:
           fetch-depth: 0
           ssh-key: ${{ secrets.SUBMODULE_SSH_KEY }}
       - name: git checkout ${{ github.event.pull_request.base.ref }}
+        if: ${{ github.event.pull_request.base.ref }}
         run: cd packages/pro-plugins && git checkout ${{ github.event.pull_request.base.ref }}
         continue-on-error: true
       - name: git checkout ${{ github.head_ref || github.ref_name }}
