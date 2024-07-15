@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { createForm } from '@formily/core';
+import { createForm, Form } from '@formily/core';
 import { Schema, useField } from '@formily/react';
 import { Spin } from 'antd';
 import React, { createContext, useContext, useEffect, useMemo, useRef } from 'react';
@@ -151,7 +151,7 @@ export const useFormBlockContext = () => {
 /**
  * @internal
  */
-export const useFormBlockProps = () => {
+export const useFormBlockProps = (shouldClearInitialValues = false) => {
   const ctx = useFormBlockContext();
   const treeParentRecord = useTreeParentRecord();
   useEffect(() => {
@@ -165,7 +165,15 @@ export const useFormBlockProps = () => {
 
   useEffect(() => {
     if (!ctx?.service?.loading) {
-      ctx.form?.setInitialValues(ctx.service?.data?.data);
+      const form: Form = ctx.form;
+      if (form) {
+        // form 字段中可能一开始就存在一些默认值（比如设置了字段默认值的模板区块）。在编辑表单中，
+        // 这些默认值是不需要的，需要清除掉，不然会导致一些问题。比如：https://github.com/nocobase/nocobase/issues/4868
+        if (shouldClearInitialValues) {
+          form.initialValues = {};
+        }
+        form.setInitialValues(ctx.service?.data?.data);
+      }
     }
   }, [ctx?.service?.loading]);
   return {
