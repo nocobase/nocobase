@@ -9,7 +9,7 @@
 
 import { ConfigProvider, theme as antdTheme } from 'antd';
 import _ from 'lodash';
-import React, { createContext, useCallback, useMemo, useRef } from 'react';
+import React, { createContext, FC, useCallback, useMemo, useRef } from 'react';
 import compatOldTheme from './compatOldTheme';
 import { addCustomAlgorithmToTheme } from './customAlgorithm';
 import defaultTheme from './defaultTheme';
@@ -41,7 +41,11 @@ export const useGlobalTheme = () => {
   return React.useContext(GlobalThemeContext) || ({ theme: {}, isDarkTheme: false } as GlobalThemeContextProps);
 };
 
-export const GlobalThemeProvider = ({ children, theme: themeFromProps }) => {
+interface GlobalThemeProviderProps {
+  theme?: ThemeConfig;
+}
+
+export const GlobalThemeProvider: FC<GlobalThemeProviderProps> = ({ children, theme: themeFromProps }) => {
   const [theme, setTheme] = React.useState<ThemeConfig>(themeFromProps || defaultTheme);
   const currentSettingThemeRef = useRef<ThemeConfig>(null);
   const currentEditingThemeRef = useRef<ThemeItem>(null);
@@ -88,6 +92,8 @@ export const GlobalThemeProvider = ({ children, theme: themeFromProps }) => {
     setCurrentSettingTheme,
     theme,
   ]);
+
+  console.log('GlobalThemeProvider', value);
 
   return (
     <GlobalThemeContext.Provider value={value}>

@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { OpenModeProvider, usePlugin } from '@nocobase/client';
+import { GlobalThemeProvider, OpenModeProvider, usePlugin } from '@nocobase/client';
 import React from 'react';
 import { isDesktop } from 'react-device-detect';
 
@@ -45,18 +45,20 @@ export const Mobile = () => {
 
   return (
     <DesktopComponent>
-      <OpenModeProvider
-        defaultOpenMode="page"
-        hideOpenMode
-        openModeToComponent={{
-          page: MobileActionPage,
-          drawer: MobileActionPage,
-        }}
-      >
-        <MobileAppProvider>
-          <MobileRouter />
-        </MobileAppProvider>
-      </OpenModeProvider>
+      <GlobalThemeProvider>
+        <OpenModeProvider
+          defaultOpenMode="page"
+          hideOpenMode
+          openModeToComponent={{
+            page: MobileActionPage,
+            drawer: MobileActionPage,
+          }}
+        >
+          <MobileAppProvider>
+            <MobileRouter />
+          </MobileAppProvider>
+        </OpenModeProvider>
+      </GlobalThemeProvider>
     </DesktopComponent>
   );
 };
