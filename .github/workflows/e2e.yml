@@ -27,22 +27,17 @@ jobs:
     name: Build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-
       - name: Checkout pro-plugins
         continue-on-error: true # 外部开发者提交 PR 的时候因为没有权限这里会报错，为了能够继续执行后续步骤，所以这里设置为 continue-on-error: true
         uses: actions/checkout@v4
         with:
           repository: nocobase/pro-plugins
-          ref: main
+          ref: ${{ github.event.pull_request.base.ref || 'main' }}
           path: packages/pro-plugins
           fetch-depth: 0
           ssh-key: ${{ secrets.SUBMODULE_SSH_KEY }}
-      - name: git checkout ${{ github.event.pull_request.base.ref }}
-        run: cd packages/pro-plugins && git checkout ${{ github.event.pull_request.base.ref }}
-        continue-on-error: true
       - name: git checkout ${{ github.head_ref || github.ref_name }}
-        run: cd packages/pro-plugins && git checkout${{ github.head_ref || github.ref_name }}
+        run: cd packages/pro-plugins && git checkout ${{ github.head_ref || github.ref_name }}
         continue-on-error: true
       - name: Use Node.js
         uses: actions/setup-node@v4
@@ -84,19 +79,15 @@ jobs:
           --health-timeout 5s
           --health-retries 5
     steps:
-      - uses: actions/checkout@v4
       - name: Checkout pro-plugins
         continue-on-error: true # 外部开发者提交 PR 的时候因为没有权限这里会报错，为了能够继续执行后续步骤，所以这里设置为 continue-on-error: true
         uses: actions/checkout@v4
         with:
           repository: nocobase/pro-plugins
-          ref: main
+          ref: ${{ github.event.pull_request.base.ref || 'main' }}
           path: packages/pro-plugins
           fetch-depth: 0
           ssh-key: ${{ secrets.SUBMODULE_SSH_KEY }}
-      - name: git checkout ${{ github.event.pull_request.base.ref }}
-        run: cd packages/pro-plugins && git checkout ${{ github.event.pull_request.base.ref }}
-        continue-on-error: true
       - name: git checkout ${{ github.head_ref || github.ref_name }}
         run: cd packages/pro-plugins && git checkout ${{ github.head_ref || github.ref_name }}
         continue-on-error: true
@@ -171,19 +162,15 @@ jobs:
           --health-timeout 5s
           --health-retries 5
     steps:
-      - uses: actions/checkout@v4
       - name: Checkout pro-plugins
         continue-on-error: true # 外部开发者提交 PR 的时候因为没有权限这里会报错，为了能够继续执行后续步骤，所以这里设置为 continue-on-error: true
         uses: actions/checkout@v4
         with:
           repository: nocobase/pro-plugins
-          ref: main
+          ref: ${{ github.event.pull_request.base.ref || 'main' }}
           path: packages/pro-plugins
           fetch-depth: 0
           ssh-key: ${{ secrets.SUBMODULE_SSH_KEY }}
-      - name: git checkout ${{ github.event.pull_request.base.ref }}
-        run: cd packages/pro-plugins && git checkout ${{ github.event.pull_request.base.ref }}
-        continue-on-error: true
       - name: git checkout ${{ github.head_ref || github.ref_name }}
         run: cd packages/pro-plugins && git checkout ${{ github.head_ref || github.ref_name }}
         continue-on-error: true
@@ -258,19 +245,15 @@ jobs:
           --health-timeout 5s
           --health-retries 5
     steps:
-      - uses: actions/checkout@v4
       - name: Checkout pro-plugins
         continue-on-error: true # 外部开发者提交 PR 的时候因为没有权限这里会报错，为了能够继续执行后续步骤，所以这里设置为 continue-on-error: true
         uses: actions/checkout@v4
         with:
           repository: nocobase/pro-plugins
-          ref: main
+          ref: ${{ github.event.pull_request.base.ref || 'main' }}
           path: packages/pro-plugins
           fetch-depth: 0
           ssh-key: ${{ secrets.SUBMODULE_SSH_KEY }}
-      - name: git checkout ${{ github.event.pull_request.base.ref }}
-        run: cd packages/pro-plugins && git checkout ${{ github.event.pull_request.base.ref }}
-        continue-on-error: true
       - name: git checkout ${{ github.head_ref || github.ref_name }}
         run: cd packages/pro-plugins && git checkout ${{ github.head_ref || github.ref_name }}
         continue-on-error: true
@@ -345,19 +328,15 @@ jobs:
           --health-timeout 5s
           --health-retries 5
     steps:
-      - uses: actions/checkout@v4
       - name: Checkout pro-plugins
         continue-on-error: true # 外部开发者提交 PR 的时候因为没有权限这里会报错，为了能够继续执行后续步骤，所以这里设置为 continue-on-error: true
         uses: actions/checkout@v4
         with:
           repository: nocobase/pro-plugins
-          ref: main
+          ref: ${{ github.event.pull_request.base.ref || 'main' }}
           path: packages/pro-plugins
           fetch-depth: 0
           ssh-key: ${{ secrets.SUBMODULE_SSH_KEY }}
-      - name: git checkout ${{ github.event.pull_request.base.ref }}
-        run: cd packages/pro-plugins && git checkout ${{ github.event.pull_request.base.ref }}
-        continue-on-error: true
       - name: git checkout ${{ github.head_ref || github.ref_name }}
         run: cd packages/pro-plugins && git checkout ${{ github.head_ref || github.ref_name }}
         continue-on-error: true
