@@ -54,6 +54,11 @@ export class FieldModel extends MagicAttributeModel {
       transaction,
     });
 
+    if (transaction) {
+      this.db.on('transactionRollback:' + transaction['id'], async () => {
+        collection.removeField(name);
+      });
+    }
     return field;
   }
 

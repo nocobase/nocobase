@@ -1,14 +1,19 @@
 ---
 name: Bug report
-about: Report a bug to help us improve. Please use discussions for feature requests.
+about: Report a bug to help us improve. Please communicate in English, and post content in other languages to NocoBase Forum https://forum.nocobase.com/.
 title: ''
 labels: ''
 assignees: ''
 
 ---
 
-<!-- Note: Please do not clear the contents of the issue template. Items marked with * are required. Issues not filled out according to the template will be closed. -->
-<!-- 注意：请不要将 issue 模板内容清空，带 * 的项目为必填项，没有按照模板填写的issue将被关闭。-->
+<!-- 
+First off, thank you for reporting bugs.
+
+Please do not clear the contents of the issue template. Items marked with * are required. Issues not filled out according to the template will be closed. 
+
+Please communicate in English, and post content in other languages to NocoBase Forum https://forum.nocobase.com/. Non-English issues will be closed.
+-->
 
 ## * Describe the bug
 

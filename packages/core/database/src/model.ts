@@ -30,8 +30,7 @@ interface JSONTransformerOptions {
 
 export class Model<TModelAttributes extends {} = any, TCreationAttributes extends {} = TModelAttributes>
   extends SequelizeModel<TModelAttributes, TCreationAttributes>
-  implements IModel
-{
+  implements IModel {
   public static database: Database;
   public static collection: Collection;
 
@@ -47,7 +46,7 @@ export class Model<TModelAttributes extends {} = any, TCreationAttributes extend
 
   static async sync(options) {
     const runner = new SyncRunner(this);
-    return runner.runSync(options);
+    return await runner.runSync(options);
   }
 
   // TODO
