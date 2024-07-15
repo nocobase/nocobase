@@ -48,12 +48,12 @@ export const MobileNavigationBarAction: FC<MobileNavigationBarActionProps> = Rea
         {designer}
         {contentLength > 1 ? (
           position === 'left' ? (
-            <Space style={{ '--gap': '4px' }}>
+            <Space style={{ '--gap': '6px' }}>
               {iconElement}
               <span>{title}</span>
             </Space>
           ) : (
-            <Space style={{ '--gap': '4px' }}>
+            <Space style={{ '--gap': '6px' }}>
               <span>{title}</span>
               {iconElement}
             </Space>
