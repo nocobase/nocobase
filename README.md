@@ -37,8 +37,8 @@ https://demo.nocobase.com/new
 Documents:  
 https://docs.nocobase.com/
 
-Contact Us:  
-hello@nocobase.com
+Forum:  
+https://forum.nocobase.com/
 
 ## Distinctive features
 
