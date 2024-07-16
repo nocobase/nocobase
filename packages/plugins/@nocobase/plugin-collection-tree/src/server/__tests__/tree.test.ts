@@ -372,7 +372,7 @@ describe('list-tree', () => {
   let db: Database;
   let agent;
   beforeEach(async () => {
-    app = await prepareApp();
+    app = await createApp();
     agent = app.agent();
     db = app.db;
   });
