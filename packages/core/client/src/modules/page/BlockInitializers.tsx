@@ -28,6 +28,16 @@ const commonOptions = {
           name: 'form',
           title: '{{t("Form")}}',
           Component: 'FormBlockInitializer',
+          useComponentProps: () => {
+            const filterCollections = ({ collection }) => {
+              const { unavailableActions } = collection?.options || {};
+              if (unavailableActions) {
+                return !unavailableActions?.includes?.('create');
+              }
+              return true;
+            };
+            return { filterCollections };
+          },
         },
         {
           name: 'details',
