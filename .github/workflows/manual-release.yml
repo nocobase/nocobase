@@ -11,7 +11,61 @@ on:
         description: 'is feat'
         type: boolean
 jobs:
+  pre-publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          repository: nocobase/nocobase
+          ssh-key: ${{ secrets.NOCOBASE_DEPLOY_KEY }}
+          persist-credentials: true
+          fetch-depth: 0
+      - name: Checkout pro-plugins
+        uses: actions/checkout@v4
+        with:
+          repository: nocobase/pro-plugins
+          path: packages/pro-plugins
+          fetch-depth: 0
+          ssh-key: ${{ secrets.PRO_PLUGINS_DEPLOY_KEY }}
+          persist-credentials: true
+      - name: main -> next
+        run: |
+          git config --global user.email "actions@github.com"
+          git config --global user.name "GitHub Actions Bot"
+          git checkout main
+          git pull origin main
+          git checkout next
+          git merge main
+          git push origin next
+      - name: main -> next
+        run: |
+          cd ./packages/pro-plugins
+          git checkout main
+          git pull origin main
+          git checkout next
+          git merge main
+          git push origin next
+      - name: push pro plugins
+        continue-on-error: true
+        uses: ad-m/github-push-action@master
+        with:
+          ssh: true
+          branch: next
+          directory: packages/pro-plugins
+          repository: nocobase/pro-plugins
+          tags: true
+          atomic: true
+      - name: push nocobase
+        uses: ad-m/github-push-action@master
+        with:
+          branch: next
+          ssh: true
+          repository: nocobase/nocobase
+          tags: true
+          atomic: true
   push-commit:
+    needs: pre-publish
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -57,6 +111,60 @@ jobs:
         uses: ad-m/github-push-action@master
         with:
           branch: main
+          ssh: true
+          repository: nocobase/nocobase
+          tags: true
+          atomic: true
+  post-publish:
+    needs: push-commit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          repository: nocobase/nocobase
+          ssh-key: ${{ secrets.NOCOBASE_DEPLOY_KEY }}
+          persist-credentials: true
+          fetch-depth: 0
+      - name: Checkout pro-plugins
+        uses: actions/checkout@v4
+        with:
+          repository: nocobase/pro-plugins
+          path: packages/pro-plugins
+          fetch-depth: 0
+          ssh-key: ${{ secrets.PRO_PLUGINS_DEPLOY_KEY }}
+          persist-credentials: true
+      - name: main -> next
+        run: |
+          git config --global user.email "actions@github.com"
+          git config --global user.name "GitHub Actions Bot"
+          git checkout main
+          git pull origin main
+          git checkout next
+          git merge -X ours main --no-edit
+          git push origin next
+      - name: main -> next
+        run: |
+          cd ./packages/pro-plugins
+          git checkout main
+          git pull origin main
+          git checkout next
+          git merge -X ours main --no-edit
+          git push origin next
+      - name: push pro plugins
+        continue-on-error: true
+        uses: ad-m/github-push-action@master
+        with:
+          ssh: true
+          branch: next
+          directory: packages/pro-plugins
+          repository: nocobase/pro-plugins
+          tags: true
+          atomic: true
+      - name: push nocobase
+        uses: ad-m/github-push-action@master
+        with:
+          branch: next
           ssh: true
           repository: nocobase/nocobase
           tags: true
