@@ -1,0 +1,27 @@
+name: auto-merge
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+on:
+  push:
+
+jobs:
+  push-commit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          repository: nocobase/nocobase
+          ssh-key: ${{ secrets.NOCOBASE_DEPLOY_KEY }}
+          persist-credentials: true
+          fetch-depth: 0
+      - name: Merge main -> next
+        uses: devmasx/merge-branch@master
+        with:
+          type: now
+          from_branch: main
+          target_branch: ${{ github.head_ref || github.ref_name }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
