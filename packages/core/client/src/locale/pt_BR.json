@@ -739,5 +739,6 @@
   "URL search params": "Parâmetros de pesquisa de URL",
   "Expand All": "Expandir tudo",
   "Parent popup record": "Registro pop-up pai",
-  "Current popup record": "Registro pop-up atual"
+  "Current popup record": "Registro pop-up atual",
+  "Clear default value": "Limpar valor padrão"
 }

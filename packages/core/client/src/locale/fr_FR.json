@@ -782,5 +782,6 @@
   "This variable has been deprecated and can be replaced with \"Current form\"": "La variable a été obsolète ; \"Formulaire actuel\" peut être utilisé comme substitut",
   "The value of this variable is derived from the query string of the page URL. This variable can only be used normally when the page has a query string.": "La valeur de cette variable est dérivée de la chaîne de requête de l'URL de la page. Cette variable ne peut être utilisée normalement que lorsque la page a une chaîne de requête.",
   "URL search params": "Paramètres de recherche d'URL",
-  "Expand All": "Tout déplier"
+  "Expand All": "Tout déplier",
+  "Clear default value": "Effacer la valeur par défaut"
 }
