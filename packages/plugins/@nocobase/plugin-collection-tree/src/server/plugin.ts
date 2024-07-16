@@ -36,7 +36,9 @@ class PluginCollectionTreeServer extends Plugin {
           //afterSync
           collectionManager.db.on(`${collection.name}.afterSync`, async (collection: Model) => {
             await this.defineTreePathCollection(name, collectionManager);
-            await this.db.getCollection(name).sync({ transaction: collection.transaction } as syncOptions);
+            await this.db
+              .getCollection(name)
+              .sync({ transaction: collection.transaction, force: false, alter: true } as syncOptions);
           });
 
           //afterCreate
@@ -100,6 +102,10 @@ class PluginCollectionTreeServer extends Plugin {
   }
 
   private async syncExistTreeCollectionPathTable() {
+    const collectionsRepository = this.app.db.getRepository('collections');
+    if (!collectionsRepository) {
+      return;
+    }
     const treeCollections = await this.app.db.getRepository('collections').find({
       appends: ['fields'],
       filter: {
@@ -123,7 +129,7 @@ class PluginCollectionTreeServer extends Plugin {
       }
       const treeExistsInDb = await this.app.db.getCollection(name).existsInDb();
       if (!treeExistsInDb) {
-        await this.db.getCollection(name).sync();
+        await this.db.getCollection(name).sync({ force: false, alter: true });
         this.db.collection({
           name: treeCollection.name,
           autoGenId: false,
