@@ -49,7 +49,9 @@ ReadPretty.Input = (props: InputReadPrettyProps) => {
     <div className={cls(prefixCls, props.className)} style={props.style}>
       {props.addonBefore}
       {props.prefix}
-      <EllipsisWithTooltip ellipsis={props.ellipsis}>{compile(props.value)}</EllipsisWithTooltip>
+      <EllipsisWithTooltip ellipsis={props.ellipsis}>
+        {typeof props.value === 'object' ? JSON.stringify(props.value) : compile(props.value)}
+      </EllipsisWithTooltip>
       {props.suffix}
       {props.addonAfter}
     </div>
