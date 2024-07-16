@@ -11,7 +11,7 @@ on:
         description: 'is feat'
         type: boolean
 jobs:
-  pre-publish:
+  push-commit:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -29,7 +29,7 @@ jobs:
           fetch-depth: 0
           ssh-key: ${{ secrets.PRO_PLUGINS_DEPLOY_KEY }}
           persist-credentials: true
-      - name: main -> next
+      - name: main -> next(nocobase)
         run: |
           git config --global user.email "actions@github.com"
           git config --global user.name "GitHub Actions Bot"
@@ -38,7 +38,7 @@ jobs:
           git checkout next
           git merge main
           git push origin next
-      - name: main -> next
+      - name: main -> next(pro-plugins)
         run: |
           cd ./packages/pro-plugins
           git checkout main
@@ -46,7 +46,7 @@ jobs:
           git checkout next
           git merge main
           git push origin next
-      - name: push pro plugins
+      - name: push pro plugins(next)
         continue-on-error: true
         uses: ad-m/github-push-action@master
         with:
@@ -56,7 +56,7 @@ jobs:
           repository: nocobase/pro-plugins
           tags: true
           atomic: true
-      - name: push nocobase
+      - name: push nocobase(next)
         uses: ad-m/github-push-action@master
         with:
           branch: next
@@ -64,25 +64,6 @@ jobs:
           repository: nocobase/nocobase
           tags: true
           atomic: true
-  push-commit:
-    needs: pre-publish
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          repository: nocobase/nocobase
-          ssh-key: ${{ secrets.NOCOBASE_DEPLOY_KEY }}
-          persist-credentials: true
-          fetch-depth: 0
-      - name: Checkout pro-plugins
-        uses: actions/checkout@v4
-        with:
-          repository: nocobase/pro-plugins
-          path: packages/pro-plugins
-          fetch-depth: 0
-          ssh-key: ${{ secrets.PRO_PLUGINS_DEPLOY_KEY }}
-          persist-credentials: true
       - name: Set Node.js 18
         uses: actions/setup-node@v3
         with:
@@ -91,6 +72,7 @@ jobs:
         run: npm install -g lerna@4 auto-changelog@2
       - name: Run release.sh
         run: |
+          git checkout main
           git config --global user.email "actions@github.com"
           git config --global user.name "GitHub Actions Bot"
           echo "packages/pro-plugins/" >> .git/info/exclude
@@ -115,25 +97,6 @@ jobs:
           repository: nocobase/nocobase
           tags: true
           atomic: true
-  post-publish:
-    needs: push-commit
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          repository: nocobase/nocobase
-          ssh-key: ${{ secrets.NOCOBASE_DEPLOY_KEY }}
-          persist-credentials: true
-          fetch-depth: 0
-      - name: Checkout pro-plugins
-        uses: actions/checkout@v4
-        with:
-          repository: nocobase/pro-plugins
-          path: packages/pro-plugins
-          fetch-depth: 0
-          ssh-key: ${{ secrets.PRO_PLUGINS_DEPLOY_KEY }}
-          persist-credentials: true
       - name: main -> next
         run: |
           git config --global user.email "actions@github.com"
