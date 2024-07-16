@@ -15,7 +15,7 @@ export * from './ImportDesigner';
 export * from './ImportPluginProvider';
 export * from './useImportAction';
 
-import { Plugin, useCollection_deprecated } from '@nocobase/client';
+import { Plugin, useCollection } from '@nocobase/client';
 import { ImportPluginProvider } from './ImportPluginProvider';
 import { importActionSchemaSettings } from './schemaSettings';
 
@@ -35,13 +35,13 @@ export class PluginActionImportClient extends Plugin {
         },
       },
       useVisible() {
-        const collection = useCollection_deprecated() || ({} as any);
-        const { unavailableActions, availableActions } = collection;
+        const collection = useCollection() || ({} as any);
+        const { unavailableActions, availableActions } = collection?.options || {};
         if (availableActions) {
-          return availableActions.includes?.('create');
+          return availableActions.includes?.('import');
         }
         if (unavailableActions) {
-          return !unavailableActions?.includes?.('create');
+          return !unavailableActions?.includes?.('import');
         }
         return true;
       },

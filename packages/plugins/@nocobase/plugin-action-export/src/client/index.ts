@@ -11,7 +11,7 @@ export * from './ExportActionInitializer';
 export * from './ExportDesigner';
 export * from './ExportPluginProvider';
 export * from './useExportAction';
-import { Plugin } from '@nocobase/client';
+import { Plugin, useCollection } from '@nocobase/client';
 import { ExportPluginProvider } from './ExportPluginProvider';
 import { exportActionSchemaSettings } from './schemaSettings';
 
@@ -28,6 +28,17 @@ export class PluginActionExportClient extends Plugin {
         'x-acl-action-props': {
           skipScopeCheck: true,
         },
+      },
+      useVisible() {
+        const collection = useCollection() || ({} as any);
+        const { unavailableActions, availableActions } = collection?.options || {};
+        if (availableActions) {
+          return availableActions.includes?.('export');
+        }
+        if (unavailableActions) {
+          return !unavailableActions?.includes?.('export');
+        }
+        return true;
       },
     };
 
