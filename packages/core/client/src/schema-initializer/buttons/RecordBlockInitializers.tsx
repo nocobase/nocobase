@@ -147,7 +147,10 @@ function useRecordBlocks() {
       },
       useVisible() {
         const collection = useCollection() || ({} as any);
-        const { unavailableActions } = collection?.options || {};
+        const { unavailableActions, availableActions } = collection?.options || {};
+        if (availableActions) {
+          return availableActions.includes?.('update');
+        }
         if (unavailableActions) {
           return !unavailableActions?.includes?.('update');
         }

@@ -26,7 +26,10 @@ const commonOptions = {
       },
       useVisible() {
         const collection = useCollection() || ({} as any);
-        const { unavailableActions } = collection?.options || {};
+        const { unavailableActions, availableActions } = collection?.options || {};
+        if (availableActions) {
+          return availableActions.includes?.('get');
+        }
         if (unavailableActions) {
           return !unavailableActions?.includes?.('get');
         }
@@ -45,7 +48,10 @@ const commonOptions = {
       },
       useVisible() {
         const collection = useCollection() || ({} as any);
-        const { unavailableActions } = collection?.options || {};
+        const { unavailableActions, availableActions } = collection?.options || {};
+        if (availableActions) {
+          return availableActions.includes?.('update');
+        }
         if (unavailableActions) {
           return !unavailableActions?.includes?.('update');
         }
@@ -64,7 +70,10 @@ const commonOptions = {
       },
       useVisible() {
         const collection = useCollection() || ({} as any);
-        const { unavailableActions } = collection?.options || {};
+        const { unavailableActions, availableActions } = collection?.options || {};
+        if (availableActions) {
+          return availableActions.includes?.('destroy');
+        }
         if (unavailableActions) {
           return !unavailableActions?.includes?.('destroy');
         }
@@ -87,7 +96,10 @@ const commonOptions = {
       Component: 'UpdateRecordActionInitializer',
       useVisible() {
         const collection = useCollection() || ({} as any);
-        const { unavailableActions } = collection?.options || {};
+        const { unavailableActions, availableActions } = collection?.options || {};
+        if (availableActions) {
+          return availableActions.includes?.('update');
+        }
         if (unavailableActions) {
           return !unavailableActions?.includes?.('update');
         }

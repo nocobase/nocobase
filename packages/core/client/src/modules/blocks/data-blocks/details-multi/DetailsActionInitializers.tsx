@@ -35,7 +35,10 @@ const commonOptions = {
           },
           useVisible() {
             const collection = useCollection() || ({} as any);
-            const { unavailableActions } = collection?.options || {};
+            const { unavailableActions, availableActions } = collection?.options || {};
+            if (availableActions) {
+              return unavailableActions.includes?.('update');
+            }
             if (unavailableActions) {
               return !unavailableActions?.includes?.('update');
             }
@@ -52,7 +55,10 @@ const commonOptions = {
           },
           useVisible() {
             const collection = useCollection() || ({} as any);
-            const { unavailableActions } = collection?.options || {};
+            const { unavailableActions, availableActions } = collection?.options || {};
+            if (availableActions) {
+              return unavailableActions.includes?.('destroy');
+            }
             if (unavailableActions) {
               return !unavailableActions?.includes?.('destroy');
             }

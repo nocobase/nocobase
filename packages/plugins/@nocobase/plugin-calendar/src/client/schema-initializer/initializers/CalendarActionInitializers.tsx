@@ -92,7 +92,10 @@ const commonOptions = {
       },
       useVisible() {
         const collection = useCollection() || ({} as any);
-        const { unavailableActions } = collection?.options || {};
+        const { unavailableActions, availableActions } = collection?.options || {};
+        if (availableActions) {
+          return availableActions.includes?.('create');
+        }
         if (unavailableActions) {
           return !unavailableActions?.includes?.('create');
         }

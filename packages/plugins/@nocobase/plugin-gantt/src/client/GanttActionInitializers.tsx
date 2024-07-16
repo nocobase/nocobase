@@ -40,7 +40,10 @@ const commonOptions = {
       },
       useVisible() {
         const collection = useCollection() || ({} as any);
-        const { unavailableActions } = collection?.options || {};
+        const { unavailableActions, availableActions } = collection?.options || {};
+        if (availableActions) {
+          return availableActions.includes?.('create');
+        }
         if (unavailableActions) {
           return !unavailableActions?.includes?.('create');
         }
@@ -58,9 +61,12 @@ const commonOptions = {
       },
       useVisible() {
         const collection = useCollection() || ({} as any);
-        const { unavailableActions } = collection?.options || {};
+        const { unavailableActions, availableActions } = collection?.options || {};
+        if (availableActions) {
+          return availableActions.includes?.('destroyMany');
+        }
         if (unavailableActions) {
-          return !unavailableActions?.includes?.('destroy');
+          return !unavailableActions?.includes?.('destroyMany');
         }
         return true;
       },

@@ -56,9 +56,12 @@ export class PluginActionBulkEditClient extends Plugin {
       },
       useVisible() {
         const collection = useCollection_deprecated() || ({} as any);
-        const { unavailableActions } = collection;
+        const { unavailableActions, availableActions } = collection;
+        if (availableActions) {
+          return availableActions.includes?.('updateMany');
+        }
         if (unavailableActions) {
-          return !unavailableActions?.includes?.('update');
+          return !unavailableActions?.includes?.('updateMany');
         }
         return true;
       },

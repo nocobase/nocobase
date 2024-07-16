@@ -36,7 +36,10 @@ export class PluginActionImportClient extends Plugin {
       },
       useVisible() {
         const collection = useCollection_deprecated() || ({} as any);
-        const { unavailableActions } = collection;
+        const { unavailableActions, availableActions } = collection;
+        if (availableActions) {
+          return availableActions.includes?.('create');
+        }
         if (unavailableActions) {
           return !unavailableActions?.includes?.('create');
         }

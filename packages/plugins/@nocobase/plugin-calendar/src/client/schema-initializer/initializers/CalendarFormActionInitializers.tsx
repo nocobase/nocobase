@@ -59,7 +59,10 @@ export const CalendarFormActionInitializers = new SchemaInitializer({
           },
           useVisible() {
             const collection = useCollection() || ({} as any);
-            const { unavailableActions } = collection?.options || {};
+            const { unavailableActions, availableActions } = collection?.options || {};
+            if (availableActions) {
+              return availableActions.includes?.('update');
+            }
             if (unavailableActions) {
               return !unavailableActions?.includes?.('update');
             }
@@ -76,7 +79,10 @@ export const CalendarFormActionInitializers = new SchemaInitializer({
           },
           useVisible() {
             const collection = useCollection() || ({} as any);
-            const { unavailableActions } = collection?.options || {};
+            const { unavailableActions, availableActions } = collection?.options || {};
+            if (availableActions) {
+              return availableActions.includes?.('destroy');
+            }
             if (unavailableActions) {
               return !unavailableActions?.includes?.('destroy');
             }
@@ -172,7 +178,10 @@ export const CalendarFormActionInitializers = new SchemaInitializer({
           },
           useVisible() {
             const collection = useCollection() || ({} as any);
-            const { unavailableActions } = collection?.options || {};
+            const { unavailableActions, availableActions } = collection?.options || {};
+            if (availableActions) {
+              return availableActions.includes?.('update');
+            }
             if (unavailableActions) {
               return !unavailableActions?.includes?.('update');
             }

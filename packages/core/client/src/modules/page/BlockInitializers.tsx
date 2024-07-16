@@ -30,7 +30,10 @@ const commonOptions = {
           Component: 'FormBlockInitializer',
           useComponentProps: () => {
             const filterCollections = ({ collection }) => {
-              const { unavailableActions } = collection?.options || {};
+              const { unavailableActions, availableActions } = collection?.options || {};
+              if (availableActions) {
+                return availableActions.includes?.('create');
+              }
               if (unavailableActions) {
                 return !unavailableActions?.includes?.('create');
               }
