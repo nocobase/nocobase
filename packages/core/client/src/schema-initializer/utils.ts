@@ -30,6 +30,7 @@ import { useDataSourceManager } from '../data-source/data-source/DataSourceManag
 import { isAssocField } from '../filter-provider/utils';
 import { useActionContext, useCompile, useDesignable } from '../schema-component';
 import { useSchemaTemplateManager } from '../schema-templates';
+
 export const itemsMerge = (items1) => {
   return items1;
 };
@@ -382,7 +383,9 @@ export const useFilterFormItemInitializerFields = (options?: any) => {
         'x-decorator': 'FormItem',
         'x-use-decorator-props': 'useFormItemProps',
         'x-collection-field': `${name}.${field.name}`,
-        'x-component-props': {},
+        'x-component-props': {
+          component: interfaceConfig?.filterable?.operators?.[0]?.schema?.['x-component'],
+        },
       };
       if (isAssocField(field)) {
         schema = {
