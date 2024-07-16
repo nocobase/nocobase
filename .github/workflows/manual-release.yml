@@ -141,7 +141,7 @@ jobs:
           git checkout main
           git pull origin main
           git checkout next
-          git merge -X ours main
+          git merge -X ours main --no-edit
           git push origin next
       - name: main -> next
         run: |
@@ -149,7 +149,7 @@ jobs:
           git checkout main
           git pull origin main
           git checkout next
-          git merge -X ours main
+          git merge -X ours main --no-edit
           git push origin next
       - name: push pro plugins
         continue-on-error: true
