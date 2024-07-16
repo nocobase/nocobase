@@ -207,14 +207,14 @@ export class PluginDataSourceManagerServer extends Plugin {
           const results = {
             ...collectionOptions,
             fields,
-            unavailableActions:
-              collectionInstance && collectionInstance.unavailableActions
-                ? collectionInstance.unavailableActions()
-                : [],
           };
 
-          if (collectionInstance && collectionInstance.unavailableFunctions) {
-            results['unavailableFunctions'] = collectionInstance.unavailableFunctions();
+          if (collectionInstance && collectionInstance.availableActions) {
+            results['availableActions'] = collectionInstance.availableActions();
+          }
+
+          if (collectionInstance && collectionInstance.unavailableActions) {
+            results['unavailableActions'] = collectionInstance.unavailableActions();
           }
 
           return results;
