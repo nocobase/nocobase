@@ -33,7 +33,15 @@ export class CollectionModel extends MagicAttributeModel {
       json.filterTargetKey = collection?.filterTargetKey;
     }
 
-    json['unavailableActions'] = collection?.unavailableActions() || [];
+    if (collection && collection.unavailableActions) {
+      json['unavailableActions'] = collection.unavailableActions();
+    }
+
+    // @ts-ignore
+    if (collection && collection.availableActions) {
+      // @ts-ignore
+      json['availableActions'] = collection.availableActions();
+    }
 
     return json;
   }
