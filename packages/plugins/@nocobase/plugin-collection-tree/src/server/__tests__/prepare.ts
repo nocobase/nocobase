@@ -43,3 +43,12 @@ export async function createApp(options: any = {}) {
   });
   return app;
 }
+
+export async function createAppWithNoUsersPlugin(options: any = {}) {
+  const app = await createMockServer({
+    acl: false,
+    ...options,
+    plugins: ['data-source-main', 'collection-tree', 'error-handler', 'data-source-manager', 'ui-schema-storage'],
+  });
+  return app;
+}

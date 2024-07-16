@@ -9,7 +9,7 @@
 
 import { AdjacencyListRepository, Database } from '@nocobase/database';
 import { MockServer } from '@nocobase/test';
-import { createApp, prepareApp } from './prepare';
+import { createApp, createAppWithNoUsersPlugin, prepareApp } from './prepare';
 
 describe('tree', () => {
   let app: MockServer;
@@ -151,7 +151,7 @@ describe('find with association test case 1', () => {
 
   let db: Database;
   beforeEach(async () => {
-    app = await createApp();
+    app = await createAppWithNoUsersPlugin();
 
     agent = app.agent();
     db = app.db;
@@ -248,7 +248,7 @@ describe('find with association test case 2', () => {
 
   let db: Database;
   beforeEach(async () => {
-    app = await createApp();
+    app = await createAppWithNoUsersPlugin();
 
     agent = app.agent();
     db = app.db;
@@ -370,8 +370,10 @@ describe('find with association test case 2', () => {
 describe('list-tree', () => {
   let app;
   let db: Database;
+  let agent;
   beforeEach(async () => {
     app = await prepareApp();
+    agent = app.agent();
     db = app.db;
   });
 
