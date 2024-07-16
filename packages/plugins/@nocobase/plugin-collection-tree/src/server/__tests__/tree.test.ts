@@ -145,7 +145,7 @@ describe('tree', () => {
   });
 });
 
-describe('find with association', () => {
+describe('find with association test case 1', () => {
   let app: MockServer;
   let agent;
 
@@ -239,6 +239,23 @@ describe('find with association', () => {
     });
 
     expect(findResult[0].get('name')).toEqual('u1');
+  });
+});
+
+describe('find with association test case 2', () => {
+  let app: MockServer;
+  let agent;
+
+  let db: Database;
+  beforeEach(async () => {
+    app = await createApp();
+
+    agent = app.agent();
+    db = app.db;
+  });
+
+  afterEach(async () => {
+    await app.destroy();
   });
 
   it('should filter by association field', async () => {
