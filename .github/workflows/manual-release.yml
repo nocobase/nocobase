@@ -65,6 +65,7 @@ jobs:
           tags: true
           atomic: true
   push-commit:
+    needs: pre-publish
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -115,6 +116,7 @@ jobs:
           tags: true
           atomic: true
   post-publish:
+    needs: push-commit
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
