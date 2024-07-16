@@ -369,8 +369,10 @@ describe('find with association test case 2', () => {
 
 describe('list-tree', () => {
   let app;
+  let db: Database;
   beforeEach(async () => {
     app = await prepareApp();
+    db = app.db;
   });
 
   afterEach(async () => {
