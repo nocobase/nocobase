@@ -180,7 +180,7 @@ export class Application {
   }
 
   getName() {
-    return this.name || getSubAppName(this.getPublicPath()) || null;
+    return getSubAppName(this.getPublicPath()) || null;
   }
 
   getPublicPath() {
