@@ -11,13 +11,12 @@ import { ToposortOptions } from '@nocobase/utils';
 import { DataSource } from './data-source';
 import { DataSourceFactory } from './data-source-factory';
 import { createConsoleLogger, createLogger, Logger, LoggerOptions } from '@nocobase/logger';
-import { Application } from '@nocobase/server';
 
 type DataSourceHook = (dataSource: DataSource) => void;
 
 type DataSourceManagerOptions = {
   logger?: LoggerOptions | Logger;
-  app?: Application;
+  app?: any;
 };
 
 export class DataSourceManager {
