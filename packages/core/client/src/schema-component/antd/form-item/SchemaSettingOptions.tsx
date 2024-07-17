@@ -16,6 +16,7 @@ import { useTranslation } from 'react-i18next';
 import { useOperators } from '../../../block-provider/CollectOperators';
 import { useFormBlockContext } from '../../../block-provider/FormBlockProvider';
 import { useCollectionManager_deprecated, useCollection_deprecated } from '../../../collection-manager';
+import { useCollectOperator } from '../../../modules/blocks/filter-blocks/form/hooks/useCollectOperator';
 import { SchemaSettingsModalItem, SchemaSettingsSelectItem, SchemaSettingsSwitchItem } from '../../../schema-settings';
 import { isPatternDisabled } from '../../../schema-settings/isPatternDisabled';
 import { useCompile, useDesignable, useFieldModeOptions } from '../../hooks';
@@ -472,6 +473,9 @@ export const EditPattern = () => {
  * 该方法确保 operator 一定有值（需要在 FormItem 中调用）
  */
 export const useEnsureOperatorsValid = () => {
+  // TODO: 等给 Schema 中都加上 'x-use-decorator-props': 'useFormItemProps' 后，可以删除这个方法
+  useCollectOperator();
+
   const fieldSchema = useFieldSchema();
   const operatorList = useOperatorList();
   const { getOperators, collectOperator } = useOperators();

@@ -12,7 +12,7 @@ import React, { FC, createContext, useCallback, useRef } from 'react';
 const NOOP = () => {};
 
 const CollectOperatorsContext = createContext<{
-  /** 手机单个字段的操作符 */
+  /** 收集单个字段的操作符 */
   collectOperator: (name: string | number, operator: string) => void;
   /** 获取所有字段的操作符 */
   getOperators: () => Record<string, string>;
