@@ -93,8 +93,6 @@ export const GlobalThemeProvider: FC<GlobalThemeProviderProps> = ({ children, th
     theme,
   ]);
 
-  console.log('GlobalThemeProvider', value);
-
   return (
     <GlobalThemeContext.Provider value={value}>
       <ConfigProvider theme={compatOldTheme(value.theme)}>{children}</ConfigProvider>
