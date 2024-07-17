@@ -33,6 +33,7 @@ export const Mobile = () => {
       viewportMeta.setAttribute('content', 'width=device-width,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no');
 
       document.body.style.backgroundColor = PageBackgroundColor;
+      document.body.style.overflow = 'hidden';
 
       // 触发视图重绘
       const fakeBody = document.createElement('div');
