@@ -18,6 +18,7 @@ import {
   useInheritsTableColumnInitializerFields,
   useTableColumnInitializerFields,
 } from '../../../../schema-initializer/utils';
+import { TableCollectionFields } from '../../../../data-source/collection-fields-initializer-items';
 
 // 表格列配置
 const ParentCollectionFields = () => {
@@ -79,6 +80,10 @@ const commonOptions = {
     };
   },
   items: [
+    {
+      name: 'collectionFields',
+      Component: TableCollectionFields,
+    }, ,
     {
       name: 'displayFields',
       type: 'itemGroup',

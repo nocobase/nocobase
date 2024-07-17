@@ -9,5 +9,5 @@ export const SelfFields: FC<SelfCollectionFieldsProps> = (props) => {
   const fields = collection.getFields();
   const children = getInitializerItemsByFields(props, fields, callbackContext);
 
-  return <SchemaInitializerItemGroup title={t('Display fields 11')} children={children} />
+  return <SchemaInitializerItemGroup title={t('new | Display fields')} children={children} />
 }

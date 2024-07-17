@@ -2,7 +2,7 @@ import React, { FC } from "react";
 
 import { InheritanceCollectionMixin } from "../../../collection-manager";
 import { AssociationCollectionFieldsProps, getInitializerItemsByFields } from "../utils";
-import { SchemaInitializerItemGroup, SchemaInitializerItemType } from "../../../application/schema-initializer";
+import { SchemaInitializerChildren, SchemaInitializerItemGroup, SchemaInitializerItemType } from "../../../application/schema-initializer";
 
 export const AssociationCollectionFields: FC<AssociationCollectionFieldsProps> = (props) => {
   const {
@@ -44,7 +44,8 @@ export const AssociationCollectionFields: FC<AssociationCollectionFieldsProps> =
         return {
           ...(schema || {}),
           'x-read-pretty': true,
-          'x-collection-field': `${associationCollection.name}.${associationField.name}.${field.name}`,
+          name: `${associationField.name}.${field.name}`,
+          'x-collection-field': `${collection.name}.${associationField.name}.${field.name}`,
         }
       }
 
@@ -62,5 +63,5 @@ export const AssociationCollectionFields: FC<AssociationCollectionFieldsProps> =
 
   if (!children.length) return null;
 
-  return <SchemaInitializerItemGroup title={t('Display association fields')} children={children} />
+  return <SchemaInitializerItemGroup title={t('new | Display association fields')} children={children} />
 }

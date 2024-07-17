@@ -68,7 +68,7 @@ export interface CollectionFieldDefaultInitializerItem {
 }
 
 export interface CollectionFieldGetInitializerItemResult {
-  find?: (schema: Schema, key: string, action: string) => Schema;
+  find?: (schema: Schema, key: string, action: string) => any;
   remove?: (schema: Schema, cb: (schema: Schema, stopProps: Record<string, any>) => void) => void
 }
 

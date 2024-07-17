@@ -33,11 +33,11 @@ export const findKanbanFormItem = (schema: Schema, key: string, action: string) 
   return findSchema(s, key, action);
 }
 
-interface GetFormDisplayFieldsInitializerItem {
+interface FormCollectionFieldsProps {
   block?: string;
 }
 
-export const FormCollectionFields: FC<GetFormDisplayFieldsInitializerItem> = (props) => {
+export const FormCollectionFields: FC<FormCollectionFieldsProps> = (props) => {
   const block = props?.block || 'Form';
   return <CollectionFields
     block={block}

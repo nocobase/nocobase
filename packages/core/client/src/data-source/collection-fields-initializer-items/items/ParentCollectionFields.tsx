@@ -3,7 +3,7 @@ import React, { FC } from "react";
 import { CollectionFieldOptions } from "../../collection/Collection";
 import { InheritanceCollectionMixin } from "../../../collection-manager";
 import { ParentCollectionFieldsProps, getInitializerItemsByFields, useCollectionFieldContext } from "../utils";
-import { SchemaInitializerItemGroup, SchemaInitializerItemType } from "../../../application/schema-initializer";
+import { SchemaInitializerChildren, SchemaInitializerItemType } from "../../../application/schema-initializer";
 
 export const ParentCollectionFields: FC<ParentCollectionFieldsProps> = (props) => {
   const context = useCollectionFieldContext();
@@ -35,10 +35,10 @@ export const ParentCollectionFields: FC<ParentCollectionFieldsProps> = (props) =
       return {
         type: 'itemGroup',
         divider: true,
-        title: t(`Parent collection fields`) + '(' + context.compile(`parentCollection.title`) + ')',
+        title: t(`new | Parent collection fields`) + '(' + context.compile(parentCollection.title) + ')',
         children: getInitializerItemsByFields(props, parentCollectionFields, newContext),
       } as SchemaInitializerItemType;
     })
 
-  return <SchemaInitializerItemGroup title={t('Display fields')} children={children} />
+  return <SchemaInitializerChildren children={children} />
 }

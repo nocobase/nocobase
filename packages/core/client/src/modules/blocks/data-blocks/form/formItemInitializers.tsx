@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { FormCollectionFields } from '../../../../data-source';
 import { CompatibleSchemaInitializer } from '../../../../application/schema-initializer/CompatibleSchemaInitializer';
 import { AssociatedFields, ParentCollectionFields } from '../../../../schema-initializer/buttons/FormItemInitializers';
 import { gridRowColWrap, useFormItemInitializerFields } from '../../../../schema-initializer/utils';
@@ -16,6 +17,10 @@ const commonOptions = {
   icon: 'SettingOutlined',
   title: '{{t("Configure fields")}}',
   items: [
+    {
+      name: 'collectionFields',
+      Component: FormCollectionFields,
+    },
     {
       type: 'itemGroup',
       name: 'displayFields',
