@@ -45,6 +45,7 @@ export const Mobile = () => {
 
   return (
     <DesktopComponent>
+      {/* 目前移动端由于和客户端的主题对不上，所以先使用 `GlobalThemeProvider` 进行重置为默认主题  */}
       <GlobalThemeProvider>
         <OpenModeProvider
           defaultOpenMode="page"

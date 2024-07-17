@@ -10,8 +10,9 @@
 import { SchemaInitializerItemActionModalType } from '@nocobase/client';
 import { useNavigate } from 'react-router-dom';
 import { uid } from '@formily/shared';
+import { App } from 'antd';
 
-import { generatePluginTranslationTemplate } from '../../../../locale';
+import { generatePluginTranslationTemplate, usePluginTranslation } from '../../../../locale';
 import { getMobileTabBarItemSchemaFields } from '../../MobileTabBar.Item';
 import { MobileRouteItem, useMobileRoutes } from '../../../../mobile-providers';
 import { getMobilePageSchema } from '../../../../pages';
@@ -22,14 +23,22 @@ export const mobileTabBarSchemaInitializerItem: SchemaInitializerItemActionModal
   useComponentProps() {
     const { resource, refresh, schemaResource } = useMobileRoutes();
     const navigate = useNavigate();
+    const { t } = usePluginTranslation();
+    const { message } = App.useApp();
+
     return {
       isItem: true,
       title: generatePluginTranslationTemplate('Add page'),
       buttonText: generatePluginTranslationTemplate('Page'),
       schema: getMobileTabBarItemSchemaFields(),
       async onSubmit(values) {
-        if (!values.title && !values.icon) {
-          return;
+        if (!values.title || values.title.trim() === '') {
+          message.error(t('Title field is required'));
+          return Promise.reject(new Error(t('Title field is required')));
+        }
+        if (!values.icon) {
+          message.error(t('Icon field is required'));
+          return Promise.reject(new Error(t('Icon field is required')));
         }
 
         const pageSchemaUid = uid();

@@ -18,5 +18,6 @@
   "Display tabs": "显示标签页",
   "Add tab": "添加标签页",
   "Mobile": "移动端",
-  "Title field is required": "标题必填"
+  "Title field is required": "标题必填",
+  "Icon field is required": "图标必填"
 }

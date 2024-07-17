@@ -8,8 +8,8 @@
  */
 
 import { SchemaInitializerItemActionModalType } from '@nocobase/client';
-
-import { generatePluginTranslationTemplate } from '../../../../locale';
+import { App } from 'antd';
+import { generatePluginTranslationTemplate, usePluginTranslation } from '../../../../locale';
 import { getMobileTabBarItemSchemaFields } from '../../MobileTabBar.Item';
 import { MobileRouteItem, useMobileRoutes } from '../../../../mobile-providers';
 
@@ -18,6 +18,8 @@ export const mobileTabBarLinkInitializerItem: SchemaInitializerItemActionModalTy
   type: 'actionModal',
   useComponentProps() {
     const { resource, refresh } = useMobileRoutes();
+    const { t } = usePluginTranslation();
+    const { message } = App.useApp();
 
     return {
       isItem: true,
@@ -25,8 +27,13 @@ export const mobileTabBarLinkInitializerItem: SchemaInitializerItemActionModalTy
       buttonText: generatePluginTranslationTemplate('Link'),
       schema: getMobileTabBarItemSchemaFields(),
       async onSubmit(values) {
-        if (!values.title && !values.icon) {
-          return;
+        if (!values.title || values.title.trim() === '') {
+          message.error(t('Title field is required'));
+          return Promise.reject(new Error(t('Title field is required')));
+        }
+        if (!values.icon) {
+          message.error(t('Icon field is required'));
+          return Promise.reject(new Error(t('Icon field is required')));
         }
 
         // 先创建 tab item
