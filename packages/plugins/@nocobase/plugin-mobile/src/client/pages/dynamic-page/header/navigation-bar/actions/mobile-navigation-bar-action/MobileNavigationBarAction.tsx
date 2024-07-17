@@ -9,7 +9,7 @@
 
 import React, { FC, useMemo } from 'react';
 import { Button, ButtonProps, Space } from 'antd-mobile';
-import { css, cx, Icon, useSchemaToolbar } from '@nocobase/client';
+import { cx, Icon, useSchemaToolbar } from '@nocobase/client';
 import { useStyles } from './styles';
 
 interface MobileNavigationBarActionProps extends ButtonProps {
@@ -37,7 +37,7 @@ export const MobileNavigationBarAction: FC<MobileNavigationBarActionProps> = Rea
         onClick={onClick}
         color={color}
         size={contentLength <= 1 ? undefined : 'mini'}
-        className={cx(className, {
+        className={cx(className, styles.navigationBarAction, {
           [styles.navigationBarActionIconAndTitle]: contentLength > 1,
           [styles.navigationBarActionTitle]: contentLength === 1 && title,
           [styles.navigationBarActionIcon]: contentLength === 1 && icon,
@@ -59,7 +59,7 @@ export const MobileNavigationBarAction: FC<MobileNavigationBarActionProps> = Rea
             </Space>
           )
         ) : (
-          iconElement || title
+          <Space>{iconElement || title}</Space>
         )}
       </Button>
     </div>

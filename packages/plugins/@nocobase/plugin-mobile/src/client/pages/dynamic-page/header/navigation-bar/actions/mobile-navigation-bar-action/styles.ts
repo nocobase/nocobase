@@ -10,6 +10,13 @@
 import { createStyles } from 'antd-style';
 
 export const useStyles = createStyles(() => ({
+  navigationBarAction: {
+    maxWidth: '10em',
+    '.adm-space': {
+      maxWidth: '100%',
+      overflow: 'hidden',
+    },
+  },
   navigationBarActionIcon: {
     width: 24,
     height: 24,
