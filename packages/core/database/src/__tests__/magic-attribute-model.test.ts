@@ -22,6 +22,51 @@ describe('magic-attribute-model', () => {
     await db.close();
   });
 
+  it('should update with magic attribute', async () => {
+    db.registerModels({ MagicAttributeModel });
+
+    const Test = db.collection({
+      name: 'tests',
+      model: 'MagicAttributeModel',
+      fields: [
+        { type: 'string', name: 'title' },
+        { type: 'json', name: 'options' },
+      ],
+    });
+
+    await db.sync();
+    const record0 = await Test.repository.create({
+      values: {
+        title: 'xxx',
+        other: 'a',
+        actions: {
+          list: {
+            a: 'b',
+            c: 'd',
+          },
+          get: {
+            a: 'b',
+            c: 'd',
+          },
+        },
+      },
+    });
+
+    await record0.update({
+      title: 'xxx',
+      other: 'b',
+      actions: {
+        list: {
+          a: 'b',
+          c: 'd',
+        },
+      },
+    });
+
+    const data = record0.toJSON();
+    expect(data['actions']['get']).toBeUndefined();
+  });
+
   it('case 0', async () => {
     db.registerModels({ MagicAttributeModel });
 

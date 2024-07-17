@@ -96,6 +96,13 @@ export default {
         });
       }
 
+      dataSourceCollectionRecord = await ctx.db.getRepository('dataSourcesCollections').findOne({
+        filter: {
+          name: collectionName,
+          dataSourceKey,
+        },
+      });
+
       ctx.body = dataSourceCollectionRecord.toJSON();
 
       await next();
