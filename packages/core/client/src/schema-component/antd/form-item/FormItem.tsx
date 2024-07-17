@@ -34,6 +34,9 @@ const formItemWrapCss = css`
   & .ant-space {
     flex-wrap: wrap;
   }
+  .ant-description-textarea img {
+    max-width: 100%;
+  }
 `;
 
 const formItemLabelCss = css`
