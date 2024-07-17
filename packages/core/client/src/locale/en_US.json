@@ -831,5 +831,6 @@
   "The value of this variable is derived from the query string of the page URL. This variable can only be used normally when the page has a query string.": "The value of this variable is derived from the query string of the page URL. This variable can only be used normally when the page has a query string.",
   "URL search params": "URL search params",
   "Expand All": "Expand All",
-  "Search": "Search"
+  "Search": "Search",
+  "Clear default value": "Clear default value"
 }
