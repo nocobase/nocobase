@@ -226,20 +226,20 @@ test.describe('PageHeader', () => {
         await expect(navigationBarPositionElement).toContainText('Test________');
 
         // 编辑
-        await navigationBarPositionElement.getByRole('button', { name: 'Test________' }).click();
+        await navigationBarPositionElement.getByRole('button', { name: 'Test________' }).hover();
         await navigationBarPositionElement
           .getByLabel('designer-schema-settings-Action-mobile:navigation-bar:actions:link')
-          .click();
+          .hover();
         await page.getByRole('menuitem', { name: 'Edit button' }).click();
         await page.getByRole('textbox').fill('Test_changed');
         await page.getByRole('button', { name: 'Submit' }).click();
         await expect(navigationBarPositionElement).toContainText('Test_changed');
 
         // 编辑 URL
-        await navigationBarPositionElement.getByText('Test_changed').click();
+        await navigationBarPositionElement.getByText('Test_changed').hover();
         await navigationBarPositionElement
           .getByLabel('designer-schema-settings-Action-mobile:navigation-bar:actions:link')
-          .click();
+          .hover();
         await page.getByRole('menuitem', { name: 'Edit link' }).click();
         await page.getByLabel('block-item-URL').getByLabel('textbox').fill('https://github.com');
         await page.getByRole('button', { name: 'OK' }).click();
