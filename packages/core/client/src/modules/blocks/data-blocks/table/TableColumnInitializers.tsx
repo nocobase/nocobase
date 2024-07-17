@@ -83,7 +83,7 @@ const commonOptions = {
     {
       name: 'collectionFields',
       Component: TableCollectionFields,
-    }, ,
+    },
     {
       name: 'displayFields',
       type: 'itemGroup',

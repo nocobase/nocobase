@@ -1,7 +1,7 @@
 import React, { FC } from 'react';
 import { Schema } from '@formily/json-schema';
 import { CollectionFields } from './CollectionFields';
-import { findTableColumn, removeTableColumn } from '../../schema-initializer/utils';
+import { findTableColumn, removeGridFormItem, removeTableColumn } from '../../schema-initializer/utils';
 
 const quickEditField = [
   'attachment',
@@ -15,36 +15,6 @@ const quickEditField = [
   'lineString',
 ];
 
-const findSchema = (schema: Schema, key: string, action: string) => {
-  if (!Schema.isSchemaInstance(schema)) return null;
-  return schema.reduceProperties((buf, s) => {
-    if (s[key] === action) {
-      return s;
-    }
-    if (s['x-component'] !== 'Action.Container' && !s['x-component'].includes('AssociationField')) {
-      const c = findSchema(s, key, action);
-      if (c) {
-        return c;
-      }
-    }
-
-    return buf;
-  });
-};
-
-export const removeGridFormItem = (schema, cb) => {
-  cb(schema, {
-    removeParentsIfNoChildren: true,
-    breakRemoveOn: {
-      'x-component': 'Grid',
-    },
-  });
-};
-
-export const findKanbanFormItem = (schema: Schema, key: string, action: string) => {
-  const s = findSchema(schema, 'x-component', 'Kanban');
-  return findSchema(s, key, action);
-}
 
 export const TableCollectionFields: FC = (props) => {
   function isReadPretty({ fieldSchema, form }) {
