@@ -54,7 +54,7 @@ describe('CollectionSelect', () => {
             role="button"
           >
             <div
-              class="css-1nrq807 ant-formily-item ant-formily-item-layout-horizontal ant-formily-item-feedback-layout-loose ant-formily-item-label-align-right ant-formily-item-control-align-left css-dev-only-do-not-override-wwtqkl"
+              class="css-1yh5po ant-formily-item ant-formily-item-layout-horizontal ant-formily-item-feedback-layout-loose ant-formily-item-label-align-right ant-formily-item-control-align-left css-dev-only-do-not-override-wwtqkl"
             >
               <div
                 class="ant-formily-item-label"
@@ -191,7 +191,7 @@ describe('CollectionSelect', () => {
             role="button"
           >
             <div
-              class="css-1nrq807 ant-formily-item ant-formily-item-layout-horizontal ant-formily-item-feedback-layout-loose ant-formily-item-label-align-right ant-formily-item-control-align-left css-dev-only-do-not-override-wwtqkl"
+              class="css-1yh5po ant-formily-item ant-formily-item-layout-horizontal ant-formily-item-feedback-layout-loose ant-formily-item-label-align-right ant-formily-item-control-align-left css-dev-only-do-not-override-wwtqkl"
             >
               <div
                 class="ant-formily-item-label"
