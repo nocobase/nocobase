@@ -233,7 +233,7 @@ const commonOptions = {
         const collection = useCollection() || ({} as any);
         const { unavailableActions, availableActions } = collection?.options || {};
         if (availableActions) {
-          return availableActions.includes?.('update');
+          return !!props?.association && availableActions.includes?.('update');
         }
         if (unavailableActions) {
           return !!props?.association && !unavailableActions?.includes?.('update');
