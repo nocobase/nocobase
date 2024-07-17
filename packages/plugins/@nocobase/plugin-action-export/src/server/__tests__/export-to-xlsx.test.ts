@@ -253,6 +253,48 @@ describe('export to xlsx', () => {
     await app.destroy();
   });
 
+  it('should throw error when export field not exists', async () => {
+    const Post = app.db.collection({
+      name: 'posts',
+      fields: [
+        {
+          name: 'title',
+          type: 'string',
+        },
+      ],
+    });
+
+    await app.db.sync();
+
+    await Post.repository.create({
+      values: {
+        title: 'some_title',
+        json: {
+          a: {
+            b: 'c',
+          },
+        },
+      },
+    });
+
+    const exporter = new XlsxExporter({
+      collectionManager: app.mainDataSource.collectionManager,
+      collection: Post,
+      chunkSize: 10,
+      columns: [{ dataIndex: ['json'], defaultTitle: '' }],
+    });
+
+    let error: any;
+    try {
+      await exporter.run({});
+    } catch (e) {
+      error = e;
+    }
+
+    expect(error).toBeDefined();
+    expect(error.message).toContain('not found');
+  });
+
   it('should export with json field', async () => {
     const Post = app.db.collection({
       name: 'posts',
