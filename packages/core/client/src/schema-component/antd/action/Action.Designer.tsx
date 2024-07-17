@@ -771,6 +771,33 @@ export const actionSettingsItems: SchemaSettingOptions['items'] = [
         },
       },
       {
+        type: 'switch',
+        name: 'clearDefaultValue',
+        useComponentProps() {
+          const { t } = useTranslation();
+          const fieldSchema = useFieldSchema();
+          const { dn } = useDesignable();
+
+          return {
+            title: t('Clear default value'),
+            checked: fieldSchema?.['x-component-props']?.clearDefaultValue,
+            onChange: (value) => {
+              dn.deepMerge({
+                ['x-uid']: fieldSchema['x-uid'],
+                'x-component-props': {
+                  clearDefaultValue: value,
+                },
+              });
+            },
+          };
+        },
+        useVisible() {
+          const fieldSchema = useFieldSchema();
+          const isResetButton = fieldSchema['x-use-component-props'] === 'useResetBlockActionProps';
+          return isResetButton;
+        },
+      },
+      {
         name: 'remove',
         sort: 100,
         Component: RemoveButton as any,

@@ -872,5 +872,6 @@
   "The value of this variable is derived from the query string of the page URL. This variable can only be used normally when the page has a query string.": "該變數的值來自頁面 URL 的查詢字符串，只有當頁面有查詢字符串時，該變數才能正常使用。",
   "URL search params": "URL 查詢參數",
   "Expand All": "展開全部",
+  "Clear default value": "清除預設值",
   "Sorry, the page you visited does not exist.": "抱歉，你訪問的頁面不存在。"
 }

@@ -520,7 +520,9 @@ const useDoReset = () => {
 
   return {
     doReset: async () => {
-      await form.reset();
+      await form.reset(undefined, {
+        forceClear: !!fieldSchema?.['x-component-props']?.clearDefaultValue,
+      });
       if (_.isEmpty(getFilterFromCurrentForm())) {
         return doReset({ getDataBlocks, targets, uid });
       }
