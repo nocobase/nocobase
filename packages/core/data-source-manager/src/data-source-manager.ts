@@ -11,11 +11,13 @@ import { ToposortOptions } from '@nocobase/utils';
 import { DataSource } from './data-source';
 import { DataSourceFactory } from './data-source-factory';
 import { createConsoleLogger, createLogger, Logger, LoggerOptions } from '@nocobase/logger';
+import { Application } from '@nocobase/server';
 
 type DataSourceHook = (dataSource: DataSource) => void;
 
 type DataSourceManagerOptions = {
   logger?: LoggerOptions | Logger;
+  app?: Application;
 };
 
 export class DataSourceManager {
@@ -31,6 +33,14 @@ export class DataSourceManager {
   constructor(public options: DataSourceManagerOptions = {}) {
     this.dataSources = new Map();
     this.middlewares = [];
+
+    if (options.app) {
+      options.app.on('beforeStop', async () => {
+        for (const dataSource of this.dataSources.values()) {
+          await dataSource.close();
+        }
+      });
+    }
   }
 
   get(dataSourceKey: string) {

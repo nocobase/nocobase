@@ -1181,6 +1181,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     this._dataSourceManager = new DataSourceManager({
       logger: this.logger,
+      app: this,
     });
 
     // can not use await here
