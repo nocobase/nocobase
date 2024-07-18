@@ -40,10 +40,28 @@ export class PluginDataSourceMainServer extends Plugin {
     this.loadFilter = filter;
   }
 
+  async onSync(message) {
+    const { type, collectionName } = message;
+    if (type === 'newCollection') {
+      const collectionModel: CollectionModel = await this.app.db.getCollection('collections').repository.findOne({
+        filter: {
+          name: collectionName,
+        },
+      });
+
+      await collectionModel.load();
+    }
+  }
+
   async beforeLoad() {
     if (this.app.db.inDialect('postgres')) {
       this.schema = process.env.COLLECTION_MANAGER_SCHEMA || this.db.options.schema || 'public';
     }
+
+    this.app.on('afterStart', async () => {
+      // @ts-ignore
+      this.app.syncManager.subscribe(this.name, this.onSync.bind(this));
+    });
 
     this.app.db.registerRepositories({
       CollectionRepository,
@@ -76,6 +94,11 @@ export class PluginDataSourceMainServer extends Plugin {
         if (context) {
           await model.migrate({
             transaction,
+          });
+
+          this.app.syncManager.publish(this.name, {
+            type: 'newCollection',
+            collectionName: model.get('name'),
           });
         }
       },

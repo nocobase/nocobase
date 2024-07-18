@@ -34,7 +34,7 @@ export class SyncManager {
   private nodeId: string;
   private app: Application;
   private eventEmitter = new EventEmitter();
-  private adapter = null;
+  private adapter: SyncAdapter = null;
   private incomingBuffer: SyncMessageData[] = [];
   private outgoingBuffer: [string, SyncMessageData][] = [];
   private flushTimer: NodeJS.Timeout = null;
