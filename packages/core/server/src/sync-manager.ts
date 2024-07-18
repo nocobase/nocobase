@@ -34,7 +34,7 @@ export class SyncManager {
   private nodeId: string;
   private app: Application;
   private eventEmitter = new EventEmitter();
-  private adapter = null;
+  private adapter: SyncAdapter = null;
   private incomingBuffer: SyncMessageData[] = [];
   private outgoingBuffer: [string, SyncMessageData][] = [];
   private flushTimer: NodeJS.Timeout = null;
@@ -43,12 +43,21 @@ export class SyncManager {
     return this.adapter ? this.adapter.ready : false;
   }
 
+  private onMessage(namespace, message) {
+    this.app.logger.info(`emit sync event in namespace ${namespace}`);
+    this.eventEmitter.emit(namespace, message);
+    const pluginInstance = this.app.pm.get(namespace);
+    pluginInstance.onSync(message);
+  }
+
   private onSync = (messages: SyncMessage[]) => {
-    this.app.logger.info('sync messages received into buffer:', messages);
+    this.app.logger.info('sync messages received, save into buffer:', messages);
+
     if (this.flushTimer) {
       clearTimeout(this.flushTimer);
       this.flushTimer = null;
     }
+
     this.incomingBuffer = uniqWith(
       this.incomingBuffer.concat(
         messages
@@ -60,9 +69,9 @@ export class SyncManager {
 
     this.flushTimer = setTimeout(() => {
       this.incomingBuffer.forEach(({ namespace, ...message }) => {
-        this.app.logger.info(`emit sync event in namespace ${namespace}`);
-        this.eventEmitter.emit(namespace, message);
+        this.onMessage(namespace, message);
       });
+      this.incomingBuffer = [];
     }, 1000);
   };
 
@@ -82,9 +91,11 @@ export class SyncManager {
     if (this.adapter) {
       throw new Error('sync adapter is already exists');
     }
+
     if (!adapter) {
       return;
     }
+
     this.adapter = adapter;
     this.adapter.on('message', this.onSync);
     this.adapter.on('ready', this.onReady);
