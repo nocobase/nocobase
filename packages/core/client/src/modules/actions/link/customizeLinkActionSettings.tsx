@@ -17,14 +17,14 @@ import { SchemaSettings } from '../../../application/schema-settings/SchemaSetti
 import { useCollection_deprecated } from '../../../collection-manager';
 import { ButtonEditor, RemoveButton } from '../../../schema-component/antd/action/Action.Designer';
 import { SchemaSettingsLinkageRules, SchemaSettingsModalItem } from '../../../schema-settings';
-import { useURLAndParamsSchema } from './useURLAndParamsSchema';
+import { useURLAndHTMLSchema } from './useURLAndHTMLSchema';
 
 export function SchemaSettingsActionLinkItem() {
   const field = useField();
   const fieldSchema = useFieldSchema();
   const { dn } = useDesignable();
   const { t } = useTranslation();
-  const { urlSchema, paramsSchema } = useURLAndParamsSchema();
+  const { urlSchema, paramsSchema } = useURLAndHTMLSchema();
   const initialValues = { url: field.componentProps.url, params: field.componentProps.params || [{}] };
 
   return (
