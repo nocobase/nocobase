@@ -13,6 +13,7 @@ import EventEmitter from 'events';
 import compose from 'koa-compose';
 import { loadDefaultActions } from './load-default-actions';
 import { ICollectionManager } from './types';
+import { Logger } from '@nocobase/logger';
 
 export type DataSourceOptions = any;
 
@@ -20,10 +21,15 @@ export abstract class DataSource extends EventEmitter {
   public collectionManager: ICollectionManager;
   public resourceManager: ResourceManager;
   public acl: ACL;
+  logger: Logger;
 
   constructor(protected options: DataSourceOptions) {
     super();
     this.init(options);
+  }
+
+  setLogger(logger: Logger) {
+    this.logger = logger;
   }
 
   get name() {
@@ -82,6 +88,7 @@ export abstract class DataSource extends EventEmitter {
   }
 
   async load(options: any = {}) {}
+  async close() {}
 
   abstract createCollectionManager(options?: any): ICollectionManager;
 
