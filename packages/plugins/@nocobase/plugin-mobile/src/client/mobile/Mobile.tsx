@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { GlobalThemeProvider, OpenModeProvider, usePlugin } from '@nocobase/client';
+import { AntdAppProvider, GlobalThemeProvider, OpenModeProvider, usePlugin } from '@nocobase/client';
 import React from 'react';
 import { isDesktop } from 'react-device-detect';
 
@@ -46,20 +46,22 @@ export const Mobile = () => {
 
   return (
     <DesktopComponent>
-      {/* 目前移动端由于和客户端的主题对不上，所以先使用 `GlobalThemeProvider` 进行重置为默认主题  */}
+      {/* 目前移动端由于和客户端的主题对不上，所以先使用 `GlobalThemeProvider` 和 `AntdAppProvider` 进行重置为默认主题  */}
       <GlobalThemeProvider>
-        <OpenModeProvider
-          defaultOpenMode="page"
-          hideOpenMode
-          openModeToComponent={{
-            page: MobileActionPage,
-            drawer: MobileActionPage,
-          }}
-        >
-          <MobileAppProvider>
-            <MobileRouter />
-          </MobileAppProvider>
-        </OpenModeProvider>
+        <AntdAppProvider>
+          <OpenModeProvider
+            defaultOpenMode="page"
+            hideOpenMode
+            openModeToComponent={{
+              page: MobileActionPage,
+              drawer: MobileActionPage,
+            }}
+          >
+            <MobileAppProvider>
+              <MobileRouter />
+            </MobileAppProvider>
+          </OpenModeProvider>
+        </AntdAppProvider>
       </GlobalThemeProvider>
     </DesktopComponent>
   );
