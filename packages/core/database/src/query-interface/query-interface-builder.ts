@@ -20,5 +20,10 @@ export default function buildQueryInterface(db: Database) {
     sqlite: SqliteQueryInterface,
   };
 
+  const dialect = db.options.dialect;
+  if (!map[dialect]) {
+    return null;
+  }
+
   return new map[db.options.dialect](db);
 }
