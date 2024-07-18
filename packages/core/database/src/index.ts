@@ -53,3 +53,4 @@ export * from './view/view-inference';
 export * from './helpers';
 export { default as sqlParser, SQLParserTypes } from './sql-parser';
 export * from './interfaces';
+export { default as fieldTypeMap } from './view/field-type-map';
