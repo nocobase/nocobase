@@ -1,10 +1,27 @@
-import { CollectionFieldDefaultSchema, CollectionFieldDefaultInitializerItem, CommonCollectionFieldsProps } from "./type";
-import { CollectionFieldOptions } from "../../collection/Collection";
-import { CollectionFieldContext } from "./useCollectionFieldContext";
-import { ISchema } from "@formily/json-schema";
-import { SchemaInitializerItemType } from "../../../application/schema-initializer";
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
 
-export function getInitializerItemsByFields(props: CommonCollectionFieldsProps, fields: CollectionFieldOptions[], context: CollectionFieldContext) {
+import {
+  CollectionFieldDefaultSchema,
+  CollectionFieldDefaultInitializerItem,
+  CommonCollectionFieldsProps,
+} from './type';
+import { CollectionFieldOptions } from '../../collection/Collection';
+import { CollectionFieldContext } from './useCollectionFieldContext';
+import { ISchema } from '@formily/json-schema';
+import { SchemaInitializerItemType } from '../../../application/schema-initializer';
+
+export function getInitializerItemsByFields(
+  props: CommonCollectionFieldsProps,
+  fields: CollectionFieldOptions[],
+  context: CollectionFieldContext,
+) {
   const {
     block,
     isReadPretty = ({ form }) => form.readPretty,
@@ -17,20 +34,21 @@ export function getInitializerItemsByFields(props: CommonCollectionFieldsProps, 
   const action = actionContext.fieldSchema?.['x-action'];
   if (!collection) return [];
   return fields
-    .map(collectionField => {
+    .map((collectionField) => {
       const targetCollection = collectionManager.getCollection(collectionField.target!);
-      const collectionFieldInterface = dataSourceManager
-        .collectionFieldInterfaceManager
-        .getFieldInterface(collectionField.interface);
+      const collectionFieldInterface = dataSourceManager.collectionFieldInterfaceManager.getFieldInterface(
+        collectionField.interface,
+      );
       return {
         collectionField,
         context: {
           ...context,
           targetCollection,
           collectionFieldInterface,
-        }
-      }
+        },
+      };
     })
+    .filter(({ collectionField }) => collectionField.interface)
     .filter(({ collectionField, context }) => {
       return filter(collectionField, context);
     })
@@ -47,7 +65,7 @@ export function getInitializerItemsByFields(props: CommonCollectionFieldsProps, 
       const schema = {
         ...defaultSchema,
         ...(customSchema || {}),
-      }
+      };
       return {
         collectionField,
         schema,

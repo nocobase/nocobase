@@ -1,9 +1,18 @@
-import { ISchema, Schema } from "@formily/json-schema";
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+import { ISchema, Schema } from '@formily/json-schema';
 
 import { CollectionFieldContext } from './useCollectionFieldContext';
-import { CollectionFieldInterface } from "../../collection-field-interface";
-import { Collection, CollectionFieldOptions } from "../../collection/Collection";
-import { InheritanceCollectionMixin } from "../../../collection-manager";
+import { CollectionFieldInterface } from '../../collection-field-interface';
+import { Collection, CollectionFieldOptions } from '../../collection/Collection';
+import { InheritanceCollectionMixin } from '../../../collection-manager';
 
 export interface CollectionFieldDefaultSchema {
   /**
@@ -69,52 +78,56 @@ export interface CollectionFieldDefaultInitializerItem {
 
 export interface CollectionFieldGetInitializerItemResult {
   find?: (schema: Schema, key: string, action: string) => any;
-  remove?: (schema: Schema, cb: (schema: Schema, stopProps: Record<string, any>) => void) => void
+  remove?: (schema: Schema, cb: (schema: Schema, stopProps: Record<string, any>) => void) => void;
 }
 
 export interface CommonCollectionFieldsProps {
-  /**
-   * block name.
-   *
-   * @example 'Form'、`Table`
-   */
   block: string;
-  getSchema: (collectionField: CollectionFieldOptions, context: CollectionFieldContext & {
-    defaultSchema: CollectionFieldDefaultSchema
-    targetCollection?: Collection
-    collectionFieldInterface?: CollectionFieldInterface
-  }) => CollectionFieldGetSchemaResult;
+  getSchema: (
+    collectionField: CollectionFieldOptions,
+    context: CollectionFieldContext & {
+      defaultSchema: CollectionFieldDefaultSchema;
+      targetCollection?: Collection;
+      collectionFieldInterface?: CollectionFieldInterface;
+    },
+  ) => CollectionFieldGetSchemaResult;
   isReadPretty?: (context: CollectionFieldContext) => boolean;
   filter?: (collectionField: CollectionFieldOptions, context: CollectionFieldContext) => boolean;
-  getInitializerItem?: (collectionField: CollectionFieldOptions, context: CollectionFieldContext & {
-    schema: ISchema;
-    defaultInitializerItem: CollectionFieldDefaultInitializerItem;
-    targetCollection?: Collection
-    collectionFieldInterface?: CollectionFieldInterface
-  }) => CollectionFieldGetInitializerItemResult;
+  getInitializerItem?: (
+    collectionField: CollectionFieldOptions,
+    context: CollectionFieldContext & {
+      schema: ISchema;
+      defaultInitializerItem: CollectionFieldDefaultInitializerItem;
+      targetCollection?: Collection;
+      collectionFieldInterface?: CollectionFieldInterface;
+    },
+  ) => CollectionFieldGetInitializerItemResult;
 }
 
 export interface SelfCollectionFieldsProps extends CommonCollectionFieldsProps {
   context: Omit<CollectionFieldContext, 'collection'> & {
-    collection: Collection
-  }
+    collection: Collection;
+  };
 }
 
 export interface ParentCollectionFieldsProps extends CommonCollectionFieldsProps {
   context: Omit<CollectionFieldContext, 'collection'> & {
-    collection: Collection
-  }
+    collection: Collection;
+  };
 }
 
 export interface AssociationCollectionFieldsProps extends Omit<CommonCollectionFieldsProps, 'filter'> {
   filterSelfField?: CommonCollectionFieldsProps['filter'];
   filterAssociationField?: CommonCollectionFieldsProps['filter'];
   context: Omit<CollectionFieldContext, 'collection'> & {
-    collection: CollectionFieldContext['collection'] // 之前是可选的，这里是必须的
-  }
+    collection: CollectionFieldContext['collection']; // 之前是可选的，这里是必须的
+  };
 }
 
 export interface CollectionFieldsProps {
+  /**
+   * Block name.
+   */
   block: string;
   selfField: Omit<SelfCollectionFieldsProps, 'block' | 'context'>;
   parentField?: Omit<ParentCollectionFieldsProps, 'block' | 'context'>;
