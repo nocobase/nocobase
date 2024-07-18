@@ -24,8 +24,12 @@ export function SchemaSettingsActionLinkItem() {
   const fieldSchema = useFieldSchema();
   const { dn } = useDesignable();
   const { t } = useTranslation();
-  const { urlSchema, paramsSchema } = useURLAndHTMLSchema();
-  const initialValues = { url: field.componentProps.url, params: field.componentProps.params || [{}] };
+  const { urlSchema, paramsSchema, openInNewWindowSchema } = useURLAndHTMLSchema();
+  const initialValues = {
+    url: field.componentProps.url,
+    params: field.componentProps.params || [{}],
+    openInNewWindow: field.componentProps.openInNewWindow,
+  };
 
   return (
     <SchemaSettingsModalItem
@@ -40,16 +44,21 @@ export function SchemaSettingsActionLinkItem() {
             required: true,
           },
           params: paramsSchema,
+          openInNewWindow: openInNewWindowSchema,
         },
       }}
-      onSubmit={({ url, params }) => {
+      onSubmit={({ url, params, openInNewWindow }) => {
         const componentProps = fieldSchema['x-component-props'] || {};
         componentProps.url = url;
-        fieldSchema['x-component-props'] = componentProps;
-        field.componentProps.url = url;
         componentProps.params = params;
+        componentProps.openInNewWindow = openInNewWindow;
+
         fieldSchema['x-component-props'] = componentProps;
+
+        field.componentProps.url = url;
         field.componentProps.params = params;
+        field.componentProps.openInNewWindow = openInNewWindow;
+
         dn.emit('patch', {
           schema: {
             ['x-uid']: fieldSchema['x-uid'],

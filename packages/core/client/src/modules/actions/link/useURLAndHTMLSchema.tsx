@@ -159,10 +159,10 @@ export const useURLAndHTMLSchema = () => {
 
   const openInNewWindowSchema = useMemo(() => {
     return {
-      title: t('Open in new window'),
       type: 'boolean',
+      'x-content': t('Open in new window'),
       'x-decorator': 'FormItem',
-      'x-component': 'Switch',
+      'x-component': 'Checkbox',
       'x-reactions': {
         dependencies: ['mode'],
         fulfill: {
