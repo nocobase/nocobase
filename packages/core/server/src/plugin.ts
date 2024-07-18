@@ -18,6 +18,7 @@ import { resolve } from 'path';
 import { Application } from './application';
 import { InstallOptions, getExposeChangelogUrl, getExposeReadmeUrl } from './plugin-manager';
 import { checkAndGetCompatible, getPluginBasePath } from './plugin-manager/utils';
+import { SyncMessageData } from './sync-manager';
 
 export interface PluginInterface {
   beforeLoad?: () => void;
@@ -25,8 +26,6 @@ export interface PluginInterface {
   load();
 
   getName(): string;
-
-  onSync?(messages: any): void;
 }
 
 export interface PluginOptions {
@@ -134,6 +133,12 @@ export abstract class Plugin<O = any> implements PluginInterface {
   async beforeRemove() {}
 
   async afterRemove() {}
+
+  /**
+   * Fired when a sync message is received.
+   * @experimental
+   */
+  onSync(message: SyncMessageData): Promise<void> | void {}
 
   /**
    * @deprecated

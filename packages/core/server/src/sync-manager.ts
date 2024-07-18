@@ -47,16 +47,11 @@ export class SyncManager {
     this.app.logger.info(`emit sync event in namespace ${namespace}`);
     this.eventEmitter.emit(namespace, message);
     const pluginInstance = this.app.pm.get(namespace);
-
-    // @ts-ignore
-    if (pluginInstance && pluginInstance.onSync) {
-      // @ts-ignore
-      pluginInstance.onSync(message);
-    }
+    pluginInstance.onSync(message);
   }
 
   private onSync = (messages: SyncMessage[]) => {
-    this.app.logger.info('sync messages received into buffer:', messages);
+    this.app.logger.info('sync messages received, save into buffer:', messages);
 
     if (this.flushTimer) {
       clearTimeout(this.flushTimer);
@@ -76,6 +71,7 @@ export class SyncManager {
       this.incomingBuffer.forEach(({ namespace, ...message }) => {
         this.onMessage(namespace, message);
       });
+      this.incomingBuffer = [];
     }, 1000);
   };
 
