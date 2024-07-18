@@ -184,7 +184,7 @@ export const collection = [
   { label: '{{t("is not empty")}}', value: '$notEmpty', noValue: true },
 ];
 
-export const richText = [
+export const bigField = [
   {
     label: '{{t("contains")}}',
     value: '$includes',
@@ -218,6 +218,22 @@ export const richText = [
       'x-component': 'Input',
     },
   },
-  { label: '{{t("is empty")}}', value: '$empty', noValue: true },
-  { label: '{{t("is not empty")}}', value: '$notEmpty', noValue: true },
+  {
+    label: '{{t("is empty")}}',
+    value: '$empty',
+    noValue: true,
+    schema: {
+      type: 'string',
+      'x-component': 'Input',
+    },
+  },
+  {
+    label: '{{t("is not empty")}}',
+    value: '$notEmpty',
+    noValue: true,
+    schema: {
+      type: 'string',
+      'x-component': 'Input',
+    },
+  },
 ];
