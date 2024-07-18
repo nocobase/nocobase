@@ -25,6 +25,8 @@ export interface PluginInterface {
   load();
 
   getName(): string;
+
+  onSync?(messages: any): void;
 }
 
 export interface PluginOptions {

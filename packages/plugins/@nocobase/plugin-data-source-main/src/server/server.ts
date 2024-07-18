@@ -58,11 +58,6 @@ export class PluginDataSourceMainServer extends Plugin {
       this.schema = process.env.COLLECTION_MANAGER_SCHEMA || this.db.options.schema || 'public';
     }
 
-    this.app.on('afterStart', async () => {
-      // @ts-ignore
-      this.app.syncManager.subscribe(this.name, this.onSync.bind(this));
-    });
-
     this.app.db.registerRepositories({
       CollectionRepository,
     });

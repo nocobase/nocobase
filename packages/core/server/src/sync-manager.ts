@@ -43,12 +43,26 @@ export class SyncManager {
     return this.adapter ? this.adapter.ready : false;
   }
 
+  private onMessage(namespace, message) {
+    this.app.logger.info(`emit sync event in namespace ${namespace}`);
+    this.eventEmitter.emit(namespace, message);
+    const pluginInstance = this.app.pm.get(namespace);
+
+    // @ts-ignore
+    if (pluginInstance && pluginInstance.onSync) {
+      // @ts-ignore
+      pluginInstance.onSync(message);
+    }
+  }
+
   private onSync = (messages: SyncMessage[]) => {
     this.app.logger.info('sync messages received into buffer:', messages);
+
     if (this.flushTimer) {
       clearTimeout(this.flushTimer);
       this.flushTimer = null;
     }
+
     this.incomingBuffer = uniqWith(
       this.incomingBuffer.concat(
         messages
@@ -60,8 +74,7 @@ export class SyncManager {
 
     this.flushTimer = setTimeout(() => {
       this.incomingBuffer.forEach(({ namespace, ...message }) => {
-        this.app.logger.info(`emit sync event in namespace ${namespace}`);
-        this.eventEmitter.emit(namespace, message);
+        this.onMessage(namespace, message);
       });
     }, 1000);
   };
@@ -82,9 +95,11 @@ export class SyncManager {
     if (this.adapter) {
       throw new Error('sync adapter is already exists');
     }
+
     if (!adapter) {
       return;
     }
+
     this.adapter = adapter;
     this.adapter.on('message', this.onSync);
     this.adapter.on('ready', this.onReady);
