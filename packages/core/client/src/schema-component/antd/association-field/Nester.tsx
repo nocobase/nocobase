@@ -36,14 +36,17 @@ import { SubFormProvider, useAssociationFieldContext } from './hooks';
 
 export const Nester = (props) => {
   const { options } = useContext(AssociationFieldContext);
-  if (['hasOne', 'belongsTo'].includes(options.type)) {
+  if (['hasOne', 'belongsTo'].includes(options.type) || ['JSONDocObject'].includes(options.interface)) {
     return (
       <FlagProvider isInSubForm>
         <ToOneNester {...props} />
       </FlagProvider>
     );
   }
-  if (['hasMany', 'belongsToMany', 'belongsToArray'].includes(options.type)) {
+  if (
+    ['hasMany', 'belongsToMany', 'belongsToArray'].includes(options.type) ||
+    ['JSONDocArray'].includes(options.interface)
+  ) {
     return (
       <FlagProvider isInSubForm>
         <ToManyNester {...props} />

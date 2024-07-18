@@ -26,6 +26,11 @@ export function useFieldComponentName(): string {
     // AssociationField 的 mode 默认值是 Select
     AssociationField: 'Select',
   };
+
+  if (!tableColumnSchema && ['JSONDocObject', 'JSONDocArray'].includes(collectionField?.interface)) {
+    return 'Nester';
+  }
+
   const fieldComponentName =
     fieldSchema?.['x-component-props']?.['mode'] ||
     field?.componentProps?.['mode'] ||

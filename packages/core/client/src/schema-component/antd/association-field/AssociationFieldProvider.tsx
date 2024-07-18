@@ -14,6 +14,7 @@ import { useCollectionManager } from '../../../data-source/collection';
 import { markRecordAsNew } from '../../../data-source/collection-record/isNewRecord';
 import { useSchemaComponentContext } from '../../hooks';
 import { AssociationFieldContext } from './context';
+import { re } from 'mathjs';
 
 export const AssociationFieldProvider = observer(
   (props) => {
@@ -38,9 +39,17 @@ export const AssociationFieldProvider = observer(
       [fieldSchema['x-collection-field']],
     );
     const currentMode = useMemo(
-      () => fieldSchema['x-component-props']?.mode || (isFileCollection ? 'FileManager' : 'Select'),
+      () => {
+        if (isFileCollection) {
+          return 'FileManager';
+        }
+        if (!fieldSchema['x-read-pretty'] && ['JSONDocObject', 'JSONDocArray'].includes(collectionField?.interface)) {
+          return 'Nester';
+        }
+        return fieldSchema['x-component-props']?.mode || 'Select';
+      },
       // eslint-disable-next-line react-hooks/exhaustive-deps
-      [fieldSchema['x-component-props']?.mode],
+      [fieldSchema['x-component-props']?.mode, collectionField?.interface],
     );
 
     const fieldValue = useMemo(() => JSON.stringify(field.value), [field.value]);
@@ -74,7 +83,8 @@ export const AssociationFieldProvider = observer(
         if (['Nester', 'PopoverNester'].includes(currentMode) && Array.isArray(field.value)) {
           if (
             field.value.length === 0 &&
-            ['belongsToMany', 'hasMany', 'belongsToArray'].includes(collectionField.type)
+            (['belongsToMany', 'hasMany', 'belongsToArray'].includes(collectionField.type) ||
+              ['JSONDocArray'].includes(collectionField.interface))
           ) {
             field.value = [markRecordAsNew({})];
           }
@@ -83,9 +93,15 @@ export const AssociationFieldProvider = observer(
         return;
       }
       if (['Nester'].includes(currentMode)) {
-        if (['belongsTo', 'hasOne'].includes(collectionField.type)) {
+        if (
+          ['belongsTo', 'hasOne'].includes(collectionField.type) ||
+          ['JSONDocObject'].includes(collectionField.interface)
+        ) {
           field.value = {};
-        } else if (['belongsToMany', 'hasMany', 'belongsToArray'].includes(collectionField.type)) {
+        } else if (
+          ['belongsToMany', 'hasMany', 'belongsToArray'].includes(collectionField.type) ||
+          ['JSONDocArray'].includes(collectionField.interface)
+        ) {
           field.value = [markRecordAsNew({})];
         }
       }

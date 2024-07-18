@@ -32,9 +32,20 @@ export const useFieldModeOptions = (props?) => {
       return;
     }
     if (
-      !['o2o', 'oho', 'obo', 'o2m', 'linkTo', 'm2o', 'm2m', 'updatedBy', 'createdBy', 'mbm'].includes(
-        collectionField.interface,
-      )
+      ![
+        'o2o',
+        'oho',
+        'obo',
+        'o2m',
+        'linkTo',
+        'm2o',
+        'm2m',
+        'updatedBy',
+        'createdBy',
+        'mbm',
+        'JSONDocObject',
+        'JSONDocArray',
+      ].includes(collectionField.interface)
     )
       return;
     const collection = getCollection(collectionField.target);
@@ -112,6 +123,17 @@ export const useFieldModeOptions = (props?) => {
           : [
               { label: t('Select'), value: 'Select' },
               { label: t('Record picker'), value: 'Picker' },
+              !isTableField && { label: t('Sub-form'), value: 'Nester' },
+              { label: t('Sub-form(Popover)'), value: 'PopoverNester' },
+            ];
+      case 'JSONDocObject':
+        return isReadPretty
+          ? [
+              { label: t('Title'), value: 'Select' },
+              { label: t('Tag'), value: 'Tag' },
+              !isTableField && { label: t('Sub-details'), value: 'Nester' },
+            ]
+          : [
               !isTableField && { label: t('Sub-form'), value: 'Nester' },
               { label: t('Sub-form(Popover)'), value: 'PopoverNester' },
             ];
