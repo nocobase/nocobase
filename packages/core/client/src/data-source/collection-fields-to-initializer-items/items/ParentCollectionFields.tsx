@@ -1,9 +1,9 @@
-import React, { FC } from "react";
+import React, { FC } from 'react';
 
-import { CollectionFieldOptions } from "../../collection/Collection";
-import { InheritanceCollectionMixin } from "../../../collection-manager";
-import { ParentCollectionFieldsProps, getInitializerItemsByFields, useCollectionFieldContext } from "../utils";
-import { SchemaInitializerChildren, SchemaInitializerItemType } from "../../../application/schema-initializer";
+import { CollectionFieldOptions } from '../../collection/Collection';
+import { InheritanceCollectionMixin } from '../../../collection-manager';
+import { ParentCollectionFieldsProps, getInitializerItemsByFields, useCollectionFieldContext } from '../utils';
+import { SchemaInitializerChildren, SchemaInitializerItemType } from '../../../application/schema-initializer';
 
 export const ParentCollectionFields: FC<ParentCollectionFieldsProps> = (props) => {
   const context = useCollectionFieldContext();
@@ -26,19 +26,22 @@ export const ParentCollectionFields: FC<ParentCollectionFieldsProps> = (props) =
     .filter(Boolean)
     // 修改数据结构
     .map((options) => {
-      const { parentCollection, parentCollectionFields } = options as { parentCollection: InheritanceCollectionMixin, parentCollectionFields: CollectionFieldOptions[] };
+      const { parentCollection, parentCollectionFields } = options as {
+        parentCollection: InheritanceCollectionMixin;
+        parentCollectionFields: CollectionFieldOptions[];
+      };
       const newContext = {
         ...context,
         collection: parentCollection,
-      }
+      };
 
       return {
         type: 'itemGroup',
         divider: true,
-        title: t(`new | Parent collection fields`) + '(' + context.compile(parentCollection.title) + ')',
+        title: t(`Parent collection fields`) + '(' + context.compile(parentCollection.title) + ')',
         children: getInitializerItemsByFields(props, parentCollectionFields, newContext),
       } as SchemaInitializerItemType;
-    })
+    });
 
-  return <SchemaInitializerChildren children={children} />
-}
+  return <SchemaInitializerChildren>{children}</SchemaInitializerChildren>;
+};
