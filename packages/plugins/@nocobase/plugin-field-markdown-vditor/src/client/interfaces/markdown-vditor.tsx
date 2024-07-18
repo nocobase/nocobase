@@ -109,7 +109,7 @@ export class MarkdownVditorFieldInterface extends CollectionFieldInterface {
     }
   }
   filterable = {
-    operators: operators.number,
+    operators: operators.bigField,
   };
   titleUsable = true;
 }

@@ -79,6 +79,6 @@ export class MarkdownFieldInterface extends CollectionFieldInterface {
     };
   }
   filterable = {
-    operators: operators.string,
+    operators: operators.bigField,
   };
 }
