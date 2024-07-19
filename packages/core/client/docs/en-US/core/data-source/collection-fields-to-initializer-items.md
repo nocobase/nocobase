@@ -32,6 +32,20 @@
 
 `CollectionFieldsToInitializerItems` 是一个组件，用于将 `Collection Fields` 转换为 `Initializer Items`。
 
+
+```ts
+const someInitializer = new SchemaInitializer({
+  // ...
+  items: [
+    {
+      name: 'collectionFields',
+      Component: CollectionFieldsToInitializerItems,
+    },
+    // ...
+  ]
+})
+```
+
 ### Types
 
 ```ts
@@ -52,17 +66,8 @@ interface CommonCollectionFieldsProps {
   block: string;
   isReadPretty?: (context: CollectionFieldContext) => boolean;
   filter?: (collectionField: CollectionFieldOptions, context: CollectionFieldContext) => boolean;
-  getSchema: (collectionField: CollectionFieldOptions, context: CollectionFieldContext & {
-    defaultSchema: CollectionFieldDefaultSchema
-    targetCollection?: Collection
-    collectionFieldInterface?: CollectionFieldInterface
-  }) => CollectionFieldGetSchemaResult;
-  getInitializerItem?: (collectionField: CollectionFieldOptions, context: CollectionFieldContext & {
-    schema: ISchema;
-    defaultInitializerItem: CollectionFieldDefaultInitializerItem;
-    targetCollection?: Collection
-    collectionFieldInterface?: CollectionFieldInterface
-  }) => CollectionFieldGetInitializerItemResult;
+  getSchema: (collectionField: CollectionFieldOptions, context: CollectionFieldContext) => CollectionFieldGetSchemaResult;
+  getInitializerItem?: (collectionField: CollectionFieldOptions, context: CollectionFieldContext) => CollectionFieldGetInitializerItemResult;
 }
 
 interface SelfCollectionFieldsProps extends CommonCollectionFieldsProps {}
@@ -301,9 +306,34 @@ const formItemInitializers = new CompatibleSchemaInitializer({
 
 目前使用在了 `Form`、`List`、`Kanban`、`Grid Card` 和 `Details` 区块中。
 
+```ts
+const someInitializer = new SchemaInitializer({
+  // ...
+  items: [
+    {
+      name: 'collectionFields',
+      Component: CollectionFieldsToFormInitializerItems,
+    },
+    // ...
+  ]
+})
+```
+
 ## CollectionFieldsToTableInitializerItems
 
 `CollectionFieldsToTableInitializerItems` 是 `CollectionFieldsToInitializerItems` 的一个封装，用于表格场景。
 
 目前使用在了 `Table` 和 `Gantt` 区块中。
 
+```ts
+const someInitializer = new SchemaInitializer({
+  // ...
+  items: [
+    {
+      name: 'collectionFields',
+      Component: CollectionFieldsToTableInitializerItems,
+    },
+    // ...
+  ]
+})
+```
