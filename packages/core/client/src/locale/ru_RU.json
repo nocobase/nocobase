@@ -577,5 +577,6 @@
   "The value of this variable is derived from the query string of the page URL. This variable can only be used normally when the page has a query string.": "Значение этой переменной происходит из строки запроса URL страницы. Эта переменная может использоваться только в том случае, если у страницы есть строка запроса.",
   "URL search params": "Параметры поиска URL",
   "Expand All": "Развернуть все",
-  "Clear default value": "Очистить значение по умолчанию"
+  "Clear default value": "Очистить значение по умолчанию",
+  "Open in new window": "Открыть в новом окне"
 }
