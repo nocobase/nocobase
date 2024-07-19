@@ -57,6 +57,7 @@ export const CreateDatabaseConnectAction = () => {
                     'x-decorator-props': {
                       initialValue: {
                         type: info.key,
+                        key: `d_${uid()}`,
                       },
                     },
                     title: compile("{{t('Add new')}}") + ' - ' + compile(type.label),
