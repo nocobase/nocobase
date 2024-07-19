@@ -14,7 +14,6 @@ import { observer, RecursionField, useFieldSchema } from '@formily/react';
 import { action } from '@formily/reactive';
 import { isArr } from '@formily/shared';
 import { Button } from 'antd';
-import { unionBy, uniqBy } from 'lodash';
 import React, { useContext, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -28,15 +27,66 @@ import { useCreateActionProps } from '../../../block-provider/hooks';
 import { FormActiveFieldsProvider } from '../../../block-provider/hooks/useFormActiveFields';
 import { TableSelectorParamsProvider } from '../../../block-provider/TableSelectorProvider';
 import { CollectionProvider_deprecated } from '../../../collection-manager';
-import { CollectionRecordProvider, useCollectionRecord } from '../../../data-source';
+import { CollectionRecordProvider, useCollection, useCollectionRecord } from '../../../data-source';
+import { markRecordAsNew } from '../../../data-source/collection-record/isNewRecord';
 import { FlagProvider } from '../../../flag-provider';
 import { useCompile } from '../../hooks';
 import { ActionContextProvider } from '../action';
 import { Table } from '../table-v2/Table';
-import { useAssociationFieldContext, useFieldNames } from './hooks';
+import { SubFormProvider, useAssociationFieldContext, useFieldNames } from './hooks';
 import { useTableSelectorProps } from './InternalPicker';
 import { getLabelFormatValue, useLabelUiSchema } from './util';
-import { markRecordAsNew } from '../../../data-source/collection-record/isNewRecord';
+
+const subTableContainer = css`
+  .ant-table-footer {
+    padding: 0 !important;
+  }
+  .ant-formily-item-error-help {
+    display: none;
+  }
+  .ant-description-textarea {
+    line-height: 34px;
+  }
+  .ant-table-cell .ant-formily-item-error-help {
+    display: block;
+    position: absolute;
+    font-size: 12px;
+    top: 100%;
+    background: #fff;
+    width: 100%;
+    margin-top: -15px;
+    padding: 3px;
+    z-index: 1;
+    border-radius: 3px;
+    box-shadow: 0 0 10px #eee;
+    animation: none;
+    transform: translateY(0);
+    opacity: 1;
+  }
+`;
+
+const tableClassName = css`
+  .ant-formily-item.ant-formily-item-feedback-layout-loose {
+    margin-bottom: 0px !important;
+  }
+  .ant-formily-editable {
+    vertical-align: sub;
+  }
+  .ant-table-footer {
+    display: flex;
+  }
+`;
+
+const addNewButtonClassName = css`
+  display: block;
+  border-radius: 0px;
+  border-right: 1px solid rgba(0, 0, 0, 0.06);
+`;
+
+const selectButtonClassName = css`
+  display: block;
+  border-radius: 0px;
+`;
 
 export const SubTable: any = observer(
   (props: any) => {
@@ -50,6 +100,7 @@ export const SubTable: any = observer(
     const compile = useCompile();
     const labelUiSchema = useLabelUiSchema(collectionField, fieldNames?.label || 'label');
     const recordV2 = useCollectionRecord();
+    const collection = useCollection();
     const move = (fromIndex: number, toIndex: number) => {
       if (toIndex === undefined) return;
       if (!isArr(field.value)) return;
@@ -115,98 +166,56 @@ export const SubTable: any = observer(
       return filter;
     };
     return (
-      <div
-        className={css`
-          .ant-table-footer {
-            padding: 0 !important;
-          }
-          .ant-formily-item-error-help {
-            display: none;
-          }
-          .ant-description-textarea {
-            line-height: 34px;
-          }
-          .ant-table-cell .ant-formily-item-error-help {
-            display: block;
-            position: absolute;
-            font-size: 12px;
-            top: 100%;
-            background: #fff;
-            width: 100%;
-            margin-top: -15px;
-            padding: 3px;
-            z-index: 1;
-            border-radius: 3px;
-            box-shadow: 0 0 10px #eee;
-            animation: none;
-            transform: translateY(0);
-            opacity: 1;
-          }
-        `}
-      >
+      <div className={subTableContainer}>
         <FlagProvider isInSubTable>
           <CollectionRecordProvider record={null} parentRecord={recordV2}>
             <FormActiveFieldsProvider name="nester">
-              <Table
-                className={css`
-                  .ant-formily-item.ant-formily-item-feedback-layout-loose {
-                    margin-bottom: 0px !important;
+              {/* 在这里加，是为了让 “当前对象” 的配置显示正确 */}
+              <SubFormProvider value={{ value: null, collection }}>
+                <Table
+                  className={tableClassName}
+                  bordered
+                  size={'small'}
+                  field={field}
+                  showIndex
+                  dragSort={false}
+                  showDel={field.editable}
+                  pagination={false}
+                  rowSelection={{ type: 'none', hideSelectAll: true }}
+                  footer={() =>
+                    field.editable && (
+                      <>
+                        {field.componentProps?.allowAddnew !== false && (
+                          <Button
+                            type={'text'}
+                            block
+                            className={addNewButtonClassName}
+                            onClick={() => {
+                              field.value = field.value || [];
+                              field.value.push(markRecordAsNew({}));
+                            }}
+                          >
+                            {t('Add new')}
+                          </Button>
+                        )}
+                        {field.componentProps?.allowSelectExistingRecord && (
+                          <Button
+                            type={'text'}
+                            block
+                            className={selectButtonClassName}
+                            onClick={() => {
+                              setVisibleSelector(true);
+                            }}
+                          >
+                            {t('Select')}
+                          </Button>
+                        )}
+                      </>
+                    )
                   }
-                  .ant-formily-editable {
-                    vertical-align: sub;
-                  }
-                  .ant-table-footer {
-                    display: flex;
-                  }
-                `}
-                bordered
-                size={'small'}
-                field={field}
-                showIndex
-                dragSort={false}
-                showDel={field.editable}
-                pagination={false}
-                rowSelection={{ type: 'none', hideSelectAll: true }}
-                footer={() =>
-                  field.editable && (
-                    <>
-                      {field.componentProps?.allowAddnew !== false && (
-                        <Button
-                          type={'text'}
-                          block
-                          className={css`
-                            display: block;
-                            border-radius: 0px;
-                            border-right: 1px solid rgba(0, 0, 0, 0.06);
-                          `}
-                          onClick={() => {
-                            field.value = field.value || [];
-                            field.value.push(markRecordAsNew({}));
-                          }}
-                        >
-                          {t('Add new')}
-                        </Button>
-                      )}
-                      {field.componentProps?.allowSelectExistingRecord && (
-                        <Button
-                          type={'text'}
-                          block
-                          className={css`
-                            display: block;
-                            border-radius: 0px;
-                          `}
-                          onClick={() => {
-                            setVisibleSelector(true);
-                          }}
-                        >
-                          {t('Select')}
-                        </Button>
-                      )}
-                    </>
-                  )
-                }
-                isSubTable={true}
-              />
+                  isSubTable={true}
+                />
+              </SubFormProvider>
             </FormActiveFieldsProvider>
           </CollectionRecordProvider>
         </FlagProvider>
