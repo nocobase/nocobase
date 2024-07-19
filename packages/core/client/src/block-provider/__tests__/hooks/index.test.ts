@@ -7,7 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { appendQueryStringToUrl, parseVariablesAndChangeParamsToQueryString, reduceValueSize } from '../../hooks/index';
+import {
+  appendQueryStringToUrl,
+  completeURL,
+  navigateWithinSelf,
+  parseVariablesAndChangeParamsToQueryString,
+  reduceValueSize,
+} from '../../hooks/index';
 
 describe('parseVariablesAndChangeParamsToQueryString', () => {
   it('should parse variables and change params to query string', async () => {
@@ -148,5 +154,84 @@ describe('appendQueryStringToUrl', () => {
     const result = appendQueryStringToUrl(url, queryString);
 
     expect(result).toBe('https://example.com?existingParam=value&param1=value1&param2=value2');
+  });
+});
+
+describe('completeURL', () => {
+  it('should complete a relative URL with the origin', () => {
+    const origin = 'https://example.com';
+    const url = '/path/to/resource';
+
+    const result = completeURL(url, origin);
+
+    expect(result).toBe('https://example.com/path/to/resource');
+  });
+
+  it('should return the URL as is if it is already complete', () => {
+    const origin = 'https://example.com';
+    const url = 'https://example.com/path/to/resource';
+
+    const result = completeURL(url, origin);
+
+    expect(result).toBe('https://example.com/path/to/resource');
+  });
+
+  it('should return the URL as is if it is already complete with a different origin', () => {
+    const origin = 'https://example.com';
+    const url = 'https://another.com/path/to/resource';
+
+    const result = completeURL(url, origin);
+
+    expect(result).toBe('https://another.com/path/to/resource');
+  });
+
+  it('should return an empty string if the URL is falsy', () => {
+    const origin = 'https://example.com';
+    const url = '';
+
+    const result = completeURL(url, origin);
+
+    expect(result).toBe('');
+  });
+});
+
+describe('navigateWithinSelf', () => {
+  it('should navigate within the same window if the link is a relative URL', () => {
+    const origin = 'https://example.com';
+    const link = '/path/to/resource';
+    const navigate = vi.fn();
+
+    navigateWithinSelf(link, navigate, origin);
+
+    expect(navigate).toHaveBeenCalledWith(link);
+  });
+
+  it('should navigate within the same window if the link starts with the origin', () => {
+    const origin = 'https://example.com';
+    const link = 'https://example.com/path/to/resource';
+    const navigate = vi.fn();
+
+    navigateWithinSelf(link, navigate, origin);
+
+    expect(navigate).toHaveBeenCalledWith('/path/to/resource');
+  });
+
+  it('should open the link in the same window if it is an external URL', () => {
+    const origin = 'https://example.com';
+    const link = 'https://other.com/path/to/resource';
+    window.open = vi.fn();
+
+    navigateWithinSelf(link, () => {}, origin);
+
+    expect(window.open).toHaveBeenCalledWith(link, '_self');
+  });
+
+  it('should log an error if the link is not a string', () => {
+    const link = null;
+    console.error = vi.fn();
+
+    navigateWithinSelf(link, () => {});
+
+    expect(console.error).toHaveBeenCalledWith('link should be a string');
   });
 });

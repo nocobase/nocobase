@@ -16,7 +16,7 @@ import { SchemaInitializerItem, useSchemaInitializer } from '../../application';
 import { useGlobalTheme } from '../../global-theme';
 import { FormDialog, SchemaComponent, SchemaComponentOptions } from '../../schema-component';
 import { useStyles } from '../../schema-component/antd/menu/MenuItemInitializers';
-import { useURLAndParamsSchema } from '../actions/link/useURLAndParamsSchema';
+import { useURLAndHTMLSchema } from '../actions/link/useURLAndHTMLSchema';
 
 export const LinkMenuItem = () => {
   const { insert } = useSchemaInitializer();
@@ -24,7 +24,7 @@ export const LinkMenuItem = () => {
   const options = useContext(SchemaOptionsContext);
   const { theme } = useGlobalTheme();
   const { styles } = useStyles();
-  const { urlSchema, paramsSchema } = useURLAndParamsSchema();
+  const { urlSchema, paramsSchema } = useURLAndHTMLSchema();
 
   const handleClick = useCallback(async () => {
     const values = await FormDialog(

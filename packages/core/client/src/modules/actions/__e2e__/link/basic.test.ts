@@ -8,7 +8,7 @@
  */
 
 import { expect, test } from '@nocobase/test/e2e';
-import { PopupAndSubPageWithParams, oneEmptyTableWithUsers } from './templates';
+import { PopupAndSubPageWithParams, oneEmptyTableWithUsers, openInNewWidow } from './templates';
 
 test.describe('Link', () => {
   test('basic', async ({ page, mockPage, mockRecords }) => {
@@ -83,6 +83,36 @@ test.describe('Link', () => {
     await expect(page.getByRole('button', { name: users[0].username, exact: true })).toBeVisible();
     await expect(page.getByRole('button', { name: 'nocobase', exact: true })).toBeVisible();
     await expect(page.getByRole('button', { name: users[1].username, exact: true })).toBeVisible();
+  });
+
+  test('open in new window', async ({ page, mockPage, mockRecords }) => {
+    await mockPage(openInNewWidow).goto();
+    const otherPage = mockPage();
+    const otherPageUrl = await otherPage.getUrl();
+
+    // 默认情况下，点击链接按钮会在当前窗口打开
+    await page.getByLabel('action-Action.Link-Link-').hover();
+    await page.getByLabel('designer-schema-settings-Action.Link-actionSettings:link-users').hover();
+    await page.getByRole('menuitem', { name: 'Edit link' }).click();
+    await page.getByLabel('block-item-users-table-URL').getByLabel('textbox').fill(otherPageUrl);
+    await page.getByRole('button', { name: 'OK', exact: true }).click();
+
+    await page.getByLabel('action-Action.Link-Link-').click();
+    expect(page.url().endsWith(otherPageUrl)).toBe(true);
+
+    // 开启 “Open in new window” 选项后，点击链接按钮会在新窗口打开
+    await page.goBack();
+    await page.getByLabel('action-Action.Link-Link-').hover();
+    await page.getByLabel('designer-schema-settings-Action.Link-actionSettings:link-users').hover();
+    await page.getByRole('menuitem', { name: 'Edit link' }).click();
+    await page.getByLabel('Open in new window').check();
+    await page.getByRole('button', { name: 'OK', exact: true }).click();
+
+    await page.getByLabel('action-Action.Link-Link-').click();
+    await page.waitForTimeout(1000);
+
+    const newPage = page.context().pages()[1];
+    expect(newPage.url().endsWith(otherPageUrl)).toBe(true);
   });
 
   test('popup and sub page with search params', async ({ page, mockPage, mockRecords }) => {
