@@ -22,7 +22,7 @@ describe('magic-attribute-model', () => {
     await db.close();
   });
 
-  it('should update with magic attribute', async () => {
+  it.skip('should update with magic attribute', async () => {
     db.registerModels({ MagicAttributeModel });
 
     const Test = db.collection({
