@@ -108,7 +108,6 @@ export const Form: React.FC<FormProps> & { Designer?: any } = observer(
           form.setValues(data?.data);
           form.setInitialValues(data?.data);
         },
-        form,
       },
       props,
     );

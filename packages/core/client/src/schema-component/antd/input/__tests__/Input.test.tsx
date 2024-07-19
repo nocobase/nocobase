@@ -142,7 +142,7 @@ describe('Input.JSON', () => {
     await userEvent.type(textarea, '{{name:"nocobase"}');
     // mock blur event
     await userEvent.click(document.body);
-    expect(screen.getByText(/Unexpected token n/)).toBeInTheDocument();
+    expect(screen.getByText(/Expected property name /)).toBeInTheDocument();
   });
 
   it('should not display error when the value is valid JSON5', async () => {
