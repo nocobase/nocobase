@@ -19,6 +19,7 @@ import omit from 'lodash/omit';
 import qs from 'qs';
 import { ChangeEvent, useCallback, useContext, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { NavigateFunction } from 'react-router-dom';
 import { useReactToPrint } from 'react-to-print';
 import {
   AssociationFilter,
@@ -1561,6 +1562,7 @@ export function useLinkActionProps() {
   const { t } = useTranslation();
   const url = fieldSchema?.['x-component-props']?.['url'];
   const searchParams = fieldSchema?.['x-component-props']?.['params'] || [];
+  const openInNewWindow = fieldSchema?.['x-component-props']?.['openInNewWindow'];
   const { parseURLAndParams } = useParseURLAndParams();
 
   return {
@@ -1573,11 +1575,13 @@ export function useLinkActionProps() {
       const link = await parseURLAndParams(url, searchParams);
 
       if (link) {
-        if (isURL(link)) {
-          window.open(link, '_blank');
+        if (openInNewWindow) {
+          window.open(completeURL(link), '_blank');
         } else {
-          navigate(link);
+          navigateWithinSelf(link, navigate);
         }
+      } else {
+        console.error('link should be a string');
       }
     },
   };
@@ -1675,4 +1679,31 @@ export function reduceValueSize(value: any) {
   }
 
   return value;
+}
+
+// 补全 URL
+export function completeURL(url: string, origin = window.location.origin) {
+  if (!url) {
+    return '';
+  }
+  if (isURL(url)) {
+    return url;
+  }
+  return url.startsWith('/') ? `${origin}${url}` : `${origin}/${url}`;
+}
+
+export function navigateWithinSelf(link: string, navigate: NavigateFunction, origin = window.location.origin) {
+  if (!_.isString(link)) {
+    return console.error('link should be a string');
+  }
+
+  if (isURL(link)) {
+    if (link.startsWith(origin)) {
+      navigate(link.replace(origin, ''));
+    } else {
+      window.open(link, '_self');
+    }
+  } else {
+    navigate(link.startsWith('/') ? link : `/${link}`);
+  }
 }

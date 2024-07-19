@@ -17,7 +17,7 @@ import {
   useDesignable,
   useFormBlockContext,
   useRecord,
-  useURLAndParamsSchema,
+  useURLAndHTMLSchema,
   useVariableOptions,
 } from '@nocobase/client';
 import React from 'react';
@@ -65,7 +65,7 @@ const commonOptions: any = {
             return data?.data;
           }
         };
-        const { urlSchema, paramsSchema } = useURLAndParamsSchema();
+        const { urlSchema, paramsSchema } = useURLAndHTMLSchema();
         const submitHandler = async ({ mode, url, html, height, params }) => {
           const componentProps = fieldSchema['x-component-props'] || {};
           componentProps['mode'] = mode;
