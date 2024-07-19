@@ -22,7 +22,7 @@ import {
   SchemaSettingsSubMenu,
   useAPIClient,
   useDesignable,
-  useURLAndParamsSchema,
+  useURLAndHTMLSchema,
 } from '../../../';
 
 const toItems = (properties = {}) => {
@@ -61,7 +61,7 @@ const InsertMenuItems = (props) => {
   const { t } = useTranslation();
   const { dn } = useDesignable();
   const fieldSchema = useFieldSchema();
-  const { urlSchema, paramsSchema } = useURLAndParamsSchema();
+  const { urlSchema, paramsSchema } = useURLAndHTMLSchema();
   const isSubMenu = fieldSchema['x-component'] === 'Menu.SubMenu';
   if (!isSubMenu && insertPosition === 'beforeEnd') {
     return null;
@@ -218,7 +218,7 @@ export const MenuDesigner = () => {
   const { t } = useTranslation();
   const menuSchema = findMenuSchema(fieldSchema);
   const compile = useCompile();
-  const { urlSchema, paramsSchema } = useURLAndParamsSchema();
+  const { urlSchema, paramsSchema } = useURLAndHTMLSchema();
   const onSelect = compile(menuSchema?.['x-component-props']?.['onSelect']);
   const items = toItems(menuSchema?.properties);
   const effects = (form) => {
