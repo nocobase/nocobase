@@ -288,7 +288,7 @@ const usePaginationProps = (pagination1, pagination2) => {
         showSizeChanger: true,
         hideOnSinglePage: false,
         ...pagination,
-        total: field.value?.length ? pageSize * current + 1 : pageSize * current,
+        total: field.value?.length < pageSize ? pageSize * current : pageSize * current + 1,
         className: css`
           .ant-pagination-simple-pager {
             display: none !important;
