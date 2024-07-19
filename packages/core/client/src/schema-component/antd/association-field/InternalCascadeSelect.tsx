@@ -130,7 +130,7 @@ const CascadeSelect = connect((props) => {
     const response = await resource.list({
       pageSize: 200,
       params: service?.params,
-      filter: mergeFilter([service?.params?.filter, filter]),
+      filter: mergeFilter([filter]),
       tree: !filter.parentId ? true : undefined,
     });
     return response?.data?.data;

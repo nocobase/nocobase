@@ -33,6 +33,7 @@ module.exports = (cli) => {
     .command('start')
     .option('-p, --port [port]')
     .option('-d, --daemon')
+    .option('-i, --instances [instances]')
     .option('--db-sync')
     .option('--quickstart')
     .allowUnknownOption()
@@ -61,13 +62,16 @@ module.exports = (cli) => {
       }
       await postCheck(opts);
       deleteSockFiles();
+      const instances = opts.instances || process.env.CLUSTER_MODE;
+      const instancesArgs = instances ? ['-i', instances] : [];
       if (opts.daemon) {
-        run('pm2', ['start', `${APP_PACKAGE_ROOT}/lib/index.js`, '--', ...process.argv.slice(2)]);
+        run('pm2', ['start', ...instancesArgs, `${APP_PACKAGE_ROOT}/lib/index.js`, '--', ...process.argv.slice(2)]);
       } else {
         run(
           'pm2-runtime',
           [
             'start',
+            ...instancesArgs,
             `${APP_PACKAGE_ROOT}/lib/index.js`,
             NODE_ARGS ? `--node-args="${NODE_ARGS}"` : undefined,
             '--',

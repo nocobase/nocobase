@@ -71,6 +71,23 @@ test.describe('filter form', () => {
     await expect(
       page.getByLabel('block-item-CardItem-users-table').getByRole('button', { name: 'Super Admin' }),
     ).not.toBeVisible();
+
+    // 5. 打开 “Clear default value” 开关，然后点击 Reset 按钮，应该显示所有数据
+    await page.getByLabel('action-Action-Reset-users-').hover();
+    await page.getByRole('button', { name: 'designer-schema-settings-Action-Action.Designer-users' }).hover();
+    await page.getByRole('menuitem', { name: 'Clear default value' }).click();
+    await page.getByLabel('action-Action-Reset-users-').click({
+      position: {
+        x: 10,
+        y: 10,
+      },
+    });
+    await expect(
+      page.getByLabel('block-item-CardItem-users-table').getByRole('button', { name: 'test name' }),
+    ).toBeVisible();
+    await expect(
+      page.getByLabel('block-item-CardItem-users-table').getByRole('button', { name: 'Super Admin' }),
+    ).toBeVisible();
   });
 
   test('with dataLoadingMode is manual', async ({ page, mockPage, mockRecord }) => {
@@ -124,5 +141,17 @@ test.describe('filter form', () => {
     await expect(
       page.getByLabel('block-item-CardItem-users-table').getByRole('button', { name: 'test name' }),
     ).not.toBeVisible();
+
+    // 5. 打开 “Clear default value” 开关，然后点击 Reset 按钮，应该显示空数据
+    await page.getByLabel('action-Action-Reset-users-').hover();
+    await page.getByRole('button', { name: 'designer-schema-settings-Action-Action.Designer-users' }).hover();
+    await page.getByRole('menuitem', { name: 'Clear default value' }).click();
+    await page.getByLabel('action-Action-Reset-users-').click({
+      position: {
+        x: 10,
+        y: 10,
+      },
+    });
+    await expect(page.getByLabel('block-item-CardItem-users-table').getByText('No data')).toBeVisible();
   });
 });

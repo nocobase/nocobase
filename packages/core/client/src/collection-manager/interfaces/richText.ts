@@ -79,6 +79,6 @@ export class RichTextFieldInterface extends CollectionFieldInterface {
     };
   };
   filterable = {
-    operators: operators.string,
+    operators: operators.bigField,
   };
 }

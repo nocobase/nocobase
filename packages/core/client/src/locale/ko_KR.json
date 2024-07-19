@@ -874,5 +874,6 @@
  "The value of this variable is derived from the query string of the page URL. This variable can only be used normally when the page has a query string.": "이 변수의 값은 페이지 URL의 쿼리 문자열에서 파생됩니다. 이 변수는 페이지에 쿼리 문자열이 있는 경우에만 정상적으로 사용할 수 있습니다.",
 "URL search params": "URL 검색 매개변수",
 "Expand All": "모두 펼치기",
+"Clear default value": "기본값 지우기",
 "Sorry, the page you visited does not exist.": "죄송합니다. 방문한 페이지가 존재하지 않습니다."
 }

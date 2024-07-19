@@ -16,6 +16,7 @@ type DataSourceHook = (dataSource: DataSource) => void;
 
 type DataSourceManagerOptions = {
   logger?: LoggerOptions | Logger;
+  app?: any;
 };
 
 export class DataSourceManager {
@@ -31,6 +32,14 @@ export class DataSourceManager {
   constructor(public options: DataSourceManagerOptions = {}) {
     this.dataSources = new Map();
     this.middlewares = [];
+
+    if (options.app) {
+      options.app.on('beforeStop', async () => {
+        for (const dataSource of this.dataSources.values()) {
+          await dataSource.close();
+        }
+      });
+    }
   }
 
   get(dataSourceKey: string) {
@@ -54,6 +63,12 @@ export class DataSourceManager {
 
     for (const hook of this.beforeAddHooks) {
       hook(dataSource);
+    }
+
+    const oldDataSource = this.dataSources.get(dataSource.name);
+
+    if (oldDataSource) {
+      await oldDataSource.close();
     }
 
     await dataSource.load(options);

@@ -20,7 +20,6 @@ import {
   useFormBlockContext,
   ActionContext,
 } from '@nocobase/client';
-import { debounce } from 'lodash';
 import { Evaluator, evaluators } from '@nocobase/evaluators/client';
 import { Registry, toFixedByStep } from '@nocobase/utils/client';
 import React, { useEffect, useState, useContext } from 'react';
@@ -74,13 +73,11 @@ export function Result(props) {
   const fieldPath = path?.replace(`.${fieldSchema.name}`, '');
   const fieldName = fieldPath.split('.')[0];
   const index = parseInt(fieldPath.split('.')?.[1]);
-  const ctx = useContext(ActionContext);
   useEffect(() => {
     setEditingValue(value);
   }, [value]);
 
   useFormEffects(() => {
-    const delayedOnChange = debounce(props.onChange, 300);
     onFormValuesChange((form) => {
       if (
         (fieldSchema.name as string).indexOf('.') >= 0 ||
@@ -102,8 +99,9 @@ export function Result(props) {
         setEditingValue(v);
       }
       setEditingValue(v);
-      delayedOnChange(v);
-      ctx?.setFormValueChanged?.(false);
+      if (v !== field.value) {
+        field.value = v;
+      }
     });
   });
   const Component = TypedComponents[dataType] ?? InputString;

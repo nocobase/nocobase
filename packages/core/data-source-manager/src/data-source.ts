@@ -92,6 +92,7 @@ export abstract class DataSource extends EventEmitter {
   }
 
   async load(options: any = {}) {}
+  async close() {}
 
   abstract createCollectionManager(options?: any): ICollectionManager;
 
