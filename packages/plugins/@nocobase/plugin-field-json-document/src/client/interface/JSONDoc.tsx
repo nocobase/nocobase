@@ -71,6 +71,14 @@ export class JSONDocObjectInterface extends CollectionFieldInterface {
       description:
         "{{t('Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.')}}",
     },
+    jsonb: {
+      type: 'boolean',
+      'x-content': 'JSONB',
+      'x-decorator': 'FormItem',
+      'x-component': 'Checkbox',
+      'x-hidden': `{{ !isDialect('postgres') }}`,
+      'x-disabled': `{{ disabledJSONB }}`,
+    },
     fields: {
       type: 'array',
       title: '{{t("Fields")}}',

@@ -137,6 +137,18 @@ export const useFieldModeOptions = (props?) => {
               !isTableField && { label: t('Sub-form'), value: 'Nester' },
               { label: t('Sub-form(Popover)'), value: 'PopoverNester' },
             ];
+      case 'JSONDocArray':
+        return isReadPretty
+          ? [
+              { label: t('Title'), value: 'Select' },
+              { label: t('Tag'), value: 'Tag' },
+              !isTableField && { label: t('Sub-details'), value: 'Nester' },
+            ]
+          : [
+              !isTableField && { label: t('Sub-form'), value: 'Nester' },
+              !isTableField && { label: t('Sub-table'), value: 'SubTable' },
+              { label: t('Sub-form(Popover)'), value: 'PopoverNester' },
+            ];
 
       default:
         return isReadPretty

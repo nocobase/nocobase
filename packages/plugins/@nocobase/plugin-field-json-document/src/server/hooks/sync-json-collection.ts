@@ -46,7 +46,7 @@ export const syncJSONCollection = (db: Database) => {
       interface: 'id',
       title: 'Index',
       type: 'bigInt',
-      name: '__index',
+      name: '__json_index',
       uiSchema: {
         type: 'number',
         title: '{{t("Index")}}',
@@ -64,6 +64,7 @@ export const syncJSONCollection = (db: Database) => {
       const collectionRepo = db.getRepository('collections');
       targetModel = await collectionRepo.create({
         values: {
+          title: target,
           name: target,
           json: true,
           sync: false,
@@ -74,7 +75,7 @@ export const syncJSONCollection = (db: Database) => {
         transaction,
       });
       await targetModel.load({ transaction });
-      model.set('options', Object.assign(model.get('options'), { target, targetKey: '__index' }));
+      model.set('options', Object.assign(model.get('options'), { target, targetKey: '__json_index' }));
       return;
     }
     const existFields = await targetModel.getFields({ transaction });

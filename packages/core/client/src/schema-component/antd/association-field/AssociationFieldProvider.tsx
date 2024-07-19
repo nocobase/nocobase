@@ -40,13 +40,16 @@ export const AssociationFieldProvider = observer(
     );
     const currentMode = useMemo(
       () => {
+        if (fieldSchema['x-component-props']?.mode) {
+          return fieldSchema['x-component-props'].mode;
+        }
         if (isFileCollection) {
           return 'FileManager';
         }
         if (!fieldSchema['x-read-pretty'] && ['JSONDocObject', 'JSONDocArray'].includes(collectionField?.interface)) {
           return 'Nester';
         }
-        return fieldSchema['x-component-props']?.mode || 'Select';
+        return 'Select';
       },
       // eslint-disable-next-line react-hooks/exhaustive-deps
       [fieldSchema['x-component-props']?.mode, collectionField?.interface],
