@@ -575,5 +575,6 @@
   "The value of this variable is derived from the query string of the page URL. This variable can only be used normally when the page has a query string.": "Bu değişkenin değeri sayfa URL'sinin sorgu dizgisinden türetilir. Bu değişken, sayfanın bir sorgu dizgisi olduğunda yalnızca normal olarak kullanılabilir.",
   "URL search params": "URL arama parametreleri",
   "Expand All": "Tümünü genişlet",
-  "Clear default value": "Varsayılan değeri temizle"
+  "Clear default value": "Varsayılan değeri temizle",
+  "Open in new window": "Yeni pencerede aç"
 }

@@ -702,5 +702,6 @@
   "The value of this variable is derived from the query string of the page URL. This variable can only be used normally when the page has a query string.": "この変数の値はページURLのクエリ文字列から取得されます。この変数は、ページにクエリ文字列がある場合にのみ正常に使用できます。",
   "URL search params": "URL検索パラメータ",
   "Expand All": "すべて展開",
-  "Clear default value": "デフォルト値をクリア"
+  "Clear default value": "デフォルト値をクリア",
+  "Open in new window": "新しいウィンドウで開く"
 }
