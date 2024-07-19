@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Plugin, useCollection_deprecated } from '@nocobase/client';
+import { Plugin, useActionAvailable } from '@nocobase/client';
 import { DuplicateAction } from './DuplicateAction';
 import { deprecatedDuplicateActionSettings, duplicateActionSettings } from './DuplicateAction.Settings';
 import { DuplicateActionInitializer } from './DuplicateActionInitializer';
@@ -36,17 +36,7 @@ export class PluginActionDuplicateClient extends Plugin {
           type: 'primary',
         },
       },
-      useVisible() {
-        const collection = useCollection_deprecated() || ({} as any);
-        const { unavailableActions, availableActions } = collection;
-        if (availableActions) {
-          return availableActions.includes?.('create');
-        }
-        if (unavailableActions) {
-          return !unavailableActions?.includes?.('create');
-        }
-        return true;
-      },
+      useVisible: () => useActionAvailable('create'),
     };
 
     this.app.schemaInitializerManager.addItem('table:configureItemActions', 'actions.duplicate', initializerTableData);

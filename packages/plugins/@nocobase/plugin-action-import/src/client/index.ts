@@ -15,7 +15,7 @@ export * from './ImportDesigner';
 export * from './ImportPluginProvider';
 export * from './useImportAction';
 
-import { Plugin, useCollection } from '@nocobase/client';
+import { Plugin, useActionAvailable } from '@nocobase/client';
 import { ImportPluginProvider } from './ImportPluginProvider';
 import { importActionSchemaSettings } from './schemaSettings';
 
@@ -34,17 +34,7 @@ export class PluginActionImportClient extends Plugin {
           skipScopeCheck: true,
         },
       },
-      useVisible() {
-        const collection = useCollection() || ({} as any);
-        const { unavailableActions, availableActions } = collection?.options || {};
-        if (availableActions) {
-          return availableActions.includes?.('import');
-        }
-        if (unavailableActions) {
-          return !unavailableActions?.includes?.('import');
-        }
-        return true;
-      },
+      useVisible: () => useActionAvailable('import'),
     };
 
     const tableActionInitializers = this.app.schemaInitializerManager.get('table:configureActions');

@@ -8,7 +8,7 @@
  */
 
 import { useFieldSchema } from '@formily/react';
-import { CompatibleSchemaInitializer, useCollection } from '@nocobase/client';
+import { CompatibleSchemaInitializer, useActionAvailable, useCollection } from '@nocobase/client';
 
 const commonOptions = {
   title: "{{t('Configure actions')}}",
@@ -38,17 +38,7 @@ const commonOptions = {
           skipScopeCheck: true,
         },
       },
-      useVisible() {
-        const collection = useCollection() || ({} as any);
-        const { unavailableActions, availableActions } = collection?.options || {};
-        if (availableActions) {
-          return availableActions.includes?.('create');
-        }
-        if (unavailableActions) {
-          return !unavailableActions?.includes?.('create');
-        }
-        return true;
-      },
+      useVisible: () => useActionAvailable('create'),
     },
     {
       type: 'item',
@@ -59,17 +49,7 @@ const commonOptions = {
         'x-align': 'right',
         'x-decorator': 'ACLActionProvider',
       },
-      useVisible() {
-        const collection = useCollection() || ({} as any);
-        const { unavailableActions, availableActions } = collection?.options || {};
-        if (availableActions) {
-          return availableActions.includes?.('destroyMany');
-        }
-        if (unavailableActions) {
-          return !unavailableActions?.includes?.('destroyMany');
-        }
-        return true;
-      },
+      useVisible: () => useActionAvailable('destroyMany'),
     },
     {
       type: 'item',
@@ -87,6 +67,7 @@ const commonOptions = {
       schema: {
         'x-align': 'right',
       },
+
       useVisible() {
         const schema = useFieldSchema();
         const collection = useCollection();

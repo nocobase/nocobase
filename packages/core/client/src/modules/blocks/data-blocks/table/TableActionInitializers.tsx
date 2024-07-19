@@ -10,7 +10,7 @@
 import { useFieldSchema } from '@formily/react';
 import { CompatibleSchemaInitializer } from '../../../../application/schema-initializer/CompatibleSchemaInitializer';
 import { useCollection } from '../../../../data-source';
-
+import { useActionAvailable } from '../../useActionAvailable';
 const commonOptions = {
   title: "{{t('Configure actions')}}",
   icon: 'SettingOutlined',
@@ -40,17 +40,7 @@ const commonOptions = {
           skipScopeCheck: true,
         },
       },
-      useVisible() {
-        const collection = useCollection() || ({} as any);
-        const { unavailableActions, availableActions } = collection?.options || {};
-        if (availableActions) {
-          return availableActions.includes?.('create');
-        }
-        if (unavailableActions) {
-          return !unavailableActions?.includes?.('create');
-        }
-        return true;
-      },
+      useVisible: () => useActionAvailable('create'),
     },
     {
       type: 'item',
@@ -61,17 +51,7 @@ const commonOptions = {
         'x-align': 'right',
         'x-decorator': 'ACLActionProvider',
       },
-      useVisible() {
-        const collection = useCollection() || ({} as any);
-        const { unavailableActions, availableActions } = collection?.options || {};
-        if (availableActions) {
-          return availableActions.includes?.('destroyMany');
-        }
-        if (unavailableActions) {
-          return !unavailableActions?.includes?.('destroyMany');
-        }
-        return true;
-      },
+      useVisible: () => useActionAvailable('destroyMany'),
     },
     {
       type: 'item',

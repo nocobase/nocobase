@@ -9,7 +9,7 @@
 
 import { useCollection } from '../../../../data-source';
 import { CompatibleSchemaInitializer } from '../../../../application/schema-initializer/CompatibleSchemaInitializer';
-
+import { useActionAvailable } from '../../useActionAvailable';
 const commonOptions = {
   title: '{{t("Configure actions")}}',
   icon: 'SettingOutlined',
@@ -33,17 +33,7 @@ const commonOptions = {
               type: 'primary',
             },
           },
-          useVisible() {
-            const collection = useCollection() || ({} as any);
-            const { unavailableActions, availableActions } = collection?.options || {};
-            if (availableActions) {
-              return unavailableActions.includes?.('update');
-            }
-            if (unavailableActions) {
-              return !unavailableActions?.includes?.('update');
-            }
-            return true;
-          },
+          useVisible: () => useActionAvailable('update'),
         },
         {
           name: 'delete',
@@ -53,17 +43,7 @@ const commonOptions = {
             'x-component': 'Action',
             'x-decorator': 'ACLActionProvider',
           },
-          useVisible() {
-            const collection = useCollection() || ({} as any);
-            const { unavailableActions, availableActions } = collection?.options || {};
-            if (availableActions) {
-              return unavailableActions.includes?.('destroy');
-            }
-            if (unavailableActions) {
-              return !unavailableActions?.includes?.('destroy');
-            }
-            return true;
-          },
+          useVisible: () => useActionAvailable('destroy'),
         },
       ],
     },

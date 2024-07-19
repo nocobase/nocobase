@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Plugin, useCollection_deprecated } from '@nocobase/client';
+import { Plugin, useActionAvailable } from '@nocobase/client';
 import { bulkUpdateActionSettings, deprecatedBulkUpdateActionSettings } from './BulkUpdateAction.Settings';
 import { BulkUpdateActionInitializer } from './BulkUpdateActionInitializer';
 import { CustomizeActionInitializer } from './CustomizeActionInitializer';
@@ -24,17 +24,7 @@ export class PluginActionBulkUpdateClient extends Plugin {
       title: '{{t("Bulk update")}}',
       Component: BulkUpdateActionInitializer,
       name: 'bulkUpdate',
-      useVisible() {
-        const collection = useCollection_deprecated() || ({} as any);
-        const { unavailableActions, availableActions } = collection;
-        if (availableActions) {
-          return availableActions.includes?.('updateMany');
-        }
-        if (unavailableActions) {
-          return !unavailableActions?.includes?.('updateMany');
-        }
-        return true;
-      },
+      useVisible: () => useActionAvailable('updateMany'),
     };
 
     this.app.schemaInitializerManager.addItem('table:configureActions', 'customize.bulkUpdate', initializerData);

@@ -9,7 +9,7 @@
 
 import { CompatibleSchemaInitializer } from '../../../../application/schema-initializer/CompatibleSchemaInitializer';
 import { useCollection } from '../../../../data-source';
-
+import { useActionAvailable } from '../../useActionAvailable';
 const commonOptions = {
   title: '{{t("Configure actions")}}',
   icon: 'SettingOutlined',
@@ -24,17 +24,7 @@ const commonOptions = {
         'x-decorator': 'ACLActionProvider',
         'x-align': 'left',
       },
-      useVisible() {
-        const collection = useCollection() || ({} as any);
-        const { unavailableActions, availableActions } = collection?.options || {};
-        if (availableActions) {
-          return availableActions.includes?.('get');
-        }
-        if (unavailableActions) {
-          return !unavailableActions?.includes?.('get');
-        }
-        return true;
-      },
+      useVisible: () => useActionAvailable('get'),
     },
     {
       name: 'edit',
@@ -46,17 +36,7 @@ const commonOptions = {
         'x-decorator': 'ACLActionProvider',
         'x-align': 'left',
       },
-      useVisible() {
-        const collection = useCollection() || ({} as any);
-        const { unavailableActions, availableActions } = collection?.options || {};
-        if (availableActions) {
-          return availableActions.includes?.('update');
-        }
-        if (unavailableActions) {
-          return !unavailableActions?.includes?.('update');
-        }
-        return true;
-      },
+      useVisible: () => useActionAvailable('update'),
     },
     {
       name: 'delete',
@@ -68,17 +48,7 @@ const commonOptions = {
         'x-decorator': 'ACLActionProvider',
         'x-align': 'left',
       },
-      useVisible() {
-        const collection = useCollection() || ({} as any);
-        const { unavailableActions, availableActions } = collection?.options || {};
-        if (availableActions) {
-          return availableActions.includes?.('destroy');
-        }
-        if (unavailableActions) {
-          return !unavailableActions?.includes?.('destroy');
-        }
-        return true;
-      },
+      useVisible: () => useActionAvailable('destroy'),
     },
     {
       name: 'popup',
@@ -94,17 +64,7 @@ const commonOptions = {
       name: 'update-record',
       title: '{{t("Update record")}}',
       Component: 'UpdateRecordActionInitializer',
-      useVisible() {
-        const collection = useCollection() || ({} as any);
-        const { unavailableActions, availableActions } = collection?.options || {};
-        if (availableActions) {
-          return availableActions.includes?.('update');
-        }
-        if (unavailableActions) {
-          return !unavailableActions?.includes?.('update');
-        }
-        return true;
-      },
+      useVisible: () => useActionAvailable('update'),
     },
     {
       name: 'customRequest',

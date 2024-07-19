@@ -10,7 +10,7 @@
 import {
   CompatibleSchemaInitializer,
   InitializerWithSwitch,
-  useCollection,
+  useActionAvailable,
   useSchemaInitializerItem,
 } from '@nocobase/client';
 import React from 'react';
@@ -90,17 +90,7 @@ const commonOptions = {
           skipScopeCheck: true,
         },
       },
-      useVisible() {
-        const collection = useCollection() || ({} as any);
-        const { unavailableActions, availableActions } = collection?.options || {};
-        if (availableActions) {
-          return availableActions.includes?.('create');
-        }
-        if (unavailableActions) {
-          return !unavailableActions?.includes?.('create');
-        }
-        return true;
-      },
+      useVisible: () => useActionAvailable('create'),
     },
   ],
 };

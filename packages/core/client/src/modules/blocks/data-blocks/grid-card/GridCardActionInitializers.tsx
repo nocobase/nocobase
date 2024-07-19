@@ -9,7 +9,7 @@
 
 import { CompatibleSchemaInitializer } from '../../../../application/schema-initializer/CompatibleSchemaInitializer';
 import { useCollection } from '../../../../data-source';
-
+import { useActionAvailable } from '../../useActionAvailable';
 const commonOptions = {
   title: "{{t('Configure actions')}}",
   icon: 'SettingOutlined',
@@ -36,17 +36,7 @@ const commonOptions = {
           skipScopeCheck: true,
         },
       },
-      useVisible() {
-        const collection = useCollection() || ({} as any);
-        const { unavailableActions, availableActions } = collection?.options || {};
-        if (availableActions) {
-          return availableActions.includes?.('create');
-        }
-        if (unavailableActions) {
-          return !unavailableActions?.includes?.('create');
-        }
-        return true;
-      },
+      useVisible: () => useActionAvailable('create'),
     },
     {
       name: 'refresh',
@@ -68,22 +58,13 @@ const commonOptions = {
           skipScopeCheck: true,
         },
       },
-      useVisible() {
-        const collection = useCollection() || ({} as any);
-        const { unavailableActions, availableActions } = collection?.options || {};
-        if (availableActions) {
-          return availableActions.includes?.('create');
-        }
-        if (unavailableActions) {
-          return !unavailableActions?.includes?.('create');
-        }
-        return true;
-      },
+      useVisible: () => useActionAvailable('import'),
     },
     {
       name: 'export',
       title: "{{t('Export')}}",
       Component: 'ExportActionInitializer',
+      useVisible: () => useActionAvailable('export'),
       schema: {
         'x-align': 'right',
         'x-decorator': 'ACLActionProvider',

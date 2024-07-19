@@ -11,7 +11,7 @@ import {
   SchemaInitializer,
   SchemaInitializerItemType,
   useCollection_deprecated,
-  useCollection,
+  useActionAvailable,
 } from '@nocobase/client';
 import { generateNTemplate } from '../../../locale';
 
@@ -57,17 +57,7 @@ export const CalendarFormActionInitializers = new SchemaInitializer({
               type: 'primary',
             },
           },
-          useVisible() {
-            const collection = useCollection() || ({} as any);
-            const { unavailableActions, availableActions } = collection?.options || {};
-            if (availableActions) {
-              return availableActions.includes?.('update');
-            }
-            if (unavailableActions) {
-              return !unavailableActions?.includes?.('update');
-            }
-            return true;
-          },
+          useVisible: () => useActionAvailable('update'),
         },
         {
           name: 'delete',
@@ -77,17 +67,7 @@ export const CalendarFormActionInitializers = new SchemaInitializer({
             'x-component': 'Action',
             'x-decorator': 'ACLActionProvider',
           },
-          useVisible() {
-            const collection = useCollection() || ({} as any);
-            const { unavailableActions, availableActions } = collection?.options || {};
-            if (availableActions) {
-              return availableActions.includes?.('destroy');
-            }
-            if (unavailableActions) {
-              return !unavailableActions?.includes?.('destroy');
-            }
-            return true;
-          },
+          useVisible: () => useActionAvailable('destroy'),
         },
         deleteEventActionInitializer,
       ],
@@ -176,17 +156,7 @@ export const CalendarFormActionInitializers = new SchemaInitializer({
               triggerWorkflows: [],
             },
           },
-          useVisible() {
-            const collection = useCollection() || ({} as any);
-            const { unavailableActions, availableActions } = collection?.options || {};
-            if (availableActions) {
-              return availableActions.includes?.('update');
-            }
-            if (unavailableActions) {
-              return !unavailableActions?.includes?.('update');
-            }
-            return true;
-          },
+          useVisible: () => useActionAvailable('update'),
         },
         {
           name: 'customRequest',

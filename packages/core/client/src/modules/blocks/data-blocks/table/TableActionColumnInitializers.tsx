@@ -21,7 +21,7 @@ import { useDataBlockProps } from '../../../../data-source';
 import { createDesignable, useDesignable } from '../../../../schema-component';
 import { useGetAriaLabelOfDesigner } from '../../../../schema-settings/hooks/useGetAriaLabelOfDesigner';
 import { useCollection } from '../../../../data-source';
-
+import { useActionAvailable } from '../../useActionAvailable';
 export const Resizable = () => {
   const { t } = useTranslation();
   const { dn } = useDesignable();
@@ -161,17 +161,7 @@ const commonOptions = {
         'x-action': 'view',
         'x-decorator': 'ACLActionProvider',
       },
-      useVisible() {
-        const collection = useCollection() || ({} as any);
-        const { unavailableActions, availableActions } = collection?.options || {};
-        if (availableActions) {
-          return availableActions.includes?.('get');
-        }
-        if (unavailableActions) {
-          return !unavailableActions?.includes?.('get');
-        }
-        return true;
-      },
+      useVisible: () => useActionAvailable('get'),
     },
     {
       type: 'item',
@@ -183,17 +173,7 @@ const commonOptions = {
         'x-action': 'update',
         'x-decorator': 'ACLActionProvider',
       },
-      useVisible() {
-        const collection = useCollection() || ({} as any);
-        const { unavailableActions, availableActions } = collection?.options || {};
-        if (availableActions) {
-          return availableActions.includes?.('update');
-        }
-        if (unavailableActions) {
-          return !unavailableActions?.includes?.('update');
-        }
-        return true;
-      },
+      useVisible: () => useActionAvailable('update'),
     },
     {
       type: 'item',
@@ -205,17 +185,7 @@ const commonOptions = {
         'x-action': 'destroy',
         'x-decorator': 'ACLActionProvider',
       },
-      useVisible() {
-        const collection = useCollection() || ({} as any);
-        const { unavailableActions, availableActions } = collection?.options || {};
-        if (availableActions) {
-          return availableActions.includes?.('destroy');
-        }
-        if (unavailableActions) {
-          return !unavailableActions?.includes?.('destroy');
-        }
-        return true;
-      },
+      useVisible: () => useActionAvailable('destroy'),
     },
     {
       type: 'item',
@@ -269,17 +239,7 @@ const commonOptions = {
       title: '{{t("Update record")}}',
       name: 'updateRecord',
       Component: 'UpdateRecordActionInitializer',
-      useVisible() {
-        const collection = useCollection() || ({} as any);
-        const { unavailableActions, availableActions } = collection?.options || {};
-        if (availableActions) {
-          return availableActions.includes?.('update');
-        }
-        if (unavailableActions) {
-          return !unavailableActions?.includes?.('update');
-        }
-        return true;
-      },
+      useVisible: () => useActionAvailable('update'),
     },
     {
       name: 'customRequest',
