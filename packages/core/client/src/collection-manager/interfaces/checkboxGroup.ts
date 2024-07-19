@@ -26,7 +26,7 @@ export class CheckboxGroupFieldInterface extends CollectionFieldInterface {
       'x-component': 'Checkbox.Group',
     },
   };
-  availableTypes = ['array'];
+  availableTypes = ['array', 'json'];
   hasDefaultValue = true;
   properties = {
     ...defaultProps,

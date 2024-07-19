@@ -8,8 +8,8 @@
  */
 
 import { CompatibleSchemaInitializer } from '../../../../application/schema-initializer/CompatibleSchemaInitializer';
-import { useCollection_deprecated } from '../../../../collection-manager';
-
+import { useCollection } from '../../../../data-source';
+import { useActionAvailable } from '../../useActionAvailable';
 const commonOptions = {
   title: '{{t("Configure actions")}}',
   icon: 'SettingOutlined',
@@ -24,6 +24,7 @@ const commonOptions = {
         'x-decorator': 'ACLActionProvider',
         'x-align': 'left',
       },
+      useVisible: () => useActionAvailable('get'),
     },
     {
       name: 'edit',
@@ -35,10 +36,7 @@ const commonOptions = {
         'x-decorator': 'ACLActionProvider',
         'x-align': 'left',
       },
-      useVisible() {
-        const collection = useCollection_deprecated();
-        return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
-      },
+      useVisible: () => useActionAvailable('update'),
     },
     {
       name: 'delete',
@@ -50,10 +48,7 @@ const commonOptions = {
         'x-decorator': 'ACLActionProvider',
         'x-align': 'left',
       },
-      useVisible() {
-        const collection = useCollection_deprecated();
-        return collection.template !== 'sql';
-      },
+      useVisible: () => useActionAvailable('destroy'),
     },
     {
       name: 'popup',
@@ -69,10 +64,7 @@ const commonOptions = {
       name: 'update-record',
       title: '{{t("Update record")}}',
       Component: 'UpdateRecordActionInitializer',
-      useVisible() {
-        const collection = useCollection_deprecated();
-        return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
-      },
+      useVisible: () => useActionAvailable('update'),
     },
     {
       name: 'customRequest',
@@ -80,10 +72,6 @@ const commonOptions = {
       Component: 'CustomRequestInitializer',
       schema: {
         'x-action': 'customize:table:request',
-      },
-      useVisible() {
-        const collection = useCollection_deprecated();
-        return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
       },
     },
     {
