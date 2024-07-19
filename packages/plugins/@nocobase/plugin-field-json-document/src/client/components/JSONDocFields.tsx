@@ -233,7 +233,7 @@ export const JSONDocFields: React.FC = () => {
         paginate: false,
         filter: {
           'interface.$not': null,
-          'name.$not': '__index',
+          'name.$not': record.targetKey || '__json_index',
         },
         sort: ['sort'],
       },

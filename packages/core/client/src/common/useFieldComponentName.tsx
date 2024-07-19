@@ -27,14 +27,13 @@ export function useFieldComponentName(): string {
     AssociationField: 'Select',
   };
 
-  if (!tableColumnSchema && ['JSONDocObject', 'JSONDocArray'].includes(collectionField?.interface)) {
-    return 'Nester';
-  }
+  const isJSONDocField = ['JSONDocObject', 'JSONDocArray'].includes(collectionField?.interface);
 
   const fieldComponentName =
     fieldSchema?.['x-component-props']?.['mode'] ||
     field?.componentProps?.['mode'] ||
     (isFileField ? 'FileManager' : '') ||
+    (isJSONDocField ? 'Nester' : '') ||
     fieldSchema?.['x-component-props']?.['component'] ||
     collectionField?.uiSchema?.['x-component'];
   return map[fieldComponentName] || fieldComponentName;

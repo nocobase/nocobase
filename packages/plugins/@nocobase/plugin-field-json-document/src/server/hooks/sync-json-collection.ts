@@ -12,32 +12,7 @@ import _ from 'lodash';
 
 export const syncJSONCollection = (db: Database) => {
   return async (model: Model, { transaction }) => {
-    const { type, name } = model.get();
-    const fields = [
-      {
-        interface: 'input',
-        title: 'Name',
-        type: 'string',
-        name: 'name',
-        uiSchema: {
-          type: 'string',
-          title: 'Name',
-          'x-component': 'Input',
-        },
-      },
-      {
-        interface: 'password',
-        title: 'Password',
-        type: 'password',
-        name: 'password',
-        uiSchema: {
-          type: 'string',
-          title: 'Password',
-          'x-component': 'Password',
-        },
-      },
-    ];
-
+    const { type, name, fields = [] } = model.get();
     if (type !== 'JSONDocument') {
       return;
     }
