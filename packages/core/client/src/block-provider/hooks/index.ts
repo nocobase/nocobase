@@ -1056,13 +1056,13 @@ export const useDetailPrintActionProps = () => {
   const printHandler = useReactToPrint({
     content: () => formBlockRef.current,
     pageStyle: `@media print {
-       * {
-         margin: 0;
-       }
-       :not(.ant-formily-item-control-content-component) > div.ant-formily-layout>div:first-child {
-         overflow: hidden; height: 0;
-       }
-     }`,
+        * {
+          margin: 0;
+        }
+        :not(.ant-formily-item-control-content-component) > div.ant-formily-layout>div:first-child {
+          overflow: hidden; height: 0;
+        }
+      }`,
   });
   return {
     async onClick() {
@@ -1127,7 +1127,7 @@ export const useDetailsPaginationProps = () => {
       },
       showTotal: false,
       showTitle: false,
-      total: ctx.service?.data?.data ? 1 * current + 1 : 1 * current,
+      total: ctx.service?.data?.data?.length ? 1 * current + 1 : 1 * current,
       className: css`
         .ant-pagination-simple-pager {
           display: none !important;
