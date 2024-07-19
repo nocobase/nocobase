@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { DeleteOutlined, MenuOutlined } from '@ant-design/icons';
+import { DeleteOutlined, MenuOutlined, LeftOutlined, RightOutlined } from '@ant-design/icons';
 import { TinyColor } from '@ctrl/tinycolor';
 import { SortableContext, SortableContextProps, useSortable } from '@dnd-kit/sortable';
 import { css } from '@emotion/css';
@@ -261,21 +261,42 @@ const TableIndex = (props) => {
 
 const usePaginationProps = (pagination1, pagination2) => {
   const { t } = useTranslation();
+  const field: any = useField();
   const pagination = useMemo(
     () => ({ ...pagination1, ...pagination2 }),
     [JSON.stringify({ ...pagination1, ...pagination2 })],
   );
-
-  const showTotal = useCallback((total) => t('Total {{count}} items', { count: total }), [t]);
-
-  const result = useMemo(
-    () => ({
-      showTotal,
-      showSizeChanger: true,
-      ...pagination,
-    }),
-    [pagination, t, showTotal],
+  const { total: totalCount, current, pageSize } = pagination || {};
+  const showTotal = useCallback(
+    (total) => {
+      return t('Total {{count}} items', { count: total });
+    },
+    [t, totalCount],
   );
+  const result = useMemo(() => {
+    if (totalCount) {
+      return {
+        showTotal,
+        showSizeChanger: true,
+        ...pagination,
+      };
+    } else {
+      return {
+        showTotal: false,
+        simple: { readOnly: true },
+        showTitle: false,
+        showSizeChanger: true,
+        hideOnSinglePage: false,
+        ...pagination,
+        total: field.value?.length < pageSize ? pageSize * current : pageSize * current + 1,
+        className: css`
+          .ant-pagination-simple-pager {
+            display: none !important;
+          }
+        `,
+      };
+    }
+  }, [pagination, t, showTotal]);
 
   if (pagination2 === false) {
     return false;
@@ -499,12 +520,12 @@ export const Table: any = withDynamicSchemaProps(
       [rowKey, defaultRowKey],
     );
 
-    const dataSourceKeys = field?.value?.map(getRowKey);
+    const dataSourceKeys = field?.value?.map?.(getRowKey);
     const memoizedDataSourceKeys = useMemo(() => dataSourceKeys, [JSON.stringify(dataSourceKeys)]);
-    const dataSource = useMemo(
-      () => [...(field?.value || [])].filter(Boolean),
-      [field?.value, field?.value?.length, memoizedDataSourceKeys],
-    );
+    const dataSource = useMemo(() => {
+      const value = Array.isArray(field?.value) ? field.value : [];
+      return value.filter(Boolean);
+    }, [field?.value, field?.value?.length, memoizedDataSourceKeys]);
 
     const bodyWrapperComponent = useMemo(() => {
       return (props) => {

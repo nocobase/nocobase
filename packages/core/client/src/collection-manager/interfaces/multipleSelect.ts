@@ -29,7 +29,7 @@ export class MultipleSelectFieldInterface extends CollectionFieldInterface {
       enum: [],
     },
   };
-  availableTypes = ['array'];
+  availableTypes = ['array', 'json'];
   hasDefaultValue = true;
   properties = {
     ...defaultProps,

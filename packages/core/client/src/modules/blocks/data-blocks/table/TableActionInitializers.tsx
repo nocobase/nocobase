@@ -9,8 +9,8 @@
 
 import { useFieldSchema } from '@formily/react';
 import { CompatibleSchemaInitializer } from '../../../../application/schema-initializer/CompatibleSchemaInitializer';
-import { useCollection_deprecated } from '../../../../collection-manager/hooks/useCollection_deprecated';
-
+import { useCollection } from '../../../../data-source';
+import { useActionAvailable } from '../../useActionAvailable';
 const commonOptions = {
   title: "{{t('Configure actions')}}",
   icon: 'SettingOutlined',
@@ -27,6 +27,7 @@ const commonOptions = {
         'x-align': 'left',
       },
     },
+
     {
       type: 'item',
       title: "{{t('Add new')}}",
@@ -39,10 +40,7 @@ const commonOptions = {
           skipScopeCheck: true,
         },
       },
-      useVisible() {
-        const collection = useCollection_deprecated();
-        return !['view', 'file', 'sql'].includes(collection.template) || collection?.writableView;
-      },
+      useVisible: () => useActionAvailable('create'),
     },
     {
       type: 'item',
@@ -53,10 +51,7 @@ const commonOptions = {
         'x-align': 'right',
         'x-decorator': 'ACLActionProvider',
       },
-      useVisible() {
-        const collection = useCollection_deprecated();
-        return !['view', 'sql'].includes(collection.template) || collection?.writableView;
-      },
+      useVisible: () => useActionAvailable('destroyMany'),
     },
     {
       type: 'item',
@@ -90,7 +85,7 @@ const commonOptions = {
       },
       useVisible() {
         const schema = useFieldSchema();
-        const collection = useCollection_deprecated();
+        const collection = useCollection();
         const { treeTable } = schema?.parent?.['x-decorator-props'] || {};
         return collection.tree && treeTable;
       },
