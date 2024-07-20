@@ -141,6 +141,14 @@ export abstract class Plugin<O = any> implements PluginInterface {
   onSync(message: SyncMessageData): Promise<void> | void {}
 
   /**
+   * Publish a sync message.
+   * @experimental
+   */
+  sync(message: SyncMessageData) {
+    this.app.syncManager.publish(this.name, message);
+  }
+
+  /**
    * @deprecated
    */
   async importCollections(collectionsPath: string) {}
