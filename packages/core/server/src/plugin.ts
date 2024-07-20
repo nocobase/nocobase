@@ -138,13 +138,13 @@ export abstract class Plugin<O = any> implements PluginInterface {
    * Fired when a sync message is received.
    * @experimental
    */
-  onSync(message: SyncMessageData): Promise<void> | void {}
+  onSync(message: SyncMessageData = {}): Promise<void> | void {}
 
   /**
    * Publish a sync message.
    * @experimental
    */
-  sync(message: SyncMessageData) {
+  sync(message?: SyncMessageData) {
     this.app.syncManager.publish(this.name, message);
   }
 

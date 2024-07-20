@@ -112,7 +112,7 @@ export class SyncManager {
   /**
    * Publish a message to the sync manager
    */
-  public publish(namespace: string, data: SyncMessageData) {
+  public publish(namespace: string, data: SyncMessageData = {}) {
     if (!this.adapter) {
       return;
     }
