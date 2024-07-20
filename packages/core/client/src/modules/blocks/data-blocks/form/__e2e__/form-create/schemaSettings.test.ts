@@ -774,6 +774,11 @@ test.describe('set default value', () => {
     await expect(page.getByLabel('block-item-CollectionField-').getByRole('textbox')).toHaveValue('Super Admin');
 
     await page.reload();
+
+    // wait for the parsed variable value to be displayed
+    await expect(page.getByLabel('block-item-CollectionField-').getByRole('textbox')).toBeVisible();
+    await page.waitForTimeout(500);
+
     await expect(page.getByLabel('block-item-CollectionField-').getByRole('textbox')).toHaveValue('Super Admin');
   });
 });
