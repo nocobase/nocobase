@@ -72,6 +72,9 @@ jobs:
     timeout-minutes: 20
 
   core-and-plugins:
+    env:
+      ACTIONS_RUNNER_DEBUG: true
+      ACTIONS_STEP_DEBUG: true
     name: Core and plugins
     needs: build
     runs-on: ubuntu-latest
@@ -262,6 +265,9 @@ jobs:
     timeout-minutes: 60
 
   plugin-workflow-approval:
+    env:
+      ACTIONS_RUNNER_DEBUG: true
+      ACTIONS_STEP_DEBUG: true
     name: plugin-workflow-approval
     needs: build
     runs-on: ubuntu-latest
