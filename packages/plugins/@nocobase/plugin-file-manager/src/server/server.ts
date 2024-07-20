@@ -106,14 +106,14 @@ export default class PluginFileManagerServer extends Plugin {
     const Storage = this.db.getModel('storages');
     Storage.afterSave((m) => {
       this.storagesCache.set(m.id, m.toJSON());
-      this.app.syncManager.publish(this.name, {
+      this.sync({
         type: 'storageChange',
         storageId: `${m.id}`,
       });
     });
     Storage.afterDestroy((m) => {
       this.storagesCache.delete(m.id);
-      this.app.syncManager.publish(this.name, {
+      this.sync({
         type: 'storageRemove',
         storageId: `${m.id}`,
       });
