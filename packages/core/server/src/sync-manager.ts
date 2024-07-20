@@ -32,7 +32,6 @@ export type SyncMessage = {
  */
 export class SyncManager {
   private nodeId: string;
-  private app: Application;
   private eventEmitter = new EventEmitter();
   private adapter: SyncAdapter = null;
   private incomingBuffer: SyncMessageData[] = [];
@@ -82,8 +81,7 @@ export class SyncManager {
     }
   };
 
-  constructor(app: Application) {
-    this.app = app;
+  constructor(private app: Application) {
     this.nodeId = `${process.env.NODE_ID || randomUUID()}-${process.pid}`;
   }
 
@@ -112,7 +110,7 @@ export class SyncManager {
   /**
    * Publish a message to the sync manager
    */
-  public publish(namespace: string, data: SyncMessageData) {
+  public publish(namespace: string, data: SyncMessageData = {}) {
     if (!this.adapter) {
       return;
     }

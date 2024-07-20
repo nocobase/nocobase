@@ -342,7 +342,7 @@ export default class PluginWorkflowServer extends Plugin {
       this.enabledCache.delete(workflow.id);
     }
     if (!silent) {
-      this.app.syncManager.publish(this.name, {
+      this.sync({
         type: 'statusChange',
         workflowId: `${workflow.id}`,
         enabled: `${Number(next)}`,
