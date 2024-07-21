@@ -1239,18 +1239,18 @@ export const useAssociationFilterBlockProps = () => {
       },
     },
     {
-      // 由于 选项字段不需要触发当前请求，所以当前请求更改为手动触发
+      // 由于选项字段不需要触发当前请求，所以当前请求更改为手动触发
       manual: true,
       debounceWait: 300,
     },
   ));
 
   useEffect(() => {
-    // 由于 选项字段不需要触发当前请求，所以请求单独在 关系字段的时候触发
+    // 由于选项字段不需要触发当前请求，所以请求单独在关系字段的时候触发
     if (!isOptionalField(collectionField)) {
       run();
     }
-  }, [collectionField, labelKey, run, valueKey]);
+  }, [collectionField, labelKey, run, valueKey, field.componentProps?.params]);
 
   if (!collectionField) {
     return {};
