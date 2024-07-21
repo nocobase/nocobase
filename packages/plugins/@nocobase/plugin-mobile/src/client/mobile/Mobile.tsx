@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { AntdAppProvider, GlobalThemeProvider, OpenModeProvider, usePlugin } from '@nocobase/client';
+import { Action, AntdAppProvider, GlobalThemeProvider, OpenModeProvider, usePlugin } from '@nocobase/client';
 import React from 'react';
 import { isDesktop } from 'react-device-detect';
 
@@ -55,6 +55,7 @@ export const Mobile = () => {
             openModeToComponent={{
               page: MobileActionPage,
               drawer: MobileActionPage,
+              modal: Action.Modal,
             }}
           >
             <MobileAppProvider>
