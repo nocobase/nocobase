@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Application, Plugin } from '@nocobase/server';
+import { Application, Plugin, SyncMessageData } from '@nocobase/server';
 import { resolve } from 'path';
 import { DataSourcesCollectionModel } from './models/data-sources-collection-model';
 import { DataSourcesFieldModel } from './models/data-sources-field-model';
@@ -22,6 +22,7 @@ import { DataSourcesRolesResourcesModel } from './models/connections-roles-resou
 import { DataSourcesRolesResourcesActionModel } from './models/connections-roles-resources-action';
 import { DataSourceModel } from './models/data-source';
 import { DataSourcesRolesModel } from './models/data-sources-roles-model';
+import { message } from 'antd';
 
 type DataSourceState = 'loading' | 'loaded' | 'loading-failed' | 'reloading' | 'reloading-failed';
 
@@ -35,6 +36,44 @@ export class PluginDataSourceManagerServer extends Plugin {
   public dataSourceStatus: {
     [dataSourceKey: string]: DataSourceState;
   } = {};
+
+  async onSync(message: SyncMessageData = {}) {
+    const { type } = message;
+    if (type === 'syncRole') {
+      const { roleName, dataSourceKey } = message;
+      const dataSource = this.app.dataSourceManager.dataSources.get(dataSourceKey);
+
+      const dataSourceRole: DataSourcesRolesModel = await this.app.db.getRepository('dataSourcesRoles').findOne({
+        filter: {
+          dataSourceKey,
+          roleName,
+        },
+      });
+
+      await dataSourceRole.writeToAcl({
+        acl: dataSource.acl,
+      });
+    }
+
+    if (type === 'syncRoleResource') {
+      const { roleName, dataSourceKey, resourceName } = message;
+      const dataSource = this.app.dataSourceManager.dataSources.get(dataSourceKey);
+
+      const dataSourceRoleResource: DataSourcesRolesResourcesModel = await this.app.db
+        .getRepository('dataSourcesRolesResources')
+        .findOne({
+          filter: {
+            dataSourceKey,
+            roleName,
+            name: resourceName,
+          },
+        });
+
+      await dataSourceRoleResource.writeToACL({
+        acl: dataSource.acl,
+      });
+    }
+  }
 
   async beforeLoad() {
     this.app.db.registerModels({
@@ -412,6 +451,14 @@ export class PluginDataSourceManagerServer extends Plugin {
           acl: dataSource.acl,
           transaction: transaction,
         });
+
+        // sync roles resources between nodes
+        await this.app.syncManager.publish(this.name, {
+          type: 'syncRoleResource',
+          roleName: model.get('roleName'),
+          dataSourceKey: model.get('dataSourceKey'),
+          resourceName: model.get('name'),
+        });
       },
     );
 
@@ -429,6 +476,13 @@ export class PluginDataSourceManagerServer extends Plugin {
           acl: dataSource.acl,
           transaction: transaction,
         });
+
+        await this.app.syncManager.publish(this.name, {
+          type: 'syncRoleResource',
+          roleName: resource.get('roleName'),
+          dataSourceKey: resource.get('dataSourceKey'),
+          resourceName: resource.get('name'),
+        });
       },
     );
 
@@ -440,6 +494,13 @@ export class PluginDataSourceManagerServer extends Plugin {
       if (role) {
         role.revokeResource(model.get('name'));
       }
+
+      await this.app.syncManager.public(this.name, {
+        type: 'syncRoleResource',
+        roleName,
+        dataSourceKey: model.get('dataSourceKey'),
+        resourceName: model.get('name'),
+      });
     });
 
     this.app.db.on('dataSourcesRoles.afterSave', async (model: DataSourcesRolesModel, options) => {
@@ -461,6 +522,13 @@ export class PluginDataSourceManagerServer extends Plugin {
         },
         hooks: false,
         transaction,
+      });
+
+      // sync role between nodes
+      await this.app.syncManager.publish(this.name, {
+        type: 'syncRole',
+        roleName: model.get('roleName'),
+        dataSourceKey: model.get('dataSourceKey'),
       });
     });
 
