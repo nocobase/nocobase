@@ -130,6 +130,34 @@ export class PluginMultiAppManagerServer extends Plugin {
   appOptionsFactory: AppOptionsFactory = defaultAppOptionsFactory;
   subAppUpgradeHandler: SubAppUpgradeHandler = defaultSubAppUpgradeHandle;
 
+  async onSync(message) {
+    const { type } = message;
+
+    if (type === 'startApp') {
+      const { appName } = message;
+      const model = await this.app.db.getRepository('applications').findOne({
+        filter: {
+          name: appName,
+        },
+      });
+
+      if (!model) {
+        return;
+      }
+
+      const subApp = model.registerToSupervisor(this.app, {
+        appOptionsFactory: this.appOptionsFactory,
+      });
+
+      subApp.runCommand('start', '--quickstart');
+    }
+
+    if (type === 'removeApp') {
+      const { appName } = message;
+      await AppSupervisor.getInstance().removeApp(appName);
+    }
+  }
+
   static getDatabaseConfig(app: Application): IDatabaseOptions {
     let oldConfig =
       app.options.database instanceof Database
@@ -186,6 +214,11 @@ export class PluginMultiAppManagerServer extends Plugin {
           context: options.context,
         });
 
+        this.app.syncManager.publish(this.name, {
+          type: 'startApp',
+          appName: name,
+        });
+
         const startPromise = subApp.runCommand('start', '--quickstart');
 
         if (options?.context?.waitSubAppInstall) {
@@ -196,6 +229,11 @@ export class PluginMultiAppManagerServer extends Plugin {
 
     this.db.on('applications.afterDestroy', async (model: ApplicationModel) => {
       await AppSupervisor.getInstance().removeApp(model.get('name') as string);
+
+      await this.app.syncManager.publish(this.name, {
+        type: 'removeApp',
+        appName: model.get('name'),
+      });
     });
 
     const self = this;
