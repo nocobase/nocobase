@@ -10,7 +10,7 @@
 import { randomUUID } from 'node:crypto';
 import EventEmitter from 'node:events';
 import Application from './application';
-import { isEqual, uniqWith } from 'lodash';
+import lodash, { isEqual, uniqWith } from 'lodash';
 
 export abstract class SyncAdapter extends EventEmitter {
   abstract get ready(): boolean;
@@ -114,14 +114,30 @@ export class SyncManager {
     if (!this.adapter) {
       return;
     }
+
     if (!this.adapter.ready) {
       this.outgoingBuffer.push([namespace, data]);
       this.app.logger.warn(`sync adapter is not ready for now, message will be send when it is ready`);
       return;
     }
+
     this.app.logger.info(`publishing sync message from #${this.nodeId} (${this.app.name}) in namespace ${namespace}:`, {
       data,
     });
-    return this.adapter.publish({ ...data, nodeId: this.nodeId, appName: this.app.name, namespace });
+
+    // @ts-ignore
+    if (data.transaction && data.transaction.afterCommit) {
+      // @ts-ignore
+      data.transaction.afterCommit(() => {
+        this.adapter.publish({
+          ...lodash.omit(data, ['transaction']),
+          nodeId: this.nodeId,
+          appName: this.app.name,
+          namespace,
+        });
+      });
+    } else {
+      return this.adapter.publish({ ...data, nodeId: this.nodeId, appName: this.app.name, namespace });
+    }
   }
 }

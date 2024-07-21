@@ -52,6 +52,26 @@ export class PluginDataSourceMainServer extends Plugin {
 
       await collectionModel.load();
     }
+
+    if (type === 'removeField') {
+      const { collectionName, fieldName } = message;
+      const collection = this.app.db.getCollection(collectionName);
+      if (!collection) {
+        return;
+      }
+
+      return collection.removeFieldFromDb(fieldName);
+    }
+
+    if (type === 'removeCollection') {
+      const { collectionName } = message;
+      const collection = this.app.db.getCollection(collectionName);
+      if (!collection) {
+        return;
+      }
+
+      return collection.remove();
+    }
   }
 
   async beforeLoad() {
@@ -95,6 +115,7 @@ export class PluginDataSourceMainServer extends Plugin {
           this.app.syncManager.publish(this.name, {
             type: 'syncCollection',
             collectionName: model.get('name'),
+            transaction,
           });
         }
       },
@@ -113,6 +134,12 @@ export class PluginDataSourceMainServer extends Plugin {
       }
 
       await model.remove(removeOptions);
+
+      this.app.syncManager.publish(this.name, {
+        type: 'removeCollection',
+        collectionName: model.get('name'),
+        transaction: options.transaction,
+      });
     });
 
     // 要在 beforeInitOptions 之前处理
@@ -264,6 +291,7 @@ export class PluginDataSourceMainServer extends Plugin {
         this.app.syncManager.publish(this.name, {
           type: 'syncCollection',
           collectionName: model.get('collectionName'),
+          transaction,
         });
       }
     });
@@ -276,6 +304,13 @@ export class PluginDataSourceMainServer extends Plugin {
     this.app.db.on('fields.beforeDestroy', async (model: FieldModel, options) => {
       await mutex.runExclusive(async () => {
         await model.remove(options);
+
+        this.app.syncManager.publish(this.name, {
+          type: 'removeField',
+          collectionName: model.get('collectionName'),
+          fieldName: model.get('name'),
+          transaction: options.transaction,
+        });
       });
     });
 
