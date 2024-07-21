@@ -73,6 +73,58 @@ export class PluginDataSourceManagerServer extends Plugin {
         acl: dataSource.acl,
       });
     }
+    if (type === 'loadDataSource') {
+      const { dataSourceKey } = message;
+      const dataSourceModel = await this.app.db.getRepository('dataSources').findOne({
+        filter: {
+          key: dataSourceKey,
+        },
+      });
+
+      if (!dataSourceModel) {
+        return;
+      }
+
+      await dataSourceModel.loadIntoApplication({
+        app: this.app,
+      });
+    }
+
+    if (type === 'loadDataSourceField') {
+      const { key } = message;
+      const fieldModel = await this.app.db.getRepository('dataSourcesFields').findOne({
+        filter: {
+          key,
+        },
+      });
+
+      fieldModel.load({
+        app: this.app,
+      });
+    }
+    if (type === 'removeDataSourceCollection') {
+      const { dataSourceKey, collectionName } = message;
+      const dataSource = this.app.dataSourceManager.dataSources.get(dataSourceKey);
+      dataSource.collectionManager.removeCollection(collectionName);
+    }
+
+    if (type === 'removeDataSourceField') {
+      const { key } = message;
+      const fieldModel = await this.app.db.getRepository('dataSourcesFields').findOne({
+        filter: {
+          key,
+        },
+      });
+
+      fieldModel.unload({
+        app: this.app,
+      });
+    }
+
+    if (type === 'removeDataSource') {
+      const { dataSourceKey } = message;
+      this.app.dataSourceManager.dataSources.delete(dataSourceKey);
+    }
   }
 
   async beforeLoad() {
@@ -138,6 +190,11 @@ export class PluginDataSourceManagerServer extends Plugin {
       if (model.changed('options') && !model.isMainRecord()) {
         model.loadIntoApplication({
           app: this.app,
+        });
+
+        this.app.syncManager.publish(this.name, {
+          type: 'loadDataSource',
+          dataSourceKey: model.get('key'),
         });
       }
     });
@@ -341,6 +398,7 @@ export class PluginDataSourceManagerServer extends Plugin {
 
       async ['dataSources:refresh'](ctx, next) {
         const { filterByTk, clientStatus } = ctx.action.params;
+
         const dataSourceModel: DataSourceModel = await ctx.db.getRepository('dataSources').findOne({
           filter: {
             key: filterByTk,
@@ -355,6 +413,11 @@ export class PluginDataSourceManagerServer extends Plugin {
         ) {
           dataSourceModel.loadIntoApplication({
             app: ctx.app,
+          });
+
+          this.app.syncManager.publish(this.name, {
+            type: 'loadDataSource',
+            dataSourceKey: dataSourceModel.get('key'),
           });
         }
 
@@ -394,17 +457,33 @@ export class PluginDataSourceManagerServer extends Plugin {
     this.app.db.on('dataSourcesCollections.afterDestroy', async (model: DataSourcesCollectionModel) => {
       const dataSource = this.app.dataSourceManager.dataSources.get(model.get('dataSourceKey'));
       dataSource.collectionManager.removeCollection(model.get('name'));
+
+      await this.app.syncManager.publish(this.name, {
+        type: 'removeDataSourceCollection',
+        dataSourceKey: model.get('dataSourceKey'),
+        collectionName: model.get('name'),
+      });
     });
 
     this.app.db.on('dataSourcesFields.afterSaveWithAssociations', async (model: DataSourcesFieldModel) => {
       model.load({
         app: this.app,
       });
+
+      await this.app.syncManager.publish(this.name, {
+        type: 'loadDataSourceField',
+        key: model.get('key'),
+      });
     });
 
     this.app.db.on('dataSourcesFields.afterDestroy', async (model: DataSourcesFieldModel) => {
       model.unload({
         app: this.app,
+      });
+
+      await this.app.syncManager.publish(this.name, {
+        type: 'removeDataSourceField',
+        key: model.get('key'),
       });
     });
 
@@ -420,6 +499,11 @@ export class PluginDataSourceManagerServer extends Plugin {
 
     this.app.db.on('dataSources.afterDestroy', async (model: DataSourceModel) => {
       this.app.dataSourceManager.dataSources.delete(model.get('key'));
+
+      await this.app.syncManager.publish(this.name, {
+        type: 'removeDataSource',
+        dataSourceKey: model.get('key'),
+      });
     });
 
     this.app.on('afterStart', async (app: Application) => {
