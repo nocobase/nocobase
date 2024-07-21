@@ -70,7 +70,7 @@ export class PluginDataSourceMainServer extends Plugin {
         return;
       }
 
-      return collection.remove();
+      collection.remove();
     }
   }
 
