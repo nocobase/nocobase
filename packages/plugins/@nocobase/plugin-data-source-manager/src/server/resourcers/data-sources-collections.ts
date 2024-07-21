@@ -86,10 +86,22 @@ export default {
           },
         });
       } else {
-        await dataSourceCollectionRecord.update({
-          ...params.values,
+        await ctx.db.getRepository('dataSourcesCollections').update({
+          filter: {
+            name: collectionName,
+            dataSourceKey,
+          },
+          values: params.values,
+          updateAssociationValues: ['fields'],
         });
       }
+
+      dataSourceCollectionRecord = await ctx.db.getRepository('dataSourcesCollections').findOne({
+        filter: {
+          name: collectionName,
+          dataSourceKey,
+        },
+      });
 
       ctx.body = dataSourceCollectionRecord.toJSON();
 

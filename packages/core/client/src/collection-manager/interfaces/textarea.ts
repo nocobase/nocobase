@@ -26,7 +26,7 @@ export class TextareaFieldInterface extends CollectionFieldInterface {
       'x-component': 'Input.TextArea',
     },
   };
-  availableTypes = ['text', 'json'];
+  availableTypes = ['text', 'json', 'string'];
   hasDefaultValue = true;
   properties = {
     ...defaultProps,

@@ -16,7 +16,7 @@ export class CircleFieldInterface extends CommonSchema {
   group = 'map';
   order = 3;
   title = generateNTemplate('Circle');
-  availableTypes = ['circle'];
+  availableTypes = ['circle', 'json'];
   description = generateNTemplate('Circle');
   sortable = true;
   default = {

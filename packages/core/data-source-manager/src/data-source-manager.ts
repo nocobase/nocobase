@@ -10,8 +10,14 @@
 import { ToposortOptions } from '@nocobase/utils';
 import { DataSource } from './data-source';
 import { DataSourceFactory } from './data-source-factory';
+import { createConsoleLogger, createLogger, Logger, LoggerOptions } from '@nocobase/logger';
 
 type DataSourceHook = (dataSource: DataSource) => void;
+
+type DataSourceManagerOptions = {
+  logger?: LoggerOptions | Logger;
+  app?: any;
+};
 
 export class DataSourceManager {
   dataSources: Map<string, DataSource>;
@@ -23,9 +29,17 @@ export class DataSourceManager {
   private onceHooks: Array<DataSourceHook> = [];
   private beforeAddHooks: Array<DataSourceHook> = [];
 
-  constructor(public options = {}) {
+  constructor(public options: DataSourceManagerOptions = {}) {
     this.dataSources = new Map();
     this.middlewares = [];
+
+    if (options.app) {
+      options.app.on('beforeStop', async () => {
+        for (const dataSource of this.dataSources.values()) {
+          await dataSource.close();
+        }
+      });
+    }
   }
 
   get(dataSourceKey: string) {
@@ -33,8 +47,28 @@ export class DataSourceManager {
   }
 
   async add(dataSource: DataSource, options: any = {}) {
+    let logger;
+
+    if (this.options.logger) {
+      if (typeof this.options.logger['log'] === 'function') {
+        logger = this.options.logger as Logger;
+      } else {
+        logger = createLogger(this.options.logger);
+      }
+    } else {
+      logger = createConsoleLogger();
+    }
+
+    dataSource.setLogger(logger);
+
     for (const hook of this.beforeAddHooks) {
       hook(dataSource);
+    }
+
+    const oldDataSource = this.dataSources.get(dataSource.name);
+
+    if (oldDataSource) {
+      await oldDataSource.close();
     }
 
     await dataSource.load(options);

@@ -17,7 +17,7 @@ import { SchemaSettings } from '../../../application/schema-settings/SchemaSetti
 import { useCollection_deprecated } from '../../../collection-manager';
 import { ButtonEditor, RemoveButton } from '../../../schema-component/antd/action/Action.Designer';
 import { SchemaSettingsLinkageRules, SchemaSettingsModalItem } from '../../../schema-settings';
-import { useURLAndParamsSchema } from './useURLAndParamsSchema';
+import { useURLAndHTMLSchema } from './useURLAndHTMLSchema';
 
 interface SchemaSettingsActionLinkItemProps {
   afterSubmit?: () => void;
@@ -28,8 +28,12 @@ export const SchemaSettingsActionLinkItem: FC<SchemaSettingsActionLinkItemProps>
   const fieldSchema = useFieldSchema();
   const { dn } = useDesignable();
   const { t } = useTranslation();
-  const { urlSchema, paramsSchema } = useURLAndParamsSchema();
-  const initialValues = { url: field.componentProps.url, params: field.componentProps.params || [{}] };
+  const { urlSchema, paramsSchema, openInNewWindowSchema } = useURLAndHTMLSchema();
+  const initialValues = {
+    url: field.componentProps.url,
+    params: field.componentProps.params || [{}],
+    openInNewWindow: field.componentProps.openInNewWindow,
+  };
 
   return (
     <SchemaSettingsModalItem
@@ -44,17 +48,21 @@ export const SchemaSettingsActionLinkItem: FC<SchemaSettingsActionLinkItemProps>
             required: true,
           },
           params: paramsSchema,
+          openInNewWindow: openInNewWindowSchema,
         },
       }}
-      onSubmit={({ url, params }) => {
+      onSubmit={({ url, params, openInNewWindow }) => {
         const componentProps = fieldSchema['x-component-props'] || {};
         componentProps.url = url;
-        console.log('componentProps', componentProps);
-        fieldSchema['x-component-props'] = componentProps;
-        field.componentProps.url = url;
         componentProps.params = params;
+        componentProps.openInNewWindow = openInNewWindow;
+
         fieldSchema['x-component-props'] = componentProps;
+
+        field.componentProps.url = url;
         field.componentProps.params = params;
+        field.componentProps.openInNewWindow = openInNewWindow;
+
         dn.emit('patch', {
           schema: {
             ['x-uid']: fieldSchema['x-uid'],

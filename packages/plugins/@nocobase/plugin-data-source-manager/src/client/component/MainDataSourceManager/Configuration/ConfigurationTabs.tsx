@@ -30,7 +30,7 @@ import {
   SchemaComponentOptions,
   useCompile,
   useResourceActionContext,
-  CollectionCategroriesContext,
+  CollectionCategoriesContext,
 } from '@nocobase/client';
 import { CollectionFields } from './CollectionFields';
 import { collectionTableSchema } from './schemas/collections';
@@ -93,7 +93,7 @@ const TabBar = ({ item }) => {
 const DndProvider = observer(
   (props) => {
     const [activeTab, setActiveId] = useState(null);
-    const { refresh } = useContext(CollectionCategroriesContext);
+    const { refresh } = useContext(CollectionCategoriesContext);
     const { refresh: refreshCM } = useResourceActionContext();
     const api = useAPIClient();
     const onDragEnd = async (props: DragEndEvent) => {
@@ -134,7 +134,7 @@ const DndProvider = observer(
 );
 export const ConfigurationTabs = () => {
   const { t } = useTranslation();
-  const { data, refresh } = useContext(CollectionCategroriesContext);
+  const { data, refresh } = useContext(CollectionCategoriesContext);
   const { refresh: refreshCM, run, defaultRequest, setState } = useResourceActionContext();
   const [activeKey, setActiveKey] = useState({ tab: 'all' });
   const [key, setKey] = useState(activeKey.tab);

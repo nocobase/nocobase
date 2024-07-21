@@ -183,3 +183,57 @@ export const collection = [
   { label: '{{t("is empty")}}', value: '$empty', noValue: true },
   { label: '{{t("is not empty")}}', value: '$notEmpty', noValue: true },
 ];
+
+export const bigField = [
+  {
+    label: '{{t("contains")}}',
+    value: '$includes',
+    selected: true,
+    schema: {
+      type: 'string',
+      'x-component': 'Input',
+    },
+  },
+  {
+    label: '{{t("does not contain")}}',
+    value: '$notIncludes',
+    schema: {
+      type: 'string',
+      'x-component': 'Input',
+    },
+  },
+  {
+    label: '{{t("is")}}',
+    value: '$eq',
+    schema: {
+      type: 'string',
+      'x-component': 'Input',
+    },
+  },
+  {
+    label: '{{t("is not")}}',
+    value: '$ne',
+    schema: {
+      type: 'string',
+      'x-component': 'Input',
+    },
+  },
+  {
+    label: '{{t("is empty")}}',
+    value: '$empty',
+    noValue: true,
+    schema: {
+      type: 'string',
+      'x-component': 'Input',
+    },
+  },
+  {
+    label: '{{t("is not empty")}}',
+    value: '$notEmpty',
+    noValue: true,
+    schema: {
+      type: 'string',
+      'x-component': 'Input',
+    },
+  },
+];

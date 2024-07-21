@@ -32,8 +32,7 @@ const getVariableComponentWithScope = (Com) => {
   };
 };
 
-export const useURLAndParamsSchema = () => {
-  const fieldSchema = useFieldSchema();
+export const useURLAndHTMLSchema = () => {
   const { t } = useTranslation();
   const Com = useMemo(() => getVariableComponentWithScope(Variable.TextArea), []);
 
@@ -53,7 +52,40 @@ export const useURLAndParamsSchema = () => {
         },
       },
     };
-  }, [t, fieldSchema]);
+  }, [t, Com]);
+
+  const modeSchema = useMemo(() => {
+    return {
+      title: '{{t("Mode")}}',
+      'x-component': 'Radio.Group',
+      'x-decorator': 'FormItem',
+      default: 'url',
+      enum: [
+        { value: 'url', label: t('URL') },
+        { value: 'html', label: t('HTML') },
+      ],
+    };
+  }, [t]);
+
+  const htmlSchema = useMemo(() => {
+    return {
+      title: t('html'),
+      type: 'string',
+      'x-decorator': 'FormItem',
+      'x-component': getVariableComponentWithScope(Variable.RawTextArea),
+      'x-component-props': {
+        rows: 10,
+      },
+      'x-reactions': {
+        dependencies: ['mode'],
+        fulfill: {
+          state: {
+            hidden: '{{$deps[0] === "url"}}',
+          },
+        },
+      },
+    };
+  }, [t]);
 
   const paramsSchema = useMemo(() => {
     return {
@@ -123,7 +155,24 @@ export const useURLAndParamsSchema = () => {
         },
       },
     };
-  }, [fieldSchema]);
+  }, [Com]);
 
-  return { urlSchema, paramsSchema };
+  const openInNewWindowSchema = useMemo(() => {
+    return {
+      type: 'boolean',
+      'x-content': t('Open in new window'),
+      'x-decorator': 'FormItem',
+      'x-component': 'Checkbox',
+      'x-reactions': {
+        dependencies: ['mode'],
+        fulfill: {
+          state: {
+            hidden: '{{$deps[0] === "html"}}',
+          },
+        },
+      },
+    };
+  }, [t]);
+
+  return { urlSchema, paramsSchema, openInNewWindowSchema, modeSchema, htmlSchema };
 };

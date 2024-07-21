@@ -1005,7 +1005,9 @@ export const SchemaSettingsLinkageRules = function LinkageRules(props) {
   const record = useRecord();
   const { type: formBlockType } = useFormBlockType();
   const category = props?.category ?? LinkageRuleCategory.default;
-  const elementType = ['Action', 'Action.Link'].includes(fieldSchema['x-component']) ? 'button' : 'field';
+  const elementType =
+    props?.type ||
+    (fieldSchema?.['x-action'] || ['Action', 'Action.Link'].includes(fieldSchema['x-component']) ? 'button' : 'field');
 
   const gridSchema = findGridSchema(fieldSchema) || fieldSchema;
   const options = useLinkageCollectionFilterOptions(collectionName);

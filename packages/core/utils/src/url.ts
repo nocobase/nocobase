@@ -7,8 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+/**
+ * 是否是完整的 URL（带协议的）
+ * @param string
+ * @returns
+ */
 export function isURL(string) {
-  let url;
+  let url: URL;
 
   try {
     url = new URL(string);

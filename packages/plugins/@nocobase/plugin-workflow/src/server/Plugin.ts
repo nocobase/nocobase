@@ -110,7 +110,7 @@ export default class PluginWorkflowServer extends Plugin {
     }
   };
 
-  private onSync = async (message) => {
+  async onSync(message) {
     if (message.type === 'statusChange') {
       const workflowId = Number.parseInt(message.workflowId, 10);
       const enabled = Number.parseInt(message.enabled, 10);
@@ -133,7 +133,7 @@ export default class PluginWorkflowServer extends Plugin {
         }
       }
     }
-  };
+  }
 
   /**
    * @experimental
@@ -284,7 +284,6 @@ export default class PluginWorkflowServer extends Plugin {
     this.app.on('afterStart', async () => {
       this.app.setMaintainingMessage('check for not started executions');
       this.ready = true;
-      this.app.syncManager.subscribe(this.name, this.onSync);
 
       const collection = db.getCollection('workflows');
       const workflows = await collection.repository.find({
@@ -307,8 +306,6 @@ export default class PluginWorkflowServer extends Plugin {
       for (const workflow of this.enabledCache.values()) {
         this.toggle(workflow, false);
       }
-
-      this.app.syncManager.unsubscribe('workflow', this.onSync);
 
       this.ready = false;
       if (this.events.length) {
@@ -345,7 +342,7 @@ export default class PluginWorkflowServer extends Plugin {
       this.enabledCache.delete(workflow.id);
     }
     if (!silent) {
-      this.app.syncManager.publish(this.name, {
+      this.sync({
         type: 'statusChange',
         workflowId: `${workflow.id}`,
         enabled: `${Number(next)}`,
