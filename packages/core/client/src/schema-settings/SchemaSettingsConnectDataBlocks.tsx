@@ -10,6 +10,7 @@
 import { useFieldSchema } from '@formily/react';
 import { error } from '@nocobase/utils/client';
 import { Empty } from 'antd';
+import _ from 'lodash';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { findFilterTargets, updateFilterTargets } from '../block-provider/hooks';
@@ -17,6 +18,8 @@ import { useCollectionManager_deprecated } from '../collection-manager/hooks/use
 import { useCollection_deprecated } from '../collection-manager/hooks/useCollection_deprecated';
 import { useFilterBlock } from '../filter-provider/FilterProvider';
 import {
+  canBeConnectedByAssociation,
+  canBeConnectedByForeignKey,
   getSupportFieldsByAssociation,
   getSupportFieldsByForeignKey,
   isSameCollection,
@@ -49,104 +52,119 @@ export function SchemaSettingsConnectDataBlocks(props) {
     return null;
   }
 
-  const Content = dataBlocks.map((block) => {
-    const title = `${compile(block.collection.title)} #${block.uid.slice(0, 4)}`;
-    const onHover = () => {
-      const dom = block.dom;
-      const designer = dom.querySelector('.general-schema-designer') as HTMLElement;
-      if (designer) {
-        designer.style.display = 'block';
-      }
-      dom.style.boxShadow = '0 0 10px rgba(0, 0, 0, 0.2)';
-      dom.scrollIntoView({
-        behavior: 'smooth',
-        block: 'center',
-      });
-    };
-    const onLeave = () => {
-      const dom = block.dom;
-      const designer = dom.querySelector('.general-schema-designer') as HTMLElement;
-      if (designer) {
-        designer.style.display = null;
-      }
-      dom.style.boxShadow = 'none';
-    };
-    if (isSameCollection(block.collection, collection)) {
-      return (
-        <SchemaSettingsSwitchItem
-          key={block.uid}
-          title={title}
-          checked={targets.some((target) => target.uid === block.uid)}
-          onChange={(checked) => {
-            if (checked) {
-              targets.push({ uid: block.uid });
-            } else {
-              targets = targets.filter((target) => target.uid !== block.uid);
-              block.clearFilter(uid);
-            }
+  const Content = _.flatten(
+    dataBlocks.map((block) => {
+      const onHover = () => {
+        const dom = block.dom;
+        const designer = dom.querySelector('.general-schema-designer') as HTMLElement;
+        if (designer) {
+          designer.style.display = 'block';
+        }
+        dom.style.boxShadow = '0 0 10px rgba(0, 0, 0, 0.2)';
+        dom.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center',
+        });
+      };
+      const onLeave = () => {
+        const dom = block.dom;
+        const designer = dom.querySelector('.general-schema-designer') as HTMLElement;
+        if (designer) {
+          designer.style.display = null;
+        }
+        dom.style.boxShadow = 'none';
+      };
 
-            updateFilterTargets(fieldSchema, targets);
-            dn.emit('patch', {
-              schema: {
-                ['x-uid']: uid,
-                'x-filter-targets': targets,
+      const result = [];
+
+      if (isSameCollection(block.collection, collection)) {
+        const title = `${compile(block.collection.title)} #${block.uid.slice(0, 2)}01`;
+        result.push(
+          <SchemaSettingsSwitchItem
+            key={block.uid + 'sameCollection'}
+            title={title}
+            checked={targets.some((target) => target.uid === block.uid)}
+            onChange={(checked) => {
+              if (checked) {
+                targets.push({ uid: block.uid });
+              } else {
+                targets = targets.filter((target) => target.uid !== block.uid);
+                block.clearFilter(uid);
+              }
+
+              updateFilterTargets(fieldSchema, targets);
+              dn.emit('patch', {
+                schema: {
+                  ['x-uid']: uid,
+                  'x-filter-targets': targets,
+                },
+              }).catch(error);
+              dn.refresh();
+            }}
+            onMouseEnter={onHover}
+            onMouseLeave={onLeave}
+          />,
+        );
+      }
+
+      if (
+        canBeConnectedByAssociation(collection, block, getAllCollectionsInheritChain) ||
+        canBeConnectedByForeignKey(collection, block)
+      ) {
+        const title = `${compile(block.collection.title)} #${block.uid.slice(0, 2)}02`;
+        const target = targets.find((target) => target.uid === block.uid);
+        // 与筛选区块的数据表具有关系的表
+        result.push(
+          <SchemaSettingsSelectItem
+            key={block.uid + 'associationFiled'}
+            title={title}
+            value={target?.field || ''}
+            options={[
+              ...getSupportFieldsByAssociation(getAllCollectionsInheritChain(collection.name), block).map((field) => {
+                return {
+                  label: compile(field.uiSchema.title) || field.name,
+                  value: `${field.name}.${getTargetKey(field)}`,
+                };
+              }),
+              ...getSupportFieldsByForeignKey(collection, block).map((field) => {
+                return {
+                  label: `${compile(field.uiSchema.title) || field.name} [${t('Foreign key')}]`,
+                  value: field.name,
+                };
+              }),
+              {
+                label: t('Unconnected'),
+                value: '',
               },
-            }).catch(error);
-            dn.refresh();
-          }}
-          onMouseEnter={onHover}
-          onMouseLeave={onLeave}
-        />
-      );
-    }
+            ]}
+            onChange={(value) => {
+              if (value === '') {
+                targets = targets.filter((target) => target.uid !== block.uid);
+                block.clearFilter(uid);
+              } else {
+                targets = targets.filter((target) => target.uid !== block.uid);
+                targets.push({ uid: block.uid, field: value });
+              }
+              updateFilterTargets(fieldSchema, targets);
+              dn.emit('patch', {
+                schema: {
+                  ['x-uid']: uid,
+                  'x-filter-targets': targets,
+                },
+              });
+              dn.refresh();
+            }}
+            onMouseEnter={onHover}
+            onMouseLeave={onLeave}
+          />,
+        );
+      }
 
-    const target = targets.find((target) => target.uid === block.uid);
-    // 与筛选区块的数据表具有关系的表
-    return (
-      <SchemaSettingsSelectItem
-        key={block.uid}
-        title={title}
-        value={target?.field || ''}
-        options={[
-          ...getSupportFieldsByAssociation(getAllCollectionsInheritChain(collection.name), block).map((field) => {
-            return {
-              label: compile(field.uiSchema.title) || field.name,
-              value: `${field.name}.${getTargetKey(field)}`,
-            };
-          }),
-          ...getSupportFieldsByForeignKey(collection, block).map((field) => {
-            return {
-              label: `${compile(field.uiSchema.title) || field.name} [${t('Foreign key')}]`,
-              value: field.name,
-            };
-          }),
-          {
-            label: t('Unconnected'),
-            value: '',
-          },
-        ]}
-        onChange={(value) => {
-          if (value === '') {
-            targets = targets.filter((target) => target.uid !== block.uid);
-            block.clearFilter(uid);
-          } else {
-            targets = targets.filter((target) => target.uid !== block.uid);
-            targets.push({ uid: block.uid, field: value });
-          }
-          updateFilterTargets(fieldSchema, targets);
-          dn.emit('patch', {
-            schema: {
-              ['x-uid']: uid,
-              'x-filter-targets': targets,
-            },
-          });
-          dn.refresh();
-        }}
-        onMouseEnter={onHover}
-        onMouseLeave={onLeave}
-      />
-    );
-  });
+      return result;
+    }),
+  );
+
+  console.log('Content', Content);
 
   return (
     <SchemaSettingsSubMenu title={t('Connect data blocks')}>
