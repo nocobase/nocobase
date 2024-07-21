@@ -14,22 +14,23 @@ import { getPortPromise } from 'portfinder';
 import { uid } from '@nocobase/utils';
 import { createMockServer } from './mock-server';
 
-type ProcessConfig = {
-  env: Record<string, any>;
-};
-
 type ClusterOptions = {
-  script: string;
-  config: ProcessConfig;
-  instances: number;
+  script?: string;
+  env?: Record<string, any>;
   plugins?: string[];
+  instances?: number;
 };
 
 export class MockCluster {
+  private script = `${process.env.APP_PACKAGE_ROOT}/src/index.ts`;
   private processes = [];
   private mockApp;
 
-  constructor(private options: ClusterOptions) {}
+  constructor(private options: ClusterOptions = {}) {
+    if (options.script) {
+      this.script = options.script;
+    }
+  }
 
   async start(): Promise<number[]> {
     // NOTE: use this for install app first
@@ -40,12 +41,12 @@ export class MockCluster {
     this.processes = [];
     const ports = [];
 
-    for (let i = 0; i < this.options.instances; i++) {
+    for (let i = 0; i < (this.options.instances ?? 2); i++) {
       const port = await getPortPromise();
-      const childProcess = spawn('node', ['./node_modules/tsx/dist/cli.mjs', this.options.script, 'start'], {
+      const childProcess = spawn('node', ['./node_modules/tsx/dist/cli.mjs', this.script, 'start'], {
         env: {
           ...process.env,
-          ...this.options.config.env,
+          ...this.options.env,
           APP_PORT: `${port}`,
           APPEND_PRESET_BUILT_IN_PLUGINS: (this.options.plugins ?? []).join(','),
           SOCKET_PATH: `storage/tests/gateway-cluster-${uid()}.sock`,
