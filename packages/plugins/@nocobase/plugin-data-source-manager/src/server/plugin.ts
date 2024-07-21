@@ -495,7 +495,7 @@ export class PluginDataSourceManagerServer extends Plugin {
         role.revokeResource(model.get('name'));
       }
 
-      await this.app.syncManager.public(this.name, {
+      await this.app.syncManager.publish(this.name, {
         type: 'syncRoleResource',
         roleName,
         dataSourceKey: model.get('dataSourceKey'),
