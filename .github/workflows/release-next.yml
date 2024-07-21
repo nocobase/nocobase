@@ -93,6 +93,7 @@ jobs:
         run: |
           yarn config set registry https://registry.npmjs.org/
           yarn install
+          yarn lerna version ${{ env.NEWVERSION }} -y --no-git-tag-version
           yarn build packages/pro-plugins
       - name: publish pkg.nocobase.com
         run: |
