@@ -360,6 +360,7 @@ export class PluginDataSourceManagerServer extends Plugin {
       }
     });
 
+    const self = this;
     this.app.actions({
       async ['dataSources:listEnabled'](ctx, next) {
         const dataSources = await ctx.db.getRepository('dataSources').find({
@@ -415,7 +416,7 @@ export class PluginDataSourceManagerServer extends Plugin {
             app: ctx.app,
           });
 
-          this.app.syncManager.publish(this.name, {
+          ctx.app.syncManager.publish(self.name, {
             type: 'loadDataSource',
             dataSourceKey: dataSourceModel.get('key'),
           });
