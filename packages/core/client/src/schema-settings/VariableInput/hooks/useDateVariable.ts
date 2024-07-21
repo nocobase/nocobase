@@ -7,8 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { Schema } from '@formily/json-schema';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useOperators } from '../../../block-provider/CollectOperators';
 import { getDateRanges } from '../../../schema-component/antd/date-picker/util';
 
 interface Props {
@@ -20,6 +22,8 @@ interface Props {
    * 不需要禁用选项，一般会在表达式中使用
    */
   noDisabled?: boolean;
+  /** 消费变量值的字段 */
+  targetFieldSchema?: Schema;
 }
 
 /**
@@ -189,11 +193,15 @@ export const useDateVariable = ({ operator, schema, noDisabled }: Props) => {
  * @param param0
  * @returns
  */
-export const useDatetimeVariable = ({ operator, schema, noDisabled }: Props = {}) => {
+export const useDatetimeVariable = ({ operator, schema, noDisabled, targetFieldSchema }: Props = {}) => {
   const { t } = useTranslation();
+  const { getOperator } = useOperators();
+
   const datetimeSettings = useMemo(() => {
-    const operatorValue = operator?.value || '';
-    const disabled = noDisabled ? false : !['DatePicker.RangePicker'].includes(schema?.['x-component']);
+    const operatorValue = operator?.value || getOperator(targetFieldSchema?.name) || '';
+    const disabled = noDisabled
+      ? false
+      : !['DatePicker.RangePicker'].includes(schema?.['x-component']) && !operatorValue;
     const dateOptions = [
       {
         key: 'now',
@@ -336,7 +344,7 @@ export const useDatetimeVariable = ({ operator, schema, noDisabled }: Props = {}
       disabled: dateOptions.every((option) => option.disabled),
       children: dateOptions,
     };
-  }, [schema?.['x-component']]);
+  }, [schema?.['x-component'], targetFieldSchema]);
 
   const datetimeCtx = useMemo(() => getDateRanges(), []);
 
