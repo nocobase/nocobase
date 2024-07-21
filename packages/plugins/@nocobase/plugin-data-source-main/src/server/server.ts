@@ -42,7 +42,8 @@ export class PluginDataSourceMainServer extends Plugin {
 
   async onSync(message) {
     const { type, collectionName } = message;
-    if (type === 'newCollection') {
+
+    if (type === 'syncCollection') {
       const collectionModel: CollectionModel = await this.app.db.getCollection('collections').repository.findOne({
         filter: {
           name: collectionName,
@@ -92,7 +93,7 @@ export class PluginDataSourceMainServer extends Plugin {
           });
 
           this.app.syncManager.publish(this.name, {
-            type: 'newCollection',
+            type: 'syncCollection',
             collectionName: model.get('name'),
           });
         }
@@ -259,6 +260,11 @@ export class PluginDataSourceMainServer extends Plugin {
         };
 
         await collection.sync(syncOptions);
+
+        this.app.syncManager.publish(this.name, {
+          type: 'syncCollection',
+          collectionName: model.get('collectionName'),
+        });
       }
     });
 
