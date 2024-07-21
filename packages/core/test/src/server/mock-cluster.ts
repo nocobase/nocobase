@@ -15,19 +15,22 @@ import { uid } from '@nocobase/utils';
 import { createMockServer } from './mock-server';
 
 type ClusterOptions = {
+  script?: string;
   env?: Record<string, any>;
   plugins?: string[];
-  instances: number;
+  instances?: number;
 };
 
 export class MockCluster {
+  private script = `${process.env.APP_PACKAGE_ROOT}/src/index.ts`;
   private processes = [];
   private mockApp;
 
-  constructor(
-    private script: string,
-    private options: ClusterOptions = { instances: 2 },
-  ) {}
+  constructor(private options: ClusterOptions = {}) {
+    if (options.script) {
+      this.script = options.script;
+    }
+  }
 
   async start(): Promise<number[]> {
     // NOTE: use this for install app first
