@@ -17,8 +17,15 @@ export const usePopupSettings = () => {
   const isPopupVisibleControlledByURL = useCallback(() => {
     const pathname = window.location.pathname;
     const hash = window.location.hash;
-    return pathname?.includes('/admin/') && !hash?.includes('/mobile');
+    const isOldMobileMode = pathname?.includes('/mobile/') || hash?.includes('/mobile/');
+    const isNewMobileMode = pathname?.includes('/m/');
+    const isPCMode = pathname?.includes('/admin/');
+
+    return (isPCMode || isNewMobileMode) && !isOldMobileMode;
   }, []);
 
-  return { isPopupVisibleControlledByURL };
+  return {
+    /** 弹窗窗口的显隐是否由 URL 控制 */
+    isPopupVisibleControlledByURL,
+  };
 };

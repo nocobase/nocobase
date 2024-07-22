@@ -19,7 +19,6 @@ import { DataBlockProvider } from '../../../data-source/data-block/DataBlockProv
 import { BlockRequestContext } from '../../../data-source/data-block/DataBlockRequestProvider';
 import { SchemaComponent } from '../../core';
 import { TabsContextProvider } from '../tabs/context';
-import { BackButtonUsedInSubPage } from './BackButtonUsedInSubPage';
 import { usePopupSettings } from './PopupSettingsProvider';
 import { deleteRandomNestedSchemaKey, getRandomNestedSchemaKey } from './nestedSchemaKeyStorage';
 import { PopupParams, getPopupParamsFromPath, getStoredPopupContext, usePagePopup } from './pagePopupUtils';
@@ -87,22 +86,20 @@ const PopupParamsProvider: FC<Omit<PopupProps, 'hidden'>> = (props) => {
 
 const PopupTabsPropsProvider: FC<{ params: PopupParams }> = ({ children, params }) => {
   const { changeTab } = usePagePopup();
-  const onTabClick = useCallback(
+  const onChange = useCallback(
     (key: string) => {
       changeTab(key);
     },
     [changeTab],
   );
   const { isPopupVisibleControlledByURL } = usePopupSettings();
-  const { isSubPage } = useCurrentPopupContext();
-  const tabBarExtraContent = useMemo(() => (isSubPage ? <BackButtonUsedInSubPage /> : null), [isSubPage]);
 
   if (!isPopupVisibleControlledByURL()) {
     return <>{children}</>;
   }
 
   return (
-    <TabsContextProvider activeKey={params.tab} onTabClick={onTabClick} tabBarExtraContent={tabBarExtraContent}>
+    <TabsContextProvider activeKey={params.tab} onChange={onChange}>
       {children}
     </TabsContextProvider>
   );
@@ -276,7 +273,7 @@ export const PagePopups = (props: { paramsList?: PopupParams[] }) => {
         context={popupPropsRef.current[0].context}
         currentLevel={1}
       >
-        <SchemaComponent components={components} schema={rootSchema} onlyRenderProperties />;
+        <SchemaComponent components={components} schema={rootSchema} onlyRenderProperties />
       </PagePopupsItemProvider>
     </AllPopupsPropsProviderContext.Provider>
   );
@@ -351,6 +348,7 @@ function get404Schema() {
         'x-component': 'Action.Container',
         'x-component-props': {
           className: 'nb-action-popup',
+          level: 99, // 确保在最上层
         },
         properties: {
           tabs: {
