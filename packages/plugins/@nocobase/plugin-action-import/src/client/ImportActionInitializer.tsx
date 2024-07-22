@@ -77,8 +77,9 @@ export const ImportActionInitializer = () => {
         'x-component': 'Action.Container',
         'x-decorator': 'Form',
         'x-component-props': {
-          width: '50%',
           className: css`
+            width: 100% !important;
+            max-width: 750px;
             .ant-formily-item-label {
               height: var(--controlHeightLG);
             }
