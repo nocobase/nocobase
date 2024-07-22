@@ -28,6 +28,7 @@ storage/backups/*
 **/.dumi/tmp-production
 packages/core/client/docs/contributing.md
 packages/core/app/client/src/.plugins
+packages/pro-plugins/
 storage/plugins
 storage/tar
 storage/tmp

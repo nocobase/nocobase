@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { css } from '@emotion/css';
 import { Field, Form } from '@formily/core';
 import { SchemaExpressionScopeContext, useField, useFieldSchema, useForm } from '@formily/react';
 import { untracked } from '@formily/reactive';
@@ -21,7 +22,6 @@ import { ChangeEvent, useCallback, useContext, useEffect, useMemo } from 'react'
 import { useTranslation } from 'react-i18next';
 import { NavigateFunction } from 'react-router-dom';
 import { useReactToPrint } from 'react-to-print';
-import { css } from '@emotion/css';
 import {
   AssociationFilter,
   useCollection,
@@ -1582,12 +1582,13 @@ export const useParseURLAndParams = () => {
   return { parseURLAndParams };
 };
 
-export function useLinkActionProps() {
+export function useLinkActionProps(componentProps?: any) {
   const navigate = useNavigateNoUpdate();
   const fieldSchema = useFieldSchema();
+  const componentPropsValue = fieldSchema?.['x-component-props'] || componentProps;
   const { t } = useTranslation();
-  const url = fieldSchema?.['x-component-props']?.['url'];
-  const searchParams = fieldSchema?.['x-component-props']?.['params'] || [];
+  const url = componentPropsValue?.['url'];
+  const searchParams = componentPropsValue?.['params'] || [];
   const openInNewWindow = fieldSchema?.['x-component-props']?.['openInNewWindow'];
   const { parseURLAndParams } = useParseURLAndParams();
 

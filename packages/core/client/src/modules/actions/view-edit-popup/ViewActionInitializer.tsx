@@ -11,8 +11,10 @@ import React from 'react';
 import { usePagePopup } from '../../../schema-component/antd/page/pagePopupUtils';
 import { CONTEXT_SCHEMA_KEY } from '../../../schema-component/antd/page/usePopupContextInActionOrAssociationField';
 import { ActionInitializerItem } from '../../../schema-initializer/items/ActionInitializerItem';
+import { useOpenModeContext } from '../../popup/OpenModeProvider';
 
 export const ViewActionInitializer = (props) => {
+  const { defaultOpenMode } = useOpenModeContext();
   const { getPopupContext } = usePagePopup();
   const schema = {
     type: 'void',
@@ -22,7 +24,7 @@ export const ViewActionInitializer = (props) => {
     'x-settings': 'actionSettings:view',
     'x-component': 'Action',
     'x-component-props': {
-      openMode: 'drawer',
+      openMode: defaultOpenMode,
     },
     properties: {
       drawer: {

@@ -19,6 +19,7 @@ import {
   useCollectionState,
   useCollection_deprecated,
   useDesignable,
+  useOpenModeContext,
   useRecord,
   useSchemaToolbar,
   useSyncFromForm,
@@ -357,6 +358,7 @@ const schemaSettingsItems: SchemaSettingsItemType[] = [
         name: 'openMode',
         Component: SchemaSettingOpenModeSchemaItems,
         useComponentProps() {
+          const { hideOpenMode } = useOpenModeContext();
           const { t } = useTranslation();
 
           const modeOptions = useMemo(() => {
@@ -367,8 +369,8 @@ const schemaSettingsItems: SchemaSettingsItemType[] = [
           }, [t]);
 
           return {
-            openMode: true,
-            openSize: true,
+            openMode: !hideOpenMode,
+            openSize: !hideOpenMode,
             modeOptions,
           };
         },

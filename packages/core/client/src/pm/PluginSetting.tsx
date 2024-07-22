@@ -144,6 +144,12 @@ export const AdminSettingsLayout = () => {
             style={{ height: 'calc(100vh - 46px)', overflowY: 'auto', overflowX: 'hidden' }}
             onClick={({ key }) => {
               const plugin = settings.find((item) => item.name === key);
+
+              if (plugin.link) {
+                window.open(plugin.link, '_blank');
+                return;
+              }
+
               if (plugin.children?.length) {
                 return navigate(getFirstDeepChildPath(plugin.children));
               } else {
