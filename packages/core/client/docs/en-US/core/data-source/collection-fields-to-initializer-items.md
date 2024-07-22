@@ -4,7 +4,7 @@
 
 ![20240718145531](https://static-docs.nocobase.com/20240718145531.png)
 
-页面上有 `Configure columns` 和 `Configure fields` 两个按钮，点击后显示当前表的字段列表，当点击某个字段后，会插入表单项或者表格列到界面中，这个过程就是从 `Collection Fields` 到 `Initializer Items` 的过程。
+页面上有 `Configure columns` 和 `Configure fields` 两个按钮，鼠标悬浮后显示当前表的字段列表，当点击某个字段后，会插入表格列或者表单项到界面中，这个过程就是从 `Collection Fields` 到 `Initializer Items` 的过程。
 
 ## Configure fields 分类
 
