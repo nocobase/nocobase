@@ -13,7 +13,7 @@ import {
   oneTableBlockWithAddNewAndViewAndEditAndBasicFields,
   test,
 } from '@nocobase/test/e2e';
-import { T2165, T3251, T3806, T3815, expressionTemplateInLinkageRules } from './templatesOfBug';
+import { T2165, T3251, T3806, T3815, expressionTemplateInLinkageRules, T4891 } from './templatesOfBug';
 
 test.describe('linkage rules', () => {
   test('basic usage', async ({ page, mockPage }) => {
@@ -322,5 +322,36 @@ test.describe('linkage rules', () => {
     await expect(
       page.getByLabel('block-item-CollectionField-general1-form-general1.number1-number1').getByRole('spinbutton'),
     ).toHaveValue('3');
+  });
+  test('field are set from not displayed to displayed and required', async ({ page, mockPage }) => {
+    await mockPage(T4891).goto();
+
+    await expect(page.getByLabel('block-item-CardItem-general-')).toBeVisible();
+
+    // 初始化时select没有值,name 必填
+    await expect(
+      page.getByLabel('block-item-CollectionField-general-form-general.name-name').locator('.ant-formily-item-label'),
+    ).toContainText('*name');
+
+    //select 为111,name 隐藏
+    await page.getByLabel('block-item-CollectionField-general-form-general.select-select').click();
+    await page.getByText('111').click();
+
+    await expect(page.getByLabel('block-item-CollectionField-general-form-general.name-name')).not.toBeVisible();
+
+    //select 为333,name 显示且必填
+    await page.getByTestId('select-single').click();
+    await page.getByText('333').click();
+    await expect(
+      page.getByLabel('block-item-CollectionField-general-form-general.name-name').locator('.ant-formily-item-label'),
+    ).toContainText('*name');
+
+    //select 为222,name 显示且非必填
+    await page.getByLabel('block-item-CollectionField-general-form-general.select-select').click();
+    await page.getByText('222').click();
+
+    await expect(
+      page.getByLabel('block-item-CollectionField-general-form-general.name-name').locator('.ant-formily-item-label'),
+    ).not.toContainText('*name');
   });
 });
