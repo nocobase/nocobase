@@ -45,9 +45,8 @@ jobs:
       - name: git checkout ${{ github.head_ref || github.ref_name }}
         run: cd packages/pro-plugins && git checkout ${{ github.head_ref || github.ref_name }}
         continue-on-error: true
-      - name: exclude packages/pro-plugins
-        run: |
-          echo "packages/pro-plugins/" >> .git/info/exclude
+      - name: rm .git
+        run: rm -rf packages/pro-plugins/.git &&  git config --global user.email "you@example.com"  &&  git config --global user.name "Your Name" && git add -A && git commit -m "tmp commit"
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
       - name: Set up Docker Buildx
