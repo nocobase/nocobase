@@ -20,7 +20,7 @@
 
 ## CollectionFieldsToInitializerItems
 
-我们将单个 `Collection Field` 转为 `Initializer Item` 的过程抽象以下三个步骤：
+我们将单个 `Collection Field` 转为 `Initializer Item` 的过程抽象为以下三个步骤：
 
 - `filter`：过滤字段
 - `getSchema`：获取字段对应的 schema
