@@ -37,15 +37,19 @@ jobs:
           repository: nocobase/pro-plugins
           ref: main
           path: packages/pro-plugins
+          fetch-depth: 0
           ssh-key: ${{ secrets.SUBMODULE_SSH_KEY }}
-      - name: Fetch all branches
-        run: cd packages/pro-plugins && git fetch --all
-      - name: git checkout ${{ github.event.pull_request.base.ref }}
-        run: cd packages/pro-plugins && git checkout ${{ github.event.pull_request.base.ref }}
-        continue-on-error: true
-      - name: git checkout ${{ github.head_ref || github.ref_name }}
-        run: cd packages/pro-plugins && git checkout ${{ github.head_ref || github.ref_name }}
-        continue-on-error: true
+      - run: |
+          cd packages/pro-plugins &&
+          if git show-ref --quiet refs/remotes/origin/${{ github.head_ref || github.ref_name }}; then
+            git checkout ${{ github.head_ref || github.ref_name }}
+          else
+            if git show-ref --quiet refs/remotes/origin/${{ github.event.pull_request.base.ref }}; then
+              git checkout ${{ github.event.pull_request.base.ref }}
+            else
+              git checkout main
+            fi
+          fi
       - name: rm .git
         run: rm -rf packages/pro-plugins/.git &&  git config --global user.email "you@example.com"  &&  git config --global user.name "Your Name" && git add -A && git commit -m "tmp commit"
       - name: Set up QEMU
