@@ -280,6 +280,162 @@ describe('workflow > triggers > collection', () => {
     });
   });
 
+  describe('config.condition', () => {
+    it('empty condition', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'collection',
+        config: {
+          mode: 1,
+          collection: 'posts',
+          condition: {},
+        },
+      });
+
+      const post = await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
+
+      const executions = await workflow.getExecutions();
+      expect(executions.length).toBe(1);
+      expect(executions[0].context.data.title).toBe('t1');
+    });
+
+    it('and empty condition', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'collection',
+        config: {
+          mode: 1,
+          collection: 'posts',
+          condition: {
+            $and: [],
+          },
+        },
+      });
+
+      const post = await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
+
+      const executions = await workflow.getExecutions();
+      expect(executions.length).toBe(1);
+      expect(executions[0].context.data.title).toBe('t1');
+    });
+
+    it('and deep empty condition', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'collection',
+        config: {
+          mode: 1,
+          collection: 'posts',
+          condition: {
+            $and: [{}],
+          },
+        },
+      });
+
+      const post = await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
+
+      const executions = await workflow.getExecutions();
+      expect(executions.length).toBe(1);
+      expect(executions[0].context.data.title).toBe('t1');
+    });
+
+    it('and condition', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'collection',
+        config: {
+          mode: 1,
+          collection: 'posts',
+          condition: {
+            $and: [{ title: 't1' }],
+          },
+        },
+      });
+
+      const post1 = await PostRepo.create({ values: { title: 't1' } });
+      const post2 = await PostRepo.create({ values: { title: 't2' } });
+
+      await sleep(500);
+
+      const executions = await workflow.getExecutions();
+      expect(executions.length).toBe(1);
+      expect(executions[0].context.data.title).toBe('t1');
+    });
+
+    it('or empty condition', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'collection',
+        config: {
+          mode: 1,
+          collection: 'posts',
+          condition: {
+            $or: [],
+          },
+        },
+      });
+
+      const post = await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
+
+      const executions = await workflow.getExecutions();
+      expect(executions.length).toBe(1);
+      expect(executions[0].context.data.title).toBe('t1');
+    });
+
+    it('or deep empty condition', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'collection',
+        config: {
+          mode: 1,
+          collection: 'posts',
+          condition: {
+            $or: [{}],
+          },
+        },
+      });
+
+      const post = await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
+
+      const executions = await workflow.getExecutions();
+      expect(executions.length).toBe(1);
+      expect(executions[0].context.data.title).toBe('t1');
+    });
+
+    it('or condition', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'collection',
+        config: {
+          mode: 1,
+          collection: 'posts',
+          condition: {
+            $or: [{ title: { $notEmpty: true } }],
+          },
+        },
+      });
+
+      const post1 = await PostRepo.create({ values: { title: 't1' } });
+      const post2 = await PostRepo.create({ values: {} });
+
+      await sleep(500);
+
+      const executions = await workflow.getExecutions();
+      expect(executions.length).toBe(1);
+      expect(executions[0].context.data.title).toBe('t1');
+    });
+  });
+
   describe('config.appends', () => {
     it('non-appended association could not be accessed', async () => {
       const workflow = await WorkflowModel.create({
