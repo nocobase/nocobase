@@ -245,10 +245,10 @@ test.describe('PageHeader', () => {
         await page.getByRole('button', { name: 'OK' }).click();
 
         // 删除
-        await navigationBarPositionElement.getByText('Test_changed').click();
+        await navigationBarPositionElement.getByText('Test_changed').hover();
         await navigationBarPositionElement
           .getByLabel('designer-schema-settings-Action-mobile:navigation-bar:actions:link')
-          .click();
+          .hover();
         await page.getByRole('menuitem', { name: 'Delete' }).click();
         await page.getByText('Delete action').click();
         await page.getByRole('dialog').getByRole('button', { name: 'OK' }).click();
