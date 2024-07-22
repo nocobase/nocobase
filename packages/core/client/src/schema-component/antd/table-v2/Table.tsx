@@ -539,11 +539,12 @@ export const Table: any = withDynamicSchemaProps(
 
         return (
           <td {...props} ref={ref} className={classNames(props.className, cellClass)}>
-            {inView || isIndex ? props.children : <Skeleton.Button style={{ height: '100%' }} />}
+            {/* 子表单中不能使用懒渲染。详见：https://nocobase.height.app/T-4889/description */}
+            {others.isSubTable || inView || isIndex ? props.children : <Skeleton.Button style={{ height: '100%' }} />}
           </td>
         );
       },
-      [dataSource.length],
+      [dataSource.length, others.isSubTable],
     );
 
     const components = useMemo(() => {
