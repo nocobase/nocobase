@@ -18,7 +18,9 @@ export class RedisPubSubAdapter implements IPubSubAdapter {
   subscriber;
 
   constructor() {
-    this.publisher = createClient();
+    this.publisher = createClient({
+      url: process.env.REDIS_URL || 'redis://redis:6379',
+    });
     this.subscriber = this.publisher.duplicate();
   }
 
