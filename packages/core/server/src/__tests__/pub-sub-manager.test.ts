@@ -52,6 +52,14 @@ describe('pub-sub-manager', () => {
   test('case1', async () => {
     let count = 0;
     class Plugin1 extends Plugin {
+      get name() {
+        return 'Plugin1';
+      }
+
+      onMessage() {
+        ++count;
+      }
+
       async beforeLoad() {
         this.app.pubSubManager.setAdapter(new RedisPubSubAdapter());
         await this.app.pubSubManager.subscribe('chan1nel', (message) => {
@@ -77,6 +85,9 @@ describe('pub-sub-manager', () => {
     await node1.pubSubManager.publish('chan1nel', `channel1_message_1`);
     await sleep(1000);
     expect(count).toBe(2);
+    await node1.pm.get(Plugin1).sendMessage('plugin send message');
+    await sleep(1000);
+    expect(count).toBe(4);
     await node1.destroy();
     await node2.destroy();
   });
