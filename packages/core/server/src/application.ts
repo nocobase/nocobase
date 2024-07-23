@@ -36,7 +36,6 @@ import lodash from 'lodash';
 import { RecordableHistogram } from 'node:perf_hooks';
 import path, { basename, resolve } from 'path';
 import semver from 'semver';
-import packageJson from '../package.json';
 import { createACL } from './acl';
 import { AppCommand } from './app-command';
 import { AppSupervisor } from './app-supervisor';
@@ -62,6 +61,8 @@ import { Plugin } from './plugin';
 import { InstallOptions, PluginManager } from './plugin-manager';
 import { PubSubManager } from './pub-sub-manager';
 import { SyncManager } from './sync-manager';
+
+import packageJson from '../package.json';
 
 export type PluginType = string | typeof Plugin;
 export type PluginConfiguration = PluginType | [PluginType, any];

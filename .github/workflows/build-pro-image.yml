@@ -9,10 +9,8 @@ on:
     branches:
       - 'main'
       - 'next'
-      - 'next-test'
     paths:
       - 'packages/**'
-      - 'docker/nocobase/**'
       - 'Dockerfile'
       - '.github/workflows/build-pro-image.yml'
 
