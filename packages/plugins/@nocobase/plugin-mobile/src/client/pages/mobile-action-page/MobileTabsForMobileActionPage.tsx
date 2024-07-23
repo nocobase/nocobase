@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { observer, RecursionField, useField, useFieldSchema } from '@formily/react';
+import { observer, RecursionField, Schema, useField, useFieldSchema } from '@formily/react';
 import {
   css,
   DndContext,
@@ -50,6 +50,7 @@ export const MobileTabsForMobileActionPage: any = observer(
 
     const tabContent = useMemo(() => {
       const list = fieldSchema.mapProperties((schema, key) => {
+        schema = hideDivider(schema);
         return {
           key,
           node: <SchemaComponent name={key} schema={schema} onlyRenderProperties distributed />,
@@ -148,3 +149,17 @@ MobileTabsForMobileActionPage.TabPane = observer(
 );
 
 MobileTabsForMobileActionPage.Designer = TabsOfPC.Designer;
+
+// 隐藏 Grid 组件的左右 divider，因为移动端不需要在一行中并列展示两个区块
+function hideDivider(tabPaneSchema: Schema) {
+  tabPaneSchema?.mapProperties((schema) => {
+    if (schema['x-component'] === 'Grid') {
+      schema['x-component-props'] = {
+        ...schema['x-component-props'],
+        showDivider: false,
+      };
+    }
+  });
+
+  return tabPaneSchema;
+}
