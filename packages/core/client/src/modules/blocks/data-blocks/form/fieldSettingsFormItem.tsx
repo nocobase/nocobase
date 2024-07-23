@@ -24,6 +24,7 @@ import { isPatternDisabled } from '../../../../schema-settings';
 import { ActionType } from '../../../../schema-settings/LinkageRules/type';
 import { SchemaSettingsDefaultValue } from '../../../../schema-settings/SchemaSettingsDefaultValue';
 import { useIsAllowToSetDefaultValue } from '../../../../schema-settings/hooks/useIsAllowToSetDefaultValue';
+import { fieldComponentSettingsItem } from '../../../../data-source';
 
 export const fieldSettingsFormItem = new SchemaSettings({
   name: 'fieldSettings:FormItem',
@@ -459,7 +460,8 @@ export const fieldSettingsFormItem = new SchemaSettings({
         const app = useApp();
         const fieldComponentName = useFieldComponentName();
         const componentSettings = app.schemaSettingsManager.get(`fieldSettings:component:${fieldComponentName}`);
-        return componentSettings?.items || [];
+        const items = componentSettings?.items || [];
+        return [fieldComponentSettingsItem, ...items];
       },
     },
     {
