@@ -13,7 +13,7 @@ import _ from 'lodash';
 import { useTranslation } from 'react-i18next';
 import { useDataSourceManager } from '../data-source/DataSourceManagerProvider';
 import { useCollectionField } from '../collection-field/CollectionFieldProvider';
-import { useColumnSchema, useDesignable } from '../../schema-component';
+import { useColumnSchema, useCompile, useDesignable } from '../../schema-component';
 import type { SchemaSettingsItemType } from '../../application';
 
 export const fieldComponentSettingsItem: SchemaSettingsItemType = {
@@ -35,9 +35,15 @@ export const fieldComponentSettingsItem: SchemaSettingsItemType = {
     const { fieldSchema: tableColumnSchema } = useColumnSchema();
     const fieldSchema = tableColumnSchema || schema;
     const { dn } = useDesignable();
+    const compile = useCompile();
     return {
       title: t('Field component'),
-      options: collectionInterface.componentOptions,
+      options: collectionInterface?.componentOptions.map((item) => {
+        return {
+          label: compile(item.label),
+          value: item.value,
+        };
+      }),
       value: fieldSchema['x-component-props']?.['component'] || 'Input.URL',
       onChange(component) {
         _.set(fieldSchema, 'x-component-props.component', component);

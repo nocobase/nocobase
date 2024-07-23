@@ -25,7 +25,7 @@ export function getNewSchema(options: IGetNewSchema) {
   if (value != undefined && typeof value === 'object') {
     Object.keys(value).forEach((key) => {
       if (valueKeys && !valueKeys.includes(key)) return;
-      _.set(clonedSchema, `${schemaKeyArr.slice(1)}.${key}`, value[key]);
+      _.set(clonedSchema, `${schemaKeyArr.slice(1).join('.')}${schemaKeyArr.length > 1 ? '.' : ''}${key}`, value[key]);
     });
   } else {
     _.set(clonedSchema, schemaKeyArr.slice(1), value);
