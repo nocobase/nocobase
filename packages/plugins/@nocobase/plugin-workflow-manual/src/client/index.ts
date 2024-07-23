@@ -49,6 +49,12 @@ export default class extends Plugin {
       Component: 'WorkflowTodoBlockInitializer',
       icon: 'CheckSquareOutlined',
     });
+
+    this.app.schemaInitializerManager.addItem('mobile:addBlock', 'otherBlocks.workflowTodos', {
+      title: `{{t("Workflow todos", { ns: "${NAMESPACE}" })}}`,
+      Component: 'WorkflowTodoBlockInitializer',
+      icon: 'CheckSquareOutlined',
+    });
   }
 
   addComponents() {
