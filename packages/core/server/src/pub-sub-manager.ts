@@ -8,7 +8,13 @@
  */
 
 import { uid } from '@nocobase/utils';
+import _ from 'lodash';
 import Application from './application';
+
+export interface PubSubManagerCallbackOptions {
+  skipSelf?: boolean;
+  debounce?: number;
+}
 
 export class PubSubManager {
   adapter: IPubSubAdapter;
@@ -30,8 +36,7 @@ export class PubSubManager {
       if (!plugin.name) {
         return;
       }
-      console.log('beforeLoadPlugin', plugin.name);
-      await this.subscribe(plugin.name, plugin.onMessage.bind(plugin));
+      await this.subscribe(plugin.name, plugin.onMessage.bind(plugin), { debounce: 1000 });
     });
   }
 
@@ -63,7 +68,8 @@ export class PubSubManager {
     return await this.adapter.close();
   }
 
-  async subscribe(channel, callback, skipSelf = true) {
+  async subscribe(channel: string, callback, options: PubSubManagerCallbackOptions = {}) {
+    const { skipSelf = true, debounce = 0 } = options;
     const fn = (wrappedMessage) => {
       const { publisherId, message } = JSON.parse(wrappedMessage);
       if (skipSelf && publisherId === this.publisherId) {
@@ -71,12 +77,13 @@ export class PubSubManager {
       }
       callback(message);
     };
+    const debounceCallback = debounce ? _.debounce(fn, debounce) : fn;
     if (!this.subscribes.has(channel)) {
       const map = new Map();
       this.subscribes.set(channel, map);
     }
     const map = this.subscribes.get(channel);
-    map.set(callback, fn);
+    map.set(callback, debounceCallback);
   }
 
   async unsubscribe(channel, callback) {
@@ -104,10 +111,16 @@ export class PubSubManager {
     return this.adapter.publish(`${this.prefix}.${channel}`, wrappedMessage);
   }
 
-  onMessage(callback, skipSelf = true) {
+  onMessage(callback, options: PubSubManagerCallbackOptions = {}) {
     if (!this.adapter) {
       return;
     }
+    const { skipSelf = true, debounce = 0 } = options;
+    const debounceCallback = debounce
+      ? _.debounce((channel, message) => {
+          callback(channel, message);
+        }, debounce)
+      : callback;
     return this.adapter.onMessage((channel: string, wrappedMessage) => {
       if (!channel.startsWith(`${this.prefix}.`)) {
         return;
@@ -116,7 +129,7 @@ export class PubSubManager {
       if (skipSelf && publisherId === this.publisherId) {
         return;
       }
-      callback(channel, message);
+      debounceCallback(channel, message);
     });
   }
 }
