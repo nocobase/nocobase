@@ -11,12 +11,15 @@ import { useFieldSchema } from '@formily/react';
 import {
   BackButtonUsedInSubPage,
   SchemaComponent,
+  SchemaInitializer,
   TabsContextProvider,
   useActionContext,
+  useApp,
   useTabsContext,
 } from '@nocobase/client';
 import { ConfigProvider } from 'antd';
-import React, { useMemo } from 'react';
+import _ from 'lodash';
+import React, { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useMobileActionPageStyle } from './MobileActionPage.style';
 import { MobileTabsForMobileActionPage } from './MobileTabsForMobileActionPage';
@@ -29,10 +32,57 @@ const theme: any = {
 };
 
 /**
+ * 把 popup:common:addBlock 替换为移动端专属的值。当退出子页面时，再换回来。
+ *
+ * 之所以要把这个过程放到子页面组件这里，是因为 dataBlocks 的 useChildren 必须要在子页面的上下文中运行。
+ *
+ * @param supportsDataBlocks 支持在子页面中使用的数据区块 name
+ */
+const useMobileBlockInitializersInSubpage = (
+  supportsDataBlocks = ['details', 'editForm', 'createForm', 'table', 'gridCard'],
+) => {
+  const app = useApp();
+  const [originalInitializers] = useState<SchemaInitializer>(() =>
+    app.schemaInitializerManager.get('popup:common:addBlock'),
+  );
+
+  const dataBlocks = originalInitializers.options.items.find((item) => item.name === 'dataBlocks');
+  const dataBlocksChildren = [...dataBlocks.useChildren(), ...dataBlocks.children];
+
+  const [newInitializers] = useState<SchemaInitializer>(() => {
+    const options = _.cloneDeep(originalInitializers.options);
+    options.items = options.items.filter((item) => {
+      if (item.name === 'dataBlocks') {
+        item.children = dataBlocksChildren.filter((child) => {
+          return supportsDataBlocks.includes(child.name);
+        });
+        item.useChildren = () => [];
+        return true;
+      }
+
+      return item.name !== 'filterBlocks';
+    });
+
+    return new SchemaInitializer(options);
+  });
+
+  // 把 PC 端子页面的 Add block 按钮换成移动端的。在退出移动端时，再换回来
+  app.schemaInitializerManager.add(newInitializers);
+
+  useEffect(() => {
+    return () => {
+      app.schemaInitializerManager.add(originalInitializers);
+    };
+  }, [app, originalInitializers]);
+};
+
+/**
  * 在移动端通过 Action 按钮打开的页面
  * @returns
  */
 export const MobileActionPage = ({ level }) => {
+  useMobileBlockInitializersInSubpage();
+
   const filedSchema = useFieldSchema();
   const ctx = useActionContext();
   const { styles } = useMobileActionPageStyle();
