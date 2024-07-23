@@ -65,10 +65,14 @@ describe('pub-sub-manager', () => {
 
       async beforeLoad() {
         this.app.pubSubManager.setAdapter(new RedisPubSubAdapter());
-        await this.app.pubSubManager.subscribe('chan1nel', (message) => {
-          ++count;
-          console.log(`Channel1 subscriber collected message: ${message}`);
-        });
+        await this.app.pubSubManager.subscribe(
+          'chan1nel',
+          (message) => {
+            ++count;
+            console.log(`Channel1 subscriber collected message: ${message}`);
+          },
+          { debounce: 1000 },
+        );
       }
     }
     const appOpts = {
@@ -86,10 +90,21 @@ describe('pub-sub-manager', () => {
       name: 'app1_' + uid(),
     });
     await node1.pubSubManager.publish('chan1nel', `channel1_message_1`);
-    await sleep(1000);
+    await node1.pubSubManager.publish('chan1nel', `channel1_message_1`);
+    await node1.pubSubManager.publish('chan1nel', `channel1_message_1`);
+    await node1.pubSubManager.publish('chan1nel', `channel1_message_1`);
+    await node1.pubSubManager.publish('chan1nel', `channel1_message_1`);
+    await node1.pubSubManager.publish('chan1nel', `channel1_message_1`);
+    await node1.pubSubManager.publish('chan1nel', `channel1_message_1`);
+    await sleep(2000);
     expect(count).toBe(1);
     await node1.pm.get(Plugin1).sendMessage('plugin send message');
-    await sleep(1000);
+    await node1.pm.get(Plugin1).sendMessage('plugin send message');
+    await node1.pm.get(Plugin1).sendMessage('plugin send message');
+    await node1.pm.get(Plugin1).sendMessage('plugin send message');
+    await node1.pm.get(Plugin1).sendMessage('plugin send message');
+    await node1.pm.get(Plugin1).sendMessage('plugin send message');
+    await sleep(2000);
     expect(count).toBe(2);
     await node1.destroy();
     await node2.destroy();
