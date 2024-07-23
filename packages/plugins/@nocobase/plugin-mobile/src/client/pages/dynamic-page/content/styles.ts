@@ -13,14 +13,5 @@ export const useStyles = createStyles(() => ({
   mobilePageContent: {
     maxWidth: '100%',
     overflowX: 'hidden',
-    '.ant-card': {
-      marginBottom: '18px !important',
-      borderRadius: '0 !important',
-      boxShadow: 'none',
-      borderBottom: '1px solid var(--adm-color-border)',
-    },
-    '.ant-nb-card-item': {
-      marginBottom: '18px !important',
-    },
   },
 }));
