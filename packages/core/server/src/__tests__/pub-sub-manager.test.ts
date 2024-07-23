@@ -8,6 +8,7 @@
  */
 
 import { createMockServer, MockServer } from '@nocobase/test';
+import { uid } from '@nocobase/utils';
 import { createClient } from 'redis';
 import Plugin from '../plugin';
 import { IPubSubAdapter } from '../pub-sub-manager';
@@ -76,11 +77,11 @@ describe('pub-sub-manager', () => {
     };
     const node1: MockServer = await createMockServer({
       ...appOpts,
-      name: 'node1',
+      name: 'app1_' + uid(),
     });
     const node2: MockServer = await createMockServer({
       ...appOpts,
-      name: 'node2',
+      name: 'app1_' + uid(),
     });
     await node1.pubSubManager.publish('chan1nel', `channel1_message_1`);
     await sleep(1000);
