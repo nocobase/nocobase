@@ -32,6 +32,17 @@ export class CollectionFieldInterfaceManager {
 
     Object.assign(this.collectionFieldInterfaceInstances, newCollectionFieldInterfaces);
   }
+
+  addFieldInterfaceComponentOption(interfaceName: string, componentOption: { label: string; value: string }) {
+    const fieldInterface = this.getFieldInterface(interfaceName);
+    // TODO：暂时没做到能忽略顺序
+    if (!fieldInterface) return;
+    if (!fieldInterface.componentOptions) {
+      fieldInterface.componentOptions = [];
+    }
+    fieldInterface.componentOptions.push(componentOption);
+  }
+
   getFieldInterface<T extends CollectionFieldInterface>(name: string) {
     return this.collectionFieldInterfaceInstances[name] as T;
   }

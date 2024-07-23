@@ -32,6 +32,7 @@ export abstract class CollectionFieldInterface {
   supportDataSourceType?: string[];
   notSupportDataSourceType?: string[];
   hasDefaultValue?: boolean;
+  componentOptions?: { label: string; value: string }[];
   isAssociation?: boolean;
   operators?: any[];
   /**

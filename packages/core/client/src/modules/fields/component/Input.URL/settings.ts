@@ -13,23 +13,30 @@ import _ from 'lodash';
 import { useTranslation } from 'react-i18next';
 import { SchemaSettings } from '../../../../application/schema-settings/SchemaSettings';
 import { useColumnSchema, useDesignable } from '../../../../schema-component';
+import { useCollectionField, useDataSourceManager } from '../../../../data-source';
 
 export const fieldComponent: any = {
   name: 'fieldComponent',
   type: 'select',
+  useVisible() {
+    const collectionField = useCollectionField();
+    const dm = useDataSourceManager();
+    const collectionInterface = dm.collectionFieldInterfaceManager.getFieldInterface(collectionField.interface);
+    return Array.isArray(collectionInterface.componentOptions) && collectionInterface.componentOptions?.length > 1;
+  },
   useComponentProps() {
     const { t } = useTranslation();
     const field = useField<Field>();
     const schema = useFieldSchema();
+    const collectionField = useCollectionField();
+    const dm = useDataSourceManager();
+    const collectionInterface = dm.collectionFieldInterfaceManager.getFieldInterface(collectionField.interface);
     const { fieldSchema: tableColumnSchema } = useColumnSchema();
     const fieldSchema = tableColumnSchema || schema;
     const { dn } = useDesignable();
     return {
       title: t('Field component'),
-      options: [
-        { value: 'Input.URL', label: 'URL' },
-        { value: 'Input.Preview', label: 'Preview' },
-      ],
+      options: collectionInterface.componentOptions,
       value: fieldSchema['x-component-props']?.['component'] || 'Input.URL',
       onChange(component) {
         _.set(fieldSchema, 'x-component-props.component', component);
