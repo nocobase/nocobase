@@ -36,6 +36,7 @@ import lodash from 'lodash';
 import { RecordableHistogram } from 'node:perf_hooks';
 import path, { basename, resolve } from 'path';
 import semver from 'semver';
+import packageJson from '../package.json';
 import { createACL } from './acl';
 import { AppCommand } from './app-command';
 import { AppSupervisor } from './app-supervisor';
@@ -59,6 +60,7 @@ import { dataTemplate } from './middlewares/data-template';
 import validateFilterParams from './middlewares/validate-filter-params';
 import { Plugin } from './plugin';
 import { InstallOptions, PluginManager } from './plugin-manager';
+import { PubSubManager } from './pub-sub-manager';
 import { SyncManager } from './sync-manager';
 
 import packageJson from '../package.json';
@@ -97,6 +99,7 @@ export interface ApplicationOptions {
    */
   resourcer?: ResourceManagerOptions;
   resourceManager?: ResourceManagerOptions;
+  pubSubManager?: any;
   bodyParser?: any;
   cors?: any;
   dataWrapping?: boolean;
@@ -226,6 +229,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
    * @internal
    */
   public syncManager: SyncManager;
+  public pubSubManager: PubSubManager;
   public requestLogger: Logger;
   private sqlLogger: Logger;
   protected _logger: SystemLogger;
@@ -516,6 +520,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     if (this.cacheManager) {
       await this.cacheManager.close();
+    }
+
+    if (this.pubSubManager) {
+      await this.pubSubManager.close();
     }
 
     if (this.telemetry.started) {
@@ -1121,6 +1129,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this._cli = this.createCLI();
     this._i18n = createI18n(options);
     this.syncManager = new SyncManager(this);
+    this.pubSubManager = new PubSubManager(this, options.pubSubManager);
     this.context.db = this.db;
 
     /**
