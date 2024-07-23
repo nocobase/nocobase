@@ -118,6 +118,7 @@ export interface ApplicationOptions {
    */
   perfHooks?: boolean;
   telemetry?: AppTelemetryOptions;
+  skipSupervisor?: boolean;
 }
 
 export interface DefaultState extends KoaDefaultState {
@@ -238,7 +239,9 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this.rawOptions = this.name == 'main' ? lodash.cloneDeep(options) : {};
     this.init();
 
-    this._appSupervisor.addApp(this);
+    if (!options.skipSupervisor) {
+      this._appSupervisor.addApp(this);
+    }
   }
 
   /**
