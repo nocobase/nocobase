@@ -7,16 +7,19 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { uid } from '@nocobase/utils';
 import Application from './application';
 
 export class PubSubManager {
   adapter: IPubSubAdapter;
   subscribes = new Map();
+  publisherId: string;
 
   constructor(
     protected app: Application,
     protected options: any = {},
   ) {
+    this.publisherId = uid();
     app.on('afterStart', async () => {
       await this.connect();
     });
@@ -47,8 +50,8 @@ export class PubSubManager {
     await this.adapter.connect();
     // subscribe 要在 connect 之后
     for (const [channel, callbacks] of this.subscribes) {
-      for (const callback of callbacks) {
-        await this.adapter.subscribe(`${this.prefix}.${channel}`, callback);
+      for (const [, fn] of callbacks) {
+        await this.adapter.subscribe(`${this.prefix}.${channel}`, fn);
       }
     }
   }
@@ -60,41 +63,60 @@ export class PubSubManager {
     return await this.adapter.close();
   }
 
-  async subscribe(channel, callback) {
+  async subscribe(channel, callback, skipSelf = true) {
+    const fn = (wrappedMessage) => {
+      const { publisherId, message } = JSON.parse(wrappedMessage);
+      if (skipSelf && publisherId === this.publisherId) {
+        return;
+      }
+      callback(message);
+    };
     if (!this.subscribes.has(channel)) {
-      const set = new Set();
-      this.subscribes.set(channel, set);
+      const map = new Map();
+      this.subscribes.set(channel, map);
     }
-    const set = this.subscribes.get(channel);
-    set.add(callback);
+    const map = this.subscribes.get(channel);
+    map.set(callback, fn);
   }
 
   async unsubscribe(channel, callback) {
-    const set = this.subscribes.get(channel);
-    if (set) {
-      set.delete(callback);
+    const map: Map<any, any> = this.subscribes.get(channel);
+    let fn = null;
+    if (map) {
+      fn = map.get(callback);
     }
-    if (!this.adapter) {
+    if (!this.adapter || !fn) {
       return;
     }
-    return this.adapter.unsubscribe(`${this.prefix}.${channel}`, callback);
+    return this.adapter.unsubscribe(`${this.prefix}.${channel}`, fn);
   }
 
   async publish(channel, message) {
     if (!this.adapter) {
       return;
     }
-    return this.adapter.publish(`${this.prefix}.${channel}`, message);
+
+    const wrappedMessage = JSON.stringify({
+      publisherId: this.publisherId,
+      message: message,
+    });
+
+    return this.adapter.publish(`${this.prefix}.${channel}`, wrappedMessage);
   }
 
-  onMessage(callback) {
+  onMessage(callback, skipSelf = true) {
     if (!this.adapter) {
       return;
     }
-    return this.adapter.onMessage((channel, message) => {
-      if (channel.startsWith(`${this.prefix}.`)) {
-        callback(channel, message);
+    return this.adapter.onMessage((channel: string, wrappedMessage) => {
+      if (!channel.startsWith(`${this.prefix}.`)) {
+        return;
       }
+      const { publisherId, message } = JSON.parse(wrappedMessage);
+      if (skipSelf && publisherId === this.publisherId) {
+        return;
+      }
+      callback(channel, message);
     });
   }
 }
