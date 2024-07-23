@@ -23,6 +23,13 @@ export class PubSubManager {
     app.on('afterStop', async () => {
       await this.close();
     });
+    app.on('beforeLoadPlugin', async (plugin) => {
+      if (!plugin.name) {
+        return;
+      }
+      console.log('beforeLoadPlugin', plugin.name);
+      await this.subscribe(plugin.name, plugin.onMessage.bind(plugin));
+    });
   }
 
   get prefix() {
@@ -34,6 +41,9 @@ export class PubSubManager {
   }
 
   async connect() {
+    if (!this.adapter) {
+      return;
+    }
     await this.adapter.connect();
     // subscribe 要在 connect 之后
     for (const [channel, callbacks] of this.subscribes) {
@@ -44,6 +54,9 @@ export class PubSubManager {
   }
 
   async close() {
+    if (!this.adapter) {
+      return;
+    }
     return await this.adapter.close();
   }
 
@@ -61,14 +74,23 @@ export class PubSubManager {
     if (set) {
       set.delete(callback);
     }
+    if (!this.adapter) {
+      return;
+    }
     return this.adapter.unsubscribe(`${this.prefix}.${channel}`, callback);
   }
 
   async publish(channel, message) {
+    if (!this.adapter) {
+      return;
+    }
     return this.adapter.publish(`${this.prefix}.${channel}`, message);
   }
 
   onMessage(callback) {
+    if (!this.adapter) {
+      return;
+    }
     return this.adapter.onMessage((channel, message) => {
       if (channel.startsWith(`${this.prefix}.`)) {
         callback(channel, message);

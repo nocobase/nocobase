@@ -7,10 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { isEqual, uniqWith } from 'lodash';
 import { randomUUID } from 'node:crypto';
 import EventEmitter from 'node:events';
 import Application from './application';
-import { isEqual, uniqWith } from 'lodash';
 
 export abstract class SyncAdapter extends EventEmitter {
   abstract get ready(): boolean;
@@ -40,6 +40,10 @@ export class SyncManager {
 
   public get available() {
     return this.adapter ? this.adapter.ready : false;
+  }
+
+  constructor(private app: Application) {
+    this.nodeId = `${process.env.NODE_ID || randomUUID()}-${process.pid}`;
   }
 
   private onMessage(namespace, message) {
@@ -80,10 +84,6 @@ export class SyncManager {
       this.publish(namespace, data);
     }
   };
-
-  constructor(private app: Application) {
-    this.nodeId = `${process.env.NODE_ID || randomUUID()}-${process.pid}`;
-  }
 
   public init(adapter: SyncAdapter) {
     if (this.adapter) {
