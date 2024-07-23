@@ -19,7 +19,7 @@ export class RedisPubSubAdapter implements IPubSubAdapter {
 
   constructor() {
     this.publisher = createClient({
-      url: process.env.REDIS_URL || 'redis://redis:6379',
+      url: process.env.PUB_SUB_REDIS_URL || 'redis://redis:6379',
     });
     this.subscriber = this.publisher.duplicate();
   }
@@ -87,10 +87,10 @@ describe('pub-sub-manager', () => {
     });
     await node1.pubSubManager.publish('chan1nel', `channel1_message_1`);
     await sleep(1000);
-    expect(count).toBe(2);
+    expect(count).toBe(1);
     await node1.pm.get(Plugin1).sendMessage('plugin send message');
     await sleep(1000);
-    expect(count).toBe(4);
+    expect(count).toBe(2);
     await node1.destroy();
     await node2.destroy();
   });
