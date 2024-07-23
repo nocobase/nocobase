@@ -48,7 +48,16 @@ export const Mobile = () => {
     <DesktopComponent>
       {/* 目前移动端由于和客户端的主题对不上，所以先使用 `GlobalThemeProvider` 和 `AntdAppProvider` 进行重置为默认主题  */}
       <div className={styles.nbMobile}>
-        <GlobalThemeProvider>
+        <GlobalThemeProvider
+          theme={{
+            token: {
+              marginBlock: 18,
+              borderRadiusBlock: 0,
+              boxShadowBlock: 'none',
+              borderBottomBlock: '1px solid var(--adm-color-border)',
+            },
+          }}
+        >
           <AntdAppProvider>
             <OpenModeProvider
               defaultOpenMode="page"

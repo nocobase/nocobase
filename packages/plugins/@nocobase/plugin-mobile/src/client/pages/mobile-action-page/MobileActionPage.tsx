@@ -15,18 +15,12 @@ import {
   useActionContext,
   useTabsContext,
 } from '@nocobase/client';
-import { ConfigProvider } from 'antd';
 import React, { useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { useMobileActionPageStyle } from './MobileActionPage.style';
 import { MobileTabsForMobileActionPage } from './MobileTabsForMobileActionPage';
 
 const components = { Tabs: MobileTabsForMobileActionPage };
-const theme: any = {
-  token: {
-    marginBlock: 18,
-  },
-};
 
 /**
  * 在移动端通过 Action 按钮打开的页面
@@ -53,9 +47,7 @@ export const MobileActionPage = ({ level }) => {
   const actionPageNode = (
     <div className={styles.container} style={style}>
       <TabsContextProvider {...tabContext} tabBarExtraContent={<BackButtonUsedInSubPage />} tabBarGutter={48}>
-        <ConfigProvider theme={theme}>
-          <SchemaComponent components={components} schema={filedSchema} onlyRenderProperties />
-        </ConfigProvider>
+        <SchemaComponent components={components} schema={filedSchema} onlyRenderProperties />
       </TabsContextProvider>
     </div>
   );

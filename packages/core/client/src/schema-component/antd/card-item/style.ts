@@ -15,6 +15,10 @@ const useStyles = genStyleHook('nb-card-item', (token) => {
   return {
     [componentCls]: {
       marginBottom: token.marginBlock,
+      '> .ant-card': {
+        boxShadow: token.boxShadowBlock,
+        borderBottom: token.borderBottomBlock,
+      },
     },
   };
 });

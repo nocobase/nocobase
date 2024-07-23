@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { DeleteOutlined, MenuOutlined, LeftOutlined, RightOutlined } from '@ant-design/icons';
+import { DeleteOutlined, MenuOutlined } from '@ant-design/icons';
 import { TinyColor } from '@ctrl/tinycolor';
 import { SortableContext, SortableContextProps, useSortable } from '@dnd-kit/sortable';
 import { css } from '@emotion/css';
@@ -565,11 +565,12 @@ export const Table: any = withDynamicSchemaProps(
 
         return (
           <td {...props} ref={ref} className={classNames(props.className, cellClass)} style={style}>
-            {inView || isIndex ? props.children : <Skeleton.Button style={{ height: '100%' }} />}
+            {/* 子表格中不能使用懒渲染。详见：https://nocobase.height.app/T-4889/description */}
+            {others.isSubTable || inView || isIndex ? props.children : <Skeleton.Button style={{ height: '100%' }} />}
           </td>
         );
       },
-      [dataSource.length],
+      [dataSource.length, others.isSubTable],
     );
 
     const components = useMemo(() => {

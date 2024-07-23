@@ -5,8 +5,8 @@
   "homepage": "https://docs.nocobase.com/handbook/mobile-client",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/mobile-client",
   "license": "AGPL-3.0",
-  "displayName": "Mobile client",
-  "displayName.zh-CN": "移动端",
+  "displayName": "Mobile client(Deprecated)",
+  "displayName.zh-CN": "移动端（已废弃）",
   "description": "Provides the ability to configure mobile pages.",
   "description.zh-CN": "提供移动端页面配置的能力。",
   "devDependencies": {
