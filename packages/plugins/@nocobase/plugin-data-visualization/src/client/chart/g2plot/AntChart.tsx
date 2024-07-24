@@ -11,7 +11,7 @@ import React, { useContext, useEffect, useRef } from 'react';
 import { ChartRendererContext } from '../../renderer';
 
 export const getAntChart = (Component: React.FC<any>) => (props: any) => {
-  const { size } = props;
+  const { size = {} } = props;
   let { height: fixedHeight } = props;
   if (!fixedHeight && size.type === 'fixed') {
     fixedHeight = size.fixed;
