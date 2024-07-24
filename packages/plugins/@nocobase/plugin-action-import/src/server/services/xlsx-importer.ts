@@ -30,6 +30,7 @@ type ImporterOptions = {
 
 type RunOptions = {
   transaction?: Transaction;
+  context?: any;
 };
 
 export class XlsxImporter extends EventEmitter {
@@ -180,6 +181,7 @@ export class XlsxImporter extends EventEmitter {
 
           await this.options.collection.repository.create({
             values: rowValues,
+            context: options?.context,
             transaction,
           });
 
