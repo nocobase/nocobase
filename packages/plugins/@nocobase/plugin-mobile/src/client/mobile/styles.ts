@@ -25,7 +25,7 @@ export const useStyles = createStyles(({ token, css }) => {
       .ant-pagination .ant-pagination-options {
         display: none;
       }
-      .ant-btn {
+      .ant-card-body .nb-action-bar .ant-btn {
         justify-content: space-between;
         display: flex;
         align-items: center;
@@ -35,7 +35,7 @@ export const useStyles = createStyles(({ token, css }) => {
           display: contents;
         }
       }
-      .nb-action-bar .ant-btn-icon {
+      .ant-card-body .nb-action-bar .ant-btn-icon {
         margin-inline-end: 0px !important;
       }
       .nb-action-bar button[aria-label*='schema-initializer-ActionBar-table:configureActions'] > span:last-child {
