@@ -53,7 +53,6 @@ export const Mobile = () => {
             marginBlock: 18,
             borderRadiusBlock: 0,
             boxShadowBlock: 'none',
-            borderBottomBlock: '1px solid var(--adm-color-border)',
           },
         }}
       >

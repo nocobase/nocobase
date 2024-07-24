@@ -14,6 +14,7 @@ import { ChartDataProvider } from './ChartDataProvider';
 import { ChartRenderer, ChartRendererProvider } from '../renderer';
 import { ChartFilterBlockProvider, ChartFilterBlockDesigner } from '../filter';
 import { ChartFilterProvider } from '../filter/FilterProvider';
+import { css } from '@emotion/css';
 
 export const ChartV2Block: React.FC = (props) => {
   const [initialVisible, setInitialVisible] = useState(false);
@@ -25,11 +26,27 @@ export const ChartV2Block: React.FC = (props) => {
       <SchemaComponentOptions
         components={{ ChartRenderer, ChartRendererProvider, ChartFilterBlockProvider, ChartFilterBlockDesigner }}
       >
-        <ChartDataProvider>
-          <ChartFilterProvider>
-            <ChartConfigProvider>{props.children}</ChartConfigProvider>
-          </ChartFilterProvider>
-        </ChartDataProvider>
+        <div
+          className={css`
+            .ant-nb-card-item {
+              margin-bottom: 0;
+              .ant-card {
+                box-shadow: none;
+                margin-bottom: 0 !important;
+              }
+            }
+            .nb-grid-warp > button:last-child {
+              margin-top: 20px;
+              margin-bottom: 0 !important;
+            }
+          `}
+        >
+          <ChartDataProvider>
+            <ChartFilterProvider>
+              <ChartConfigProvider>{props.children}</ChartConfigProvider>
+            </ChartFilterProvider>
+          </ChartDataProvider>
+        </div>
       </SchemaComponentOptions>
     </SchemaInitializerContext.Provider>
   );

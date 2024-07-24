@@ -12,15 +12,66 @@ import {
   SchemaSettingsBlockTitleItem,
   SchemaSettingsDivider,
   SchemaSettingsRemove,
+  SchemaSettingsSelectItem,
+  SchemaSettingsSwitchItem,
+  useDesignable,
+  useToken,
 } from '@nocobase/client';
 import React from 'react';
 import { useChartsTranslation } from '../locale';
+import { useField, useFieldSchema } from '@formily/react';
 
 export const ChartV2BlockDesigner: React.FC = () => {
   const { t } = useChartsTranslation();
+  const field = useField();
+  const fieldSchema = useFieldSchema();
+  const { dn } = useDesignable();
+  const { token } = useToken();
+
   return (
     <GeneralSchemaDesigner title={t('Charts')} showDataSource={false}>
       <SchemaSettingsBlockTitleItem />
+      <SchemaSettingsSwitchItem
+        title={t('Show background')}
+        checked={field.componentProps.style?.background !== 'none'}
+        onChange={(v) => {
+          const style = {
+            ...field.componentProps.style,
+            background: v ? token.colorBgContainer : 'none',
+            boxShadow: v ? token.boxShadowTertiary : 'none',
+          };
+          field.componentProps.style = style;
+          field.componentProps.bordered = v;
+          fieldSchema['x-component-props']['style'] = style;
+          fieldSchema['x-component-props']['bordered'] = v;
+          dn.emit('patch', {
+            schema: {
+              ['x-uid']: fieldSchema['x-uid'],
+              'x-component-props': field.componentProps,
+            },
+          });
+          dn.refresh();
+        }}
+      />
+      <SchemaSettingsSwitchItem
+        title={t('Show padding')}
+        checked={field.componentProps.bodyStyle?.padding !== '5px 0px'}
+        onChange={(v) => {
+          const style = {
+            ...field.componentProps.bodyStyle,
+            padding: v ? token.paddingLG : '5px 0px',
+          };
+          field.componentProps.bodyStyle = style;
+          fieldSchema['x-component-props']['bodyStyle'] = style;
+          dn.emit('patch', {
+            schema: {
+              ['x-uid']: fieldSchema['x-uid'],
+              'x-component-props': field.componentProps,
+            },
+          });
+          dn.refresh();
+        }}
+      />
       <SchemaSettingsDivider />
       <SchemaSettingsRemove
         removeParentsIfNoChildren
