@@ -109,6 +109,7 @@ export const DataBlockCollector = ({
   const dataLoadingMode = useDataLoadingMode();
 
   const shouldApplyFilter =
+    field &&
     field.decoratorType !== 'FilterFormBlockProvider' &&
     field.decoratorType !== 'FormBlockProvider' &&
     field.decoratorProps.blockType !== 'filter';
@@ -151,7 +152,7 @@ export const DataBlockCollector = ({
     associatedFields,
     collection,
     dataLoadingMode,
-    field.componentProps.title,
+    field?.componentProps?.title,
     fieldSchema,
     params?.filter,
     recordDataBlocks,
