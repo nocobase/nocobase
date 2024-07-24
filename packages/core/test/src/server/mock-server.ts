@@ -234,7 +234,9 @@ export function mockServer(options: ApplicationOptions = {}) {
     ...options,
   });
 
-  app.pubSubManager.setAdapter(MemoryPubSubAdapter.create(options.pubSubManager.basename));
+  if (options.pubSubManager) {
+    app.pubSubManager.setAdapter(MemoryPubSubAdapter.create(options.pubSubManager?.basename));
+  }
 
   return app;
 }

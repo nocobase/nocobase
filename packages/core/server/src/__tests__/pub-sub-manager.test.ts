@@ -21,7 +21,7 @@ describe('pub-sub-manager', () => {
         return 'Plugin1';
       }
 
-      async onMessage() {
+      async handleSyncMessage() {
         ++count;
       }
 
@@ -59,9 +59,9 @@ describe('pub-sub-manager', () => {
     node1.pubSubManager.publish('chan1nel', `channel1_message_1`);
     await sleep(1000);
     expect(count).toBe(1);
-    await node1.pm.get(Plugin1).sendMessage('plugin send message');
+    await node1.pm.get(Plugin1).sendSyncMessage('plugin send message');
     expect(count).toBe(2);
-    await node1.pm.get(Plugin1).sendMessage('plugin send message');
+    await node1.pm.get(Plugin1).sendSyncMessage('plugin send message');
     expect(count).toBe(3);
     await node1.destroy();
     await node2.destroy();

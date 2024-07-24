@@ -148,12 +148,11 @@ export abstract class Plugin<O = any> implements PluginInterface {
     this.app.syncManager.publish(this.name, message);
   }
 
-  async onMessage(message) {}
-  async sendMessage(message) {
+  async handleSyncMessage(message) {}
+  async sendSyncMessage(message) {
     if (!this.name) {
       return;
     }
-    console.log('sendMessage', this.name);
     await this.app.pubSubManager.publish(this.name, message);
   }
 

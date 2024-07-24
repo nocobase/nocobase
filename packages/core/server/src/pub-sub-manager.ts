@@ -36,14 +36,14 @@ export class PubSubManager {
       if (!plugin.name) {
         return;
       }
-      await this.subscribe(plugin.name, plugin.onMessage.bind(plugin), {
+      await this.subscribe(plugin.name, plugin.handleSyncMessage.bind(plugin), {
         debounce: Number(process.env.PUB_SUB_DEFAULT_DEBOUNCE || 1000),
       });
     });
   }
 
   get basename() {
-    return this.options.basename ? `${this.options.basename}.` : '';
+    return this.options?.basename ? `${this.options.basename}.` : '';
   }
 
   setAdapter(adapter: IPubSubAdapter) {
