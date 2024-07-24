@@ -42,8 +42,7 @@ export const ChartV2BlockDesigner: React.FC = () => {
           };
           field.componentProps.style = style;
           field.componentProps.bordered = v;
-          fieldSchema['x-component-props']['style'] = style;
-          fieldSchema['x-component-props']['bordered'] = v;
+          fieldSchema['x-component-props'] = field.componentProps;
           dn.emit('patch', {
             schema: {
               ['x-uid']: fieldSchema['x-uid'],
@@ -62,7 +61,7 @@ export const ChartV2BlockDesigner: React.FC = () => {
             padding: v ? `${token.paddingLG}px ${token.paddingLG}px 0` : '5px 0 0',
           };
           field.componentProps.bodyStyle = style;
-          fieldSchema['x-component-props']['bodyStyle'] = style;
+          fieldSchema['x-component-props'] = field.componentProps;
           dn.emit('patch', {
             schema: {
               ['x-uid']: fieldSchema['x-uid'],
