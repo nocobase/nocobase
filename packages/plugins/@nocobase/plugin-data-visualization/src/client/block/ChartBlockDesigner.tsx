@@ -55,11 +55,11 @@ export const ChartV2BlockDesigner: React.FC = () => {
       />
       <SchemaSettingsSwitchItem
         title={t('Show padding')}
-        checked={field.componentProps.bodyStyle?.padding !== '5px 0px'}
+        checked={field.componentProps.bodyStyle?.padding !== '5px 0 0'}
         onChange={(v) => {
           const style = {
             ...field.componentProps.bodyStyle,
-            padding: v ? token.paddingLG : '5px 0px',
+            padding: v ? `${token.paddingLG}px ${token.paddingLG}px 0` : '5px 0 0',
           };
           field.componentProps.bodyStyle = style;
           fieldSchema['x-component-props']['bodyStyle'] = style;

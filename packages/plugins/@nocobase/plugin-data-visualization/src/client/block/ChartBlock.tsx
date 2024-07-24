@@ -29,15 +29,12 @@ export const ChartV2Block: React.FC = (props) => {
         <div
           className={css`
             .ant-nb-card-item {
-              margin-bottom: 0;
               .ant-card {
                 box-shadow: none;
-                margin-bottom: 0 !important;
               }
             }
             .nb-grid-warp > button:last-child {
-              margin-top: 20px;
-              margin-bottom: 0 !important;
+              margin-bottom: 24px !important;
             }
           `}
         >
