@@ -74,12 +74,14 @@ export const ImportActionInitializer = () => {
       modal: {
         type: 'void',
         title: `{{ t("Import Data", {ns: "${NAMESPACE}" }) }}`,
-        'x-component': 'Action.Container',
+        'x-component': 'Action.Modal',
         'x-decorator': 'Form',
         'x-component-props': {
+          style: {
+            width: '100%',
+            maxWidth: '750px',
+          },
           className: css`
-            width: 100% !important;
-            max-width: 750px;
             .ant-formily-item-label {
               height: var(--controlHeightLG);
             }
@@ -134,7 +136,7 @@ export const ImportActionInitializer = () => {
             },
           },
           footer: {
-            'x-component': 'Action.Container.Footer',
+            'x-component': 'Action.Modal.Footer',
             'x-component-props': {},
             properties: {
               actions: {
