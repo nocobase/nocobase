@@ -31,12 +31,12 @@ export default {
           default: 'ratio',
           enum: [
             {
-              label: lang('Fixed height'),
-              value: 'fixed',
-            },
-            {
               label: lang('Aspect ratio'),
               value: 'ratio',
+            },
+            {
+              label: lang('Fixed height'),
+              value: 'fixed',
             },
           ],
         },
