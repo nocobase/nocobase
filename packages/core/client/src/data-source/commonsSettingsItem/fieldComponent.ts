@@ -23,7 +23,7 @@ export const fieldComponentSettingsItem: SchemaSettingsItemType = {
     const collectionField = useCollectionField();
     const dm = useDataSourceManager();
     const collectionInterface = dm.collectionFieldInterfaceManager.getFieldInterface(collectionField.interface);
-    return Array.isArray(collectionInterface.componentOptions) && collectionInterface.componentOptions?.length > 1;
+    return Array.isArray(collectionInterface?.componentOptions) && collectionInterface.componentOptions.length > 1;
   },
   useComponentProps() {
     const { t } = useTranslation();
@@ -38,7 +38,7 @@ export const fieldComponentSettingsItem: SchemaSettingsItemType = {
     const compile = useCompile();
     return {
       title: t('Field component'),
-      options: collectionInterface?.componentOptions.map((item) => {
+      options: collectionInterface?.componentOptions?.map((item) => {
         return {
           label: compile(item.label),
           value: item.value,
