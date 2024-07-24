@@ -77,11 +77,11 @@ export const ImportActionInitializer = () => {
         'x-component': 'Action.Modal',
         'x-decorator': 'Form',
         'x-component-props': {
+          width: '100%',
           style: {
             maxWidth: '750px',
           },
           className: css`
-            width: 100% !important;
             .ant-formily-item-label {
               height: var(--controlHeightLG);
             }
