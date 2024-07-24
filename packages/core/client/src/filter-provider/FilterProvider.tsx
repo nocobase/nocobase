@@ -10,8 +10,10 @@
 import { useField, useFieldSchema } from '@formily/react';
 import { uniqBy } from 'lodash';
 import React, { createContext, useCallback, useEffect, useRef } from 'react';
-import { useBlockRequestContext } from '../block-provider/BlockProvider';
-import { CollectionFieldOptions_deprecated, useCollection_deprecated } from '../collection-manager';
+import { CollectionFieldOptions_deprecated } from '../collection-manager';
+import { Collection } from '../data-source/collection/Collection';
+import { useCollection } from '../data-source/collection/CollectionProvider';
+import { useDataBlockRequest } from '../data-source/data-block/DataBlockRequestProvider';
 import { useDataLoadingMode } from '../modules/blocks/data-blocks/details-multi/setDataLoadingModeSettingsItem';
 import { removeNullCondition } from '../schema-component';
 import { mergeFilter, useAssociatedFields } from './utils';
@@ -36,8 +38,6 @@ export interface ForeignKeyField {
 
   [key: string]: any;
 }
-
-type Collection = ReturnType<typeof useCollection_deprecated>;
 
 export interface DataBlock {
   /** 唯一标识符，schema 中的 name 值 */
@@ -97,11 +97,11 @@ export const DataBlockCollector = ({
   params,
 }: {
   children: React.ReactNode;
-  params?: { filter: FilterParam };
+  params?: { filter?: FilterParam };
 }) => {
-  const collection = useCollection_deprecated();
+  const collection = useCollection();
   const { recordDataBlocks } = useFilterBlock();
-  const { service } = useBlockRequestContext();
+  const service = useDataBlockRequest();
   const field = useField();
   const fieldSchema = useFieldSchema();
   const associatedFields = useAssociatedFields();
@@ -117,10 +117,10 @@ export const DataBlockCollector = ({
     recordDataBlocks({
       uid: fieldSchema['x-uid'],
       title: field.componentProps.title,
-      doFilter: service.runAsync,
+      doFilter: service.runAsync as any,
       collection,
       associatedFields,
-      foreignKeyFields: collection.foreignKeyFields as ForeignKeyField[],
+      foreignKeyFields: collection.getFields('isForeignKey') as ForeignKeyField[],
       defaultFilter: params?.filter || {},
       service,
       dom: container.current,
