@@ -33,7 +33,6 @@ import {
   useCollectionManager_deprecated,
   useCollection_deprecated,
 } from '../collection-manager';
-import { DataBlockCollector } from '../filter-provider/FilterProvider';
 import { useSourceId } from '../modules/blocks/useSourceId';
 import { RecordProvider, useRecordIndex } from '../record-provider';
 import { useAssociationNames } from './hooks';
@@ -272,9 +271,7 @@ export const BlockProvider = (props: {
     <BlockContext.Provider value={blockValue}>
       <DataBlockProvider {...(props as any)} params={params} parentRecord={parentRecord || parentRecordFromHook}>
         <BlockRequestProvider_deprecated {...props} updateAssociationValues={updateAssociationValues} params={params}>
-          <DataBlockCollector {...props} params={params}>
-            {props.children}
-          </DataBlockCollector>
+          {props.children}
         </BlockRequestProvider_deprecated>
       </DataBlockProvider>
     </BlockContext.Provider>
