@@ -13,7 +13,6 @@ export const useStyles = createStyles(({ token, css }) => {
   return {
     nbMobile: css`
       display: initial;
-
       .ant-table-thead button[aria-label*='schema-initializer-TableV2-table:configureColumns'] > span:last-child {
         display: none !important;
       }
@@ -26,11 +25,24 @@ export const useStyles = createStyles(({ token, css }) => {
       .ant-pagination .ant-pagination-options {
         display: none;
       }
+      .ant-btn {
+        justify-content: space-between;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+
+        span {
+          display: contents;
+        }
+      }
       .nb-action-bar .ant-btn-icon {
         margin-inline-end: 0px !important;
       }
       .nb-action-bar button[aria-label*='schema-initializer-ActionBar-table:configureActions'] > span:last-child {
         display: none !important;
+      }
+      .nb-action-bar button[aria-label*='schema-initializer-ActionBar-table:configureActions'] > .ant-btn-icon {
+        margin: 0px;
       }
     `,
   };
