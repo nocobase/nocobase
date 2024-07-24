@@ -14,7 +14,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { findFilterTargets, updateFilterTargets } from '../block-provider/hooks';
 import { useCollectionManager_deprecated } from '../collection-manager/hooks/useCollectionManager_deprecated';
-import { useCollection_deprecated } from '../collection-manager/hooks/useCollection_deprecated';
+import { useCollection } from '../data-source/collection/CollectionProvider';
 import { useFilterBlock } from '../filter-provider/FilterProvider';
 import {
   getSupportFieldsByAssociation,
@@ -37,7 +37,7 @@ export function SchemaSettingsConnectDataBlocks(props) {
   const fieldSchema = useFieldSchema();
   const { dn } = useDesignable();
   const { t } = useTranslation();
-  const collection = useCollection_deprecated();
+  const collection = useCollection();
   const { inProvider } = useFilterBlock();
   const dataBlocks = useSupportedBlocks(type);
   // eslint-disable-next-line prefer-const
