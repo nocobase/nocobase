@@ -11,6 +11,7 @@ import { Action, AntdAppProvider, GlobalThemeProvider, OpenModeProvider, usePlug
 import React from 'react';
 import { isDesktop } from 'react-device-detect';
 
+import { usedToResetFilterActionForMobile } from '../adaptor-of-desktop/FilterAction';
 import { PageBackgroundColor } from '../constants';
 import { DesktopMode } from '../desktop-mode/DesktopMode';
 import { PluginMobileClient } from '../index';
@@ -18,6 +19,8 @@ import { MobileActionPage } from '../pages/mobile-action-page/MobileActionPage';
 import { MobileAppProvider } from './MobileAppContext';
 
 export const Mobile = () => {
+  usedToResetFilterActionForMobile();
+
   const mobilePlugin = usePlugin(PluginMobileClient);
   const MobileRouter = mobilePlugin.getRouterComponent();
 
@@ -48,7 +51,7 @@ export const Mobile = () => {
     <DesktopComponent>
       {/* 目前移动端由于和客户端的主题对不上，所以先使用 `GlobalThemeProvider` 和 `AntdAppProvider` 进行重置为默认主题  */}
       <GlobalThemeProvider>
-        <AntdAppProvider>
+        <AntdAppProvider className="mobile-container" style={{ transform: 'translateZ(0)', overflow: 'hidden' }}>
           <OpenModeProvider
             defaultOpenMode="page"
             hideOpenMode
