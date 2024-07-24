@@ -12,6 +12,7 @@ import { Application, ApplicationOptions, AppSupervisor, Gateway, PluginManager 
 import jwt from 'jsonwebtoken';
 import qs from 'qs';
 import supertest, { SuperAgentTest } from 'supertest';
+import { MemoryPubSubAdapter } from './memory-pub-sub-adapter';
 
 interface ActionParams {
   filterByTk?: any;
@@ -232,6 +233,8 @@ export function mockServer(options: ApplicationOptions = {}) {
     acl: false,
     ...options,
   });
+
+  app.pubSubManager.setAdapter(MemoryPubSubAdapter.create(options.pubSubManager.basename));
 
   return app;
 }

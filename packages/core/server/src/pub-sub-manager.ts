@@ -36,12 +36,14 @@ export class PubSubManager {
       if (!plugin.name) {
         return;
       }
-      await this.subscribe(plugin.name, plugin.onMessage.bind(plugin), { debounce: 1000 });
+      await this.subscribe(plugin.name, plugin.onMessage.bind(plugin), {
+        debounce: Number(process.env.PUB_SUB_DEFAULT_DEBOUNCE || 1000),
+      });
     });
   }
 
-  get prefix() {
-    return this.options.name || this.app.name;
+  get basename() {
+    return this.options.basename ? `${this.options.basename}.` : '';
   }
 
   setAdapter(adapter: IPubSubAdapter) {
@@ -56,7 +58,7 @@ export class PubSubManager {
     // subscribe 要在 connect 之后
     for (const [channel, callbacks] of this.subscribes) {
       for (const [, fn] of callbacks) {
-        await this.adapter.subscribe(`${this.prefix}.${channel}`, fn);
+        await this.adapter.subscribe(`${this.basename}${channel}`, fn);
       }
     }
   }
@@ -70,14 +72,13 @@ export class PubSubManager {
 
   async subscribe(channel: string, callback, options: PubSubManagerCallbackOptions = {}) {
     const { skipSelf = true, debounce = 0 } = options;
-    const fn = (wrappedMessage) => {
+    const debounceCallback = this.debounce((wrappedMessage) => {
       const { publisherId, message } = JSON.parse(wrappedMessage);
       if (skipSelf && publisherId === this.publisherId) {
         return;
       }
       callback(message);
-    };
-    const debounceCallback = debounce ? _.debounce(fn, debounce) : fn;
+    }, debounce);
     if (!this.subscribes.has(channel)) {
       const map = new Map();
       this.subscribes.set(channel, map);
@@ -95,7 +96,7 @@ export class PubSubManager {
     if (!this.adapter || !fn) {
       return;
     }
-    return this.adapter.unsubscribe(`${this.prefix}.${channel}`, fn);
+    return this.adapter.unsubscribe(`${this.basename}${channel}`, fn);
   }
 
   async publish(channel, message) {
@@ -108,7 +109,14 @@ export class PubSubManager {
       message: message,
     });
 
-    return this.adapter.publish(`${this.prefix}.${channel}`, wrappedMessage);
+    return this.adapter.publish(`${this.basename}${channel}`, wrappedMessage);
+  }
+
+  protected debounce(func, wait: number) {
+    if (wait) {
+      return _.debounce(func, wait);
+    }
+    return func;
   }
 
   onMessage(callback, options: PubSubManagerCallbackOptions = {}) {
@@ -116,13 +124,9 @@ export class PubSubManager {
       return;
     }
     const { skipSelf = true, debounce = 0 } = options;
-    const debounceCallback = debounce
-      ? _.debounce((channel, message) => {
-          callback(channel, message);
-        }, debounce)
-      : callback;
+    const debounceCallback = this.debounce(callback, debounce);
     return this.adapter.onMessage((channel: string, wrappedMessage) => {
-      if (!channel.startsWith(`${this.prefix}.`)) {
+      if (!channel.startsWith(`${this.basename}`)) {
         return;
       }
       const { publisherId, message } = JSON.parse(wrappedMessage);
