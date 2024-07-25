@@ -25,17 +25,17 @@ export class MemoryPubSubAdapter implements IPubSubAdapter {
 
   static instances = new Map<string, MemoryPubSubAdapter>();
 
-  static create(name?: string) {
+  static create(name?: string, options?: any) {
     if (!name) {
       name = uid();
     }
     if (!this.instances.has(name)) {
-      this.instances.set(name, new MemoryPubSubAdapter());
+      this.instances.set(name, new MemoryPubSubAdapter(options));
     }
     return this.instances.get(name);
   }
 
-  constructor() {
+  constructor(protected options: any = {}) {
     this.emitter = new TestEventEmitter();
   }
 
@@ -56,12 +56,16 @@ export class MemoryPubSubAdapter implements IPubSubAdapter {
   }
 
   async publish(channel, message) {
+    console.log(this.connected, { channel, message });
     if (!this.connected) {
       return;
     }
     await this.emitter.emitAsync(channel, message);
     await this.emitter.emitAsync('__publish__', channel, message);
-    await sleep(Number(process.env.PUB_SUB_DEFAULT_DEBOUNCE || 1000));
+    // 用于处理延迟问题
+    if (this.options.debounce) {
+      await sleep(Number(this.options.debounce));
+    }
   }
 
   async subscribeAll(callback) {

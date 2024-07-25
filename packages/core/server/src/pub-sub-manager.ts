@@ -16,8 +16,12 @@ export interface PubSubManagerOptions {
   basename?: string;
 }
 
-export interface PubSubManagerCallbackOptions {
+export interface PubSubManagerPublishOptions {
   skipSelf?: boolean;
+  onlySelf?: boolean;
+}
+
+export interface PubSubManagerSubscribeOptions {
   debounce?: number;
 }
 
@@ -35,14 +39,6 @@ export class PubSubManager {
     });
     app.on('afterStop', async () => {
       await pubSubManager.close();
-    });
-    app.on('beforeLoadPlugin', async (plugin) => {
-      if (!plugin.name) {
-        return;
-      }
-      await pubSubManager.subscribe(plugin.name, plugin.handleSyncMessage.bind(plugin), {
-        debounce: Number(process.env.PUB_SUB_DEFAULT_DEBOUNCE || 1000),
-      });
     });
     return pubSubManager;
   }
@@ -85,11 +81,13 @@ export class PubSubManager {
     return crypto.createHash('sha256').update(JSON.stringify(message)).digest('hex');
   }
 
-  async subscribe(channel: string, callback, options: PubSubManagerCallbackOptions = {}) {
-    const { skipSelf = true, debounce = 0 } = options;
+  async subscribe(channel: string, callback, options: PubSubManagerSubscribeOptions = {}) {
+    const { debounce = 0 } = options;
     const wrappedCallback = async (wrappedMessage) => {
-      const { publisherId, message } = JSON.parse(wrappedMessage);
-      if (skipSelf && publisherId === this.publisherId) {
+      const { onlySelf, skipSelf, publisherId, message } = JSON.parse(wrappedMessage);
+      if (onlySelf && publisherId !== this.publisherId) {
+        return;
+      } else if (!onlySelf && skipSelf && publisherId === this.publisherId) {
         return;
       }
       if (!debounce) {
@@ -131,37 +129,33 @@ export class PubSubManager {
     return this.adapter.unsubscribe(`${this.basename}${channel}`, fn);
   }
 
-  async publish(channel, message) {
+  async publish(channel, message, options?: PubSubManagerPublishOptions) {
     if (!this.adapter) {
       return;
     }
 
     const wrappedMessage = JSON.stringify({
       publisherId: this.publisherId,
+      ...options,
       message: message,
     });
 
     return this.adapter.publish(`${this.basename}${channel}`, wrappedMessage);
   }
 
-  protected debounce(func, wait: number) {
-    if (wait) {
-      return _.debounce(func, wait);
-    }
-    return func;
-  }
-
-  async subscribeAll(callback, options: PubSubManagerCallbackOptions = {}) {
+  async subscribeAll(callback, options: PubSubManagerSubscribeOptions = {}) {
     if (!this.adapter) {
       return;
     }
-    const { skipSelf = true, debounce = 0 } = options;
+    const { debounce = 0 } = options;
     return this.adapter.subscribeAll(async (channel: string, wrappedMessage) => {
       if (!channel.startsWith(this.basename)) {
         return;
       }
-      const { publisherId, message } = JSON.parse(wrappedMessage);
-      if (skipSelf && publisherId === this.publisherId) {
+      const { onlySelf, skipSelf, publisherId, message } = JSON.parse(wrappedMessage);
+      if (onlySelf && publisherId !== this.publisherId) {
+        return;
+      } else if (!onlySelf && skipSelf && publisherId === this.publisherId) {
         return;
       }
       const realChannel = channel.substring(this.basename.length);
@@ -177,6 +171,13 @@ export class PubSubManager {
       await handleMessage(realChannel, message);
       this.messageHanders.delete(messageHash);
     });
+  }
+
+  protected debounce(func, wait: number) {
+    if (wait) {
+      return _.debounce(func, wait);
+    }
+    return func;
   }
 }
 

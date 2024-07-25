@@ -151,9 +151,9 @@ export abstract class Plugin<O = any> implements PluginInterface {
   async handleSyncMessage(message) {}
   async sendSyncMessage(message) {
     if (!this.name) {
-      return;
+      throw new Error(`plugin name invalid`);
     }
-    await this.app.pubSubManager.publish(this.name, message);
+    await this.app.syncMessageManager.publish(this.name, message);
   }
 
   /**

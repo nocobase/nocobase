@@ -10,6 +10,7 @@
 import { mockDatabase } from '@nocobase/database';
 import { Application, ApplicationOptions, AppSupervisor, Gateway, PluginManager } from '@nocobase/server';
 import jwt from 'jsonwebtoken';
+import _ from 'lodash';
 import qs from 'qs';
 import supertest, { SuperAgentTest } from 'supertest';
 import { MemoryPubSubAdapter } from './memory-pub-sub-adapter';
@@ -231,12 +232,19 @@ export function mockServer(options: ApplicationOptions = {}) {
 
   const app = new MockServer({
     acl: false,
+    syncMessageManager: {
+      debounce: 1000,
+    },
     ...options,
   });
 
-  if (options.pubSubManager) {
-    app.pubSubManager.setAdapter(MemoryPubSubAdapter.create(options.pubSubManager?.basename));
-  }
+  const basename = app.options.pubSubManager?.basename || app.name;
+
+  app.pubSubManager.setAdapter(
+    MemoryPubSubAdapter.create(basename, {
+      debounce: 1000,
+    }),
+  );
 
   return app;
 }
@@ -248,6 +256,30 @@ export async function startMockServer(options: ApplicationOptions = {}) {
 }
 
 type BeforeInstallFn = (app) => Promise<void>;
+
+export async function createMultiMockServer(
+  options: ApplicationOptions & {
+    number?: number;
+    version?: string;
+    basename?: string;
+    beforeInstall?: BeforeInstallFn;
+    skipInstall?: boolean;
+    skipStart?: boolean;
+  } = {},
+) {
+  const instances: MockServer[] = [];
+  for (const i of _.range(0, options.number || 2)) {
+    const app: MockServer = await createMockServer({
+      ...options,
+      skipSupervisor: true,
+      pubSubManager: {
+        basename: options.basename,
+      },
+    });
+    instances.push(app);
+  }
+  return instances;
+}
 
 export async function createMockServer(
   options: ApplicationOptions & {
