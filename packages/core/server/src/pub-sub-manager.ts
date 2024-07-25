@@ -27,7 +27,7 @@ export interface PubSubManagerSubscribeOptions {
 
 export class PubSubManager {
   adapter: IPubSubAdapter;
-  messageHanders = new Map();
+  messageHandlers = new Map();
   subscribes = new Map();
   publisherId: string;
 
@@ -169,15 +169,15 @@ export class PubSubManager {
     }
     const prefix = subscribeAll ? '__subscribe_all__' : '__subscribe__';
     const messageHash = prefix + channel + (await this.getMessageHash(message));
-    if (!this.messageHanders.has(messageHash)) {
-      this.messageHanders.set(messageHash, this.debounce(callback, debounce));
+    if (!this.messageHandlers.has(messageHash)) {
+      this.messageHandlers.set(messageHash, this.debounce(callback, debounce));
     }
-    const handleMessage = this.messageHanders.get(messageHash);
+    const handleMessage = this.messageHandlers.get(messageHash);
     try {
       const args = subscribeAll ? [channel, message] : [message];
       await handleMessage(...args);
     } catch (error) {
-      this.messageHanders.delete(messageHash);
+      this.messageHandlers.delete(messageHash);
       throw error;
     }
   }
