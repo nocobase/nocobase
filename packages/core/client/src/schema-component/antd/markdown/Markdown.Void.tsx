@@ -17,16 +17,15 @@ import { useGlobalTheme } from '../../../global-theme';
 import { useDesignable } from '../../hooks/useDesignable';
 import { MarkdownVoidDesigner } from './Markdown.Void.Designer';
 import { useStyles } from './style';
-import { parseMarkdown } from './util';
 import { TextAreaProps } from 'antd/es/input';
 import { useBlockHeight } from '../../hooks/useBlockSize';
 import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
 import { useCollectionRecord } from '../../../data-source';
 import { useVariableOptions } from '../../../schema-settings/VariableInput/hooks/useVariableOptions';
 import { VariableSelect } from '../variable/VariableSelect';
-import { replaceVariableValue } from '../../../block-provider/hooks';
 import { useLocalVariables, useVariables } from '../../../variables';
 import { registerQrcodeWebComponent } from './qrcode-webcom';
+import { getRenderContent } from './util';
 export interface MarkdownEditorProps extends Omit<TextAreaProps, 'onSubmit'> {
   scope: any[];
   defaultValue?: string;
@@ -129,17 +128,18 @@ export const MarkdownVoid: any = withDynamicSchemaProps(
     const [html, setHtml] = useState('');
     const variables = useVariables();
     const localVariables = useLocalVariables();
+    const { engine } = schema?.['x-decorator-props'] || {};
     const [loading, setLoading] = useState(false);
     useEffect(() => {
       setLoading(true);
       const cvtContentToHTML = async () => {
-        const replacedContent = await replaceVariableValue(content, variables, localVariables);
-        const html = await parseMarkdown(replacedContent);
-        setHtml(html);
+        const replacedContent = await getRenderContent(engine, content, variables, localVariables);
+        setHtml(replacedContent);
         setLoading(false);
       };
       cvtContentToHTML();
-    }, [content, variables, localVariables]);
+    }, [content, variables, localVariables, engine]);
+
     const height = useMarkdownHeight();
     const scope = useVariableOptions({
       collectionField: { uiSchema: schema },
