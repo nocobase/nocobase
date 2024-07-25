@@ -18,6 +18,7 @@ import { useCollectionManager_deprecated, useCollection_deprecated } from '../..
 import { useFieldComponentName } from '../../../../common/useFieldComponentName';
 import { EditOperator, useDesignable, useValidateSchema } from '../../../../schema-component';
 import { SchemaSettingsDefaultValue } from '../../../../schema-settings/SchemaSettingsDefaultValue';
+import { fieldComponentSettingsItem } from '../../../../data-source/commonsSettingsItem';
 
 export const filterFormItemFieldSettings = new SchemaSettings({
   name: 'fieldSettings:FilterFormItem',
@@ -327,6 +328,7 @@ export const filterFormItemFieldSettings = new SchemaSettings({
             name: 'operator',
             Component: EditOperator,
           },
+          fieldComponentSettingsItem,
         ];
       },
     },

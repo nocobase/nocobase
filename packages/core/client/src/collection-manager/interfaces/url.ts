@@ -29,10 +29,10 @@ export class UrlFieldInterface extends CollectionFieldInterface {
       label: 'URL',
       value: 'Input.URL',
     },
-    // {
-    //   label: 'Preview',
-    //   value: 'Input.Preview',
-    // },
+    {
+      label: 'Preview',
+      value: 'Input.Preview',
+    },
   ];
   availableTypes = ['string', 'text'];
   schemaInitialize(schema: ISchema, { block }) {}

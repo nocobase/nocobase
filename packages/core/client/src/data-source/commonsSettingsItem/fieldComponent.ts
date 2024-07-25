@@ -23,7 +23,11 @@ export const fieldComponentSettingsItem: SchemaSettingsItemType = {
     const collectionField = useCollectionField();
     const dm = useDataSourceManager();
     const collectionInterface = dm.collectionFieldInterfaceManager.getFieldInterface(collectionField.interface);
-    return Array.isArray(collectionInterface?.componentOptions) && collectionInterface.componentOptions.length > 1;
+    return (
+      Array.isArray(collectionInterface?.componentOptions) &&
+      collectionInterface.componentOptions.length > 1 &&
+      collectionInterface.componentOptions.filter((item) => !item.useVisible || item.useVisible()).length > 1
+    );
   },
   useComponentProps() {
     const { t } = useTranslation();
@@ -46,12 +50,17 @@ export const fieldComponentSettingsItem: SchemaSettingsItemType = {
       }),
       value: fieldSchema['x-component-props']?.['component'] || 'Input.URL',
       onChange(component) {
-        _.set(fieldSchema, 'x-component-props.component', component);
-        field.componentProps.component = component;
+        const componentOptions = collectionInterface?.componentOptions?.find((item) => item.value === component);
+        const componentProps = {
+          component,
+          ...componentOptions?.useProps?.(),
+        };
+        _.set(fieldSchema, 'x-component-props', componentProps);
+        field.componentProps = componentProps;
         dn.emit('patch', {
           schema: {
             ['x-uid']: fieldSchema['x-uid'],
-            'x-component-props': fieldSchema['x-component-props'],
+            'x-component-props': componentProps,
           },
         });
       },

@@ -20,6 +20,7 @@ import {
   useFormBlockContext,
   useIsFormReadPretty,
   useValidateSchema,
+  fieldComponentSettingsItem,
 } from '@nocobase/client';
 import _ from 'lodash';
 import { useTranslation } from 'react-i18next';
@@ -324,6 +325,7 @@ export const bulkEditFormItemSettings = new SchemaSettings({
               return form && !isFormReadPretty && validateSchema;
             },
           },
+          fieldComponentSettingsItem,
         ];
       },
     },

@@ -276,14 +276,6 @@ export class NocoBaseBuildInPlugin extends Plugin {
   }
 
   async load() {
-    // TODO：暂时没做到能忽略顺序
-    setTimeout(() => {
-      this.dataSourceManager.collectionFieldInterfaceManager.addFieldInterfaceComponentOption('url', {
-        label: 'Preview',
-        value: 'Input.Preview',
-      });
-    });
-
     this.addComponents();
     this.addRoutes();
 
