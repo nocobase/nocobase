@@ -72,7 +72,7 @@ export abstract class CollectionFieldInterface {
             label: xComponent.split('.').pop(),
             value: xComponent,
             useProps() {
-              return this.default.uiSchema['x-component-props'];
+              return this.default?.uiSchema?.['x-component-props'] || {};
             },
           },
         ];
