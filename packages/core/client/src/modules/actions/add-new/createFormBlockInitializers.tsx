@@ -11,6 +11,7 @@ import { useTranslation } from 'react-i18next';
 import { CompatibleSchemaInitializer } from '../../../application/schema-initializer/CompatibleSchemaInitializer';
 import { useCollection } from '../../../data-source/collection/CollectionProvider';
 import { gridRowColWrap } from '../../../schema-initializer/utils';
+import { useBlockTemplateContext } from '../../../schema-templates/BlockTemplateProvider';
 
 const commonOptions = {
   wrap: gridRowColWrap,
@@ -24,6 +25,7 @@ const commonOptions = {
       useChildren() {
         const currentCollection = useCollection();
         const { t } = useTranslation();
+        const { componentNamePrefix } = useBlockTemplateContext();
 
         return [
           {
@@ -44,7 +46,7 @@ const commonOptions = {
               showAssociationFields: true,
               onlyCurrentDataSource: true,
               hideSearch: true,
-              componentType: 'FormItem',
+              componentType: `${componentNamePrefix}FormItem`,
               currentText: t('Current collection'),
               otherText: t('Other collections'),
             },

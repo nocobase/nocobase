@@ -17,7 +17,6 @@ import { useFormBlockContext } from '../../../block-provider/FormBlockProvider';
 import { useCollection_deprecated, useSortFields } from '../../../collection-manager';
 import { SetDataLoadingMode } from '../../../modules/blocks/data-blocks/details-multi/setDataLoadingModeSettingsItem';
 import { SetTheCountOfColumnsDisplayedInARow } from '../../../modules/blocks/data-blocks/grid-card/SetTheCountOfColumnsDisplayedInARow';
-import { useRecord } from '../../../record-provider';
 import {
   GeneralSchemaDesigner,
   SchemaSettingsDivider,
@@ -28,10 +27,11 @@ import {
 import { SchemaSettingsDataScope } from '../../../schema-settings/SchemaSettingsDataScope';
 import { SchemaSettingsTemplate } from '../../../schema-settings/SchemaSettingsTemplate';
 import { useSchemaTemplate } from '../../../schema-templates';
+import { useBlockTemplateContext } from '../../../schema-templates/BlockTemplate';
 import { SchemaComponentOptions } from '../../core';
 import { useDesignable } from '../../hooks';
 import { removeNullCondition } from '../filter';
-import { defaultColumnCount, gridSizes, pageSizeOptions, screenSizeMaps, screenSizeTitleMaps } from './options';
+import { gridSizes, pageSizeOptions, screenSizeMaps, screenSizeTitleMaps } from './options';
 
 export const columnCountMarks = [1, 2, 3, 4, 6, 8, 12, 24].reduce((obj, cur) => {
   obj[cur] = cur;
@@ -47,11 +47,10 @@ export const GridCardDesigner = () => {
   const field = useField();
   const { dn } = useDesignable();
   const sortFields = useSortFields(name);
-  const record = useRecord();
+  const { componentNamePrefix } = useBlockTemplateContext();
   const defaultSort = fieldSchema?.['x-decorator-props']?.params?.sort || [];
   const defaultResource =
     fieldSchema?.['x-decorator-props']?.resource || fieldSchema?.['x-decorator-props']?.association;
-  const columnCount = field.decoratorProps.columnCount || defaultColumnCount;
 
   const columnCountSchema = useMemo(() => {
     return {
@@ -217,7 +216,11 @@ export const GridCardDesigner = () => {
             });
           }}
         />
-        <SchemaSettingsTemplate componentName={'GridCard'} collectionName={name} resourceName={defaultResource} />
+        <SchemaSettingsTemplate
+          componentName={`${componentNamePrefix}GridCard`}
+          collectionName={name}
+          resourceName={defaultResource}
+        />
         <SchemaSettingsDivider />
         <SchemaSettingsRemove
           removeParentsIfNoChildren

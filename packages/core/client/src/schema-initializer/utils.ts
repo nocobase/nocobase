@@ -30,6 +30,7 @@ import { useDataSourceManager } from '../data-source/data-source/DataSourceManag
 import { isAssocField } from '../filter-provider/utils';
 import { useActionContext, useCompile, useDesignable } from '../schema-component';
 import { useSchemaTemplateManager } from '../schema-templates';
+import { useBlockTemplateContext } from '../schema-templates/BlockTemplate';
 
 export const itemsMerge = (items1) => {
   return items1;
@@ -884,6 +885,7 @@ export const useCollectionDataSourceItems = ({
   const collection = useCollection();
   const associationFields = useAssociationFields({ componentName, filterCollections: filter, showAssociationFields });
   const association = useAssociationName();
+  const { componentNamePrefix } = useBlockTemplateContext();
 
   let allCollections = dm.getAllCollections({
     filterCollection: (collection) => {
@@ -984,7 +986,7 @@ export const useCollectionDataSourceItems = ({
           onlyCurrentDataSource: false,
           hideChildrenIfSingleCollection: false,
           fromOthersInPopup: true,
-          componentType: componentTypeMap[componentName] || componentName,
+          componentType: componentNamePrefix + (componentTypeMap[componentName] || componentName),
           filter({ collection, associationField }) {
             if (filterOtherRecordsCollection) {
               return filterOtherRecordsCollection(collection);

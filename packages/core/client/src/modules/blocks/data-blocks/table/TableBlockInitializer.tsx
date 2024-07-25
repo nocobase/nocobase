@@ -13,6 +13,7 @@ import { useSchemaInitializer, useSchemaInitializerItem } from '../../../../appl
 import { useCollectionManager_deprecated } from '../../../../collection-manager/hooks/useCollectionManager_deprecated';
 import { Collection, CollectionFieldOptions } from '../../../../data-source/collection/Collection';
 import { DataBlockInitializer } from '../../../../schema-initializer/items/DataBlockInitializer';
+import { useBlockTemplateContext } from '../../../../schema-templates/BlockTemplateProvider';
 import { createTableBlockUISchema } from './createTableBlockUISchema';
 
 export const TableBlockInitializer = ({
@@ -39,12 +40,13 @@ export const TableBlockInitializer = ({
 }) => {
   const itemConfig = useSchemaInitializerItem();
   const { createTableBlock } = useCreateTableBlock();
+  const { componentNamePrefix } = useBlockTemplateContext();
 
   return (
     <DataBlockInitializer
       {...itemConfig}
       icon={<TableOutlined />}
-      componentType={'Table'}
+      componentType={`${componentNamePrefix}Table`}
       onCreateBlockSchema={async (options) => {
         if (createBlockSchema) {
           return createBlockSchema(options);

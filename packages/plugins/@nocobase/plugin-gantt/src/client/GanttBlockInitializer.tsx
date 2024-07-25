@@ -14,16 +14,17 @@ import React, { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import {
-  useSchemaInitializer,
-  useSchemaInitializerItem,
-  useCollectionManager_deprecated,
-  useGlobalTheme,
-  FormDialog,
-  SchemaComponent,
-  DataBlockInitializer,
-  SchemaComponentOptions,
   Collection,
   CollectionFieldOptions,
+  DataBlockInitializer,
+  FormDialog,
+  SchemaComponent,
+  SchemaComponentOptions,
+  useBlockTemplateContext,
+  useCollectionManager_deprecated,
+  useGlobalTheme,
+  useSchemaInitializer,
+  useSchemaInitializerItem,
 } from '@nocobase/client';
 import { createGanttBlockUISchema } from './createGanttBlockUISchema';
 
@@ -42,11 +43,12 @@ export const GanttBlockInitializer = ({
 }) => {
   const itemConfig = useSchemaInitializerItem();
   const { createGanttBlock } = useCreateGanttBlock();
+  const { componentNamePrefix } = useBlockTemplateContext();
 
   return (
     <DataBlockInitializer
       {...itemConfig}
-      componentType={'Calendar'}
+      componentType={`${componentNamePrefix}Calendar`}
       icon={<FormOutlined />}
       onCreateBlockSchema={async (options) => {
         if (createBlockSchema) {

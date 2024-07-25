@@ -21,6 +21,7 @@ import { SchemaSettingsBlockHeightItem } from '../../../../schema-settings/Schem
 import { SchemaSettingsBlockTitleItem } from '../../../../schema-settings/SchemaSettingsBlockTitleItem';
 import { SchemaSettingsDataScope } from '../../../../schema-settings/SchemaSettingsDataScope';
 import { SchemaSettingsTemplate } from '../../../../schema-settings/SchemaSettingsTemplate';
+import { useBlockTemplateContext } from '../../../../schema-templates/BlockTemplate';
 import { setDataLoadingModeSettingsItem } from './setDataLoadingModeSettingsItem';
 
 const commonItems: SchemaSettingsItemType[] = [
@@ -201,10 +202,11 @@ const commonItems: SchemaSettingsItemType[] = [
     useComponentProps() {
       const { name } = useCollection_deprecated();
       const fieldSchema = useFieldSchema();
+      const { componentNamePrefix } = useBlockTemplateContext();
       const defaultResource =
         fieldSchema?.['x-decorator-props']?.resource || fieldSchema?.['x-decorator-props']?.association;
       return {
-        componentName: 'Details',
+        componentName: `${componentNamePrefix}Details`,
         collectionName: name,
         resourceName: defaultResource,
       };

@@ -9,15 +9,17 @@
 
 import { useField, useFieldSchema } from '@formily/react';
 import {
-  useFormBlockContext,
+  removeNullCondition,
+  SchemaSettings,
+  SchemaSettingsBlockHeightItem,
+  SchemaSettingsBlockTitleItem,
   SchemaSettingsDataScope,
+  SchemaSettingsTemplate,
+  useBlockTemplateContext,
+  useCollection,
   useCollection_deprecated,
   useDesignable,
-  SchemaSettings,
-  SchemaSettingsBlockTitleItem,
-  removeNullCondition,
-  SchemaSettingsTemplate,
-  SchemaSettingsBlockHeightItem,
+  useFormBlockContext,
 } from '@nocobase/client';
 import { useKanbanBlockContext } from './KanbanBlockProvider';
 export const kanbanSettings = new SchemaSettings({
@@ -66,9 +68,10 @@ export const kanbanSettings = new SchemaSettings({
       name: 'template',
       Component: SchemaSettingsTemplate,
       useComponentProps() {
-        const { name } = useCollection_deprecated();
+        const { name } = useCollection();
+        const { componentNamePrefix } = useBlockTemplateContext();
         return {
-          componentName: 'Kanban',
+          componentName: `${componentNamePrefix}Kanban`,
           collectionName: name,
         };
       },

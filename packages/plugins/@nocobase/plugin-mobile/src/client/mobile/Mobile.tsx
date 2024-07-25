@@ -7,7 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Action, AntdAppProvider, GlobalThemeProvider, OpenModeProvider, usePlugin } from '@nocobase/client';
+import {
+  Action,
+  AntdAppProvider,
+  BlockTemplateProvider,
+  GlobalThemeProvider,
+  OpenModeProvider,
+  usePlugin,
+} from '@nocobase/client';
 import React from 'react';
 import { isDesktop } from 'react-device-detect';
 
@@ -61,9 +68,11 @@ export const Mobile = () => {
               modal: Action.Modal,
             }}
           >
-            <MobileAppProvider>
-              <MobileRouter />
-            </MobileAppProvider>
+            <BlockTemplateProvider componentNamePrefix="mobile-">
+              <MobileAppProvider>
+                <MobileRouter />
+              </MobileAppProvider>
+            </BlockTemplateProvider>
           </OpenModeProvider>
         </AntdAppProvider>
       </GlobalThemeProvider>

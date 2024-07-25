@@ -10,6 +10,7 @@
 import { Schema } from '@formily/react';
 import { useCallback, useMemo } from 'react';
 import {
+  useActionAvailable,
   useCollection,
   useCollectionManager_deprecated,
   useCollection_deprecated,
@@ -22,13 +23,13 @@ import {
   useCreateEditFormBlock,
   useCreateFormBlock,
   useCreateTableBlock,
-  useActionAvailable,
 } from '../..';
 import { CompatibleSchemaInitializer } from '../../application/schema-initializer/CompatibleSchemaInitializer';
 import { useCreateDetailsBlock } from '../../modules/blocks/data-blocks/details-multi/DetailsBlockInitializer';
 import { useCreateSingleDetailsSchema } from '../../modules/blocks/data-blocks/details-single/RecordReadPrettyFormBlockInitializer';
 import { useCreateGridCardBlock } from '../../modules/blocks/data-blocks/grid-card/GridCardBlockInitializer';
 import { useCreateListBlock } from '../../modules/blocks/data-blocks/list/ListBlockInitializer';
+import { useBlockTemplateContext } from '../../schema-templates/BlockTemplate';
 import { gridRowColWrap } from '../utils';
 
 const recursiveParent = (schema: Schema) => {
@@ -89,6 +90,7 @@ function useRecordBlocks() {
             createSingleDetailsSchema,
           ],
         );
+        const { componentNamePrefix } = useBlockTemplateContext();
         return {
           filterCollections({ collection, associationField }) {
             if (collection) {
@@ -101,7 +103,7 @@ function useRecordBlocks() {
           },
           onlyCurrentDataSource: true,
           hideSearch: true,
-          componentType: 'ReadPrettyFormItem',
+          componentType: `${componentNamePrefix}ReadPrettyFormItem`,
           createBlockSchema,
           templateWrap: useCallback(
             (templateSchema, { item }) => {
@@ -128,6 +130,7 @@ function useRecordBlocks() {
       useComponentProps() {
         const currentCollection = useCollection_deprecated();
         const { createEditFormBlock, templateWrap: templateWrapEdit } = useCreateEditFormBlock();
+        const { componentNamePrefix } = useBlockTemplateContext();
         const collectionsNeedToDisplay = [currentCollection, ...collectionsWithView];
 
         return {
@@ -140,7 +143,7 @@ function useRecordBlocks() {
           onlyCurrentDataSource: true,
           hideSearch: true,
           hideOtherRecordsInPopup: true,
-          componentType: 'FormItem',
+          componentType: `${componentNamePrefix}FormItem`,
           createBlockSchema: createEditFormBlock,
           templateWrap: templateWrapEdit,
           showAssociationFields: true,
@@ -157,6 +160,7 @@ function useRecordBlocks() {
       useComponentProps() {
         const { createAssociationFormBlock, templateWrap } = useCreateAssociationFormBlock();
         const { createFormBlock, templateWrap: templateWrapCollection } = useCreateFormBlock();
+        const { componentNamePrefix } = useBlockTemplateContext();
         return {
           filterCollections({ collection, associationField }) {
             if (associationField) {
@@ -166,7 +170,7 @@ function useRecordBlocks() {
           },
           onlyCurrentDataSource: true,
           hideSearch: true,
-          componentType: 'FormItem',
+          componentType: `${componentNamePrefix}FormItem`,
           createBlockSchema: ({ item, fromOthersInPopup }) => {
             if (fromOthersInPopup) {
               return createFormBlock({ item, fromOthersInPopup });

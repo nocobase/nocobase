@@ -19,6 +19,7 @@ import { useCollection_deprecated } from '../../../collection-manager';
 import { GeneralSchemaDesigner, SchemaSettingsDivider, SchemaSettingsRemove } from '../../../schema-settings';
 import { SchemaSettingsTemplate } from '../../../schema-settings/SchemaSettingsTemplate';
 import { useSchemaTemplate } from '../../../schema-templates';
+import { useBlockTemplateContext } from '../../../schema-templates/BlockTemplate';
 
 type Opts = Options<any, any> & { uid?: string };
 
@@ -130,9 +131,10 @@ export const Form: React.FC<FormProps> & { Designer?: any } = observer(
 Form.Designer = function Designer() {
   const { name, title } = useCollection_deprecated();
   const template = useSchemaTemplate();
+  const { componentNamePrefix } = useBlockTemplateContext();
   return (
     <GeneralSchemaDesigner template={template} title={title || name}>
-      <SchemaSettingsTemplate componentName={'Form'} collectionName={name} />
+      <SchemaSettingsTemplate componentName={`${componentNamePrefix}Form`} collectionName={name} />
       <SchemaSettingsDivider />
       <SchemaSettingsRemove
         removeParentsIfNoChildren

@@ -17,19 +17,25 @@ import { SchemaSettingsBlockTitleItem } from '../../../schema-settings/SchemaSet
 import { SchemaSettingsConnectDataBlocks } from '../../../schema-settings/SchemaSettingsConnectDataBlocks';
 import { SchemaSettingsTemplate } from '../../../schema-settings/SchemaSettingsTemplate';
 import { useSchemaTemplate } from '../../../schema-templates';
+import { useBlockTemplateContext } from '../../../schema-templates/BlockTemplate';
 
 export const AssociationFilterBlockDesigner = () => {
   const { name, title } = useCollection_deprecated();
   const template = useSchemaTemplate();
   const fieldSchema = useFieldSchema();
   const { t } = useTranslation();
+  const { componentNamePrefix } = useBlockTemplateContext();
   const defaultResource =
     fieldSchema?.['x-decorator-props']?.resource || fieldSchema?.['x-decorator-props']?.association;
 
   return (
     <GeneralSchemaDesigner template={template} title={title || name}>
       <SchemaSettingsBlockTitleItem />
-      <SchemaSettingsTemplate componentName={'FilterCollapse'} collectionName={name} resourceName={defaultResource} />
+      <SchemaSettingsTemplate
+        componentName={`${componentNamePrefix}FilterCollapse`}
+        collectionName={name}
+        resourceName={defaultResource}
+      />
       <SchemaSettingsConnectDataBlocks type={FilterBlockType.COLLAPSE} emptyDescription={t('No blocks to connect')} />
       <SchemaSettingsDivider />
       <SchemaSettingsRemove
