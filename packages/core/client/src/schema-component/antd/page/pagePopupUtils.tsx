@@ -53,7 +53,10 @@ export const getStoredPopupContext = (popupUid: string) => {
 };
 
 /**
- * Used to store the context of the current popup when a button is clicked.
+ * Used to store the context of the current popup.
+ *
+ * The context that has already been stored, when displaying the popup,
+ * will directly retrieve the context information from the cache instead of making an API request.
  * @param popupUid
  * @param params
  */
