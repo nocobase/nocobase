@@ -10,6 +10,7 @@
 import { registerActions } from '@nocobase/actions';
 import { actions as authActions, AuthManager, AuthManagerOptions } from '@nocobase/auth';
 import { Cache, CacheManager, CacheManagerOptions } from '@nocobase/cache';
+import { DataSourceManager, SequelizeDataSource } from '@nocobase/data-source-manager';
 import Database, { CollectionOptions, IDatabaseOptions } from '@nocobase/database';
 import {
   createLogger,
@@ -33,7 +34,7 @@ import Koa, { DefaultContext as KoaDefaultContext, DefaultState as KoaDefaultSta
 import compose from 'koa-compose';
 import lodash from 'lodash';
 import { RecordableHistogram } from 'node:perf_hooks';
-import { basename, resolve } from 'path';
+import path, { basename, resolve } from 'path';
 import semver from 'semver';
 import { createACL } from './acl';
 import { AppCommand } from './app-command';
@@ -52,16 +53,15 @@ import {
 } from './helper';
 import { ApplicationVersion } from './helpers/application-version';
 import { Locale } from './locale';
-import { Plugin } from './plugin';
-import { InstallOptions, PluginManager } from './plugin-manager';
-import { DataSourceManager, SequelizeDataSource } from '@nocobase/data-source-manager';
-import packageJson from '../package.json';
 import { MainDataSource } from './main-data-source';
-import validateFilterParams from './middlewares/validate-filter-params';
-import path from 'path';
 import { parseVariables } from './middlewares';
 import { dataTemplate } from './middlewares/data-template';
+import validateFilterParams from './middlewares/validate-filter-params';
+import { Plugin } from './plugin';
+import { InstallOptions, PluginManager } from './plugin-manager';
 import { SyncManager } from './sync-manager';
+
+import packageJson from '../package.json';
 
 export type PluginType = string | typeof Plugin;
 export type PluginConfiguration = PluginType | [PluginType, any];
@@ -116,6 +116,7 @@ export interface ApplicationOptions {
    */
   perfHooks?: boolean;
   telemetry?: AppTelemetryOptions;
+  skipSupervisor?: boolean;
 }
 
 export interface DefaultState extends KoaDefaultState {
@@ -235,7 +236,9 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this.rawOptions = this.name == 'main' ? lodash.cloneDeep(options) : {};
     this.init();
 
-    this._appSupervisor.addApp(this);
+    if (!options.skipSupervisor) {
+      this._appSupervisor.addApp(this);
+    }
   }
 
   /**

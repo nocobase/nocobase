@@ -1,4 +1,4 @@
-Updated Date: July 22, 2024
+Updated Date: July 24, 2024
 
 NocoBase License Agreement
 
@@ -80,7 +80,7 @@ Except for Third-Party Open Source Software, the Company owns all copyrights, tr
 
 6.6 Can sell plugins developed for Software in the Marketplace.
 
-6.7 Can sell or provide Upper Layer Applications developed based on Software in the form of SaaS to the public.
+6.7 Can sell Upper Layer Applications developed based on Software to Customer who has obtained a commercial license.
 
 6.8 Not restricted by the AGPL-3.0 agreement.
 

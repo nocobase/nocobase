@@ -17,7 +17,6 @@ import {
   useApp,
   useTabsContext,
 } from '@nocobase/client';
-import { ConfigProvider } from 'antd';
 import _ from 'lodash';
 import React, { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
@@ -25,11 +24,6 @@ import { useMobileActionPageStyle } from './MobileActionPage.style';
 import { MobileTabsForMobileActionPage } from './MobileTabsForMobileActionPage';
 
 const components = { Tabs: MobileTabsForMobileActionPage };
-const theme: any = {
-  token: {
-    marginBlock: 18,
-  },
-};
 
 /**
  * 把 popup:common:addBlock 替换为移动端专属的值。当退出子页面时，再换回来。
@@ -103,9 +97,7 @@ export const MobileActionPage = ({ level }) => {
   const actionPageNode = (
     <div className={styles.container} style={style}>
       <TabsContextProvider {...tabContext} tabBarExtraContent={<BackButtonUsedInSubPage />} tabBarGutter={48}>
-        <ConfigProvider theme={theme}>
-          <SchemaComponent components={components} schema={filedSchema} onlyRenderProperties />
-        </ConfigProvider>
+        <SchemaComponent components={components} schema={filedSchema} onlyRenderProperties />
       </TabsContextProvider>
     </div>
   );

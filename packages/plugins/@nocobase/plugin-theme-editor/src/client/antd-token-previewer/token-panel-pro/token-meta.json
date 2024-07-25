@@ -1759,5 +1759,21 @@
     "descEn": "Used to set the radius of the block",
     "type": "number",
     "source": "map"
+  },
+  "boxShadowBlock": {
+    "name": "区块的阴影",
+    "nameEn": "Shadow of block",
+    "desc": "用于设置区块的阴影",
+    "descEn": "Used to set the shadow of the block",
+    "type": "string",
+    "source": "map"
+  },
+  "borderBottomBlock": {
+    "name": "区块的底边框",
+    "nameEn": "Bottom border of block",
+    "desc": "用于设置区块的底边框",
+    "descEn": "Used to set the bottom border of the block",
+    "type": "string",
+    "source": "map"
   }
 }
