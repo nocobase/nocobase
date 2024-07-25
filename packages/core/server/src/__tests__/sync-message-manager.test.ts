@@ -9,6 +9,7 @@
 
 import { Plugin } from '@nocobase/server';
 import { createMultiMockServer } from '@nocobase/test';
+import { uid } from '@nocobase/utils';
 
 describe('sync-message-manager', () => {
   test('subscribe + publish', async () => {
@@ -34,12 +35,18 @@ describe('sync-message-manager', () => {
         mockListener(message);
       }
     }
-    const [node1, node2] = await createMultiMockServer({ basename: 'base1', plugins: [MyPlugin] });
-    await node1.pm.get(MyPlugin).sendSyncMessage('message1');
+    const [app1, app2] = await createMultiMockServer({
+      basename: uid(),
+      number: 2, // 创建几个 app 实例
+      plugins: [MyPlugin],
+    });
+    await app1.pm.get(MyPlugin).sendSyncMessage('message1');
     expect(mockListener).toBeCalledTimes(1);
     expect(mockListener).toHaveBeenCalledWith('message1');
-    await node2.pm.get(MyPlugin).sendSyncMessage('message2');
+    await app2.pm.get(MyPlugin).sendSyncMessage('message2');
     expect(mockListener).toBeCalledTimes(2);
     expect(mockListener).toHaveBeenCalledWith('message2');
+    await app1.destroy();
+    await app2.destroy();
   });
 });
