@@ -42,7 +42,7 @@
     "release:force": "lerna publish from-package --yes --no-git-tag-version",
     "release": "lerna publish",
     "run:example": "tsx -r dotenv/config -r tsconfig-paths/register ./examples/index.ts",
-    "prepare": "[ -z \"$CI\" ] && echo \"packages/pro-plugins/\" > .git/info/exclude"
+    "prepare": "[ -z \"$CI\" ] && echo \"packages/pro-plugins/\" > .git/info/exclude || true"
   },
   "resolutions": {
     "@types/react": "^17.0.0",
