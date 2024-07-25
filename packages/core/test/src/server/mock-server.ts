@@ -238,7 +238,7 @@ export function mockServer(options: ApplicationOptions = {}) {
     ...options,
   });
 
-  const basename = app.options.pubSubManager?.basename || app.name;
+  const basename = app.options.pubSubManager?.channelPrefix || app.name;
 
   app.pubSubManager.setAdapter(
     MemoryPubSubAdapter.create(basename, {
@@ -273,7 +273,7 @@ export async function createMultiMockServer(
       ...options,
       skipSupervisor: true,
       pubSubManager: {
-        basename: options.basename,
+        channelPrefix: options.basename,
       },
     });
     instances.push(app);

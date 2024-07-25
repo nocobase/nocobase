@@ -21,7 +21,7 @@ applyMixins(TestEventEmitter, [AsyncEmitter]);
 export class MemoryPubSubAdapter implements IPubSubAdapter {
   protected emitter: TestEventEmitter;
 
-  protected connected = false;
+  connected = false;
 
   static instances = new Map<string, MemoryPubSubAdapter>();
 

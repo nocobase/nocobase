@@ -9,7 +9,7 @@
 
 /* istanbul ignore file -- @preserve */
 
-import { Model } from '@nocobase/database';
+import { Model, Transactionable } from '@nocobase/database';
 import { LoggerOptions } from '@nocobase/logger';
 import { fsExists } from '@nocobase/utils';
 import fs from 'fs';
@@ -148,12 +148,12 @@ export abstract class Plugin<O = any> implements PluginInterface {
     this.app.syncManager.publish(this.name, message);
   }
 
-  async handleSyncMessage(message) {}
-  async sendSyncMessage(message) {
+  async handleSyncMessage(message: any) {}
+  async sendSyncMessage(message: any, options?: Transactionable) {
     if (!this.name) {
       throw new Error(`plugin name invalid`);
     }
-    await this.app.syncMessageManager.publish(this.name, message);
+    await this.app.syncMessageManager.publish(this.name, message, options);
   }
 
   /**
