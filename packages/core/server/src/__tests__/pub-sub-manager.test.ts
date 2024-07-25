@@ -14,7 +14,7 @@ describe('connect', () => {
   let pubSubManager: PubSubManager;
 
   beforeEach(async () => {
-    pubSubManager = new PubSubManager({ basename: 'pubsub1' });
+    pubSubManager = new PubSubManager({ channelPrefix: 'pubsub1' });
     pubSubManager.setAdapter(new MemoryPubSubAdapter());
   });
 
@@ -63,7 +63,7 @@ describe('skipSelf, unsubscribe, debounce', () => {
   let pubSubManager: PubSubManager;
 
   beforeEach(async () => {
-    pubSubManager = new PubSubManager({ basename: 'pubsub1' });
+    pubSubManager = new PubSubManager({ channelPrefix: 'pubsub1' });
     pubSubManager.setAdapter(new MemoryPubSubAdapter());
     await pubSubManager.connect();
   });
@@ -180,10 +180,10 @@ describe('Pub/Sub', () => {
 
   beforeEach(async () => {
     const pubsub = new MemoryPubSubAdapter();
-    publisher = new PubSubManager({ basename: 'pubsub1' });
+    publisher = new PubSubManager({ channelPrefix: 'pubsub1' });
     publisher.setAdapter(pubsub);
     await publisher.connect();
-    subscriber = new PubSubManager({ basename: 'pubsub1' });
+    subscriber = new PubSubManager({ channelPrefix: 'pubsub1' });
     subscriber.setAdapter(pubsub);
     await subscriber.connect();
   });
@@ -230,7 +230,7 @@ describe('app.pubSubManager', () => {
   beforeEach(async () => {
     app = await createMockServer({
       pubSubManager: {
-        basename: 'app1',
+        channelPrefix: 'app1',
       },
     });
     pubSubManager = app.pubSubManager;

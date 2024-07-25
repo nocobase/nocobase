@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { Transactionable } from '@nocobase/database';
 import Application from './application';
 import { PubSubManager, PubSubManagerPublishOptions } from './pub-sub-manager';
 
@@ -31,12 +32,39 @@ export class SyncMessageManager {
     return this.options.debounce || 1000;
   }
 
-  async publish(channel: string, message, options?: PubSubManagerPublishOptions) {
-    await this.app.pubSubManager.publish(`${this.app.name}.sync.${channel}`, message, { skipSelf: true, ...options });
+  async publish(channel: string, message, options?: PubSubManagerPublishOptions & Transactionable) {
+    const { transaction, ...others } = options || {};
+    if (transaction) {
+      return await new Promise((resolve, reject) => {
+        const timer = setTimeout(() => {
+          reject(new Error('publish timeout'));
+        }, 5000);
+        transaction.afterCommit(async () => {
+          try {
+            const r = await this.app.pubSubManager.publish(`${this.app.name}.sync.${channel}`, message, {
+              skipSelf: true,
+              ...others,
+            });
+            clearTimeout(timer);
+            resolve(r);
+          } catch (error) {
+            clearTimeout(timer);
+            reject(error);
+          }
+        });
+      });
+    } else {
+      return await this.app.pubSubManager.publish(`${this.app.name}.sync.${channel}`, message, {
+        skipSelf: true,
+        ...options,
+      });
+    }
   }
 
   async subscribe(channel: string, callback) {
-    await this.app.pubSubManager.subscribe(`${this.app.name}.sync.${channel}`, callback, { debounce: this.debounce });
+    return await this.app.pubSubManager.subscribe(`${this.app.name}.sync.${channel}`, callback, {
+      debounce: this.debounce,
+    });
   }
 
   async sync() {

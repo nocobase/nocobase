@@ -1132,7 +1132,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this._i18n = createI18n(options);
     this.syncManager = new SyncManager(this);
     this.pubSubManager = PubSubManager.create(this, {
-      basename: this.name,
+      channelPrefix: this.name,
       ...options.pubSubManager,
     });
     this.syncMessageManager = new SyncMessageManager(this, options.syncMessageManager);
