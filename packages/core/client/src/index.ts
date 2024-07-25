@@ -63,11 +63,13 @@ export * from './variables';
 export { withDynamicSchemaProps } from './hoc/withDynamicSchemaProps';
 
 export { SchemaSettingsActionLinkItem } from './modules/actions/link/customizeLinkActionSettings';
+export { useURLAndHTMLSchema } from './modules/actions/link/useURLAndHTMLSchema';
 export * from './modules/blocks/BlockSchemaToolbar';
 export * from './modules/blocks/data-blocks/form';
 export * from './modules/blocks/data-blocks/table';
 export * from './modules/blocks/data-blocks/table-selector';
 export * from './modules/blocks/index';
 export * from './modules/blocks/useParentRecordCommon';
+export { OpenModeProvider, useOpenModeContext } from './modules/popup/OpenModeProvider';
 
 export { VariablePopupRecordProvider } from './modules/variable/variablesProvider/VariablePopupRecordProvider';

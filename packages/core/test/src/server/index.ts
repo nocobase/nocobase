@@ -10,9 +10,10 @@
 import { describe } from 'vitest';
 import ws from 'ws';
 
-export { mockDatabase } from '@nocobase/database';
+export { mockDatabase, MockDatabase } from '@nocobase/database';
 export { default as supertest } from 'supertest';
-export * from './mockServer';
+export * from './mock-server';
+export * from './mock-cluster';
 
 export const pgOnly: () => any = () => (process.env.DB_DIALECT == 'postgres' ? describe : describe.skip);
 export const isPg = () => process.env.DB_DIALECT == 'postgres';
@@ -22,9 +23,13 @@ export function randomStr() {
   return Math.random().toString(36).substring(2);
 }
 
-export const waitSecond = async (timeout = 1000) => {
-  await new Promise((resolve) => setTimeout(resolve, timeout));
-};
+export function sleep(ms = 1000) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
+export const waitSecond = sleep;
 
 export const startServerWithRandomPort = async (startServer) => {
   return await new Promise((resolve) => {

@@ -30,6 +30,7 @@ type ImporterOptions = {
 
 type RunOptions = {
   transaction?: Transaction;
+  context?: any;
 };
 
 export class XlsxImporter extends EventEmitter {
@@ -180,6 +181,7 @@ export class XlsxImporter extends EventEmitter {
 
           await this.options.collection.repository.create({
             values: rowValues,
+            context: options?.context,
             transaction,
           });
 
@@ -188,7 +190,9 @@ export class XlsxImporter extends EventEmitter {
           await new Promise((resolve) => setTimeout(resolve, 5));
         } catch (error) {
           throw new Error(
-            `failed to import row ${handingRowIndex}, message: ${error.message}, rowData: ${JSON.stringify(rowValues)}`,
+            `failed to import row ${handingRowIndex}, ${this.renderErrorMessage(error)}, rowData: ${JSON.stringify(
+              rowValues,
+            )}`,
             { cause: error },
           );
         }
@@ -201,6 +205,14 @@ export class XlsxImporter extends EventEmitter {
     return imported;
   }
 
+  renderErrorMessage(error) {
+    let message = error.message;
+    if (error.parent) {
+      message += `: ${error.parent.message}`;
+    }
+
+    return message;
+  }
   trimString(str: string) {
     if (typeof str === 'string') {
       return str.trim();

@@ -129,7 +129,7 @@ export const usePagePopup = () => {
       (_parentRecordData || parentRecord?.data)?.[cm.getSourceKeyByAssociation(association)],
     [parentRecord, association],
   );
-  const currentPopupUidWithoutOpened = fieldSchema['x-uid'];
+  const currentPopupUidWithoutOpened = fieldSchema?.['x-uid'];
 
   const getNewPathname = useCallback(
     ({

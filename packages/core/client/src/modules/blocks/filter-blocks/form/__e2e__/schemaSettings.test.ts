@@ -14,6 +14,7 @@ import {
   oneFormAndOneTableWithSameCollection,
   test,
 } from '@nocobase/test/e2e';
+import { T4798 } from './templates';
 
 test.describe('filter block schema settings', () => {
   test('supported options', async ({ page, mockPage }) => {
@@ -161,6 +162,24 @@ test.describe('filter block schema settings', () => {
       ).toBeVisible();
 
       await clearBlockTemplates();
+    });
+
+    test('the operator of association field should work', async ({ page, mockPage, mockRecords }) => {
+      const nocoPage = await mockPage(T4798).waitForInit();
+      await mockRecords('general', 3);
+      await nocoPage.goto();
+
+      // 默认操作符为 “contains”，更改为 “is”
+      await page.getByLabel('block-item-CollectionField-').hover();
+      await page.getByLabel('designer-schema-settings-CollectionField-fieldSettings:FilterFormItem-general-').hover();
+      await page.getByRole('menuitem', { name: 'Operator contains' }).click();
+      await page.getByRole('option', { name: 'is', exact: true }).click();
+
+      // 刷新页面后，操作符应该还是 “is”
+      await page.reload();
+      await page.getByLabel('block-item-CollectionField-').hover();
+      await page.getByLabel('designer-schema-settings-CollectionField-fieldSettings:FilterFormItem-general-').hover();
+      await expect(page.getByRole('menuitem', { name: 'Operator is' })).toBeVisible();
     });
   });
 });

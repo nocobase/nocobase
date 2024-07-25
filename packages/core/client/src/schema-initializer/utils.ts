@@ -17,6 +17,7 @@ import {
   DataBlockInitializer,
   DataSource,
   SchemaInitializerItemType,
+  useAssociationName,
   useCollection,
   useCollectionManager,
   useDataSourceKey,
@@ -29,6 +30,7 @@ import { useDataSourceManager } from '../data-source/data-source/DataSourceManag
 import { isAssocField } from '../filter-provider/utils';
 import { useActionContext, useCompile, useDesignable } from '../schema-component';
 import { useSchemaTemplateManager } from '../schema-templates';
+
 export const itemsMerge = (items1) => {
   return items1;
 };
@@ -305,7 +307,7 @@ export const useFormItemInitializerFields = (options?: any) => {
       const targetCollection = getCollection(field.target);
       const isFileCollection = field?.target && getCollection(field?.target)?.template === 'file';
       const isAssociationField = targetCollection;
-      const fieldNames = field?.uiSchema['x-component-props']?.['fieldNames'];
+      const fieldNames = field?.uiSchema?.['x-component-props']?.['fieldNames'];
       const schema = {
         type: 'string',
         name: field.name,
@@ -381,7 +383,9 @@ export const useFilterFormItemInitializerFields = (options?: any) => {
         'x-decorator': 'FormItem',
         'x-use-decorator-props': 'useFormItemProps',
         'x-collection-field': `${name}.${field.name}`,
-        'x-component-props': {},
+        'x-component-props': {
+          component: interfaceConfig?.filterable?.operators?.[0]?.schema?.['x-component'],
+        },
       };
       if (isAssocField(field)) {
         schema = {
@@ -710,7 +714,7 @@ export const useCustomFormItemInitializerFields = (options?: any) => {
     });
 };
 
-const findSchema = (schema: Schema, key: string, action: string) => {
+export const findSchema = (schema: Schema, key: string, action: string) => {
   if (!Schema.isSchemaInstance(schema)) return null;
   return schema.reduceProperties((buf, s) => {
     if (s[key] === action) {
@@ -759,6 +763,7 @@ export const useCurrentSchema = (action: string, key: string, find = findSchema,
       form?.query(new RegExp(`${schema.parent.name}.${schema.name}$`)).forEach((field: Field) => {
         // 如果字段被删掉，那么在提交的时候不应该提交这个字段
         field.setValue?.(undefined);
+        field.setInitialValue?.(undefined);
       });
       schema && rm(schema, remove);
     },
@@ -842,6 +847,7 @@ export const useRecordCollectionDataSourceItems = (
 };
 
 export const useCollectionDataSourceItems = ({
+  name,
   componentName,
   filter = () => true,
   onlyCurrentDataSource = false,
@@ -854,7 +860,8 @@ export const useCollectionDataSourceItems = ({
   currentText,
   otherText,
 }: {
-  componentName;
+  name: string;
+  componentName: string;
   filter?: (options: { collection?: Collection; associationField?: CollectionFieldOptions }) => boolean;
   onlyCurrentDataSource?: boolean;
   showAssociationFields?: boolean;
@@ -877,6 +884,7 @@ export const useCollectionDataSourceItems = ({
   const dataSourceKey = useDataSourceKey();
   const collection = useCollection();
   const associationFields = useAssociationFields({ componentName, filterCollections: filter, showAssociationFields });
+  const association = useAssociationName();
 
   let allCollections = dm.getAllCollections({
     filterCollection: (collection) => {
@@ -900,6 +908,8 @@ export const useCollectionDataSourceItems = ({
       type: 'subMenu',
       children: [
         ...getChildren({
+          name,
+          association,
           collections,
           componentName,
           searchValue: '',
@@ -1383,6 +1393,8 @@ export const createTableBlockSchema = (options) => {
 };
 
 const getChildren = ({
+  name,
+  association,
   collections,
   dataSource,
   componentName,
@@ -1390,6 +1402,8 @@ const getChildren = ({
   getTemplatesByCollection,
   t,
 }: {
+  name: string;
+  association: string;
   collections: any[];
   componentName: string;
   searchValue: string;
@@ -1422,13 +1436,21 @@ const getChildren = ({
     ?.map((item, index) => {
       const title = item.title || item.tableName || item.label;
       const templates = getTemplatesByCollection(dataSource, item.name).filter((template) => {
-        return (
-          componentName &&
-          template.componentName === componentName &&
-          (['FormItem', 'ReadPrettyFormItem'].includes(componentName) ||
-            !template.resourceName ||
-            template.resourceName === item.name)
-        );
+        // 弹窗中的 Current record 选项
+        const isCurrentRecordOption = name !== 'otherRecords' && association;
+
+        if (isCurrentRecordOption) {
+          if (template.resourceName !== association) {
+            return false;
+          }
+          return componentName && template.componentName === componentName;
+        }
+
+        if (!isCurrentRecordOption && template?.resourceName?.includes('.')) {
+          return false;
+        }
+
+        return componentName && template.componentName === componentName;
       });
       if (!templates.length) {
         return {
@@ -1539,6 +1561,10 @@ function useAssociationFields({
       .map((field, index) => {
         const title = compile(field.uiSchema.title || field.name);
         const templates = getTemplatesByCollection(dataSource, field.target).filter((template) => {
+          if (template.resourceName !== `${field.collectionName}.${field.name}`) {
+            return false;
+          }
+
           // 针对弹窗中的详情区块
           if (componentName === 'ReadPrettyFormItem') {
             if (['hasOne', 'belongsTo'].includes(field.type)) {
@@ -1548,13 +1574,7 @@ function useAssociationFields({
             }
           }
 
-          return (
-            componentName &&
-            template.componentName === componentName &&
-            (['FormItem', 'ReadPrettyFormItem'].includes(componentName) ||
-              !template.resourceName ||
-              template.resourceName === `${field.collectionName}.${field.name}`)
-          );
+          return template.componentName === componentName;
         });
         if (!templates.length) {
           return {

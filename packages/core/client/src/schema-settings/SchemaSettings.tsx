@@ -447,15 +447,17 @@ export const SchemaSettingsDivider = function Divider() {
 
 export interface SchemaSettingsRemoveProps {
   disabled?: boolean;
+  title?: string;
   confirm?: ModalFuncProps;
   removeParentsIfNoChildren?: boolean;
   breakRemoveOn?: ISchema | ((s: ISchema) => boolean);
 }
 export const SchemaSettingsRemove: FC<SchemaSettingsRemoveProps> = (props) => {
-  const { disabled, confirm, removeParentsIfNoChildren, breakRemoveOn } = props;
+  const { disabled, confirm, title, removeParentsIfNoChildren, breakRemoveOn } = props;
   const { dn, template } = useSchemaSettings();
   const { t } = useTranslation();
   const field = useField<Field>();
+  const compile = useCompile();
   const fieldSchema = useFieldSchema();
   const ctx = useBlockTemplateContext();
   const form = useForm();
@@ -470,7 +472,7 @@ export const SchemaSettingsRemove: FC<SchemaSettingsRemoveProps> = (props) => {
       eventKey="remove"
       onClick={() => {
         modal.confirm({
-          title: t('Delete block'),
+          title: title ? compile(title) : t('Delete block'),
           content: t('Are you sure you want to delete it?'),
           ...confirm,
           async onOk() {
@@ -493,6 +495,7 @@ export const SchemaSettingsRemove: FC<SchemaSettingsRemoveProps> = (props) => {
             form?.query(new RegExp(`${fieldSchema.parent.name}.${fieldSchema.name}$`)).forEach((field: Field) => {
               // 如果字段被删掉，那么在提交的时候不应该提交这个字段
               field.setValue?.(undefined);
+              field.setInitialValue?.(undefined);
             });
             removeDataBlock(fieldSchema['x-uid']);
           },
@@ -602,10 +605,22 @@ export interface SchemaSettingsActionModalItemProps
   schema?: ISchema;
   beforeOpen?: () => void;
   maskClosable?: boolean;
+  width?: string | number;
 }
 export const SchemaSettingsActionModalItem: FC<SchemaSettingsActionModalItemProps> = React.memo((props) => {
-  const { title, onSubmit, initialValues, beforeOpen, initialSchema, schema, modalTip, components, scope, ...others } =
-    props;
+  const {
+    title,
+    onSubmit,
+    width = '50%',
+    initialValues,
+    beforeOpen,
+    initialSchema,
+    schema,
+    modalTip,
+    components,
+    scope,
+    ...others
+  } = props;
   const [visible, setVisible] = useState(false);
   const [schemaUid, setSchemaUid] = useState<string>(props.uid);
   const { t } = useTranslation();
@@ -636,8 +651,12 @@ export const SchemaSettingsActionModalItem: FC<SchemaSettingsActionModalItemProp
 
   const submitHandler = useCallback(async () => {
     await form.submit();
-    onSubmit?.(cloneDeep(form.values));
-    setVisible(false);
+    try {
+      await onSubmit?.(cloneDeep(form.values));
+      setVisible(false);
+    } catch (err) {
+      console.error(err);
+    }
   }, [form, onSubmit]);
 
   const openAssignedFieldValueHandler = useCallback(async () => {
@@ -667,7 +686,7 @@ export const SchemaSettingsActionModalItem: FC<SchemaSettingsActionModalItemProp
       </SchemaSettingsItem>
       {createPortal(
         <Modal
-          width={'50%'}
+          width={width}
           title={compile(title)}
           {...others}
           destroyOnClose
@@ -704,7 +723,7 @@ SchemaSettingsActionModalItem.displayName = 'SchemaSettingsActionModalItem';
 
 export interface SchemaSettingsModalItemProps {
   title: string;
-  onSubmit: (values: any) => void;
+  onSubmit: (values: any) => Promise<any> | void;
   initialValues?: any;
   schema?: ISchema | (() => ISchema);
   modalTip?: string;
@@ -987,7 +1006,9 @@ export const SchemaSettingsLinkageRules = function LinkageRules(props) {
   const record = useRecord();
   const { type: formBlockType } = useFormBlockType();
   const category = props?.category ?? LinkageRuleCategory.default;
-  const elementType = ['Action', 'Action.Link'].includes(fieldSchema['x-component']) ? 'button' : 'field';
+  const elementType =
+    props?.type ||
+    (fieldSchema?.['x-action'] || ['Action', 'Action.Link'].includes(fieldSchema['x-component']) ? 'button' : 'field');
 
   const gridSchema = findGridSchema(fieldSchema) || fieldSchema;
   const options = useLinkageCollectionFilterOptions(collectionName);

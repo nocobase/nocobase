@@ -7,17 +7,17 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { css } from '@emotion/css';
 import { ISchema, useField, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import {
   SchemaSettings,
+  SchemaSettingsBlockHeightItem,
   Variable,
   useAPIClient,
   useDesignable,
-  SchemaSettingsBlockHeightItem,
   useFormBlockContext,
   useRecord,
+  useURLAndHTMLSchema,
   useVariableOptions,
 } from '@nocobase/client';
 import React from 'react';
@@ -50,7 +50,7 @@ const commonOptions: any = {
         const { t } = useTranslation();
         const { dn } = useDesignable();
         const api = useAPIClient();
-        const { mode, url, htmlId, height = '60vh' } = fieldSchema['x-component-props'] || {};
+        const { mode, url, params, htmlId, height = '60vh' } = fieldSchema['x-component-props'] || {};
         const saveHtml = async (html: string) => {
           const options = {
             values: { html },
@@ -65,7 +65,7 @@ const commonOptions: any = {
             return data?.data;
           }
         };
-
+        const { urlSchema, paramsSchema } = useURLAndHTMLSchema();
         const submitHandler = async ({ mode, url, html, height, params }) => {
           const componentProps = fieldSchema['x-component-props'] || {};
           componentProps['mode'] = mode;
@@ -94,6 +94,7 @@ const commonOptions: any = {
               mode,
               url,
               height,
+              params,
             };
             if (htmlId) {
               // eslint-disable-next-line no-unsafe-optional-chaining
@@ -118,89 +119,10 @@ const commonOptions: any = {
                 ],
               },
               url: {
-                title: t('URL'),
-                type: 'string',
-                'x-decorator': 'FormItem',
-                'x-component': getVariableComponentWithScope(Variable.TextArea),
-                description: t('Do not concatenate search params in the URL'),
+                ...urlSchema,
                 required: true,
-                'x-reactions': {
-                  dependencies: ['mode'],
-                  fulfill: {
-                    state: {
-                      hidden: '{{$deps[0] === "html"}}',
-                    },
-                  },
-                },
               },
-              params: {
-                type: 'array',
-                'x-component': 'ArrayItems',
-                'x-decorator': 'FormItem',
-                title: `{{t("Search parameters")}}`,
-                default: fieldSchema?.['x-component-props']?.params || [{}],
-                items: {
-                  type: 'object',
-                  properties: {
-                    space: {
-                      type: 'void',
-                      'x-component': 'Space',
-                      'x-component-props': {
-                        style: {
-                          flexWrap: 'nowrap',
-                          maxWidth: '100%',
-                        },
-                        className: css`
-                          & > .ant-space-item:first-child,
-                          & > .ant-space-item:last-child {
-                            flex-shrink: 0;
-                          }
-                        `,
-                      },
-                      properties: {
-                        name: {
-                          type: 'string',
-                          'x-decorator': 'FormItem',
-                          'x-component': 'Input',
-                          'x-component-props': {
-                            placeholder: `{{t("Name")}}`,
-                          },
-                        },
-                        value: {
-                          type: 'string',
-                          'x-decorator': 'FormItem',
-                          'x-component': getVariableComponentWithScope(Variable.TextArea),
-                          'x-component-props': {
-                            placeholder: `{{t("Value")}}`,
-                            useTypedConstant: true,
-                            changeOnSelect: true,
-                          },
-                        },
-                        remove: {
-                          type: 'void',
-                          'x-decorator': 'FormItem',
-                          'x-component': 'ArrayItems.Remove',
-                        },
-                      },
-                    },
-                  },
-                },
-                'x-reactions': {
-                  dependencies: ['mode'],
-                  fulfill: {
-                    state: {
-                      hidden: '{{$deps[0] === "html"}}',
-                    },
-                  },
-                },
-                properties: {
-                  add: {
-                    type: 'void',
-                    title: `{{t("Add parameter")}}`,
-                    'x-component': 'ArrayItems.Addition',
-                  },
-                },
-              },
+              params: paramsSchema,
               html: {
                 title: t('html'),
                 type: 'string',

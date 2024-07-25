@@ -14,14 +14,25 @@ import { useToken } from '../../../style';
 import { useCurrentPopupContext } from './PagePopups';
 import { usePagePopup } from './pagePopupUtils';
 
+export const useBackButton = () => {
+  const { params } = useCurrentPopupContext();
+  const { closePopup } = usePagePopup();
+  const goBack = useCallback(() => {
+    closePopup(params?.popupuid);
+  }, [closePopup, params?.popupuid]);
+
+  return {
+    goBack,
+  };
+};
+
 /**
  * Used for the back button in subpages
  * @returns
  */
 export const BackButtonUsedInSubPage = () => {
-  const { params } = useCurrentPopupContext();
-  const { closePopup } = usePagePopup();
   const { token } = useToken();
+  const { goBack } = useBackButton();
   // tab item gutter, this is fixed value in antd
   const horizontalItemGutter = 32;
 
@@ -35,17 +46,7 @@ export const BackButtonUsedInSubPage = () => {
     };
   }, [token.paddingXS]);
 
-  const handleClick = useCallback(() => {
-    closePopup(params.popupuid);
-  }, [params.popupuid]);
-
   return (
-    <Button
-      aria-label="back-button"
-      type="text"
-      icon={<ArrowLeftOutlined />}
-      style={resetStyle}
-      onClick={handleClick}
-    />
+    <Button aria-label="back-button" type="text" icon={<ArrowLeftOutlined />} style={resetStyle} onClick={goBack} />
   );
 };

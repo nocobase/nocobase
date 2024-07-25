@@ -12,7 +12,7 @@ import { css } from '@emotion/css';
 import { SchemaOptionsContext } from '@formily/react';
 import { uid } from '@formily/shared';
 import {
-  CollectionCategroriesContext,
+  CollectionCategoriesContext,
   CollectionProvider_deprecated,
   SchemaComponent,
   SchemaComponentProvider,
@@ -307,7 +307,7 @@ const PortsCom = React.memo<any>(({ targetGraph, collectionData, setTargetNode, 
     if (
       v.isForeignKey ||
       v.primaryKey ||
-      ['obo', 'oho', 'o2o', 'o2m', 'm2o', 'm2m', 'linkTo', 'id'].includes(v.interface)
+      ['obo', 'oho', 'o2o', 'o2m', 'm2o', 'm2m', 'linkTo', 'id', 'mbm'].includes(v.interface)
     ) {
       return 'initPorts';
     } else {
@@ -387,7 +387,7 @@ const Entity: React.FC<{
     data: { database },
   } = useCurrentAppInfo();
   const collectionData = useRef();
-  const categoryData = useContext(CollectionCategroriesContext);
+  const categoryData = useContext(CollectionCategoriesContext);
   collectionData.current = { ...item, title, inherits: item.inherits && new Proxy(item.inherits, {}) };
   const { category = [] } = item;
   const compile = useCompile();

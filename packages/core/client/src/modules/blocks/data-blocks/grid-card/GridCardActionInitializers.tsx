@@ -8,8 +8,8 @@
  */
 
 import { CompatibleSchemaInitializer } from '../../../../application/schema-initializer/CompatibleSchemaInitializer';
-import { useCollection_deprecated } from '../../../../collection-manager';
-
+import { useCollection } from '../../../../data-source';
+import { useActionAvailable } from '../../useActionAvailable';
 const commonOptions = {
   title: "{{t('Configure actions')}}",
   icon: 'SettingOutlined',
@@ -36,10 +36,7 @@ const commonOptions = {
           skipScopeCheck: true,
         },
       },
-      useVisible() {
-        const collection = useCollection_deprecated();
-        return !['view', 'file', 'sql'].includes(collection.template) || collection?.writableView;
-      },
+      useVisible: () => useActionAvailable('create'),
     },
     {
       name: 'refresh',
@@ -61,15 +58,13 @@ const commonOptions = {
           skipScopeCheck: true,
         },
       },
-      useVisible() {
-        const collection = useCollection_deprecated();
-        return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
-      },
+      useVisible: () => useActionAvailable('import'),
     },
     {
       name: 'export',
       title: "{{t('Export')}}",
       Component: 'ExportActionInitializer',
+      useVisible: () => useActionAvailable('export'),
       schema: {
         'x-align': 'right',
         'x-decorator': 'ACLActionProvider',

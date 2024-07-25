@@ -198,6 +198,7 @@ export class PluginManager {
     if (typeof pluginName === 'string') {
       const packageName = isPkg ? pluginName : await this.getPackageName(pluginName);
       this.clearCache(packageName);
+
       return await importModule(packageName);
     } else {
       return pluginName;

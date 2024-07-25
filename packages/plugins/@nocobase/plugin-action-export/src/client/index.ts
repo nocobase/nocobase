@@ -11,7 +11,7 @@ export * from './ExportActionInitializer';
 export * from './ExportDesigner';
 export * from './ExportPluginProvider';
 export * from './useExportAction';
-import { Plugin } from '@nocobase/client';
+import { Plugin, useCollection, useActionAvailable } from '@nocobase/client';
 import { ExportPluginProvider } from './ExportPluginProvider';
 import { exportActionSchemaSettings } from './schemaSettings';
 
@@ -29,6 +29,7 @@ export class PluginActionExportClient extends Plugin {
           skipScopeCheck: true,
         },
       },
+      useVisible: () => useActionAvailable('export'),
     };
 
     const tableActionInitializers = this.app.schemaInitializerManager.get('table:configureActions');

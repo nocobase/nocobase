@@ -36,15 +36,22 @@ jobs:
           repository: nocobase/pro-plugins
           ref: main
           path: packages/pro-plugins
+          fetch-depth: 0
           ssh-key: ${{ secrets.SUBMODULE_SSH_KEY }}
-      - name: Fetch all branches
-        run: cd packages/pro-plugins && git fetch --all
-      - name: git checkout ${{ github.event.pull_request.base.ref }}
-        run: cd packages/pro-plugins && git checkout ${{ github.event.pull_request.base.ref }}
-        continue-on-error: true
-      - name: git checkout ${{ github.head_ref || github.ref_name }}
-        run: cd packages/pro-plugins && git checkout${{ github.head_ref || github.ref_name }}
-        continue-on-error: true
+      - run: |
+          cd packages/pro-plugins &&
+          if git show-ref --quiet refs/remotes/origin/${{ github.head_ref || github.ref_name }}; then
+            git checkout ${{ github.head_ref || github.ref_name }}
+          else
+            if git show-ref --quiet refs/remotes/origin/${{ github.event.pull_request.base.ref }}; then
+              git checkout ${{ github.event.pull_request.base.ref }}
+            else
+              git checkout main
+            fi
+          fi
+      - name: Git logs
+        run: |
+          cd packages/pro-plugins && git log --color --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit -n 10
       - name: Use Node.js
         uses: actions/setup-node@v4
         with:
@@ -93,15 +100,22 @@ jobs:
           repository: nocobase/pro-plugins
           ref: main
           path: packages/pro-plugins
+          fetch-depth: 0
           ssh-key: ${{ secrets.SUBMODULE_SSH_KEY }}
-      - name: Fetch all branches
-        run: cd packages/pro-plugins && git fetch --all
-      - name: git checkout ${{ github.event.pull_request.base.ref }}
-        run: cd packages/pro-plugins && git checkout ${{ github.event.pull_request.base.ref }}
-        continue-on-error: true
-      - name: git checkout ${{ github.head_ref || github.ref_name }}
-        run: cd packages/pro-plugins && git checkout ${{ github.head_ref || github.ref_name }}
-        continue-on-error: true
+      - run: |
+          cd packages/pro-plugins &&
+          if git show-ref --quiet refs/remotes/origin/${{ github.head_ref || github.ref_name }}; then
+            git checkout ${{ github.head_ref || github.ref_name }}
+          else
+            if git show-ref --quiet refs/remotes/origin/${{ github.event.pull_request.base.ref }}; then
+              git checkout ${{ github.event.pull_request.base.ref }}
+            else
+              git checkout main
+            fi
+          fi
+      - name: Git logs
+        run: |
+          cd packages/pro-plugins && git log --color --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit -n 10
       - name: Set variables
         continue-on-error: true # 外部开发者提交 PR 的时候因为没有权限这里会报错，为了能够继续执行后续步骤，所以这里设置为 continue-on-error: true
         run: |
@@ -181,15 +195,22 @@ jobs:
           repository: nocobase/pro-plugins
           ref: main
           path: packages/pro-plugins
+          fetch-depth: 0
           ssh-key: ${{ secrets.SUBMODULE_SSH_KEY }}
-      - name: Fetch all branches
-        run: cd packages/pro-plugins && git fetch --all
-      - name: git checkout ${{ github.event.pull_request.base.ref }}
-        run: cd packages/pro-plugins && git checkout ${{ github.event.pull_request.base.ref }}
-        continue-on-error: true
-      - name: git checkout ${{ github.head_ref || github.ref_name }}
-        run: cd packages/pro-plugins && git checkout ${{ github.head_ref || github.ref_name }}
-        continue-on-error: true
+      - run: |
+          cd packages/pro-plugins &&
+          if git show-ref --quiet refs/remotes/origin/${{ github.head_ref || github.ref_name }}; then
+            git checkout ${{ github.head_ref || github.ref_name }}
+          else
+            if git show-ref --quiet refs/remotes/origin/${{ github.event.pull_request.base.ref }}; then
+              git checkout ${{ github.event.pull_request.base.ref }}
+            else
+              git checkout main
+            fi
+          fi
+      - name: Git logs
+        run: |
+          cd packages/pro-plugins && git log --color --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit -n 10
       - name: Set variables
         continue-on-error: true # 外部开发者提交 PR 的时候因为没有权限这里会报错，为了能够继续执行后续步骤，所以这里设置为 continue-on-error: true
         run: |
@@ -269,15 +290,22 @@ jobs:
           repository: nocobase/pro-plugins
           ref: main
           path: packages/pro-plugins
+          fetch-depth: 0
           ssh-key: ${{ secrets.SUBMODULE_SSH_KEY }}
-      - name: Fetch all branches
-        run: cd packages/pro-plugins && git fetch --all
-      - name: git checkout ${{ github.event.pull_request.base.ref }}
-        run: cd packages/pro-plugins && git checkout ${{ github.event.pull_request.base.ref }}
-        continue-on-error: true
-      - name: git checkout ${{ github.head_ref || github.ref_name }}
-        run: cd packages/pro-plugins && git checkout ${{ github.head_ref || github.ref_name }}
-        continue-on-error: true
+      - run: |
+          cd packages/pro-plugins &&
+          if git show-ref --quiet refs/remotes/origin/${{ github.head_ref || github.ref_name }}; then
+            git checkout ${{ github.head_ref || github.ref_name }}
+          else
+            if git show-ref --quiet refs/remotes/origin/${{ github.event.pull_request.base.ref }}; then
+              git checkout ${{ github.event.pull_request.base.ref }}
+            else
+              git checkout main
+            fi
+          fi
+      - name: Git logs
+        run: |
+          cd packages/pro-plugins && git log --color --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit -n 10
       - name: Set variables
         continue-on-error: true # 外部开发者提交 PR 的时候因为没有权限这里会报错，为了能够继续执行后续步骤，所以这里设置为 continue-on-error: true
         run: |
@@ -357,15 +385,22 @@ jobs:
           repository: nocobase/pro-plugins
           ref: main
           path: packages/pro-plugins
+          fetch-depth: 0
           ssh-key: ${{ secrets.SUBMODULE_SSH_KEY }}
-      - name: Fetch all branches
-        run: cd packages/pro-plugins && git fetch --all
-      - name: git checkout ${{ github.event.pull_request.base.ref }}
-        run: cd packages/pro-plugins && git checkout ${{ github.event.pull_request.base.ref }}
-        continue-on-error: true
-      - name: git checkout ${{ github.head_ref || github.ref_name }}
-        run: cd packages/pro-plugins && git checkout ${{ github.head_ref || github.ref_name }}
-        continue-on-error: true
+      - run: |
+          cd packages/pro-plugins &&
+          if git show-ref --quiet refs/remotes/origin/${{ github.head_ref || github.ref_name }}; then
+            git checkout ${{ github.head_ref || github.ref_name }}
+          else
+            if git show-ref --quiet refs/remotes/origin/${{ github.event.pull_request.base.ref }}; then
+              git checkout ${{ github.event.pull_request.base.ref }}
+            else
+              git checkout main
+            fi
+          fi
+      - name: Git logs
+        run: |
+          cd packages/pro-plugins && git log --color --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit -n 10
       - name: Set variables
         continue-on-error: true # 外部开发者提交 PR 的时候因为没有权限这里会报错，为了能够继续执行后续步骤，所以这里设置为 continue-on-error: true
         run: |
@@ -488,7 +523,7 @@ jobs:
             const mergeWorkflowUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
             const reportMd = await fs.promises.readFile('report.md', 'utf8');
             function formatComment(lines) {
-              let body = lines.join('\n');
+              let body = lines.map(item => item.replace(/__e2e__/g, '\_\_e2e\_\_')).join('\n');
               if (body.length > 65535)
                 body = body.substring(0, 65000) + `... ${body.length - 65000} more characters`;
               return body;

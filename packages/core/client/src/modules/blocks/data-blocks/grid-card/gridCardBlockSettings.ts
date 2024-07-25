@@ -22,6 +22,8 @@ import { SchemaSettingsDataScope } from '../../../../schema-settings/SchemaSetti
 import { SchemaSettingsTemplate } from '../../../../schema-settings/SchemaSettingsTemplate';
 import { setDataLoadingModeSettingsItem } from '../details-multi/setDataLoadingModeSettingsItem';
 import { SetTheCountOfColumnsDisplayedInARow } from './SetTheCountOfColumnsDisplayedInARow';
+import { useCollection } from '../../../../data-source';
+
 export const gridCardBlockSettings = new SchemaSettings({
   name: 'blockSettings:gridCard',
   items: [

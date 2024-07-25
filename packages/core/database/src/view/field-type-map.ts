@@ -40,6 +40,8 @@ const postgres = {
   polygon: 'json',
   circle: 'json',
   uuid: 'uuid',
+  set: 'set',
+  array: 'array',
 };
 
 const mysql = {
@@ -92,4 +94,5 @@ const sqlite = {
   json: ['json', 'array'],
 };
 
-export default { postgres, mysql, sqlite, mariadb: mysql };
+const fieldTypeMap = { postgres, mysql, sqlite, mariadb: mysql };
+export default fieldTypeMap;

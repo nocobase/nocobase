@@ -14,7 +14,7 @@ import { CollectionManagerProvider } from '../data-source/collection/CollectionM
 import { useDataSourceManager } from '../data-source/data-source/DataSourceManagerProvider';
 import { useCollectionHistory } from './CollectionHistoryProvider';
 import { CollectionManagerSchemaComponentProvider } from './CollectionManagerSchemaComponentProvider';
-import { CollectionCategroriesContext } from './context';
+import { CollectionCategoriesContext } from './context';
 import { CollectionManagerOptions } from './types';
 
 /**
@@ -62,16 +62,16 @@ export const RemoteCollectionManagerProvider = (props: any) => {
   }
 
   return (
-    <CollectionCategroriesProvider service={result} refreshCategory={refreshCategory}>
+    <CollectionCategoriesProvider service={result} refreshCategory={refreshCategory}>
       <CollectionManagerProvider_deprecated {...props}></CollectionManagerProvider_deprecated>
-    </CollectionCategroriesProvider>
+    </CollectionCategoriesProvider>
   );
 };
 
-export const CollectionCategroriesProvider = (props) => {
+export const CollectionCategoriesProvider = (props) => {
   const { service, refreshCategory } = props;
   return (
-    <CollectionCategroriesContext.Provider
+    <CollectionCategoriesContext.Provider
       value={{
         data: service?.data?.data,
         refresh: refreshCategory,
@@ -79,6 +79,6 @@ export const CollectionCategroriesProvider = (props) => {
       }}
     >
       {props.children}
-    </CollectionCategroriesContext.Provider>
+    </CollectionCategoriesContext.Provider>
   );
 };

@@ -10,6 +10,7 @@
 import { registerActions } from '@nocobase/actions';
 import { actions as authActions, AuthManager, AuthManagerOptions } from '@nocobase/auth';
 import { Cache, CacheManager, CacheManagerOptions } from '@nocobase/cache';
+import { DataSourceManager, SequelizeDataSource } from '@nocobase/data-source-manager';
 import Database, { CollectionOptions, IDatabaseOptions } from '@nocobase/database';
 import {
   createLogger,
@@ -33,7 +34,7 @@ import Koa, { DefaultContext as KoaDefaultContext, DefaultState as KoaDefaultSta
 import compose from 'koa-compose';
 import lodash from 'lodash';
 import { RecordableHistogram } from 'node:perf_hooks';
-import { basename, resolve } from 'path';
+import path, { basename, resolve } from 'path';
 import semver from 'semver';
 import { createACL } from './acl';
 import { AppCommand } from './app-command';
@@ -52,15 +53,15 @@ import {
 } from './helper';
 import { ApplicationVersion } from './helpers/application-version';
 import { Locale } from './locale';
-import { Plugin } from './plugin';
-import { InstallOptions, PluginManager } from './plugin-manager';
-import { DataSourceManager, SequelizeDataSource } from '@nocobase/data-source-manager';
-import packageJson from '../package.json';
 import { MainDataSource } from './main-data-source';
-import validateFilterParams from './middlewares/validate-filter-params';
-import path from 'path';
 import { parseVariables } from './middlewares';
 import { dataTemplate } from './middlewares/data-template';
+import validateFilterParams from './middlewares/validate-filter-params';
+import { Plugin } from './plugin';
+import { InstallOptions, PluginManager } from './plugin-manager';
+import { SyncManager } from './sync-manager';
+
+import packageJson from '../package.json';
 
 export type PluginType = string | typeof Plugin;
 export type PluginConfiguration = PluginType | [PluginType, any];
@@ -115,6 +116,7 @@ export interface ApplicationOptions {
    */
   perfHooks?: boolean;
   telemetry?: AppTelemetryOptions;
+  skipSupervisor?: boolean;
 }
 
 export interface DefaultState extends KoaDefaultState {
@@ -213,7 +215,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   public perfHistograms = new Map<string, RecordableHistogram>();
   protected plugins = new Map<string, Plugin>();
   protected _appSupervisor: AppSupervisor = AppSupervisor.getInstance();
-  protected _started: boolean;
+  protected _started: Date | null = null;
   private _authenticated = false;
   private _maintaining = false;
   private _maintainingCommandStatus: MaintainingCommandStatus;
@@ -223,6 +225,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   /**
    * @internal
    */
+  public syncManager: SyncManager;
   public requestLogger: Logger;
   private sqlLogger: Logger;
   protected _logger: SystemLogger;
@@ -233,7 +236,16 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this.rawOptions = this.name == 'main' ? lodash.cloneDeep(options) : {};
     this.init();
 
-    this._appSupervisor.addApp(this);
+    if (!options.skipSupervisor) {
+      this._appSupervisor.addApp(this);
+    }
+  }
+
+  /**
+   * @experimental
+   */
+  get started() {
+    return this._started;
   }
 
   get logger() {
@@ -755,7 +767,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       return;
     }
 
-    this._started = true;
+    this._started = new Date();
 
     if (options.checkInstall && !(await this.isInstalled())) {
       throw new ApplicationNotInstall(
@@ -791,7 +803,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   }
 
   async isStarted() {
-    return this._started;
+    return Boolean(this._started);
   }
 
   /**
@@ -812,7 +824,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     this.log.info('restarting...');
 
-    this._started = false;
+    this._started = null;
     await this.emitAsync('beforeStop');
     await this.reload(options);
     await this.start(options);
@@ -862,7 +874,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     this.stopped = true;
     log.info(`app has stopped`, { method: 'stop' });
-    this._started = false;
+    this._started = null;
   }
 
   async destroy(options: any = {}) {
@@ -1108,6 +1120,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     this._cli = this.createCLI();
     this._i18n = createI18n(options);
+    this.syncManager = new SyncManager(this);
     this.context.db = this.db;
 
     /**
@@ -1179,7 +1192,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       useACL: options.acl,
     });
 
-    this._dataSourceManager = new DataSourceManager();
+    this._dataSourceManager = new DataSourceManager({
+      logger: this.logger,
+      app: this,
+    });
 
     // can not use await here
     this.dataSourceManager.dataSources.set('main', mainDataSourceInstance);

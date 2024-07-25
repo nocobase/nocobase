@@ -312,12 +312,16 @@ function getSubscriber(
         }
       } else {
         field[fieldName] = lastState?.value;
+        requestAnimationFrame(() => {
+          field.setState((state) => {
+            state[fieldName] = lastState?.value;
+          });
+        });
         //字段隐藏时清空数据
         if (fieldName === 'display' && lastState?.value === 'none') {
           field.value = null;
         }
       }
-
       // 在这里清空 field.stateOfLinkageRules，就可以保证：当条件再次改变时，如果该字段没有和任何条件匹配，则需要把对应的值恢复到初始值；
       field.stateOfLinkageRules[fieldName] = null;
     });

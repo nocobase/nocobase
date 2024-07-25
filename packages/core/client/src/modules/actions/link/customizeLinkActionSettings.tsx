@@ -6,34 +6,35 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
-import { css } from '@emotion/css';
 import { ArrayItems } from '@formily/antd-v5';
 import { useField, useFieldSchema } from '@formily/react';
 import _ from 'lodash';
-import React from 'react';
+import React, { FC } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useCollectionRecord, useDesignable, useFormBlockContext, useRecord } from '../../../';
+import { useCollectionRecord, useDesignable } from '../../../';
 import { useSchemaToolbar } from '../../../application';
 import { SchemaSettings } from '../../../application/schema-settings/SchemaSettings';
 import { useCollection_deprecated } from '../../../collection-manager';
 import { ButtonEditor, RemoveButton } from '../../../schema-component/antd/action/Action.Designer';
 import { SchemaSettingsLinkageRules, SchemaSettingsModalItem } from '../../../schema-settings';
-import { useVariableOptions } from '../../../schema-settings/VariableInput/hooks/useVariableOptions';
+import { useURLAndHTMLSchema } from './useURLAndHTMLSchema';
 
-export function SchemaSettingsActionLinkItem() {
+interface SchemaSettingsActionLinkItemProps {
+  afterSubmit?: () => void;
+}
+
+export const SchemaSettingsActionLinkItem: FC<SchemaSettingsActionLinkItemProps> = ({ afterSubmit }) => {
   const field = useField();
   const fieldSchema = useFieldSchema();
   const { dn } = useDesignable();
   const { t } = useTranslation();
-  const { form } = useFormBlockContext();
-  const record = useRecord();
-  const scope = useVariableOptions({
-    collectionField: { uiSchema: fieldSchema },
-    form,
-    record,
-    uiSchema: fieldSchema,
-    noDisabled: true,
-  });
+  const { urlSchema, paramsSchema, openInNewWindowSchema } = useURLAndHTMLSchema();
+  const initialValues = {
+    url: field.componentProps.url,
+    params: field.componentProps.params || [{}],
+    openInNewWindow: field.componentProps.openInNewWindow,
+  };
+
   return (
     <SchemaSettingsModalItem
       title={t('Edit link')}
@@ -43,88 +44,25 @@ export function SchemaSettingsActionLinkItem() {
         title: t('Edit link'),
         properties: {
           url: {
-            title: t('URL'),
-            type: 'string',
-            default: fieldSchema?.['x-component-props']?.['url'],
-            'x-decorator': 'FormItem',
-            'x-component': 'Variable.TextArea',
-            'x-component-props': {
-              scope,
-              changeOnSelect: true,
-            },
-            description: t('Do not concatenate search params in the URL'),
+            ...urlSchema,
+            required: true,
           },
-          params: {
-            type: 'array',
-            'x-component': 'ArrayItems',
-            'x-decorator': 'FormItem',
-            title: `{{t("Search parameters")}}`,
-            default: fieldSchema?.['x-component-props']?.params || [{}],
-            items: {
-              type: 'object',
-              properties: {
-                space: {
-                  type: 'void',
-                  'x-component': 'Space',
-                  'x-component-props': {
-                    style: {
-                      flexWrap: 'nowrap',
-                      maxWidth: '100%',
-                    },
-                    className: css`
-                      & > .ant-space-item:first-child,
-                      & > .ant-space-item:last-child {
-                        flex-shrink: 0;
-                      }
-                    `,
-                  },
-                  properties: {
-                    name: {
-                      type: 'string',
-                      'x-decorator': 'FormItem',
-                      'x-component': 'Input',
-                      'x-component-props': {
-                        placeholder: `{{t("Name")}}`,
-                      },
-                    },
-                    value: {
-                      type: 'string',
-                      'x-decorator': 'FormItem',
-                      'x-component': 'Variable.TextArea',
-                      'x-component-props': {
-                        scope,
-                        placeholder: `{{t("Value")}}`,
-                        useTypedConstant: true,
-                        changeOnSelect: true,
-                      },
-                    },
-                    remove: {
-                      type: 'void',
-                      'x-decorator': 'FormItem',
-                      'x-component': 'ArrayItems.Remove',
-                    },
-                  },
-                },
-              },
-            },
-            properties: {
-              add: {
-                type: 'void',
-                title: `{{t("Add parameter")}}`,
-                'x-component': 'ArrayItems.Addition',
-              },
-            },
-          },
+          params: paramsSchema,
+          openInNewWindow: openInNewWindowSchema,
         },
       }}
-      onSubmit={({ url, params }) => {
+      onSubmit={({ url, params, openInNewWindow }) => {
         const componentProps = fieldSchema['x-component-props'] || {};
         componentProps.url = url;
-        fieldSchema['x-component-props'] = componentProps;
-        field.componentProps.url = url;
         componentProps.params = params;
+        componentProps.openInNewWindow = openInNewWindow;
+
         fieldSchema['x-component-props'] = componentProps;
+
+        field.componentProps.url = url;
         field.componentProps.params = params;
+        field.componentProps.openInNewWindow = openInNewWindow;
+
         dn.emit('patch', {
           schema: {
             ['x-uid']: fieldSchema['x-uid'],
@@ -132,10 +70,12 @@ export function SchemaSettingsActionLinkItem() {
           },
         });
         dn.refresh();
+        afterSubmit?.();
       }}
+      initialValues={initialValues}
     />
   );
-}
+};
 
 export const customizeLinkActionSettings = new SchemaSettings({
   name: 'actionSettings:link',

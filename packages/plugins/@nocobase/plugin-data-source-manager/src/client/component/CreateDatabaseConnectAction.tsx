@@ -57,6 +57,7 @@ export const CreateDatabaseConnectAction = () => {
                     'x-decorator-props': {
                       initialValue: {
                         type: info.key,
+                        key: `d_${uid()}`,
                       },
                     },
                     title: compile("{{t('Add new')}}") + ' - ' + compile(type.label),
@@ -69,12 +70,13 @@ export const CreateDatabaseConnectAction = () => {
                         type: 'void',
                         'x-component': 'Action.Drawer.Footer',
                         properties: {
-                          testConnectiion: {
+                          testConnection: {
                             title: `{{ t("Test Connection",{ ns: "${NAMESPACE}" }) }}`,
                             'x-component': 'Action',
                             'x-component-props': {
                               useAction: '{{ useTestConnectionAction }}',
                             },
+                            'x-hidden': type?.disableTestConnection,
                           },
                           cancel: {
                             title: '{{t("Cancel")}}',

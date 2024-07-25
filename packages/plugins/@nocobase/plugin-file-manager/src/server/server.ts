@@ -66,6 +66,21 @@ export default class PluginFileManagerServer extends Plugin {
     }
   }
 
+  async onSync(message) {
+    if (message.type === 'storageChange') {
+      const storage = await this.db.getRepository('storages').findOne({
+        filterByTk: message.storageId,
+      });
+      if (storage) {
+        this.storagesCache.set(storage.id, storage.toJSON());
+      }
+    }
+    if (message.type === 'storageRemove') {
+      const id = Number.parseInt(message.storageId, 10);
+      this.storagesCache.delete(id);
+    }
+  }
+
   async beforeLoad() {
     this.db.registerModels({ FileModel });
     this.db.on('beforeDefineCollection', (options) => {
@@ -91,9 +106,17 @@ export default class PluginFileManagerServer extends Plugin {
     const Storage = this.db.getModel('storages');
     Storage.afterSave((m) => {
       this.storagesCache.set(m.id, m.toJSON());
+      this.sync({
+        type: 'storageChange',
+        storageId: `${m.id}`,
+      });
     });
     Storage.afterDestroy((m) => {
       this.storagesCache.delete(m.id);
+      this.sync({
+        type: 'storageRemove',
+        storageId: `${m.id}`,
+      });
     });
 
     this.app.acl.registerSnippet({

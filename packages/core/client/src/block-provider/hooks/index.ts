@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { css } from '@emotion/css';
 import { Field, Form } from '@formily/core';
 import { SchemaExpressionScopeContext, useField, useFieldSchema, useForm } from '@formily/react';
 import { untracked } from '@formily/reactive';
@@ -19,6 +20,7 @@ import omit from 'lodash/omit';
 import qs from 'qs';
 import { ChangeEvent, useCallback, useContext, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { NavigateFunction } from 'react-router-dom';
 import { useReactToPrint } from 'react-to-print';
 import {
   AssociationFilter,
@@ -520,7 +522,9 @@ const useDoReset = () => {
 
   return {
     doReset: async () => {
-      await form.reset();
+      await form.reset(undefined, {
+        forceClear: !!fieldSchema?.['x-component-props']?.clearDefaultValue,
+      });
       if (_.isEmpty(getFilterFromCurrentForm())) {
         return doReset({ getDataBlocks, targets, uid });
       }
@@ -1053,13 +1057,13 @@ export const useDetailPrintActionProps = () => {
   const printHandler = useReactToPrint({
     content: () => formBlockRef.current,
     pageStyle: `@media print {
-       * {
-         margin: 0;
-       }
-       :not(.ant-formily-item-control-content-component) > div.ant-formily-layout>div:first-child {
-         overflow: hidden; height: 0;
-       }
-     }`,
+        * {
+          margin: 0;
+        }
+        :not(.ant-formily-item-control-content-component) > div.ant-formily-layout>div:first-child {
+          overflow: hidden; height: 0;
+        }
+      }`,
   });
   return {
     async onClick() {
@@ -1107,6 +1111,31 @@ export const useRefreshActionProps = () => {
 export const useDetailsPaginationProps = () => {
   const ctx = useDetailsBlockContext();
   const count = ctx.service?.data?.meta?.count || 0;
+  const current = ctx.service?.data?.meta?.page;
+  if (!count && current) {
+    return {
+      simple: true,
+      current: ctx.service?.data?.meta?.page || 1,
+      pageSize: 1,
+      showSizeChanger: false,
+      async onChange(page) {
+        const params = ctx.service?.params?.[0];
+        ctx.service.run({ ...params, page });
+      },
+      style: {
+        marginTop: 24,
+        textAlign: 'center',
+      },
+      showTotal: false,
+      showTitle: false,
+      total: ctx.service?.data?.data?.length ? 1 * current + 1 : 1 * current,
+      className: css`
+        .ant-pagination-simple-pager {
+          display: none !important;
+        }
+      `,
+    };
+  }
   return {
     simple: true,
     hidden: count <= 1,
@@ -1402,7 +1431,8 @@ export const useAssociationNames = (dataSource?: string) => {
       const collectionField = s['x-collection-field'] && getCollectionJoinField(s['x-collection-field'], dataSource);
       const isAssociationSubfield = s.name.includes('.');
       const isAssociationField =
-        collectionField && ['hasOne', 'hasMany', 'belongsTo', 'belongsToMany'].includes(collectionField.type);
+        collectionField &&
+        ['hasOne', 'hasMany', 'belongsTo', 'belongsToMany', 'belongsToArray'].includes(collectionField.type);
 
       // 根据联动规则中条件的字段获取一些 appends
       if (s['x-linkage-rules']) {
@@ -1529,14 +1559,38 @@ export function appendQueryStringToUrl(url: string, queryString: string) {
   return url;
 }
 
-export function useLinkActionProps() {
-  const navigate = useNavigateNoUpdate();
-  const fieldSchema = useFieldSchema();
-  const { t } = useTranslation();
-  const url = fieldSchema?.['x-component-props']?.['url'];
-  const searchParams = fieldSchema?.['x-component-props']?.['params'] || [];
+export const useParseURLAndParams = () => {
   const variables = useVariables();
   const localVariables = useLocalVariables();
+
+  const parseURLAndParams = useCallback(
+    async (url: string, params: { name: string; value: any }[]) => {
+      const queryString = await parseVariablesAndChangeParamsToQueryString({
+        searchParams: params,
+        variables,
+        localVariables,
+        replaceVariableValue,
+      });
+      const targetUrl = await replaceVariableValue(url, variables, localVariables);
+      const result = appendQueryStringToUrl(targetUrl, queryString);
+
+      return result;
+    },
+    [variables, localVariables],
+  );
+
+  return { parseURLAndParams };
+};
+
+export function useLinkActionProps(componentProps?: any) {
+  const navigate = useNavigateNoUpdate();
+  const fieldSchema = useFieldSchema();
+  const componentPropsValue = fieldSchema?.['x-component-props'] || componentProps;
+  const { t } = useTranslation();
+  const url = componentPropsValue?.['url'];
+  const searchParams = componentPropsValue?.['params'] || [];
+  const openInNewWindow = fieldSchema?.['x-component-props']?.['openInNewWindow'];
+  const { parseURLAndParams } = useParseURLAndParams();
 
   return {
     type: 'default',
@@ -1545,20 +1599,16 @@ export function useLinkActionProps() {
         message.warning(t('Please configure the URL'));
         return;
       }
-      const queryString = await parseVariablesAndChangeParamsToQueryString({
-        searchParams,
-        variables,
-        localVariables,
-        replaceVariableValue,
-      });
-      const targetUrl = await replaceVariableValue(url, variables, localVariables);
-      const link = appendQueryStringToUrl(targetUrl, queryString);
+      const link = await parseURLAndParams(url, searchParams);
+
       if (link) {
-        if (isURL(link)) {
-          window.open(link, '_blank');
+        if (openInNewWindow) {
+          window.open(completeURL(link), '_blank');
         } else {
-          navigate(link);
+          navigateWithinSelf(link, navigate);
         }
+      } else {
+        console.error('link should be a string');
       }
     },
   };
@@ -1656,4 +1706,31 @@ export function reduceValueSize(value: any) {
   }
 
   return value;
+}
+
+// 补全 URL
+export function completeURL(url: string, origin = window.location.origin) {
+  if (!url) {
+    return '';
+  }
+  if (isURL(url)) {
+    return url;
+  }
+  return url.startsWith('/') ? `${origin}${url}` : `${origin}/${url}`;
+}
+
+export function navigateWithinSelf(link: string, navigate: NavigateFunction, origin = window.location.origin) {
+  if (!_.isString(link)) {
+    return console.error('link should be a string');
+  }
+
+  if (isURL(link)) {
+    if (link.startsWith(origin)) {
+      navigate(link.replace(origin, ''));
+    } else {
+      window.open(link, '_self');
+    }
+  } else {
+    navigate(link.startsWith('/') ? link : `/${link}`);
+  }
 }

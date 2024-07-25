@@ -20,6 +20,7 @@ export interface ISchemaComponentContext {
   setDesignable?: (value: boolean) => void;
   SchemaField?: React.FC<ISchemaFieldProps>;
   distributed?: boolean;
+  [key: string]: any;
 }
 
 export interface ISchemaComponentProvider {
