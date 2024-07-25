@@ -356,6 +356,9 @@ export class Application {
   }
 
   addFieldInterfaceComponentOption(fieldName: string, componentOption: CollectionFieldInterfaceComponentOption) {
-    return this.dataSourceManager.collectionFieldInterfaceManager.addComponentOption(fieldName, componentOption);
+    return this.dataSourceManager.collectionFieldInterfaceManager.addFieldInterfaceComponentOption(
+      fieldName,
+      componentOption,
+    );
   }
 }

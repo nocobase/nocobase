@@ -49,7 +49,7 @@ export class CollectionFieldInterfaceManager {
     Object.assign(this.collectionFieldInterfaceInstances, newCollectionFieldInterfaces);
   }
 
-  addComponentOption(interfaceName: string, componentOption: CollectionFieldInterfaceComponentOption) {
+  addFieldInterfaceComponentOption(interfaceName: string, componentOption: CollectionFieldInterfaceComponentOption) {
     const fieldInterface = this.getFieldInterface(interfaceName);
     if (!fieldInterface) {
       if (!this.actionList[interfaceName]) {
