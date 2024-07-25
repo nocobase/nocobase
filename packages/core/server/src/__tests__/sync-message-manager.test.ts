@@ -13,7 +13,7 @@ import { createMockCluster, sleep } from '@nocobase/test';
 describe('sync-message-manager', () => {
   test('subscribe + publish', async () => {
     const cluster = await createMockCluster();
-    const [node1, node2] = cluster.instances;
+    const [node1, node2] = cluster.nodes;
     const mockListener = vi.fn();
     await node1.syncMessageManager.subscribe('test1', mockListener);
     await node2.syncMessageManager.subscribe('test1', mockListener);
@@ -26,7 +26,7 @@ describe('sync-message-manager', () => {
 
   test('transaction', async () => {
     const cluster = await createMockCluster();
-    const [node1, node2] = cluster.instances;
+    const [node1, node2] = cluster.nodes;
     const mockListener = vi.fn();
     await node1.syncMessageManager.subscribe('test1', mockListener);
     const transaction = await node2.db.sequelize.transaction();
@@ -54,7 +54,7 @@ describe('sync-message-manager', () => {
     const cluster = await createMockCluster({
       plugins: [MyPlugin],
     });
-    const [app1, app2] = cluster.instances;
+    const [app1, app2] = cluster.nodes;
     await app1.pm.get(MyPlugin).sendSyncMessage('message1');
     expect(mockListener).toBeCalledTimes(1);
     expect(mockListener).toHaveBeenCalledWith('message1');
@@ -77,7 +77,7 @@ describe('sync-message-manager', () => {
     const cluster = await createMockCluster({
       plugins: [MyPlugin],
     });
-    const [app1, app2] = cluster.instances;
+    const [app1, app2] = cluster.nodes;
     const transaction = await app1.db.sequelize.transaction();
     app1.pm.get(MyPlugin).sendSyncMessage('message1', { transaction });
     await sleep(1000);
