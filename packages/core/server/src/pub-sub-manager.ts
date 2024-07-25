@@ -25,22 +25,22 @@ export interface PubSubManagerSubscribeOptions {
   debounce?: number;
 }
 
+export const createPubSubManager = (app: Application, options: PubSubManagerOptions) => {
+  const pubSubManager = new PubSubManager(options);
+  app.on('afterStart', async () => {
+    await pubSubManager.connect();
+  });
+  app.on('afterStop', async () => {
+    await pubSubManager.close();
+  });
+  return pubSubManager;
+};
+
 export class PubSubManager {
   adapter: IPubSubAdapter;
   messageHandlers = new Map();
   subscribes = new Map();
   publisherId: string;
-
-  static create(app: Application, options: PubSubManagerOptions) {
-    const pubSubManager = new PubSubManager(options);
-    app.on('afterStart', async () => {
-      await pubSubManager.connect();
-    });
-    app.on('afterStop', async () => {
-      await pubSubManager.close();
-    });
-    return pubSubManager;
-  }
 
   constructor(protected options: PubSubManagerOptions = {}) {
     this.publisherId = uid();
