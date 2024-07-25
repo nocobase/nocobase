@@ -64,7 +64,7 @@ export class MemoryPubSubAdapter implements IPubSubAdapter {
     await sleep(Number(process.env.PUB_SUB_DEFAULT_DEBOUNCE || 1000));
   }
 
-  onMessage(callback) {
+  async subscribeAll(callback) {
     this.emitter.on('__publish__', callback);
   }
 }
