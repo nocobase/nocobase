@@ -169,7 +169,7 @@ export const PresetFields = observer(
     ];
     useEffect(() => {
       const config = {
-        autoGenId: true,
+        autoGenId: false,
         createdAt: true,
         createdBy: true,
         updatedAt: true,
@@ -209,7 +209,7 @@ export const PresetFields = observer(
           onChange: (_, selectedRows) => {
             const fields = getDefaultCollectionFields(selectedRows, form.values);
             const config = {
-              autoGenId: !!fields.find((v) => v.name === 'id'),
+              autoGenId: false,
               createdAt: !!fields.find((v) => v.name === 'createdAt'),
               createdBy: !!fields.find((v) => v.name === 'createdBy'),
               updatedAt: !!fields.find((v) => v.name === 'updatedAt'),
