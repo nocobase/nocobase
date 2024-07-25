@@ -9,6 +9,7 @@
 
 import { mockDatabase } from '@nocobase/database';
 import { Application, ApplicationOptions, AppSupervisor, Gateway, PluginManager } from '@nocobase/server';
+import { uid } from '@nocobase/utils';
 import jwt from 'jsonwebtoken';
 import _ from 'lodash';
 import qs from 'qs';
@@ -257,28 +258,39 @@ export async function startMockServer(options: ApplicationOptions = {}) {
 
 type BeforeInstallFn = (app) => Promise<void>;
 
-export async function createMultiMockServer(
+export async function createMockCluster(
   options: ApplicationOptions & {
     number?: number;
     version?: string;
-    basename?: string;
+    name?: string;
+    appName?: string;
     beforeInstall?: BeforeInstallFn;
     skipInstall?: boolean;
     skipStart?: boolean;
   } = {},
 ) {
   const instances: MockServer[] = [];
+  const clusterName = options.name || `cluster_${uid()}`;
+  const appName = options.appName || `app_${uid()}`;
   for (const i of _.range(0, options.number || 2)) {
     const app: MockServer = await createMockServer({
       ...options,
       skipSupervisor: true,
+      name: clusterName + '_' + appName,
       pubSubManager: {
-        channelPrefix: options.basename,
+        channelPrefix: clusterName,
       },
     });
     instances.push(app);
   }
-  return instances;
+  return {
+    instances,
+    async destroy() {
+      for (const instance of instances) {
+        await instance.destroy();
+      }
+    },
+  };
 }
 
 export async function createMockServer(
