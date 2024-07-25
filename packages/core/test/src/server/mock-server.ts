@@ -269,7 +269,7 @@ export async function createMockCluster(
     skipStart?: boolean;
   } = {},
 ) {
-  const instances: MockServer[] = [];
+  const nodes: MockServer[] = [];
   const clusterName = options.name || `cluster_${uid()}`;
   const appName = options.appName || `app_${uid()}`;
   for (const i of _.range(0, options.number || 2)) {
@@ -281,13 +281,13 @@ export async function createMockCluster(
         channelPrefix: clusterName,
       },
     });
-    instances.push(app);
+    nodes.push(app);
   }
   return {
-    instances,
+    nodes,
     async destroy() {
-      for (const instance of instances) {
-        await instance.destroy();
+      for (const node of nodes) {
+        await node.destroy();
       }
     },
   };
