@@ -8,7 +8,7 @@
  */
 
 import { Plugin } from '@nocobase/server';
-import { Collection, Model, SyncOptions, AdjacencyListRepository } from '@nocobase/database';
+import { Collection, Model, SyncOptions, AdjacencyListRepository, DestroyOptions } from '@nocobase/database';
 import { DataSource, SequelizeCollectionManager, SequelizeDataSource } from '@nocobase/data-source-manager';
 
 class PluginCollectionTreeServer extends Plugin {
@@ -38,7 +38,7 @@ class PluginCollectionTreeServer extends Plugin {
             await this.defineTreePathCollection(name, collectionManager);
             await this.db
               .getCollection(name)
-              .sync({ transaction: collection.transaction, force: false, alter: true } as syncOptions);
+              .sync({ transaction: collection.transaction, force: false, alter: true } as SyncOptions);
           });
 
           //afterCreate
@@ -76,12 +76,12 @@ class PluginCollectionTreeServer extends Plugin {
           });
 
           //afterDestroy
-          this.db.on(`${collection.name}.afterDestroy`, async (model: Model, options) => {
+          this.db.on(`${collection.name}.afterDestroy`, async (model: Model, options: DestroyOptions) => {
             this.app.db.getRepository(name).destroy({
               filter: {
                 nodePk: model.dataValues?.id,
               },
-              options,
+              ...options,
             });
           });
         });

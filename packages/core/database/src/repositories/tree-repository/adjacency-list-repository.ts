@@ -12,7 +12,7 @@ import { FindOptions, Repository } from '../../repository';
 import Database from '../../database';
 import { Collection } from '../../collection';
 import { Model } from '../../model';
-import { FindAndCountOptions, QueryTypes } from 'sequelize';
+import { FindAndCountOptions } from 'sequelize';
 import { assign } from '@nocobase/utils';
 
 export class AdjacencyListRepository extends Repository {
@@ -50,7 +50,11 @@ export class AdjacencyListRepository extends Repository {
     });
   }
 
-  async find(options: FindOptions & { addIndex?: boolean } = {}): Promise<any> {
+  async find(options: FindOptions & { addIndex?: boolean; filter?: any } = {}): Promise<any> {
+    let childIds: any[] = [];
+    childIds = lodash.get(options, ['filter', 'childIds'], []);
+    options = lodash.omit(options, 'filter.childIds');
+
     //for sqlite weired bug
     if (options.filter && Object.keys(options.filter).length === 1 && options.filter.id === undefined) {
       return [];
@@ -90,7 +94,9 @@ export class AdjacencyListRepository extends Repository {
       transaction: options.transaction,
     });
 
-    const childIds = childNodes.map((node) => node[primaryKey]);
+    if (childIds.length === 0) {
+      childIds = childNodes.map((node) => node[primaryKey]);
+    }
 
     const findChildrenOptions = {
       ...lodash.omit(options, ['limit', 'offset', 'filterByTk']),
@@ -177,7 +183,7 @@ export class AdjacencyListRepository extends Repository {
     });
   }
 
-  async findAndCount(options?: FindAndCountOptions): Promise<[Model[], number]> {
+  async findAndCount(options?: FindAndCountOptions & { tree?: boolean }): Promise<[Model[], number]> {
     let totalCount = 0;
     let datas = [];
     const foreignKey = this.collection.treeParentField?.foreignKey || 'parentId';
@@ -205,12 +211,80 @@ export class AdjacencyListRepository extends Repository {
       const childrenKey = collection.treeChildrenField?.name ?? 'children';
       const filterNodes = await super.find(optionsTmp);
       const filterIds = filterNodes.map((node) => node[primaryKey]);
+
+      const nodeIds = [];
+      for (const id of filterIds) {
+        nodeIds.push(id);
+      }
+      const nodeDatas = await this.queryRootDatas(nodeIds);
+
+      interface rootPathDataMapInterface {
+        [key: string]: string[];
+      }
+
+      interface rebuildTreeRootNodeDataInterface {
+        [key: string]: Set<any>;
+      }
+
+      const rootPathDataMap: rootPathDataMapInterface = {};
+
+      for (const nodeData of nodeDatas) {
+        if (rootPathDataMap[nodeData.dataValues.rootPk]) {
+          rootPathDataMap[nodeData.dataValues.rootPk] = [
+            ...rootPathDataMap[nodeData.dataValues.rootPk],
+            nodeData.dataValues.path,
+          ];
+        } else {
+          rootPathDataMap[nodeData.dataValues.rootPk] = [nodeData.dataValues.path];
+        }
+      }
+
+      const rebuildTreeRootNodeDataMap: rebuildTreeRootNodeDataInterface = {};
+      //find commons root path
+      for (const pathArray of Object.values(rootPathDataMap)) {
+        const commonParentPath = await this.findCommonParent(pathArray);
+        const commonParentPathNodeArray: string[] = commonParentPath.split('/').filter((item) => {
+          return item !== '';
+        });
+        if (pathArray.length == 1) {
+          rebuildTreeRootNodeDataMap[commonParentPathNodeArray[0]] = new Set();
+          for (const i of commonParentPathNodeArray) {
+            rebuildTreeRootNodeDataMap[commonParentPathNodeArray[0]].add(i);
+          }
+          continue;
+        }
+        // get filter root nodeid
+        const commonParentRootNodeId = commonParentPathNodeArray[commonParentPathNodeArray.length - 1];
+        rebuildTreeRootNodeDataMap[commonParentRootNodeId] = new Set([
+          commonParentPathNodeArray[commonParentPathNodeArray.length - 1],
+        ]);
+        for (const path of pathArray) {
+          if (commonParentPath != path) {
+            const commonPathNodeArray = path.split(commonParentPath).filter((item) => {
+              return item !== '';
+            });
+            for (const i of commonPathNodeArray[0].split('/').filter((item) => {
+              return item !== '';
+            })) {
+              rebuildTreeRootNodeDataMap[commonParentRootNodeId].add(i);
+            }
+          }
+        }
+      }
+
+      const childIds = [];
+      for (const nodeIdSet of Object.values(rebuildTreeRootNodeDataMap)) {
+        for (const nodeId of nodeIdSet) {
+          childIds.push(nodeId);
+        }
+      }
+
       let rootIds: any[] = [];
-      if (filterIds.length > 0) {
-        rootIds = await this.queryRootIDs(filterIds, collection);
-      } else {
+      rootIds = Object.keys(rebuildTreeRootNodeDataMap);
+      if (rootIds.length === 0) {
         return [[], 0];
       }
+
       totalCount = rootIds.length;
       options = lodash.omit(optionsTmp, ['filter']);
       assign(options, {
@@ -218,6 +292,7 @@ export class AdjacencyListRepository extends Repository {
           [primaryKey]: {
             $in: rootIds,
           },
+          childIds: childIds,
         },
       });
       assign(options, {
@@ -225,78 +300,8 @@ export class AdjacencyListRepository extends Repository {
         offset: offset,
       });
       datas = await this.find(options);
-
-      const nodeIds = [];
-      for (const id of filterIds) {
-        if (!rootIds.includes(id)) {
-          nodeIds.push(id);
-        }
-      }
-
-      const treeNodes = this.flattenTree(datas, rootIds, filterIds, childrenKey);
-      const nodeIdMap = {};
-      for (const node of treeNodes) {
-        delete node.dataValues[childrenKey];
-        nodeIdMap[node.dataValues.id] = node;
-      }
-
-      const nodeDatas = await this.queryRootDatas(nodeIds);
-      const nodeRootPkNodesMap = {};
-      for (const nodeData of nodeDatas) {
-        if (nodeRootPkNodesMap[nodeData.dataValues.rootPk]) {
-          nodeRootPkNodesMap[nodeData.dataValues.rootPk] = [
-            ...nodeRootPkNodesMap[nodeData.dataValues.rootPk],
-            nodeIdMap[nodeData.dataValues.nodePk],
-          ];
-        } else {
-          nodeRootPkNodesMap[nodeData.dataValues.rootPk] = [nodeIdMap[nodeData.dataValues.nodePk]];
-        }
-      }
-
-      for (const node of datas) {
-        if (nodeRootPkNodesMap[node.dataValues.id]) {
-          for (let index = 0; index < nodeRootPkNodesMap[node.dataValues.id].length; index++) {
-            if (
-              nodeRootPkNodesMap[node.dataValues.id][index].dataValues &&
-              nodeRootPkNodesMap[node.dataValues.id][index].dataValues.__index
-            ) {
-              const nodeTmp = lodash.cloneDeep(nodeRootPkNodesMap[node.dataValues.id][index]);
-              nodeRootPkNodesMap[node.dataValues.id][index] = {
-                ...nodeTmp.dataValues,
-                __index: `${node.dataValues.__index}.${childrenKey}.${index}`,
-              };
-            }
-            index = index++;
-          }
-          node.setDataValue(childrenKey, nodeRootPkNodesMap[node.dataValues.id]);
-        }
-      }
     }
     return [datas, totalCount];
-  }
-
-  private flattenTree(tree: any[], rootIds: any[], filterNodeIds: any[], childrenKey = 'children') {
-    const result = [];
-    for (let i = 0; i < tree.length; i++) {
-      const node = {
-        ...tree[i],
-        isRootPk: rootIds.includes(tree[i].dataValues.id),
-      };
-
-      if (tree[i].dataValues[childrenKey] && tree[i].dataValues[childrenKey].length > 0) {
-        const childNodes = this.flattenTree(tree[i].dataValues[childrenKey], rootIds, filterNodeIds, childrenKey);
-        for (const nodeData of childNodes) {
-          if (nodeData.isRootPk || filterNodeIds.includes(nodeData.dataValues.id)) {
-            result.push(nodeData);
-          }
-        }
-      }
-
-      if (node.isRootPk || filterNodeIds.includes(node.dataValues.id)) {
-        result.push(node);
-      }
-    }
-    return result;
   }
 
   private async queryRootDatas(nodePks) {
@@ -331,29 +336,6 @@ export class AdjacencyListRepository extends Repository {
       }
     }
     return prefix;
-  }
-
-  private async queryRootIDs(nodePks, collection) {
-    const pathTableName = `main_${collection.name}_path`;
-    const queryInterface = this.database.sequelize.getQueryInterface();
-    const q = queryInterface.quoteIdentifier.bind(queryInterface);
-    const collectionTreePath = await this.collection.db.getCollection(pathTableName);
-    const rootPkColumnName = collectionTreePath.getField('rootPk').columnName();
-    const nodePkColumnName = collectionTreePath.getField('nodePk').columnName();
-    const datas = await this.database.sequelize.query(
-      `
-      SELECT DISTINCT(${q(rootPkColumnName)}) as ${q('rootId')}
-      FROM ${pathTableName}
-      WHERE ${q(nodePkColumnName)} IN (${nodePks.join(',')}) ;
-      `,
-      {
-        type: QueryTypes.SELECT,
-        raw: true,
-      },
-    );
-    return datas.map((data: any) => {
-      return data.rootId;
-    });
   }
 
   private querySQL(rootIds, collection) {
