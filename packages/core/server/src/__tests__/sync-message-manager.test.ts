@@ -89,7 +89,6 @@ describe('sync-message-manager', () => {
     await app2.pm.get(MyPlugin).sendSyncMessage('message2');
     expect(mockListener).toBeCalledTimes(2);
     expect(mockListener).toHaveBeenCalledWith('message2');
-    await app1.destroy();
-    await app2.destroy();
+    await cluster.destroy();
   });
 });
