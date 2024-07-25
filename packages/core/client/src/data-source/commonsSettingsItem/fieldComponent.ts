@@ -22,7 +22,8 @@ export const fieldComponentSettingsItem: SchemaSettingsItemType = {
   useVisible() {
     const collectionField = useCollectionField();
     const dm = useDataSourceManager();
-    const collectionInterface = dm.collectionFieldInterfaceManager.getFieldInterface(collectionField.interface);
+    if (!collectionField) return false;
+    const collectionInterface = dm.collectionFieldInterfaceManager.getFieldInterface(collectionField?.interface);
     return (
       Array.isArray(collectionInterface?.componentOptions) &&
       collectionInterface.componentOptions.length > 1 &&
@@ -35,25 +36,31 @@ export const fieldComponentSettingsItem: SchemaSettingsItemType = {
     const schema = useFieldSchema();
     const collectionField = useCollectionField();
     const dm = useDataSourceManager();
-    const collectionInterface = dm.collectionFieldInterfaceManager.getFieldInterface(collectionField.interface);
+    const collectionInterface = dm.collectionFieldInterfaceManager.getFieldInterface(collectionField?.interface);
     const { fieldSchema: tableColumnSchema } = useColumnSchema();
     const fieldSchema = tableColumnSchema || schema;
     const { dn } = useDesignable();
     const compile = useCompile();
+
+    const options =
+      collectionInterface?.componentOptions
+        ?.filter((item) => !item.useVisible || item.useVisible())
+        ?.map((item) => {
+          return {
+            label: compile(item.label),
+            value: item.value,
+            useProps: item.useProps,
+          };
+        }) || [];
     return {
       title: t('Field component'),
-      options: collectionInterface?.componentOptions?.map((item) => {
-        return {
-          label: compile(item.label),
-          value: item.value,
-        };
-      }),
-      value: fieldSchema['x-component-props']?.['component'] || 'Input.URL',
+      options,
+      value: fieldSchema['x-component-props']?.['component'] || options[0]?.value,
       onChange(component) {
-        const componentOptions = collectionInterface?.componentOptions?.find((item) => item.value === component);
+        const componentOptions = options.find((item) => item.value === component);
         const componentProps = {
           component,
-          ...componentOptions?.useProps?.(),
+          ...(componentOptions?.useProps?.() || {}),
         };
         _.set(fieldSchema, 'x-component-props', componentProps);
         field.componentProps = componentProps;

@@ -20,7 +20,7 @@ type IGetNewSchema = {
 export function getNewSchema(options: IGetNewSchema) {
   const { fieldSchema, schemaKey, value, valueKeys } = options as any;
   const schemaKeyArr = schemaKey.split('.');
-  const clonedSchema = _.cloneDeep(fieldSchema[schemaKeyArr[0]]);
+  const clonedSchema = _.cloneDeep(fieldSchema[schemaKeyArr[0]] || {});
 
   if (value != undefined && typeof value === 'object') {
     Object.keys(value).forEach((key) => {
