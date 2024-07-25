@@ -8,8 +8,13 @@
  */
 
 import { uid } from '@nocobase/utils';
+import crypto from 'crypto';
 import _ from 'lodash';
 import Application from './application';
+
+export interface PubSubManagerOptions {
+  basename?: string;
+}
 
 export interface PubSubManagerCallbackOptions {
   skipSelf?: boolean;
@@ -18,28 +23,32 @@ export interface PubSubManagerCallbackOptions {
 
 export class PubSubManager {
   adapter: IPubSubAdapter;
+  messageHanders = new Map();
   subscribes = new Map();
   publisherId: string;
+  connected: boolean;
 
-  constructor(
-    protected app: Application,
-    protected options: any = {},
-  ) {
-    this.publisherId = uid();
+  static create(app: Application, options: PubSubManagerOptions) {
+    const pubSubManager = new PubSubManager(options);
     app.on('afterStart', async () => {
-      await this.connect();
+      await pubSubManager.connect();
     });
     app.on('afterStop', async () => {
-      await this.close();
+      await pubSubManager.close();
     });
     app.on('beforeLoadPlugin', async (plugin) => {
       if (!plugin.name) {
         return;
       }
-      await this.subscribe(plugin.name, plugin.handleSyncMessage.bind(plugin), {
+      await pubSubManager.subscribe(plugin.name, plugin.handleSyncMessage.bind(plugin), {
         debounce: Number(process.env.PUB_SUB_DEFAULT_DEBOUNCE || 1000),
       });
     });
+    return pubSubManager;
+  }
+
+  constructor(protected options: PubSubManagerOptions = {}) {
+    this.publisherId = uid();
   }
 
   get basename() {
@@ -54,6 +63,7 @@ export class PubSubManager {
     if (!this.adapter) {
       return;
     }
+    this.connected = true;
     await this.adapter.connect();
     // subscribe 要在 connect 之后
     for (const [channel, callbacks] of this.subscribes) {
@@ -67,24 +77,46 @@ export class PubSubManager {
     if (!this.adapter) {
       return;
     }
+    this.connected = false;
     return await this.adapter.close();
+  }
+
+  getMessageHash(message) {
+    return crypto.createHash('sha256').update(JSON.stringify(message)).digest('hex');
   }
 
   async subscribe(channel: string, callback, options: PubSubManagerCallbackOptions = {}) {
     const { skipSelf = true, debounce = 0 } = options;
-    const debounceCallback = this.debounce((wrappedMessage) => {
+    const wrappedCallback = async (wrappedMessage) => {
       const { publisherId, message } = JSON.parse(wrappedMessage);
       if (skipSelf && publisherId === this.publisherId) {
         return;
       }
-      callback(message);
-    }, debounce);
+      if (!debounce) {
+        await callback(message);
+        return;
+      }
+      const messageHash = '__subscribe__' + channel + this.getMessageHash(message);
+      if (!this.messageHanders.has(messageHash)) {
+        this.messageHanders.set(messageHash, this.debounce(callback, debounce));
+      }
+      const handleMessage = this.messageHanders.get(messageHash);
+      await handleMessage(message);
+      this.messageHanders.delete(messageHash);
+    };
     if (!this.subscribes.has(channel)) {
       const map = new Map();
       this.subscribes.set(channel, map);
     }
-    const map = this.subscribes.get(channel);
-    map.set(callback, debounceCallback);
+    const map: Map<any, any> = this.subscribes.get(channel);
+    const previous = map.get(callback);
+    if (previous) {
+      await this.adapter.unsubscribe(`${this.basename}${channel}`, previous);
+    }
+    map.set(callback, wrappedCallback);
+    if (this.connected) {
+      await this.adapter.subscribe(`${this.basename}${channel}`, wrappedCallback);
+    }
   }
 
   async unsubscribe(channel, callback) {
@@ -119,21 +151,31 @@ export class PubSubManager {
     return func;
   }
 
-  onMessage(callback, options: PubSubManagerCallbackOptions = {}) {
+  async subscribeAll(callback, options: PubSubManagerCallbackOptions = {}) {
     if (!this.adapter) {
       return;
     }
     const { skipSelf = true, debounce = 0 } = options;
-    const debounceCallback = this.debounce(callback, debounce);
-    return this.adapter.onMessage((channel: string, wrappedMessage) => {
-      if (!channel.startsWith(`${this.basename}`)) {
+    return this.adapter.subscribeAll(async (channel: string, wrappedMessage) => {
+      if (!channel.startsWith(this.basename)) {
         return;
       }
       const { publisherId, message } = JSON.parse(wrappedMessage);
       if (skipSelf && publisherId === this.publisherId) {
         return;
       }
-      debounceCallback(channel, message);
+      const realChannel = channel.substring(this.basename.length);
+      if (!debounce) {
+        await callback(realChannel, message);
+        return;
+      }
+      const messageHash = '__subscribe_all__' + realChannel + this.getMessageHash(message);
+      if (!this.messageHanders.has(messageHash)) {
+        this.messageHanders.set(messageHash, this.debounce(callback, debounce));
+      }
+      const handleMessage = this.messageHanders.get(messageHash);
+      await handleMessage(realChannel, message);
+      this.messageHanders.delete(messageHash);
     });
   }
 }
@@ -144,5 +186,5 @@ export interface IPubSubAdapter {
   subscribe(channel: string, callback): Promise<any>;
   unsubscribe(channel: string, callback): Promise<any>;
   publish(channel: string, message): Promise<any>;
-  onMessage(callback): void;
+  subscribeAll(callback): Promise<any>;
 }

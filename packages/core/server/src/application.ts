@@ -1128,7 +1128,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this._cli = this.createCLI();
     this._i18n = createI18n(options);
     this.syncManager = new SyncManager(this);
-    this.pubSubManager = new PubSubManager(this, options.pubSubManager);
+    this.pubSubManager = PubSubManager.create(this, options.pubSubManager);
     this.context.db = this.db;
 
     /**

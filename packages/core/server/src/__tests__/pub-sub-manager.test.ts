@@ -7,63 +7,183 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { createMockServer, MockServer } from '@nocobase/test';
-import { uid } from '@nocobase/utils';
-import Plugin from '../plugin';
+import { MemoryPubSubAdapter, sleep } from '@nocobase/test';
+import { PubSubManager } from '../pub-sub-manager';
 
-const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+describe('connect', () => {
+  let pubSubManager: PubSubManager;
 
-describe('pub-sub-manager', () => {
-  test('case1', async () => {
-    let count = 0;
-    class Plugin1 extends Plugin {
-      get name() {
-        return 'Plugin1';
-      }
+  beforeEach(async () => {
+    pubSubManager = new PubSubManager({ basename: 'pubsub1' });
+    pubSubManager.setAdapter(new MemoryPubSubAdapter());
+  });
 
-      async handleSyncMessage() {
-        ++count;
-      }
+  afterEach(async () => {
+    await pubSubManager.close();
+  });
 
-      async beforeLoad() {
-        await this.app.pubSubManager.subscribe(
-          'chan1nel',
-          (message) => {
-            ++count;
-            console.log(`Channel1 subscriber collected message: ${message}`);
-          },
-          { debounce: 500 },
-        );
-      }
-    }
-    const appOpts = {
-      pubSubManager: {
-        basename: 'pubsub1',
-      },
-      plugins: [Plugin1, 'nocobase'],
-    };
-    const node1: MockServer = await createMockServer({
-      ...appOpts,
-      name: 'app1_' + uid(),
-    });
-    const node2: MockServer = await createMockServer({
-      ...appOpts,
-      name: 'app1_' + uid(),
-    });
-    node1.pubSubManager.publish('chan1nel', `channel1_message_1`);
-    node1.pubSubManager.publish('chan1nel', `channel1_message_1`);
-    node1.pubSubManager.publish('chan1nel', `channel1_message_1`);
-    node1.pubSubManager.publish('chan1nel', `channel1_message_1`);
-    node1.pubSubManager.publish('chan1nel', `channel1_message_1`);
-    node1.pubSubManager.publish('chan1nel', `channel1_message_1`);
-    node1.pubSubManager.publish('chan1nel', `channel1_message_1`);
-    await sleep(1000);
-    expect(count).toBe(1);
-    await node1.pm.get(Plugin1).sendSyncMessage('plugin send message');
-    expect(count).toBe(2);
-    await node1.pm.get(Plugin1).sendSyncMessage('plugin send message');
-    expect(count).toBe(3);
-    await node1.destroy();
-    await node2.destroy();
+  test('not connected', async () => {
+    const mockListener = vi.fn();
+    await pubSubManager.subscribe('test1', mockListener);
+    await pubSubManager.publish('test1', 'message1');
+    expect(mockListener).not.toHaveBeenCalled();
+  });
+
+  test('closed', async () => {
+    const mockListener = vi.fn();
+    await pubSubManager.connect();
+    await pubSubManager.subscribe('test1', mockListener);
+    await pubSubManager.close();
+    await pubSubManager.publish('test1', 'message1');
+    expect(mockListener).not.toHaveBeenCalled();
+  });
+
+  test('subscribe before connect', async () => {
+    const mockListener = vi.fn();
+    await pubSubManager.subscribe('test1', mockListener, { skipSelf: false });
+    await pubSubManager.connect();
+    await pubSubManager.publish('test1', 'message1');
+    expect(mockListener).toHaveBeenCalled();
+    expect(mockListener).toBeCalledTimes(1);
+    expect(mockListener).toHaveBeenCalledWith('message1');
+  });
+
+  test('subscribe after connect', async () => {
+    await pubSubManager.connect();
+    const mockListener = vi.fn();
+    await pubSubManager.subscribe('test1', mockListener, { skipSelf: false });
+    await pubSubManager.publish('test1', 'message1');
+    expect(mockListener).toHaveBeenCalled();
+    expect(mockListener).toBeCalledTimes(1);
+    expect(mockListener).toHaveBeenCalledWith('message1');
+  });
+});
+
+describe('skipSelf, unsubscribe, debounce', () => {
+  let pubSubManager: PubSubManager;
+
+  beforeEach(async () => {
+    pubSubManager = new PubSubManager({ basename: 'pubsub1' });
+    pubSubManager.setAdapter(new MemoryPubSubAdapter());
+    await pubSubManager.connect();
+  });
+
+  afterEach(async () => {
+    await pubSubManager.close();
+  });
+
+  test('skipSelf: true', async () => {
+    const mockListener = vi.fn();
+    await pubSubManager.subscribe('test1', mockListener);
+    await pubSubManager.publish('test1', 'message1');
+    expect(mockListener).not.toHaveBeenCalled();
+  });
+
+  test('skipSelf: false', async () => {
+    const mockListener = vi.fn();
+    await pubSubManager.subscribe('test1', mockListener, { skipSelf: false });
+    await pubSubManager.publish('test1', 'message1');
+    expect(mockListener).toHaveBeenCalled();
+    expect(mockListener).toBeCalledTimes(1);
+    expect(mockListener).toHaveBeenCalledWith('message1');
+  });
+
+  test('debounce', async () => {
+    const mockListener = vi.fn();
+    await pubSubManager.subscribe('test1', mockListener, { skipSelf: false, debounce: 1000 });
+    pubSubManager.publish('test1', 'message1');
+    pubSubManager.publish('test1', 'message1');
+    pubSubManager.publish('test1', 'message1');
+    pubSubManager.publish('test1', 'message1');
+    pubSubManager.publish('test1', 'message1');
+    pubSubManager.publish('test1', 'message1');
+    pubSubManager.publish('test1', 'message2');
+    pubSubManager.publish('test1', 'message2');
+    pubSubManager.publish('test1', 'message2');
+    pubSubManager.publish('test1', 'message2');
+    pubSubManager.publish('test1', 'message2');
+    pubSubManager.publish('test1', 'message2');
+    await sleep(2000);
+    expect(mockListener).toBeCalledTimes(2);
+  });
+
+  test('debounce', async () => {
+    const mockListener = vi.fn();
+    await pubSubManager.subscribeAll(mockListener, { skipSelf: false, debounce: 1000 });
+    pubSubManager.publish('test1', 'message1');
+    pubSubManager.publish('test1', 'message1');
+    pubSubManager.publish('test1', 'message2');
+    pubSubManager.publish('test1', 'message2');
+    pubSubManager.publish('test2', 'message2');
+    pubSubManager.publish('test2', 'message2');
+    await sleep(2000);
+    expect(mockListener).toBeCalledTimes(3);
+  });
+
+  test('unsubscribe', async () => {
+    const mockListener = vi.fn();
+    await pubSubManager.subscribe('test1', mockListener, { skipSelf: false });
+    await pubSubManager.publish('test1', 'message1');
+    expect(mockListener).toHaveBeenCalled();
+    expect(mockListener).toBeCalledTimes(1);
+    expect(mockListener).toHaveBeenCalledWith('message1');
+    await pubSubManager.unsubscribe('test1', mockListener);
+    await pubSubManager.publish('test1', 'message1');
+    expect(mockListener).toBeCalledTimes(1);
+  });
+
+  test('subscribeAll + skipSelf: true', async () => {
+    const mockListener = vi.fn();
+    await pubSubManager.subscribeAll(mockListener);
+    await pubSubManager.publish('test1', 'message1');
+    expect(mockListener).not.toHaveBeenCalled();
+  });
+
+  test('subscribeAll + skipSelf: false', async () => {
+    const mockListener = vi.fn();
+    await pubSubManager.subscribeAll(mockListener, { skipSelf: false });
+    await pubSubManager.publish('test1', 'message1');
+    expect(mockListener).toHaveBeenCalled();
+    expect(mockListener).toBeCalledTimes(1);
+    expect(mockListener).toHaveBeenCalledWith('test1', 'message1');
+  });
+});
+
+describe('Pub/Sub', () => {
+  let publisher: PubSubManager;
+  let subscriber: PubSubManager;
+
+  beforeEach(async () => {
+    const pubsub = new MemoryPubSubAdapter();
+    publisher = new PubSubManager({ basename: 'pubsub1' });
+    publisher.setAdapter(pubsub);
+    await publisher.connect();
+    subscriber = new PubSubManager({ basename: 'pubsub1' });
+    subscriber.setAdapter(pubsub);
+    await subscriber.connect();
+  });
+
+  afterEach(async () => {
+    await publisher.close();
+    await subscriber.close();
+  });
+
+  test('subscribe publish', async () => {
+    const mockListener = vi.fn();
+    await subscriber.subscribe('test1', mockListener);
+    await publisher.publish('test1', 'message1');
+    expect(mockListener).toHaveBeenCalled();
+    expect(mockListener).toBeCalledTimes(1);
+    expect(mockListener).toHaveBeenCalledWith('message1');
+  });
+
+  test('subscribe twice', async () => {
+    const mockListener = vi.fn();
+    await subscriber.subscribe('test1', mockListener);
+    await subscriber.subscribe('test1', mockListener);
+    await publisher.publish('test1', 'message1');
+    expect(mockListener).toHaveBeenCalled();
+    expect(mockListener).toBeCalledTimes(1);
+    expect(mockListener).toHaveBeenCalledWith('message1');
   });
 });
