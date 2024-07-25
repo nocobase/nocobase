@@ -11,6 +11,7 @@ import React, { FC, ReactNode, createContext, useContext, useMemo } from 'react'
 
 import { ACLCollectionProvider } from '../../acl/ACLProvider';
 import { UseRequestOptions, UseRequestService } from '../../api-client';
+import { DataBlockCollector, FilterParam } from '../../filter-provider/FilterProvider';
 import { withDynamicSchemaProps } from '../../hoc/withDynamicSchemaProps';
 import { Designable, useDesignable } from '../../schema-component';
 import {
@@ -33,6 +34,7 @@ export interface AllDataBlockProps {
   action?: 'list' | 'get';
   params?: {
     filterByTk?: string | number;
+    filter?: FilterParam;
     [index: string]: any;
   };
   parentRecord?: CollectionRecord;
@@ -149,7 +151,7 @@ export const AssociationOrCollectionProvider = (props: {
   );
 };
 
-export const DataBlockProvider: FC<DataBlockProviderProps & { children?: ReactNode }> = withDynamicSchemaProps(
+export const DataBlockProvider: FC<Partial<AllDataBlockProps>> = withDynamicSchemaProps(
   (props) => {
     const { collection, association, dataSource, children, hidden, ...resets } = props as Partial<AllDataBlockProps>;
     const { dn } = useDesignable();
@@ -167,7 +169,9 @@ export const DataBlockProvider: FC<DataBlockProviderProps & { children?: ReactNo
           <AssociationOrCollectionProvider collection={collection} association={association}>
             <ACLCollectionProvider>
               <DataBlockResourceProvider>
-                <BlockRequestProvider>{children}</BlockRequestProvider>
+                <BlockRequestProvider>
+                  <DataBlockCollector params={props.params}>{children}</DataBlockCollector>
+                </BlockRequestProvider>
               </DataBlockResourceProvider>
             </ACLCollectionProvider>
           </AssociationOrCollectionProvider>
