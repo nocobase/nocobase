@@ -10,18 +10,12 @@
 import { IPubSubAdapter } from '@nocobase/server';
 import { AsyncEmitter, applyMixins, uid } from '@nocobase/utils';
 import { EventEmitter } from 'events';
-const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+import boolean from '@nocobase/database/src/operators/boolean';
 
-class TestEventEmitter extends EventEmitter {
+export class MemoryPubSubAdapter extends EventEmitter implements IPubSubAdapter {
   declare emitAsync: (event: string | symbol, ...args: any[]) => Promise<boolean>;
-}
 
-applyMixins(TestEventEmitter, [AsyncEmitter]);
-
-export class MemoryPubSubAdapter implements IPubSubAdapter {
-  protected emitter: TestEventEmitter;
-
-  connected = false;
+  private connected = false;
 
   static instances = new Map<string, MemoryPubSubAdapter>();
 
@@ -36,7 +30,7 @@ export class MemoryPubSubAdapter implements IPubSubAdapter {
   }
 
   constructor(protected options: any = {}) {
-    this.emitter = new TestEventEmitter();
+    super();
   }
 
   async connect() {
@@ -47,28 +41,15 @@ export class MemoryPubSubAdapter implements IPubSubAdapter {
     this.connected = false;
   }
 
-  async subscribe(channel, callback) {
-    this.emitter.on(channel, callback);
-  }
-
-  async unsubscribe(channel, callback) {
-    this.emitter.off(channel, callback);
+  isConnected(): boolean {
+    return this.connected;
   }
 
   async publish(channel, message) {
-    console.log(this.connected, { channel, message });
     if (!this.connected) {
       return;
     }
-    await this.emitter.emitAsync(channel, message);
-    await this.emitter.emitAsync('__publish__', channel, message);
-    // 用于处理延迟问题
-    if (this.options.debounce) {
-      await sleep(Number(this.options.debounce));
-    }
-  }
 
-  async subscribeAll(callback) {
-    this.emitter.on('__publish__', callback);
+    this.emit('message', channel, message);
   }
 }

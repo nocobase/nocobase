@@ -53,6 +53,7 @@ describe('connect', () => {
     const mockListener = vi.fn();
     await pubSubManager.subscribe('test1', mockListener);
     await pubSubManager.publish('test1', 'message1');
+
     expect(mockListener).toHaveBeenCalled();
     expect(mockListener).toBeCalledTimes(1);
     expect(mockListener).toHaveBeenCalledWith('message1');
@@ -88,7 +89,7 @@ describe('skipSelf, unsubscribe, debounce', () => {
     expect(mockListener).not.toHaveBeenCalled();
   });
 
-  test('debounce', async () => {
+  test('debounce1', async () => {
     const mockListener = vi.fn();
     await pubSubManager.subscribe('test1', mockListener, { debounce: 1000 });
     pubSubManager.publish('test1', 'message1');
@@ -107,7 +108,7 @@ describe('skipSelf, unsubscribe, debounce', () => {
     expect(mockListener).toBeCalledTimes(2);
   });
 
-  test('debounce', async () => {
+  test('debounce2', async () => {
     const mockListener = vi.fn();
     await pubSubManager.subscribeAll(mockListener, { debounce: 1000 });
     pubSubManager.publish('test1', 'message1');
