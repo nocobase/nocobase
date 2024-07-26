@@ -28,6 +28,7 @@ const schema: ISchema = {
       enum: options,
       'x-decorator': 'FormItem',
       'x-component': 'Select',
+      default: null,
     },
   },
 };
