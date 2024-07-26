@@ -45,9 +45,9 @@ function flatData(data: any[], fieldNames: FieldNames): any[] {
 
 export function getCurrentOptions(values: string | string[], dataSource: any[], fieldNames: FieldNames): Option[] {
   const result = flatData(dataSource, fieldNames);
-  const arrValues = castArray(values)
-    .filter((item) => item != null)
-    .map((val) => (isPlainObject(val) ? val[fieldNames.value] : val)) as string[];
+  const arrValues = castArray(values).map((val) =>
+    isPlainObject(val) && val !== null ? val[fieldNames.value] : val,
+  ) as string[];
 
   function findOptions(options: any[]): Option[] {
     if (!options) return [];
