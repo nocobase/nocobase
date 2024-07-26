@@ -7,8 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { CollectionFieldInterface, defaultProps, operators } from '@nocobase/client';
-
+import { CollectionFieldInterface, defaultProps } from '@nocobase/client';
+import { uid } from '@nocobase/utils/client';
 export class EncryptionFieldInterface extends CollectionFieldInterface {
   name = 'encryption';
   type = 'object';
@@ -17,6 +17,7 @@ export class EncryptionFieldInterface extends CollectionFieldInterface {
   title = '{{t("Encryption")}}';
   default = {
     type: 'encryption',
+    iv: uid(16),
     uiSchema: {
       type: 'string',
       'x-component': 'Input',
