@@ -183,7 +183,9 @@ export class AdjacencyListRepository extends Repository {
     });
   }
 
-  async findAndCount(options?: FindAndCountOptions & { tree?: boolean }): Promise<[Model[], number]> {
+  async findAndCount(
+    options?: FindAndCountOptions & { tree?: boolean; fields?: string[]; filter?: any },
+  ): Promise<[Model[], number]> {
     let totalCount = 0;
     let datas = [];
     const foreignKey = this.collection.treeParentField?.foreignKey || 'parentId';
@@ -204,10 +206,14 @@ export class AdjacencyListRepository extends Repository {
     } else {
       const limit = options.limit;
       const offset = options.offset;
+      const fields = lodash.cloneDeep(options.fields);
       const optionsClone = lodash.clone(options);
       const optionsTmp = lodash.omit(optionsClone, ['limit', 'offset']);
       const collection = this.collection;
       const primaryKey = collection.model?.primaryKeyAttribute ?? 'id';
+      if (options.fields.length > 0 && !options.fields.includes(primaryKey)) {
+        optionsTmp.fields.push(primaryKey);
+      }
       const filterNodes = await super.find(optionsTmp);
       const filterIds = filterNodes.map((node) => node[primaryKey]);
 
@@ -298,6 +304,7 @@ export class AdjacencyListRepository extends Repository {
       assign(options, {
         limit: limit,
         offset: offset,
+        fields: fields,
       });
       datas = await this.find(options);
     }
