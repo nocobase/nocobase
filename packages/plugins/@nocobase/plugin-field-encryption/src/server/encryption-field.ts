@@ -7,9 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { BaseColumnFieldOptions, Field, FieldContext, Model } from '@nocobase/database';
+import { BaseColumnFieldOptions, Field, Model } from '@nocobase/database';
 import { DataTypes } from 'sequelize';
-import { encrypt, decrypt } from './utils';
+import { decrypt, encrypt } from './utils';
 
 export interface EncryptionFieldOptions extends BaseColumnFieldOptions {
   type: 'encryption';
@@ -57,28 +57,29 @@ export class EncryptionField extends Field {
       }
     };
 
-    this.getListener = async (model: Model) => {
-      const encrypted = model.get(name) as string;
-      if (encrypted) {
-        const str = await decrypt(encrypted, iv);
-        model.set(name, str);
-      } else {
-        model.set(name, null);
-      }
+    this.findListener = async (instances, options) => {
+      await Promise.all(
+        instances.map(async (instance) => {
+          if (instance.get(name)) {
+            instance.set(name, await decrypt(instance.get(name), iv));
+          }
+          return instance;
+        }),
+      );
     };
   }
 
   bind() {
     super.bind();
     // @ts-ignore
-    this.on('afterFind', this.getListener);
+    this.on('afterFind', this.findListener);
     this.on('beforeCreate', this.writeListener);
     this.on('beforeUpdate', this.writeListener);
   }
 
   unbind() {
     super.unbind();
-    this.off('afterFind', this.getListener);
+    this.off('afterFind', this.findListener);
     this.off('beforeCreate', this.writeListener);
     this.off('beforeUpdate', this.writeListener);
   }
