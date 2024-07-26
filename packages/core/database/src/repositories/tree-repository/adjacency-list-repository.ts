@@ -205,10 +205,9 @@ export class AdjacencyListRepository extends Repository {
       const limit = options.limit;
       const offset = options.offset;
       const optionsClone = lodash.clone(options);
-      const optionsTmp = lodash.omit(optionsClone, ['limit', 'offset', 'filterByTk']);
+      const optionsTmp = lodash.omit(optionsClone, ['limit', 'offset']);
       const collection = this.collection;
       const primaryKey = collection.model?.primaryKeyAttribute ?? 'id';
-      const childrenKey = collection.treeChildrenField?.name ?? 'children';
       const filterNodes = await super.find(optionsTmp);
       const filterIds = filterNodes.map((node) => node[primaryKey]);
 
@@ -286,13 +285,14 @@ export class AdjacencyListRepository extends Repository {
       }
 
       totalCount = rootIds.length;
-      options = lodash.omit(optionsTmp, ['filter']);
+      options = lodash.omit(optionsClone, ['filter', primaryKey]);
       assign(options, {
         filter: {
           [primaryKey]: {
             $in: rootIds,
           },
           childIds: childIds,
+          ...options?.filter,
         },
       });
       assign(options, {
