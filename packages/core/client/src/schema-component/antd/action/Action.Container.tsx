@@ -16,7 +16,7 @@ import { ComposedActionDrawer } from './types';
 
 export const ActionContainer: ComposedActionDrawer = observer(
   (props: any) => {
-    const { openMode } = useActionContext();
+    const { openMode = 'drawer' } = useActionContext();
     const { getComponentByOpenMode } = useOpenModeContext();
     const { currentLevel } = useCurrentPopupContext();
 

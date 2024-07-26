@@ -13,6 +13,7 @@ import WorkflowPlugin from '@nocobase/plugin-workflow/client';
 import Manual from './instruction';
 
 import { NAMESPACE } from '../locale';
+import { WorkflowManualProvider } from './WorkflowManualProvider';
 import { WorkflowTodo } from './WorkflowTodo';
 import { WorkflowTodoBlockInitializer } from './WorkflowTodoBlockInitializer';
 import {
@@ -55,6 +56,8 @@ export default class extends Plugin {
       Component: 'WorkflowTodoBlockInitializer',
       icon: 'CheckSquareOutlined',
     });
+
+    this.app.addProvider(WorkflowManualProvider);
   }
 
   addComponents() {

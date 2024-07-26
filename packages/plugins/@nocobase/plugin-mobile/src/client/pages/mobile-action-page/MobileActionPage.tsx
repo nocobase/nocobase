@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { useFieldSchema } from '@formily/react';
+import { RecursionField, useField, useFieldSchema } from '@formily/react';
 import {
   BackButtonUsedInSubPage,
   SchemaComponent,
@@ -74,14 +74,21 @@ const useMobileBlockInitializersInSubpage = (
  * 在移动端通过 Action 按钮打开的页面
  * @returns
  */
-export const MobileActionPage = ({ level }) => {
+export const MobileActionPage = ({ level, footerNodeName }) => {
   useMobileBlockInitializersInSubpage();
 
+  const field = useField();
   const filedSchema = useFieldSchema();
   const ctx = useActionContext();
   const { styles } = useMobileActionPageStyle();
   const tabContext = useTabsContext();
   const containerDOM = useMemo(() => document.querySelector('.nb-mobile-subpages-slot'), []);
+  const footerSchema = filedSchema.reduceProperties((buf, s) => {
+    if (s['x-component'] === footerNodeName) {
+      return s;
+    }
+    return buf;
+  });
 
   const style = useMemo(() => {
     return {
@@ -99,6 +106,18 @@ export const MobileActionPage = ({ level }) => {
       <TabsContextProvider {...tabContext} tabBarExtraContent={<BackButtonUsedInSubPage />} tabBarGutter={48}>
         <SchemaComponent components={components} schema={filedSchema} onlyRenderProperties />
       </TabsContextProvider>
+      {footerSchema && (
+        <div className={styles.footer}>
+          <RecursionField
+            basePath={field.address}
+            schema={filedSchema}
+            onlyRenderProperties
+            filterProperties={(s) => {
+              return s['x-component'] === footerNodeName;
+            }}
+          />
+        </div>
+      )}
     </div>
   );
 
