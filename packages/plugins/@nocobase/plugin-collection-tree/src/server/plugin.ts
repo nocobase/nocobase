@@ -102,6 +102,7 @@ class PluginCollectionTreeServer extends Plugin {
   }
 
   private async syncExistTreeCollectionPathTable() {
+    return;
     const collectionsRepository = this.app.db.getRepository('collections');
     if (!collectionsRepository) {
       return;
