@@ -196,7 +196,10 @@ export class AdjacencyListRepository extends Repository {
       datas = await super.find(options);
       return [datas, datas.length];
     }
-    if (JSON.stringify(lodash.get(options, ['filter', '$and'], {})) === JSON.stringify([{}, { [foreignKey]: null }])) {
+    if (
+      JSON.stringify(lodash.get(options, ['filter', '$and'], {})) === JSON.stringify([{}, { [foreignKey]: null }]) ||
+      JSON.stringify(lodash.get(options, ['filter'], {})) === JSON.stringify({ [foreignKey]: null })
+    ) {
       options = lodash.omit(options, ['filterByTk']);
       assign(options, {
         filter: {

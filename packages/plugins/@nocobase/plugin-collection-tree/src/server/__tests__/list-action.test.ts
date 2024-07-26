@@ -9,6 +9,7 @@
 
 import { registerActions } from '@nocobase/actions';
 import { MockServer, mockServer as actionMockServer } from './index';
+import { createApp } from './prepare';
 
 describe('list action', () => {
   let app: MockServer;
@@ -151,7 +152,7 @@ describe('list action', () => {
 describe('list-tree', () => {
   let app;
   beforeEach(async () => {
-    app = actionMockServer();
+    app = await createApp();
     registerActions(app);
   });
 
@@ -248,7 +249,7 @@ describe('list-tree', () => {
       });
 
     expect(response.status).toEqual(200);
-    expect(response.body.rows).toMatchObject(values);
+    expect(response.body.data).toMatchObject(values);
   });
 
   it('should be tree', async () => {
@@ -309,6 +310,10 @@ describe('list-tree', () => {
           name: 'name',
         },
         {
+          type: 'bigInt',
+          name: 'parentId',
+        },
+        {
           type: 'string',
           name: 'description',
         },
@@ -342,7 +347,7 @@ describe('list-tree', () => {
       });
 
     expect(response.status).toEqual(200);
-    expect(response.body.rows).toMatchObject(values);
+    expect(response.body.data).toMatchObject(values);
   });
 
   it('should filter child nodes for tree', async () => {
@@ -421,7 +426,7 @@ describe('list-tree', () => {
       });
 
     expect(response.status).toEqual(200);
-    const rows = response.body.rows;
+    const rows = response.body.data;
     expect(rows.length).toEqual(2);
     expect(rows[0].name).toEqual('B');
     expect(rows[1].name).toEqual('B');
