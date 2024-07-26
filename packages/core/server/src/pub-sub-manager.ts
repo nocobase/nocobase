@@ -176,7 +176,9 @@ export class PubSubManager {
     try {
       const args = subscribeAll ? [channel, message] : [message];
       await handleMessage(...args);
-      this.messageHandlers.delete(messageHash);
+      setTimeout(() => {
+        this.messageHandlers.delete(messageHash);
+      }, debounce);
     } catch (error) {
       this.messageHandlers.delete(messageHash);
       throw error;

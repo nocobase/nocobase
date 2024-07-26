@@ -103,7 +103,12 @@ describe('skipSelf, unsubscribe, debounce', () => {
     pubSubManager.publish('test1', 'message2');
     pubSubManager.publish('test1', 'message2');
     pubSubManager.publish('test1', 'message2');
+    await sleep(500);
+    //@ts-ignore
+    expect(pubSubManager['messageHandlers'].size).toBe(2);
     await sleep(2000);
+    //@ts-ignore
+    expect(pubSubManager['messageHandlers'].size).toBe(0);
     expect(mockListener).toBeCalledTimes(2);
   });
 
@@ -116,7 +121,10 @@ describe('skipSelf, unsubscribe, debounce', () => {
     pubSubManager.publish('test1', 'message2');
     pubSubManager.publish('test2', 'message2');
     pubSubManager.publish('test2', 'message2');
+    await sleep(500);
+    expect(pubSubManager['messageHandlers'].size).toBe(3);
     await sleep(2000);
+    expect(pubSubManager['messageHandlers'].size).toBe(0);
     expect(mockListener).toBeCalledTimes(3);
   });
 
