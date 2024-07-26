@@ -20,28 +20,6 @@ export class EncryptionField extends Field {
     return DataTypes.STRING;
   }
 
-  // constructor(options?: any, context?: FieldContext) {
-  // const { name, iv } = options;
-  // super(
-  //   {
-  //     get() {
-  //       const value = this.getDataValue(name);
-  //       if (!value) return null;
-  //       return decrypt(value, iv);
-  //     },
-  //     set(value) {
-  //       if (!value?.length) value = null;
-  //       else {
-  //         value = encrypt(value, iv);
-  //       }
-  //       this.setDataValue(name, value);
-  //     },
-  //     ...options,
-  //   },
-  //   context,
-  // );
-  // }
-
   init() {
     const { name, iv } = this.options;
     this.writeListener = async (model: Model) => {
@@ -60,7 +38,7 @@ export class EncryptionField extends Field {
     this.findListener = async (instances, options) => {
       await Promise.all(
         instances.map(async (instance) => {
-          if (instance.get(name)) {
+          if (instance.get?.(name)) {
             instance.set(name, await decrypt(instance.get(name), iv));
           }
           return instance;

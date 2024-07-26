@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { CollectionFieldInterface, defaultProps } from '@nocobase/client';
+import { CollectionFieldInterface, defaultProps, operators } from '@nocobase/client';
 import { uid } from '@nocobase/utils/client';
 export class EncryptionFieldInterface extends CollectionFieldInterface {
   name = 'encryption';
@@ -27,5 +27,13 @@ export class EncryptionFieldInterface extends CollectionFieldInterface {
   hasDefaultValue = true;
   properties = {
     ...defaultProps,
+  };
+  filterable = {
+    operators: [
+      { label: '{{t("is")}}', value: '$encryptionEq', selected: true },
+      { label: '{{t("is not")}}', value: '$encryptionNe' },
+      { label: '{{t("exists")}}', value: '$exists', noValue: true },
+      { label: '{{t("not exists")}}', value: '$notExists', noValue: true },
+    ],
   };
 }
