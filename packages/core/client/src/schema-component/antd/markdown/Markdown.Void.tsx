@@ -81,11 +81,19 @@ const MarkdownEditor = (props: MarkdownEditorProps) => {
         }}
         style={{ paddingBottom: '40px' }}
       />
+      <>
+        <span style={{ marginLeft: '.25em' }} className={'ant-formily-item-extra'}>
+          {t('Syntax references')}:
+        </span>
+        <a href="https://handlebarsjs.com/guide/" target="_blank" rel="noreferrer">
+          Handlebars.js
+        </a>
+      </>
       <div style={{ position: 'absolute', top: 21, right: 1 }}>
         <VariableSelect options={options} setOptions={setOptions} onInsert={onInsert} />
       </div>
 
-      <Space style={{ position: 'absolute', bottom: 5, right: 5 }}>
+      <Space style={{ position: 'absolute', bottom: 25, right: 5 }}>
         <Button
           onClick={(e) => {
             props.onCancel?.(e);
