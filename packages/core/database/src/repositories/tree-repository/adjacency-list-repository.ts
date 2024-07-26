@@ -214,7 +214,7 @@ export class AdjacencyListRepository extends Repository {
       const optionsTmp = lodash.omit(optionsClone, ['limit', 'offset']);
       const collection = this.collection;
       const primaryKey = collection.model?.primaryKeyAttribute ?? 'id';
-      if (options.fields.length > 0 && !options.fields.includes(primaryKey)) {
+      if (options.fields !== undefined && options.fields.length > 0 && !options.fields.includes(primaryKey)) {
         optionsTmp.fields.push(primaryKey);
       }
       const filterNodes = await super.find(optionsTmp);
