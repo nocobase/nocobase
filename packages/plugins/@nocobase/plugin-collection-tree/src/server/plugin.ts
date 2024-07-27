@@ -79,6 +79,7 @@ class PluginCollectionTreeServer extends Plugin {
 
           //afterDestroy
           this.db.on(`${collection.name}.afterDestroy`, async (model: Model, options: DestroyOptions) => {
+            delete options.filterByTk;
             this.app.db.getRepository(name).destroy({
               filter: {
                 nodePk: model.dataValues?.id,
