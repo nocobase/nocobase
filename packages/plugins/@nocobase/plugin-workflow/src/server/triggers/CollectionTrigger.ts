@@ -68,7 +68,7 @@ async function handler(this: CollectionTrigger, workflow: WorkflowModel, data: M
   }
 
   // NOTE: if no configured condition, or not match, do not trigger
-  if (isValidFilter(condition)) {
+  if (isValidFilter(condition) && !(mode & MODE_BITMAP.DESTROY)) {
     // TODO: change to map filter format to calculation format
     // const calculation = toCalculation(condition);
     const count = await repository.count({
