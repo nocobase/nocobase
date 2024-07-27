@@ -76,7 +76,6 @@ export class SyncRunner {
 
     try {
       const beforeColumns = await this.queryInterface.describeTable(this.tableName, options);
-      await this.checkAutoIncrementField(beforeColumns, options);
       await this.handlePrimaryKeyBeforeSync(beforeColumns, options);
       await this.handleUniqueFieldBeforeSync(beforeColumns, options);
     } catch (e) {
@@ -93,20 +92,6 @@ export class SyncRunner {
     await this.handleUniqueIndex(options);
 
     return syncResult;
-  }
-
-  async checkAutoIncrementField(beforeColumns, options) {
-    // if there is auto increment field, throw error
-    if (!this.database.isMySQLCompatibleDialect()) {
-      return;
-    }
-    const autoIncrFields = Object.keys(this.rawAttributes).filter((key) => {
-      return this.rawAttributes[key].autoIncrement;
-    });
-
-    if (autoIncrFields.length > 1) {
-      throw new Error(`Auto increment field can't be more than one: ${autoIncrFields.join(', ')}`);
-    }
   }
 
   async handleUniqueFieldBeforeSync(beforeColumns, options) {
