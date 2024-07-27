@@ -19,7 +19,6 @@ class PluginCollectionTreeServer extends Plugin {
 
     //sync exisit tree collection path table
     this.app.on('afterLoad', async () => {
-      console.log('collections afterDefineCollection');
       await this.syncExistTreeCollectionPathTable();
     });
 
