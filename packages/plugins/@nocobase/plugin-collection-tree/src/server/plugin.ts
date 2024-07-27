@@ -17,6 +17,12 @@ class PluginCollectionTreeServer extends Plugin {
       return options.tree;
     };
 
+    //sync exisit tree collection path table
+    this.app.on('afterLoad', async () => {
+      console.log('collections afterDefineCollection');
+      await this.syncExistTreeCollectionPathTable();
+    });
+
     this.app.db.collectionFactory.registerCollectionType(TreeCollection, {
       condition,
     });
@@ -29,9 +35,6 @@ class PluginCollectionTreeServer extends Plugin {
             return;
           }
           const name = `${dataSource.name}_${collection.options.name}_path`;
-
-          //sync exisit tree collection path table
-          this.syncExistTreeCollectionPathTable();
 
           //afterSync
           collectionManager.db.on(`${collection.name}.afterSync`, async (collection: Model) => {
@@ -102,7 +105,6 @@ class PluginCollectionTreeServer extends Plugin {
   }
 
   private async syncExistTreeCollectionPathTable() {
-    return;
     const collectionsRepository = this.app.db.getRepository('collections');
     if (!collectionsRepository) {
       return;
