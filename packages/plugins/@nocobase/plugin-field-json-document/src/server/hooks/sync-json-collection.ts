@@ -17,18 +17,6 @@ export const syncJSONCollection = (db: Database) => {
       return;
     }
     model.set('options', _.omit(model.get('options'), ['fields']));
-    fields.push({
-      interface: 'id',
-      title: 'Index',
-      type: 'bigInt',
-      name: '__json_index',
-      uiSchema: {
-        type: 'number',
-        title: '{{t("Index")}}',
-        'x-component': 'InputNumber',
-        'x-read-pretty': true,
-      },
-    });
     const target = `${name}_json_collection`;
     const repo = db.getRepository('collections');
     let targetModel = await repo.findOne({
@@ -36,6 +24,18 @@ export const syncJSONCollection = (db: Database) => {
       transaction,
     });
     if (!targetModel) {
+      fields.push({
+        interface: 'id',
+        title: 'Index',
+        type: 'bigInt',
+        name: '__json_index',
+        uiSchema: {
+          type: 'number',
+          title: '{{t("Index")}}',
+          'x-component': 'InputNumber',
+          'x-read-pretty': true,
+        },
+      });
       const collectionRepo = db.getRepository('collections');
       targetModel = await collectionRepo.create({
         values: {
@@ -45,7 +45,7 @@ export const syncJSONCollection = (db: Database) => {
           sync: false,
           hidden: true,
           fields,
-          filterTargetKey: '__index',
+          filterTargetKey: '__json_index',
         },
         transaction,
       });

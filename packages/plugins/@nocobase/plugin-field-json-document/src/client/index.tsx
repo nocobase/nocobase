@@ -14,9 +14,9 @@ import {
   DatetimeFieldInterface,
   EmailFieldInterface,
   IconFieldInterface,
-  IdFieldInterface,
   InputFieldInterface,
   IntegerFieldInterface,
+  JsonFieldInterface,
   MarkdownFieldInterface,
   MultipleSelectFieldInterface,
   NanoidFieldInterface,
@@ -38,7 +38,7 @@ import { JSONDocArrayInterface, JSONDocObjectInterface } from './interface/JSOND
 import { JSONDocFields } from './components/JSONDocFields';
 import { FieldInterfaceManager } from './field-interface-manager';
 
-export class PluginFieldJsonDocumentClient extends Plugin {
+export class PluginFieldJSONDocumentClient extends Plugin {
   fieldInterfaceManager = new FieldInterfaceManager(this.app);
 
   async afterAdd() {
@@ -56,7 +56,6 @@ export class PluginFieldJsonDocumentClient extends Plugin {
       DatetimeFieldInterface,
       EmailFieldInterface,
       IconFieldInterface,
-      IdFieldInterface,
       InputFieldInterface,
       IntegerFieldInterface,
       MarkdownFieldInterface,
@@ -74,6 +73,9 @@ export class PluginFieldJsonDocumentClient extends Plugin {
       UUIDFieldInterface,
       NanoidFieldInterface,
       UnixTimestampFieldInterface,
+      JsonFieldInterface,
+      JSONDocArrayInterface,
+      JSONDocObjectInterface,
     );
 
     this.app.addComponents({
@@ -83,4 +85,4 @@ export class PluginFieldJsonDocumentClient extends Plugin {
   }
 }
 
-export default PluginFieldJsonDocumentClient;
+export default PluginFieldJSONDocumentClient;

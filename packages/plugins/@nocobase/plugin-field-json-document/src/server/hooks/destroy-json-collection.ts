@@ -15,7 +15,6 @@ export const destroyJSONCollection = (db: Database) => {
     if (type !== 'JSONDocument') {
       return;
     }
-    console.log(model);
     const target = model.get('options')?.target;
     if (!target) {
       return;

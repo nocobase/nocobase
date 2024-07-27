@@ -9,7 +9,6 @@
 
 import { Collection, CollectionContext, CollectionOptions } from '@nocobase/database';
 import { JSONModel } from './json-model';
-import JSONRepository from './json-repository';
 
 export class JSONCollection extends Collection {
   constructor(options: CollectionOptions, context: CollectionContext) {

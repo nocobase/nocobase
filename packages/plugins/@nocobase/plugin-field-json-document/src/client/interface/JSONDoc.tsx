@@ -110,7 +110,7 @@ export class JSONDocArrayInterface extends CollectionFieldInterface {
   name = 'JSONDocArray';
   type = 'object';
   group = 'advanced';
-  order = 4;
+  order = 5;
   title = '{{t("JSON Document (Array)")}}';
   description = '{{t("One to one description")}}';
   isAssociation = true;
@@ -163,6 +163,20 @@ export class JSONDocArrayInterface extends CollectionFieldInterface {
       'x-component': 'Input',
       description:
         "{{t('Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.')}}",
+    },
+    jsonb: {
+      type: 'boolean',
+      'x-content': 'JSONB',
+      'x-decorator': 'FormItem',
+      'x-component': 'Checkbox',
+      'x-hidden': `{{ !isDialect('postgres') }}`,
+      'x-disabled': `{{ disabledJSONB }}`,
+    },
+    fields: {
+      type: 'array',
+      title: '{{t("Fields")}}',
+      'x-decorator': 'FormItem',
+      'x-component': 'JSONDocFields',
     },
   };
   filterable = {

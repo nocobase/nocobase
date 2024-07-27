@@ -8,7 +8,7 @@
  */
 
 import React, { useContext, useEffect } from 'react';
-import { ISchema, useField } from '@formily/react';
+import { ISchema, useField, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
 import {
   SchemaComponent,
@@ -16,9 +16,27 @@ import {
   useRecord,
   ResourceActionProvider,
   ResourceActionContext,
-  DataSourceContext,
+  useRequest,
+  useAPIClient,
 } from '@nocobase/client';
 import { useParams } from 'react-router-dom';
+import { AddJSONDocField } from './AddJSONDocField';
+import { FieldTitleInput } from './FieldTitleInput';
+import { EditJSONDocField } from './EditJSONDocField';
+import { ArrayField } from '@formily/core';
+import { FieldInterfaceSelect } from './FieldInterfaceSelect';
+import { useFieldInterfaceOptions } from '../field-interface-manager';
+import { JSONDocFieldsContext, JSONDocFieldsProvider } from './JSONDocFieldsProvider';
+
+const useDestroyJSONDocField = () => {
+  const record = useRecord();
+  const { del } = useContext(JSONDocFieldsContext);
+  return {
+    run() {
+      del(record.key);
+    },
+  };
+};
 
 const collection: CollectionOptions = {
   name: 'fields',
@@ -70,23 +88,11 @@ const fieldsTableSchema: ISchema = {
         },
       },
       properties: {
-        delete: {
-          type: 'void',
-          title: '{{ t("Delete") }}',
-          'x-component': 'Action',
-          'x-visible': false,
-          'x-component-props': {
-            useAction: '{{ useBulkDestroyActionAndRefreshCM }}',
-            confirm: {
-              title: "{{t('Delete record')}}",
-              content: "{{t('Are you sure you want to delete it?')}}",
-            },
-          },
-        },
         create: {
           type: 'void',
+          'x-align': 'left',
           title: '{{ t("Add new") }}',
-          'x-component': 'AddCollectionField',
+          'x-component': 'AddJSONDocField',
           'x-component-props': {
             type: 'primary',
           },
@@ -113,11 +119,8 @@ const fieldsTableSchema: ISchema = {
           'x-component': 'Table.Column',
           properties: {
             'uiSchema.title': {
-              type: 'string',
-              'x-component': 'FieldTitleInput',
-              'x-component-props': {
-                handleFieldChange: '{{enqueueChange}}',
-              },
+              'x-component': 'Input',
+              'x-read-pretty': true,
             },
           },
         },
@@ -139,23 +142,9 @@ const fieldsTableSchema: ISchema = {
           title: `{{t("Field interface")}}`,
           properties: {
             interface: {
-              'x-component': 'CollectionFieldInterfaceSelect',
-              'x-component-props': {
-                handleFieldChange: '{{enqueueChange}}',
-              },
-            },
-          },
-        },
-        column5: {
-          type: 'void',
-          'x-decorator': 'Table.Column.Decorator',
-          'x-component': 'Table.Column',
-          title: '{{t("Title field")}}',
-          properties: {
-            titleField: {
-              'x-component': 'TitleField',
-              'x-use-component-props': 'useTitleFieldProps',
-              'x-read-pretty': false,
+              'x-component': 'Select',
+              'x-read-pretty': true,
+              enum: '{{ interfaceOptions }}',
             },
           },
         },
@@ -174,7 +163,7 @@ const fieldsTableSchema: ISchema = {
                 update: {
                   type: 'void',
                   title: '{{ t("Edit") }}',
-                  'x-component': 'EditCollectionField',
+                  'x-component': 'EditJSONDocField',
                   'x-component-props': {
                     role: 'button',
                     'aria-label': '{{ "edit-button-" + $record.name }}',
@@ -184,14 +173,13 @@ const fieldsTableSchema: ISchema = {
                 delete: {
                   type: 'void',
                   title: '{{ t("Delete") }}',
-                  'x-disabled': '{{cm.useDeleteButtonDisabled()}}',
                   'x-component': 'Action.Link',
                   'x-component-props': {
                     confirm: {
                       title: "{{t('Delete record')}}",
                       content: "{{t('Are you sure you want to delete it?')}}",
                     },
-                    useAction: '{{ useDestroyActionAndRefreshCM }}',
+                    useAction: '{{ useDestroyJSONDocField}}',
                   },
                 },
               },
@@ -203,20 +191,54 @@ const fieldsTableSchema: ISchema = {
   },
 };
 
+const useDataSource = (options) => {
+  const { field } = useContext(JSONDocFieldsContext);
+  const record = useRecord();
+  const { name: dataSourceKey } = useParams();
+  const url = !dataSourceKey
+    ? `collections/${record.target}/fields:list`
+    : `dataSourcesCollections/${dataSourceKey}.${record.target}/fields:list`;
+  const api = useAPIClient();
+  const { run, data, loading } = useRequest(
+    () =>
+      api
+        .request({
+          url,
+          params: {
+            paginate: false,
+            filter: {
+              'interface.$not': null,
+              'name.$not': record.targetKey || '__json_index',
+            },
+            sort: ['sort'],
+          },
+        })
+        .then((res) => res?.data?.data || []),
+    {
+      manual: true,
+    },
+  );
+  useEffect(() => {
+    if (record.target) {
+      run();
+    }
+  }, [record.target]);
+  useEffect(() => {
+    if (!loading) {
+      field.value = (data as any) || [];
+    }
+  }, [loading, field, data]);
+  useEffect(() => {
+    options?.onSuccess({ data: [...field.value] });
+  }, [field.value]);
+};
+
 export const JSONDocFields: React.FC = () => {
   const { name: dataSourceKey } = useParams();
   const record = useRecord();
-  const useDataSource = (options) => {
-    const service = useContext(ResourceActionContext);
-    const field = useField();
-    useEffect(() => {
-      if (!service.loading) {
-        options?.onSuccess(service.data);
-        field.componentProps.dragSort = !!service.dragSort;
-      }
-    }, [service.loading]);
-    return service;
-  };
+  const form = useForm();
+  const field = useField<ArrayField>();
+  const interfaceOptions = useFieldInterfaceOptions();
   const url = !dataSourceKey
     ? `collections/${record.target}/fields:list`
     : `dataSourcesCollections/${dataSourceKey}.${record.target}/fields:list`;
@@ -240,8 +262,14 @@ export const JSONDocFields: React.FC = () => {
     },
   };
   return (
-    <ResourceActionProvider {...resourceActionProps}>
-      <SchemaComponent schema={fieldsTableSchema} scope={{ useDataSource }} />
-    </ResourceActionProvider>
+    <JSONDocFieldsProvider field={field} form={form}>
+      <ResourceActionProvider {...resourceActionProps}>
+        <SchemaComponent
+          schema={fieldsTableSchema}
+          scope={{ useDataSource, interfaceOptions, useDestroyJSONDocField }}
+          components={{ AddJSONDocField, FieldTitleInput, FieldInterfaceSelect, EditJSONDocField }}
+        />
+      </ResourceActionProvider>
+    </JSONDocFieldsProvider>
   );
 };
