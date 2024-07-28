@@ -111,6 +111,10 @@ export const getPopupPathFromParams = (params: PopupParams) => {
   return `/popups/${popupPath.map((item) => encodePathValue(item)).join('/')}`;
 };
 
+/**
+ * Note: use this hook in a plugin is not recommended
+ * @returns
+ */
 export const usePagePopup = () => {
   const navigate = useNavigateNoUpdate();
   const location = useLocationNoUpdate();

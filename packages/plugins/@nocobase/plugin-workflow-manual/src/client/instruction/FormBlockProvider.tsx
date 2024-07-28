@@ -23,7 +23,6 @@ import {
   useBlockRequestContext,
   useCollectionRecordData,
   useDataSourceHeaders,
-  useDesignable,
 } from '@nocobase/client';
 import { theme } from 'antd';
 import React, { useMemo, useRef } from 'react';
@@ -39,8 +38,6 @@ export function FormBlockProvider(props) {
   const { appends, updateAssociationValues } = getAssociationAppends();
   const [formKey] = Object.keys(fieldSchema.toJSON().properties ?? {});
   const values = userJob?.result?.[formKey];
-
-  const { findComponent } = useDesignable();
 
   const form = useMemo(
     () =>
