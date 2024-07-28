@@ -19,6 +19,7 @@ import React from 'react';
 import { isDesktop } from 'react-device-detect';
 
 import { usedToResetFilterActionForMobile } from '../adaptor-of-desktop/FilterAction';
+import { ResetSchemaOptionsProvider } from '../adaptor-of-desktop/ResetSchemaOptionsProvider';
 import { PageBackgroundColor } from '../constants';
 import { DesktopMode } from '../desktop-mode/DesktopMode';
 import { PluginMobileClient } from '../index';
@@ -78,7 +79,9 @@ export const Mobile = () => {
           >
             <BlockTemplateProvider componentNamePrefix="mobile-">
               <MobileAppProvider>
-                <MobileRouter />
+                <ResetSchemaOptionsProvider>
+                  <MobileRouter />
+                </ResetSchemaOptionsProvider>
               </MobileAppProvider>
             </BlockTemplateProvider>
           </OpenModeProvider>
