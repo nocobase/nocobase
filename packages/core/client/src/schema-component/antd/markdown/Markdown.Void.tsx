@@ -25,7 +25,8 @@ import { useVariableOptions } from '../../../schema-settings/VariableInput/hooks
 import { VariableSelect } from '../variable/VariableSelect';
 import { useLocalVariables, useVariables } from '../../../variables';
 import { registerQrcodeWebComponent } from './qrcode-webcom';
-import { getRenderContent } from './util';
+import { getRenderContent } from '../../common/utils/uitls';
+import { parseMarkdown } from './util';
 export interface MarkdownEditorProps extends Omit<TextAreaProps, 'onSubmit'> {
   scope: any[];
   defaultValue?: string;
@@ -141,7 +142,7 @@ export const MarkdownVoid: any = withDynamicSchemaProps(
     useEffect(() => {
       setLoading(true);
       const cvtContentToHTML = async () => {
-        const replacedContent = await getRenderContent(engine, content, variables, localVariables);
+        const replacedContent = await getRenderContent(engine, content, variables, localVariables, parseMarkdown);
         setHtml(replacedContent);
         setLoading(false);
       };

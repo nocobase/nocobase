@@ -50,7 +50,7 @@ const commonOptions: any = {
         const { t } = useTranslation();
         const { dn } = useDesignable();
         const api = useAPIClient();
-        const { mode, url, params, htmlId, height = '60vh' } = fieldSchema['x-component-props'] || {};
+        const { mode, url, params, htmlId, height = '60vh', engine } = fieldSchema['x-component-props'] || {};
         const saveHtml = async (html: string) => {
           const options = {
             values: { html },
@@ -66,10 +66,11 @@ const commonOptions: any = {
           }
         };
         const { urlSchema, paramsSchema } = useURLAndHTMLSchema();
-        const submitHandler = async ({ mode, url, html, height, params }) => {
+        const submitHandler = async ({ mode, url, html, height, params, engine }) => {
           const componentProps = fieldSchema['x-component-props'] || {};
           componentProps['mode'] = mode;
           componentProps['height'] = height;
+          componentProps['engine'] = engine;
           componentProps['params'] = params;
           componentProps['url'] = url;
           if (mode === 'html') {
@@ -94,6 +95,7 @@ const commonOptions: any = {
               mode,
               url,
               height,
+              engine,
               params,
             };
             if (htmlId) {
@@ -123,6 +125,24 @@ const commonOptions: any = {
                 required: true,
               },
               params: paramsSchema,
+              engine: {
+                title: '{{t("Template engine")}}',
+                'x-component': 'Radio.Group',
+                'x-decorator': 'FormItem',
+                default: 'string',
+                enum: [
+                  { value: 'string', label: t('Default') },
+                  { value: 'handlebars', label: t('Handlebars') },
+                ],
+                'x-reactions': {
+                  dependencies: ['mode'],
+                  fulfill: {
+                    state: {
+                      hidden: '{{$deps[0] === "url"}}',
+                    },
+                  },
+                },
+              },
               html: {
                 title: t('html'),
                 type: 'string',
@@ -141,13 +161,6 @@ const commonOptions: any = {
                   },
                 },
               },
-              // height: {
-              //   title: t('Height'),
-              //   type: 'string',
-              //   'x-decorator': 'FormItem',
-              //   'x-component': 'Input',
-              //   required: true,
-              // },
             },
           } as ISchema,
           onSubmit: submitHandler,
