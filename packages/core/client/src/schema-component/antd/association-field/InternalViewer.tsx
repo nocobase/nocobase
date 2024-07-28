@@ -98,10 +98,15 @@ const ButtonLinkList: FC<ButtonListProps> = (props) => {
                   if (designable) {
                     insertViewer(schema.Viewer);
                   }
-                  openPopup({
-                    recordData: record,
-                    parentRecordData: recordData,
-                  });
+
+                  // fix https://nocobase.height.app/T-4794/description
+                  if (fieldSchema.properties) {
+                    openPopup({
+                      recordData: record,
+                      parentRecordData: recordData,
+                    });
+                  }
+
                   ellipsisWithTooltipRef?.current?.setPopoverVisible(false);
                 }}
               >

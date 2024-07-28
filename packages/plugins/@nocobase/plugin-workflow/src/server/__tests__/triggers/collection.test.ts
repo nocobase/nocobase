@@ -434,6 +434,29 @@ describe('workflow > triggers > collection', () => {
       expect(executions.length).toBe(1);
       expect(executions[0].context.data.title).toBe('t1');
     });
+
+    it('condition will not effect destroy', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'collection',
+        config: {
+          mode: 4,
+          collection: 'posts',
+          condition: {
+            title: 't1',
+          },
+        },
+      });
+
+      const post1 = await PostRepo.create({ values: { title: 't1' } });
+      await PostRepo.destroy({ filterByTk: post1.id });
+
+      await sleep(500);
+
+      const executions = await workflow.getExecutions();
+      expect(executions.length).toBe(1);
+      expect(executions[0].context.data.title).toBe('t1');
+    });
   });
 
   describe('config.appends', () => {

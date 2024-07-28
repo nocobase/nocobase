@@ -53,7 +53,7 @@ export const Mobile = () => {
             token: {
               marginBlock: 18,
               borderRadiusBlock: 0,
-              boxShadowBlock: 'none',
+              boxShadowTertiary: 'none',
             },
           }}
         >

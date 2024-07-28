@@ -31,16 +31,16 @@ export const ReadPretty = observer(
   (props: SelectReadPrettyProps) => {
     const fieldNames = { ...defaultFieldNames, ...props.fieldNames };
     const field = useField<any>();
+    const collectionField = useCollectionField();
+    const dataSource = field.dataSource || props.options || collectionField?.uiSchema.enum || [];
+    const currentOptions = getCurrentOptions(field.value, dataSource, fieldNames);
 
-    if (!isValid(props.value)) {
+    if (!isValid(props.value) && !currentOptions.length) {
       return <div />;
     }
     if (isArrayField(field) && field?.value?.length === 0) {
       return <div />;
     }
-    const collectionField = useCollectionField();
-    const dataSource = field.dataSource || props.options || collectionField?.uiSchema.enum || [];
-    const currentOptions = getCurrentOptions(field.value, dataSource, fieldNames);
 
     return (
       <div>
