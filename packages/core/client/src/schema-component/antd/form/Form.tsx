@@ -19,7 +19,7 @@ import { useCollection_deprecated } from '../../../collection-manager';
 import { GeneralSchemaDesigner, SchemaSettingsDivider, SchemaSettingsRemove } from '../../../schema-settings';
 import { SchemaSettingsTemplate } from '../../../schema-settings/SchemaSettingsTemplate';
 import { useSchemaTemplate } from '../../../schema-templates';
-import { useBlockTemplateContext } from '../../../schema-templates/BlockTemplate';
+import { useBlockTemplateContext } from '../../../schema-templates/BlockTemplateProvider';
 
 type Opts = Options<any, any> & { uid?: string };
 

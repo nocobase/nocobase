@@ -29,7 +29,7 @@ import { useCreateDetailsBlock } from '../../modules/blocks/data-blocks/details-
 import { useCreateSingleDetailsSchema } from '../../modules/blocks/data-blocks/details-single/RecordReadPrettyFormBlockInitializer';
 import { useCreateGridCardBlock } from '../../modules/blocks/data-blocks/grid-card/GridCardBlockInitializer';
 import { useCreateListBlock } from '../../modules/blocks/data-blocks/list/ListBlockInitializer';
-import { useBlockTemplateContext } from '../../schema-templates/BlockTemplate';
+import { useBlockTemplateContext } from '../../schema-templates/BlockTemplateProvider';
 import { gridRowColWrap } from '../utils';
 
 const recursiveParent = (schema: Schema) => {

@@ -23,7 +23,7 @@ import {
 } from '../../../schema-settings';
 import { SchemaSettingsTemplate } from '../../../schema-settings/SchemaSettingsTemplate';
 import { useSchemaTemplate } from '../../../schema-templates';
-import { useBlockTemplateContext } from '../../../schema-templates/BlockTemplate';
+import { useBlockTemplateContext } from '../../../schema-templates/BlockTemplateProvider';
 import { useDesignable } from '../../hooks';
 
 export const TableVoidDesigner = () => {

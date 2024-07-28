@@ -30,7 +30,7 @@ import { useDataSourceManager } from '../data-source/data-source/DataSourceManag
 import { isAssocField } from '../filter-provider/utils';
 import { useActionContext, useCompile, useDesignable } from '../schema-component';
 import { useSchemaTemplateManager } from '../schema-templates';
-import { useBlockTemplateContext } from '../schema-templates/BlockTemplate';
+import { useBlockTemplateContext } from '../schema-templates/BlockTemplateProvider';
 
 export const itemsMerge = (items1) => {
   return items1;

@@ -26,7 +26,7 @@ import { SchemaSettingsBlockTitleItem } from '../../../schema-settings/SchemaSet
 import { SchemaSettingsDataScope } from '../../../schema-settings/SchemaSettingsDataScope';
 import { SchemaSettingsTemplate } from '../../../schema-settings/SchemaSettingsTemplate';
 import { useSchemaTemplate } from '../../../schema-templates';
-import { useBlockTemplateContext } from '../../../schema-templates/BlockTemplate';
+import { useBlockTemplateContext } from '../../../schema-templates/BlockTemplateProvider';
 import { useDesignable } from '../../hooks';
 import { removeNullCondition } from '../filter';
 
