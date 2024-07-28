@@ -11,15 +11,20 @@ import { ArrowLeftOutlined } from '@ant-design/icons';
 import { Button } from 'antd';
 import React, { useCallback, useMemo } from 'react';
 import { useToken } from '../../../style';
+import { useActionContext } from '../action/hooks';
 import { useCurrentPopupContext } from './PagePopups';
 import { usePagePopup } from './pagePopupUtils';
 
 export const useBackButton = () => {
   const { params } = useCurrentPopupContext();
   const { closePopup } = usePagePopup();
+  const { setVisible } = useActionContext();
   const goBack = useCallback(() => {
     closePopup(params?.popupuid);
-  }, [closePopup, params?.popupuid]);
+
+    // ensure to close the popup opened by `duplicate` action
+    setVisible?.(false);
+  }, [closePopup, params?.popupuid, setVisible]);
 
   return {
     goBack,

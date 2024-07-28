@@ -93,7 +93,7 @@ export const MobileActionPage = ({ level, footerNodeName }) => {
   const style = useMemo(() => {
     return {
       // 10 为基数，是为了要确保能大于 Table 中的悬浮行的 z-index
-      zIndex: 10 + level,
+      zIndex: 10 + (level || 0),
     };
   }, [level]);
 
