@@ -123,10 +123,10 @@ function getTypedConstantOption(type: string, types: true | string[], fieldNames
     Object.keys(item).reduce(
       (result, key) =>
         fieldNames[key] in item
-          ? result
-          : Object.assign(result, {
+          ? Object.assign(result, {
               [fieldNames[key]]: item[key],
-            }),
+            })
+          : result,
       item,
     ),
   );
@@ -397,9 +397,9 @@ export function Input(props: VariableInputProps) {
         <div style={{ flex: 1 }}>
           {children && isFieldValue ? (
             children
-          ) : (
+          ) : ConstantComponent ? (
             <ConstantComponent role="button" aria-label="variable-constant" value={value} onChange={onChange} />
-          )}
+          ) : null}
         </div>
       )}
       <Cascader
