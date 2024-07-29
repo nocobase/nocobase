@@ -193,8 +193,7 @@ export class AdjacencyListRepository extends Repository {
     let datas = [];
     const foreignKey = this.collection.treeParentField?.foreignKey || 'parentId';
     if (options.raw || !options.tree) {
-      datas = await super.find(options);
-      return [datas, datas.length];
+      return await super.findAndCount(options);
     }
     if (
       JSON.stringify(lodash.get(options, ['filter', '$and'], {})) === JSON.stringify([{}, { [foreignKey]: null }]) ||
