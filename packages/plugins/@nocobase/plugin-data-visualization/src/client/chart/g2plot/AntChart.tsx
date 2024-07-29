@@ -40,9 +40,11 @@ export const getAntChart = (Component: React.FC<any>) => (props: any) => {
     observer.observe(el);
     return () => observer.disconnect();
   }, [service.loading, fixedHeight, size.type, size.ratio?.width, size.ratio?.height]);
+  const chartHeight = fixedHeight || height;
+
   return (
-    <div ref={chartRef} style={height ? { height: `${fixedHeight || height}px` } : {}}>
-      <Component {...props} {...(height ? { height: fixedHeight || height } : {})} />
+    <div ref={chartRef} style={chartHeight ? { height: `${chartHeight}px` } : {}}>
+      <Component {...props} {...(chartHeight ? { height: chartHeight } : {})} />
     </div>
   );
 };
