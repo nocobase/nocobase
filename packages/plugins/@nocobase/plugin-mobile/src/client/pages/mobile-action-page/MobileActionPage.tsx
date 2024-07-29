@@ -20,6 +20,7 @@ import {
 import _ from 'lodash';
 import React, { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { usePluginTranslation } from '../../locale';
 import { useMobileActionPageStyle } from './MobileActionPage.style';
 import { MobileTabsForMobileActionPage } from './MobileTabsForMobileActionPage';
 
@@ -39,6 +40,7 @@ const useMobileBlockInitializersInSubpage = (
   const [originalInitializers] = useState<SchemaInitializer>(() =>
     app.schemaInitializerManager.get('popup:common:addBlock'),
   );
+  const { t } = usePluginTranslation();
 
   const dataBlocks = originalInitializers.options.items.find((item) => item.name === 'dataBlocks');
   const dataBlocksChildren = [...dataBlocks.useChildren(), ...dataBlocks.children];
@@ -47,11 +49,16 @@ const useMobileBlockInitializersInSubpage = (
     const options = _.cloneDeep(originalInitializers.options);
     options.items = options.items.filter((item) => {
       if (item.name === 'dataBlocks') {
+        item.title = t('Desktop data blocks');
         item.children = dataBlocksChildren.filter((child) => {
           return supportsDataBlocks.includes(child.name);
         });
         item.useChildren = () => [];
         return true;
+      }
+
+      if (item.name === 'otherBlocks') {
+        item.title = t('Other desktop blocks');
       }
 
       return item.name !== 'filterBlocks';
