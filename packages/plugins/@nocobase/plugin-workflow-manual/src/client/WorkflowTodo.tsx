@@ -12,7 +12,14 @@ import { Space, Spin, Tag } from 'antd';
 import dayjs from 'dayjs';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
-import { css, useCollectionRecordData, useCompile, useOpenModeContext, usePlugin } from '@nocobase/client';
+import {
+  css,
+  useCollection,
+  useCollectionRecordData,
+  useCompile,
+  useOpenModeContext,
+  usePlugin,
+} from '@nocobase/client';
 
 import {
   SchemaComponent,
@@ -227,6 +234,7 @@ function UserJobStatusColumn(props) {
 
 export const WorkflowTodo: React.FC & { Drawer: React.FC; Decorator: React.FC } = () => {
   const { defaultOpenMode } = useOpenModeContext();
+  const collection = useCollection();
 
   return (
     <SchemaComponent
@@ -293,7 +301,7 @@ export const WorkflowTodo: React.FC & { Drawer: React.FC; Decorator: React.FC } 
                 },
                 title: '{{t("Actions")}}',
                 properties: {
-                  view: getWorkflowTodoViewActionSchema({ defaultOpenMode }),
+                  view: getWorkflowTodoViewActionSchema({ defaultOpenMode, collectionName: collection.name }),
                 },
               },
               node: {
@@ -381,7 +389,7 @@ export const WorkflowTodo: React.FC & { Drawer: React.FC; Decorator: React.FC } 
   );
 };
 
-export function getWorkflowTodoViewActionSchema({ defaultOpenMode }) {
+export function getWorkflowTodoViewActionSchema({ defaultOpenMode, collectionName }) {
   return {
     name: 'view',
     type: 'void',
@@ -393,11 +401,11 @@ export function getWorkflowTodoViewActionSchema({ defaultOpenMode }) {
     // 1. “弹窗 URL”需要 Schema 中必须包含 uid
     // 2. 所以，在这里加上一个固定的 uid 用以支持“弹窗 URL”
     // 3. 然后，把这段 Schema 完整的（加上弹窗的部分）保存到内存中，以便“弹窗 URL”可以直接使用
-    'x-uid': 'workflow-todo-view',
+    'x-uid': `${collectionName}-view`,
     'x-action': 'view',
     'x-action-context': {
       dataSource: 'main',
-      collection: 'users_jobs',
+      collection: collectionName,
     },
     properties: {
       drawer: {
