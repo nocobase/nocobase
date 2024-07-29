@@ -15,7 +15,6 @@ import { MockServer, createMockServer, mockDatabase } from '@nocobase/test';
 import functions from './functions';
 import triggers from './triggers';
 import instructions from './instructions';
-import { Resourcer } from '@nocobase/resourcer';
 import { SequelizeDataSource } from '@nocobase/data-source-manager';
 import { uid } from '@nocobase/utils';
 

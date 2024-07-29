@@ -27,19 +27,26 @@ function useCurrentRequest<T>(options: Omit<AllDataBlockProps, 'type'>) {
   const { action, params = {}, record, requestService, requestOptions } = options;
 
   const service = useMemo(() => {
-    return requestService
-      ? requestService
-      : (customParams) => {
-          if (record) return Promise.resolve({ data: record });
-          if (!action) {
-            throw new Error(
-              `[nocobase]: The 'action' parameter is missing in the 'DataBlockRequestProvider' component`,
-            );
-          }
-          const paramsValue = params.filterByTk === undefined ? _.omit(params, 'filterByTk') : params;
+    return (
+      requestService ||
+      ((customParams) => {
+        if (record) return Promise.resolve({ data: record });
+        if (!action) {
+          throw new Error(`[nocobase]: The 'action' parameter is missing in the 'DataBlockRequestProvider' component`);
+        }
 
-          return resource[action]?.({ ...paramsValue, ...customParams }).then((res) => res.data);
-        };
+        // fix https://nocobase.height.app/T-4876/description
+        if (action === 'get' && _.isNil(params.filterByTk)) {
+          return console.warn(
+            '[nocobase]: The "filterByTk" parameter is missing in the "DataBlockRequestProvider" component',
+          );
+        }
+
+        const paramsValue = params.filterByTk === undefined ? _.omit(params, 'filterByTk') : params;
+
+        return resource[action]?.({ ...paramsValue, ...customParams }).then((res) => res.data);
+      })
+    );
   }, [resource, action, JSON.stringify(params), JSON.stringify(record), requestService]);
 
   const request = useRequest<T>(service, {

@@ -7,8 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { useCollection } from '../../../../data-source';
 import { CompatibleSchemaInitializer } from '../../../../application/schema-initializer/CompatibleSchemaInitializer';
-
+import { useActionAvailable } from '../../useActionAvailable';
 const commonOptions = {
   title: '{{t("Configure actions")}}',
   icon: 'SettingOutlined',
@@ -32,6 +33,7 @@ const commonOptions = {
               type: 'primary',
             },
           },
+          useVisible: () => useActionAvailable('update'),
         },
         {
           name: 'delete',
@@ -41,6 +43,7 @@ const commonOptions = {
             'x-component': 'Action',
             'x-decorator': 'ACLActionProvider',
           },
+          useVisible: () => useActionAvailable('destroy'),
         },
       ],
     },

@@ -51,7 +51,9 @@ async function importXlsxAction(ctx: Context, next: Next) {
     explain: (ctx.request.body as any).explain,
   });
 
-  const importedCount = await importer.run();
+  const importedCount = await importer.run({
+    context: ctx,
+  });
 
   ctx.bodyMeta = { successCount: importedCount };
   ctx.body = ctx.bodyMeta;

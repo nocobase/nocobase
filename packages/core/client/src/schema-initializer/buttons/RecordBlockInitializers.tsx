@@ -22,6 +22,7 @@ import {
   useCreateEditFormBlock,
   useCreateFormBlock,
   useCreateTableBlock,
+  useActionAvailable,
 } from '../..';
 import { CompatibleSchemaInitializer } from '../../application/schema-initializer/CompatibleSchemaInitializer';
 import { useCreateDetailsBlock } from '../../modules/blocks/data-blocks/details-multi/DetailsBlockInitializer';
@@ -145,9 +146,7 @@ function useRecordBlocks() {
           showAssociationFields: true,
         };
       },
-      useVisible() {
-        return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
-      },
+      useVisible: () => useActionAvailable('update'),
     },
     {
       name: 'createForm',

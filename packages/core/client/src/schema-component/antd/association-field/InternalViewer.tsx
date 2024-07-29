@@ -13,6 +13,7 @@ import React, { FC, Fragment, useRef, useState } from 'react';
 import { useDesignable } from '../../';
 import { WithoutTableFieldResource } from '../../../block-provider';
 import { useCollectionManager, useCollectionRecordData } from '../../../data-source';
+import { useOpenModeContext } from '../../../modules/popup/OpenModeProvider';
 import { VariablePopupRecordProvider } from '../../../modules/variable/variablesProvider/VariablePopupRecordProvider';
 import { useCompile } from '../../hooks';
 import { ActionContextProvider, useActionContext } from '../action';
@@ -97,10 +98,15 @@ const ButtonLinkList: FC<ButtonListProps> = (props) => {
                   if (designable) {
                     insertViewer(schema.Viewer);
                   }
-                  openPopup({
-                    recordData: record,
-                    parentRecordData: recordData,
-                  });
+
+                  // fix https://nocobase.height.app/T-4794/description
+                  if (fieldSchema.properties) {
+                    openPopup({
+                      recordData: record,
+                      parentRecordData: recordData,
+                    });
+                  }
+
                   ellipsisWithTooltipRef?.current?.setPopoverVisible(false);
                 }}
               >
@@ -139,6 +145,7 @@ export const ReadPrettyInternalViewer: React.FC = observer(
     const ellipsisWithTooltipRef = useRef<IEllipsisWithTooltipRef>();
     const { visibleWithURL, setVisibleWithURL } = usePagePopup();
     const [btnHover, setBtnHover] = useState(!!visibleWithURL);
+    const { defaultOpenMode } = useOpenModeContext();
 
     const btnElement = (
       <EllipsisWithTooltip ellipsis={true} ref={ellipsisWithTooltipRef}>
@@ -175,7 +182,7 @@ export const ReadPrettyInternalViewer: React.FC = observer(
               setVisible?.(value);
               setVisibleWithURL?.(value);
             },
-            openMode: 'drawer',
+            openMode: defaultOpenMode,
             snapshot: collectionField?.interface === 'snapshot',
             fieldSchema: fieldSchema,
           }}

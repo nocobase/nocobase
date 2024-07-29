@@ -12,8 +12,10 @@ import { useSchemaInitializerItem } from '../../../application';
 import { usePagePopup } from '../../../schema-component/antd/page/pagePopupUtils';
 import { CONTEXT_SCHEMA_KEY } from '../../../schema-component/antd/page/usePopupContextInActionOrAssociationField';
 import { ActionInitializerItem } from '../../../schema-initializer/items/ActionInitializerItem';
+import { useOpenModeContext } from '../../popup/OpenModeProvider';
 
 export const CreateActionInitializer = () => {
+  const { defaultOpenMode } = useOpenModeContext();
   const { getPopupContext } = usePagePopup();
   const schema = {
     type: 'void',
@@ -25,7 +27,7 @@ export const CreateActionInitializer = () => {
     'x-component': 'Action',
     'x-decorator': 'ACLActionProvider',
     'x-component-props': {
-      openMode: 'drawer',
+      openMode: defaultOpenMode,
       type: 'primary',
       component: 'CreateRecordAction',
       icon: 'PlusOutlined',

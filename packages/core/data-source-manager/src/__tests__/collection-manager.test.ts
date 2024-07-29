@@ -83,6 +83,6 @@ describe('Collection Manager', () => {
 
     const UsersCollection = collectionManager.getCollection('users');
 
-    expect(UsersCollection.repository).toBe(MockRepository);
+    expect(UsersCollection.repository).toBeInstanceOf(MockRepository);
   });
 });

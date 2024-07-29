@@ -9,7 +9,7 @@
 import { ArrayItems } from '@formily/antd-v5';
 import { useField, useFieldSchema } from '@formily/react';
 import _ from 'lodash';
-import React from 'react';
+import React, { FC } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCollectionRecord, useDesignable } from '../../../';
 import { useSchemaToolbar } from '../../../application';
@@ -17,15 +17,23 @@ import { SchemaSettings } from '../../../application/schema-settings/SchemaSetti
 import { useCollection_deprecated } from '../../../collection-manager';
 import { ButtonEditor, RemoveButton } from '../../../schema-component/antd/action/Action.Designer';
 import { SchemaSettingsLinkageRules, SchemaSettingsModalItem } from '../../../schema-settings';
-import { useURLAndParamsSchema } from './useURLAndParamsSchema';
+import { useURLAndHTMLSchema } from './useURLAndHTMLSchema';
 
-export function SchemaSettingsActionLinkItem() {
+interface SchemaSettingsActionLinkItemProps {
+  afterSubmit?: () => void;
+}
+
+export const SchemaSettingsActionLinkItem: FC<SchemaSettingsActionLinkItemProps> = ({ afterSubmit }) => {
   const field = useField();
   const fieldSchema = useFieldSchema();
   const { dn } = useDesignable();
   const { t } = useTranslation();
-  const { urlSchema, paramsSchema } = useURLAndParamsSchema();
-  const initialValues = { url: field.componentProps.url, params: field.componentProps.params || [{}] };
+  const { urlSchema, paramsSchema, openInNewWindowSchema } = useURLAndHTMLSchema();
+  const initialValues = {
+    url: field.componentProps.url,
+    params: field.componentProps.params || [{}],
+    openInNewWindow: field.componentProps.openInNewWindow,
+  };
 
   return (
     <SchemaSettingsModalItem
@@ -40,16 +48,21 @@ export function SchemaSettingsActionLinkItem() {
             required: true,
           },
           params: paramsSchema,
+          openInNewWindow: openInNewWindowSchema,
         },
       }}
-      onSubmit={({ url, params }) => {
+      onSubmit={({ url, params, openInNewWindow }) => {
         const componentProps = fieldSchema['x-component-props'] || {};
         componentProps.url = url;
-        fieldSchema['x-component-props'] = componentProps;
-        field.componentProps.url = url;
         componentProps.params = params;
+        componentProps.openInNewWindow = openInNewWindow;
+
         fieldSchema['x-component-props'] = componentProps;
+
+        field.componentProps.url = url;
         field.componentProps.params = params;
+        field.componentProps.openInNewWindow = openInNewWindow;
+
         dn.emit('patch', {
           schema: {
             ['x-uid']: fieldSchema['x-uid'],
@@ -57,11 +70,12 @@ export function SchemaSettingsActionLinkItem() {
           },
         });
         dn.refresh();
+        afterSubmit?.();
       }}
       initialValues={initialValues}
     />
   );
-}
+};
 
 export const customizeLinkActionSettings = new SchemaSettings({
   name: 'actionSettings:link',

@@ -30,6 +30,7 @@ import viewResourcer from './resourcers/views';
 import { FieldNameExistsError } from './errors/field-name-exists-error';
 import { beforeDestoryField } from './hooks/beforeDestoryField';
 import { FieldIsDependedOnByOtherError } from './errors/field-is-depended-on-by-other';
+import { beforeCreateCheckFieldInMySQL } from './hooks/beforeCreateCheckFieldInMySQL';
 
 export class PluginDataSourceMainServer extends Plugin {
   public schema: string;
@@ -38,6 +39,19 @@ export class PluginDataSourceMainServer extends Plugin {
 
   setLoadFilter(filter: Filter) {
     this.loadFilter = filter;
+  }
+
+  async onSync(message) {
+    const { type, collectionName } = message;
+    if (type === 'newCollection') {
+      const collectionModel: CollectionModel = await this.app.db.getCollection('collections').repository.findOne({
+        filter: {
+          name: collectionName,
+        },
+      });
+
+      await collectionModel.load();
+    }
   }
 
   async beforeLoad() {
@@ -77,6 +91,11 @@ export class PluginDataSourceMainServer extends Plugin {
           await model.migrate({
             transaction,
           });
+
+          this.app.syncManager.publish(this.name, {
+            type: 'newCollection',
+            collectionName: model.get('name'),
+          });
         }
       },
     );
@@ -97,6 +116,8 @@ export class PluginDataSourceMainServer extends Plugin {
     });
 
     // 要在 beforeInitOptions 之前处理
+    this.app.db.on('fields.beforeCreate', beforeCreateCheckFieldInMySQL(this.app.db));
+
     this.app.db.on('fields.beforeCreate', beforeCreateForReverseField(this.app.db));
 
     this.app.db.on('fields.beforeCreate', async (model, options) => {

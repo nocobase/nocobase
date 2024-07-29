@@ -66,7 +66,7 @@ export default class PluginFileManagerServer extends Plugin {
     }
   }
 
-  private onSync = async (message) => {
+  async onSync(message) {
     if (message.type === 'storageChange') {
       const storage = await this.db.getRepository('storages').findOne({
         filterByTk: message.storageId,
@@ -79,7 +79,7 @@ export default class PluginFileManagerServer extends Plugin {
       const id = Number.parseInt(message.storageId, 10);
       this.storagesCache.delete(id);
     }
-  };
+  }
 
   async beforeLoad() {
     this.db.registerModels({ FileModel });
@@ -90,8 +90,6 @@ export default class PluginFileManagerServer extends Plugin {
     });
     this.app.on('afterStart', async () => {
       await this.loadStorages();
-
-      this.app.syncManager.subscribe(this.name, this.onSync);
     });
   }
 
@@ -108,14 +106,14 @@ export default class PluginFileManagerServer extends Plugin {
     const Storage = this.db.getModel('storages');
     Storage.afterSave((m) => {
       this.storagesCache.set(m.id, m.toJSON());
-      this.app.syncManager.publish(this.name, {
+      this.sync({
         type: 'storageChange',
         storageId: `${m.id}`,
       });
     });
     Storage.afterDestroy((m) => {
       this.storagesCache.delete(m.id);
-      this.app.syncManager.publish(this.name, {
+      this.sync({
         type: 'storageRemove',
         storageId: `${m.id}`,
       });

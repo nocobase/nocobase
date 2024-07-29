@@ -26,7 +26,7 @@ test.describe('create collection with preset fields', () => {
     const postData = request.postDataJSON();
     //默认提交的数据符合预期
     expect(postData).toMatchObject({
-      autoGenId: true,
+      autoGenId: false,
       createdAt: true,
       createdBy: true,
       updatedAt: true,
@@ -78,7 +78,7 @@ test.describe('create collection with preset fields', () => {
     const postData = request.postDataJSON();
     //提交的数据符合预期
     expect(postData).toMatchObject({
-      autoGenId: true,
+      autoGenId: false,
       createdAt: false,
       createdBy: false,
       updatedAt: false,

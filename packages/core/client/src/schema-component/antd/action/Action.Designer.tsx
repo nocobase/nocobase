@@ -28,6 +28,7 @@ import {
 import { DataSourceProvider, useDataSourceKey } from '../../../data-source';
 import { FlagProvider } from '../../../flag-provider';
 import { SaveMode } from '../../../modules/actions/submit/createSubmitActionSettings';
+import { useOpenModeContext } from '../../../modules/popup/OpenModeProvider';
 import { SchemaSettingOpenModeSchemaItems } from '../../../schema-items';
 import { GeneralSchemaDesigner } from '../../../schema-settings/GeneralSchemaDesigner';
 import {
@@ -656,6 +657,7 @@ export const actionSettingsItems: SchemaSettingOptions['items'] = [
         name: 'openMode',
         Component: SchemaSettingOpenModeSchemaItems,
         useComponentProps() {
+          const { hideOpenMode } = useOpenModeContext();
           const fieldSchema = useFieldSchema();
           const isPopupAction = [
             'create',
@@ -667,8 +669,8 @@ export const actionSettingsItems: SchemaSettingOptions['items'] = [
           ].includes(fieldSchema['x-action'] || '');
 
           return {
-            openMode: isPopupAction,
-            openSize: isPopupAction,
+            openMode: isPopupAction && !hideOpenMode,
+            openSize: isPopupAction && !hideOpenMode,
           };
         },
       },
@@ -768,6 +770,33 @@ export const actionSettingsItems: SchemaSettingOptions['items'] = [
         useVisible() {
           const fieldSchema = useFieldSchema();
           return isValid(fieldSchema?.['x-action-settings']?.triggerWorkflows);
+        },
+      },
+      {
+        type: 'switch',
+        name: 'clearDefaultValue',
+        useComponentProps() {
+          const { t } = useTranslation();
+          const fieldSchema = useFieldSchema();
+          const { dn } = useDesignable();
+
+          return {
+            title: t('Clear default value'),
+            checked: fieldSchema?.['x-component-props']?.clearDefaultValue,
+            onChange: (value) => {
+              dn.deepMerge({
+                ['x-uid']: fieldSchema['x-uid'],
+                'x-component-props': {
+                  clearDefaultValue: value,
+                },
+              });
+            },
+          };
+        },
+        useVisible() {
+          const fieldSchema = useFieldSchema();
+          const isResetButton = fieldSchema['x-use-component-props'] === 'useResetBlockActionProps';
+          return isResetButton;
         },
       },
       {

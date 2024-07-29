@@ -30,6 +30,7 @@ import { useDataSourceManager } from '../data-source/data-source/DataSourceManag
 import { isAssocField } from '../filter-provider/utils';
 import { useActionContext, useCompile, useDesignable } from '../schema-component';
 import { useSchemaTemplateManager } from '../schema-templates';
+
 export const itemsMerge = (items1) => {
   return items1;
 };
@@ -382,7 +383,9 @@ export const useFilterFormItemInitializerFields = (options?: any) => {
         'x-decorator': 'FormItem',
         'x-use-decorator-props': 'useFormItemProps',
         'x-collection-field': `${name}.${field.name}`,
-        'x-component-props': {},
+        'x-component-props': {
+          component: interfaceConfig?.filterable?.operators?.[0]?.schema?.['x-component'],
+        },
       };
       if (isAssocField(field)) {
         schema = {
@@ -711,7 +714,7 @@ export const useCustomFormItemInitializerFields = (options?: any) => {
     });
 };
 
-const findSchema = (schema: Schema, key: string, action: string) => {
+export const findSchema = (schema: Schema, key: string, action: string) => {
   if (!Schema.isSchemaInstance(schema)) return null;
   return schema.reduceProperties((buf, s) => {
     if (s[key] === action) {
@@ -760,6 +763,7 @@ export const useCurrentSchema = (action: string, key: string, find = findSchema,
       form?.query(new RegExp(`${schema.parent.name}.${schema.name}$`)).forEach((field: Field) => {
         // 如果字段被删掉，那么在提交的时候不应该提交这个字段
         field.setValue?.(undefined);
+        field.setInitialValue?.(undefined);
       });
       schema && rm(schema, remove);
     },

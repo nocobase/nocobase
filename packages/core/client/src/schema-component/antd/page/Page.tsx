@@ -110,7 +110,7 @@ export const Page = (props) => {
             marginLeft: token.paddingPageHorizontal - token.paddingLG,
             marginRight: token.paddingPageHorizontal - token.paddingLG,
           }}
-          onTabClick={(activeKey) => {
+          onChange={(activeKey) => {
             setLoading(true);
             navigate(`/admin/${pageUid}/tabs/${activeKey}`, { replace: true });
             setTimeout(() => {
