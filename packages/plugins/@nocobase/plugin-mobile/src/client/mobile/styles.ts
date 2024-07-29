@@ -51,6 +51,10 @@ export const useStyles = createStyles(({ token, css }) => {
       .nb-action-bar button[aria-label*='schema-initializer-ActionBar-table:configureActions'] > .ant-btn-icon {
         margin: 0px;
       }
+      .nb-card-list .ant-row > div {
+        width: 100% !important;
+        max-width: 100% !important;
+      }
     `,
   };
 });
