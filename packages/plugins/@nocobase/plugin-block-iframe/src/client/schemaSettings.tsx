@@ -152,6 +152,16 @@ const commonOptions: any = {
                   rows: 10,
                 },
                 required: true,
+                description: (
+                  <>
+                    <span style={{ marginLeft: '.25em' }} className={'ant-formily-item-extra'}>
+                      {t('Syntax references')}:
+                    </span>
+                    <a href="https://handlebarsjs.com/guide/" target="_blank" rel="noreferrer">
+                      Handlebars.js
+                    </a>
+                  </>
+                ),
                 'x-reactions': {
                   dependencies: ['mode'],
                   fulfill: {
