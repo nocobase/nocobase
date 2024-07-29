@@ -25,6 +25,9 @@ export const useStyles = createStyles(({ token, css }) => {
       .ant-pagination .ant-pagination-options {
         display: none;
       }
+      .ant-pagination .ant-pagination-item {
+        display: none;
+      }
       .ant-card-body .nb-action-bar .ant-btn {
         justify-content: space-between;
         display: flex;
