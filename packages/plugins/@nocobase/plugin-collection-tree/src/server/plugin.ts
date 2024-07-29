@@ -33,7 +33,7 @@ class PluginCollectionTreeServer extends Plugin {
           if (!collection.options.tree) {
             return;
           }
-          const name = `${dataSource.name}_${collection.options.name}_path`;
+          const name = `${dataSource.name}_${collection.name}_path`;
 
           //afterSync
           collectionManager.db.on(`${collection.name}.afterSync`, async (collection: Model) => {
@@ -133,7 +133,7 @@ class PluginCollectionTreeServer extends Plugin {
       const treeExistsInDb = await this.app.db.getCollection(name).existsInDb();
       if (!treeExistsInDb) {
         await this.db.getCollection(name).sync({ force: false, alter: true });
-        this.db.collection({
+        this.app.db.collection({
           name: treeCollection.name,
           autoGenId: false,
           timestamps: false,
