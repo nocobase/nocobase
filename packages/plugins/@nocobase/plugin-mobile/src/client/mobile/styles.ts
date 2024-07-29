@@ -41,6 +41,10 @@ export const useStyles = createStyles(({ token, css }) => {
       .ant-card-body .nb-action-bar .ant-btn-icon {
         margin-inline-end: 0px !important;
       }
+      .ant-card-body .ant-table-cell-fix-right:last-child {
+        display: ruby-text;
+        width: 78px;
+      }
       .nb-action-bar button[aria-label*='schema-initializer-ActionBar-table:configureActions'] > span:last-child {
         display: none !important;
       }
