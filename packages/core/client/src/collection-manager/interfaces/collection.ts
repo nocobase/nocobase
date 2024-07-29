@@ -15,7 +15,7 @@ export class CollectionSelectFieldInterface extends CollectionFieldInterface {
   name = 'collection';
   type = 'string';
   group = 'advanced';
-  order = 5;
+  order = 6;
   title = '{{t("Collection selector")}}';
   description =
     '{{t("Providing certain collections as options for users, typically used in polymorphic or inheritance scenarios")}}';

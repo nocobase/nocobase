@@ -21,20 +21,19 @@ export function useFieldComponentName(): string {
   const targetCollectionField = useCollectionField();
   const fieldSchema = tableColumnSchema || schema;
   const collectionField = tableColumnField || targetCollectionField;
+  const isJSONDocField = ['JSONDocObject', 'JSONDocArray'].includes(collectionField?.interface);
 
   const map = {
     // AssociationField 的 mode 默认值是 Select
-    AssociationField: 'Select',
+    AssociationField: isJSONDocField ? (fieldSchema['x-read-pretty'] ? 'Select' : 'Nester') : 'Select',
   };
-
-  const isJSONDocField = ['JSONDocObject', 'JSONDocArray'].includes(collectionField?.interface);
 
   const fieldComponentName =
     fieldSchema?.['x-component-props']?.['mode'] ||
     field?.componentProps?.['mode'] ||
     (isFileField ? 'FileManager' : '') ||
-    (isJSONDocField ? 'Nester' : '') ||
     fieldSchema?.['x-component-props']?.['component'] ||
     collectionField?.uiSchema?.['x-component'];
+
   return map[fieldComponentName] || fieldComponentName;
 }

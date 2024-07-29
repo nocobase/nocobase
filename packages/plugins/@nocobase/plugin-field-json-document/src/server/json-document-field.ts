@@ -18,9 +18,10 @@ export const elementTypeMap = {
 export class JSONDocumentField extends JsonField {
   relationRepository = JSONRepository;
 
-  private build = async (model: Model, { values, transaction }) => {
+  private build = async (model: Model, { transaction }) => {
     const { name, target, targetKey = '__json_index' } = this.options;
-    if (!values || values[name] === undefined) {
+    const document = model.get(name);
+    if (!document) {
       return;
     }
     const targetCollection = this.database.getCollection(target);
@@ -28,7 +29,6 @@ export class JSONDocumentField extends JsonField {
       return;
     }
     const targetModel = targetCollection.model;
-    const document = values[name];
     if (!Array.isArray(document)) {
       let isNewRecord = true;
       if (document[targetKey]) {

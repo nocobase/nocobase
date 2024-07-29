@@ -12,12 +12,13 @@ import _ from 'lodash';
 
 export const syncJSONCollection = (db: Database) => {
   return async (model: Model, { transaction }) => {
-    const { type, name, fields = [] } = model.get();
+    const { type, key, fields = [] } = model.get();
     if (type !== 'JSONDocument') {
       return;
     }
     model.set('options', _.omit(model.get('options'), ['fields']));
-    const target = `${name}_json_collection`;
+    const target = `${key}_json_collection`;
+    const targetKey = '__json_index';
     const repo = db.getRepository('collections');
     let targetModel = await repo.findOne({
       filterByTk: target,
@@ -28,7 +29,7 @@ export const syncJSONCollection = (db: Database) => {
         interface: 'id',
         title: 'Index',
         type: 'bigInt',
-        name: '__json_index',
+        name: targetKey,
         uiSchema: {
           type: 'number',
           title: '{{t("Index")}}',
@@ -45,16 +46,18 @@ export const syncJSONCollection = (db: Database) => {
           sync: false,
           hidden: true,
           fields,
-          filterTargetKey: '__json_index',
+          filterTargetKey: targetKey,
         },
         transaction,
       });
       await targetModel.load({ transaction });
-      model.set('options', Object.assign(model.get('options'), { target, targetKey: '__json_index' }));
+      model.set('options', Object.assign(model.get('options'), { target, targetKey }));
       return;
     }
     const existFields = await targetModel.getFields({ transaction });
-    const deletedFields = existFields.filter((field: any) => !fields.find((f: any) => f.name === field.name));
+    const deletedFields = existFields.filter(
+      (field: any) => field.name !== targetKey && !fields.find((f: any) => f.name === field.name),
+    );
     for (const field of deletedFields) {
       await field.destroy({ transaction });
     }
@@ -66,6 +69,6 @@ export const syncJSONCollection = (db: Database) => {
       updateAssociationValues: ['fields'],
       transaction,
     });
-    await targetModel.load({ transaction, resetFields: true });
+    await targetModel.load({ transaction });
   };
 };
