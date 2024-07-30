@@ -26,10 +26,23 @@ export class CollectionModel extends MagicAttributeModel {
 
   toJSON() {
     const json = super.toJSON();
+
+    const collection = this.db.getCollection(json.name);
+
     if (!json.filterTargetKey) {
-      const collection = this.db.getCollection(json.name);
       json.filterTargetKey = collection?.filterTargetKey;
     }
+
+    if (collection && collection.unavailableActions) {
+      json['unavailableActions'] = collection.unavailableActions();
+    }
+
+    // @ts-ignore
+    if (collection && collection.availableActions) {
+      // @ts-ignore
+      json['availableActions'] = collection.availableActions();
+    }
+
     return json;
   }
 

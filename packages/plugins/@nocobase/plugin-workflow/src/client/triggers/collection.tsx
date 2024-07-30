@@ -160,10 +160,10 @@ export default class extends Trigger {
       'x-component-props': {},
       'x-reactions': [
         {
-          dependencies: ['collection'],
+          dependencies: ['collection', 'mode'],
           fulfill: {
             state: {
-              visible: '{{!!$deps[0]}}',
+              visible: `{{!!$deps[0] && !($deps[1] & ${COLLECTION_TRIGGER_MODE.DELETED})}}`,
             },
           },
         },

@@ -12,7 +12,8 @@ import _ from 'lodash';
 
 type IGetNewSchema = {
   fieldSchema: ISchema;
-  schemaKey: string;
+  schemaKey?: string;
+  parentSchemaKey?: string;
   value: any;
   valueKeys?: string[];
 };
@@ -28,12 +29,9 @@ export function getNewSchema(options: IGetNewSchema) {
       _.set(clonedSchema, `${schemaKeyArr.slice(1).join('.')}${schemaKeyArr.length > 1 ? '.' : ''}${key}`, value[key]);
     });
   } else {
-    _.set(clonedSchema, schemaKeyArr.slice(1), value);
+    _.set(fieldSchema, schemaKey, value);
   }
-  return {
-    'x-uid': fieldSchema['x-uid'],
-    [schemaKeyArr[0]]: clonedSchema,
-  };
+  return fieldSchema;
 }
 
 export const useHookDefault = (defaultValues?: any) => defaultValues;

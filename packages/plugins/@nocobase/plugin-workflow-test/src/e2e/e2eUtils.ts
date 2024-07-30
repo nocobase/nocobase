@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { request, Browser } from '@nocobase/test/e2e';
+import { Browser, request } from '@nocobase/test/e2e';
 
 const PORT = process.env.APP_PORT || 20000;
 const APP_BASE_URL = process.env.APP_BASE_URL || `http://localhost:${PORT}`;
@@ -808,6 +808,57 @@ export const apiCreateRecordTriggerActionEvent = async (
   return (await result.json()).data;
 };
 
+// 添加业务表单条数据触发工作流表单事件,triggerWorkflows=key1!field,key2,key3!field.subfield
+export const apiTriggerCustomActionEvent = async (collectionName: string, triggerWorkflows: string, data: any) => {
+  const api = await request.newContext({
+    storageState: process.env.PLAYWRIGHT_AUTH_FILE,
+  });
+  const state = await api.storageState();
+  const headers = getHeaders(state);
+  /*
+    {
+        "title": "a11",
+        "enabled": true,
+        "description": null
+    }
+    */
+  const result = await api.post(`/api/${collectionName}:trigger?triggerWorkflows=${triggerWorkflows}`, {
+    headers,
+    data,
+  });
+
+  if (!result.ok()) {
+    throw new Error(await result.text());
+  }
+  /*
+        {
+            "data": {
+                "id": 1,
+                "createdAt": "2023-12-12T02:43:53.793Z",
+                "updatedAt": "2023-12-12T05:41:33.300Z",
+                "key": "fzk3j2oj4el",
+                "title": "a11",
+                "enabled": true,
+                "description": null
+            },
+            "meta": {
+                "allowedActions": {
+                    "view": [
+                        1
+                    ],
+                    "update": [
+                        1
+                    ],
+                    "destroy": [
+                        1
+                    ]
+                }
+            }
+        }
+    */
+  return (await result.json()).data;
+};
+
 // 审批中心发起审批
 export const apiApplyApprovalEvent = async (data: any) => {
   const api = await request.newContext({
@@ -1020,5 +1071,6 @@ export default module.exports = {
   apiCreateRecordTriggerActionEvent,
   apiApplyApprovalEvent,
   userLogin,
-  apiCreateField
+  apiCreateField,
+  apiTriggerCustomActionEvent,
 };

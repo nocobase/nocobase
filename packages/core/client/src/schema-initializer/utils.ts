@@ -307,7 +307,7 @@ export const useFormItemInitializerFields = (options?: any) => {
       const targetCollection = getCollection(field.target);
       const isFileCollection = field?.target && getCollection(field?.target)?.template === 'file';
       const isAssociationField = targetCollection;
-      const fieldNames = field?.uiSchema['x-component-props']?.['fieldNames'];
+      const fieldNames = field?.uiSchema?.['x-component-props']?.['fieldNames'];
       const schema = {
         type: 'string',
         name: field.name,
@@ -763,6 +763,7 @@ export const useCurrentSchema = (action: string, key: string, find = findSchema,
       form?.query(new RegExp(`${schema.parent.name}.${schema.name}$`)).forEach((field: Field) => {
         // 如果字段被删掉，那么在提交的时候不应该提交这个字段
         field.setValue?.(undefined);
+        field.setInitialValue?.(undefined);
       });
       schema && rm(schema, remove);
     },

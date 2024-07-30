@@ -20,6 +20,7 @@ import { SchemaSettingsBlockTitleItem } from '../../../../schema-settings/Schema
 import { SchemaSettingsDataScope } from '../../../../schema-settings/SchemaSettingsDataScope';
 import { SchemaSettingsTemplate } from '../../../../schema-settings/SchemaSettingsTemplate';
 import { setDataLoadingModeSettingsItem } from '../details-multi/setDataLoadingModeSettingsItem';
+import { useCollection } from '../../../../data-source';
 
 export const listBlockSettings = new SchemaSettings({
   name: 'blockSettings:list',

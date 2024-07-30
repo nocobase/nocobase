@@ -45,6 +45,7 @@ import { HasOneRepository } from './relation-repository/hasone-repository';
 import { RelationRepository } from './relation-repository/relation-repository';
 import { updateAssociations, updateModelByValues } from './update-associations';
 import { UpdateGuard } from './update-guard';
+import { BelongsToArrayRepository } from './relation-repository/belongs-to-array-repository';
 
 const debug = require('debug')('noco-database');
 
@@ -188,6 +189,7 @@ class RelationRepositoryBuilder<R extends RelationRepository> {
     BelongsToMany: BelongsToManyRepository,
     HasMany: HasManyRepository,
     ArrayField: ArrayFieldRepository,
+    BelongsToArray: BelongsToArrayRepository,
   };
 
   constructor(collection: Collection, associationName: string) {
@@ -195,13 +197,17 @@ class RelationRepositoryBuilder<R extends RelationRepository> {
     this.associationName = associationName;
     this.association = this.collection.model.associations[this.associationName];
 
-    if (!this.association) {
-      const field = collection.getField(associationName);
-      if (field && field instanceof ArrayField) {
-        this.association = {
-          associationType: 'ArrayField',
-        };
-      }
+    if (this.association) {
+      return;
+    }
+    const field = collection.getField(associationName);
+    if (!field) {
+      return;
+    }
+    if (field instanceof ArrayField) {
+      this.association = {
+        associationType: 'ArrayField',
+      };
     }
   }
 

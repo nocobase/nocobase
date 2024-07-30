@@ -7,11 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { useAPIClient, useCompile } from '@nocobase/client';
+import { useAPIClient, useCompile, useLocationSearch } from '@nocobase/client';
 import { useBoolean } from 'ahooks';
 import { Button, Card, Form, Input, Tabs, message } from 'antd';
 import React, { useEffect, useMemo } from 'react';
-import { useLocation } from 'react-router-dom';
 import { MapTypes } from '../constants';
 import { MapConfigurationResourceKey, getSSKey, useMapConfiguration } from '../hooks';
 import { useMapTranslation } from '../locale';
@@ -99,7 +98,7 @@ const components = {
   google: GoogleMapConfiguration,
 };
 
-const tabList = MapTypes.map((item) => {
+const routeList = MapTypes.map((item) => {
   return {
     ...item,
     component: components[item.value],
@@ -108,12 +107,12 @@ const tabList = MapTypes.map((item) => {
 
 export const Configuration = () => {
   const compile = useCompile();
-  const location = useLocation();
-  const search = new URLSearchParams(location.search);
+  const searchString = useLocationSearch();
+  const search = new URLSearchParams(searchString);
   return (
     <Card bordered>
       <Tabs type="card" defaultActiveKey={search.get('tab')}>
-        {tabList.map((tab) => {
+        {routeList.map((tab) => {
           return (
             <Tabs.TabPane key={tab.value} tab={compile(tab.label)}>
               <tab.component type={tab.value} />
