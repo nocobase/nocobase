@@ -221,12 +221,7 @@ export class AdjacencyListRepository extends Repository {
       }
       const filterNodes = await super.find(optionsTmp);
       const filterIds = filterNodes.map((node) => node[primaryKey]);
-
-      const nodeIds = [];
-      for (const id of filterIds) {
-        nodeIds.push(id);
-      }
-      const nodeDatas = await this.queryRootDatas(nodeIds);
+      const nodeDatas = await this.queryRootDatas(filterIds);
 
       interface rootPathDataMapInterface {
         [key: string]: string[];
