@@ -221,7 +221,7 @@ export class AdjacencyListRepository extends Repository {
       }
       const filterNodes = await super.find(optionsTmp);
       const filterIds = filterNodes.map((node) => node[primaryKey]);
-      const nodeDatas = await this.queryRootDatas(filterIds);
+      const nodeData = await this.queryRootDatas(filterIds);
 
       interface rootPathDataMapInterface {
         [key: string]: string[];
@@ -233,14 +233,11 @@ export class AdjacencyListRepository extends Repository {
 
       const rootPathDataMap: rootPathDataMapInterface = {};
 
-      for (const nodeData of nodeDatas) {
-        if (rootPathDataMap[nodeData.dataValues.rootPk]) {
-          rootPathDataMap[nodeData.dataValues.rootPk] = [
-            ...rootPathDataMap[nodeData.dataValues.rootPk],
-            nodeData.dataValues.path,
-          ];
+      for (const node of nodeData) {
+        if (rootPathDataMap[node.dataValues.rootPk]) {
+          rootPathDataMap[node.dataValues.rootPk] = [...rootPathDataMap[node.dataValues.rootPk], node.dataValues.path];
         } else {
-          rootPathDataMap[nodeData.dataValues.rootPk] = [nodeData.dataValues.path];
+          rootPathDataMap[node.dataValues.rootPk] = [node.dataValues.path];
         }
       }
 
