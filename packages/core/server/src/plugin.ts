@@ -16,7 +16,7 @@ import fs from 'fs';
 import type { TFuncKey, TOptions } from 'i18next';
 import { resolve } from 'path';
 import { Application } from './application';
-import { InstallOptions, getExposeChangelogUrl, getExposeReadmeUrl } from './plugin-manager';
+import { getExposeChangelogUrl, getExposeReadmeUrl, InstallOptions } from './plugin-manager';
 import { checkAndGetCompatible, getPluginBasePath } from './plugin-manager/utils';
 import { SyncMessageData } from './sync-manager';
 
@@ -153,6 +153,7 @@ export abstract class Plugin<O = any> implements PluginInterface {
     if (!this.name) {
       throw new Error(`plugin name invalid`);
     }
+
     await this.app.syncMessageManager.publish(this.name, message, options);
   }
 
@@ -185,13 +186,6 @@ export abstract class Plugin<O = any> implements PluginInterface {
         plugin: this,
       },
     });
-  }
-
-  private async getPluginBasePath() {
-    if (!this.options.packageName) {
-      return;
-    }
-    return getPluginBasePath(this.options.packageName);
   }
 
   /**
@@ -259,6 +253,13 @@ export abstract class Plugin<O = any> implements PluginInterface {
     }
 
     return results;
+  }
+
+  private async getPluginBasePath() {
+    if (!this.options.packageName) {
+      return;
+    }
+    return getPluginBasePath(this.options.packageName);
   }
 }
 

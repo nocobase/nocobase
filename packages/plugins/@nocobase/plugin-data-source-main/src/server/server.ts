@@ -40,7 +40,7 @@ export class PluginDataSourceMainServer extends Plugin {
     this.loadFilter = filter;
   }
 
-  async onSync(message) {
+  async handleSyncMessage(message) {
     const { type, collectionName } = message;
 
     if (type === 'syncCollection') {
@@ -112,11 +112,15 @@ export class PluginDataSourceMainServer extends Plugin {
             transaction,
           });
 
-          this.app.syncManager.publish(this.name, {
-            type: 'syncCollection',
-            collectionName: model.get('name'),
-            transaction,
-          });
+          this.sendSyncMessage(
+            {
+              type: 'syncCollection',
+              collectionName: model.get('name'),
+            },
+            {
+              transaction,
+            },
+          );
         }
       },
     );
