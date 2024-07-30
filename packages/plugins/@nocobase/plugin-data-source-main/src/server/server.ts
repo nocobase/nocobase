@@ -292,11 +292,15 @@ export class PluginDataSourceMainServer extends Plugin {
 
         await collection.sync(syncOptions);
 
-        this.app.syncManager.publish(this.name, {
-          type: 'syncCollection',
-          collectionName: model.get('collectionName'),
-          transaction,
-        });
+        this.sendSyncMessage(
+          {
+            type: 'syncCollection',
+            collectionName: model.get('collectionName'),
+          },
+          {
+            transaction,
+          },
+        );
       }
     });
 

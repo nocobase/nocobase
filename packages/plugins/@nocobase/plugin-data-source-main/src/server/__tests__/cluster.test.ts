@@ -22,25 +22,148 @@ describe('cluster', () => {
     await cluster.destroy();
   });
 
-  it('should sync collection between nodes', async () => {
-    const [app1, app2] = cluster.nodes;
+  describe('sync collection', () => {
+    test('create collection', async () => {
+      const [app1, app2] = cluster.nodes;
 
-    await app1.db.getRepository('collections').create({
-      values: {
-        name: 'tests',
-        fields: [
-          {
-            name: 'name',
-            type: 'string',
-          },
-        ],
-      },
-      context: {},
+      await app1.db.getRepository('collections').create({
+        values: {
+          name: 'tests',
+          fields: [
+            {
+              name: 'name',
+              type: 'string',
+            },
+          ],
+        },
+        context: {},
+      });
+
+      await sleep(2000);
+
+      const testsCollection = app2.db.getCollection('tests');
+      expect(testsCollection).toBeTruthy();
     });
 
-    await sleep(2000);
+    test('update collection', async () => {
+      const [app1, app2] = cluster.nodes;
 
-    const testsCollection = app2.db.getCollection('tests');
-    expect(testsCollection).toBeTruthy();
+      await app1.db.getRepository('collections').create({
+        values: {
+          name: 'tests',
+          fields: [
+            {
+              name: 'name',
+              type: 'string',
+            },
+          ],
+          description: 'test collection',
+        },
+        context: {},
+      });
+
+      await sleep(2000);
+
+      const testsCollection = app2.db.getCollection('tests');
+      expect(testsCollection).toBeTruthy();
+
+      await app1.db.getRepository('collections').update({
+        filterByTk: 'tests',
+        values: {
+          description: 'new test collection',
+        },
+        context: {},
+      });
+
+      await sleep(2000);
+
+      expect(testsCollection.options.description).toBe('new test collection');
+    });
+  });
+
+  describe('sync fields', () => {
+    test('create field', async () => {
+      const [app1, app2] = cluster.nodes;
+
+      await app1.db.getRepository('collections').create({
+        values: {
+          name: 'tests',
+          fields: [
+            {
+              name: 'name',
+              type: 'string',
+            },
+          ],
+        },
+        context: {},
+      });
+
+      await sleep(2000);
+
+      const testsCollection = app2.db.getCollection('tests');
+      expect(testsCollection).toBeTruthy();
+
+      await app1.db.getRepository('fields').create({
+        values: {
+          name: 'age',
+          type: 'integer',
+          collectionName: 'tests',
+        },
+        context: {},
+      });
+
+      await sleep(2000);
+
+      const ageField = testsCollection.getField('age');
+      expect(ageField).toBeTruthy();
+    });
+
+    test('update field', async () => {
+      const [app1, app2] = cluster.nodes;
+
+      await app1.db.getRepository('collections').create({
+        values: {
+          name: 'tests',
+          fields: [
+            {
+              name: 'name',
+              type: 'string',
+            },
+          ],
+        },
+        context: {},
+      });
+
+      await sleep(2000);
+
+      const testsCollection = app2.db.getCollection('tests');
+      expect(testsCollection).toBeTruthy();
+
+      await app1.db.getRepository('fields').create({
+        values: {
+          name: 'age',
+          type: 'integer',
+          collectionName: 'tests',
+        },
+        context: {},
+      });
+
+      await sleep(2000);
+
+      await app1.db.getRepository('collections.fields', 'tests').update({
+        filterByTk: 'age',
+        values: {
+          description: 'age field',
+        },
+        context: {},
+      });
+
+      await sleep(2000);
+
+      const ageField = testsCollection.getField('age');
+      expect(ageField).toBeTruthy();
+
+      expect(ageField.options.description).toBe('age field');
+    });
   });
 });
