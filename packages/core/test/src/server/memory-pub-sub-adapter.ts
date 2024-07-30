@@ -76,20 +76,18 @@ export class MemoryPubSubAdapter implements IPubSubAdapter {
     this.eventEmitter.emit(channel, message);
   }
 
-  // to append new channel or topic to external service
   subscribe(channel: string, callback, options?: any): Promise<any> {
-    // this.eventEmitter.on(channel, callback);
+    // to append new channel or topic to external service
+    return;
+  }
+
+  unsubscribe(channel: string, callback): Promise<void> {
+    // to remove channel or topic from external service
     return;
   }
 
   subscribeAll(callback, options?: any): Promise<void> {
     this.eventEmitter.subscribeAll(callback);
-    return;
-  }
-
-  // to remove channel or topic from external service
-  unsubscribe(channel: string, callback): Promise<void> {
-    // this.eventEmitter.off(channel, callback);
     return;
   }
 }
