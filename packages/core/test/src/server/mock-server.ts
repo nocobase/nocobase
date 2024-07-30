@@ -241,11 +241,11 @@ export function mockServer(options: ApplicationOptions = {}) {
 
   const basename = app.options.pubSubManager?.channelPrefix || app.name;
 
-  app.pubSubManager.setAdapter(
-    MemoryPubSubAdapter.create(basename, {
-      debounce: 1000,
-    }),
-  );
+  const adapter = MemoryPubSubAdapter.create(basename, {
+    debounce: 1000,
+  });
+
+  app.pubSubManager.setAdapter(adapter);
 
   return app;
 }

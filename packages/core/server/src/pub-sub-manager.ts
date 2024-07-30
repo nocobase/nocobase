@@ -148,7 +148,7 @@ export class PubSubManager implements PubSubAble {
       message: message,
     });
 
-    return this.adapter.publish(`${this.channelPrefix}${channel}`, wrappedMessage);
+    return this.adapter?.publish(`${this.channelPrefix}${channel}`, wrappedMessage);
   }
 
   async subscribeAll(callback, options: PubSubManagerSubscribeOptions = {}) {
