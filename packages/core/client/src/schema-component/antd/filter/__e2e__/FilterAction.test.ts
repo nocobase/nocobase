@@ -14,10 +14,10 @@ test.describe('FilterAction', () => {
   test('the date string should not be UTC', async ({ page, mockPage }) => {
     await mockPage(theDateStringShouldNotBeUTC).goto();
 
-    // 获取当前的日期，格式为：YYYY-MM-DD
+    // get current date, format: YYYY-MM-DD
     const today = new Date().toISOString().split('T')[0];
 
-    // 断言：应该会触发一个请求，请求参数包含了 filter: {"$and":[{"createdAt":{"$dateOn":"2024-07-10"}}]}
+    // expect: should trigger a request, the request parameters contain filter: {"$and":[{"createdAt":{"$dateOn":"2024-07-10"}}]}
     const requestPromise = page.waitForRequest(
       // /api/users:list?pageSize=20&page=1&filter={"$and":[{"createdAt":{"$dateOn":"2024-07-10"}}]}
       `/api/users:list?pageSize=20&page=1&filter=%7B%22%24and%22%3A%5B%7B%22createdAt%22%3A%7B%22%24dateOn%22%3A%22${today}%22%7D%7D%5D%7D`,
