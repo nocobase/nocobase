@@ -244,7 +244,7 @@ export class AdjacencyListRepository extends Repository {
       const rebuildTreeRootNodeDataMap: rebuildTreeRootNodeDataInterface = {};
       //find commons root path
       for (const pathArray of Object.values(rootPathDataMap)) {
-        const commonParentPath = await this.findCommonParent(pathArray);
+        const commonParentPath = this.findCommonParent(pathArray);
         const commonParentPathNodeArray: string[] = commonParentPath.split('/').filter((item) => {
           return item !== '';
         });
@@ -324,7 +324,7 @@ export class AdjacencyListRepository extends Repository {
     return [];
   }
 
-  private async findCommonParent(strings: string[]): Promise<string | undefined> {
+  private findCommonParent(strings: string[]): string | undefined {
     if (strings.length === 0) {
       return undefined;
     }
