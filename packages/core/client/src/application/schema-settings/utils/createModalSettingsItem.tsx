@@ -66,7 +66,9 @@ export function createModalSettingsItem(options: CreateModalSchemaSettingsItemPr
         width,
         schema: schema({ ...defaultValue, ...values }),
         onSubmit(values) {
-          deepMerge(getNewSchema({ fieldSchema, parentSchemaKey, value: values, valueKeys }));
+          const res = getNewSchema({ fieldSchema, parentSchemaKey: parentSchemaKey, value: values, valueKeys });
+          console.log('res', res);
+          deepMerge(res);
           return onSubmit?.(values);
         },
       };

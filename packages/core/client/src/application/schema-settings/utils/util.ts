@@ -12,26 +12,39 @@ import _ from 'lodash';
 
 type IGetNewSchema = {
   fieldSchema: ISchema;
+  // x-component-props.title
   schemaKey?: string;
+  // x-component-props
   parentSchemaKey?: string;
   value: any;
   valueKeys?: string[];
 };
 
 export function getNewSchema(options: IGetNewSchema) {
-  const { fieldSchema, schemaKey, value, valueKeys } = options as any;
-  const schemaKeyArr = schemaKey.split('.');
-  const clonedSchema = _.cloneDeep(fieldSchema[schemaKeyArr[0]] || {});
+  const { fieldSchema, schemaKey, parentSchemaKey, value, valueKeys } = options as any;
+  const clonedKey = schemaKey ? schemaKey.split('.')[0] : parentSchemaKey;
+  const fieldSchemaClone = _.cloneDeep(_.get(fieldSchema, clonedKey));
+  const res = {
+    'x-uid': fieldSchema['x-uid'],
+  };
+  _.set(res, clonedKey, fieldSchemaClone);
+  console.log('getNewSchema', res);
+  if (schemaKey) {
+    _.set(res, schemaKey, value);
+  } else if (parentSchemaKey) {
+    if (value == undefined) return res;
 
-  if (value != undefined && typeof value === 'object') {
-    Object.keys(value).forEach((key) => {
-      if (valueKeys && !valueKeys.includes(key)) return;
-      _.set(clonedSchema, `${schemaKeyArr.slice(1).join('.')}${schemaKeyArr.length > 1 ? '.' : ''}${key}`, value[key]);
-    });
-  } else {
-    _.set(fieldSchema, schemaKey, value);
+    if (typeof value === 'object') {
+      Object.keys(value).forEach((key) => {
+        if (valueKeys && !valueKeys.includes(key)) return;
+        _.set(res, `${parentSchemaKey}.${key}`, value[key]);
+      });
+    } else {
+      console.error('value must be object');
+    }
   }
-  return fieldSchema;
+
+  return res;
 }
 
 export const useHookDefault = (defaultValues?: any) => defaultValues;
