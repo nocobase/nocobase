@@ -69,12 +69,9 @@ export class PubSubManager implements PubSubAble {
       return;
     }
 
-    const splitResult = channel.split('.');
-    channel = splitResult[1];
-    const prefix = splitResult[0];
-
-    if (!channel) {
-      channel = prefix;
+    if (this.channelPrefix) {
+      // remove prefix from channel
+      channel = channel.replace(this.channelPrefix, '');
     }
 
     const channelSubscribes = this.subscribes.get(channel);
