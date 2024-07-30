@@ -81,6 +81,7 @@ export class JSONDocObjectInterface extends CollectionFieldInterface {
     },
     fields: {
       type: 'array',
+      required: true,
       title: '{{t("Fields")}}',
       'x-decorator': 'FormItem',
       'x-component': 'JSONDocFields',
@@ -175,6 +176,7 @@ export class JSONDocArrayInterface extends CollectionFieldInterface {
     fields: {
       type: 'array',
       title: '{{t("Fields")}}',
+      required: true,
       'x-decorator': 'FormItem',
       'x-component': 'JSONDocFields',
     },

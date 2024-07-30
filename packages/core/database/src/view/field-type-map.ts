@@ -32,8 +32,8 @@ const postgres = {
   date: 'date',
   boolean: 'boolean',
 
-  json: ['json', 'array'],
-  jsonb: ['json', 'array', 'jsonb'],
+  json: ['json', 'array', 'JSONDocument'],
+  jsonb: ['json', 'array', 'jsonb', 'JSONDocument'],
 
   point: 'json',
   path: 'json',
@@ -73,7 +73,7 @@ const mysql = {
 
   datetime: 'date',
   timestamp: 'date',
-  json: ['json', 'array'],
+  json: ['json', 'array', 'JSONDocument'],
   enum: 'string',
 };
 
@@ -91,7 +91,7 @@ const sqlite = {
   boolean: 'boolean',
 
   numeric: 'decimal',
-  json: ['json', 'array'],
+  json: ['json', 'array', 'JSONDocument'],
 };
 
 const fieldTypeMap = { postgres, mysql, sqlite, mariadb: mysql };

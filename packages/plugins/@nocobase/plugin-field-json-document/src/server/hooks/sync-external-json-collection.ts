@@ -8,26 +8,27 @@
  */
 
 import { Database, Model } from '@nocobase/database';
+import { Application } from '@nocobase/server';
 import _ from 'lodash';
 
-export const syncJSONCollection = (db: Database) => {
+export const syncExternalJSONCollection = (app: Application, db: Database) => {
   return async (model: Model, { transaction }) => {
-    const { type, key, fields } = model.get();
-    if (type !== 'JSONDocument') {
+    const { interface: fieldInterface, key, fields, dataSourceKey } = model.get();
+    if (!['JSONDocObject', 'JSONDocArray'].includes(fieldInterface)) {
+      return;
+    }
+    if (!fields) {
       return;
     }
     model.set('options', _.omit(model.get('options'), ['fields']));
     const target = `${key}_json_collection`;
     const targetKey = '__json_index';
-    const repo = db.getRepository('collections');
+    const repo = db.getRepository('dataSourcesCollections');
     let targetModel = await repo.findOne({
       filterByTk: target,
       transaction,
     });
     if (!targetModel) {
-      if (!fields) {
-        throw new Error('Fields is required for json document');
-      }
       fields.push({
         interface: 'id',
         title: 'Index',
@@ -46,17 +47,16 @@ export const syncJSONCollection = (db: Database) => {
           name: target,
           json: true,
           sync: false,
+          introspected: true,
           hidden: true,
           fields,
           filterTargetKey: targetKey,
+          dataSourceKey,
         },
         transaction,
       });
-      await targetModel.load({ transaction });
+      await targetModel.load({ app, transaction });
       model.set('options', Object.assign(model.get('options'), { target, targetKey }));
-      return;
-    }
-    if (!fields) {
       return;
     }
     const existFields = await targetModel.getFields({ transaction });
@@ -75,6 +75,6 @@ export const syncJSONCollection = (db: Database) => {
       updateAssociationValues: ['fields'],
       transaction,
     });
-    await targetModel.load({ transaction });
+    await targetModel.load({ app, transaction });
   };
 };

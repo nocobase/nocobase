@@ -208,12 +208,14 @@ const useDataSource = (options) => {
             paginate: false,
             filter: {
               'interface.$not': null,
-              'name.$not': record.targetKey || '__json_index',
             },
             sort: ['sort'],
           },
         })
-        .then((res) => res?.data?.data || []),
+        .then(
+          (res) =>
+            res?.data?.data?.filter((f: { name: string }) => f.name !== (record.targetKey || '__json_index')) || [],
+        ),
     {
       manual: true,
     },
@@ -234,42 +236,16 @@ const useDataSource = (options) => {
 };
 
 export const JSONDocFields: React.FC = () => {
-  const { name: dataSourceKey } = useParams();
-  const record = useRecord();
   const form = useForm();
   const field = useField<ArrayField>();
   const interfaceOptions = useFieldInterfaceOptions();
-  const url = !dataSourceKey
-    ? `collections/${record.target}/fields:list`
-    : `dataSourcesCollections/${dataSourceKey}.${record.target}/fields:list`;
-  const resourceActionProps = {
-    association: {
-      sourceKey: 'name',
-      targetKey: 'name',
-    },
-    dragSort: false,
-    collection,
-    request: {
-      url,
-      params: {
-        paginate: false,
-        filter: {
-          'interface.$not': null,
-          'name.$not': record.targetKey || '__json_index',
-        },
-        sort: ['sort'],
-      },
-    },
-  };
   return (
     <JSONDocFieldsProvider field={field} form={form}>
-      <ResourceActionProvider {...resourceActionProps}>
-        <SchemaComponent
-          schema={fieldsTableSchema}
-          scope={{ useDataSource, interfaceOptions, useDestroyJSONDocField }}
-          components={{ AddJSONDocField, FieldTitleInput, FieldInterfaceSelect, EditJSONDocField }}
-        />
-      </ResourceActionProvider>
+      <SchemaComponent
+        schema={fieldsTableSchema}
+        scope={{ useDataSource, interfaceOptions, useDestroyJSONDocField }}
+        components={{ AddJSONDocField, FieldTitleInput, FieldInterfaceSelect, EditJSONDocField }}
+      />
     </JSONDocFieldsProvider>
   );
 };
