@@ -229,7 +229,7 @@ export class AdjacencyListRepository extends Repository {
       }
       const filterNodes = await super.find(optionsTmp);
       const filterIds = filterNodes.map((node) => node[primaryKey]);
-      const nodeData = await this.queryRootDatas(filterIds);
+      const nodeData = await this.queryRootDatas(filterIds, options.context.dataSource.name);
 
       const rootPathDataMap: rootPathDataMapInterface = {};
 
@@ -308,9 +308,9 @@ export class AdjacencyListRepository extends Repository {
     return [datas, totalCount];
   }
 
-  private async queryRootDatas(nodePks) {
+  private async queryRootDatas(nodePks, dataSourceName): Promise<any> {
     const collection = this.collection;
-    const pathTableName = `main_${collection.name}_path`;
+    const pathTableName = `${dataSourceName}_${collection.name}_path`;
     const treeRepository = this.database.getRepository(pathTableName);
     if (treeRepository) {
       return await treeRepository.find({
