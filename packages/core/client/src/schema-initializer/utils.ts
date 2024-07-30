@@ -714,7 +714,7 @@ export const useCustomFormItemInitializerFields = (options?: any) => {
     });
 };
 
-const findSchema = (schema: Schema, key: string, action: string) => {
+export const findSchema = (schema: Schema, key: string, action: string) => {
   if (!Schema.isSchemaInstance(schema)) return null;
   return schema.reduceProperties((buf, s) => {
     if (s[key] === action) {

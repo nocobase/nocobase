@@ -13,7 +13,7 @@ import { Select, SelectProps, Tag } from 'antd';
 import React from 'react';
 import { useCompile } from '../../hooks/useCompile';
 
-const colors = {
+const defaultColors = {
   red: '{{t("Red")}}',
   magenta: '{{t("Magenta")}}',
   volcano: '{{t("Volcano")}}',
@@ -30,13 +30,15 @@ const colors = {
 
 export interface ColorSelectProps extends SelectProps {
   suffix?: React.ReactNode;
+  colors?: Record<string, string>;
 }
 
 export const ColorSelect = connect(
   (props: ColorSelectProps) => {
     const compile = useCompile();
+    const { colors = defaultColors, ...selectProps } = props;
     return (
-      <Select {...props}>
+      <Select {...selectProps}>
         {Object.keys(colors).map((color) => (
           <Select.Option key={color} value={color}>
             <Tag color={color}>{compile(colors[color] || colors.default)}</Tag>
@@ -53,7 +55,7 @@ export const ColorSelect = connect(
   }),
   mapReadPretty((props) => {
     const compile = useCompile();
-    const { value } = props;
+    const { value, colors = defaultColors } = props;
     if (!colors[value]) {
       return null;
     }

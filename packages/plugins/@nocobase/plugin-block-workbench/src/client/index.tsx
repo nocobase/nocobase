@@ -42,6 +42,11 @@ export class PluginBlockWorkbenchClient extends Plugin {
       `otherBlocks.${workbenchBlockInitializerItem.name}`,
       workbenchBlockInitializerItem,
     );
+    this.app.schemaInitializerManager.addItem(
+      'mobile:addBlock',
+      `otherBlocks.${workbenchBlockInitializerItem.name}`,
+      workbenchBlockInitializerItem,
+    );
 
     // link 操作
     this.app.schemaSettingsManager.add(workbenchActionSettingsLink);

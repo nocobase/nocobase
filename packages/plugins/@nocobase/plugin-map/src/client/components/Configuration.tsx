@@ -98,7 +98,7 @@ const components = {
   google: GoogleMapConfiguration,
 };
 
-const tabList = MapTypes.map((item) => {
+const routeList = MapTypes.map((item) => {
   return {
     ...item,
     component: components[item.value],
@@ -112,7 +112,7 @@ export const Configuration = () => {
   return (
     <Card bordered>
       <Tabs type="card" defaultActiveKey={search.get('tab')}>
-        {tabList.map((tab) => {
+        {routeList.map((tab) => {
           return (
             <Tabs.TabPane key={tab.value} tab={compile(tab.label)}>
               <tab.component type={tab.value} />

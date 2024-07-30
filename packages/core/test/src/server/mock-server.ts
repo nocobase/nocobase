@@ -9,9 +9,12 @@
 
 import { mockDatabase } from '@nocobase/database';
 import { Application, ApplicationOptions, AppSupervisor, Gateway, PluginManager } from '@nocobase/server';
+import { uid } from '@nocobase/utils';
 import jwt from 'jsonwebtoken';
+import _ from 'lodash';
 import qs from 'qs';
 import supertest, { SuperAgentTest } from 'supertest';
+import { MemoryPubSubAdapter } from './memory-pub-sub-adapter';
 
 interface ActionParams {
   filterByTk?: any;
@@ -230,8 +233,19 @@ export function mockServer(options: ApplicationOptions = {}) {
 
   const app = new MockServer({
     acl: false,
+    syncMessageManager: {
+      debounce: 1000,
+    },
     ...options,
   });
+
+  const basename = app.options.pubSubManager?.channelPrefix || app.name;
+
+  app.pubSubManager.setAdapter(
+    MemoryPubSubAdapter.create(basename, {
+      debounce: 1000,
+    }),
+  );
 
   return app;
 }
@@ -243,6 +257,41 @@ export async function startMockServer(options: ApplicationOptions = {}) {
 }
 
 type BeforeInstallFn = (app) => Promise<void>;
+
+export async function createMockCluster(
+  options: ApplicationOptions & {
+    number?: number;
+    version?: string;
+    name?: string;
+    appName?: string;
+    beforeInstall?: BeforeInstallFn;
+    skipInstall?: boolean;
+    skipStart?: boolean;
+  } = {},
+) {
+  const nodes: MockServer[] = [];
+  const clusterName = options.name || `cluster_${uid()}`;
+  const appName = options.appName || `app_${uid()}`;
+  for (const i of _.range(0, options.number || 2)) {
+    const app: MockServer = await createMockServer({
+      ...options,
+      skipSupervisor: true,
+      name: clusterName + '_' + appName,
+      pubSubManager: {
+        channelPrefix: clusterName,
+      },
+    });
+    nodes.push(app);
+  }
+  return {
+    nodes,
+    async destroy() {
+      for (const node of nodes) {
+        await node.destroy();
+      }
+    },
+  };
+}
 
 export async function createMockServer(
   options: ApplicationOptions & {

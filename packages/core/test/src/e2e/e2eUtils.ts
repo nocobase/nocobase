@@ -183,6 +183,15 @@ export interface PageConfig {
   keepUid?: boolean;
 }
 
+export interface MobilePageConfig extends Omit<PageConfig, 'type'> {
+  type?: 'page' | 'link';
+  /**
+   * 页面的基础路径
+   * @default '/m/'
+   */
+  basePath?: string;
+}
+
 interface CreatePageOptions {
   type?: PageConfig['type'];
   url?: PageConfig['url'];
@@ -190,6 +199,10 @@ interface CreatePageOptions {
   pageSchema?: any;
   /** 如果为 true 则表示不会更改 PageSchema 的 uid */
   keepUid?: boolean;
+}
+
+interface CreateMobilePageOptions extends Omit<CreatePageOptions, 'type'> {
+  type?: Omit<PageConfig['type'], 'group'>;
 }
 
 interface ExtendUtils {
@@ -200,6 +213,12 @@ interface ExtendUtils {
    * @returns
    */
   mockPage: (pageConfig?: PageConfig) => NocoPage;
+  /**
+   * 根据配置，生成一个移动端 NocoBase 的页面
+   * @param pageConfig 页面配置
+   * @returns
+   */
+  mockMobilePage: (pageConfig?: MobilePageConfig) => NocoMobilePage;
   /**
    * 根据配置，生成一个需要手动销毁的 NocoPage 页面
    * @param pageConfig
@@ -299,14 +318,14 @@ const PORT = process.env.APP_PORT || 20000;
 const APP_BASE_URL = process.env.APP_BASE_URL || `http://localhost:${PORT}`;
 
 export class NocoPage {
-  private url: string;
-  private uid: string | undefined;
-  private collectionsName: string[] | undefined;
-  private _waitForInit: Promise<void>;
+  protected url: string;
+  protected uid: string | undefined;
+  protected collectionsName: string[] | undefined;
+  protected _waitForInit: Promise<void>;
 
   constructor(
-    private options?: PageConfig,
-    private page?: Page,
+    protected options?: PageConfig,
+    protected page?: Page,
   ) {
     this._waitForInit = this.init();
   }
@@ -374,6 +393,57 @@ export class NocoPage {
   }
 }
 
+export class NocoMobilePage extends NocoPage {
+  protected routeId: number;
+  protected title: string;
+  constructor(
+    protected options?: MobilePageConfig,
+    protected page?: Page,
+  ) {
+    super(options, page);
+  }
+
+  getTitle() {
+    return this.title;
+  }
+
+  async init() {
+    const waitList = [];
+    if (this.options?.collections?.length) {
+      const collections: any = omitSomeFields(this.options.collections);
+      this.collectionsName = collections.map((item) => item.name);
+
+      waitList.push(createCollections(collections));
+    }
+
+    waitList.push(createMobilePage(this.options));
+
+    const result = await Promise.all(waitList);
+
+    const { url, pageSchemaUid, routeId, title } = result[result.length - 1];
+    this.title = title;
+    this.routeId = routeId;
+    this.uid = pageSchemaUid;
+    if (this.options?.type == 'link') {
+      // 内部 URL 和外部 URL
+      if (url?.startsWith('/')) {
+        this.url = `${this.options?.basePath || '/m'}${url}`;
+      } else {
+        this.url = url;
+      }
+    } else {
+      this.url = `${this.options?.basePath || '/m'}${url}`;
+    }
+  }
+
+  async mobileDestroy() {
+    // 移除 mobile routes
+    await deleteMobileRoutes(this.routeId);
+    // 移除 schema
+    await this.destroy();
+  }
+}
+
 let _page: Page;
 const getPage = async (browser: Browser) => {
   if (!_page) {
@@ -405,6 +475,33 @@ const _test = base.extend<ExtendUtils>({
     for (const nocoPage of nocoPages) {
       // 这里之所以不加入 waitList 是因为会导致 acl 的测试报错
       await nocoPage.destroy();
+    }
+    waitList.push(setDefaultRole('root'));
+    // 删除掉 id 不是 1 的 users 和 name 不是 root admin member 的 roles
+    waitList.push(removeRedundantUserAndRoles());
+
+    await Promise.all(waitList);
+  },
+  mockMobilePage: async ({ browser }, use) => {
+    // 保证每个测试运行时 faker 的随机值都是一样的
+    // faker.seed(1);
+
+    const page = await getPage(browser);
+    const nocoPages: NocoMobilePage[] = [];
+    const mockPage = (config?: MobilePageConfig) => {
+      const nocoPage = new NocoMobilePage(config, page);
+      nocoPages.push(nocoPage);
+      return nocoPage;
+    };
+
+    await use(mockPage);
+
+    const waitList = [];
+
+    // 测试运行完自动销毁页面
+    for (const nocoPage of nocoPages) {
+      // 这里之所以不加入 waitList 是因为会导致 acl 的测试报错
+      await nocoPage.mobileDestroy();
     }
     waitList.push(setDefaultRole('root'));
     // 删除掉 id 不是 1 的 users 和 name 不是 root admin member 的 roles
@@ -682,6 +779,196 @@ const createPage = async (options?: CreatePageOptions) => {
   }
 
   return pageUid;
+};
+
+/**
+ * 在 NocoBase 中创建一个移动端页面
+ */
+const createMobilePage = async (options?: CreateMobilePageOptions) => {
+  const { type = 'page', url, name, pageSchema, keepUid } = options || {};
+  function randomStr() {
+    return Math.random().toString(36).substring(2);
+  }
+  const api = await request.newContext({
+    storageState: process.env.PLAYWRIGHT_AUTH_FILE,
+  });
+  const state = await api.storageState();
+  const headers = getHeaders(state);
+  const pageSchemaUid = name || uid();
+  const schemaUrl = `/page/${pageSchemaUid}`;
+  const firstTabUid = uid();
+  const title = name || randomStr();
+
+  // 创建路由
+  const routerResponse: any = await api.post(`/api/mobileRoutes:create`, {
+    headers,
+    data: {
+      type: type,
+      schemaUid: pageSchemaUid,
+      title: title,
+      icon: 'appstoreoutlined',
+      options: {
+        url,
+      },
+    },
+  });
+  const responseData = await routerResponse.json();
+  const routeId = responseData.data.id;
+  if (!routerResponse.ok()) {
+    throw new Error(await routerResponse.text());
+  }
+
+  if (type === 'link') return { url, routeId, title };
+
+  // 创建空页面
+  const createSchemaResult = await api.post(`/api/uiSchemas:insertAdjacent?resourceIndex=mobile&position=beforeEnd`, {
+    headers,
+    data: {
+      schema: {
+        type: 'void',
+        name: pageSchemaUid,
+        'x-uid': pageSchemaUid,
+        'x-component': 'MobilePageProvider',
+        'x-settings': 'mobile:page',
+        'x-decorator': 'BlockItem',
+        'x-toolbar-props': {
+          draggable: false,
+          spaceWrapperStyle: {
+            right: -15,
+            top: -15,
+          },
+          spaceClassName: 'css-m1q7xw',
+          toolbarStyle: {
+            overflowX: 'hidden',
+          },
+        },
+        properties: {
+          header: {
+            type: 'void',
+            'x-component': 'MobilePageHeader',
+            properties: {
+              pageNavigationBar: {
+                type: 'void',
+                'x-component': 'MobilePageNavigationBar',
+                properties: {
+                  actionBar: {
+                    type: 'void',
+                    'x-component': 'MobileNavigationActionBar',
+                    'x-initializer': 'mobile:navigation-bar:actions',
+                    'x-component-props': {
+                      spaceProps: {
+                        style: {
+                          flexWrap: 'nowrap',
+                        },
+                      },
+                    },
+                    name: 'actionBar',
+                  },
+                },
+                name: 'pageNavigationBar',
+              },
+              pageTabs: {
+                type: 'void',
+                'x-component': 'MobilePageTabs',
+                name: 'pageTabs',
+              },
+            },
+            name: 'header',
+          },
+          content: {
+            type: 'void',
+            'x-component': 'MobilePageContent',
+            properties: {
+              [firstTabUid]: {
+                ...((keepUid ? pageSchema : updateUidOfPageSchema(pageSchema)) || {
+                  type: 'void',
+                  'x-uid': firstTabUid,
+                  'x-async': true,
+                  'x-component': 'Grid',
+                  'x-initializer': 'mobile:addBlock',
+                }),
+                name: firstTabUid,
+                'x-uid': firstTabUid,
+              },
+            },
+          },
+        },
+      },
+    },
+  });
+
+  if (!createSchemaResult.ok()) {
+    throw new Error(await createSchemaResult.text());
+  }
+
+  // 创建第一个 tab
+  const createTabResponse = await api.post(`/api/mobileRoutes:create`, {
+    headers,
+    data: {
+      parentId: routeId,
+      type: 'tabs',
+      title: 'Unnamed',
+      schemaUid: firstTabUid,
+    },
+  });
+
+  if (!createTabResponse.ok()) {
+    throw new Error(await createTabResponse.text());
+  }
+
+  return { url: schemaUrl, pageSchemaUid, routeId, title };
+};
+
+export const removeAllMobileRoutes = async () => {
+  const api = await request.newContext({
+    storageState: process.env.PLAYWRIGHT_AUTH_FILE,
+  });
+
+  const state = await api.storageState();
+  const headers = getHeaders(state);
+
+  const result = await api.post(
+    `/api/mobileRoutes:destroy?filter=%7B%22%24and%22%3A%5B%7B%22id%22%3A%7B%22%24ne%22%3A0%7D%7D%5D%7D`,
+    {
+      headers,
+    },
+  );
+
+  if (!result.ok()) {
+    throw new Error(await result.text());
+  }
+};
+
+/**
+ * 根据页面 id 删除一个 Mobile Routes 的页面
+ */
+const deleteMobileRoutes = async (mobileRouteId: number) => {
+  if (!mobileRouteId) return;
+  const api = await request.newContext({
+    storageState: process.env.PLAYWRIGHT_AUTH_FILE,
+  });
+
+  const state = await api.storageState();
+  const headers = getHeaders(state);
+
+  const result = await api.post(`/api/mobileRoutes:destroy?filterByTk=${mobileRouteId}`, {
+    headers,
+  });
+
+  if (!result.ok()) {
+    throw new Error(await result.text());
+  }
+
+  const result2 = await api.post(
+    `/api/mobileRoutes:destroy?filter=${encodeURIComponent(JSON.stringify({ parentId: mobileRouteId }))}`,
+    {
+      headers,
+    },
+  );
+
+  if (!result2.ok()) {
+    throw new Error(await result2.text());
+  }
 };
 
 /**
