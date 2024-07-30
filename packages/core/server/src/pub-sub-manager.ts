@@ -11,7 +11,6 @@ import { uid } from '@nocobase/utils';
 import crypto from 'crypto';
 import _ from 'lodash';
 import Application from './application';
-import EventEmitter from 'events';
 
 export interface PubSubManagerOptions {
   channelPrefix?: string;
@@ -37,7 +36,7 @@ export const createPubSubManager = (app: Application, options: PubSubManagerOpti
   return pubSubManager;
 };
 
-export class PubSubManager {
+export class PubSubManager implements PubSubAble {
   adapter: IPubSubAdapter;
   messageHandlers = new Map();
   subscribes = new Map();
@@ -58,8 +57,7 @@ export class PubSubManager {
   setAdapter(adapter: IPubSubAdapter) {
     this.adapter = adapter;
 
-    // 监听 adapter 的 message 事件
-    adapter.on('message', async (channel, message) => {
+    adapter.subscribeAll(async (channel, message) => {
       await this.onMessage(channel, message);
     });
   }
@@ -131,11 +129,15 @@ export class PubSubManager {
 
     const map: Map<any, any> = this.subscribes.get(channel);
     map.set(callback, options);
+
+    return this.adapter.subscribe(`${this.channelPrefix}${channel}`, callback, options);
   }
 
   async unsubscribe(channel, callback) {
     const map: Map<any, any> = this.subscribes.get(channel);
     map?.delete(callback);
+
+    return this.adapter.unsubscribe(`${this.channelPrefix}${channel}`, callback);
   }
 
   async publish(channel, message, options?: PubSubManagerPublishOptions) {
@@ -210,7 +212,14 @@ export class PubSubManager {
   }
 }
 
-export interface IPubSubAdapter extends EventEmitter {
+export interface PubSubAble {
+  publish(channel: string, message, options?: any): Promise<any>;
+  subscribe(channel: string, callback, options?: any): Promise<any>;
+  unsubscribe(channel: string, callback): Promise<any>;
+  subscribeAll(callback, options?: any): Promise<void>;
+}
+
+export interface IPubSubAdapter extends PubSubAble {
   isConnected(): boolean;
   connect(): Promise<any>;
   close(): Promise<any>;
