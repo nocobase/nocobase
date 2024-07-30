@@ -130,14 +130,14 @@ export class PubSubManager implements PubSubAble {
     const map: Map<any, any> = this.subscribes.get(channel);
     map.set(callback, options);
 
-    return this.adapter.subscribe(`${this.channelPrefix}${channel}`, callback, options);
+    return this.adapter?.subscribe(`${this.channelPrefix}${channel}`, callback, options);
   }
 
   async unsubscribe(channel, callback) {
     const map: Map<any, any> = this.subscribes.get(channel);
     map?.delete(callback);
 
-    return this.adapter.unsubscribe(`${this.channelPrefix}${channel}`, callback);
+    return this.adapter?.unsubscribe(`${this.channelPrefix}${channel}`, callback);
   }
 
   async publish(channel, message, options?: PubSubManagerPublishOptions) {
