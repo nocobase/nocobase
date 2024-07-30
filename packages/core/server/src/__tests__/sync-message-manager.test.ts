@@ -18,6 +18,9 @@ describe('sync-message-manager', () => {
     await node1.syncMessageManager.subscribe('test1', mockListener);
     await node2.syncMessageManager.subscribe('test1', mockListener);
     await node2.syncMessageManager.publish('test1', 'message1');
+
+    await sleep(1100);
+
     expect(mockListener).toHaveBeenCalled();
     expect(mockListener).toBeCalledTimes(1);
     expect(mockListener).toHaveBeenCalledWith('message1');
@@ -56,9 +59,11 @@ describe('sync-message-manager', () => {
     });
     const [app1, app2] = cluster.nodes;
     await app1.pm.get(MyPlugin).sendSyncMessage('message1');
+    await sleep(1100);
     expect(mockListener).toBeCalledTimes(1);
     expect(mockListener).toHaveBeenCalledWith('message1');
     await app2.pm.get(MyPlugin).sendSyncMessage('message2');
+    await sleep(1100);
     expect(mockListener).toBeCalledTimes(2);
     expect(mockListener).toHaveBeenCalledWith('message2');
     await cluster.destroy();
@@ -87,6 +92,7 @@ describe('sync-message-manager', () => {
     expect(mockListener).toBeCalledTimes(1);
     expect(mockListener).toHaveBeenCalledWith('message1');
     await app2.pm.get(MyPlugin).sendSyncMessage('message2');
+    await sleep(1100);
     expect(mockListener).toBeCalledTimes(2);
     expect(mockListener).toHaveBeenCalledWith('message2');
     await cluster.destroy();

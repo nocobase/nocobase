@@ -36,7 +36,7 @@ export const createPubSubManager = (app: Application, options: PubSubManagerOpti
   return pubSubManager;
 };
 
-export class PubSubManager {
+export class PubSubManager implements PubSubAble {
   adapter: IPubSubAdapter;
   messageHandlers = new Map();
   subscribes = new Map();
@@ -51,76 +51,90 @@ export class PubSubManager {
   }
 
   get connected() {
-    return this.adapter?.connected || false;
+    return this.adapter.isConnected();
   }
 
   setAdapter(adapter: IPubSubAdapter) {
     this.adapter = adapter;
+
+    adapter.subscribeAll(async (channel, message) => {
+      await this.onMessage(channel, message);
+    });
+  }
+
+  async onMessage(channel, wrappedMessage) {
+    const json = JSON.parse(wrappedMessage);
+
+    if (!this.verifyMessage(json)) {
+      return;
+    }
+
+    if (this.channelPrefix) {
+      // remove prefix from channel
+      channel = channel.replace(this.channelPrefix, '');
+    }
+
+    const channelSubscribes = this.subscribes.get(channel);
+
+    if (channelSubscribes) {
+      for (const [callback, options] of channelSubscribes) {
+        await this.handleMessage({
+          channel,
+          message: json.message,
+          callback,
+          debounce: options?.debounce,
+        });
+      }
+    }
+
+    const subscribeAllSubscribes = this.subscribes.get('__subscribe_all__');
+
+    if (subscribeAllSubscribes) {
+      for (const [callback, options] of subscribeAllSubscribes) {
+        await this.handleMessage({
+          channel,
+          message: json.message,
+          callback,
+          debounce: options?.debounce,
+          subscribeAll: true,
+        });
+      }
+    }
   }
 
   async connect() {
     if (!this.adapter) {
       return;
     }
+
     await this.adapter.connect();
-    for (const [channel, callbacks] of this.subscribes) {
-      for (const [, fn] of callbacks) {
-        await this.adapter.subscribe(`${this.channelPrefix}${channel}`, fn);
-      }
-    }
   }
 
   async close() {
     if (!this.adapter) {
       return;
     }
+
     return await this.adapter.close();
   }
 
-  async getMessageHash(message) {
-    const encoder = new TextEncoder();
-    const data = encoder.encode(JSON.stringify(message));
-    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    const hashHex = hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
-    return hashHex;
-  }
-
   async subscribe(channel: string, callback, options: PubSubManagerSubscribeOptions = {}) {
-    const { debounce = 0 } = options;
-    const wrappedCallback = async (wrappedMessage) => {
-      const json = JSON.parse(wrappedMessage);
-      if (!this.verifyMessage(json)) {
-        return;
-      }
-      await this.handleMessage({ channel, message: json.message, debounce, callback });
-    };
     if (!this.subscribes.has(channel)) {
       const map = new Map();
       this.subscribes.set(channel, map);
     }
+
     const map: Map<any, any> = this.subscribes.get(channel);
-    const previous = map.get(callback);
-    if (previous) {
-      await this.adapter.unsubscribe(`${this.channelPrefix}${channel}`, previous);
-    }
-    map.set(callback, wrappedCallback);
-    if (this.connected) {
-      await this.adapter.subscribe(`${this.channelPrefix}${channel}`, wrappedCallback);
-    }
+    map.set(callback, options);
+
+    return this.adapter?.subscribe(`${this.channelPrefix}${channel}`, callback, options);
   }
 
   async unsubscribe(channel, callback) {
     const map: Map<any, any> = this.subscribes.get(channel);
-    let fn = null;
-    if (map) {
-      fn = map.get(callback);
-      map.delete(callback);
-    }
-    if (!this.adapter || !fn) {
-      return;
-    }
-    return this.adapter.unsubscribe(`${this.channelPrefix}${channel}`, fn);
+    map?.delete(callback);
+
+    return this.adapter?.unsubscribe(`${this.channelPrefix}${channel}`, callback);
   }
 
   async publish(channel, message, options?: PubSubManagerPublishOptions) {
@@ -134,45 +148,31 @@ export class PubSubManager {
       message: message,
     });
 
-    return this.adapter.publish(`${this.channelPrefix}${channel}`, wrappedMessage);
+    return this.adapter?.publish(`${this.channelPrefix}${channel}`, wrappedMessage);
   }
 
   async subscribeAll(callback, options: PubSubManagerSubscribeOptions = {}) {
-    if (!this.adapter) {
-      return;
-    }
-    const { debounce = 0 } = options;
-    return this.adapter.subscribeAll(async (channel: string, wrappedMessage) => {
-      if (!channel.startsWith(this.channelPrefix)) {
-        return;
-      }
-      const json = JSON.parse(wrappedMessage);
-      if (!this.verifyMessage(json)) {
-        return;
-      }
-      const realChannel = channel.substring(this.channelPrefix.length);
-      await this.handleMessage({
-        callback,
-        debounce,
-        subscribeAll: true,
-        channel: realChannel,
-        message: json.message,
-      });
-    });
+    return this.subscribe('__subscribe_all__', callback, options);
   }
 
   protected async handleMessage({ channel, message, callback, debounce, subscribeAll = false }) {
     const args = subscribeAll ? [channel, message] : [message];
+
     if (!debounce) {
       await callback(...args);
       return;
     }
+
     const prefix = subscribeAll ? '__subscribe_all__' : '__subscribe__';
+
     const messageHash = prefix + channel + (await this.getMessageHash(message));
+
     if (!this.messageHandlers.has(messageHash)) {
       this.messageHandlers.set(messageHash, this.debounce(callback, debounce));
     }
+
     const handleMessage = this.messageHandlers.get(messageHash);
+
     try {
       const args = subscribeAll ? [channel, message] : [message];
       await handleMessage(...args);
@@ -191,6 +191,7 @@ export class PubSubManager {
     } else if (!onlySelf && skipSelf && publisherId === this.publisherId) {
       return;
     }
+
     return true;
   }
 
@@ -200,14 +201,27 @@ export class PubSubManager {
     }
     return func;
   }
+
+  protected async getMessageHash(message) {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(JSON.stringify(message));
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const hashHex = hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
+    return hashHex;
+  }
 }
 
-export interface IPubSubAdapter {
-  connected?: boolean;
+export interface PubSubAble {
+  publish(channel: string, message, options?: any): Promise<any>;
+  subscribe(channel: string, callback, options?: any): Promise<any>;
+  unsubscribe(channel: string, callback): Promise<any>;
+  subscribeAll(callback, options?: any): Promise<void>;
+}
+
+export interface IPubSubAdapter extends PubSubAble {
+  isConnected(): boolean;
   connect(): Promise<any>;
   close(): Promise<any>;
-  subscribe(channel: string, callback): Promise<any>;
-  unsubscribe(channel: string, callback): Promise<any>;
   publish(channel: string, message): Promise<any>;
-  subscribeAll(callback): Promise<any>;
 }

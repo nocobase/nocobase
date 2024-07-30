@@ -8,22 +8,41 @@
  */
 
 import { IPubSubAdapter } from '@nocobase/server';
-import { AsyncEmitter, applyMixins, uid } from '@nocobase/utils';
-import { EventEmitter } from 'events';
-const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+import { uid } from '@nocobase/utils';
+import EventEmitter from 'events';
 
-class TestEventEmitter extends EventEmitter {
-  declare emitAsync: (event: string | symbol, ...args: any[]) => Promise<boolean>;
+class ExtendedEventEmitter extends EventEmitter {
+  allListeners = [];
+  constructor() {
+    super();
+  }
+
+  // 覆盖 emit 方法
+  // @ts-ignore
+  emit(event, ...args) {
+    // 首先触发特定事件的监听器
+    super.emit(event, ...args);
+
+    // 然后触发所有的统一监听器
+    for (const listener of this.allListeners) {
+      listener(event, ...args);
+    }
+  }
+
+  // 添加 subscribeAll 方法
+  subscribeAll(listener) {
+    this.allListeners.push(listener);
+  }
 }
 
-applyMixins(TestEventEmitter, [AsyncEmitter]);
-
 export class MemoryPubSubAdapter implements IPubSubAdapter {
-  protected emitter: TestEventEmitter;
-
-  connected = false;
-
   static instances = new Map<string, MemoryPubSubAdapter>();
+
+  // use EventEmitter to simulate the external service
+  private eventEmitter = new ExtendedEventEmitter();
+  private connected = false;
+
+  constructor(options?: any) {}
 
   static create(name?: string, options?: any) {
     if (!name) {
@@ -32,11 +51,8 @@ export class MemoryPubSubAdapter implements IPubSubAdapter {
     if (!this.instances.has(name)) {
       this.instances.set(name, new MemoryPubSubAdapter(options));
     }
-    return this.instances.get(name);
-  }
 
-  constructor(protected options: any = {}) {
-    this.emitter = new TestEventEmitter();
+    return this.instances.get(name);
   }
 
   async connect() {
@@ -47,28 +63,31 @@ export class MemoryPubSubAdapter implements IPubSubAdapter {
     this.connected = false;
   }
 
-  async subscribe(channel, callback) {
-    this.emitter.on(channel, callback);
-  }
-
-  async unsubscribe(channel, callback) {
-    this.emitter.off(channel, callback);
+  isConnected(): boolean {
+    return this.connected;
   }
 
   async publish(channel, message) {
-    console.log(this.connected, { channel, message });
     if (!this.connected) {
       return;
     }
-    await this.emitter.emitAsync(channel, message);
-    await this.emitter.emitAsync('__publish__', channel, message);
-    // 用于处理延迟问题
-    if (this.options.debounce) {
-      await sleep(Number(this.options.debounce));
-    }
+
+    // publish event to external service
+    this.eventEmitter.emit(channel, message);
   }
 
-  async subscribeAll(callback) {
-    this.emitter.on('__publish__', callback);
+  subscribe(channel: string, callback, options?: any): Promise<any> {
+    // to append new channel or topic to external service
+    return;
+  }
+
+  unsubscribe(channel: string, callback): Promise<void> {
+    // to remove channel or topic from external service
+    return;
+  }
+
+  subscribeAll(callback, options?: any): Promise<void> {
+    this.eventEmitter.subscribeAll(callback);
+    return;
   }
 }
