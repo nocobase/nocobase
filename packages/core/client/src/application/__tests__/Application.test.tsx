@@ -17,6 +17,7 @@ import { OpenModeProvider } from '../../modules/popup/OpenModeProvider';
 import { Application } from '../Application';
 import { Plugin } from '../Plugin';
 import { useApp } from '../hooks';
+import { CollectionFieldInterface } from '../../data-source';
 
 describe('Application', () => {
   beforeAll(() => {
@@ -437,6 +438,45 @@ describe('Application', () => {
       expect(screen.getByText('AppError')).toBeInTheDocument();
 
       console.error = originalConsoleWarn;
+    });
+  });
+
+  describe('alias', () => {
+    test('addFieldInterfaceComponentOption', () => {
+      class TestInterface extends CollectionFieldInterface {
+        name = 'test';
+        default = {
+          type: 'string',
+          uiSchema: {
+            type: 'string',
+            'x-component': 'TestComponent',
+          },
+        };
+      }
+      const app = new Application({
+        dataSourceManager: {
+          fieldInterfaces: [TestInterface],
+        },
+      });
+      app.addFieldInterfaceComponentOption('test', {
+        label: 'A',
+        value: 'a',
+      });
+
+      expect(app.dataSourceManager.collectionFieldInterfaceManager.getFieldInterface('test').componentOptions)
+        .toMatchInlineSnapshot(`
+        [
+          {
+            "label": "TestComponent",
+            "useProps": [Function],
+            "value": "TestComponent",
+          },
+          {
+            "label": "A",
+            "value": "a",
+          },
+        ]
+      `);
     });
   });
 });

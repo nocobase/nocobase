@@ -65,14 +65,16 @@ export abstract class CollectionFieldInterface {
 
   addComponentOption(componentOption: CollectionFieldInterfaceComponentOption) {
     if (!this.componentOptions) {
-      const xComponent = this.default.uiSchema?.['x-component'];
+      this.componentOptions = [];
+      const xComponent = this.default?.uiSchema?.['x-component'];
+      const componentProps = this.default?.uiSchema?.['x-component-props'];
       if (xComponent) {
         this.componentOptions = [
           {
             label: xComponent.split('.').pop(),
             value: xComponent,
             useProps() {
-              return this.default?.uiSchema?.['x-component-props'] || {};
+              return componentProps || {};
             },
           },
         ];
