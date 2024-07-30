@@ -15,6 +15,14 @@ import { Model } from '../../model';
 import { FindAndCountOptions } from 'sequelize';
 import { assign } from '@nocobase/utils';
 
+interface rootPathDataMapInterface {
+  [key: string]: string[];
+}
+
+interface rebuildTreeRootNodeDataInterface {
+  [key: string]: Set<any>;
+}
+
 export class AdjacencyListRepository extends Repository {
   static queryParentSQL(options: {
     db: Database;
@@ -222,14 +230,6 @@ export class AdjacencyListRepository extends Repository {
       const filterNodes = await super.find(optionsTmp);
       const filterIds = filterNodes.map((node) => node[primaryKey]);
       const nodeData = await this.queryRootDatas(filterIds);
-
-      interface rootPathDataMapInterface {
-        [key: string]: string[];
-      }
-
-      interface rebuildTreeRootNodeDataInterface {
-        [key: string]: Set<any>;
-      }
 
       const rootPathDataMap: rootPathDataMapInterface = {};
 
