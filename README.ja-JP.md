@@ -27,7 +27,7 @@ NocoBaseは非常に拡張性の高いオープンソースのノーコード開
 大量のお時間と資金を投入して開発する必要がなく、NocoBaseをデプロイすることですぐにでもプライベートで制御可能かつ非常に拡張性の高いノーコード開発プラットフォームを構築することができます。
 
 ホームページ：  
-https://www.nocobase.com/jp
+https://www.nocobase.com/
 
 オンライン体験：  
 https://demo-cn.nocobase.com/new
@@ -35,7 +35,7 @@ https://demo-cn.nocobase.com/new
 ドキュメント：  
 https://docs-cn.nocobase.com/
 
-コミュニティ：
+コミュニティ：  
 https://forum.nocobase.com/
 
 ## 他の製品との違い
