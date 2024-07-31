@@ -27,6 +27,7 @@ import { useLocalVariables, useVariables } from '../../../variables';
 import { registerQrcodeWebComponent } from './qrcode-webcom';
 import { getRenderContent } from '../../common/utils/uitls';
 import { parseMarkdown } from './util';
+import { useCompile } from '../../';
 export interface MarkdownEditorProps extends Omit<TextAreaProps, 'onSubmit'> {
   scope: any[];
   defaultValue?: string;
@@ -139,10 +140,18 @@ export const MarkdownVoid: any = withDynamicSchemaProps(
     const localVariables = useLocalVariables();
     const { engine } = schema?.['x-decorator-props'] || {};
     const [loading, setLoading] = useState(false);
+    const compile = useCompile();
+
     useEffect(() => {
       setLoading(true);
       const cvtContentToHTML = async () => {
-        const replacedContent = await getRenderContent(engine, content, variables, localVariables, parseMarkdown);
+        const replacedContent = await getRenderContent(
+          engine,
+          content,
+          compile(variables),
+          compile(localVariables),
+          parseMarkdown,
+        );
         setHtml(replacedContent);
         setLoading(false);
       };

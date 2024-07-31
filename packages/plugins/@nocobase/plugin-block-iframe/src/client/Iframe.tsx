@@ -9,7 +9,7 @@
 
 import { observer, useField } from '@formily/react';
 import {
-  replaceVariableValue,
+  useCompile,
   useBlockHeight,
   useLocalVariables,
   useParseURLAndParams,
@@ -40,6 +40,7 @@ export const Iframe: any = observer(
     const targetHeight = useBlockHeight() || height;
     const variables = useVariables();
     const localVariables = useLocalVariables();
+    const compile = useCompile();
     const { loading, data: htmlContent } = useRequest<string>(
       {
         url: `iframeHtml:getHtml/${htmlId}`,
@@ -54,9 +55,15 @@ export const Iframe: any = observer(
     useEffect(() => {
       const generateSrc = async () => {
         if (mode === 'html') {
-          const targetHtmlContent = await getRenderContent(engine, htmlContent, variables, localVariables, (data) => {
-            return data;
-          });
+          const targetHtmlContent = await getRenderContent(
+            engine,
+            htmlContent,
+            compile(variables),
+            compile(localVariables),
+            (data) => {
+              return data;
+            },
+          );
           const encodedHtml = encodeURIComponent(targetHtmlContent);
           const dataUrl = 'data:text/html;charset=utf-8,' + encodedHtml;
 

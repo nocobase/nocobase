@@ -141,13 +141,6 @@ export function targetFieldToVariableString(targetField: string[]) {
   return `{{ $nForm.${targetField.join('.')} }}`;
 }
 
-Handlebars.registerHelper('eq', function (arg1, arg2) {
-  return arg1 == arg2;
-});
-Handlebars.registerHelper('toUpperCase', function (str) {
-  return str.toUpperCase();
-});
-
 const getVariablesData = (localVariables) => {
   const data = {};
   localVariables.map((v) => {
@@ -162,6 +155,7 @@ export async function getRenderContent(templateEngine, content, variables, local
     // 处理渲染后的内容
     try {
       const data = getVariablesData(localVariables);
+      console.log({ ...variables.ctxRef.current, ...data });
       return renderedContent({ ...variables.ctxRef.current, ...data });
     } catch (error) {
       console.log(error);
