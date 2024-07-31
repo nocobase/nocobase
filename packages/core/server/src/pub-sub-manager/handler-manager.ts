@@ -94,6 +94,9 @@ export class HandlerManager {
   }
 
   delete(channel: string, callback) {
+    if (!callback) {
+      return;
+    }
     const headlerMap = this.handlers.get(channel);
     if (!headlerMap) {
       return;

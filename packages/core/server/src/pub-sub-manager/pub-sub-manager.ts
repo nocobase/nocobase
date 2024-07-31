@@ -48,7 +48,10 @@ export class PubSubManager {
   }
 
   async isConnected() {
-    return !!this.adapter?.isConnected();
+    if (this.adapter) {
+      return this.adapter.isConnected();
+    }
+    return false;
   }
 
   async connect() {
@@ -74,6 +77,7 @@ export class PubSubManager {
     await this.unsubscribe(channel, callback);
     const handler = this.handlerManager.set(channel, callback, options);
     // 连接之后才能订阅
+
     if (await this.isConnected()) {
       await this.adapter.subscribe(`${this.channelPrefix}${channel}`, handler);
     }
