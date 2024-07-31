@@ -7,14 +7,16 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { CollectionFieldInterface, defaultProps, operators } from '@nocobase/client';
+import { CollectionFieldInterface, defaultProps } from '@nocobase/client';
 import { uid } from '@nocobase/utils/client';
+import { tStr } from './locale';
+
 export class EncryptionFieldInterface extends CollectionFieldInterface {
   name = 'encryption';
   type = 'object';
   group = 'advanced';
   order = 10;
-  title = '{{t("Encryption")}}';
+  title = tStr('Encryption');
   default = {
     type: 'encryption',
     iv: uid(16),
@@ -34,7 +36,7 @@ export class EncryptionFieldInterface extends CollectionFieldInterface {
       default: true,
       'x-decorator': 'FormItem',
       'x-component': 'Checkbox',
-      description: "{{t('Interface response does not return the value of this field')}}",
+      description: tStr('The response result does not return the value of this field'),
     },
   };
   filterable = {
