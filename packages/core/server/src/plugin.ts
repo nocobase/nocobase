@@ -134,20 +134,6 @@ export abstract class Plugin<O = any> implements PluginInterface {
 
   async afterRemove() {}
 
-  /**
-   * Fired when a sync message is received.
-   * @experimental
-   */
-  onSync(message: SyncMessageData = {}): Promise<void> | void {}
-
-  /**
-   * Publish a sync message.
-   * @experimental
-   */
-  sync(message?: SyncMessageData) {
-    this.app.syncManager.publish(this.name, message);
-  }
-
   async handleSyncMessage(message: any) {}
   async sendSyncMessage(message: any, options?: Transactionable) {
     if (!this.name) {
