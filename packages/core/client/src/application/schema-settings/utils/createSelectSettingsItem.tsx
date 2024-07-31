@@ -12,7 +12,7 @@ import { useFieldSchema } from '@formily/react';
 import { TFunction, useTranslation } from 'react-i18next';
 
 import { SchemaSettingsItemType } from '../types';
-import { getNewSchema, useHookDefault } from './util';
+import { getNewSchema, useHookDefault, useSchemaByType } from './util';
 import { SelectProps } from '../../../schema-component/antd/select';
 import { useCompile } from '../../../schema-component/hooks/useCompile';
 import { useDesignable } from '../../../schema-component/hooks/useDesignable';
@@ -26,6 +26,10 @@ interface CreateSelectSchemaSettingsItemProps {
   defaultValue?: string | number;
   useDefaultValue?: () => string | number;
   useVisible?: () => boolean;
+  /**
+   * @default 'common'
+   */
+  type?: 'common' | 'field';
 }
 
 /**
@@ -44,6 +48,7 @@ export const createSelectSchemaSettingsItem = (
     useOptions = useHookDefault,
     schemaKey,
     useVisible,
+    type = 'common',
     defaultValue: propsDefaultValue,
     useDefaultValue = useHookDefault,
   } = options;
@@ -52,7 +57,7 @@ export const createSelectSchemaSettingsItem = (
     type: 'select',
     useVisible,
     useComponentProps() {
-      const filedSchema = useFieldSchema();
+      const fieldSchema = useSchemaByType(type);
       const { deepMerge } = useDesignable();
       const options = useOptions(propsOptions);
       const defaultValue = useDefaultValue(propsDefaultValue);
@@ -62,9 +67,9 @@ export const createSelectSchemaSettingsItem = (
       return {
         title: typeof title === 'function' ? title(t) : compile(title),
         options,
-        value: _.get(filedSchema, schemaKey, defaultValue),
+        value: _.get(fieldSchema, schemaKey, defaultValue),
         onChange(v) {
-          deepMerge(getNewSchema({ fieldSchema: filedSchema, schemaKey, value: v }));
+          deepMerge(getNewSchema({ fieldSchema, schemaKey, value: v }));
         },
       };
     },

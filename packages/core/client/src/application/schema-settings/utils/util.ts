@@ -8,7 +8,9 @@
  */
 
 import { ISchema } from '@formily/json-schema';
+import { useFieldSchema } from '@formily/react';
 import _ from 'lodash';
+import { useColumnSchema } from '../../../schema-component';
 
 type IGetNewSchema = {
   fieldSchema: ISchema;
@@ -22,29 +24,28 @@ type IGetNewSchema = {
 
 export function getNewSchema(options: IGetNewSchema) {
   const { fieldSchema, schemaKey, parentSchemaKey, value, valueKeys } = options as any;
-  const clonedKey = schemaKey ? schemaKey.split('.')[0] : parentSchemaKey;
-  const fieldSchemaClone = _.cloneDeep(_.get(fieldSchema, clonedKey));
-  const res = {
-    'x-uid': fieldSchema['x-uid'],
-  };
-  _.set(res, clonedKey, fieldSchemaClone);
-  console.log('getNewSchema', res);
   if (schemaKey) {
-    _.set(res, schemaKey, value);
+    _.set(fieldSchema, schemaKey, value);
   } else if (parentSchemaKey) {
-    if (value == undefined) return res;
+    if (value == undefined) return fieldSchema;
 
     if (typeof value === 'object') {
       Object.keys(value).forEach((key) => {
         if (valueKeys && !valueKeys.includes(key)) return;
-        _.set(res, `${parentSchemaKey}.${key}`, value[key]);
+        _.set(fieldSchema, `${parentSchemaKey}.${key}`, value[key]);
       });
     } else {
       console.error('value must be object');
     }
   }
 
-  return res;
+  return fieldSchema;
 }
 
 export const useHookDefault = (defaultValues?: any) => defaultValues;
+
+export const useSchemaByType = (type: 'common' | 'field' = 'common') => {
+  const schema = useFieldSchema();
+  const { fieldSchema: tableColumnSchema } = useColumnSchema() || {};
+  return type === 'field' ? tableColumnSchema || schema : schema;
+};

@@ -12,7 +12,7 @@ import { useFieldSchema } from '@formily/react';
 import { TFunction, useTranslation } from 'react-i18next';
 
 import { SchemaSettingsItemType } from '../types';
-import { getNewSchema, useHookDefault } from './util';
+import { getNewSchema, useHookDefault, useSchemaByType } from './util';
 import { useCompile } from '../../../schema-component/hooks/useCompile';
 import { useDesignable } from '../../../schema-component/hooks/useDesignable';
 
@@ -23,6 +23,10 @@ export interface CreateSwitchSchemaSettingsItemProps {
   defaultValue?: boolean;
   useDefaultValue?: () => boolean;
   useVisible?: () => boolean;
+  /**
+   * @default 'common'
+   */
+  type?: 'common' | 'field';
 }
 
 /**
@@ -37,6 +41,7 @@ export function createSwitchSettingsItem(options: CreateSwitchSchemaSettingsItem
     useVisible,
     schemaKey,
     title,
+    type = 'common',
     defaultValue: propsDefaultValue,
     useDefaultValue = useHookDefault,
   } = options;
@@ -45,7 +50,7 @@ export function createSwitchSettingsItem(options: CreateSwitchSchemaSettingsItem
     useVisible,
     type: 'switch',
     useComponentProps() {
-      const filedSchema = useFieldSchema();
+      const fieldSchema = useSchemaByType(type);
       const { deepMerge } = useDesignable();
       const defaultValue = useDefaultValue(propsDefaultValue);
       const compile = useCompile();
@@ -53,9 +58,9 @@ export function createSwitchSettingsItem(options: CreateSwitchSchemaSettingsItem
 
       return {
         title: typeof title === 'function' ? title(t) : compile(title),
-        checked: !!_.get(filedSchema, schemaKey, defaultValue),
+        checked: !!_.get(fieldSchema, schemaKey, defaultValue),
         onChange(v) {
-          deepMerge(getNewSchema({ fieldSchema: filedSchema, schemaKey, value: v }));
+          deepMerge(getNewSchema({ fieldSchema, schemaKey, value: v }));
         },
       };
     },

@@ -12,7 +12,7 @@ import { ISchema, useFieldSchema } from '@formily/react';
 import { TFunction, useTranslation } from 'react-i18next';
 
 import { SchemaSettingsItemType } from '../types';
-import { getNewSchema, useHookDefault } from './util';
+import { getNewSchema, useHookDefault, useSchemaByType } from './util';
 import { useCompile } from '../../../schema-component/hooks/useCompile';
 import { useDesignable } from '../../../schema-component/hooks/useDesignable';
 
@@ -27,6 +27,10 @@ export interface CreateModalSchemaSettingsItemProps {
   useVisible?: () => boolean;
   width?: number | string;
   useSubmit?: () => (values: any) => void;
+  /**
+   * @default 'common'
+   */
+  type?: 'common' | 'field';
 }
 
 /**
@@ -47,13 +51,14 @@ export function createModalSettingsItem(options: CreateModalSchemaSettingsItemPr
     defaultValue: propsDefaultValue,
     useDefaultValue = useHookDefault,
     width,
+    type = 'common',
   } = options;
   return {
     name,
     type: 'actionModal',
     useVisible,
     useComponentProps() {
-      const fieldSchema = useFieldSchema();
+      const fieldSchema = useSchemaByType(type);
       const { deepMerge } = useDesignable();
       const defaultValue = useDefaultValue(propsDefaultValue);
       const values = parentSchemaKey ? _.get(fieldSchema, parentSchemaKey) : undefined;
