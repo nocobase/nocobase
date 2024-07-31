@@ -9,8 +9,7 @@
 import crypto from 'crypto';
 const algorithm = 'aes-256-cbc';
 
-// 示例用户配置的 Key
-const keyString = '12345678901234567890123456789012'; // 32 字符，适用于 AES-256
+const keyString = process.env.ENCRYPTION_FIELD_KEY;
 
 // 将字符串转换为 Buffer 对象
 const key = Buffer.from(keyString, 'utf8');
@@ -81,4 +80,13 @@ export function decryptSync(encrypted: string, ivString: string) {
   let decrypted = decipher.update(encrypted, 'hex', 'utf8');
   decrypted += decipher.final('utf8');
   return decrypted;
+}
+
+export function checkKey() {
+  if (!keyString) {
+    throw new Error('ENCRYPTION_FIELD_KEY is required, please set it in the environment variable');
+  }
+  if (keyString.length !== 32) {
+    throw new Error('ENCRYPTION_FIELD_KEY must be 32 characters');
+  }
 }

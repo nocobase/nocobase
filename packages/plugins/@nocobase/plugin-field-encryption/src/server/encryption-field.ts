@@ -9,7 +9,7 @@
 
 import { BaseColumnFieldOptions, Field, Model } from '@nocobase/database';
 import { DataTypes } from 'sequelize';
-import { decrypt, encrypt } from './utils';
+import { decrypt, encrypt, checkKey } from './utils';
 
 export interface EncryptionFieldOptions extends BaseColumnFieldOptions {
   type: 'encryption';
@@ -23,6 +23,7 @@ export class EncryptionField extends Field {
   init() {
     const { name, iv } = this.options;
     this.writeListener = async (model: Model) => {
+      checkKey();
       if (!model.changed(name as any)) {
         return;
       }

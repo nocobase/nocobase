@@ -11,6 +11,7 @@ import { Plugin } from '@nocobase/server';
 import { EncryptionField } from './encryption-field';
 import { $encryptionEq } from './operators/eq';
 import { $encryptionNe } from './operators/ne';
+import { checkKey } from './utils';
 
 export class PluginFieldEncryptionServer extends Plugin {
   async load() {
@@ -21,6 +22,12 @@ export class PluginFieldEncryptionServer extends Plugin {
     this.db.registerOperators({
       $encryptionEq,
       $encryptionNe,
+    });
+
+    this.db.on('fields.beforeCreate', (model, field) => {
+      if (field.values?.type === 'encryption') {
+        checkKey();
+      }
     });
   }
 }
