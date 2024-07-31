@@ -11,6 +11,7 @@ import { Schema } from '@formily/json-schema';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useOperators } from '../../../block-provider/CollectOperators';
+import { useDatePickerContext } from '../../../schema-component/antd/date-picker/DatePicker';
 import { getDateRanges } from '../../../schema-component/antd/date-picker/util';
 
 interface Props {
@@ -196,6 +197,7 @@ export const useDateVariable = ({ operator, schema, noDisabled }: Props) => {
 export const useDatetimeVariable = ({ operator, schema, noDisabled, targetFieldSchema }: Props = {}) => {
   const { t } = useTranslation();
   const { getOperator } = useOperators();
+  const { utc = true } = useDatePickerContext();
 
   const datetimeSettings = useMemo(() => {
     const operatorValue = operator?.value || getOperator(targetFieldSchema?.name) || '';
@@ -346,7 +348,7 @@ export const useDatetimeVariable = ({ operator, schema, noDisabled, targetFieldS
     };
   }, [schema?.['x-component'], targetFieldSchema]);
 
-  const datetimeCtx = useMemo(() => getDateRanges(), []);
+  const datetimeCtx = useMemo(() => getDateRanges({ shouldBeString: true, utc }), [utc]);
 
   return {
     datetimeSettings,
