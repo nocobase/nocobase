@@ -409,7 +409,7 @@ export default class extends Instruction {
       ['x-validator'](value, rules, { form }) {
         const { values } = form;
         const { evaluate } = evaluators.get(values.engine);
-        const exp = value.trim().replace(/{{([^{}]+)}}/g, ' 1 ');
+        const exp = value.trim().replace(/{{([^{}]+)}}/g, ' "1" ');
         try {
           evaluate(exp);
           return '';
