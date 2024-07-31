@@ -84,9 +84,19 @@ describe('export to xlsx with preset', () => {
       // read xlsx file
       const workbook = XLSX.readFile(xlsxFilePath);
       const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-      const sheetData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
 
-      const header = sheetData[0];
+      // cell type should be number
+      const cellA2 = firstSheet['A2'];
+      expect(cellA2.t).toBe('s');
+      expect(cellA2.v).toBe('p1');
+
+      const cellB2 = firstSheet['B2'];
+      expect(cellB2.t).toBe('n');
+      expect(cellB2.v).toBe(123);
+
+      const cellC2 = firstSheet['C2'];
+      expect(cellC2.t).toBe('n');
+      expect(cellC2.v).toBe(123.456);
     } finally {
       fs.unlinkSync(xlsxFilePath);
     }
