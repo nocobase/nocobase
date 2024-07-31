@@ -11,6 +11,7 @@ import { uid } from '@nocobase/utils';
 import Application from '../application';
 import { HandlerManager } from './handler-manager';
 import {
+  PubSubCallback,
   type IPubSubAdapter,
   type PubSubManagerOptions,
   type PubSubManagerPublishOptions,
@@ -47,7 +48,7 @@ export class PubSubManager {
   }
 
   async isConnected() {
-    return this.adapter?.isConnected();
+    return !!this.adapter?.isConnected();
   }
 
   async connect() {
@@ -68,17 +69,17 @@ export class PubSubManager {
     return await this.adapter.close();
   }
 
-  async subscribe(channel: string, callback, options: PubSubManagerSubscribeOptions = {}) {
+  async subscribe(channel: string, callback: PubSubCallback, options: PubSubManagerSubscribeOptions = {}) {
     // 先退订，防止重复订阅
     await this.unsubscribe(channel, callback);
     const handler = this.handlerManager.set(channel, callback, options);
     // 连接之后才能订阅
-    if (await this.adapter.isConnected()) {
+    if (await this.isConnected()) {
       await this.adapter.subscribe(`${this.channelPrefix}${channel}`, handler);
     }
   }
 
-  async unsubscribe(channel, callback) {
+  async unsubscribe(channel: string, callback: PubSubCallback) {
     const handler = this.handlerManager.delete(channel, callback);
 
     if (!this.adapter || !handler) {
@@ -88,7 +89,7 @@ export class PubSubManager {
     return this.adapter.unsubscribe(`${this.channelPrefix}${channel}`, handler);
   }
 
-  async publish(channel, message, options?: PubSubManagerPublishOptions) {
+  async publish(channel: string, message: any, options?: PubSubManagerPublishOptions) {
     if (!this.adapter) {
       return;
     }

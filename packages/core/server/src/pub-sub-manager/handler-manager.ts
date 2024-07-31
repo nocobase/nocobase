@@ -11,7 +11,7 @@ import _ from 'lodash';
 import { type PubSubManagerSubscribeOptions } from './types';
 
 export class HandlerManager {
-  headlers: Map<any, any>;
+  handlers: Map<any, any>;
   uniqueMessageHandlers: Map<any, any>;
 
   constructor(protected publisherId: string) {
@@ -76,17 +76,17 @@ export class HandlerManager {
   }
 
   set(channel: string, callback, options: PubSubManagerSubscribeOptions) {
-    if (!this.headlers.has(channel)) {
-      this.headlers.set(channel, new Map());
+    if (!this.handlers.has(channel)) {
+      this.handlers.set(channel, new Map());
     }
-    const headlerMap = this.headlers.get(channel);
+    const headlerMap = this.handlers.get(channel);
     const headler = this.wrapper(channel, callback, options);
     headlerMap.set(callback, headler);
     return headler;
   }
 
   get(channel: string, callback) {
-    const headlerMap = this.headlers.get(channel);
+    const headlerMap = this.handlers.get(channel);
     if (!headlerMap) {
       return;
     }
@@ -94,7 +94,7 @@ export class HandlerManager {
   }
 
   delete(channel: string, callback) {
-    const headlerMap = this.headlers.get(channel);
+    const headlerMap = this.handlers.get(channel);
     if (!headlerMap) {
       return;
     }
@@ -104,12 +104,12 @@ export class HandlerManager {
   }
 
   reset() {
-    this.headlers = new Map();
+    this.handlers = new Map();
     this.uniqueMessageHandlers = new Map();
   }
 
   async each(callback) {
-    for (const [channel, headlerMap] of this.headlers) {
+    for (const [channel, headlerMap] of this.handlers) {
       for (const headler of headlerMap.values()) {
         await callback(channel, headler);
       }
