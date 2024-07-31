@@ -9,7 +9,7 @@
 
 import { Filter, withDynamicSchemaProps } from '@nocobase/client';
 import { Popup } from 'antd-mobile';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 
 const OriginFilterAction = Filter.Action;
 
@@ -52,9 +52,19 @@ export const FilterAction = withDynamicSchemaProps((props) => {
   );
 });
 
+FilterAction.displayName = 'FilterAction';
+
+const originalFilterAction = Filter.Action;
+
 /**
- * 重置 FilterAction，使其样式更符合移动端
+ * adapt Filter.Action to mobile
  */
-export const usedToResetFilterActionForMobile = () => {
+export const useToAdaptFilterActionToMobile = () => {
   Filter.Action = FilterAction;
+
+  useEffect(() => {
+    return () => {
+      Filter.Action = originalFilterAction;
+    };
+  }, []);
 };

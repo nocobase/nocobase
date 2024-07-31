@@ -85,12 +85,12 @@ export const MobileActionPage = ({ level, footerNodeName }) => {
   useMobileBlockInitializersInSubpage();
 
   const field = useField();
-  const filedSchema = useFieldSchema();
+  const fieldSchema = useFieldSchema();
   const ctx = useActionContext();
   const { styles } = useMobileActionPageStyle();
   const tabContext = useTabsContext();
   const containerDOM = useMemo(() => document.querySelector('.nb-mobile-subpages-slot'), []);
-  const footerSchema = filedSchema.reduceProperties((buf, s) => {
+  const footerSchema = fieldSchema.reduceProperties((buf, s) => {
     if (s['x-component'] === footerNodeName) {
       return s;
     }
@@ -111,13 +111,13 @@ export const MobileActionPage = ({ level, footerNodeName }) => {
   const actionPageNode = (
     <div className={styles.container} style={style}>
       <TabsContextProvider {...tabContext} tabBarExtraContent={<BackButtonUsedInSubPage />} tabBarGutter={48}>
-        <SchemaComponent components={components} schema={filedSchema} onlyRenderProperties />
+        <SchemaComponent components={components} schema={fieldSchema} onlyRenderProperties />
       </TabsContextProvider>
       {footerSchema && (
         <div className={styles.footer}>
           <RecursionField
             basePath={field.address}
-            schema={filedSchema}
+            schema={fieldSchema}
             onlyRenderProperties
             filterProperties={(s) => {
               return s['x-component'] === footerNodeName;

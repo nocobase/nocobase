@@ -18,7 +18,8 @@ import {
 import React from 'react';
 import { isDesktop } from 'react-device-detect';
 
-import { usedToResetFilterActionForMobile } from '../adaptor-of-desktop/FilterAction';
+import { useToAdaptActionDrawerToMobile } from '../adaptor-of-desktop/ActionDrawer';
+import { useToAdaptFilterActionToMobile } from '../adaptor-of-desktop/FilterAction';
 import { ResetSchemaOptionsProvider } from '../adaptor-of-desktop/ResetSchemaOptionsProvider';
 import { PageBackgroundColor } from '../constants';
 import { DesktopMode } from '../desktop-mode/DesktopMode';
@@ -27,7 +28,8 @@ import { MobileActionPage } from '../pages/mobile-action-page/MobileActionPage';
 import { MobileAppProvider } from './MobileAppContext';
 
 export const Mobile = () => {
-  usedToResetFilterActionForMobile();
+  useToAdaptFilterActionToMobile();
+  useToAdaptActionDrawerToMobile();
 
   const mobilePlugin = usePlugin(PluginMobileClient);
   const MobileRouter = mobilePlugin.getRouterComponent();
