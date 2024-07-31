@@ -110,24 +110,22 @@ export default class PluginWorkflowServer extends Plugin {
     }
   };
 
-  async onSync(message) {
+  async handleSyncMessage(message) {
     if (message.type === 'statusChange') {
-      const workflowId = Number.parseInt(message.workflowId, 10);
-      const enabled = Number.parseInt(message.enabled, 10);
-      if (enabled) {
-        let workflow = this.enabledCache.get(workflowId);
+      if (message.enabled) {
+        let workflow = this.enabledCache.get(message.workflowId);
         if (workflow) {
           await workflow.reload();
         } else {
           workflow = await this.db.getRepository('workflows').findOne({
-            filterByTk: workflowId,
+            filterByTk: message.workflowId,
           });
         }
         if (workflow) {
           this.toggle(workflow, true, true);
         }
       } else {
-        const workflow = this.enabledCache.get(workflowId);
+        const workflow = this.enabledCache.get(message.workflowId);
         if (workflow) {
           this.toggle(workflow, false, true);
         }
@@ -342,10 +340,10 @@ export default class PluginWorkflowServer extends Plugin {
       this.enabledCache.delete(workflow.id);
     }
     if (!silent) {
-      this.sync({
+      this.sendSyncMessage({
         type: 'statusChange',
-        workflowId: `${workflow.id}`,
-        enabled: `${Number(next)}`,
+        workflowId: workflow.id,
+        enabled: next,
       });
     }
   }
@@ -356,6 +354,10 @@ export default class PluginWorkflowServer extends Plugin {
     options: EventOptions = {},
   ): void | Promise<Processor | null> {
     const logger = this.getLogger(workflow.id);
+    if (!workflow.enabled) {
+      logger.warn(`workflow ${workflow.id} is not enabled, event will be ignored`);
+      return;
+    }
     if (!this.ready) {
       logger.warn(`app is not ready, event of workflow ${workflow.id} will be ignored`);
       logger.debug(`ignored event data:`, context);

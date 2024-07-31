@@ -60,7 +60,6 @@ import validateFilterParams from './middlewares/validate-filter-params';
 import { Plugin } from './plugin';
 import { InstallOptions, PluginManager } from './plugin-manager';
 import { createPubSubManager, PubSubManager, PubSubManagerOptions } from './pub-sub-manager';
-import { SyncManager } from './sync-manager';
 import { SyncMessageManager } from './sync-message-manager';
 
 import packageJson from '../package.json';
@@ -229,7 +228,6 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   /**
    * @internal
    */
-  public syncManager: SyncManager;
   public pubSubManager: PubSubManager;
   public syncMessageManager: SyncMessageManager;
   public requestLogger: Logger;
@@ -1130,7 +1128,6 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     this._cli = this.createCLI();
     this._i18n = createI18n(options);
-    this.syncManager = new SyncManager(this);
     this.pubSubManager = createPubSubManager(this, {
       channelPrefix: this.name,
       ...options.pubSubManager,
