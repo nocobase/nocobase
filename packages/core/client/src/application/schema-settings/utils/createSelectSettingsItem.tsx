@@ -8,7 +8,7 @@
  */
 
 import _ from 'lodash';
-import { useFieldSchema } from '@formily/react';
+import { useField, useFieldSchema } from '@formily/react';
 import { TFunction, useTranslation } from 'react-i18next';
 
 import { SchemaSettingsItemType } from '../types';
@@ -16,6 +16,7 @@ import { getNewSchema, useHookDefault, useSchemaByType } from './util';
 import { SelectProps } from '../../../schema-component/antd/select';
 import { useCompile } from '../../../schema-component/hooks/useCompile';
 import { useDesignable } from '../../../schema-component/hooks/useDesignable';
+import { useColumnSchema } from '../../../schema-component';
 
 interface CreateSelectSchemaSettingsItemProps {
   name: string;
@@ -58,7 +59,8 @@ export const createSelectSchemaSettingsItem = (
     useVisible,
     useComponentProps() {
       const fieldSchema = useSchemaByType(type);
-      const { deepMerge } = useDesignable();
+      const { fieldSchema: tableColumnSchema } = useColumnSchema() || {};
+      const { dn } = useDesignable();
       const options = useOptions(propsOptions);
       const defaultValue = useDefaultValue(propsDefaultValue);
       const compile = useCompile();
@@ -69,7 +71,15 @@ export const createSelectSchemaSettingsItem = (
         options,
         value: _.get(fieldSchema, schemaKey, defaultValue),
         onChange(v) {
-          deepMerge(getNewSchema({ fieldSchema, schemaKey, value: v }));
+          const newSchema = getNewSchema({ fieldSchema, schemaKey, value: v });
+          if (tableColumnSchema) {
+            dn.emit('patch', {
+              schema: newSchema,
+            });
+            dn.refresh();
+          } else {
+            dn.deepMerge(newSchema);
+          }
         },
       };
     },

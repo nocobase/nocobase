@@ -15,6 +15,7 @@ import { SchemaSettingsItemType } from '../types';
 import { getNewSchema, useHookDefault, useSchemaByType } from './util';
 import { useCompile } from '../../../schema-component/hooks/useCompile';
 import { useDesignable } from '../../../schema-component/hooks/useDesignable';
+import { useColumnSchema } from '../../../schema-component';
 
 export interface CreateSwitchSchemaSettingsItemProps {
   name: string;
@@ -51,16 +52,25 @@ export function createSwitchSettingsItem(options: CreateSwitchSchemaSettingsItem
     type: 'switch',
     useComponentProps() {
       const fieldSchema = useSchemaByType(type);
-      const { deepMerge } = useDesignable();
+      const { dn } = useDesignable();
       const defaultValue = useDefaultValue(propsDefaultValue);
       const compile = useCompile();
       const { t } = useTranslation();
+      const { fieldSchema: tableColumnSchema } = useColumnSchema() || {};
 
       return {
         title: typeof title === 'function' ? title(t) : compile(title),
         checked: !!_.get(fieldSchema, schemaKey, defaultValue),
         onChange(v) {
-          deepMerge(getNewSchema({ fieldSchema, schemaKey, value: v }));
+          const newSchema = getNewSchema({ fieldSchema, schemaKey, value: v });
+          if (tableColumnSchema) {
+            dn.emit('patch', {
+              schema: newSchema,
+            });
+            dn.refresh();
+          } else {
+            dn.deepMerge(newSchema);
+          }
         },
       };
     },
