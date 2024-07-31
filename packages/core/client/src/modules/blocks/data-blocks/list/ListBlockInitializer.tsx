@@ -13,7 +13,6 @@ import { useSchemaInitializer, useSchemaInitializerItem } from '../../../../appl
 import { useCollectionManager_deprecated } from '../../../../collection-manager';
 import { Collection, CollectionFieldOptions } from '../../../../data-source/collection/Collection';
 import { DataBlockInitializer } from '../../../../schema-initializer/items/DataBlockInitializer';
-import { useBlockTemplateContext } from '../../../../schema-templates/BlockTemplateProvider';
 import { createListBlockUISchema } from './createListBlockUISchema';
 
 export const ListBlockInitializer = ({
@@ -45,13 +44,12 @@ export const ListBlockInitializer = ({
 }) => {
   const itemConfig = useSchemaInitializerItem();
   const { createListBlock } = useCreateListBlock();
-  const { componentNamePrefix } = useBlockTemplateContext();
 
   return (
     <DataBlockInitializer
       {...itemConfig}
       icon={<OrderedListOutlined />}
-      componentType={`${componentNamePrefix}List`}
+      componentType={`List`}
       onCreateBlockSchema={async (options) => {
         if (createBlockSchema) {
           return createBlockSchema(options);

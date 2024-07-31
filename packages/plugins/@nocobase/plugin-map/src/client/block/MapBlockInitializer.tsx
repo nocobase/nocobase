@@ -15,7 +15,6 @@ import {
   FormDialog,
   SchemaComponent,
   SchemaComponentOptions,
-  useBlockTemplateContext,
   useCollectionManager_deprecated,
   useGlobalTheme,
   useSchemaInitializer,
@@ -33,11 +32,10 @@ export const MapBlockInitializer = () => {
   const { getCollectionFieldsOptions } = useCollectionManager_deprecated();
   const { t } = useMapTranslation();
   const { theme } = useGlobalTheme();
-  const { componentNamePrefix } = useBlockTemplateContext();
 
   return (
     <DataBlockInitializer
-      componentType={`${componentNamePrefix}Map`}
+      componentType={`Map`}
       icon={<TableOutlined />}
       onCreateBlockSchema={async ({ item }) => {
         const mapFieldOptions = getCollectionFieldsOptions(item.name, ['point', 'lineString', 'polygon'], {

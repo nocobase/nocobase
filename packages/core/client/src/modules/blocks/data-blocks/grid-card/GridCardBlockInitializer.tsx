@@ -13,7 +13,6 @@ import { useSchemaInitializer, useSchemaInitializerItem } from '../../../../appl
 import { useCollectionManager_deprecated } from '../../../../collection-manager';
 import { Collection, CollectionFieldOptions } from '../../../../data-source/collection/Collection';
 import { DataBlockInitializer } from '../../../../schema-initializer/items/DataBlockInitializer';
-import { useBlockTemplateContext } from '../../../../schema-templates/BlockTemplateProvider';
 import { createGridCardBlockUISchema } from './createGridCardBlockUISchema';
 
 export const GridCardBlockInitializer = ({
@@ -45,13 +44,12 @@ export const GridCardBlockInitializer = ({
 }) => {
   const itemConfig = useSchemaInitializerItem();
   const { createGridCardBlock } = useCreateGridCardBlock();
-  const { componentNamePrefix } = useBlockTemplateContext();
 
   return (
     <DataBlockInitializer
       {...itemConfig}
       icon={<OrderedListOutlined />}
-      componentType={`${componentNamePrefix}GridCard`}
+      componentType={`GridCard`}
       onCreateBlockSchema={async (options) => {
         if (createBlockSchema) {
           return createBlockSchema(options);

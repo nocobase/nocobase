@@ -22,7 +22,6 @@ import {
   SchemaComponent,
   SchemaComponentOptions,
   useAPIClient,
-  useBlockTemplateContext,
   useCollectionManager_deprecated,
   useGlobalTheme,
   useSchemaInitializer,
@@ -127,12 +126,11 @@ export const KanbanBlockInitializer = ({
 }) => {
   const itemConfig = useSchemaInitializerItem();
   const { createKanbanBlock } = useCreateKanbanBlock();
-  const { componentNamePrefix } = useBlockTemplateContext();
 
   return (
     <DataBlockInitializer
       {...itemConfig}
-      componentType={`${componentNamePrefix}Calendar`}
+      componentType={`Calendar`}
       icon={<FormOutlined />}
       onCreateBlockSchema={async (options) => {
         if (createBlockSchema) {

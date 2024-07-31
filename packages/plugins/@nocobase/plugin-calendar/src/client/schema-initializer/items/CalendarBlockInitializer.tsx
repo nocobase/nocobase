@@ -17,7 +17,6 @@ import {
   FormDialog,
   SchemaComponent,
   SchemaComponentOptions,
-  useBlockTemplateContext,
   useCollectionManager_deprecated,
   useGlobalTheme,
   useSchemaInitializer,
@@ -42,12 +41,11 @@ export const CalendarBlockInitializer = ({
 }) => {
   const itemConfig = useSchemaInitializerItem();
   const { createCalendarBlock } = useCreateCalendarBlock();
-  const { componentNamePrefix } = useBlockTemplateContext();
 
   return (
     <DataBlockInitializer
       {...itemConfig}
-      componentType={`${componentNamePrefix}Calendar`}
+      componentType={`Calendar`}
       icon={<FormOutlined />}
       onCreateBlockSchema={async (options) => {
         if (createBlockSchema) {

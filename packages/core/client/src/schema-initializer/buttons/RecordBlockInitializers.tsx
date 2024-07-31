@@ -29,7 +29,6 @@ import { useCreateDetailsBlock } from '../../modules/blocks/data-blocks/details-
 import { useCreateSingleDetailsSchema } from '../../modules/blocks/data-blocks/details-single/RecordReadPrettyFormBlockInitializer';
 import { useCreateGridCardBlock } from '../../modules/blocks/data-blocks/grid-card/GridCardBlockInitializer';
 import { useCreateListBlock } from '../../modules/blocks/data-blocks/list/ListBlockInitializer';
-import { useBlockTemplateContext } from '../../schema-templates/BlockTemplateProvider';
 import { gridRowColWrap } from '../utils';
 
 const recursiveParent = (schema: Schema) => {
@@ -90,7 +89,6 @@ function useRecordBlocks() {
             createSingleDetailsSchema,
           ],
         );
-        const { componentNamePrefix } = useBlockTemplateContext();
         return {
           filterCollections({ collection, associationField }) {
             if (collection) {
@@ -103,7 +101,7 @@ function useRecordBlocks() {
           },
           onlyCurrentDataSource: true,
           hideSearch: true,
-          componentType: `${componentNamePrefix}ReadPrettyFormItem`,
+          componentType: `ReadPrettyFormItem`,
           createBlockSchema,
           templateWrap: useCallback(
             (templateSchema, { item }) => {
@@ -130,7 +128,6 @@ function useRecordBlocks() {
       useComponentProps() {
         const currentCollection = useCollection_deprecated();
         const { createEditFormBlock, templateWrap: templateWrapEdit } = useCreateEditFormBlock();
-        const { componentNamePrefix } = useBlockTemplateContext();
         const collectionsNeedToDisplay = [currentCollection, ...collectionsWithView];
 
         return {
@@ -143,7 +140,7 @@ function useRecordBlocks() {
           onlyCurrentDataSource: true,
           hideSearch: true,
           hideOtherRecordsInPopup: true,
-          componentType: `${componentNamePrefix}FormItem`,
+          componentType: `FormItem`,
           createBlockSchema: createEditFormBlock,
           templateWrap: templateWrapEdit,
           showAssociationFields: true,
@@ -160,7 +157,6 @@ function useRecordBlocks() {
       useComponentProps() {
         const { createAssociationFormBlock, templateWrap } = useCreateAssociationFormBlock();
         const { createFormBlock, templateWrap: templateWrapCollection } = useCreateFormBlock();
-        const { componentNamePrefix } = useBlockTemplateContext();
         return {
           filterCollections({ collection, associationField }) {
             if (associationField) {
@@ -170,7 +166,7 @@ function useRecordBlocks() {
           },
           onlyCurrentDataSource: true,
           hideSearch: true,
-          componentType: `${componentNamePrefix}FormItem`,
+          componentType: `FormItem`,
           createBlockSchema: ({ item, fromOthersInPopup }) => {
             if (fromOthersInPopup) {
               return createFormBlock({ item, fromOthersInPopup });

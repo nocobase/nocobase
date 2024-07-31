@@ -13,7 +13,6 @@ import React from 'react';
 import { useSchemaInitializer, useSchemaInitializerItem } from '../../../../application';
 import { Collection, CollectionFieldOptions } from '../../../../data-source';
 import { DataBlockInitializer } from '../../../../schema-initializer/items/DataBlockInitializer';
-import { useBlockTemplateContext } from '../../../../schema-templates/BlockTemplateProvider';
 import { createCollapseBlockSchema } from './createFilterCollapseBlockSchema';
 
 export const FilterCollapseBlockInitializer = ({
@@ -27,14 +26,13 @@ export const FilterCollapseBlockInitializer = ({
 }) => {
   const itemConfig = useSchemaInitializerItem();
   const { insert } = useSchemaInitializer();
-  const { componentNamePrefix } = useBlockTemplateContext();
 
   return (
     <DataBlockInitializer
       {...itemConfig}
       onlyCurrentDataSource={onlyCurrentDataSource}
       icon={<TableOutlined />}
-      componentType={`${componentNamePrefix}FilterCollapse`}
+      componentType={`FilterCollapse`}
       onCreateBlockSchema={async ({ item }) => {
         const schema = createCollapseBlockSchema({
           dataSource: item.dataSource,
