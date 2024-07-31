@@ -143,7 +143,7 @@ class PluginCollectionTreeServer extends Plugin {
         const existDatas = await this.app.db.getRepository(treeCollection.name).find({});
         for (const data of existDatas) {
           let path = `/${data.get(treeCollectionModel.filterTargetKey)}`;
-          path = await this.getTreePath(data, path, treeCollectionModel as Model);
+          path = await this.getTreePath(data, path, treeCollectionModel as unknown as Model);
           await this.app.db.getRepository(name).create({
             values: {
               nodePk: data.get(treeCollectionModel.filterTargetKey),

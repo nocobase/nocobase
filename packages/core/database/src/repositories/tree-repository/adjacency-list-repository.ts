@@ -195,7 +195,7 @@ export class AdjacencyListRepository extends Repository {
   }
 
   async findAndCount(
-    options?: FindAndCountOptions & { tree?: boolean; fields?: string[]; filter?: any },
+    options?: FindAndCountOptions & { tree?: boolean; fields?: string[]; filter?: any; context?: any },
   ): Promise<[Model[], number]> {
     let totalCount = 0;
     let datas = [];
