@@ -30,6 +30,9 @@ class PluginCollectionTreeServer extends Plugin {
           }
           const name = `${dataSource.name}_${collection.name}_path`;
 
+          //always define tree path collection
+          this.defineTreePathCollection(name, collectionManager);
+
           //afterSync
           collectionManager.db.on(`${collection.name}.afterSync`, async (collection: Model) => {
             //sync exisit tree collection path table
@@ -41,7 +44,6 @@ class PluginCollectionTreeServer extends Plugin {
               treeExistsInDb = await treePathCollection.existsInDb();
             }
             if (!treeExistsInDb) {
-              await this.defineTreePathCollection(name, collectionManager);
               await this.db
                 .getCollection(name)
                 .sync({ transaction: collection.transaction, force: false, alter: true } as SyncOptions);
@@ -84,13 +86,11 @@ class PluginCollectionTreeServer extends Plugin {
 
           //afterDestroy
           this.db.on(`${collection.name}.afterDestroy`, async (model: Model, options: DestroyOptions) => {
-            delete options.filterByTk;
-            delete options.where;
             await this.app.db.getRepository(name).destroy({
               filter: {
                 nodePk: model.get(collection.filterTargetKey),
               },
-              ...options,
+              transaction: options.transaction,
             });
           });
         });
