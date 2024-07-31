@@ -262,7 +262,7 @@ const category: TokenTree<keyof AliasToken | string> = [
         nameEn: 'Shadow',
         desc: '',
         descEn: '',
-        mapToken: ['boxShadow', 'boxShadowSecondary', 'boxShadowBlock'],
+        mapToken: ['boxShadow', 'boxShadowSecondary'],
       },
     ],
   },
