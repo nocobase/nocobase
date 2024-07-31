@@ -27,6 +27,15 @@ export class EncryptionFieldInterface extends CollectionFieldInterface {
   hasDefaultValue = true;
   properties = {
     ...defaultProps,
+    hidden: {
+      type: 'boolean',
+      title: '{{t("Hidden")}}',
+      required: true,
+      default: true,
+      'x-decorator': 'FormItem',
+      'x-component': 'Checkbox',
+      description: "{{t('Interface response does not return the value of this field')}}",
+    },
   };
   filterable = {
     operators: [
