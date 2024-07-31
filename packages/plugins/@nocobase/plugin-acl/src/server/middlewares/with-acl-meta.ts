@@ -226,13 +226,22 @@ function createWithACLMetaMiddleware() {
         Model,
       );
 
-      const whereCase = actionSql.match(/WHERE (.*?);/)[1];
+      const whereCaseMatch = actionSql.match(/WHERE (.*?);/);
+      if (!whereCaseMatch) {
+        conditions.push({
+          whereCase: '1=1',
+          action,
+          include: queryParams.include,
+        });
+      } else {
+        const whereCase = actionSql.match(/WHERE (.*?);/)[1];
 
-      conditions.push({
-        whereCase,
-        action,
-        include: queryParams.include,
-      });
+        conditions.push({
+          whereCase,
+          action,
+          include: queryParams.include,
+        });
+      }
     }
 
     const results = await collection.model.findAll({
