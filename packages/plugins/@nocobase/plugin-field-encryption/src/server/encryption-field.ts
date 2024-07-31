@@ -36,6 +36,7 @@ export class EncryptionField extends Field {
     };
 
     this.findListener = async (instances, options) => {
+      instances = Array.isArray(instances) ? instances : [instances];
       await Promise.all(
         instances.map(async (instance) => {
           if (instance.get?.(name)) {
