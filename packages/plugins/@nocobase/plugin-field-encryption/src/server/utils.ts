@@ -84,9 +84,9 @@ export function decryptSync(encrypted: string, ivString: string) {
 
 export function checkKey() {
   if (!keyString) {
-    throw new Error('ENCRYPTION_FIELD_KEY is required, please set it in the environment variable');
+    throw new Error('The environment variable `ENCRYPTION_FIELD_KEY` is required, please set it');
   }
   if (keyString.length !== 32) {
-    throw new Error('ENCRYPTION_FIELD_KEY must be 32 characters');
+    throw new Error('The environment variable `ENCRYPTION_FIELD_KEY` must be a 32-character string');
   }
 }

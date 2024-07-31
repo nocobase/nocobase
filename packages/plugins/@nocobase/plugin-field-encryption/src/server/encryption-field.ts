@@ -29,8 +29,13 @@ export class EncryptionField extends Field {
       }
       const value = model.get(name) as string;
       if (value) {
-        const encrypted = await encrypt(value, iv);
-        model.set(name, encrypted);
+        try {
+          const encrypted = await encrypt(value, iv);
+          model.set(name, encrypted);
+        } catch (error) {
+          console.error(error);
+          throw new Error('Encryption failed');
+        }
       } else {
         model.set(name, null);
       }
@@ -41,7 +46,12 @@ export class EncryptionField extends Field {
       await Promise.all(
         instances.map(async (instance) => {
           if (instance.get?.(name)) {
-            instance.set(name, await decrypt(instance.get(name), iv));
+            try {
+              instance.set(name, await decrypt(instance.get(name), iv));
+            } catch (error) {
+              console.error(error);
+              throw new Error('Decryption failed, the environment variable `ENCRYPTION_FIELD_KEY` may be incorrect');
+            }
           }
           return instance;
         }),

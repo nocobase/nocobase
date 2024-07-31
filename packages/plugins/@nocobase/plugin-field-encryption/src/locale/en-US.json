@@ -1,4 +1,8 @@
 {
   "The response result does not return the value of this field": "The response result does not return the value of this field",
-  "Encryption": "Encryption"
+  "Encryption": "Encryption",
+  "Encryption failed": "Encryption failed",
+  "Decryption failed, the environment variable `ENCRYPTION_FIELD_KEY` may be incorrect": "Decryption failed, the environment variable `ENCRYPTION_FIELD_KEY` may be incorrect",
+  "The environment variable `ENCRYPTION_FIELD_KEY` is required, please set it": "The environment variable `ENCRYPTION_FIELD_KEY` is required, please set it",
+  "The environment variable `ENCRYPTION_FIELD_KEY` must be a 32-character string": "The environment variable `ENCRYPTION_FIELD_KEY` must be a 32-character string"
 }
