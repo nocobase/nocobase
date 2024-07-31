@@ -33,11 +33,15 @@ class PluginCollectionTreeServer extends Plugin {
           //always define tree path collection
           this.defineTreePathCollection(name, collectionManager);
 
+          //sync exist tree collection path table
+          this.db.on(`${name}.afterSync`, async (collection: Model) => {
+            await this.syncExistTreeCollectionPathTable();
+          });
+
           //afterSync
           collectionManager.db.on(`${collection.name}.afterSync`, async (collection: Model) => {
-            //sync exisit tree collection path table
-            await this.syncExistTreeCollectionPathTable();
-
+            // trigger tree path collection creat logic
+            await this.db.getCollection(name).sync({ transaction: collection.transaction } as SyncOptions);
             const treePathCollection = await this.app.db.getCollection(name);
             let treeExistsInDb = false;
             if (treePathCollection) {
@@ -140,8 +144,8 @@ class PluginCollectionTreeServer extends Plugin {
       if (!treeExistsInDb) {
         await this.db.getCollection(name).sync({ force: false, alter: true });
         const treeCollectionModel = this.app.db.getCollection(treeCollection.name);
-        const existDatas = await this.app.db.getRepository(treeCollection.name).find({});
-        for (const data of existDatas) {
+        const existData = await this.app.db.getRepository(treeCollection.name).find({});
+        for (const data of existData) {
           let path = `/${data.get(treeCollectionModel.filterTargetKey)}`;
           path = await this.getTreePath(data, path, treeCollectionModel as unknown as Model);
           await this.app.db.getRepository(name).create({
@@ -157,7 +161,7 @@ class PluginCollectionTreeServer extends Plugin {
   }
 
   private async defineTreePathCollection(name: string, collectionManager: SequelizeCollectionManager) {
-    collectionManager.db.collection({
+    this.db.collection({
       name,
       autoGenId: false,
       timestamps: false,
