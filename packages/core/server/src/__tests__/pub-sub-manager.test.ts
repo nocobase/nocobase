@@ -104,28 +104,10 @@ describe('skipSelf, unsubscribe, debounce', () => {
     pubSubManager.publish('test1', 'message2');
     pubSubManager.publish('test1', 'message2');
     await sleep(500);
-    //@ts-ignore
-    expect(pubSubManager['messageHandlers'].size).toBe(2);
+    expect(pubSubManager['handlerManager']['uniqueMessageHandlers'].size).toBe(2);
     await sleep(2000);
-    //@ts-ignore
-    expect(pubSubManager['messageHandlers'].size).toBe(0);
+    expect(pubSubManager['handlerManager']['uniqueMessageHandlers'].size).toBe(0);
     expect(mockListener).toBeCalledTimes(2);
-  });
-
-  test('debounce', async () => {
-    const mockListener = vi.fn();
-    await pubSubManager.subscribeAll(mockListener, { debounce: 1000 });
-    pubSubManager.publish('test1', 'message1');
-    pubSubManager.publish('test1', 'message1');
-    pubSubManager.publish('test1', 'message2');
-    pubSubManager.publish('test1', 'message2');
-    pubSubManager.publish('test2', 'message2');
-    pubSubManager.publish('test2', 'message2');
-    await sleep(500);
-    expect(pubSubManager['messageHandlers'].size).toBe(3);
-    await sleep(2000);
-    expect(pubSubManager['messageHandlers'].size).toBe(0);
-    expect(mockListener).toBeCalledTimes(3);
   });
 
   test('message format', async () => {
@@ -163,22 +145,6 @@ describe('skipSelf, unsubscribe, debounce', () => {
     await pubSubManager.unsubscribe('test1', mockListener);
     await pubSubManager.publish('test1', 'message1');
     expect(mockListener).toBeCalledTimes(1);
-  });
-
-  test('subscribeAll + skipSelf: true', async () => {
-    const mockListener = vi.fn();
-    await pubSubManager.subscribeAll(mockListener);
-    await pubSubManager.publish('test1', 'message1');
-    expect(mockListener).toHaveBeenCalled();
-    expect(mockListener).toBeCalledTimes(1);
-    expect(mockListener).toHaveBeenCalledWith('test1', 'message1');
-  });
-
-  test('publish + skipSelf: false', async () => {
-    const mockListener = vi.fn();
-    await pubSubManager.subscribeAll(mockListener);
-    await pubSubManager.publish('test1', 'message1', { skipSelf: true });
-    expect(mockListener).not.toHaveBeenCalled();
   });
 });
 
@@ -249,8 +215,7 @@ describe('app.pubSubManager', () => {
   });
 
   test('adapter', async () => {
-    expect(pubSubManager.connected).toBe(true);
-    expect(pubSubManager.adapter).toBeInstanceOf(MemoryPubSubAdapter);
+    expect(await pubSubManager.isConnected()).toBe(true);
   });
 
   test('subscribe + publish', async () => {
