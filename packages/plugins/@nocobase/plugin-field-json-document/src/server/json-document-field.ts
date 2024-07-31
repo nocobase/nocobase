@@ -18,7 +18,46 @@ export const elementTypeMap = {
 export class JSONDocumentField extends JsonField {
   relationRepository = JSONRepository;
 
-  private build = async (model: Model, { transaction }) => {
+  private build = async (model: Model, options: any) => {
+    const { values, jsonDocValues, prevJSONDocValues } = options;
+    const { name, target, targetKey = '__json_index' } = this.options;
+    const newValues = values[name] || jsonDocValues?.[name];
+    const oldValues = prevJSONDocValues?.[name] || model.dataValues[name];
+    if (!newValues) {
+      return;
+    }
+    const targetCollection = this.database.getCollection(target);
+    if (!targetCollection) {
+      return;
+    }
+    const targetModel = targetCollection.model;
+    if (!Array.isArray(oldValues)) {
+      const document = { ...oldValues.dataValues, ...newValues };
+      delete document[targetKey];
+      const instance = await targetModel
+        .build(document, { isNewRecord: true })
+        // @ts-ignore
+        .save({ ...options, jsonDocValues: document, prevJSONDocValues: oldValues });
+      model.set(name, instance.dataValues);
+      return;
+    }
+    const buildPromises = newValues.map(async (item: any, index: number) => {
+      const prev = oldValues[index];
+      if (prev) {
+        item = { ...prev.dataValues, ...item };
+      }
+      delete item[targetKey];
+      const instance = await targetModel
+        .build(item, { isNewRecord: true })
+        // @ts-ignore
+        .save({ ...options, jsonDocValues: item, prevJSONDocValues: prev });
+      return instance.dataValues;
+    });
+    const documents = await Promise.all(buildPromises);
+    model.set(name, documents);
+  };
+
+  private appendIndex = async (model: Model, options: any) => {
     const { name, target, targetKey = '__json_index' } = this.options;
     const document = model.get(name);
     if (!document) {
@@ -30,25 +69,15 @@ export class JSONDocumentField extends JsonField {
     }
     const targetModel = targetCollection.model;
     if (!Array.isArray(document)) {
-      let isNewRecord = true;
-      if (document[targetKey]) {
-        isNewRecord = false;
-      } else {
-        document[targetKey] = 0;
-      }
-      const instance = await targetModel.build(document, { isNewRecord }).save({ transaction, hooks: true });
-      model.set(name, instance.dataValues);
+      document[targetKey] = 0;
+      const instance = await targetModel.build(document.dataValues || document, { isNewRecord: true }).findAll(options);
+      model.set(name, instance);
       return;
     }
     const buildPromises = document.map(async (item: any, index: number) => {
-      let isNewRecord = true;
-      if (item[targetKey]) {
-        isNewRecord = false;
-      } else {
-        item[targetKey] = index;
-      }
-      const instance = await targetModel.build(item, { isNewRecord }).save({ transaction, hooks: true });
-      return instance.dataValues;
+      item[targetKey] = index;
+      const instance = await targetModel.build(item.dataValues || item, { isNewRecord: true }).findAll(options);
+      return instance;
     });
     const documents = await Promise.all(buildPromises);
     model.set(name, documents);
@@ -57,11 +86,27 @@ export class JSONDocumentField extends JsonField {
   bind() {
     super.bind();
     this.on('beforeSave', this.build);
+    // @ts-ignore
+    this.on('afterFind', async (model: Model | Model[], options) => {
+      if (Array.isArray(model)) {
+        model.forEach((m) => this.appendIndex(m, options));
+      } else {
+        this.appendIndex(model, options);
+      }
+    });
   }
 
   unbind() {
     super.unbind();
     this.off('beforeSave', this.build);
+    // @ts-ignore
+    this.off('afterFind', async (model: Model | Model[], options) => {
+      if (Array.isArray(model)) {
+        model.forEach((m) => this.appendIndex(m, options));
+      } else {
+        this.appendIndex(model, options);
+      }
+    });
   }
 }
 

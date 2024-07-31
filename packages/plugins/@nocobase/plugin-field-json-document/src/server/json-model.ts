@@ -8,17 +8,30 @@
  */
 
 import { Model } from '@nocobase/database';
-import { SaveOptions } from 'sequelize';
 
 export class JSONModel extends Model {
-  async save(options: SaveOptions) {
+  async save(options: any) {
     const hook = this.isNewRecord ? 'Create' : 'Update';
+    if (options.validate) {
+      await this.validate(options);
+    }
     if (options.hooks) {
       // @ts-ignore
       await this.constructor.runHooks(`before${hook}`, this, options);
 
       // @ts-ignore
       await this.constructor.runHooks(`after${hook}`, this, options);
+    }
+    return this;
+  }
+
+  async findAll(options: any) {
+    if (options.hooks) {
+      // @ts-ignore
+      await this.constructor.runHooks('beforeFind', this, options);
+
+      // @ts-ignore
+      await this.constructor.runHooks('afterFind', this, options);
     }
     return this;
   }
