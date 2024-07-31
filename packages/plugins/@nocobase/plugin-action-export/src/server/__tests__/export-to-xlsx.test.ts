@@ -31,6 +31,67 @@ describe('export to xlsx with preset', () => {
     await app.destroy();
   });
 
+  it('should export number field with cell format', async () => {
+    const Post = app.db.collection({
+      name: 'posts',
+      fields: [
+        { type: 'string', name: 'title' },
+        { type: 'integer', name: 'integer' },
+        { type: 'float', name: 'float' },
+      ],
+    });
+
+    await app.db.sync();
+
+    await Post.repository.create({
+      values: [
+        {
+          title: 'p1',
+          integer: 123,
+          float: 123.456,
+        },
+        {
+          title: 'p2',
+          integer: 456,
+          float: 456.789,
+        },
+      ],
+    });
+
+    const exporter = new XlsxExporter({
+      collectionManager: app.mainDataSource.collectionManager,
+      collection: Post,
+      chunkSize: 10,
+      columns: [
+        { dataIndex: ['title'], defaultTitle: 'title' },
+        {
+          dataIndex: ['integer'],
+          defaultTitle: 'integer',
+        },
+        {
+          dataIndex: ['float'],
+          defaultTitle: 'float',
+        },
+      ],
+    });
+
+    const wb = await exporter.run();
+    const xlsxFilePath = path.resolve(__dirname, `t_${uid()}.xlsx`);
+
+    try {
+      XLSX.writeFile(wb, xlsxFilePath);
+
+      // read xlsx file
+      const workbook = XLSX.readFile(xlsxFilePath);
+      const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+      const sheetData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+
+      const header = sheetData[0];
+    } finally {
+      fs.unlinkSync(xlsxFilePath);
+    }
+  });
+
   it('should export with map field', async () => {
     const Post = app.db.collection({
       name: 'posts',
