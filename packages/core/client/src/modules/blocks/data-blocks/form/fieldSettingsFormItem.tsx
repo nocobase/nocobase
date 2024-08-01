@@ -426,6 +426,7 @@ export const fieldSettingsFormItem = new SchemaSettings({
                   }
                   const concatValidator = _.concat([], collectionField?.uiSchema?.['x-validator'] || [], rules);
                   field.validator = concatValidator;
+                  field.required = fieldSchema.required as any;
                   fieldSchema['x-validator'] = rules;
                   schema['x-validator'] = rules;
                   dn.emit('patch', {
