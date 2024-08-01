@@ -106,7 +106,7 @@ export default class PluginWorkflowServer extends Plugin {
         },
       );
 
-      this.toggle(previous, false, transaction);
+      this.toggle(previous, false, { transaction });
     }
   };
 
@@ -122,12 +122,12 @@ export default class PluginWorkflowServer extends Plugin {
           });
         }
         if (workflow) {
-          this.toggle(workflow, true);
+          this.toggle(workflow, true, { silent: true });
         }
       } else {
         const workflow = this.enabledCache.get(message.workflowId);
         if (workflow) {
-          this.toggle(workflow, false);
+          this.toggle(workflow, false, { silent: true });
         }
       }
     }
@@ -270,13 +270,15 @@ export default class PluginWorkflowServer extends Plugin {
     db.on('workflows.beforeSave', this.onBeforeSave);
     db.on('workflows.afterCreate', (model: WorkflowModel, { transaction }) => {
       if (model.enabled) {
-        this.toggle(model, true, transaction);
+        this.toggle(model, true, { transaction });
       }
     });
     db.on('workflows.afterUpdate', (model: WorkflowModel, { transaction }) =>
-      this.toggle(model, model.enabled, transaction),
+      this.toggle(model, model.enabled, { transaction }),
     );
-    db.on('workflows.afterDestroy', (model: WorkflowModel, { transaction }) => this.toggle(model, false, transaction));
+    db.on('workflows.afterDestroy', (model: WorkflowModel, { transaction }) =>
+      this.toggle(model, false, { transaction }),
+    );
 
     // [Life Cycle]:
     //   * load all workflows in db
@@ -292,7 +294,7 @@ export default class PluginWorkflowServer extends Plugin {
       });
 
       workflows.forEach((workflow: WorkflowModel) => {
-        this.toggle(workflow);
+        this.toggle(workflow, true, { silent: true });
       });
 
       this.checker = setInterval(() => {
@@ -305,7 +307,7 @@ export default class PluginWorkflowServer extends Plugin {
 
     this.app.on('beforeStop', async () => {
       for (const workflow of this.enabledCache.values()) {
-        this.toggle(workflow, false);
+        this.toggle(workflow, false, { silent: true });
       }
 
       this.ready = false;
@@ -322,7 +324,11 @@ export default class PluginWorkflowServer extends Plugin {
     });
   }
 
-  private toggle(workflow: WorkflowModel, enable?: boolean, transaction?: Transaction) {
+  private toggle(
+    workflow: WorkflowModel,
+    enable?: boolean,
+    { silent, transaction }: { silent?: boolean } & Transactionable = {},
+  ) {
     const type = workflow.get('type');
     const trigger = this.triggers.get(type);
     if (!trigger) {
@@ -342,7 +348,7 @@ export default class PluginWorkflowServer extends Plugin {
       trigger.off(workflow);
       this.enabledCache.delete(workflow.id);
     }
-    if (transaction) {
+    if (!silent) {
       this.sendSyncMessage(
         {
           type: 'statusChange',
