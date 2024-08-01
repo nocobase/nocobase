@@ -18,7 +18,6 @@ import { resolve } from 'path';
 import { Application } from './application';
 import { InstallOptions, getExposeChangelogUrl, getExposeReadmeUrl } from './plugin-manager';
 import { checkAndGetCompatible, getPluginBasePath } from './plugin-manager/utils';
-import { SyncMessageData } from './sync-manager';
 
 export interface PluginInterface {
   beforeLoad?: () => void;
