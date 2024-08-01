@@ -43,6 +43,7 @@ import { OpenModeProvider } from '../modules/popup/OpenModeProvider';
 import { AppSchemaComponentProvider } from './AppSchemaComponentProvider';
 import type { Plugin } from './Plugin';
 import type { RequireJS } from './utils/requirejs';
+import type { CollectionFieldInterfaceFactory } from '../data-source';
 
 declare global {
   interface Window {
@@ -354,5 +355,9 @@ export class Application {
     const root = createRoot(container);
     root.render(<App />);
     return root;
+  }
+
+  addFieldInterfaces(fieldInterfaceClasses: CollectionFieldInterfaceFactory[] = []) {
+    return this.dataSourceManager.collectionFieldInterfaceManager.addFieldInterfaces(fieldInterfaceClasses);
   }
 }

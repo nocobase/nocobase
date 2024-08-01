@@ -12,7 +12,7 @@ import { EncryptionFieldInterface } from './encryption';
 
 export class PluginFieldEncryptionClient extends Plugin {
   async load() {
-    this.app.dataSourceManager.collectionFieldInterfaceManager.addFieldInterfaces([EncryptionFieldInterface]);
+    this.app.addFieldInterfaces([EncryptionFieldInterface]);
   }
 }
 
