@@ -15,6 +15,7 @@ import _ from 'lodash';
 import qs from 'qs';
 import supertest, { SuperAgentTest } from 'supertest';
 import { MemoryPubSubAdapter } from './memory-pub-sub-adapter';
+import { MockDataSource } from './mock-data-source';
 
 interface ActionParams {
   filterByTk?: any;
@@ -77,6 +78,10 @@ interface ExtendedAgent extends SuperAgentTest {
 }
 
 export class MockServer extends Application {
+  registerMockDataSource() {
+    this.dataSourceManager.factory.register('mock', MockDataSource);
+  }
+
   async loadAndInstall(options: any = {}) {
     await this.load({ method: 'install' });
 
