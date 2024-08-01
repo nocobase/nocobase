@@ -39,17 +39,18 @@ export class SyncMessageManager {
         const timer = setTimeout(() => {
           reject(new Error('publish timeout'));
         }, 5000);
+
         transaction.afterCommit(async () => {
           try {
             const r = await this.app.pubSubManager.publish(`${this.app.name}.sync.${channel}`, message, {
               skipSelf: true,
               ...others,
             });
-            clearTimeout(timer);
             resolve(r);
           } catch (error) {
-            clearTimeout(timer);
             reject(error);
+          } finally {
+            clearTimeout(timer);
           }
         });
       });

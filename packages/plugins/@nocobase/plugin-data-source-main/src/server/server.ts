@@ -139,11 +139,15 @@ export class PluginDataSourceMainServer extends Plugin {
 
       await model.remove(removeOptions);
 
-      this.app.syncManager.publish(this.name, {
-        type: 'removeCollection',
-        collectionName: model.get('name'),
-        transaction: options.transaction,
-      });
+      this.sendSyncMessage(
+        {
+          type: 'removeCollection',
+          collectionName: model.get('name'),
+        },
+        {
+          transaction: options.transaction,
+        },
+      );
     });
 
     // 要在 beforeInitOptions 之前处理
@@ -313,12 +317,16 @@ export class PluginDataSourceMainServer extends Plugin {
       await mutex.runExclusive(async () => {
         await model.remove(options);
 
-        this.app.syncManager.publish(this.name, {
-          type: 'removeField',
-          collectionName: model.get('collectionName'),
-          fieldName: model.get('name'),
-          transaction: options.transaction,
-        });
+        this.sendSyncMessage(
+          {
+            type: 'removeField',
+            collectionName: model.get('collectionName'),
+            fieldName: model.get('name'),
+          },
+          {
+            transaction: options.transaction,
+          },
+        );
       });
     });
 

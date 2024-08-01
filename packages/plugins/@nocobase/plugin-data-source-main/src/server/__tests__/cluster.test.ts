@@ -79,6 +79,37 @@ describe('cluster', () => {
 
       expect(testsCollection.options.description).toBe('new test collection');
     });
+
+    test('destroy collection', async () => {
+      const [app1, app2] = cluster.nodes;
+
+      await app1.db.getRepository('collections').create({
+        values: {
+          name: 'tests',
+          fields: [
+            {
+              name: 'name',
+              type: 'string',
+            },
+          ],
+        },
+        context: {},
+      });
+
+      await sleep(2000);
+
+      const testsCollection = app2.db.getCollection('tests');
+      expect(testsCollection).toBeTruthy();
+
+      await app1.db.getRepository('collections').destroy({
+        filterByTk: 'tests',
+        context: {},
+      });
+
+      await sleep(2000);
+
+      expect(app2.db.getCollection('tests')).toBeFalsy();
+    });
   });
 
   describe('sync fields', () => {
@@ -164,6 +195,41 @@ describe('cluster', () => {
       expect(ageField).toBeTruthy();
 
       expect(ageField.options.description).toBe('age field');
+    });
+
+    test('destroy field', async () => {
+      const [app1, app2] = cluster.nodes;
+
+      await app1.db.getRepository('collections').create({
+        values: {
+          name: 'tests',
+          fields: [
+            {
+              name: 'name',
+              type: 'string',
+            },
+            {
+              name: 'age',
+              type: 'integer',
+            },
+          ],
+        },
+        context: {},
+      });
+
+      await sleep(2000);
+
+      const testsCollection = app2.db.getCollection('tests');
+      expect(testsCollection).toBeTruthy();
+
+      await app1.db.getRepository('collections.fields', 'tests').destroy({
+        filterByTk: 'age',
+        context: {},
+      });
+
+      await sleep(2000);
+
+      expect(testsCollection.getField('age')).toBeFalsy();
     });
   });
 });
