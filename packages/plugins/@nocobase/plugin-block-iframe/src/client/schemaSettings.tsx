@@ -70,7 +70,7 @@ const commonOptions: any = {
           const componentProps = fieldSchema['x-component-props'] || {};
           componentProps['mode'] = mode;
           componentProps['height'] = height;
-          componentProps['engine'] = engine;
+          componentProps['engine'] = engine || 'string';
           componentProps['params'] = params;
           componentProps['url'] = url;
           if (mode === 'html') {
@@ -129,9 +129,8 @@ const commonOptions: any = {
                 title: '{{t("Template engine")}}',
                 'x-component': 'Radio.Group',
                 'x-decorator': 'FormItem',
-                default: 'string',
                 enum: [
-                  { value: 'string', label: t('Default') },
+                  { value: 'string', label: t('String template') },
                   { value: 'handlebars', label: t('Handlebars') },
                 ],
                 'x-reactions': {

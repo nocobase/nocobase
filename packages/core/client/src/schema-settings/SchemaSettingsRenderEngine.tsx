@@ -24,7 +24,7 @@ export function SchemaSettingsRenderEngine() {
   const options = [
     {
       value: 'string',
-      label: t('Default'),
+      label: t('String template'),
     },
     {
       value: 'handlebars',
