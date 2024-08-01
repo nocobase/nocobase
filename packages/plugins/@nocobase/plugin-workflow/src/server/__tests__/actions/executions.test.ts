@@ -19,10 +19,15 @@ describe('workflow > actions > executions', () => {
   let PostRepo;
   let WorkflowModel;
   let workflow;
+  let users;
+  let userAgents;
 
   beforeEach(async () => {
-    app = await getApp();
-    agent = app.agent();
+    app = await getApp({
+      plugins: ['users', 'acl', 'auth', 'data-source-manager'],
+      acl: true,
+    });
+    agent = app.agent().loginUsingId(1);
     db = app.db;
     WorkflowModel = db.getCollection('workflows').model;
     PostRepo = db.getCollection('posts').repository;
@@ -35,6 +40,14 @@ describe('workflow > actions > executions', () => {
         collection: 'posts',
       },
     });
+    const UserRepo = db.getCollection('users').repository;
+    users = await UserRepo.createMany({
+      records: [
+        { id: 2, nickname: 'a', roles: ['admin'] },
+        { id: 3, nickname: 'b' },
+      ],
+    });
+    userAgents = users.map((user) => app.agent().login(user));
   });
 
   afterEach(async () => await app.destroy());
@@ -48,11 +61,12 @@ describe('workflow > actions > executions', () => {
       expect(e1.length).toBe(1);
       expect(e1[0].get('status')).toBe(EXECUTION_STATUS.RESOLVED);
 
-      await agent.resource('executions').destroy({
+      const res1 = await agent.resource('executions').destroy({
         filter: {
           key: workflow.key,
         },
       });
+      expect(res1.status).toBe(200);
 
       const e2 = await workflow.getExecutions();
       expect(e2.length).toBe(0);
@@ -78,6 +92,31 @@ describe('workflow > actions > executions', () => {
 
       const e2 = await workflow.getExecutions();
       expect(e2.length).toBe(1);
+    });
+
+    it('role as admin could delete execution', async () => {
+      const post = await PostRepo.create({ values: { title: 't1' } });
+      await sleep(500);
+
+      const e1 = await workflow.getExecutions();
+      expect(e1.length).toBe(1);
+      expect(e1[0].get('status')).toBe(EXECUTION_STATUS.RESOLVED);
+
+      const res1 = await userAgents[1].resource('executions').destroy({
+        filter: {
+          key: workflow.key,
+        },
+      });
+      expect(res1.status).toBe(403);
+      const res2 = await userAgents[0].resource('executions').destroy({
+        filter: {
+          key: workflow.key,
+        },
+      });
+      expect(res2.status).toBe(200);
+
+      const e2 = await workflow.getExecutions();
+      expect(e2.length).toBe(0);
     });
   });
 
