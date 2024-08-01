@@ -9,12 +9,12 @@ services:
       - nocobase
     environment:
       - APP_KEY=your-secret-key # Replace it with your own app key
+      - ENCRYPTION_FIELD_KEY=your-secret-key # Replace it with your own app key
       - DB_DIALECT=postgres
       - DB_HOST=postgres
       - DB_DATABASE=nocobase
       - DB_USER=nocobase
       - DB_PASSWORD=nocobase
-      - ENCRYPTION_FIELD_KEY=2%&glK;<UA}aIxJVc53-4G(rTi0vg@J]
     volumes:
       - ./storage:/app/nocobase/storage
     ports:

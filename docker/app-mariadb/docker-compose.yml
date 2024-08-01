@@ -11,6 +11,7 @@ services:
       - mariadb
     environment:
       - APP_KEY=your-secret-key # Replace it with your own app key
+      - ENCRYPTION_FIELD_KEY=your-secret-key # Replace it with your own app key
       - DB_DIALECT=mariadb
       - DB_HOST=mariadb
       - DB_DATABASE=nocobase
@@ -18,7 +19,6 @@ services:
       - DB_PASSWORD=nocobase
       - DB_TIMEZONE=+08:00
       - DB_UNDERSCORED=true
-      - ENCRYPTION_FIELD_KEY=2%&glK;<UA}aIxJVc53-4G(rTi0vg@J]
     volumes:
       - ./storage:/app/nocobase/storage
     ports:
