@@ -18,6 +18,7 @@ services:
       - DB_PASSWORD=nocobase
       - DB_TIMEZONE=+08:00
       - DB_UNDERSCORED=true
+      - ENCRYPTION_FIELD_KEY=2%&glK;<UA}aIxJVc53-4G(rTi0vg@J]
     volumes:
       - ./storage:/app/nocobase/storage
     ports:

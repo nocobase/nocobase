@@ -14,6 +14,7 @@ services:
       - DB_DATABASE=nocobase
       - DB_USER=nocobase
       - DB_PASSWORD=nocobase
+      - ENCRYPTION_FIELD_KEY=2%&glK;<UA}aIxJVc53-4G(rTi0vg@J]
     volumes:
       - ./storage:/app/nocobase/storage
     ports:
