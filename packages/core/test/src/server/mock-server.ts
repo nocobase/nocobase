@@ -280,7 +280,7 @@ export async function createMockCluster({
   ...options
 }: MockClusterOptions = {}) {
   const nodes: MockServer[] = [];
-  for (const i of _.range(0, number || 2)) {
+  for (let i = 0; i < number; i++) {
     const app: MockServer = await createMockServer({
       ...options,
       skipSupervisor: true,
@@ -290,6 +290,7 @@ export async function createMockCluster({
         channelPrefix: clusterName,
       },
     });
+    console.log('-------------', await app.isInstalled());
     nodes.push(app);
   }
   return {
