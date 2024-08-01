@@ -10,7 +10,7 @@ import crypto from 'crypto';
 import { EncryptionError } from './errors/EncryptionError';
 const algorithm = 'aes-256-cbc';
 
-const keyString = process.env.ENCRYPTION_FIELD_KEY;
+const keyString = process.env.ENCRYPTION_FIELD_KEY || '';
 
 // 将字符串转换为 Buffer 对象
 const key = Buffer.from(keyString, 'utf8');
