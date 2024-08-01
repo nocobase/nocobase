@@ -239,13 +239,15 @@ export function mockServer(options: ApplicationOptions = {}) {
     ...options,
   });
 
-  const basename = app.options.pubSubManager?.channelPrefix || app.name;
+  const basename = app.options.pubSubManager?.channelPrefix;
 
-  app.pubSubManager.setAdapter(
-    MemoryPubSubAdapter.create(basename, {
-      debounce: 500,
-    }),
-  );
+  if (basename) {
+    app.pubSubManager.setAdapter(
+      MemoryPubSubAdapter.create(basename, {
+        debounce: 500,
+      }),
+    );
+  }
 
   return app;
 }
