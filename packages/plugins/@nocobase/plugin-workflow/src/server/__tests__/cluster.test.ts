@@ -59,8 +59,11 @@ describe('workflow > cluster', () => {
       const executions = await w1.getExecutions();
       expect(executions.length).toBe(3);
 
-      await w1.update({
-        enabled: false,
+      await WorkflowRepo.update({
+        filterByTk: w1.id,
+        values: {
+          enabled: false,
+        },
       });
 
       await sleep(550);
