@@ -130,7 +130,20 @@ export class PluginMultiAppManagerServer extends Plugin {
   appOptionsFactory: AppOptionsFactory = defaultAppOptionsFactory;
   subAppUpgradeHandler: SubAppUpgradeHandler = defaultSubAppUpgradeHandle;
 
-  async onSync(message) {
+  static getDatabaseConfig(app: Application): IDatabaseOptions {
+    let oldConfig =
+      app.options.database instanceof Database
+        ? (app.options.database as Database).options
+        : (app.options.database as IDatabaseOptions);
+
+    if (!oldConfig && app.db) {
+      oldConfig = app.db.options;
+    }
+
+    return lodash.cloneDeep(lodash.omit(oldConfig, ['migrator']));
+  }
+
+  async handleSyncMessage(message) {
     const { type } = message;
 
     if (type === 'startApp') {
@@ -156,19 +169,6 @@ export class PluginMultiAppManagerServer extends Plugin {
       const { appName } = message;
       await AppSupervisor.getInstance().removeApp(appName);
     }
-  }
-
-  static getDatabaseConfig(app: Application): IDatabaseOptions {
-    let oldConfig =
-      app.options.database instanceof Database
-        ? (app.options.database as Database).options
-        : (app.options.database as IDatabaseOptions);
-
-    if (!oldConfig && app.db) {
-      oldConfig = app.db.options;
-    }
-
-    return lodash.cloneDeep(lodash.omit(oldConfig, ['migrator']));
   }
 
   setSubAppUpgradeHandler(handler: SubAppUpgradeHandler) {
@@ -214,10 +214,15 @@ export class PluginMultiAppManagerServer extends Plugin {
           context: options.context,
         });
 
-        this.app.syncManager.publish(this.name, {
-          type: 'startApp',
-          appName: name,
-        });
+        this.sendSyncMessage(
+          {
+            type: 'startApp',
+            appName: name,
+          },
+          {
+            transaction,
+          },
+        );
 
         const startPromise = subApp.runCommand('start', '--quickstart');
 
@@ -227,13 +232,18 @@ export class PluginMultiAppManagerServer extends Plugin {
       },
     );
 
-    this.db.on('applications.afterDestroy', async (model: ApplicationModel) => {
+    this.db.on('applications.afterDestroy', async (model: ApplicationModel, options) => {
       await AppSupervisor.getInstance().removeApp(model.get('name') as string);
 
-      await this.app.syncManager.publish(this.name, {
-        type: 'removeApp',
-        appName: model.get('name'),
-      });
+      this.sendSyncMessage(
+        {
+          type: 'removeApp',
+          appName: model.get('name'),
+        },
+        {
+          transaction: options.transaction,
+        },
+      );
     });
 
     const self = this;
