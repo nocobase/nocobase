@@ -19,6 +19,7 @@ import { FormProvider, SchemaComponent } from '../../core';
 import { useDesignable } from '../../hooks';
 import { useProps } from '../../hooks/useProps';
 import { Action, ActionProps } from '../action';
+import { DatePickerProvider } from '../date-picker/DatePicker';
 import { StablePopover } from '../popover';
 
 export const FilterActionContext = createContext<any>(null);
@@ -69,20 +70,22 @@ export const FilterAction = withDynamicSchemaProps(
           content={
             <form>
               <FormProvider form={form}>
-                <SchemaComponent
-                  schema={{
-                    type: 'object',
-                    properties: {
-                      filter: {
-                        type: 'string',
-                        enum: options || field.dataSource,
-                        default: fieldSchema.default,
-                        'x-component': 'Filter',
-                        'x-component-props': {},
+                <DatePickerProvider value={{ utc: false }}>
+                  <SchemaComponent
+                    schema={{
+                      type: 'object',
+                      properties: {
+                        filter: {
+                          type: 'string',
+                          enum: options || field.dataSource,
+                          default: fieldSchema.default,
+                          'x-component': 'Filter',
+                          'x-component-props': {},
+                        },
                       },
-                    },
-                  }}
-                />
+                    }}
+                  />
+                </DatePickerProvider>
                 <div
                   className={css`
                     display: flex;
