@@ -69,7 +69,7 @@ export const Mobile = () => {
           },
         }}
       >
-        <AntdAppProvider className="mobile-container" style={{ transform: 'translateZ(0)', overflow: 'hidden' }}>
+        <AntdAppProvider className="mobile-container">
           <OpenModeProvider
             defaultOpenMode="page"
             hideOpenMode

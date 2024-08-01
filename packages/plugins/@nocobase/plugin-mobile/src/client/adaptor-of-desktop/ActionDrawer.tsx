@@ -10,12 +10,13 @@
 import { observer, useFieldSchema } from '@formily/react';
 import { Action, SchemaComponent, useActionContext } from '@nocobase/client';
 import { Popup } from 'antd-mobile';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect } from 'react';
+import { usePopupContainer } from './FilterAction';
 
 export const ActionDrawerUsedInMobile = observer((props) => {
   const fieldSchema = useFieldSchema();
   const { visible, setVisible } = useActionContext();
-  const [mobileContainer] = useState<HTMLElement>(() => document.querySelector('.mobile-container') as HTMLElement);
+  const { popupContainerRef, visiblePopup } = usePopupContainer(visible);
 
   const closePopup = useCallback(() => {
     setVisible(false);
@@ -23,10 +24,10 @@ export const ActionDrawerUsedInMobile = observer((props) => {
 
   return (
     <Popup
-      visible={visible}
+      visible={visiblePopup}
       onClose={closePopup}
       onMaskClick={closePopup}
-      getContainer={() => mobileContainer}
+      getContainer={() => popupContainerRef.current}
       bodyStyle={{
         borderTopLeftRadius: '8px',
         borderTopRightRadius: '8px',
