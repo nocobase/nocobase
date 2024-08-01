@@ -42,7 +42,7 @@ describe('workflow > cluster', () => {
       const pro1 = (await p1.trigger(w1, {})) as Processor;
       expect(pro1.execution.status).toBe(EXECUTION_STATUS.RESOLVED);
 
-      await sleep(500);
+      await sleep(550);
 
       const p2 = app2.pm.get(Plugin) as Plugin;
       const w2 = p2.enabledCache.get(w1.id);
@@ -59,11 +59,8 @@ describe('workflow > cluster', () => {
       const executions = await w1.getExecutions();
       expect(executions.length).toBe(3);
 
-      await WorkflowRepo.update({
-        filterByTk: w1.id,
-        values: {
-          enabled: false,
-        },
+      await w1.update({
+        enabled: false,
       });
 
       await sleep(550);
