@@ -19,10 +19,10 @@ export class JSONDocumentField extends JsonField {
   relationRepository = JSONRepository;
 
   private build = async (model: Model, options: any) => {
-    const { values, jsonDocValues, prevJSONDocValues } = options;
     const { name, target, targetKey = '__json_index' } = this.options;
-    const newValues = values[name] || jsonDocValues?.[name];
-    const oldValues = prevJSONDocValues?.[name] || model._previousDataValues[name] || model.dataValues[name];
+    const newValues = model.get(name);
+    const oldValues = model.previous(name);
+
     if (!newValues) {
       return;
     }
@@ -31,28 +31,32 @@ export class JSONDocumentField extends JsonField {
       return;
     }
     const targetModel = targetCollection.model;
-    if (!Array.isArray(oldValues)) {
-      const document = { ...oldValues, ...newValues };
-      delete document[targetKey];
-      let instance = targetModel.build(document, { isNewRecord: true });
-      instance._previousDataValues = oldValues;
+    if (!Array.isArray(newValues)) {
+      delete (newValues.dataValues || newValues)[targetKey];
+      let instance: Model;
+      if (oldValues) {
+        delete (oldValues.dataValues || oldValues)[targetKey];
+        instance = targetModel.build(oldValues.dataValues || oldValues, { raw: true });
+        instance.set(newValues.dataValues || newValues);
+      }
+      instance = instance || targetModel.build(newValues.dataValues || newValues, { isNewRecord: true });
       // @ts-ignore
-      instance = await instance.save({ ...options, jsonDocValues: document, prevJSONDocValues: oldValues });
+      await instance.save(options);
       model.set(name, instance.dataValues);
       return;
     }
     const buildPromises = newValues.map(async (item: any, index: number) => {
-      const prev = oldValues[index];
+      const prev = oldValues?.[index];
+      delete (item.dataValues || item)[targetKey];
+      let instance: Model;
       if (prev) {
-        item = { ...prev, ...item };
+        delete (prev.dataValues || prev)[targetKey];
+        instance = targetModel.build(prev.dataValues || prev, { raw: true });
+        instance.set(item.dataValues || item);
       }
-      delete item[targetKey];
-      let instance = targetModel.build(item, { isNewRecord: true });
-      if (prev) {
-        instance._previousDataValues = prev;
-      }
+      instance = instance || targetModel.build(item.dataValues || item, { isNewRecord: true });
       // @ts-ignore
-      instance = await instance.save({ ...options, jsonDocValues: item, prevJSONDocValues: prev });
+      await instance.save(options);
       return instance.dataValues;
     });
     const documents = await Promise.all(buildPromises);

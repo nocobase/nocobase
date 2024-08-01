@@ -136,7 +136,7 @@ describe('json document field api', () => {
     });
   });
 
-  it.only('update', async () => {
+  it('update', async () => {
     const res = await agent.resource('test_json_doc').update({
       filterByTk: 1,
       values: {

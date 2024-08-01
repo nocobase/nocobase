@@ -97,14 +97,8 @@ describe('field interfaces for json document', () => {
       filterByTk: 1,
       values: {
         json_doc: {
-          password: null,
           nested_json_doc: {
-            password: null,
-            nested_json_array: [
-              {
-                password: null,
-              },
-            ],
+            nested_json_array: [{}],
           },
         },
       },
@@ -112,9 +106,32 @@ describe('field interfaces for json document', () => {
     expect(res4.status).toBe(200);
     const res5 = await agent.resource('test_json_doc.json_doc', id).get();
     expect(res5.status).toBe(200);
-    console.log(res5.body.data);
+    console.log('res5.body.data', res5.body.data);
     expect(await pwd.verify('123', res5.body.data.password)).toBe(true);
     expect(await pwd.verify('123', res5.body.data.nested_json_doc.password)).toBe(true);
     expect(await pwd.verify('123', res5.body.data.nested_json_doc.nested_json_array[0].password)).toBe(true);
+    const res6 = await agent.resource('test_json_doc').update({
+      filterByTk: 1,
+      values: {
+        json_doc: {
+          password: '1234',
+          nested_json_doc: {
+            password: '1234',
+            nested_json_array: [
+              {
+                password: '1234',
+              },
+            ],
+          },
+        },
+      },
+    });
+    expect(res6.status).toBe(200);
+    const res7 = await agent.resource('test_json_doc.json_doc', id).get();
+    expect(res7.status).toBe(200);
+    console.log('res7.body.data', res7.body.data);
+    expect(await pwd.verify('1234', res7.body.data.password)).toBe(true);
+    expect(await pwd.verify('1234', res7.body.data.nested_json_doc.password)).toBe(true);
+    expect(await pwd.verify('1234', res7.body.data.nested_json_doc.nested_json_array[0].password)).toBe(true);
   });
 });
