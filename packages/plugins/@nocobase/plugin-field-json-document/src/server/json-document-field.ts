@@ -22,7 +22,7 @@ export class JSONDocumentField extends JsonField {
     const { values, jsonDocValues, prevJSONDocValues } = options;
     const { name, target, targetKey = '__json_index' } = this.options;
     const newValues = values[name] || jsonDocValues?.[name];
-    const oldValues = prevJSONDocValues?.[name] || model.dataValues[name];
+    const oldValues = prevJSONDocValues?.[name] || model._previousDataValues[name] || model.dataValues[name];
     if (!newValues) {
       return;
     }
@@ -32,25 +32,27 @@ export class JSONDocumentField extends JsonField {
     }
     const targetModel = targetCollection.model;
     if (!Array.isArray(oldValues)) {
-      const document = { ...oldValues.dataValues, ...newValues };
+      const document = { ...oldValues, ...newValues };
       delete document[targetKey];
-      const instance = await targetModel
-        .build(document, { isNewRecord: true })
-        // @ts-ignore
-        .save({ ...options, jsonDocValues: document, prevJSONDocValues: oldValues });
+      let instance = targetModel.build(document, { isNewRecord: true });
+      instance._previousDataValues = oldValues;
+      // @ts-ignore
+      instance = await instance.save({ ...options, jsonDocValues: document, prevJSONDocValues: oldValues });
       model.set(name, instance.dataValues);
       return;
     }
     const buildPromises = newValues.map(async (item: any, index: number) => {
       const prev = oldValues[index];
       if (prev) {
-        item = { ...prev.dataValues, ...item };
+        item = { ...prev, ...item };
       }
       delete item[targetKey];
-      const instance = await targetModel
-        .build(item, { isNewRecord: true })
-        // @ts-ignore
-        .save({ ...options, jsonDocValues: item, prevJSONDocValues: prev });
+      let instance = targetModel.build(item, { isNewRecord: true });
+      if (prev) {
+        instance._previousDataValues = prev;
+      }
+      // @ts-ignore
+      instance = await instance.save({ ...options, jsonDocValues: item, prevJSONDocValues: prev });
       return instance.dataValues;
     });
     const documents = await Promise.all(buildPromises);

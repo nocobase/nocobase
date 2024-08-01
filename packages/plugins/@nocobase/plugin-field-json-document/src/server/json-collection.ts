@@ -23,6 +23,10 @@ export class JSONCollection extends Collection {
     return undefined;
   }
 
+  availableActions() {
+    return ['view'];
+  }
+
   modelInit() {
     const model = class extends JSONModel {};
     model.init(null, {
