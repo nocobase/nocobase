@@ -10,6 +10,7 @@
 import { BaseColumnFieldOptions, Field, Model } from '@nocobase/database';
 import { DataTypes } from 'sequelize';
 import { decrypt, encrypt, checkKey } from './utils';
+import { EncryptionError } from './errors/EncryptionError';
 
 export interface EncryptionFieldOptions extends BaseColumnFieldOptions {
   type: 'encryption';
@@ -34,7 +35,7 @@ export class EncryptionField extends Field {
           model.set(name, encrypted);
         } catch (error) {
           console.error(error);
-          throw new Error('Encryption failed');
+          throw new EncryptionError('Encryption failed');
         }
       } else {
         model.set(name, null);
@@ -50,7 +51,9 @@ export class EncryptionField extends Field {
               instance.set(name, await decrypt(instance.get(name), iv));
             } catch (error) {
               console.error(error);
-              throw new Error('Decryption failed, the environment variable `ENCRYPTION_FIELD_KEY` may be incorrect');
+              throw new EncryptionError(
+                'Decryption failed, the environment variable `ENCRYPTION_FIELD_KEY` may be incorrect',
+              );
             }
           }
           return instance;

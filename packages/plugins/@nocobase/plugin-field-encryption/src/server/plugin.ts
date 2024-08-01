@@ -8,10 +8,12 @@
  */
 
 import { Plugin } from '@nocobase/server';
+import PluginErrorHandler from '@nocobase/plugin-error-handler';
 import { EncryptionField } from './encryption-field';
 import { $encryptionEq } from './operators/eq';
 import { $encryptionNe } from './operators/ne';
 import { checkKey } from './utils';
+import { EncryptionError } from './errors/EncryptionError';
 
 export class PluginFieldEncryptionServer extends Plugin {
   async load() {
@@ -29,6 +31,23 @@ export class PluginFieldEncryptionServer extends Plugin {
         checkKey();
       }
     });
+
+    const errorHandlerPlugin = this.app.getPlugin<PluginErrorHandler>('error-handler');
+    errorHandlerPlugin.errorHandler.register(
+      (err) => {
+        return err instanceof EncryptionError;
+      },
+      (err, ctx) => {
+        ctx.status = 400;
+        ctx.body = {
+          errors: [
+            {
+              message: ctx.t(err.message, { ns: 'field-encryption' }),
+            },
+          ],
+        };
+      },
+    );
   }
 }
 

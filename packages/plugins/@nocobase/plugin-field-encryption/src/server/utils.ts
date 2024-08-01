@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 import crypto from 'crypto';
+import { EncryptionError } from './errors/EncryptionError';
 const algorithm = 'aes-256-cbc';
 
 const keyString = process.env.ENCRYPTION_FIELD_KEY;
@@ -84,9 +85,9 @@ export function decryptSync(encrypted: string, ivString: string) {
 
 export function checkKey() {
   if (!keyString) {
-    throw new Error('The environment variable `ENCRYPTION_FIELD_KEY` is required, please set it');
+    throw new EncryptionError('The environment variable `ENCRYPTION_FIELD_KEY` is required, please set it');
   }
   if (keyString.length !== 32) {
-    throw new Error('The environment variable `ENCRYPTION_FIELD_KEY` must be a 32-character string');
+    throw new EncryptionError('The environment variable `ENCRYPTION_FIELD_KEY` must be a 32-character string');
   }
 }
