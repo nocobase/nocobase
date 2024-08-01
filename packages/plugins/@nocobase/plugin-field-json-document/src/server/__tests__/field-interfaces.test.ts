@@ -106,7 +106,6 @@ describe('field interfaces for json document', () => {
     expect(res4.status).toBe(200);
     const res5 = await agent.resource('test_json_doc.json_doc', id).get();
     expect(res5.status).toBe(200);
-    console.log('res5.body.data', res5.body.data);
     expect(await pwd.verify('123', res5.body.data.password)).toBe(true);
     expect(await pwd.verify('123', res5.body.data.nested_json_doc.password)).toBe(true);
     expect(await pwd.verify('123', res5.body.data.nested_json_doc.nested_json_array[0].password)).toBe(true);
@@ -129,9 +128,60 @@ describe('field interfaces for json document', () => {
     expect(res6.status).toBe(200);
     const res7 = await agent.resource('test_json_doc.json_doc', id).get();
     expect(res7.status).toBe(200);
-    console.log('res7.body.data', res7.body.data);
     expect(await pwd.verify('1234', res7.body.data.password)).toBe(true);
     expect(await pwd.verify('1234', res7.body.data.nested_json_doc.password)).toBe(true);
     expect(await pwd.verify('1234', res7.body.data.nested_json_doc.nested_json_array[0].password)).toBe(true);
+  });
+
+  it('uuid', async () => {
+    const res = await agent.resource('collections.fields', 'test_json_doc').create({
+      values: {
+        name: 'json_doc',
+        type: 'JSONDocument',
+        fields: [
+          {
+            name: 'uuid',
+            type: 'uuid',
+          },
+          {
+            name: 'nested_json_doc',
+            type: 'JSONDocument',
+            fields: [
+              {
+                name: 'uuid',
+                type: 'uuid',
+              },
+              {
+                name: 'nested_json_array',
+                type: 'JSONDocument',
+                fields: [
+                  {
+                    name: 'uuid',
+                    type: 'uuid',
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    });
+    expect(res.status).toBe(200);
+    const res2 = await agent.resource('test_json_doc').create({
+      values: {
+        json_doc: {
+          nested_json_doc: {
+            nested_json_array: [{}],
+          },
+        },
+      },
+    });
+    expect(res2.status).toBe(200);
+    const id = res2.body.data.id;
+    const res3 = await agent.resource('test_json_doc.json_doc', id).get();
+    expect(res3.status).toBe(200);
+    expect(res3.body.data.uuid).toBeDefined();
+    expect(res3.body.data.nested_json_doc.uuid).toBeDefined();
+    expect(res3.body.data.nested_json_doc.nested_json_array[0].uuid).toBeDefined();
   });
 });
