@@ -13,6 +13,7 @@ import type { TextAreaRef } from 'antd/es/input/TextArea';
 import cls from 'classnames';
 import React, { useCallback, useEffect, useState, useRef, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import DOMPurify from 'dompurify';
 import { useGlobalTheme } from '../../../global-theme';
 import { useDesignable } from '../../hooks/useDesignable';
 import { MarkdownVoidDesigner } from './Markdown.Void.Designer';
@@ -152,7 +153,8 @@ export const MarkdownVoid: any = withDynamicSchemaProps(
           compile(localVariables),
           parseMarkdown,
         );
-        setHtml(replacedContent);
+        const sanitizedHtml = DOMPurify.sanitize(replacedContent);
+        setHtml(sanitizedHtml);
         setLoading(false);
       };
       cvtContentToHTML();
