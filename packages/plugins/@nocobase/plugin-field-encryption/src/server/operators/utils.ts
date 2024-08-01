@@ -10,12 +10,16 @@
 import { encryptSync } from '../utils';
 
 export function getFieldOptions(ctx: any) {
-  const fieldPathArr = ctx.fieldPath.split('.');
-  // 关联字段和普通字段
-  const collectionName = fieldPathArr[fieldPathArr.length - 2];
-  const fieldName = ctx.fieldName;
+  function getField(fieldPath: string[]) {
+    const [collectionName, fieldName, ...resetFieldName] = fieldPath;
+    const field = ctx.db.collections.get(collectionName).fields.get(fieldName);
+    if (resetFieldName.length) {
+      return getField([field.target, ...resetFieldName]);
+    }
+    return ctx.db.collections.get(collectionName).fields.get(fieldName);
+  }
 
-  return ctx.db.collections.get(collectionName).fields.get(fieldName).options;
+  return getField(ctx.fieldPath.split('.')).options;
 }
 
 export function encryptSearchValueSync(str: any, ctx: any) {
