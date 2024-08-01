@@ -11,7 +11,7 @@ import AMapLoader from '@amap/amap-jsapi-loader';
 import '@amap/amap-jsapi-types';
 import { SyncOutlined } from '@ant-design/icons';
 import { useFieldSchema } from '@formily/react';
-import { css, useApp, useCollection_deprecated, useNavigateNoUpdate } from '@nocobase/client';
+import { css, useApp, useCollection_deprecated } from '@nocobase/client';
 import { useMemoizedFn } from 'ahooks';
 import { Alert, App, Button, Spin } from 'antd';
 import React, { useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
@@ -108,7 +108,6 @@ export const AMapComponent = React.forwardRef<AMapForwardedRefProps, AMapCompone
 
   const overlay = useRef<AMap.Polygon>();
   const editor = useRef(null);
-  const navigate = useNavigateNoUpdate();
   const id = useRef(`nocobase-map-${type || ''}-${Date.now().toString(32)}`);
   const { modal } = App.useApp();
   const height = useMapHeight();
@@ -395,7 +394,10 @@ export const AMapComponent = React.forwardRef<AMapForwardedRefProps, AMapCompone
     return (
       <Alert
         action={
-          <Button type="primary" onClick={() => navigate(app.pluginSettingsManager.getRoutePath('map'))}>
+          <Button
+            type="primary"
+            onClick={() => window.open(window.origin + app.pluginSettingsManager.getRoutePath('map'), '_self')}
+          >
             {t('Go to the configuration page')}
           </Button>
         }
