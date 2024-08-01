@@ -239,18 +239,20 @@ export function mockServer(options: ApplicationOptions = {}) {
   const app = new MockServer({
     acl: false,
     syncMessageManager: {
-      debounce: 1000,
+      debounce: 500,
     },
     ...options,
   });
 
-  const basename = app.options.pubSubManager?.channelPrefix || app.name;
+  const basename = app.options.pubSubManager?.channelPrefix;
 
-  app.pubSubManager.setAdapter(
-    MemoryPubSubAdapter.create(basename, {
-      debounce: 1000,
-    }),
-  );
+  if (basename) {
+    app.pubSubManager.setAdapter(
+      MemoryPubSubAdapter.create(basename, {
+        debounce: 500,
+      }),
+    );
+  }
 
   return app;
 }
@@ -263,29 +265,37 @@ export async function startMockServer(options: ApplicationOptions = {}) {
 
 type BeforeInstallFn = (app) => Promise<void>;
 
-export async function createMockCluster(
-  options: ApplicationOptions & {
-    number?: number;
-    version?: string;
-    name?: string;
-    appName?: string;
-    beforeInstall?: BeforeInstallFn;
-    skipInstall?: boolean;
-    skipStart?: boolean;
-  } = {},
-) {
+export type MockServerOptions = ApplicationOptions & {
+  version?: string;
+  beforeInstall?: BeforeInstallFn;
+  skipInstall?: boolean;
+  skipStart?: boolean;
+};
+
+export type MockClusterOptions = MockServerOptions & {
+  number?: number;
+  clusterName?: string;
+  appName?: string;
+};
+
+export async function createMockCluster({
+  number = 2,
+  clusterName = `cluster_${uid()}`,
+  appName = `app_${uid()}`,
+  ...options
+}: MockClusterOptions = {}) {
   const nodes: MockServer[] = [];
-  const clusterName = options.name || `cluster_${uid()}`;
-  const appName = options.appName || `app_${uid()}`;
-  for (const i of _.range(0, options.number || 2)) {
+  for (let i = 0; i < number; i++) {
     const app: MockServer = await createMockServer({
       ...options,
       skipSupervisor: true,
       name: clusterName + '_' + appName,
+      skipInstall: Boolean(i),
       pubSubManager: {
         channelPrefix: clusterName,
       },
     });
+    console.log('-------------', await app.isInstalled());
     nodes.push(app);
   }
   return {
@@ -298,14 +308,7 @@ export async function createMockCluster(
   };
 }
 
-export async function createMockServer(
-  options: ApplicationOptions & {
-    version?: string;
-    beforeInstall?: BeforeInstallFn;
-    skipInstall?: boolean;
-    skipStart?: boolean;
-  } = {},
-) {
+export async function createMockServer(options: MockServerOptions = {}) {
   const { version, beforeInstall, skipInstall, skipStart, ...others } = options;
   const app: any = mockServer(others);
   if (!skipInstall) {

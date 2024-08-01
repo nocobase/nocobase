@@ -47,6 +47,10 @@ export class MemoryPubSubAdapter implements IPubSubAdapter {
     this.connected = false;
   }
 
+  async isConnected() {
+    return this.connected;
+  }
+
   async subscribe(channel, callback) {
     this.emitter.on(channel, callback);
   }

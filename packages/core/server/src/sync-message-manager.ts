@@ -9,7 +9,7 @@
 
 import { Transactionable } from '@nocobase/database';
 import Application from './application';
-import { PubSubManager, PubSubManagerPublishOptions } from './pub-sub-manager';
+import { PubSubCallback, PubSubManager, PubSubManagerPublishOptions } from './pub-sub-manager';
 
 export class SyncMessageManager {
   protected versionManager: SyncMessageVersionManager;
@@ -62,10 +62,14 @@ export class SyncMessageManager {
     }
   }
 
-  async subscribe(channel: string, callback) {
+  async subscribe(channel: string, callback: PubSubCallback) {
     return await this.app.pubSubManager.subscribe(`${this.app.name}.sync.${channel}`, callback, {
       debounce: this.debounce,
     });
+  }
+
+  async unsubscribe(channel: string, callback: PubSubCallback) {
+    return this.app.pubSubManager.unsubscribe(`${this.app.name}.sync.${channel}`, callback);
   }
 
   async sync() {
