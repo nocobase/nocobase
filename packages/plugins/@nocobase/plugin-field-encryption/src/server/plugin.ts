@@ -27,7 +27,7 @@ export class PluginFieldEncryptionServer extends Plugin {
     });
 
     this.db.on('fields.beforeCreate', (model, field) => {
-      if (field.values?.type === 'encryption') {
+      if (model.type === 'encryption') {
         checkKey();
       }
     });

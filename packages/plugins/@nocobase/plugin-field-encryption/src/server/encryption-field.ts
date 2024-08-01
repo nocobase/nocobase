@@ -66,14 +66,12 @@ export class EncryptionField extends Field {
     super.bind();
     // @ts-ignore
     this.on('afterFind', this.findListener);
-    this.on('beforeCreate', this.writeListener);
-    this.on('beforeUpdate', this.writeListener);
+    this.on('beforeSave', this.writeListener);
   }
 
   unbind() {
     super.unbind();
     this.off('afterFind', this.findListener);
-    this.off('beforeCreate', this.writeListener);
-    this.off('beforeUpdate', this.writeListener);
+    this.off('beforeSave', this.writeListener);
   }
 }
