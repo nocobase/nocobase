@@ -28,7 +28,7 @@ export function SchemaSettingsRenderEngine() {
     },
     {
       value: 'handlebars',
-      label: 'Handlebars',
+      label: t('Handlebars'),
     },
   ];
   return (
