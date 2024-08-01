@@ -16,7 +16,7 @@ describe('file-manager > cluster', () => {
 
   beforeEach(async () => {
     cluster = await createMockCluster({
-      plugins: [[Plugin, { name: 'file-manager' }]],
+      plugins: ['file-manager'],
     });
   });
 
@@ -44,9 +44,7 @@ describe('file-manager > cluster', () => {
         path: 'a',
       });
       expect(p1.storagesCache.get(s1.id).path).toEqual('a');
-
       await sleep(550);
-
       expect(p2.storagesCache.get(s1.id).path).toEqual('a');
     });
   });

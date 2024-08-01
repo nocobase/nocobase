@@ -190,19 +190,25 @@ export default class PluginFileManagerServer extends Plugin {
     });
 
     const Storage = this.db.getModel('storages');
-    Storage.afterSave((m) => {
+    Storage.afterSave((m, { transaction }) => {
       this.storagesCache.set(m.id, m.toJSON());
-      this.sendSyncMessage({
-        type: 'storageChange',
-        storageId: m.id,
-      });
+      this.sendSyncMessage(
+        {
+          type: 'storageChange',
+          storageId: m.id,
+        },
+        { transaction },
+      );
     });
-    Storage.afterDestroy((m) => {
+    Storage.afterDestroy((m, { transaction }) => {
       this.storagesCache.delete(m.id);
-      this.sendSyncMessage({
-        type: 'storageRemove',
-        storageId: m.id,
-      });
+      this.sendSyncMessage(
+        {
+          type: 'storageRemove',
+          storageId: m.id,
+        },
+        { transaction },
+      );
     });
 
     this.app.acl.registerSnippet({
