@@ -70,7 +70,11 @@ class PluginCollectionTreeServer extends Plugin {
           });
 
           //afterUpdate
-          this.db.on(`${collection.name}.afterUpdate`, async (model, options) => {
+          this.db.on(`${collection.name}.afterUpdate`, async (model: Model, options) => {
+            // only update parentId and filterTargetKey
+            if (!(model._changed.has(collection.filterTargetKey) || model._changed.has('parentId'))) {
+              return;
+            }
             const { transaction } = options;
             let path = `/${model.get(collection.filterTargetKey)}`;
             path = await this.getTreePath(model, path, collection);
