@@ -307,7 +307,7 @@ export async function createMockCluster({
     if (!dbOptions) {
       dbOptions = app.db.options;
     }
-    console.log('-------------', await app.isInstalled());
+
     nodes.push(app);
   }
   return {
@@ -322,7 +322,7 @@ export async function createMockCluster({
 
 export async function createMockServer(options: MockServerOptions = {}) {
   const { version, beforeInstall, skipInstall, skipStart, ...others } = options;
-  const app: any = mockServer(others);
+  const app: MockServer = mockServer(others);
   if (!skipInstall) {
     if (beforeInstall) {
       await beforeInstall(app);
