@@ -10,7 +10,7 @@
 import { DeleteOutlined, MenuOutlined } from '@ant-design/icons';
 import { TinyColor } from '@ctrl/tinycolor';
 import { SortableContext, SortableContextProps, useSortable } from '@dnd-kit/sortable';
-import { css } from '@emotion/css';
+import { css, cx } from '@emotion/css';
 import { ArrayField } from '@formily/core';
 import { spliceArrayState } from '@formily/core/esm/shared/internals';
 import { RecursionField, Schema, observer, useField, useFieldSchema } from '@formily/react';
@@ -166,7 +166,7 @@ const useTableColumns = (props: { showDel?: boolean; isSubTable?: boolean }) => 
         title: render(),
         dataIndex: 'TABLE_COLUMN_INITIALIZER',
         key: 'TABLE_COLUMN_INITIALIZER',
-        render: designable ? () => <div style={{ minWidth: 180 }} /> : null,
+        render: designable ? () => <div style={{ width: '100%' }} /> : null,
         fixed: designable ? 'right' : 'none',
       },
     ];
@@ -715,28 +715,31 @@ export const Table: any = withDynamicSchemaProps(
     }, [expandedKeys, onExpandValue]);
     return (
       <div
-        className={css`
-          height: 100%;
-          overflow: hidden;
-          .ant-table-wrapper {
+        className={cx(
+          css`
             height: 100%;
-            .ant-spin-nested-loading {
+            overflow: hidden;
+            .ant-table-wrapper {
               height: 100%;
-              .ant-spin-container {
+              .ant-spin-nested-loading {
                 height: 100%;
-                display: flex;
-                flex-direction: column;
-                .ant-table-body {
-                  min-height: ${tableHeight}px;
+                .ant-spin-container {
+                  height: 100%;
+                  display: flex;
+                  flex-direction: column;
+                  .ant-table-body {
+                    min-height: ${tableHeight}px;
+                  }
                 }
               }
             }
-          }
-          .ant-table {
-            overflow-x: auto;
-            overflow-y: hidden;
-          }
-        `}
+            .ant-table {
+              overflow-x: auto;
+              overflow-y: hidden;
+            }
+          `,
+          'nb-table-container',
+        )}
       >
         <SortableWrapper>
           <MemoizedAntdTable
