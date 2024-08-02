@@ -42,8 +42,8 @@ export const useStyles = createStyles(({ token, css }) => {
         margin-inline-end: 0px !important;
       }
       .ant-card-body .ant-table-cell-fix-right:last-child {
-        display: ruby-text;
-        width: 78px;
+        // display: table-cell;
+        // width: auto;
       }
       .ant-card-body .nb-table-container {
         margin-right: -20px;
