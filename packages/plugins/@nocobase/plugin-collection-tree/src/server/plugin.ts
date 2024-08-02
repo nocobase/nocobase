@@ -42,7 +42,7 @@ class PluginCollectionTreeServer extends Plugin {
           collectionManager.db.on(`${collection.name}.afterSync`, async ({ transaction }) => {
             // trigger tree path collection creat logic
             await this.db.getCollection(name).sync({ transaction } as SyncOptions);
-            const treePathCollection = await this.app.db.getCollection(name);
+            const treePathCollection = this.app.db.getCollection(name);
             let treeExistsInDb = false;
             if (treePathCollection) {
               treeExistsInDb = await treePathCollection.existsInDb();
