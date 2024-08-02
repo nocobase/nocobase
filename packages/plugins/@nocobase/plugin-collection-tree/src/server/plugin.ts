@@ -33,23 +33,10 @@ class PluginCollectionTreeServer extends Plugin {
           //always define tree path collection
           this.defineTreePathCollection(name, collectionManager);
 
-          //sync exist tree collection path table
-          this.db.on(`${name}.afterSync`, async ({ transaction }) => {
-            await this.syncExistTreeCollectionPathTable();
-          });
-
           //afterSync
           collectionManager.db.on(`${collection.name}.afterSync`, async ({ transaction }) => {
-            // trigger tree path collection creat logic
+            // trigger tree path collection create logic
             await this.db.getCollection(name).sync({ transaction } as SyncOptions);
-            const treePathCollection = this.app.db.getCollection(name);
-            let treeExistsInDb = false;
-            if (treePathCollection) {
-              treeExistsInDb = await treePathCollection.existsInDb();
-            }
-            if (!treeExistsInDb) {
-              await this.db.getCollection(name).sync({ transaction, force: false, alter: true } as SyncOptions);
-            }
           });
 
           //afterCreate
