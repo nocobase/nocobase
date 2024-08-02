@@ -67,7 +67,7 @@ export const TableColumnDecorator = (props) => {
       <CollectionFieldContext.Provider value={collectionField}>
         <Designer fieldSchema={fieldSchema} uiSchema={uiSchema} collectionField={collectionField} />
         <span role="button">
-          {fieldSchema.required && <span className="ant-formily-item-asterisk">*</span>}
+          {fieldSchema?.required && <span className="ant-formily-item-asterisk">*</span>}
           <span>{field?.title || compile(uiSchema?.title)}</span>
         </span>
       </CollectionFieldContext.Provider>
