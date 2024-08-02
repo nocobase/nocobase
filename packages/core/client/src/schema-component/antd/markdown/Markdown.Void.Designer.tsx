@@ -15,6 +15,7 @@ import {
   SchemaSettingsDivider,
   SchemaSettingsItem,
   SchemaSettingsRemove,
+  SchemaSettingsRenderEngine,
 } from '../../../schema-settings';
 import { SchemaSettingsBlockHeightItem } from '../../../schema-settings/SchemaSettingsBlockHeightItem';
 
@@ -29,6 +30,7 @@ export const MarkdownVoidDesigner = () => {
           field.editable = true;
         }}
       />
+      <SchemaSettingsRenderEngine />
       <SchemaSettingsBlockHeightItem />
       <SchemaSettingsDivider />
       <SchemaSettingsRemove
