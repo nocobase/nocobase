@@ -268,8 +268,9 @@ AssociationSelect.Designer = function Designer() {
           }
           onSubmit={(v) => {
             const rules = [];
+            const customPredicate = (value) => value !== null && value !== undefined && !Number.isNaN(value);
             for (const rule of v.rules) {
-              rules.push(_.pickBy(rule, _.identity));
+              rules.push(_.pickBy(rule, customPredicate));
             }
             const schema = {
               ['x-uid']: fieldSchema['x-uid'],
