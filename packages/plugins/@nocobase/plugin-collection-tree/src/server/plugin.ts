@@ -103,52 +103,6 @@ class PluginCollectionTreeServer extends Plugin {
     });
   }
 
-  private async syncExistTreeCollectionPathTable() {
-    const collectionsRepository = this.app.db.getRepository('collections');
-    if (!collectionsRepository) {
-      return;
-    }
-    const treeCollections = await this.app.db.getRepository('collections').find({
-      appends: ['fields'],
-      filter: {
-        'options.tree': 'adjacencyList',
-      },
-    });
-    for (const collection of treeCollections) {
-      const name = `main_${collection.name}_path`;
-      const treePathCollection = this.app.db.getCollection(name);
-      if (!treePathCollection) {
-        this.app.db.collection({
-          name,
-          autoGenId: false,
-          timestamps: false,
-          fields: [
-            { type: 'integer', name: 'nodePk' },
-            { type: 'jsonb', name: 'path' },
-            { type: 'integer', name: 'rootPk' },
-          ],
-        });
-      }
-      const treeExistsInDb = await this.app.db.getCollection(name).existsInDb();
-      if (!treeExistsInDb) {
-        await this.app.db.getCollection(name).sync({ force: false, alter: true });
-        const treeCollection = this.app.db.getCollection(collection.name);
-        const existData = await this.app.db.getRepository(collection.name).find({});
-        for (const data of existData) {
-          let path = `/${data.get(treeCollection.filterTargetKey)}`;
-          path = await this.getTreePath(data, path, treeCollection as unknown as Model);
-          await this.app.db.getRepository(name).create({
-            values: {
-              nodePk: data.get(treeCollection.filterTargetKey),
-              path: path,
-              rootPk: path.split('/')[1],
-            },
-          });
-        }
-      }
-    }
-  }
-
   private async defineTreePathCollection(name: string, collectionManager: SequelizeCollectionManager) {
     this.db.collection({
       name,
