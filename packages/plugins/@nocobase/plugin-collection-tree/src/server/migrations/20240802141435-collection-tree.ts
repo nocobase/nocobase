@@ -31,7 +31,7 @@ export default class extends Migration {
         fields: [
           { type: 'integer', name: 'nodePk' },
           { type: 'jsonb', name: 'path' },
-          { type: 'integer', name: 'rootPK' },
+          { type: 'integer', name: 'rootPk' },
         ],
       });
       const treeExistsInDb = await this.app.db.getCollection(name).existsInDb();
@@ -54,7 +54,7 @@ export default class extends Migration {
             values: {
               nodePk: data.get('id'),
               path: path,
-              rootPK: path.split('/')[1],
+              rootPk: path.split('/')[1],
             },
           });
         }
