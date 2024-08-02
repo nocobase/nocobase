@@ -11,7 +11,6 @@ import { mockDatabase } from '@nocobase/database';
 import { Application, ApplicationOptions, AppSupervisor, Gateway, PluginManager } from '@nocobase/server';
 import { uid } from '@nocobase/utils';
 import jwt from 'jsonwebtoken';
-import _ from 'lodash';
 import qs from 'qs';
 import supertest, { SuperAgentTest } from 'supertest';
 import { MemoryPubSubAdapter } from './memory-pub-sub-adapter';
@@ -290,7 +289,7 @@ export async function createMockCluster({
       ...options,
       skipSupervisor: true,
       name: clusterName + '_' + appName,
-      skipInstall: Boolean(i),
+      skipInstall: i !== 0,
       pubSubManager: {
         channelPrefix: clusterName,
       },
