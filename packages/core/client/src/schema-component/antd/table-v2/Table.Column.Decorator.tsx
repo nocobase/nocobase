@@ -67,9 +67,9 @@ export const TableColumnDecorator = (props) => {
       <CollectionFieldContext.Provider value={collectionField}>
         <Designer fieldSchema={fieldSchema} uiSchema={uiSchema} collectionField={collectionField} />
         {/* <RecursionField name={columnSchema.name} schema={columnSchema}/> */}
-        <span>
+        <span role="button">
           {fieldSchema.required && <span className="ant-formily-item-asterisk">*</span>}
-          <span role="button">{field?.title || compile(uiSchema?.title)}</span>
+          <span>{field?.title || compile(uiSchema?.title)}</span>
         </span>
         {/* <div
         onClick={() => {
