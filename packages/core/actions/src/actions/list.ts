@@ -20,9 +20,7 @@ function findArgs(ctx: Context) {
   const resourceName = ctx.action.resourceName;
   const params = ctx.action.params;
   if (params.tree) {
-    if (isValidFilter(params.filter)) {
-      params.tree = true;
-    } else {
+    if (!isValidFilter(params.filter)) {
       const [collectionName, associationName] = resourceName.split('.');
       const collection = ctx.db.getCollection(resourceName);
       // tree collection 或者关系表是 tree collection
