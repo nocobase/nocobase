@@ -39,6 +39,7 @@ import {
   useSchemaInitializer,
   useSchemaInitializerItem,
   useSchemaOptionsContext,
+  useVariableScope,
 } from '@nocobase/client';
 import WorkflowPlugin, {
   DetailsBlockProvider,
@@ -358,7 +359,7 @@ function ActionInitializer() {
           ...actionProps,
           useAction: '{{ useSubmit }}',
         },
-        'x-designer': 'Action.Designer',
+        'x-designer': 'ManualActionDesigner',
         'x-action': `${action}`,
       }}
       type="x-action"
