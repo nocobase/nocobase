@@ -289,7 +289,6 @@ export async function createMockCluster({
       ...options,
       skipSupervisor: true,
       name: clusterName + '_' + appName,
-      skipInstall: i !== 0,
       pubSubManager: {
         channelPrefix: clusterName,
       },
