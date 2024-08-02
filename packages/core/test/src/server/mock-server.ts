@@ -11,10 +11,10 @@ import { mockDatabase } from '@nocobase/database';
 import { Application, ApplicationOptions, AppSupervisor, Gateway, PluginManager } from '@nocobase/server';
 import { uid } from '@nocobase/utils';
 import jwt from 'jsonwebtoken';
-import _ from 'lodash';
 import qs from 'qs';
 import supertest, { SuperAgentTest } from 'supertest';
 import { MemoryPubSubAdapter } from './memory-pub-sub-adapter';
+import { MockDataSource } from './mock-data-source';
 
 interface ActionParams {
   filterByTk?: any;
@@ -77,6 +77,10 @@ interface ExtendedAgent extends SuperAgentTest {
 }
 
 export class MockServer extends Application {
+  registerMockDataSource() {
+    this.dataSourceManager.factory.register('mock', MockDataSource);
+  }
+
   async loadAndInstall(options: any = {}) {
     await this.load({ method: 'install' });
 
@@ -231,13 +235,15 @@ export function mockServer(options: ApplicationOptions = {}) {
     PluginManager.findPackagePatched = true;
   }
 
-  const app = new MockServer({
+  const mockServerOptions = {
     acl: false,
     syncMessageManager: {
       debounce: 500,
     },
     ...options,
-  });
+  };
+
+  const app = new MockServer(mockServerOptions);
 
   const basename = app.options.pubSubManager?.channelPrefix;
 
@@ -280,16 +286,27 @@ export async function createMockCluster({
   ...options
 }: MockClusterOptions = {}) {
   const nodes: MockServer[] = [];
+  let dbOptions;
+
   for (let i = 0; i < number; i++) {
+    if (dbOptions) {
+      options['database'] = {
+        ...dbOptions,
+      };
+    }
+
     const app: MockServer = await createMockServer({
       ...options,
       skipSupervisor: true,
       name: clusterName + '_' + appName,
-      skipInstall: Boolean(i),
       pubSubManager: {
         channelPrefix: clusterName,
       },
     });
+
+    if (!dbOptions) {
+      dbOptions = app.db.options;
+    }
     console.log('-------------', await app.isInstalled());
     nodes.push(app);
   }
