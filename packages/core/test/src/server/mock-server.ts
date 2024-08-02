@@ -235,13 +235,15 @@ export function mockServer(options: ApplicationOptions = {}) {
     PluginManager.findPackagePatched = true;
   }
 
-  const app = new MockServer({
+  const mockServerOptions = {
     acl: false,
     syncMessageManager: {
       debounce: 500,
     },
     ...options,
-  });
+  };
+
+  const app = new MockServer(mockServerOptions);
 
   const basename = app.options.pubSubManager?.channelPrefix;
 
@@ -288,7 +290,7 @@ export async function createMockCluster({
 
   for (let i = 0; i < number; i++) {
     if (dbOptions) {
-      options['db'] = {
+      options['database'] = {
         ...dbOptions,
       };
     }
