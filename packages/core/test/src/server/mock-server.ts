@@ -284,7 +284,15 @@ export async function createMockCluster({
   ...options
 }: MockClusterOptions = {}) {
   const nodes: MockServer[] = [];
+  let dbOptions;
+
   for (let i = 0; i < number; i++) {
+    if (dbOptions) {
+      options['db'] = {
+        ...dbOptions,
+      };
+    }
+
     const app: MockServer = await createMockServer({
       ...options,
       skipSupervisor: true,
@@ -293,6 +301,10 @@ export async function createMockCluster({
         channelPrefix: clusterName,
       },
     });
+
+    if (!dbOptions) {
+      dbOptions = app.db.options;
+    }
     console.log('-------------', await app.isInstalled());
     nodes.push(app);
   }
