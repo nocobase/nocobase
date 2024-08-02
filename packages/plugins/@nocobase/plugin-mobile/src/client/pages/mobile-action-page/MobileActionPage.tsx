@@ -99,8 +99,9 @@ export const MobileActionPage = ({ level, footerNodeName }) => {
 
   const style = useMemo(() => {
     return {
-      // 10 为基数，是为了要确保能大于 Table 中的悬浮行的 z-index
-      zIndex: 10 + (level || 0),
+      // 200 为基数，是为了要确保能大于 Table 中的悬浮行的 z-index
+      // 高德地图中有一些元素的 z-index 是 160，这里设置 200 是为了覆盖高德地图的元素˝
+      zIndex: 200 + (level || 0),
     };
   }, [level]);
 
