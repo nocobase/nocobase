@@ -27,7 +27,6 @@ export interface MobileRouteItem {
   children?: MobileRouteItem[];
 }
 
-
 export interface MobileRoutesContextValue {
   routeList?: MobileRouteItem[];
   refresh: () => Promise<any>;
@@ -97,7 +96,9 @@ export const MobileRoutesProvider = ({ children }) => {
     data,
     runAsync: refresh,
     loading,
-  } = useRequest<{ data: MobileRouteItem[] }>(() => resource.list({ tree: true, sort: 'sort' }).then((res) => res.data));
+  } = useRequest<{ data: MobileRouteItem[] }>(() =>
+    resource.list({ tree: true, sort: 'sort' }).then((res) => res.data),
+  );
   const routeList = useMemo(() => data?.data || [], [data]);
   const { activeTabBarItem, activeTabItem } = useActiveTabBar(routeList);
 

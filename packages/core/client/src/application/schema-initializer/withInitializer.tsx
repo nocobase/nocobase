@@ -108,7 +108,7 @@ export function withInitializer<T>(C: ComponentType<T>) {
                 {...popoverProps}
                 arrow={false}
                 overlayClassName={overlayClassName}
-                  open={visible}
+                open={visible}
                 onOpenChange={setVisible}
                 content={wrapSSR(
                   <div
