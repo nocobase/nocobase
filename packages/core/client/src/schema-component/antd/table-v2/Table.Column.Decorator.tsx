@@ -66,23 +66,10 @@ export const TableColumnDecorator = (props) => {
     >
       <CollectionFieldContext.Provider value={collectionField}>
         <Designer fieldSchema={fieldSchema} uiSchema={uiSchema} collectionField={collectionField} />
-        {/* <RecursionField name={columnSchema.name} schema={columnSchema}/> */}
         <span role="button">
           {fieldSchema.required && <span className="ant-formily-item-asterisk">*</span>}
           <span>{field?.title || compile(uiSchema?.title)}</span>
         </span>
-        {/* <div
-        onClick={() => {
-          field.title = uid();
-          // columnSchema.title = field.title = field.title;
-          // refresh();
-          // field.query(`.*.${fieldSchema.name}`).take((f) => {
-          //   f.componentProps.dateFormat = 'YYYY-MM-DD';
-          // });
-        }}
-      >
-        Edit
-      </div> */}
       </CollectionFieldContext.Provider>
     </SortableItem>
   );
