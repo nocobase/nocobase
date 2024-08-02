@@ -8,7 +8,7 @@
  */
 
 import { Migration } from '@nocobase/server';
-import { Model } from '@nocobase/database';
+import { FindOneOptions, Model } from '@nocobase/database';
 
 export default class extends Migration {
   on = 'afterLoad'; // 'beforeLoad' or 'afterLoad'
@@ -48,11 +48,11 @@ export default class extends Migration {
         });
         const existDatas = await this.app.db.getRepository(treeCollection.name).find({});
         for (const data of existDatas) {
-          let path = `/${data.dataValues?.id}`;
+          let path = `/${data.get('id')}`;
           path = await this.getTreePath(data, path, treeCollection.name);
           await this.app.db.getRepository(name).create({
             values: {
-              nodePk: data.dataValues?.id,
+              nodePk: data.get('id'),
               path: path,
               rootPK: path.split('/')[1],
             },
@@ -63,15 +63,15 @@ export default class extends Migration {
   }
 
   async getTreePath(model: Model, path: string, collectionName: string) {
-    if (model.dataValues?.parentId !== null) {
+    if (model.get('parentId') !== null) {
       const parent = await this.app.db.getRepository(collectionName).findOne({
         filter: {
-          id: model.dataValues?.parentId,
+          id: model.get('parentId') as FindOneOptions,
         },
       });
       if (parent) {
-        path = `/${parent.dataValues?.id}${path}`;
-        if (parent.dataValues?.parentId !== null) {
+        path = `/${parent.get('id')}${path}`;
+        if (parent.get('parentId') !== null) {
           path = await this.getTreePath(parent, path, collectionName);
         }
       }
