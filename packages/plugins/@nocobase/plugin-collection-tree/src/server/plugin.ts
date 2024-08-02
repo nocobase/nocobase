@@ -111,7 +111,7 @@ class PluginCollectionTreeServer extends Plugin {
         return;
       }
 
-      const collectionTree = await this.db.getCollection(name);
+      const collectionTree = this.db.getCollection(name);
       if (collectionTree) {
         await this.db.getCollection(name).removeFromDb({ transaction });
       }
