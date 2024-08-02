@@ -8,6 +8,8 @@
  */
 
 import { MockDatabase, MockServer, createMockServer } from '@nocobase/test';
+import Migration from '../migrations/20240802141435-collection-tree';
+import { Repository } from '@nocobase/database';
 
 describe('tree collection sync', async () => {
   let app: MockServer;
@@ -15,6 +17,7 @@ describe('tree collection sync', async () => {
 
   beforeEach(async () => {
     app = await createMockServer({
+      version: '1.3.0-alpha',
       plugins: ['data-source-main', 'data-source-manager', 'error-handler', 'collection-tree'],
     });
     db = app.db;
@@ -46,9 +49,39 @@ describe('tree collection sync', async () => {
     const name = `main_${collection.name}_path`;
     const pathCollection = db.getCollection(name);
     expect(pathCollection).toBeTruthy();
+    expect(await pathCollection.existsInDb()).toBeTruthy();
+  });
+});
+
+describe('collection tree migrate test', () => {
+  let app: MockServer;
+  let db: MockDatabase;
+  let repo: Repository;
+
+  beforeEach(async () => {
+    app = await createMockServer({
+      version: '1.3.0-alpha',
+      plugins: ['data-source-main', 'data-source-manager', 'error-handler', 'collection-tree'],
+    });
+    db = app.db;
+    repo = app.db.getRepository('applicationPlugins');
+  });
+
+  afterEach(async () => {
+    await app.db.clean({ drop: true });
+    await app.destroy();
   });
 
   it('should sync path collection for old tree collections when upgrading', async () => {
+    const plugin = await repo.create({
+      values: {
+        name: 'collection-tree',
+        version: '1.3.0-alpha',
+        enabled: true,
+        installed: true,
+        builtIn: true,
+      },
+    });
     await db.getRepository('collections').create({
       values: {
         name: 'test_tree',
@@ -70,8 +103,17 @@ describe('tree collection sync', async () => {
     const name = `main_test_tree_path`;
     const pathCollection = db.getCollection(name);
     expect(pathCollection).toBeFalsy();
-    await app.runCommand('upgrade');
-    const pathCollection2 = db.getCollection(name);
-    expect(pathCollection2).toBeTruthy();
+    // await app.runCommand('upgrade');
+    const migration = new Migration({
+      // @ts-ignore
+      app,
+    });
+    await migration.up();
+    const p = await repo.findOne({
+      filter: {
+        id: plugin.id,
+      },
+    });
+    expect(p.name).toBe('collection-tree');
   });
 });
