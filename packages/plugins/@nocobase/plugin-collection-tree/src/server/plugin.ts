@@ -125,11 +125,11 @@ class PluginCollectionTreeServer extends Plugin {
         'options.tree': 'adjacencyList',
       },
     });
-    for (const treeCollection of treeCollections) {
-      const name = `main_${treeCollection.name}_path`;
+    for (const collection of treeCollections) {
+      const name = `main_${collection.name}_path`;
       const treePathCollection = this.app.db.getCollection(name);
       if (!treePathCollection) {
-        this.db.collection({
+        this.app.db.collection({
           name,
           autoGenId: false,
           timestamps: false,
@@ -142,9 +142,9 @@ class PluginCollectionTreeServer extends Plugin {
       }
       const treeExistsInDb = await this.app.db.getCollection(name).existsInDb();
       if (!treeExistsInDb) {
-        await this.db.getCollection(name).sync({ force: false, alter: true });
-        const treeCollection = this.app.db.getCollection(treeCollection.name);
-        const existData = await this.app.db.getRepository(treeCollection.name).find({});
+        await this.app.db.getCollection(name).sync({ force: false, alter: true });
+        const treeCollection = this.app.db.getCollection(collection.name);
+        const existData = await this.app.db.getRepository(collection.name).find({});
         for (const data of existData) {
           let path = `/${data.get(treeCollection.filterTargetKey)}`;
           path = await this.getTreePath(data, path, treeCollection as unknown as Model);
