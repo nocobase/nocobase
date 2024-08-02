@@ -43,7 +43,7 @@ class PluginCollectionTreeServer extends Plugin {
           this.db.on(`${collection.name}.afterCreate`, async (model: Model, options) => {
             const { transaction } = options;
             let path = `/${model.get(collection.filterTargetKey)}`;
-            path = await this.getTreePath(model, path, collection);
+            path = await this.getTreePath(model, path, collection, name);
             await this.app.db.getRepository(name).create({
               values: {
                 nodePk: model.get(collection.filterTargetKey),
@@ -62,7 +62,7 @@ class PluginCollectionTreeServer extends Plugin {
             }
             const { transaction } = options;
             let path = `/${model.get(collection.filterTargetKey)}`;
-            path = await this.getTreePath(model, path, collection);
+            path = await this.getTreePath(model, path, collection, name);
             const collectionTreePath = await this.app.db.getCollection(name);
             const nodePkColumnName = collectionTreePath.getField('nodePk').columnName();
             await this.app.db.getRepository(name).update({
@@ -116,7 +116,7 @@ class PluginCollectionTreeServer extends Plugin {
     });
   }
 
-  private async getTreePath(model: Model, path: string, collection: Model) {
+  private async getTreePath(model: Model, path: string, collection: Model, name: string) {
     if (model.get('parentId') !== null) {
       const parent = await this.app.db.getRepository(collection.name).findOne({
         filter: {
@@ -126,7 +126,19 @@ class PluginCollectionTreeServer extends Plugin {
       if (parent) {
         path = `/${parent.get(collection.filterTargetKey)}${path}`;
         if (parent.get('parentId') !== null) {
-          path = await this.getTreePath(parent, path, collection);
+          const collectionTreePath = this.app.db.getCollection(name);
+          const nodePkColumnName = collectionTreePath.getField('nodePk').columnName();
+          const parentPathData = await this.app.db.getRepository(name).findOne({
+            filter: {
+              [nodePkColumnName]: parent.get('parentId'),
+            },
+          });
+          const parentPath = parentPathData.get('path');
+          if (parentPath == null) {
+            path = await this.getTreePath(parent, path, collection, name);
+          } else {
+            path = `${parentPath}/${parent.get(collection.filterTargetKey)}`;
+          }
         }
       }
     }
