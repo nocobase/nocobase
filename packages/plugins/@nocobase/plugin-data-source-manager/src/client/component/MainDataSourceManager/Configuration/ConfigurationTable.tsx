@@ -29,6 +29,7 @@ import {
   FieldSummary,
   TemplateSummary,
   useRequest,
+  useCollectionRecordData,
 } from '@nocobase/client';
 import { CollectionFields } from './CollectionFields';
 import { collectionSchema } from './schemas/collections';
@@ -101,7 +102,7 @@ const useNewId = (prefix) => {
 
 export const ConfigurationTable = () => {
   const { t } = useTranslation();
-  const { interfaces, getCollections } = useCollectionManager_deprecated();
+  const { interfaces, getCollections, getCollection } = useCollectionManager_deprecated();
   const {
     data: { database },
   } = useCurrentAppInfo();
@@ -163,7 +164,8 @@ export const ConfigurationTable = () => {
   };
 
   const loadFilterTargetKeys = async (field) => {
-    const { fields } = field.form.values;
+    const { name } = field.form.values;
+    const { fields } = getCollection(name);
     return Promise.resolve({
       data: fields,
     }).then(({ data }) => {
