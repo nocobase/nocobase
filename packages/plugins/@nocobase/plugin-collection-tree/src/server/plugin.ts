@@ -117,15 +117,15 @@ class PluginCollectionTreeServer extends Plugin {
   }
 
   private async getTreePath(model: Model, path: string, collection: Model) {
-    if (model.dataValues?.parentId !== null) {
+    if (model.get('parentId') !== null) {
       const parent = await this.app.db.getRepository(collection.name).findOne({
         filter: {
-          [collection.filterTargetKey]: model.dataValues?.parentId,
+          [collection.filterTargetKey]: model.get('parentId'),
         },
       });
       if (parent) {
         path = `/${parent.get(collection.filterTargetKey)}${path}`;
-        if (parent.dataValues?.parentId !== null) {
+        if (parent.get('parentId') !== null) {
           path = await this.getTreePath(parent, path, collection);
         }
       }
