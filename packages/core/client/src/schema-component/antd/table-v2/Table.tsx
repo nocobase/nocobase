@@ -96,7 +96,7 @@ const useTableColumns = (props: { showDel?: boolean; isSubTable?: boolean }) => 
     return buf;
   }, []);
 
-  // const hasChangedColumns = useColumnsDeepMemoized(columnsSchema);
+  const hasChangedColumns = useColumnsDeepMemoized(columnsSchema);
 
   const schemaToolbarBigger = useMemo(() => {
     return css`
@@ -149,11 +149,11 @@ const useTableColumns = (props: { showDel?: boolean; isSubTable?: boolean }) => 
             return { record, schema: s };
           },
         } as TableColumnProps<any>;
-
-        // 这里不能把 columnsSchema 作为依赖，因为其每次都会变化，这里使用 hasChangedColumns 作为依赖
-        // eslint-disable-next-line react-hooks/exhaustive-deps
       }),
-    [columnsSchema, field.value, field.address, collection, parentRecordData, schemaToolbarBigger],
+
+    // 这里不能把 columnsSchema 作为依赖，因为其每次都会变化，这里使用 hasChangedColumns 作为依赖
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [hasChangedColumns, field.value, field.address, collection, parentRecordData, schemaToolbarBigger],
   );
 
   const tableColumns = useMemo(() => {
