@@ -22,7 +22,7 @@ describe('password field', () => {
     await db.close();
   });
 
-  it('case 1', async () => {
+  it('basic', async () => {
     db.registerFieldTypes({
       encryption: EncryptionField,
     });
