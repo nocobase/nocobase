@@ -234,10 +234,10 @@ export class AdjacencyListRepository extends Repository {
       const rootPathDataMap: rootPathDataMapInterface = {};
 
       for (const node of nodeData) {
-        if (rootPathDataMap[node.dataValues.rootPk]) {
-          rootPathDataMap[node.dataValues.rootPk] = [...rootPathDataMap[node.dataValues.rootPk], node.dataValues.path];
+        if (rootPathDataMap[node.get('rootPk')]) {
+          rootPathDataMap[node.get('rootPk')] = [...rootPathDataMap[node.get('rootPk')], node.get('path')];
         } else {
-          rootPathDataMap[node.dataValues.rootPk] = [node.dataValues.path];
+          rootPathDataMap[node.get('rootPk')] = [node.get('path')];
         }
       }
 
