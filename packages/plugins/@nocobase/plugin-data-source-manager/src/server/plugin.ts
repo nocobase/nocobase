@@ -420,7 +420,7 @@ export class PluginDataSourceManagerServer extends Plugin {
             app: ctx.app,
           });
 
-          this.app.syncMessageManager.publish(self.name, {
+          ctx.app.syncMessageManager.publish(self.name, {
             type: 'loadDataSource',
             dataSourceKey: dataSourceModel.get('key'),
           });
