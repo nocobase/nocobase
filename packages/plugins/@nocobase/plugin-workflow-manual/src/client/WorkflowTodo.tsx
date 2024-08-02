@@ -463,7 +463,7 @@ function ManualActionStatusProvider({ value, children }) {
 
 function useSubmit() {
   const api = useAPIClient();
-  const { setVisible } = useActionContext();
+  const { setVisible, setSubmitted } = useActionContext();
   const { values, submit } = useForm();
   const buttonSchema = useFieldSchema();
   const { service } = useTableBlockContext();
@@ -482,8 +482,9 @@ function useSubmit() {
           result: { [formKey]: values, _: actionKey },
         },
       });
+      setSubmitted(true);
       setVisible(false);
-      service.refresh();
+      service?.refresh();
     },
   };
 }
