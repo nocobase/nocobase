@@ -32,6 +32,7 @@ function cacheSchema(collectionNameList: string[]) {
     storePopupContext(workflowTodoViewActionSchema['x-uid'], {
       schema: workflowTodoViewActionSchema,
       ...workflowTodoViewActionSchema['x-action-context'],
+      notBackToPreviousPath: true,
     });
   });
 }
