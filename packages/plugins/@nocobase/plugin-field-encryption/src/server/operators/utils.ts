@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { encryptSync } from '../utils';
+import { aesEncryptSync } from '@nocobase/database';
 
 export function getFieldOptions(ctx: any) {
   function getField(fieldPath: string[]) {
@@ -26,9 +26,9 @@ export function encryptSearchValueSync(str: any, ctx: any) {
   const { iv } = getFieldOptions(ctx);
   let encrypted;
   if (Array.isArray(str)) {
-    encrypted = str.map((item) => encryptSync(item, iv));
+    encrypted = str.map((item) => aesEncryptSync(item, iv));
   } else {
-    encrypted = encryptSync(str, iv);
+    encrypted = aesEncryptSync(str, iv);
   }
   return encrypted;
 }

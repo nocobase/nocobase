@@ -7,13 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { BaseColumnFieldOptions, Field, Model } from '@nocobase/database';
-import { DataTypes } from 'sequelize';
-import { decrypt, encrypt, checkKey } from './utils';
+import { DataTypes, Model } from 'sequelize';
 import { EncryptionError } from './errors/EncryptionError';
+import { aesCheckKey, aesDecrypt, aesEncrypt } from './utils';
+import { BaseColumnFieldOptions, Field } from '../field';
 
 export interface EncryptionFieldOptions extends BaseColumnFieldOptions {
   type: 'encryption';
+  hidden?: boolean;
 }
 
 export class EncryptionField extends Field {
@@ -22,17 +23,17 @@ export class EncryptionField extends Field {
   }
 
   init() {
-    checkKey();
+    aesCheckKey();
     const { name, iv } = this.options;
     this.writeListener = async (model: Model) => {
-      checkKey();
+      aesCheckKey();
       if (!model.changed(name as any)) {
         return;
       }
       const value = model.get(name) as string;
       if (value) {
         try {
-          const encrypted = await encrypt(value, iv);
+          const encrypted = await aesEncrypt(value, iv);
           model.set(name, encrypted);
         } catch (error) {
           console.error(error);
@@ -44,13 +45,13 @@ export class EncryptionField extends Field {
     };
 
     this.findListener = async (instances, options) => {
-      checkKey();
+      aesCheckKey();
       instances = Array.isArray(instances) ? instances : [instances];
       await Promise.all(
         instances.map(async (instance) => {
           if (instance.get?.(name)) {
             try {
-              instance.set(name, await decrypt(instance.get(name), iv));
+              instance.set(name, await aesDecrypt(instance.get(name), iv));
             } catch (error) {
               console.error(error);
               throw new EncryptionError(

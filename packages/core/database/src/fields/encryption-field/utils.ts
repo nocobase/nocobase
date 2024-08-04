@@ -15,7 +15,7 @@ const keyString = process.env.ENCRYPTION_FIELD_KEY || '';
 // 将字符串转换为 Buffer 对象
 const key = Buffer.from(keyString, 'utf8');
 
-export function encrypt(text: string, ivString: string) {
+export function aesEncrypt(text: string, ivString: string) {
   return new Promise((resolve, reject) => {
     const iv = Buffer.from(ivString, 'utf8');
     const cipher = crypto.createCipheriv(algorithm, key, iv);
@@ -41,7 +41,7 @@ export function encrypt(text: string, ivString: string) {
   });
 }
 
-export function decrypt(encrypted: string, ivString: string) {
+export function aesDecrypt(encrypted: string, ivString: string) {
   return new Promise((resolve, reject) => {
     const iv = Buffer.from(ivString, 'utf8');
     const decipher = crypto.createDecipheriv(algorithm, key, iv);
@@ -67,7 +67,7 @@ export function decrypt(encrypted: string, ivString: string) {
   });
 }
 
-export function encryptSync(text: string, ivString: string) {
+export function aesEncryptSync(text: string, ivString: string) {
   const iv = Buffer.from(ivString, 'utf8');
   const cipher = crypto.createCipheriv(algorithm, key, iv);
   let encrypted = cipher.update(text, 'utf8', 'hex');
@@ -75,7 +75,7 @@ export function encryptSync(text: string, ivString: string) {
   return encrypted;
 }
 
-export function decryptSync(encrypted: string, ivString: string) {
+export function aseDecryptSync(encrypted: string, ivString: string) {
   const iv = Buffer.from(ivString, 'utf8');
   const decipher = crypto.createDecipheriv(algorithm, key, iv);
   let decrypted = decipher.update(encrypted, 'hex', 'utf8');
@@ -83,7 +83,7 @@ export function decryptSync(encrypted: string, ivString: string) {
   return decrypted;
 }
 
-export function checkKey() {
+export function aesCheckKey() {
   if (!keyString) {
     throw new EncryptionError('The environment variable `ENCRYPTION_FIELD_KEY` is required, please set it');
   }

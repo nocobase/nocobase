@@ -9,17 +9,12 @@
 
 import { Plugin } from '@nocobase/server';
 import PluginErrorHandler from '@nocobase/plugin-error-handler';
-import { EncryptionField } from './encryption-field';
 import { $encryptionEq } from './operators/eq';
 import { $encryptionNe } from './operators/ne';
-import { EncryptionError } from './errors/EncryptionError';
+import { EncryptionError } from '@nocobase/database';
 
 export class PluginFieldEncryptionServer extends Plugin {
   async load() {
-    this.db.registerFieldTypes({
-      encryption: EncryptionField,
-    });
-
     this.db.registerOperators({
       $encryptionEq,
       $encryptionNe,
