@@ -13,7 +13,7 @@ import ws from 'ws';
 export { MockDatabase, mockDatabase } from '@nocobase/database';
 export { default as supertest } from 'supertest';
 export * from './memory-pub-sub-adapter';
-export * from './mock-cluster';
+export * from './mock-isolated-cluster';
 export * from './mock-server';
 
 export const pgOnly: () => any = () => (process.env.DB_DIALECT == 'postgres' ? describe : describe.skip);

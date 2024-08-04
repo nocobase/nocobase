@@ -279,12 +279,17 @@ export type MockClusterOptions = MockServerOptions & {
   appName?: string;
 };
 
+export type MockCluster = {
+  nodes: MockServer[];
+  destroy: () => Promise<void>;
+};
+
 export async function createMockCluster({
   number = 2,
   clusterName = `cluster_${uid()}`,
   appName = `app_${uid()}`,
   ...options
-}: MockClusterOptions = {}) {
+}: MockClusterOptions = {}): Promise<MockCluster> {
   const nodes: MockServer[] = [];
   let dbOptions;
 
