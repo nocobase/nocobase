@@ -41,6 +41,7 @@ const useMobileBlockInitializersInSubpage = (
     app.schemaInitializerManager.get('popup:common:addBlock'),
   );
   const { t } = usePluginTranslation();
+  const { visible } = useActionContext();
 
   const dataBlocks = originalInitializers.options.items.find((item) => item.name === 'dataBlocks');
   const dataBlocksChildren = [...dataBlocks.useChildren(), ...dataBlocks.children];
@@ -67,14 +68,16 @@ const useMobileBlockInitializersInSubpage = (
     return new SchemaInitializer(options);
   });
 
-  // 把 PC 端子页面的 Add block 按钮换成移动端的。在退出移动端时，再换回来
-  app.schemaInitializerManager.add(newInitializers);
-
   useEffect(() => {
     return () => {
       app.schemaInitializerManager.add(originalInitializers);
     };
   }, [app, originalInitializers]);
+
+  if (visible) {
+    // 把 PC 端子页面的 Add block 按钮换成移动端的。在退出移动端时，再换回来
+    app.schemaInitializerManager.add(newInitializers);
+  }
 };
 
 /**
@@ -101,7 +104,7 @@ export const MobileActionPage = ({ level, footerNodeName }) => {
     return {
       // 200 为基数，是为了要确保能大于 Table 中的悬浮行的 z-index
       // 高德地图中有一些元素的 z-index 是 160，这里设置 200 是为了覆盖高德地图的元素˝
-      zIndex: 200 + (level || 0),
+      zIndex: 200 + (level || 1),
     };
   }, [level]);
 

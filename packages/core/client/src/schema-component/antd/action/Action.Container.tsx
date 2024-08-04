@@ -16,15 +16,11 @@ import { ComposedActionDrawer } from './types';
 
 export const ActionContainer: ComposedActionDrawer = observer(
   (props: any) => {
-    const { openMode = 'drawer', visible } = useActionContext();
+    const { openMode = 'drawer' } = useActionContext();
     const { getComponentByOpenMode } = useOpenModeContext();
     const { currentLevel } = useCurrentPopupContext();
 
     const Component = getComponentByOpenMode(openMode);
-
-    if (!visible) {
-      return null;
-    }
 
     return <Component footerNodeName={'Action.Container.Footer'} level={currentLevel} {...props} />;
   },

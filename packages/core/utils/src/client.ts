@@ -24,9 +24,13 @@ export * from './number';
 export * from './parse-filter';
 export * from './registry';
 // export * from './toposort';
+export * from './i18n';
 export * from './isPortalInBody';
+export * from './parseHTML';
 export * from './uid';
 export * from './url';
 export { dayjs, lodash };
-export * from './parseHTML';
-export * from './i18n';
+
+export const isMobile = () => {
+  return window.location.pathname.startsWith('/m');
+};

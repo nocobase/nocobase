@@ -8,6 +8,7 @@
  */
 
 import { ExtendCollectionsProvider, storePopupContext } from '@nocobase/client';
+import { isMobile } from '@nocobase/utils/client';
 import React, { FC } from 'react';
 import { getWorkflowTodoViewActionSchema, nodeCollection, todoCollection, workflowCollection } from './WorkflowTodo';
 
@@ -27,7 +28,8 @@ export const WorkflowManualProvider: FC = (props) => {
  */
 function cacheSchema(collectionNameList: string[]) {
   collectionNameList.forEach((collectionName) => {
-    const workflowTodoViewActionSchema = getWorkflowTodoViewActionSchema({ defaultOpenMode: 'drawer', collectionName });
+    const defaultOpenMode = isMobile() ? 'drawer' : 'page';
+    const workflowTodoViewActionSchema = getWorkflowTodoViewActionSchema({ defaultOpenMode, collectionName });
 
     storePopupContext(workflowTodoViewActionSchema['x-uid'], {
       schema: workflowTodoViewActionSchema,

@@ -18,7 +18,7 @@ import {
 import React from 'react';
 import { isDesktop } from 'react-device-detect';
 
-import { useToAdaptActionDrawerToMobile } from '../adaptor-of-desktop/ActionDrawer';
+import { ActionDrawerUsedInMobile, useToAdaptActionDrawerToMobile } from '../adaptor-of-desktop/ActionDrawer';
 import { useToAdaptFilterActionToMobile } from '../adaptor-of-desktop/FilterAction';
 import { ResetSchemaOptionsProvider } from '../adaptor-of-desktop/ResetSchemaOptionsProvider';
 import { PageBackgroundColor } from '../constants';
@@ -76,7 +76,7 @@ export const Mobile = () => {
               hideOpenMode
               openModeToComponent={{
                 page: MobileActionPage,
-                drawer: MobileActionPage,
+                drawer: ActionDrawerUsedInMobile,
                 modal: Action.Modal,
               }}
             >

@@ -7,16 +7,25 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { observer, useFieldSchema } from '@formily/react';
+import { observer, RecursionField, useField, useFieldSchema } from '@formily/react';
 import { Action, SchemaComponent, useActionContext } from '@nocobase/client';
 import { Popup } from 'antd-mobile';
 import React, { useCallback, useEffect } from 'react';
+import { useMobileActionDrawerStyle } from './ActionDrawer.style';
 import { usePopupContainer } from './FilterAction';
 
-export const ActionDrawerUsedInMobile = observer((props) => {
+export const ActionDrawerUsedInMobile = observer((props: any) => {
   const fieldSchema = useFieldSchema();
+  const field = useField();
   const { visible, setVisible } = useActionContext();
   const { popupContainerRef, visiblePopup } = usePopupContainer(visible);
+  const { styles } = useMobileActionDrawerStyle();
+  const footerSchema = fieldSchema.reduceProperties((buf, s) => {
+    if (s['x-component'] === props.footerNodeName) {
+      return s;
+    }
+    return buf;
+  });
 
   const closePopup = useCallback(() => {
     setVisible(false);
@@ -35,12 +44,31 @@ export const ActionDrawerUsedInMobile = observer((props) => {
         maxHeight: 'calc(100% - var(--nb-mobile-page-header-height))',
         overflowY: 'auto',
         overflowX: 'hidden',
-        padding: '12px',
       }}
       showCloseButton
       closeOnSwipe
     >
-      <SchemaComponent schema={fieldSchema} onlyRenderProperties />
+      <div style={{ padding: '24px 12px 12px' }}>
+        <SchemaComponent
+          schema={fieldSchema}
+          onlyRenderProperties
+          filterProperties={(s) => {
+            return s['x-component'] !== props.footerNodeName;
+          }}
+        />
+      </div>
+      {footerSchema ? (
+        <div className={styles.footer}>
+          <RecursionField
+            basePath={field.address}
+            schema={fieldSchema}
+            onlyRenderProperties
+            filterProperties={(s) => {
+              return s['x-component'] === props.footerNodeName;
+            }}
+          />
+        </div>
+      ) : null}
     </Popup>
   );
 });
