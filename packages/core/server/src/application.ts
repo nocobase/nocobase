@@ -33,7 +33,7 @@ import Koa, { DefaultContext as KoaDefaultContext, DefaultState as KoaDefaultSta
 import compose from 'koa-compose';
 import lodash from 'lodash';
 import { RecordableHistogram } from 'node:perf_hooks';
-import { basename, resolve } from 'path';
+import path, { basename, resolve } from 'path';
 import semver from 'semver';
 import { createACL } from './acl';
 import { AppCommand } from './app-command';
@@ -58,9 +58,9 @@ import { DataSourceManager, SequelizeDataSource } from '@nocobase/data-source-ma
 import packageJson from '../package.json';
 import { MainDataSource } from './main-data-source';
 import validateFilterParams from './middlewares/validate-filter-params';
-import path from 'path';
 import { parseVariables } from './middlewares';
 import { dataTemplate } from './middlewares/data-template';
+import { createErrorHandler, ErrorHandler } from './errors/handler';
 
 export type PluginType = string | typeof Plugin;
 export type PluginConfiguration = PluginType | [PluginType, any];
@@ -211,6 +211,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
    * @internal
    */
   public perfHistograms = new Map<string, RecordableHistogram>();
+  /**
+   * @internal
+   */
+  public requestLogger: Logger;
   protected plugins = new Map<string, Plugin>();
   protected _appSupervisor: AppSupervisor = AppSupervisor.getInstance();
   protected _started: boolean;
@@ -219,13 +223,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   private _maintainingCommandStatus: MaintainingCommandStatus;
   private _maintainingStatusBeforeCommand: MaintainingCommandStatus | null;
   private _actionCommand: Command;
-
-  /**
-   * @internal
-   */
-  public requestLogger: Logger;
   private sqlLogger: Logger;
-  protected _logger: SystemLogger;
 
   constructor(public options: ApplicationOptions) {
     super();
@@ -235,6 +233,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     this._appSupervisor.addApp(this);
   }
+
+  protected _logger: SystemLogger;
 
   get logger() {
     return this._logger;
@@ -354,6 +354,11 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   get localeManager() {
     return this._locales;
+  }
+
+  protected _errorHandler: ErrorHandler;
+  get errorHandler() {
+    return this._errorHandler;
   }
 
   protected _telemetry: Telemetry;
@@ -1154,6 +1159,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this._dataSourceManager.use(dataTemplate, { group: 'dataTemplate', after: 'acl' });
 
     this._locales = new Locale(createAppProxy(this));
+    this._errorHandler = createErrorHandler(this);
 
     if (options.perfHooks) {
       enablePerfHooks(this);
