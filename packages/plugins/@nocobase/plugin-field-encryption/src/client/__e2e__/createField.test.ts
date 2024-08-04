@@ -11,11 +11,11 @@ import { test, expect } from '@nocobase/test/e2e';
 
 test('create Encryption field', async ({ page }) => {
   await page.goto('/admin/settings/data-source-manager/main/collections?type=main');
-  await page.getByLabel('action-Action.Link-Configure fields-collections-users').click();
+  await page.getByLabel('action-Action.Link-Configure fields-collections-users', { exact: true }).click();
   await page.getByRole('button', { name: 'plus Add field' }).click();
   await page.getByRole('menuitem', { name: 'Encryption' }).click();
-  const displayName = Math.random().toString(36).substring(7);
-  const name = Math.random().toString(36).substring(7);
+  const displayName = `a${Math.random().toString(36).substring(7)}`;
+  const name = `a${Math.random().toString(36).substring(7)}`;
   await page.getByLabel('block-item-Input-fields-Field display name').getByRole('textbox').fill(displayName);
   await page.getByLabel('block-item-Input-fields-Field name').getByRole('textbox').fill(name);
   await expect(page.getByText('Hidden')).toBeVisible();
