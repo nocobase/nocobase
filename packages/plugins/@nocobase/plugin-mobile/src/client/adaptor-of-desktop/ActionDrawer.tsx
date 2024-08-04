@@ -57,6 +57,7 @@ export const ActionDrawerUsedInMobile = observer((props: any) => {
           }}
         />
       </div>
+      <div style={{ height: 50 }}></div>
       {footerSchema ? (
         <div className={styles.footer}>
           <RecursionField

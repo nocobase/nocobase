@@ -45,6 +45,7 @@ export const FilterAction = withDynamicSchemaProps((props) => {
               closeOnSwipe
             >
               {props.content}
+              <div style={{ height: 50 }}></div>
             </Popup>
           </>
         );
@@ -101,7 +102,7 @@ export const usePopupContainer = (visible: boolean) => {
     popupContainer.style.right = '0';
     popupContainer.style.bottom = '0';
     popupContainer.style.overflow = 'hidden';
-    popupContainer.style.zIndex = '200';
+    popupContainer.style.zIndex = '1000';
 
     mobileContainer.appendChild(popupContainer);
     popupContainerRef.current = popupContainer;
