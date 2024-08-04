@@ -22,6 +22,7 @@ export class EncryptionField extends Field {
   }
 
   init() {
+    checkKey();
     const { name, iv } = this.options;
     this.writeListener = async (model: Model) => {
       checkKey();
@@ -43,6 +44,7 @@ export class EncryptionField extends Field {
     };
 
     this.findListener = async (instances, options) => {
+      checkKey();
       instances = Array.isArray(instances) ? instances : [instances];
       await Promise.all(
         instances.map(async (instance) => {

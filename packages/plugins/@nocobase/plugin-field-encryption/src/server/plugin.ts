@@ -12,7 +12,6 @@ import PluginErrorHandler from '@nocobase/plugin-error-handler';
 import { EncryptionField } from './encryption-field';
 import { $encryptionEq } from './operators/eq';
 import { $encryptionNe } from './operators/ne';
-import { checkKey } from './utils';
 import { EncryptionError } from './errors/EncryptionError';
 
 export class PluginFieldEncryptionServer extends Plugin {
@@ -24,12 +23,6 @@ export class PluginFieldEncryptionServer extends Plugin {
     this.db.registerOperators({
       $encryptionEq,
       $encryptionNe,
-    });
-
-    this.db.on('fields.beforeCreate', (model, field) => {
-      if (model.type === 'encryption') {
-        checkKey();
-      }
     });
 
     const errorHandlerPlugin = this.app.getPlugin<PluginErrorHandler>('error-handler');
