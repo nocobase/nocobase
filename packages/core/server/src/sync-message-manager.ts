@@ -37,7 +37,7 @@ export class SyncMessageManager {
     if (transaction) {
       return await new Promise((resolve, reject) => {
         const timer = setTimeout(() => {
-          reject(new Error('publish timeout'));
+          reject(new Error(`Publish message to ${channel} timeout, message: ${JSON.stringify(message)}`));
         }, 5000);
 
         transaction.afterCommit(async () => {
