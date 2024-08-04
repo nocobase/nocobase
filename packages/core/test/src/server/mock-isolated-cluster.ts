@@ -14,19 +14,19 @@ import { getPortPromise } from 'portfinder';
 import { uid } from '@nocobase/utils';
 import { createMockServer } from './mock-server';
 
-type ClusterOptions = {
+type IsolatedClusterOptions = {
   script?: string;
   env?: Record<string, any>;
   plugins?: string[];
   instances?: number;
 };
 
-export class MockCluster {
+export class MockIsolatedCluster {
   private script = `${process.env.APP_PACKAGE_ROOT}/src/index.ts`;
   private processes = [];
   private mockApp;
 
-  constructor(private options: ClusterOptions = {}) {
+  constructor(private options: IsolatedClusterOptions = {}) {
     if (options.script) {
       this.script = options.script;
     }
