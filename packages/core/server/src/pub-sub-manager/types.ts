@@ -23,7 +23,7 @@ export interface PubSubManagerSubscribeOptions {
 export type PubSubCallback = (message: any) => Promise<void>;
 
 export interface IPubSubAdapter {
-  isConnected(): Promise<boolean>;
+  isConnected(): Promise<boolean> | boolean;
   connect(): Promise<any>;
   close(): Promise<any>;
   subscribe(channel: string, callback: PubSubCallback): Promise<any>;

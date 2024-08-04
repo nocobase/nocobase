@@ -94,7 +94,7 @@ export class PubSubManager {
   }
 
   async publish(channel: string, message: any, options?: PubSubManagerPublishOptions) {
-    if (!this.adapter) {
+    if (!this.adapter?.isConnected()) {
       return;
     }
 
