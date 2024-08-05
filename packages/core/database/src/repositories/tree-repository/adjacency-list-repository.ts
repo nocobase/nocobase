@@ -321,7 +321,7 @@ export class AdjacencyListRepository extends Repository {
         },
       });
     }
-    this.collection.context.database.logger.warn(`Collection tree path table: ${pathTableName} not found`);
+    this.database.logger.warn(`Collection tree path table: ${pathTableName} not found`);
     return [];
   }
 
