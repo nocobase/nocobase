@@ -63,7 +63,7 @@ class PluginCollectionTreeServer extends Plugin {
             const { transaction } = options;
             let path = `/${model.get(collection.filterTargetKey)}`;
             path = await this.getTreePath(model, path, collection, name);
-            const collectionTreePath = await this.app.db.getCollection(name);
+            const collectionTreePath = this.db.getCollection(name);
             const nodePkColumnName = collectionTreePath.getField('nodePk').columnName();
             await this.app.db.getRepository(name).update({
               values: {
