@@ -25,7 +25,7 @@ on:
 jobs:
   build-and-push:
     if: github.event.pull_request.head.repo.fork != true
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-20.04
     services:
       verdaccio:
         image: verdaccio/verdaccio:5
