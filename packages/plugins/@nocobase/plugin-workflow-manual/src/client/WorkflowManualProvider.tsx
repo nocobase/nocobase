@@ -8,7 +8,6 @@
  */
 
 import { ExtendCollectionsProvider, storePopupContext } from '@nocobase/client';
-import { isMobile } from '@nocobase/utils/client';
 import React, { FC } from 'react';
 import { getWorkflowTodoViewActionSchema, nodeCollection, todoCollection, workflowCollection } from './WorkflowTodo';
 
@@ -40,3 +39,7 @@ function cacheSchema(collectionNameList: string[]) {
 }
 
 cacheSchema(Object.values(collections).map((collection) => collection.name));
+
+function isMobile() {
+  return window.location.pathname.startsWith('/m');
+}

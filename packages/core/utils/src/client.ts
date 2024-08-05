@@ -30,7 +30,3 @@ export * from './parseHTML';
 export * from './uid';
 export * from './url';
 export { dayjs, lodash };
-
-export const isMobile = () => {
-  return window.location.pathname.startsWith('/m');
-};
