@@ -90,11 +90,13 @@ const TabPaneInitializers = (props?: any) => {
                   required: true,
                   'x-component': 'Input',
                   'x-decorator': 'FormItem',
+                  'x-acl-ignore': true,
                 },
                 icon: {
                   title: '{{t("Icon")}}',
                   'x-component': 'IconPicker',
                   'x-decorator': 'FormItem',
+                  'x-acl-ignore': true,
                 },
                 footer: {
                   'x-component': 'Action.Modal.Footer',
