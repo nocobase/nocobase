@@ -65,6 +65,69 @@ describe('collection tree migrate test', () => {
     });
     db = app.db;
     repo = app.db.getRepository('applicationPlugins');
+    await db.getRepository('collections').create({
+      values: {
+        name: 'test_tree',
+        tree: 'adjacencyList',
+        fields: [
+          {
+            type: 'string',
+            name: 'name',
+          },
+          {
+            type: 'belongsTo',
+            name: 'parent',
+            treeParent: true,
+          },
+          {
+            type: 'hasMany',
+            name: 'children',
+            treeChildren: true,
+          },
+        ],
+      },
+    });
+    const collection = db.collection({
+      name: 'test_tree',
+      tree: 'adjacency-list',
+      fields: [
+        {
+          type: 'string',
+          name: 'name',
+        },
+        {
+          type: 'belongsTo',
+          name: 'parent',
+          treeParent: true,
+        },
+        {
+          type: 'hasMany',
+          name: 'children',
+          treeChildren: true,
+        },
+      ],
+    });
+    await collection.sync();
+    await collection.repository.create({
+      values: [
+        {
+          name: 'c1',
+          children: [
+            {
+              name: 'c1-1',
+              children: [
+                {
+                  name: 'c1-1-1',
+                },
+              ],
+            },
+            {
+              name: 'c12',
+            },
+          ],
+        },
+      ],
+    });
   });
 
   afterEach(async () => {
@@ -82,28 +145,13 @@ describe('collection tree migrate test', () => {
         builtIn: true,
       },
     });
-    await db.getRepository('collections').create({
-      values: {
-        name: 'test_tree',
-        tree: 'adjacency-list',
-        fields: [
-          {
-            type: 'belongsTo',
-            name: 'parent',
-            treeParent: true,
-          },
-          {
-            type: 'hasMany',
-            name: 'children',
-            treeChildren: true,
-          },
-        ],
-      },
-    });
     const name = `main_test_tree_path`;
     const pathCollection = db.getCollection(name);
-    expect(pathCollection).toBeFalsy();
-    // await app.runCommand('upgrade');
+    expect(pathCollection).toBeTruthy();
+    expect(await pathCollection.existsInDb()).toBeTruthy();
+    const pathData = await pathCollection.repository.find({});
+    expect(pathData.length).toEqual(4);
+    await pathCollection.removeFromDb();
     const migration = new Migration({
       // @ts-ignore
       app,
@@ -115,5 +163,32 @@ describe('collection tree migrate test', () => {
       },
     });
     expect(p.name).toBe('collection-tree');
+    const collection1 = db.collection({
+      name: 'test_tree',
+      tree: 'adjacency-list',
+      fields: [
+        {
+          type: 'string',
+          name: 'name',
+        },
+        {
+          type: 'belongsTo',
+          name: 'parent',
+          treeParent: true,
+        },
+        {
+          type: 'hasMany',
+          name: 'children',
+          treeChildren: true,
+        },
+      ],
+    });
+    const pathCollection1 = db.getCollection(name);
+    expect(pathCollection1).toBeTruthy();
+    expect(await pathCollection1.existsInDb()).toBeTruthy();
+    const collectionData = await collection1.repository.find({});
+    expect(collectionData.length).toEqual(4);
+    const pathData1 = await pathCollection1.repository.find({ context: {} });
+    expect(pathData1.length).toEqual(4);
   });
 });

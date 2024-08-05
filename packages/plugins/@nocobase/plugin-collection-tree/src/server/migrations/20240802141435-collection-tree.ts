@@ -24,7 +24,7 @@ export default class extends Migration {
 
     for (const treeCollection of treeCollections) {
       const name = `main_${treeCollection.name}_path`;
-      this.db.collection({
+      this.app.db.collection({
         name,
         autoGenId: false,
         timestamps: false,
@@ -36,8 +36,8 @@ export default class extends Migration {
       });
       const treeExistsInDb = await this.app.db.getCollection(name).existsInDb();
       if (!treeExistsInDb) {
-        await this.db.getCollection(name).sync();
-        this.db.collection({
+        await this.app.db.getCollection(name).sync();
+        this.app.db.collection({
           name: treeCollection.name,
           autoGenId: false,
           timestamps: false,
@@ -46,8 +46,8 @@ export default class extends Migration {
             { type: 'integer', name: 'parentId' },
           ],
         });
-        const existDatas = await this.app.db.getRepository(treeCollection.name).find({});
-        for (const data of existDatas) {
+        const existData = await this.app.db.getRepository(treeCollection.name).find({});
+        for (const data of existData) {
           let path = `/${data.get('id')}`;
           path = await this.getTreePath(data, path, treeCollection.name);
           await this.app.db.getRepository(name).create({
