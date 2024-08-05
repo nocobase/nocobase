@@ -8,9 +8,10 @@
  */
 
 import { observer, RecursionField, useField, useFieldSchema } from '@formily/react';
-import { Action, SchemaComponent, useActionContext } from '@nocobase/client';
+import { Action, SchemaComponent, useActionContext, useCompile } from '@nocobase/client';
 import { ConfigProvider } from 'antd';
 import { Popup } from 'antd-mobile';
+import { CloseOutline } from 'antd-mobile-icons';
 import React, { useCallback, useEffect, useMemo } from 'react';
 import { useMobileActionDrawerStyle } from './ActionDrawer.style';
 import { usePopupContainer } from './FilterAction';
@@ -21,12 +22,17 @@ export const ActionDrawerUsedInMobile = observer((props: any) => {
   const { visible, setVisible } = useActionContext();
   const { popupContainerRef, visiblePopup } = usePopupContainer(visible);
   const { styles } = useMobileActionDrawerStyle();
+  const compile = useCompile();
+
   const footerSchema = fieldSchema.reduceProperties((buf, s) => {
     if (s['x-component'] === props.footerNodeName) {
       return s;
     }
     return buf;
   });
+
+  const title = compile(fieldSchema.title) || '';
+  const marginBlock = 18;
 
   const closePopup = useCallback(() => {
     setVisible(false);
@@ -35,6 +41,9 @@ export const ActionDrawerUsedInMobile = observer((props: any) => {
   const theme = useMemo(() => {
     return {
       token: {
+        marginBlock,
+        borderRadiusBlock: 0,
+        boxShadowTertiary: 'none',
         zIndexPopupBase: 2000,
       },
     };
@@ -47,27 +56,29 @@ export const ActionDrawerUsedInMobile = observer((props: any) => {
         onClose={closePopup}
         onMaskClick={closePopup}
         getContainer={() => popupContainerRef.current}
-        bodyStyle={{
-          borderTopLeftRadius: '8px',
-          borderTopRightRadius: '8px',
-          minHeight: '40vh',
-          maxHeight: 'calc(100% - var(--nb-mobile-page-header-height))',
-          overflowY: 'auto',
-          overflowX: 'hidden',
-        }}
-        showCloseButton
+        bodyClassName={styles.body}
         closeOnSwipe
       >
-        <div style={{ padding: '24px 12px 12px' }}>
-          <SchemaComponent
-            schema={fieldSchema}
-            onlyRenderProperties
-            filterProperties={(s) => {
-              return s['x-component'] !== props.footerNodeName;
-            }}
-          />
+        <div className={styles.header}>
+          {/* used to make the title center */}
+          <span className={styles.placeholder}>
+            <CloseOutline />
+          </span>
+          <span>{title}</span>
+          <span className={styles.closeIcon} onClick={closePopup}>
+            <CloseOutline />
+          </span>
         </div>
-        <div style={{ height: 50 }}></div>
+        <SchemaComponent
+          schema={fieldSchema}
+          onlyRenderProperties
+          filterProperties={(s) => {
+            return s['x-component'] !== props.footerNodeName;
+          }}
+        />
+        {/* used to offset the margin-bottom of the last block */}
+        {/* The number 1 is to prevent the scroll bar from appearing */}
+        <div style={{ marginBottom: 1 - marginBlock }}></div>
         {footerSchema ? (
           <div className={styles.footer}>
             <RecursionField

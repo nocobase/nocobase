@@ -45,7 +45,6 @@ export const FilterAction = withDynamicSchemaProps((props) => {
               bodyStyle={{
                 borderTopLeftRadius: '8px',
                 borderTopRightRadius: '8px',
-                minHeight: '40vh',
                 maxHeight: 'calc(100% - var(--nb-mobile-page-header-height))',
                 overflow: 'auto',
                 padding: '12px',
@@ -54,7 +53,7 @@ export const FilterAction = withDynamicSchemaProps((props) => {
               closeOnSwipe
             >
               {props.content}
-              <div style={{ height: 50 }}></div>
+              <div style={{ height: 150 }}></div>
             </Popup>
           </ConfigProvider>
         );

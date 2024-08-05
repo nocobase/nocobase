@@ -59,38 +59,36 @@ export const Mobile = () => {
   const DesktopComponent = mobilePlugin.desktopMode === false ? React.Fragment : DesktopMode;
   return (
     <DesktopComponent>
-      <div className={styles.nbMobile}>
-        {/* 目前移动端由于和客户端的主题对不上，所以先使用 `GlobalThemeProvider` 和 `AntdAppProvider` 进行重置为默认主题  */}
-        <GlobalThemeProvider
-          theme={{
-            token: {
-              marginBlock: 18,
-              borderRadiusBlock: 0,
-              boxShadowTertiary: 'none',
-            },
-          }}
-        >
-          <AntdAppProvider className="mobile-container">
-            <OpenModeProvider
-              defaultOpenMode="page"
-              hideOpenMode
-              openModeToComponent={{
-                page: MobileActionPage,
-                drawer: ActionDrawerUsedInMobile,
-                modal: Action.Modal,
-              }}
-            >
-              <BlockTemplateProvider componentNamePrefix="mobile-">
-                <MobileAppProvider>
-                  <ResetSchemaOptionsProvider>
-                    <MobileRouter />
-                  </ResetSchemaOptionsProvider>
-                </MobileAppProvider>
-              </BlockTemplateProvider>
-            </OpenModeProvider>
-          </AntdAppProvider>
-        </GlobalThemeProvider>
-      </div>
+      {/* 目前移动端由于和客户端的主题对不上，所以先使用 `GlobalThemeProvider` 和 `AntdAppProvider` 进行重置为默认主题  */}
+      <GlobalThemeProvider
+        theme={{
+          token: {
+            marginBlock: 18,
+            borderRadiusBlock: 0,
+            boxShadowTertiary: 'none',
+          },
+        }}
+      >
+        <AntdAppProvider className={`mobile-container ${styles.nbMobile}`}>
+          <OpenModeProvider
+            defaultOpenMode="page"
+            hideOpenMode
+            openModeToComponent={{
+              page: MobileActionPage,
+              drawer: ActionDrawerUsedInMobile,
+              modal: Action.Modal,
+            }}
+          >
+            <BlockTemplateProvider componentNamePrefix="mobile-">
+              <MobileAppProvider>
+                <ResetSchemaOptionsProvider>
+                  <MobileRouter />
+                </ResetSchemaOptionsProvider>
+              </MobileAppProvider>
+            </BlockTemplateProvider>
+          </OpenModeProvider>
+        </AntdAppProvider>
+      </GlobalThemeProvider>
     </DesktopComponent>
   );
 };

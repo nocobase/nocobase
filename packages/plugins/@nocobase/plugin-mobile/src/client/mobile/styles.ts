@@ -19,6 +19,19 @@ export const useStyles = createStyles(({ token, css }) => {
       .ant-table-thead button[aria-label*='schema-initializer-TableV2-table:configureColumns'] > .ant-btn-icon {
         margin: 0px;
       }
+
+      // reset Select record popup
+      .ant-table-thead
+        button[aria-label*='schema-initializer-TableV2.Selector-table:configureColumns']
+        > span:last-child {
+        display: none !important;
+      }
+      .ant-table-thead
+        button[aria-label*='schema-initializer-TableV2.Selector-table:configureColumns']
+        > .ant-btn-icon {
+        margin: 0px;
+      }
+
       .ant-pagination .ant-pagination-total-text {
         display: none;
       }
