@@ -8,7 +8,7 @@
  */
 
 import { Plugin } from '@nocobase/server';
-import { resolve } from 'path';
+import _ from 'lodash';
 import { ChinaRegionInterface } from './interfaces/china-region-interface';
 
 function getChinaDivisionData(key: string) {
@@ -26,9 +26,18 @@ export class PluginFieldChinaRegionServer extends Plugin {
   }
 
   async load() {
-    await this.importCollections(resolve(__dirname, 'collections'));
-
     this.app.acl.allow('chinaRegions', 'list', 'loggedIn');
+
+    this.db.registerOperators({
+      $regionCodeEq: (value, ctx) => {
+        const eq = this.db.operators.get('$eq');
+        if (Array.isArray(value)) {
+          const obj = _.castArray(value).pop();
+          return eq(obj?.code, ctx);
+        }
+        return eq(value, ctx);
+      },
+    });
 
     this.app.resourcer.use(async (ctx, next) => {
       const { resourceName, actionName } = ctx.action.params;

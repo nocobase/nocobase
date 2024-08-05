@@ -8,8 +8,8 @@
  */
 
 import { uid } from '@formily/shared';
-import { defaultProps, operators } from './properties';
 import { CollectionFieldInterface } from '../../data-source/collection-field-interface/CollectionFieldInterface';
+import { defaultProps, operators } from './properties';
 
 export class ChinaRegionFieldInterface extends CollectionFieldInterface {
   name = 'chinaRegion';
@@ -86,6 +86,16 @@ export class ChinaRegionFieldInterface extends CollectionFieldInterface {
 
   filterable = {
     children: [
+      {
+        name: 'code',
+        title: '{{t("Province/city/area code")}}',
+        operators: operators.regionCode,
+        schema: {
+          title: '{{t("Province/city/area code")}}',
+          type: 'string',
+          'x-component': 'Input',
+        },
+      },
       {
         name: 'name',
         title: '{{t("Province/city/area name")}}',

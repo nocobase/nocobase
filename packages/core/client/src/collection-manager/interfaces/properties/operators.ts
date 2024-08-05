@@ -16,6 +16,8 @@ export const string = [
   { label: '{{t("is not empty")}}', value: '$notEmpty', noValue: true },
 ];
 
+export const regionCode = [{ label: '{{t("is")}}', value: '$regionCodeEq' }];
+
 export const array = [
   {
     label: '{{t("is")}}',
