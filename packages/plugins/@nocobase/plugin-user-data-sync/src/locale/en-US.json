@@ -1,0 +1,16 @@
+{
+  "Synchronize": "Synchronize",
+  "Source name": "Source name",
+  "Source display name": "Source display name",
+  "Type": "Type",
+  "Sync": "Sync",
+  "Tasks": "Tasks",
+  "Batch": "Batch",
+  "Status": "Status",
+  "Message": "Message",
+  "Init": "Init",
+  "Processing": "Processing",
+  "Success": "Success",
+  "Failed": "Failed",
+  "Authenticator": "Authenticator"
+}
