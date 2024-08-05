@@ -153,6 +153,7 @@ describe('collection tree migrate test', () => {
     expect(pathData.length).toEqual(4);
     await pathCollection.removeFromDb();
     const migration = new Migration({
+      db: db,
       // @ts-ignore
       app,
     });
