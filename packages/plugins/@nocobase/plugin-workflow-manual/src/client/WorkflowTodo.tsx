@@ -8,7 +8,7 @@
  */
 
 import { observer, useField, useFieldSchema, useForm } from '@formily/react';
-import { Space, Spin, Tag } from 'antd';
+import { Button, Space, Spin, Tag } from 'antd';
 import dayjs from 'dayjs';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
@@ -425,6 +425,7 @@ function ManualActionStatusProvider({ value, children }) {
   const { userJob, execution } = useFlowContext();
   const button = useField();
   const buttonSchema = useFieldSchema();
+  const compile = useCompile();
 
   useEffect(() => {
     if (execution.status || userJob.status) {
@@ -433,7 +434,17 @@ function ManualActionStatusProvider({ value, children }) {
     }
   }, [execution, userJob, value, button, buttonSchema.name]);
 
-  return <ManualActionStatusContext.Provider value={value}>{children}</ManualActionStatusContext.Provider>;
+  return (
+    <ManualActionStatusContext.Provider value={value}>
+      {execution.status || userJob.status ? (
+        <Button type="primary" disabled>
+          {compile(buttonSchema.title)}
+        </Button>
+      ) : (
+        children
+      )}
+    </ManualActionStatusContext.Provider>
+  );
 }
 
 function useSubmit() {

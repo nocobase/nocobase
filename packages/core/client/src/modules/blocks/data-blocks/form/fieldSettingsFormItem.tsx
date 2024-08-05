@@ -323,7 +323,7 @@ export const fieldSettingsFormItem = new SchemaSettings({
               const { getField } = useCollection_deprecated();
               const collectionField =
                 getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field']);
-
+              const customPredicate = (value) => value !== null && value !== undefined && !Number.isNaN(value);
               return {
                 title: t('Set validation rules'),
                 components: { ArrayCollapse, FormLayout },
@@ -412,7 +412,7 @@ export const fieldSettingsFormItem = new SchemaSettings({
                 onSubmit(v) {
                   const rules = [];
                   for (const rule of v.rules) {
-                    rules.push(_.pickBy(rule, _.identity));
+                    rules.push(_.pickBy(rule, customPredicate));
                   }
                   const schema = {
                     ['x-uid']: fieldSchema['x-uid'],
@@ -430,6 +430,7 @@ export const fieldSettingsFormItem = new SchemaSettings({
                   }
                   const concatValidator = _.concat([], collectionField?.uiSchema?.['x-validator'] || [], rules);
                   field.validator = concatValidator;
+                  field.required = fieldSchema.required as any;
                   fieldSchema['x-validator'] = rules;
                   schema['x-validator'] = rules;
                   dn.emit('patch', {

@@ -9,12 +9,13 @@
 
 import { observer, useField } from '@formily/react';
 import {
-  replaceVariableValue,
+  useCompile,
   useBlockHeight,
   useLocalVariables,
   useParseURLAndParams,
   useRequest,
   useVariables,
+  getRenderContent,
 } from '@nocobase/client';
 import { Card, Spin } from 'antd';
 import React, { useEffect, useState } from 'react';
@@ -32,13 +33,14 @@ function isNumeric(str: string | undefined) {
 }
 
 export const Iframe: any = observer(
-  (props: IIframe & { html?: string; htmlId?: number; mode: string; params?: any }) => {
-    const { url, htmlId, mode = 'url', height, html, params, ...others } = props;
+  (props: IIframe & { html?: string; htmlId?: number; mode: string; params?: any; engine?: string }) => {
+    const { url, htmlId, mode = 'url', height, html, params, engine, ...others } = props;
     const field = useField();
     const { t } = useTranslation();
     const targetHeight = useBlockHeight() || height;
     const variables = useVariables();
     const localVariables = useLocalVariables();
+    const compile = useCompile();
     const { loading, data: htmlContent } = useRequest<string>(
       {
         url: `iframeHtml:getHtml/${htmlId}`,
@@ -50,13 +52,21 @@ export const Iframe: any = observer(
     );
     const { parseURLAndParams } = useParseURLAndParams();
     const [src, setSrc] = useState(null);
-
     useEffect(() => {
       const generateSrc = async () => {
         if (mode === 'html') {
-          const targetHtmlContent = await replaceVariableValue(htmlContent, variables, localVariables);
+          const targetHtmlContent = await getRenderContent(
+            engine,
+            htmlContent,
+            compile(variables),
+            compile(localVariables),
+            (data) => {
+              return data;
+            },
+          );
           const encodedHtml = encodeURIComponent(targetHtmlContent);
           const dataUrl = 'data:text/html;charset=utf-8,' + encodedHtml;
+
           setSrc(dataUrl);
         } else {
           try {

@@ -178,7 +178,7 @@ describe('Table.settings', () => {
           modalChecker: {
             modalTitle: 'Data loading mode',
             async beforeCheck() {
-              await userEvent.click(screen.getByText('Load data after filtering'));
+              await userEvent.click(screen.getByText('Do not load data when filter is empty'));
             },
             async afterSubmit() {
               await checkSchema({
