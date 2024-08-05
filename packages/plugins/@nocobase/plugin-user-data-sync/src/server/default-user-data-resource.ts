@@ -126,7 +126,7 @@ export class DefaultUserDataResource implements IUserDataResource {
             // 创建用户
             this.logger.info(`updateOrCreateUsers: create user for record`);
             user = await authenticator.newUser(record[uniqueKey], {
-              nickname: record.name === undefined ? record[uniqueKey] : record.name,
+              nickname: record.nickname === undefined ? record[uniqueKey] : record.nickname,
             });
             // 关联数据源
             this.logger.info(`updateOrCreateUsers: add user to source`);
