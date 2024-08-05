@@ -44,7 +44,6 @@ describe('encryption field', () => {
       },
     });
     expect(model.get('name1')).not.toBe('aaa');
-    console.log(model.get('name1'));
     const model2 = await r.findOne();
     expect(model2.get('name1')).toBe('aaa');
   });
