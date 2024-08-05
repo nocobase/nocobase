@@ -8,8 +8,9 @@
  */
 
 import { Filter, withDynamicSchemaProps } from '@nocobase/client';
+import { ConfigProvider } from 'antd';
 import { Popup } from 'antd-mobile';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 
 const OriginFilterAction = Filter.Action;
 
@@ -25,8 +26,16 @@ export const FilterAction = withDynamicSchemaProps((props) => {
           props.onOpenChange(false);
         }, [props]);
 
+        const theme = useMemo(() => {
+          return {
+            token: {
+              zIndexPopupBase: 2000,
+            },
+          };
+        }, []);
+
         return (
-          <>
+          <ConfigProvider theme={theme}>
             {props.children}
             <Popup
               visible={visiblePopup}
@@ -47,7 +56,7 @@ export const FilterAction = withDynamicSchemaProps((props) => {
               {props.content}
               <div style={{ height: 50 }}></div>
             </Popup>
-          </>
+          </ConfigProvider>
         );
       }}
     />
@@ -102,7 +111,7 @@ export const usePopupContainer = (visible: boolean) => {
     popupContainer.style.right = '0';
     popupContainer.style.bottom = '0';
     popupContainer.style.overflow = 'hidden';
-    popupContainer.style.zIndex = '1000';
+    popupContainer.style.zIndex = '2000';
 
     mobileContainer.appendChild(popupContainer);
     popupContainerRef.current = popupContainer;

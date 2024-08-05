@@ -9,8 +9,9 @@
 
 import { observer, RecursionField, useField, useFieldSchema } from '@formily/react';
 import { Action, SchemaComponent, useActionContext } from '@nocobase/client';
+import { ConfigProvider } from 'antd';
 import { Popup } from 'antd-mobile';
-import React, { useCallback, useEffect } from 'react';
+import React, { useCallback, useEffect, useMemo } from 'react';
 import { useMobileActionDrawerStyle } from './ActionDrawer.style';
 import { usePopupContainer } from './FilterAction';
 
@@ -31,46 +32,56 @@ export const ActionDrawerUsedInMobile = observer((props: any) => {
     setVisible(false);
   }, [setVisible]);
 
+  const theme = useMemo(() => {
+    return {
+      token: {
+        zIndexPopupBase: 2000,
+      },
+    };
+  }, []);
+
   return (
-    <Popup
-      visible={visiblePopup}
-      onClose={closePopup}
-      onMaskClick={closePopup}
-      getContainer={() => popupContainerRef.current}
-      bodyStyle={{
-        borderTopLeftRadius: '8px',
-        borderTopRightRadius: '8px',
-        minHeight: '40vh',
-        maxHeight: 'calc(100% - var(--nb-mobile-page-header-height))',
-        overflowY: 'auto',
-        overflowX: 'hidden',
-      }}
-      showCloseButton
-      closeOnSwipe
-    >
-      <div style={{ padding: '24px 12px 12px' }}>
-        <SchemaComponent
-          schema={fieldSchema}
-          onlyRenderProperties
-          filterProperties={(s) => {
-            return s['x-component'] !== props.footerNodeName;
-          }}
-        />
-      </div>
-      <div style={{ height: 50 }}></div>
-      {footerSchema ? (
-        <div className={styles.footer}>
-          <RecursionField
-            basePath={field.address}
+    <ConfigProvider theme={theme}>
+      <Popup
+        visible={visiblePopup}
+        onClose={closePopup}
+        onMaskClick={closePopup}
+        getContainer={() => popupContainerRef.current}
+        bodyStyle={{
+          borderTopLeftRadius: '8px',
+          borderTopRightRadius: '8px',
+          minHeight: '40vh',
+          maxHeight: 'calc(100% - var(--nb-mobile-page-header-height))',
+          overflowY: 'auto',
+          overflowX: 'hidden',
+        }}
+        showCloseButton
+        closeOnSwipe
+      >
+        <div style={{ padding: '24px 12px 12px' }}>
+          <SchemaComponent
             schema={fieldSchema}
             onlyRenderProperties
             filterProperties={(s) => {
-              return s['x-component'] === props.footerNodeName;
+              return s['x-component'] !== props.footerNodeName;
             }}
           />
         </div>
-      ) : null}
-    </Popup>
+        <div style={{ height: 50 }}></div>
+        {footerSchema ? (
+          <div className={styles.footer}>
+            <RecursionField
+              basePath={field.address}
+              schema={fieldSchema}
+              onlyRenderProperties
+              filterProperties={(s) => {
+                return s['x-component'] === props.footerNodeName;
+              }}
+            />
+          </div>
+        ) : null}
+      </Popup>
+    </ConfigProvider>
   );
 });
 
