@@ -7,8 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Switch } from 'antd';
-import React from 'react';
+import { Switch, Radio, Input } from 'antd';
+import React, { useState } from 'react';
 
 export const TargetKey = () => {
   return <div>Target key</div>;
@@ -48,5 +48,34 @@ export const ForeignKey2 = () => {
     <div>
       Foreign key 2 <a>新建</a>
     </div>
+  );
+};
+
+// 自定义 Radio 组件
+export const CustomRadio = (props) => {
+  const { options, onChange } = props;
+  const [value, setValue] = useState(props.value);
+  const handleRadioChange = (e) => {
+    setValue(e.target.value);
+    if (e.target.value !== 'custom') {
+      onChange?.(e.target.value);
+    }
+  };
+  return (
+    <Radio.Group onChange={handleRadioChange} value={value}>
+      {options.map((option) => (
+        <Radio key={option.value} value={option.value}>
+          {option.label}
+          {option.value === 'custom' && value === 'custom' ? (
+            <Input
+              style={{ width: 200, marginLeft: 10 }}
+              onChange={(e) => {
+                onChange?.(e.target.value);
+              }}
+            />
+          ) : null}
+        </Radio>
+      ))}
+    </Radio.Group>
   );
 };
