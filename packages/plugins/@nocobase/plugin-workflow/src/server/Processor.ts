@@ -161,7 +161,7 @@ export default class Processor {
       // for uncaught error, set to error
       this.logger.error(
         `execution (${this.execution.id}) run instruction [${node.type}] for node (${node.id}) failed: `,
-        { error: err },
+        err,
       );
       job = {
         result:
