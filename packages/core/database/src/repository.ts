@@ -33,7 +33,7 @@ import injectTargetCollection from './decorators/target-collection-decorator';
 import { transactionWrapperBuilder } from './decorators/transaction-decorator';
 import { EagerLoadingTree } from './eager-loading/eager-loading-tree';
 import { ArrayFieldRepository } from './field-repository/array-field-repository';
-import { ArrayField, RelationField } from './fields';
+import { ArrayField, Field, RelationField } from './fields';
 import FilterParser from './filter-parser';
 import { Model } from './model';
 import operators from './operators';
@@ -182,6 +182,7 @@ class RelationRepositoryBuilder<R extends RelationRepository> {
   collection: Collection;
   associationName: string;
   association: Association | { associationType: string };
+  field: Field;
 
   builderMap = {
     HasOne: HasOneRepository,
@@ -204,6 +205,7 @@ class RelationRepositoryBuilder<R extends RelationRepository> {
     if (!field) {
       return;
     }
+    this.field = field;
     if (field instanceof ArrayField) {
       this.association = {
         associationType: 'ArrayField',
@@ -212,11 +214,14 @@ class RelationRepositoryBuilder<R extends RelationRepository> {
   }
 
   of(id: string | number): R {
-    if (!this.association) {
-      return;
+    if (this.association) {
+      const klass = this.builder()[this.association.associationType];
+      return new klass(this.collection, this.associationName, id);
     }
-    const klass = this.builder()[this.association.associationType];
-    return new klass(this.collection, this.associationName, id);
+    if (this.field?.relationRepository) {
+      const klass = this.field.relationRepository;
+      return new klass(this.collection, this.associationName, id);
+    }
   }
 
   protected builder() {

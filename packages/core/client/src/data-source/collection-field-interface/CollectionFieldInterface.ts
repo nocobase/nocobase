@@ -54,4 +54,5 @@ export abstract class CollectionFieldInterface {
   usePathOptions?(field: CollectionFieldOptions): any;
   schemaInitialize?(schema: ISchema, data: any): void;
   hidden?: boolean;
+  properties?: any;
 }

@@ -1432,7 +1432,9 @@ export const useAssociationNames = (dataSource?: string) => {
       const isAssociationSubfield = s.name.includes('.');
       const isAssociationField =
         collectionField &&
-        ['hasOne', 'hasMany', 'belongsTo', 'belongsToMany', 'belongsToArray'].includes(collectionField.type);
+        ['hasOne', 'hasMany', 'belongsTo', 'belongsToMany', 'belongsToArray', 'JSONDocument'].includes(
+          collectionField.type,
+        );
 
       // 根据联动规则中条件的字段获取一些 appends
       if (s['x-linkage-rules']) {
