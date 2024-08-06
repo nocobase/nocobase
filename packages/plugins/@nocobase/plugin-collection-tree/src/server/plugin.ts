@@ -137,7 +137,7 @@ class PluginCollectionTreeServer extends Plugin {
           if (parentPath == null) {
             path = await this.getTreePath(parent, path, collection, name);
           } else {
-            path = `${parentPath}/${parent.get(collection.filterTargetKey)}`;
+            path = `${parentPath}/${parent.get(collection.filterTargetKey)}/${model.get(collection.filterTargetKey)}`;
           }
         }
       }
