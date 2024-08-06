@@ -25,28 +25,28 @@ test.describe('setDataLoadingModeSettingsItem', () => {
     await page.getByLabel('block-item-CardItem-users-table').hover();
     await page.getByLabel('designer-schema-settings-CardItem-blockSettings:table-users').hover();
     await page.getByRole('menuitem', { name: 'Set data loading mode' }).click();
-    await page.getByLabel('Load data after filtering').check();
+    await page.getByLabel('Do not load data when filter is empty').check();
     await page.getByRole('button', { name: 'OK', exact: true }).click();
 
     // Details
     await page.getByLabel('block-item-CardItem-users-details').hover();
     await page.getByLabel('designer-schema-settings-CardItem-blockSettings:detailsWithPagination-users').hover();
     await page.getByRole('menuitem', { name: 'Set data loading mode' }).click();
-    await page.getByLabel('Load data after filtering').check();
+    await page.getByLabel('Do not load data when filter is empty').check();
     await page.getByRole('button', { name: 'OK', exact: true }).click();
 
     // List
     await page.getByLabel('block-item-CardItem-users-list').hover();
     await page.getByLabel('designer-schema-settings-CardItem-blockSettings:list-users').hover();
     await page.getByRole('menuitem', { name: 'Set data loading mode' }).click();
-    await page.getByLabel('Load data after filtering').check();
+    await page.getByLabel('Do not load data when filter is empty').check();
     await page.getByRole('button', { name: 'OK', exact: true }).click();
 
     // GridCard
     await page.getByLabel('block-item-BlockItem-users-').hover();
     await page.getByLabel('designer-schema-settings-BlockItem-blockSettings:gridCard-users').hover();
     await page.getByRole('menuitem', { name: 'Set data loading mode' }).click();
-    await page.getByLabel('Load data after filtering').check();
+    await page.getByLabel('Do not load data when filter is empty').check();
     await page.getByRole('button', { name: 'OK', exact: true }).click();
 
     // 所有区块应该显示 No data

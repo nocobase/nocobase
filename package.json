@@ -41,8 +41,7 @@
     "version:alpha": "lerna version prerelease --preid alpha --force-publish=* --no-git-tag-version -m \"chore(versions): publish packages %s\"",
     "release:force": "lerna publish from-package --yes --no-git-tag-version",
     "release": "lerna publish",
-    "run:example": "tsx -r dotenv/config -r tsconfig-paths/register ./examples/index.ts",
-    "prepare": "[ -z \"$CI\" ] && echo \"packages/pro-plugins/\" > .git/info/exclude || true"
+    "run:example": "tsx -r dotenv/config -r tsconfig-paths/register ./examples/index.ts"
   },
   "resolutions": {
     "@types/react": "^17.0.0",

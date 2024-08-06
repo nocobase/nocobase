@@ -8,7 +8,7 @@
  */
 
 import { observer, useField, useFieldSchema, useForm } from '@formily/react';
-import { Space, Spin, Tag } from 'antd';
+import { Button, Space, Spin, Tag } from 'antd';
 import dayjs from 'dayjs';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
@@ -450,6 +450,7 @@ function ManualActionStatusProvider({ value, children }) {
   const { userJob, execution } = useFlowContext();
   const button = useField();
   const buttonSchema = useFieldSchema();
+  const compile = useCompile();
 
   useEffect(() => {
     if (execution.status || userJob.status) {
@@ -458,30 +459,47 @@ function ManualActionStatusProvider({ value, children }) {
     }
   }, [execution, userJob, value, button, buttonSchema.name]);
 
-  return <ManualActionStatusContext.Provider value={value}>{children}</ManualActionStatusContext.Provider>;
+  return (
+    <ManualActionStatusContext.Provider value={value}>
+      {execution.status || userJob.status ? (
+        <Button type="primary" disabled>
+          {compile(buttonSchema.title)}
+        </Button>
+      ) : (
+        children
+      )}
+    </ManualActionStatusContext.Provider>
+  );
 }
 
 function useSubmit() {
   const api = useAPIClient();
   const { setVisible, setSubmitted } = useActionContext();
   const { values, submit } = useForm();
+  const field = useField();
   const buttonSchema = useFieldSchema();
   const { service } = useTableBlockContext();
   const { userJob, execution } = useFlowContext();
   const { name: actionKey } = buttonSchema;
   const { name: formKey } = buttonSchema.parent.parent;
+  const { assignedValues = {} } = buttonSchema?.['x-action-settings'] ?? {};
   return {
     async run() {
       if (execution.status || userJob.status) {
         return;
       }
       await submit();
+      field.data = field.data || {};
+      field.data.loading = true;
+
       await api.resource('users_jobs').submit({
         filterByTk: userJob.id,
         values: {
-          result: { [formKey]: values, _: actionKey },
+          result: { [formKey]: { ...values, ...assignedValues.values }, _: actionKey },
         },
       });
+
+      field.data.loading = false;
       setSubmitted(true);
       setVisible(false);
       service?.refresh();

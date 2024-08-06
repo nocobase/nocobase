@@ -17,6 +17,7 @@ import {
   useAPIClient,
   useCurrentAppInfo,
   useRecord,
+  useApp,
   SchemaComponent,
   SchemaComponentContext,
   useCompile,
@@ -112,6 +113,7 @@ export const ConfigurationTable = () => {
   const resource = api.resource('dbViews');
   const compile = useCompile();
   const form = useForm();
+  const app = useApp();
 
   /**
    *
@@ -169,12 +171,25 @@ export const ConfigurationTable = () => {
     return Promise.resolve({
       data: fields,
     }).then(({ data }) => {
-      return data?.map((item: any) => {
-        return {
-          label: compile(item.uiSchema?.title) || item.name,
-          value: item.name,
-        };
-      });
+      return data
+        .filter((field) => {
+          if (!field.interface) {
+            return false;
+          }
+          const interfaceOptions = app.dataSourceManager.collectionFieldInterfaceManager.getFieldInterface(
+            field.interface,
+          );
+          if (interfaceOptions.titleUsable) {
+            return true;
+          }
+          return false;
+        })
+        ?.map((item: any) => {
+          return {
+            label: compile(item.uiSchema?.title) || item.name,
+            value: item.name,
+          };
+        });
     });
   };
 
