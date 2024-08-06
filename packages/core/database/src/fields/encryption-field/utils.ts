@@ -16,6 +16,8 @@ const keyString = process.env.ENCRYPTION_FIELD_KEY || '';
 const key = Buffer.from(keyString, 'utf8');
 
 export function aesEncrypt(text: string, ivString: string) {
+  checkValueAndIv('Encrypt', text, ivString);
+
   return new Promise((resolve, reject) => {
     const iv = Buffer.from(ivString, 'utf8');
     const cipher = crypto.createCipheriv(algorithm, key, iv);
@@ -42,6 +44,8 @@ export function aesEncrypt(text: string, ivString: string) {
 }
 
 export function aesDecrypt(encrypted: string, ivString: string) {
+  checkValueAndIv('Decrypt', encrypted, ivString);
+
   return new Promise((resolve, reject) => {
     const iv = Buffer.from(ivString, 'utf8');
     const decipher = crypto.createDecipheriv(algorithm, key, iv);
@@ -68,6 +72,8 @@ export function aesDecrypt(encrypted: string, ivString: string) {
 }
 
 export function aesEncryptSync(text: string, ivString: string) {
+  checkValueAndIv('Encrypt', text, ivString);
+
   const iv = Buffer.from(ivString, 'utf8');
   const cipher = crypto.createCipheriv(algorithm, key, iv);
   let encrypted = cipher.update(text, 'utf8', 'hex');
@@ -76,6 +82,8 @@ export function aesEncryptSync(text: string, ivString: string) {
 }
 
 export function aseDecryptSync(encrypted: string, ivString: string) {
+  checkValueAndIv('Decrypt', encrypted, ivString);
+
   const iv = Buffer.from(ivString, 'utf8');
   const decipher = crypto.createDecipheriv(algorithm, key, iv);
   let decrypted = decipher.update(encrypted, 'hex', 'utf8');
@@ -87,7 +95,25 @@ export function aesCheckKey() {
   if (!keyString) {
     throw new EncryptionError('The environment variable `ENCRYPTION_FIELD_KEY` is required, please set it');
   }
+  if (typeof keyString !== 'string') {
+    throw new EncryptionError('The environment variable `ENCRYPTION_FIELD_KEY` must be a string');
+  }
   if (keyString.length !== 32) {
     throw new EncryptionError('The environment variable `ENCRYPTION_FIELD_KEY` must be a 32-character string');
+  }
+}
+
+export function checkValueAndIv(type: 'Decrypt' | 'Encrypt', value: string, iv: string) {
+  const msg = `${type} Failed: `;
+  if (typeof value !== 'string') {
+    throw new EncryptionError(msg + 'The value must be a string, but got ' + typeof value);
+  }
+
+  if (typeof value !== 'string') {
+    throw new EncryptionError(msg + 'The `iv` must be a string, but got ' + typeof value);
+  }
+
+  if (iv.length !== 16) {
+    throw new EncryptionError(msg + 'The `iv` must be a 16-character string');
   }
 }
