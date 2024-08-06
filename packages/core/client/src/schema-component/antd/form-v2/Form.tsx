@@ -13,6 +13,7 @@ import { Field, Form as FormilyForm, createForm, onFieldInit, onFormInputChange,
 import { FieldContext, FormContext, RecursionField, observer, useField, useFieldSchema } from '@formily/react';
 import { reaction } from '@formily/reactive';
 import { uid } from '@formily/shared';
+import { useTranslation } from 'react-i18next';
 import { getValuesByPath } from '@nocobase/utils/client';
 import { ConfigProvider, Spin, theme } from 'antd';
 import _ from 'lodash';
@@ -111,14 +112,6 @@ interface WithFormProps {
   disabled?: boolean;
 }
 
-// 自定义的必填校验函数
-const requiredValidator = (value: string, _, { field }) => {
-  if (field.required && value && !transformToNoSpaces(value)) {
-    return 'The field value is required';
-  }
-  return '';
-};
-
 const transformToNoSpaces = (value: string) => value.trim().replace(/\s+/g, '');
 
 const WithForm = (props: WithFormProps) => {
@@ -130,10 +123,17 @@ const WithForm = (props: WithFormProps) => {
   const { templateFinished } = useTemplateBlockContext();
   const linkageRules: any[] =
     (getLinkageRules(fieldSchema) || fieldSchema.parent?.['x-linkage-rules'])?.filter((k) => !k.disabled) || [];
+  const { t } = useTranslation();
+  // 自定义的必填校验函数
+  const requiredValidator = (value: string, _, { field }) => {
+    if (field.required && value && !transformToNoSpaces(value)) {
+      return t('The field value is required');
+    }
+    return '';
+  };
 
   useEffect(() => {
     const id = uid();
-
     form.addEffects(id, () => {
       onFormInputChange(() => {
         setFormValueChanged?.(true);
