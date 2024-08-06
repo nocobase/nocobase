@@ -116,4 +116,10 @@ export function checkValueAndIv(type: 'Decrypt' | 'Encrypt', value: string, iv: 
   if (iv.length !== 16) {
     throw new EncryptionError(msg + 'The `iv` must be a 16-character string');
   }
+
+  if (type === 'Decrypt') {
+    if (value.length % 2 !== 0) {
+      throw new EncryptionError(msg + `The encrypted value is invalid, not a hex string. The value is "${value}"`);
+    }
+  }
 }
