@@ -123,9 +123,9 @@ export const Cascader = withDynamicSchemaProps(
           onDropdownVisibleChange={handelDropDownVisible}
           onChange={(value, selectedOptions: any) => {
             if (value && labelInValue) {
-              onChange(selectedOptions.map((option) => omit(option, [fieldNames.children])));
+              onChange(selectedOptions.map((option) => omit(option, [fieldNames.children])) || null);
             } else {
-              onChange(value);
+              onChange(value || null);
             }
           }}
         />
