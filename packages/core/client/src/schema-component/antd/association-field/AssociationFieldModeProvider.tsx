@@ -9,7 +9,7 @@
 
 import _ from 'lodash';
 import React, { createContext, useCallback, useMemo } from 'react';
-import { AssociationSelect } from '../association-select/AssociationSelect';
+import { AssociationSelect } from './AssociationSelect';
 import { InternalFileManager } from './FileManager';
 import { InternalCascadeSelect } from './InternalCascadeSelect';
 import { InternalNester } from './InternalNester';
