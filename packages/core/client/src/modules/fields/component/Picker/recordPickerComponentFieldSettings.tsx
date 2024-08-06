@@ -71,7 +71,7 @@ const allowMultiple: any = {
   useVisible() {
     const isFieldReadPretty = useIsFieldReadPretty();
     const collectionField = useCollectionField();
-    return !isFieldReadPretty && ['hasMany', 'belongsToMany'].includes(collectionField?.type);
+    return !isFieldReadPretty && ['hasMany', 'belongsToMany', 'belongsToArray'].includes(collectionField?.type);
   },
   useComponentProps() {
     const { t } = useTranslation();

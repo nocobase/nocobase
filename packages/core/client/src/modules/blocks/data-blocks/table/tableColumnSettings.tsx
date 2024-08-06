@@ -7,10 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import React from 'react';
 import { ISchema } from '@formily/json-schema';
 import { useField, useFieldSchema } from '@formily/react';
 import { useTranslation } from 'react-i18next';
-import { useApp } from '../../../../application';
+import { useApp, useSchemaToolbar } from '../../../../application';
 import { SchemaSettings } from '../../../../application/schema-settings/SchemaSettings';
 import { useCollectionManager_deprecated } from '../../../../collection-manager';
 import { useFieldComponentName } from '../../../../common/useFieldComponentName';
@@ -20,6 +21,8 @@ import { useAssociationFieldContext } from '../../../../schema-component/antd/as
 import { useColumnSchema } from '../../../../schema-component/antd/table-v2/Table.Column.Decorator';
 import { SchemaSettingsDefaultValue } from '../../../../schema-settings/SchemaSettingsDefaultValue';
 import { isPatternDisabled } from '../../../../schema-settings/isPatternDisabled';
+import { fieldComponentSettingsItem } from '../../../../data-source/commonsSettingsItem';
+import { SchemaSettingsLinkageRules } from '../../../../schema-settings';
 
 export const tableColumnSettings = new SchemaSettings({
   name: 'fieldSettings:TableColumn',
@@ -44,7 +47,6 @@ export const tableColumnSettings = new SchemaSettings({
             const { t } = useTranslation();
             const columnSchema = useFieldSchema();
             const { dn } = useDesignable();
-
             return {
               title: t('Custom column title'),
               schema: {
@@ -76,6 +78,30 @@ export const tableColumnSettings = new SchemaSettings({
                 }
                 dn.refresh();
               },
+            };
+          },
+        },
+        {
+          name: 'style',
+          Component: (props) => {
+            const localProps = { ...props, category: 'style' };
+            return <SchemaSettingsLinkageRules {...localProps} />;
+          },
+          useVisible() {
+            const { fieldSchema } = useColumnSchema();
+            const field: any = useField();
+            const path = field.path?.splice(field.path?.length - 1, 1);
+            if (fieldSchema) {
+              const isReadPretty = field.form.query(`${path.concat(`*.` + fieldSchema.name)}`).get('readPretty');
+              return isReadPretty;
+            } else return false;
+          },
+          useComponentProps() {
+            const { name } = useCollection();
+            const { linkageRulesProps } = useSchemaToolbar();
+            return {
+              ...linkageRulesProps,
+              collectionName: name,
             };
           },
         },
@@ -353,6 +379,7 @@ export const tableColumnSettings = new SchemaSettings({
             };
           },
         },
+        fieldComponentSettingsItem,
       ],
     },
     {

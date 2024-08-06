@@ -154,10 +154,8 @@ export const useFormBlockContext = () => {
 export const useFormBlockProps = (shouldClearInitialValues = false) => {
   const ctx = useFormBlockContext();
   const treeParentRecord = useTreeParentRecord();
-  const { fieldSchema } = useActionContext();
-  const addChild = fieldSchema?.['x-component-props']?.addChild;
   useEffect(() => {
-    if (addChild) {
+    if (treeParentRecord) {
       ctx.form?.query('parent').take((field) => {
         field.disabled = true;
         field.value = treeParentRecord;

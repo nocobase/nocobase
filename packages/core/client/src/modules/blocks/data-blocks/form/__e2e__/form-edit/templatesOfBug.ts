@@ -426,7 +426,7 @@ export const T3825: PageConfig = {
                                     _isJSONSchemaObject: true,
                                     version: '2.0',
                                     type: 'void',
-                                    title: '{{ t("Edit") }}',
+                                    title: '{{ t("Edit record") }}',
                                     'x-action': 'update',
                                     'x-toolbar': 'ActionSchemaToolbar',
                                     'x-settings': 'actionSettings:edit',

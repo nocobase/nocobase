@@ -8,7 +8,7 @@
  */
 
 import { useFieldSchema } from '@formily/react';
-import { CompatibleSchemaInitializer, useCollection_deprecated } from '@nocobase/client';
+import { CompatibleSchemaInitializer, useActionAvailable, useCollection } from '@nocobase/client';
 
 const commonOptions = {
   title: "{{t('Configure actions')}}",
@@ -38,10 +38,7 @@ const commonOptions = {
           skipScopeCheck: true,
         },
       },
-      useVisible() {
-        const collection = useCollection_deprecated();
-        return !['view', 'file', 'sql'].includes(collection.template) || collection?.writableView;
-      },
+      useVisible: () => useActionAvailable('create'),
     },
     {
       type: 'item',
@@ -52,10 +49,7 @@ const commonOptions = {
         'x-align': 'right',
         'x-decorator': 'ACLActionProvider',
       },
-      useVisible() {
-        const collection = useCollection_deprecated();
-        return !['view', 'sql'].includes(collection.template) || collection?.writableView;
-      },
+      useVisible: () => useActionAvailable('destroyMany'),
     },
     {
       type: 'item',
@@ -73,9 +67,10 @@ const commonOptions = {
       schema: {
         'x-align': 'right',
       },
+
       useVisible() {
         const schema = useFieldSchema();
-        const collection = useCollection_deprecated();
+        const collection = useCollection();
         const { treeTable } = schema?.parent?.['x-decorator-props'] || {};
         return collection.tree && treeTable;
       },

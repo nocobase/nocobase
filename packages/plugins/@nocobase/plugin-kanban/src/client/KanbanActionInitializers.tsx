@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { CompatibleSchemaInitializer, useCollection_deprecated } from '@nocobase/client';
+import { CompatibleSchemaInitializer, useCollection, useActionAvailable } from '@nocobase/client';
 
 const commonOptions = {
   title: "{{t('Configure actions')}}",
@@ -35,10 +35,7 @@ const commonOptions = {
           skipScopeCheck: true,
         },
       },
-      useVisible() {
-        const collection = useCollection_deprecated();
-        return (collection as any).template !== 'view' || collection?.writableView;
-      },
+      useVisible: () => useActionAvailable('create'),
     },
   ],
 };

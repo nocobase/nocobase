@@ -7,22 +7,31 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { SchemaSettingsItemType, useCompile, useDesignable } from '@nocobase/client';
-import { ISchema, useFieldSchema } from '@formily/react';
 import _ from 'lodash';
+import { ISchema, useFieldSchema } from '@formily/react';
 import { TFunction, useTranslation } from 'react-i18next';
 
-import { getNewSchema, useHookDefault } from './util';
+import { SchemaSettingsItemType } from '../types';
+import { getNewSchema, useHookDefault, useSchemaByType } from './util';
+import { useCompile } from '../../../schema-component/hooks/useCompile';
+import { useDesignable } from '../../../schema-component/hooks/useDesignable';
+import { useColumnSchema } from '../../../schema-component';
 
 export interface CreateModalSchemaSettingsItemProps {
   name: string;
   title: string | ((t: TFunction<'translation', undefined>) => string);
-  parentSchemaKey: string;
+  parentSchemaKey?: string;
   defaultValue?: any;
   useDefaultValue?: () => any;
   schema: (defaultValue: any) => ISchema;
   valueKeys?: string[];
   useVisible?: () => boolean;
+  width?: number | string;
+  useSubmit?: () => (values: any) => void;
+  /**
+   * @default 'common'
+   */
+  type?: 'common' | 'field';
 }
 
 /**
@@ -38,27 +47,42 @@ export function createModalSettingsItem(options: CreateModalSchemaSettingsItemPr
     valueKeys,
     schema,
     title,
+    useSubmit = useHookDefault,
     useVisible,
     defaultValue: propsDefaultValue,
     useDefaultValue = useHookDefault,
+    width,
+    type = 'common',
   } = options;
   return {
     name,
     type: 'actionModal',
     useVisible,
     useComponentProps() {
-      const fieldSchema = useFieldSchema();
-      const { deepMerge } = useDesignable();
+      const fieldSchema = useSchemaByType(type);
+      const { dn } = useDesignable();
       const defaultValue = useDefaultValue(propsDefaultValue);
-      const values = _.get(fieldSchema, parentSchemaKey);
+      const values = parentSchemaKey ? _.get(fieldSchema, parentSchemaKey) : undefined;
       const compile = useCompile();
       const { t } = useTranslation();
+      const onSubmit = useSubmit();
+      const { fieldSchema: tableColumnSchema } = useColumnSchema() || {};
 
       return {
         title: typeof title === 'function' ? title(t) : compile(title),
+        width,
         schema: schema({ ...defaultValue, ...values }),
         onSubmit(values) {
-          deepMerge(getNewSchema({ fieldSchema, schemaKey: parentSchemaKey, value: values, valueKeys }));
+          const newSchema = getNewSchema({ fieldSchema, parentSchemaKey: parentSchemaKey, value: values, valueKeys });
+          if (tableColumnSchema) {
+            dn.emit('patch', {
+              schema: newSchema,
+            });
+            dn.refresh();
+          } else {
+            dn.deepMerge(newSchema);
+          }
+          return onSubmit?.(values);
         },
       };
     },

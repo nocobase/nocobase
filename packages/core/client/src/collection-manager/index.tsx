@@ -35,3 +35,4 @@ export * from './mixins/InheritanceCollectionMixin';
 export * from './sub-table';
 export * from './CollectionHistoryProvider';
 export * from './utils';
+export { UnSupportFields } from './templates/components/UnSupportFields';

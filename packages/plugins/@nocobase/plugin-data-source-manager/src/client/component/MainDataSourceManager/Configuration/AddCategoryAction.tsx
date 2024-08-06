@@ -18,7 +18,7 @@ import {
   SchemaComponent,
   useActionContext,
   useCancelAction,
-  CollectionCategroriesContext,
+  CollectionCategoriesContext,
   CollectionCategory,
   CollectionTemplateTag,
 } from '@nocobase/client';
@@ -27,7 +27,7 @@ import { collectionCategorySchema } from './schemas/collections';
 const useCreateCategry = () => {
   const form = useForm();
   const ctx = useActionContext();
-  const { refresh } = useContext(CollectionCategroriesContext);
+  const { refresh } = useContext(CollectionCategoriesContext);
   const api = useAPIClient();
   return {
     async run() {

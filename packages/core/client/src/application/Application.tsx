@@ -38,7 +38,9 @@ import { CollectionField } from '../data-source/collection-field/CollectionField
 import { DataSourceApplicationProvider } from '../data-source/components/DataSourceApplicationProvider';
 import { DataBlockProvider } from '../data-source/data-block/DataBlockProvider';
 import { DataSourceManager, type DataSourceManagerOptions } from '../data-source/data-source/DataSourceManager';
+import { CollectionFieldInterfaceComponentOption } from '../data-source/collection-field-interface/CollectionFieldInterface';
 
+import { OpenModeProvider } from '../modules/popup/OpenModeProvider';
 import { AppSchemaComponentProvider } from './AppSchemaComponentProvider';
 import type { Plugin } from './Plugin';
 import type { RequireJS } from './utils/requirejs';
@@ -158,6 +160,7 @@ export class Application {
     });
     this.use(AntdAppProvider);
     this.use(DataSourceApplicationProvider, { dataSourceManager: this.dataSourceManager });
+    this.use(OpenModeProvider);
   }
 
   private addReactRouterComponents() {
@@ -352,5 +355,12 @@ export class Application {
     const root = createRoot(container);
     root.render(<App />);
     return root;
+  }
+
+  addFieldInterfaceComponentOption(fieldName: string, componentOption: CollectionFieldInterfaceComponentOption) {
+    return this.dataSourceManager.collectionFieldInterfaceManager.addFieldInterfaceComponentOption(
+      fieldName,
+      componentOption,
+    );
   }
 }

@@ -7,12 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ActionInitializerItem, useCollection_deprecated } from '@nocobase/client';
+import { ActionInitializerItem } from '@nocobase/client';
 import React from 'react';
 
 export const UploadActionInitializer = (props) => {
-  const collection = useCollection_deprecated();
-
   const schema = {
     type: 'void',
     'x-action': 'create',

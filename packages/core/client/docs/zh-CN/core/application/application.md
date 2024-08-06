@@ -20,21 +20,23 @@ export interface ApplicationOptions {
   schemaInitializers?: SchemaInitializer[];
   loadRemotePlugins?: boolean;
   dataSourceManager?: DataSourceManagerOptions;
+  addFieldInterfaceComponentOption(fieldName: string, componentOption: CollectionFieldInterfaceComponentOption): void;
 }
 ```
 
 - 详细信息
-  - apiClient：API 请求实例，具体说明请参见：[https://docs.nocobase.com/api/sdk](https://docs.nocobase.com/api/sdk)
-  - i18n：国际化，具体请参考：[https://www.i18next.com/overview/api#createinstance](https://www.i18next.com/overview/api#createinstance)
-  - providers：上下文
-  - components：全局组件
-  - scopes：全局 scopes
-  - router：配置路由，具体请参考：[RouterManager](/core/application/router-manager)
-  - pluginSettings: [PluginSettingsManager](/core/application/plugin-settings-manager)
-  - schemaSettings：Schema 设置工具，具体参考：[SchemaSettingsManager](/core/ui-schema/schema-initializer-manager)
-  - schemaInitializers：Schema 添加工具，具体参考：[SchemaInitializerManager](/core/ui-schema/schema-initializer-manager)
-  - loadRemotePlugins：用于控制是否加载远程插件，默认为 `false`，即不加载远程插件（方便单测和 DEMO 环境）。
-  - dataSourceManager：数据源管理器，具体参考：[DataSourceManager](/core/data-source/data-source-manager)
+  - `apiClient`：API 请求实例，具体说明请参见：[https://docs.nocobase.com/api/sdk](https://docs.nocobase.com/api/sdk)
+  - `i18n`：国际化，具体请参考：[https://www.i18next.com/overview/api#createinstance](https://www.i18next.com/overview/api#createinstance)
+  - `providers`：上下文
+  - `components`：全局组件
+  - `scopes`：全局 scopes
+  - `router`：配置路由，具体请参考：[RouterManager](/core/application/router-manager)
+  - `pluginSettings`: [PluginSettingsManager](/core/application/plugin-settings-manager)
+  - `schemaSettings`：Schema 设置工具，具体参考：[SchemaSettingsManager](/core/ui-schema/schema-initializer-manager)
+  - `schemaInitializers`：Schema 添加工具，具体参考：[SchemaInitializerManager](/core/ui-schema/schema-initializer-manager)
+  - `loadRemotePlugins`：用于控制是否加载远程插件，默认为 `false`，即不加载远程插件（方便单测和 DEMO 环境）。
+  - `dataSourceManager`：数据源管理器，具体参考：[DataSourceManager](/core/data-source/data-source-manager)
+  - `addFieldInterfaceComponentOption`: 添加 Field interface 组件选项。具体参考： [CollectionFieldInterfaceManager](/core/data-source/collection-field-interface-manager#addfieldinterfacecomponentoption)
 - 示例
 
 ```tsx
@@ -341,6 +343,24 @@ class Application {
 ```tsx | pure
 app.getCollectionManager() // 获取默认数据源的 collection manager
 app.getCollectionManager('test') // 获取指定数据源的 collection manager
+```
+
+### app.addFieldInterfaceComponentOption()
+
+Add field interface component option.
+
+添加 Field interface 组件选项。具体参考： [CollectionFieldInterfaceManager](/core/data-source/collection-field-interface-manager#addfieldinterfacecomponentoption)
+
+
+```tsx | pure
+class MyPlugin extends Plugin {
+  async load() {
+    this.app.addFieldInterfaceComponentOption('url', {
+      label: 'Preview',
+      value: 'Input.Preview',
+    });
+  }
+}
 ```
 
 ## Hooks

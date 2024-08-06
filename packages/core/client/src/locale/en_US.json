@@ -426,6 +426,7 @@
   "Option value": "Option value",
   "Option label": "Option label",
   "Color": "Color",
+  "Background Color": "Background Color",
   "Add option": "Add option",
   "Related collection": "Related collection",
   "Allow linking to multiple records": "Allow linking to multiple records",
@@ -552,6 +553,7 @@
   "Add condition group": "Add condition group",
   "exists": "exists",
   "not exists": "not exists",
+  "Style": "Style",
   "=": "=",
   "≠": "≠",
   ">": ">",
@@ -833,5 +835,6 @@
   "Expand All": "Expand All",
   "Search": "Search",
   "Clear default value": "Clear default value",
-  "Open in new window": "Open in new window"
+  "Open in new window": "Open in new window",
+  "Sorry, the page you visited does not exist.": "Sorry, the page you visited does not exist."
 }

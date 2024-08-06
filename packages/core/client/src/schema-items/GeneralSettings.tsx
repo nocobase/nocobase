@@ -6,7 +6,7 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
-
+import React from 'react';
 import { Field } from '@formily/core';
 import { ISchema, useField, useFieldSchema } from '@formily/react';
 import { useTranslation } from 'react-i18next';
@@ -14,6 +14,9 @@ import { useDesignable } from '../schema-component';
 import { SchemaSettingOptions } from '../application';
 import { useSchemaToolbar } from '../application/schema-toolbar';
 import { useCollection_deprecated, useCollectionManager_deprecated } from '../collection-manager';
+import { SchemaSettingsLinkageRules } from '../schema-settings';
+import { useIsFieldReadPretty } from '../schema-component';
+import { useCollection } from '../data-source';
 
 export const generalSettingsItems: SchemaSettingOptions['items'] = [
   {
@@ -214,6 +217,25 @@ export const generalSettingsItems: SchemaSettingOptions['items'] = [
       const fieldSchema = useFieldSchema();
       const { required = true } = useSchemaToolbar();
       return !field.readPretty && fieldSchema['x-component'] !== 'FormField' && required;
+    },
+  },
+  {
+    name: 'style',
+    Component: (props) => {
+      const localProps = { ...props, category: 'style' };
+      return <SchemaSettingsLinkageRules {...localProps} />;
+    },
+    useVisible() {
+      const isFieldReadPretty = useIsFieldReadPretty();
+      return isFieldReadPretty;
+    },
+    useComponentProps() {
+      const { name } = useCollection();
+      const { linkageRulesProps } = useSchemaToolbar();
+      return {
+        ...linkageRulesProps,
+        collectionName: name,
+      };
     },
   },
 ];

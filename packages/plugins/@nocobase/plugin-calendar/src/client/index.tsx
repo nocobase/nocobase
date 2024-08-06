@@ -34,6 +34,10 @@ export class PluginCalendarClient extends Plugin {
       title: generateNTemplate('Calendar'),
       Component: 'CalendarBlockInitializer',
     });
+    this.app.schemaInitializerManager.addItem('mobile:addBlock', 'dataBlocks.calendar', {
+      title: generateNTemplate('Calendar'),
+      Component: 'CalendarBlockInitializer',
+    });
     this.app.schemaInitializerManager.addItem('popup:common:addBlock', 'dataBlocks.calendar', {
       title: generateNTemplate('Calendar'),
       Component: 'CalendarBlockInitializer',

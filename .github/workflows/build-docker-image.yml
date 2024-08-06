@@ -11,7 +11,6 @@ on:
       - 'next'
     paths:
       - 'packages/**'
-      - 'docker/nocobase/**'
       - 'Dockerfile'
       - '.github/workflows/build-docker-image.yml'
   pull_request:

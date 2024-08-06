@@ -8,10 +8,15 @@
  */
 
 import _ from 'lodash';
-import { useFieldSchema } from '@formily/react';
-import { SchemaSettingsItemType, SelectProps, useCompile, useDesignable } from '@nocobase/client';
-import { getNewSchema, useHookDefault } from './util';
+import { useField, useFieldSchema } from '@formily/react';
 import { TFunction, useTranslation } from 'react-i18next';
+
+import { SchemaSettingsItemType } from '../types';
+import { getNewSchema, useHookDefault, useSchemaByType } from './util';
+import { SelectProps } from '../../../schema-component/antd/select';
+import { useCompile } from '../../../schema-component/hooks/useCompile';
+import { useDesignable } from '../../../schema-component/hooks/useDesignable';
+import { useColumnSchema } from '../../../schema-component';
 
 interface CreateSelectSchemaSettingsItemProps {
   name: string;
@@ -22,6 +27,10 @@ interface CreateSelectSchemaSettingsItemProps {
   defaultValue?: string | number;
   useDefaultValue?: () => string | number;
   useVisible?: () => boolean;
+  /**
+   * @default 'common'
+   */
+  type?: 'common' | 'field';
 }
 
 /**
@@ -40,6 +49,7 @@ export const createSelectSchemaSettingsItem = (
     useOptions = useHookDefault,
     schemaKey,
     useVisible,
+    type = 'common',
     defaultValue: propsDefaultValue,
     useDefaultValue = useHookDefault,
   } = options;
@@ -48,8 +58,9 @@ export const createSelectSchemaSettingsItem = (
     type: 'select',
     useVisible,
     useComponentProps() {
-      const filedSchema = useFieldSchema();
-      const { deepMerge } = useDesignable();
+      const fieldSchema = useSchemaByType(type);
+      const { fieldSchema: tableColumnSchema } = useColumnSchema() || {};
+      const { dn } = useDesignable();
       const options = useOptions(propsOptions);
       const defaultValue = useDefaultValue(propsDefaultValue);
       const compile = useCompile();
@@ -58,9 +69,17 @@ export const createSelectSchemaSettingsItem = (
       return {
         title: typeof title === 'function' ? title(t) : compile(title),
         options,
-        value: _.get(filedSchema, schemaKey, defaultValue),
+        value: _.get(fieldSchema, schemaKey, defaultValue),
         onChange(v) {
-          deepMerge(getNewSchema({ fieldSchema: filedSchema, schemaKey, value: v }));
+          const newSchema = getNewSchema({ fieldSchema, schemaKey, value: v });
+          if (tableColumnSchema) {
+            dn.emit('patch', {
+              schema: newSchema,
+            });
+            dn.refresh();
+          } else {
+            dn.deepMerge(newSchema);
+          }
         },
       };
     },
