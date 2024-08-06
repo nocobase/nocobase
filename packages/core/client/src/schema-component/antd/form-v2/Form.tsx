@@ -9,7 +9,7 @@
 
 import { css } from '@emotion/css';
 import { FormLayout, IFormLayoutProps } from '@formily/antd-v5';
-import { Field, Form as FormilyForm, createForm, onFieldInit, onFormInputChange } from '@formily/core';
+import { Field, Form as FormilyForm, createForm, onFieldInit, onFormInputChange, onFieldChange } from '@formily/core';
 import { FieldContext, FormContext, RecursionField, observer, useField, useFieldSchema } from '@formily/react';
 import { reaction } from '@formily/reactive';
 import { uid } from '@formily/shared';
@@ -111,6 +111,16 @@ interface WithFormProps {
   disabled?: boolean;
 }
 
+// 自定义的必填校验函数
+const requiredValidator = (value: string, _, { field }) => {
+  if (field.required && value && !transformToNoSpaces(value)) {
+    return 'The field value is required';
+  }
+  return '';
+};
+
+const transformToNoSpaces = (value: string) => value.trim().replace(/\s+/g, '');
+
 const WithForm = (props: WithFormProps) => {
   const { form } = props;
   const fieldSchema = useFieldSchema();
@@ -127,6 +137,12 @@ const WithForm = (props: WithFormProps) => {
     form.addEffects(id, () => {
       onFormInputChange(() => {
         setFormValueChanged?.(true);
+      });
+      onFieldChange('*', async (field: any, form) => {
+        if (field.required) {
+          field.validator = requiredValidator;
+          field.required = true;
+        }
       });
     });
 
