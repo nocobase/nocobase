@@ -1,7 +1,7 @@
 {
   "Post-action event": "操作后事件",
-  "Triggered after the completion of a request initiated through an action button or API, such as after adding, updating, or deleting data. Suitable for data processing, sending notifications, etc., after actions are completed.":
-    "通过操作按钮或 API 发起请求时，在请求执行成功后触发该事件，比如新增、更新、删除操作之后。适用于在操作完成后进行数据处理、发送通知等。",
+  "Triggered after the completion of a request initiated through an action button or API, such as after adding or updating data. Suitable for data processing, sending notifications, etc., after actions are completed.":
+    "通过操作按钮或 API 发起请求时，在请求执行成功后触发该事件，比如新增、更新操作之后。适用于在操作完成后进行数据处理、发送通知等。",
   "Collection": "数据表",
   "The collection to which the triggered data belongs.": "触发数据所属的数据表。",
   "Trigger mode": "触发模式",

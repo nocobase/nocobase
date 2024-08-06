@@ -47,10 +47,6 @@ export interface CustomToken extends AliasToken {
   marginBlock: number;
   /** 区块的圆角 */
   borderRadiusBlock: number;
-  /** 区块的 boxShadow */
-  boxShadowBlock: string;
-  /** 区块的下边框 */
-  borderBottomBlock: string;
 }
 
 export interface ThemeConfig extends _ThemeConfig {

@@ -58,6 +58,14 @@ const getSchema = (schema: IField, record: any, compile, getContainer): ISchema 
         title: '{{ t("Edit collection") }}',
         properties: {
           ...properties,
+          filterTargetKey: {
+            title: `{{ t("Record unique key")}}`,
+            type: 'single',
+            description: `{{t( "If a collection lacks a primary key, you must configure a unique record key to locate row records within a block, failure to configure this will prevent the creation of data blocks for the collection.")}}`,
+            'x-decorator': 'FormItem',
+            'x-component': 'Select',
+            'x-reactions': ['{{useAsyncDataSource(loadFilterTargetKeys)}}'],
+          },
           footer: {
             type: 'void',
             'x-component': 'Action.Drawer.Footer',

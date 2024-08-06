@@ -233,6 +233,7 @@ test.describe('PageHeader', () => {
         await page.getByRole('menuitem', { name: 'Edit button' }).click();
         await page.getByRole('textbox').fill('Test_changed');
         await page.getByRole('button', { name: 'Submit' }).click();
+        await expect(page.getByLabel('Edit button')).not.toBeVisible();
         await expect(navigationBarPositionElement).toContainText('Test_changed');
 
         // 编辑 URL
