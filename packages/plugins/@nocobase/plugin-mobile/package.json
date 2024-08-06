@@ -15,14 +15,14 @@
     "@nocobase/test": "1.x"
   },
   "devDependencies": {
-    "@types/react": "17.x",
-    "@types/react-dom": "17.x",
     "@ant-design/icons": "5.x",
     "@formily/antd-v5": "1.x",
     "@formily/react": "2.x",
     "@formily/shared": "2.x",
+    "@types/react": "17.x",
+    "@types/react-dom": "17.x",
     "antd-mobile": "^5.36.1",
-    "react-device-detect": "2.2.3",
-    "re-resizable": "6.6.0"
+    "re-resizable": "6.6.0",
+    "react-device-detect": "2.2.3"
   }
 }
