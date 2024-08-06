@@ -10,6 +10,7 @@
 import {
   Action,
   AntdAppProvider,
+  AssociationFieldModeProvider,
   BlockTemplateProvider,
   GlobalThemeProvider,
   OpenModeProvider,
@@ -57,6 +58,12 @@ export const Mobile = () => {
   }, []);
 
   const DesktopComponent = mobilePlugin.desktopMode === false ? React.Fragment : DesktopMode;
+  const modeToComponent = React.useMemo(() => {
+    return {
+      PopoverNester: ActionDrawerUsedInMobile,
+    };
+  }, []);
+
   return (
     <DesktopComponent>
       {/* 目前移动端由于和客户端的主题对不上，所以先使用 `GlobalThemeProvider` 和 `AntdAppProvider` 进行重置为默认主题  */}
@@ -82,7 +89,9 @@ export const Mobile = () => {
             <BlockTemplateProvider componentNamePrefix="mobile-">
               <MobileAppProvider>
                 <ResetSchemaOptionsProvider>
-                  <MobileRouter />
+                  <AssociationFieldModeProvider modeToComponent={modeToComponent}>
+                    <MobileRouter />
+                  </AssociationFieldModeProvider>
                 </ResetSchemaOptionsProvider>
               </MobileAppProvider>
             </BlockTemplateProvider>

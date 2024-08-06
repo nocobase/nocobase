@@ -28,7 +28,7 @@ export enum AssociationFieldMode {
 }
 
 interface AssociationFieldModeProviderProps {
-  modeToComponent: Record<AssociationFieldMode, React.FC | ((originalCom: React.FC) => React.FC)>;
+  modeToComponent: Partial<Record<AssociationFieldMode, React.FC | ((originalCom: React.FC) => React.FC)>>;
 }
 
 const defaultModeToComponent = {
