@@ -17,6 +17,7 @@ export const deleteEventActionInitializer: SchemaInitializerItemType<any> = {
   schema: {
     'x-component': 'Action',
     'x-decorator': 'ACLActionProvider',
+    'x-action': 'destroy',
   },
   useVisible() {
     const collection = useCollection_deprecated();
