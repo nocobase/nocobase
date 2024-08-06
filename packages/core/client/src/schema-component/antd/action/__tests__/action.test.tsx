@@ -11,7 +11,6 @@ import { fireEvent, render, screen, userEvent, waitFor } from '@nocobase/test/cl
 import React from 'react';
 import App1 from '../demos/demo1';
 import App2 from '../demos/demo2';
-import App3 from '../demos/demo3';
 import App4 from '../demos/demo4';
 
 describe('Action', () => {
@@ -54,46 +53,6 @@ describe('Action', () => {
     await waitFor(() => {
       expect(document.querySelector('.ant-drawer')).not.toBeInTheDocument();
     });
-  });
-
-  it('openMode', async () => {
-    const { getByText } = render(<App3 />);
-
-    expect(document.querySelector('.ant-drawer')).not.toBeInTheDocument();
-    expect(document.querySelector('.ant-modal')).not.toBeInTheDocument();
-    expect(document.querySelector('.nb-action-page')).not.toBeInTheDocument();
-
-    // drawer
-    await waitFor(async () => {
-      await userEvent.click(getByText('Drawer'));
-      await userEvent.click(getByText('Open'));
-      expect(document.querySelector('.ant-drawer')).toBeInTheDocument();
-      expect(document.querySelector('.ant-modal')).not.toBeInTheDocument();
-      expect(document.querySelector('.nb-action-page')).not.toBeInTheDocument();
-    });
-
-    // modal
-    await waitFor(async () => {
-      await userEvent.click(getByText('Close'));
-      await userEvent.click(getByText('Modal'));
-      await userEvent.click(getByText('Open'));
-      expect(document.querySelector('.ant-drawer')).not.toBeInTheDocument();
-      expect(document.querySelector('.ant-modal')).toBeInTheDocument();
-      expect(document.querySelector('.nb-action-page')).not.toBeInTheDocument();
-    });
-    await waitFor(async () => {
-      await userEvent.click(getByText('Close'));
-      // page
-      await userEvent.click(getByText('Page'));
-      await userEvent.click(getByText('Open'));
-      expect(document.querySelector('.ant-drawer')).not.toBeInTheDocument();
-      expect(document.querySelector('.ant-modal')).not.toBeInTheDocument();
-      expect(document.querySelector('.nb-action-page')).toBeInTheDocument();
-    });
-    await userEvent.click(getByText('Close'));
-
-    // TODO: 点击关闭按钮时应该消失
-    // expect(document.querySelector('.nb-action-page')).not.toBeInTheDocument();
   });
 });
 

@@ -73,13 +73,14 @@ const useStyles = createStyles(({ css, token }: CustomCreateStylesUtils) => {
 export interface BlockItemProps {
   name?: string;
   className?: string;
+  style?: React.CSSProperties;
   children?: React.ReactNode;
 }
 
 export const BlockItem: React.FC<BlockItemProps> = withDynamicSchemaProps(
   (props) => {
     // 新版 UISchema（1.0 之后）中已经废弃了 useProps，这里之所以继续保留是为了兼容旧版的 UISchema
-    const { className, children } = useProps(props);
+    const { className, children, style } = useProps(props);
     const { styles: blockItemCss } = useStyles();
     const fieldSchema = useFieldSchema();
     const { render } = useSchemaToolbarRender(fieldSchema);
@@ -87,7 +88,12 @@ export const BlockItem: React.FC<BlockItemProps> = withDynamicSchemaProps(
     const label = useMemo(() => getAriaLabel(), [getAriaLabel]);
 
     return (
-      <SortableItem role="button" aria-label={label} className={cls('nb-block-item', className, blockItemCss)}>
+      <SortableItem
+        role="button"
+        aria-label={label}
+        className={cls('nb-block-item', className, blockItemCss)}
+        style={style}
+      >
         {render()}
         <ErrorBoundary FallbackComponent={ErrorFallback} onError={(err) => console.log(err)}>
           {children}

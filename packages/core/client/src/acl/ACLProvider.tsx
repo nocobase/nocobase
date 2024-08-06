@@ -45,7 +45,6 @@ const getRouteUrl = (props) => {
 };
 
 export const ACLRolesCheckProvider = (props) => {
-  const route = getRouteUrl(props.children.props);
   const { setDesignable } = useDesignable();
   const { render } = useAppSpin();
   const api = useAPIClient();

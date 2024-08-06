@@ -16,6 +16,7 @@ import { findFilterTargets } from '../../../../../block-provider/hooks';
 import { useFilterBlock } from '../../../../../filter-provider/FilterProvider';
 import { mergeFilter } from '../../../../../filter-provider/utils';
 import { removeNullCondition } from '../../../../../schema-component';
+import { useCollection } from '../../../../../data-source';
 
 export const useTableBlockProps = () => {
   const field = useField<ArrayField>();
@@ -25,7 +26,6 @@ export const useTableBlockProps = () => {
   const { getDataBlocks } = useFilterBlock();
   const isLoading = ctx?.service?.loading;
   const params = useMemo(() => ctx?.service?.params, [JSON.stringify(ctx?.service?.params)]);
-
   useEffect(() => {
     if (!isLoading) {
       const serviceResponse = ctx?.service?.data;

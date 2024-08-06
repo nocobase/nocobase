@@ -10,8 +10,9 @@
 import { PageHeader as AntdPageHeader } from '@ant-design/pro-layout';
 import { Input, Spin } from 'antd';
 import React, { useContext, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { useAPIClient, useRequest, useSchemaTemplateManager } from '..';
+import { useNavigateNoUpdate } from '../application/CustomRouterContextProvider';
 import { RemoteSchemaComponent, SchemaComponentContext } from '../schema-component';
 
 const EditableTitle = (props) => {
@@ -68,7 +69,7 @@ const EditableTitle = (props) => {
 };
 
 export const BlockTemplateDetails = () => {
-  const navigate = useNavigate();
+  const navigate = useNavigateNoUpdate();
   const params = useParams<any>();
   const key = params?.key;
   const value = useContext(SchemaComponentContext);

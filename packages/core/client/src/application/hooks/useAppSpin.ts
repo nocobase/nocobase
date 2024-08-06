@@ -8,12 +8,16 @@
  */
 
 import { Spin } from 'antd';
-import React from 'react';
+import React, { useCallback } from 'react';
 import { useApp } from './useApp';
 
 export const useAppSpin = () => {
   const app = useApp();
+  const renderSpin = useCallback(
+    () => (app?.renderComponent ? app?.renderComponent?.('AppSpin') : React.createElement(Spin)),
+    [app],
+  );
   return {
-    render: () => (app?.renderComponent ? app?.renderComponent?.('AppSpin') : React.createElement(Spin)),
+    render: renderSpin,
   };
 };

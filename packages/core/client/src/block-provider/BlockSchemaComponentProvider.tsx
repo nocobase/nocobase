@@ -21,6 +21,7 @@ import { useCreateFormBlockDecoratorProps } from '../modules/blocks/data-blocks/
 import { useCreateFormBlockProps } from '../modules/blocks/data-blocks/form/hooks/useCreateFormBlockProps';
 import { useEditFormBlockDecoratorProps } from '../modules/blocks/data-blocks/form/hooks/useEditFormBlockDecoratorProps';
 import { useEditFormBlockProps } from '../modules/blocks/data-blocks/form/hooks/useEditFormBlockProps';
+import { useDataFormItemProps } from '../modules/blocks/data-blocks/form/hooks/useDataFormItemProps';
 import { useGridCardBlockDecoratorProps } from '../modules/blocks/data-blocks/grid-card/hooks/useGridCardBlockDecoratorProps';
 import { useListBlockDecoratorProps } from '../modules/blocks/data-blocks/list/hooks/useListBlockDecoratorProps';
 import { useTableSelectorDecoratorProps } from '../modules/blocks/data-blocks/table-selector/hooks/useTableSelectorDecoratorProps';
@@ -85,6 +86,7 @@ export const BlockSchemaComponentProvider: React.FC = (props) => {
         useFilterFormBlockDecoratorProps,
         useGridCardBlockDecoratorProps,
         useFormItemProps,
+        useDataFormItemProps,
       }}
     >
       {props.children}
@@ -145,6 +147,7 @@ export class BlockSchemaComponentPlugin extends Plugin {
       useFilterFormBlockDecoratorProps,
       useGridCardBlockDecoratorProps,
       useFormItemProps,
+      useDataFormItemProps,
     });
   }
 }

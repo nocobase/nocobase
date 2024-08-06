@@ -39,6 +39,7 @@ import { DataSourceApplicationProvider } from '../data-source/components/DataSou
 import { DataBlockProvider } from '../data-source/data-block/DataBlockProvider';
 import { DataSourceManager, type DataSourceManagerOptions } from '../data-source/data-source/DataSourceManager';
 
+import { OpenModeProvider } from '../modules/popup/OpenModeProvider';
 import { AppSchemaComponentProvider } from './AppSchemaComponentProvider';
 import type { Plugin } from './Plugin';
 import type { RequireJS } from './utils/requirejs';
@@ -158,6 +159,7 @@ export class Application {
     });
     this.use(AntdAppProvider);
     this.use(DataSourceApplicationProvider, { dataSourceManager: this.dataSourceManager });
+    this.use(OpenModeProvider);
   }
 
   private addReactRouterComponents() {

@@ -6,10 +6,10 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
-import { LeftOutlined, FileImageOutlined } from '@ant-design/icons';
-import { Html5Qrcode } from 'html5-qrcode';
-import React, { useState, useEffect, useRef } from 'react';
+import { FileImageOutlined, LeftOutlined } from '@ant-design/icons';
 import { useActionContext } from '@nocobase/client';
+import { Html5Qrcode } from 'html5-qrcode';
+import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ScanBox } from './ScanBox';
 import { useScanner } from './useScanner';

@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { css } from '@emotion/css';
 import { Field, Form } from '@formily/core';
 import { SchemaExpressionScopeContext, useField, useFieldSchema, useForm } from '@formily/react';
 import { untracked } from '@formily/reactive';
@@ -19,7 +20,7 @@ import omit from 'lodash/omit';
 import qs from 'qs';
 import { ChangeEvent, useCallback, useContext, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { NavigateFunction, useNavigate } from 'react-router-dom';
+import { NavigateFunction } from 'react-router-dom';
 import { useReactToPrint } from 'react-to-print';
 import {
   AssociationFilter,
@@ -30,6 +31,7 @@ import {
   useTableBlockContext,
 } from '../..';
 import { useAPIClient, useRequest } from '../../api-client';
+import { useNavigateNoUpdate } from '../../application/CustomRouterContextProvider';
 import { useFormBlockContext } from '../../block-provider/FormBlockProvider';
 import { useCollectionManager_deprecated, useCollection_deprecated } from '../../collection-manager';
 import { DataBlock, useFilterBlock } from '../../filter-provider/FilterProvider';
@@ -206,7 +208,7 @@ export const useCreateActionProps = () => {
   const form = useForm();
   const { field, resource } = useBlockRequestContext();
   const { setVisible, setSubmitted, setFormValueChanged } = useActionContext();
-  const navigate = useNavigate();
+  const navigate = useNavigateNoUpdate();
   const actionSchema = useFieldSchema();
   const actionField = useField();
   const compile = useCompile();
@@ -550,7 +552,7 @@ export const useCustomizeUpdateActionProps = () => {
   const { resource, __parent, service } = useBlockRequestContext();
   const filterByTk = useFilterByTk();
   const actionSchema = useFieldSchema();
-  const navigate = useNavigate();
+  const navigate = useNavigateNoUpdate();
   const compile = useCompile();
   const form = useForm();
   const { modal } = App.useApp();
@@ -645,7 +647,7 @@ export const useCustomizeBulkUpdateActionProps = () => {
   const { rowKey } = tableBlockContext;
   const selectedRecordKeys =
     tableBlockContext.field?.data?.selectedRowKeys ?? expressionScope?.selectedRecordKeys ?? {};
-  const navigate = useNavigate();
+  const navigate = useNavigateNoUpdate();
   const compile = useCompile();
   const { t } = useTranslation();
   const actionField = useField();
@@ -756,7 +758,7 @@ export const useCustomizeBulkUpdateActionProps = () => {
 
 export const useCustomizeRequestActionProps = () => {
   const apiClient = useAPIClient();
-  const navigate = useNavigate();
+  const navigate = useNavigateNoUpdate();
   const filterByTk = useFilterByTk();
   const actionSchema = useFieldSchema();
   const compile = useCompile();
@@ -852,7 +854,7 @@ export const useUpdateActionProps = () => {
   const { field, resource, __parent } = useBlockRequestContext();
   const { setVisible, setSubmitted, setFormValueChanged } = useActionContext();
   const actionSchema = useFieldSchema();
-  const navigate = useNavigate();
+  const navigate = useNavigateNoUpdate();
   const { fields, getField, name } = useCollection_deprecated();
   const compile = useCompile();
   const actionField = useField();
@@ -1055,13 +1057,13 @@ export const useDetailPrintActionProps = () => {
   const printHandler = useReactToPrint({
     content: () => formBlockRef.current,
     pageStyle: `@media print {
-       * {
-         margin: 0;
-       }
-       :not(.ant-formily-item-control-content-component) > div.ant-formily-layout>div:first-child {
-         overflow: hidden; height: 0;
-       }
-     }`,
+        * {
+          margin: 0;
+        }
+        :not(.ant-formily-item-control-content-component) > div.ant-formily-layout>div:first-child {
+          overflow: hidden; height: 0;
+        }
+      }`,
   });
   return {
     async onClick() {
@@ -1109,6 +1111,31 @@ export const useRefreshActionProps = () => {
 export const useDetailsPaginationProps = () => {
   const ctx = useDetailsBlockContext();
   const count = ctx.service?.data?.meta?.count || 0;
+  const current = ctx.service?.data?.meta?.page;
+  if (!count && current) {
+    return {
+      simple: true,
+      current: ctx.service?.data?.meta?.page || 1,
+      pageSize: 1,
+      showSizeChanger: false,
+      async onChange(page) {
+        const params = ctx.service?.params?.[0];
+        ctx.service.run({ ...params, page });
+      },
+      style: {
+        marginTop: 24,
+        textAlign: 'center',
+      },
+      showTotal: false,
+      showTitle: false,
+      total: ctx.service?.data?.data?.length ? 1 * current + 1 : 1 * current,
+      className: css`
+        .ant-pagination-simple-pager {
+          display: none !important;
+        }
+      `,
+    };
+  }
   return {
     simple: true,
     hidden: count <= 1,
@@ -1404,7 +1431,8 @@ export const useAssociationNames = (dataSource?: string) => {
       const collectionField = s['x-collection-field'] && getCollectionJoinField(s['x-collection-field'], dataSource);
       const isAssociationSubfield = s.name.includes('.');
       const isAssociationField =
-        collectionField && ['hasOne', 'hasMany', 'belongsTo', 'belongsToMany'].includes(collectionField.type);
+        collectionField &&
+        ['hasOne', 'hasMany', 'belongsTo', 'belongsToMany', 'belongsToArray'].includes(collectionField.type);
 
       // 根据联动规则中条件的字段获取一些 appends
       if (s['x-linkage-rules']) {
@@ -1554,12 +1582,13 @@ export const useParseURLAndParams = () => {
   return { parseURLAndParams };
 };
 
-export function useLinkActionProps() {
-  const navigate = useNavigate();
+export function useLinkActionProps(componentProps?: any) {
+  const navigate = useNavigateNoUpdate();
   const fieldSchema = useFieldSchema();
+  const componentPropsValue = fieldSchema?.['x-component-props'] || componentProps;
   const { t } = useTranslation();
-  const url = fieldSchema?.['x-component-props']?.['url'];
-  const searchParams = fieldSchema?.['x-component-props']?.['params'] || [];
+  const url = componentPropsValue?.['url'];
+  const searchParams = componentPropsValue?.['params'] || [];
   const openInNewWindow = fieldSchema?.['x-component-props']?.['openInNewWindow'];
   const { parseURLAndParams } = useParseURLAndParams();
 

@@ -10,7 +10,21 @@
 /* istanbul ignore file -- @preserve */
 
 const typeInterfaceMap = {
-  array: '',
+  array: () => {
+    return {
+      interface: 'json',
+      uiSchema: {
+        'x-component': 'Input.JSON',
+        'x-component-props': {
+          autoSize: {
+            minRows: 5,
+            // maxRows: 20,
+          },
+        },
+        default: null,
+      },
+    };
+  },
   belongsTo: '',
   belongsToMany: '',
   boolean: () => {

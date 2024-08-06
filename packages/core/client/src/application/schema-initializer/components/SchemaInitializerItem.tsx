@@ -24,6 +24,7 @@ export interface SchemaInitializerItemProps {
   icon?: React.ReactNode;
   title?: React.ReactNode;
   items?: any[];
+  disabled?: boolean;
   onClick?: (args?: any) => any;
   applyMenuStyle?: boolean;
   children?: ReactNode;
@@ -41,6 +42,7 @@ export const SchemaInitializerItem = memo(
       name = uid(),
       applyMenuStyle = true,
       className,
+      disabled,
       items,
       icon,
       title,
@@ -89,7 +91,10 @@ export const SchemaInitializerItem = memo(
       >
         <div
           {...attribute}
-          className={classNames({ [`${componentCls}-menu-item`]: applyMenuStyle }, className)}
+          className={classNames(
+            { [`${componentCls}-menu-item`]: applyMenuStyle, [`${componentCls}-menu-item-disabled`]: disabled },
+            className,
+          )}
           style={style}
         >
           {children || (

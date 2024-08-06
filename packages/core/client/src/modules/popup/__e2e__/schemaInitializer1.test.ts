@@ -27,7 +27,7 @@ test.describe('where to open a popup and what can be added to it', () => {
     await page.getByLabel('schema-initializer-Tabs-').click();
     await page.getByRole('textbox').click();
     await page.getByRole('textbox').fill('test123');
-    await page.getByLabel('action-Action-Submit-general-table').click();
+    await page.getByLabel('action-Action-Submit-general').click();
 
     await expect(page.getByText('test123')).toBeVisible();
 
@@ -54,7 +54,7 @@ test.describe('where to open a popup and what can be added to it', () => {
     await page.getByLabel('schema-initializer-Tabs-').click();
     await page.getByRole('textbox').click();
     await page.getByRole('textbox').fill('test7');
-    await page.getByLabel('action-Action-Submit-general-table').click();
+    await page.getByLabel('action-Action-Submit-general').click();
 
     await expect(page.getByText('test7')).toBeVisible();
 
@@ -83,7 +83,7 @@ test.describe('where to open a popup and what can be added to it', () => {
     await page.getByLabel('schema-initializer-Tabs-').click();
     await page.getByRole('textbox').click();
     await page.getByRole('textbox').fill('test8');
-    await page.getByLabel('action-Action-Submit-general-table-0').click();
+    await page.getByLabel('action-Action-Submit-general').click();
 
     await expect(page.getByText('test8')).toBeVisible();
 
@@ -140,7 +140,7 @@ test.describe('where to open a popup and what can be added to it', () => {
     await page.getByLabel('schema-initializer-Tabs-').click();
     await page.getByRole('textbox').click();
     await page.getByRole('textbox').fill('test1');
-    await page.getByLabel('action-Action-Submit-general-table').click();
+    await page.getByLabel('action-Action-Submit-general').click();
 
     await expect(page.getByText('test1')).toBeVisible();
 
@@ -171,7 +171,73 @@ test.describe('where to open a popup and what can be added to it', () => {
     await page.getByLabel('schema-initializer-Tabs-').click();
     await page.getByRole('textbox').click();
     await page.getByRole('textbox').fill('test8');
-    await page.getByLabel('action-Action-Submit-general-details').click();
+    await page.getByLabel('action-Action-Submit-general').click();
+
+    await expect(page.getByText('test8')).toBeVisible();
+
+    // add blocks
+    await page.getByLabel('schema-initializer-Grid-popup:common:addBlock-general').hover();
+    await page.getByRole('menuitem', { name: 'Details' }).hover();
+    await page.getByRole('menuitem', { name: 'Current record' }).click();
+    await page.getByLabel('schema-initializer-Grid-popup:common:addBlock-general').hover();
+    await page.getByRole('menuitem', { name: 'form Form (Edit)' }).first().click();
+    await page.getByLabel('schema-initializer-Grid-popup:common:addBlock-general').hover();
+    await page.getByRole('menuitem', { name: 'Markdown' }).click();
+    await page.mouse.move(300, 0);
+
+    await expect(page.getByLabel('block-item-CardItem-general-details')).toBeVisible();
+    await expect(page.getByLabel('block-item-CardItem-general-form')).toBeVisible();
+    await expect(page.getByLabel('block-item-Markdown.Void-')).toBeVisible();
+
+    // add relationship blocks
+    // 下拉列表中，可选择以下区块进行创建
+    await page.getByLabel('schema-initializer-Grid-popup:common:addBlock-general').hover();
+    await expect(page.getByRole('menuitem', { name: 'table Details right' })).toBeVisible();
+    await expect(page.getByRole('menuitem', { name: 'form Form (Edit)' })).toBeVisible();
+    await expect(page.getByRole('menuitem', { name: 'form Form (Add new) right' })).toBeVisible();
+    await expect(page.getByRole('menuitem', { name: 'form Form (Add new) right' })).toBeVisible();
+    await expect(page.getByRole('menuitem', { name: 'table Table right' })).toBeVisible();
+    await expect(page.getByRole('menuitem', { name: 'ordered-list List right' })).toBeVisible();
+    await expect(page.getByRole('menuitem', { name: 'ordered-list Grid Card right' })).toBeVisible();
+    await expect(page.getByRole('menuitem', { name: 'Calendar' })).toBeVisible();
+    await expect(page.getByRole('menuitem', { name: 'Gantt' })).toBeVisible();
+    await expect(page.getByRole('menuitem', { name: 'Kanban' })).toBeVisible();
+
+    await page.getByLabel('schema-initializer-Grid-popup:common:addBlock-general').hover();
+    await page.getByRole('menuitem', { name: 'Details' }).hover();
+    await page.getByRole('menuitem', { name: 'Associated records' }).hover();
+    await page.getByRole('menuitem', { name: 'Many to one' }).click();
+    await page.mouse.move(300, 0);
+    await expect(page.getByLabel('block-item-CardItem-users-')).toBeVisible();
+
+    await page.getByLabel('schema-initializer-Grid-popup:common:addBlock-general').hover();
+    await page.getByRole('menuitem', { name: 'table Table right' }).hover();
+    await page.getByRole('menuitem', { name: 'Associated records' }).hover();
+    await page.getByRole('menuitem', { name: 'One to many' }).click();
+    await page.mouse.move(300, 0);
+    await expect(page.getByLabel('block-item-CardItem-users-table')).toBeVisible();
+    // 屏幕上没有显示错误提示
+    await expect(page.locator('.ant-notification-notice').first()).toBeHidden({ timeout: 1000 });
+  });
+
+  test('association link after reload page', async ({ page, mockPage, mockRecord }) => {
+    const nocoPage = await mockPage(oneDetailBlockWithM2oFieldToGeneral).waitForInit();
+    const record = await mockRecord('targetToGeneral');
+    await nocoPage.goto();
+
+    // open dialog
+    await page
+      .getByLabel('block-item-CollectionField-targetToGeneral-details-targetToGeneral.toGeneral-toGeneral')
+      .getByText(record.id, { exact: true })
+      .click();
+
+    await page.reload();
+
+    // add a tab
+    await page.getByLabel('schema-initializer-Tabs-').click();
+    await page.getByRole('textbox').click();
+    await page.getByRole('textbox').fill('test8');
+    await page.getByLabel('action-Action-Submit-general').click();
 
     await expect(page.getByText('test8')).toBeVisible();
 

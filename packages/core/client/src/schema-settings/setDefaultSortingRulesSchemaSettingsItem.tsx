@@ -15,6 +15,7 @@ import { useTableBlockContext } from '../block-provider';
 import { useCollection_deprecated, useSortFields } from '../collection-manager';
 import { useDesignable } from '../schema-component';
 import { SchemaSettingsItemType } from '../application';
+import { useCollection } from '../data-source';
 
 export const setDefaultSortingRulesSchemaSettingsItem: SchemaSettingsItemType = {
   name: 'SetDefaultSortingRules',
@@ -134,7 +135,6 @@ export const setDefaultSortingRulesSchemaSettingsItem: SchemaSettingsItemType = 
   useVisible() {
     const field = useField();
     const { dragSort } = field.decoratorProps;
-
     return !dragSort;
   },
 };

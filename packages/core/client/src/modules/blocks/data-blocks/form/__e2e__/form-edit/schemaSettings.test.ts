@@ -50,7 +50,6 @@ test.describe('edit form block schema settings', () => {
 
     // 刷新页面后，显示的应该依然是上次设置的值
     await page.reload();
-    await page.getByText('Edit', { exact: true }).click();
     await runExpect();
   });
 
@@ -81,7 +80,6 @@ test.describe('edit form block schema settings', () => {
 
     // 刷新页面后，设置的值应该依然存在
     await page.reload();
-    await page.getByText('Edit', { exact: true }).click();
     await clickOption(page, 'Linkage rules');
     await runExpect();
   });
@@ -104,7 +102,6 @@ test.describe('edit form block schema settings', () => {
 
     // 刷新页面
     await page.reload();
-    await page.getByText('Edit', { exact: true }).click();
     await page.getByLabel('block-item-CardItem-general-form').hover();
     await page.getByLabel('designer-schema-settings-CardItem-FormV2.Designer-general').hover();
     await expect(page.getByRole('menuitem', { name: 'Save as block template' })).not.toBeVisible();
@@ -117,7 +114,6 @@ test.describe('edit form block schema settings', () => {
 
     // 刷新页面
     await page.reload();
-    await page.getByText('Edit', { exact: true }).click();
     await page.getByLabel('block-item-CardItem-general-form').hover();
     await page.getByLabel('designer-schema-settings-CardItem-FormV2.Designer-general').hover();
     await expect(page.getByRole('menuitem', { name: 'Save as block template' })).toBeVisible();
@@ -152,30 +148,28 @@ test.describe('edit form block schema settings', () => {
 
     // 刷新页面后，区块依然是被删除状态
     await page.reload();
-    await page.getByText('Edit', { exact: true }).click();
     await expect(page.getByLabel('block-item-CardItem-general-form')).not.toBeVisible();
   });
   // https://nocobase.height.app/T-3825
   test('Unsaved changes warning display', async ({ page, mockPage, mockRecord }) => {
     await mockPage(T3825).goto();
     await mockRecord('general', { number: 9, formula: 10 });
-    await expect(await page.getByLabel('block-item-CardItem-general-')).toBeVisible();
+    await expect(page.getByLabel('block-item-CardItem-general-')).toBeVisible();
     //没有改动时不显示提示
-    await page.getByLabel('action-Action.Link-Edit-').click();
+    await page.getByLabel('action-Action.Link-Edit record-update-general-table-').click();
     await page.getByLabel('drawer-Action.Container-general-Edit record-mask').click();
-    await expect(await page.getByLabel('action-Action-Add new-create-')).toBeVisible();
+    await expect(page.getByLabel('action-Action-Add new-create-')).toBeVisible();
     //有改动时显示提示
-    await page.getByLabel('action-Action.Link-Edit-').click();
+    await page.getByLabel('action-Action.Link-Edit record-update-general-table-').click();
     await page.getByRole('spinbutton').fill('');
     await page.getByRole('spinbutton').fill('10');
     await expect(
-      await page
+      page
         .getByLabel('block-item-CollectionField-general-form-general.formula-formula')
-        .locator('.nb-read-pretty-input-number')
-        .innerText(),
-    ).toBe('11');
+        .locator('.nb-read-pretty-input-number'),
+    ).toHaveText('11');
     await page.getByLabel('drawer-Action.Container-general-Edit record-mask').click();
-    await expect(await page.getByText('Unsaved changes')).toBeVisible();
+    await expect(page.getByText('Unsaved changes')).toBeVisible();
   });
 });
 

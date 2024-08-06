@@ -19,6 +19,7 @@ import {
   useDesignable,
   useFormItemInitializerFields,
   useGetAriaLabelOfDesigner,
+  useOpenModeContext,
   useSchemaInitializerRender,
 } from '@nocobase/client';
 import { Space } from 'antd';
@@ -137,6 +138,13 @@ const commonOptions = {
     {
       name: 'openMode',
       Component: SchemaInitializerOpenModeSchemaItems,
+      useComponentProps() {
+        const { hideOpenMode } = useOpenModeContext();
+        return {
+          openMode: !hideOpenMode,
+          openSize: !hideOpenMode,
+        };
+      },
     },
   ],
 };

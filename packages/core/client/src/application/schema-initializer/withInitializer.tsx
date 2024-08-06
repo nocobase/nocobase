@@ -21,6 +21,7 @@ import { SchemaInitializerOptions } from './types';
 import { ErrorBoundary } from 'react-error-boundary';
 
 const defaultWrap = (s: ISchema) => s;
+const useWrapDefault = (wrap = defaultWrap) => wrap;
 
 export function withInitializer<T>(C: ComponentType<T>) {
   const WithInitializer = observer(
@@ -30,6 +31,7 @@ export function withInitializer<T>(C: ComponentType<T>) {
       const {
         insert,
         useInsert,
+        useWrap = useWrapDefault,
         wrap = defaultWrap,
         insertPosition = 'beforeEnd',
         onSuccess,
@@ -43,15 +45,16 @@ export function withInitializer<T>(C: ComponentType<T>) {
 
       // 插入 schema 的能力
       const insertCallback = useInsert ? useInsert() : insert;
+      const wrapCallback = useWrap(wrap);
       const insertSchema = useCallback(
         (schema) => {
           if (insertCallback) {
-            insertCallback(wrap(schema, { isInSubTable }));
+            insertCallback(wrapCallback(schema, { isInSubTable }));
           } else {
-            insertAdjacent(insertPosition, wrap(schema, { isInSubTable }), { onSuccess });
+            insertAdjacent(insertPosition, wrapCallback(schema, { isInSubTable }), { onSuccess });
           }
         },
-        [insertCallback, wrap, insertAdjacent, insertPosition, onSuccess],
+        [insertCallback, wrapCallback, insertAdjacent, insertPosition, onSuccess],
       );
 
       const { wrapSSR, hashId, componentCls } = useSchemaInitializerStyles();
@@ -105,7 +108,7 @@ export function withInitializer<T>(C: ComponentType<T>) {
                 {...popoverProps}
                 arrow={false}
                 overlayClassName={overlayClassName}
-                open={visible}
+                  open={visible}
                 onOpenChange={setVisible}
                 content={wrapSSR(
                   <div

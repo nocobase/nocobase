@@ -8,6 +8,7 @@ on:
   push:
     branches:
       - main
+      - next
     paths:
       - 'package.json'
       - '**/yarn.lock'
@@ -42,6 +43,11 @@ jobs:
         underscored: [true, false]
     runs-on: ubuntu-latest
     container: node:${{ matrix.node_version }}
+    services:
+      redis:
+        image: redis:latest
+        ports:
+          - 6379:6379
     steps:
       - uses: actions/checkout@v4
       - name: Use Node.js ${{ matrix.node_version }}
@@ -84,6 +90,10 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+      redis:
+        image: redis:latest
+        ports:
+          - 6379:6379
     steps:
       - uses: actions/checkout@v4
       - name: Use Node.js ${{ matrix.node_version }}
@@ -128,6 +138,10 @@ jobs:
           MYSQL_ROOT_PASSWORD: password
           MYSQL_DATABASE: nocobase
         options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+      redis:
+        image: redis:latest
+        ports:
+          - 6379:6379
     steps:
       - uses: actions/checkout@v4
       - name: Use Node.js ${{ matrix.node_version }}
@@ -169,6 +183,10 @@ jobs:
           MARIADB_ROOT_PASSWORD: password
           MARIADB_DATABASE: nocobase
         options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+      redis:
+        image: redis:latest
+        ports:
+          - 6379:6379
     steps:
       - uses: actions/checkout@v4
       - name: Use Node.js ${{ matrix.node_version }}

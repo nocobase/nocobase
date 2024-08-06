@@ -87,5 +87,12 @@
   "Show border": "Show border",
   "Transformation tip": "Fields allow multiple transformations, applied sequentially. Pay attention to data type changes after each transformation. Drag-and-drop functionality enables adjustment of transformation order.",
   "Type conversion": "Type conversion",
-  "Transformer": "Transformer"
+  "Transformer": "Transformer",
+  "Size": "Size",
+  "Width": "Width",
+  "Height": "Height",
+  "Aspect ratio": "Aspect ratio",
+  "Fixed height": "Fixed height",
+  "Show background": "Show background",
+  "Show padding": "Show padding"
 }

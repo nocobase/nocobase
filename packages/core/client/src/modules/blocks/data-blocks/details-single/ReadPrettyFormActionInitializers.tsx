@@ -8,12 +8,8 @@
  */
 
 import { CompatibleSchemaInitializer } from '../../../../application/schema-initializer/CompatibleSchemaInitializer';
-import { useCollection_deprecated } from '../../../../collection-manager/hooks/useCollection_deprecated';
-
-const useVisibleCollection = () => {
-  const collection = useCollection_deprecated();
-  return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
-};
+import { useCollection } from '../../../../data-source';
+import { useActionAvailable } from '../../useActionAvailable';
 
 const commonOptions = {
   title: '{{t("Configure actions")}}',
@@ -33,7 +29,7 @@ const commonOptions = {
           type: 'primary',
         },
       },
-      useVisible: useVisibleCollection,
+      useVisible: () => useActionAvailable('update'),
     },
     {
       title: '{{t("Delete")}}',
@@ -43,7 +39,7 @@ const commonOptions = {
         'x-component': 'Action',
         'x-decorator': 'ACLActionProvider',
       },
-      useVisible: useVisibleCollection,
+      useVisible: () => useActionAvailable('destroy'),
     },
     {
       name: 'popup',
@@ -64,13 +60,12 @@ const commonOptions = {
           'x-component': 'Action',
         };
       },
-      useVisible: useVisibleCollection,
+      useVisible: () => useActionAvailable('update'),
     },
     {
       name: 'customRequest',
       title: '{{t("Custom request")}}',
       Component: 'CustomRequestInitializer',
-      useVisible: useVisibleCollection,
     },
     {
       name: 'link',

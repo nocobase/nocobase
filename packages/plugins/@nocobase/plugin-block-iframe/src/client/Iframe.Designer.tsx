@@ -29,7 +29,7 @@ export const IframeDesigner = () => {
   const { t } = useTranslation();
   const { dn } = useDesignable();
   const api = useAPIClient();
-  const { mode, url, htmlId, height = '60vh' } = fieldSchema['x-component-props'] || {};
+  const { mode, url, htmlId, height = '60vh', engine } = fieldSchema['x-component-props'] || {};
 
   const saveHtml = async (html: string) => {
     const options = {
@@ -46,11 +46,13 @@ export const IframeDesigner = () => {
     }
   };
 
-  const submitHandler = async ({ mode, url, html, height }) => {
+  const submitHandler = async ({ mode, url, html, height, engine }) => {
     const componentProps = fieldSchema['x-component-props'] || {};
     componentProps['mode'] = mode;
     componentProps['height'] = height;
     componentProps['url'] = url;
+    componentProps['engine'] = engine || 'string';
+
     if (mode === 'html') {
       const data = await saveHtml(html);
       componentProps['htmlId'] = data.id;
@@ -121,6 +123,23 @@ export const IframeDesigner = () => {
                   fulfill: {
                     state: {
                       hidden: '{{$deps[0] === "html"}}',
+                    },
+                  },
+                },
+              },
+              engine: {
+                title: '{{t("Template engine")}}',
+                'x-component': 'Radio.Group',
+                'x-decorator': 'FormItem',
+                enum: [
+                  { value: 'string', label: t('String template') },
+                  { value: 'handlebars', label: t('Handlebars') },
+                ],
+                'x-reactions': {
+                  dependencies: ['mode'],
+                  fulfill: {
+                    state: {
+                      hidden: '{{$deps[0] === "url"}}',
                     },
                   },
                 },

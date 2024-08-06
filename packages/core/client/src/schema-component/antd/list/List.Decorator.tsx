@@ -32,7 +32,10 @@ const InternalListBlockProvider = (props) => {
 
   useEffect(() => {
     if (!service?.loading) {
-      form.setValuesIn(field.address.concat('list').toString(), service?.data?.data);
+      form.query(/\.list$/).forEach((field) => {
+        // @ts-ignore
+        field.setValue?.(service?.data?.data);
+      });
     }
   }, [field.address, form, service?.data?.data, service?.loading]);
 

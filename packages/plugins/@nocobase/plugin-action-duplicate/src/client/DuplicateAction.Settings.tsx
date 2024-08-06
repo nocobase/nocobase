@@ -12,16 +12,17 @@ import { ISchema, connect, mapProps, useField, useFieldSchema, useForm } from '@
 import {
   ActionDesigner,
   SchemaSettingOpenModeSchemaItems,
-  useCollection_deprecated,
-  useRecord,
-  SchemaSettingsModalItem,
+  SchemaSettings,
   SchemaSettingsItemType,
   SchemaSettingsLinkageRules,
+  SchemaSettingsModalItem,
   useCollectionState,
+  useCollection_deprecated,
   useDesignable,
+  useOpenModeContext,
+  useRecord,
   useSchemaToolbar,
   useSyncFromForm,
-  SchemaSettings,
 } from '@nocobase/client';
 import { Tree as AntdTree } from 'antd';
 import { cloneDeep } from 'lodash';
@@ -357,19 +358,20 @@ const schemaSettingsItems: SchemaSettingsItemType[] = [
         name: 'openMode',
         Component: SchemaSettingOpenModeSchemaItems,
         useComponentProps() {
-          const fieldSchema = useFieldSchema();
-          const isPopupAction = [
-            'create',
-            'update',
-            'view',
-            'customize:popup',
-            'duplicate',
-            'customize:create',
-          ].includes(fieldSchema['x-action'] || '');
+          const { hideOpenMode } = useOpenModeContext();
+          const { t } = useTranslation();
+
+          const modeOptions = useMemo(() => {
+            return [
+              { label: t('Drawer'), value: 'drawer' },
+              { label: t('Dialog'), value: 'modal' },
+            ];
+          }, [t]);
 
           return {
-            openMode: isPopupAction,
-            openSize: isPopupAction,
+            openMode: !hideOpenMode,
+            openSize: !hideOpenMode,
+            modeOptions,
           };
         },
       },

@@ -22,10 +22,12 @@ export function useParseMarkdown(text: string) {
   const [loading, setLoading] = useState(false);
   useEffect(() => {
     setLoading(true);
-    parseMarkdown(text).then((r) => {
-      setHtml(r);
-      setLoading(false);
-    });
+    parseMarkdown(text)
+      .then((r) => {
+        setHtml(r);
+        setLoading(false);
+      })
+      .catch((error) => console.log(error));
   }, [text]);
   return { html, loading };
 }

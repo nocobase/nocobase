@@ -37,11 +37,13 @@ const useLocalVariables = (props?: Props) => {
     popupRecordCtx,
     collectionName: collectionNameOfPopupRecord,
     dataSource: popupDataSource,
+    defaultValue: defaultValueOfPopupRecord,
   } = usePopupVariable();
   const {
     parentPopupRecordCtx,
     collectionName: collectionNameOfParentPopupRecord,
     dataSource: parentPopupDataSource,
+    defaultValue: defaultValueOfParentPopupRecord,
   } = useParentPopupVariable();
   const { datetimeCtx } = useDatetimeVariable();
   const { currentFormCtx } = useCurrentFormVariable({ form: props?.currentForm });
@@ -98,12 +100,14 @@ const useLocalVariables = (props?: Props) => {
           ctx: popupRecordCtx,
           collectionName: collectionNameOfPopupRecord,
           dataSource: popupDataSource,
+          defaultValue: defaultValueOfPopupRecord,
         },
         {
           name: '$nParentPopupRecord',
           ctx: parentPopupRecordCtx,
           collectionName: collectionNameOfParentPopupRecord,
           dataSource: parentPopupDataSource,
+          defaultValue: defaultValueOfParentPopupRecord,
         },
         {
           name: '$nForm',
@@ -138,12 +142,15 @@ const useLocalVariables = (props?: Props) => {
     collectionNameOfParentRecord,
     currentParentRecordDataSource,
     popupRecordCtx,
+    parentPopupRecordCtx,
     collectionNameOfPopupRecord,
     popupDataSource,
     datetimeCtx,
     shouldDisplayCurrentObject,
     currentObjectCtx,
     currentCollectionName,
+    defaultValueOfPopupRecord,
+    defaultValueOfParentPopupRecord,
   ]); // 尽量保持返回的值不变，这样可以减少接口的请求次数，因为关系字段会缓存到变量的 ctx 中
 };
 

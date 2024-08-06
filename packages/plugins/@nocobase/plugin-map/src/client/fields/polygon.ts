@@ -17,7 +17,7 @@ export class PolygonFieldInterface extends CommonSchema {
   order = 4;
   title = generateNTemplate('Polygon');
   description = generateNTemplate('Polygon');
-  availableTypes = ['polygon'];
+  availableTypes = ['polygon', 'json'];
   sortable = true;
   default = {
     type: 'polygon',

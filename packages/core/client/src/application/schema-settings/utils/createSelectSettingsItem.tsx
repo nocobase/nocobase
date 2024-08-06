@@ -9,9 +9,13 @@
 
 import _ from 'lodash';
 import { useFieldSchema } from '@formily/react';
-import { SchemaSettingsItemType, SelectProps, useCompile, useDesignable } from '@nocobase/client';
-import { getNewSchema, useHookDefault } from './util';
 import { TFunction, useTranslation } from 'react-i18next';
+
+import { SchemaSettingsItemType } from '../types';
+import { getNewSchema, useHookDefault } from './util';
+import { SelectProps } from '../../../schema-component/antd/select';
+import { useCompile } from '../../../schema-component/hooks/useCompile';
+import { useDesignable } from '../../../schema-component/hooks/useDesignable';
 
 interface CreateSelectSchemaSettingsItemProps {
   name: string;

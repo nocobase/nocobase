@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Plugin, useCollection_deprecated } from '@nocobase/client';
+import { Plugin, useActionAvailable } from '@nocobase/client';
 import { bulkEditActionSettings, deprecatedBulkEditActionSettings } from './BulkEditAction.Settings';
 import { BulkEditActionInitializer } from './BulkEditActionInitializer';
 import {
@@ -54,14 +54,7 @@ export class PluginActionBulkEditClient extends Plugin {
           skipScopeCheck: true,
         },
       },
-      useVisible() {
-        const collection = useCollection_deprecated();
-        return (
-          (collection.template !== 'view' || collection?.writableView) &&
-          collection.template !== 'file' &&
-          collection.template !== 'sql'
-        );
-      },
+      useVisible: () => useActionAvailable('updateMany'),
     };
 
     this.app.schemaInitializerManager.addItem('table:configureActions', 'customize.bulkEdit', initializerData);

@@ -43,10 +43,9 @@ import React, {
 } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
-import { Router } from 'react-router-dom';
 import { APIClientProvider } from '../api-client/APIClientProvider';
 import { useAPIClient } from '../api-client/hooks/useAPIClient';
-import { ApplicationContext, useApp } from '../application';
+import { ApplicationContext, LocationSearchContext, useApp, useLocationSearch } from '../application';
 import {
   BlockContext,
   BlockRequestContext_deprecated,
@@ -103,6 +102,7 @@ import { EnableChildCollections } from './EnableChildCollections';
 import { ChildDynamicComponent } from './EnableChildCollections/DynamicComponent';
 import { FormLinkageRules } from './LinkageRules';
 import { useLinkageCollectionFieldOptions } from './LinkageRules/action-hooks';
+import { LinkageRuleCategory, LinkageRuleDataKeyMap } from './LinkageRules/type';
 
 export interface SchemaSettingsProps {
   title?: any;
@@ -447,15 +447,18 @@ export const SchemaSettingsDivider = function Divider() {
 };
 
 export interface SchemaSettingsRemoveProps {
+  disabled?: boolean;
+  title?: string;
   confirm?: ModalFuncProps;
   removeParentsIfNoChildren?: boolean;
   breakRemoveOn?: ISchema | ((s: ISchema) => boolean);
 }
 export const SchemaSettingsRemove: FC<SchemaSettingsRemoveProps> = (props) => {
-  const { confirm, removeParentsIfNoChildren, breakRemoveOn } = props;
+  const { disabled, confirm, title, removeParentsIfNoChildren, breakRemoveOn } = props;
   const { dn, template } = useSchemaSettings();
   const { t } = useTranslation();
   const field = useField<Field>();
+  const compile = useCompile();
   const fieldSchema = useFieldSchema();
   const ctx = useBlockTemplateContext();
   const form = useForm();
@@ -465,11 +468,12 @@ export const SchemaSettingsRemove: FC<SchemaSettingsRemoveProps> = (props) => {
 
   return (
     <SchemaSettingsItem
+      disabled={disabled}
       title="Delete"
       eventKey="remove"
       onClick={() => {
         modal.confirm({
-          title: t('Delete block'),
+          title: title ? compile(title) : t('Delete block'),
           content: t('Are you sure you want to delete it?'),
           ...confirm,
           async onOk() {
@@ -602,10 +606,22 @@ export interface SchemaSettingsActionModalItemProps
   schema?: ISchema;
   beforeOpen?: () => void;
   maskClosable?: boolean;
+  width?: string | number;
 }
 export const SchemaSettingsActionModalItem: FC<SchemaSettingsActionModalItemProps> = React.memo((props) => {
-  const { title, onSubmit, initialValues, beforeOpen, initialSchema, schema, modalTip, components, scope, ...others } =
-    props;
+  const {
+    title,
+    onSubmit,
+    width = '50%',
+    initialValues,
+    beforeOpen,
+    initialSchema,
+    schema,
+    modalTip,
+    components,
+    scope,
+    ...others
+  } = props;
   const [visible, setVisible] = useState(false);
   const [schemaUid, setSchemaUid] = useState<string>(props.uid);
   const { t } = useTranslation();
@@ -636,8 +652,12 @@ export const SchemaSettingsActionModalItem: FC<SchemaSettingsActionModalItemProp
 
   const submitHandler = useCallback(async () => {
     await form.submit();
-    onSubmit?.(cloneDeep(form.values));
-    setVisible(false);
+    try {
+      await onSubmit?.(cloneDeep(form.values));
+      setVisible(false);
+    } catch (err) {
+      console.error(err);
+    }
   }, [form, onSubmit]);
 
   const openAssignedFieldValueHandler = useCallback(async () => {
@@ -667,7 +687,7 @@ export const SchemaSettingsActionModalItem: FC<SchemaSettingsActionModalItemProp
       </SchemaSettingsItem>
       {createPortal(
         <Modal
-          width={'50%'}
+          width={width}
           title={compile(title)}
           {...others}
           destroyOnClose
@@ -704,7 +724,7 @@ SchemaSettingsActionModalItem.displayName = 'SchemaSettingsActionModalItem';
 
 export interface SchemaSettingsModalItemProps {
   title: string;
-  onSubmit: (values: any) => void;
+  onSubmit: (values: any) => Promise<any> | void;
   initialValues?: any;
   schema?: ISchema | (() => ISchema);
   modalTip?: string;
@@ -749,6 +769,7 @@ export const SchemaSettingsModalItem: FC<SchemaSettingsModalItemProps> = (props)
   const formCtx = useFormBlockContext();
   const blockOptions = useBlockContext();
   const { getOperators } = useOperators();
+  const locationSearch = useLocationSearch();
 
   // 解决变量`当前对象`值在弹窗中丢失的问题
   const { formValue: subFormValue, collection: subFormCollection } = useSubFormValue();
@@ -788,7 +809,7 @@ export const SchemaSettingsModalItem: FC<SchemaSettingsModalItemProps> = (props)
                             name="form"
                             getActiveFieldsName={upLevelActiveFields?.getActiveFieldsName}
                           >
-                            <Router location={location} navigator={null}>
+                            <LocationSearchContext.Provider value={locationSearch}>
                               <BlockRequestContext_deprecated.Provider value={ctx}>
                                 <DataSourceApplicationProvider dataSourceManager={dm} dataSource={dataSourceKey}>
                                   <AssociationOrCollectionProvider
@@ -823,7 +844,7 @@ export const SchemaSettingsModalItem: FC<SchemaSettingsModalItemProps> = (props)
                                   </AssociationOrCollectionProvider>
                                 </DataSourceApplicationProvider>
                               </BlockRequestContext_deprecated.Provider>
-                            </Router>
+                            </LocationSearchContext.Provider>
                           </FormActiveFieldsProvider>
                         </SubFormProvider>
                       </FormBlockContext.Provider>
@@ -988,23 +1009,37 @@ export const SchemaSettingsLinkageRules = function LinkageRules(props) {
   const localVariables = useLocalVariables();
   const record = useRecord();
   const { type: formBlockType } = useFormBlockType();
-  const type = props?.type || fieldSchema?.['x-action'] ? 'button' : 'field';
+  const category = props?.category ?? LinkageRuleCategory.default;
+  const elementType =
+    props?.type ||
+    (fieldSchema?.['x-action'] || ['Action', 'Action.Link'].includes(fieldSchema['x-component']) ? 'button' : 'field');
+
   const gridSchema = findGridSchema(fieldSchema) || fieldSchema;
   const options = useLinkageCollectionFilterOptions(collectionName);
   const linkageOptions = useLinkageCollectionFieldOptions(collectionName, readPretty);
+  const titleMap = {
+    [LinkageRuleCategory.default]: t('Linkage rules'),
+    [LinkageRuleCategory.style]: t('Style'),
+  };
+  const dataKey = LinkageRuleDataKeyMap[category];
+  const getRules = useCallback(() => {
+    return gridSchema?.[dataKey] || fieldSchema?.[dataKey] || [];
+  }, [gridSchema, fieldSchema, dataKey]);
+  const title = titleMap[category];
   const schema = useMemo<ISchema>(
     () => ({
       type: 'object',
-      title: t('Linkage rules'),
+      title,
       properties: {
         fieldReaction: {
           'x-component': FormLinkageRules,
           'x-use-component-props': () => {
             return {
               options,
-              defaultValues: gridSchema?.['x-linkage-rules'] || fieldSchema?.['x-linkage-rules'],
-              type,
+              defaultValues: getRules(),
               linkageOptions,
+              category,
+              elementType,
               collectionName,
               form,
               variables,
@@ -1016,7 +1051,7 @@ export const SchemaSettingsLinkageRules = function LinkageRules(props) {
         },
       },
     }),
-    [collectionName, fieldSchema, form, gridSchema, localVariables, record, t, type, variables],
+    [collectionName, fieldSchema, form, gridSchema, localVariables, record, t, variables, getRules],
   );
   const components = useMemo(() => ({ ArrayCollapse, FormLayout }), []);
   const onSubmit = useCallback(
@@ -1030,25 +1065,18 @@ export const SchemaSettingsLinkageRules = function LinkageRules(props) {
       const schema = {
         ['x-uid']: uid,
       };
-
-      gridSchema['x-linkage-rules'] = rules;
-      schema['x-linkage-rules'] = rules;
+      gridSchema[dataKey] = rules;
+      schema[dataKey] = rules;
       dn.emit('patch', {
         schema,
       });
       dn.refresh();
     },
-    [dn, getTemplateById, gridSchema],
+    [dn, getTemplateById, gridSchema, dataKey],
   );
 
   return (
-    <SchemaSettingsModalItem
-      title={t('Linkage rules')}
-      components={components}
-      width={770}
-      schema={schema}
-      onSubmit={onSubmit}
-    />
+    <SchemaSettingsModalItem title={title} components={components} width={770} schema={schema} onSubmit={onSubmit} />
   );
 };
 

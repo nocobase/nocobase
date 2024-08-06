@@ -71,7 +71,7 @@ test.describe('page schema settings', () => {
 });
 
 test.describe('tabs schema settings', () => {
-  async function showSettings(page: Page) {
+  async function showSettingsOfTab(page: Page) {
     await page.getByText('Unnamed').hover();
     await page.getByRole('tab').getByLabel('designer-schema-settings-Page').hover();
   }
@@ -87,7 +87,7 @@ test.describe('tabs schema settings', () => {
     await mockPage().goto();
     await enablePageTabs(page);
 
-    await showSettings(page);
+    await showSettingsOfTab(page);
     await page.getByRole('menuitem', { name: 'Edit', exact: true }).click();
     await page.getByLabel('block-item-Input-Tab name').getByRole('textbox').click();
     await page.getByLabel('block-item-Input-Tab name').getByRole('textbox').fill('new name of page tab');
@@ -103,7 +103,7 @@ test.describe('tabs schema settings', () => {
     await mockPage().goto();
     await enablePageTabs(page);
 
-    await showSettings(page);
+    await showSettingsOfTab(page);
     await page.getByRole('menuitem', { name: 'Delete', exact: true }).click();
     await page.getByRole('button', { name: 'OK', exact: true }).click();
 

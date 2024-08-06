@@ -88,5 +88,12 @@
   "Show border": "显示边框",
   "Transformation tip": "一个字段可以应用多次转换，会按照顺序执行，请注意每次转换后的数据类型，拖动可以调整转换顺序。",
   "Type conversion": "类型转换",
-  "Transformer": "转换方法"
+  "Transformer": "转换方法",
+  "Size": "尺寸",
+  "Width": "宽",
+  "Height": "高",
+  "Aspect ratio": "宽高比",
+  "Fixed height": "固定高度",
+  "Show background": "显示背景",
+  "Show padding": "显示内边距"
 }

@@ -347,10 +347,14 @@ export class APIClient {
     return this.axios.request<T, R, D>(config);
   }
 
-  resource(name: string, of?: any, headers?: AxiosRequestHeaders): IResource {
+  resource(name: string, of?: any, headers?: AxiosRequestHeaders, cancel?: boolean): IResource {
     const target = {};
     const handler = {
       get: (_: any, actionName: string) => {
+        if (cancel) {
+          return;
+        }
+
         let url = name.split('.').join(`/${encodeURIComponent(of) || '_'}/`);
         url += `:${actionName}`;
         const config: AxiosRequestConfig = { url };

@@ -40,6 +40,7 @@ const schema: ISchema = {
         collection: 'users',
         resource: 'users',
         action: 'get',
+        filterByTk: 1,
       },
       properties: {
         form: {

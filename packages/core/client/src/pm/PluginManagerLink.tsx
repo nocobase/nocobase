@@ -47,7 +47,8 @@ export const SettingsCenterDropdown = () => {
         return {
           key: setting.name,
           icon: setting.icon,
-          label: <Link to={setting.path}>{compile(setting.title)}</Link>,
+          label: setting.link ? <div onClick={() => window.open(setting.link)}>{compile(setting.title)}</div> :
+            <Link to={setting.path}>{compile(setting.title)}</Link>
         };
       });
   }, [app, t]);

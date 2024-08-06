@@ -171,7 +171,7 @@ test.describe('where filter block can be added', () => {
     await connectToOtherBlock('Users #o1nq');
 
     await page.getByLabel('block-item-CardItem-users-filter-form').getByRole('textbox').fill(usersRecords[0].nickname);
-    await page.getByLabel('action-Action-Filter-submit-users-filter-form-').click({ position: { x: 10, y: 10 } });
+    await page.getByLabel('action-Action-Filter-submit-users-filter-form').click({ position: { x: 10, y: 10 } });
     await page.waitForLoadState('networkidle');
     for (const record of usersRecords) {
       await expect(page.getByLabel('block-item-CardItem-users-details').getByText(record.nickname)).toBeVisible({

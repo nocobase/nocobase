@@ -11,7 +11,7 @@ import { observer, RecursionField, useField, useFieldSchema, useForm } from '@fo
 import { isPortalInBody } from '@nocobase/utils/client';
 import { App, Button } from 'antd';
 import classnames from 'classnames';
-import { default as lodash } from 'lodash';
+import _, { default as lodash } from 'lodash';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { useTranslation } from 'react-i18next';
@@ -28,6 +28,9 @@ import { useLocalVariables, useVariables } from '../../../variables';
 import { SortableItem } from '../../common';
 import { useCompile, useComponent, useDesigner } from '../../hooks';
 import { useProps } from '../../hooks/useProps';
+import { PopupVisibleProvider } from '../page/PagePopups';
+import { usePagePopup } from '../page/pagePopupUtils';
+import { usePopupSettings } from '../page/PopupSettingsProvider';
 import ActionContainer from './Action.Container';
 import { ActionDesigner } from './Action.Designer';
 import { ActionDrawer } from './Action.Drawer';
@@ -36,10 +39,15 @@ import { ActionModal } from './Action.Modal';
 import { ActionPage } from './Action.Page';
 import useStyles from './Action.style';
 import { ActionContextProvider } from './context';
-import { useA } from './hooks';
 import { useGetAriaLabelOfAction } from './hooks/useGetAriaLabelOfAction';
 import { ActionProps, ComposedAction } from './types';
 import { linkageAction, setInitialActionState } from './utils';
+
+const useA = () => {
+  return {
+    async run() {},
+  };
+};
 
 const handleError = (err) => console.log(err);
 
@@ -48,7 +56,6 @@ export const Action: ComposedAction = withDynamicSchemaProps(
     const {
       popover,
       confirm,
-      openMode: om,
       containerRefKey,
       component,
       useAction = useA,
@@ -70,11 +77,13 @@ export const Action: ComposedAction = withDynamicSchemaProps(
     const aclCtx = useACLActionParamsContext();
     const { wrapSSR, componentCls, hashId } = useStyles();
     const { t } = useTranslation();
+    const { visibleWithURL, setVisibleWithURL } = usePagePopup();
     const [visible, setVisible] = useState(false);
     const [formValueChanged, setFormValueChanged] = useState(false);
+    const { setSubmitted: setParentSubmitted } = useActionContext();
     const Designer = useDesigner();
     const field = useField<any>();
-    const { run, element, disabled: disableAction } = useAction(actionCallback);
+    const { run, element, disabled: disableAction } = _.isFunction(useAction) ? useAction(actionCallback) : ({} as any);
     const fieldSchema = useFieldSchema();
     const compile = useCompile();
     const form = useForm();
@@ -120,47 +129,12 @@ export const Action: ComposedAction = withDynamicSchemaProps(
         });
     }, [field, linkageRules, localVariables, variables]);
 
-    const handleButtonClick = useCallback(
-      (e: React.MouseEvent, checkPortal = true) => {
-        if (checkPortal && isPortalInBody(e.target as Element)) {
-          return;
-        }
-        e.preventDefault();
-        e.stopPropagation();
-
-        if (!disabled && aclCtx) {
-          const onOk = () => {
-            if (onClick) {
-              onClick(e, () => {
-                if (refreshDataBlockRequest !== false) {
-                  service?.refresh?.();
-                }
-              });
-            } else {
-              setVisible(true);
-              run();
-            }
-          };
-          if (confirm?.content) {
-            modal.confirm({
-              title: t(confirm.title, { title: actionTitle }),
-              content: t(confirm.content, { title: actionTitle }),
-              onOk,
-            });
-          } else {
-            onOk();
-          }
-        }
-      },
-      [confirm, disabled, modal, onClick, run],
-    );
-
     const buttonStyle = useMemo(() => {
       return {
         ...style,
         opacity: designable && (field?.data?.hidden || !aclCtx) && 0.1,
       };
-    }, [designable, field?.data?.hidden, style]);
+    }, [aclCtx, designable, field?.data?.hidden, style]);
 
     const handleMouseEnter = useCallback(
       (e) => {
@@ -168,55 +142,66 @@ export const Action: ComposedAction = withDynamicSchemaProps(
       },
       [onMouseEnter],
     );
-    const renderButton = () => {
-      if (!designable && (field?.data?.hidden || !aclCtx)) {
-        return null;
-      }
 
-      return (
-        <SortableItem
-          role="button"
-          aria-label={getAriaLabel()}
-          {...others}
-          onMouseEnter={handleMouseEnter}
-          loading={field?.data?.loading || loading}
-          icon={typeof icon === 'string' ? <Icon type={icon} /> : icon}
-          disabled={disabled}
-          style={buttonStyle}
-          onClick={handleButtonClick}
-          component={tarComponent || Button}
-          className={classnames(componentCls, hashId, className, 'nb-action')}
-          type={(props as any).type === 'danger' ? undefined : props.type}
-        >
-          {actionTitle}
-          <Designer {...designerProps} />
-        </SortableItem>
-      );
+    const buttonProps = {
+      designable,
+      field,
+      aclCtx,
+      actionTitle,
+      icon,
+      loading,
+      disabled,
+      buttonStyle,
+      handleMouseEnter,
+      tarComponent,
+      designerProps,
+      componentCls,
+      hashId,
+      className,
+      others,
+      getAriaLabel,
+      type: props.type,
+      Designer,
+      openMode,
+      onClick,
+      refreshDataBlockRequest,
+      service,
+      fieldSchema,
+      setVisible,
+      run,
+      confirm,
+      modal,
     };
 
-    const buttonElement = renderButton();
+    const buttonElement = RenderButton(buttonProps);
 
     // if (!btnHover) {
     //   return buttonElement;
     // }
 
     const result = (
-      <ActionContextProvider
-        button={buttonElement}
-        visible={visible}
-        setVisible={setVisible}
-        formValueChanged={formValueChanged}
-        setFormValueChanged={setFormValueChanged}
-        openMode={openMode}
-        openSize={openSize}
-        containerRefKey={containerRefKey}
-        fieldSchema={fieldSchema}
-      >
-        {popover && <RecursionField basePath={field.address} onlyRenderProperties schema={fieldSchema} />}
-        {!popover && renderButton()}
-        <VariablePopupRecordProvider>{!popover && props.children}</VariablePopupRecordProvider>
-        {element}
-      </ActionContextProvider>
+      <PopupVisibleProvider visible={false}>
+        <ActionContextProvider
+          button={buttonElement}
+          visible={visible || visibleWithURL}
+          setVisible={(value) => {
+            setVisible?.(value);
+            setVisibleWithURL?.(value);
+          }}
+          formValueChanged={formValueChanged}
+          setFormValueChanged={setFormValueChanged}
+          openMode={openMode}
+          openSize={openSize}
+          containerRefKey={containerRefKey}
+          fieldSchema={fieldSchema}
+          setSubmitted={setParentSubmitted}
+        >
+          {popover && <RecursionField basePath={field.address} onlyRenderProperties schema={fieldSchema} />}
+          {!popover && <RenderButton {...buttonProps} />}
+          <VariablePopupRecordProvider>{!popover && props.children}</VariablePopupRecordProvider>
+          {element}
+        </ActionContextProvider>
+      </PopupVisibleProvider>
     );
 
     // fix https://nocobase.height.app/T-3235/description
@@ -284,3 +269,126 @@ Action.Container = ActionContainer;
 Action.Page = ActionPage;
 
 export default Action;
+
+// TODO: Plugin-related code should not exist in the core. It would be better to implement it by modifying the schema, but it would cause incompatibility.
+function isBulkEditAction(fieldSchema) {
+  return fieldSchema['x-action'] === 'customize:bulkEdit';
+}
+
+function RenderButton({
+  designable,
+  field,
+  aclCtx,
+  actionTitle,
+  icon,
+  loading,
+  disabled,
+  buttonStyle,
+  handleMouseEnter,
+  tarComponent,
+  designerProps,
+  componentCls,
+  hashId,
+  className,
+  others,
+  getAriaLabel,
+  type,
+  Designer,
+  openMode,
+  onClick,
+  refreshDataBlockRequest,
+  service,
+  fieldSchema,
+  setVisible,
+  run,
+  confirm,
+  modal,
+}) {
+  const { t } = useTranslation();
+  const { isPopupVisibleControlledByURL } = usePopupSettings();
+  const { openPopup } = usePagePopup();
+
+  const handleButtonClick = useCallback(
+    (e: React.MouseEvent, checkPortal = true) => {
+      if (checkPortal && isPortalInBody(e.target as Element)) {
+        return;
+      }
+      e.preventDefault();
+      e.stopPropagation();
+
+      if (!disabled && aclCtx) {
+        const onOk = () => {
+          if (onClick) {
+            onClick(e, () => {
+              if (refreshDataBlockRequest !== false) {
+                service?.refresh?.();
+              }
+            });
+          } else if (isBulkEditAction(fieldSchema) || !isPopupVisibleControlledByURL()) {
+            setVisible(true);
+            run?.();
+          } else {
+            if (
+              // Currently, only buttons of these types can control the visibility of popups through URLs.
+              ['view', 'update', 'create', 'customize:popup'].includes(fieldSchema['x-action']) &&
+              fieldSchema['x-uid']
+            ) {
+              openPopup();
+            } else {
+              setVisible(true);
+              run?.();
+            }
+          }
+        };
+        if (confirm?.content) {
+          modal.confirm({
+            title: t(confirm.title, { title: actionTitle }),
+            content: t(confirm.content, { title: actionTitle }),
+            onOk,
+          });
+        } else {
+          onOk();
+        }
+      }
+    },
+    [
+      aclCtx,
+      actionTitle,
+      confirm?.content,
+      confirm?.title,
+      disabled,
+      modal,
+      onClick,
+      openPopup,
+      refreshDataBlockRequest,
+      run,
+      service,
+      setVisible,
+      t,
+    ],
+  );
+
+  if (!designable && (field?.data?.hidden || !aclCtx)) {
+    return null;
+  }
+
+  return (
+    <SortableItem
+      role="button"
+      aria-label={getAriaLabel()}
+      {...others}
+      onMouseEnter={handleMouseEnter}
+      loading={field?.data?.loading || loading}
+      icon={typeof icon === 'string' ? <Icon type={icon} /> : icon}
+      disabled={disabled}
+      style={buttonStyle}
+      onClick={handleButtonClick}
+      component={tarComponent || Button}
+      className={classnames(componentCls, hashId, className, 'nb-action')}
+      type={type === 'danger' ? undefined : type}
+    >
+      {actionTitle}
+      <Designer {...designerProps} />
+    </SortableItem>
+  );
+}

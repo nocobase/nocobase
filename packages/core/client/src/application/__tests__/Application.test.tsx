@@ -13,6 +13,7 @@ import MockAdapter from 'axios-mock-adapter';
 import React, { Component } from 'react';
 import { Link, Outlet } from 'react-router-dom';
 import { describe } from 'vitest';
+import { OpenModeProvider } from '../../modules/popup/OpenModeProvider';
 import { Application } from '../Application';
 import { Plugin } from '../Plugin';
 import { useApp } from '../hooks';
@@ -211,6 +212,7 @@ describe('Application', () => {
     it('initial', () => {
       const app = new Application({ router, providers: [Hello, [World, { name: 'aaa' }]] });
       expect(app.providers.slice(initialProvidersLength)).toEqual([
+        [OpenModeProvider, undefined],
         [Hello, undefined],
         [World, { name: 'aaa' }],
       ]);
@@ -220,6 +222,7 @@ describe('Application', () => {
       const app = new Application({ router, providers: [Hello] });
       app.addProviders([[World, { name: 'aaa' }], Foo]);
       expect(app.providers.slice(initialProvidersLength)).toEqual([
+        [OpenModeProvider, undefined],
         [Hello, undefined],
         [World, { name: 'aaa' }],
         [Foo, undefined],
@@ -230,6 +233,7 @@ describe('Application', () => {
       const app = new Application({ router, providers: [Hello] });
       app.addProvider(World, { name: 'aaa' });
       expect(app.providers.slice(initialProvidersLength)).toEqual([
+        [OpenModeProvider, undefined],
         [Hello, undefined],
         [World, { name: 'aaa' }],
       ]);
@@ -239,6 +243,7 @@ describe('Application', () => {
       const app = new Application({ router, providers: [Hello] });
       app.use(World, { name: 'aaa' });
       expect(app.providers.slice(initialProvidersLength)).toEqual([
+        [OpenModeProvider, undefined],
         [Hello, undefined],
         [World, { name: 'aaa' }],
       ]);

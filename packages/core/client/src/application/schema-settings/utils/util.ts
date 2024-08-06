@@ -12,28 +12,24 @@ import _ from 'lodash';
 
 type IGetNewSchema = {
   fieldSchema: ISchema;
-  schemaKey: string;
+  schemaKey?: string;
+  parentSchemaKey?: string;
   value: any;
   valueKeys?: string[];
 };
 
 export function getNewSchema(options: IGetNewSchema) {
-  const { fieldSchema, schemaKey, value, valueKeys } = options as any;
-  const schemaKeyArr = schemaKey.split('.');
-  const clonedSchema = _.cloneDeep(fieldSchema[schemaKeyArr[0]]);
+  const { fieldSchema, schemaKey, value, parentSchemaKey, valueKeys } = options;
 
   if (value != undefined && typeof value === 'object') {
     Object.keys(value).forEach((key) => {
       if (valueKeys && !valueKeys.includes(key)) return;
-      _.set(clonedSchema, `${schemaKeyArr.slice(1)}.${key}`, value[key]);
+      _.set(fieldSchema, `${parentSchemaKey}.${key}`, value[key]);
     });
   } else {
-    _.set(clonedSchema, schemaKeyArr.slice(1), value);
+    _.set(fieldSchema, schemaKey, value);
   }
-  return {
-    'x-uid': fieldSchema['x-uid'],
-    [schemaKeyArr[0]]: clonedSchema,
-  };
+  return fieldSchema;
 }
 
 export const useHookDefault = (defaultValues?: any) => defaultValues;

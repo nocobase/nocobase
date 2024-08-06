@@ -90,7 +90,7 @@ test.describe('table column & table', () => {
         await createColumnItem(page, 'JSON');
         await showSettingsMenu(page, 'JSON');
       },
-      supportedOptions: ['Custom column title', 'Column width', 'Sortable', 'Delete'],
+      supportedOptions: ['Custom column title', 'Column width', 'Delete'],
     });
   });
 });

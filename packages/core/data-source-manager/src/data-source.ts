@@ -87,6 +87,10 @@ export abstract class DataSource extends EventEmitter {
     return new ResourceManager(options);
   }
 
+  publicOptions() {
+    return null;
+  }
+
   async load(options: any = {}) {}
   async close() {}
 

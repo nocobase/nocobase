@@ -9,9 +9,14 @@
 
 import React from 'react';
 import { useSchemaInitializerItem } from '../../../application';
+import { usePagePopup } from '../../../schema-component/antd/page/pagePopupUtils';
+import { CONTEXT_SCHEMA_KEY } from '../../../schema-component/antd/page/usePopupContextInActionOrAssociationField';
 import { BlockInitializer } from '../../../schema-initializer/items';
+import { useOpenModeContext } from '../../popup/OpenModeProvider';
 
 export const PopupActionInitializer = (props) => {
+  const { defaultOpenMode } = useOpenModeContext();
+  const { getPopupContext } = usePagePopup();
   const schema = {
     type: 'void',
     title: '{{ t("Popup") }}',
@@ -20,7 +25,7 @@ export const PopupActionInitializer = (props) => {
     'x-settings': 'actionSettings:popup',
     'x-component': props?.['x-component'] || 'Action.Link',
     'x-component-props': {
-      openMode: 'drawer',
+      openMode: defaultOpenMode,
       refreshDataBlockRequest: true,
     },
     properties: {
@@ -58,6 +63,7 @@ export const PopupActionInitializer = (props) => {
         },
       },
     },
+    [CONTEXT_SCHEMA_KEY]: getPopupContext(),
   };
 
   const itemConfig = useSchemaInitializerItem();

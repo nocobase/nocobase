@@ -17,7 +17,7 @@ export class PointFieldInterface extends CommonSchema {
   order = 1;
   title = generateNTemplate('Point');
   description = generateNTemplate('Point');
-  availableTypes = ['point'];
+  availableTypes = ['point', 'json'];
   sortable = true;
   default = {
     type: 'point',

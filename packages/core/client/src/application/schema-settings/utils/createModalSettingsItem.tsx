@@ -7,22 +7,26 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { SchemaSettingsItemType, useCompile, useDesignable } from '@nocobase/client';
-import { ISchema, useFieldSchema } from '@formily/react';
 import _ from 'lodash';
+import { ISchema, useFieldSchema } from '@formily/react';
 import { TFunction, useTranslation } from 'react-i18next';
 
+import { SchemaSettingsItemType } from '../types';
 import { getNewSchema, useHookDefault } from './util';
+import { useCompile } from '../../../schema-component/hooks/useCompile';
+import { useDesignable } from '../../../schema-component/hooks/useDesignable';
 
 export interface CreateModalSchemaSettingsItemProps {
   name: string;
   title: string | ((t: TFunction<'translation', undefined>) => string);
-  parentSchemaKey: string;
+  parentSchemaKey?: string;
   defaultValue?: any;
   useDefaultValue?: () => any;
   schema: (defaultValue: any) => ISchema;
   valueKeys?: string[];
   useVisible?: () => boolean;
+  width?: number | string;
+  useSubmit?: () => (values: any) => void;
 }
 
 /**
@@ -38,9 +42,11 @@ export function createModalSettingsItem(options: CreateModalSchemaSettingsItemPr
     valueKeys,
     schema,
     title,
+    useSubmit = useHookDefault,
     useVisible,
     defaultValue: propsDefaultValue,
     useDefaultValue = useHookDefault,
+    width,
   } = options;
   return {
     name,
@@ -50,15 +56,18 @@ export function createModalSettingsItem(options: CreateModalSchemaSettingsItemPr
       const fieldSchema = useFieldSchema();
       const { deepMerge } = useDesignable();
       const defaultValue = useDefaultValue(propsDefaultValue);
-      const values = _.get(fieldSchema, parentSchemaKey);
+      const values = parentSchemaKey ? _.get(fieldSchema, parentSchemaKey) : undefined;
       const compile = useCompile();
       const { t } = useTranslation();
+      const onSubmit = useSubmit();
 
       return {
         title: typeof title === 'function' ? title(t) : compile(title),
+        width,
         schema: schema({ ...defaultValue, ...values }),
         onSubmit(values) {
-          deepMerge(getNewSchema({ fieldSchema, schemaKey: parentSchemaKey, value: values, valueKeys }));
+          deepMerge(getNewSchema({ fieldSchema, parentSchemaKey, value: values, valueKeys }));
+          return onSubmit?.(values);
         },
       };
     },

@@ -16,6 +16,7 @@ import {
   useCollectionManager_deprecated,
   useCollection_deprecated,
   useCompile,
+  useNavigateNoUpdate,
   useRemoveGridFormItem,
   useTableBlockContext,
 } from '@nocobase/client';
@@ -23,7 +24,6 @@ import { isURL } from '@nocobase/utils/client';
 import { App, message } from 'antd';
 import { useContext, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
 
 export const useCustomBulkEditFormItemInitializerFields = (options?: any) => {
   const { name, fields } = useCollection_deprecated();
@@ -83,7 +83,7 @@ export const useCustomizeBulkEditActionProps = () => {
   const { field, resource, __parent } = useBlockRequestContext();
   const expressionScope = useContext(SchemaExpressionScopeContext);
   const actionContext = useActionContext();
-  const navigate = useNavigate();
+  const navigate = useNavigateNoUpdate();
   const compile = useCompile();
   const actionField = useField();
   const tableBlockContext = useTableBlockContext();

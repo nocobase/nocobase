@@ -110,6 +110,31 @@ export default class PluginWorkflowServer extends Plugin {
     }
   };
 
+  async onSync(message) {
+    if (message.type === 'statusChange') {
+      const workflowId = Number.parseInt(message.workflowId, 10);
+      const enabled = Number.parseInt(message.enabled, 10);
+      if (enabled) {
+        let workflow = this.enabledCache.get(workflowId);
+        if (workflow) {
+          await workflow.reload();
+        } else {
+          workflow = await this.db.getRepository('workflows').findOne({
+            filterByTk: workflowId,
+          });
+        }
+        if (workflow) {
+          this.toggle(workflow, true, true);
+        }
+      } else {
+        const workflow = this.enabledCache.get(workflowId);
+        if (workflow) {
+          this.toggle(workflow, false, true);
+        }
+      }
+    }
+  }
+
   /**
    * @experimental
    */
@@ -245,8 +270,13 @@ export default class PluginWorkflowServer extends Plugin {
     });
 
     db.on('workflows.beforeSave', this.onBeforeSave);
-    db.on('workflows.afterSave', (model: WorkflowModel) => this.toggle(model));
-    db.on('workflows.afterDestroy', (model: WorkflowModel) => this.toggle(model, false));
+    db.on('workflows.afterCreate', (model: WorkflowModel) => {
+      if (model.enabled) {
+        this.toggle(model);
+      }
+    });
+    db.on('workflows.afterUpdate', (model: WorkflowModel) => this.toggle(model));
+    db.on('workflows.beforeDestroy', (model: WorkflowModel) => this.toggle(model, false));
 
     // [Life Cycle]:
     //   * load all workflows in db
@@ -274,14 +304,9 @@ export default class PluginWorkflowServer extends Plugin {
     });
 
     this.app.on('beforeStop', async () => {
-      const repository = db.getRepository('workflows');
-      const workflows = await repository.find({
-        filter: { enabled: true },
-      });
-
-      workflows.forEach((workflow: WorkflowModel) => {
+      for (const workflow of this.enabledCache.values()) {
         this.toggle(workflow, false);
-      });
+      }
 
       this.ready = false;
       if (this.events.length) {
@@ -297,14 +322,15 @@ export default class PluginWorkflowServer extends Plugin {
     });
   }
 
-  private toggle(workflow: WorkflowModel, enable?: boolean) {
+  private toggle(workflow: WorkflowModel, enable?: boolean, silent = false) {
     const type = workflow.get('type');
     const trigger = this.triggers.get(type);
     if (!trigger) {
       this.getLogger(workflow.id).error(`trigger type ${workflow.type} of workflow ${workflow.id} is not implemented`);
       return;
     }
-    if (enable ?? workflow.get('enabled')) {
+    const next = enable ?? workflow.get('enabled');
+    if (next) {
       // NOTE: remove previous listener if config updated
       const prev = workflow.previous();
       if (prev.config) {
@@ -315,6 +341,13 @@ export default class PluginWorkflowServer extends Plugin {
     } else {
       trigger.off(workflow);
       this.enabledCache.delete(workflow.id);
+    }
+    if (!silent) {
+      this.sync({
+        type: 'statusChange',
+        workflowId: `${workflow.id}`,
+        enabled: `${Number(next)}`,
+      });
     }
   }
 

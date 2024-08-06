@@ -184,3 +184,67 @@ export const FormButtonLinkageRuleAction = observer(
   },
   { displayName: 'FormButtonLinkageRuleAction' },
 );
+
+export const FormStyleLinkageRuleAction = observer(
+  (props: any) => {
+    const { value, options, collectionName } = props;
+    const { t } = useTranslation();
+    const compile = useCompile();
+    const remove = useContext(RemoveActionContext);
+    const { operator, setOperator, value: fieldValue, setValue } = useValues(options);
+    const operators = useMemo(
+      () =>
+        compile([
+          { label: t('Color'), value: ActionType.Color, schema: {} },
+          { label: t('Background Color'), value: ActionType.BackgroundColor, schema: {} },
+        ]),
+      [compile, t],
+    );
+    const schema = {
+      type: 'string',
+      'x-decorator': 'FormItem',
+      'x-component': 'ColorPicker',
+      'x-component-props': {
+        defaultValue: '',
+      },
+    };
+
+    const onChange = useCallback(
+      (value) => {
+        setOperator(value);
+      },
+      [setOperator],
+    );
+
+    const closeStyle = useMemo(() => ({ color: '#bfbfbf' }), []);
+    return (
+      <div style={{ marginBottom: 8 }}>
+        <Space>
+          <Select
+            data-testid="select-linkage-properties"
+            popupMatchSelectWidth={false}
+            value={operator}
+            options={operators}
+            onChange={onChange}
+            placeholder={t('action')}
+          />
+          {[ActionType.Color, ActionType.BackgroundColor].includes(operator) && (
+            <ValueDynamicComponent
+              fieldValue={fieldValue}
+              schema={schema}
+              setValue={setValue}
+              collectionName={collectionName}
+              inputModes={['constant']}
+            />
+          )}
+          {!props.disabled && (
+            <a role="button" aria-label="icon-close">
+              <CloseCircleOutlined onClick={remove} style={closeStyle} />
+            </a>
+          )}
+        </Space>
+      </div>
+    );
+  },
+  { displayName: 'FormStyleLinkageRuleAction' },
+);

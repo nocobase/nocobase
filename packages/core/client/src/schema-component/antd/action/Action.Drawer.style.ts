@@ -64,5 +64,5 @@ export const useStyles = genStyleHook('nb-action-drawer', (token) => {
       //   margin: `-${token.paddingPopupVertical}px -${token.paddingPopupHorizontal}px`,
       // },
     },
-  };
+  } as any;
 });

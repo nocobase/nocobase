@@ -14,6 +14,7 @@ import { useFormBlockContext, useTableBlockContext } from '../block-provider';
 import { useCollection_deprecated } from '../collection-manager';
 import { useDesignable, removeNullCondition } from '../schema-component';
 import { SchemaSettingsDataScope } from './SchemaSettingsDataScope';
+import { useCollection } from '../data-source';
 
 export const setTheDataScopeSchemaSettingsItem: SchemaSettingsItemType = {
   name: 'SetTheDataScope',

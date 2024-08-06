@@ -243,6 +243,10 @@ describe('FieldSettingsFormItem', () => {
               type: 'select',
             },
             {
+              title: 'Style',
+              type: 'modal',
+            },
+            {
               title: 'Set validation rules',
               type: 'modal',
             },
@@ -283,6 +287,10 @@ describe('FieldSettingsFormItem', () => {
             {
               title: 'Pattern',
               type: 'select',
+            },
+            {
+              title: 'Style',
+              type: 'modal',
             },
             {
               title: 'Field component',

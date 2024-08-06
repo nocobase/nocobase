@@ -22,6 +22,7 @@ export * from './SchemaSettingsTemplate';
 export * from './SchemaSettingsBlockHeightItem';
 export * from './setDefaultSortingRulesSchemaSettingsItem';
 export * from './setTheDataScopeSchemaSettingsItem';
+export * from './SchemaSettingsRenderEngine';
 export * from './hooks/useGetAriaLabelOfDesigner';
 export * from './hooks/useIsAllowToSetDefaultValue';
 export { default as useParseDataScopeFilter } from './hooks/useParseDataScopeFilter';

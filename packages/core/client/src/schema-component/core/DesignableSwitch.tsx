@@ -22,6 +22,8 @@ export const DesignableSwitch = () => {
   const style = {};
   if (designable) {
     style['backgroundColor'] = 'var(--colorSettings)';
+  } else {
+    style['backgroundColor'] = 'transparent';
   }
 
   // 快捷键切换编辑状态

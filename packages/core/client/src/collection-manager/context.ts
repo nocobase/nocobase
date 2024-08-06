@@ -9,5 +9,5 @@
 
 import { createContext } from 'react';
 
-export const CollectionCategroriesContext = createContext({ data: [], refresh: () => {} });
-CollectionCategroriesContext.displayName = 'CollectionCategroriesContext';
+export const CollectionCategoriesContext = createContext({ data: [], refresh: () => {} });
+CollectionCategoriesContext.displayName = 'CollectionCategoriesContext';

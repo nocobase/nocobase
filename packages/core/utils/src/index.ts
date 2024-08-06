@@ -36,3 +36,4 @@ export * from './url';
 export * from './i18n';
 
 export { dayjs, lodash };
+export { Schema } from '@formily/json-schema';

@@ -19,8 +19,8 @@ import { SchemaOptionsContext } from '@formily/react';
 import {
   APIClientProvider,
   ApplicationContext,
-  CollectionCategroriesContext,
-  CollectionCategroriesProvider,
+  CollectionCategoriesContext,
+  CollectionCategoriesProvider,
   CurrentAppInfoContext,
   DataSourceApplicationProvider,
   SchemaComponent,
@@ -390,7 +390,7 @@ export const GraphDrawPage = React.memo(() => {
   const {
     data: { database },
   } = currentAppInfo;
-  const categoryCtx = useContext(CollectionCategroriesContext);
+  const categoryCtx = useContext(CollectionCategoriesContext);
   const scope = { ...options?.scope };
   const components = { ...options?.components };
   const saveGraphPositionAction = async (data) => {
@@ -520,7 +520,7 @@ export const GraphDrawPage = React.memo(() => {
             <DataSourceApplicationProvider dataSourceManager={dm} dataSource={dataSource?.key}>
               <APIClientProvider apiClient={api}>
                 <SchemaComponentOptions inherit scope={scope} components={components}>
-                  <CollectionCategroriesProvider {...categoryCtx}>
+                  <CollectionCategoriesProvider {...categoryCtx}>
                     {/* TODO: 因为画布中的卡片是一次性注册进 Graph 的，这里的 theme 是存在闭包里的，因此当主题动态变更时，并不会触发卡片的重新渲染 */}
                     <ConfigProvider theme={theme as any}>
                       <div style={{ height: 'auto' }}>
@@ -531,7 +531,7 @@ export const GraphDrawPage = React.memo(() => {
                         </App>
                       </div>
                     </ConfigProvider>
-                  </CollectionCategroriesProvider>
+                  </CollectionCategoriesProvider>
                 </SchemaComponentOptions>
               </APIClientProvider>
             </DataSourceApplicationProvider>

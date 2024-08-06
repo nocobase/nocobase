@@ -17,7 +17,7 @@ export class LineStringFieldInterface extends CommonSchema {
   order = 2;
   title = generateNTemplate('Line');
   description = generateNTemplate('Line');
-  availableTypes = ['lineString'];
+  availableTypes = ['lineString', 'json'];
   sortable = true;
   default = {
     type: 'lineString',

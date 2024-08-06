@@ -20,7 +20,7 @@ import {
 import { uid } from '@formily/shared';
 import { error } from '@nocobase/utils/client';
 import { Menu as AntdMenu, MenuProps } from 'antd';
-import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { createDesignable, DndContext, SortableItem, useDesignable, useDesigner } from '../..';
@@ -229,47 +229,52 @@ const HeaderMenu = ({
     return result;
   }, [children, designable]);
 
+  const handleSelect = useCallback(
+    (info: { item; key; keyPath; domEvent }) => {
+      const s = schema.properties?.[info.key];
+
+      if (!s) {
+        return;
+      }
+
+      if (mode === 'mix') {
+        if (s['x-component'] !== 'Menu.SubMenu') {
+          onSelect?.(info);
+        } else {
+          const menuItemSchema = findMenuItem(s);
+          if (!menuItemSchema) {
+            return onSelect?.(info);
+          }
+          // TODO
+          setLoading(true);
+          const keys = findKeysByUid(schema, menuItemSchema['x-uid']);
+          setDefaultSelectedKeys(keys);
+          setTimeout(() => {
+            setLoading(false);
+          }, 100);
+          onSelect?.({
+            key: menuItemSchema.name,
+            item: {
+              props: {
+                schema: menuItemSchema,
+              },
+            },
+          });
+        }
+      } else {
+        onSelect?.(info);
+      }
+    },
+    [schema, mode, onSelect, setLoading, setDefaultSelectedKeys],
+  );
+
   return (
     <>
       <Component />
       <AntdMenu
         {...others}
         className={headerMenuClass}
-        onSelect={(info: any) => {
-          const s = schema.properties?.[info.key];
-
-          if (!s) {
-            return;
-          }
-
-          if (mode === 'mix') {
-            if (s['x-component'] !== 'Menu.SubMenu') {
-              onSelect?.(info);
-            } else {
-              const menuItemSchema = findMenuItem(s);
-              if (!menuItemSchema) {
-                return onSelect?.(info);
-              }
-              // TODO
-              setLoading(true);
-              const keys = findKeysByUid(schema, menuItemSchema['x-uid']);
-              setDefaultSelectedKeys(keys);
-              setTimeout(() => {
-                setLoading(false);
-              }, 100);
-              onSelect?.({
-                key: menuItemSchema.name,
-                item: {
-                  props: {
-                    schema: menuItemSchema,
-                  },
-                },
-              });
-            }
-          } else {
-            onSelect?.(info);
-          }
-        }}
+        onClick={handleSelect}
         mode={mode === 'mix' ? 'horizontal' : mode}
         defaultOpenKeys={defaultOpenKeys}
         defaultSelectedKeys={defaultSelectedKeys}
@@ -347,12 +352,8 @@ const SideMenu = ({
           mode={'inline'}
           openKeys={openKeys}
           selectedKeys={selectedKeys}
-          onSelect={(info) => {
-            onSelect?.(info);
-          }}
-          onOpenChange={(openKeys) => {
-            setOpenKeys(openKeys);
-          }}
+          onClick={onSelect}
+          onOpenChange={setOpenKeys}
           className={sideMenuClass}
           items={items as MenuProps['items']}
         />
@@ -496,6 +497,14 @@ export const Menu: ComposedMenu = observer(
   { displayName: 'Menu' },
 );
 
+const menuItemTitleStyle = {
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+  display: 'inline-block',
+  width: '100%',
+  verticalAlign: 'middle',
+};
+
 Menu.Item = observer(
   (props) => {
     const { t } = useMenuTranslation();
@@ -521,17 +530,7 @@ Menu.Item = observer(
                 removeParentsIfNoChildren={false}
               >
                 <Icon type={icon} />
-                <span
-                  style={{
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    display: 'inline-block',
-                    width: '100%',
-                    verticalAlign: 'middle',
-                  }}
-                >
-                  {t(field.title)}
-                </span>
+                <span style={menuItemTitleStyle}>{t(field.title)}</span>
                 <Designer />
               </SortableItem>
             </FieldContext.Provider>

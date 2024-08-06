@@ -182,6 +182,11 @@ export class PluginDataSourceManagerServer extends Plugin {
         isDBInstance: !!dataSource?.collectionManager.db,
       };
 
+      const publicOptions = dataSource?.publicOptions();
+      if (publicOptions) {
+        item['options'] = publicOptions;
+      }
+
       if (dataSourceStatus === 'loading-failed' || dataSourceStatus === 'reloading-failed') {
         item['errorMessage'] = plugin.dataSourceErrors[dataSourceModel.get('key')].message;
       }
@@ -195,12 +200,24 @@ export class PluginDataSourceManagerServer extends Plugin {
 
         item.collections = collections.map((collection) => {
           const collectionOptions = collection.options;
+          const collectionInstance = dataSource.collectionManager.getCollection(collectionOptions.name);
+
           const fields = [...collection.fields.values()].map((field) => field.options);
 
-          return {
+          const results = {
             ...collectionOptions,
             fields,
           };
+
+          if (collectionInstance && collectionInstance.availableActions) {
+            results['availableActions'] = collectionInstance.availableActions();
+          }
+
+          if (collectionInstance && collectionInstance.unavailableActions) {
+            results['unavailableActions'] = collectionInstance.unavailableActions();
+          }
+
+          return results;
         });
       }
 
@@ -320,7 +337,27 @@ export class PluginDataSourceManagerServer extends Plugin {
       name: 'dataSources',
     });
 
-    this.app.db.on('dataSourcesFields.afterSave', async (model: DataSourcesFieldModel) => {
+    this.app.db.on('dataSourcesFields.beforeSave', async (model: DataSourcesFieldModel, options) => {
+      const { transaction } = options;
+      if (!model.get('collectionName') || !model.get('dataSourceKey')) {
+        const collectionKey = model.get('collectionKey');
+        if (!collectionKey) {
+          throw new Error('collectionKey is required');
+        }
+
+        const collection = await model.getCollection({ transaction });
+
+        model.set('collectionName', collection.get('name'));
+        model.set('dataSourceKey', collection.get('dataSourceKey'));
+      }
+    });
+
+    this.app.db.on('dataSourcesCollections.afterDestroy', async (model: DataSourcesCollectionModel) => {
+      const dataSource = this.app.dataSourceManager.dataSources.get(model.get('dataSourceKey'));
+      dataSource.collectionManager.removeCollection(model.get('name'));
+    });
+
+    this.app.db.on('dataSourcesFields.afterSaveWithAssociations', async (model: DataSourcesFieldModel) => {
       model.load({
         app: this.app,
       });
@@ -332,11 +369,15 @@ export class PluginDataSourceManagerServer extends Plugin {
       });
     });
 
-    this.app.db.on('dataSourcesCollections.afterSave', async (model: DataSourcesCollectionModel) => {
-      model.load({
-        app: this.app,
-      });
-    });
+    this.app.db.on(
+      'dataSourcesCollections.afterSaveWithAssociations',
+      async (model: DataSourcesCollectionModel, { transaction }) => {
+        await model.load({
+          app: this.app,
+          transaction,
+        });
+      },
+    );
 
     this.app.db.on('dataSources.afterDestroy', async (model: DataSourceModel) => {
       this.app.dataSourceManager.dataSources.delete(model.get('key'));

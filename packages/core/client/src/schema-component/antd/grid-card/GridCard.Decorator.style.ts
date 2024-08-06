@@ -21,7 +21,7 @@ const useStyles = genStyleHook('nb-grid-card', (token) => {
         },
         '.ant-list-pagination': { padding: token.marginLG, background: token.colorBgContainer },
       },
-      '.ant-formily-item-feedback-layout-loose': { marginBottom: token.marginSM },
+      '.ant-formily-item-feedback-layout-loose': { marginBottom: 0 },
     },
   };
 });

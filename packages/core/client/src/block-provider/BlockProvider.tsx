@@ -20,6 +20,7 @@ import {
   WithoutTableFieldResource,
   useCollectionParentRecord,
   useCollectionRecord,
+  useCollectionRecordData,
   useDataBlockProps,
   useDataBlockRequest,
   useDataBlockResource,
@@ -290,11 +291,12 @@ export const useBlockAssociationContext = () => {
 export const useFilterByTk = () => {
   const { resource, __parent } = useBlockRequestContext();
   const recordIndex = useRecordIndex();
-  const record = useRecord();
+  const recordData = useCollectionRecordData();
   const collection = useCollection_deprecated();
   const { getCollectionField } = useCollectionManager_deprecated();
   const assoc = useBlockAssociationContext();
   const withoutTableFieldResource = useContext(WithoutTableFieldResource);
+
   if (!withoutTableFieldResource) {
     if (resource instanceof TableFieldResource || __parent?.block === 'TableField') {
       return recordIndex;
@@ -303,9 +305,9 @@ export const useFilterByTk = () => {
 
   if (assoc) {
     const association = getCollectionField(assoc);
-    return record?.[association.targetKey || 'id'];
+    return recordData?.[association.targetKey || 'id'];
   }
-  return record?.[collection.filterTargetKey || 'id'];
+  return recordData?.[collection.filterTargetKey || 'id'];
 };
 
 /**

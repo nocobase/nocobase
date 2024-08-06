@@ -30,7 +30,11 @@ export const AuthenticatorsContextProvider: FC<{ children: React.ReactNode }> = 
   );
 
   if (loading) {
-    return <Spin />;
+    return (
+      <div style={{ textAlign: 'center', marginTop: 20 }}>
+        <Spin />
+      </div>
+    );
   }
 
   if (error) {

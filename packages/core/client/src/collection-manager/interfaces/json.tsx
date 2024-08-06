@@ -33,7 +33,7 @@ export class JsonFieldInterface extends CollectionFieldInterface {
   group = 'advanced';
   order = 4;
   title = '{{t("JSON")}}';
-  sortable = true;
+  sortable = false;
   default = {
     type: 'json',
     // name,
@@ -50,7 +50,7 @@ export class JsonFieldInterface extends CollectionFieldInterface {
       default: null,
     },
   };
-  availableTypes = ['json', 'array', 'jsonb', 'text', 'circle', 'lineString', 'point', 'polygon'];
+  availableTypes = ['json', 'array', 'set', 'jsonb', 'text', 'circle', 'lineString', 'point', 'polygon'];
   hasDefaultValue = true;
   properties = {
     ...defaultProps,
@@ -68,7 +68,7 @@ export class JsonFieldInterface extends CollectionFieldInterface {
       'x-disabled': `{{ disabledJSONB }}`,
     },
   };
-  filterable = {
-    operators: operators.string,
-  };
+  // filterable = {
+  //   operators: operators.string,
+  // };
 }

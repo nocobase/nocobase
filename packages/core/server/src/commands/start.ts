@@ -38,13 +38,13 @@ export default (app: Application) => {
         } else {
           await app.install();
         }
-        app['_started'] = true;
+        app['_started'] = new Date();
         await app.restart();
         app.log.info('app has been started');
         return;
       }
       if (!(await app.isInstalled())) {
-        app['_started'] = true;
+        app['_started'] = new Date();
         throw new ApplicationNotInstall(
           `Application ${app.name} is not installed, Please run 'yarn nocobase install' command first`,
         );

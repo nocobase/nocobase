@@ -17,7 +17,7 @@ describe('Variable', () => {
   it('Variable.Input', async () => {
     render(<App1 />);
 
-    expect(screen.getByPlaceholderText('Null')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('<Null>')).toBeInTheDocument();
 
     await userEvent.click(screen.getByText('x'));
     await userEvent.click(screen.getByText('v1'));

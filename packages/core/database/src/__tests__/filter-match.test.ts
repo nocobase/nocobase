@@ -61,4 +61,38 @@ describe('filterMatch', () => {
       }),
     ).toBeFalsy();
   });
+
+  test('filter by array operation', () => {
+    expect(
+      expect(
+        filterMatch(
+          {
+            tags: ['tag1', 'tag2'],
+          },
+          {
+            tags: {
+              $match: 'tag1',
+            },
+          },
+        ),
+      ).toBeTruthy(),
+    );
+  });
+
+  test('filter by date operation', () => {
+    expect(
+      expect(
+        filterMatch(
+          {
+            createdAt: '2013-02-08T09:30:26.123Z',
+          },
+          {
+            createdAt: {
+              $dateOn: '2013-02-08',
+            },
+          },
+        ),
+      ).toBeTruthy(),
+    );
+  });
 });
