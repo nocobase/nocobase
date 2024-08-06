@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-notifications",
-  "version": "1.2.29-alpha",
+  "version": "1.2.30-alpha",
   "description": "",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
