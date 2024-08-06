@@ -123,7 +123,7 @@ class PluginCollectionTreeServer extends Plugin {
           [collection.filterTargetKey]: model.get('parentId'),
         },
       });
-      if (parent) {
+      if (parent && parent.get('parentId') !== model.get(collection.filterTargetKey)) {
         path = `/${parent.get(collection.filterTargetKey)}${path}`;
         if (parent.get('parentId') !== null) {
           const collectionTreePath = this.app.db.getCollection(name);

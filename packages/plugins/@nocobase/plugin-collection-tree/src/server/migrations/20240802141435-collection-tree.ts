@@ -74,7 +74,7 @@ export default class extends Migration {
           id: model.get('parentId') as FindOneOptions,
         },
       });
-      if (parent) {
+      if (parent && parent.get('parentId') !== model.get('id')) {
         path = `/${parent.get('id')}${path}`;
         if (parent.get('parentId') !== null) {
           path = await this.getTreePath(parent, path, collectionName);
