@@ -46,18 +46,23 @@ export default class extends Migration {
             { type: 'integer', name: 'parentId' },
           ],
         });
-        const existData = await this.app.db.getRepository(treeCollection.name).find({});
-        for (const data of existData) {
-          let path = `/${data.get('id')}`;
-          path = await this.getTreePath(data, path, treeCollection.name);
-          await this.app.db.getRepository(name).create({
-            values: {
-              nodePk: data.get('id'),
-              path: path,
-              rootPk: path.split('/')[1],
-            },
-          });
-        }
+        const chunkSize = 1000;
+        await this.app.db.getRepository(treeCollection.name).chunk({
+          chunkSize: chunkSize,
+          callback: async (rows, options) => {
+            const pathData = [];
+            for (const data of rows) {
+              let path = `/${data.get('id')}`;
+              path = await this.getTreePath(data, path, treeCollection.name);
+              pathData.push({
+                nodePk: data.get('id'),
+                path: path,
+                rootPk: path.split('/')[1],
+              });
+            }
+            await this.app.db.getModel(name).bulkCreate(pathData);
+          },
+        });
       }
     }
   }
