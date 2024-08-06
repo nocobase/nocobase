@@ -34,10 +34,6 @@ class CollectionFieldInterface {
   validateSchema(fieldSchema: ISchema): Record<string, ISchema>
   usePathOptions(field: CollectionFieldOptions): any
   schemaInitialize(schema: ISchema, data: any): void
-
-  getOption<K extends keyof IField>(key: K): CollectionFieldInterfaceOptions[K]
-  getOptions(): CollectionFieldInterfaceOptions;
-  setOptions(options: CollectionFieldInterfaceOptions): void;
 }
 ```
 
