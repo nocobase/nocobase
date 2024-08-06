@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { BelongsToRepository, MockDatabase } from '@nocobase/database';
+import { BelongsToRepository, MockDatabase, Op } from '@nocobase/database';
 import { getApp, sleep } from '@nocobase/plugin-workflow-test';
 import { MockServer } from '@nocobase/test';
 
@@ -649,6 +649,48 @@ describe('workflow > triggers > collection', () => {
         expect(execution.context.data.posts.map((item) => item.title)).toEqual(['t1', 't2']);
         expect(execution.context.data.posts.map((item) => item.tags.map((tag) => tag.id))).toEqual([tagIds, tagIds]);
       });
+    });
+  });
+
+  describe('transaction', () => {
+    it('should trigger after transaction committed', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'collection',
+        config: {
+          mode: 1,
+          collection: 'posts',
+        },
+      });
+
+      await workflow.createNode({
+        type: 'destroy',
+        config: {
+          collection: 'posts',
+          params: {
+            filter: {
+              id: {
+                $not: null,
+              },
+            },
+          },
+        },
+      });
+
+      await db.sequelize.transaction(async (transaction) => {
+        const p1 = await PostRepo.create({ values: { title: 't1' }, transaction });
+        await sleep(50);
+        const p2 = await PostRepo.create({ values: { title: 't2' }, transaction });
+        await sleep(50);
+      });
+
+      await sleep(500);
+
+      const executions = await workflow.getExecutions();
+      expect(executions.length).toBe(2);
+
+      const posts = await PostRepo.find();
+      expect(posts.length).toBe(0);
     });
   });
 

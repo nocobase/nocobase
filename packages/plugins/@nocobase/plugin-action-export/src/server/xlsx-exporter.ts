@@ -114,6 +114,9 @@ class XlsxExporter {
         }
 
         const field = this.options.collection.getField(col.dataIndex[0]);
+        if (!field) {
+          throw new Error(`Field "${col.dataIndex[0]}" not found: , please check the columns configuration.`);
+        }
 
         if (field.isRelationField()) {
           return col.dataIndex[0];

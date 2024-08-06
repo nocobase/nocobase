@@ -29,6 +29,7 @@ export const MarkdownBlockInitializer = () => {
           'x-decorator': 'CardItem',
           'x-decorator-props': {
             name: 'markdown',
+            engine: 'handlebars',
           },
           'x-component': 'Markdown.Void',
           'x-editable': false,
