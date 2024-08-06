@@ -377,5 +377,30 @@ describe('workflow > triggers > schedule > date field mode', () => {
       const e2c = await workflow.countExecutions();
       expect(e2c).toBe(2);
     });
+
+    it('empty endsOn as no end', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'schedule',
+        config: {
+          mode: 1,
+          collection: 'posts',
+          startsOn: {
+            field: 'createdAt',
+          },
+          repeat: 1000,
+          endsOn: {},
+        },
+      });
+
+      await sleepToEvenSecond();
+
+      const post = await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(1700);
+
+      const e1c = await workflow.countExecutions();
+      expect(e1c).toBe(2);
+    });
   });
 });

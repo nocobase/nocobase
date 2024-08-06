@@ -127,8 +127,8 @@
   "Set the data scope": "设置数据范围",
   "Data loading mode": "数据加载方式",
   "Set data loading mode": "设置数据加载方式",
-  "Automatically load data": "自动加载数据",
-  "Load data after filtering": "筛选后才加载数据",
+  "Load all data when filter is empty": "筛选条件为空时加载全部数据",
+  "Do not load data when filter is empty": "筛选条件为空时不加载数据",
   "Block": "区块",
   "Data blocks": "数据区块",
   "Filter blocks": "筛选区块",
@@ -966,5 +966,6 @@
   "Search": "搜索",
   "Clear default value": "清除默认值",
   "Open in new window": "新窗口打开",
-  "Sorry, the page you visited does not exist.": "抱歉，你访问的页面不存在。"
+  "Sorry, the page you visited does not exist.": "抱歉，你访问的页面不存在。",
+  "Set Template Engine": "设置模板引擎"
 }

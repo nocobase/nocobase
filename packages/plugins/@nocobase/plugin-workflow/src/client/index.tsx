@@ -8,8 +8,10 @@
  */
 
 import React from 'react';
+import { useFieldSchema } from '@formily/react';
+import { isValid } from '@formily/shared';
 
-import { Plugin } from '@nocobase/client';
+import { Plugin, WorkflowConfig } from '@nocobase/client';
 import { Registry } from '@nocobase/utils/client';
 
 import { ExecutionPage } from './ExecutionPage';
@@ -90,6 +92,14 @@ export default class PluginWorkflowClient extends Plugin {
     });
 
     this.app.schemaSettingsManager.add(customizeSubmitToWorkflowActionSettings);
+
+    this.app.schemaSettingsManager.addItem('actionSettings:delete', 'workflowConfig', {
+      Component: WorkflowConfig,
+      useVisible() {
+        const fieldSchema = useFieldSchema();
+        return isValid(fieldSchema?.['x-action-settings']?.triggerWorkflows);
+      },
+    });
 
     this.registerTrigger('collection', CollectionTrigger);
     this.registerTrigger('schedule', ScheduleTrigger);
