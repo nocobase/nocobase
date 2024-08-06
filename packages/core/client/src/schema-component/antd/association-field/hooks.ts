@@ -25,6 +25,7 @@ import { getPath } from '../../../variables/utils/getPath';
 import { getVariableName } from '../../../variables/utils/getVariableName';
 import { isVariable } from '../../../variables/utils/isVariable';
 import { useDesignable } from '../../hooks';
+import { AssociationFieldMode } from './AssociationFieldModeProvider';
 import { AssociationFieldContext } from './context';
 
 export const useInsertSchema = (component) => {
@@ -51,7 +52,7 @@ export function useAssociationFieldContext<F extends GeneralField>() {
   return useContext(AssociationFieldContext) as {
     options: any;
     field: F;
-    currentMode: string;
+    currentMode: AssociationFieldMode;
     allowMultiple?: boolean;
     allowDissociate?: boolean;
   };
