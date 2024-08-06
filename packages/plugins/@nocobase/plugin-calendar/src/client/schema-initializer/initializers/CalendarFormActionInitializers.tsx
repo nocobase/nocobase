@@ -9,15 +9,14 @@
 
 import { SchemaInitializer, SchemaInitializerItemType, useCollection_deprecated } from '@nocobase/client';
 import { generateNTemplate } from '../../../locale';
-
+import { DeleteEventActionInitializer } from '../items/DeleteEventActionInitializer';
 export const deleteEventActionInitializer: SchemaInitializerItemType<any> = {
   name: 'deleteEvent',
   title: generateNTemplate('Delete Event'),
-  Component: 'DeleteEventActionInitializer',
+  Component: DeleteEventActionInitializer,
   schema: {
     'x-component': 'Action',
     'x-decorator': 'ACLActionProvider',
-    'x-action': 'destroy',
   },
   useVisible() {
     const collection = useCollection_deprecated();
