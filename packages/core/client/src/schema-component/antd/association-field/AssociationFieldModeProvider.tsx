@@ -25,6 +25,7 @@ export enum AssociationFieldMode {
   SubTable = 'SubTable',
   FileManager = 'FileManager',
   CascadeSelect = 'CascadeSelect',
+  Tag = 'Tag',
 }
 
 interface AssociationFieldModeProviderProps {
