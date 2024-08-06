@@ -33,6 +33,22 @@ export class DateField extends Field {
     return props.gmt;
   }
 
+  init() {
+    const { name, defaultToCurrentTime, onUpdateToCurrentTime } = this.options;
+
+    this.listener = async (instance) => {
+      const value = instance.get(name);
+
+      if (!value && instance.isNewRecord && defaultToCurrentTime) {
+        instance.set(name, new Date());
+      }
+
+      if (onUpdateToCurrentTime) {
+        instance.set(name, new Date());
+      }
+    };
+  }
+
   bind() {
     super.bind();
 
@@ -51,6 +67,8 @@ export class DateField extends Field {
       // @ts-ignore
       model.refreshAttributes();
     }
+
+    this.on('beforeValidate', this.listener);
   }
 }
 

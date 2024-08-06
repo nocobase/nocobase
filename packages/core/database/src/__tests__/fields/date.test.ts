@@ -30,16 +30,56 @@ describe('date-field', () => {
     await db.close();
   });
 
-  const createExpectToBe = async (key, actual, expected) => {
-    const instance = await repository.create({
-      values: {
-        [key]: actual,
-      },
+  it('should set default to current time', async () => {
+    const c1 = db.collection({
+      name: 'test11',
+      fields: [
+        {
+          name: 'date1',
+          type: 'date',
+          defaultToCurrentTime: true,
+        },
+      ],
     });
-    return expect(instance.get(key).toISOString()).toEqual(expected);
-  };
+
+    await db.sync();
+
+    const instance = await c1.repository.create({});
+    const date1 = instance.get('date1');
+    expect(date1).toBeDefined();
+  });
+
+  it('should set to current time when update', async () => {
+    const c1 = db.collection({
+      name: 'test11',
+      fields: [
+        {
+          name: 'date1',
+          type: 'date',
+          onUpdateToCurrentTime: true,
+        },
+      ],
+    });
+
+    await db.sync();
+
+    const instance = await c1.repository.create({});
+
+    await instance.update({ date1: new Date() });
+    const date2 = instance.get('date1');
+    expect(date2).toBeDefined();
+  });
 
   test('create', async () => {
+    const createExpectToBe = async (key, actual, expected) => {
+      const instance = await repository.create({
+        values: {
+          [key]: actual,
+        },
+      });
+      return expect(instance.get(key).toISOString()).toEqual(expected);
+    };
+
     // sqlite 时区不能自定义，只有 +00:00，postgres 和 mysql 可以自定义 DB_TIMEZONE
     await createExpectToBe('date1', '2023-03-24', '2023-03-24T00:00:00.000Z');
     await createExpectToBe('date1', '2023-03-24T16:00:00.000Z', '2023-03-24T16:00:00.000Z');
