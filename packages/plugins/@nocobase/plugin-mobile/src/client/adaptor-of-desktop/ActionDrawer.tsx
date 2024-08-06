@@ -8,7 +8,7 @@
  */
 
 import { observer, RecursionField, useField, useFieldSchema } from '@formily/react';
-import { Action, SchemaComponent, useActionContext, useCompile } from '@nocobase/client';
+import { Action, SchemaComponent, useActionContext } from '@nocobase/client';
 import { ConfigProvider } from 'antd';
 import { Popup } from 'antd-mobile';
 import { CloseOutline } from 'antd-mobile-icons';
@@ -16,13 +16,12 @@ import React, { useCallback, useEffect, useMemo } from 'react';
 import { useMobileActionDrawerStyle } from './ActionDrawer.style';
 import { usePopupContainer } from './FilterAction';
 
-export const ActionDrawerUsedInMobile = observer((props: any) => {
+export const ActionDrawerUsedInMobile = observer((props: { footerNodeName?: string }) => {
   const fieldSchema = useFieldSchema();
   const field = useField();
   const { visible, setVisible } = useActionContext();
   const { popupContainerRef, visiblePopup } = usePopupContainer(visible);
   const { styles } = useMobileActionDrawerStyle();
-  const compile = useCompile();
 
   const footerSchema = fieldSchema.reduceProperties((buf, s) => {
     if (s['x-component'] === props.footerNodeName) {
@@ -31,7 +30,7 @@ export const ActionDrawerUsedInMobile = observer((props: any) => {
     return buf;
   });
 
-  const title = compile(fieldSchema.title) || '';
+  const title = field.title || '';
   const marginBlock = 18;
 
   const closePopup = useCallback(() => {

@@ -19,8 +19,10 @@ import {
 import React from 'react';
 import { isDesktop } from 'react-device-detect';
 
+import _ from 'lodash';
 import { ActionDrawerUsedInMobile, useToAdaptActionDrawerToMobile } from '../adaptor-of-desktop/ActionDrawer';
 import { useToAdaptFilterActionToMobile } from '../adaptor-of-desktop/FilterAction';
+import { InternalPopoverNesterUsedInMobile } from '../adaptor-of-desktop/InternalPopoverNester';
 import { ResetSchemaOptionsProvider } from '../adaptor-of-desktop/ResetSchemaOptionsProvider';
 import { PageBackgroundColor } from '../constants';
 import { DesktopMode } from '../desktop-mode/DesktopMode';
@@ -60,7 +62,9 @@ export const Mobile = () => {
   const DesktopComponent = mobilePlugin.desktopMode === false ? React.Fragment : DesktopMode;
   const modeToComponent = React.useMemo(() => {
     return {
-      PopoverNester: ActionDrawerUsedInMobile,
+      PopoverNester: _.memoize((OriginComponent) => (props) => (
+        <InternalPopoverNesterUsedInMobile {...props} OriginComponent={OriginComponent} />
+      )),
     };
   }, []);
 

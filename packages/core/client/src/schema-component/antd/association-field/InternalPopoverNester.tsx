@@ -22,6 +22,7 @@ import { useAssociationFieldContext } from './hooks';
 
 const InternalPopoverNesterContentCss = css`
   min-width: 600px;
+  max-width: 800px;
   max-height: 440px;
   overflow: auto;
   .ant-card {
@@ -51,11 +52,7 @@ export const InternalPopoverNester = observer(
       shouldMountElement: true,
     };
     const content = (
-      <div
-        ref={ref}
-        style={{ minWidth: '600px', maxWidth: '800px', maxHeight: '440px', overflow: 'auto' }}
-        className={InternalPopoverNesterContentCss}
-      >
+      <div ref={ref} className={`${InternalPopoverNesterContentCss} popover-subform-container`}>
         <InternalNester {...nesterProps} />
       </div>
     );
