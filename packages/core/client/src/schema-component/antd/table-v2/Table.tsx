@@ -511,9 +511,18 @@ export const Table: any = withDynamicSchemaProps(
 
     const getRowKey = useCallback(
       (record: any) => {
-        if (typeof rowKey === 'string') {
+        if (Array.isArray(rowKey)) {
+          // 使用多个字段值组合生成唯一键
+          return rowKey
+            .map((keyField) => {
+              console.log(keyField);
+              return record[keyField]?.toString() || '';
+            })
+            .join('-');
+        } else if (typeof rowKey === 'string') {
           return record[rowKey]?.toString();
         } else {
+          // 如果 rowKey 是函数或未提供，使用 defaultRowKey
           return (rowKey ?? defaultRowKey)(record)?.toString();
         }
       },

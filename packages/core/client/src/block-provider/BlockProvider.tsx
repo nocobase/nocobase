@@ -11,6 +11,7 @@ import { Field, GeneralField } from '@formily/core';
 import { RecursionField, useField, useFieldSchema } from '@formily/react';
 import { Col, Row } from 'antd';
 import merge from 'deepmerge';
+import { isArray } from 'lodash';
 import template from 'lodash/template';
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
@@ -307,7 +308,18 @@ export const useFilterByTk = () => {
     const association = getCollectionField(assoc);
     return recordData?.[association.targetKey || 'id'];
   }
-  return recordData?.[collection.filterTargetKey || 'id'];
+  if (isArray(collection.filterTargetKey)) {
+    console.log(collection.filterTargetKey);
+    console.log(recordData?.[collection.filterTargetKey || 'id']);
+    const filterByTk = {};
+    for (const key of collection.filterTargetKey) {
+      filterByTk[key] = recordData?.[key];
+    }
+    console.log(filterByTk);
+    return filterByTk;
+  } else {
+    return recordData?.[collection.filterTargetKey || 'id'];
+  }
 };
 
 /**
