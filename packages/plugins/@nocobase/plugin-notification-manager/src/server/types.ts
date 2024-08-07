@@ -16,6 +16,9 @@ export interface IMessage {
     body: string;
     type: 'html' | 'string';
   };
+  receiveOption: {
+    receivers: string[];
+  };
 }
 
 export interface IChannel {

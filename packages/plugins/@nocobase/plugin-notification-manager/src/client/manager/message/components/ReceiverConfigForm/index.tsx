@@ -38,7 +38,7 @@ const ReceiverConfigForm = () => {
   };
 
   const configFormMap = {
-    manual: <ArrayField name="receivers" component={[ManualConfigForm]} disabled={false} />,
+    manual: <ManualConfigForm />,
     collection: <CollectionForm />,
   };
 

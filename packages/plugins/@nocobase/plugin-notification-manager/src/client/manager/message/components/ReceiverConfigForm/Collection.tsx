@@ -15,24 +15,67 @@ import {
   useDataSourceManager,
   useDataSourceKey,
   useCollectionDataSourceItems,
+  SchemaComponent,
+  ISchema,
 } from '@nocobase/client';
 import { Radio } from 'antd';
-import { ArrayField as ArrayFieldModel, VoidField } from '@formily/core';
+import { ObjectField as ObjectField } from '@formily/core';
 import { ArrayField, Field, useField, observer } from '@formily/react';
 import { useNotificationTranslation } from '../../../../locale';
 
-export const CollectionForm = () => {
+const InnerCollectionForm = observer(() => {
   const { t } = useNotificationTranslation();
   const dm = useDataSourceManager();
   const dataSourceKey = useDataSourceKey();
-  const allCollections = dm.getAllCollections({
+  const field = useField<ObjectField>();
+  const allDatasources = dm.getAllCollections({
     filterCollection: (collection) => collection.dataSource === dataSourceKey,
   });
+  const currDatasource = allDatasources[0];
+  const getSchema = () => {
+    const getMenuOptions = (collections) => {
+      return collections.map((collection) => ({ label: collection.options.title, value: collection.options.name }));
+    };
 
-  return (
-    <>
-      <div>1</div>
-    </>
-  );
-};
-CollectionForm.displayName = 'CollectionForm';
+    const getFieldOptions = (collection) => {
+      if (Array.isArray(collection?.fields)) {
+        return collection.fields.map((field) => ({ label: field.uiSchema.title, value: field.name }));
+      } else return [];
+    };
+
+    const collectionOptions = getMenuOptions(currDatasource.collections);
+    const fieldOptions =
+      getFieldOptions(
+        currDatasource.collections.filter((collection) => collection.options.name === field?.value?.collection),
+      ) || [];
+    const schema: ISchema = {
+      type: 'object',
+      name: '',
+      properties: {
+        collection: {
+          type: 'string',
+          title: 'Collection',
+          enum: collectionOptions,
+          default: null,
+          'x-decorator': 'FormItem',
+          'x-component': 'Select',
+        },
+        address: {
+          type: 'string',
+          title: 'address',
+          enum: fieldOptions,
+          default: null,
+          'x-decorator': 'FormItem',
+          'x-component': 'Select',
+        },
+      },
+    };
+    return schema;
+    // return <SchemaComponent schema={schema} />;
+  };
+  const schema = getSchema();
+  return <SchemaComponent schema={schema} />;
+});
+InnerCollectionForm.displayName = 'CollectionForm';
+
+export const CollectionForm = InnerCollectionForm;

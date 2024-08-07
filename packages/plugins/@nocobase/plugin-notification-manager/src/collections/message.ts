@@ -70,13 +70,13 @@ const collectionOption: CollectionOptions = {
       },
     },
     {
-      name: 'message',
+      name: 'content',
       type: 'json',
       interface: 'json',
       uiSchema: {
         type: 'void',
         'x-component': `${MessageComponentNames.MessageInput}`,
-        title: 'message',
+        title: 'content',
       },
     },
 

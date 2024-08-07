@@ -29,7 +29,7 @@ export const formProperties = {
     'x-decorator': 'FormItem',
     'x-collection-field': 'messages.receiveOption',
   },
-  message: {
+  content: {
     'x-component': 'CollectionField',
     'x-decorator': 'FormItem',
     'x-collection-field': 'messages.message',

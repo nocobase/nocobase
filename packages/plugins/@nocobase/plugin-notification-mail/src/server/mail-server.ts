@@ -24,15 +24,29 @@ export class MailServer extends NotificationServerBase {
     });
   }
   send: SendFnType = async function (args) {
-    console.log(args);
-    const info = await this.transpoter.sendMail({
-      from: 'sheldon<295830037@qq.com>',
-      to: 'sheldonguo16@gmail.com, sheldon_66@163.com',
-      subject: 'Hello ✔', // Subject line
-      text: 'Hello world?', // plain text body
-      html: '<b>Hello world?</b>', // html body
+    const { message, channel } = args;
+    const { host, port, secure, account, password } = channel.options;
+    const transpoter: Transporter = nodemailer.createTransport({
+      host,
+      port,
+      secure: true, // Use `true` for port 465, `false` for all other ports
+      auth: {
+        user: account,
+        pass: password,
+      },
     });
-    console.log('Message sent: %s', info.messageId);
+    const receivers = message.receiveOption.receivers;
+    await Promise.all(
+      receivers.map(async (receiver) => {
+        return transpoter.sendMail({
+          from: 'sheldon <295830037@qq.com>',
+          to: receiver,
+          subject: 'Hello', // Subject line
+          text: message.content.body, // plain text body
+          html: message.content.body, // html body
+        });
+      }),
+    );
     return true;
   };
 }

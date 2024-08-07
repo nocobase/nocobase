@@ -50,7 +50,7 @@ const MessageInput = observer(
     return (
       <div style={{ position: 'relative', paddingTop: '20px' }}>
         <Field
-          name={'content'}
+          name={'body'}
           component={[
             Variable.TextArea,
             { scope: [datetimeSettings], autoSize: { minRows: 3 }, style: { paddingBottom: '40px' } },
