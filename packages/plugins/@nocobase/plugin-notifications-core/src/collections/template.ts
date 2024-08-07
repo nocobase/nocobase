@@ -12,6 +12,7 @@ import { COLLECTION_NAME } from '../constant';
 
 const collectionOption: CollectionOptions = {
   name: COLLECTION_NAME.templates,
+  title: 'Templates',
   fields: [
     {
       name: 'id',

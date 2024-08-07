@@ -16,6 +16,8 @@ export enum MessageScopeNames {
   ChannelOptions = 'channelOptions',
 }
 
-export enum TemplateComponentNames {
+export enum MessageComponentNames {
   AddNew = 'AddNew',
+  ReceiverConfigForm = 'ReceiverConfigForm',
+  MessageInput = 'MessageInput',
 }

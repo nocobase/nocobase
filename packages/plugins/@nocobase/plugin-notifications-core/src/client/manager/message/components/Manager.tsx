@@ -19,12 +19,17 @@ import {
   SchemaComponentOptions,
   SchemaComponentContext,
   useSchemaComponentContext,
+  ExtendCollectionsProvider,
 } from '@nocobase/client';
 import React, { useState } from 'react';
 import { Button } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import { useNotificationTranslation } from '../../../locale';
-import { useTranslation } from 'react-i18next';
+import channelCollection from '../../../../collections/channel';
+import messageCollection from '../../../../collections/message';
+import { MessageComponentNames } from '../types';
+import ReceiverConfigForm from './ReceiverConfigForm';
+import MessageInput from './MessageInput';
 
 const useCloseAction = () => {
   const { setVisible } = useActionContext();
@@ -39,11 +44,20 @@ export const MessageManager = () => {
   const { t } = useNotificationTranslation();
   const scCtx = useSchemaComponentContext();
   return (
-    <SchemaComponentContext.Provider value={{ ...scCtx, designable: false }}>
-      <Card bordered={false}>
-        <SchemaComponent schema={messageManagerSchema} scope={{ t }} />
-      </Card>
-    </SchemaComponentContext.Provider>
+    <ExtendCollectionsProvider collections={[channelCollection, messageCollection]}>
+      <SchemaComponentContext.Provider value={{ ...scCtx, designable: false }}>
+        <Card bordered={false}>
+          <SchemaComponent
+            schema={messageManagerSchema}
+            scope={{ t }}
+            components={{
+              [MessageComponentNames.ReceiverConfigForm]: ReceiverConfigForm,
+              [MessageComponentNames.MessageInput]: MessageInput,
+            }}
+          />
+        </Card>
+      </SchemaComponentContext.Provider>
+    </ExtendCollectionsProvider>
   );
 };
 

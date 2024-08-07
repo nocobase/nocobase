@@ -13,6 +13,7 @@
 
 import { CollectionOptions } from '@nocobase/client';
 import { COLLECTION_NAME } from '../constant';
+import { MessageComponentNames } from '../client/manager/message/types';
 
 const collectionOption: CollectionOptions = {
   name: COLLECTION_NAME.messages,
@@ -68,15 +69,21 @@ const collectionOption: CollectionOptions = {
       interface: 'json',
       uiSchema: {
         type: 'object',
-        'x-component': 'Input.JSON',
-        'x-component-props': {
-          autoSize: {
-            minRows: 5,
-          },
-        },
+        'x-component': `${MessageComponentNames.ReceiverConfigForm}`,
         title: 'receiver',
       },
     },
+    {
+      name: 'message',
+      type: 'json',
+      interface: 'json',
+      uiSchema: {
+        type: 'object',
+        'x-component': `${MessageComponentNames.MessageInput}`,
+        title: 'message',
+      },
+    },
+
     {
       name: 'createdAt',
       type: 'date',

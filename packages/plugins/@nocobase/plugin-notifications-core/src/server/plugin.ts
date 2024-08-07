@@ -8,11 +8,30 @@
  */
 
 import { Plugin } from '@nocobase/server';
+import { Registry } from '@nocobase/utils';
+import type { NotificationServer } from './types';
 
-export class PluginNotificationCoreServer extends Plugin {
+interface NotificatonType {
+  title: string;
+  server: NotificationServer;
+}
+
+class NotificationManager {
+  protected notificationTypes = new Registry<NotificatonType>();
+  registerTypes(type: string, config: NotificatonType) {
+    this.notificationTypes.register(type, config);
+  }
+}
+
+export class PluginNotificationServer extends Plugin {
   async afterAdd() {}
 
-  async beforeLoad() {}
+  async beforeLoad() {
+    this.app.resourceManager.registerActionHandler('messages:trigger', (ctx, next) => {
+      console.log(ctx);
+      next();
+    });
+  }
 
   async load() {}
 
@@ -25,4 +44,4 @@ export class PluginNotificationCoreServer extends Plugin {
   async remove() {}
 }
 
-export default PluginNotificationCoreServer;
+export default PluginNotificationServer;
