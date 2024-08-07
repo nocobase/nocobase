@@ -70,7 +70,7 @@ test('menu permission ', async ({ page, mockPage, mockRole, updateRole }) => {
 });
 
 test('i18n should not fallbackNS', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/admin/settings/system-settings');
 
   // 创建 Users 页面
   await page.getByTestId('schema-initializer-Menu-header').hover();
@@ -78,12 +78,11 @@ test('i18n should not fallbackNS', async ({ page }) => {
   await page.getByLabel('block-item-Input-Menu item').getByRole('textbox').click();
   await page.getByLabel('block-item-Input-Menu item').getByRole('textbox').fill('Users');
   await page.getByRole('button', { name: 'OK' }).click();
-  await page.getByLabel('Users').first().click();
-  await expect(page.getByLabel('Users').first()).toBeVisible();
+  await expect(page.getByLabel('Users')).toBeVisible();
   await expect(page.getByLabel('用户')).not.toBeVisible();
 
   // 添加中文选项
-  await page.goto('/admin/settings/system-settings');
+  await page.reload();
   await page.getByTestId('select-multiple').click();
   await page.getByRole('option', { name: '简体中文 (zh-CN)' }).click();
   await page.getByLabel('action-Action-Submit').click();
@@ -93,18 +92,19 @@ test('i18n should not fallbackNS', async ({ page }) => {
   await page.getByText('LanguageEnglish').click();
   await page.getByRole('option', { name: '简体中文' }).click();
 
+  // await page.reload();
+
   // 应该显示 Users 而非中文 “用户”
-  await expect(page.getByLabel('Users').first()).toBeVisible();
+  await expect(page.getByLabel('Users')).toBeVisible();
   await expect(page.getByLabel('用户')).not.toBeVisible();
 
   // 删除中文
-  await page.goto('/admin/settings/system-settings');
   await page.getByLabel('简体中文 (zh-CN)').getByLabel('icon-close-tag').click();
   await page.getByLabel('action-Action-提交').click();
 
   // 删除 Users 页面
-  await page.getByLabel('Users').first().hover();
-  await page.getByLabel('designer-schema-settings-Menu').first().hover();
+  await page.getByLabel('Users').hover();
+  await page.getByLabel('designer-schema-settings-Menu').hover();
   await page.getByRole('menuitem', { name: 'Delete' }).click();
   await page.getByRole('button', { name: 'OK' }).click();
 });
