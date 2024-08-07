@@ -76,10 +76,16 @@ export const MessageConfigForm = ({ variableOptions }) => {
         properties: {
           body: {
             type: 'string',
-            title: 'contentd',
+            title: 'content',
             'x-decorator': 'FormItem',
-            'x-component': 'Variable.Input',
-            'x-component-props': { scope: variableOptions },
+            'x-component': 'Variable.RawTextArea',
+            'x-component-props': {
+              scope: variableOptions,
+              placeholder: 'Hi,',
+              autoSize: {
+                minRows: 10,
+              },
+            },
           },
         },
       },
