@@ -11,5 +11,7 @@
   "Title": "Title",
   "Description": "Description",
   "Notification Type": "Notification Type",
-  "Actions": "Actions"
+  "Actions": "Actions",
+  "Configure": "Configure",
+  "Add new": "Add new"
 }

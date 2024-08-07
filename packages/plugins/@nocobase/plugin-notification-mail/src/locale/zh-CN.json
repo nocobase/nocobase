@@ -11,5 +11,6 @@
   "Port": "端口",
   "Secure": "安全模式",
   "Account": "账号",
-  "Password" : "密码"
+  "Password" : "密码",
+  "Configure": "编辑"
 }

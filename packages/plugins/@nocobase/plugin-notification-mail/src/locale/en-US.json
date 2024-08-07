@@ -11,5 +11,6 @@
   "Port": "Port",
   "Secure": "Secure",
   "Account": "Account",
-  "Password" : "Password"
+  "Password" : "Password",
+  "Configure": "Configure"
 }
