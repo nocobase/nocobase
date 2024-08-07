@@ -27,14 +27,6 @@ import MessageInput from './MessageInput';
 import { LogManager } from '../../log/components/Manager';
 import { useSendAction } from './useSendAction';
 import { useSubmitActionProps, useEditFormProps } from '../../../hooks';
-const useCloseAction = () => {
-  const { setVisible } = useActionContext();
-  return {
-    async run() {
-      setVisible(false);
-    },
-  };
-};
 
 export const MessageManager = () => {
   const { t } = useNotificationTranslation();
