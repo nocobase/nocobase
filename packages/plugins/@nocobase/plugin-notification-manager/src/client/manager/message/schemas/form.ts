@@ -30,7 +30,6 @@ export const formProperties = {
   },
   content: {
     'x-component': 'CollectionField',
-    'x-decorator': 'FormItem',
     'x-collection-field': 'messages.message',
   },
 };

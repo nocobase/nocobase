@@ -13,9 +13,7 @@ import { ChannelTypeMapContext } from '../../../../hooks';
 import { observer, useField } from '@formily/react';
 import { useAPIClient } from '@nocobase/client';
 import { useChannelTypeMap } from '../../../../hooks';
-const ContentConfigForm = () => {
-  const { typeMap } = useContext(ChannelTypeMapContext);
-};
+
 export const MessageConfigForm = observer<{ variableOptions: any }>(
   ({ variableOptions }) => {
     const field = useField();
