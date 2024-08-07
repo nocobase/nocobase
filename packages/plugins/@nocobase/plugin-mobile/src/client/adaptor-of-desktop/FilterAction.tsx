@@ -10,7 +10,10 @@
 import { Filter, withDynamicSchemaProps } from '@nocobase/client';
 import { ConfigProvider } from 'antd';
 import { Popup } from 'antd-mobile';
+import { CloseOutline } from 'antd-mobile-icons';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { useMobileActionDrawerStyle } from './ActionDrawer.style';
 import { MIN_Z_INDEX_INCREMENT, useBasicZIndex } from './BasicZIndexProvider';
 
 const OriginFilterAction = Filter.Action;
@@ -22,6 +25,8 @@ export const FilterAction = withDynamicSchemaProps((props) => {
       Container={(props) => {
         const { visiblePopup, popupContainerRef } = usePopupContainer(props.open);
         const { basicZIndex } = useBasicZIndex();
+        const { styles } = useMobileActionDrawerStyle();
+        const { t } = useTranslation();
 
         const newZIndex = basicZIndex + MIN_Z_INDEX_INCREMENT;
 
@@ -38,6 +43,21 @@ export const FilterAction = withDynamicSchemaProps((props) => {
           };
         }, [newZIndex]);
 
+        const bodyStyle = useMemo(
+          () => ({
+            borderTopLeftRadius: '8px',
+            borderTopRightRadius: '8px',
+            maxHeight: 'calc(100% - var(--nb-mobile-page-header-height))',
+            overflow: 'auto',
+            zIndex: newZIndex,
+          }),
+          [newZIndex],
+        );
+
+        const zIndexStyle = useMemo(() => ({ zIndex: newZIndex }), [newZIndex]);
+
+        const getContainer = useCallback(() => popupContainerRef.current, [popupContainerRef]);
+
         return (
           <ConfigProvider theme={theme}>
             {props.children}
@@ -45,20 +65,22 @@ export const FilterAction = withDynamicSchemaProps((props) => {
               visible={visiblePopup}
               onClose={closePopup}
               onMaskClick={closePopup}
-              getContainer={() => popupContainerRef.current}
-              bodyStyle={{
-                borderTopLeftRadius: '8px',
-                borderTopRightRadius: '8px',
-                maxHeight: 'calc(100% - var(--nb-mobile-page-header-height))',
-                overflow: 'auto',
-                padding: '12px',
-                zIndex: newZIndex,
-              }}
-              maskStyle={{ zIndex: newZIndex }}
-              showCloseButton
+              getContainer={getContainer}
+              bodyStyle={bodyStyle}
+              maskStyle={zIndexStyle}
               closeOnSwipe
             >
-              {props.content}
+              <div className={styles.header}>
+                {/* used to make the title center */}
+                <span className={styles.placeholder}>
+                  <CloseOutline />
+                </span>
+                <span>{t('Filter')}</span>
+                <span className={styles.closeIcon} onClick={closePopup}>
+                  <CloseOutline />
+                </span>
+              </div>
+              <div style={{ padding: 12 }}>{props.content}</div>
               <div style={{ height: 150 }}></div>
             </Popup>
           </ConfigProvider>
