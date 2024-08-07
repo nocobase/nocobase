@@ -1128,10 +1128,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     this._cli = this.createCLI();
     this._i18n = createI18n(options);
-    this.pubSubManager = createPubSubManager(this, {
-      channelPrefix: this.name,
-      ...options.pubSubManager,
-    });
+    this.pubSubManager = createPubSubManager(this, options.pubSubManager);
     this.syncMessageManager = new SyncMessageManager(this, options.syncMessageManager);
     this.context.db = this.db;
 
