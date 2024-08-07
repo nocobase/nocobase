@@ -8,7 +8,7 @@
  */
 
 import { Plugin } from '@nocobase/client';
-import NotificationsCorePlugin from 'packages/plugins/@nocobase/plugin-notifications-manager/client';
+import NotificationManager from '@nocobase/plugin-notification-manager/client';
 import { channelType, NAMESPACE } from '../constant';
 import { tval } from '@nocobase/utils/client';
 import { ConfigForm } from './ConfigForm';
@@ -21,7 +21,7 @@ export class PluginNotificationsMailClient extends Plugin {
 
   // You can get and modify the app instance here
   async load() {
-    const notification = this.pm.get(NotificationsCorePlugin);
+    const notification = this.pm.get(NotificationManager);
     notification.registerChannelType(channelType, {
       title: tval(channelType, { ns: NAMESPACE }),
       name: channelType,
