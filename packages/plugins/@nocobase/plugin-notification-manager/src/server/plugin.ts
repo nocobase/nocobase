@@ -45,6 +45,11 @@ export class PluginNotificationManager extends Plugin {
       notificationServer.send({ message, channel });
       next();
     });
+    this.app.acl.registerSnippet({
+      name: 'pm.notification',
+      actions: ['messages:*'],
+    });
+    this.app.acl.allow('messages', 'send', 'loggedIn');
   }
 
   async load() {}
