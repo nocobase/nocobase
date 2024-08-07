@@ -13,7 +13,13 @@
 
 import { CollectionOptions } from '@nocobase/client';
 import { COLLECTION_NAME } from '../constant';
-import { MessageComponentNames } from '../client/manager/message/types';
+
+enum MessageComponentNames {
+  AddNew = 'AddNew',
+  ReceiverConfigForm = 'ReceiverConfigForm',
+  MessageInput = 'MessageInput',
+  MessageLogManager = 'MessageLogManager',
+}
 
 const collectionOption: CollectionOptions = {
   name: COLLECTION_NAME.messages,
