@@ -1,0 +1,11 @@
+{
+  "name": "@nocobase/plugin-notifications-mail",
+  "version": "1.2.11-alpha",
+  "main": "dist/server/index.js",
+  "dependencies": {},
+  "peerDependencies": {
+    "@nocobase/client": "1.x",
+    "@nocobase/server": "1.x",
+    "@nocobase/test": "1.x"
+  }
+}
