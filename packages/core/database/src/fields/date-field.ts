@@ -11,7 +11,7 @@ import { DataTypes } from 'sequelize';
 import { BaseColumnFieldOptions, Field } from './field';
 
 export class DateField extends Field {
-  get dataType() {
+  get dataType(): any {
     return DataTypes.DATE(3);
   }
 
@@ -36,7 +36,7 @@ export class DateField extends Field {
   init() {
     const { name, defaultToCurrentTime, onUpdateToCurrentTime } = this.options;
 
-    this.listener = async (instance) => {
+    this.beforeValidate = async (instance) => {
       const value = instance.get(name);
 
       if (!value && instance.isNewRecord && defaultToCurrentTime) {
@@ -68,7 +68,12 @@ export class DateField extends Field {
       model.refreshAttributes();
     }
 
-    this.on('beforeValidate', this.listener);
+    this.on('beforeValidate', this.beforeValidate);
+  }
+
+  unbind() {
+    super.unbind();
+    this.off('beforeValidate', this.beforeValidate);
   }
 }
 

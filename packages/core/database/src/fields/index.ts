@@ -35,6 +35,7 @@ import { UidFieldOptions } from './uid-field';
 import { UUIDFieldOptions } from './uuid-field';
 import { VirtualFieldOptions } from './virtual-field';
 import { NanoidFieldOptions } from './nanoid-field';
+import { UnixTimestampFieldOptions } from './unix-timestamp-field';
 
 export * from './array-field';
 export * from './belongs-to-field';
@@ -59,6 +60,7 @@ export * from './uid-field';
 export * from './uuid-field';
 export * from './virtual-field';
 export * from './nanoid-field';
+export * from './unix-timestamp-field';
 
 export type FieldOptions =
   | BaseFieldOptions
@@ -79,6 +81,7 @@ export type FieldOptions =
   | SetFieldOptions
   | TimeFieldOptions
   | DateFieldOptions
+  | UnixTimestampFieldOptions
   | UidFieldOptions
   | UUIDFieldOptions
   | NanoidFieldOptions
