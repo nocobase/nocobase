@@ -17,22 +17,37 @@ export const ConfigForm = () => {
       scope={{ t }}
       schema={{
         type: 'object',
+
         properties: {
-          sms: {
-            type: 'void',
-            properties: {
-              public: {
-                type: 'object',
-                properties: {
-                  autoSignup: {
-                    'x-decorator': 'FormItem',
-                    type: 'boolean',
-                    title: '{{t("Sign up automatically when the user does not exist")}}',
-                    'x-component': 'Checkbox',
-                  },
-                },
-              },
-            },
+          host: {
+            'x-decorator': 'FormItem',
+            type: 'boolean',
+            title: '{{t("host")}}',
+            'x-component': 'Input',
+          },
+          port: {
+            'x-decorator': 'FormItem',
+            type: 'boolean',
+            title: '{{t("port")}}',
+            'x-component': 'Input',
+          },
+          secure: {
+            'x-decorator': 'FormItem',
+            type: 'boolean',
+            title: '{{t("secure")}}',
+            'x-component': 'Checkbox',
+          },
+          account: {
+            'x-decorator': 'FormItem',
+            type: 'boolean',
+            title: '{{t("account")}}',
+            'x-component': 'Input',
+          },
+          password: {
+            'x-decorator': 'FormItem',
+            type: 'boolean',
+            title: '{{t("password")}}',
+            'x-component': 'Input',
           },
         },
       }}

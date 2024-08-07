@@ -10,13 +10,8 @@
 import { Plugin } from '@nocobase/server';
 import NotificationsServerPlugin, { SendFnType, NotificationServerBase } from '@nocobase/plugin-notification-manager';
 import { channelType } from '../constant';
+import { MailServer } from './mail-server';
 
-class MailServer extends NotificationServerBase {
-  send: SendFnType = async function (args) {
-    console.log(args);
-    return true;
-  };
-}
 export class PluginNotificationsMailServer extends Plugin {
   async afterAdd() {}
 

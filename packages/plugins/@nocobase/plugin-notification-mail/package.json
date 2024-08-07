@@ -2,11 +2,13 @@
   "name": "@nocobase/plugin-notification-mail",
   "version": "1.3.0-alpha",
   "main": "dist/server/index.js",
-  "dependencies": {},
+  "dependencies": {
+    "nodemailer": "^6.9.14"
+  },
   "peerDependencies": {
     "@nocobase/client": "1.x",
+    "@nocobase/plugin-notification-manager": "1.x",
     "@nocobase/server": "1.x",
-    "@nocobase/test": "1.x",
-    "@nocobase/plugin-notification-manager": "1.x"
+    "@nocobase/test": "1.x"
   }
 }
