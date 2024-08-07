@@ -7,7 +7,5 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { name } from '../package.json';
-
 export const channelType = 'mail';
-export const NAMESPACE = name;
+export const NAMESPACE = '@nocobase/plugin-notification-mail';
