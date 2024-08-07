@@ -11,12 +11,21 @@ import React, { useContext } from 'react';
 import { SchemaComponent } from '@nocobase/client';
 import { ChannelTypeMapContext } from '../../../../hooks';
 import { observer, useField } from '@formily/react';
+import { useAPIClient } from '@nocobase/client';
 const ContentConfigForm = () => {
   const { typeMap } = useContext(ChannelTypeMapContext);
 };
 export const MessageConfigForm = observer<{ variableOptions: any }>(
   ({ variableOptions }) => {
     const field = useField();
+    // const mapOptions = (_, option) => {
+    //   return { ...option, value: `${option.id}|${option.NotificationType}` };
+    // };
+    // const api = useAPIClient();
+    // api.request({
+    //   url: '/channels:get',
+    // });
+
     const createMessageFormSchema = {
       type: 'object',
       properties: {
@@ -25,8 +34,9 @@ export const MessageConfigForm = observer<{ variableOptions: any }>(
           title: 'title',
           'x-decorator': 'FormItem',
           'x-component': 'Input',
+          required: true,
         },
-        channelId: {
+        channel: {
           type: 'number',
           title: 'channel',
           'x-decorator': 'FormItem',

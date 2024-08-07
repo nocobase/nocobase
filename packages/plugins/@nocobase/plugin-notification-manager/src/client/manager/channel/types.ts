@@ -13,7 +13,8 @@ export type ChannelType = {
   title: string;
   name: string;
   components: {
-    ConfigForm: ComponentType;
+    ChannelConfigForm: ComponentType;
+    MessageConfigForm?: ComponentType;
   };
 };
 

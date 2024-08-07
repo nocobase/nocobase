@@ -26,7 +26,7 @@ export class PluginNotificationsMailClient extends Plugin {
       title: tval(channelType, { ns: NAMESPACE }),
       name: channelType,
       components: {
-        ConfigForm: ConfigForm,
+        ChannelConfigForm: ConfigForm,
       },
     });
     // this.app.addComponents({})

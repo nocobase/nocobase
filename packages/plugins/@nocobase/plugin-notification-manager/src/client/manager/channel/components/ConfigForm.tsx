@@ -12,13 +12,6 @@ import { observer, useForm } from '@formily/react';
 import { NotificationTypeNameContext } from '../context';
 import { NotificationTypesContext } from '../context';
 import { useActionContext, usePlugin, useCollectionRecord, useRequest } from '@nocobase/client';
-function ConfigFormCore(props) {
-  const { name } = useContext(NotificationTypeNameContext);
-  const { channelTypes } = useContext(NotificationTypesContext);
-
-  const channel = channelTypes.find((channelType) => channelType.name === name);
-  return channel ? channel.components.ConfigForm : null;
-}
 
 export const ConfigForm = observer(
   () => {
@@ -27,7 +20,7 @@ export const ConfigForm = observer(
     const notificationTypeName = form.values.notificationType || record?.data?.notificationType;
     const { channelTypes } = useContext(NotificationTypesContext);
     const channel = channelTypes.find((channelType) => channelType.name === notificationTypeName);
-    return channel ? <channel.components.ConfigForm /> : null;
+    return channel ? <channel.components.ChannelConfigForm /> : null;
   },
   { displayName: 'ConfigForm' },
 );
