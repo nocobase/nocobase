@@ -12,9 +12,11 @@ import { useField, useFieldSchema } from '@formily/react';
 import { useTranslation } from 'react-i18next';
 import { SchemaSettings } from '../../../../application/schema-settings/SchemaSettings';
 import { useColumnSchema, useDesignable } from '../../../../schema-component';
-import { fieldComponent } from '../Input.URL/settings';
+import { SchemaSettingsItemType } from '../../../../application/schema-settings';
+// import { createSelectSchemaSettingsItem } from '../../../../application';
+// import { fieldComponent } from '../Input.URL/settings';
 
-const size = {
+const size: SchemaSettingsItemType = {
   name: 'size',
   type: 'select',
   useComponentProps() {
@@ -50,7 +52,23 @@ const size = {
   },
 };
 
+// const size2 = createSelectSchemaSettingsItem({
+//   name: 'size2',
+//   title: 'Size2',
+//   type: 'field',
+//   schemaKey: 'x-component-props.size',
+//   options: [
+//     { value: 'small', label: 'Small' },
+//     { value: 'middle', label: 'Middle' },
+//     { value: 'large', label: 'Large' },
+//     { value: 'auto', label: 'Auto' },
+//   ],
+// });
+
 export const inputPreviewComponentFieldSettings = new SchemaSettings({
   name: 'fieldSettings:component:Input.Preview',
-  items: [fieldComponent, size],
+  items: [
+    size,
+    // size2
+  ],
 });
