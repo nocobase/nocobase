@@ -7,89 +7,98 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React from 'react';
+import React, { useContext } from 'react';
 import { SchemaComponent } from '@nocobase/client';
-
-export const MessageConfigForm = ({ variableOptions }) => {
-  const createMessageFormSchema = {
-    type: 'object',
-    properties: {
-      title: {
-        type: 'string',
-        title: 'title',
-        'x-decorator': 'FormItem',
-        'x-component': 'Input',
-      },
-      channelId: {
-        type: 'number',
-        title: 'channel',
-        'x-decorator': 'FormItem',
-        'x-component': 'RemoteSelect',
-        'x-component-props': {
-          multiple: false,
-          fieldNames: {
-            label: 'title',
-            value: 'id',
-          },
-          service: {
-            resource: 'channels',
-            action: 'list',
-          },
-          style: {
-            width: '100%',
-          },
+import { ChannelTypeMapContext } from '../../../../hooks';
+import { observer, useField } from '@formily/react';
+const ContentConfigForm = () => {
+  const { typeMap } = useContext(ChannelTypeMapContext);
+};
+export const MessageConfigForm = observer<{ variableOptions: any }>(
+  ({ variableOptions }) => {
+    const field = useField();
+    const createMessageFormSchema = {
+      type: 'object',
+      properties: {
+        title: {
+          type: 'string',
+          title: 'title',
+          'x-decorator': 'FormItem',
+          'x-component': 'Input',
         },
-      },
-      receivers: {
-        type: 'array',
-        name: 'receivers',
-        title: 'Receivers',
-        'x-decorator': 'FormItem',
-        'x-component': 'ArrayItems',
-        items: {
-          type: 'void',
-          'x-component': 'Space',
-          properties: {
-            input: {
-              type: 'string',
-              'x-decorator': 'FormItem',
-              'x-component': 'Variable.Input',
-              'x-component-props': { scope: variableOptions },
+        channelId: {
+          type: 'number',
+          title: 'channel',
+          'x-decorator': 'FormItem',
+          'x-component': 'RemoteSelect',
+          'x-component-props': {
+            multiple: false,
+            fieldNames: {
+              label: 'title',
+              value: 'id',
             },
-            remove: {
-              type: 'void',
-              'x-decorator': 'FormItem',
-              'x-component': 'ArrayItems.Remove',
+            service: {
+              resource: 'channels',
+              action: 'list',
+            },
+            style: {
+              width: '100%',
             },
           },
         },
-        properties: {
-          add: {
+        receivers: {
+          type: 'array',
+          name: 'receivers',
+          title: 'Receivers',
+          'x-decorator': 'FormItem',
+          'x-component': 'ArrayItems',
+          items: {
             type: 'void',
-            title: 'Add entry',
-            'x-component': 'ArrayItems.Addition',
-          },
-        },
-      },
-      content: {
-        type: 'object',
-        properties: {
-          body: {
-            type: 'string',
-            title: 'content',
-            'x-decorator': 'FormItem',
-            'x-component': 'Variable.RawTextArea',
-            'x-component-props': {
-              scope: variableOptions,
-              placeholder: 'Hi,',
-              autoSize: {
-                minRows: 10,
+            'x-component': 'Space',
+            properties: {
+              input: {
+                type: 'string',
+                'x-decorator': 'FormItem',
+                'x-component': 'Variable.Input',
+                'x-component-props': { scope: variableOptions },
+              },
+              remove: {
+                type: 'void',
+                'x-decorator': 'FormItem',
+                'x-component': 'ArrayItems.Remove',
               },
             },
           },
+          properties: {
+            add: {
+              type: 'void',
+              title: 'Add entry',
+              'x-component': 'ArrayItems.Addition',
+            },
+          },
+        },
+        content: {
+          type: 'object',
+          properties: {
+            body: {
+              type: 'string',
+              title: 'content',
+              'x-decorator': 'FormItem',
+              'x-component': 'Variable.RawTextArea',
+              'x-component-props': {
+                scope: variableOptions,
+                placeholder: 'Hi,',
+                autoSize: {
+                  minRows: 10,
+                },
+              },
+            },
+            config: {},
+          },
         },
       },
-    },
-  };
-  return <SchemaComponent schema={createMessageFormSchema} />;
-};
+    };
+    return <SchemaComponent schema={createMessageFormSchema} />;
+  },
+  { displayName: 'MessageConfigForm' },
+);

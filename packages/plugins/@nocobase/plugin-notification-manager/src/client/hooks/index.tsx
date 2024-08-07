@@ -18,8 +18,6 @@ import {
   useDataBlockRequest,
   useDataBlockResource,
 } from '@nocobase/client';
-import { uid } from '@formily/shared';
-import { ExtendCollectionsProvider, SchemaComponent } from '@nocobase/client';
 import { App as AntdApp } from 'antd';
 import { createForm } from '@formily/core';
 import { useForm } from '@formily/react';
@@ -99,3 +97,5 @@ export const useNotificationVariableOptions = () => {
 export const NotificationVariableProvider = ({ value, children }) => {
   return <NotificationVariableContext.Provider value={value}>{children}</NotificationVariableContext.Provider>;
 };
+
+export * from './channel';
