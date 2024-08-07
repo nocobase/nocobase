@@ -53,17 +53,17 @@ export const createMessageFormSchema: ISchema = {
 export const messageManagerSchema: ISchema = {
   type: 'void',
   name: COLLECTION_NAME.messages,
-  'x-decorator': 'ResourceActionProvider',
+  'x-decorator': 'TableBlockProvider',
+  'x-acl-action': `${COLLECTION_NAME.messages}:list`,
+  'x-use-decorator-props': 'useTableBlockDecoratorProps',
   'x-decorator-props': {
-    collection,
-    resourceName: COLLECTION_NAME.messages,
-    dragSort: false,
+    collection: `${COLLECTION_NAME.messages}`,
+    action: 'list',
     request: {
       resource: COLLECTION_NAME.messages,
       action: 'list',
       params: {
-        pageSize: 50,
-        appends: [],
+        pageSize: 20,
       },
     },
   },
@@ -77,19 +77,6 @@ export const messageManagerSchema: ISchema = {
         },
       },
       properties: {
-        delete: {
-          type: 'void',
-          title: '{{t("Delete")}}',
-          'x-component': 'Action',
-          'x-component-props': {
-            icon: 'DeleteOutlined',
-            useAction: '{{ cm.useBulkDestroyAction }}',
-            confirm: {
-              title: "{{t('Delete')}}",
-              content: "{{t('Are you sure you want to delete it?')}}",
-            },
-          },
-        },
         create: {
           type: 'void',
           title: '{{t("Add new")}}',
@@ -134,50 +121,39 @@ export const messageManagerSchema: ISchema = {
       },
     },
     table: {
-      type: 'void',
-      'x-uid': 'input',
-      'x-component': 'Table.Void',
+      type: 'array',
+      'x-uid': 'table_messages',
+      'x-component': 'TableV2',
+      'x-use-component-props': 'useTableBlockProps',
       'x-component-props': {
         rowKey: 'id',
         rowSelection: {
           type: 'checkbox',
         },
-        useDataSource: '{{ cm.useDataSourceFromRAC }}',
-        useAction() {
-          // const api = useAPIClient();
-          const { t } = useTranslation();
-          return {
-            async move(from, to) {
-              // await api.resource('authenticators').move({
-              //   sourceId: from.id,
-              //   targetId: to.id,
-              // });
-              message.success(t('Saved successfully'), 0.2);
-            },
-          };
-        },
       },
       properties: {
         id: {
           type: 'void',
-          'x-decorator': 'Table.Column.Decorator',
-          'x-component': 'Table.Column',
+          'x-decorator': 'TableV2.Column.Decorator',
+          'x-component': 'TableV2.Column',
           properties: {
             id: {
               type: 'number',
               'x-component': 'CollectionField',
+              'x-collection-field': `${COLLECTION_NAME.messages}.id`,
               'x-read-pretty': true,
             },
           },
         },
         title: {
           type: 'void',
-          'x-decorator': 'Table.Column.Decorator',
-          'x-component': 'Table.Column',
+          'x-decorator': 'TableV2.Column.Decorator',
+          'x-component': 'TableV2.Column',
           properties: {
             title: {
               type: 'string',
               'x-component': 'CollectionField',
+              'x-collection-field': `${COLLECTION_NAME.messages}.title`,
               'x-read-pretty': true,
             },
           },
@@ -185,7 +161,9 @@ export const messageManagerSchema: ISchema = {
         actions: {
           type: 'void',
           title: '{{t("Actions")}}',
-          'x-component': 'Table.Column',
+          'x-component': 'TableV2.Column',
+          'x-action-column': 'actions',
+          'x-decorator': 'TableV2.Column.ActionBar',
           properties: {
             actions: {
               type: 'void',
@@ -214,6 +192,11 @@ export const messageManagerSchema: ISchema = {
                   'x-component-props': {
                     type: 'primary',
                   },
+                  'x-action-context': {
+                    dataSource: 'main',
+                    collection: `${COLLECTION_NAME.messages}`,
+                  },
+                  'x-decorator': 'ACLActionProvider',
                   properties: {
                     drawer: {
                       type: 'void',
@@ -271,18 +254,29 @@ export const messageManagerSchema: ISchema = {
                     },
                   },
                 },
-                delete: {
-                  type: 'void',
+                r82c1dijim3: {
                   title: '{{ t("Delete") }}',
+                  'x-action': 'destroy',
                   'x-component': 'Action.Link',
+                  'x-use-component-props': 'useDestroyActionProps',
+                  'x-toolbar': 'ActionSchemaToolbar',
+                  'x-settings': 'actionSettings:delete',
                   'x-component-props': {
+                    icon: 'DeleteOutlined',
                     confirm: {
                       title: "{{t('Delete record')}}",
                       content: "{{t('Are you sure you want to delete it?')}}",
                     },
-                    useAction: '{{cm.useDestroyAction}}',
+                    refreshDataBlockRequest: true,
                   },
-                  'x-disabled': '{{ useCanNotDelete() }}',
+                  'x-decorator': 'ACLActionProvider',
+                  'x-designer-props': {
+                    linkageAction: true,
+                  },
+                  type: 'void',
+                  'x-uid': 'r82c1dijim3',
+                  'x-async': false,
+                  'x-index': 2,
                 },
               },
             },

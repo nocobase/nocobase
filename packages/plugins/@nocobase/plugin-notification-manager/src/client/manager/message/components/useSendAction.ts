@@ -12,7 +12,6 @@ export function useSendAction() {
   const { data }: any = useCollectionRecord();
 
   const apiClient = useAPIClient();
-  const { refresh } = useResourceActionContext();
   return {
     async run() {
       await apiClient.request({
@@ -22,7 +21,6 @@ export function useSendAction() {
           id: data.id,
         },
       });
-      refresh();
     },
   };
 }

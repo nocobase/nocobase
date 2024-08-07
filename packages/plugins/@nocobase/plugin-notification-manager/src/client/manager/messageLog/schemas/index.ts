@@ -11,42 +11,38 @@ import { ISchema } from '@formily/react';
 import collection from '../../../../collections/messageLog';
 import { COLLECTION_NAME } from '../../../../constant';
 import { useTranslation } from 'react-i18next';
-import { message } from 'antd';
-import { MessageScopeNames } from '../types';
 
 export const messageLogsManagerSchema: ISchema = {
   type: 'void',
+  'x-uid': 't8tkmt2b9dd',
   name: COLLECTION_NAME.messageLogs,
-  'x-decorator': 'ResourceActionProvider',
+  'x-decorator': 'TableBlockProvider',
+  'x-use-decorator-props': 'useTableBlockDecoratorProps',
+  'x-acl-action': `${COLLECTION_NAME.messageLogs}:list`,
   'x-decorator-props': {
     collection,
-    resourceName: COLLECTION_NAME.messageLogs,
-    dragSort: false,
-    request: {
-      resource: COLLECTION_NAME.messageLogs,
-      action: 'list',
-      params: {
-        pageSize: 10,
-        filter: {
-          $and: [
-            {
-              messageId: {
-                $eq: '{{$nPopupRecord.id}}',
-              },
+    action: 'list',
+    params: {
+      pageSize: 10,
+      filter: {
+        $and: [
+          {
+            messageId: {
+              $eq: '{{$nPopupRecord.id}}',
             },
-          ],
-        },
+          },
+        ],
       },
     },
   },
   properties: {
     table: {
-      type: 'void',
+      type: 'array',
       'x-uid': 'COLLECTION_NAME.messageLogs',
-      'x-component': 'Table.Void',
+      'x-component': 'TableV2',
+      'x-use-component-props': 'useTableBlockProps',
       'x-component-props': {
         rowKey: 'id',
-        useDataSource: '{{ cm.useDataSourceFromRAC }}',
       },
       properties: {
         id: {
@@ -57,6 +53,7 @@ export const messageLogsManagerSchema: ISchema = {
             id: {
               type: 'number',
               'x-component': 'CollectionField',
+              'x-collection-field': `${COLLECTION_NAME.messageLogs}.id`,
               'x-read-pretty': true,
             },
           },
@@ -69,6 +66,7 @@ export const messageLogsManagerSchema: ISchema = {
             messageId: {
               type: 'number',
               'x-component': 'CollectionField',
+              'x-collection-field': `${COLLECTION_NAME.messageLogs}.messageId`,
               'x-read-pretty': true,
             },
           },
