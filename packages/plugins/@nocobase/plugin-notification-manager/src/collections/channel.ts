@@ -54,7 +54,7 @@ const collection: CollectionOptions = {
       name: 'notificationType',
       uiSchema: {
         type: 'string',
-        title: '{{t("Notification Type")}}',
+        title: '{{t("Notification type")}}',
         'x-component': 'Select',
         dataSource: '{{ notificationTypeOptions }}',
         required: true,

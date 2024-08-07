@@ -26,7 +26,6 @@ export const messageLogsManagerSchema: ISchema = {
   properties: {
     table: {
       type: 'array',
-
       'x-component': 'TableV2',
       'x-use-component-props': 'useTableBlockProps',
       'x-component-props': {
@@ -36,7 +35,7 @@ export const messageLogsManagerSchema: ISchema = {
         id: {
           type: 'void',
           'x-component': 'TableV2.Column',
-          title: 'id',
+          title: '{{t("ID")}}',
           properties: {
             id: {
               type: 'string',
@@ -48,7 +47,7 @@ export const messageLogsManagerSchema: ISchema = {
         triggerFrom: {
           type: 'void',
           'x-component': 'TableV2.Column',
-          title: 'triggerFrom',
+          title: '{{t("Trigger from")}}',
           properties: {
             triggerFrom: {
               type: 'string',
@@ -60,7 +59,7 @@ export const messageLogsManagerSchema: ISchema = {
         status: {
           type: 'void',
           'x-component': 'TableV2.Column',
-          title: 'status',
+          title: '{{t("Status")}}',
           properties: {
             status: {
               type: 'string',
@@ -69,23 +68,10 @@ export const messageLogsManagerSchema: ISchema = {
             },
           },
         },
-        // channel: {
-        //   type: 'void',
-        //   'x-component': 'TableV2.Column',
-        //   title: 'channelId',
-        //   properties: {
-        //     channelId: {
-        //       type: 'number',
-        //       'x-component': 'CollectionField',
-        //       'x-collection-field': 'messageLogs.channelId',
-        //       'x-pattern': 'readPretty',
-        //     },
-        //   },
-        // },
         createdAt: {
           type: 'void',
           'x-component': 'TableV2.Column',
-          title: 'createdAt',
+          title: '{{t("Created at")}}',
           properties: {
             createdAt: {
               type: 'string',

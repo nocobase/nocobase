@@ -57,7 +57,7 @@ export const tableSchema = {
       },
     },
     notificationType: {
-      title: '{{t("Notification Type")}}',
+      title: '{{t("Notification type")}}',
       type: 'void',
       'x-decorator': 'Table.Column.Decorator',
       'x-component': 'Table.Column',
