@@ -12,6 +12,8 @@ export class CreateWorkFlow {
   readonly page: Page;
   name: Locator;
   triggerType: Locator;
+  synchronouslyRadio: Locator;
+  asynchronouslyRadio: Locator;
   description: Locator;
   autoDeleteHistory: Locator;
   submitButton: Locator;
@@ -20,6 +22,8 @@ export class CreateWorkFlow {
     this.page = page;
     this.name = page.getByLabel('block-item-CollectionField-workflows-Name').getByRole('textbox');
     this.triggerType = page.getByTestId('select-single');
+    this.synchronouslyRadio = page.getByLabel('Synchronously', { exact: true });
+    this.asynchronouslyRadio = page.getByLabel('Asynchronously', { exact: true });
     this.description = page.getByTestId('description-item').getByRole('textbox');
     this.autoDeleteHistory = page.getByTestId('select-multiple');
     this.submitButton = page.getByLabel('action-Action-Submit-workflows');
@@ -365,6 +369,30 @@ export class FormEventTriggerNode {
   }
 }
 
+export class CustomActionEventTriggerNode {
+  readonly page: Page;
+  node: Locator;
+  nodeTitle: Locator;
+  nodeConfigure: Locator;
+  collectionDropDown: Locator;
+  relationalDataDropdown: Locator;
+  submitButton: Locator;
+  cancelButton: Locator;
+  addNodeButton: Locator;
+  constructor(page: Page, triggerName: string, collectionName: string) {
+    this.page = page;
+    this.node = page.getByLabel(`Trigger-${triggerName}`);
+    this.nodeTitle = page.getByLabel(`Trigger-${triggerName}`).getByRole('textbox');
+    this.nodeConfigure = page.getByLabel(`Trigger-${triggerName}`).getByRole('button', { name: 'Configure' });
+    this.collectionDropDown = page
+      .getByLabel('block-item-DataSourceCollectionCascader-workflows-Collection')
+      .locator('.ant-select-selection-search-input');
+    this.relationalDataDropdown = page.getByTestId('select-field-Preload associations');
+    this.submitButton = page.getByLabel('action-Action-Submit-workflows');
+    this.cancelButton = page.getByLabel('action-Action-Cancel-workflows');
+    this.addNodeButton = page.getByLabel('add-button', { exact: true });
+  }
+}
 export class CalculationNode {
   readonly page: Page;
   node: Locator;
@@ -746,4 +774,5 @@ export default module.exports = {
   SQLNode,
   ParallelBranchNode,
   ApprovalBranchModeNode,
+  CustomActionEventTriggerNode,
 };

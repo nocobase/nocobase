@@ -19,7 +19,6 @@ export * from './CreateFilterActionInitializer';
 export * from './CreateResetActionInitializer';
 export * from './CustomizeActionInitializer';
 export * from './DataBlockInitializer';
-export * from './DeleteEventActionInitializer';
 export * from './G2PlotInitializer';
 export * from './InitializerWithSwitch';
 export * from './RecordAssociationBlockInitializer';

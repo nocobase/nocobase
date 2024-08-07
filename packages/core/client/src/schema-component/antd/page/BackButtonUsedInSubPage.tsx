@@ -11,15 +11,13 @@ import { ArrowLeftOutlined } from '@ant-design/icons';
 import { Button } from 'antd';
 import React, { useCallback, useMemo } from 'react';
 import { useToken } from '../../../style';
-import { useCurrentPopupContext } from './PagePopups';
-import { usePagePopup } from './pagePopupUtils';
+import { useActionContext } from '../action/hooks';
 
 export const useBackButton = () => {
-  const { params } = useCurrentPopupContext();
-  const { closePopup } = usePagePopup();
+  const { setVisible } = useActionContext();
   const goBack = useCallback(() => {
-    closePopup(params?.popupuid);
-  }, [closePopup, params?.popupuid]);
+    setVisible?.(false);
+  }, [setVisible]);
 
   return {
     goBack,
