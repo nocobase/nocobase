@@ -89,6 +89,40 @@ class MyPlugin extends Plugin {
 }
 ```
 
+#### addFieldInterfaceComponentOption()
+
+添加 Field interface 组件选项。
+
+![20240725113756](https://static-docs.nocobase.com/20240725113756.png)
+
+- 类型
+
+```tsx | pure
+interface CollectionFieldInterfaceComponentOption {
+  label: string;
+  value: string;
+  useVisible?: () => boolean;
+  useProps?: () => any;
+}
+
+class CollectionFieldInterfaceManager {
+  addFieldInterfaceComponentOption(interfaceName: string, componentOption: CollectionFieldInterfaceComponentOption): void
+}
+```
+
+- 示例
+
+```tsx | pure
+class MyPlugin extends Plugin {
+  async load() {
+    this.app.dataSourceManager.collectionFieldInterfaceManager.addFieldInterfaceComponentOption('url', {
+      label: 'Preview',
+      value: 'Input.Preview',
+    });
+  }
+}
+```
+
 ### field interface group
 
 #### addFieldInterfaceGroups()
