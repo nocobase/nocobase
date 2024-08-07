@@ -38,7 +38,7 @@ const collectionOption: CollectionOptions = {
       onDelete: 'SET NULL',
       uiSchema: {
         type: 'number',
-        title: '{{t("channel")}}',
+        title: '{{t("Channel")}}',
         'x-component': 'AssociationField',
         'x-component-props': {
           multiple: false,
@@ -52,7 +52,7 @@ const collectionOption: CollectionOptions = {
       uiSchema: {
         type: 'string',
         'x-component': 'Input',
-        title: 'triggerFrom',
+        title: '{{t("Trigger From")}}',
       },
     },
     {
@@ -62,7 +62,7 @@ const collectionOption: CollectionOptions = {
       uiSchema: {
         type: 'string',
         'x-component': 'Input',
-        title: 'status',
+        title: '{{t("Status")}}',
       },
     },
     {

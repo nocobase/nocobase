@@ -17,37 +17,40 @@ export const ChannelConfigForm = () => {
       scope={{ t }}
       schema={{
         type: 'object',
-
         properties: {
           host: {
             'x-decorator': 'FormItem',
             type: 'boolean',
-            title: '{{t("host")}}',
+            title: '{{t("Host")}}',
             'x-component': 'Input',
+            required: true,
           },
           port: {
             'x-decorator': 'FormItem',
             type: 'boolean',
-            title: '{{t("port")}}',
+            title: '{{t("Port")}}',
             'x-component': 'Input',
+            required: true,
           },
           secure: {
             'x-decorator': 'FormItem',
             type: 'boolean',
-            title: '{{t("secure")}}',
+            title: '{{t("Secure")}}',
             'x-component': 'Checkbox',
           },
           account: {
             'x-decorator': 'FormItem',
             type: 'boolean',
-            title: '{{t("account")}}',
+            title: '{{t("Account")}}',
             'x-component': 'Input',
+            required: true,
           },
           password: {
             'x-decorator': 'FormItem',
             type: 'boolean',
-            title: '{{t("password")}}',
+            title: '{{t("Password")}}',
             'x-component': 'Input',
+            required: true,
           },
         },
       }}

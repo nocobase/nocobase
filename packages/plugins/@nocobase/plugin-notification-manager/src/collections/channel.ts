@@ -33,7 +33,7 @@ const collection: CollectionOptions = {
       uiSchema: {
         type: 'string',
         'x-component': 'Input',
-        title: 'title',
+        title: 'Title',
       },
     },
     {
@@ -51,7 +51,7 @@ const collection: CollectionOptions = {
       name: 'notificationType',
       uiSchema: {
         type: 'string',
-        title: 'notification Type',
+        title: '{{t("Notification Type")}}',
         'x-component': 'Select',
         dataSource: '{{ notificationTypeOptions }}',
       },
@@ -63,11 +63,11 @@ const collection: CollectionOptions = {
       uiSchema: {
         type: 'string',
         'x-component': 'Input.TextArea',
-        title: 'description',
+        title: '{{t("Description")}}',
       },
     },
     {
-      name: 'createdAt',
+      name: 'CreatedAt',
       type: 'date',
       interface: 'createdAt',
       field: 'createdAt',
