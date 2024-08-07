@@ -15,7 +15,6 @@ import { useTranslation } from 'react-i18next';
 import { useFormBlockContext } from '../../../block-provider/FormBlockProvider';
 import { useCollection_deprecated, useSortFields } from '../../../collection-manager';
 import { SetDataLoadingMode } from '../../../modules/blocks/data-blocks/details-multi/setDataLoadingModeSettingsItem';
-import { useRecord } from '../../../record-provider';
 import {
   GeneralSchemaDesigner,
   SchemaSettingsDivider,
@@ -27,6 +26,7 @@ import { SchemaSettingsBlockTitleItem } from '../../../schema-settings/SchemaSet
 import { SchemaSettingsDataScope } from '../../../schema-settings/SchemaSettingsDataScope';
 import { SchemaSettingsTemplate } from '../../../schema-settings/SchemaSettingsTemplate';
 import { useSchemaTemplate } from '../../../schema-templates';
+import { useBlockTemplateContext } from '../../../schema-templates/BlockTemplateProvider';
 import { useDesignable } from '../../hooks';
 import { removeNullCondition } from '../filter';
 
@@ -42,7 +42,6 @@ export const ListDesigner = () => {
   const field = useField();
   const { dn } = useDesignable();
   const sortFields = useSortFields(name);
-  const record = useRecord();
   const defaultSort = fieldSchema?.['x-decorator-props']?.params?.sort || [];
   const defaultResource =
     fieldSchema?.['x-decorator-props']?.resource || fieldSchema?.['x-decorator-props']?.association;
@@ -57,6 +56,7 @@ export const ListDesigner = () => {
           direction: 'asc',
         };
   });
+  const { componentNamePrefix } = useBlockTemplateContext();
   return (
     <GeneralSchemaDesigner template={template} title={title || name}>
       <SchemaSettingsBlockTitleItem />
@@ -187,7 +187,11 @@ export const ListDesigner = () => {
           });
         }}
       />
-      <SchemaSettingsTemplate componentName={'List'} collectionName={name} resourceName={defaultResource} />
+      <SchemaSettingsTemplate
+        componentName={`${componentNamePrefix}List`}
+        collectionName={name}
+        resourceName={defaultResource}
+      />
       <SchemaSettingsDivider />
       <SchemaSettingsRemove
         removeParentsIfNoChildren

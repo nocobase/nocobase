@@ -20,7 +20,7 @@ import { SchemaComponent } from '../schema-component/core/SchemaComponent';
 import { useCompile } from '../schema-component/hooks/useCompile';
 import { createDesignable } from '../schema-component/hooks/useDesignable';
 import { useSchemaTemplateManager } from '../schema-templates';
-import { useBlockTemplateContext } from '../schema-templates/BlockTemplate';
+import { useBlockTemplateContext } from '../schema-templates/BlockTemplateProvider';
 import { SchemaSettingsItem, useSchemaSettings } from './SchemaSettings';
 
 export function SchemaSettingsTemplate(props) {

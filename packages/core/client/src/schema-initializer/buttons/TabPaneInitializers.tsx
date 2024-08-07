@@ -81,6 +81,7 @@ const TabPaneInitializers = (props?: any) => {
               'x-component': 'Action.Modal',
               'x-component-props': {
                 width: 520,
+                zIndex: 2000,
               },
               type: 'void',
               title: '{{t("Add tab")}}',

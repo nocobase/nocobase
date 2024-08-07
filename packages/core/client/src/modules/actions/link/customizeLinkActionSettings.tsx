@@ -29,10 +29,11 @@ export const SchemaSettingsActionLinkItem: FC<SchemaSettingsActionLinkItemProps>
   const { dn } = useDesignable();
   const { t } = useTranslation();
   const { urlSchema, paramsSchema, openInNewWindowSchema } = useURLAndHTMLSchema();
+  const componentProps = fieldSchema['x-component-props'] || {};
   const initialValues = {
-    url: field.componentProps.url,
-    params: field.componentProps.params || [{}],
-    openInNewWindow: field.componentProps.openInNewWindow,
+    url: componentProps.url,
+    params: componentProps.params || [{}],
+    openInNewWindow: componentProps.openInNewWindow,
   };
 
   return (
@@ -52,7 +53,6 @@ export const SchemaSettingsActionLinkItem: FC<SchemaSettingsActionLinkItemProps>
         },
       }}
       onSubmit={({ url, params, openInNewWindow }) => {
-        const componentProps = fieldSchema['x-component-props'] || {};
         componentProps.url = url;
         componentProps.params = params;
         componentProps.openInNewWindow = openInNewWindow;

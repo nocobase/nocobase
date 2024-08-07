@@ -9,7 +9,7 @@
 
 import { useFieldSchema } from '@formily/react';
 import { useMemo } from 'react';
-import { useBlockTemplateContext } from '../../schema-templates/BlockTemplate';
+import { useBlockTemplateContext } from '../../schema-templates/BlockTemplateProvider';
 
 export const useBlockHeightProps = () => {
   const fieldSchema = useFieldSchema();

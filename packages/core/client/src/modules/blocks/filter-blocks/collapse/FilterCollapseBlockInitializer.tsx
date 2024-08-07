@@ -11,9 +11,9 @@ import { TableOutlined } from '@ant-design/icons';
 import React from 'react';
 
 import { useSchemaInitializer, useSchemaInitializerItem } from '../../../../application';
-import { createCollapseBlockSchema } from './createFilterCollapseBlockSchema';
-import { DataBlockInitializer } from '../../../../schema-initializer/items/DataBlockInitializer';
 import { Collection, CollectionFieldOptions } from '../../../../data-source';
+import { DataBlockInitializer } from '../../../../schema-initializer/items/DataBlockInitializer';
+import { createCollapseBlockSchema } from './createFilterCollapseBlockSchema';
 
 export const FilterCollapseBlockInitializer = ({
   filterCollections,
@@ -32,7 +32,7 @@ export const FilterCollapseBlockInitializer = ({
       {...itemConfig}
       onlyCurrentDataSource={onlyCurrentDataSource}
       icon={<TableOutlined />}
-      componentType={'FilterCollapse'}
+      componentType={`FilterCollapse`}
       onCreateBlockSchema={async ({ item }) => {
         const schema = createCollapseBlockSchema({
           dataSource: item.dataSource,

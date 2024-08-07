@@ -271,7 +271,7 @@ function FinallyButton({
             }),
             React.cloneElement(rightButton as React.ReactElement<any, string>, {
               loading: false,
-              style: props?.style,
+              style: { ...props?.style, justifyContent: 'center' },
             }),
           ]}
           menu={menu}
