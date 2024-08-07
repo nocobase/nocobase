@@ -154,18 +154,6 @@ export const channelsSchema: ISchema = {
             },
           },
         },
-        options: {
-          type: 'void',
-          'x-decorator': 'Table.Column.Decorator',
-          'x-component': 'Table.Column',
-          properties: {
-            options: {
-              type: 'string',
-              'x-component': 'CollectionField',
-              'x-read-pretty': true,
-            },
-          },
-        },
         description: {
           type: 'void',
           'x-decorator': 'Table.Column.Decorator',

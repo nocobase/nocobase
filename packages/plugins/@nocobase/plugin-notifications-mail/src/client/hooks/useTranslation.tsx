@@ -7,3 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { NAMESPACE } from '../../constant';
+import { useTranslation } from 'react-i18next';
+
+export function useNotifyMailTranslation() {
+  return useTranslation(NAMESPACE);
+}

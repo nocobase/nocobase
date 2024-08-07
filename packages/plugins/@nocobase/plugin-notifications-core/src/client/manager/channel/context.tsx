@@ -7,11 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { createContext, useContext } from 'react';
+import React, { createContext, useContext } from 'react';
+import { useState } from 'react';
 import { ChannelType } from './types';
 export const ChannelTypeNameContext = createContext<{
   name: string;
-}>({ name: '' });
+  setName: (name: string) => void;
+}>({ name: '', setName: () => {} });
 ChannelTypeNameContext.displayName = 'ChannelTypeContext';
 
 export const ChannelTypesContext = createContext<{
@@ -23,3 +25,11 @@ export const useChannelTypes = () => {
   const { channelTypes: types } = useContext(ChannelTypesContext);
   return types;
 };
+
+export function useChannelTypeNameProvider() {
+  const [name, setName] = useState('');
+  const ChannelTypeNameProvider = ({ children }) => (
+    <ChannelTypeNameContext.Provider value={{ name, setName }}>{children}</ChannelTypeNameContext.Provider>
+  );
+  return { name, setName, ChannelTypeNameProvider };
+}
