@@ -7,9 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export enum COLLECTION_NAME {
-  templates = 'templates',
-  channels = 'channels',
-  messages = 'messages',
-  messageLogs = 'messageLogs',
-}
+import { defineCollection } from '@nocobase/database';
+import collectionOption from '../../collections/messageLog';
+
+export default defineCollection(collectionOption);

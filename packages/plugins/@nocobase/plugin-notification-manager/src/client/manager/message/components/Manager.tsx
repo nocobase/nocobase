@@ -16,15 +16,14 @@ import {
   useSchemaComponentContext,
   ExtendCollectionsProvider,
 } from '@nocobase/client';
-import React, { useState } from 'react';
-import { Button } from 'antd';
-import { PlusOutlined } from '@ant-design/icons';
+import React from 'react';
 import { useNotificationTranslation } from '../../../locale';
 import channelCollection from '../../../../collections/channel';
 import messageCollection from '../../../../collections/message';
 import { MessageComponentNames, MessageScopeNames } from '../types';
 import ReceiverConfigForm from './ReceiverConfigForm';
 import MessageInput from './MessageInput';
+import { MessageLogManager } from '../../messageLog/components/Manager';
 import { useSendAction } from './useSendAction';
 
 const useCloseAction = () => {
@@ -49,6 +48,7 @@ export const MessageManager = () => {
             components={{
               [MessageComponentNames.ReceiverConfigForm]: ReceiverConfigForm,
               [MessageComponentNames.MessageInput]: MessageInput,
+              [MessageComponentNames.MessageLogManager]: MessageLogManager,
             }}
           />
         </Card>

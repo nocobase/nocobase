@@ -21,7 +21,6 @@ export enum MessageComponentNames {
   AddNew = 'AddNew',
   ReceiverConfigForm = 'ReceiverConfigForm',
   MessageInput = 'MessageInput',
-  MessageLogManager = 'MessageLogManager',
 }
 
 export enum MessageActionNames {

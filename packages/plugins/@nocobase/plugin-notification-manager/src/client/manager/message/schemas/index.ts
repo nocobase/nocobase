@@ -13,7 +13,7 @@ import { COLLECTION_NAME } from '../../../../constant';
 import { useTranslation } from 'react-i18next';
 import { message } from 'antd';
 import { formProperties } from './form';
-import { MessageScopeNames } from '../types';
+import { MessageScopeNames, MessageComponentNames } from '../types';
 export const createMessageFormSchema: ISchema = {
   type: 'object',
   properties: {
@@ -206,6 +206,28 @@ export const messageManagerSchema: ISchema = {
                     useAction: `{{${MessageScopeNames.useSendAction}}}`,
                   },
                 },
+
+                logs: {
+                  type: 'void',
+                  title: '{{t("Logs")}}',
+                  'x-component': 'Action.Link',
+                  'x-component-props': {
+                    type: 'primary',
+                  },
+                  properties: {
+                    drawer: {
+                      type: 'void',
+                      'x-component': 'Action.Drawer',
+                      title: '{{t("Logs")}}',
+                      properties: {
+                        logs: {
+                          type: 'void',
+                          'x-component': `${MessageComponentNames.MessageLogManager}`,
+                        },
+                      },
+                    },
+                  },
+                },
                 update: {
                   type: 'void',
                   title: '{{t("Configure")}}',
@@ -216,7 +238,7 @@ export const messageManagerSchema: ISchema = {
                   properties: {
                     drawer: {
                       type: 'void',
-                      'x-component': 'Action.Drawer',
+                      'x-component': 'Action.Modal',
                       'x-decorator': 'Form',
                       'x-decorator-props': {
                         useValues: '{{ cm.useValuesFromRecord }}',
