@@ -8,12 +8,13 @@
  */
 
 import React from 'react';
-import { ActionInitializerItem } from './ActionInitializerItem';
+import { ActionInitializerItem } from '@nocobase/client';
 
 export const DeleteEventActionInitializer = (props) => {
   const schema = {
     title: '{{ t("Delete Event") }}',
     'x-action': 'deleteEvent',
+    'x-acl-action': 'destroy',
     'x-component': 'Action',
     'x-designer': 'Action.Designer',
     'x-component-props': {
