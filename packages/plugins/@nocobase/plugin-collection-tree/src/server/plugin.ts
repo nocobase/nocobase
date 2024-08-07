@@ -92,8 +92,7 @@ class PluginCollectionTreeServer extends Plugin {
             } else {
               filter = {
                 path: {
-                  path: '$.',
-                  string_starts_with: `${pathData.get('path')}`,
+                  $startsWith: `${pathData.get('path')}`,
                 },
               };
             }
@@ -151,11 +150,11 @@ class PluginCollectionTreeServer extends Plugin {
         { type: 'jsonb', name: 'path' },
         { type: 'integer', name: 'rootPk' },
       ],
-      indexes: [
-        {
-          fields: ['path'],
-        },
-      ],
+      // indexes: [
+      //   {
+      //     fields: ['path'],
+      //   },
+      // ],
     });
   }
 

@@ -33,11 +33,11 @@ export default class extends Migration {
           { type: 'jsonb', name: 'path' },
           { type: 'integer', name: 'rootPk' },
         ],
-        indexes: [
-          {
-            fields: ['path'],
-          },
-        ],
+        // indexes: [
+        //   {
+        //     fields: ['path'],
+        //   },
+        // ],
       });
       const treeExistsInDb = await this.app.db.getCollection(name).existsInDb();
       if (!treeExistsInDb) {
