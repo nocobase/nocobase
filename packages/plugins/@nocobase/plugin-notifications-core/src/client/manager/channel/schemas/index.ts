@@ -154,6 +154,18 @@ export const channelsSchema: ISchema = {
             },
           },
         },
+        options: {
+          type: 'void',
+          'x-decorator': 'Table.Column.Decorator',
+          'x-component': 'Table.Column',
+          properties: {
+            options: {
+              type: 'string',
+              'x-component': 'CollectionField',
+              'x-read-pretty': true,
+            },
+          },
+        },
         description: {
           type: 'void',
           'x-decorator': 'Table.Column.Decorator',
@@ -209,14 +221,7 @@ export const channelsSchema: ISchema = {
                       },
                       title: '{{t("Configure")}}',
                       properties: {
-                        title: {
-                          'x-component': 'CollectionField',
-                          'x-decorator': 'FormItem',
-                        },
-                        description: {
-                          'x-component': 'CollectionField',
-                          'x-decorator': 'FormItem',
-                        },
+                        ...formProperties,
                         footer: {
                           type: 'void',
                           'x-component': 'Action.Drawer.Footer',

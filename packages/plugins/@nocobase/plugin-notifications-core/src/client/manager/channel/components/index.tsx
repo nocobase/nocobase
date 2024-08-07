@@ -78,7 +78,7 @@ const AddNew = () => {
         </Dropdown>
         {/* <SchemaComponentProvidr components={{ (typeName) }}> */}
         <SchemaComponent
-          scope={{ useCloseAction, types: channelTypes, setType: setTypeName }}
+          scope={{ useCloseAction, notificationTypeOptions }}
           schema={createFormSchema}
           components={{ ConfigForm: getConfigForm(typeName) }}
         />
@@ -135,7 +135,7 @@ export const ChannelManager = () => {
         <SchemaComponent
           schema={channelsSchema}
           components={{ AddNew }}
-          scope={{ types, notificationTypeOptions, useCanNotDelete, t }}
+          scope={{ notificationTypeOptions, useCanNotDelete, t }}
         />
       </ChannelTypesContext.Provider>
     </Card>

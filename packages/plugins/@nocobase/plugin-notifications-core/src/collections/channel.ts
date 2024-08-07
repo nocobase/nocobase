@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { COLLECTION_NAME } from '../constant';
 import { CollectionOptions } from '@nocobase/client';
 const collection: CollectionOptions = {
@@ -38,14 +47,14 @@ const collection: CollectionOptions = {
       },
     },
     {
-      name: ' notificationType',
+      interface: 'input',
       type: 'string',
+      name: 'notificationType',
       uiSchema: {
         type: 'string',
-        title: '{{t(Notification Type")}}',
+        title: 'notification Type',
         'x-component': 'Select',
-        dataSource: '{{ notificationTypes }}',
-        required: true,
+        dataSource: '{{ notificationTypeOptions }}',
       },
     },
     {
