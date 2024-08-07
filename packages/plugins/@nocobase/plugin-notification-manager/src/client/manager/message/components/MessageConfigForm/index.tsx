@@ -46,7 +46,7 @@ export const MessageConfigForm = observer<{ variableOptions: any }>(
       type: 'object',
       properties: {
         channelId: {
-          type: 'number',
+          type: 'string',
           title: '{{t("Channel")}}',
           required: true,
           'x-decorator': 'FormItem',

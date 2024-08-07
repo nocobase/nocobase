@@ -155,7 +155,7 @@ export const channelsSchema: ISchema = {
           'x-component': 'Table.Column',
           properties: {
             id: {
-              type: 'number',
+              type: 'string',
               'x-component': 'CollectionField',
               'x-read-pretty': true,
             },
