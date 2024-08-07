@@ -7,9 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { COLLECTION_NAME } from '../../../../constant';
-const collection = {
-  name: COLLECTION_NAME.channels,
+import { CollectionOptions } from '@nocobase/client';
+import { COLLECTION_NAME } from '../constant';
+
+const collectionOption: CollectionOptions = {
+  name: COLLECTION_NAME.templates,
   fields: [
     {
       name: 'id',
@@ -35,8 +37,19 @@ const collection = {
         title: 'title',
       },
     },
+
     {
-      name: 'options',
+      name: 'description',
+      type: 'text',
+      interface: 'textarea',
+      uiSchema: {
+        type: 'string',
+        'x-component': 'Input.TextArea',
+        title: 'description',
+      },
+    },
+    {
+      name: 'content',
       type: 'json',
       interface: 'json',
       uiSchema: {
@@ -47,17 +60,7 @@ const collection = {
             minRows: 5,
           },
         },
-        title: 'options',
-      },
-    },
-    {
-      name: 'description',
-      type: 'text',
-      interface: 'textarea',
-      uiSchema: {
-        type: 'string',
-        'x-component': 'Input.TextArea',
-        title: 'description',
+        title: 'content',
       },
     },
     {
@@ -111,4 +114,5 @@ const collection = {
     },
   ],
 };
-export default collection;
+
+export default collectionOption;

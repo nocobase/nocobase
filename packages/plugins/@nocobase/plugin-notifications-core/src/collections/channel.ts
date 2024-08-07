@@ -1,15 +1,6 @@
-/**
- * This file is part of the NocoBase (R) project.
- * Copyright (c) 2020-2024 NocoBase Co., Ltd.
- * Authors: NocoBase Team.
- *
- * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
- * For more information, please refer to: https://www.nocobase.com/agreement.
- */
-
-import { defineCollection } from '@nocobase/database';
-import { COLLECTION_NAME } from '../../constant';
-export default defineCollection({
+import { COLLECTION_NAME } from '../constant';
+import { CollectionOptions } from '@nocobase/client';
+const collection: CollectionOptions = {
   name: COLLECTION_NAME.channels,
   fields: [
     {
@@ -26,20 +17,35 @@ export default defineCollection({
       },
       interface: 'integer',
     },
-    { name: 'title', type: 'string' },
+    {
+      name: 'title',
+      type: 'string',
+      interface: 'input',
+      uiSchema: {
+        type: 'string',
+        'x-component': 'Input',
+        title: 'title',
+      },
+    },
     {
       name: 'options',
       type: 'json',
       interface: 'json',
       uiSchema: {
         type: 'object',
-        'x-component': 'Input.JSON',
-        'x-component-props': {
-          autoSize: {
-            minRows: 5,
-          },
-        },
+        'x-component': 'ConfigForm',
         title: 'options',
+      },
+    },
+    {
+      name: ' notificationType',
+      type: 'string',
+      uiSchema: {
+        type: 'string',
+        title: '{{t(Notification Type")}}',
+        'x-component': 'Select',
+        dataSource: '{{ notificationTypes }}',
+        required: true,
       },
     },
     {
@@ -102,4 +108,5 @@ export default defineCollection({
       },
     },
   ],
-});
+};
+export default collection;

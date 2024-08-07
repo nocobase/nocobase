@@ -8,10 +8,11 @@
  */
 
 import { ISchema } from '@formily/react';
-import collection from './collection';
+import collection from '../../../../collections/channel';
 import { COLLECTION_NAME } from '../../../../constant';
 import { useTranslation } from 'react-i18next';
 import { message } from 'antd';
+import { formProperties } from './form';
 
 export const createFormSchema: ISchema = {
   type: 'object',
@@ -22,14 +23,7 @@ export const createFormSchema: ISchema = {
       'x-decorator': 'Form',
       title: '{{t("Add new")}}',
       properties: {
-        title: {
-          'x-component': 'CollectionField',
-          'x-decorator': 'FormItem',
-        },
-        description: {
-          'x-component': 'CollectionField',
-          'x-decorator': 'FormItem',
-        },
+        ...formProperties,
         footer: {
           type: 'void',
           'x-component': 'Action.Drawer.Footer',
@@ -74,7 +68,7 @@ export const channelsSchema: ISchema = {
       },
     },
   },
-  'x-component': 'CollectionProvider',
+  'x-component': 'CollectionProvider_deprecated',
   'x-component-props': {
     collection,
   },
@@ -169,6 +163,20 @@ export const channelsSchema: ISchema = {
               type: 'boolean',
               'x-component': 'CollectionField',
               'x-read-pretty': true,
+            },
+          },
+        },
+        notificationType: {
+          title: '{{t("Notification Type")}}',
+          type: 'void',
+          'x-decorator': 'Table.Column.Decorator',
+          'x-component': 'Table.Column',
+          properties: {
+            notificationType: {
+              type: 'string',
+              'x-component': 'Select',
+              'x-read-pretty': true,
+              enum: '{{ notificationTypeOptions }}',
             },
           },
         },

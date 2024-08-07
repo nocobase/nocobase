@@ -13,15 +13,12 @@ import { NAMESPACE } from './locale';
 import { ManagementList } from './Management';
 import { ChannelManager } from './manager/channel/components';
 import { ComponentType } from 'react';
-export type ChannelOptions = {
-  components: {
-    configForm: ComponentType;
-  };
-};
+import { ChannelType } from './manager/channel/types';
+
 export class PluginNotificationCoreClient extends Plugin {
-  channelTypes = new Registry<ChannelOptions>();
-  registerChannelType(channelType: string, options: ChannelOptions) {
-    this.channelTypes.register(channelType, options);
+  channelTypes = new Registry<ChannelType>();
+  registerChannelType(channelTypeName: string, options: ChannelType) {
+    this.channelTypes.register(channelTypeName, options);
   }
   async afterAdd() {
     // await this.app.pm.add()
@@ -39,7 +36,7 @@ export class PluginNotificationCoreClient extends Plugin {
     this.app.pluginSettingsManager.add(`${NAMESPACE}.notifications`, {
       title: 'Channels',
       Component: ChannelManager,
-      icon: 'NotificationOutlined',
+      icon: 'SendOutlined',
       aclSnippet: 'pm.notification.core',
       sort: 1,
     });

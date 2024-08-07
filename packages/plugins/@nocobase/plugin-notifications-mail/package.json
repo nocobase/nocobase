@@ -6,6 +6,7 @@
   "peerDependencies": {
     "@nocobase/client": "1.x",
     "@nocobase/server": "1.x",
-    "@nocobase/test": "1.x"
+    "@nocobase/test": "1.x",
+    "@nocobase/plugin-notifications-core": "1.x"
   }
 }

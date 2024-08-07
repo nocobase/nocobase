@@ -8,22 +8,18 @@
  */
 
 import { createContext, useContext } from 'react';
-
-export const ChannelTypeContext = createContext<{
-  type: string;
-}>({ type: '' });
-ChannelTypeContext.displayName = 'ChannelTypeContext';
+import { ChannelType } from './types';
+export const ChannelTypeNameContext = createContext<{
+  name: string;
+}>({ name: '' });
+ChannelTypeNameContext.displayName = 'ChannelTypeContext';
 
 export const ChannelTypesContext = createContext<{
-  types: {
-    key: string;
-    label: string;
-    value: string;
-  }[];
-}>({ types: [] });
+  channelTypes: Array<ChannelType>;
+}>({ channelTypes: [] });
 ChannelTypesContext.displayName = 'ChannelTypesContext';
 
 export const useChannelTypes = () => {
-  const { types } = useContext(ChannelTypesContext);
+  const { channelTypes: types } = useContext(ChannelTypesContext);
   return types;
 };

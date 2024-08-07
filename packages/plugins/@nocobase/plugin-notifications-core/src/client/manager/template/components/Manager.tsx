@@ -7,8 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export enum COLLECTION_NAME {
-  notifications = 'notifications',
-  channels = 'channels',
-  notificationRecords = 'notificationRecords',
-}
+import React from 'react';
+
+export const Manager = () => {
+  return <div>1</div>;
+};
