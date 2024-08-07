@@ -26,7 +26,7 @@ import ReceiverConfigForm from './ReceiverConfigForm';
 import MessageInput from './MessageInput';
 import { MessageLogManager } from '../../messageLog/components/Manager';
 import { useSendAction } from './useSendAction';
-import { useSubmitActionProps } from '../../../hooks';
+import { useSubmitActionProps, useEditFormProps } from '../../../hooks';
 const useCloseAction = () => {
   const { setVisible } = useActionContext();
   return {
@@ -45,7 +45,7 @@ export const MessageManager = () => {
         <Card bordered={false}>
           <SchemaComponent
             schema={messageManagerSchema}
-            scope={{ t, [MessageScopeNames.useSendAction]: useSendAction, useSubmitActionProps }}
+            scope={{ t, [MessageScopeNames.useSendAction]: useSendAction, useSubmitActionProps, useEditFormProps }}
             components={{
               [MessageComponentNames.ReceiverConfigForm]: ReceiverConfigForm,
               [MessageComponentNames.MessageInput]: MessageInput,

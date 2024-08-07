@@ -53,7 +53,7 @@ export const useSubmitActionProps = () => {
   };
 };
 
-const useEditFormProps = () => {
+export const useEditFormProps = () => {
   const recordData = useCollectionRecordData();
   const form = useMemo(
     () =>

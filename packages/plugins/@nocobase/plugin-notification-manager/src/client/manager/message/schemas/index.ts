@@ -14,7 +14,6 @@ import { useTranslation } from 'react-i18next';
 import { message } from 'antd';
 import { formProperties } from './form';
 import { MessageScopeNames, MessageComponentNames } from '../types';
-
 export const messageManagerSchema: ISchema = {
   type: 'void',
   name: COLLECTION_NAME.messages,
@@ -59,7 +58,7 @@ export const messageManagerSchema: ISchema = {
                 mwjr03qwm35: {
                   type: 'void',
                   'x-component': 'FormV2',
-                  // 'x-use-component-props': 'useCreateFormBlockProps',
+                  'x-use-component-props': 'useEditFormProps',
                   properties: {
                     ...formProperties,
                     footer: {
@@ -183,31 +182,24 @@ export const messageManagerSchema: ISchema = {
                   properties: {
                     drawer: {
                       type: 'void',
-                      'x-component': 'Action.Modal',
-                      'x-decorator': 'Form',
-                      'x-decorator-props': {
-                        useValues: '{{ cm.useValuesFromRecord }}',
-                      },
+                      'x-component': 'Action.Drawer',
                       title: '{{t("Configure")}}',
                       properties: {
-                        ...formProperties,
-                        footer: {
+                        form: {
                           type: 'void',
-                          'x-component': 'Action.Drawer.Footer',
+                          'x-component': 'FormV2',
+                          'x-use-component-props': 'useEditFormProps',
                           properties: {
-                            cancel: {
-                              title: '{{t("Cancel")}}',
-                              'x-component': 'Action',
-                              'x-component-props': {
-                                useAction: '{{ cm.useCancelAction }}',
-                              },
-                            },
-                            submit: {
-                              title: '{{t("Submit")}}',
-                              'x-component': 'Action',
-                              'x-component-props': {
-                                type: 'primary',
-                                useAction: '{{ cm.useUpdateAction }}',
+                            ...formProperties,
+                            footer: {
+                              type: 'void',
+                              'x-component': 'Action.Drawer.Footer',
+                              properties: {
+                                submit: {
+                                  title: '{{t("Submit")}}',
+                                  'x-component': 'Action',
+                                  'x-use-component-props': 'useSubmitActionProps',
+                                },
                               },
                             },
                           },
