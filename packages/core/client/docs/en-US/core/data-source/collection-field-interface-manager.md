@@ -89,7 +89,6 @@ class MyPlugin extends Plugin {
 }
 ```
 
-
 #### addFieldInterfaceComponentOption()
 
 Add field interface component option.
