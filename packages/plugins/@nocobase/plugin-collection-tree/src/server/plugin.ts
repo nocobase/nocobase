@@ -113,6 +113,11 @@ class PluginCollectionTreeServer extends Plugin {
         { type: 'jsonb', name: 'path' },
         { type: 'integer', name: 'rootPk' },
       ],
+      indexes: [
+        {
+          fields: ['path'],
+        },
+      ],
     });
   }
 
