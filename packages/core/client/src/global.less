@@ -1,35 +1,46 @@
-/* width */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+// the custom style for desktop
+@media (min-width: 768px) {
+  /* width */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  /* Track */
+  ::-webkit-scrollbar-track {
+    background: var(--colorBgScrollTrack);
+  }
+
+  /* Handle */
+  ::-webkit-scrollbar-thumb {
+    background: var(--colorBgScrollBar);
+    border-radius: 4px;
+  }
+
+  /* Handle on hover */
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--colorBgScrollBarHover);
+  }
+
+  ::-webkit-scrollbar-thumb:active {
+    background: var(--colorBgScrollBarActive);
+  }
+
+  .rc-virtual-list-scrollbar-thumb {
+    background: var(--colorBgScrollBar) !important;
+  }
+  .rc-virtual-list-scrollbar-thumb:hover {
+    background: var(--colorBgScrollBarHover) !important;
+  }
+  .rc-virtual-list-scrollbar-thumb:active {
+    background: var(--colorBgScrollBarActive) !important;
+  }
 }
 
-/* Track */
-::-webkit-scrollbar-track {
-  background: var(--colorBgScrollTrack);
-}
-
-/* Handle */
-::-webkit-scrollbar-thumb {
-  background: var(--colorBgScrollBar);
-  border-radius: 4px;
-}
-
-/* Handle on hover */
-::-webkit-scrollbar-thumb:hover {
-  background: var(--colorBgScrollBarHover);
-}
-
-::-webkit-scrollbar-thumb:active {
-  background: var(--colorBgScrollBarActive);
-}
-
-.rc-virtual-list-scrollbar-thumb {
-  background: var(--colorBgScrollBar) !important;
-}
-.rc-virtual-list-scrollbar-thumb:hover {
-  background: var(--colorBgScrollBarHover) !important;
-}
-.rc-virtual-list-scrollbar-thumb:active {
-  background: var(--colorBgScrollBarActive) !important;
+// the custom style for mobile
+@media (max-width: 767px) {
+  // ensure smooth scrolling on iOS devices
+  .smooth-scroll {
+    -webkit-overflow-scrolling: touch;
+  }
 }
