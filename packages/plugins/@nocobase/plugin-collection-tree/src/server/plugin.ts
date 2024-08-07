@@ -30,6 +30,7 @@ class PluginCollectionTreeServer extends Plugin {
             return;
           }
           const name = `${dataSource.name}_${collection.name}_path`;
+          const parentForeignKey = collection.treeParentField?.foreignKey || 'parentId';
 
           //always define tree path collection
           this.defineTreePathCollection(name, collectionManager);
@@ -58,7 +59,7 @@ class PluginCollectionTreeServer extends Plugin {
           //afterUpdate
           this.db.on(`${collection.name}.afterUpdate`, async (model: Model, options) => {
             // only update parentId and filterTargetKey
-            if (!(model._changed.has(collection.filterTargetKey) || model._changed.has('parentId'))) {
+            if (!(model._changed.has(collection.filterTargetKey) || model._changed.has(parentForeignKey))) {
               return;
             }
             const { transaction } = options;
@@ -141,21 +142,22 @@ class PluginCollectionTreeServer extends Plugin {
   }
 
   private async getTreePath(model: Model, path: string, collection: Model, name: string, transaction?: Transaction) {
-    if (model.get('parentId') !== null) {
+    const parentForeignKey = collection.treeParentField?.foreignKey || 'parentId';
+    if (model.get(parentForeignKey) !== null) {
       const parent = await this.app.db.getRepository(collection.name).findOne({
         filter: {
-          [collection.filterTargetKey]: model.get('parentId'),
+          [collection.filterTargetKey]: model.get(parentForeignKey),
         },
         transaction,
       });
-      if (parent && parent.get('parentId') !== model.get(collection.filterTargetKey)) {
+      if (parent && parent.get(parentForeignKey) !== model.get(collection.filterTargetKey)) {
         path = `/${parent.get(collection.filterTargetKey)}${path}`;
-        if (parent.get('parentId') !== null) {
+        if (parent.get(parentForeignKey) !== null) {
           const collectionTreePath = this.app.db.getCollection(name);
           const nodePkColumnName = collectionTreePath.getField('nodePk').columnName();
           const parentPathData = await this.app.db.getRepository(name).findOne({
             filter: {
-              [nodePkColumnName]: parent.get('parentId'),
+              [nodePkColumnName]: parent.get(parentForeignKey),
             },
             transaction,
           });

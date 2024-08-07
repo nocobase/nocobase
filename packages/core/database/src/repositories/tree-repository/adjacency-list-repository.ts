@@ -210,7 +210,7 @@ export class AdjacencyListRepository extends Repository {
       options = lodash.omit(options, ['filterByTk']);
       assign(options, {
         filter: {
-          parentId: null,
+          [foreignKey]: null,
         },
       });
       const [_, totalCountTmp] = await super.findAndCount(options);
