@@ -73,6 +73,7 @@ export class PresetNocoBase extends Plugin {
     'auth-sms>=0.10.0-alpha.2',
     'field-markdown-vditor>=0.21.0-alpha.16',
     'workflow-mailer',
+    'workflow-notification',
     'field-m2m-array',
     'notification-mail',
   ];

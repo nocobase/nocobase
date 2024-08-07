@@ -50,13 +50,13 @@ export class PluginNotificationCoreClient extends Plugin {
       sort: 2,
     });
 
-    this.app.pluginSettingsManager.add(`${NAMESPACE}.messages`, {
-      title: 'Messages',
-      Component: MessageManager,
-      icon: 'MessageOutlined',
-      aclSnippet: 'pm.notification.core',
-      sort: 3,
-    });
+    // this.app.pluginSettingsManager.add(`${NAMESPACE}.messages`, {
+    //   title: 'Messages',
+    //   Component: MessageManager,
+    //   icon: 'MessageOutlined',
+    //   aclSnippet: 'pm.notification.core',
+    //   sort: 3,
+    // });
     this.app.pluginSettingsManager.add(`${NAMESPACE}.logs`, {
       title: 'Logs',
       Component: LogManager,
