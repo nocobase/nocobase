@@ -10,7 +10,7 @@
 import React from 'react';
 import { SchemaComponent } from '@nocobase/client';
 import { useNotifyMailTranslation } from './hooks/useTranslation';
-export const ChannelConfigForm = () => {
+export const ContentConfigForm = ({ variableOptions }) => {
   const { t } = useNotifyMailTranslation();
   return (
     <SchemaComponent
@@ -23,30 +23,6 @@ export const ChannelConfigForm = () => {
             'x-decorator': 'FormItem',
             type: 'boolean',
             title: '{{t("host")}}',
-            'x-component': 'Input',
-          },
-          port: {
-            'x-decorator': 'FormItem',
-            type: 'boolean',
-            title: '{{t("port")}}',
-            'x-component': 'Input',
-          },
-          secure: {
-            'x-decorator': 'FormItem',
-            type: 'boolean',
-            title: '{{t("secure")}}',
-            'x-component': 'Checkbox',
-          },
-          account: {
-            'x-decorator': 'FormItem',
-            type: 'boolean',
-            title: '{{t("account")}}',
-            'x-component': 'Input',
-          },
-          password: {
-            'x-decorator': 'FormItem',
-            type: 'boolean',
-            title: '{{t("password")}}',
             'x-component': 'Input',
           },
         },

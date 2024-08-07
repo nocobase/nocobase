@@ -7,24 +7,40 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useContext } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import { SchemaComponent } from '@nocobase/client';
 import { ChannelTypeMapContext } from '../../../../hooks';
 import { observer, useField } from '@formily/react';
 import { useAPIClient } from '@nocobase/client';
+import { useChannelTypeMap } from '../../../../hooks';
 const ContentConfigForm = () => {
   const { typeMap } = useContext(ChannelTypeMapContext);
 };
 export const MessageConfigForm = observer<{ variableOptions: any }>(
   ({ variableOptions }) => {
     const field = useField();
-    // const mapOptions = (_, option) => {
-    //   return { ...option, value: `${option.id}|${option.NotificationType}` };
-    // };
-    // const api = useAPIClient();
-    // api.request({
-    //   url: '/channels:get',
-    // });
+    const { channelId } = field.form.values;
+    const [providerName, setProviderName] = useState(null);
+    const api = useAPIClient();
+    useEffect(() => {
+      const onChannelChange = async () => {
+        if (!channelId) {
+          setProviderName(null);
+          return;
+        }
+        const { data } = await api.request({
+          url: '/channels:get',
+          method: 'get',
+          params: {
+            filterByTk: channelId,
+          },
+        });
+        setProviderName(data.data.notificationType);
+      };
+      onChannelChange();
+    }, [channelId, api]);
+    const providerMap = useChannelTypeMap();
+    const { ContentConfigForm = () => null } = (providerMap[providerName] ?? {}).components || {};
 
     const createMessageFormSchema = {
       type: 'object',
@@ -36,7 +52,7 @@ export const MessageConfigForm = observer<{ variableOptions: any }>(
           'x-component': 'Input',
           required: true,
         },
-        channel: {
+        channelId: {
           type: 'number',
           title: 'channel',
           'x-decorator': 'FormItem',
@@ -70,7 +86,7 @@ export const MessageConfigForm = observer<{ variableOptions: any }>(
                 type: 'string',
                 'x-decorator': 'FormItem',
                 'x-component': 'Variable.Input',
-                'x-component-props': { scope: variableOptions },
+                'x-component-props': { scope: variableOptions, useTypedConstant: ['string'] },
               },
               remove: {
                 type: 'void',
@@ -103,12 +119,18 @@ export const MessageConfigForm = observer<{ variableOptions: any }>(
                 },
               },
             },
-            config: {},
+            config: {
+              type: 'object',
+              'x-component': 'ContentConfigForm',
+              'x-component-props': {
+                variableOptions,
+              },
+            },
           },
         },
       },
     };
-    return <SchemaComponent schema={createMessageFormSchema} />;
+    return <SchemaComponent schema={createMessageFormSchema} components={{ ContentConfigForm }} />;
   },
   { displayName: 'MessageConfigForm' },
 );

@@ -14,7 +14,7 @@ export type ChannelType = {
   name: string;
   components: {
     ChannelConfigForm: ComponentType;
-    MessageConfigForm?: ComponentType;
+    ContentConfigForm?: ComponentType<{ variableOptions: any }>;
   };
 };
 
