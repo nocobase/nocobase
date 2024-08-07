@@ -13,35 +13,9 @@ import { Radio } from 'antd';
 import { ArrayField as ArrayFieldModel, VoidField } from '@formily/core';
 import { ArrayField, Field, useField, observer } from '@formily/react';
 import { useNotificationTranslation } from '../../../../locale';
+import { ManualConfigForm } from './Manual';
+import { CollectionForm } from './Collection';
 
-const ConfigForm = observer(
-  () => {
-    const field = useField<ArrayFieldModel>();
-    const { t } = useNotificationTranslation();
-    const AddItem = () => {
-      field.push('');
-    };
-    return (
-      <>
-        <div>
-          {field.value?.map((item, index) => {
-            return (
-              <div key={index} style={{ display: 'flex-block', marginBottom: 10 }}>
-                <Space>
-                  <Field name={index} component={[Input]}></Field>
-                  <a onClick={() => field.remove(index)}>{t('Remove')}</a>
-                </Space>
-              </div>
-            );
-          })}
-        </div>
-
-        <a onClick={AddItem}>{t('Add')}</a>
-      </>
-    );
-  },
-  { displayName: 'ConfigForm' },
-);
 const ReceiverConfigForm = () => {
   const [inputType, setInputType] = useState('manual');
   const options = [
@@ -56,12 +30,28 @@ const ReceiverConfigForm = () => {
     {
       label: 'import',
       value: 'import',
+      disabled: true,
     },
   ];
+  const onChange = (e) => {
+    setInputType(e.target.value);
+  };
+
+  const configFormMap = {
+    manual: <ArrayField name="receivers" component={[ManualConfigForm]} disabled={false} />,
+    collection: <CollectionForm />,
+  };
+
   return (
     <div>
-      <Radio.Group options={options} value={inputType} optionType="button" buttonStyle="solid"></Radio.Group>
-      <ArrayField name="receivers" component={[ConfigForm]} disabled={false} />
+      <Radio.Group
+        options={options}
+        value={inputType}
+        onChange={onChange}
+        optionType="button"
+        buttonStyle="solid"
+      ></Radio.Group>
+      {configFormMap[inputType]}
     </div>
   );
 };
