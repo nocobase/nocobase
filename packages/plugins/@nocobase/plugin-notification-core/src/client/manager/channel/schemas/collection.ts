@@ -25,7 +25,16 @@ const collection = {
       },
       interface: 'integer',
     },
-    { name: 'title', type: 'string' },
+    {
+      name: 'title',
+      type: 'string',
+      interface: 'input',
+      uiSchema: {
+        type: 'string',
+        'x-component': 'Input',
+        title: 'title',
+      },
+    },
     {
       name: 'options',
       type: 'json',

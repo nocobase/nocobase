@@ -22,10 +22,6 @@ export const createFormSchema: ISchema = {
       'x-decorator': 'Form',
       title: '{{t("Add new")}}',
       properties: {
-        name: {
-          'x-component': 'CollectionField',
-          'x-decorator': 'FormItem',
-        },
         title: {
           'x-component': 'CollectionField',
           'x-decorator': 'FormItem',
@@ -78,7 +74,7 @@ export const channelsSchema: ISchema = {
       },
     },
   },
-  'x-component': 'CollectionProvider_deprecated',
+  'x-component': 'CollectionProvider',
   'x-component-props': {
     collection,
   },
@@ -152,32 +148,6 @@ export const channelsSchema: ISchema = {
             },
           },
         },
-        name: {
-          type: 'void',
-          'x-decorator': 'Table.Column.Decorator',
-          'x-component': 'Table.Column',
-          properties: {
-            name: {
-              type: 'string',
-              'x-component': 'CollectionField',
-              'x-read-pretty': true,
-            },
-          },
-        },
-        authType: {
-          title: '{{t("Auth Type")}}',
-          type: 'void',
-          'x-decorator': 'Table.Column.Decorator',
-          'x-component': 'Table.Column',
-          properties: {
-            authType: {
-              type: 'string',
-              'x-component': 'Select',
-              'x-read-pretty': true,
-              enum: '{{ types }}',
-            },
-          },
-        },
         title: {
           type: 'void',
           'x-decorator': 'Table.Column.Decorator',
@@ -196,18 +166,6 @@ export const channelsSchema: ISchema = {
           'x-component': 'Table.Column',
           properties: {
             description: {
-              type: 'boolean',
-              'x-component': 'CollectionField',
-              'x-read-pretty': true,
-            },
-          },
-        },
-        enabled: {
-          type: 'void',
-          'x-decorator': 'Table.Column.Decorator',
-          'x-component': 'Table.Column',
-          properties: {
-            enabled: {
               type: 'boolean',
               'x-component': 'CollectionField',
               'x-read-pretty': true,
@@ -243,17 +201,6 @@ export const channelsSchema: ISchema = {
                       },
                       title: '{{t("Configure")}}',
                       properties: {
-                        name: {
-                          'x-component': 'CollectionField',
-                          'x-decorator': 'FormItem',
-                        },
-                        authType: {
-                          'x-component': 'CollectionField',
-                          'x-decorator': 'FormItem',
-                          'x-component-props': {
-                            options: '{{ types }}',
-                          },
-                        },
                         title: {
                           'x-component': 'CollectionField',
                           'x-decorator': 'FormItem',
@@ -261,14 +208,6 @@ export const channelsSchema: ISchema = {
                         description: {
                           'x-component': 'CollectionField',
                           'x-decorator': 'FormItem',
-                        },
-                        enabled: {
-                          'x-component': 'CollectionField',
-                          'x-decorator': 'FormItem',
-                        },
-                        options: {
-                          type: 'object',
-                          'x-component': 'Options',
                         },
                         footer: {
                           type: 'void',
