@@ -13,6 +13,7 @@ import { NAMESPACE } from './locale';
 import { ManagementList } from './Management';
 import { ChannelManager } from './manager/channel/components';
 import { MessageManager } from './manager/message/components/Manager';
+import { LogManager } from './manager/log/components/Manager';
 import { ComponentType } from 'react';
 import { ChannelType } from './manager/channel/types';
 
@@ -56,6 +57,13 @@ export class PluginNotificationCoreClient extends Plugin {
       aclSnippet: 'pm.notification.core',
       sort: 3,
     });
+    this.app.pluginSettingsManager.add(`${NAMESPACE}.logs`, {
+      title: 'Logs',
+      Component: LogManager,
+      icon: 'MessageOutlined',
+      aclSnippet: 'pm.notification.core',
+      sort: 4,
+    });
     // this.app.addComponents({})
     // this.app.addScopes({})
     // this.app.addProvider()
@@ -65,3 +73,5 @@ export class PluginNotificationCoreClient extends Plugin {
 }
 
 export default PluginNotificationCoreClient;
+export { createMessageFormSchema } from './manager/message/components/MessageConfigForm';
+export { NotificationVariableContext, useNotificationVariableOptions, NotificationVariableProvider } from './hooks';

@@ -33,15 +33,10 @@ export const ManualConfigForm = observer(
         type: 'void',
         'x-component': 'Space',
         properties: {
-          sort: {
-            type: 'void',
-            'x-decorator': 'FormItem',
-            'x-component': 'ArrayItems.SortHandle',
-          },
           input: {
             type: 'string',
             'x-decorator': 'FormItem',
-            'x-component': 'Input',
+            'x-component': 'Variable.Input',
           },
           remove: {
             type: 'void',

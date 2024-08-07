@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { useMemo } from 'react';
+import React, { createContext, useContext, useMemo } from 'react';
 import {
   ActionProps,
   ISchema,
@@ -88,3 +88,14 @@ export function useDeleteActionProps(): ActionProps {
     },
   };
 }
+
+export const NotificationVariableContext = createContext([]);
+
+export const useNotificationVariableOptions = () => {
+  const scope = useContext(NotificationVariableContext);
+  return { scope };
+};
+
+export const NotificationVariableProvider = ({ value, children }) => {
+  return <NotificationVariableContext.Provider value={value}>{children}</NotificationVariableContext.Provider>;
+};
