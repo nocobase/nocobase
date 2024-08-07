@@ -8,7 +8,7 @@
  */
 
 import { Plugin } from '@nocobase/client';
-import NotificationsCorePlugin from '@nocobase/plugin-notifications-core/client';
+import NotificationsCorePlugin from 'packages/plugins/@nocobase/plugin-notifications-manager/client';
 import { channelType, NAMESPACE } from '../constant';
 import { tval } from '@nocobase/utils/client';
 import { ConfigForm } from './ConfigForm';

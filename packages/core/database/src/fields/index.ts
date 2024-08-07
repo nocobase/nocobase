@@ -23,7 +23,6 @@ import {
   FloatFieldOptions,
   IntegerFieldOptions,
   RealFieldOptions,
-  BigIntFieldOptions,
 } from './number-field';
 import { PasswordFieldOptions } from './password-field';
 import { RadioFieldOptions } from './radio-field';
@@ -70,7 +69,6 @@ export type FieldOptions =
   | FloatFieldOptions
   | DecimalFieldOptions
   | DoubleFieldOptions
-  | BigIntFieldOptions
   | RealFieldOptions
   | JsonFieldOptions
   | JsonbFieldOptions

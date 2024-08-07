@@ -8,7 +8,7 @@
  */
 
 import { Plugin } from '@nocobase/server';
-import NotificationsServerPlugin, { SendFnType, NotificationServerBase } from '@nocobase/plugin-notifications-core';
+import NotificationsServerPlugin, { SendFnType, NotificationServerBase } from '@nocobase/plugin-notifications-manager';
 import { channelType } from '../constant';
 
 class MailServer extends NotificationServerBase {
