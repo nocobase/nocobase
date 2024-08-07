@@ -14,10 +14,10 @@ import { ManagementList } from './Management';
 import { ChannelManager } from './manager/channel/components';
 import { MessageManager } from './manager/message/components/Manager';
 import { LogManager } from './manager/log/components/Manager';
-import { ComponentType } from 'react';
+import { lang as t } from './locale';
 import { ChannelType } from './manager/channel/types';
 
-export class PluginNotificationCoreClient extends Plugin {
+export class PluginNotificationManagerClient extends Plugin {
   channelTypes = new Registry<ChannelType>();
   registerChannelType(channelTypeName: string, options: ChannelType) {
     this.channelTypes.register(channelTypeName, options);
@@ -30,48 +30,34 @@ export class PluginNotificationCoreClient extends Plugin {
 
   // You can get and modify the app instance here
   async load() {
-    console.log(this.app);
     this.app.pluginSettingsManager.add(NAMESPACE, {
-      title: this.t('Notification'),
+      title: t('Notification'),
       icon: 'NotificationOutlined',
     });
     this.app.pluginSettingsManager.add(`${NAMESPACE}.channels`, {
-      title: 'Channels',
+      title: t('Channels'),
       Component: ChannelManager,
       icon: 'SendOutlined',
       aclSnippet: 'pm.notification.core',
       sort: 1,
     });
     this.app.pluginSettingsManager.add(`${NAMESPACE}.templates`, {
-      title: 'Templates',
+      title: t('Templates'),
       Component: ManagementList,
       icon: 'SnippetsOutlined',
       aclSnippet: 'pm.notification.core',
       sort: 2,
     });
-
-    // this.app.pluginSettingsManager.add(`${NAMESPACE}.messages`, {
-    //   title: 'Messages',
-    //   Component: MessageManager,
-    //   icon: 'MessageOutlined',
-    //   aclSnippet: 'pm.notification.core',
-    //   sort: 3,
-    // });
     this.app.pluginSettingsManager.add(`${NAMESPACE}.logs`, {
-      title: 'Logs',
+      title: t('Logs'),
       Component: LogManager,
       icon: 'MessageOutlined',
       aclSnippet: 'pm.notification.core',
       sort: 4,
     });
-    // this.app.addComponents({})
-    // this.app.addScopes({})
-    // this.app.addProvider()
-    // this.app.addProviders()
-    // this.app.router.add()
   }
 }
 
-export default PluginNotificationCoreClient;
+export default PluginNotificationManagerClient;
 export { MessageConfigForm } from './manager/message/components/MessageConfigForm';
 export { NotificationVariableContext, useNotificationVariableOptions, NotificationVariableProvider } from './hooks';

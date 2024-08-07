@@ -26,6 +26,16 @@ export const ContentConfigForm = ({ variableOptions }) => {
         type: 'object',
 
         properties: {
+          subject: {
+            type: 'string',
+            required: true,
+            title: `{{t("Subject")}}`,
+            'x-decorator': 'FormItem',
+            'x-component': 'Variable.TextArea',
+            'x-component-props': {
+              scope: variableOptions,
+            },
+          },
           from: {
             type: 'string',
             required: true,
@@ -120,16 +130,6 @@ export const ContentConfigForm = ({ variableOptions }) => {
                 title: `{{t("Add email address")}}`,
                 'x-component': 'ArrayItems.Addition',
               },
-            },
-          },
-          subject: {
-            type: 'string',
-            required: true,
-            title: `{{t("Subject")}}`,
-            'x-decorator': 'FormItem',
-            'x-component': 'Variable.TextArea',
-            'x-component-props': {
-              scope: variableOptions,
             },
           },
         },

@@ -1,0 +1,15 @@
+{
+  "mail": "mail",
+  "From": "From",
+  "To": "To",
+  "CC": "CC",
+  "BCC": "BCC",
+  "Add email address": "Add email address",
+  "Subject": "Subject",
+  "Content": "Content",
+  "Host": "Host",
+  "Port": "Port",
+  "Secure": "Secure",
+  "Account": "Account",
+  "Password" : "Password"
+}

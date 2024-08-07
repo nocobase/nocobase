@@ -10,7 +10,7 @@
 import { i18n } from '@nocobase/client';
 import { useTranslation } from 'react-i18next';
 
-export const NAMESPACE = 'notification-management';
+export const NAMESPACE = 'notification-manager';
 
 export function lang(key: string) {
   return i18n.t(key, { ns: NAMESPACE });

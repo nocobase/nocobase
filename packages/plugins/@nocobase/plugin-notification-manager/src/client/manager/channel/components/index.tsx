@@ -30,7 +30,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { useNotificationTranslation } from '../../../locale';
 import { Schema } from '@formily/react';
-import { PluginNotificationCoreClient } from '../../..';
+import { PluginNotificationManagerClient } from '../../..';
 import { ChannelType, NotificationType } from '../types';
 import { ConfigForm } from './ConfigForm';
 
@@ -91,7 +91,7 @@ const useCanNotDelete = () => {
 export const ChannelManager = () => {
   const { t } = useNotificationTranslation();
   const api = useAPIClient();
-  const plugin = usePlugin(PluginNotificationCoreClient);
+  const plugin = usePlugin(PluginNotificationManagerClient);
   const notificationTypes: Array<ChannelType> = [];
   for (const [key, val] of plugin.channelTypes.getEntities()) {
     const type = {
@@ -106,26 +106,6 @@ export const ChannelManager = () => {
     label: item.title,
     value: item.name,
   }));
-
-  // useRequest(
-  //   () =>
-  //     api
-  //       .resource('channels')
-  //       .listTypes()
-  //       .then((res) => {
-  //         const types = DEFAULT_TYPES; //res?.data?.data ||;
-  //         return types.map((type: { name: string; title?: string }) => ({
-  //           key: type.name,
-  //           label: Schema.compile(type.title || type.name, { t }),
-  //           value: type.name,
-  //         }));
-  //       }),
-  //   {p
-  //     onSuccess: (types) => {
-  //       setTypes(types);
-  //     },
-  //   },
-  // );
 
   return (
     <Card bordered={false}>

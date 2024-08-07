@@ -8,11 +8,8 @@
  */
 
 import React, { useState } from 'react';
-import { FormItem, Input, Space } from '@nocobase/client';
+import { FormItem } from '@nocobase/client';
 import { Radio } from 'antd';
-import { ArrayField as ArrayFieldModel, VoidField } from '@formily/core';
-import { ArrayField, Field, useField, observer } from '@formily/react';
-import { useNotificationTranslation } from '../../../../locale';
 import { ManualConfigForm } from './Manual';
 import { CollectionForm } from './Collection';
 const ReceiverConfigForm = () => {

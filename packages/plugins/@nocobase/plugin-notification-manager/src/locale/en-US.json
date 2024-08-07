@@ -1,3 +1,15 @@
 {
-  "Notification Management": "Notification Management"
+  "Notification Management": "Notification Management",
+  "Notification": "Notification",
+  "Channels": "Channels",
+  "Channel": "Channel",
+  "Content": "Content",
+  "Receivers":"Receivers",
+  "Add new receiver": "Add new receiver",
+  "Templates": "Templates",
+  "Logs": "Logs",
+  "Title": "Title",
+  "Description": "Description",
+  "Notification Type": "Notification Type",
+  "Actions": "Actions"
 }

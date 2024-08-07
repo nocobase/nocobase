@@ -12,7 +12,7 @@ import { usePlugin } from '@nocobase/client';
 import { Schema } from '@formily/react';
 import { ChannelType } from '../manager/channel/types';
 import { useNotificationTranslation } from '../locale';
-import PluginNotificationCoreClient from '..';
+import PluginNotificationManagerClient from '..';
 
 export const ChannelTypeMapContext = createContext<{
   typeMap: Record<string, ChannelType>;
@@ -21,7 +21,7 @@ ChannelTypeMapContext.displayName = 'ChannelTypesContext';
 
 export const ChannelsProvider = ({ children }) => {
   const { t } = useNotificationTranslation();
-  const plugin = usePlugin(PluginNotificationCoreClient);
+  const plugin = usePlugin(PluginNotificationManagerClient);
   const notificationTypeMap: Record<string, ChannelType> = {};
   for (const [key, val] of plugin.channelTypes.getEntities()) {
     const type = {
@@ -38,7 +38,7 @@ export const ChannelsProvider = ({ children }) => {
 
 export const useChannelTypeMap = () => {
   const { t } = useNotificationTranslation();
-  const plugin = usePlugin(PluginNotificationCoreClient);
+  const plugin = usePlugin(PluginNotificationManagerClient);
   const notificationTypeMap: Record<string, ChannelType> = {};
   for (const [key, val] of plugin.channelTypes.getEntities()) {
     const type = {

@@ -33,7 +33,7 @@ const collection: CollectionOptions = {
       uiSchema: {
         type: 'string',
         'x-component': 'Input',
-        title: 'Title',
+        title: '{{t("Title")}}',
       },
     },
     {
@@ -54,6 +54,7 @@ const collection: CollectionOptions = {
         title: '{{t("Notification Type")}}',
         'x-component': 'Select',
         dataSource: '{{ notificationTypeOptions }}',
+        required: true,
       },
     },
     {

@@ -13,12 +13,14 @@ import { ChannelTypeMapContext } from '../../../../hooks';
 import { observer, useField } from '@formily/react';
 import { useAPIClient } from '@nocobase/client';
 import { useChannelTypeMap } from '../../../../hooks';
+import { useNotificationTranslation } from '../../../../locale';
 
 export const MessageConfigForm = observer<{ variableOptions: any }>(
   ({ variableOptions }) => {
     const field = useField();
     const { channelId } = field.form.values;
     const [providerName, setProviderName] = useState(null);
+    const { t } = useNotificationTranslation();
     const api = useAPIClient();
     useEffect(() => {
       const onChannelChange = async () => {
@@ -43,16 +45,10 @@ export const MessageConfigForm = observer<{ variableOptions: any }>(
     const createMessageFormSchema = {
       type: 'object',
       properties: {
-        title: {
-          type: 'string',
-          title: 'title',
-          'x-decorator': 'FormItem',
-          'x-component': 'Input',
-          required: true,
-        },
         channelId: {
           type: 'number',
-          title: 'channel',
+          title: '{{t("Channel")}}',
+          required: true,
           'x-decorator': 'FormItem',
           'x-component': 'RemoteSelect',
           'x-component-props': {
@@ -73,7 +69,8 @@ export const MessageConfigForm = observer<{ variableOptions: any }>(
         receivers: {
           type: 'array',
           name: 'receivers',
-          title: 'Receivers',
+          required: true,
+          title: '{{t("Receivers")}}',
           'x-decorator': 'FormItem',
           'x-component': 'ArrayItems',
           items: {
@@ -96,7 +93,7 @@ export const MessageConfigForm = observer<{ variableOptions: any }>(
           properties: {
             add: {
               type: 'void',
-              title: 'Add entry',
+              title: '{{t("Add new receiver")}}',
               'x-component': 'ArrayItems.Addition',
             },
           },
@@ -106,7 +103,8 @@ export const MessageConfigForm = observer<{ variableOptions: any }>(
           properties: {
             body: {
               type: 'string',
-              title: 'content',
+              title: '{{t("Content")}}',
+              required: true,
               'x-decorator': 'FormItem',
               'x-component': 'Variable.RawTextArea',
               'x-component-props': {
@@ -128,7 +126,7 @@ export const MessageConfigForm = observer<{ variableOptions: any }>(
         },
       },
     };
-    return <SchemaComponent schema={createMessageFormSchema} components={{ ContentConfigForm }} />;
+    return <SchemaComponent schema={createMessageFormSchema} components={{ ContentConfigForm }} scope={{ t }} />;
   },
   { displayName: 'MessageConfigForm' },
 );
