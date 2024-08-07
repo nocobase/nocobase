@@ -65,16 +65,32 @@ class PluginCollectionTreeServer extends Plugin {
             path = await this.getTreePath(model, path, collection, name);
             const collectionTreePath = this.db.getCollection(name);
             const nodePkColumnName = collectionTreePath.getField('nodePk').columnName();
-            await this.app.db.getRepository(name).update({
-              values: {
-                path,
-                rootPk: path.split('/')[1],
-              },
+            const pathData = await this.app.db.getRepository(name).findOne({
               filter: {
                 [nodePkColumnName]: model.get(collection.filterTargetKey),
               },
-              transaction,
             });
+            const relatedNodes = await this.app.db.getRepository(name).find({
+              filter: {
+                path: {
+                  '::text': {
+                    $startsWith: `${pathData.get('path')}`,
+                  },
+                },
+              },
+            });
+            for (const node of relatedNodes) {
+              await this.app.db.getRepository(name).update({
+                values: {
+                  path: node.get('path').replace(`${pathData.get('path')}`, path),
+                  rootPk: path.split('/')[1],
+                },
+                filter: {
+                  [nodePkColumnName]: node.get('nodePk'),
+                },
+                transaction,
+              });
+            }
           });
 
           //afterDestroy
