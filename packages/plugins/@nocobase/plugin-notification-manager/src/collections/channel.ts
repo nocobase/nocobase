@@ -43,7 +43,6 @@ const collection: CollectionOptions = {
       uiSchema: {
         type: 'object',
         'x-component': 'ConfigForm',
-        title: 'options',
       },
     },
     {
