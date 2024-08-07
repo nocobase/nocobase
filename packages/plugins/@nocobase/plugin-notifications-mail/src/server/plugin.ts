@@ -25,7 +25,7 @@ export class PluginNotificationsMailServer extends Plugin {
   async load() {
     const notificationServer = this.pm.get(NotificationsServerPlugin) as NotificationsServerPlugin;
     notificationServer.registerTypes(channelType, {
-      server: MailServer,
+      Server: MailServer,
     });
   }
 

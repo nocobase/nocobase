@@ -22,6 +22,7 @@ export interface IChannel {
   options: Record<string, any>;
 }
 
-export type NotificationServer = new () => NotificationServerBase;
+// export type NotificationServer = new () => NotificationServerBase;
+export type NotificationServer = NotificationServerBase;
 
 export type SendFnType = (args: { message: IMessage; channel: IChannel }) => Promise<boolean>;
