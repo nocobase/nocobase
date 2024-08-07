@@ -23,11 +23,11 @@ import _ from 'lodash';
 import { ActionDrawerUsedInMobile, useToAdaptActionDrawerToMobile } from '../adaptor-of-desktop/ActionDrawer';
 import { useToAdaptFilterActionToMobile } from '../adaptor-of-desktop/FilterAction';
 import { InternalPopoverNesterUsedInMobile } from '../adaptor-of-desktop/InternalPopoverNester';
+import { MobileActionPage } from '../adaptor-of-desktop/mobile-action-page/MobileActionPage';
 import { ResetSchemaOptionsProvider } from '../adaptor-of-desktop/ResetSchemaOptionsProvider';
 import { PageBackgroundColor } from '../constants';
 import { DesktopMode } from '../desktop-mode/DesktopMode';
 import { PluginMobileClient } from '../index';
-import { MobileActionPage } from '../pages/mobile-action-page/MobileActionPage';
 import { MobileAppProvider } from './MobileAppContext';
 import { useStyles } from './styles';
 

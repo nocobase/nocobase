@@ -24,9 +24,9 @@ import { Tabs } from 'antd-mobile';
 import { LeftOutline } from 'antd-mobile-icons';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { MobilePageHeader } from '../dynamic-page';
-import { MobilePageContentContainer } from '../dynamic-page/content/MobilePageContentContainer';
-import { useStyles } from '../dynamic-page/header/tabs';
+import { MobilePageHeader } from '../../pages/dynamic-page';
+import { MobilePageContentContainer } from '../../pages/dynamic-page/content/MobilePageContentContainer';
+import { useStyles } from '../../pages/dynamic-page/header/tabs';
 import { useMobileTabsForMobileActionPageStyle } from './MobileTabsForMobileActionPage.style';
 
 export const MobileTabsForMobileActionPage: any = observer(
