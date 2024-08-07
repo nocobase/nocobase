@@ -17,3 +17,4 @@ export * from './data-source';
 export * from './collection-record';
 export * from './utils';
 export * from './collection-fields-to-initializer-items';
+export * from './commonsSettingsItem';

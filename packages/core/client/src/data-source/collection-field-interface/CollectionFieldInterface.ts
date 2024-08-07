@@ -15,6 +15,13 @@ export type CollectionFieldInterfaceFactory = new (
   collectionFieldInterfaceManager: CollectionFieldInterfaceManager,
 ) => CollectionFieldInterface;
 
+export interface CollectionFieldInterfaceComponentOption {
+  label: string;
+  value: string;
+  useVisible?: () => boolean;
+  useProps?: () => any;
+}
+
 export abstract class CollectionFieldInterface {
   constructor(public collectionFieldInterfaceManager: CollectionFieldInterfaceManager) {}
   name: string;
@@ -32,6 +39,7 @@ export abstract class CollectionFieldInterface {
   supportDataSourceType?: string[];
   notSupportDataSourceType?: string[];
   hasDefaultValue?: boolean;
+  componentOptions?: CollectionFieldInterfaceComponentOption[];
   isAssociation?: boolean;
   operators?: any[];
   /**
@@ -54,4 +62,24 @@ export abstract class CollectionFieldInterface {
   usePathOptions?(field: CollectionFieldOptions): any;
   schemaInitialize?(schema: ISchema, data: any): void;
   hidden?: boolean;
+
+  addComponentOption(componentOption: CollectionFieldInterfaceComponentOption) {
+    if (!this.componentOptions) {
+      this.componentOptions = [];
+      const xComponent = this.default?.uiSchema?.['x-component'];
+      const componentProps = this.default?.uiSchema?.['x-component-props'];
+      if (xComponent) {
+        this.componentOptions = [
+          {
+            label: xComponent.split('.').pop(),
+            value: xComponent,
+            useProps() {
+              return componentProps || {};
+            },
+          },
+        ];
+      }
+    }
+    this.componentOptions.push(componentOption);
+  }
 }
