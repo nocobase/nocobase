@@ -15,12 +15,12 @@ export class MailServer extends NotificationServerBase {
     super();
   }
   send: SendFnType = async function (args) {
-    const { message, channel } = args;
+    const { message, channel, writeLog } = args;
     const { host, port, secure, account, password } = channel.options;
     const transpoter: Transporter = nodemailer.createTransport({
       host,
       port,
-      secure, // Use `true` for port 465, `false` for all other ports
+      secure,
       auth: {
         user: account,
         pass: password,
@@ -28,17 +28,32 @@ export class MailServer extends NotificationServerBase {
     });
     const receivers = message.receivers;
     const { from, subject } = message.content.config;
-    await Promise.all(
-      receivers.map(async (receiver) => {
-        return transpoter.sendMail({
+    receivers.forEach(async (receiver) => {
+      try {
+        const res = await transpoter.sendMail({
           from: from,
           to: receiver,
-          subject, // Subject line
-          text: message.content.body, // plain text body
-          html: message.content.body, // html body
+          subject,
+          text: message.content.body,
+          html: message.content.body,
         });
-      }),
-    );
-    return true;
+        writeLog({
+          receiver,
+          status: 'success',
+          content: message.content,
+          triggerFrom: message.triggerFrom,
+          channelId: channel.id,
+        });
+      } catch (error) {
+        writeLog({
+          receiver,
+          status: 'fail',
+          content: message.content,
+          triggerFrom: message.triggerFrom,
+          reason: error.message,
+          channelId: channel.id,
+        });
+      }
+    });
   };
 }

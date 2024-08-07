@@ -7,8 +7,22 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+export type WriteLogOptions = {
+  receiver: string;
+  status: 'success' | 'fail';
+  content: Record<string, any>;
+  triggerFrom: string;
+  reason?: string;
+  channelId: string;
+};
+
+export type SendFnType = (args: {
+  message: SendOptions;
+  channel: IChannel;
+  writeLog: (options: WriteLogOptions) => Promise<any>;
+}) => Promise<any>;
 export abstract class NotificationServerBase {
-  abstract send(args: { message: SendOptions; channel: IChannel }): Promise<boolean>;
+  abstract send: SendFnType;
 }
 
 export interface SendOptions {
@@ -23,11 +37,10 @@ export interface SendOptions {
 }
 
 export interface IChannel {
+  id: string;
   options: Record<string, any>;
   notificationType: string;
 }
 
 // export type NotificationServer = new () => NotificationServerBase;
 export type NotificationServer = NotificationServerBase;
-
-export type SendFnType = (args: { message: SendOptions; channel: IChannel }) => Promise<boolean>;

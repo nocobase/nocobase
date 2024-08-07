@@ -10,7 +10,7 @@
 import { Plugin } from '@nocobase/server';
 
 import { COLLECTION_NAME } from '../constant';
-import { SendOptions, IChannel } from './types';
+import { SendOptions, IChannel, WriteLogOptions } from './types';
 import NotificationManager from './manager';
 export class PluginNotificationManager extends Plugin {
   notificationManager: NotificationManager;
@@ -19,10 +19,12 @@ export class PluginNotificationManager extends Plugin {
     const channelsRepo = this.app.db.getRepository('channels');
     const channel: IChannel = await channelsRepo.findOne({ filterByTk: options.channelId });
     const notificationServer = this.notificationManager.notificationTypes.get(channel.notificationType).server;
-    await notificationServer.send({ message: options, channel });
-    const logsRepo = this.app.db.getRepository('messageLogs');
-    logsRepo.create({ values: { channelId: options.channelId, triggerFrom: options.triggerFrom, status: 'success' } });
+    notificationServer.send({ message: options, channel, writeLog: this.writeLog });
   }
+  writeLog = async (options: WriteLogOptions) => {
+    const logsRepo = this.app.db.getRepository('messageLogs');
+    return logsRepo.create({ values: options });
+  };
 
   async afterAdd() {
     this.notificationManager = new NotificationManager();
@@ -30,19 +32,8 @@ export class PluginNotificationManager extends Plugin {
 
   async beforeLoad() {
     this.app.resourceManager.registerActionHandler('messages:send', async (ctx, next) => {
-      const id = ctx.action?.params?.values?.id;
-      const messagesRepo = ctx.db.getRepository('messages');
-      const channelsRepo = ctx.db.getRepository('channels');
-      const messageLogsRepo = ctx.db.getRepository(COLLECTION_NAME.messageLogs);
-      const message = await messagesRepo.findOne({ filterByTk: id });
-      const channel = await channelsRepo.findOne({ filterByTk: message.channelId });
-      await messageLogsRepo.create({
-        values: {
-          messageId: message.id,
-        },
-      });
-      const notificationServer = this.notificationManager.notificationTypes.get(channel.notificationType).server;
-      notificationServer.send({ message, channel });
+      const sendOptions = ctx.action?.params?.values as SendOptions;
+      this.send(sendOptions);
       next();
     });
     this.app.acl.registerSnippet({

@@ -40,7 +40,7 @@ const collectionOption: CollectionOptions = {
       type: 'belongsTo',
       onDelete: 'SET NULL',
       uiSchema: {
-        type: 'number',
+        type: 'string',
         title: '{{t("Channel")}}',
         'x-component': 'AssociationField',
         'x-component-props': {
@@ -66,6 +66,26 @@ const collectionOption: CollectionOptions = {
         type: 'string',
         'x-component': 'Input',
         title: '{{t("Status")}}',
+      },
+    },
+    {
+      name: 'receiver',
+      type: 'string',
+      interface: 'input',
+      uiSchema: {
+        type: 'string',
+        'x-component': 'Input',
+        title: '{{t("Receiver")}}',
+      },
+    },
+    {
+      name: 'reason',
+      type: 'string',
+      interface: 'input',
+      uiSchema: {
+        type: 'string',
+        'x-component': 'Input',
+        title: '{{t("Reason")}}',
       },
     },
     {
