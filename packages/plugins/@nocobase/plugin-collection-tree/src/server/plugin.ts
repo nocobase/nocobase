@@ -83,9 +83,16 @@ class PluginCollectionTreeServer extends Plugin {
                   },
                 },
               };
+            } else if (collectionManager.db.options.dialect === 'sqlite') {
+              filter = {
+                path: {
+                  $startsWith: `${pathData.get('path')}`,
+                },
+              };
             } else {
               filter = {
                 path: {
+                  path: '$.',
                   string_starts_with: `${pathData.get('path')}`,
                 },
               };
@@ -154,7 +161,7 @@ class PluginCollectionTreeServer extends Plugin {
 
   private async getTreePath(model: Model, path: string, collection: Model, name: string, transaction?: Transaction) {
     const parentForeignKey = collection.treeParentField?.foreignKey || 'parentId';
-    if (model.get(parentForeignKey) !== null) {
+    if (model.get(parentForeignKey) && model.get(parentForeignKey) !== null) {
       const parent = await this.app.db.getRepository(collection.name).findOne({
         filter: {
           [collection.filterTargetKey]: model.get(parentForeignKey),
