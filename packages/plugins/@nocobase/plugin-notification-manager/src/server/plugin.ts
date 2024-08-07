@@ -11,6 +11,7 @@ import { Plugin } from '@nocobase/server';
 import { Registry } from '@nocobase/utils';
 import type { NotificationServer } from './types';
 import { COLLECTION_NAME } from '../constant';
+import { IMessage, IChannel } from './types';
 interface NotificatonType {
   Server: new () => NotificationServer;
 }
@@ -21,6 +22,13 @@ export class PluginNotificationManager extends Plugin {
     const server = new config.Server();
     this.notificationTypes.register(type, { server });
   }
+  async send(message: IMessage) {
+    const channelsRepo = this.app.db.getRepository('channels');
+    const channel: IChannel = await channelsRepo.findOne({ filterByTk: message.channelId });
+    const notificationServer = this.notificationTypes.get(channel.notificationType).server;
+    notificationServer.send({ message, channel });
+  }
+
   async afterAdd() {}
 
   async beforeLoad() {

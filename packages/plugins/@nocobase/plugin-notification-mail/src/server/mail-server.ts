@@ -13,15 +13,6 @@ export class MailServer extends NotificationServerBase {
   transpoter: Transporter;
   constructor() {
     super();
-    this.transpoter = nodemailer.createTransport({
-      host: 'smtp.qq.com',
-      port: 465,
-      secure: true, // Use `true` for port 465, `false` for all other ports
-      auth: {
-        user: '295830037@qq.com',
-        pass: 'lwrpuisrceflcbed',
-      },
-    });
   }
   send: SendFnType = async function (args) {
     const { message, channel } = args;
@@ -29,19 +20,20 @@ export class MailServer extends NotificationServerBase {
     const transpoter: Transporter = nodemailer.createTransport({
       host,
       port,
-      secure: true, // Use `true` for port 465, `false` for all other ports
+      secure, // Use `true` for port 465, `false` for all other ports
       auth: {
         user: account,
         pass: password,
       },
     });
-    const receivers = message.receiveOption.receivers;
+    const receivers = message.receivers;
+    const { from, subject } = message.content.config;
     await Promise.all(
       receivers.map(async (receiver) => {
         return transpoter.sendMail({
-          from: 'sheldon <295830037@qq.com>',
+          from: from,
           to: receiver,
-          subject: 'Hello', // Subject line
+          subject, // Subject line
           text: message.content.body, // plain text body
           html: message.content.body, // html body
         });

@@ -46,6 +46,23 @@ const collectionOption: CollectionOptions = {
       },
     },
     {
+      name: 'channel',
+      target: COLLECTION_NAME.channels,
+      targetKey: 'id',
+      foreignKey: 'channelId',
+      interface: 'm2o',
+      type: 'belongsTo',
+      onDelete: 'SET NULL',
+      uiSchema: {
+        type: 'number',
+        title: '{{t("channel")}}',
+        'x-component': 'AssociationField',
+        'x-component-props': {
+          multiple: false,
+        },
+      },
+    },
+    {
       name: 'createdAt',
       type: 'date',
       interface: 'createdAt',

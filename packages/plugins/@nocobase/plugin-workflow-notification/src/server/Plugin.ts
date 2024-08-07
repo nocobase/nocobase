@@ -10,7 +10,7 @@
 import { Plugin } from '@nocobase/server';
 import WorkflowPlugin from '@nocobase/plugin-workflow';
 
-import MailerInstruction from './MailerInstruction';
+import MailerInstruction from './NotificationInstruction';
 
 export default class extends Plugin {
   async load() {

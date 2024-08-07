@@ -12,17 +12,18 @@ export abstract class NotificationServerBase {
 }
 
 export interface IMessage {
+  channelId: string;
   content: {
     body: string;
     type: 'html' | 'string';
+    config: Record<string, any>;
   };
-  receiveOption: {
-    receivers: string[];
-  };
+  receivers: string[];
 }
 
 export interface IChannel {
   options: Record<string, any>;
+  notificationType: string;
 }
 
 // export type NotificationServer = new () => NotificationServerBase;
