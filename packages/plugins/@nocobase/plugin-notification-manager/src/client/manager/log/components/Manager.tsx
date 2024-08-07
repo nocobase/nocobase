@@ -15,7 +15,7 @@ import { ExtendCollectionsProvider } from '@nocobase/client';
 import { useNotificationTranslation } from '../../../locale';
 import messageLogCollection from '../../../../collections/messageLog';
 
-export const MessageLogManager = () => {
+export const LogManager = () => {
   const { t } = useNotificationTranslation();
   const scCtx = useSchemaComponentContext();
   return (
@@ -29,4 +29,4 @@ export const MessageLogManager = () => {
   );
 };
 
-MessageLogManager.displayName = 'MessageLogManager';
+LogManager.displayName = 'LogManager';

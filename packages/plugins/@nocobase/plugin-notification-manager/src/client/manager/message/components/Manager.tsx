@@ -24,7 +24,7 @@ import messageLogCollection from '../../../../collections/messageLog';
 import { MessageComponentNames, MessageScopeNames } from '../types';
 import ReceiverConfigForm from './ReceiverConfigForm';
 import MessageInput from './MessageInput';
-import { MessageLogManager } from '../../messageLog/components/Manager';
+import { LogManager } from '../../log/components/Manager';
 import { useSendAction } from './useSendAction';
 import { useSubmitActionProps, useEditFormProps } from '../../../hooks';
 const useCloseAction = () => {
@@ -49,7 +49,7 @@ export const MessageManager = () => {
             components={{
               [MessageComponentNames.ReceiverConfigForm]: ReceiverConfigForm,
               [MessageComponentNames.MessageInput]: MessageInput,
-              [MessageComponentNames.MessageLogManager]: MessageLogManager,
+              [MessageComponentNames.MessageLogManager]: LogManager,
             }}
           />
         </Card>
