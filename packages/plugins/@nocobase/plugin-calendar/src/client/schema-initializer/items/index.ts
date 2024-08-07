@@ -9,3 +9,4 @@
 
 export * from './CalendarBlockInitializer';
 export * from './RecordAssociationCalendarBlockInitializer';
+export * from './DeleteEventActionInitializer';
