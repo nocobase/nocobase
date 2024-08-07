@@ -8,20 +8,23 @@
  */
 
 import { Plugin } from '@nocobase/server';
-
+import type { Logger } from '@nocobase/logger';
 import { COLLECTION_NAME } from '../constant';
 import { SendOptions, IChannel, WriteLogOptions } from './types';
 import NotificationManager from './manager';
 export class PluginNotificationManager extends Plugin {
   notificationManager: NotificationManager;
+  logger: Logger;
 
   async send(options: SendOptions) {
+    this.logger.info('receive sending message request', options);
     const channelsRepo = this.app.db.getRepository('channels');
     const channel: IChannel = await channelsRepo.findOne({ filterByTk: options.channelId });
     const notificationServer = this.notificationManager.notificationTypes.get(channel.notificationType).server;
-    notificationServer.send({ message: options, channel, writeLog: this.writeLog });
+    notificationServer.send({ message: options, channel, createSendingRecord: this.createSendingRecord });
   }
-  writeLog = async (options: WriteLogOptions) => {
+
+  createSendingRecord = async (options: WriteLogOptions) => {
     const logsRepo = this.app.db.getRepository('messageLogs');
     return logsRepo.create({ values: options });
   };
@@ -43,7 +46,13 @@ export class PluginNotificationManager extends Plugin {
     this.app.acl.allow('messages', 'send', 'loggedIn');
   }
 
-  async load() {}
+  async load() {
+    this.logger = this.createLogger({
+      dirname: 'notification-manager',
+      filename: '%DATE%.log',
+      transports: ['dailyRotateFile'],
+    });
+  }
 
   async install() {}
 

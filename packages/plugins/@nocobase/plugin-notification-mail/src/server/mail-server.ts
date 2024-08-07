@@ -15,7 +15,7 @@ export class MailServer extends NotificationServerBase {
     super();
   }
   send: SendFnType = async function (args) {
-    const { message, channel, writeLog } = args;
+    const { message, channel, createSendingRecord: writeLog } = args;
     const { host, port, secure, account, password } = channel.options;
     const transpoter: Transporter = nodemailer.createTransport({
       host,

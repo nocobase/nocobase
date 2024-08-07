@@ -19,7 +19,7 @@ export type WriteLogOptions = {
 export type SendFnType = (args: {
   message: SendOptions;
   channel: IChannel;
-  writeLog: (options: WriteLogOptions) => Promise<any>;
+  createSendingRecord: (options: WriteLogOptions) => Promise<any>;
 }) => Promise<any>;
 export abstract class NotificationServerBase {
   abstract send: SendFnType;
