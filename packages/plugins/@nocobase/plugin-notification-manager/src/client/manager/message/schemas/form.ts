@@ -16,6 +16,12 @@ export const formProperties = {
     'x-component': 'CollectionField',
     'x-decorator': 'FormItem',
     'x-collection-field': 'messages.channel',
+    'x-component-props': {
+      fieldNames: {
+        value: 'id',
+        label: 'title',
+      },
+    },
   },
   receiveOption: {
     'x-component': 'CollectionField',

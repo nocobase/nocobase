@@ -56,10 +56,6 @@ const collectionOption: CollectionOptions = {
         'x-component': 'AssociationField',
         'x-component-props': {
           multiple: false,
-          fieldNames: {
-            label: 'title',
-            value: 'id',
-          },
         },
       },
     },
