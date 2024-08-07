@@ -8,7 +8,7 @@
  */
 
 import { Switch, Radio, Input } from 'antd';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
 export const TargetKey = () => {
   return <div>Target key</div>;
@@ -55,6 +55,9 @@ export const ForeignKey2 = () => {
 export const CustomRadio = (props) => {
   const { options, onChange } = props;
   const [value, setValue] = useState(props.value);
+  useEffect(() => {
+    setValue(['server', 'client'].includes(props.value) ? props.value : 'custom');
+  }, [props.value]);
   const handleRadioChange = (e) => {
     setValue(e.target.value);
     if (e.target.value !== 'custom') {
@@ -72,6 +75,7 @@ export const CustomRadio = (props) => {
               onChange={(e) => {
                 onChange?.(e.target.value);
               }}
+              value={props.value}
             />
           ) : null}
         </Radio>

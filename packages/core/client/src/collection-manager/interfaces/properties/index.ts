@@ -231,12 +231,12 @@ export const dateTimeProps: { [key: string]: ISchema } = {
     title: '{{t("Timezone")}}',
     'x-component': CustomRadio,
     'x-decorator': 'FormItem',
-    default: 'none',
+    default: 'server',
     'x-component-props': {
       options: [
         {
           label: '{{t("None")}}',
-          value: 'none',
+          value: 'server',
         },
         {
           label: '{{t("Client\'s time zone")}}',
