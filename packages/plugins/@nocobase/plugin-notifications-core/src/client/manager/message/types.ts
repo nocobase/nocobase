@@ -14,10 +14,15 @@ export enum MessageFieldNames {
 
 export enum MessageScopeNames {
   ChannelOptions = 'channelOptions',
+  useSendAction = 'useSendAction',
 }
 
 export enum MessageComponentNames {
   AddNew = 'AddNew',
   ReceiverConfigForm = 'ReceiverConfigForm',
   MessageInput = 'MessageInput',
+}
+
+export enum MessageActionNames {
+  useSendAction = 'useSendAction',
 }

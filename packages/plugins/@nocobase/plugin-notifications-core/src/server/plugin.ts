@@ -12,7 +12,6 @@ import { Registry } from '@nocobase/utils';
 import type { NotificationServer } from './types';
 
 interface NotificatonType {
-  title: string;
   server: NotificationServer;
 }
 
@@ -24,11 +23,22 @@ class NotificationManager {
 }
 
 export class PluginNotificationServer extends Plugin {
+  protected notificationTypes = new Registry<NotificatonType>();
+  registerTypes(type: string, config: NotificatonType) {
+    this.notificationTypes.register(type, config);
+  }
   async afterAdd() {}
 
   async beforeLoad() {
-    this.app.resourceManager.registerActionHandler('messages:trigger', (ctx, next) => {
-      console.log(ctx);
+    this.app.resourceManager.registerActionHandler('messages:send', async (ctx, next) => {
+      const id = ctx.action?.params?.values?.id;
+      const messagesRepo = ctx.db.getRepository('messages');
+      const channelRepo = ctx.db.getRepository('channels');
+      const message = await messagesRepo.findOne({ filterByTk: id });
+      const channel = await channelRepo.findOne({ filterByTk: message.channelId });
+      const PluginNotificationServer = this.notificationTypes.get(channel.notificationType).server;
+      const notificationServer = new PluginNotificationServer();
+      notificationServer.send({ message, channel });
       next();
     });
   }

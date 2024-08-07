@@ -31,7 +31,7 @@ export class PluginNotificationCoreClient extends Plugin {
   async load() {
     console.log(this.app);
     this.app.pluginSettingsManager.add(NAMESPACE, {
-      title: this.t('Notification Management'),
+      title: this.t('Notification'),
       icon: 'NotificationOutlined',
     });
     this.app.pluginSettingsManager.add(`${NAMESPACE}.channels`, {

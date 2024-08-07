@@ -10,13 +10,8 @@
 import { Card } from 'antd';
 import { messageManagerSchema, createMessageFormSchema } from '../schemas';
 import {
-  ActionContextProvider,
   SchemaComponent,
-  useAPIClient,
   useActionContext,
-  useAsyncData,
-  usePlugin,
-  SchemaComponentOptions,
   SchemaComponentContext,
   useSchemaComponentContext,
   ExtendCollectionsProvider,
@@ -27,9 +22,10 @@ import { PlusOutlined } from '@ant-design/icons';
 import { useNotificationTranslation } from '../../../locale';
 import channelCollection from '../../../../collections/channel';
 import messageCollection from '../../../../collections/message';
-import { MessageComponentNames } from '../types';
+import { MessageComponentNames, MessageScopeNames } from '../types';
 import ReceiverConfigForm from './ReceiverConfigForm';
 import MessageInput from './MessageInput';
+import { useSendAction } from './useSendAction';
 
 const useCloseAction = () => {
   const { setVisible } = useActionContext();
@@ -49,7 +45,7 @@ export const MessageManager = () => {
         <Card bordered={false}>
           <SchemaComponent
             schema={messageManagerSchema}
-            scope={{ t }}
+            scope={{ t, [MessageScopeNames.useSendAction]: useSendAction }}
             components={{
               [MessageComponentNames.ReceiverConfigForm]: ReceiverConfigForm,
               [MessageComponentNames.MessageInput]: MessageInput,

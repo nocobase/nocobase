@@ -8,14 +8,12 @@
  */
 
 import { ISchema } from '@formily/react';
-import { uid } from '@formily/shared';
-import { i18n, useAPIClient, useActionContext, useRequest } from '@nocobase/client';
-import { useContext } from 'react';
 import collection from '../../../../collections/message';
 import { COLLECTION_NAME } from '../../../../constant';
 import { useTranslation } from 'react-i18next';
 import { message } from 'antd';
 import { formProperties } from './form';
+import { MessageScopeNames } from '../types';
 export const createMessageFormSchema: ISchema = {
   type: 'object',
   properties: {
@@ -196,6 +194,18 @@ export const messageManagerSchema: ISchema = {
                 split: '|',
               },
               properties: {
+                send: {
+                  type: 'void',
+                  title: '{{ t("Send") }}',
+                  'x-component': 'Action.Link',
+                  'x-component-props': {
+                    confirm: {
+                      title: "{{t('Send Message')}}",
+                      content: "{{t('Are you sure you want to Send it?')}}",
+                    },
+                    useAction: `{{${MessageScopeNames.useSendAction}}}`,
+                  },
+                },
                 update: {
                   type: 'void',
                   title: '{{t("Configure")}}',

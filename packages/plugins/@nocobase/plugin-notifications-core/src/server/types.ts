@@ -11,15 +11,17 @@ export abstract class NotificationServerBase {
   abstract send(args: { message: IMessage; channel: IChannel }): Promise<boolean>;
 }
 
-interface IMessage {
+export interface IMessage {
   content: {
     body: string;
     type: 'html' | 'string';
   };
 }
 
-interface IChannel {
+export interface IChannel {
   options: Record<string, any>;
 }
 
 export type NotificationServer = new () => NotificationServerBase;
+
+export type SendFnType = (args: { message: IMessage; channel: IChannel }) => Promise<boolean>;

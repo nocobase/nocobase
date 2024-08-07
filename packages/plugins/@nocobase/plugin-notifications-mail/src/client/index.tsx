@@ -21,7 +21,7 @@ export class PluginNotificationsMailClient extends Plugin {
 
   // You can get and modify the app instance here
   async load() {
-    const notification = this.app.pm.get(NotificationsCorePlugin);
+    const notification = this.pm.get(NotificationsCorePlugin);
     notification.registerChannelType(channelType, {
       title: tval(channelType, { ns: NAMESPACE }),
       name: channelType,
