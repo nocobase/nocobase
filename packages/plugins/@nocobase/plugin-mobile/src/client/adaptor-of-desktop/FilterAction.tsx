@@ -11,6 +11,7 @@ import { Filter, withDynamicSchemaProps } from '@nocobase/client';
 import { ConfigProvider } from 'antd';
 import { Popup } from 'antd-mobile';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { MIN_Z_INDEX_INCREMENT, useBasicZIndex } from './BasicZIndexProvider';
 
 const OriginFilterAction = Filter.Action;
 
@@ -20,6 +21,9 @@ export const FilterAction = withDynamicSchemaProps((props) => {
       {...props}
       Container={(props) => {
         const { visiblePopup, popupContainerRef } = usePopupContainer(props.open);
+        const { basicZIndex } = useBasicZIndex();
+
+        const newZIndex = basicZIndex + MIN_Z_INDEX_INCREMENT;
 
         // eslint-disable-next-line react-hooks/rules-of-hooks
         const closePopup = useCallback(() => {
@@ -29,10 +33,10 @@ export const FilterAction = withDynamicSchemaProps((props) => {
         const theme = useMemo(() => {
           return {
             token: {
-              zIndexPopupBase: 2000,
+              zIndexPopupBase: newZIndex,
             },
           };
-        }, []);
+        }, [newZIndex]);
 
         return (
           <ConfigProvider theme={theme}>
@@ -48,7 +52,9 @@ export const FilterAction = withDynamicSchemaProps((props) => {
                 maxHeight: 'calc(100% - var(--nb-mobile-page-header-height))',
                 overflow: 'auto',
                 padding: '12px',
+                zIndex: newZIndex,
               }}
+              maskStyle={{ zIndex: newZIndex }}
               showCloseButton
               closeOnSwipe
             >
@@ -88,6 +94,9 @@ export const usePopupContainer = (visible: boolean) => {
   const [mobileContainer] = useState<HTMLElement>(() => document.querySelector('.mobile-container'));
   const [visiblePopup, setVisiblePopup] = useState(false);
   const popupContainerRef = React.useRef<HTMLDivElement>(null);
+  const { basicZIndex } = useBasicZIndex();
+
+  const newZIndex = basicZIndex + MIN_Z_INDEX_INCREMENT;
 
   useEffect(() => {
     if (!visible) {
@@ -110,7 +119,7 @@ export const usePopupContainer = (visible: boolean) => {
     popupContainer.style.right = '0';
     popupContainer.style.bottom = '0';
     popupContainer.style.overflow = 'hidden';
-    popupContainer.style.zIndex = '2000';
+    popupContainer.style.zIndex = newZIndex.toString();
 
     mobileContainer.appendChild(popupContainer);
     popupContainerRef.current = popupContainer;
@@ -126,7 +135,7 @@ export const usePopupContainer = (visible: boolean) => {
         }, 300);
       }
     };
-  }, [mobileContainer, visible]);
+  }, [mobileContainer, newZIndex, visible]);
 
   return {
     visiblePopup,

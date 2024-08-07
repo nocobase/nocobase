@@ -21,6 +21,7 @@ import _ from 'lodash';
 import React, { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { usePluginTranslation } from '../../locale';
+import { BasicZIndexProvider, MIN_Z_INDEX_INCREMENT, useBasicZIndex } from '../BasicZIndexProvider';
 import { useMobileActionPageStyle } from './MobileActionPage.style';
 import { MobileTabsForMobileActionPage } from './MobileTabsForMobileActionPage';
 
@@ -93,6 +94,12 @@ export const MobileActionPage = ({ level, footerNodeName }) => {
   const { styles } = useMobileActionPageStyle();
   const tabContext = useTabsContext();
   const containerDOM = useMemo(() => document.querySelector('.nb-mobile-subpages-slot'), []);
+  const { basicZIndex } = useBasicZIndex();
+
+  // in nested popups, basicZIndex is an accumulated value to ensure that
+  // the z-index of the current level is always higher than the previous level
+  const newZIndex = basicZIndex + MIN_Z_INDEX_INCREMENT + (level || 1);
+
   const footerSchema = fieldSchema.reduceProperties((buf, s) => {
     if (s['x-component'] === footerNodeName) {
       return s;
@@ -100,35 +107,36 @@ export const MobileActionPage = ({ level, footerNodeName }) => {
     return buf;
   });
 
-  const style = useMemo(() => {
+  const zIndexStyle = useMemo(() => {
     return {
-      // 为了让弹窗中的内容不被遮挡，设置一个较高的 z-index
-      zIndex: 1000 + (level || 1),
+      zIndex: newZIndex,
     };
-  }, [level]);
+  }, [newZIndex]);
 
   if (!ctx.visible) {
     return null;
   }
 
   const actionPageNode = (
-    <div className={styles.container} style={style}>
-      <TabsContextProvider {...tabContext} tabBarExtraContent={<BackButtonUsedInSubPage />} tabBarGutter={48}>
-        <SchemaComponent components={components} schema={fieldSchema} onlyRenderProperties />
-      </TabsContextProvider>
-      {footerSchema && (
-        <div className={styles.footer}>
-          <RecursionField
-            basePath={field.address}
-            schema={fieldSchema}
-            onlyRenderProperties
-            filterProperties={(s) => {
-              return s['x-component'] === footerNodeName;
-            }}
-          />
-        </div>
-      )}
-    </div>
+    <BasicZIndexProvider basicZIndex={newZIndex}>
+      <div className={styles.container} style={zIndexStyle}>
+        <TabsContextProvider {...tabContext} tabBarExtraContent={<BackButtonUsedInSubPage />} tabBarGutter={48}>
+          <SchemaComponent components={components} schema={fieldSchema} onlyRenderProperties />
+        </TabsContextProvider>
+        {footerSchema && (
+          <div className={styles.footer} style={zIndexStyle}>
+            <RecursionField
+              basePath={field.address}
+              schema={fieldSchema}
+              onlyRenderProperties
+              filterProperties={(s) => {
+                return s['x-component'] === footerNodeName;
+              }}
+            />
+          </div>
+        )}
+      </div>
+    </BasicZIndexProvider>
   );
 
   if (containerDOM) {

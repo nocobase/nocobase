@@ -14,6 +14,7 @@ import { Popup } from 'antd-mobile';
 import { CloseOutline } from 'antd-mobile-icons';
 import React, { useCallback, useEffect, useMemo } from 'react';
 import { useMobileActionDrawerStyle } from './ActionDrawer.style';
+import { BasicZIndexProvider, MIN_Z_INDEX_INCREMENT, useBasicZIndex } from './BasicZIndexProvider';
 import { usePopupContainer } from './FilterAction';
 
 export const ActionDrawerUsedInMobile = observer((props: { footerNodeName?: string }) => {
@@ -22,6 +23,15 @@ export const ActionDrawerUsedInMobile = observer((props: { footerNodeName?: stri
   const { visible, setVisible } = useActionContext();
   const { popupContainerRef, visiblePopup } = usePopupContainer(visible);
   const { styles } = useMobileActionDrawerStyle();
+  const { basicZIndex } = useBasicZIndex();
+
+  const newZIndex = basicZIndex + MIN_Z_INDEX_INCREMENT;
+
+  const zIndexStyle = useMemo(() => {
+    return {
+      zIndex: newZIndex,
+    };
+  }, [newZIndex]);
 
   const footerSchema = fieldSchema.reduceProperties((buf, s) => {
     if (s['x-component'] === props.footerNodeName) {
@@ -43,55 +53,59 @@ export const ActionDrawerUsedInMobile = observer((props: { footerNodeName?: stri
         marginBlock,
         borderRadiusBlock: 0,
         boxShadowTertiary: 'none',
-        zIndexPopupBase: 2000,
+        zIndexPopupBase: newZIndex,
       },
     };
-  }, []);
+  }, [newZIndex]);
 
   return (
-    <ConfigProvider theme={theme}>
-      <Popup
-        visible={visiblePopup}
-        onClose={closePopup}
-        onMaskClick={closePopup}
-        getContainer={() => popupContainerRef.current}
-        bodyClassName={styles.body}
-        closeOnSwipe
-      >
-        <div className={styles.header}>
-          {/* used to make the title center */}
-          <span className={styles.placeholder}>
-            <CloseOutline />
-          </span>
-          <span>{title}</span>
-          <span className={styles.closeIcon} onClick={closePopup}>
-            <CloseOutline />
-          </span>
-        </div>
-        <SchemaComponent
-          schema={fieldSchema}
-          onlyRenderProperties
-          filterProperties={(s) => {
-            return s['x-component'] !== props.footerNodeName;
-          }}
-        />
-        {/* used to offset the margin-bottom of the last block */}
-        {/* The number 1 is to prevent the scroll bar from appearing */}
-        <div style={{ marginBottom: 1 - marginBlock }}></div>
-        {footerSchema ? (
-          <div className={styles.footer}>
-            <RecursionField
-              basePath={field.address}
-              schema={fieldSchema}
-              onlyRenderProperties
-              filterProperties={(s) => {
-                return s['x-component'] === props.footerNodeName;
-              }}
-            />
+    <BasicZIndexProvider basicZIndex={newZIndex}>
+      <ConfigProvider theme={theme}>
+        <Popup
+          visible={visiblePopup}
+          onClose={closePopup}
+          onMaskClick={closePopup}
+          getContainer={() => popupContainerRef.current}
+          bodyClassName={styles.body}
+          bodyStyle={zIndexStyle}
+          maskStyle={zIndexStyle}
+          closeOnSwipe
+        >
+          <div className={styles.header}>
+            {/* used to make the title center */}
+            <span className={styles.placeholder}>
+              <CloseOutline />
+            </span>
+            <span>{title}</span>
+            <span className={styles.closeIcon} onClick={closePopup}>
+              <CloseOutline />
+            </span>
           </div>
-        ) : null}
-      </Popup>
-    </ConfigProvider>
+          <SchemaComponent
+            schema={fieldSchema}
+            onlyRenderProperties
+            filterProperties={(s) => {
+              return s['x-component'] !== props.footerNodeName;
+            }}
+          />
+          {/* used to offset the margin-bottom of the last block */}
+          {/* The number 1 is to prevent the scroll bar from appearing */}
+          <div style={{ marginBottom: 1 - marginBlock }}></div>
+          {footerSchema ? (
+            <div className={styles.footer}>
+              <RecursionField
+                basePath={field.address}
+                schema={fieldSchema}
+                onlyRenderProperties
+                filterProperties={(s) => {
+                  return s['x-component'] === props.footerNodeName;
+                }}
+              />
+            </div>
+          ) : null}
+        </Popup>
+      </ConfigProvider>
+    </BasicZIndexProvider>
   );
 });
 

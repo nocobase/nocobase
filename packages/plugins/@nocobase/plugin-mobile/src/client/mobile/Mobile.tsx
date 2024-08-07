@@ -21,6 +21,7 @@ import { isDesktop } from 'react-device-detect';
 
 import _ from 'lodash';
 import { ActionDrawerUsedInMobile, useToAdaptActionDrawerToMobile } from '../adaptor-of-desktop/ActionDrawer';
+import { BasicZIndexProvider } from '../adaptor-of-desktop/BasicZIndexProvider';
 import { useToAdaptFilterActionToMobile } from '../adaptor-of-desktop/FilterAction';
 import { InternalPopoverNesterUsedInMobile } from '../adaptor-of-desktop/InternalPopoverNester';
 import { MobileActionPage } from '../adaptor-of-desktop/mobile-action-page/MobileActionPage';
@@ -94,7 +95,10 @@ export const Mobile = () => {
               <MobileAppProvider>
                 <ResetSchemaOptionsProvider>
                   <AssociationFieldModeProvider modeToComponent={modeToComponent}>
-                    <MobileRouter />
+                    {/* the z-index of all popups and subpages will be based on this value */}
+                    <BasicZIndexProvider basicZIndex={1000}>
+                      <MobileRouter />
+                    </BasicZIndexProvider>
                   </AssociationFieldModeProvider>
                 </ResetSchemaOptionsProvider>
               </MobileAppProvider>
