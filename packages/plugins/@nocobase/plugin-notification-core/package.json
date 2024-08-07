@@ -1,0 +1,23 @@
+{
+  "name": "@nocobase/plugin-notification-core",
+  "version": "1.0.0-alpha.17",
+  "main": "dist/server/index.js",
+  "dependencies": {},
+  "devDependencies": {
+    "@ant-design/icons": "5.x",
+    "@formily/react": "2.x",
+    "@formily/shared": "2.x",
+    "@types/cron": "^2.0.1",
+    "antd": "5.x",
+    "cron": "^2.3.1",
+    "react": "^18.2.0",
+    "react-i18next": "^11.15.1"
+  },
+  "peerDependencies": {
+    "@nocobase/actions": "1.x",
+    "@nocobase/client": "1.x",
+    "@nocobase/database": "1.x",
+    "@nocobase/server": "1.x",
+    "@nocobase/test": "1.x"
+  }
+}
