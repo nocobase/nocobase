@@ -8,10 +8,10 @@
  */
 
 export abstract class NotificationServerBase {
-  abstract send(args: { message: IMessage; channel: IChannel }): Promise<boolean>;
+  abstract send(args: { message: SendOptions; channel: IChannel }): Promise<boolean>;
 }
 
-export interface IMessage {
+export interface SendOptions {
   channelId: string;
   content: {
     body: string;
@@ -30,4 +30,4 @@ export interface IChannel {
 // export type NotificationServer = new () => NotificationServerBase;
 export type NotificationServer = NotificationServerBase;
 
-export type SendFnType = (args: { message: IMessage; channel: IChannel }) => Promise<boolean>;
+export type SendFnType = (args: { message: SendOptions; channel: IChannel }) => Promise<boolean>;

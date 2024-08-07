@@ -8,30 +8,25 @@
  */
 
 import { Plugin } from '@nocobase/server';
-import { Registry } from '@nocobase/utils';
-import type { NotificationServer } from './types';
+
 import { COLLECTION_NAME } from '../constant';
-import { IMessage, IChannel } from './types';
-interface NotificatonType {
-  Server: new () => NotificationServer;
-}
-
+import { SendOptions, IChannel } from './types';
+import NotificationManager from './manager';
 export class PluginNotificationManager extends Plugin {
-  protected notificationTypes = new Registry<{ server: NotificationServer }>();
-  registerTypes(type: string, config: NotificatonType) {
-    const server = new config.Server();
-    this.notificationTypes.register(type, { server });
-  }
-  async send(message: IMessage) {
+  notificationManager: NotificationManager;
+
+  async send(options: SendOptions) {
     const channelsRepo = this.app.db.getRepository('channels');
-    const channel: IChannel = await channelsRepo.findOne({ filterByTk: message.channelId });
-    const notificationServer = this.notificationTypes.get(channel.notificationType).server;
-    await notificationServer.send({ message, channel });
+    const channel: IChannel = await channelsRepo.findOne({ filterByTk: options.channelId });
+    const notificationServer = this.notificationManager.notificationTypes.get(channel.notificationType).server;
+    await notificationServer.send({ message: options, channel });
     const logsRepo = this.app.db.getRepository('messageLogs');
-    logsRepo.create({ values: { channelId: message.channelId, triggerFrom: message.triggerFrom, status: 'success' } });
+    logsRepo.create({ values: { channelId: options.channelId, triggerFrom: options.triggerFrom, status: 'success' } });
   }
 
-  async afterAdd() {}
+  async afterAdd() {
+    this.notificationManager = new NotificationManager();
+  }
 
   async beforeLoad() {
     this.app.resourceManager.registerActionHandler('messages:send', async (ctx, next) => {
@@ -46,7 +41,7 @@ export class PluginNotificationManager extends Plugin {
           messageId: message.id,
         },
       });
-      const notificationServer = this.notificationTypes.get(channel.notificationType).server;
+      const notificationServer = this.notificationManager.notificationTypes.get(channel.notificationType).server;
       notificationServer.send({ message, channel });
       next();
     });

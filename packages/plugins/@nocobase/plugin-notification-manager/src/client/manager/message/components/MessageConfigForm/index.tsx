@@ -53,6 +53,7 @@ export const MessageConfigForm = observer<{ variableOptions: any }>(
           'x-component': 'RemoteSelect',
           'x-component-props': {
             multiple: false,
+            manual: false,
             fieldNames: {
               label: 'title',
               value: 'id',

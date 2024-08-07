@@ -7,14 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import React from 'react';
 import { Card } from 'antd';
 import { messageLogsManagerSchema } from '../schemas';
 import { SchemaComponent, SchemaComponentContext, useSchemaComponentContext } from '@nocobase/client';
-import React, { useState } from 'react';
 import { ExtendCollectionsProvider } from '@nocobase/client';
 import { useNotificationTranslation } from '../../../locale';
 import messageLogCollection from '../../../../collections/messageLog';
-import channelCollection from '../../../../collections/channel';
 
 export const LogManager = () => {
   const { t } = useNotificationTranslation();

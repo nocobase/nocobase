@@ -40,7 +40,7 @@ export type RemoteSelectProps<P = any> = SelectProps<P, any> & {
    */
   service: ResourceActionOptions<P>;
   target: string;
-  mapOptions?: (data: any, option?: any) => SelectProps['fieldNames'];
+  mapOptions?: (data: any) => SelectProps['fieldNames'];
   dataSource?: string;
   CustomDropdownRender?: (v: any) => any;
   optionFilter?: (option: any) => boolean;
@@ -132,13 +132,10 @@ const InternalRemoteSelect = connect(
               }
 
               if (mapOptions) {
-                return mapOptions(
-                  {
-                    [fieldNames.label]: label || EMPTY,
-                    [fieldNames.value]: option[fieldNames.value],
-                  },
-                  option,
-                );
+                return mapOptions({
+                  [fieldNames.label]: label || EMPTY,
+                  [fieldNames.value]: option[fieldNames.value],
+                });
               }
               return {
                 ...option,
