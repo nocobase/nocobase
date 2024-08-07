@@ -85,18 +85,14 @@ describe('tree path test', () => {
     });
     const data = await treeCollection.repository.find({});
     expect(data.length).toBe(6);
-    // test node parent changed if the related node path is changed
-    await treeCollection.repository.update({
-      values: {
-        parentId: null,
-      },
-      filter: {
-        name: 'a4',
-      },
-    });
     const nodeA1 = await treeCollection.repository.findOne({
       filter: {
         name: 'a1',
+      },
+    });
+    const nodeA2 = await treeCollection.repository.findOne({
+      filter: {
+        name: 'a2',
       },
     });
     const nodeA3 = await treeCollection.repository.findOne({
@@ -115,18 +111,84 @@ describe('tree path test', () => {
       },
     });
     const nodePkColumnName = db.getCollection(name).getField('nodePk').columnName();
-    const pathDataA4 = await db.getCollection(name).repository.findOne({
+    const pathNodeA1 = await db.getCollection(name).repository.findOne({
+      filter: {
+        [nodePkColumnName]: nodeA1.get(treeCollection.filterTargetKey),
+      },
+    });
+    const pathNodeA2 = await db.getCollection(name).repository.findOne({
+      filter: {
+        [nodePkColumnName]: nodeA2.get(treeCollection.filterTargetKey),
+      },
+    });
+    const pathNodeA3 = await db.getCollection(name).repository.findOne({
+      filter: {
+        [nodePkColumnName]: nodeA3.get(treeCollection.filterTargetKey),
+      },
+    });
+    const pathNodeA4 = await db.getCollection(name).repository.findOne({
       filter: {
         [nodePkColumnName]: nodeA4.get(treeCollection.filterTargetKey),
       },
     });
-    const pathDataA5 = await db.getCollection(name).repository.findOne({
+    const pathNodeA5 = await db.getCollection(name).repository.findOne({
+      filter: {
+        [nodePkColumnName]: nodeA5.get(treeCollection.filterTargetKey),
+      },
+    });
+    //test if root primary key data is correct
+    expect(pathNodeA1.get('rootPk')).toEqual(nodeA1.get(treeCollection.filterTargetKey));
+    expect(pathNodeA2.get('rootPk')).toEqual(nodeA1.get(treeCollection.filterTargetKey));
+    expect(pathNodeA3.get('rootPk')).toEqual(nodeA1.get(treeCollection.filterTargetKey));
+    expect(pathNodeA4.get('rootPk')).toEqual(nodeA1.get(treeCollection.filterTargetKey));
+    expect(pathNodeA5.get('rootPk')).toEqual(nodeA1.get(treeCollection.filterTargetKey));
+    //test if root node key data is correct
+    expect(pathNodeA1.get('nodePk')).toEqual(nodeA1.get(treeCollection.filterTargetKey));
+    expect(pathNodeA2.get('nodePk')).toEqual(nodeA2.get(treeCollection.filterTargetKey));
+    expect(pathNodeA3.get('nodePk')).toEqual(nodeA3.get(treeCollection.filterTargetKey));
+    expect(pathNodeA4.get('nodePk')).toEqual(nodeA4.get(treeCollection.filterTargetKey));
+    expect(pathNodeA5.get('nodePk')).toEqual(nodeA5.get(treeCollection.filterTargetKey));
+    //test if root path data is correct
+    expect(pathNodeA1.get('path')).toEqual(`/${nodeA1.get(treeCollection.filterTargetKey)}`);
+    expect(pathNodeA2.get('path')).toEqual(
+      `/${nodeA1.get(treeCollection.filterTargetKey)}/${nodeA2.get(treeCollection.filterTargetKey)}`,
+    );
+    expect(pathNodeA3.get('path')).toEqual(
+      `/${nodeA1.get(treeCollection.filterTargetKey)}/${nodeA2.get(treeCollection.filterTargetKey)}/${nodeA3.get(
+        treeCollection.filterTargetKey,
+      )}`,
+    );
+    expect(pathNodeA4.get('path')).toEqual(
+      `/${nodeA1.get(treeCollection.filterTargetKey)}/${nodeA2.get(treeCollection.filterTargetKey)}/${nodeA3.get(
+        treeCollection.filterTargetKey,
+      )}/${nodeA4.get(treeCollection.filterTargetKey)}`,
+    );
+    expect(pathNodeA5.get('path')).toEqual(
+      `/${nodeA1.get(treeCollection.filterTargetKey)}/${nodeA2.get(treeCollection.filterTargetKey)}/${nodeA3.get(
+        treeCollection.filterTargetKey,
+      )}/${nodeA4.get(treeCollection.filterTargetKey)}/${nodeA5.get(treeCollection.filterTargetKey)}`,
+    );
+    // test node parent changed if the related node path is changed
+    await treeCollection.repository.update({
+      values: {
+        parentId: null,
+      },
+      filter: {
+        name: 'a4',
+      },
+    });
+    const pathNodeA4Changed = await db.getCollection(name).repository.findOne({
+      filter: {
+        [nodePkColumnName]: nodeA4.get(treeCollection.filterTargetKey),
+      },
+    });
+    const pathNodeA5Changed = await db.getCollection(name).repository.findOne({
       filter: {
         [nodePkColumnName]: nodeA5.get(treeCollection.filterTargetKey),
       },
     });
     // node a4 and a5 root path is equal when a4 change parent to null
-    expect(pathDataA4.get('rootPk') === pathDataA5.get('rootPk')).toBeTruthy();
+    expect(pathNodeA4Changed.get('rootPk') === pathNodeA5Changed.get('rootPk')).toBeTruthy();
     await treeCollection.repository.update({
       values: {
         parentId: nodeA3.get(treeCollection.filterTargetKey),
@@ -140,7 +202,6 @@ describe('tree path test', () => {
     for (const node of allNodes) {
       expect(nodeA1.get(treeCollection.filterTargetKey) === node.get('rootPk')).toBeTruthy();
     }
-    //
     await treeCollection.repository.update({
       values: {
         parentId: nodeA4.get(treeCollection.filterTargetKey),
