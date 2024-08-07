@@ -11,6 +11,7 @@ export const formProperties = {
   title: {
     'x-component': 'CollectionField',
     'x-decorator': 'FormItem',
+    'x-collection-field': 'messages.title',
   },
   channel: {
     'x-component': 'CollectionField',
@@ -26,9 +27,11 @@ export const formProperties = {
   receiveOption: {
     'x-component': 'CollectionField',
     'x-decorator': 'FormItem',
+    'x-collection-field': 'messages.receiveOption',
   },
   message: {
     'x-component': 'CollectionField',
     'x-decorator': 'FormItem',
+    'x-collection-field': 'messages.message',
   },
 };

@@ -8,7 +8,7 @@
  */
 
 import { Card } from 'antd';
-import { messageManagerSchema, createMessageFormSchema } from '../schemas';
+import { messageManagerSchema } from '../schemas';
 import {
   SchemaComponent,
   useActionContext,
@@ -26,7 +26,7 @@ import ReceiverConfigForm from './ReceiverConfigForm';
 import MessageInput from './MessageInput';
 import { MessageLogManager } from '../../messageLog/components/Manager';
 import { useSendAction } from './useSendAction';
-
+import { useSubmitActionProps } from '../../../hooks';
 const useCloseAction = () => {
   const { setVisible } = useActionContext();
   return {
@@ -45,7 +45,7 @@ export const MessageManager = () => {
         <Card bordered={false}>
           <SchemaComponent
             schema={messageManagerSchema}
-            scope={{ t, [MessageScopeNames.useSendAction]: useSendAction }}
+            scope={{ t, [MessageScopeNames.useSendAction]: useSendAction, useSubmitActionProps }}
             components={{
               [MessageComponentNames.ReceiverConfigForm]: ReceiverConfigForm,
               [MessageComponentNames.MessageInput]: MessageInput,

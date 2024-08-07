@@ -7,11 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import { FormItem, Input, Space } from '@nocobase/client';
+import { Radio } from 'antd';
 import { ArrayField as ArrayFieldModel, VoidField } from '@formily/core';
 import { ArrayField, Field, useField, observer } from '@formily/react';
-import { useNotificationTranslation } from '../../../locale';
+import { useNotificationTranslation } from '../../../../locale';
 
 const ConfigForm = observer(
   () => {
@@ -42,8 +43,24 @@ const ConfigForm = observer(
   { displayName: 'ConfigForm' },
 );
 const ReceiverConfigForm = () => {
+  const [inputType, setInputType] = useState('manual');
+  const options = [
+    {
+      label: 'manual Input',
+      value: 'manual',
+    },
+    {
+      label: 'collection',
+      value: 'collection',
+    },
+    {
+      label: 'import',
+      value: 'import',
+    },
+  ];
   return (
     <div>
+      <Radio.Group options={options} value={inputType} optionType="button" buttonStyle="solid"></Radio.Group>
       <ArrayField name="receivers" component={[ConfigForm]} disabled={false} />
     </div>
   );

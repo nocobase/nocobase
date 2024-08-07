@@ -14,41 +14,6 @@ import { useTranslation } from 'react-i18next';
 import { message } from 'antd';
 import { formProperties } from './form';
 import { MessageScopeNames, MessageComponentNames } from '../types';
-export const createMessageFormSchema: ISchema = {
-  type: 'object',
-  properties: {
-    drawer: {
-      type: 'void',
-      'x-component': 'Action.Drawer',
-      'x-decorator': 'Form',
-      title: '{{t("Add new")}}',
-      properties: {
-        ...formProperties,
-        footer: {
-          type: 'void',
-          'x-component': 'Action.Drawer.Footer',
-          properties: {
-            cancel: {
-              title: '{{t("Cancel")}}',
-              'x-component': 'Action',
-              'x-component-props': {
-                useAction: '{{ cm.useCancelAction }}',
-              },
-            },
-            submit: {
-              title: '{{t("Submit")}}',
-              'x-component': 'Action',
-              'x-component-props': {
-                type: 'primary',
-                useAction: '{{ cm.useCreateAction }}',
-              },
-            },
-          },
-        },
-      },
-    },
-  },
-};
 
 export const messageManagerSchema: ISchema = {
   type: 'void',
@@ -79,6 +44,7 @@ export const messageManagerSchema: ISchema = {
       properties: {
         create: {
           type: 'void',
+          'x-uid': 'create',
           title: '{{t("Add new")}}',
           'x-component': 'Action',
           'x-component-props': {
@@ -89,27 +55,23 @@ export const messageManagerSchema: ISchema = {
             drawer: {
               type: 'void',
               'x-component': 'Action.Drawer',
-              'x-decorator': 'Form',
-              title: '{{t("Add user")}}',
               properties: {
-                ...formProperties,
-                footer: {
+                mwjr03qwm35: {
                   type: 'void',
-                  'x-component': 'Action.Drawer.Footer',
+                  'x-component': 'FormV2',
+                  // 'x-use-component-props': 'useCreateFormBlockProps',
                   properties: {
-                    cancel: {
-                      title: '{{t("Cancel")}}',
-                      'x-component': 'Action',
-                      'x-component-props': {
-                        useAction: '{{ cm.useCancelAction }}',
-                      },
-                    },
-                    submit: {
-                      title: '{{t("Submit")}}',
-                      'x-component': 'Action',
-                      'x-component-props': {
-                        type: 'primary',
-                        useAction: '{{ cm.useCreateAction }}',
+                    ...formProperties,
+                    footer: {
+                      type: 'void',
+                      'x-component': 'Action.Drawer.Footer',
+                      properties: {
+                        submit: {
+                          title: '{{t("Submit")}}',
+                          'x-component': 'Action',
+                          'x-action': 'submit',
+                          'x-use-component-props': 'useSubmitActionProps',
+                        },
                       },
                     },
                   },
