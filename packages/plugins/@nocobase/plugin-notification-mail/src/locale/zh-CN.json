@@ -1,3 +1,15 @@
 {
-  "mail": "邮件"
+  "mail": "邮件",
+  "From": "From",
+  "To": "To",
+  "CC": "CC",
+  "BCC": "BCC",
+  "Add email address": "Add email address",
+  "Subject": "Subject",
+  "Content": "Content",
+  "Content type": "Content type",
+  "Plain text": "Plain text",
+  "Ignore failed sending and continue workflow": "Ignore failed sending and continue workflow"
+
+
 }

@@ -8,8 +8,15 @@
  */
 
 import React from 'react';
-import { SchemaComponent } from '@nocobase/client';
+import { SchemaComponent, css } from '@nocobase/client';
 import { useNotifyMailTranslation } from './hooks/useTranslation';
+const emailsClass = css`
+  width: 100%;
+
+  .ant-space-item:nth-child(2) {
+    flex-grow: 1;
+  }
+`;
 export const ContentConfigForm = ({ variableOptions }) => {
   const { t } = useNotifyMailTranslation();
   return (
@@ -19,11 +26,111 @@ export const ContentConfigForm = ({ variableOptions }) => {
         type: 'object',
 
         properties: {
-          host: {
+          from: {
+            type: 'string',
+            required: true,
+            title: `{{t("From")}}`,
             'x-decorator': 'FormItem',
-            type: 'boolean',
-            title: '{{t("host")}}',
-            'x-component': 'Input',
+            'x-component': 'Variable.Input',
+            'x-component-props': {
+              scope: variableOptions,
+              useTypedConstant: ['string'],
+              placeholder: `{{t("Email address")}}`,
+            },
+          },
+          cc: {
+            type: 'array',
+            title: `{{t("CC")}}`,
+            'x-decorator': 'FormItem',
+            'x-component': 'ArrayItems',
+            items: {
+              type: 'void',
+              'x-component': 'Space',
+              'x-component-props': {
+                className: emailsClass,
+              },
+              properties: {
+                sort: {
+                  type: 'void',
+                  'x-decorator': 'FormItem',
+                  'x-component': 'ArrayItems.SortHandle',
+                },
+                input: {
+                  type: 'string',
+                  'x-decorator': 'FormItem',
+                  'x-component': 'Variable.Input',
+                  'x-component-props': {
+                    scope: variableOptions,
+                    useTypedConstant: ['string'],
+                    placeholder: `{{t("Email address")}}`,
+                  },
+                },
+                remove: {
+                  type: 'void',
+                  'x-decorator': 'FormItem',
+                  'x-component': 'ArrayItems.Remove',
+                },
+              },
+            },
+            properties: {
+              add: {
+                type: 'void',
+                title: `{{t("Add email address")}}`,
+                'x-component': 'ArrayItems.Addition',
+              },
+            },
+          },
+          bcc: {
+            type: 'array',
+            title: `{{t("BCC")}}`,
+            'x-decorator': 'FormItem',
+            'x-component': 'ArrayItems',
+            items: {
+              type: 'void',
+              'x-component': 'Space',
+              'x-component-props': {
+                className: emailsClass,
+              },
+              properties: {
+                sort: {
+                  type: 'void',
+                  'x-decorator': 'FormItem',
+                  'x-component': 'ArrayItems.SortHandle',
+                },
+                input: {
+                  type: 'string',
+                  'x-decorator': 'FormItem',
+                  'x-component': 'Variable.Input',
+                  'x-component-props': {
+                    scope: variableOptions,
+                    useTypedConstant: ['string'],
+                    placeholder: `{{t("Email address")}}`,
+                  },
+                },
+                remove: {
+                  type: 'void',
+                  'x-decorator': 'FormItem',
+                  'x-component': 'ArrayItems.Remove',
+                },
+              },
+            },
+            properties: {
+              add: {
+                type: 'void',
+                title: `{{t("Add email address")}}`,
+                'x-component': 'ArrayItems.Addition',
+              },
+            },
+          },
+          subject: {
+            type: 'string',
+            required: true,
+            title: `{{t("Subject")}}`,
+            'x-decorator': 'FormItem',
+            'x-component': 'Variable.TextArea',
+            'x-component-props': {
+              scope: variableOptions,
+            },
           },
         },
       }}
