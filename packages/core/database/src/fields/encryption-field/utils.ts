@@ -11,11 +11,12 @@ import { EncryptionError } from './errors/EncryptionError';
 const algorithm = 'aes-256-cbc';
 
 const keyString = process.env.ENCRYPTION_FIELD_KEY || '';
+const defaultIvString = process.env.ENCRYPTION_FIELD_IV || 'Vc53-4G(rTi0vg@a'; // 如果没有设置 IV，使用默认值
 
 // 将字符串转换为 Buffer 对象
 const key = Buffer.from(keyString, 'utf8');
 
-export function aesEncrypt(text: string, ivString: string) {
+export function aesEncrypt(text: string, ivString: string = defaultIvString) {
   checkValueAndIv('Encrypt', text, ivString);
 
   return new Promise((resolve, reject) => {
@@ -43,7 +44,7 @@ export function aesEncrypt(text: string, ivString: string) {
   });
 }
 
-export function aesDecrypt(encrypted: string, ivString: string) {
+export function aesDecrypt(encrypted: string, ivString: string = defaultIvString) {
   checkValueAndIv('Decrypt', encrypted, ivString);
 
   return new Promise((resolve, reject) => {
@@ -71,7 +72,7 @@ export function aesDecrypt(encrypted: string, ivString: string) {
   });
 }
 
-export function aesEncryptSync(text: string, ivString: string) {
+export function aesEncryptSync(text: string, ivString: string = defaultIvString) {
   checkValueAndIv('Encrypt', text, ivString);
 
   const iv = Buffer.from(ivString, 'utf8');
@@ -81,7 +82,7 @@ export function aesEncryptSync(text: string, ivString: string) {
   return encrypted;
 }
 
-export function aseDecryptSync(encrypted: string, ivString: string) {
+export function aseDecryptSync(encrypted: string, ivString: string = defaultIvString) {
   checkValueAndIv('Decrypt', encrypted, ivString);
 
   const iv = Buffer.from(ivString, 'utf8');
