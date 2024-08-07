@@ -74,6 +74,7 @@ export class PresetNocoBase extends Plugin {
     'field-markdown-vditor>=0.21.0-alpha.16',
     'workflow-mailer',
     'field-m2m-array',
+    'notification-mail',
   ];
 
   splitNames(name: string) {
