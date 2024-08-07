@@ -7,11 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+/**
+ * id title channelId template
+ */
+
 import { CollectionOptions } from '@nocobase/client';
 import { COLLECTION_NAME } from '../constant';
 
 const collectionOption: CollectionOptions = {
-  name: COLLECTION_NAME.templates,
+  name: COLLECTION_NAME.messages,
   fields: [
     {
       name: 'id',
@@ -38,17 +42,28 @@ const collectionOption: CollectionOptions = {
       },
     },
     {
-      name: 'description',
-      type: 'text',
-      interface: 'textarea',
+      name: 'channel',
+      target: 'channels',
+      targetKey: 'id',
+      foreignKey: 'channelId',
+      interface: 'm2o',
+      type: 'belongsTo',
+      onDelete: 'SET NULL',
       uiSchema: {
-        type: 'string',
-        'x-component': 'Input.TextArea',
-        title: 'description',
+        type: 'number',
+        title: '{{t("channel")}}',
+        'x-component': 'AssociationField',
+        'x-component-props': {
+          multiple: false,
+          fieldNames: {
+            label: 'title',
+            value: 'id',
+          },
+        },
       },
     },
     {
-      name: 'content',
+      name: 'receiver',
       type: 'json',
       interface: 'json',
       uiSchema: {
@@ -59,7 +74,7 @@ const collectionOption: CollectionOptions = {
             minRows: 5,
           },
         },
-        title: 'content',
+        title: 'receiver',
       },
     },
     {

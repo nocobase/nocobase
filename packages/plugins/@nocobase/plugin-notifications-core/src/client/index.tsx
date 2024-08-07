@@ -12,6 +12,7 @@ import { Registry } from '@nocobase/utils/client';
 import { NAMESPACE } from './locale';
 import { ManagementList } from './Management';
 import { ChannelManager } from './manager/channel/components';
+import { MessageManager } from './manager/message/components/Manager';
 import { ComponentType } from 'react';
 import { ChannelType } from './manager/channel/types';
 
@@ -33,25 +34,25 @@ export class PluginNotificationCoreClient extends Plugin {
       title: this.t('Notification Management'),
       icon: 'NotificationOutlined',
     });
-    this.app.pluginSettingsManager.add(`${NAMESPACE}.notifications`, {
+    this.app.pluginSettingsManager.add(`${NAMESPACE}.channels`, {
       title: 'Channels',
       Component: ChannelManager,
       icon: 'SendOutlined',
       aclSnippet: 'pm.notification.core',
       sort: 1,
     });
-    this.app.pluginSettingsManager.add(`${NAMESPACE}.notifrecords`, {
+    this.app.pluginSettingsManager.add(`${NAMESPACE}.templates`, {
       title: 'Templates',
       Component: ManagementList,
-      icon: 'NotificationOutlined',
+      icon: 'SnippetsOutlined',
       aclSnippet: 'pm.notification.core',
       sort: 2,
     });
 
-    this.app.pluginSettingsManager.add(`${NAMESPACE}.channels`, {
+    this.app.pluginSettingsManager.add(`${NAMESPACE}.messages`, {
       title: 'Messages',
-      Component: ChannelManager,
-      icon: 'NotificationOutlined',
+      Component: MessageManager,
+      icon: 'MessageOutlined',
       aclSnippet: 'pm.notification.core',
       sort: 3,
     });

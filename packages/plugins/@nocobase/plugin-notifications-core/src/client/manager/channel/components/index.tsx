@@ -17,26 +17,28 @@ import {
   SchemaComponentOptions,
 } from '@nocobase/client';
 import { Card } from 'antd';
-import React, { useEffect, useState, useContext } from 'react';
+import React, { useEffect, useState, useContext, useMemo, useCallback } from 'react';
 import { channelsSchema, createFormSchema } from '../schemas';
 import { Button, Dropdown } from 'antd';
 import { PlusOutlined, DownOutlined } from '@ant-design/icons';
-import { ChannelTypeNameContext, ChannelTypesContext, useChannelTypes, useChannelTypeNameProvider } from '../context';
+import {
+  NotificationTypeNameContext,
+  NotificationTypesContext,
+  useChannelTypes,
+  useNotificationTypeNameProvider,
+} from '../context';
 import { useTranslation } from 'react-i18next';
 import { useNotificationTranslation } from '../../../locale';
 import { Schema } from '@formily/react';
 import { PluginNotificationCoreClient } from '../../..';
 import { ChannelType, NotificationType } from '../types';
+import { ConfigForm } from './ConfigForm';
 
 type NotificationTypeOption = {
   key: NotificationType;
   value: NotificationType;
   label: string;
 };
-const notificationTypeOptions: Array<NotificationTypeOption> = [
-  { key: 'mail', label: 'mail', value: 'mail' },
-  { key: 'SMS', label: 'SMS', value: 'SMS' },
-];
 
 const useCloseAction = () => {
   const { setVisible } = useActionContext();
@@ -50,8 +52,7 @@ const useCloseAction = () => {
 const AddNew = () => {
   const { t } = useTranslation();
   const [visible, setVisible] = useState(false);
-
-  const { setName } = useContext(ChannelTypeNameContext);
+  const { NotificationTypeNameProvider, name, setName } = useNotificationTypeNameProvider();
   const channelTypes = useChannelTypes();
   const items = channelTypes.map((item) => ({
     key: item.name,
@@ -64,16 +65,18 @@ const AddNew = () => {
 
   return (
     <ActionContextProvider value={{ visible, setVisible }}>
-      <Dropdown menu={{ items }}>
-        <Button icon={<PlusOutlined />} type={'primary'}>
-          {t('Add new')} <DownOutlined />
-        </Button>
-      </Dropdown>
-      <SchemaComponent
-        scope={{ useCloseAction, notificationTypeOptions }}
-        schema={createFormSchema}
-        // components={{ ConfigForm: getConfigForm(typeName) }}
-      />
+      <NotificationTypeNameProvider>
+        <Dropdown menu={{ items }}>
+          <Button icon={<PlusOutlined />} type={'primary'}>
+            {t('Add new')} <DownOutlined />
+          </Button>
+        </Dropdown>
+        <SchemaComponent
+          scope={{ useCloseAction }}
+          schema={createFormSchema}
+          // components={{ ConfigForm: getConfigForm(typeName) }}
+        />
+      </NotificationTypeNameProvider>
     </ActionContextProvider>
   );
 };
@@ -89,22 +92,20 @@ export const ChannelManager = () => {
   const { t } = useNotificationTranslation();
   const api = useAPIClient();
   const plugin = usePlugin(PluginNotificationCoreClient);
-  const channelTypes: Array<ChannelType> = [];
+  const notificationTypes: Array<ChannelType> = [];
   for (const [key, val] of plugin.channelTypes.getEntities()) {
     const type = {
       ...val,
       title: Schema.compile(val.title, { t }) as string,
     };
-    channelTypes.push(type);
+    notificationTypes.push(type);
   }
 
-  const getConfigForm = (name: string) => {
-    const channel = channelTypes.find((channelType) => channelType.name === name);
-    if (channel) return channel.components.ConfigForm;
-    else return null;
-  };
-
-  const { ChannelTypeNameProvider, name } = useChannelTypeNameProvider();
+  const notificationTypeOptions = notificationTypes.map((item) => ({
+    key: item.name,
+    label: item.title,
+    value: item.name,
+  }));
 
   // useRequest(
   //   () =>
@@ -119,7 +120,7 @@ export const ChannelManager = () => {
   //           value: type.name,
   //         }));
   //       }),
-  //   {
+  //   {p
   //     onSuccess: (types) => {
   //       setTypes(types);
   //     },
@@ -128,17 +129,13 @@ export const ChannelManager = () => {
 
   return (
     <Card bordered={false}>
-      <ChannelTypeNameProvider>
-        <ChannelTypesContext.Provider value={{ channelTypes: channelTypes }}>
-          <SchemaComponentOptions components={{ ConfigForm: getConfigForm(name) }}>
-            <SchemaComponent
-              schema={channelsSchema}
-              components={{ AddNew, ConfigForm: getConfigForm(name) }}
-              scope={{ notificationTypeOptions, useCanNotDelete, t }}
-            />
-          </SchemaComponentOptions>
-        </ChannelTypesContext.Provider>
-      </ChannelTypeNameProvider>
+      <NotificationTypesContext.Provider value={{ channelTypes: notificationTypes }}>
+        <SchemaComponent
+          schema={channelsSchema}
+          components={{ AddNew, ConfigForm }}
+          scope={{ useCanNotDelete, t, notificationTypeOptions }}
+        />
+      </NotificationTypesContext.Provider>
     </Card>
   );
 };

@@ -10,26 +10,26 @@
 import React, { createContext, useContext } from 'react';
 import { useState } from 'react';
 import { ChannelType } from './types';
-export const ChannelTypeNameContext = createContext<{
+export const NotificationTypeNameContext = createContext<{
   name: string;
   setName: (name: string) => void;
 }>({ name: '', setName: () => {} });
-ChannelTypeNameContext.displayName = 'ChannelTypeContext';
+NotificationTypeNameContext.displayName = 'ChannelTypeContext';
 
-export const ChannelTypesContext = createContext<{
+export const NotificationTypesContext = createContext<{
   channelTypes: Array<ChannelType>;
 }>({ channelTypes: [] });
-ChannelTypesContext.displayName = 'ChannelTypesContext';
+NotificationTypesContext.displayName = 'ChannelTypesContext';
 
 export const useChannelTypes = () => {
-  const { channelTypes: types } = useContext(ChannelTypesContext);
+  const { channelTypes: types } = useContext(NotificationTypesContext);
   return types;
 };
 
-export function useChannelTypeNameProvider() {
+export function useNotificationTypeNameProvider() {
   const [name, setName] = useState('');
-  const ChannelTypeNameProvider = ({ children }) => (
-    <ChannelTypeNameContext.Provider value={{ name, setName }}>{children}</ChannelTypeNameContext.Provider>
+  const NotificationTypeNameProvider = ({ children }) => (
+    <NotificationTypeNameContext.Provider value={{ name, setName }}>{children}</NotificationTypeNameContext.Provider>
   );
-  return { name, setName, ChannelTypeNameProvider };
+  return { name, setName, NotificationTypeNameProvider };
 }

@@ -7,4 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export const TemplateManager = () => {};
+import { defineCollection } from '@nocobase/database';
+import collectionOption from '../../collections/message';
+export default defineCollection(collectionOption);

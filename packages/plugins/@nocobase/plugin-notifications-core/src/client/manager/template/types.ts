@@ -7,4 +7,17 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export const TemplateManager = () => {};
+export enum TemplateFieldNames {
+  templateType = 'templateType',
+  content = 'content',
+}
+
+export enum TemplateScopeNames {
+  templateTypeOptions = 'templateTypeOptions',
+}
+
+export enum TemplateComponentNames {
+  AddNew = 'AddNew',
+}
+
+export type TemplateFieldName = `${TemplateFieldNames}`;

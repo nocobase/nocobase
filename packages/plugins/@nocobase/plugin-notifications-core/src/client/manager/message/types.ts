@@ -7,4 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export const TemplateManager = () => {};
+export enum MessageFieldNames {
+  templateType = 'templateType',
+  content = 'content',
+}
+
+export enum MessageScopeNames {
+  ChannelOptions = 'channelOptions',
+}
+
+export enum TemplateComponentNames {
+  AddNew = 'AddNew',
+}

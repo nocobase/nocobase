@@ -7,4 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export const TemplateManager = () => {};
+export const formProperties = {
+  title: {
+    'x-component': 'CollectionField',
+    'x-decorator': 'FormItem',
+  },
+  channel: {
+    'x-component': 'CollectionField',
+    'x-decorator': 'FormItem',
+    'x-collection-field': 'messages.channel',
+  },
+};

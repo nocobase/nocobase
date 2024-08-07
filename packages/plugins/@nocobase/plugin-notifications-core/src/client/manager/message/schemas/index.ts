@@ -11,35 +11,18 @@ import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import { i18n, useAPIClient, useActionContext, useRequest } from '@nocobase/client';
 import { useContext } from 'react';
-import collection from '../../../../collections/channel';
+import collection from '../../../../collections/message';
 import { COLLECTION_NAME } from '../../../../constant';
 import { useTranslation } from 'react-i18next';
 import { message } from 'antd';
 import { formProperties } from './form';
-import { NotificationTypeNameContext } from '../context';
-export const createFormSchema: ISchema = {
+export const createMessageFormSchema: ISchema = {
   type: 'object',
   properties: {
     drawer: {
       type: 'void',
       'x-component': 'Action.Drawer',
       'x-decorator': 'Form',
-      'x-decorator-props': {
-        useValues(options) {
-          const ctx = useActionContext();
-          const { name } = useContext(NotificationTypeNameContext);
-          return useRequest(
-            () =>
-              Promise.resolve({
-                data: {
-                  name: `s_${uid()}`,
-                  notificationType: name,
-                },
-              }),
-            { ...options, refreshDeps: [ctx.visible] },
-          );
-        },
-      },
       title: '{{t("Add new")}}',
       properties: {
         ...formProperties,
@@ -69,27 +52,22 @@ export const createFormSchema: ISchema = {
   },
 };
 
-export const channelsSchema: ISchema = {
+export const messageManagerSchema: ISchema = {
   type: 'void',
-  name: COLLECTION_NAME.channels,
+  name: COLLECTION_NAME.messages,
   'x-decorator': 'ResourceActionProvider',
   'x-decorator-props': {
     collection,
-    resourceName: COLLECTION_NAME.channels,
-    dragSort: true,
+    resourceName: COLLECTION_NAME.messages,
+    dragSort: false,
     request: {
-      resource: COLLECTION_NAME.channels,
+      resource: COLLECTION_NAME.messages,
       action: 'list',
       params: {
         pageSize: 50,
-        sort: 'sort',
         appends: [],
       },
     },
-  },
-  'x-component': 'CollectionProvider_deprecated',
-  'x-component-props': {
-    collection,
   },
   properties: {
     actions: {
@@ -117,9 +95,42 @@ export const channelsSchema: ISchema = {
         create: {
           type: 'void',
           title: '{{t("Add new")}}',
-          'x-component': 'AddNew',
+          'x-component': 'Action',
           'x-component-props': {
             type: 'primary',
+            icon: 'PlusOutlined',
+          },
+          properties: {
+            drawer: {
+              type: 'void',
+              'x-component': 'Action.Drawer',
+              'x-decorator': 'Form',
+              title: '{{t("Add user")}}',
+              properties: {
+                ...formProperties,
+                footer: {
+                  type: 'void',
+                  'x-component': 'Action.Drawer.Footer',
+                  properties: {
+                    cancel: {
+                      title: '{{t("Cancel")}}',
+                      'x-component': 'Action',
+                      'x-component-props': {
+                        useAction: '{{ cm.useCancelAction }}',
+                      },
+                    },
+                    submit: {
+                      title: '{{t("Submit")}}',
+                      'x-component': 'Action',
+                      'x-component-props': {
+                        type: 'primary',
+                        useAction: '{{ cm.useCreateAction }}',
+                      },
+                    },
+                  },
+                },
+              },
+            },
           },
         },
       },
@@ -170,32 +181,6 @@ export const channelsSchema: ISchema = {
               type: 'string',
               'x-component': 'CollectionField',
               'x-read-pretty': true,
-            },
-          },
-        },
-        description: {
-          type: 'void',
-          'x-decorator': 'Table.Column.Decorator',
-          'x-component': 'Table.Column',
-          properties: {
-            description: {
-              type: 'boolean',
-              'x-component': 'CollectionField',
-              'x-read-pretty': true,
-            },
-          },
-        },
-        notificationType: {
-          title: '{{t("Notification Type")}}',
-          type: 'void',
-          'x-decorator': 'Table.Column.Decorator',
-          'x-component': 'Table.Column',
-          properties: {
-            notificationType: {
-              type: 'string',
-              'x-component': 'Select',
-              'x-read-pretty': true,
-              enum: '{{ notificationTypeOptions }}',
             },
           },
         },
