@@ -15,13 +15,6 @@ interface NotificatonType {
   server: NotificationServer;
 }
 
-class NotificationManager {
-  protected notificationTypes = new Registry<NotificatonType>();
-  registerTypes(type: string, config: NotificatonType) {
-    this.notificationTypes.register(type, config);
-  }
-}
-
 export class PluginNotificationServer extends Plugin {
   protected notificationTypes = new Registry<NotificatonType>();
   registerTypes(type: string, config: NotificatonType) {
