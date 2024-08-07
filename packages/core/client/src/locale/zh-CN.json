@@ -964,5 +964,7 @@
   "Expand All": "展开全部",
   "Search": "搜索",
   "Clear default value": "清除默认值",
-  "Open in new window": "新窗口打开"
+  "Open in new window": "新窗口打开",
+  "Default value to current time":"设置字段默认值为当前时间",
+  "Automatically update timestamp on update":"当记录更新时自动设置字段值为当前时间"
 }
