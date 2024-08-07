@@ -15,8 +15,7 @@ import { ObjectField, useField, Field, observer } from '@formily/react';
 import { ObjectField as ObjectFieldType } from '@formily/core';
 
 const MessageInput = observer(
-  ({ defalutValue }: { defalutValue: string }) => {
-    const [value, setValue] = useState(defalutValue);
+  () => {
     const inputRef = useRef<TextAreaRef>(null);
     const [curPos, setCurPos] = useState(null);
 
@@ -66,11 +65,7 @@ const MessageInput = observer(
 );
 
 const Message = () => {
-  return (
-    <div>
-      <ObjectField name="object" component={[MessageInput]}></ObjectField>
-    </div>
-  );
+  return <MessageInput />;
 };
 
 export default Message;

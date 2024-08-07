@@ -8,7 +8,7 @@
  */
 
 import React, { useMemo } from 'react';
-import { Card, Table, Button, Space } from 'antd';
+import { Card, Table, Space } from 'antd';
 import { useAPIClient, useRequest } from '@nocobase/client';
 import { COLLECTION_NAME } from '../constant';
 

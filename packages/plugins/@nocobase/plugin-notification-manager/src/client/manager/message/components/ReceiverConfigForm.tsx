@@ -44,7 +44,7 @@ const ConfigForm = observer(
 const ReceiverConfigForm = () => {
   return (
     <div>
-      <ArrayField name={'receivers'} component={[ConfigForm]} disabled={false} />
+      <ArrayField name="receivers" component={[ConfigForm]} disabled={false} />
     </div>
   );
 };

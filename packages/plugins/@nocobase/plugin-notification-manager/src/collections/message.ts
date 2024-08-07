@@ -64,13 +64,13 @@ const collectionOption: CollectionOptions = {
       },
     },
     {
-      name: 'receiver',
+      name: 'receiveOption',
       type: 'json',
       interface: 'json',
       uiSchema: {
         type: 'object',
         'x-component': `${MessageComponentNames.ReceiverConfigForm}`,
-        title: 'receiver',
+        title: 'receiveOption',
       },
     },
     {
@@ -78,7 +78,7 @@ const collectionOption: CollectionOptions = {
       type: 'json',
       interface: 'json',
       uiSchema: {
-        type: 'object',
+        type: 'void',
         'x-component': `${MessageComponentNames.MessageInput}`,
         title: 'message',
       },

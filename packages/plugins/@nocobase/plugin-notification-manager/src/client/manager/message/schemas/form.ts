@@ -17,7 +17,7 @@ export const formProperties = {
     'x-decorator': 'FormItem',
     'x-collection-field': 'messages.channel',
   },
-  receiver: {
+  receiveOption: {
     'x-component': 'CollectionField',
     'x-decorator': 'FormItem',
   },
