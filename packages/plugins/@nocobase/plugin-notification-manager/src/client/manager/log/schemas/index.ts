@@ -17,28 +17,16 @@ export const messageLogsManagerSchema: ISchema = {
   'x-uid': 't8tkmt2b9dd',
   name: COLLECTION_NAME.messageLogs,
   'x-decorator': 'TableBlockProvider',
-  'x-use-decorator-props': 'useTableBlockDecoratorProps',
-  'x-acl-action': `${COLLECTION_NAME.messageLogs}:list`,
   'x-decorator-props': {
-    collection,
+    collection: collection.name,
     action: 'list',
-    params: {
-      pageSize: 10,
-      filter: {
-        $and: [
-          {
-            messageId: {
-              $eq: '{{$nPopupRecord.id}}',
-            },
-          },
-        ],
-      },
-    },
+    showIndex: true,
+    dragSort: false,
   },
   properties: {
     table: {
       type: 'array',
-      'x-uid': 'COLLECTION_NAME.messageLogs',
+
       'x-component': 'TableV2',
       'x-use-component-props': 'useTableBlockProps',
       'x-component-props': {
@@ -47,32 +35,66 @@ export const messageLogsManagerSchema: ISchema = {
       properties: {
         id: {
           type: 'void',
-          'x-decorator': 'Table.Column.Decorator',
-          'x-component': 'Table.Column',
+          'x-component': 'TableV2.Column',
+          title: 'id',
           properties: {
             id: {
-              type: 'number',
+              type: 'string',
               'x-component': 'CollectionField',
-              'x-collection-field': `${COLLECTION_NAME.messageLogs}.id`,
-              'x-read-pretty': true,
+              'x-pattern': 'readPretty',
             },
           },
         },
-        messageId: {
+        triggerFrom: {
           type: 'void',
-          'x-decorator': 'Table.Column.Decorator',
-          'x-component': 'Table.Column',
+          'x-component': 'TableV2.Column',
+          title: 'triggerFrom',
           properties: {
-            messageId: {
+            triggerFrom: {
+              type: 'string',
               'x-component': 'CollectionField',
-              'x-collection-field': `${COLLECTION_NAME.messageLogs}.messageId`,
-              'x-component-props': {},
-              'x-read-pretty': true,
-              'x-decorator': null,
-              'x-decorator-props': {
-                labelStyle: {
-                  display: 'none',
-                },
+              'x-pattern': 'readPretty',
+            },
+          },
+        },
+        status: {
+          type: 'void',
+          'x-component': 'TableV2.Column',
+          title: 'status',
+          properties: {
+            status: {
+              type: 'string',
+              'x-component': 'CollectionField',
+              'x-pattern': 'readPretty',
+            },
+          },
+        },
+        // channel: {
+        //   type: 'void',
+        //   'x-component': 'TableV2.Column',
+        //   title: 'channelId',
+        //   properties: {
+        //     channelId: {
+        //       type: 'number',
+        //       'x-component': 'CollectionField',
+        //       'x-collection-field': 'messageLogs.channelId',
+        //       'x-pattern': 'readPretty',
+        //     },
+        //   },
+        // },
+        createdAt: {
+          type: 'void',
+          'x-component': 'TableV2.Column',
+          title: 'createdAt',
+          properties: {
+            createdAt: {
+              type: 'string',
+              'x-component': 'CollectionField',
+              'x-pattern': 'readPretty',
+              'x-component-props': {
+                dateFormat: 'YYYY-MM-DD',
+                showTime: true,
+                timeFormat: 'HH:mm:ss',
               },
             },
           },

@@ -26,7 +26,9 @@ export class PluginNotificationManager extends Plugin {
     const channelsRepo = this.app.db.getRepository('channels');
     const channel: IChannel = await channelsRepo.findOne({ filterByTk: message.channelId });
     const notificationServer = this.notificationTypes.get(channel.notificationType).server;
-    notificationServer.send({ message, channel });
+    await notificationServer.send({ message, channel });
+    const logsRepo = this.app.db.getRepository('messageLogs');
+    logsRepo.create({ values: { channelId: message.channelId, triggerFrom: message.triggerFrom, status: 'success' } });
   }
 
   async afterAdd() {}

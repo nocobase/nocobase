@@ -19,6 +19,7 @@ export interface IMessage {
     config: Record<string, any>;
   };
   receivers: string[];
+  triggerFrom: string;
 }
 
 export interface IChannel {

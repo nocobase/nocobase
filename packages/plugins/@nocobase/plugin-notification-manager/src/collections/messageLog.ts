@@ -29,23 +29,6 @@ const collectionOption: CollectionOptions = {
       interface: 'integer',
     },
     {
-      name: 'message',
-      target: COLLECTION_NAME.messages,
-      targetKey: 'id',
-      foreignKey: 'messageId',
-      interface: 'm2o',
-      type: 'belongsTo',
-      onDelete: 'SET NULL',
-      uiSchema: {
-        type: 'number',
-        title: '{{t("message")}}',
-        'x-component': 'AssociationField',
-        'x-component-props': {
-          multiple: false,
-        },
-      },
-    },
-    {
       name: 'channel',
       target: COLLECTION_NAME.channels,
       targetKey: 'id',
@@ -60,6 +43,26 @@ const collectionOption: CollectionOptions = {
         'x-component-props': {
           multiple: false,
         },
+      },
+    },
+    {
+      name: 'triggerFrom',
+      type: 'string',
+      interface: 'input',
+      uiSchema: {
+        type: 'string',
+        'x-component': 'Input',
+        title: 'triggerFrom',
+      },
+    },
+    {
+      name: 'status',
+      type: 'string',
+      interface: 'input',
+      uiSchema: {
+        type: 'string',
+        'x-component': 'Input',
+        title: 'status',
       },
     },
     {

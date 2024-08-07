@@ -15,7 +15,7 @@ export default class extends Instruction {
   async run(node: FlowNodeModel, prevJob, processor: Processor) {
     const options = processor.getParsedValue(node.config, node.id);
     const notificationServer = this.workflow.pm.get(NotificationsServerPlugin) as NotificationsServerPlugin;
-    notificationServer.send(options);
+    notificationServer.send({ ...options, triggerFrom: 'workflow' });
 
     const { workflow } = processor.execution;
     const sync = this.workflow.isWorkflowSync(workflow);
