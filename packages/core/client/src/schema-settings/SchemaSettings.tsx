@@ -95,7 +95,7 @@ import { SchemaComponentOptions } from '../schema-component/core/SchemaComponent
 import { useCompile } from '../schema-component/hooks/useCompile';
 import { Designable, createDesignable, useDesignable } from '../schema-component/hooks/useDesignable';
 import { useSchemaTemplateManager } from '../schema-templates';
-import { useBlockTemplateContext } from '../schema-templates/BlockTemplate';
+import { useBlockTemplateContext } from '../schema-templates/BlockTemplateProvider';
 import { useLocalVariables, useVariables } from '../variables';
 import { FormDataTemplates } from './DataTemplates';
 import { EnableChildCollections } from './EnableChildCollections';

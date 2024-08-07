@@ -7,21 +7,38 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Action, AntdAppProvider, GlobalThemeProvider, OpenModeProvider, usePlugin } from '@nocobase/client';
+import {
+  Action,
+  AntdAppProvider,
+  AssociationFieldModeProvider,
+  BlockTemplateProvider,
+  GlobalThemeProvider,
+  OpenModeProvider,
+  usePlugin,
+} from '@nocobase/client';
 import React from 'react';
 import { isDesktop } from 'react-device-detect';
 
+import _ from 'lodash';
+import { ActionDrawerUsedInMobile, useToAdaptActionDrawerToMobile } from '../adaptor-of-desktop/ActionDrawer';
+import { BasicZIndexProvider } from '../adaptor-of-desktop/BasicZIndexProvider';
+import { useToAdaptFilterActionToMobile } from '../adaptor-of-desktop/FilterAction';
+import { InternalPopoverNesterUsedInMobile } from '../adaptor-of-desktop/InternalPopoverNester';
+import { MobileActionPage } from '../adaptor-of-desktop/mobile-action-page/MobileActionPage';
+import { ResetSchemaOptionsProvider } from '../adaptor-of-desktop/ResetSchemaOptionsProvider';
 import { PageBackgroundColor } from '../constants';
 import { DesktopMode } from '../desktop-mode/DesktopMode';
 import { PluginMobileClient } from '../index';
-import { MobileActionPage } from '../pages/mobile-action-page/MobileActionPage';
 import { MobileAppProvider } from './MobileAppContext';
 import { useStyles } from './styles';
 
 export const Mobile = () => {
+  useToAdaptFilterActionToMobile();
+  useToAdaptActionDrawerToMobile();
+
+  const { styles } = useStyles();
   const mobilePlugin = usePlugin(PluginMobileClient);
   const MobileRouter = mobilePlugin.getRouterComponent();
-  const { styles } = useStyles();
   // 设置的移动端 meta
   React.useEffect(() => {
     if (!isDesktop) {
@@ -44,36 +61,51 @@ export const Mobile = () => {
   }, []);
 
   const DesktopComponent = mobilePlugin.desktopMode === false ? React.Fragment : DesktopMode;
+  const modeToComponent = React.useMemo(() => {
+    return {
+      PopoverNester: _.memoize((OriginComponent) => (props) => (
+        <InternalPopoverNesterUsedInMobile {...props} OriginComponent={OriginComponent} />
+      )),
+    };
+  }, []);
+
   return (
     <DesktopComponent>
       {/* 目前移动端由于和客户端的主题对不上，所以先使用 `GlobalThemeProvider` 和 `AntdAppProvider` 进行重置为默认主题  */}
-      <div className={styles.nbMobile}>
-        <GlobalThemeProvider
-          theme={{
-            token: {
-              marginBlock: 18,
-              borderRadiusBlock: 0,
-              boxShadowTertiary: 'none',
-            },
-          }}
-        >
-          <AntdAppProvider>
-            <OpenModeProvider
-              defaultOpenMode="page"
-              hideOpenMode
-              openModeToComponent={{
-                page: MobileActionPage,
-                drawer: MobileActionPage,
-                modal: Action.Modal,
-              }}
-            >
+      <GlobalThemeProvider
+        theme={{
+          token: {
+            marginBlock: 18,
+            borderRadiusBlock: 0,
+            boxShadowTertiary: 'none',
+          },
+        }}
+      >
+        <AntdAppProvider className={`mobile-container ${styles.nbMobile}`}>
+          <OpenModeProvider
+            defaultOpenMode="page"
+            hideOpenMode
+            openModeToComponent={{
+              page: MobileActionPage,
+              drawer: ActionDrawerUsedInMobile,
+              modal: Action.Modal,
+            }}
+          >
+            <BlockTemplateProvider componentNamePrefix="mobile-">
               <MobileAppProvider>
-                <MobileRouter />
+                <ResetSchemaOptionsProvider>
+                  <AssociationFieldModeProvider modeToComponent={modeToComponent}>
+                    {/* the z-index of all popups and subpages will be based on this value */}
+                    <BasicZIndexProvider basicZIndex={1000}>
+                      <MobileRouter />
+                    </BasicZIndexProvider>
+                  </AssociationFieldModeProvider>
+                </ResetSchemaOptionsProvider>
               </MobileAppProvider>
-            </OpenModeProvider>
-          </AntdAppProvider>
-        </GlobalThemeProvider>
-      </div>
+            </BlockTemplateProvider>
+          </OpenModeProvider>
+        </AntdAppProvider>
+      </GlobalThemeProvider>
     </DesktopComponent>
   );
 };

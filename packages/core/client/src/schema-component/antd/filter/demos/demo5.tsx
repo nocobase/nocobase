@@ -1,8 +1,14 @@
-
-
 import { ISchema } from '@formily/json-schema';
-import { Filter, FilterAction, Input, SchemaComponent, SchemaComponentProvider } from '@nocobase/client';
+import {
+  CustomRouterContextProvider,
+  Filter,
+  FilterAction,
+  Input,
+  SchemaComponent,
+  SchemaComponentProvider,
+} from '@nocobase/client';
 import React from 'react';
+import { Router } from 'react-router-dom';
 
 const options = [
   {
@@ -99,8 +105,12 @@ const schema: ISchema = {
 
 export default () => {
   return (
-    <SchemaComponentProvider components={{ FilterAction, Filter, Input }} scope={{ options }}>
-      <SchemaComponent schema={schema} />
-    </SchemaComponentProvider>
+    <Router location={window.location} navigator={null}>
+      <CustomRouterContextProvider>
+        <SchemaComponentProvider components={{ FilterAction, Filter, Input }} scope={{ options }}>
+          <SchemaComponent schema={schema} />
+        </SchemaComponentProvider>
+      </CustomRouterContextProvider>
+    </Router>
   );
 };

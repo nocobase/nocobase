@@ -23,5 +23,19 @@ export const useMobileActionPageStyle = createStyles(({ css, token }: any) => {
         margin: 20px;
       }
     `,
+
+    footer: css`
+      height: var(--nb-mobile-page-header-height);
+      padding-right: var(--nb-mobile-page-tabs-content-padding);
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background-color: white;
+      z-index: 1000;
+    `,
   };
 });

@@ -23,8 +23,8 @@ import { SchemaSettingsSortField } from '../../../../schema-settings/SchemaSetti
 import { SchemaSettingsTemplate } from '../../../../schema-settings/SchemaSettingsTemplate';
 import { setDefaultSortingRulesSchemaSettingsItem } from '../../../../schema-settings/setDefaultSortingRulesSchemaSettingsItem';
 import { setTheDataScopeSchemaSettingsItem } from '../../../../schema-settings/setTheDataScopeSchemaSettingsItem';
+import { useBlockTemplateContext } from '../../../../schema-templates/BlockTemplateProvider';
 import { setDataLoadingModeSettingsItem } from '../details-multi/setDataLoadingModeSettingsItem';
-import { useCollection } from '../../../../data-source';
 
 export const tableBlockSettings = new SchemaSettings({
   name: 'blockSettings:table',
@@ -212,10 +212,11 @@ export const tableBlockSettings = new SchemaSettings({
       useComponentProps() {
         const { name } = useCollection_deprecated();
         const fieldSchema = useFieldSchema();
+        const { componentNamePrefix } = useBlockTemplateContext();
         const defaultResource =
           fieldSchema?.['x-decorator-props']?.resource || fieldSchema?.['x-decorator-props']?.association;
         return {
-          componentName: 'Table',
+          componentName: `${componentNamePrefix}Table`,
           collectionName: name,
           resourceName: defaultResource,
         };
