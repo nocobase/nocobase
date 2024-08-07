@@ -527,6 +527,7 @@
                                                                         "x-app-version": "1.3.0-alpha",
                                                                         "properties": {
                                                                           "ffc8mlhugg0": {
+                                                                            "x-uid": "npy9peofqfi",
                                                                             "_isJSONSchemaObject": true,
                                                                             "version": "2.0",
                                                                             "type": "void",
@@ -535,6 +536,9 @@
                                                                             "x-settings": "fieldSettings:TableColumn",
                                                                             "x-component": "TableV2.Column",
                                                                             "x-app-version": "1.3.0-alpha",
+                                                                            "x-component-props": {
+                                                                              "width": 50
+                                                                            },
                                                                             "properties": {
                                                                               "id": {
                                                                                 "_isJSONSchemaObject": true,
@@ -555,11 +559,11 @@
                                                                                 "x-index": 1
                                                                               }
                                                                             },
-                                                                            "x-uid": "npy9peofqfi",
                                                                             "x-async": false,
                                                                             "x-index": 2
                                                                           },
                                                                           "pvie58xjvdh": {
+                                                                            "x-uid": "56zqpy54uos",
                                                                             "_isJSONSchemaObject": true,
                                                                             "version": "2.0",
                                                                             "type": "void",
@@ -568,6 +572,9 @@
                                                                             "x-settings": "fieldSettings:TableColumn",
                                                                             "x-component": "TableV2.Column",
                                                                             "x-app-version": "1.3.0-alpha",
+                                                                            "x-component-props": {
+                                                                              "width": 80
+                                                                            },
                                                                             "properties": {
                                                                               "gxd_title_message": {
                                                                                 "_isJSONSchemaObject": true,
@@ -590,9 +597,41 @@
                                                                                 "x-index": 1
                                                                               }
                                                                             },
-                                                                            "x-uid": "56zqpy54uos",
                                                                             "x-async": false,
                                                                             "x-index": 3
+                                                                          },
+                                                                          "x4zjj92eoni": {
+                                                                            "_isJSONSchemaObject": true,
+                                                                            "version": "2.0",
+                                                                            "type": "void",
+                                                                            "x-decorator": "TableV2.Column.Decorator",
+                                                                            "x-toolbar": "TableColumnSchemaToolbar",
+                                                                            "x-settings": "fieldSettings:TableColumn",
+                                                                            "x-component": "TableV2.Column",
+                                                                            "x-app-version": "1.3.0-alpha",
+                                                                            "properties": {
+                                                                              "channelId": {
+                                                                                "_isJSONSchemaObject": true,
+                                                                                "version": "2.0",
+                                                                                "x-collection-field": "test_messages.channelId",
+                                                                                "x-component": "CollectionField",
+                                                                                "x-component-props": {},
+                                                                                "x-read-pretty": true,
+                                                                                "x-decorator": null,
+                                                                                "x-decorator-props": {
+                                                                                  "labelStyle": {
+                                                                                    "display": "none"
+                                                                                  }
+                                                                                },
+                                                                                "x-app-version": "1.3.0-alpha",
+                                                                                "x-uid": "y00fnsybezc",
+                                                                                "x-async": false,
+                                                                                "x-index": 1
+                                                                              }
+                                                                            },
+                                                                            "x-uid": "4v21ujvrqas",
+                                                                            "x-async": false,
+                                                                            "x-index": 4
                                                                           }
                                                                         },
                                                                         "x-uid": "1u5x5ebcray",

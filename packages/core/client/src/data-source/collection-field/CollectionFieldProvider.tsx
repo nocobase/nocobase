@@ -33,6 +33,7 @@ export const CollectionFieldProvider: FC<CollectionFieldProviderProps> = (props)
   const value = useMemo(() => {
     if (!collection) return null;
     const field = fieldSchema?.['x-component-props']?.['field'];
+    //在这里调试
     return (
       collectionManager.getCollectionField(fieldSchema?.['x-collection-field']) ||
       field ||

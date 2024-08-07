@@ -64,10 +64,16 @@ export const messageLogsManagerSchema: ISchema = {
           'x-component': 'Table.Column',
           properties: {
             messageId: {
-              type: 'number',
               'x-component': 'CollectionField',
               'x-collection-field': `${COLLECTION_NAME.messageLogs}.messageId`,
+              'x-component-props': {},
               'x-read-pretty': true,
+              'x-decorator': null,
+              'x-decorator-props': {
+                labelStyle: {
+                  display: 'none',
+                },
+              },
             },
           },
         },
