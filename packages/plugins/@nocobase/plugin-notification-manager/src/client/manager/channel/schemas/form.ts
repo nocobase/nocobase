@@ -18,7 +18,6 @@ export const formProperties = {
   },
   options: {
     'x-component': 'CollectionField',
-    'x-decorator': 'FormItem',
   },
   notificationType: {
     'x-component': 'CollectionField',

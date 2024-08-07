@@ -21,11 +21,7 @@ export const ConfigForm = observer(
     const notificationType = form.values.notificationType || record?.data?.notificationType;
     const { channelTypes } = useContext(NotificationTypesContext);
     const channel = channelTypes.find((channelType) => channelType.name === notificationType);
-    return channel ? (
-      <FormLayout layout={'vertical'}>
-        <channel.components.ChannelConfigForm />{' '}
-      </FormLayout>
-    ) : null;
+    return channel ? <channel.components.ChannelConfigForm /> : null;
   },
   { displayName: 'ConfigForm' },
 );
