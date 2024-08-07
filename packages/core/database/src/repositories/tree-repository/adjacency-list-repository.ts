@@ -195,12 +195,18 @@ export class AdjacencyListRepository extends Repository {
   }
 
   async findAndCount(
-    options?: FindAndCountOptions & { tree?: boolean; fields?: string[]; filter?: any; context?: any },
+    options?: FindAndCountOptions & {
+      tree?: boolean;
+      fields?: string[];
+      filter?: any;
+      context?: any;
+      appends?: string[];
+    },
   ): Promise<[Model[], number]> {
     let totalCount = 0;
     let datas = [];
     const foreignKey = this.collection.treeParentField?.foreignKey || 'parentId';
-    if (options.raw || !options.tree) {
+    if (options.raw || !options.tree || (options.appends != undefined && options.appends.includes('parent'))) {
       return await super.findAndCount(options);
     }
     if (
