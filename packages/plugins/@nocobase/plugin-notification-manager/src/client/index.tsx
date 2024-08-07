@@ -73,5 +73,5 @@ export class PluginNotificationCoreClient extends Plugin {
 }
 
 export default PluginNotificationCoreClient;
-export { createMessageFormSchema } from './manager/message/components/MessageConfigForm';
+export { MessageConfigForm } from './manager/message/components/MessageConfigForm';
 export { NotificationVariableContext, useNotificationVariableOptions, NotificationVariableProvider } from './hooks';

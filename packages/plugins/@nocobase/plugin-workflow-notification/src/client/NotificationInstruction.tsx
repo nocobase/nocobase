@@ -11,37 +11,14 @@ import React from 'react';
 import { ArrayItems } from '@formily/antd-v5';
 
 import { SchemaComponentContext, css } from '@nocobase/client';
-import {
-  Instruction,
-  WorkflowVariableInput,
-  WorkflowVariableRawTextArea,
-  WorkflowVariableTextArea,
-  useWorkflowVariableOptions,
-} from '@nocobase/plugin-workflow/client';
-import {
-  createMessageFormSchema,
-  NotificationVariableContext,
-  useNotificationVariableOptions,
-  NotificationVariableProvider,
-} from '@nocobase/plugin-notification-manager/client';
+import { Instruction, useWorkflowVariableOptions } from '@nocobase/plugin-workflow/client';
+import { MessageConfigForm, NotificationVariableProvider } from '@nocobase/plugin-notification-manager/client';
 
 import { NAMESPACE } from '../locale';
 
-const emailsClass = css`
-  width: 100%;
-
-  .ant-space-item:nth-child(2) {
-    flex-grow: 1;
-  }
-`;
-const useVariableDecoratorProps = () => {
-  const scope = useWorkflowVariableOptions();
-  return { value: scope };
-};
-
-const LocalProvider = ({ children }) => {
-  const scope = useWorkflowVariableOptions();
-  return <NotificationVariableProvider value={scope}>{children}</NotificationVariableProvider>;
+const LocalProvider = () => {
+  const variableOptions = useWorkflowVariableOptions();
+  return <MessageConfigForm variableOptions={variableOptions} />;
 };
 
 export default class extends Instruction {
@@ -51,14 +28,8 @@ export default class extends Instruction {
   description = `{{t("Send email. You can use the variables in the upstream nodes as receivers, subject and content of the email.", { ns: "${NAMESPACE}" })}}`;
   fieldset = {
     message: {
-      type: 'object',
-      properties: {
-        provider: {
-          type: 'void',
-          'x-component': 'LocalProvider',
-          properties: createMessageFormSchema,
-        },
-      },
+      type: 'void',
+      'x-component': 'LocalProvider',
     },
   };
   components = {
@@ -67,5 +38,4 @@ export default class extends Instruction {
     LocalProvider,
     NotificationVariableProvider,
   };
-  scope = { useNotificationVariableOptions };
 }
