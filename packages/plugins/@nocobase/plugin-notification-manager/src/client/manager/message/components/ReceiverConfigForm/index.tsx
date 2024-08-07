@@ -15,7 +15,6 @@ import { ArrayField, Field, useField, observer } from '@formily/react';
 import { useNotificationTranslation } from '../../../../locale';
 import { ManualConfigForm } from './Manual';
 import { CollectionForm } from './Collection';
-
 const ReceiverConfigForm = () => {
   const [inputType, setInputType] = useState('manual');
   const options = [
@@ -44,13 +43,16 @@ const ReceiverConfigForm = () => {
 
   return (
     <div>
-      <Radio.Group
-        options={options}
-        value={inputType}
-        onChange={onChange}
-        optionType="button"
-        buttonStyle="solid"
-      ></Radio.Group>
+      <FormItem label="input type">
+        <Radio.Group
+          options={options}
+          value={inputType}
+          onChange={onChange}
+          optionType="button"
+          buttonStyle="solid"
+        ></Radio.Group>
+      </FormItem>
+
       {configFormMap[inputType]}
     </div>
   );

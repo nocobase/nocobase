@@ -26,7 +26,6 @@ export const formProperties = {
   },
   receiveOption: {
     'x-component': 'CollectionField',
-    'x-decorator': 'FormItem',
     'x-collection-field': 'messages.receiveOption',
   },
   content: {
