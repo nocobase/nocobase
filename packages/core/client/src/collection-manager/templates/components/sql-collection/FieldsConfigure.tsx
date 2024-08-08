@@ -68,11 +68,13 @@ const useSourceFieldsOptions = () => {
       return;
     }
     const children = (collection.fields as FieldOptions[])
-      .filter((v) => !['hasOne', 'hasMany', 'belongsToMany'].includes(v?.type))
+      .filter((v) => {
+        console.log(v);
+        return !['hasOne', 'hasMany', 'belongsToMany', 'belongsTo'].includes(v?.type);
+      })
       ?.map((v) => {
         return { value: v.name, label: t(v.uiSchema?.title) };
       });
-
     data.push({
       value: item,
       label: t(collection.title),
@@ -110,7 +112,7 @@ export const FieldsConfigure = observer(
       [compile],
     );
     const sourceFieldsOptions = useSourceFieldsOptions();
-
+    console.log(sourceFieldsOptions);
     const refGetInterface = useRef(getInterface);
     useEffect(() => {
       const fieldsMp = new Map();

@@ -69,7 +69,7 @@ const PreviewCom = (props) => {
         };
       });
       const children = collection.fields
-        .filter((v) => !['hasOne', 'hasMany', 'belongsToMany'].includes(v?.type))
+        .filter((v) => !['obo', 'oho', 'm2m', 'o2m'].includes(v?.interface))
         ?.map((v) => {
           return { value: v.name, key: v.name, label: t(v.uiSchema?.title || v.name) };
         })
