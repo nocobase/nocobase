@@ -52,4 +52,9 @@ export default {
   Monthly: '每月',
   Yearly: '每年',
   Repeats: '重复',
+  Month: '月',
+  Week: '周',
+  Title: '标题',
+  'Repeat End date field': '重复结束日期字段',
+  'Default Calendar View': '默认视图'
 };
