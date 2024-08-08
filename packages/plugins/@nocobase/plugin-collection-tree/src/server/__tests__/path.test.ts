@@ -14,6 +14,10 @@ import { createApp } from './prepare';
 describe('tree path test', () => {
   let app: MockServer;
   let agent;
+  let treeCollection;
+  let name;
+  let nodePkColumnName;
+  let values;
 
   let db: Database;
   beforeEach(async () => {
@@ -21,14 +25,7 @@ describe('tree path test', () => {
 
     agent = app.agent();
     db = app.db;
-  });
-
-  afterEach(async () => {
-    await app.destroy();
-  });
-
-  it('test collection tree crud for path table', async () => {
-    const treeCollection = db.collection({
+    treeCollection = db.collection({
       name: 'tree',
       tree: 'adjacency-list',
       fields: [
@@ -51,9 +48,9 @@ describe('tree path test', () => {
       ],
     });
     await db.sync();
-    const name = `main_${treeCollection.name}_path`;
-    expect(await db.getCollection(name).existsInDb()).toBeTruthy();
-    await treeCollection.repository.create({
+    name = `main_${treeCollection.name}_path`;
+    nodePkColumnName = db.getCollection(name).getField('nodePk').columnName();
+    values = {
       values: [
         {
           name: 'a1',
@@ -82,7 +79,19 @@ describe('tree path test', () => {
           ],
         },
       ],
-    });
+    };
+  });
+
+  afterEach(async () => {
+    await app.destroy();
+  });
+
+  it('test path table if create', async () => {
+    expect(await db.getCollection(name).existsInDb()).toBeTruthy();
+  });
+
+  it('test path table data correction', async () => {
+    await treeCollection.repository.create(values);
     const data = await treeCollection.repository.find({});
     expect(data.length).toBe(6);
     const nodeA1 = await treeCollection.repository.findOne({
@@ -110,7 +119,6 @@ describe('tree path test', () => {
         name: 'a5',
       },
     });
-    const nodePkColumnName = db.getCollection(name).getField('nodePk').columnName();
     const pathNodeA1 = await db.getCollection(name).repository.findOne({
       filter: {
         [nodePkColumnName]: nodeA1.get(treeCollection.filterTargetKey),
@@ -168,6 +176,35 @@ describe('tree path test', () => {
         treeCollection.filterTargetKey,
       )}/${nodeA4.get(treeCollection.filterTargetKey)}/${nodeA5.get(treeCollection.filterTargetKey)}`,
     );
+  });
+
+  it('test node parent changed if the related node path is changed', async () => {
+    await treeCollection.repository.create(values);
+    const nodeA1 = await treeCollection.repository.findOne({
+      filter: {
+        name: 'a1',
+      },
+    });
+    const nodeA2 = await treeCollection.repository.findOne({
+      filter: {
+        name: 'a2',
+      },
+    });
+    const nodeA3 = await treeCollection.repository.findOne({
+      filter: {
+        name: 'a3',
+      },
+    });
+    const nodeA4 = await treeCollection.repository.findOne({
+      filter: {
+        name: 'a4',
+      },
+    });
+    const nodeA5 = await treeCollection.repository.findOne({
+      filter: {
+        name: 'a5',
+      },
+    });
     // test node parent changed if the related node path is changed
     await treeCollection.repository.update({
       values: {
@@ -218,4 +255,9 @@ describe('tree path test', () => {
     // node primary key shoud be equal to root primary key to avoid infinite loop
     expect(pathDataA4New.get('nodePk') === pathDataA4New.get('rootPk')).toBeTruthy();
   });
+
+  // it('test tree collection destroy then the path table will be destroy', async () => {
+  //   await treeCollection.removeFromDb();
+  //   expect(await db.getCollection(name).existsInDb()).toBeFalsy();
+  // })
 });
