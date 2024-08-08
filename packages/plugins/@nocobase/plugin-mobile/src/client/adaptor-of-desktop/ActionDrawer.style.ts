@@ -62,6 +62,10 @@ export const useMobileActionDrawerStyle = createStyles(({ css, token }: any) => 
       z-index: 1000;
       border-top: 1px solid ${token.colorSplit};
       background-color: ${token.colorBgLayout};
+
+      .ant-btn {
+        margin-left: 8px;
+      }
     `,
   };
 });
