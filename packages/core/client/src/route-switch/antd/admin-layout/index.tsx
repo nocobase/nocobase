@@ -303,16 +303,19 @@ const AdminSideBar = ({ sideMenuRef }) => {
         left: 0;
         top: 0;
         background: rgba(0, 0, 0, 0);
-        z-index: 100;
+        z-index: 90; /* nint 100 to 90, below header */
         .ant-layout-sider-children {
           top: var(--nb-header-height);
           position: fixed;
-          width: 200px;
+          width: inherit; /*nint 200px to inherit, auto collapse */
           height: calc(100vh - var(--nb-header-height));
         }
       `}
       theme={'light'}
       ref={sideMenuRef}
+      breakpoint={'lg'} /* nint support auto collapse */
+      collapsedWidth={0}
+      zeroWidthTriggerStyle={{ top: 'calc(2 * var(--nb-header-height))' }}
     ></Layout.Sider>
   );
 };
