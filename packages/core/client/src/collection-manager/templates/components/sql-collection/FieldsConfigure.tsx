@@ -69,7 +69,6 @@ const useSourceFieldsOptions = () => {
     }
     const children = (collection.fields as FieldOptions[])
       .filter((v) => {
-        console.log(v);
         return !['hasOne', 'hasMany', 'belongsToMany', 'belongsTo'].includes(v?.type);
       })
       ?.map((v) => {
