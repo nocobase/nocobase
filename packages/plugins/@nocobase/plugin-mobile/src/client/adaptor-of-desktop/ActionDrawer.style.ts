@@ -24,8 +24,7 @@ export const useMobileActionDrawerStyle = createStyles(({ css, token }: any) => 
 
       // to match the button named 'Add block'
       & + .nb-grid-container > .nb-grid > .nb-grid-warp > .ant-btn {
-        // 18px is the token marginBlock value
-        margin: 12px 12px calc(12px + 18px);
+        margin: 12px;
       }
     `,
 
@@ -48,6 +47,15 @@ export const useMobileActionDrawerStyle = createStyles(({ css, token }: any) => 
       overflow-y: auto;
       overflow-x: hidden;
       background-color: ${token.colorBgLayout};
+
+      // clear the margin-bottom of the last block
+      & > .nb-grid-container > .nb-grid > .nb-grid-warp > .nb-grid-row:nth-last-child(2) .noco-card-item {
+        margin-bottom: 0;
+
+        & > .ant-card {
+          margin-bottom: 0 !important;
+        }
+      }
     `,
 
     footer: css`
