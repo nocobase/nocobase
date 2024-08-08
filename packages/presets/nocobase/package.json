@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/preset-nocobase",
-  "version": "1.2.34-alpha",
+  "version": "1.3.0-alpha",
   "license": "AGPL-3.0",
   "main": "./lib/server/index.js",
   "dependencies": {
@@ -32,9 +32,9 @@
     "@nocobase/plugin-error-handler": "1.3.0-alpha",
     "@nocobase/plugin-field-china-region": "1.3.0-alpha",
     "@nocobase/plugin-field-formula": "1.3.0-alpha",
+    "@nocobase/plugin-field-m2m-array": "1.3.0-alpha",
     "@nocobase/plugin-field-markdown-vditor": "1.3.0-alpha",
     "@nocobase/plugin-field-sequence": "1.3.0-alpha",
-    "@nocobase/plugin-field-m2m-array": "1.3.0-alpha",
     "@nocobase/plugin-file-manager": "1.3.0-alpha",
     "@nocobase/plugin-gantt": "1.3.0-alpha",
     "@nocobase/plugin-graph-collection-manager": "1.3.0-alpha",

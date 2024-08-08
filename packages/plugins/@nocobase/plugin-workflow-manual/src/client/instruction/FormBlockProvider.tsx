@@ -9,7 +9,6 @@
 
 import { createForm } from '@formily/core';
 import { useField, useFieldSchema } from '@formily/react';
-import { theme } from 'antd';
 import {
   BlockRequestContext_deprecated,
   CollectionManagerProvider,
@@ -22,14 +21,14 @@ import {
   useAPIClient,
   useAssociationNames,
   useBlockRequestContext,
+  useCollectionRecordData,
   useDataSourceHeaders,
-  useDesignable,
-  useRecord,
 } from '@nocobase/client';
+import { theme } from 'antd';
 import React, { useMemo, useRef } from 'react';
 
 export function FormBlockProvider(props) {
-  const userJob = useRecord();
+  const userJob = useCollectionRecordData();
   const fieldSchema = useFieldSchema();
   const field = useField();
   const formBlockRef = useRef(null);
@@ -39,8 +38,6 @@ export function FormBlockProvider(props) {
   const { appends, updateAssociationValues } = getAssociationAppends();
   const [formKey] = Object.keys(fieldSchema.toJSON().properties ?? {});
   const values = userJob?.result?.[formKey];
-
-  const { findComponent } = useDesignable();
 
   const form = useMemo(
     () =>
@@ -81,7 +78,7 @@ export function FormBlockProvider(props) {
     };
   }, [field, form, params, service, updateAssociationValues]);
 
-  return !userJob.status || values ? (
+  return !userJob?.status || values ? (
     <CollectionManagerProvider dataSource={dataSource}>
       <CollectionProvider_deprecated collection={props.collection}>
         <RecordProvider record={values} parent={null}>

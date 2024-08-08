@@ -444,6 +444,25 @@ export const fieldSettingsFormItem = new SchemaSettings({
               return form && !isFormReadPretty && validateSchema;
             },
           },
+          {
+            name: 'style',
+            Component: (props) => {
+              const localProps = { ...props, category: 'style' };
+              return <SchemaSettingsLinkageRules {...localProps} />;
+            },
+            useVisible() {
+              const isFieldReadPretty = useIsFieldReadPretty();
+              return isFieldReadPretty;
+            },
+            useComponentProps() {
+              const { name } = useCollection();
+              const { linkageRulesProps } = useSchemaToolbar();
+              return {
+                ...linkageRulesProps,
+                collectionName: name,
+              };
+            },
+          },
           fieldComponentSettingsItem,
         ];
       },

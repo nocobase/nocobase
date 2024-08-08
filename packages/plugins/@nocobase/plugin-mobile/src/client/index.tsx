@@ -9,10 +9,10 @@
 
 import { PagePopups, Plugin, RouterManager, createRouterManager } from '@nocobase/client';
 import React from 'react';
-import { Outlet } from 'react-router-dom';
-
 // @ts-ignore
 import { name } from '../../package.json';
+
+import { Outlet } from 'react-router-dom';
 
 import { generatePluginTranslationTemplate } from './locale';
 import { Mobile } from './mobile';
@@ -180,6 +180,15 @@ export class PluginMobileClient extends Plugin {
         window.location.href = window.location.href
           .replace(this.mobilePath, '')
           .replace('redirect=', `redirect=${this.mobilePath}`);
+        return null;
+      },
+    });
+
+    // 跳转到主应用的页面
+    this.mobileRouter.add('admin', {
+      path: `/admin/*`,
+      Component: () => {
+        window.location.replace(window.location.href.replace(this.mobilePath, ''));
         return null;
       },
     });

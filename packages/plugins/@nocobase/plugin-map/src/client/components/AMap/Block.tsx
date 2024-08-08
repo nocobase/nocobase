@@ -326,7 +326,6 @@ export const AMapBlock = (props) => {
 
 const MapBlockDrawer = (props) => {
   const { setVisible, record } = props;
-  const { t } = useMapTranslation();
   const collection = useCollection();
   const parentRecordData = useCollectionParentRecordData();
   const fieldSchema = useFieldSchema();

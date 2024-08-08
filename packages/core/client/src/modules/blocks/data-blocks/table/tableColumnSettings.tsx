@@ -21,6 +21,7 @@ import { useColumnSchema } from '../../../../schema-component/antd/table-v2/Tabl
 import { SchemaSettingsDefaultValue } from '../../../../schema-settings/SchemaSettingsDefaultValue';
 import { isPatternDisabled } from '../../../../schema-settings/isPatternDisabled';
 import { fieldComponentSettingsItem } from '../../../../data-source/commonsSettingsItem';
+import { SchemaSettingsLinkageRules } from '../../../../schema-settings';
 
 export const tableColumnSettings = new SchemaSettings({
   name: 'fieldSettings:TableColumn',

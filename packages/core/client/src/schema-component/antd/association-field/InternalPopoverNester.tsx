@@ -10,7 +10,7 @@
 import { EditOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { observer, useFieldSchema } from '@formily/react';
-import React, { useContext, useRef, useState } from 'react';
+import React, { useCallback, useContext, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActionContext, ActionContextProvider } from '../action/context';
 import { useGetAriaLabelOfPopover } from '../action/hooks/useGetAriaLabelOfPopover';
@@ -22,6 +22,7 @@ import { useAssociationFieldContext } from './hooks';
 
 const InternalPopoverNesterContentCss = css`
   min-width: 600px;
+  max-width: 800px;
   max-height: 440px;
   overflow: auto;
   .ant-card {
@@ -30,7 +31,16 @@ const InternalPopoverNesterContentCss = css`
 `;
 
 export const InternalPopoverNester = observer(
-  (props) => {
+  (props: {
+    Container?: (props: {
+      open: boolean;
+      onOpenChange: (open: boolean) => void;
+      trigger: 'click' | 'hover';
+      content: React.ReactElement;
+      children: React.ReactElement;
+    }) => React.ReactElement;
+    children?: React.ReactElement;
+  }) => {
     const { options } = useAssociationFieldContext();
     const [visible, setVisible] = useState(false);
     const { t } = useTranslation();
@@ -42,11 +52,7 @@ export const InternalPopoverNester = observer(
       shouldMountElement: true,
     };
     const content = (
-      <div
-        ref={ref}
-        style={{ minWidth: '600px', maxWidth: '800px', maxHeight: '440px', overflow: 'auto' }}
-        className={InternalPopoverNesterContentCss}
-      >
+      <div ref={ref} className={`${InternalPopoverNesterContentCss} popover-subform-container`}>
         <InternalNester {...nesterProps} />
       </div>
     );
@@ -56,6 +62,11 @@ export const InternalPopoverNester = observer(
       getContainer: getContainer,
     };
     const { getAriaLabel } = useGetAriaLabelOfPopover();
+    const Container = props.Container || StablePopover;
+    const handleOpenChange = useCallback((open: boolean) => {
+      setVisible(open);
+    }, []);
+    const overlayStyle = useMemo(() => ({ padding: '0px' }), []);
 
     if (process.env.__E2E__) {
       useSetAriaLabelForPopover(visible);
@@ -63,13 +74,13 @@ export const InternalPopoverNester = observer(
 
     return (
       <ActionContextProvider value={{ ...ctx, modalProps }}>
-        <StablePopover
-          overlayStyle={{ padding: '0px' }}
+        <Container
+          overlayStyle={overlayStyle}
           content={content}
           trigger="click"
           placement="topLeft"
           open={visible}
-          onOpenChange={(open) => setVisible(open)}
+          onOpenChange={handleOpenChange}
           title={t(options?.uiSchema?.rawTitle)}
         >
           <span style={{ cursor: 'pointer', display: 'flex' }}>
@@ -82,7 +93,7 @@ export const InternalPopoverNester = observer(
             </div>
             <EditOutlined style={{ display: 'inline-flex', margin: '5px' }} />
           </span>
-        </StablePopover>
+        </Container>
         {visible && (
           <div
             role="button"

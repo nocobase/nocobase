@@ -155,7 +155,8 @@ export async function getRenderContent(templateEngine, content, variables, local
     // 处理渲染后的内容
     try {
       const data = getVariablesData(localVariables);
-      return renderedContent({ ...variables.ctxRef.current, ...data });
+      const html = renderedContent({ ...variables.ctxRef.current, ...data });
+      return await defaultParse(html);
     } catch (error) {
       console.log(error);
       return content;

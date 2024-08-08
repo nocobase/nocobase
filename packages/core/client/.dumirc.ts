@@ -1,4 +1,3 @@
-import _ from 'lodash'
 import { getUmiConfig } from '@nocobase/devtools/umiConfig';
 import { defineConfig } from 'dumi';
 import { defineThemeConfig } from 'dumi-theme-nocobase';

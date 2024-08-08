@@ -43,19 +43,19 @@ export const ActionContextProvider: React.FC<ActionContextProps & { value?: Acti
 
 const useBlockServiceInActionButton = () => {
   const { params } = useCurrentPopupContext();
+  const fieldSchema = useFieldSchema();
   const popupUidWithoutOpened = useFieldSchema()?.['x-uid'];
   const service = useDataBlockRequest();
   const currentPopupUid = params?.popupuid;
 
-  // By using caching, we solve the problem of not being able to obtain the correct service when closing a popup through a URL
+  // 把 service 存起来
   useEffect(() => {
-    // This case refers to when the current button is rendered on a page or in a popup
     if (popupUidWithoutOpened && currentPopupUid !== popupUidWithoutOpened) {
       storeBlockService(popupUidWithoutOpened, { service });
     }
-  }, [popupUidWithoutOpened, service, currentPopupUid]);
+  }, [popupUidWithoutOpened, service, currentPopupUid, fieldSchema]);
 
-  // This case refers to when the current button is closed as a popup (the button's uid is the same as the popup's uid)
+  // 关闭弹窗时，获取到对应的 service
   if (currentPopupUid === popupUidWithoutOpened) {
     return getBlockService(currentPopupUid)?.service || service;
   }
