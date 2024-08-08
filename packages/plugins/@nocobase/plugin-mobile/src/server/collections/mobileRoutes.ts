@@ -305,6 +305,5 @@ export default defineCollection({
   template: 'tree',
   view: false,
   tree: 'adjacencyList',
-  schema: 'public',
   filterTargetKey: 'id',
 });
