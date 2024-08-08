@@ -79,7 +79,7 @@ export class SyncRunner {
     try {
       beforeColumns = await this.queryInterface.describeTable(this.tableName, options);
     } catch (error) {
-      console.log(error);
+      // continue
     }
 
     if (beforeColumns) {
