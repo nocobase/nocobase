@@ -22,6 +22,28 @@ describe('string field', () => {
     await db.close();
   });
 
+  it('should define string with length options', async () => {
+    const Test = db.collection({
+      name: 'tests',
+      fields: [{ type: 'string', name: 'name', length: 10 }],
+    });
+    await db.sync();
+
+    let err;
+
+    try {
+      await Test.repository.create({
+        values: {
+          name: '12345678901',
+        },
+      });
+    } catch (e) {
+      err = e;
+    }
+
+    expect(err).toBeDefined();
+  });
+
   it('define', async () => {
     const Test = db.collection({
       name: 'tests',
