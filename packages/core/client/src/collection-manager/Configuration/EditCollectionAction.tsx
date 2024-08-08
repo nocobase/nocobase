@@ -58,6 +58,16 @@ const getSchema = (schema: IField, record: any, compile, getContainer): ISchema 
         title: '{{ t("Edit collection") }}',
         properties: {
           ...properties,
+          //nint add logging select
+          logging: {
+            type: 'boolean',
+            'x-decorator': 'FormItem',
+            'x-component': 'Checkbox',
+            default: false,
+            required: true,
+            title: '{{ t("AuditLogging") }}',
+            description: '{{ t("Check it if you want to monitor data changes in this collection.") }}',
+          },
           filterTargetKey: {
             title: `{{ t("Record unique key")}}`,
             type: 'single',

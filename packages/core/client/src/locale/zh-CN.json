@@ -963,6 +963,8 @@
   "URL search params": "URL 查询参数",
   "Expand All": "展开全部",
   "Search": "搜索",
+  "AuditLogging": "审计日志",
+  "Check it if you want to monitor data changes in this collection.": "勾选后，将会保存此数据表的所有数据变更。",
   "Clear default value": "清除默认值",
   "Open in new window": "新窗口打开"
 }

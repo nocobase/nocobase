@@ -76,6 +76,16 @@ const getSchema = (schema, category, compile): ISchema => {
               schemaKey: schema.name,
             },
           },
+          //nint add logging select
+          logging: {
+            type: 'boolean',
+            'x-decorator': 'FormItem',
+            'x-component': 'Checkbox',
+            default: false,
+            required: true,
+            title: '{{ t("AuditLogging") }}',
+            description: '{{ t("Check it if you want to monitor data changes in this collection.") }}',
+          },
           // @ts-ignore
           ...properties,
           footer: {
@@ -128,7 +138,7 @@ const useCreateCollection = (schema?: any) => {
         delete values.autoCreateReverseField;
         await resource.create({
           values: {
-            logging: true,
+            //logging: true, //nint use ui config value
             ...values,
           },
         });
