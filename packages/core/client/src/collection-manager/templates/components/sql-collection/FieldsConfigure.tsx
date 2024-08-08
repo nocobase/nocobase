@@ -112,7 +112,6 @@ export const FieldsConfigure = observer(
       [compile],
     );
     const sourceFieldsOptions = useSourceFieldsOptions();
-    console.log(sourceFieldsOptions);
     const refGetInterface = useRef(getInterface);
     useEffect(() => {
       const fieldsMp = new Map();
