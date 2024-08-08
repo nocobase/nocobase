@@ -7,14 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Model } from './model';
+import { isPlainObject } from '@nocobase/utils';
+import { Model as SequelizeModel } from 'sequelize';
 import { Collection } from './collection';
 import Database from './database';
-import { InheritedSyncRunner } from './inherited-sync-runner';
-import { InheritedCollection } from './inherited-collection';
-import { Model as SequelizeModel } from 'sequelize';
 import { ZeroColumnTableError } from './errors/zero-column-table-error';
-import { isPlainObject } from '@nocobase/utils';
+import { InheritedCollection } from './inherited-collection';
+import { InheritedSyncRunner } from './inherited-sync-runner';
+import { Model } from './model';
 
 export class SyncRunner {
   private readonly collection: Collection;
@@ -79,7 +79,7 @@ export class SyncRunner {
       await this.handlePrimaryKeyBeforeSync(beforeColumns, options);
       await this.handleUniqueFieldBeforeSync(beforeColumns, options);
     } catch (e) {
-      if (!e.message.includes('No description found')) {
+      if (!e.message.includes("doesn't exist") || !e.message.includes('No description found')) {
         throw e;
       }
     }
