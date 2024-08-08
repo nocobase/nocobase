@@ -51,6 +51,36 @@ export const ShowLunarDesignerItem = () => {
   );
 };
 
+export const ShowDefaultViewSelectItem = () => {
+  //nint
+  const field = useField();
+  const { t } = useTranslation();
+  const fieldSchema = useFieldSchema();
+  const { dn } = useDesignable();
+  return (
+    <SchemaSettingsSelectItem
+      title={t('Default Calendar View')}
+      value={field.decoratorProps?.defaultView || 'month'}
+      options={[
+        { label: t('Month'), value: 'month' },
+        { label: t('Week'), value: 'week' },
+        { label: t('Day'), value: 'day' },
+      ]}
+      onChange={(v) => {
+        field.decoratorProps.defaultView = v;
+        fieldSchema['x-decorator-props']['defaultView'] = v;
+        dn.emit('patch', {
+          schema: {
+            ['x-uid']: fieldSchema['x-uid'],
+            'x-decorator-props': field.decoratorProps,
+          },
+        });
+        dn.refresh();
+      }}
+    />
+  );
+};
+
 export const calendarBlockSettings = new SchemaSettings({
   name: 'blockSettings:calendar',
   items: [
@@ -61,6 +91,11 @@ export const calendarBlockSettings = new SchemaSettings({
     {
       name: 'setTheBlockHeight',
       Component: SchemaSettingsBlockHeightItem,
+    },
+    {
+      //nint
+      name: 'defaultView',
+      Component: ShowDefaultViewSelectItem,
     },
     {
       name: 'titleField',
@@ -158,6 +193,42 @@ export const calendarBlockSettings = new SchemaSettings({
           onChange: (end) => {
             const fieldNames = field.decoratorProps.fieldNames || {};
             fieldNames['end'] = end;
+            field.decoratorProps.fieldNames = fieldNames;
+            fieldSchema['x-decorator-props']['fieldNames'] = fieldNames;
+            service.refresh();
+            dn.emit('patch', {
+              schema: {
+                ['x-uid']: fieldSchema['x-uid'],
+                'x-decorator-props': field.decoratorProps,
+              },
+            });
+            dn.refresh();
+          },
+        };
+      },
+    },
+    {
+      //nint
+      name: 'repeatEndDateField',
+      Component: SchemaSettingsCascaderItem,
+      useComponentProps() {
+        const { t } = useTranslation();
+        const fieldSchema = useFieldSchema();
+        const field = useField();
+        const { service } = useCalendarBlockContext();
+        const { getCollectionFieldsOptions } = useCollectionManager_deprecated();
+        const { dn } = useDesignable();
+        const { name } = useCollection();
+        const fieldNames = fieldSchema?.['x-decorator-props']?.['fieldNames'] || {};
+        return {
+          title: t('Repeat End date field'),
+          value: fieldNames.repeatEnd,
+          options: getCollectionFieldsOptions(name, 'date', {
+            association: ['o2o', 'obo', 'oho', 'm2o'],
+          }),
+          onChange: (repeatEnd) => {
+            const fieldNames = field.decoratorProps.fieldNames || {};
+            fieldNames['repeatEnd'] = repeatEnd;
             field.decoratorProps.fieldNames = fieldNames;
             fieldSchema['x-decorator-props']['fieldNames'] = fieldNames;
             service.refresh();
