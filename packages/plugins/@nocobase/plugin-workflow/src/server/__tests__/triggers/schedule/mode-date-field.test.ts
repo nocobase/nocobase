@@ -403,4 +403,42 @@ describe('workflow > triggers > schedule > date field mode', () => {
       expect(e1c).toBe(2);
     });
   });
+
+  describe('status', () => {
+    it('toggle off', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'schedule',
+        config: {
+          mode: 1,
+          collection: 'posts',
+          startsOn: {
+            field: 'createdAt',
+          },
+        },
+      });
+
+      const now = await sleepToEvenSecond();
+
+      const p1 = await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(1500);
+
+      const executions = await workflow.getExecutions();
+      expect(executions.length).toBe(1);
+      expect(executions[0].context.data.id).toBe(p1.id);
+      const triggerTime = new Date(p1.createdAt);
+      triggerTime.setMilliseconds(0);
+      expect(executions[0].context.date).toBe(triggerTime.toISOString());
+
+      await workflow.update({ enabled: false });
+
+      const p2 = await PostRepo.create({ values: { title: 't2' } });
+
+      await sleep(1500);
+
+      const e2s = await workflow.getExecutions({ order: [['createdAt', 'ASC']] });
+      expect(e2s.length).toBe(1);
+    });
+  });
 });
