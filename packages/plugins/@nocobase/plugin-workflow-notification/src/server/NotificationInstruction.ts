@@ -44,7 +44,7 @@ export default class extends Instruction {
     notificationServer
       .send({ ...options, triggerFrom: 'workflow' })
       .then((res) => {
-        processor.logger.info(`smtp-mailer (#${node.id}) sent successfully.`);
+        processor.logger.info(`notification (#${node.id}) sent successfully.`);
 
         job.set({
           status: JOB_STATUS.RESOLVED,
@@ -52,7 +52,7 @@ export default class extends Instruction {
         });
       })
       .catch((error) => {
-        processor.logger.warn(`smtp-mailer (#${node.id}) sent failed: ${error.message}`);
+        processor.logger.warn(`notification (#${node.id}) sent failed: ${error.message}`);
 
         job.set({
           status: JOB_STATUS.FAILED,
@@ -60,7 +60,7 @@ export default class extends Instruction {
         });
       })
       .finally(() => {
-        processor.logger.debug(`smtp-mailer (#${node.id}) sending ended, resume workflow...`);
+        processor.logger.debug(`notification (#${node.id}) sending ended, resume workflow...`);
         setImmediate(() => {
           this.workflow.resume(job);
         });
