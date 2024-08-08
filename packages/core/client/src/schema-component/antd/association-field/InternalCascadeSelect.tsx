@@ -133,7 +133,9 @@ const CascadeSelect = connect((props) => {
     const response = await resource.list({
       pageSize: 200,
       params: service?.params,
-      filter: mergeFilter([filter]),
+      //filter: mergeFilter([filter]),
+      //nint revert fix 4893, still merge select data scope here
+      filter: mergeFilter([service?.params?.filter, filter]),
       tree: !filter.parentId ? true : undefined,
     });
     return response?.data?.data;
