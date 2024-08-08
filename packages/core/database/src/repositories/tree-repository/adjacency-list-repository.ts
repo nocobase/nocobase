@@ -206,7 +206,7 @@ export class AdjacencyListRepository extends Repository {
     let totalCount = 0;
     let datas = [];
     const foreignKey = this.collection.treeParentField?.foreignKey || 'parentId';
-    if (options.raw || !options.tree || (options.appends != undefined && options.appends.includes('parent'))) {
+    if (options.raw || !options.tree) {
       return await super.findAndCount(options);
     }
     if (
