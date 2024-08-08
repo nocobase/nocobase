@@ -17,7 +17,9 @@ export { renderHook } from '@testing-library/react-hooks';
 function customRender(ui: React.ReactElement, options = {}) {
   return render(ui, {
     // wrap provider(s) here if needed
-    wrapper: ({ children }) => children,
+    //nint fix build
+    //wrapper: ({ children }) => children,
+    wrapper: ({ children }) => <>{children}</>,
     ...options,
   });
 }
