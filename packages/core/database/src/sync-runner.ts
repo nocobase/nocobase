@@ -54,8 +54,9 @@ export class SyncRunner {
     }
 
     // @ts-ignore
-    const collectionSyncOptions = this.database.collectionFactory.collectionTypes.get(this.collection.constructor)
-      ?.onSync;
+    const collectionSyncOptions = this.database.collectionFactory.collectionTypes.get(
+      this.collection.constructor as typeof Collection,
+    )?.onSync; //nint add type fix
 
     if (collectionSyncOptions) {
       await collectionSyncOptions(this.model, options);

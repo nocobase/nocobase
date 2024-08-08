@@ -31,3 +31,4 @@ benchmark
 packages/core/cli/src
 t.js
 packages/**/client.d.ts
+packages/core/cli/templates/plugin/src/

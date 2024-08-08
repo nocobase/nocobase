@@ -59,7 +59,10 @@ const CascadeSelect = connect((props) => {
   useEffect(() => {
     if (value) {
       const values = Array.isArray(value)
-        ? extractLastNonNullValueObjects(value?.filter((v) => v.value), true)
+        ? extractLastNonNullValueObjects(
+            value?.filter((v) => v.value),
+            true,
+          )
         : transformNestedData(value);
       const options = values?.map?.((v) => {
         return {

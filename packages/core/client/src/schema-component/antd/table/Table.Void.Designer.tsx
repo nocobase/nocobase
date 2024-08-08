@@ -189,7 +189,7 @@ export const TableVoidDesigner = () => {
         }}
       />
       <SchemaSettingsSelectItem
-        title={'每页显示'}
+        title={t('Records per page')}
         value={field.decoratorProps.request.params?.pageSize || 20}
         options={[
           { label: '10', value: 10 },

@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+/* eslint-disable prefer-rest-params */
 import lodash from 'lodash';
 
 export function transactionWrapperBuilder(transactionGenerator) {
