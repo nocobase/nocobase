@@ -79,6 +79,8 @@ const schema: ISchema = {
           title: "{{t('Nickname')}}",
           'x-decorator': 'FormItem',
           'x-component': 'Input',
+          required: true, //nint require name
+          'x-disabled': true, //nint disable edit
         },
         username: {
           type: 'string',
@@ -87,6 +89,7 @@ const schema: ISchema = {
           'x-component': 'Input',
           'x-validator': { username: true },
           required: true,
+          'x-disabled': true, //nint disable edit
         },
         email: {
           type: 'string',
@@ -94,12 +97,15 @@ const schema: ISchema = {
           'x-decorator': 'FormItem',
           'x-component': 'Input',
           'x-validator': 'email',
+          required: true, //nint require email
+          'x-disabled': true, //nint disable edit
         },
         phone: {
           type: 'string',
           title: '{{t("Phone")}}',
           'x-decorator': 'FormItem',
           'x-component': 'Input',
+          'x-validator': 'phone', //nint valid phone
         },
         footer: {
           'x-component': 'Action.Drawer.Footer',

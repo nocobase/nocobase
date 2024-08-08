@@ -19,7 +19,7 @@ export async function updateProfile(ctx: Context, next: Next) {
   const UserRepo = ctx.db.getRepository('users');
   const result = await UserRepo.update({
     filterByTk: currentUser.id,
-    values: _.pick(values, ['nickname', 'username', 'email', 'phone', 'systemSettings', 'appLang']),
+    values: _.pick(values, ['phone', 'systemSettings', 'appLang']), //nint only allow systemSettings, appLang, phone, forbid nickname/username/email
   });
   ctx.body = result;
   await next();
