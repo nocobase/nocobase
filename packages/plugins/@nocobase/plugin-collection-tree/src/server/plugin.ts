@@ -156,7 +156,7 @@ class PluginCollectionTreeServer extends Plugin {
           const nodePkColumnName = collectionTreePath.getField('nodePk').columnName();
           const parentPathData = await this.app.db.getRepository(name).findOne({
             filter: {
-              [nodePkColumnName]: parent.get(parentForeignKey),
+              [nodePkColumnName]: parent.get(collection.filterTargetKey),
             },
             transaction,
           });
@@ -164,7 +164,7 @@ class PluginCollectionTreeServer extends Plugin {
           if (parentPath == null) {
             path = await this.getTreePath(parent, path, collection, name, transaction);
           } else {
-            path = `${parentPath}/${parent.get(collection.filterTargetKey)}/${model.get(collection.filterTargetKey)}`;
+            path = `${parentPath}/${model.get(collection.filterTargetKey)}`;
           }
         }
       }
