@@ -30,14 +30,14 @@ export default class extends Migration {
         timestamps: false,
         fields: [
           { type: 'integer', name: 'nodePk' },
-          { type: 'jsonb', name: 'path' },
+          { type: 'string', name: 'path', length: 1024 },
           { type: 'integer', name: 'rootPk' },
         ],
-        // indexes: [
-        //   {
-        //     fields: ['path'],
-        //   },
-        // ],
+        indexes: [
+          {
+            fields: ['path'],
+          },
+        ],
       });
       const treeExistsInDb = await this.app.db.getCollection(name).existsInDb();
       if (!treeExistsInDb) {

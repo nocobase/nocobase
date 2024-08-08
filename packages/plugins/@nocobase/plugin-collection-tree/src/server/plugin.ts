@@ -141,14 +141,14 @@ class PluginCollectionTreeServer extends Plugin {
       timestamps: false,
       fields: [
         { type: 'integer', name: 'nodePk' },
-        { type: 'jsonb', name: 'path' },
+        { type: 'string', name: 'path', length: 1024 },
         { type: 'integer', name: 'rootPk' },
       ],
-      // indexes: [
-      //   {
-      //     fields: ['path'],
-      //   },
-      // ],
+      indexes: [
+        {
+          fields: ['path'],
+        },
+      ],
     });
   }
 
