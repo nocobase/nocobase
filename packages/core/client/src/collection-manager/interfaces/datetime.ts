@@ -24,6 +24,7 @@ export class DatetimeFieldInterface extends CollectionFieldInterface {
       'x-component': 'DatePicker',
       'x-component-props': {
         showTime: false,
+        timezone: 'server',
       },
     },
   };
