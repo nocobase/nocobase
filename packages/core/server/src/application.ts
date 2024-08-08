@@ -59,7 +59,8 @@ import { dataTemplate } from './middlewares/data-template';
 import validateFilterParams from './middlewares/validate-filter-params';
 import { Plugin } from './plugin';
 import { InstallOptions, PluginManager } from './plugin-manager';
-import { SyncManager } from './sync-manager';
+import { createPubSubManager, PubSubManager, PubSubManagerOptions } from './pub-sub-manager';
+import { SyncMessageManager } from './sync-message-manager';
 
 import packageJson from '../package.json';
 
@@ -97,6 +98,8 @@ export interface ApplicationOptions {
    */
   resourcer?: ResourceManagerOptions;
   resourceManager?: ResourceManagerOptions;
+  pubSubManager?: PubSubManagerOptions;
+  syncMessageManager?: any;
   bodyParser?: any;
   cors?: any;
   dataWrapping?: boolean;
@@ -225,7 +228,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   /**
    * @internal
    */
-  public syncManager: SyncManager;
+  public pubSubManager: PubSubManager;
+  public syncMessageManager: SyncMessageManager;
   public requestLogger: Logger;
   private sqlLogger: Logger;
   protected _logger: SystemLogger;
@@ -516,6 +520,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     if (this.cacheManager) {
       await this.cacheManager.close();
+    }
+
+    if (this.pubSubManager) {
+      await this.pubSubManager.close();
     }
 
     if (this.telemetry.started) {
@@ -1120,7 +1128,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     this._cli = this.createCLI();
     this._i18n = createI18n(options);
-    this.syncManager = new SyncManager(this);
+    this.pubSubManager = createPubSubManager(this, options.pubSubManager);
+    this.syncMessageManager = new SyncMessageManager(this, options.syncMessageManager);
     this.context.db = this.db;
 
     /**

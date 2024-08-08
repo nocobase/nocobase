@@ -510,7 +510,7 @@ describe('workflow > Plugin', () => {
     });
   });
 
-  describe('sync', () => {
+  describe('sync trigger', () => {
     it('sync on trigger class', async () => {
       const w1 = await WorkflowModel.create({
         enabled: true,

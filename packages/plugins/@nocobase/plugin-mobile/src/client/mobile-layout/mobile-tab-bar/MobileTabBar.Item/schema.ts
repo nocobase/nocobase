@@ -18,5 +18,5 @@ export function getMobileTabBarItemSchema(routeItem: MobileRouteItem) {
       schemaUid: routeItem.schemaUid,
       ...(routeItem.options || {}),
     },
-  }
+  };
 }

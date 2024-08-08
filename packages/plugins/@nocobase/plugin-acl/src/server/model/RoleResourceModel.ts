@@ -17,7 +17,7 @@ export class RoleResourceModel extends Model {
     role.revokeResource(resourceName);
   }
 
-  async writeToACL(options: { acl: ACL; transaction: any }) {
+  async writeToACL(options: { acl: ACL; transaction?: any }) {
     const { acl } = options;
     const resourceName = this.get('name') as string;
     const roleName = this.get('roleName') as string;
