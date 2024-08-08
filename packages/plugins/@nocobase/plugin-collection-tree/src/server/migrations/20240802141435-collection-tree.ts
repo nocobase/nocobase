@@ -9,17 +9,20 @@
 
 import { Migration } from '@nocobase/server';
 import { FindOneOptions, Model } from '@nocobase/database';
+import { Transaction } from 'sequelize';
 
 export default class extends Migration {
   on = 'afterLoad'; // 'beforeLoad' or 'afterLoad'
   appVersion = '<=1.3.0-alpha';
 
   async up() {
+    const transaction = await this.db.sequelize.transaction();
     const treeCollections = await this.app.db.getRepository('collections').find({
       appends: ['fields'],
       filter: {
         'options.tree': 'adjacencyList',
       },
+      transaction,
     });
 
     for (const treeCollection of treeCollections) {
@@ -58,7 +61,7 @@ export default class extends Migration {
             const pathData = [];
             for (const data of rows) {
               let path = `/${data.get('id')}`;
-              path = await this.getTreePath(data, path, treeCollection.name);
+              path = await this.getTreePath(data, path, treeCollection.name, transaction);
               pathData.push({
                 nodePk: data.get('id'),
                 path: path,
@@ -67,22 +70,25 @@ export default class extends Migration {
             }
             await this.app.db.getModel(name).bulkCreate(pathData);
           },
+          transaction,
         });
       }
     }
+    await transaction.commit();
   }
 
-  async getTreePath(model: Model, path: string, collectionName: string) {
+  async getTreePath(model: Model, path: string, collectionName: string, transaction: Transaction) {
     if (model.get('parentId') !== null) {
       const parent = await this.app.db.getRepository(collectionName).findOne({
         filter: {
           id: model.get('parentId') as FindOneOptions,
         },
+        transaction,
       });
       if (parent && parent.get('parentId') !== model.get('id')) {
         path = `/${parent.get('id')}${path}`;
         if (parent.get('parentId') !== null) {
-          path = await this.getTreePath(parent, path, collectionName);
+          path = await this.getTreePath(parent, path, collectionName, transaction);
         }
       }
     }
