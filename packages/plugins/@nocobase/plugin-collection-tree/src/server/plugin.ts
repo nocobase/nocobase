@@ -83,12 +83,6 @@ class PluginCollectionTreeServer extends Plugin {
                   },
                 },
               };
-            } else if (collectionManager.db.options.dialect === 'sqlite') {
-              filter = {
-                path: {
-                  $startsWith: `${pathData.get('path')}`,
-                },
-              };
             } else {
               filter = {
                 path: {
