@@ -6,7 +6,7 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
-
+import React from 'react';
 import { ArrayCollapse, FormLayout } from '@formily/antd-v5';
 import { Field } from '@formily/core';
 import { ISchema, useField, useFieldSchema } from '@formily/react';
@@ -16,6 +16,7 @@ import { useApp, useSchemaToolbar } from '../../../../application';
 import { SchemaSettings } from '../../../../application/schema-settings/SchemaSettings';
 import { useFormBlockContext } from '../../../../block-provider/FormBlockProvider';
 import { useCollectionManager_deprecated, useCollection_deprecated } from '../../../../collection-manager';
+import { useCollection } from '../../../../data-source';
 import { useFieldComponentName } from '../../../../common/useFieldComponentName';
 import { useDesignable, useValidateSchema } from '../../../../schema-component';
 import { useIsFormReadPretty } from '../../../../schema-component/antd/form-item/FormItem.Settings';
@@ -26,6 +27,8 @@ import { SchemaSettingsDefaultValue } from '../../../../schema-settings/SchemaSe
 import { useIsAllowToSetDefaultValue } from '../../../../schema-settings/hooks/useIsAllowToSetDefaultValue';
 import { fieldComponentSettingsItem } from '../../../../data-source/commonsSettingsItem';
 
+import { SchemaSettingsLinkageRules } from '../../../../schema-settings';
+import { useIsFieldReadPretty } from '../../../../schema-component/antd/form-item/FormItem.Settings';
 export const fieldSettingsFormItem = new SchemaSettings({
   name: 'fieldSettings:FormItem',
   items: [
