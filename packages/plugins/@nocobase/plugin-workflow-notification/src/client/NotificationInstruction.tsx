@@ -25,7 +25,7 @@ export default class extends Instruction {
   title = `{{t("Notification", { ns: "${NAMESPACE}" })}}`;
   type = 'notification';
   group = 'extended';
-  description = `{{t("Send email. You can use the variables in the upstream nodes as receivers, subject and content of the email.", { ns: "${NAMESPACE}" })}}`;
+  description = `{{t("Send notification. You can use the variables in the upstream nodes as content and ohter config.", { ns: "${NAMESPACE}" })}}`;
   fieldset = {
     message: {
       type: 'void',
@@ -33,9 +33,6 @@ export default class extends Instruction {
     },
   };
   components = {
-    ArrayItems,
-    SchemaComponentContext,
     LocalProvider,
-    NotificationVariableProvider,
   };
 }

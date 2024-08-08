@@ -22,9 +22,7 @@ export class PluginNotificationManagerClient extends Plugin {
   registerChannelType(channelTypeName: string, options: ChannelType) {
     this.channelTypes.register(channelTypeName, options);
   }
-  async afterAdd() {
-    // await this.app.pm.add()
-  }
+  async afterAdd() {}
 
   async beforeLoad() {}
 
@@ -41,19 +39,19 @@ export class PluginNotificationManagerClient extends Plugin {
       aclSnippet: 'pm.notification.core',
       sort: 1,
     });
-    this.app.pluginSettingsManager.add(`${NAMESPACE}.templates`, {
-      title: t('Templates'),
-      Component: ManagementList,
-      icon: 'SnippetsOutlined',
-      aclSnippet: 'pm.notification.core',
-      sort: 2,
-    });
+    // this.app.pluginSettingsManager.add(`${NAMESPACE}.templates`, {
+    //   title: t('Templates'),
+    //   Component: ManagementList,
+    //   icon: 'SnippetsOutlined',
+    //   aclSnippet: 'pm.notification.core',
+    //   sort: 2,
+    // });
     this.app.pluginSettingsManager.add(`${NAMESPACE}.logs`, {
       title: t('Logs'),
       Component: LogManager,
       icon: 'MessageOutlined',
       aclSnippet: 'pm.notification.core',
-      sort: 4,
+      sort: 3,
     });
   }
 }
