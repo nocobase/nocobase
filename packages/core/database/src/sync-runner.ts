@@ -74,14 +74,17 @@ export class SyncRunner {
       throw e;
     }
 
+    let beforeColumns;
+
     try {
-      const beforeColumns = await this.queryInterface.describeTable(this.tableName, options);
+      beforeColumns = await this.queryInterface.describeTable(this.tableName, options);
+    } catch (error) {
+      console.log(error);
+    }
+
+    if (beforeColumns) {
       await this.handlePrimaryKeyBeforeSync(beforeColumns, options);
       await this.handleUniqueFieldBeforeSync(beforeColumns, options);
-    } catch (e) {
-      if (!e.message.includes("doesn't exist") || !e.message.includes('No description found')) {
-        throw e;
-      }
     }
 
     const syncResult = await this.performSync(options);
