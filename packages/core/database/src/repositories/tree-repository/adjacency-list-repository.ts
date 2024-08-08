@@ -205,112 +205,96 @@ export class AdjacencyListRepository extends Repository {
   ): Promise<[Model[], number]> {
     let totalCount = 0;
     let datas = [];
-    const foreignKey = this.collection.treeParentField?.foreignKey || 'parentId';
     if (options.raw || !options.tree) {
       return await super.findAndCount(options);
     }
-    if (
-      JSON.stringify(lodash.get(options, ['filter', '$and'], {})) === JSON.stringify([{}, { [foreignKey]: null }]) ||
-      JSON.stringify(lodash.get(options, ['filter'], {})) === JSON.stringify({ [foreignKey]: null })
-    ) {
-      options = lodash.omit(options, ['filterByTk']);
-      assign(options, {
-        filter: {
-          [foreignKey]: null,
-        },
-      });
-      const [_, totalCountTmp] = await super.findAndCount(options);
-      totalCount = totalCountTmp;
-      datas = await this.find(options);
-    } else {
-      const limit = options.limit;
-      const offset = options.offset;
-      const fields = lodash.cloneDeep(options.fields);
-      const optionsClone = lodash.clone(options);
-      const optionsTmp = lodash.omit(optionsClone, ['limit', 'offset']);
-      const collection = this.collection;
-      const primaryKey = collection.model?.primaryKeyAttribute ?? 'id';
-      if (options.fields !== undefined && options.fields.length > 0 && !options.fields.includes(primaryKey)) {
-        optionsTmp.fields.push(primaryKey);
-      }
-      const filterNodes = await super.find(optionsTmp);
-      const filterIds = filterNodes.map((node) => node[primaryKey]);
-      const nodeData = await this.queryRootDatas(filterIds, options.context.dataSource.name);
-
-      const rootPathDataMap: rootPathDataMapInterface = {};
-
-      for (const node of nodeData) {
-        if (rootPathDataMap[node.get('rootPk')]) {
-          rootPathDataMap[node.get('rootPk')] = [...rootPathDataMap[node.get('rootPk')], node.get('path')];
-        } else {
-          rootPathDataMap[node.get('rootPk')] = [node.get('path')];
-        }
-      }
-
-      const rebuildTreeRootNodeDataMap: rebuildTreeRootNodeDataInterface = {};
-      //find commons root path
-      for (const pathArray of Object.values(rootPathDataMap)) {
-        const commonParentPath = this.findCommonParent(pathArray);
-        const commonParentPathNodeArray: string[] = commonParentPath.split('/').filter((item) => {
-          return item !== '';
-        });
-        if (pathArray.length == 1) {
-          rebuildTreeRootNodeDataMap[commonParentPathNodeArray[0]] = new Set();
-          for (const i of commonParentPathNodeArray) {
-            rebuildTreeRootNodeDataMap[commonParentPathNodeArray[0]].add(i);
-          }
-          continue;
-        }
-        // get filter root nodeid
-        const commonParentRootNodeId = commonParentPathNodeArray[commonParentPathNodeArray.length - 1];
-        rebuildTreeRootNodeDataMap[commonParentRootNodeId] = new Set([
-          commonParentPathNodeArray[commonParentPathNodeArray.length - 1],
-        ]);
-        for (const path of pathArray) {
-          if (commonParentPath != path) {
-            const commonPathNodeArray = path.split(commonParentPath).filter((item) => {
-              return item !== '';
-            });
-            for (const i of commonPathNodeArray[0].split('/').filter((item) => {
-              return item !== '';
-            })) {
-              rebuildTreeRootNodeDataMap[commonParentRootNodeId].add(i);
-            }
-          }
-        }
-      }
-
-      const childIds = [];
-      for (const nodeIdSet of Object.values(rebuildTreeRootNodeDataMap)) {
-        for (const nodeId of nodeIdSet) {
-          childIds.push(nodeId);
-        }
-      }
-
-      let rootIds: any[] = [];
-      rootIds = Object.keys(rebuildTreeRootNodeDataMap);
-      if (rootIds.length === 0) {
-        return [[], 0];
-      }
-
-      totalCount = rootIds.length;
-      options = lodash.omit(optionsClone, ['filter', primaryKey]);
-      assign(options, {
-        filter: {
-          [primaryKey]: {
-            $in: rootIds,
-          },
-          childIds: childIds,
-          ...options?.filter,
-        },
-      });
-      assign(options, {
-        limit: limit,
-        offset: offset,
-        fields: fields,
-      });
-      datas = await this.find(options);
+    const limit = options.limit;
+    const offset = options.offset;
+    const fields = lodash.cloneDeep(options.fields);
+    const optionsClone = lodash.clone(options);
+    const optionsTmp = lodash.omit(optionsClone, ['limit', 'offset']);
+    const collection = this.collection;
+    const primaryKey = collection.model?.primaryKeyAttribute ?? 'id';
+    if (options.fields !== undefined && options.fields.length > 0 && !options.fields.includes(primaryKey)) {
+      optionsTmp.fields.push(primaryKey);
     }
+    const filterNodes = await super.find(optionsTmp);
+    const filterIds = filterNodes.map((node) => node[primaryKey]);
+    const nodeData = await this.queryRootDatas(filterIds, options.context.dataSource.name);
+
+    const rootPathDataMap: rootPathDataMapInterface = {};
+
+    for (const node of nodeData) {
+      if (rootPathDataMap[node.get('rootPk')]) {
+        rootPathDataMap[node.get('rootPk')] = [...rootPathDataMap[node.get('rootPk')], node.get('path')];
+      } else {
+        rootPathDataMap[node.get('rootPk')] = [node.get('path')];
+      }
+    }
+
+    const rebuildTreeRootNodeDataMap: rebuildTreeRootNodeDataInterface = {};
+    //find commons root path
+    for (const pathArray of Object.values(rootPathDataMap)) {
+      const commonParentPath = this.findCommonParent(pathArray);
+      const commonParentPathNodeArray: string[] = commonParentPath.split('/').filter((item) => {
+        return item !== '';
+      });
+      if (pathArray.length == 1) {
+        rebuildTreeRootNodeDataMap[commonParentPathNodeArray[0]] = new Set();
+        for (const i of commonParentPathNodeArray) {
+          rebuildTreeRootNodeDataMap[commonParentPathNodeArray[0]].add(i);
+        }
+        continue;
+      }
+      // get filter root nodeid
+      const commonParentRootNodeId = commonParentPathNodeArray[commonParentPathNodeArray.length - 1];
+      rebuildTreeRootNodeDataMap[commonParentRootNodeId] = new Set([
+        commonParentPathNodeArray[commonParentPathNodeArray.length - 1],
+      ]);
+      for (const path of pathArray) {
+        if (commonParentPath != path) {
+          const commonPathNodeArray = path.split(commonParentPath).filter((item) => {
+            return item !== '';
+          });
+          for (const i of commonPathNodeArray[0].split('/').filter((item) => {
+            return item !== '';
+          })) {
+            rebuildTreeRootNodeDataMap[commonParentRootNodeId].add(i);
+          }
+        }
+      }
+    }
+
+    const childIds = [];
+    for (const nodeIdSet of Object.values(rebuildTreeRootNodeDataMap)) {
+      for (const nodeId of nodeIdSet) {
+        childIds.push(nodeId);
+      }
+    }
+
+    let rootIds: any[] = [];
+    rootIds = Object.keys(rebuildTreeRootNodeDataMap);
+    if (rootIds.length === 0) {
+      return [[], 0];
+    }
+
+    totalCount = rootIds.length;
+    options = lodash.omit(optionsClone, ['filter', primaryKey]);
+    assign(options, {
+      filter: {
+        [primaryKey]: {
+          $in: rootIds,
+        },
+        childIds: childIds,
+        ...options?.filter,
+      },
+    });
+    assign(options, {
+      limit: limit,
+      offset: offset,
+      fields: fields,
+    });
+    datas = await this.find(options);
     return [datas, totalCount];
   }
 

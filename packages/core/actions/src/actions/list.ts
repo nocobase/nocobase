@@ -17,21 +17,15 @@ function totalPage(total, pageSize): number {
 }
 
 function findArgs(ctx: Context) {
-  const resourceName = ctx.action.resourceName;
   const params = ctx.action.params;
-  if (params.tree) {
-    if (!isValidFilter(params.filter)) {
-      const [collectionName, associationName] = resourceName.split('.');
-      const collection = ctx.db.getCollection(resourceName);
-      // tree collection 或者关系表是 tree collection
-      if (collection.options.tree && !(associationName && collectionName === collection.name)) {
-        const foreignKey = collection.treeParentField?.foreignKey || 'parentId';
-        assign(params, { filter: { [foreignKey]: null } }, { filter: 'andMerge' });
-      }
-    }
-  }
-  const { tree, fields, filter, appends, except, sort } = params;
 
+  const { fields, filter, appends, except, sort } = params;
+  let { tree } = params;
+  if (tree === true || tree === 'true') {
+    tree = true;
+  } else {
+    tree = false;
+  }
   return { tree, filter, fields, appends, except, sort };
 }
 
