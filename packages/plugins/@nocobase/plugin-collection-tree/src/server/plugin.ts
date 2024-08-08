@@ -74,24 +74,12 @@ class PluginCollectionTreeServer extends Plugin {
               transaction,
             });
 
-            let filter = {} as any;
-            if (collectionManager.db.options.dialect === 'postgres') {
-              filter = {
-                path: {
-                  '::text': {
-                    $startsWith: `${pathData.get('path')}`,
-                  },
-                },
-              };
-            } else {
-              filter = {
+            const relatedNodes = await this.app.db.getRepository(name).find({
+              filter: {
                 path: {
                   $startsWith: `${pathData.get('path')}`,
                 },
-              };
-            }
-            const relatedNodes = await this.app.db.getRepository(name).find({
-              filter: filter,
+              },
               transaction,
             });
             for (const node of relatedNodes) {
