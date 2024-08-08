@@ -81,11 +81,22 @@ export const AdminSettingsLayout = () => {
     if (!settings || !settings.length) {
       return '/admin';
     }
-    const first = settings[0];
-    if (first.children?.length) {
-      return getFirstDeepChildPath(first.children);
+
+    if (settings.filter((item) => item.isTopLevel).length === 1) {
+      // 如果是外链类型的，需要跳转外链，如果是内页则返回内页 path
+      const pluginSetting = settings.find((item) => item.isTopLevel);
+      return pluginSetting.link || pluginSetting.path;
     }
-    return first.path;
+
+    function find(settings: PluginSettingsPageType[]) {
+      const first = settings.find((item) => !item.link); // 找到第一个非外链类型的
+      if (first.children?.length) {
+        return getFirstDeepChildPath(first.children);
+      }
+      return first;
+    }
+
+    return find(settings).path;
   }, []);
 
   const settingsMapByPath = useMemo<Record<string, PluginSettingsPageType>>(() => {
@@ -120,6 +131,12 @@ export const AdminSettingsLayout = () => {
   if (location.pathname === currentTopLevelSetting.path && currentTopLevelSetting.children?.length > 0) {
     return <Navigate replace to={getFirstDeepChildPath(currentTopLevelSetting.children)} />;
   }
+
+  // 如果是外链类型的，需要跳转并返回到上一个页面
+  if (currentSetting.link) {
+    return <Navigate replace to={currentSetting.link} />;
+  }
+
   return (
     <div>
       <Layout>
