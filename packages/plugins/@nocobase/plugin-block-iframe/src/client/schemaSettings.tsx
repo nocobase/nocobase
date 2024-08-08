@@ -87,6 +87,17 @@ const commonOptions: any = {
             },
           });
         };
+        // 外部定义 description 的内容
+        const descriptionContent = (
+          <>
+            <span style={{ marginLeft: '.25em' }} className={'ant-formily-item-extra'}>
+              {t('Syntax references')}:
+            </span>
+            <a href="https://handlebarsjs.com/guide/" target="_blank" rel="noreferrer">
+              Handlebars.js
+            </a>
+          </>
+        );
 
         return {
           title: t('Edit iframe'),
@@ -129,6 +140,7 @@ const commonOptions: any = {
                 title: '{{t("Template engine")}}',
                 'x-component': 'Radio.Group',
                 'x-decorator': 'FormItem',
+                default: 'string',
                 enum: [
                   { value: 'string', label: t('String template') },
                   { value: 'handlebars', label: t('Handlebars') },
@@ -151,24 +163,25 @@ const commonOptions: any = {
                   rows: 10,
                 },
                 required: true,
-                description: (
-                  <>
-                    <span style={{ marginLeft: '.25em' }} className={'ant-formily-item-extra'}>
-                      {t('Syntax references')}:
-                    </span>
-                    <a href="https://handlebarsjs.com/guide/" target="_blank" rel="noreferrer">
-                      Handlebars.js
-                    </a>
-                  </>
-                ),
-                'x-reactions': {
-                  dependencies: ['mode'],
-                  fulfill: {
-                    state: {
-                      hidden: '{{$deps[0] === "url"}}',
+                description: descriptionContent,
+                'x-reactions': [
+                  {
+                    dependencies: ['mode'],
+                    fulfill: {
+                      state: {
+                        hidden: '{{$deps[0] === "url"}}',
+                      },
                     },
                   },
-                },
+                  (field) => {
+                    const { engine } = field.form.values;
+                    if (engine === 'handlebars') {
+                      field.description = descriptionContent;
+                    } else {
+                      field.description = null;
+                    }
+                  },
+                ],
               },
             },
           } as ISchema,
