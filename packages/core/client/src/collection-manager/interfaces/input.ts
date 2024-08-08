@@ -32,7 +32,7 @@ const isValidateEmpty = (value: any) => {
 
 registerValidateRules({
   username(value) {
-    return /^[^@.<>"'/]{1,50}$/.test(value) || i18n.t('Must be 1-50 characters in length (excluding @.<>"\'/)');
+    return /^[^<>"'/]{1,50}$/.test(value) || i18n.t('Must be 1-50 characters in length (excluding <>"\'/)');
   },
   required(value, rule) {
     if (rule.required === false) return '';

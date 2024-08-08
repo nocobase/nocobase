@@ -480,7 +480,7 @@
   "Verification code": "인증 코드",
   "Send code": "코드 전송",
   "Retry after {{count}} seconds": "{{count}} 초 후 재시도",
-  "Must be 1-50 characters in length (excluding @.<>\"'/)": "1~50자여야 합니다 ( @.<>\"'/ 제외)",
+  "Must be 1-50 characters in length (excluding <>\"'/)": "1~50자여야 합니다 ( <>\"'/ 제외)",
   "Roles": "역할",
   "Add role": "역할 추가",
   "Role name": "역할 이름",

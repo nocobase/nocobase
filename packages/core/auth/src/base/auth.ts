@@ -60,7 +60,7 @@ export class BaseAuth extends Auth {
    * @internal
    */
   validateUsername(username: string) {
-    return /^[^@.<>"'/]{1,50}$/.test(username);
+    return /^[^<>"'/]{1,50}$/.test(username); //nint remove @. limit
   }
 
   async check() {

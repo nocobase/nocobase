@@ -480,7 +480,7 @@
   "Verification code": "驗證碼",
   "Send code": "傳送驗證碼",
   "Retry after {{count}} seconds": "{{count}} 秒後重試",
-  "Must be 1-50 characters in length (excluding @.<>\"'/)": "長度為1到50個字元（不能包含@.<>\"'/）",
+  "Must be 1-50 characters in length (excluding <>\"'/)": "長度為1到50個字元（不能包含<>\"'/）",
   "Roles": "角色",
   "Add role": "新增角色",
   "Role name": "角色名稱",

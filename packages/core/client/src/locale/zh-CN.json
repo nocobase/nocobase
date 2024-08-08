@@ -483,7 +483,7 @@
   "Verification code": "验证码",
   "Send code": "发送验证码",
   "Retry after {{count}} seconds": "{{count}} 秒后重试",
-  "Must be 1-50 characters in length (excluding @.<>\"'/)": "长度为1到50个字符（不能包含@.<>\"'/）",
+  "Must be 1-50 characters in length (excluding <>\"'/)": "长度为1到50个字符（不能包含<>\"'/）",
   "Roles": "角色",
   "Add role": "添加角色",
   "Role name": "角色名称",
