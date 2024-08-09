@@ -77,6 +77,9 @@ const getSchema = (schema: IField, record: any, compile, getContainer): ISchema 
             ),
             'x-decorator': 'FormItem',
             'x-component': 'Select',
+            'x-component-props': {
+              multiple: true,
+            },
             enum: '{{filterTargetKeyOptions}}',
           },
           footer: {
