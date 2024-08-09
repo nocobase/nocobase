@@ -59,6 +59,19 @@ export const getSupportFieldsByForeignKey = (filterBlockCollection: Collection, 
   });
 };
 
+export const canBeConnectedByForeignKey = (collection: Collection_deprecated, block: DataBlock) => {
+  return !!getSupportFieldsByForeignKey(collection, block)?.length;
+};
+
+export const canBeConnectedByAssociation = (
+  collection: Collection_deprecated,
+  block: DataBlock,
+  getAllCollectionsInheritChain: (collectionName: string, customDataSource?: string) => string[],
+) => {
+  return !!getSupportFieldsByAssociation(getAllCollectionsInheritChain(collection.name, collection.dataSource), block)
+    ?.length;
+};
+
 /**
  * 根据筛选区块类型筛选出支持的数据区块（同表或具有关系字段的表）
  * @param filterBlockType
@@ -86,9 +99,8 @@ export const useSupportedBlocks = (filterBlockType: FilterBlockType) => {
       return (
         fieldSchema['x-uid'] !== block.uid &&
         (isSameCollection(block.collection, collection) ||
-          getSupportFieldsByAssociation(getAllCollectionsInheritChain(collection.name, collection.dataSource), block)
-            ?.length ||
-          getSupportFieldsByForeignKey(collection, block)?.length)
+          canBeConnectedByAssociation(collection, block, getAllCollectionsInheritChain) ||
+          canBeConnectedByForeignKey(collection, block))
       );
     });
   }
