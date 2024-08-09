@@ -85,7 +85,9 @@ export const AdminSettingsLayout = () => {
     if (settings.filter((item) => item.isTopLevel).length === 1) {
       // 如果是外链类型的，需要跳转外链，如果是内页则返回内页 path
       const pluginSetting = settings.find((item) => item.isTopLevel);
-      return pluginSetting.link || pluginSetting.path;
+      // 如果仅有 1 个，且是外链类型的，跳转到 /admin
+      // @see https://nocobase.height.app/inbox/T-5038
+      return pluginSetting.link ? '/admin' : pluginSetting.path;
     }
 
     function find(settings: PluginSettingsPageType[]) {
