@@ -256,6 +256,55 @@ describe('tree path test', () => {
     expect(pathDataA4New.get('nodePk') === pathDataA4New.get('rootPk')).toBeTruthy();
   });
 
+  it('test tree find one', async () => {
+    await treeCollection.repository.create(values);
+    const nodeA1 = await treeCollection.repository.findOne({
+      filter: {
+        name: 'a1',
+      },
+    });
+    expect(nodeA1).toBeTruthy();
+    expect(nodeA1.get('name')).toEqual('a1');
+  });
+
+  it('test tree find', async () => {
+    await treeCollection.repository.create(values);
+    const data = await treeCollection.repository.find({
+      filter: {
+        name: 'a1',
+      },
+    });
+    expect(data.length).toEqual(1);
+    expect(data[0].name).toEqual('a1');
+  });
+
+  it('test tree find with tree', async () => {
+    await treeCollection.repository.create(values);
+    const data = await treeCollection.repository.find({
+      filter: {
+        name: 'a1',
+      },
+      tree: true,
+    });
+    expect(data.length).toEqual(1);
+    expect(data[0].get('children').length).toEqual(2);
+    expect(data[0].get('name')).toEqual('a1');
+  });
+
+  it('test tree find with tree and append parameter', async () => {
+    await treeCollection.repository.create(values);
+    const data = await treeCollection.repository.find({
+      filter: {
+        name: 'a1',
+      },
+      tree: true,
+      appends: ['parent'],
+    });
+    expect(data.length).toEqual(1);
+    expect(data[0].get('children').length).toEqual(2);
+    expect(data[0].get('name')).toEqual('a1');
+  });
+
   // it('test tree collection destroy then the path table will be destroy', async () => {
   //   await treeCollection.removeFromDb();
   //   expect(await db.getCollection(name).existsInDb()).toBeFalsy();
