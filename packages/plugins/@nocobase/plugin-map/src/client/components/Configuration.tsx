@@ -15,7 +15,6 @@ import { useLocation } from 'react-router-dom';
 import { MapTypes } from '../constants';
 import { MapConfigurationResourceKey, getSSKey, useMapConfiguration } from '../hooks';
 import { useMapTranslation } from '../locale';
-
 interface BaseConfigurationProps {
   type: 'amap' | 'google';
 }
@@ -100,27 +99,19 @@ const components = {
 };
 
 const tabList = MapTypes.map((item) => {
+  const Component = components[item.key];
   return {
     ...item,
-    component: components[item.value],
+    children: <Component />,
   };
 });
 
 export const Configuration = () => {
-  const compile = useCompile();
   const location = useLocation();
   const search = new URLSearchParams(location.search);
   return (
     <Card bordered>
-      <Tabs type="card" defaultActiveKey={search.get('tab')}>
-        {tabList.map((tab) => {
-          return (
-            <Tabs.TabPane key={tab.value} tab={compile(tab.label)}>
-              <tab.component type={tab.value} />
-            </Tabs.TabPane>
-          );
-        })}
-      </Tabs>
+      <Tabs type="card" defaultActiveKey={search.get('tab')} items={tabList} />
     </Card>
   );
 };
