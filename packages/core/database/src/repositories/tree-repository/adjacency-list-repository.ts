@@ -271,27 +271,4 @@ export class AdjacencyListRepository extends Repository {
     }
     return prefix;
   }
-
-  private querySQL(rootIds, collection) {
-    const { treeParentField } = collection;
-    const foreignKey = treeParentField.options.foreignKey;
-    const foreignKeyField = collection.model.rawAttributes[foreignKey].field;
-
-    const primaryKey = collection.model.primaryKeyAttribute;
-
-    const queryInterface = this.database.sequelize.getQueryInterface();
-    const q = queryInterface.quoteIdentifier.bind(queryInterface);
-
-    return `
-      WITH RECURSIVE cte AS (SELECT ${q(primaryKey)}, ${q(foreignKeyField)}, 1 AS level
-                             FROM ${collection.quotedTableName()}
-                             WHERE ${q(foreignKeyField)} IN (${rootIds.join(',')})
-                             UNION ALL
-                             SELECT t.${q(primaryKey)}, t.${q(foreignKeyField)}, cte.level + 1 AS level
-                             FROM ${collection.quotedTableName()} t
-                                    JOIN cte ON t.${q(foreignKeyField)} = cte.${q(primaryKey)})
-      SELECT ${q(primaryKey)}, ${q(foreignKeyField)} as ${q(foreignKey)}, level
-      FROM cte
-    `;
-  }
 }
