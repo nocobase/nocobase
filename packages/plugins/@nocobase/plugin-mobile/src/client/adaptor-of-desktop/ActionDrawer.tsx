@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { observer, RecursionField, useField, useFieldSchema } from '@formily/react';
+import { ISchema, observer, RecursionField, useField, useFieldSchema } from '@formily/react';
 import { Action, SchemaComponent, useActionContext } from '@nocobase/client';
 import { ConfigProvider } from 'antd';
 import { Popup } from 'antd-mobile';
@@ -17,13 +17,20 @@ import { useMobileActionDrawerStyle } from './ActionDrawer.style';
 import { BasicZIndexProvider, MIN_Z_INDEX_INCREMENT, useBasicZIndex } from './BasicZIndexProvider';
 import { usePopupContainer } from './FilterAction';
 
-export const ActionDrawerUsedInMobile = observer((props: { footerNodeName?: string }) => {
+export const ActionDrawerUsedInMobile: any = observer((props: { footerNodeName?: string }) => {
   const fieldSchema = useFieldSchema();
   const field = useField();
   const { visible, setVisible } = useActionContext();
   const { popupContainerRef, visiblePopup } = usePopupContainer(visible);
   const { styles } = useMobileActionDrawerStyle();
   const { basicZIndex } = useBasicZIndex();
+
+  // this schema need to add padding in the content area of the popup
+  const isSpecialSchema = isChangePasswordSchema(fieldSchema) || isEditProfileSchema(fieldSchema);
+
+  const footerNodeName = isSpecialSchema ? 'Action.Drawer.Footer' : props.footerNodeName;
+
+  const specialStyle = isSpecialSchema ? { backgroundColor: 'white' } : {};
 
   const newZIndex = basicZIndex + MIN_Z_INDEX_INCREMENT;
 
@@ -34,7 +41,7 @@ export const ActionDrawerUsedInMobile = observer((props: { footerNodeName?: stri
   }, [newZIndex]);
 
   const footerSchema = fieldSchema.reduceProperties((buf, s) => {
-    if (s['x-component'] === props.footerNodeName) {
+    if (s['x-component'] === footerNodeName) {
       return s;
     }
     return buf;
@@ -81,24 +88,32 @@ export const ActionDrawerUsedInMobile = observer((props: { footerNodeName?: stri
               <CloseOutline />
             </span>
           </div>
-          <SchemaComponent
-            schema={fieldSchema}
-            onlyRenderProperties
-            filterProperties={(s) => {
-              return s['x-component'] !== props.footerNodeName;
-            }}
-          />
-          {/* used to offset the margin-bottom of the last block */}
-          {/* The number 1 is to prevent the scroll bar from appearing */}
-          <div style={{ marginBottom: 1 - marginBlock }}></div>
+          {isSpecialSchema ? (
+            <div style={{ padding: 12, ...specialStyle }}>
+              <SchemaComponent
+                schema={fieldSchema}
+                filterProperties={(s) => {
+                  return s['x-component'] !== footerNodeName;
+                }}
+              />
+            </div>
+          ) : (
+            <SchemaComponent
+              schema={fieldSchema}
+              onlyRenderProperties
+              filterProperties={(s) => {
+                return s['x-component'] !== footerNodeName;
+              }}
+            />
+          )}
           {footerSchema ? (
-            <div className={styles.footer}>
+            <div className={styles.footer} style={isSpecialSchema ? specialStyle : null}>
               <RecursionField
                 basePath={field.address}
                 schema={fieldSchema}
                 onlyRenderProperties
                 filterProperties={(s) => {
-                  return s['x-component'] === props.footerNodeName;
+                  return s['x-component'] === footerNodeName;
                 }}
               />
             </div>
@@ -125,3 +140,11 @@ export const useToAdaptActionDrawerToMobile = () => {
     };
   }, []);
 };
+
+function isEditProfileSchema(schema: ISchema) {
+  return schema.title === `{{t("Edit profile")}}`;
+}
+
+function isChangePasswordSchema(schema: ISchema) {
+  return schema.title === `{{t("Change password")}}`;
+}
