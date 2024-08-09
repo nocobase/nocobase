@@ -11,6 +11,7 @@ services:
       - mysql
     environment:
       - APP_KEY=your-secret-key # Replace it with your own app key
+      - ENCRYPTION_FIELD_KEY=your-secret-key # Replace it with your own app key
       - DB_DIALECT=mysql
       - DB_HOST=mysql
       - DB_DATABASE=nocobase
