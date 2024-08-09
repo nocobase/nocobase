@@ -18,12 +18,16 @@ export function useCalendarBlockParams(props) {
     const arr: string[] = [];
     const start = props.fieldNames?.start;
     const end = props.fieldNames?.end;
-
+    const repeatEnd = props.fieldNames?.repeatEnd; //nint
     if (Array.isArray(start) && start.length >= 2) {
       arr.push(start[0]);
     }
     if (Array.isArray(end) && end.length >= 2) {
       arr.push(end[0]);
+    }
+    if (Array.isArray(repeatEnd) && repeatEnd.length >= 2) {
+      //nint
+      arr.push(repeatEnd[0]);
     }
 
     return arr;

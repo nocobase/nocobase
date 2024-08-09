@@ -105,6 +105,13 @@ export const useCreateCalendarBlock = () => {
                       'x-component': 'Cascader',
                       'x-decorator': 'FormItem',
                     },
+                    repeatEnd: {
+                      //nint
+                      title: t('Repeat End date field'),
+                      enum: dateFieldsOptions,
+                      'x-component': 'Cascader',
+                      'x-decorator': 'FormItem',
+                    },
                   },
                 }}
               />

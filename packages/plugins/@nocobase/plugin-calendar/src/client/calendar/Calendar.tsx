@@ -74,6 +74,7 @@ const useEvents = (dataSource: any, fieldNames: any, date: Date, view: (typeof W
       const start = dayjs(get(item, fieldNames.start) || dayjs());
       const end = dayjs(get(item, fieldNames.end) || start);
       const intervalTime = end.diff(start, 'millisecond', true);
+      const repeatEnd = dayjs(get(item, fieldNames.repeatEnd) || start); //nint
 
       const dateM = dayjs(date);
       let startDate = dateM.clone().startOf('month');
@@ -85,9 +86,22 @@ const useEvents = (dataSource: any, fieldNames: any, date: Date, view: (typeof W
        * 假设 10.1 号是星期六，我们需要将日程的开始时间调整为这一周的星期一，也就是 9.25 号
        * 而结束时间需要调整为 10.31 号这一周的星期日，也就是 10.5 号
        */
-      if (view === 'month') {
+      //nint
+      /**
+       * from Nint, both week and month view
+       * have the chance to show 2 month in the same page.
+       * (the start and end of the month)
+       * so, we have to expend startDate and endDate to the weekStart/weekEnd
+       * then the event data in that special week can have a change to be shown.
+       */
+      //if (view === 'month') {
+      if (view === 'month' || view === 'week') {
         startDate = startDate.startOf('week');
         endDate = endDate.endOf('week');
+      }
+      //nint
+      if (cron !== '' && get(item, fieldNames.repeatEnd)) {
+        if (endDate.isSameOrAfter(repeatEnd)) endDate = repeatEnd.add(1, 'day');
       }
 
       const push = (eventStart: Dayjs = start.clone()) => {
@@ -126,7 +140,9 @@ const useEvents = (dataSource: any, fieldNames: any, date: Date, view: (typeof W
           .month(startDate.month())
           .date(startDate.date())
           .day(start.day());
-        while (nextStart.isBefore(endDate)) {
+        //while (nextStart.isBefore(endDate)) {
+        while (nextStart.isSameOrBefore(endDate)) {
+          //nint
           if (push(nextStart.clone())) {
             break;
           }
@@ -157,7 +173,17 @@ const useEvents = (dataSource: any, fieldNames: any, date: Date, view: (typeof W
       }
     });
     return events;
-  }, [dataSource, fieldNames.start, fieldNames.end, fieldNames.id, fieldNames.title, date, view, t]);
+  }, [
+    dataSource,
+    fieldNames.start,
+    fieldNames.end,
+    fieldNames.repeatEnd,
+    fieldNames.id,
+    fieldNames.title,
+    date,
+    view,
+    t,
+  ]);
 };
 
 const CalendarRecordViewer = (props) => {
@@ -200,10 +226,12 @@ export const Calendar: any = withDynamicSchemaProps(
   observer(
     (props: any) => {
       // 新版 UISchema（1.0 之后）中已经废弃了 useProps，这里之所以继续保留是为了兼容旧版的 UISchema
-      const { dataSource, fieldNames, showLunar } = useProps(props);
+      //const { dataSource, fieldNames, showLunar } = useProps(props); //nint
+      const { dataSource, fieldNames, showLunar, defaultView } = useProps(props); //nint
       const height = useCalenderHeight();
       const [date, setDate] = useState<Date>(new Date());
-      const [view, setView] = useState<View>('month');
+      //const [view, setView] = useState<View>('month'); //nint
+      const [view, setView] = useState<View>(defaultView); //nint
       const events = useEvents(dataSource, fieldNames, date, view);
       const [visible, setVisible] = useState(false);
       const [record, setRecord] = useState<any>({});
