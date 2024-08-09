@@ -15,7 +15,7 @@
     "antd": "5.x",
     "antd-style": "3.x",
     "async-mutex": "^0.3.2",
-    "mysql2": "^2.3.3",
+    "mysql2": "^3.10.3",
     "pg": "^8.7.3",
     "react": "18.x",
     "react-i18next": "^11.15.1",
