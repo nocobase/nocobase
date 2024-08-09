@@ -13,7 +13,7 @@ import { isEqual } from 'lodash';
 import { useCallback, useEffect, useMemo } from 'react';
 import { useTableBlockContext } from '../../../../../block-provider/TableBlockProvider';
 import { findFilterTargets } from '../../../../../block-provider/hooks';
-import { useFilterBlock } from '../../../../../filter-provider/FilterProvider';
+import { DataBlock, useFilterBlock } from '../../../../../filter-provider/FilterProvider';
 import { mergeFilter } from '../../../../../filter-provider/utils';
 import { removeNullCondition } from '../../../../../schema-component';
 import { useCollection } from '../../../../../data-source';
@@ -103,11 +103,16 @@ export const useTableBlockProps = () => {
           return;
         }
 
-        const value = [record[ctx.rowKey]];
+        const currentBlock = dataBlocks.find((block) => block.uid === fieldSchema.parent['x-uid']);
 
         dataBlocks.forEach((block) => {
           const target = targets.find((target) => target.uid === block.uid);
           if (!target) return;
+
+          const isForeignKey = block.foreignKeyFields?.some((field) => field.name === target.field);
+          const sourceKey = getSourceKey(currentBlock, target.field);
+          const recordKey = isForeignKey ? sourceKey : ctx.rowKey;
+          const value = [record[recordKey]];
 
           const param = block.service.params?.[0] || {};
           // 保留原有的 filter
@@ -146,7 +151,7 @@ export const useTableBlockProps = () => {
         });
 
         // 更新表格的选中状态
-        setSelectedRow((prev) => (prev?.includes(record[ctx.rowKey]) ? [] : [...value]));
+        setSelectedRow((prev) => (prev?.includes(record[ctx.rowKey]) ? [] : [record[ctx.rowKey]]));
       },
       [ctx.rowKey, fieldSchema, getDataBlocks],
     ),
@@ -155,3 +160,8 @@ export const useTableBlockProps = () => {
     }, []),
   };
 };
+
+function getSourceKey(currentBlock: DataBlock, field: string) {
+  const associationField = currentBlock?.associatedFields?.find((item) => item.foreignKey === field);
+  return associationField?.sourceKey || 'id';
+}
