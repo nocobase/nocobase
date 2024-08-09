@@ -14,12 +14,13 @@ import { SchemaComponent, SchemaComponentContext, useSchemaComponentContext } fr
 import { ExtendCollectionsProvider } from '@nocobase/client';
 import { useNotificationTranslation } from '../../../locale';
 import messageLogCollection from '../../../../collections/messageLog';
+import channelCollection from '../../../../collections/channel';
 
 export const LogManager = () => {
   const { t } = useNotificationTranslation();
   const scCtx = useSchemaComponentContext();
   return (
-    <ExtendCollectionsProvider collections={[messageLogCollection]}>
+    <ExtendCollectionsProvider collections={[messageLogCollection, channelCollection]}>
       <SchemaComponentContext.Provider value={{ ...scCtx, designable: false }}>
         <Card bordered={false}>
           <SchemaComponent schema={messageLogsManagerSchema} scope={{ t }} />
