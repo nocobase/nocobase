@@ -385,7 +385,7 @@ export function Input(props: VariableInputProps) {
               // eslint-disable-next-line react/no-unknown-property
               unselectable="on"
               onClick={() => {
-                setIsFieldValue(false);
+                setIsFieldValue(Boolean(children));
                 onChange(null);
               }}
             >
