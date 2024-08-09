@@ -92,7 +92,6 @@ export const ActionDrawerUsedInMobile: any = observer((props: { footerNodeName?:
             <div style={{ padding: 12, ...specialStyle }}>
               <SchemaComponent
                 schema={fieldSchema}
-                onlyRenderProperties
                 filterProperties={(s) => {
                   return s['x-component'] !== footerNodeName;
                 }}
