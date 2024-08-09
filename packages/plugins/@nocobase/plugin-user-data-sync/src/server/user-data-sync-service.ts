@@ -41,7 +41,7 @@ export class UserDataSyncService {
       dataType: data.dataType,
       uniqueKey: data.uniqueKey,
       records: data.records,
-      sourceName: 'push',
+      sourceName: data.sourceName,
     };
     await this.resourceManager.updateOrCreate(userData);
   }
