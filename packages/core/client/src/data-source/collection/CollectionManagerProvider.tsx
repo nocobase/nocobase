@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { FC, ReactNode, createContext, useContext, useMemo } from 'react';
+import React, { FC, ReactNode, createContext, useContext, useEffect, useMemo } from 'react';
 import type { CollectionManager } from './CollectionManager';
 import type { Collection } from './Collection';
 import { DataSourceProvider, useDataSource } from '../data-source/DataSourceProvider';
@@ -25,14 +25,23 @@ export interface CollectionManagerProviderProps {
 const CollectionManagerProviderInner: FC<CollectionManagerProviderProps> = ({ instance, children }) => {
   const dataSource = useDataSource();
   const extendCollections = useExtendCollections();
+  const collectionManager = useMemo(() => instance || dataSource?.collectionManager, [instance, dataSource]);
+  const [random, setRandom] = React.useState(Math.random());
+  useEffect(() => {
+    collectionManager.dataSource.addReloadCallback(() => {
+      setRandom(Math.random());
+    });
+  }, [collectionManager]);
 
   const cm = useMemo(() => {
-    const res = instance || dataSource?.collectionManager;
+    const res = collectionManager;
     if (extendCollections?.length) {
       return res.clone(extendCollections);
     }
     return res;
-  }, [instance, extendCollections, dataSource]);
+    // Random is used to force re-render when collectionManager is changed
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [collectionManager, extendCollections, random]);
   return <CollectionManagerContext.Provider value={cm}>{children}</CollectionManagerContext.Provider>;
 };
 
