@@ -8,7 +8,7 @@
  */
 
 import lodash from 'lodash';
-import { FindOptions, Repository } from '../../repository';
+import { CountOptions, FindOptions, Repository } from '../../repository';
 import Database from '../../database';
 import { Collection } from '../../collection';
 
@@ -69,7 +69,7 @@ export class AdjacencyListRepository extends Repository {
       options.fields.push(primaryKey);
     }
 
-    const filterNodes = await super.find(options);
+    const filterNodes = await super.find({ ...lodash.omit(options, ['limit', 'offset']) });
     if (filterNodes.length === 0) {
       return [];
     }
@@ -206,6 +206,22 @@ export class AdjacencyListRepository extends Repository {
     this.addIndex(parentNodes, childrenKey, options);
 
     return parentNodes;
+  }
+
+  async count(countOptions?: CountOptions): Promise<number> {
+    const collection = this.collection;
+    const primaryKey = collection.model.primaryKeyAttribute;
+    if (countOptions.raw || !countOptions.tree) {
+      return await super.count(countOptions);
+    }
+    const filterNodes = await super.find({ ...lodash.omit(countOptions, ['limit', 'offset']) });
+    const filterIds = filterNodes.map((node) => node[primaryKey]);
+    const nodeData = await this.queryRootDatas(filterIds, countOptions.context?.dataSource?.name ?? 'main');
+    const rootIds = new Set();
+    for (const node of nodeData) {
+      rootIds.add(node.get('rootPk'));
+    }
+    return rootIds.size;
   }
 
   private addIndex(treeArray, childrenKey, options) {
