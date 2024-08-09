@@ -121,7 +121,7 @@ const getChildren = (
 ): Option[] => {
   const result = options
     .map((option): Option => {
-      if (!option.target) {
+      if (!option.target || option.target === 'chinaRegions') {
         return {
           key: option.name,
           value: option.name,
