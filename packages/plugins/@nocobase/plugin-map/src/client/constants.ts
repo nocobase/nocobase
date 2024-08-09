@@ -7,11 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { generateNTemplate } from './locale';
+import { lang } from './locale';
 
 export const MapTypes = [
-  { label: generateNTemplate('AMap'), value: 'amap' },
-  { label: generateNTemplate('Google Maps'), value: 'google' },
+  { label: lang('AMap'), key: 'amap' },
+  { label: lang('Google Maps'), key: 'google' },
 ];
 
 export const selectedImage =
