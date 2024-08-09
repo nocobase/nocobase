@@ -11,9 +11,6 @@ import lodash from 'lodash';
 import { FindOptions, Repository } from '../../repository';
 import Database from '../../database';
 import { Collection } from '../../collection';
-import { Model } from '../../model';
-import { FindAndCountOptions } from 'sequelize';
-import { assign } from '@nocobase/utils';
 
 interface rootPathDataMapInterface {
   [key: string]: string[];
@@ -58,10 +55,8 @@ export class AdjacencyListRepository extends Repository {
     });
   }
 
-  async find(options: FindOptions & { addIndex?: boolean; filter?: any } = {}): Promise<any> {
-    let childIds: any[] = [];
-    childIds = lodash.get(options, ['filter', 'childIds'], []);
-    options = lodash.omit(options, 'filter.childIds');
+  async find(options: FindOptions & { addIndex?: boolean } = {}): Promise<any> {
+    const childIds: any[] = [];
 
     if (options.raw || !options.tree) {
       return await super.find(options);
@@ -74,8 +69,8 @@ export class AdjacencyListRepository extends Repository {
       options.fields.push(primaryKey);
     }
 
-    const parentNodes = await super.find(options);
-    if (parentNodes.length === 0) {
+    const filterNodes = await super.find(options);
+    if (filterNodes.length === 0) {
       return [];
     }
 
@@ -84,23 +79,78 @@ export class AdjacencyListRepository extends Repository {
 
     const childrenKey = collection.treeChildrenField?.name ?? 'children';
 
-    const parentIds = parentNodes.map((node) => node[primaryKey]);
+    const filterIds = filterNodes.map((node) => node[primaryKey]);
 
-    if (parentIds.length == 0) {
+    if (filterIds.length == 0) {
       this.database.logger.warn('parentIds is empty');
-      return parentNodes;
+      return filterNodes;
     }
 
-    const sql = this.querySQL(parentIds, collection);
+    const nodeData = await this.queryRootDatas(filterIds, options.context?.dataSource?.name ?? 'main');
 
-    const childNodes = await this.database.sequelize.query(sql, {
-      type: 'SELECT',
-      transaction: options.transaction,
+    const rootPathDataMap: rootPathDataMapInterface = {};
+
+    for (const node of nodeData) {
+      if (rootPathDataMap[node.get('rootPk')]) {
+        rootPathDataMap[node.get('rootPk')] = [...rootPathDataMap[node.get('rootPk')], node.get('path')];
+      } else {
+        rootPathDataMap[node.get('rootPk')] = [node.get('path')];
+      }
+    }
+
+    const rebuildTreeRootNodeDataMap: rebuildTreeRootNodeDataInterface = {};
+    //find commons root path
+    for (const pathArray of Object.values(rootPathDataMap)) {
+      const commonParentPath = this.findCommonParent(pathArray);
+      const commonParentPathNodeArray: string[] = commonParentPath.split('/').filter((item) => {
+        return item !== '';
+      });
+      if (pathArray.length == 1) {
+        rebuildTreeRootNodeDataMap[commonParentPathNodeArray[0]] = new Set();
+        for (const i of commonParentPathNodeArray) {
+          rebuildTreeRootNodeDataMap[commonParentPathNodeArray[0]].add(i);
+        }
+        continue;
+      }
+      // get filter root nodeid
+      const commonParentRootNodeId = commonParentPathNodeArray[commonParentPathNodeArray.length - 1];
+      rebuildTreeRootNodeDataMap[commonParentRootNodeId] = new Set([
+        commonParentPathNodeArray[commonParentPathNodeArray.length - 1],
+      ]);
+      for (const path of pathArray) {
+        if (commonParentPath != path) {
+          const commonPathNodeArray = path.split(commonParentPath).filter((item) => {
+            return item !== '';
+          });
+          for (const i of commonPathNodeArray[0].split('/').filter((item) => {
+            return item !== '';
+          })) {
+            rebuildTreeRootNodeDataMap[commonParentRootNodeId].add(i);
+          }
+        }
+      }
+    }
+
+    for (const nodeIdSet of Object.values(rebuildTreeRootNodeDataMap)) {
+      for (const nodeId of nodeIdSet) {
+        childIds.push(nodeId);
+      }
+    }
+
+    let parentIds: any[] = [];
+    parentIds = Object.keys(rebuildTreeRootNodeDataMap);
+    if (parentIds.length === 0) {
+      this.database.logger.warn('parentIds is empty');
+      return [];
+    }
+    const parentNodes = await super.find({
+      filter: {
+        [primaryKey]: {
+          $in: parentIds,
+        },
+      },
+      ...lodash.omit(options, ['limit', 'offset', 'filterByTk', 'filter']),
     });
-
-    if (childIds.length === 0) {
-      childIds = childNodes.map((node) => node[primaryKey]);
-    }
 
     const findChildrenOptions = {
       ...lodash.omit(options, ['limit', 'offset', 'filterByTk']),
@@ -185,110 +235,6 @@ export class AdjacencyListRepository extends Repository {
     treeArray.forEach((tree, i) => {
       traverse(tree, i);
     });
-  }
-
-  async findAndCount(
-    options?: FindAndCountOptions & {
-      tree?: boolean;
-      fields?: string[];
-      filter?: any;
-      context?: any;
-      appends?: string[];
-    },
-  ): Promise<[Model[], number]> {
-    let totalCount = 0;
-    let datas = [];
-    if (options.raw || !options.tree) {
-      return await super.findAndCount(options);
-    }
-    const limit = options.limit;
-    const offset = options.offset;
-    const fields = lodash.cloneDeep(options.fields);
-    const optionsClone = lodash.clone(options);
-    const optionsTmp = lodash.omit(optionsClone, ['limit', 'offset']);
-    const collection = this.collection;
-    const primaryKey = collection.model?.primaryKeyAttribute ?? 'id';
-    if (options.fields !== undefined && options.fields.length > 0 && !options.fields.includes(primaryKey)) {
-      optionsTmp.fields.push(primaryKey);
-    }
-    const filterNodes = await super.find(optionsTmp);
-    const filterIds = filterNodes.map((node) => node[primaryKey]);
-    const nodeData = await this.queryRootDatas(filterIds, options.context.dataSource.name);
-
-    const rootPathDataMap: rootPathDataMapInterface = {};
-
-    for (const node of nodeData) {
-      if (rootPathDataMap[node.get('rootPk')]) {
-        rootPathDataMap[node.get('rootPk')] = [...rootPathDataMap[node.get('rootPk')], node.get('path')];
-      } else {
-        rootPathDataMap[node.get('rootPk')] = [node.get('path')];
-      }
-    }
-
-    const rebuildTreeRootNodeDataMap: rebuildTreeRootNodeDataInterface = {};
-    //find commons root path
-    for (const pathArray of Object.values(rootPathDataMap)) {
-      const commonParentPath = this.findCommonParent(pathArray);
-      const commonParentPathNodeArray: string[] = commonParentPath.split('/').filter((item) => {
-        return item !== '';
-      });
-      if (pathArray.length == 1) {
-        rebuildTreeRootNodeDataMap[commonParentPathNodeArray[0]] = new Set();
-        for (const i of commonParentPathNodeArray) {
-          rebuildTreeRootNodeDataMap[commonParentPathNodeArray[0]].add(i);
-        }
-        continue;
-      }
-      // get filter root nodeid
-      const commonParentRootNodeId = commonParentPathNodeArray[commonParentPathNodeArray.length - 1];
-      rebuildTreeRootNodeDataMap[commonParentRootNodeId] = new Set([
-        commonParentPathNodeArray[commonParentPathNodeArray.length - 1],
-      ]);
-      for (const path of pathArray) {
-        if (commonParentPath != path) {
-          const commonPathNodeArray = path.split(commonParentPath).filter((item) => {
-            return item !== '';
-          });
-          for (const i of commonPathNodeArray[0].split('/').filter((item) => {
-            return item !== '';
-          })) {
-            rebuildTreeRootNodeDataMap[commonParentRootNodeId].add(i);
-          }
-        }
-      }
-    }
-
-    const childIds = [];
-    for (const nodeIdSet of Object.values(rebuildTreeRootNodeDataMap)) {
-      for (const nodeId of nodeIdSet) {
-        childIds.push(nodeId);
-      }
-    }
-
-    let rootIds: any[] = [];
-    rootIds = Object.keys(rebuildTreeRootNodeDataMap);
-    if (rootIds.length === 0) {
-      return [[], 0];
-    }
-
-    totalCount = rootIds.length;
-    options = lodash.omit(optionsClone, ['filter', primaryKey]);
-    assign(options, {
-      filter: {
-        [primaryKey]: {
-          $in: rootIds,
-        },
-        childIds: childIds,
-        ...options?.filter,
-      },
-    });
-    assign(options, {
-      limit: limit,
-      offset: offset,
-      fields: fields,
-    });
-    datas = await this.find(options);
-    return [datas, totalCount];
   }
 
   private async queryRootDatas(nodePks, dataSourceName): Promise<any> {
