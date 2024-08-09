@@ -104,15 +104,11 @@ function useDeleteActionProps(): ActionProps {
 function useSyncActionProps(): ActionProps {
   const { message } = AntdApp.useApp();
   const record = useCollectionRecordData();
-  const resource = useDataBlockResource();
-  const collection = useCollection();
+  const api = useAPIClient();
   const { runAsync } = useDataBlockRequest();
   return {
     async onClick() {
-      await resource.sync({
-        id: record[collection.filterTargetKey],
-        name: record['name'],
-      });
+      await api.resource('userData').pull({ name: record['name'] });
       await runAsync();
       message.success('Synced!');
     },
@@ -154,13 +150,11 @@ function useRetryActionProps(): ActionProps {
   const record = useCollectionRecordData();
   const resource = useDataBlockResource();
   const collection = useCollection();
+  const api = useAPIClient();
   const { runAsync } = useDataBlockRequest();
   return {
     async onClick() {
-      await resource.retry({
-        id: record[collection.filterTargetKey],
-        sourceId: record['sourceId'],
-      });
+      await api.resource('userData').retry({ id: record[collection.filterTargetKey], sourceId: record['sourceId'] });
       await runAsync();
       message.success('Successfully');
     },
@@ -225,9 +219,9 @@ export const UserDataSyncSource: React.FC = () => {
         .listTypes()
         .then((res) => {
           const types = res?.data?.data || [];
-          return types.map((type: { name: string; displayName?: string }) => ({
+          return types.map((type: { name: string; title?: string }) => ({
             key: type.name,
-            label: Schema.compile(type.displayName || type.name, { t }),
+            label: Schema.compile(type.title || type.name, { t }),
             value: type.name,
           }));
         }),

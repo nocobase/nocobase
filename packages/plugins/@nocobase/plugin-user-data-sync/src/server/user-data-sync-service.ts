@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { UserDataResourceManager } from './user-data-resource-manager';
+import { UserData, UserDataResourceManager } from './user-data-resource-manager';
 import { SyncSourceManager } from './sync-source-manager';
 import { Context } from '@nocobase/actions';
 import { SyncSource } from './sync-source';
@@ -24,7 +24,7 @@ export class UserDataSyncService {
     this.logger = logger;
   }
 
-  async sync(sourceName: string, ctx: Context) {
+  async pull(sourceName: string, ctx: Context) {
     const source = await this.sourceManager.getByName(sourceName, ctx);
     const taskId = await source.newTask();
     await source.beginTask(taskId);
@@ -34,6 +34,16 @@ export class UserDataSyncService {
       } time: ${new Date().toLocaleString()}`,
     );
     this.runSync(source, taskId);
+  }
+
+  async push(data: any) {
+    const userData: UserData = {
+      dataType: data.dataType,
+      uniqueKey: data.uniqueKey,
+      records: data.records,
+      sourceName: 'push',
+    };
+    await this.resourceManager.updateOrCreate(userData);
   }
 
   async retry(sourceId: number, taskId: number, ctx: Context) {
@@ -66,7 +76,9 @@ export class UserDataSyncService {
           source.instance.sourceType
         } time: ${new Date().toLocaleString()}`,
       );
-      await this.resourceManager.updateOrCreate(data);
+      for (const item of data) {
+        await this.resourceManager.updateOrCreate(item);
+      }
       this.logger.info(
         `end update data of source: ${source.instance.name} sourceType: ${
           source.instance.sourceType

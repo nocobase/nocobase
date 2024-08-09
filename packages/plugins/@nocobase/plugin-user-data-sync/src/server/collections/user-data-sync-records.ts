@@ -28,11 +28,21 @@ export default defineCollection({
       interface: 'id',
     },
     {
-      name: 'source',
-      type: 'belongsTo',
-      target: 'userDataSyncSources',
-      targetKey: 'id',
-      foreignKey: 'sourceId',
+      name: 'sourceName',
+      interface: 'Input',
+      type: 'string',
+      allowNull: false,
+    },
+    {
+      name: 'sourceUniqueKey',
+      interface: 'Input',
+      type: 'string',
+      allowNull: false,
+    },
+    {
+      name: 'sourceId',
+      interface: 'Input',
+      type: 'string',
       allowNull: false,
     },
     {
@@ -45,13 +55,7 @@ export default defineCollection({
       name: 'resourcePk',
       interface: 'Input',
       type: 'string',
-      allowNull: false,
-    },
-    {
-      name: 'resourceId',
-      interface: 'input',
-      type: 'string',
-      allowNull: false,
+      allowNull: true,
     },
     {
       type: 'text',

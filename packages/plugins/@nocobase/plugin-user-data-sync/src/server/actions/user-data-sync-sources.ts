@@ -11,12 +11,6 @@ import { Context, Next } from '@nocobase/actions';
 import { PluginUserDataSyncServer } from '../plugin';
 
 export default {
-  sync: async (ctx: Context, next: Next) => {
-    const { name } = ctx.action.params;
-    const plugin = ctx.app.pm.get(PluginUserDataSyncServer) as PluginUserDataSyncServer;
-    await plugin.syncService.sync(name, ctx);
-    await next();
-  },
   listTypes: async (ctx: Context, next: Next) => {
     const plugin = ctx.app.pm.get(PluginUserDataSyncServer) as PluginUserDataSyncServer;
     ctx.body = plugin.sourceManager.listTypes();

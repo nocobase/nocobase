@@ -8,8 +8,8 @@
  */
 
 import { Context } from '@nocobase/actions';
-import { UserData } from './user-data-resource';
 import { SyncSourceModel } from './models/sync-source';
+import { UserData } from './user-data-resource-manager';
 
 export type SyncSourceConfig = {
   sourceInstance: SyncSourceModel;

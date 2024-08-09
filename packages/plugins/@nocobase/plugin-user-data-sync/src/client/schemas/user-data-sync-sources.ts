@@ -43,16 +43,16 @@ export const sourceCollection = {
         dataSource: '{{ types }}',
       },
     },
-    {
-      interface: 'input',
-      type: 'string',
-      name: 'displayName',
-      uiSchema: {
-        type: 'string',
-        title: '{{t("Source display name")}}',
-        'x-component': 'Input',
-      },
-    },
+    // {
+    //   interface: 'input',
+    //   type: 'string',
+    //   name: 'displayName',
+    //   uiSchema: {
+    //     type: 'string',
+    //     title: '{{t("Source display name")}}',
+    //     'x-component': 'Input',
+    //   },
+    // },
     {
       type: 'boolean',
       name: 'enabled',
@@ -60,26 +60,6 @@ export const sourceCollection = {
         type: 'boolean',
         title: '{{t("Enabled")}}',
         'x-component': 'Checkbox',
-      },
-    },
-    {
-      name: 'authenticator',
-      interface: 'input',
-      type: 'belongsTo',
-      target: 'authenticators',
-      targetKey: 'id',
-      foreignKey: 'authenticatorId',
-      uiSchema: {
-        type: 'array',
-        title: '{{t("Authenticator")}}',
-        'x-component': 'AssociationField',
-        'x-component-props': {
-          fieldNames: {
-            value: 'id',
-            label: 'name',
-          },
-        },
-        required: false,
       },
     },
   ],
@@ -200,15 +180,10 @@ export const createFormSchema: ISchema = {
                 options: '{{ types }}',
               },
             },
-            displayName: {
-              'x-component': 'CollectionField',
-              'x-decorator': 'FormItem',
-            },
-            authenticator: {
-              'x-component': 'CollectionField',
-              'x-collection-field': 'userDataSyncSources.authenticator',
-              'x-decorator': 'FormItem',
-            },
+            // displayName: {
+            //   'x-component': 'CollectionField',
+            //   'x-decorator': 'FormItem',
+            // },
             enabled: {
               'x-component': 'CollectionField',
               'x-decorator': 'FormItem',
@@ -404,18 +379,18 @@ export const userDataSyncSourcesSchema: ISchema = {
             },
           },
         },
-        displayName: {
-          type: 'void',
-          title: '{{t("Source display name")}}',
-          'x-component': 'TableV2.Column',
-          properties: {
-            displayName: {
-              type: 'string',
-              'x-component': 'CollectionField',
-              'x-pattern': 'readPretty',
-            },
-          },
-        },
+        // displayName: {
+        //   type: 'void',
+        //   title: '{{t("Source display name")}}',
+        //   'x-component': 'TableV2.Column',
+        //   properties: {
+        //     displayName: {
+        //       type: 'string',
+        //       'x-component': 'CollectionField',
+        //       'x-pattern': 'readPretty',
+        //     },
+        //   },
+        // },
         sourceType: {
           type: 'void',
           title: '{{t("Type")}}',
@@ -500,15 +475,10 @@ export const userDataSyncSourcesSchema: ISchema = {
                                 options: '{{ types }}',
                               },
                             },
-                            displayName: {
-                              'x-component': 'CollectionField',
-                              'x-decorator': 'FormItem',
-                            },
-                            authenticator: {
-                              'x-component': 'CollectionField',
-                              'x-collection-field': 'userDataSyncSources.authenticator',
-                              'x-decorator': 'FormItem',
-                            },
+                            // displayName: {
+                            //   'x-component': 'CollectionField',
+                            //   'x-decorator': 'FormItem',
+                            // },
                             enabled: {
                               'x-component': 'CollectionField',
                               'x-decorator': 'FormItem',

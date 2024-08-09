@@ -7,61 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import Database, { Repository } from '@nocobase/database';
-import { UserData, IUserDataResource } from './user-data-resource';
-import { SyncSource } from './sync-source';
+import Database from '@nocobase/database';
+import { UserDataResource } from './user-data-resource-manager';
 import { Logger } from '@nocobase/logger';
-import { AuthModel } from '@nocobase/plugin-auth';
 
-function maskValues(obj, keysToMask) {
-  return Object.assign({}, obj, ...keysToMask.map((key) => ({ [key]: '***' })));
-}
-
-function buildDepartmentForest(departments: any[]) {
-  // Create a map with department id as key
-  const departmentMap = new Map(departments.map((dept) => [dept.id, { ...dept, children: [] }]));
-
-  // Build the tree structure of departments
-  function buildTree(parentId) {
-    const parentDept = departmentMap.get(parentId);
-    if (!parentDept) return {}; // If the parent department does not exist, return an empty array
-
-    const children = [];
-    departments.forEach((dept) => {
-      if (dept.parentId === parentDept.id) {
-        children.push(buildTree(dept.id)); // Recursively build the tree of child departments
-      }
-    });
-
-    parentDept.children = children; // Assign the subtree to the children property of the parent department
-    return parentDept; // Return an array containing the current department as the root of the tree
-  }
-
-  // Build the forest, including all top-level departments and those departments whose parentId does not exist
-  const forest = [];
-  departments.forEach((dept) => {
-    if (!dept.parentId || dept.parentId === 1) {
-      forest.push(buildTree(dept.id)); // Add top-level departments
-    }
-  });
-
-  return forest; // Return the entire forest structure
-}
-
-async function traverseForestBFS(forest: any[], action) {
-  const queue = [...forest]; // Put the root nodes of the forest into the queue
-
-  while (queue.length > 0) {
-    const currentNode = queue.shift(); // Dequeue a node from the queue
-    await action(currentNode); // Perform the operation
-    // Add all child nodes of the current node to the queue
-    if (currentNode.children && currentNode.children.length > 0) {
-      queue.push(...currentNode.children);
-    }
-  }
-}
-
-export class DefaultUserDataResource implements IUserDataResource {
+export class DefaultUserDataResource implements UserDataResource {
   accepts: ('user' | 'department')[];
   db: Database;
   logger: Logger;
@@ -72,236 +22,222 @@ export class DefaultUserDataResource implements IUserDataResource {
     this.logger = logger;
   }
 
-  get userRepository() {
+  get userRepo() {
     return this.db.getRepository('users');
   }
 
-  get departmentRepository() {
+  get deptRepo() {
     return this.db.getRepository('departments');
   }
 
-  async updateOrCreate(data: UserData) {
-    if (data) {
-      switch (data.type) {
-        case 'user':
-          await this.updateOrCreateUsers(data);
-          break;
-        case 'department':
-          await this.updateOrCreateDepartments(data);
-          break;
+  get syncRecordRepo() {
+    return this.db.getRepository('userDataSyncRecords');
+  }
+
+  async updateOrCreate(originRecords: any[]): Promise<{ newRecords: any[] }> {
+    this.logger.info(`updateOrCreate: there is ${originRecords.length} records need to update or create`);
+    const result = { newRecords: [] };
+    let index = 0;
+    for (const data of originRecords) {
+      index++;
+      this.logger.info(`updateOrCreate: ${index}/${originRecords.length} record, data: ${JSON.stringify(data)}`);
+      let pk: string;
+      if (!this.accepts.includes(data.resource)) {
+        continue;
+      }
+      if (data.resource === 'user') {
+        pk = await this.updateOrCreateUser(data);
+      } else if (data.resource === 'department' && this.deptRepo) {
+        pk = await this.updateOrCreateDepartment(data);
+      } else {
+        pk = undefined;
+        this.logger.warn(`updateOrCreate: unsupported data type: ${data.resource}`);
+      }
+      if (pk) {
+        result.newRecords.push({
+          sourceId: data.sourceId,
+          resourcePk: pk,
+        });
+      }
+      this.logger.info(`updateOrCreate: ${index}/${originRecords.length} record done`);
+    }
+    return result;
+  }
+
+  async updateOrCreateUser(originRecord: any): Promise<string> {
+    const { sourceUniqueKey, metaData, resourcePk, sourceName } = originRecord;
+    const sourceUser = JSON.parse(metaData);
+    if (resourcePk) {
+      // 已存在的用户，更新信息
+      const user = await this.userRepo.findOne({
+        filterByTk: resourcePk,
+      });
+      await this.updateUser(user, sourceUser, sourceName);
+      return undefined;
+    } else {
+      // 根据 uniquekey 查找用户
+      const filter = {};
+      filter[sourceUniqueKey] = sourceUser[sourceUniqueKey];
+      const user = await this.userRepo.findOne({
+        filter,
+      });
+      if (user) {
+        await this.updateUser(user, sourceUser, sourceName);
+        return user.id;
+      } else {
+        return await this.createUser(sourceUniqueKey, sourceUser, sourceName);
       }
     }
   }
 
-  async updateOrCreateUsers(data: UserData) {
-    if (!data.data || !data.data.length) {
+  async updateUser(user: any, sourceUser: any, sourceName: string) {
+    if (sourceUser.isDeleted) {
+      // 删除用户
+      await user.destroy();
       return;
     }
-    if (!this.userRepository) {
+    let dataChanged = false;
+    if (sourceUser.phone !== undefined && user.phone !== sourceUser.phone) {
+      user.phone = sourceUser.phone;
+      dataChanged = true;
+    }
+    if (sourceUser.email !== undefined && user.email !== sourceUser.email) {
+      user.email = sourceUser.email;
+      dataChanged = true;
+    }
+    if (sourceUser.nickname !== undefined && user.nickname !== sourceUser.nickname) {
+      user.name = sourceUser.name;
+      dataChanged = true;
+    }
+    if (dataChanged) {
+      await user.save();
+    }
+    // 更新用户所属部门
+    await this.updateUserDepartments(user, sourceUser.departments, sourceName);
+  }
+
+  async createUser(sourceUniqueKey: string, sourceUser: any, sourceName): Promise<string> {
+    const user = await this.userRepo.create({
+      values: {
+        nickname: sourceUser.nickname,
+        phone: sourceUser.phone,
+        email: sourceUser.email,
+        username: sourceUniqueKey === 'id' ? sourceUser.id : undefined,
+      },
+    });
+    // 更新用户所属部门
+    await this.updateUserDepartments(user, sourceUser.departments, sourceName);
+    return user.id;
+  }
+
+  async updateUserDepartments(user: any, sourceDepartmentIds: any[], sourceName: string) {
+    if (!this.deptRepo) {
       return;
     }
-    const { uniqueKey, data: records, source } = data;
-    this.logger.info(`updateOrCreateUsers: there is ${records.length} records waiting for processing`);
-    const authenticator = (await source.instance.getAuthenticator()) as AuthModel;
-    this.logger.info(`updateOrCreateUsers: authenticator: ${authenticator ? authenticator.name : 'none'}`);
-    if (uniqueKey === 'id' && !authenticator) {
-      this.logger.error(`updateOrCreateUsers: authenticator is not found`);
-      throw new Error(`updateOrCreateUsers: authenticator is not found`);
-    }
-    for (let i = 0; i < records.length; i++) {
-      const record = records[i];
-      this.logger.info(
-        `updateOrCreateUsers: ${i + 1}/${records.length} record is processing, record: ${JSON.stringify(
-          maskValues(record, ['phone', 'email']),
-        )}`,
-      );
-      let user: any;
-      // 判断uniqueKey是否为id
-      if (uniqueKey === 'id') {
-        user = await authenticator.findUser(record[uniqueKey]);
-        if (!user) {
-          // 查询数据源关联用户
-          user = await source.instance.findUser(record[uniqueKey]);
-          if (!user) {
-            // 创建用户
-            this.logger.info(`updateOrCreateUsers: create user for record`);
-            user = await authenticator.newUser(record[uniqueKey], {
-              nickname: record.nickname === undefined ? record[uniqueKey] : record.nickname,
-            });
-            // 关联数据源
-            this.logger.info(`updateOrCreateUsers: add user to source`);
-            await source.instance.addUser(user.id, {
-              through: {
-                uuid: record[uniqueKey],
-              },
-            });
-          } else {
-            // 查询数据源关联用户
-            user = await source.instance.findUser(record[uniqueKey]);
-            if (!user) {
-              // 关联数据源
-              this.logger.info(`updateOrCreateUsers: add user to source`);
-              await source.instance.addUser(user.id, {
-                through: {
-                  uuid: record[uniqueKey],
-                },
-              });
-            } else {
-              this.logger.info(`updateOrCreateUsers: user is already exists`);
-            }
-          }
+    if (!sourceDepartmentIds || !sourceDepartmentIds.length) {
+      const userDepartments = await user.getDepartments();
+      if (userDepartments.length) {
+        await user.removeDepartments(userDepartments);
+      }
+    } else {
+      // 查询部门同步记录
+      const syncDepartmentRecords = await this.syncRecordRepo.find({
+        filter: { sourceName, resource: 'department', sourceId: { $in: sourceDepartmentIds } },
+      });
+      const departmentIds = syncDepartmentRecords.map((record) => record.resourcePk);
+      const departments = await this.deptRepo.find({ filter: { id: { $in: departmentIds } } });
+      const userDepartments = await user.getDepartments();
+      // 需要删除的部门
+      const toRemoveDepartments = userDepartments.filter((department) => {
+        return !departments.find((sourceDepartment) => sourceDepartment.id === department.id);
+      });
+      if (toRemoveDepartments.length) {
+        await user.removeDepartments(toRemoveDepartments);
+      }
+      // 需要添加的部门
+      const toAddDepartments = departments.filter((department) => {
+        if (userDepartments.length === 0) {
+          return true;
         }
-      } else {
-        user = await this.userRepository.findOne({ filter: { [uniqueKey]: record[uniqueKey] } });
-        if (!user) {
-          // create user if not exists
-          if (authenticator) {
-            // 创建用户
-            this.logger.info(`updateOrCreateUsers: create user for record`);
-            user = await authenticator.newUser(record[uniqueKey], {
-              username: record.username,
-              nickname: record.nickname == null ? record.id : record.nickname,
-              phone: record.phone,
-              email: record.email,
-            });
-            // 关联数据源
-            this.logger.info(`updateOrCreateUsers: add user to source`);
-            await source.instance.addUser(user.id, {
-              through: {
-                uuid: record[uniqueKey],
-              },
-            });
-          } else {
-            // 创建用户
-            this.logger.info(`updateOrCreateUsers: create user for record`);
-            user = await source.instance.newUser(record[uniqueKey], {
-              username: record.username,
-              nickname: record.nickname == null ? record.id : record.nickname,
-              phone: record.phone,
-              email: record.email,
-            });
+        return !userDepartments.find((userDepartment) => userDepartment.id === department.id);
+      });
+      if (toAddDepartments.length) {
+        await user.addDepartments(toAddDepartments);
+      }
+    }
+  }
+
+  async updateOrCreateDepartment(originRecord: any): Promise<string> {
+    const { metaData, resourcePk, sourceName } = originRecord;
+    const sourceDepartment = JSON.parse(metaData);
+    if (resourcePk) {
+      // 已存在的部门，更新信息
+      const department = await this.deptRepo.findOne({
+        filterByTk: resourcePk,
+      });
+      await this.updateDepartment(department, sourceDepartment, sourceName);
+      return undefined;
+    } else {
+      return this.createDepartment(sourceDepartment, sourceName);
+    }
+  }
+
+  async updateDepartment(department: any, sourceDepartment: any, sourceName: string) {
+    if (sourceDepartment.isDeleted) {
+      // 删除部门
+      await department.destroy();
+      return;
+    }
+    let dataChanged = false;
+    if (sourceDepartment.name !== undefined && department.name !== sourceDepartment.name) {
+      department.name = sourceDepartment.name;
+      dataChanged = true;
+    }
+    if (dataChanged) {
+      await department.save();
+    }
+    this.updateParentDepartment(department, sourceDepartment.parentId, sourceName);
+  }
+
+  async createDepartment(sourceDepartment: any, sourceName: string): Promise<string> {
+    const department = await this.deptRepo.create({
+      values: {
+        title: sourceDepartment.name,
+      },
+    });
+    this.updateParentDepartment(department, sourceDepartment.parentId, sourceName);
+    return department.id;
+  }
+
+  async updateParentDepartment(department: any, parentId: string, sourceName: string) {
+    if (!parentId) {
+      const parentDepartment = await department.getParent();
+      if (parentDepartment) {
+        await department.setParent(null);
+      }
+    } else {
+      const syncDepartmentRecord = await this.syncRecordRepo.findOne({
+        filter: { sourceName, resource: 'department', sourceId: parentId },
+      });
+      if (syncDepartmentRecord) {
+        const parentDepartment = await this.deptRepo.findOne({
+          filterByTk: syncDepartmentRecord.resourcePk,
+        });
+        if (!parentDepartment) {
+          await department.setParent(null);
+          return;
+        }
+        const parent = await department.getParent();
+        if (parent) {
+          if (parentDepartment.id !== parent.id) {
+            await department.setParent(parentDepartment);
           }
         } else {
-          if (authenticator) {
-            user = await authenticator.findUser(record[uniqueKey]);
-            if (!user) {
-              // 关联认证器
-              this.logger.info(`updateOrCreateUsers: add user to authenticator`);
-              await authenticator.addUser(user.id, {
-                through: {
-                  uuid: record[uniqueKey],
-                },
-              });
-            }
-          }
-          user = await source.instance.findUser(record[uniqueKey]);
-          if (!user) {
-            // 关联数据源
-            this.logger.info(`updateOrCreateUsers: add user to source`);
-            await source.instance.addUser(user.id, {
-              through: {
-                uuid: record[uniqueKey],
-              },
-            });
-          } else {
-            this.logger.info(`updateOrCreateUsers: user is already exists`);
-          }
-        }
-      }
-      // add departments
-      if (this.departmentRepository && record.departments && record.departments.length) {
-        for (const deptId of record.departments) {
-          if (deptId === 1) {
-            continue;
-          }
-          const sourceDepartments = await source.instance.getDepartments({
-            through: { where: { uuid: deptId } },
-          });
-          if (sourceDepartments && sourceDepartments.length) {
-            const sourceDepartment = sourceDepartments[0];
-            const userDepartments = await user.getDepartments({ where: { id: sourceDepartment.id } });
-            if (!userDepartments || !userDepartments.length) {
-              await user.addDepartments(sourceDepartment);
-              this.logger.info(
-                `updateOrCreateUsers: add department to user: id: ${sourceDepartment.id} name: ${sourceDepartment.title}`,
-              );
-            }
-          }
-        }
-      }
-      this.logger.info(`updateOrCreateUsers: ${i + 1}/${records.length} record is processed`);
-      await this.createOrUpdateRecord('user', uniqueKey, record, source);
-    }
-  }
-
-  async updateOrCreateDepartments(data: UserData) {
-    if (!data.data || !data.data.length) {
-      this.logger.info(`updateOrCreateDepartments: no departments found`);
-      return;
-    }
-    if (!this.departmentRepository) {
-      this.logger.error(`updateOrCreateDepartments: department repository is not found`);
-      return;
-    }
-    const { uniqueKey, data: departments, source } = data;
-    this.logger.info(`updateOrCreateDepartments: there is ${departments.length} departments waiting for processing`);
-    const departmentForest = buildDepartmentForest(departments);
-    await traverseForestBFS(departmentForest, async (department) => {
-      this.logger.info(`updateOrCreateDepartments: department is processing, record: ${JSON.stringify(department)}`);
-      let sourceDepartment = await source.instance.getDepartments({
-        through: { where: { uuid: department[uniqueKey] } },
-      });
-      this.logger.info(`updateOrCreateDepartments: uuid: ${department[uniqueKey]}`);
-      // convert to department forest
-      if (!sourceDepartment || !sourceDepartment.length) {
-        // create department if not exists
-        this.logger.info(`updateOrCreateDepartments: create department for record`);
-        sourceDepartment = await source.instance.createDepartment(
-          {
-            title: department.name,
-          },
-          { through: { uuid: department[uniqueKey] } },
-        );
-        // add parent department
-        if (department.parentId && department.parentId !== 1) {
-          const parentSourceDepartments = await source.instance.getDepartments({
-            through: { where: { uuid: department.parentId } },
-          });
-          if (parentSourceDepartments && parentSourceDepartments.length) {
-            const parentSourceDepartment = parentSourceDepartments[0];
-            await sourceDepartment.setParent(parentSourceDepartment);
-          }
+          await department.setParent(parentDepartment);
         }
       } else {
-        // update department, not supported yet
-        this.logger.info(`updateOrCreateDepartments: update department for record`);
+        await department.setParent(null);
       }
-      await this.createOrUpdateRecord('department', uniqueKey, department, source);
-    });
-  }
-
-  // create or update sync record
-  async createOrUpdateRecord(type: string, uniqueKey: string, data: any, source: SyncSource) {
-    this.logger.info(
-      `createOrUpdateRecord: type: ${type} uniqueKey: ${uniqueKey} data: ${JSON.stringify(data)} data uniqueKey: ${
-        data[uniqueKey]
-      }`,
-    );
-    const syncRecords = await source.instance.getRecords({
-      where: { resourceId: data[uniqueKey], resource: type },
-    });
-    if (syncRecords && syncRecords.length) {
-      const syncRecord = syncRecords[0];
-      syncRecord.lastMetaData = syncRecord.metaData;
-      syncRecord.metaData = JSON.stringify(data);
-      await syncRecord.save();
-    } else {
-      await source.instance.createRecord({
-        resourceId: data[uniqueKey],
-        resource: type,
-        resourcePk: uniqueKey,
-        metaData: JSON.stringify(data),
-      });
     }
   }
 }

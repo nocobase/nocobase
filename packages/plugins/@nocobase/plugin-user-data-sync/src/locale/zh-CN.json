@@ -15,5 +15,6 @@
   "Authenticator": "用户认证",
   "dingtalk": "钉钉",
   "wecom": "企业微信",
-  "default": "默认"
+  "default": "默认",
+  "Retry": "重试"
 }

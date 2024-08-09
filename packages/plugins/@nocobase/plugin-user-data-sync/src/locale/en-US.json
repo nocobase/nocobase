@@ -12,5 +12,6 @@
   "Processing": "Processing",
   "Success": "Success",
   "Failed": "Failed",
-  "Authenticator": "Authenticator"
+  "Authenticator": "Authenticator",
+  "Retry": "Retry"
 }
