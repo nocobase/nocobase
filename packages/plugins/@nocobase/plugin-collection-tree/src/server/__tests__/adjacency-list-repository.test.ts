@@ -7,19 +7,22 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { mockDatabase } from './';
-import Database from '../database';
+import { prepareApp } from './prepare';
+import { Database } from '@nocobase/database';
+import { MockServer } from '@nocobase/test';
 
 describe('adjacency list repository', () => {
+  let app: MockServer;
   let db: Database;
 
   beforeEach(async () => {
-    db = mockDatabase();
+    app = await prepareApp();
+    db = app.db;
     await db.clean({ drop: true });
   });
 
   afterEach(async () => {
-    await db.close();
+    await app.destroy();
   });
 
   it('should append relation parent recursively with belongs to assoc', async () => {

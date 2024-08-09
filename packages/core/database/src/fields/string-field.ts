@@ -12,10 +12,15 @@ import { BaseColumnFieldOptions, Field } from './field';
 
 export class StringField extends Field {
   get dataType() {
+    if (this.options.length) {
+      return DataTypes.STRING(this.options.length);
+    }
+
     return DataTypes.STRING;
   }
 }
 
 export interface StringFieldOptions extends BaseColumnFieldOptions {
   type: 'string';
+  length?: number;
 }

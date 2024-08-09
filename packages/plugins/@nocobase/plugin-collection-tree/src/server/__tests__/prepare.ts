@@ -19,11 +19,35 @@ export async function prepareApp(): Promise<MockServer> {
       'users',
       'ui-schema-storage',
       'data-source-main',
-      'auth',
       'data-source-manager',
       'collection-tree',
     ],
   });
 
+  return app;
+}
+
+export async function createApp(options: any = {}) {
+  const app = await createMockServer({
+    acl: false,
+    ...options,
+    plugins: [
+      'data-source-main',
+      'users',
+      'collection-tree',
+      'error-handler',
+      'data-source-manager',
+      'ui-schema-storage',
+    ],
+  });
+  return app;
+}
+
+export async function createAppWithNoUsersPlugin(options: any = {}) {
+  const app = await createMockServer({
+    acl: false,
+    ...options,
+    plugins: ['data-source-main', 'collection-tree', 'error-handler', 'data-source-manager', 'ui-schema-storage'],
+  });
   return app;
 }

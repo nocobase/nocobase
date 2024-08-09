@@ -8,9 +8,17 @@
  */
 
 import lodash from 'lodash';
-import { FindOptions, Repository } from '../../repository';
+import { CountOptions, FindOptions, Repository } from '../../repository';
 import Database from '../../database';
 import { Collection } from '../../collection';
+
+interface rootPathDataMapInterface {
+  [key: string]: string[];
+}
+
+interface rebuildTreeRootNodeDataInterface {
+  [key: string]: Set<any>;
+}
 
 export class AdjacencyListRepository extends Repository {
   static queryParentSQL(options: {
@@ -48,6 +56,8 @@ export class AdjacencyListRepository extends Repository {
   }
 
   async find(options: FindOptions & { addIndex?: boolean } = {}): Promise<any> {
+    const childIds: any[] = [];
+
     if (options.raw || !options.tree) {
       return await super.find(options);
     }
@@ -59,8 +69,8 @@ export class AdjacencyListRepository extends Repository {
       options.fields.push(primaryKey);
     }
 
-    const parentNodes = await super.find(options);
-    if (parentNodes.length === 0) {
+    const filterNodes = await super.find({ ...lodash.omit(options, ['limit', 'offset']) });
+    if (filterNodes.length === 0) {
       return [];
     }
 
@@ -69,21 +79,78 @@ export class AdjacencyListRepository extends Repository {
 
     const childrenKey = collection.treeChildrenField?.name ?? 'children';
 
-    const parentIds = parentNodes.map((node) => node[primaryKey]);
+    const filterIds = filterNodes.map((node) => node[primaryKey]);
 
-    if (parentIds.length == 0) {
+    if (filterIds.length == 0) {
       this.database.logger.warn('parentIds is empty');
-      return parentNodes;
+      return filterNodes;
     }
 
-    const sql = this.querySQL(parentIds, collection);
+    const nodeData = await this.queryRootDatas(filterIds, options.context?.dataSource?.name ?? 'main');
 
-    const childNodes = await this.database.sequelize.query(sql, {
-      type: 'SELECT',
-      transaction: options.transaction,
+    const rootPathDataMap: rootPathDataMapInterface = {};
+
+    for (const node of nodeData) {
+      if (rootPathDataMap[node.get('rootPk')]) {
+        rootPathDataMap[node.get('rootPk')] = [...rootPathDataMap[node.get('rootPk')], node.get('path')];
+      } else {
+        rootPathDataMap[node.get('rootPk')] = [node.get('path')];
+      }
+    }
+
+    const rebuildTreeRootNodeDataMap: rebuildTreeRootNodeDataInterface = {};
+    //find commons root path
+    for (const pathArray of Object.values(rootPathDataMap)) {
+      const commonParentPath = this.findCommonParent(pathArray);
+      const commonParentPathNodeArray: string[] = commonParentPath.split('/').filter((item) => {
+        return item !== '';
+      });
+      if (pathArray.length == 1) {
+        rebuildTreeRootNodeDataMap[commonParentPathNodeArray[0]] = new Set();
+        for (const i of commonParentPathNodeArray) {
+          rebuildTreeRootNodeDataMap[commonParentPathNodeArray[0]].add(i);
+        }
+        continue;
+      }
+      // get filter root nodeid
+      const commonParentRootNodeId = commonParentPathNodeArray[commonParentPathNodeArray.length - 1];
+      rebuildTreeRootNodeDataMap[commonParentRootNodeId] = new Set([
+        commonParentPathNodeArray[commonParentPathNodeArray.length - 1],
+      ]);
+      for (const path of pathArray) {
+        if (commonParentPath != path) {
+          const commonPathNodeArray = path.split(commonParentPath).filter((item) => {
+            return item !== '';
+          });
+          for (const i of commonPathNodeArray[0].split('/').filter((item) => {
+            return item !== '';
+          })) {
+            rebuildTreeRootNodeDataMap[commonParentRootNodeId].add(i);
+          }
+        }
+      }
+    }
+
+    for (const nodeIdSet of Object.values(rebuildTreeRootNodeDataMap)) {
+      for (const nodeId of nodeIdSet) {
+        childIds.push(nodeId);
+      }
+    }
+
+    let parentIds: any[] = [];
+    parentIds = Object.keys(rebuildTreeRootNodeDataMap);
+    if (parentIds.length === 0) {
+      this.database.logger.warn('parentIds is empty');
+      return [];
+    }
+    const parentNodes = await super.find({
+      filter: {
+        [primaryKey]: {
+          $in: parentIds,
+        },
+      },
+      ...lodash.omit(options, ['limit', 'offset', 'filterByTk', 'filter']),
     });
-
-    const childIds = childNodes.map((node) => node[primaryKey]);
 
     const findChildrenOptions = {
       ...lodash.omit(options, ['limit', 'offset', 'filterByTk']),
@@ -141,6 +208,22 @@ export class AdjacencyListRepository extends Repository {
     return parentNodes;
   }
 
+  async count(countOptions?: CountOptions): Promise<number> {
+    const collection = this.collection;
+    const primaryKey = collection.model.primaryKeyAttribute;
+    if (countOptions.raw || !countOptions.tree) {
+      return await super.count(countOptions);
+    }
+    const filterNodes = await super.find({ ...lodash.omit(countOptions, ['limit', 'offset']) });
+    const filterIds = filterNodes.map((node) => node[primaryKey]);
+    const nodeData = await this.queryRootDatas(filterIds, countOptions.context?.dataSource?.name ?? 'main');
+    const rootIds = new Set();
+    for (const node of nodeData) {
+      rootIds.add(node.get('rootPk'));
+    }
+    return rootIds.size;
+  }
+
   private addIndex(treeArray, childrenKey, options) {
     function traverse(node, index) {
       // patch for sequelize toJSON
@@ -170,26 +253,38 @@ export class AdjacencyListRepository extends Repository {
     });
   }
 
-  private querySQL(rootIds, collection) {
-    const { treeParentField } = collection;
-    const foreignKey = treeParentField.options.foreignKey;
-    const foreignKeyField = collection.model.rawAttributes[foreignKey].field;
+  private async queryRootDatas(nodePks, dataSourceName): Promise<any> {
+    const collection = this.collection;
+    const pathTableName = `${dataSourceName}_${collection.name}_path`;
+    const treeRepository = this.database.getRepository(pathTableName);
+    if (treeRepository) {
+      return await treeRepository.find({
+        filter: {
+          nodePk: {
+            $in: nodePks,
+          },
+        },
+      });
+    }
+    this.database.logger.warn(`Collection tree path table: ${pathTableName} not found`);
+    return [];
+  }
 
-    const primaryKey = collection.model.primaryKeyAttribute;
+  private findCommonParent(strings: string[]): string | undefined {
+    if (strings.length === 0) {
+      return undefined;
+    }
 
-    const queryInterface = this.database.sequelize.getQueryInterface();
-    const q = queryInterface.quoteIdentifier.bind(queryInterface);
+    let prefix = strings[0];
 
-    return `
-      WITH RECURSIVE cte AS (SELECT ${q(primaryKey)}, ${q(foreignKeyField)}, 1 AS level
-                             FROM ${collection.quotedTableName()}
-                             WHERE ${q(foreignKeyField)} IN (${rootIds.join(',')})
-                             UNION ALL
-                             SELECT t.${q(primaryKey)}, t.${q(foreignKeyField)}, cte.level + 1 AS level
-                             FROM ${collection.quotedTableName()} t
-                                    JOIN cte ON t.${q(foreignKeyField)} = cte.${q(primaryKey)})
-      SELECT ${q(primaryKey)}, ${q(foreignKeyField)} as ${q(foreignKey)}, level
-      FROM cte
-    `;
+    for (let i = 1; i < strings.length; i++) {
+      while (strings[i].indexOf(prefix) !== 0) {
+        if (prefix.length === 0) {
+          return '';
+        }
+        prefix = prefix.slice(0, -1);
+      }
+    }
+    return prefix;
   }
 }
