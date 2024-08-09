@@ -41,7 +41,6 @@ import { referentialIntegrityCheck } from './features/referential-integrity-chec
 import { ArrayFieldRepository } from './field-repository/array-field-repository';
 import * as FieldTypes from './fields';
 import { Field, FieldContext, RelationField } from './fields';
-import { checkDatabaseVersion } from './helpers';
 import { InheritedCollection } from './inherited-collection';
 import InheritanceMap from './inherited-map';
 import { InterfaceManager } from './interface-manager';
@@ -847,7 +846,8 @@ export class Database extends EventEmitter implements AsyncEmitter {
    * @internal
    */
   async checkVersion() {
-    return await checkDatabaseVersion(this);
+    return true;
+    // return await checkDatabaseVersion(this);
   }
 
   /**

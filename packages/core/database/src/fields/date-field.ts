@@ -34,17 +34,43 @@ export class DateField extends Field {
   }
 
   init() {
-    const { name, defaultToCurrentTime, onUpdateToCurrentTime } = this.options;
+    const { name, defaultToCurrentTime, onUpdateToCurrentTime, timezone } = this.options;
 
-    this.beforeValidate = async (instance) => {
+    const resolveTimeZone = (context) => {
+      const serverTimeZone = this.database.options.timezone;
+      if (timezone === 'server') {
+        return serverTimeZone;
+      }
+
+      if (timezone === 'client') {
+        return context?.timezone || serverTimeZone;
+      }
+
+      if (timezone) {
+        return timezone;
+      }
+
+      return serverTimeZone;
+    };
+
+    this.beforeValidate = async (instance, options) => {
       const value = instance.get(name);
 
       if (!value && instance.isNewRecord && defaultToCurrentTime) {
         instance.set(name, new Date());
+        return;
       }
 
       if (onUpdateToCurrentTime) {
         instance.set(name, new Date());
+        return;
+      }
+
+      const dateTimezone = resolveTimeZone(options?.context);
+
+      if (typeof value === 'string') {
+        // string to date with timezone
+        instance.set(name, new Date(`${value} ${dateTimezone}`));
       }
     };
   }
@@ -74,6 +100,16 @@ export class DateField extends Field {
   unbind() {
     super.unbind();
     this.off('beforeValidate', this.beforeValidate);
+  }
+
+  additionalSequelizeOptions(): {} {
+    const { name } = this.options;
+    return {
+      set(value) {
+        console.log(`set ${name}`, value);
+        this.setDataValue(name, value);
+      },
+    };
   }
 }
 

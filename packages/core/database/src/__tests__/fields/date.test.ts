@@ -10,7 +10,6 @@
 import { mockDatabase } from '../';
 import { Database } from '../../database';
 import { Repository } from '../../repository';
-import * as process from 'node:process';
 
 describe('timezone', () => {
   let db: Database;
@@ -26,10 +25,11 @@ describe('timezone', () => {
     await db.close();
   });
 
-  describe.runIf(process.env.DB_DIALECT == 'mysql')('mysql timezone', () => {
+  describe('timezone', () => {
     test('custom', async () => {
       db.collection({
         name: 'tests',
+        timestamps: false,
         fields: [{ name: 'date1', type: 'date', timezone: '+06:00' }],
       });
 
@@ -40,7 +40,25 @@ describe('timezone', () => {
       expect(date1.toISOString()).toEqual('2023-03-23T18:00:00.000Z');
     });
 
-    test('client', async () => {});
+    test('client', async () => {
+      db.collection({
+        name: 'tests',
+        timestamps: false,
+        fields: [{ name: 'date1', type: 'date', timezone: 'client' }],
+      });
+
+      await db.sync();
+      const repository = db.getRepository('tests');
+      const instance = await repository.create({
+        values: { date1: '2023-03-24 01:00:00' },
+        context: {
+          timezone: '+01:00',
+        },
+      });
+      const date1 = instance.get('date1');
+      expect(date1.toISOString()).toEqual('2023-03-24T00:00:00.000Z');
+    });
+
     test('server', async () => {
       db.collection({
         name: 'tests',
@@ -49,7 +67,7 @@ describe('timezone', () => {
 
       await db.sync();
       const repository = db.getRepository('tests');
-      const instance = await repository.create({ values: { date1: '2023-03-24' } });
+      const instance = await repository.create({ values: { date1: '2023-03-24 08:00:00' } });
       const date1 = instance.get('date1');
       expect(date1.toISOString()).toEqual('2023-03-24T00:00:00.000Z');
     });
