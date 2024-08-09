@@ -10,6 +10,7 @@
 import { Schema } from '@formily/react';
 import { useCallback, useMemo } from 'react';
 import {
+  useActionAvailable,
   useCollection,
   useCollectionManager_deprecated,
   useCollection_deprecated,
@@ -22,7 +23,6 @@ import {
   useCreateEditFormBlock,
   useCreateFormBlock,
   useCreateTableBlock,
-  useActionAvailable,
 } from '../..';
 import { CompatibleSchemaInitializer } from '../../application/schema-initializer/CompatibleSchemaInitializer';
 import { useCreateDetailsBlock } from '../../modules/blocks/data-blocks/details-multi/DetailsBlockInitializer';
@@ -101,7 +101,7 @@ function useRecordBlocks() {
           },
           onlyCurrentDataSource: true,
           hideSearch: true,
-          componentType: 'ReadPrettyFormItem',
+          componentType: `ReadPrettyFormItem`,
           createBlockSchema,
           templateWrap: useCallback(
             (templateSchema, { item }) => {
@@ -140,7 +140,7 @@ function useRecordBlocks() {
           onlyCurrentDataSource: true,
           hideSearch: true,
           hideOtherRecordsInPopup: true,
-          componentType: 'FormItem',
+          componentType: `FormItem`,
           createBlockSchema: createEditFormBlock,
           templateWrap: templateWrapEdit,
           showAssociationFields: true,
@@ -166,7 +166,7 @@ function useRecordBlocks() {
           },
           onlyCurrentDataSource: true,
           hideSearch: true,
-          componentType: 'FormItem',
+          componentType: `FormItem`,
           createBlockSchema: ({ item, fromOthersInPopup }) => {
             if (fromOthersInPopup) {
               return createFormBlock({ item, fromOthersInPopup });

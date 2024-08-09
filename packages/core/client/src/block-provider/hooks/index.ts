@@ -20,7 +20,7 @@ import omit from 'lodash/omit';
 import qs from 'qs';
 import { ChangeEvent, useCallback, useContext, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { NavigateFunction } from 'react-router-dom';
+import { NavigateFunction, useHref } from 'react-router-dom';
 import { useReactToPrint } from 'react-to-print';
 import {
   AssociationFilter,
@@ -1592,6 +1592,9 @@ export function useLinkActionProps(componentProps?: any) {
   const openInNewWindow = fieldSchema?.['x-component-props']?.['openInNewWindow'];
   const { parseURLAndParams } = useParseURLAndParams();
 
+  // see: https://stackoverflow.com/questions/50449423/accessing-basename-of-browserouter
+  const basenameOfCurrentRouter = useHref('/');
+
   return {
     type: 'default',
     async onClick() {
@@ -1605,7 +1608,7 @@ export function useLinkActionProps(componentProps?: any) {
         if (openInNewWindow) {
           window.open(completeURL(link), '_blank');
         } else {
-          navigateWithinSelf(link, navigate);
+          navigateWithinSelf(link, navigate, window.location.origin + basenameOfCurrentRouter);
         }
       } else {
         console.error('link should be a string');
@@ -1719,18 +1722,18 @@ export function completeURL(url: string, origin = window.location.origin) {
   return url.startsWith('/') ? `${origin}${url}` : `${origin}/${url}`;
 }
 
-export function navigateWithinSelf(link: string, navigate: NavigateFunction, origin = window.location.origin) {
+export function navigateWithinSelf(link: string, navigate: NavigateFunction, basePath = window.location.origin) {
   if (!_.isString(link)) {
     return console.error('link should be a string');
   }
 
   if (isURL(link)) {
-    if (link.startsWith(origin)) {
-      navigate(link.replace(origin, ''));
+    if (link.startsWith(basePath)) {
+      navigate(completeURL(link.replace(basePath, ''), ''));
     } else {
       window.open(link, '_self');
     }
   } else {
-    navigate(link.startsWith('/') ? link : `/${link}`);
+    navigate(completeURL(link, ''));
   }
 }

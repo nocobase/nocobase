@@ -8,17 +8,10 @@
  */
 
 import { observer, useField, useFieldSchema } from '@formily/react';
-import React, { createContext, useContext, useMemo } from 'react';
-import { CollectionDeletedPlaceholder, RemoteSchemaComponent, useDesignable } from '..';
-import { useSchemaTemplateManager } from './SchemaTemplateManagerProvider';
+import React, { useMemo } from 'react';
+import { BlockTemplateProvider, CollectionDeletedPlaceholder, RemoteSchemaComponent, useDesignable } from '..';
 import { useTemplateBlockContext } from '../block-provider/TemplateBlockProvider';
-
-const BlockTemplateContext = createContext<any>({});
-BlockTemplateContext.displayName = 'BlockTemplateContext';
-
-export const useBlockTemplateContext = () => {
-  return useContext(BlockTemplateContext);
-};
+import { useSchemaTemplateManager } from './SchemaTemplateManagerProvider';
 
 export const BlockTemplate = observer(
   (props: any) => {
@@ -36,9 +29,9 @@ export const BlockTemplate = observer(
       onTemplateSuccess?.();
     };
     return template ? (
-      <BlockTemplateContext.Provider value={{ dn, field, fieldSchema, template }}>
+      <BlockTemplateProvider {...{ dn, field, fieldSchema, template }}>
         <RemoteSchemaComponent noForm uid={template?.uid} onSuccess={onSuccess} />
-      </BlockTemplateContext.Provider>
+      </BlockTemplateProvider>
     ) : (
       <CollectionDeletedPlaceholder type="Block template" name={templateId} />
     );

@@ -22,6 +22,7 @@ export const MobileProviders: FC<MobileProvidersProps> = ({ children, skipLogin 
 
   useEffect(() => {
     document.body.style.setProperty('--nb-mobile-page-tabs-content-padding', '12px');
+    document.body.style.setProperty('--nb-mobile-page-header-height', '50px');
   }, []);
 
   return (
