@@ -6,6 +6,7 @@
   "Channel title": "渠道名称",
   "Content": "内容",
   "Receivers":"接收人",
+  "Receiver": "接收人",
   "Add new receiver": "新增接收人",
   "Templates": "模板",
   "Logs": "日志",
@@ -13,6 +14,7 @@
   "Description": "描述",
   "Notification type": "通知类型",
   "Actions": "操作",
+
   "Configure": "编辑",
   "Add new": "新增",
   "Trigger from": "触发来源",
