@@ -208,7 +208,7 @@ export class AdjacencyListRepository extends Repository {
     return parentNodes;
   }
 
-  async count(countOptions?: CountOptions): Promise<number> {
+  async count(countOptions?: CountOptions & { raw?: boolean; tree?: boolean }): Promise<number> {
     const collection = this.collection;
     const primaryKey = collection.model.primaryKeyAttribute;
     if (countOptions.raw || !countOptions.tree) {
