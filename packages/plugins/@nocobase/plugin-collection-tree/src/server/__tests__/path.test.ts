@@ -18,6 +18,7 @@ describe('tree path test', () => {
   let name;
   let nodePkColumnName;
   let values;
+  let valuesNoA1Children;
 
   let db: Database;
   beforeEach(async () => {
@@ -79,6 +80,36 @@ describe('tree path test', () => {
           {
             name: 'a1-1',
             __index: '0.children.1',
+          },
+        ],
+        __index: '0',
+      },
+    ];
+    valuesNoA1Children = [
+      {
+        name: 'a1',
+        children: [
+          {
+            name: 'a2',
+            children: [
+              {
+                name: 'a3',
+                children: [
+                  {
+                    name: 'a4',
+                    children: [
+                      {
+                        name: 'a5',
+                        __index: '0.children.0.children.0.children.0.children.0',
+                      },
+                    ],
+                    __index: '0.children.0.children.0.children.0',
+                  },
+                ],
+                __index: '0.children.0.children.0',
+              },
+            ],
+            __index: '0.children.0',
           },
         ],
         __index: '0',
@@ -388,37 +419,31 @@ describe('tree path test', () => {
       appends: ['parent'],
       fields: ['id', 'name'],
     });
-    const valuesNew = [
-      {
-        name: 'a1',
-        children: [
-          {
-            name: 'a2',
-            children: [
-              {
-                name: 'a3',
-                children: [
-                  {
-                    name: 'a4',
-                    children: [
-                      {
-                        name: 'a5',
-                        __index: '0.children.0.children.0.children.0.children.0',
-                      },
-                    ],
-                    __index: '0.children.0.children.0.children.0',
-                  },
-                ],
-                __index: '0.children.0.children.0',
-              },
-            ],
-            __index: '0.children.0',
-          },
-        ],
-        __index: '0',
-      },
-    ];
-    expect(dataA3.map((i) => i.toJSON())).toMatchObject(valuesNew);
+    expect(dataA3.map((i) => i.toJSON())).toMatchObject(valuesNoA1Children);
+  });
+
+  it('test tree find with filterByTk parameter', async () => {
+    await treeCollection.repository.create({
+      values,
+    });
+    const data = await treeCollection.repository.find({
+      filterByTk: 1,
+      tree: true,
+      appends: ['parent'],
+      fields: ['id', 'name'],
+    });
+    expect(data.length).toEqual(1);
+    expect(data[0].name).toEqual('a1');
+    expect(data[0].children).toBeUndefined();
+    const dataA5 = await treeCollection.repository.find({
+      filterByTk: 5,
+      tree: true,
+      // appends: ['parent'],
+      fields: ['id', 'name'],
+    });
+    expect(dataA5.length).toEqual(1);
+    expect(dataA5[0].get('children')).toBeTruthy();
+    expect(dataA5.map((i) => i.toJSON())).toMatchObject(valuesNoA1Children);
   });
 
   // it('test tree collection destroy then the path table will be destroy', async () => {
