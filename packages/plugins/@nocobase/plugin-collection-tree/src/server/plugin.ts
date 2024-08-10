@@ -135,7 +135,7 @@ class PluginCollectionTreeServer extends Plugin {
       ],
       indexes: [
         {
-          fields: ['path'],
+          fields: [{ name: 'path', length: 191 }],
         },
       ],
     });

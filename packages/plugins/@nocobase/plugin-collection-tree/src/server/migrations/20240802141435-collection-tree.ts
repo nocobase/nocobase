@@ -39,7 +39,7 @@ export default class extends Migration {
           ],
           indexes: [
             {
-              fields: ['path'],
+              fields: [{ name: 'path', length: 191 }],
             },
           ],
         });
