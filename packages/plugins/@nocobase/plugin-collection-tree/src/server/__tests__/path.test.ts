@@ -446,6 +446,33 @@ describe('tree path test', () => {
     expect(dataA5.map((i) => i.toJSON())).toMatchObject(valuesNoA1Children);
   });
 
+  it('test tree count', async () => {
+    await treeCollection.repository.create({
+      values,
+    });
+    const count = await treeCollection.repository.count({});
+    expect(count).toEqual(6);
+
+    const countWithTree = await treeCollection.repository.count({
+      tree: true,
+    });
+    expect(countWithTree).toEqual(1);
+
+    const countWithFilterByTk = await treeCollection.repository.count({
+      tree: true,
+      filterByTk: 5,
+    });
+
+    expect(countWithFilterByTk).toEqual(1);
+    const countFilter = await treeCollection.repository.count({
+      tree: true,
+      filter: {
+        name: 'a5',
+      },
+    });
+    expect(countFilter).toEqual(1);
+  });
+
   // it('test tree collection destroy then the path table will be destroy', async () => {
   //   await treeCollection.removeFromDb();
   //   expect(await db.getCollection(name).existsInDb()).toBeFalsy();
