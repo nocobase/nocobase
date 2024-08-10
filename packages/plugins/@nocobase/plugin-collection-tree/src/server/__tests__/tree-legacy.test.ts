@@ -172,10 +172,11 @@ describe('tree test', () => {
       values,
     });
 
+    // new tree implantation not need to pass primary key to null
     const instances = await db.getRepository('categories').find({
-      filter: {
-        parentId: null,
-      },
+      // filter: {
+      //   parentId: null,
+      // },
       tree: true,
       fields: ['id', 'name'],
       sort: 'id',
@@ -183,13 +184,23 @@ describe('tree test', () => {
 
     expect(instances.map((i) => i.toJSON())).toMatchObject(values);
 
+    // new tree implantation if the filterByTk pass to the find then will return the data from root id
     const instance = await db.getRepository('categories').findOne({
-      filterByTk: 1,
+      filterByTk: 4,
       tree: true,
       fields: ['id', 'name'],
     });
 
     expect(instance.toJSON()).toMatchObject(values[0]);
+
+    const instanceNew = await db.getRepository('categories').findOne({
+      filterByTk: 1,
+      tree: true,
+      fields: ['id', 'name'],
+    });
+
+    const valuesNew = { id: 1, name: '1', __index: '0' };
+    expect(instanceNew.toJSON()).toMatchObject(valuesNew);
   });
 
   it('should find tree collection', async () => {
