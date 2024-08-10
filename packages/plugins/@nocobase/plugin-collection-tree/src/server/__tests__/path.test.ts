@@ -65,17 +65,23 @@ describe('tree path test', () => {
                     children: [
                       {
                         name: 'a5',
+                        __index: '0.children.0.children.0.children.0.children.0',
                       },
                     ],
+                    __index: '0.children.0.children.0.children.0',
                   },
                 ],
+                __index: '0.children.0.children.0',
               },
             ],
+            __index: '0.children.0',
           },
           {
             name: 'a1-1',
+            __index: '0.children.1',
           },
         ],
+        __index: '0',
       },
     ];
   });
@@ -269,6 +275,16 @@ describe('tree path test', () => {
     });
     expect(nodeA1).toBeTruthy();
     expect(nodeA1.get('name')).toEqual('a1');
+  });
+
+  it('test tree find with tree', async () => {
+    await treeCollection.repository.create({
+      values,
+    });
+    const data = await treeCollection.repository.find({
+      tree: true,
+    });
+    expect(data.map((i) => i.toJSON())).toMatchObject(values);
   });
 
   it('test tree find', async () => {
