@@ -68,22 +68,29 @@ describe('tree test', () => {
     });
 
     const tree = await collection.repository.find({
-      filter: {
-        parentId: null,
-      },
+      // filter: {
+      //   parentId: null,
+      // },
       tree: true,
     });
 
     const c2 = tree.find((item) => item.name === 'c2');
     expect(c2.toJSON()['children']).toBeUndefined();
 
-    // const c11 = tree
-    //   .find((item) => item.name === 'c1')
-    //   .get('children')
-    //   .find((item) => item.name === 'c11');
-    //
-    // expect(c11.toJSON()['children']).toBeUndefined();
-    const c1 = tree.find((item) => item.name === 'c1');
+    const c11 = tree
+      .find((item) => item.name === 'c1')
+      .get('children')
+      .find((item) => item.name === 'c11');
+
+    expect(c11.toJSON()['children']).toBeUndefined();
+
+    const treeNew = await collection.repository.find({
+      filter: {
+        parentId: null,
+      },
+      tree: true,
+    });
+    const c1 = treeNew.find((item) => item.name === 'c1');
     expect(c1.toJSON()['children']).toBeUndefined();
   });
 
