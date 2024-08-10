@@ -26,7 +26,7 @@ jobs:
           - 4873:4873
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           ref: ${{ github.event.inputs.base_branch }}
           ssh-key: ${{ secrets.SUBMODULE_SSH_KEY }}
@@ -38,7 +38,7 @@ jobs:
       - name: Echo PR branch
         run: echo "${{ steps.set_pro_pr_branch.outputs.pr_branch }}"
       - name: Checkout pro-plugins
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           repository: nocobase/pro-plugins
           path: packages/pro-plugins
