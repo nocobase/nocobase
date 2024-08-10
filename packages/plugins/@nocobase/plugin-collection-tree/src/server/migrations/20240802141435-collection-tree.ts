@@ -8,8 +8,9 @@
  */
 
 import { Migration } from '@nocobase/server';
-import { FindOneOptions, Model, SyncOptions } from '@nocobase/database';
+import { Model, SyncOptions } from '@nocobase/database';
 import { Transaction } from 'sequelize';
+import lodash from 'lodash';
 
 export default class extends Migration {
   on = 'afterLoad'; // 'beforeLoad' or 'afterLoad'
@@ -61,7 +62,7 @@ export default class extends Migration {
               const pathData = [];
               for (const data of rows) {
                 let path = `/${data.get('id')}`;
-                path = await this.getTreePath(data, path, treeCollection.name, transaction);
+                path = await this.getTreePath(data, path, treeCollection, name, transaction);
                 pathData.push({
                   nodePk: data.get('id'),
                   path: path,
@@ -77,18 +78,35 @@ export default class extends Migration {
     });
   }
 
-  async getTreePath(model: Model, path: string, collectionName: string, transaction: Transaction) {
+  async getTreePath(
+    model: Model,
+    path: string,
+    collection: Model,
+    pathCollectionName: string,
+    transaction: Transaction,
+  ) {
     if (model.get('parentId') !== null) {
-      const parent = await this.app.db.getRepository(collectionName).findOne({
+      const parent = await this.app.db.getRepository(collection.name).findOne({
         filter: {
-          id: model.get('parentId') as FindOneOptions,
+          id: model.get('parentId') as any,
         },
         transaction,
       });
       if (parent && parent.get('parentId') !== model.get('id')) {
         path = `/${parent.get('id')}${path}`;
-        if (parent.get('parentId') !== null) {
-          path = await this.getTreePath(parent, path, collectionName, transaction);
+        const collectionTreePath = this.app.db.getCollection(pathCollectionName);
+        const nodePkColumnName = collectionTreePath.getField('nodePk').columnName();
+        const parentPathData = await this.app.db.getRepository(pathCollectionName).findOne({
+          filter: {
+            [nodePkColumnName]: parent.get('id'),
+          },
+          transaction,
+        });
+        const parentPath = lodash.get(parentPathData, 'path', null);
+        if (parentPath == null) {
+          path = await this.getTreePath(parent, path, collection, pathCollectionName, transaction);
+        } else {
+          path = `${parentPath}/${model.get('id')}`;
         }
       }
     }
