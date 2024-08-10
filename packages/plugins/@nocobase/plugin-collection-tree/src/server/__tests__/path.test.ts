@@ -50,36 +50,34 @@ describe('tree path test', () => {
     await db.sync();
     name = `main_${treeCollection.name}_path`;
     nodePkColumnName = db.getCollection(name).getField('nodePk').columnName();
-    values = {
-      values: [
-        {
-          name: 'a1',
-          children: [
-            {
-              name: 'a2',
-              children: [
-                {
-                  name: 'a3',
-                  children: [
-                    {
-                      name: 'a4',
-                      children: [
-                        {
-                          name: 'a5',
-                        },
-                      ],
-                    },
-                  ],
-                },
-              ],
-            },
-            {
-              name: 'a1-1',
-            },
-          ],
-        },
-      ],
-    };
+    values = [
+      {
+        name: 'a1',
+        children: [
+          {
+            name: 'a2',
+            children: [
+              {
+                name: 'a3',
+                children: [
+                  {
+                    name: 'a4',
+                    children: [
+                      {
+                        name: 'a5',
+                      },
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
+          {
+            name: 'a1-1',
+          },
+        ],
+      },
+    ];
   });
 
   afterEach(async () => {
@@ -91,7 +89,9 @@ describe('tree path test', () => {
   });
 
   it('test path table data correction', async () => {
-    await treeCollection.repository.create(values);
+    await treeCollection.repository.create({
+      values,
+    });
     const data = await treeCollection.repository.find({});
     expect(data.length).toBe(6);
     const nodeA1 = await treeCollection.repository.findOne({
@@ -179,7 +179,9 @@ describe('tree path test', () => {
   });
 
   it('test node parent changed if the related node path is changed', async () => {
-    await treeCollection.repository.create(values);
+    await treeCollection.repository.create({
+      values,
+    });
     const nodeA1 = await treeCollection.repository.findOne({
       filter: {
         name: 'a1',
@@ -257,7 +259,9 @@ describe('tree path test', () => {
   });
 
   it('test tree find one', async () => {
-    await treeCollection.repository.create(values);
+    await treeCollection.repository.create({
+      values,
+    });
     const nodeA1 = await treeCollection.repository.findOne({
       filter: {
         name: 'a1',
@@ -268,7 +272,9 @@ describe('tree path test', () => {
   });
 
   it('test tree find', async () => {
-    await treeCollection.repository.create(values);
+    await treeCollection.repository.create({
+      values,
+    });
     const data = await treeCollection.repository.find({
       filter: {
         name: 'a1',
@@ -279,7 +285,9 @@ describe('tree path test', () => {
   });
 
   it('test tree find with tree', async () => {
-    await treeCollection.repository.create(values);
+    await treeCollection.repository.create({
+      values,
+    });
     const data = await treeCollection.repository.find({
       filter: {
         name: 'a1',
@@ -303,7 +311,9 @@ describe('tree path test', () => {
   });
 
   it('test tree find with tree and append parameter', async () => {
-    await treeCollection.repository.create(values);
+    await treeCollection.repository.create({
+      values,
+    });
     const data = await treeCollection.repository.find({
       filter: {
         name: 'a1',
@@ -331,7 +341,9 @@ describe('tree path test', () => {
   });
 
   it('test tree find with tree、 appends and fields parameter', async () => {
-    await treeCollection.repository.create(values);
+    await treeCollection.repository.create({
+      values,
+    });
     const data = await treeCollection.repository.find({
       filter: {
         name: 'a1',
