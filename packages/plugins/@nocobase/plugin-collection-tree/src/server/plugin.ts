@@ -11,6 +11,7 @@ import { Plugin } from '@nocobase/server';
 import { Collection, Model, SyncOptions, AdjacencyListRepository, DestroyOptions } from '@nocobase/database';
 import { DataSource, SequelizeCollectionManager, SequelizeDataSource } from '@nocobase/data-source-manager';
 import { Transaction } from 'sequelize';
+import lodash from 'lodash';
 
 class PluginCollectionTreeServer extends Plugin {
   async beforeLoad() {
@@ -140,7 +141,13 @@ class PluginCollectionTreeServer extends Plugin {
     });
   }
 
-  private async getTreePath(model: Model, path: string, collection: Model, name: string, transaction?: Transaction) {
+  private async getTreePath(
+    model: Model,
+    path: string,
+    collection: Model,
+    pathCollectionName: string,
+    transaction?: Transaction,
+  ) {
     const parentForeignKey = collection.treeParentField?.foreignKey || 'parentId';
     if (model.get(parentForeignKey) && model.get(parentForeignKey) !== null) {
       const parent = await this.app.db.getRepository(collection.name).findOne({
@@ -152,17 +159,17 @@ class PluginCollectionTreeServer extends Plugin {
       if (parent && parent.get(parentForeignKey) !== model.get(collection.filterTargetKey)) {
         path = `/${parent.get(collection.filterTargetKey)}${path}`;
         if (parent.get(parentForeignKey) !== null) {
-          const collectionTreePath = this.app.db.getCollection(name);
+          const collectionTreePath = this.app.db.getCollection(pathCollectionName);
           const nodePkColumnName = collectionTreePath.getField('nodePk').columnName();
-          const parentPathData = await this.app.db.getRepository(name).findOne({
+          const parentPathData = await this.app.db.getRepository(pathCollectionName).findOne({
             filter: {
               [nodePkColumnName]: parent.get(collection.filterTargetKey),
             },
             transaction,
           });
-          const parentPath = parentPathData.get('path');
+          const parentPath = lodash.get(parentPathData, 'path', null);
           if (parentPath == null) {
-            path = await this.getTreePath(parent, path, collection, name, transaction);
+            path = await this.getTreePath(parent, path, collection, pathCollectionName, transaction);
           } else {
             path = `${parentPath}/${model.get(collection.filterTargetKey)}`;
           }
