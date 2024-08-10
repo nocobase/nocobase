@@ -453,6 +453,15 @@ describe('tree path test', () => {
     const count = await treeCollection.repository.count({});
     expect(count).toEqual(6);
 
+    const countWithFilter = await treeCollection.repository.count({
+      filter: {
+        name: {
+          $startsWith: 'a',
+        },
+      },
+    });
+    expect(countWithFilter).toEqual(6);
+
     const countWithTree = await treeCollection.repository.count({
       tree: true,
     });
@@ -462,8 +471,8 @@ describe('tree path test', () => {
       tree: true,
       filterByTk: 5,
     });
-
     expect(countWithFilterByTk).toEqual(1);
+
     const countFilter = await treeCollection.repository.count({
       tree: true,
       filter: {
@@ -471,6 +480,47 @@ describe('tree path test', () => {
       },
     });
     expect(countFilter).toEqual(1);
+  });
+
+  it('test tree find and count', async () => {
+    await treeCollection.repository.create({
+      values,
+    });
+    const data = await treeCollection.repository.findAndCount({});
+    const count = data[1];
+    expect(count).toEqual(6);
+
+    const countWithFilter = await treeCollection.repository.findAndCount({
+      filter: {
+        name: {
+          $startsWith: 'a',
+        },
+      },
+    });
+    expect(countWithFilter[1]).toEqual(6);
+
+    const countWithTree = await treeCollection.repository.findAndCount({
+      tree: true,
+    });
+    expect(countWithTree[1]).toEqual(1);
+    expect(countWithTree[0].map((i) => i.toJSON())).toMatchObject(values);
+
+    const countWithFilterByTk = await treeCollection.repository.findAndCount({
+      tree: true,
+      filterByTk: 5,
+    });
+    expect(countWithFilterByTk[0].map((i) => i.toJSON())).toMatchObject(valuesNoA1Children);
+    expect(countWithFilterByTk[1]).toEqual(1);
+
+    const countFilter = await treeCollection.repository.findAndCount({
+      tree: true,
+      filter: {
+        name: 'a5',
+      },
+    });
+    expect(countFilter[1]).toEqual(1);
+    // shoud be root node name of a1
+    expect(countFilter[0][0].name).toEqual('a1');
   });
 
   // it('test tree collection destroy then the path table will be destroy', async () => {
