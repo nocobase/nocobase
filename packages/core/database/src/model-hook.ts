@@ -36,7 +36,10 @@ export class ModelHook {
   }
 
   findModelName(hookArgs) {
-    for (const arg of hookArgs) {
+    for (let arg of hookArgs) {
+      if (Array.isArray(arg)) {
+        arg = arg[0];
+      }
       if (arg?._previousDataValues) {
         return (<Model>arg).constructor.name;
       }

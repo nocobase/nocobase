@@ -151,9 +151,9 @@ const getVariablesData = (localVariables) => {
 
 export async function getRenderContent(templateEngine, content, variables, localVariables, defaultParse) {
   if (content && templateEngine === 'handlebars') {
-    const renderedContent = Handlebars.compile(content);
-    // 处理渲染后的内容
     try {
+      const renderedContent = Handlebars.compile(content);
+      // 处理渲染后的内容
       const data = getVariablesData(localVariables);
       const html = renderedContent({ ...variables.ctxRef.current, ...data });
       return await defaultParse(html);

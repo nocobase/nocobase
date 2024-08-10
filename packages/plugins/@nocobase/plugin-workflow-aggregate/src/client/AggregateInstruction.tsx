@@ -238,6 +238,11 @@ export default class extends Instruction {
                   required: true,
                   'x-decorator': 'FormItem',
                   'x-component': 'DataSourceCollectionCascader',
+                  'x-component-props': {
+                    dataSourceFilter(datasource) {
+                      return datasource.key === 'main' || datasource.options.isDBInstance;
+                    },
+                  },
                   title: `{{t("Data of collection", { ns: "${NAMESPACE}" })}}`,
                   'x-reactions': [
                     {

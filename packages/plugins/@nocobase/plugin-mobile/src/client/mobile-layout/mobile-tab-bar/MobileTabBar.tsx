@@ -10,13 +10,14 @@
 import React, { FC, useCallback } from 'react';
 import { SafeArea } from 'antd-mobile';
 import 'antd-mobile/es/components/tab-bar/tab-bar.css';
+import { Navigate } from 'react-router-dom';
 
 import { useStyles } from './styles';
 import { useMobileRoutes } from '../../mobile-providers';
 
 import { getMobileTabBarItemSchema, MobileTabBarItem } from './MobileTabBar.Item';
 import { MobileTabBarPage, MobileTabBarLink } from './types';
-import { cx, DndContext, DndContextProps, SchemaComponent, useDesignable, css } from '@nocobase/client';
+import { cx, DndContext, DndContextProps, SchemaComponent, useDesignable, css, useApp } from '@nocobase/client';
 import { MobileTabBarInitializer } from './initializer';
 import { isInnerLink } from '../../utils';
 
@@ -32,6 +33,8 @@ export const MobileTabBar: FC<MobileTabBarProps> & {
   Page: typeof MobileTabBarPage;
   Link: typeof MobileTabBarLink;
 } = ({ enableTabBar = true }) => {
+  const app = useApp();
+  const hasAuth = app.pluginSettingsManager.hasAuth('mobile');
   const { styles } = useStyles();
   const { designable } = useDesignable();
   const { routeList, activeTabBarItem, resource, refresh } = useMobileRoutes();
@@ -52,6 +55,10 @@ export const MobileTabBar: FC<MobileTabBarProps> & {
     },
     [resource, refresh],
   );
+
+  if (!hasAuth) {
+    return <Navigate to="/admin" />;
+  }
 
   if (!enableTabBar) {
     return null;

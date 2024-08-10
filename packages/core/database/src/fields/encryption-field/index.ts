@@ -7,15 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Plugin } from '@nocobase/server';
-
-export class PluginMobileServer extends Plugin {
-  async load() {
-    this.app.acl.registerSnippet({
-      name: `pm.${this.name}`,
-      actions: ['mobileRoutes:*'],
-    });
-  }
-}
-
-export default PluginMobileServer;
+export * from './encryption-field';
+export * from './utils';
+export * from './errors/EncryptionError';
