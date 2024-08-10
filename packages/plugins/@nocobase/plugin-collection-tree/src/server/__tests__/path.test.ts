@@ -523,6 +523,49 @@ describe('tree path test', () => {
     expect(countFilter[0][0].name).toEqual('a1');
   });
 
+  it('test tree find one', async () => {
+    await treeCollection.repository.create({
+      values,
+    });
+
+    const nodeA1 = await treeCollection.repository.findOne({
+      filter: {
+        name: 'a1',
+      },
+    });
+    expect(nodeA1.get('name')).toEqual('a1');
+    expect(nodeA1.get('children')).toBeUndefined();
+
+    const nodeA5 = await treeCollection.repository.findOne({
+      filter: {
+        name: 'a5',
+      },
+    });
+    expect(nodeA5.get('name')).toEqual('a5');
+    expect(nodeA5.get('children')).toBeUndefined();
+
+    const nodeA1WithTree = await treeCollection.repository.findOne({
+      filter: {
+        name: 'a1',
+      },
+      tree: true,
+    });
+    expect(nodeA1WithTree.get('name')).toEqual('a1');
+    expect(nodeA1WithTree.get('children')).toBeUndefined();
+
+    const nodeA5WithTree = await treeCollection.repository.findOne({
+      filter: {
+        name: 'a5',
+      },
+      fields: ['id', 'name'],
+      tree: true,
+    });
+    // shoud be root node name of a1
+    expect(nodeA5WithTree.get('name')).toEqual('a1');
+    expect(nodeA5WithTree.get('children')).toBeTruthy();
+    expect(nodeA5WithTree.toJSON()).toMatchObject(valuesNoA1Children[0]);
+  });
+
   // it('test tree collection destroy then the path table will be destroy', async () => {
   //   await treeCollection.removeFromDb();
   //   expect(await db.getCollection(name).existsInDb()).toBeFalsy();
