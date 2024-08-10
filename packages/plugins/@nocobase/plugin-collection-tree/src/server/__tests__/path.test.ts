@@ -382,21 +382,43 @@ describe('tree path test', () => {
     expect(data[0].get('__index')).toEqual('0');
     const dataA3 = await treeCollection.repository.find({
       filter: {
-        name: 'a3',
+        name: 'a5',
       },
       tree: true,
       appends: ['parent'],
       fields: ['id', 'name'],
     });
-    expect(dataA3.length).toEqual(1);
-    expect(dataA3[0].get('children')).toBeTruthy();
-    expect(dataA3[0].get('parent')).toBeFalsy();
-    expect(dataA3[0].get('children').length).toEqual(1);
-    expect(dataA3[0].get('children')[0].get('parent')).toBeTruthy();
-    expect(dataA3[0].get('children')[0].get('parent').get('name')).toEqual('a1');
-    expect(dataA3[0].get('children')[0].get('children')).toBeTruthy();
-    expect(dataA3[0].get('children')[0].get('children')[0].get('name')).toEqual('a3');
-    expect(dataA3[0].get('children')[0].get('children')[0].get('parent').get('name')).toEqual('a2');
+    const valuesNew = [
+      {
+        name: 'a1',
+        children: [
+          {
+            name: 'a2',
+            children: [
+              {
+                name: 'a3',
+                children: [
+                  {
+                    name: 'a4',
+                    children: [
+                      {
+                        name: 'a5',
+                        __index: '0.children.0.children.0.children.0.children.0',
+                      },
+                    ],
+                    __index: '0.children.0.children.0.children.0',
+                  },
+                ],
+                __index: '0.children.0.children.0',
+              },
+            ],
+            __index: '0.children.0',
+          },
+        ],
+        __index: '0',
+      },
+    ];
+    expect(dataA3.map((i) => i.toJSON())).toMatchObject(valuesNew);
   });
 
   // it('test tree collection destroy then the path table will be destroy', async () => {
