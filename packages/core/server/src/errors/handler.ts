@@ -43,10 +43,17 @@ export class ErrorHandler {
 
   defaultHandler(err, ctx) {
     ctx.status = err.statusCode || err.status || 500;
+
+    let message = err.message;
+    // if error has a cause, append it to the message
+    if (err.cause) {
+      message += `: ${err.cause.message}`;
+    }
+
     ctx.body = {
       errors: [
         {
-          message: err.message,
+          message,
           code: err.code,
         },
       ],
