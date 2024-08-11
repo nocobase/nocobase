@@ -10,6 +10,12 @@
 import { DataTypes } from 'sequelize';
 import { BaseColumnFieldOptions, Field } from './field';
 
+const datetimeRegex = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/;
+
+function isValidDatetime(str) {
+  return datetimeRegex.test(str);
+}
+
 export class DateField extends Field {
   get dataType(): any {
     return DataTypes.DATE(3);
@@ -66,11 +72,11 @@ export class DateField extends Field {
         return;
       }
 
-      const dateTimezone = resolveTimeZone(options?.context);
-
-      if (typeof value === 'string') {
-        // string to date with timezone
-        instance.set(name, new Date(`${value} ${dateTimezone}`));
+      if (typeof value === 'string' && isValidDatetime(value)) {
+        const dateTimezone = resolveTimeZone(options?.context);
+        const dateString = `${value} ${dateTimezone}`;
+        console.log('dateString', dateString);
+        instance.set(name, new Date(dateString));
       }
     };
   }
@@ -106,6 +112,10 @@ export class DateField extends Field {
     const { name } = this.options;
     return {
       set(value) {
+        if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+          value = `${value} 00:00:00`;
+        }
+
         console.log(`set ${name}`, value);
         this.setDataValue(name, value);
       },
