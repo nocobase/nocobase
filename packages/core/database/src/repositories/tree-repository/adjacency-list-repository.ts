@@ -69,7 +69,10 @@ export class AdjacencyListRepository extends Repository {
       options.fields.push(primaryKey);
     }
 
-    const filterNodes = await super.find({ ...lodash.omit(options, ['limit', 'offset']) });
+    const filterNodes = await super.find({
+      fields: [primaryKey],
+      ...lodash.omit(options, ['limit', 'offset', 'fields']),
+    });
     if (filterNodes.length === 0) {
       return [];
     }
@@ -86,7 +89,7 @@ export class AdjacencyListRepository extends Repository {
       return filterNodes;
     }
 
-    const nodeData = await this.queryRootDatas(filterIds, options.context?.dataSource?.name ?? 'main');
+    const nodeData = await this.queryRootData(filterIds, options.context?.dataSource?.name ?? 'main');
 
     const rootPathDataMap: rootPathDataMapInterface = {};
 
@@ -216,7 +219,7 @@ export class AdjacencyListRepository extends Repository {
     }
     const filterNodes = await super.find({ ...lodash.omit(countOptions, ['limit', 'offset']) });
     const filterIds = filterNodes.map((node) => node[primaryKey]);
-    const nodeData = await this.queryRootDatas(filterIds, countOptions.context?.dataSource?.name ?? 'main');
+    const nodeData = await this.queryRootData(filterIds, countOptions.context?.dataSource?.name ?? 'main');
     const rootIds = new Set();
     for (const node of nodeData) {
       rootIds.add(node.get('rootPk'));
@@ -253,7 +256,7 @@ export class AdjacencyListRepository extends Repository {
     });
   }
 
-  private async queryRootDatas(nodePks, dataSourceName): Promise<any> {
+  private async queryRootData(nodePks, dataSourceName): Promise<any> {
     const collection = this.collection;
     const pathTableName = `${dataSourceName}_${collection.name}_path`;
     const treeRepository = this.database.getRepository(pathTableName);
