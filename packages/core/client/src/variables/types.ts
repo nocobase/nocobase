@@ -44,6 +44,8 @@ export interface VariablesContextType {
     options?: {
       /** 第一次请求时，需要包含的关系字段 */
       appends?: string[];
+      /** do not request when the association field is empty */
+      doNotRequest?: boolean;
     },
   ) => Promise<any>;
   /**
