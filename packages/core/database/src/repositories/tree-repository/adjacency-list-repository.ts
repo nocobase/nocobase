@@ -8,7 +8,7 @@
  */
 
 import lodash from 'lodash';
-import { CountOptions, FindOptions, Repository } from '../../repository';
+import { CountOptions, FindOptions, Repository, FindAndCountOptions, Transactionable } from '../../repository';
 import Database from '../../database';
 import { Collection } from '../../collection';
 import { Model } from '../../model';
@@ -101,8 +101,8 @@ export class AdjacencyListRepository extends Repository {
   async buildTree(paths: Model[], options: FindOptions & { addIndex?: boolean } = {}, rootNodes?: Model[]) {
     const collection = this.collection;
     const primaryKey = collection.model.primaryKeyAttribute;
-    const { treeParentField } = collection;
-    const foreignKey = treeParentField.options.foreignKey;
+    // @ts-ignore
+    const foreignKey = collection.treeForeignKey;
     const childrenKey = collection.treeChildrenField?.name ?? 'children';
     const treePathMap = this.buildRootNodeDataMap(paths);
     if (!rootNodes) {
@@ -184,8 +184,8 @@ export class AdjacencyListRepository extends Repository {
   }
 
   async findWithoutFilter(options: FindOptions & { addIndex?: boolean } = {}): Promise<any> {
-    const { treeParentField } = this.collection;
-    const foreignKey = treeParentField?.options.foreignKey || 'parent';
+    // @ts-ignore
+    const foreignKey = this.collection.treeForeignKey;
     const rootNodes = await super.find({ ...options, filter: { [foreignKey]: null } });
     if (!rootNodes.length) {
       return [];
@@ -193,8 +193,44 @@ export class AdjacencyListRepository extends Repository {
     const collection = this.collection;
     const primaryKey = collection.model.primaryKeyAttribute;
     const rootPks = rootNodes.map((node) => node[primaryKey]);
-    const paths = await this.queryPathByRoot(rootPks, options.context?.dataSource?.name ?? 'main');
+    const paths = await this.queryPathByRoot({
+      rootPks,
+      dataSourceName: options.context?.dataSource?.name ?? 'main',
+      transaction: options.transaction,
+    });
     return await this.buildTree(paths, options, rootNodes);
+  }
+
+  async countWithoutFilter(options: CountOptions & { raw?: boolean; tree?: boolean }): Promise<number> {
+    // @ts-ignore
+    const foreignKey = this.collection.treeForeignKey;
+    return await super.count({ ...options, filter: { [foreignKey]: null } });
+  }
+
+  async filterAndGetPaths(options: FindOptions & { addIndex?: boolean } = {}): Promise<{
+    filterNodes: Model[];
+    paths: Model[];
+  }> {
+    const primaryKey = this.collection.model.primaryKeyAttribute;
+    const filterNodes = await super.find({
+      fields: [primaryKey],
+      ...lodash.omit(options, ['limit', 'offset', 'fields']),
+    });
+    if (!filterNodes.length) {
+      return { filterNodes: [], paths: [] };
+    }
+
+    const filterPks = filterNodes.map((node: Model) => node[primaryKey]);
+    if (!filterPks.length) {
+      this.database.logger.debug('adjacency-list-repository: filterIds is empty');
+      return { filterNodes, paths: [] };
+    }
+    const paths = await this.queryPathByNode({
+      nodePks: filterPks,
+      dataSourceName: options.context?.dataSource?.name ?? 'main',
+      transaction: options.transaction,
+    });
+    return { filterNodes, paths };
   }
 
   async find(options: FindOptions & { addIndex?: boolean } = {}): Promise<any> {
@@ -202,8 +238,7 @@ export class AdjacencyListRepository extends Repository {
       return await super.find(options);
     }
 
-    const collection = this.collection;
-    const primaryKey = collection.model.primaryKeyAttribute;
+    const primaryKey = this.collection.model.primaryKeyAttribute;
     if (options.fields && !options.fields.includes(primaryKey)) {
       options.fields.push(primaryKey);
     }
@@ -212,37 +247,53 @@ export class AdjacencyListRepository extends Repository {
       return await this.findWithoutFilter(options);
     }
 
-    const filterNodes = await super.find({
-      fields: [primaryKey],
-      ...lodash.omit(options, ['limit', 'offset', 'fields']),
-    });
-    if (!filterNodes.length) {
-      return [];
-    }
-
-    const filterPks = filterNodes.map((node: Model) => node[primaryKey]);
-    if (!filterPks.length) {
-      this.database.logger.debug('adjacency-list-repository: filterIds is empty');
+    const { filterNodes, paths } = await this.filterAndGetPaths(options);
+    if (!paths.length) {
       return filterNodes;
     }
-    const paths = await this.queryPathByNode(filterPks, options.context?.dataSource?.name ?? 'main');
     return await this.buildTree(paths, options);
   }
 
+  countByPaths(paths: Model[]): number {
+    const rootIds = new Set();
+    for (const path of paths) {
+      rootIds.add(path.get('rootPk'));
+    }
+    return rootIds.size;
+  }
+
   async count(countOptions?: CountOptions & { raw?: boolean; tree?: boolean }): Promise<number> {
-    const collection = this.collection;
-    const primaryKey = collection.model.primaryKeyAttribute;
     if (countOptions.raw || !countOptions.tree) {
       return await super.count(countOptions);
     }
-    const filterNodes = await super.find({ ...lodash.omit(countOptions, ['limit', 'offset']) });
-    const filterIds = filterNodes.map((node) => node[primaryKey]);
-    const nodeData = await this.queryPathByNode(filterIds, countOptions.context?.dataSource?.name ?? 'main');
-    const rootIds = new Set();
-    for (const node of nodeData) {
-      rootIds.add(node.get('rootPk'));
+    if (!isValidFilter(countOptions.filter) && !countOptions.filterByTk) {
+      return await this.countWithoutFilter(countOptions);
     }
-    return rootIds.size;
+    const { paths } = await this.filterAndGetPaths(countOptions);
+    return this.countByPaths(paths);
+  }
+
+  async findAndCount(options?: FindAndCountOptions & { filterByTk?: number | string }): Promise<[Model[], number]> {
+    options = {
+      ...options,
+      transaction: await this.getTransaction(options.transaction),
+    };
+
+    if (options.raw || !options.tree) {
+      return await super.findAndCount(options);
+    }
+    if (!isValidFilter(options.filter) && !options.filterByTk) {
+      const count = await this.countWithoutFilter(options);
+      const results = count ? await this.findWithoutFilter(options) : [];
+      return [results, count];
+    }
+    const { filterNodes, paths } = await this.filterAndGetPaths(options);
+    if (!paths.length) {
+      return [filterNodes, 0];
+    }
+    const results = await this.buildTree(paths, options);
+    const count = this.countByPaths(paths);
+    return [results, count];
   }
 
   private addIndex(treeArray, childrenKey, options) {
@@ -274,7 +325,11 @@ export class AdjacencyListRepository extends Repository {
     });
   }
 
-  private async queryPathByNode(nodePks: (string | number)[], dataSourceName: string): Promise<Model[]> {
+  private async queryPathByNode({
+    nodePks,
+    dataSourceName,
+    transaction,
+  }: { nodePks: (string | number)[]; dataSourceName: string } & Transactionable): Promise<Model[]> {
     const collection = this.collection;
     const pathTableName = `${dataSourceName}_${collection.name}_path`;
     const repo = this.database.getRepository(pathTableName);
@@ -285,13 +340,18 @@ export class AdjacencyListRepository extends Repository {
             $in: nodePks,
           },
         },
+        transaction,
       });
     }
     this.database.logger.warn(`Collection tree path table: ${pathTableName} not found`);
     return [];
   }
 
-  private async queryPathByRoot(rootPks: (string | number)[], dataSourceName: string): Promise<Model[]> {
+  private async queryPathByRoot({
+    rootPks,
+    dataSourceName,
+    transaction,
+  }: { rootPks: (string | number)[]; dataSourceName: string } & Transactionable): Promise<Model[]> {
     const collection = this.collection;
     const pathTableName = `${dataSourceName}_${collection.name}_path`;
     const repo = this.database.getRepository(pathTableName);
@@ -302,6 +362,7 @@ export class AdjacencyListRepository extends Repository {
             $in: rootPks,
           },
         },
+        transaction,
       });
     }
     this.database.logger.warn(`Collection tree path table: ${pathTableName} not found`);

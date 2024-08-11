@@ -184,6 +184,10 @@ class TreeCollection extends Collection {
   setRepository() {
     this.repository = new AdjacencyListRepository(this);
   }
+
+  get treeForeignKey() {
+    return this.treeParentField?.options.foreignKey || 'parent';
+  }
 }
 
 export default PluginCollectionTreeServer;
