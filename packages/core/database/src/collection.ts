@@ -268,11 +268,6 @@ export class Collection<
     if (typeof repository === 'string') {
       repo = this.context.database.repositories.get(repository) || Repository;
     }
-
-    if (this.options.tree == 'adjacency-list' || this.options.tree == 'adjacencyList') {
-      repo = AdjacencyListRepository;
-    }
-
     this.repository = new repo(this);
   }
 

@@ -47,11 +47,12 @@ class PluginCollectionTreeServer extends Plugin {
             const { transaction } = options;
             let path = `/${model.get(collection.filterTargetKey)}`;
             path = await this.getTreePath(model, path, collection, name, transaction);
+            const rootPk = path.split('/')[1];
             await this.app.db.getRepository(name).create({
               values: {
                 nodePk: model.get(collection.filterTargetKey),
                 path: path,
-                rootPk: path.split('/')[1],
+                rootPk: rootPk ? Number(rootPk) : null,
               },
               transaction,
             });
@@ -83,11 +84,12 @@ class PluginCollectionTreeServer extends Plugin {
               },
               transaction,
             });
+            const rootPk = path.split('/')[1];
             for (const node of relatedNodes) {
               await this.app.db.getRepository(name).update({
                 values: {
                   path: node.get('path').replace(`${pathData.get('path')}`, path),
-                  rootPk: path.split('/')[1],
+                  rootPk: rootPk ? Number(rootPk) : null,
                 },
                 filter: {
                   [nodePkColumnName]: node.get('nodePk'),
