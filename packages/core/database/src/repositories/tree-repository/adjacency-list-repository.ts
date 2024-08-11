@@ -11,14 +11,8 @@ import lodash from 'lodash';
 import { CountOptions, FindOptions, Repository } from '../../repository';
 import Database from '../../database';
 import { Collection } from '../../collection';
-
-interface rootPathDataMapInterface {
-  [key: string]: string[];
-}
-
-interface rebuildTreeRootNodeDataInterface {
-  [key: string]: Set<any>;
-}
+import { Model } from '../../model';
+import { isValidFilter } from '@nocobase/utils';
 
 export class AdjacencyListRepository extends Repository {
   static queryParentSQL(options: {
@@ -55,44 +49,10 @@ export class AdjacencyListRepository extends Repository {
     });
   }
 
-  async find(options: FindOptions & { addIndex?: boolean } = {}): Promise<any> {
-    const childIds: any[] = [];
-
-    if (options.raw || !options.tree) {
-      return await super.find(options);
-    }
-
-    const collection = this.collection;
-    const primaryKey = collection.model.primaryKeyAttribute;
-
-    if (options.fields && !options.fields.includes(primaryKey)) {
-      options.fields.push(primaryKey);
-    }
-
-    const filterNodes = await super.find({
-      fields: [primaryKey],
-      ...lodash.omit(options, ['limit', 'offset', 'fields']),
-    });
-    if (filterNodes.length === 0) {
-      return [];
-    }
-
-    const { treeParentField } = collection;
-    const foreignKey = treeParentField.options.foreignKey;
-
-    const childrenKey = collection.treeChildrenField?.name ?? 'children';
-
-    const filterIds = filterNodes.map((node) => node[primaryKey]);
-
-    if (filterIds.length == 0) {
-      this.database.logger.warn('parentIds is empty');
-      return filterNodes;
-    }
-
-    const nodeData = await this.queryRootData(filterIds, options.context?.dataSource?.name ?? 'main');
-
-    const rootPathDataMap: rootPathDataMapInterface = {};
-
+  buildRootNodeDataMap(nodeData: Model[]) {
+    const rootPathDataMap: {
+      [key: string]: string[];
+    } = {};
     for (const node of nodeData) {
       if (rootPathDataMap[node.get('rootPk')]) {
         rootPathDataMap[node.get('rootPk')] = [...rootPathDataMap[node.get('rootPk')], node.get('path')];
@@ -101,7 +61,9 @@ export class AdjacencyListRepository extends Repository {
       }
     }
 
-    const rebuildTreeRootNodeDataMap: rebuildTreeRootNodeDataInterface = {};
+    const rebuildTreeRootNodeDataMap: {
+      [key: string]: Set<any>;
+    } = {};
     //find commons root path
     for (const pathArray of Object.values(rootPathDataMap)) {
       const commonParentPath = this.findCommonParent(pathArray);
@@ -133,28 +95,38 @@ export class AdjacencyListRepository extends Repository {
         }
       }
     }
+    return rebuildTreeRootNodeDataMap;
+  }
 
-    for (const nodeIdSet of Object.values(rebuildTreeRootNodeDataMap)) {
+  async buildTree(paths: Model[], options: FindOptions & { addIndex?: boolean } = {}, rootNodes?: Model[]) {
+    const collection = this.collection;
+    const primaryKey = collection.model.primaryKeyAttribute;
+    const { treeParentField } = collection;
+    const foreignKey = treeParentField.options.foreignKey;
+    const childrenKey = collection.treeChildrenField?.name ?? 'children';
+    const treePathMap = this.buildRootNodeDataMap(paths);
+    if (!rootNodes) {
+      const rootIds = Object.keys(treePathMap);
+      if (!rootIds.length) {
+        this.database.logger.warn('adjacency-list-repository: rootIds is empty');
+        return [];
+      }
+      rootNodes = await super.find({
+        filter: {
+          [primaryKey]: {
+            $in: rootIds,
+          },
+        },
+        ...lodash.omit(options, ['filter', 'filterByTk']),
+        transaction: options.transaction,
+      });
+    }
+    const childIds: any[] = [];
+    for (const nodeIdSet of Object.values(treePathMap)) {
       for (const nodeId of nodeIdSet) {
         childIds.push(nodeId);
       }
     }
-
-    let parentIds: any[] = [];
-    parentIds = Object.keys(rebuildTreeRootNodeDataMap);
-    if (parentIds.length === 0) {
-      this.database.logger.warn('parentIds is empty');
-      return [];
-    }
-    const parentNodes = await super.find({
-      filter: {
-        [primaryKey]: {
-          $in: parentIds,
-        },
-      },
-      ...lodash.omit(options, ['filterByTk', 'filter']),
-    });
-
     const findChildrenOptions = {
       ...lodash.omit(options, ['limit', 'offset', 'filterByTk']),
       filter: {
@@ -182,8 +154,8 @@ export class AdjacencyListRepository extends Repository {
       nodeMap[`${node[foreignKey]}`].push(node);
     });
 
-    function buildTree(parentId) {
-      const children = nodeMap[parentId];
+    function buildTree(rootId: string | number) {
+      const children = nodeMap[rootId];
 
       if (!children) {
         return [];
@@ -198,17 +170,63 @@ export class AdjacencyListRepository extends Repository {
       });
     }
 
-    for (const parent of parentNodes) {
-      const parentId = parent[primaryKey];
-      const children = buildTree(parentId);
+    for (const root of rootNodes) {
+      const rootId = root[primaryKey];
+      const children = buildTree(rootId);
       if (children.length > 0) {
-        parent.setDataValue(childrenKey, children);
+        root.setDataValue(childrenKey, children);
       }
     }
 
-    this.addIndex(parentNodes, childrenKey, options);
+    this.addIndex(rootNodes, childrenKey, options);
 
-    return parentNodes;
+    return rootNodes;
+  }
+
+  async findWithoutFilter(options: FindOptions & { addIndex?: boolean } = {}): Promise<any> {
+    const { treeParentField } = this.collection;
+    const foreignKey = treeParentField?.options.foreignKey || 'parent';
+    const rootNodes = await super.find({ ...options, filter: { [foreignKey]: null } });
+    if (!rootNodes.length) {
+      return [];
+    }
+    const collection = this.collection;
+    const primaryKey = collection.model.primaryKeyAttribute;
+    const rootPks = rootNodes.map((node) => node[primaryKey]);
+    const paths = await this.queryPathByRoot(rootPks, options.context?.dataSource?.name ?? 'main');
+    return await this.buildTree(paths, options, rootNodes);
+  }
+
+  async find(options: FindOptions & { addIndex?: boolean } = {}): Promise<any> {
+    if (options.raw || !options.tree) {
+      return await super.find(options);
+    }
+
+    const collection = this.collection;
+    const primaryKey = collection.model.primaryKeyAttribute;
+    if (options.fields && !options.fields.includes(primaryKey)) {
+      options.fields.push(primaryKey);
+    }
+
+    if (!isValidFilter(options.filter) && !options.filterByTk) {
+      return await this.findWithoutFilter(options);
+    }
+
+    const filterNodes = await super.find({
+      fields: [primaryKey],
+      ...lodash.omit(options, ['limit', 'offset', 'fields']),
+    });
+    if (!filterNodes.length) {
+      return [];
+    }
+
+    const filterPks = filterNodes.map((node: Model) => node[primaryKey]);
+    if (!filterPks.length) {
+      this.database.logger.debug('adjacency-list-repository: filterIds is empty');
+      return filterNodes;
+    }
+    const paths = await this.queryPathByNode(filterPks, options.context?.dataSource?.name ?? 'main');
+    return await this.buildTree(paths, options);
   }
 
   async count(countOptions?: CountOptions & { raw?: boolean; tree?: boolean }): Promise<number> {
@@ -219,7 +237,7 @@ export class AdjacencyListRepository extends Repository {
     }
     const filterNodes = await super.find({ ...lodash.omit(countOptions, ['limit', 'offset']) });
     const filterIds = filterNodes.map((node) => node[primaryKey]);
-    const nodeData = await this.queryRootData(filterIds, countOptions.context?.dataSource?.name ?? 'main');
+    const nodeData = await this.queryPathByNode(filterIds, countOptions.context?.dataSource?.name ?? 'main');
     const rootIds = new Set();
     for (const node of nodeData) {
       rootIds.add(node.get('rootPk'));
@@ -256,15 +274,32 @@ export class AdjacencyListRepository extends Repository {
     });
   }
 
-  private async queryRootData(nodePks, dataSourceName): Promise<any> {
+  private async queryPathByNode(nodePks: (string | number)[], dataSourceName: string): Promise<Model[]> {
     const collection = this.collection;
     const pathTableName = `${dataSourceName}_${collection.name}_path`;
-    const treeRepository = this.database.getRepository(pathTableName);
-    if (treeRepository) {
-      return await treeRepository.find({
+    const repo = this.database.getRepository(pathTableName);
+    if (repo) {
+      return await repo.find({
         filter: {
           nodePk: {
             $in: nodePks,
+          },
+        },
+      });
+    }
+    this.database.logger.warn(`Collection tree path table: ${pathTableName} not found`);
+    return [];
+  }
+
+  private async queryPathByRoot(rootPks: (string | number)[], dataSourceName: string): Promise<Model[]> {
+    const collection = this.collection;
+    const pathTableName = `${dataSourceName}_${collection.name}_path`;
+    const repo = this.database.getRepository(pathTableName);
+    if (repo) {
+      return await repo.find({
+        filter: {
+          rootPk: {
+            $in: rootPks,
           },
         },
       });
