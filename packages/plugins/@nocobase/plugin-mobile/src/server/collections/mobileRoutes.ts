@@ -10,8 +10,8 @@
 import { defineCollection } from '@nocobase/database';
 
 export default defineCollection({
-  key: 'd1za29o7irk',
   name: 'mobileRoutes',
+  dumpRules: 'required',
   title: 'mobileRoutes',
   inherit: false,
   hidden: false,

@@ -127,7 +127,7 @@ const InternalAssociationSelect = observer(
     };
     return (
       <div key={fieldSchema.name}>
-        <Space.Compact style={{ display: 'flex', lineHeight: '32px' }}>
+        <Space.Compact style={{ display: 'flex' }}>
           <RemoteSelect
             style={{ width: '100%' }}
             {...rest}

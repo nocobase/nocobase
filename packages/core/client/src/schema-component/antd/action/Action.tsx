@@ -133,9 +133,9 @@ export const Action: ComposedAction = withDynamicSchemaProps(
       return {
         ...style,
         opacity: designable && (field?.data?.hidden || !aclCtx) && 0.1,
-        color: disabled ? 'rgba(0, 0, 0, 0.25)' : null,
+        color: disabled ? 'rgba(0, 0, 0, 0.25)' : style?.color,
       };
-    }, [aclCtx, designable, field?.data?.hidden, style, disabled, disabled]);
+    }, [aclCtx, designable, field?.data?.hidden, style, disabled]);
 
     const handleMouseEnter = useCallback(
       (e) => {
