@@ -309,13 +309,10 @@ export const useFilterByTk = () => {
     return recordData?.[association.targetKey || 'id'];
   }
   if (isArray(collection.filterTargetKey)) {
-    console.log(collection.filterTargetKey);
-    console.log(recordData?.[collection.filterTargetKey || 'id']);
     const filterByTk = {};
     for (const key of collection.filterTargetKey) {
       filterByTk[key] = recordData?.[key];
     }
-    console.log(filterByTk);
     return filterByTk;
   } else {
     return recordData?.[collection.filterTargetKey || 'id'];
