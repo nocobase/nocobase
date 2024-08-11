@@ -9,13 +9,13 @@
 
 import { observer, useField } from '@formily/react';
 import {
-  useCompile,
+  getRenderContent,
   useBlockHeight,
+  useCompile,
   useLocalVariables,
   useParseURLAndParams,
   useRequest,
   useVariables,
-  getRenderContent,
 } from '@nocobase/client';
 import { Card, Spin } from 'antd';
 import React, { useEffect, useState } from 'react';
@@ -64,6 +64,12 @@ export const Iframe: any = observer(
               return data;
             },
           );
+
+          // fix https://nocobase.height.app/T-4940/description
+          if (targetHtmlContent === undefined) {
+            return;
+          }
+
           const encodedHtml = encodeURIComponent(targetHtmlContent);
           const dataUrl = 'data:text/html;charset=utf-8,' + encodedHtml;
 
