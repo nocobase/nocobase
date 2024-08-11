@@ -108,7 +108,7 @@ export const useToAdaptFilterActionToMobile = () => {
 };
 
 /**
- * 之所以不直接使用 mobile-container 作为容器，是因为会影响到区块的拖拽功能。详见：https://nocobase.height.app/T-4959
+ * 之所以不直接在 mobile-container 中设置 transform，是因为会影响到子页面区块的拖拽功能。详见：https://nocobase.height.app/T-4959
  * @param visible
  * @returns
  */

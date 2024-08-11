@@ -45,6 +45,9 @@ import {
 
 // 导出 JSBridge，会挂在到 window 上
 import './js-bridge';
+import { MobileSettings } from './mobile-blocks/settings-block/MobileSettings';
+import { MobileSettingsBlockInitializer } from './mobile-blocks/settings-block/MobileSettingsBlockInitializer';
+import { MobileSettingsBlockSchemaSettings } from './mobile-blocks/settings-block/schemaSettings';
 import { MobileCheckerProvider } from './providers';
 
 export * from './desktop-mode';
@@ -135,6 +138,7 @@ export class PluginMobileClient extends Plugin {
       mobileTabBarLinkSettings,
       mobilePageTabsSettings,
       mobileNavigationBarLinkSettings,
+      MobileSettingsBlockSchemaSettings,
     );
   }
 
@@ -150,6 +154,8 @@ export class PluginMobileClient extends Plugin {
       MobilePageTabs,
       MobileNavigationActionBar,
       MobileNotFoundPage,
+      MobileSettingsBlockInitializer,
+      MobileSettings,
     });
   }
 

@@ -102,7 +102,9 @@ export const conditionAnalyses = async ({
     }
 
     const targetVariableName = targetFieldToVariableString(getTargetField(condition));
-    const targetValue = variables.parseVariable(targetVariableName, localVariables);
+    const targetValue = variables.parseVariable(targetVariableName, localVariables, {
+      doNotRequest: true,
+    });
 
     const parsingResult = isVariable(jsonlogic?.value)
       ? [variables.parseVariable(jsonlogic?.value, localVariables), targetValue]
@@ -151,9 +153,9 @@ const getVariablesData = (localVariables) => {
 
 export async function getRenderContent(templateEngine, content, variables, localVariables, defaultParse) {
   if (content && templateEngine === 'handlebars') {
-    const renderedContent = Handlebars.compile(content);
-    // 处理渲染后的内容
     try {
+      const renderedContent = Handlebars.compile(content);
+      // 处理渲染后的内容
       const data = getVariablesData(localVariables);
       const html = renderedContent({ ...variables.ctxRef.current, ...data });
       return await defaultParse(html);

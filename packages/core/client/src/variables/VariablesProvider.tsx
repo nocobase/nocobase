@@ -76,6 +76,8 @@ const VariablesProvider = ({ children }) => {
       options?: {
         /** 第一次请求时，需要包含的关系字段 */
         appends?: string[];
+        /** do not request when the association field is empty */
+        doNotRequest?: boolean;
       },
     ) => {
       const list = variablePath.split('.');
@@ -100,7 +102,7 @@ const VariablesProvider = ({ children }) => {
         const collectionPrimaryKey = getCollection(collectionName)?.getPrimaryKey();
         if (Array.isArray(current)) {
           const result = current.map((item) => {
-            if (shouldToRequest(item?.[key]) && item?.[collectionPrimaryKey] != null) {
+            if (!options?.doNotRequest && shouldToRequest(item?.[key]) && item?.[collectionPrimaryKey] != null) {
               if (associationField?.target) {
                 const url = `/${collectionName}/${
                   item[associationField.sourceKey || collectionPrimaryKey]
@@ -128,7 +130,12 @@ const VariablesProvider = ({ children }) => {
             return item?.[key];
           });
           current = removeThroughCollectionFields(_.flatten(await Promise.all(result)), associationField);
-        } else if (shouldToRequest(current[key]) && current[collectionPrimaryKey] != null && associationField?.target) {
+        } else if (
+          !options?.doNotRequest &&
+          shouldToRequest(current[key]) &&
+          current[collectionPrimaryKey] != null &&
+          associationField?.target
+        ) {
           const url = `/${collectionName}/${
             current[associationField.sourceKey || collectionPrimaryKey]
           }/${key}:${getAction(associationField.type)}`;
@@ -228,6 +235,8 @@ const VariablesProvider = ({ children }) => {
       options?: {
         /** 第一次请求时，需要包含的关系字段 */
         appends?: string[];
+        /** do not request when the association field is empty */
+        doNotRequest?: boolean;
       },
     ) => {
       if (!isVariable(str)) {

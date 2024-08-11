@@ -160,6 +160,7 @@ jobs:
           DB_PASSWORD: password
           DB_DATABASE: nocobase
           APPEND_PRESET_LOCAL_PLUGINS: ${{ steps.vars.outputs.var2 }}
+          ENCRYPTION_FIELD_KEY: 1%&glK;<UA}aIxJVc53-4G(rTi0vg@J]
 
       - name: Upload e2e-report
         if: ${{ !cancelled() }}
@@ -257,6 +258,7 @@ jobs:
           DB_PASSWORD: password
           DB_DATABASE: nocobase
           APPEND_PRESET_LOCAL_PLUGINS: ${{ steps.vars.outputs.var2 }}
+          ENCRYPTION_FIELD_KEY: 1%&glK;<UA}aIxJVc53-4G(rTi0vg@J]
 
       - name: Upload e2e-report
         if: ${{ !cancelled() }}
@@ -354,6 +356,7 @@ jobs:
           DB_PASSWORD: password
           DB_DATABASE: nocobase
           APPEND_PRESET_LOCAL_PLUGINS: ${{ steps.vars.outputs.var2 }}
+          ENCRYPTION_FIELD_KEY: 1%&glK;<UA}aIxJVc53-4G(rTi0vg@J]
 
       - name: Upload e2e-report
         if: ${{ !cancelled() }}
@@ -451,6 +454,7 @@ jobs:
           DB_PASSWORD: password
           DB_DATABASE: nocobase
           APPEND_PRESET_LOCAL_PLUGINS: ${{ steps.vars.outputs.var2 }}
+          ENCRYPTION_FIELD_KEY: 1%&glK;<UA}aIxJVc53-4G(rTi0vg@J]
 
       - name: Upload e2e-report
         if: ${{ !cancelled() }}
@@ -469,6 +473,8 @@ jobs:
       - plugin-workflow
       - plugin-workflow-approval
       - plugin-data-source-main
+    permissions:
+      pull-requests: write
     if: ${{ !cancelled() && github.event.pull_request.number }}
     steps:
       - uses: actions/checkout@v4
