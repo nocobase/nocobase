@@ -20,6 +20,8 @@ import {
   useFormBlockContext,
   useIsFormReadPretty,
   useValidateSchema,
+  fieldComponentSettingsItem,
+  EditValidationRules,
 } from '@nocobase/client';
 import _ from 'lodash';
 import { useTranslation } from 'react-i18next';
@@ -192,131 +194,7 @@ export const bulkEditFormItemSettings = new SchemaSettings({
           {
             name: 'setValidationRules',
             type: 'modal',
-            useComponentProps() {
-              const { t } = useTranslation();
-              const field = useField<Field>();
-              const fieldSchema = useFieldSchema();
-              const { dn, refresh } = useDesignable();
-              const validateSchema = useValidateSchema();
-              const { getCollectionJoinField } = useCollectionManager_deprecated();
-              const { dataSource } = useCollection_deprecated();
-              const collectionField = getCollectionJoinField(fieldSchema['x-collection-field'], dataSource);
-
-              return {
-                title: t('Set validation rules'),
-                components: { ArrayCollapse, FormLayout },
-                schema: {
-                  type: 'object',
-                  title: t('Set validation rules'),
-                  properties: {
-                    rules: {
-                      type: 'array',
-                      default: fieldSchema?.['x-validator'],
-                      'x-component': 'ArrayCollapse',
-                      'x-decorator': 'FormItem',
-                      'x-component-props': {
-                        accordion: true,
-                      },
-                      maxItems: 3,
-                      items: {
-                        type: 'object',
-                        'x-component': 'ArrayCollapse.CollapsePanel',
-                        'x-component-props': {
-                          header: '{{ t("Validation rule") }}',
-                        },
-                        properties: {
-                          index: {
-                            type: 'void',
-                            'x-component': 'ArrayCollapse.Index',
-                          },
-                          layout: {
-                            type: 'void',
-                            'x-component': 'FormLayout',
-                            'x-component-props': {
-                              labelStyle: {
-                                marginTop: '6px',
-                              },
-                              labelCol: 8,
-                              wrapperCol: 16,
-                            },
-                            properties: {
-                              ...validateSchema,
-                              message: {
-                                type: 'string',
-                                title: '{{ t("Error message") }}',
-                                'x-decorator': 'FormItem',
-                                'x-component': 'Input.TextArea',
-                                'x-component-props': {
-                                  autoSize: {
-                                    minRows: 2,
-                                    maxRows: 2,
-                                  },
-                                },
-                              },
-                            },
-                          },
-                          remove: {
-                            type: 'void',
-                            'x-component': 'ArrayCollapse.Remove',
-                          },
-                          moveUp: {
-                            type: 'void',
-                            'x-component': 'ArrayCollapse.MoveUp',
-                          },
-                          moveDown: {
-                            type: 'void',
-                            'x-component': 'ArrayCollapse.MoveDown',
-                          },
-                        },
-                      },
-                      properties: {
-                        add: {
-                          type: 'void',
-                          title: '{{ t("Add validation rule") }}',
-                          'x-component': 'ArrayCollapse.Addition',
-                          'x-reactions': {
-                            dependencies: ['rules'],
-                            fulfill: {
-                              state: {
-                                disabled: '{{$deps[0].length >= 3}}',
-                              },
-                            },
-                          },
-                        },
-                      },
-                    },
-                  },
-                },
-                onSubmit(v) {
-                  const rules = [];
-                  for (const rule of v.rules) {
-                    rules.push(_.pickBy(rule, _.identity));
-                  }
-                  const schema = {
-                    ['x-uid']: fieldSchema['x-uid'],
-                  };
-                  if (['percent'].includes(collectionField?.interface)) {
-                    for (const rule of rules) {
-                      if (!!rule.maxValue || !!rule.minValue) {
-                        rule['percentMode'] = true;
-                      }
-
-                      if (rule.percentFormat) {
-                        rule['percentFormats'] = true;
-                      }
-                    }
-                  }
-                  const concatValidator = _.concat([], collectionField?.uiSchema?.['x-validator'] || [], rules);
-                  field.validator = concatValidator;
-                  fieldSchema['x-validator'] = rules;
-                  schema['x-validator'] = rules;
-                  dn.emit('patch', {
-                    schema,
-                  });
-                  refresh();
-                },
-              };
-            },
+            Component: EditValidationRules,
             useVisible() {
               const { form } = useFormBlockContext();
               const isFormReadPretty = useIsFormReadPretty();
@@ -324,6 +202,7 @@ export const bulkEditFormItemSettings = new SchemaSettings({
               return form && !isFormReadPretty && validateSchema;
             },
           },
+          fieldComponentSettingsItem,
         ];
       },
     },

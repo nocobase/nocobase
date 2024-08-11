@@ -186,6 +186,10 @@ export default defineConfig({
               title: 'ExtendCollectionsProvider',
               link: '/core/data-source/extend-collections-provider',
             },
+            {
+              title: 'Collection Fields To Initializer Items',
+              link: '/core/data-source/collection-fields-to-initializer-items',
+            },
           ]
         },
         {

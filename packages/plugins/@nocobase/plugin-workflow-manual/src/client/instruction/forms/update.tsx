@@ -70,6 +70,7 @@ function UpdateFormDesigner() {
           });
           dn.refresh();
         }}
+        width="60%"
       />
       <SchemaSettingsLinkageRules collectionName={name} />
       <SchemaSettingsDivider />

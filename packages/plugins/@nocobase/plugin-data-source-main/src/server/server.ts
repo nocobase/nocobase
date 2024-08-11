@@ -30,6 +30,7 @@ import viewResourcer from './resourcers/views';
 import { FieldNameExistsError } from './errors/field-name-exists-error';
 import { beforeDestoryField } from './hooks/beforeDestoryField';
 import { FieldIsDependedOnByOtherError } from './errors/field-is-depended-on-by-other';
+import { beforeCreateCheckFieldInMySQL } from './hooks/beforeCreateCheckFieldInMySQL';
 
 export class PluginDataSourceMainServer extends Plugin {
   public schema: string;
@@ -97,6 +98,8 @@ export class PluginDataSourceMainServer extends Plugin {
     });
 
     // 要在 beforeInitOptions 之前处理
+    this.app.db.on('fields.beforeCreate', beforeCreateCheckFieldInMySQL(this.app.db));
+
     this.app.db.on('fields.beforeCreate', beforeCreateForReverseField(this.app.db));
 
     this.app.db.on('fields.beforeCreate', async (model, options) => {

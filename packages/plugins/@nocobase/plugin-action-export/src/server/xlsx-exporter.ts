@@ -18,6 +18,7 @@ import {
 
 import XLSX from 'xlsx';
 import { deepGet } from './utils/deep-get';
+import { NumberField } from '@nocobase/database';
 
 type ExportColumn = {
   dataIndex: Array<string>;
@@ -84,6 +85,23 @@ class XlsxExporter {
       },
     });
 
+    for (const col of columns) {
+      const field = this.findFieldByDataIndex(col.dataIndex);
+      if (field instanceof NumberField) {
+        // set column cell type to number
+        const colIndex = columns.indexOf(col);
+        const cellRange = XLSX.utils.decode_range(worksheet['!ref']);
+
+        for (let r = 1; r <= cellRange.e.r; r++) {
+          const cell = worksheet[XLSX.utils.encode_cell({ c: colIndex, r })];
+          // if cell and cell.v is a number, set cell.t to 'n'
+          if (cell && typeof cell.v === 'number') {
+            cell.t = 'n';
+          }
+        }
+      }
+    }
+
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Data');
     return workbook;
   }
@@ -96,6 +114,9 @@ class XlsxExporter {
         }
 
         const field = this.options.collection.getField(col.dataIndex[0]);
+        if (!field) {
+          throw new Error(`Field "${col.dataIndex[0]}" not found: , please check the columns configuration.`);
+        }
 
         if (field.isRelationField()) {
           return col.dataIndex[0];

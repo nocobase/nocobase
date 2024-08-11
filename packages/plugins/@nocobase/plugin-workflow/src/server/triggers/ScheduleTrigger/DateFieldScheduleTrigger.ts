@@ -54,7 +54,7 @@ function getDataOptionTime(record, on, dir = 1) {
     }
     case 'object': {
       const { field, offset = 0, unit = 1000 } = on;
-      if (!record.get(field)) {
+      if (!field || !record.get(field)) {
         return null;
       }
       const second = new Date(record.get(field).getTime());
@@ -357,7 +357,6 @@ export default class ScheduleTrigger {
     const { collection } = workflow.config;
     const [dataSourceName, collectionName] = parseCollectionName(collection);
     const event = `${collectionName}.afterSaveWithAssociations`;
-    const eventKey = `${collection}.afterSaveWithAssociations`;
     const name = getHookId(workflow, event);
     if (this.events.has(name)) {
       return;
@@ -384,14 +383,13 @@ export default class ScheduleTrigger {
     const { collection } = workflow.config;
     const [dataSourceName, collectionName] = parseCollectionName(collection);
     const event = `${collectionName}.afterSaveWithAssociations`;
-    const eventKey = `${collection}.afterSaveWithAssociations`;
     const name = getHookId(workflow, event);
-    if (this.events.has(eventKey)) {
-      const listener = this.events.get(name);
+    const listener = this.events.get(name);
+    if (listener) {
       // @ts-ignore
       const { db } = this.workflow.app.dataSourceManager.dataSources.get(dataSourceName).collectionManager;
       db.off(event, listener);
-      this.events.delete(eventKey);
+      this.events.delete(name);
     }
   }
 }

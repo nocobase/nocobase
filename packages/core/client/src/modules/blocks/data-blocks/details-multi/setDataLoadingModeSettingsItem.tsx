@@ -11,10 +11,10 @@ import { ISchema, useField, useFieldSchema } from '@formily/react';
 import _ from 'lodash';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { useDesignable } from '../../../../schema-component';
-import { SchemaSettingsModalItem, useCollectionState } from '../../../../schema-settings';
 import { useCollection_deprecated } from '../../../../collection-manager/hooks/useCollection_deprecated';
 import { useDataBlockProps, useDataBlockRequest } from '../../../../data-source';
+import { useDesignable } from '../../../../schema-component';
+import { SchemaSettingsModalItem, useCollectionState } from '../../../../schema-settings';
 
 export const setDataLoadingModeSettingsItem = {
   name: 'setDataLoadingMode',
@@ -49,8 +49,8 @@ export function SetDataLoadingMode() {
               'x-component': 'Radio.Group',
               default: fieldSchema['x-decorator-props']?.dataLoadingMode || 'auto',
               enum: [
-                { value: 'auto', label: t('Automatically load data') },
-                { value: 'manual', label: t('Load data after filtering') },
+                { value: 'auto', label: t('Load all data when filter is empty') },
+                { value: 'manual', label: t('Do not load data when filter is empty') },
               ],
             },
           },

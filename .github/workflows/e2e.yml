@@ -419,6 +419,8 @@ jobs:
       - plugin-workflow
       - plugin-workflow-approval
       - plugin-data-source-main
+    permissions:
+      pull-requests: write
     if: ${{ !cancelled() && github.event.pull_request.number }}
     steps:
       - uses: actions/checkout@v4

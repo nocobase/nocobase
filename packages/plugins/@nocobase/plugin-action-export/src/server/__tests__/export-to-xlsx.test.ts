@@ -31,6 +31,77 @@ describe('export to xlsx with preset', () => {
     await app.destroy();
   });
 
+  it('should export number field with cell format', async () => {
+    const Post = app.db.collection({
+      name: 'posts',
+      fields: [
+        { type: 'string', name: 'title' },
+        { type: 'integer', name: 'integer' },
+        { type: 'float', name: 'float' },
+      ],
+    });
+
+    await app.db.sync();
+
+    await Post.repository.create({
+      values: [
+        {
+          title: 'p1',
+          integer: 123,
+          float: 123.456,
+        },
+        {
+          title: 'p2',
+          integer: 456,
+          float: 456.789,
+        },
+      ],
+    });
+
+    const exporter = new XlsxExporter({
+      collectionManager: app.mainDataSource.collectionManager,
+      collection: Post,
+      chunkSize: 10,
+      columns: [
+        { dataIndex: ['title'], defaultTitle: 'title' },
+        {
+          dataIndex: ['integer'],
+          defaultTitle: 'integer',
+        },
+        {
+          dataIndex: ['float'],
+          defaultTitle: 'float',
+        },
+      ],
+    });
+
+    const wb = await exporter.run();
+    const xlsxFilePath = path.resolve(__dirname, `t_${uid()}.xlsx`);
+
+    try {
+      XLSX.writeFile(wb, xlsxFilePath);
+
+      // read xlsx file
+      const workbook = XLSX.readFile(xlsxFilePath);
+      const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+
+      // cell type should be number
+      const cellA2 = firstSheet['A2'];
+      expect(cellA2.t).toBe('s');
+      expect(cellA2.v).toBe('p1');
+
+      const cellB2 = firstSheet['B2'];
+      expect(cellB2.t).toBe('n');
+      expect(cellB2.v).toBe(123);
+
+      const cellC2 = firstSheet['C2'];
+      expect(cellC2.t).toBe('n');
+      expect(cellC2.v).toBe(123.456);
+    } finally {
+      fs.unlinkSync(xlsxFilePath);
+    }
+  });
+
   it('should export with map field', async () => {
     const Post = app.db.collection({
       name: 'posts',
@@ -251,6 +322,48 @@ describe('export to xlsx', () => {
 
   afterEach(async () => {
     await app.destroy();
+  });
+
+  it('should throw error when export field not exists', async () => {
+    const Post = app.db.collection({
+      name: 'posts',
+      fields: [
+        {
+          name: 'title',
+          type: 'string',
+        },
+      ],
+    });
+
+    await app.db.sync();
+
+    await Post.repository.create({
+      values: {
+        title: 'some_title',
+        json: {
+          a: {
+            b: 'c',
+          },
+        },
+      },
+    });
+
+    const exporter = new XlsxExporter({
+      collectionManager: app.mainDataSource.collectionManager,
+      collection: Post,
+      chunkSize: 10,
+      columns: [{ dataIndex: ['json'], defaultTitle: '' }],
+    });
+
+    let error: any;
+    try {
+      await exporter.run({});
+    } catch (e) {
+      error = e;
+    }
+
+    expect(error).toBeDefined();
+    expect(error.message).toContain('not found');
   });
 
   it('should export with json field', async () => {
