@@ -43,7 +43,6 @@ export class PluginNotificationManager extends Plugin {
       name: 'pm.notification',
       actions: ['messages:*'],
     });
-    this.app.acl.allow('messages', 'send', 'loggedIn');
   }
 
   async load() {

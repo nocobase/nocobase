@@ -12,7 +12,6 @@ import { Registry } from '@nocobase/utils/client';
 import { NAMESPACE } from './locale';
 import { ManagementList } from './Management';
 import { ChannelManager } from './manager/channel/components';
-import { MessageManager } from './manager/message/components/Manager';
 import { LogManager } from './manager/log/components/Manager';
 import { lang as t } from './locale';
 import { ChannelType } from './manager/channel/types';
@@ -31,12 +30,13 @@ export class PluginNotificationManagerClient extends Plugin {
     this.app.pluginSettingsManager.add(NAMESPACE, {
       title: t('Notification'),
       icon: 'NotificationOutlined',
+      aclSnippet: 'pm.notification',
     });
     this.app.pluginSettingsManager.add(`${NAMESPACE}.channels`, {
       title: t('Channels'),
       Component: ChannelManager,
       icon: 'SendOutlined',
-      aclSnippet: 'pm.notification.core',
+      aclSnippet: 'pm.notification.channels',
       sort: 1,
     });
     // this.app.pluginSettingsManager.add(`${NAMESPACE}.templates`, {
@@ -50,7 +50,7 @@ export class PluginNotificationManagerClient extends Plugin {
       title: t('Logs'),
       Component: LogManager,
       icon: 'MessageOutlined',
-      aclSnippet: 'pm.notification.core',
+      aclSnippet: 'pm.notification.logs',
       sort: 3,
     });
   }

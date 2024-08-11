@@ -10,7 +10,6 @@
 import { ISchema } from '@formily/react';
 import collection from '../../../../collections/messageLog';
 import { COLLECTION_NAME } from '../../../../constant';
-import { useTranslation } from 'react-i18next';
 
 export const messageLogsManagerSchema: ISchema = {
   type: 'void',
