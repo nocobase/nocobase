@@ -152,7 +152,7 @@ export class AdjacencyListRepository extends Repository {
           $in: parentIds,
         },
       },
-      ...lodash.omit(options, ['limit', 'offset', 'filterByTk', 'filter']),
+      ...lodash.omit(options, ['filterByTk', 'filter']),
     });
 
     const findChildrenOptions = {
