@@ -8,10 +8,11 @@
  */
 
 import { Plugin } from '@nocobase/server';
-import { Collection, Model, SyncOptions, AdjacencyListRepository, DestroyOptions } from '@nocobase/database';
-import { DataSource, SequelizeCollectionManager, SequelizeDataSource } from '@nocobase/data-source-manager';
+import { Collection, Model, SyncOptions, DestroyOptions } from '@nocobase/database';
+import { DataSource, SequelizeCollectionManager } from '@nocobase/data-source-manager';
 import { Transaction } from 'sequelize';
 import lodash from 'lodash';
+import { AdjacencyListRepository } from './adjacency-list-repository';
 
 class PluginCollectionTreeServer extends Plugin {
   async beforeLoad() {
