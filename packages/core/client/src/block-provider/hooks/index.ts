@@ -1250,7 +1250,9 @@ export const useAssociationFilterBlockProps = () => {
     if (!isOptionalField(collectionField)) {
       run();
     }
-  }, [collectionField, labelKey, run, valueKey, field.componentProps?.params]);
+
+    // do not format the dependencies
+  }, [collectionField, labelKey, run, valueKey, field.componentProps?.params, field.componentProps?.params?.sort]);
 
   if (!collectionField) {
     return {};
