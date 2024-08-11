@@ -7,9 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { AdjacencyListRepository, Database } from '@nocobase/database';
+import { Database } from '@nocobase/database';
 import { MockServer } from '@nocobase/test';
 import { createApp, createAppWithNoUsersPlugin, prepareApp } from './prepare';
+import { AdjacencyListRepository } from '../adjacency-list-repository';
 
 describe('tree', () => {
   let app: MockServer;
