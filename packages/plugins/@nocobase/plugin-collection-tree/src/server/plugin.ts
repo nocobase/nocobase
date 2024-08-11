@@ -26,7 +26,7 @@ class PluginCollectionTreeServer extends Plugin {
     this.app.dataSourceManager.afterAddDataSource((dataSource: DataSource) => {
       const collectionManager = dataSource.collectionManager;
       if (collectionManager instanceof SequelizeCollectionManager) {
-        collectionManager.db.on('afterDefineCollection', (collection: Model) => {
+        collectionManager.db.on('afterDefineCollection', (collection: Collection) => {
           if (!condition(collection.options)) {
             return;
           }
@@ -144,7 +144,7 @@ class PluginCollectionTreeServer extends Plugin {
   private async getTreePath(
     model: Model,
     path: string,
-    collection: Model,
+    collection: Collection,
     pathCollectionName: string,
     transaction?: Transaction,
   ) {
