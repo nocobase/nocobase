@@ -12,7 +12,7 @@ import { Collection, Model, SyncOptions, DestroyOptions } from '@nocobase/databa
 import { DataSource, SequelizeCollectionManager } from '@nocobase/data-source-manager';
 import { Transaction } from 'sequelize';
 import lodash from 'lodash';
-import { AdjacencyListRepository } from './adjacency-list-repository';
+import { TreeCollection } from './tree-collection';
 
 class PluginCollectionTreeServer extends Plugin {
   async beforeLoad() {
@@ -180,16 +180,6 @@ class PluginCollectionTreeServer extends Plugin {
       }
     }
     return path;
-  }
-}
-
-class TreeCollection extends Collection {
-  setRepository() {
-    this.repository = new AdjacencyListRepository(this);
-  }
-
-  get treeForeignKey() {
-    return this.treeParentField?.options.foreignKey || 'parent';
   }
 }
 

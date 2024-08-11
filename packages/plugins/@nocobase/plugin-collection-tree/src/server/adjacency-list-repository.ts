@@ -10,8 +10,11 @@
 import lodash from 'lodash';
 import { CountOptions, FindOptions, Repository, FindAndCountOptions, Transactionable, Model } from '@nocobase/database';
 import { isValidFilter } from '@nocobase/utils';
+import { TreeCollection } from './tree-collection';
 
 export class AdjacencyListRepository extends Repository {
+  declare collection: TreeCollection;
+
   async update(options): Promise<any> {
     return super.update({
       ...(options || {}),
@@ -71,7 +74,6 @@ export class AdjacencyListRepository extends Repository {
   async buildTree(paths: Model[], options: FindOptions & { addIndex?: boolean } = {}, rootNodes?: Model[]) {
     const collection = this.collection;
     const primaryKey = collection.model.primaryKeyAttribute;
-    // @ts-ignore
     const foreignKey = collection.treeForeignKey;
     const childrenKey = collection.treeChildrenField?.name ?? 'children';
     const treePathMap = this.buildRootNodeDataMap(paths);
@@ -154,7 +156,6 @@ export class AdjacencyListRepository extends Repository {
   }
 
   async findWithoutFilter(options: FindOptions & { addIndex?: boolean } = {}): Promise<any> {
-    // @ts-ignore
     const foreignKey = this.collection.treeForeignKey;
     const rootNodes = await super.find({ ...options, filter: { [foreignKey]: null } });
     if (!rootNodes.length) {
@@ -172,7 +173,6 @@ export class AdjacencyListRepository extends Repository {
   }
 
   async countWithoutFilter(options: CountOptions & { raw?: boolean; tree?: boolean }): Promise<number> {
-    // @ts-ignore
     const foreignKey = this.collection.treeForeignKey;
     return await super.count({ ...options, filter: { [foreignKey]: null } });
   }
