@@ -8,18 +8,18 @@
  */
 
 const postgres = {
-  'character varying': ['string', 'uuid', 'nanoid', 'encryption'],
-  varchar: ['string', 'uuid', 'nanoid', 'encryption'],
-  char: ['string', 'uuid', 'nanoid', 'encryption'],
+  'character varying': ['string', 'uuid', 'nanoid', 'encryption', 'dataMasking'],
+  varchar: ['string', 'uuid', 'nanoid', 'encryption', 'dataMasking'],
+  char: ['string', 'uuid', 'nanoid', 'encryption', 'dataMasking'],
 
   character: 'string',
   text: 'text',
   oid: 'string',
   name: 'string',
 
-  smallint: ['integer', 'sort'],
-  integer: ['integer', 'sort'],
-  bigint: ['bigInt', 'sort'],
+  smallint: ['integer', 'sort', 'dataMasking'],
+  integer: ['integer', 'sort', 'dataMasking'],
+  bigint: ['bigInt', 'sort', 'dataMasking'],
   decimal: 'decimal',
   numeric: 'float',
   real: 'float',
@@ -45,16 +45,16 @@ const postgres = {
 };
 
 const mysql = {
-  smallint: ['integer', 'boolean', 'sort'],
-  tinyint: ['integer', 'boolean', 'sort'],
-  mediumint: ['integer', 'boolean', 'sort'],
+  smallint: ['integer', 'boolean', 'sort', 'dataMasking'],
+  tinyint: ['integer', 'boolean', 'sort', 'dataMasking'],
+  mediumint: ['integer', 'boolean', 'sort', 'dataMasking'],
 
-  'smallint unsigned': ['integer', 'boolean', 'sort'],
-  'tinyint unsigned': ['integer', 'boolean', 'sort'],
-  'mediumint unsigned': ['integer', 'boolean', 'sort'],
+  'smallint unsigned': ['integer', 'boolean', 'sort', 'dataMasking'],
+  'tinyint unsigned': ['integer', 'boolean', 'sort', 'dataMasking'],
+  'mediumint unsigned': ['integer', 'boolean', 'sort', 'dataMasking'],
 
-  char: ['string', 'uuid', 'nanoid', 'encryption'],
-  varchar: ['string', 'uuid', 'nanoid', 'encryption'],
+  char: ['string', 'uuid', 'nanoid', 'encryption', 'dataMasking'],
+  varchar: ['string', 'uuid', 'nanoid', 'encryption', 'dataMasking'],
   date: 'date',
   time: 'time',
   tinytext: 'text',
@@ -62,10 +62,10 @@ const mysql = {
   mediumtext: 'text',
   longtext: 'text',
   int: ['integer', 'sort'],
-  'int unsigned': ['integer', 'sort'],
-  integer: ['integer', 'sort'],
-  bigint: ['bigInt', 'sort'],
-  'bigint unsigned': ['bigInt', 'sort'],
+  'int unsigned': ['integer', 'sort', 'dataMasking'],
+  integer: ['integer', 'sort', 'dataMasking'],
+  bigint: ['bigInt', 'sort', 'dataMasking'],
+  'bigint unsigned': ['bigInt', 'sort', 'dataMasking'],
   float: 'float',
   double: 'float',
   boolean: 'boolean',
@@ -79,7 +79,7 @@ const mysql = {
 
 const sqlite = {
   text: 'text',
-  varchar: ['string', 'uuid', 'nanoid', 'encryption'],
+  varchar: ['string', 'uuid', 'nanoid', 'encryption', 'dataMasking'],
 
   integer: 'integer',
   real: 'real',
