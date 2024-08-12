@@ -34,13 +34,7 @@ export default defineCollection({
       allowNull: false,
     },
     {
-      name: 'sourceUniqueKey',
-      interface: 'Input',
-      type: 'string',
-      allowNull: false,
-    },
-    {
-      name: 'sourceId',
+      name: 'sourceUk',
       interface: 'Input',
       type: 'string',
       allowNull: false,

@@ -10,7 +10,6 @@
 import { Plugin } from '@nocobase/server';
 import { UserDataResourceManager } from './user-data-resource-manager';
 import { UserDataSyncService } from './user-data-sync-service';
-import userDataSyncSourcesActions from './actions/user-data-sync-sources';
 import userDataActions from './actions/user-data';
 import { SyncSourceManager } from './sync-source-manager';
 import { DefaultUserDataResource } from './default-user-data-resource';
@@ -41,23 +40,23 @@ export class PluginUserDataSyncServer extends Plugin {
 
   async load() {
     const logger = this.getLogger();
-    const defaultUserDataResource = new DefaultUserDataResource(this.app.db, logger);
+    const defaultUserDataResource = new DefaultUserDataResource(this.app.db, this.app.log);
     this.resourceManager.db = this.app.db;
     this.resourceManager.reigsterResource('default', defaultUserDataResource);
     this.syncService = new UserDataSyncService(this.resourceManager, this.sourceManager, logger);
     this.app.resourceManager.define({
-      name: 'userDataSyncSources',
-      actions: {
-        listTypes: userDataSyncSourcesActions.listTypes,
-      },
-    });
-    this.app.resourceManager.define({
       name: 'userData',
       actions: {
+        listSyncTypes: userDataActions.listSyncTypes,
         pull: userDataActions.pull,
         push: userDataActions.push,
         retry: userDataActions.retry,
       },
+    });
+
+    this.app.acl.registerSnippet({
+      name: `pm.${this.name}`,
+      actions: ['userData:*', 'userDataSyncSources:*'],
     });
   }
 

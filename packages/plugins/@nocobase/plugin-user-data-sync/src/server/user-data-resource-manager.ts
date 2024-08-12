@@ -19,7 +19,8 @@ export type UserData = {
 
 export interface UserDataResource {
   accepts: ('user' | 'department')[];
-  updateOrCreate(originRecords: any[]): Promise<{ newRecords: any[] }>;
+  update(originRecord: any): Promise<void>;
+  create(originRecord: any): Promise<string>;
 }
 
 export class UserDataResourceManager {
@@ -36,11 +37,11 @@ export class UserDataResourceManager {
 
   async saveOriginRecords(data: UserData): Promise<void> {
     for (const record of data.records) {
-      const sourceId = record.id;
+      const sourceUk = record[data.uniqueKey];
       const syncRecord = await this.syncRecordRepo.findOne({
         where: {
           sourceName: data.sourceName,
-          sourceId,
+          sourceUk,
           resource: data.dataType,
         },
       });
@@ -53,8 +54,7 @@ export class UserDataResourceManager {
           values: {
             sourceName: data.sourceName,
             resource: data.dataType,
-            sourceId,
-            sourceUniqueKey: data.uniqueKey,
+            sourceUk,
             metaData: JSON.stringify(record),
           },
         });
@@ -62,35 +62,46 @@ export class UserDataResourceManager {
     }
   }
 
-  async findOriginRecords({ resource, sourceName, sourceIds }): Promise<any[]> {
-    return await this.syncRecordRepo.find({ filter: { sourceName, resource, sourceId: { $in: sourceIds } } });
+  async findOriginRecords({ resource, sourceName, sourceUks }): Promise<any[]> {
+    return await this.syncRecordRepo.find({ filter: { sourceName, resource, sourceUk: { $in: sourceUks } } });
   }
 
-  async updateOriginRecords({ resource, sourceName, values }): Promise<void> {
-    for (const value of values) {
-      const syncRecord = await this.syncRecordRepo.findOne({
-        filter: {
-          sourceName,
-          sourceId: value.sourceId,
-          resource,
-        },
-      });
-      if (syncRecord) {
-        syncRecord.resourcePk = value.resourcePk;
-        await syncRecord.save();
-      }
+  async updateOriginRecord({ resource, sourceName, sourceUk, resourcePk }): Promise<void> {
+    const syncRecord = await this.syncRecordRepo.findOne({
+      filter: {
+        sourceName,
+        sourceUk,
+        resource,
+      },
+    });
+    if (syncRecord) {
+      syncRecord.resourcePk = resourcePk;
+      await syncRecord.save();
     }
   }
 
   async updateOrCreate(data: UserData) {
     await this.saveOriginRecords(data);
     const { dataType, sourceName, records } = data;
-    const sourceIds = records.map((record) => record.id);
+    const sourceUks = records.map((record) => record[data.uniqueKey]);
     for (const resource of this.resources.getValues()) {
       if (resource.accepts.includes(dataType)) {
-        const originRecords = await this.findOriginRecords({ resource: dataType, sourceName, sourceIds });
-        const results = await resource.updateOrCreate(originRecords);
-        await this.updateOriginRecords({ resource: dataType, sourceName, values: results.newRecords });
+        const originRecords = await this.findOriginRecords({ resource: dataType, sourceName, sourceUks });
+        if (originRecords && originRecords.length > 0) {
+          for (const originRecord of originRecords) {
+            if (originRecord.resourcePk) {
+              await resource.update(originRecord);
+            } else {
+              const resourcePk = await resource.create(originRecord);
+              await this.updateOriginRecord({
+                resource: dataType,
+                sourceName,
+                sourceUk: originRecord.sourceUk,
+                resourcePk,
+              });
+            }
+          }
+        }
       }
     }
   }

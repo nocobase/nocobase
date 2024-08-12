@@ -10,6 +10,7 @@
 import { Context } from '@nocobase/actions';
 import { SyncSourceModel } from './models/sync-source';
 import { UserData } from './user-data-resource-manager';
+import dayjs from 'dayjs';
 
 export type SyncSourceConfig = {
   sourceInstance: SyncSourceModel;
@@ -41,8 +42,7 @@ export abstract class SyncSource implements ISyncSource {
 
   async newTask() {
     const batch = generateUniqueNumber();
-    const task = await this.instance.createTask({ batch, status: 'init' });
-    return task.id;
+    return await this.instance.createTask({ batch, status: 'init' });
   }
 
   async beginTask(taskId: number) {
@@ -86,6 +86,7 @@ export abstract class SyncSource implements ISyncSource {
     task.status = 'processing';
     task.message = '';
     await task.save();
+    return task;
   }
 }
 
@@ -99,19 +100,7 @@ type EndTaskParams = {
 };
 
 function generateUniqueNumber() {
-  // 获取当前日期和时间
-  const now = new Date();
-  // 格式化日期时间为年月日时分秒，例如：20240726103030（2024年7月26日10时30分30秒）
-  const formattedDate =
-    now.getFullYear().toString().padStart(4, '0') +
-    (now.getMonth() + 1).toString().padStart(2, '0') + // 月份从0开始，所以需要+1
-    now.getDate().toString().padStart(2, '0') +
-    now.getHours().toString().padStart(2, '0') +
-    now.getMinutes().toString().padStart(2, '0') +
-    now.getSeconds().toString().padStart(2, '0');
-  // 生成后6位随机数字
+  const formattedDate = dayjs().format('YYYYMMDDHHmmss');
   const randomDigits = Math.floor(100000 + Math.random() * 900000);
-  // 组合日期时间和随机数字
-  const uniqueNumber = formattedDate + randomDigits;
-  return uniqueNumber;
+  return formattedDate + randomDigits;
 }

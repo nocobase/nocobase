@@ -33,6 +33,7 @@ export class PluginUserDataSyncClient extends Plugin {
       icon: 'SyncOutlined',
       Component: UserDataSyncSource,
       sort: 99,
+      aclSnippet: 'pm.user-data-sync',
     });
   }
 }

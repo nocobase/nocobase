@@ -26,14 +26,10 @@ export class UserDataSyncService {
 
   async pull(sourceName: string, ctx: Context) {
     const source = await this.sourceManager.getByName(sourceName, ctx);
-    const taskId = await source.newTask();
-    await source.beginTask(taskId);
-    this.logger.info(
-      `begin sync task of source: ${sourceName} sourceType: ${
-        source.instance.sourceType
-      } time: ${new Date().toLocaleString()}`,
-    );
-    this.runSync(source, taskId);
+    const task = await source.newTask();
+    await source.beginTask(task.id);
+    ctx.log.info(`begin sync task of source: ${sourceName} sourceType: ${source.instance.sourceType}`);
+    this.runSync(source, task, ctx);
   }
 
   async push(data: any) {
@@ -48,49 +44,35 @@ export class UserDataSyncService {
 
   async retry(sourceId: number, taskId: number, ctx: Context) {
     const source = await this.sourceManager.getById(sourceId, ctx);
-    await source.retryTask(taskId);
-    this.logger.info(
-      `retry sync task of source: ${source.instance.name} sourceType: ${
-        source.instance.sourceType
-      } time: ${new Date().toLocaleString()}`,
-    );
-    this.runSync(source, taskId);
+    const task = await source.retryTask(taskId);
+    ctx.log.info(`retry sync task of source: ${source.instance.name} sourceType: ${source.instance.sourceType}`);
+    this.runSync(source, task, ctx);
   }
 
-  async runSync(source: SyncSource, taskId: number) {
+  async runSync(source: SyncSource, task: any, ctx: Context) {
     const currentTimeMillis = new Date().getTime();
     try {
-      this.logger.info(
-        `begin pull data of source: ${source.instance.name} sourceType: ${
-          source.instance.sourceType
-        } time: ${new Date().toLocaleString()}`,
-      );
+      ctx.log.info(`begin pull data of source: ${source.instance.name} sourceType: ${source.instance.sourceType}`);
       const data = await source.pull();
+      // 输出拉取的数据
       this.logger.info(
-        `end pull data of source: ${source.instance.name} sourceType: ${
-          source.instance.sourceType
-        } time: ${new Date().toLocaleString()} cost: ${new Date().getTime() - currentTimeMillis}`,
+        `pull data of source: ${source.instance.name} sourceType: ${source.instance.sourceType} batch:${
+          task.batch
+        } data: ${JSON.stringify(data)}`,
       );
-      this.logger.info(
-        `begin update data of source: ${source.instance.name} sourceType: ${
-          source.instance.sourceType
-        } time: ${new Date().toLocaleString()}`,
-      );
+      ctx.log.info(`end pull data of source: ${source.instance.name} sourceType: ${source.instance.sourceType}`);
+      ctx.log.info(`begin update data of source: ${source.instance.name} sourceType: ${source.instance.sourceType}`);
       for (const item of data) {
         await this.resourceManager.updateOrCreate(item);
       }
-      this.logger.info(
-        `end update data of source: ${source.instance.name} sourceType: ${
-          source.instance.sourceType
-        } time: ${new Date().toLocaleString()} cost: ${new Date().getTime() - currentTimeMillis}`,
-      );
+      ctx.log.info(`end update data of source: ${source.instance.name} sourceType: ${source.instance.sourceType}`);
       const costTime = new Date().getTime() - currentTimeMillis;
-      await source.endTask({ taskId, success: true, cost: costTime });
+      await source.endTask({ taskId: task.id, success: true, cost: costTime });
     } catch (err) {
-      this.logger.error(
+      ctx.log.error(
         `sync task of source: ${source.instance.name} sourceType: ${source.instance.sourceType} error: ${err.message}`,
       );
-      await source.endTask({ taskId, success: false, message: err.message });
+      await source.endTask({ taskId: task.id, success: false, message: err.message });
     }
   }
 }

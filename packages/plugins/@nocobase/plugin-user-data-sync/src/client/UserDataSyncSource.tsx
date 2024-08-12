@@ -136,7 +136,7 @@ const useTasksTableBlockProps = () => {
   const collection = useCollection();
   return {
     params: {
-      pageSize: 10,
+      pageSize: 20,
       filter: {
         sourceId: record[collection.filterTargetKey],
       },
@@ -215,8 +215,8 @@ export const UserDataSyncSource: React.FC = () => {
   useRequest(
     () =>
       api
-        .resource('userDataSyncSources')
-        .listTypes()
+        .resource('userData')
+        .listSyncTypes()
         .then((res) => {
           const types = res?.data?.data || [];
           return types.map((type: { name: string; title?: string }) => ({
