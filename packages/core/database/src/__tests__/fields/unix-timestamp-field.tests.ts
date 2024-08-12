@@ -8,6 +8,7 @@
  */
 
 import { Database, mockDatabase } from '@nocobase/database';
+import moment from 'moment';
 
 describe('unix timestamp field', () => {
   let db: Database;
@@ -40,5 +41,46 @@ describe('unix timestamp field', () => {
     expect(date1).toBeDefined();
 
     console.log(instance.toJSON());
+  });
+
+  it('should set date value', async () => {
+    const c1 = db.collection({
+      name: 'test12',
+      fields: [
+        {
+          name: 'date1',
+          type: 'unixTimestamp',
+        },
+      ],
+    });
+
+    await db.sync();
+
+    await c1.repository.create({
+      values: {
+        date1: '2021-01-01T00:00:00Z',
+      },
+    });
+
+    const item = await c1.repository.findOne();
+    const val = item.get('date1');
+    const date = moment(val).utc().format('YYYY-MM-DD HH:mm:ss');
+    expect(date).toBe('2021-01-01 00:00:00');
+  });
+
+  describe('timezone', () => {
+    test('custom', async () => {
+      db.collection({
+        name: 'tests',
+        timestamps: false,
+        fields: [{ name: 'date1', type: 'unixTimestamp', timezone: '+06:00' }],
+      });
+
+      await db.sync();
+      const repository = db.getRepository('tests');
+      const instance = await repository.create({ values: { date1: '2023-03-24 00:00:00' } });
+      const date1 = instance.get('date1');
+      expect(date1.toISOString()).toEqual('2023-03-23T18:00:00.000Z');
+    });
   });
 });
