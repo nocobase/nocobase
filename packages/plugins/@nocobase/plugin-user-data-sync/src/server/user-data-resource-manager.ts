@@ -20,7 +20,7 @@ export type UserData = {
 export interface UserDataResource {
   accepts: ('user' | 'department')[];
   update(originRecord: any): Promise<void>;
-  create(originRecord: any): Promise<string>;
+  create(originRecord: any, uniqueKey: string): Promise<string>;
 }
 
 export class UserDataResourceManager {
@@ -82,8 +82,8 @@ export class UserDataResourceManager {
 
   async updateOrCreate(data: UserData) {
     await this.saveOriginRecords(data);
-    const { dataType, sourceName, records } = data;
-    const sourceUks = records.map((record) => record[data.uniqueKey]);
+    const { dataType, sourceName, records, uniqueKey } = data;
+    const sourceUks = records.map((record) => record[uniqueKey]);
     for (const resource of this.resources.getValues()) {
       if (resource.accepts.includes(dataType)) {
         const originRecords = await this.findOriginRecords({ resource: dataType, sourceName, sourceUks });
@@ -92,7 +92,7 @@ export class UserDataResourceManager {
             if (originRecord.resourcePk) {
               await resource.update(originRecord);
             } else {
-              const resourcePk = await resource.create(originRecord);
+              const resourcePk = await resource.create(originRecord, uniqueKey);
               await this.updateOriginRecord({
                 resource: dataType,
                 sourceName,

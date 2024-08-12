@@ -71,6 +71,7 @@ export class UserDataSyncService {
     } catch (err) {
       ctx.log.error(
         `sync task of source: ${source.instance.name} sourceType: ${source.instance.sourceType} error: ${err.message}`,
+        { method: 'runSync', err: err.stack, cause: err.cause },
       );
       await source.endTask({ taskId: task.id, success: false, message: err.message });
     }

@@ -36,6 +36,7 @@ export class DefaultUserDataResource implements UserDataResource {
 
   async update(originRecord: any): Promise<void> {
     const { metaData, resourcePk, sourceName } = originRecord;
+    this.logger.info(`update: ${JSON.stringify(originRecord)}`);
     if (originRecord.resource === 'user') {
       const sourceUser = JSON.parse(metaData);
       const user = await this.userRepo.findOne({
@@ -53,12 +54,17 @@ export class DefaultUserDataResource implements UserDataResource {
     }
   }
 
-  async create(originRecord: any): Promise<string> {
-    const { sourceUniqueKey, metaData, sourceName } = originRecord;
+  async create(originRecord: any, uniqueKey: string): Promise<string> {
+    const { metaData, sourceName } = originRecord;
+    this.logger.info(`create: ${JSON.stringify(originRecord)}`);
     if (originRecord.resource === 'user') {
       const sourceUser = JSON.parse(metaData);
       const filter = {};
-      filter[sourceUniqueKey] = sourceUser[sourceUniqueKey];
+      if (uniqueKey === 'id') {
+        filter['username'] = sourceUser[uniqueKey];
+      } else {
+        filter[uniqueKey] = sourceUser[uniqueKey];
+      }
       const user = await this.userRepo.findOne({
         filter,
       });
@@ -66,7 +72,7 @@ export class DefaultUserDataResource implements UserDataResource {
         await this.updateUser(user, sourceUser, sourceName);
         return user.id;
       } else {
-        return await this.createUser(sourceUniqueKey, sourceUser, sourceName);
+        return await this.createUser(uniqueKey, sourceUser, sourceName);
       }
     } else if (originRecord.resource === 'department') {
       const sourceDepartment = JSON.parse(metaData);
@@ -129,7 +135,7 @@ export class DefaultUserDataResource implements UserDataResource {
     } else {
       // 查询部门同步记录
       const syncDepartmentRecords = await this.syncRecordRepo.find({
-        filter: { sourceName, resource: 'department', sourceId: { $in: sourceDepartmentIds } },
+        filter: { sourceName, resource: 'department', sourceUk: { $in: sourceDepartmentIds } },
       });
       const departmentIds = syncDepartmentRecords.map((record) => record.resourcePk);
       const departments = await this.deptRepo.find({ filter: { id: { $in: departmentIds } } });
@@ -189,7 +195,7 @@ export class DefaultUserDataResource implements UserDataResource {
       }
     } else {
       const syncDepartmentRecord = await this.syncRecordRepo.findOne({
-        filter: { sourceName, resource: 'department', sourceId: parentId },
+        filter: { sourceName, resource: 'department', sourceUk: parentId },
       });
       if (syncDepartmentRecord) {
         const parentDepartment = await this.deptRepo.findOne({
