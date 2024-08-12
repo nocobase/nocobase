@@ -10,6 +10,7 @@
 import { Field } from '@formily/core';
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
+import { cloneDeep } from 'lodash';
 export * as operators from './operators';
 
 export const type: ISchema = {
@@ -447,4 +448,60 @@ export const collectionDataSource: ISchema = {
     multiple: true,
   },
   enum: '{{collections}}',
+};
+
+export const DefaultValueProps = (field) => {
+  console.log(field);
+  return {
+    defaultValue: {
+      ...cloneDeep(field?.default?.uiSchema),
+      ...field?.properties?.uiSchema,
+      required: false,
+      title: '{{ t("Default value") }}',
+      'x-decorator': 'FormItem',
+      'x-reactions': [
+        {
+          dependencies: [
+            'uiSchema.x-component-props.gmt',
+            'uiSchema.x-component-props.showTime',
+            'uiSchema.x-component-props.dateFormat',
+            'uiSchema.x-component-props.timeFormat',
+          ],
+          fulfill: {
+            state: {
+              componentProps: {
+                gmt: '{{$deps[0]}}',
+                showTime: '{{$deps[1]}}',
+                dateFormat: '{{$deps[2]}}',
+                timeFormat: '{{$deps[3]}}',
+              },
+            },
+          },
+        },
+        {
+          dependencies: ['primaryKey', 'unique', 'autoIncrement'],
+          when: '{{$deps[0]||$deps[1]||$deps[2]}}',
+          fulfill: {
+            state: {
+              hidden: true,
+              value: null,
+            },
+          },
+          otherwise: {
+            state: {
+              hidden: false,
+            },
+          },
+        },
+        {
+          dependencies: ['uiSchema.enum'],
+          fulfill: {
+            state: {
+              dataSource: '{{$deps[0]}}',
+            },
+          },
+        },
+      ],
+    },
+  };
 };

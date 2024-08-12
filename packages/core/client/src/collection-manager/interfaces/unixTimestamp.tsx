@@ -8,7 +8,7 @@
  */
 
 import { CollectionFieldInterface } from '../../data-source/collection-field-interface/CollectionFieldInterface';
-import { dateTimeProps, defaultProps, operators } from './properties';
+import { defaultProps, operators, DefaultValueProps } from './properties';
 
 export class UnixTimestampFieldInterface extends CollectionFieldInterface {
   name = 'unixTimestamp';
@@ -43,6 +43,7 @@ export class UnixTimestampFieldInterface extends CollectionFieldInterface {
         { value: 'second', label: '{{t("Second")}}' },
       ],
     },
+    ...DefaultValueProps(this),
   };
   filterable = {
     operators: operators.number,

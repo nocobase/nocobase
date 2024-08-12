@@ -8,7 +8,7 @@
  */
 
 import { CollectionFieldInterface } from '../../data-source/collection-field-interface/CollectionFieldInterface';
-import { dateTimeProps, defaultProps, operators } from './properties';
+import { dateTimeProps, defaultProps, operators, DefaultValueProps } from './properties';
 
 export class DatetimeFieldInterface extends CollectionFieldInterface {
   name = 'datetime';
@@ -41,6 +41,7 @@ export class DatetimeFieldInterface extends CollectionFieldInterface {
       'x-decorator': 'FormItem',
       default: false,
     },
+    ...DefaultValueProps(this),
   };
   filterable = {
     operators: operators.datetime,

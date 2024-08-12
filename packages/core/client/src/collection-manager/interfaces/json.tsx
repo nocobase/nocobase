@@ -10,7 +10,7 @@
 import { FormItem, FormLayout } from '@formily/antd-v5';
 import { registerValidateRules } from '@formily/core';
 import React from 'react';
-import { defaultProps, operators } from './properties';
+import { defaultProps, DefaultValueProps } from './properties';
 import { CollectionFieldInterface } from '../../data-source/collection-field-interface/CollectionFieldInterface';
 
 registerValidateRules({
@@ -67,6 +67,7 @@ export class JsonFieldInterface extends CollectionFieldInterface {
       'x-hidden': `{{ !isDialect('postgres') }}`,
       'x-disabled': `{{ disabledJSONB }}`,
     },
+    ...DefaultValueProps(this),
   };
   // filterable = {
   //   operators: operators.string,

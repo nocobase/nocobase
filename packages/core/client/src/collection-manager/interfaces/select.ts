@@ -8,7 +8,7 @@
  */
 
 import { ISchema } from '@formily/react';
-import { dataSource, defaultProps, operators } from './properties';
+import { dataSource, defaultProps, operators, DefaultValueProps } from './properties';
 import { CollectionFieldInterface } from '../../data-source/collection-field-interface/CollectionFieldInterface';
 
 export class SelectFieldInterface extends CollectionFieldInterface {
@@ -31,6 +31,7 @@ export class SelectFieldInterface extends CollectionFieldInterface {
   properties = {
     ...defaultProps,
     'uiSchema.enum': dataSource,
+    ...DefaultValueProps(this),
   };
   filterable = {
     operators: operators.enumType,

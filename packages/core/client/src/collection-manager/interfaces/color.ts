@@ -8,7 +8,7 @@
  */
 
 import { CollectionFieldInterface } from '../../data-source/collection-field-interface/CollectionFieldInterface';
-import { defaultProps, operators } from './properties';
+import { defaultProps, operators, DefaultValueProps } from './properties';
 
 export class ColorFieldInterface extends CollectionFieldInterface {
   name = 'color';
@@ -28,6 +28,7 @@ export class ColorFieldInterface extends CollectionFieldInterface {
   hasDefaultValue = true;
   properties = {
     ...defaultProps,
+    ...DefaultValueProps(this),
   };
   filterable = {
     operators: operators.string,

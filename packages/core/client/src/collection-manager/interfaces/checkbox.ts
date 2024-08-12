@@ -8,7 +8,7 @@
  */
 
 import { ISchema } from '@formily/react';
-import { defaultProps, operators } from '../';
+import { defaultProps, operators, DefaultValueProps } from '../';
 import { CollectionFieldInterface } from '../../data-source/collection-field-interface/CollectionFieldInterface';
 
 export class CheckboxFieldInterface extends CollectionFieldInterface {
@@ -28,6 +28,7 @@ export class CheckboxFieldInterface extends CollectionFieldInterface {
   hasDefaultValue = true;
   properties = {
     ...defaultProps,
+    ...DefaultValueProps(this),
   };
   filterable = {
     operators: operators.boolean,

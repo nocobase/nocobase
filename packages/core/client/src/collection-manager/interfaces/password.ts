@@ -9,7 +9,7 @@
 
 import { CollectionFieldInterface } from '../../data-source/collection-field-interface/CollectionFieldInterface';
 import { i18n } from '../../i18n';
-import { defaultProps, unique } from './properties';
+import { defaultProps, unique, DefaultValueProps } from './properties';
 
 export class PasswordFieldInterface extends CollectionFieldInterface {
   name = 'password';
@@ -30,6 +30,7 @@ export class PasswordFieldInterface extends CollectionFieldInterface {
   properties = {
     ...defaultProps,
     unique,
+    ...DefaultValueProps(this),
   };
   validateSchema = (fieldSchema) => {
     return {
