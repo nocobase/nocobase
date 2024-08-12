@@ -9,22 +9,22 @@
 
 import { COLLECTION_NAME } from '../constant';
 import { CollectionOptions } from '@nocobase/client';
+import { uid } from '@formily/shared';
 const collection: CollectionOptions = {
   name: COLLECTION_NAME.channels,
   fields: [
     {
       name: 'id',
-      type: 'nanoid',
+      type: 'uid',
       primaryKey: true,
       allowNull: false,
-      autoFill: true,
-      customAlphabet: '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz',
-      interface: 'nanoid',
+      interface: 'input',
       uiSchema: {
         type: 'string',
-        title: '{{t("ID")}}',
-        'x-component': 'NanoIDInput',
+        title: '{{t("Channel name")}}',
+        'x-component': 'Input',
         'x-read-pretty': true,
+        required: true,
       },
       unique: true,
       size: 10,
@@ -37,6 +37,7 @@ const collection: CollectionOptions = {
         type: 'string',
         'x-component': 'Input',
         title: '{{t("Title")}}',
+        required: true,
       },
     },
     {

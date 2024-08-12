@@ -8,6 +8,10 @@
  */
 
 export const formProperties = {
+  id: {
+    'x-component': 'CollectionField',
+    'x-decorator': 'FormItem',
+  },
   title: {
     'x-component': 'CollectionField',
     'x-decorator': 'FormItem',

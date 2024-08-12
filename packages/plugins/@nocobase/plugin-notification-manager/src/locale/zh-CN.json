@@ -14,7 +14,7 @@
   "Description": "描述",
   "Notification type": "通知类型",
   "Actions": "操作",
-
+  "Channel name": "渠道标识",
   "Configure": "编辑",
   "Add new": "新增",
   "Trigger from": "触发来源",

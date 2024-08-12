@@ -32,7 +32,7 @@ export const createFormSchema: ISchema = {
             () =>
               Promise.resolve({
                 data: {
-                  name: `s_${uid()}`,
+                  id: `s_${uid()}`,
                   notificationType: name,
                 },
               }),
