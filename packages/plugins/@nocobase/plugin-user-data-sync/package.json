@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-user-data-sync",
-  "version": "1.2.15-alpha",
+  "version": "1.3.0-alpha",
   "main": "dist/server/index.js",
   "dependencies": {},
   "peerDependencies": {
