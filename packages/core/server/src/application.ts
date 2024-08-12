@@ -901,7 +901,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   async install(options: InstallOptions = {}) {
     const reinstall = options.clean || options.force;
     if (reinstall) {
-      // await this.db.clean({ drop: true });
+      await this.db.clean({ drop: true });
     }
     if (await this.isInstalled()) {
       this.log.warn('app is installed');
