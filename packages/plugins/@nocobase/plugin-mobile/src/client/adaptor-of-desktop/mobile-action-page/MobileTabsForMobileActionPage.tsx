@@ -23,21 +23,35 @@ import {
 import { Tabs } from 'antd-mobile';
 import { LeftOutline } from 'antd-mobile-icons';
 import classNames from 'classnames';
-import React, { useMemo, useRef } from 'react';
-import { MobilePageHeader } from '../dynamic-page';
-import { MobilePageContentContainer } from '../dynamic-page/content/MobilePageContentContainer';
-import { useStyles } from '../dynamic-page/header/tabs';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { MobilePageHeader } from '../../pages/dynamic-page';
+import { MobilePageContentContainer } from '../../pages/dynamic-page/content/MobilePageContentContainer';
+import { useStyles } from '../../pages/dynamic-page/header/tabs';
+import { hideDivider } from '../hideDivider';
 import { useMobileTabsForMobileActionPageStyle } from './MobileTabsForMobileActionPage.style';
 
 export const MobileTabsForMobileActionPage: any = observer(
   (props) => {
     const fieldSchema = useFieldSchema();
     const { render } = useSchemaInitializerRender(fieldSchema['x-initializer'], fieldSchema['x-initializer-props']);
-    const { activeKey, onChange } = useTabsContext() || {};
+    const { activeKey: _activeKey, onChange: _onChange } = useTabsContext() || {};
+    const [activeKey, setActiveKey] = useState(_activeKey);
     const { styles } = useStyles();
     const { styles: mobileTabsForMobileActionPageStyle } = useMobileTabsForMobileActionPageStyle();
     const { goBack } = useBackButton();
     const keyToTabRef = useRef({});
+
+    const onChange = useCallback(
+      (key) => {
+        setActiveKey(key);
+        _onChange?.(key);
+      },
+      [_onChange],
+    );
+
+    useEffect(() => {
+      setActiveKey(_activeKey);
+    }, [_activeKey]);
 
     const items = useMemo(() => {
       const result = fieldSchema.mapProperties((schema, key) => {
@@ -50,6 +64,7 @@ export const MobileTabsForMobileActionPage: any = observer(
 
     const tabContent = useMemo(() => {
       const list = fieldSchema.mapProperties((schema, key) => {
+        schema = hideDivider(schema);
         return {
           key,
           node: <SchemaComponent name={key} schema={schema} onlyRenderProperties distributed />,

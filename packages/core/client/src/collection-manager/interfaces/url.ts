@@ -24,6 +24,16 @@ export class UrlFieldInterface extends CollectionFieldInterface {
       'x-component': 'Input.URL',
     },
   };
+  componentOptions = [
+    {
+      label: 'URL',
+      value: 'Input.URL',
+    },
+    {
+      label: 'Preview',
+      value: 'Input.Preview',
+    },
+  ];
   availableTypes = ['string', 'text'];
   schemaInitialize(schema: ISchema, { block }) {}
   properties = {

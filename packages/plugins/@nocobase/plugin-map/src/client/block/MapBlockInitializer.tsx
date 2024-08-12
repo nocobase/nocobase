@@ -22,8 +22,8 @@ import {
 } from '@nocobase/client';
 import React, { useContext } from 'react';
 import { useMapTranslation } from '../locale';
-import { findNestedOption } from './utils';
 import { createMapBlockUISchema } from './createMapBlockUISchema';
+import { findNestedOption } from './utils';
 
 export const MapBlockInitializer = () => {
   const itemConfig = useSchemaInitializerItem();
@@ -32,9 +32,10 @@ export const MapBlockInitializer = () => {
   const { getCollectionFieldsOptions } = useCollectionManager_deprecated();
   const { t } = useMapTranslation();
   const { theme } = useGlobalTheme();
+
   return (
     <DataBlockInitializer
-      componentType={'Map'}
+      componentType={`Map`}
       icon={<TableOutlined />}
       onCreateBlockSchema={async ({ item }) => {
         const mapFieldOptions = getCollectionFieldsOptions(item.name, ['point', 'lineString', 'polygon'], {

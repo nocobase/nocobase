@@ -8,6 +8,7 @@
  */
 
 import { SchemaInitializer, gridRowColWrap } from '@nocobase/client';
+import { generatePluginTranslationTemplate } from '../../../locale';
 
 export const mobileAddBlockInitializer = new SchemaInitializer({
   title: '{{t("Add block")}}',
@@ -20,7 +21,7 @@ export const mobileAddBlockInitializer = new SchemaInitializer({
   items: [
     {
       name: 'dataBlocks',
-      title: '{{t("Data blocks")}}',
+      title: '{{t("Desktop data blocks")}}',
       type: 'itemGroup',
       children: [
         {
@@ -53,12 +54,17 @@ export const mobileAddBlockInitializer = new SchemaInitializer({
     {
       name: 'otherBlocks',
       type: 'itemGroup',
-      title: '{{t("Other blocks")}}',
+      title: '{{t("Other desktop blocks")}}',
       children: [
         {
           name: 'markdown',
           title: '{{t("Markdown")}}',
           Component: 'MarkdownBlockInitializer',
+        },
+        {
+          name: 'settings',
+          title: generatePluginTranslationTemplate('Settings'),
+          Component: 'MobileSettingsBlockInitializer',
         },
       ],
     },

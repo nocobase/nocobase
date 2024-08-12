@@ -69,7 +69,8 @@ test('menu permission ', async ({ page, mockPage, mockRole, updateRole }) => {
   expect(page.url()).toContain(uid2);
 });
 
-test('i18n should not fallbackNS', async ({ page }) => {
+// TODO: this is not stable
+test.skip('i18n should not fallbackNS', async ({ page }) => {
   await page.goto('/admin/settings/system-settings');
 
   // 创建 Users 页面

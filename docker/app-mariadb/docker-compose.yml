@@ -11,6 +11,7 @@ services:
       - mariadb
     environment:
       - APP_KEY=your-secret-key # Replace it with your own app key
+      - ENCRYPTION_FIELD_KEY=your-secret-key # Replace it with your own app key
       - DB_DIALECT=mariadb
       - DB_HOST=mariadb
       - DB_DATABASE=nocobase

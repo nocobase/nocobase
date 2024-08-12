@@ -65,7 +65,7 @@ test('createMapBlockSchema should return an object with expected properties', ()
               },
               "title": "{{ t("View record") }}",
               "type": "void",
-              "x-component": "Action.Drawer",
+              "x-component": "Action.Container",
               "x-component-props": {
                 "className": "nb-action-popup",
               },

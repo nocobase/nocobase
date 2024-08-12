@@ -25,6 +25,8 @@ import { isPatternDisabled } from '../../../../schema-settings';
 import { ActionType } from '../../../../schema-settings/LinkageRules/type';
 import { SchemaSettingsDefaultValue } from '../../../../schema-settings/SchemaSettingsDefaultValue';
 import { useIsAllowToSetDefaultValue } from '../../../../schema-settings/hooks/useIsAllowToSetDefaultValue';
+import { fieldComponentSettingsItem } from '../../../../data-source/commonsSettingsItem';
+
 import { SchemaSettingsLinkageRules } from '../../../../schema-settings';
 import { useIsFieldReadPretty } from '../../../../schema-component/antd/form-item/FormItem.Settings';
 export const fieldSettingsFormItem = new SchemaSettings({
@@ -464,6 +466,7 @@ export const fieldSettingsFormItem = new SchemaSettings({
               };
             },
           },
+          fieldComponentSettingsItem,
         ];
       },
     },

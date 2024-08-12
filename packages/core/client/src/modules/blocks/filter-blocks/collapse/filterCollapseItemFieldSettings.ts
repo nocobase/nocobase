@@ -17,6 +17,7 @@ import { useCollectionManager } from '../../../../data-source/collection/Collect
 import { useCompile, useDesignable } from '../../../../schema-component';
 import { SchemaSettingsDefaultSortingRules } from '../../../../schema-settings';
 import { SchemaSettingsDataScope } from '../../../../schema-settings/SchemaSettingsDataScope';
+import { fieldComponentSettingsItem } from '../../../../data-source/commonsSettingsItem';
 
 export const filterCollapseItemFieldSettings = new SchemaSettings({
   name: 'fieldSettings:FilterCollapseItem',
@@ -197,6 +198,7 @@ export const filterCollapseItemFieldSettings = new SchemaSettings({
               };
             },
           },
+          fieldComponentSettingsItem,
         ];
       },
     },

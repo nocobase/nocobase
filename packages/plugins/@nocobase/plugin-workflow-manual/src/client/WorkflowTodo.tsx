@@ -12,7 +12,14 @@ import { Button, Space, Spin, Tag } from 'antd';
 import dayjs from 'dayjs';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
-import { css, useCompile, usePlugin } from '@nocobase/client';
+import {
+  css,
+  useCollection,
+  useCollectionRecordData,
+  useCompile,
+  useOpenModeContext,
+  usePlugin,
+} from '@nocobase/client';
 
 import {
   SchemaComponent,
@@ -22,25 +29,23 @@ import {
   useActionContext,
   useCurrentUserContext,
   useFormBlockContext,
-  useRecord,
   useTableBlockContext,
-  ExtendCollectionsProvider,
 } from '@nocobase/client';
 import WorkflowPlugin, {
+  DetailsBlockProvider,
   FlowContext,
   JobStatusOptions,
   JobStatusOptionsMap,
   linkNodes,
   useAvailableUpstreams,
   useFlowContext,
-  DetailsBlockProvider,
 } from '@nocobase/plugin-workflow/client';
 
 import { NAMESPACE, useLang } from '../locale';
 import { FormBlockProvider } from './instruction/FormBlockProvider';
 import { ManualFormType, manualFormTypes } from './instruction/SchemaConfig';
 
-const nodeCollection = {
+export const nodeCollection = {
   title: `{{t("Task", { ns: "${NAMESPACE}" })}}`,
   name: 'flow_nodes',
   fields: [
@@ -81,7 +86,7 @@ const nodeCollection = {
   ],
 };
 
-const workflowCollection = {
+export const workflowCollection = {
   title: `{{t("Workflow", { ns: "${NAMESPACE}" })}}`,
   name: 'workflows',
   fields: [
@@ -99,7 +104,7 @@ const workflowCollection = {
   ],
 };
 
-const todoCollection = {
+export const todoCollection = {
   title: `{{t("Workflow todos", { ns: "${NAMESPACE}" })}}`,
   name: 'users_jobs',
   fields: [
@@ -219,15 +224,18 @@ const UserColumn = observer(
 );
 
 function UserJobStatusColumn(props) {
-  const record = useRecord();
+  const recordData = useCollectionRecordData();
   const labelUnprocessed = useLang('Unprocessed');
-  if (record.execution.status && !record.status) {
+  if (recordData?.execution?.status && !recordData?.status) {
     return <Tag>{labelUnprocessed}</Tag>;
   }
   return props.children;
 }
 
 export const WorkflowTodo: React.FC & { Drawer: React.FC; Decorator: React.FC } = () => {
+  const { defaultOpenMode } = useOpenModeContext();
+  const collection = useCollection();
+
   return (
     <SchemaComponent
       components={{
@@ -293,16 +301,7 @@ export const WorkflowTodo: React.FC & { Drawer: React.FC; Decorator: React.FC } 
                 },
                 title: '{{t("Actions")}}',
                 properties: {
-                  view: {
-                    type: 'void',
-                    'x-component': 'Action.Link',
-                    title: '{{t("View")}}',
-                    properties: {
-                      drawer: {
-                        'x-component': 'WorkflowTodo.Drawer',
-                      },
-                    },
-                  },
+                  view: getWorkflowTodoViewActionSchema({ defaultOpenMode, collectionName: collection.name }),
                 },
               },
               node: {
@@ -390,6 +389,32 @@ export const WorkflowTodo: React.FC & { Drawer: React.FC; Decorator: React.FC } 
   );
 };
 
+export function getWorkflowTodoViewActionSchema({ defaultOpenMode, collectionName }) {
+  return {
+    name: 'view',
+    type: 'void',
+    'x-component': 'Action.Link',
+    'x-component-props': {
+      openMode: defaultOpenMode,
+    },
+    title: '{{t("View")}}',
+    // 1. “弹窗 URL”需要 Schema 中必须包含 uid
+    // 2. 所以，在这里加上一个固定的 uid 用以支持“弹窗 URL”
+    // 3. 然后，把这段 Schema 完整的（加上弹窗的部分）保存到内存中，以便“弹窗 URL”可以直接使用
+    'x-uid': `${collectionName}-view`,
+    'x-action': 'view',
+    'x-action-context': {
+      dataSource: 'main',
+      collection: collectionName,
+    },
+    properties: {
+      drawer: {
+        'x-component': WorkflowTodo.Drawer,
+      },
+    },
+  };
+}
+
 function ActionBarProvider(props) {
   // * status is done:
   //   1. form is this form: show action button, and emphasis used status button
@@ -449,27 +474,35 @@ function ManualActionStatusProvider({ value, children }) {
 
 function useSubmit() {
   const api = useAPIClient();
-  const { setVisible } = useActionContext();
+  const { setVisible, setSubmitted } = useActionContext();
   const { values, submit } = useForm();
+  const field = useField();
   const buttonSchema = useFieldSchema();
   const { service } = useTableBlockContext();
   const { userJob, execution } = useFlowContext();
   const { name: actionKey } = buttonSchema;
   const { name: formKey } = buttonSchema.parent.parent;
+  const { assignedValues = {} } = buttonSchema?.['x-action-settings'] ?? {};
   return {
     async run() {
       if (execution.status || userJob.status) {
         return;
       }
       await submit();
+      field.data = field.data || {};
+      field.data.loading = true;
+
       await api.resource('users_jobs').submit({
         filterByTk: userJob.id,
         values: {
-          result: { [formKey]: values, _: actionKey },
+          result: { [formKey]: { ...values, ...assignedValues.values }, _: actionKey },
         },
       });
+
+      field.data.loading = false;
+      setSubmitted(true);
       setVisible(false);
-      service.refresh();
+      service?.refresh();
     },
   };
 }
@@ -477,7 +510,7 @@ function useSubmit() {
 function FlowContextProvider(props) {
   const workflowPlugin = usePlugin(WorkflowPlugin);
   const api = useAPIClient();
-  const { id } = useRecord();
+  const { id } = useCollectionRecordData() || {};
   const [flowContext, setFlowContext] = useState<any>(null);
   const [node, setNode] = useState<any>(null);
 
@@ -551,13 +584,13 @@ function FlowContextProvider(props) {
 
 function useFormBlockProps() {
   const { userJob, execution } = useFlowContext();
-  const record = useRecord();
+  const recordData = useCollectionRecordData();
   const { data: user } = useCurrentUserContext();
   const { form } = useFormBlockContext();
 
   const pattern =
     execution.status || userJob.status
-      ? record
+      ? recordData
         ? 'readPretty'
         : 'disabled'
       : user?.data?.id !== userJob.userId
@@ -578,7 +611,7 @@ function useDetailsBlockProps() {
 
 function FooterStatus() {
   const compile = useCompile();
-  const { status, updatedAt } = useRecord();
+  const { status, updatedAt } = useCollectionRecordData() || {};
   const statusOption = JobStatusOptionsMap[status];
   return status ? (
     <Space>
@@ -598,7 +631,7 @@ function FooterStatus() {
 
 function Drawer() {
   const ctx = useContext(SchemaComponentContext);
-  const { id, node, workflow, status } = useRecord();
+  const { id, node, workflow, status } = useCollectionRecordData() || {};
 
   return (
     <SchemaComponentContext.Provider value={{ ...ctx, reset() {}, designable: false }}>
@@ -610,11 +643,11 @@ function Drawer() {
         schema={{
           type: 'void',
           name: `drawer-${id}-${status}`,
-          'x-component': 'Action.Drawer',
+          'x-component': 'Action.Container',
           'x-component-props': {
             className: 'nb-action-popup',
           },
-          title: `${workflow.title} - ${node.title ?? `#${node.id}`}`,
+          title: `${workflow?.title} - ${node?.title ?? `#${node?.id}`}`,
           properties: {
             tabs: {
               type: 'void',
@@ -622,7 +655,7 @@ function Drawer() {
             },
             footer: {
               type: 'void',
-              'x-component': 'Action.Drawer.Footer',
+              'x-component': 'Action.Container.Footer',
               properties: {
                 content: {
                   type: 'void',
@@ -655,11 +688,9 @@ function Decorator({ params = {}, children }) {
   };
 
   return (
-    <ExtendCollectionsProvider collections={[nodeCollection, workflowCollection, todoCollection]}>
-      <TableBlockProvider name="workflow-todo" {...blockProps}>
-        {children}
-      </TableBlockProvider>
-    </ExtendCollectionsProvider>
+    <TableBlockProvider name="workflow-todo" {...blockProps}>
+      {children}
+    </TableBlockProvider>
   );
 }
 

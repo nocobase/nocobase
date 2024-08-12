@@ -11,6 +11,7 @@ import { useFieldSchema } from '@formily/react';
 import { SchemaSettings } from '../../../../application/schema-settings/SchemaSettings';
 import { useFormBlockContext } from '../../../../block-provider/FormBlockProvider';
 import { useCollection_deprecated } from '../../../../collection-manager';
+import { useCollection } from '../../../../data-source/collection/CollectionProvider';
 import {
   SchemaSettingsDataTemplates,
   SchemaSettingsFormItemTemplate,
@@ -18,6 +19,7 @@ import {
 } from '../../../../schema-settings';
 import { SchemaSettingsBlockHeightItem } from '../../../../schema-settings/SchemaSettingsBlockHeightItem';
 import { SchemaSettingsBlockTitleItem } from '../../../../schema-settings/SchemaSettingsBlockTitleItem';
+import { useBlockTemplateContext } from '../../../../schema-templates/BlockTemplateProvider';
 
 export const createFormBlockSettings = new SchemaSettings({
   name: 'blockSettings:createForm',
@@ -62,12 +64,13 @@ export const createFormBlockSettings = new SchemaSettings({
       name: 'formItemTemplate',
       Component: SchemaSettingsFormItemTemplate,
       useComponentProps() {
-        const { name } = useCollection_deprecated();
+        const { componentNamePrefix } = useBlockTemplateContext();
+        const { name } = useCollection();
         const fieldSchema = useFieldSchema();
         const defaultResource =
           fieldSchema?.['x-decorator-props']?.resource || fieldSchema?.['x-decorator-props']?.association;
         return {
-          componentName: 'FormItem',
+          componentName: `${componentNamePrefix}FormItem`,
           collectionName: name,
           resourceName: defaultResource,
         };
