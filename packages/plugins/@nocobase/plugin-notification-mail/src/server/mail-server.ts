@@ -15,7 +15,7 @@ export class MailServer extends NotificationServerBase {
     super();
   }
   send: SendFnType = async function (args) {
-    const { message, channel, createSendingRecord: writeLog } = args;
+    const { message, channel } = args;
     const { host, port, secure, account, password } = channel.options;
     const transpoter: Transporter = nodemailer.createTransport({
       host,
@@ -28,7 +28,7 @@ export class MailServer extends NotificationServerBase {
     });
     const receivers = message.receivers;
     const { from, subject } = message.content.config;
-    receivers.forEach(async (receiver) => {
+    const sendMail = async ({ receiver }) => {
       try {
         const res = await transpoter.sendMail({
           from: from,
@@ -37,23 +37,17 @@ export class MailServer extends NotificationServerBase {
           text: message.content.body,
           html: message.content.body,
         });
-        writeLog({
-          receiver,
-          status: 'success',
-          content: message.content,
-          triggerFrom: message.triggerFrom,
-          channelId: channel.id,
-        });
+        return { receiver, status: 'success' };
       } catch (error) {
-        writeLog({
-          receiver,
-          status: 'fail',
-          content: message.content,
-          triggerFrom: message.triggerFrom,
-          reason: error.message,
-          channelId: channel.id,
-        });
+        throw { receiver, status: 'fail', reason: error.message };
       }
+    };
+    const results = await Promise.allSettled(receivers.map((receiver) => sendMail({ receiver })));
+    return results.map((result) => {
+      if (result.status === 'fulfilled') {
+        return { ...result.value, content: message.content };
+      }
+      return { ...result.reason, content: message.content };
     });
   };
 }

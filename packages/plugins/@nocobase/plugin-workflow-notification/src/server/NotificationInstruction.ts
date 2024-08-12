@@ -20,7 +20,7 @@ export default class extends Instruction {
     const sync = this.workflow.isWorkflowSync(workflow);
     if (sync) {
       try {
-        const result = await notificationServer.send({ ...options, triggerFrom: 'workflow' });
+        const result = await notificationServer.notificationManager.send({ ...options, triggerFrom: 'workflow' });
         return {
           status: JOB_STATUS.RESOLVED,
           result,
@@ -41,7 +41,7 @@ export default class extends Instruction {
     });
 
     // eslint-disable-next-line promise/catch-or-return
-    notificationServer
+    notificationServer.notificationManager
       .send({ ...options, triggerFrom: 'workflow' })
       .then((res) => {
         processor.logger.info(`notification (#${node.id}) sent successfully.`);

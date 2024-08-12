@@ -9,34 +9,25 @@
 
 import { Plugin } from '@nocobase/server';
 import type { Logger } from '@nocobase/logger';
-import { COLLECTION_NAME } from '../constant';
-import { SendOptions, IChannel, WriteLogOptions } from './types';
+import { SendOptions } from './types';
 import NotificationManager from './manager';
-export class PluginNotificationManager extends Plugin {
+export class PluginNotificationManagerServer extends Plugin {
   notificationManager: NotificationManager;
   logger: Logger;
 
-  async send(options: SendOptions) {
-    this.logger.info('receive sending message request', options);
-    const channelsRepo = this.app.db.getRepository('channels');
-    const channel: IChannel = await channelsRepo.findOne({ filterByTk: options.channelId });
-    const notificationServer = this.notificationManager.notificationTypes.get(channel.notificationType).server;
-    notificationServer.send({ message: options, channel, createSendingRecord: this.createSendingRecord });
-  }
-
-  createSendingRecord = async (options: WriteLogOptions) => {
-    const logsRepo = this.app.db.getRepository('messageLogs');
-    return logsRepo.create({ values: options });
-  };
-
   async afterAdd() {
-    this.notificationManager = new NotificationManager();
+    this.logger = this.createLogger({
+      dirname: 'notification-manager',
+      filename: '%DATE%.log',
+      transports: ['dailyRotateFile'],
+    });
+    this.notificationManager = new NotificationManager({ plugin: this });
   }
 
   async beforeLoad() {
     this.app.resourceManager.registerActionHandler('messages:send', async (ctx, next) => {
       const sendOptions = ctx.action?.params?.values as SendOptions;
-      this.send(sendOptions);
+      this.notificationManager.send(sendOptions);
       next();
     });
     this.app.acl.registerSnippet({
@@ -45,13 +36,7 @@ export class PluginNotificationManager extends Plugin {
     });
   }
 
-  async load() {
-    this.logger = this.createLogger({
-      dirname: 'notification-manager',
-      filename: '%DATE%.log',
-      transports: ['dailyRotateFile'],
-    });
-  }
+  async load() {}
 
   async install() {}
 
@@ -62,4 +47,4 @@ export class PluginNotificationManager extends Plugin {
   async remove() {}
 }
 
-export default PluginNotificationManager;
+export default PluginNotificationManagerServer;
