@@ -16,20 +16,17 @@ const collectionOption: CollectionOptions = {
   fields: [
     {
       name: 'id',
-      type: 'nanoid',
+      type: 'uuid',
       primaryKey: true,
       allowNull: false,
-      autoFill: true,
-      customAlphabet: '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz',
-      interface: 'nanoid',
+      interface: 'uuid',
       uiSchema: {
         type: 'string',
         title: '{{t("ID")}}',
-        'x-component': 'NanoIDInput',
+        'x-component': 'Input',
         'x-read-pretty': true,
       },
       unique: true,
-      size: 10,
     },
     {
       name: 'channel',
