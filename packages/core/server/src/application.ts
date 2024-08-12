@@ -62,6 +62,7 @@ import { Plugin } from './plugin';
 import { InstallOptions, PluginManager } from './plugin-manager';
 import { createPubSubManager, PubSubManager, PubSubManagerOptions } from './pub-sub-manager';
 import { SyncMessageManager } from './sync-message-manager';
+import { LockManager, LockManagerOptions } from './lock-manager';
 
 import packageJson from '../package.json';
 
@@ -115,6 +116,7 @@ export interface ApplicationOptions {
   pmSock?: string;
   name?: string;
   authManager?: AuthManagerOptions;
+  lockManager?: LockManagerOptions;
   /**
    * @internal
    */
@@ -225,6 +227,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   private _maintainingCommandStatus: MaintainingCommandStatus;
   private _maintainingStatusBeforeCommand: MaintainingCommandStatus | null;
   private _actionCommand: Command;
+
+  public lockManager: LockManager;
 
   /**
    * @internal
@@ -1131,6 +1135,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this._i18n = createI18n(options);
     this.pubSubManager = createPubSubManager(this, options.pubSubManager);
     this.syncMessageManager = new SyncMessageManager(this, options.syncMessageManager);
+    this.lockManager = new LockManager({
+      defaultAdapter: process.env.LOCK_ADAPTER_DEFAULT,
+      ...options.lockManager,
+    });
     this.context.db = this.db;
 
     /**
