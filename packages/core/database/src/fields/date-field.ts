@@ -42,7 +42,7 @@ export class DateField extends Field {
   init() {
     const { name, defaultToCurrentTime, onUpdateToCurrentTime, timezone } = this.options;
 
-    const resolveTimeZone = (context) => {
+    this.resolveTimeZone = (context) => {
       const serverTimeZone = this.database.options.timezone;
       if (timezone === 'server') {
         return serverTimeZone;
@@ -71,14 +71,24 @@ export class DateField extends Field {
         instance.set(name, new Date());
         return;
       }
-
-      if (typeof value === 'string' && isValidDatetime(value)) {
-        const dateTimezone = resolveTimeZone(options?.context);
-        const dateString = `${value} ${dateTimezone}`;
-        console.log('dateString', dateString);
-        instance.set(name, new Date(dateString));
-      }
     };
+  }
+
+  setter(value, options) {
+    if (value === null) {
+      return value;
+    }
+    if (value instanceof Date) {
+      return value;
+    }
+
+    if (typeof value === 'string' && isValidDatetime(value)) {
+      const dateTimezone = this.resolveTimeZone(options?.context);
+      const dateString = `${value} ${dateTimezone}`;
+      return new Date(dateString);
+    }
+
+    return value;
   }
 
   bind() {
@@ -106,20 +116,6 @@ export class DateField extends Field {
   unbind() {
     super.unbind();
     this.off('beforeValidate', this.beforeValidate);
-  }
-
-  additionalSequelizeOptions(): {} {
-    const { name } = this.options;
-    return {
-      set(value) {
-        if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
-          value = `${value} 00:00:00`;
-        }
-
-        console.log(`set ${name}`, value);
-        this.setDataValue(name, value);
-      },
-    };
   }
 }
 

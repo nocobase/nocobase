@@ -9,7 +9,7 @@
 
 import { Database, mockDatabase } from '@nocobase/database';
 
-describe('date-field', () => {
+describe('unix timestamp field', () => {
   let db: Database;
 
   beforeEach(async () => {
