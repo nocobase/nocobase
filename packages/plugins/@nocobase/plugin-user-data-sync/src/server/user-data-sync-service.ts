@@ -63,10 +63,12 @@ export class UserDataSyncService {
       const data = await source.pull();
       // 输出拉取的数据
       this.logger.info('pull data of source', {
-        source: source.instance.name,
-        sourceType: source.instance.sourceType,
-        batch: task.batch,
-        data: data,
+        data: {
+          source: source.instance.name,
+          sourceType: source.instance.sourceType,
+          batch: task.batch,
+          data: data,
+        },
       });
       ctx.log.info('end pull data of source', { source: source.instance.name, sourceType: source.instance.sourceType });
       ctx.log.info('begin update data of source', {
