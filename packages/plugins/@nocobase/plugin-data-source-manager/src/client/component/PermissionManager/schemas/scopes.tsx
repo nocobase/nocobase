@@ -15,6 +15,9 @@ import {
   useFilterFieldOptions,
   useFormBlockContext,
   withDynamicSchemaProps,
+  useCollectionRecord,
+  Action,
+  useDestroyActionProps,
 } from '@nocobase/client';
 import React, { useContext, useEffect } from 'react';
 import { RoleResourceCollectionContext } from '../RolesResourcesActions';
@@ -49,6 +52,20 @@ const useFormBlockProps = () => {
   return {
     form: ctx.form,
   };
+};
+
+const EditScopeActionComponent = (props) => {
+  const { data } = useCollectionRecord();
+  const { id } = data || ({} as any);
+  const actionProps = { ...props, disabled: [1, 2].includes(id) };
+  return <Action.Link {...actionProps} />;
+};
+
+const DestroyScopeActionComponent = (props) => {
+  const { data } = useCollectionRecord();
+  const { id } = data || ({} as any);
+  const actionProps = { ...props, ...useDestroyActionProps(), disabled: [1, 2].includes(id) };
+  return <Action.Link {...actionProps} />;
 };
 
 export const getScopesSchema = (dataSourceKey) => {
@@ -247,7 +264,7 @@ export const getScopesSchema = (dataSourceKey) => {
                                 title: '{{ t("Edit") }}',
                                 'x-action': 'update',
                                 'x-decorator': 'ACLActionProvider',
-                                'x-component': 'Action.Link',
+                                'x-component': EditScopeActionComponent,
                                 'x-component-props': {
                                   openMode: 'drawer',
                                   icon: 'EditOutlined',
@@ -341,8 +358,6 @@ export const getScopesSchema = (dataSourceKey) => {
                                 title: '{{ t("Delete") }}',
                                 'x-action': 'destroy',
                                 'x-decorator': 'ACLActionProvider',
-                                'x-component': 'Action.Link',
-                                'x-use-component-props': 'useDestroyActionProps',
                                 'x-component-props': {
                                   icon: 'DeleteOutlined',
                                   confirm: {
@@ -350,6 +365,7 @@ export const getScopesSchema = (dataSourceKey) => {
                                     content: "{{t('Are you sure you want to delete it?')}}",
                                   },
                                 },
+                                'x-component': DestroyScopeActionComponent,
                               },
                             },
                           },
