@@ -9,7 +9,7 @@
   },
   "typings": "./index.d.ts",
   "dependencies": {
-    "@babel/core": "7.25.3",
+    "@babel/core": "7.25.2",
     "@babel/plugin-transform-modules-amd": "7.24.7",
     "@babel/preset-env": "7.25.3",
     "@hapi/topo": "^6.0.0",
