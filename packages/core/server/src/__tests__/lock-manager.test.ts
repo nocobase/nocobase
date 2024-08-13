@@ -85,48 +85,89 @@ describe('lock manager', () => {
 
     it('base api', async () => {
       expect(app.lockManager).toBeDefined();
-      expect(await app.lockManager.getLock('a')).toBeInstanceOf(LocalLock);
     });
 
     it('acquire and release', async () => {
       const order = [];
-      const lock1 = await app.lockManager.getLock('test');
-      expect(lock1).toBeDefined();
+      const r1 = await app.lockManager.acquire('test');
       order.push(1);
-      await lock1.acquire();
-      order.push(2);
       setTimeout(async () => {
+        order.push(2);
+        await r1();
         order.push(3);
-        await lock1.release();
-        order.push(4);
       }, 200);
+      order.push(4);
+      const r2 = await app.lockManager.acquire('test');
       order.push(5);
-      await lock1.acquire();
+      await r2();
       order.push(6);
-      await lock1.release();
-      order.push(7);
-      expect(order).toEqual([1, 2, 5, 3, 4, 6, 7]);
+      expect(order).toEqual([1, 4, 2, 3, 5, 6]);
+    });
+
+    it('acquire and release with timeout', async () => {
+      const order = [];
+      const r1 = await app.lockManager.acquire('test', 200);
+      order.push(1);
+      setTimeout(async () => {
+        order.push(2);
+        await r1();
+        order.push(3);
+      }, 400);
+      order.push(4);
+      const r2 = await app.lockManager.acquire('test', 200);
+      order.push(5);
+      await sleep(300);
+      await r2();
+      order.push(6);
+      expect(order).toEqual([1, 4, 5, 2, 3, 6]);
     });
 
     it('runExclusive', async () => {
       const order = [];
-      const lock = await app.lockManager.getLock('test');
       setTimeout(async () => {
-        await lock.runExclusive(async () => {
+        await app.lockManager.runExclusive('test', async () => {
           order.push(1);
           await sleep(100);
           order.push(2);
         });
       }, 100);
       order.push(3);
-      await lock.runExclusive(async () => {
+      await app.lockManager.runExclusive('test', async () => {
         order.push(4);
-        await sleep(500);
+        await sleep(400);
         order.push(5);
       });
       order.push(6);
       await sleep(200);
-      expect(order).toEqual([3, 4, 5, 6, 1, 2]);
+      expect(order).toEqual([3, 4, 5, 1, 6, 2]);
+    });
+
+    it('runExclusive with timeout', async () => {
+      const order = [];
+      setTimeout(async () => {
+        await app.lockManager.runExclusive(
+          'test',
+          async () => {
+            order.push(1);
+            await sleep(200);
+            order.push(2);
+          },
+          200,
+        );
+      }, 100);
+      order.push(3);
+      await app.lockManager.runExclusive(
+        'test',
+        async () => {
+          order.push(4);
+          await sleep(400);
+          order.push(5);
+        },
+        200,
+      );
+      order.push(6);
+      await sleep(200);
+      expect(order).toEqual([3, 4, 5, 1, 6, 2]);
     });
   });
 });

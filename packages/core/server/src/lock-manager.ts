@@ -10,17 +10,13 @@
 import { Registry } from '@nocobase/utils';
 import { Mutex, withTimeout, MutexInterface, E_CANCELED } from 'async-mutex';
 
-export abstract class AbstractLockAdapter<L extends AbstractLock = AbstractLock> {
-  async connect() {}
-  abstract getLock(key: string, ttl: number): L | Promise<L>;
-  abstract acquire(key: string, ttl: number): L | Promise<L>;
-  abstract release(key: string): void | Promise<void>;
-}
+export type Releaser = () => void | Promise<void>;
 
-export abstract class AbstractLock {
-  abstract acquire(): Promise<AbstractLock>;
-  abstract release(): Promise<void>;
-  abstract runExclusive<T>(fn: () => Promise<T>): Promise<T>;
+export abstract class AbstractLockAdapter {
+  async connect() {}
+  async close() {}
+  abstract acquire(key: string, ttl: number): Releaser | Promise<Releaser>;
+  abstract runExclusive<T>(key: string, fn: () => Promise<T>, ttl: number): Promise<T>;
 }
 
 export class LockAbortError extends Error {
@@ -29,25 +25,38 @@ export class LockAbortError extends Error {
   }
 }
 
-export class LocalLock extends AbstractLock {
+export class LocalLock {
   private lock: MutexInterface;
 
-  constructor(ttl) {
-    super();
-    this.lock = withTimeout(new Mutex(), ttl);
+  constructor(private ttl: number) {
+    this.lock = new Mutex();
+  }
+
+  setTTL(ttl: number) {
+    this.ttl = ttl;
   }
 
   async acquire() {
-    await this.lock.acquire();
-    return this;
-  }
-
-  async release() {
-    this.lock.release();
+    const release = (await this.lock.acquire()) as Releaser;
+    const timer = setTimeout(() => {
+      if (this.lock.isLocked()) {
+        release();
+      }
+    }, this.ttl);
+    return () => {
+      release();
+      clearTimeout(timer);
+    };
   }
 
   async runExclusive<T>(fn: () => Promise<T>): Promise<T> {
+    let timer;
     try {
+      timer = setTimeout(() => {
+        if (this.lock.isLocked()) {
+          this.lock.release();
+        }
+      });
       return this.lock.runExclusive(fn);
     } catch (e) {
       if (e === E_CANCELED) {
@@ -55,32 +64,34 @@ export class LocalLock extends AbstractLock {
       } else {
         throw e;
       }
+    } finally {
+      clearTimeout(timer);
     }
   }
 }
 
-class LocalLockAdapter extends AbstractLockAdapter<LocalLock> {
+class LocalLockAdapter extends AbstractLockAdapter {
   private locks = new Map<string, LocalLock>();
 
-  getLock(key: string, ttl: number): LocalLock {
+  private getLock(key: string, ttl: number): LocalLock {
     let lock = this.locks.get(key);
     if (!lock) {
       lock = new LocalLock(ttl);
       this.locks.set(key, lock);
+    } else {
+      lock.setTTL(ttl);
     }
     return lock;
   }
 
-  async acquire(key: string, ttl?: number) {
-    const lockInstance = this.getLock(key, ttl);
-    return lockInstance.acquire();
+  async acquire(key: string, ttl: number) {
+    const lock = this.getLock(key, ttl);
+    return lock.acquire();
   }
 
-  async release(lockKey) {
-    if (this.locks.has(lockKey)) {
-      const lock = this.locks.get(lockKey);
-      await lock.release();
-    }
+  async runExclusive<T>(key: string, fn: () => Promise<T>, ttl: number): Promise<T> {
+    const lock = this.getLock(key, ttl);
+    return lock.runExclusive(fn);
   }
 }
 
@@ -107,7 +118,7 @@ export class LockManager {
     this.registry.register(name, adapterConfig);
   }
 
-  async getLock(key: string, ttl = 500): Promise<AbstractLock> {
+  private async getClient(): Promise<AbstractLockAdapter> {
     const type = this.options.defaultAdapter || 'local';
     let client = this.clients.get(type);
     if (!client) {
@@ -122,6 +133,16 @@ export class LockManager {
       this.clients.set(type, client);
     }
 
-    return client.getLock(key, ttl);
+    return client;
+  }
+
+  public async acquire(key: string, ttl = 500) {
+    const client = await this.getClient();
+    return client.acquire(key, ttl);
+  }
+
+  public async runExclusive<T>(key: string, fn: () => Promise<T>, ttl = 500): Promise<T> {
+    const client = await this.getClient();
+    return client.runExclusive(key, fn, ttl);
   }
 }
