@@ -9,7 +9,7 @@
 
 export default {
   info: {
-    title: 'NocoBase API - UserDataSync plugin',
+    title: 'NocoBase API - User data synchronization plugin',
   },
   paths: {
     '/userData:push': {
