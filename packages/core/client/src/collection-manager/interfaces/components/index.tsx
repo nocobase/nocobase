@@ -64,6 +64,7 @@ export const CustomRadio = (props) => {
       onChange?.(e.target.value);
     }
   };
+
   return (
     <Radio.Group onChange={handleRadioChange} value={value}>
       {options.map((option) => (
@@ -75,7 +76,7 @@ export const CustomRadio = (props) => {
               onChange={(e) => {
                 onChange?.(e.target.value);
               }}
-              value={props.value}
+              value={['server', 'client', 'custom'].includes(props.value) ? null : props.value}
             />
           ) : null}
         </Radio>
