@@ -10,7 +10,7 @@
   "typings": "./index.d.ts",
   "dependencies": {
     "@babel/core": "7.22.10",
-    "@babel/plugin-transform-modules-amd": "7.22.5",
+    "@babel/plugin-transform-modules-amd": "7.24.7",
     "@babel/preset-env": "7.22.10",
     "@hapi/topo": "^6.0.0",
     "@lerna/project": "4.0.0",
