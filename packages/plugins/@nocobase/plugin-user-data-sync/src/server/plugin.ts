@@ -42,7 +42,7 @@ export class PluginUserDataSyncServer extends Plugin {
     const logger = this.getLogger();
     this.resourceManager.db = this.app.db;
     // TODO(yangqia): 在部门插件注册
-    this.resourceManager.reigsterResource(new DepartmentDataSyncResource(this.db, this.app.logger), {
+    this.resourceManager.registerResource(new DepartmentDataSyncResource(this.db, this.app.logger), {
       // write department records after writing user records
       after: 'users',
     });

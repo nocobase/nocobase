@@ -19,7 +19,7 @@ type SyncSourceConfig = {
 
 export class SyncSourceManager {
   protected syncSourceTypes: Registry<SyncSourceConfig> = new Registry();
-  reigsterType(syncSourceType: string, syncSourceConfig: SyncSourceConfig) {
+  registerType(syncSourceType: string, syncSourceConfig: SyncSourceConfig) {
     this.syncSourceTypes.register(syncSourceType, syncSourceConfig);
   }
 

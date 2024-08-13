@@ -78,7 +78,7 @@ export class UserDataResourceManager {
   resources = new Toposort<UserDataResource>();
   syncRecordRepo: Repository;
 
-  reigsterResource(resource: UserDataResource, options?: ToposortOptions) {
+  registerResource(resource: UserDataResource, options?: ToposortOptions) {
     this.resources.add(resource, { tag: resource.name, ...options });
   }
 

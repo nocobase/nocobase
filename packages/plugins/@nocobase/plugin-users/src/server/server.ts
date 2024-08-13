@@ -152,11 +152,6 @@ export default class PluginUsersServer extends Plugin {
       name: `pm.${this.name}`,
       actions: ['users:*'],
     });
-
-    const userDataSyncPlugin = this.app.pm.get('user-data-sync') as PluginUserDataSyncServer;
-    if (userDataSyncPlugin) {
-      userDataSyncPlugin.resourceManager.reigsterResource(new UserDataSyncResource(this.db, this.app.logger));
-    }
   }
 
   async load() {
@@ -185,6 +180,11 @@ export default class PluginUsersServer extends Plugin {
         }
       }
     });
+
+    const userDataSyncPlugin = this.app.pm.get('user-data-sync') as PluginUserDataSyncServer;
+    if (userDataSyncPlugin) {
+      userDataSyncPlugin.resourceManager.registerResource(new UserDataSyncResource(this.db, this.app.logger));
+    }
   }
 
   getInstallingData(options: any = {}) {
