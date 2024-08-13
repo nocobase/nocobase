@@ -25,6 +25,7 @@ export class UnixTimestampFieldInterface extends CollectionFieldInterface {
       'x-component-props': {
         accuracy: 'second',
         showTime: true,
+        timezone: 'server',
       },
     },
   };
