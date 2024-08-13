@@ -43,6 +43,7 @@ export class DateField extends Field {
     const { name, defaultToCurrentTime, onUpdateToCurrentTime, timezone } = this.options;
 
     this.resolveTimeZone = (context) => {
+      // @ts-ignore
       const serverTimeZone = this.database.options.rawTimezone;
       if (timezone === 'server') {
         return serverTimeZone;
