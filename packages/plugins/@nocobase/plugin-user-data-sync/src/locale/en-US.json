@@ -13,5 +13,7 @@
   "Success": "Success",
   "Failed": "Failed",
   "Authenticator": "Authenticator",
-  "Retry": "Retry"
+  "Retry": "Retry",
+  "No user data source plugin installed": "No user data source plugin installed",
+  "View documentation": "View documentation"
 }

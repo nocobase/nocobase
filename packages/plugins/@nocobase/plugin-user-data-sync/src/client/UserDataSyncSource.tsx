@@ -28,11 +28,11 @@ import {
   sourceCollection,
   tasksTableBlockSchema,
 } from './schemas/user-data-sync-sources';
-import { Button, Dropdown } from 'antd';
+import { Button, Dropdown, Empty } from 'antd';
 import { PlusOutlined, DownOutlined } from '@ant-design/icons';
 import { SourceTypeContext, SourceTypesContext, useSourceTypes } from './sourceType';
 import { useValuesFromOptions, Options } from './Options';
-import { useUserDataSyncSourceTranslation } from './locale';
+import { NAMESPACE, useUserDataSyncSourceTranslation } from './locale';
 import { Schema, useForm } from '@formily/react';
 import { taskCollection } from './schemas/user-data-sync-sources';
 import { createForm } from '@formily/core';
@@ -163,6 +163,7 @@ function useRetryActionProps(): ActionProps {
 
 const AddNew = () => {
   const { t } = useUserDataSyncSourceTranslation();
+  const api = useAPIClient();
   const [visible, setVisible] = useState(false);
   const [type, setType] = useState('');
   const types = useSourceTypes();
@@ -174,10 +175,39 @@ const AddNew = () => {
     },
   }));
 
+  const emptyItem = [
+    {
+      key: '__empty__',
+      label: (
+        <Empty
+          image={Empty.PRESENTED_IMAGE_SIMPLE}
+          description={
+            <>
+              {t('No user data source plugin installed', { ns: NAMESPACE })}
+              <br />{' '}
+              <a
+                target="_blank"
+                href={
+                  api.auth.locale === 'zh-CN'
+                    ? 'https://docs-cn.nocobase.com/handbook/user-data-sync'
+                    : 'https://docs.nocobase.com/handbook/user-data-sync'
+                }
+                rel="noreferrer"
+              >
+                {t('View documentation', { ns: NAMESPACE })}
+              </a>
+            </>
+          }
+        />
+      ),
+      onClick: () => {},
+    },
+  ];
+
   return (
     <ActionContextProvider value={{ visible, setVisible }}>
       <SourceTypeContext.Provider value={{ type }}>
-        <Dropdown menu={{ items }}>
+        <Dropdown menu={{ items: items && items.length > 0 ? items : emptyItem }}>
           <Button icon={<PlusOutlined />} type={'primary'}>
             {t('Add new')} <DownOutlined />
           </Button>
