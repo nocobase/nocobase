@@ -40,16 +40,17 @@ export default defineCollection({
       allowNull: false,
     },
     {
-      name: 'resource',
+      name: 'dataType',
       interface: 'Select',
       type: 'string',
       allowNull: false,
     },
     {
-      name: 'resourcePk',
-      interface: 'Input',
-      type: 'string',
-      allowNull: true,
+      name: 'resources',
+      type: 'hasMany',
+      target: 'userDataSyncRecordsResources',
+      sourceKey: 'id',
+      foreignKey: 'recordId',
     },
     {
       type: 'json',

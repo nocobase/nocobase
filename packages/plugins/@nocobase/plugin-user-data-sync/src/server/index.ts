@@ -8,5 +8,5 @@
  */
 
 export { SyncSource } from './sync-source';
-export { UserData } from './user-data-resource-manager';
+export * from './user-data-resource-manager';
 export { default } from './plugin';

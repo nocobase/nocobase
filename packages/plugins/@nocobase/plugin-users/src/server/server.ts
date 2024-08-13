@@ -11,10 +11,11 @@ import { Collection, Op } from '@nocobase/database';
 import { Plugin } from '@nocobase/server';
 import { parse } from '@nocobase/utils';
 import { resolve } from 'path';
-
 import { Cache } from '@nocobase/cache';
 import * as actions from './actions/users';
 import { UserModel } from './models/UserModel';
+import PluginUserDataSyncServer from '@nocobase/plugin-user-data-sync';
+import { UserDataSyncResource } from './user-data-sync-resource';
 
 export default class PluginUsersServer extends Plugin {
   async beforeLoad() {
@@ -151,6 +152,11 @@ export default class PluginUsersServer extends Plugin {
       name: `pm.${this.name}`,
       actions: ['users:*'],
     });
+
+    const userDataSyncPlugin = this.app.pm.get('user-data-sync') as PluginUserDataSyncServer;
+    if (userDataSyncPlugin) {
+      userDataSyncPlugin.resourceManager.reigsterResource(new UserDataSyncResource(this.db, this.app.logger));
+    }
   }
 
   async load() {

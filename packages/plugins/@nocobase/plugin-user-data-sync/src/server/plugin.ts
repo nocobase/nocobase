@@ -12,9 +12,9 @@ import { UserDataResourceManager } from './user-data-resource-manager';
 import { UserDataSyncService } from './user-data-sync-service';
 import userDataActions from './actions/user-data';
 import { SyncSourceManager } from './sync-source-manager';
-import { DefaultUserDataResource } from './default-user-data-resource';
 import { SyncSourceModel } from './models/sync-source';
 import { Logger, LoggerOptions } from '@nocobase/logger';
+import { DepartmentDataSyncResource } from './department-data-sync-resource';
 
 export class PluginUserDataSyncServer extends Plugin {
   sourceManager: SyncSourceManager;
@@ -40,9 +40,12 @@ export class PluginUserDataSyncServer extends Plugin {
 
   async load() {
     const logger = this.getLogger();
-    const defaultUserDataResource = new DefaultUserDataResource(this.app.db, this.app.log);
     this.resourceManager.db = this.app.db;
-    this.resourceManager.reigsterResource('default', defaultUserDataResource);
+    // TODO(yangqia): 在部门插件注册
+    this.resourceManager.reigsterResource(new DepartmentDataSyncResource(this.db, this.app.logger), {
+      // write department records after writing user records
+      after: 'users',
+    });
     this.syncService = new UserDataSyncService(this.resourceManager, this.sourceManager, logger);
     this.app.resourceManager.define({
       name: 'userData',

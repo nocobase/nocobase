@@ -7,20 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import Database from '@nocobase/database';
-import { UserDataResource } from './user-data-resource-manager';
-import { SystemLogger } from '@nocobase/logger';
+import { OriginRecord, SyncDataType, UserDataResource } from './user-data-resource-manager';
 
-export class DefaultUserDataResource implements UserDataResource {
-  accepts: ('user' | 'department')[];
-  db: Database;
-  logger: SystemLogger;
-
-  constructor(db: Database, logger: SystemLogger) {
-    this.accepts = ['user', 'department'];
-    this.db = db;
-    this.logger = logger;
-  }
+// TODO(yangqia): 在部门插件定义
+export class DepartmentDataSyncResource extends UserDataResource {
+  name = 'departments';
+  accepts: SyncDataType[] = ['user', 'department'];
 
   get userRepo() {
     return this.db.getRepository('users');
@@ -30,97 +22,36 @@ export class DefaultUserDataResource implements UserDataResource {
     return this.db.getRepository('departments');
   }
 
-  get syncRecordRepo() {
-    return this.db.getRepository('userDataSyncRecords');
-  }
-
-  async update(originRecord: any): Promise<void> {
-    const { metaData, resourcePk, sourceName } = originRecord;
-    this.logger.info(`update: ${JSON.stringify(originRecord)}`);
-    if (originRecord.resource === 'user') {
+  async update(record: OriginRecord, resourcePk: number): Promise<void> {
+    const { dataType, metaData, sourceName } = record;
+    if (dataType === 'user') {
       const sourceUser = metaData;
       const user = await this.userRepo.findOne({
         filterByTk: resourcePk,
       });
-      await this.updateUser(user, sourceUser, sourceName);
-    } else if (originRecord.resource === 'department') {
-      const sourceDepartment = metaData;
+      await this.updateUserDepartments(user, sourceUser.departments, sourceName);
+    } else if (dataType === 'department') {
+      const sourceDepartment = record;
       const department = await this.deptRepo.findOne({
         filterByTk: resourcePk,
       });
       await this.updateDepartment(department, sourceDepartment, sourceName);
     } else {
-      this.logger.warn(`update: unsupported data type: ${originRecord.resource}`);
+      this.logger.warn(`update department: unsupported data type: ${dataType}`);
     }
   }
 
-  async create(originRecord: any, uniqueKey: string): Promise<string> {
-    const { metaData, sourceName } = originRecord;
-    this.logger.info(`create: ${JSON.stringify(originRecord)}`);
-    if (originRecord.resource === 'user') {
-      const sourceUser = metaData;
-      const filter = {};
-      if (uniqueKey === 'id') {
-        filter['username'] = sourceUser[uniqueKey];
-      } else {
-        filter[uniqueKey] = sourceUser[uniqueKey];
-      }
-      const user = await this.userRepo.findOne({
-        filter,
-      });
-      if (user) {
-        await this.updateUser(user, sourceUser, sourceName);
-        return user.id;
-      } else {
-        return await this.createUser(uniqueKey, sourceUser, sourceName);
-      }
-    } else if (originRecord.resource === 'department') {
+  async create(record: OriginRecord, uniqueKey: string): Promise<string> {
+    const { dataType, metaData, sourceName } = record;
+    if (dataType === 'user') {
+      return;
+    } else if (dataType === 'department') {
       const sourceDepartment = metaData;
       return await this.createDepartment(sourceDepartment, sourceName);
     } else {
-      this.logger.warn(`create: unsupported data type: ${originRecord.resource}`);
+      this.logger.warn(`create department: unsupported data type: ${dataType}`);
     }
-    return undefined;
-  }
-
-  async updateUser(user: any, sourceUser: any, sourceName: string) {
-    if (sourceUser.isDeleted) {
-      // 删除用户
-      await user.destroy();
-      return;
-    }
-    let dataChanged = false;
-    if (sourceUser.phone !== undefined && user.phone !== sourceUser.phone) {
-      user.phone = sourceUser.phone;
-      dataChanged = true;
-    }
-    if (sourceUser.email !== undefined && user.email !== sourceUser.email) {
-      user.email = sourceUser.email;
-      dataChanged = true;
-    }
-    if (sourceUser.nickname !== undefined && user.nickname !== sourceUser.nickname) {
-      user.name = sourceUser.name;
-      dataChanged = true;
-    }
-    if (dataChanged) {
-      await user.save();
-    }
-    // 更新用户所属部门
-    await this.updateUserDepartments(user, sourceUser.departments, sourceName);
-  }
-
-  async createUser(sourceUniqueKey: string, sourceUser: any, sourceName): Promise<string> {
-    const user = await this.userRepo.create({
-      values: {
-        nickname: sourceUser.nickname,
-        phone: sourceUser.phone,
-        email: sourceUser.email,
-        username: sourceUniqueKey === 'id' ? sourceUser.id : undefined,
-      },
-    });
-    // 更新用户所属部门
-    await this.updateUserDepartments(user, sourceUser.departments, sourceName);
-    return user.id;
+    return;
   }
 
   async updateUserDepartments(user: any, sourceDepartmentIds: any[], sourceName: string) {
@@ -135,9 +66,17 @@ export class DefaultUserDataResource implements UserDataResource {
     } else {
       // 查询部门同步记录
       const syncDepartmentRecords = await this.syncRecordRepo.find({
-        filter: { sourceName, resource: 'department', sourceUk: { $in: sourceDepartmentIds } },
+        filter: {
+          sourceName,
+          dataType: 'department',
+          sourceUk: { $in: sourceDepartmentIds },
+          'resources.resource': this.name,
+        },
+        appends: ['resources'],
       });
-      const departmentIds = syncDepartmentRecords.map((record) => record.resourcePk);
+      const departmentIds = syncDepartmentRecords
+        .filter((record) => record.resources?.length)
+        .map((record) => record.resources[0].resourcePk);
       const departments = await this.deptRepo.find({ filter: { id: { $in: departmentIds } } });
       const userDepartments = await user.getDepartments();
       // 需要删除的部门
@@ -195,11 +134,17 @@ export class DefaultUserDataResource implements UserDataResource {
       }
     } else {
       const syncDepartmentRecord = await this.syncRecordRepo.findOne({
-        filter: { sourceName, resource: 'department', sourceUk: parentId },
+        filter: {
+          sourceName,
+          dataType: 'department',
+          sourceUk: parentId,
+          'resources.resource': this.name,
+        },
+        appends: ['resources'],
       });
-      if (syncDepartmentRecord) {
+      if (syncDepartmentRecord && syncDepartmentRecord.resources?.length) {
         const parentDepartment = await this.deptRepo.findOne({
-          filterByTk: syncDepartmentRecord.resourcePk,
+          filterByTk: syncDepartmentRecord.resources[0].resourcePk,
         });
         if (!parentDepartment) {
           await department.setParent(null);

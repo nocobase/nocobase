@@ -8,4 +8,4 @@
  */
 
 export * from './server';
-export { default } from './server';
+export { default, UserDataResource, FormatUser, SyncDataType, OriginRecord } from './server';
