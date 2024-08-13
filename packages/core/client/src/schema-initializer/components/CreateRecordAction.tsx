@@ -12,7 +12,7 @@ import { observer, useField, useFieldSchema, useForm } from '@formily/react';
 import { Button, Dropdown, MenuProps } from 'antd';
 import { composeRef } from 'rc-util/lib/ref';
 import React, { createRef, forwardRef, useEffect, useMemo } from 'react';
-import { Collection, useDesignable } from '../../';
+import { Collection, useCollectionManager, useDesignable } from '../../';
 import { useACLActionParamsContext, useACLRolesCheck, useRecordPkValue } from '../../acl/ACLProvider';
 import { useCollectionManager_deprecated, useCollection_deprecated } from '../../collection-manager';
 import { useTreeParentRecord } from '../../modules/blocks/data-blocks/table/TreeRecordProvider';
@@ -65,7 +65,6 @@ function useAclCheckFn() {
 
 const InternalCreateRecordAction = (props: any, ref) => {
   const fieldSchema = useFieldSchema();
-  const openMode = fieldSchema?.['x-component-props']?.['openMode'];
   const field: any = useField();
   const linkageRules: any[] = fieldSchema?.['x-linkage-rules'] || [];
   const values = useRecord();
@@ -73,6 +72,7 @@ const InternalCreateRecordAction = (props: any, ref) => {
   const localVariables = useLocalVariables({ currentForm: { values } as any });
   const { openPopup } = usePagePopup();
   const treeRecordData = useTreeParentRecord();
+  const cm = useCollectionManager();
 
   useEffect(() => {
     field.stateOfLinkageRules = {};
@@ -98,13 +98,22 @@ const InternalCreateRecordAction = (props: any, ref) => {
     <div ref={buttonRef as React.Ref<HTMLButtonElement>}>
       <CreateAction
         {...props}
-        onClick={(collection: Collection) => {
+        onClick={(collection: Partial<Collection>) => {
+          collection = cm.getCollection(collection.name) || collection;
+
           if (treeRecordData) {
             openPopup({
               recordData: treeRecordData,
             });
           } else {
-            openPopup();
+            // fix https://nocobase.height.app/T-5084/description
+            if (collection.isInherited?.()) {
+              openPopup({
+                collectionNameUsedInURL: collection.name,
+              });
+            } else {
+              openPopup();
+            }
           }
         }}
       />
