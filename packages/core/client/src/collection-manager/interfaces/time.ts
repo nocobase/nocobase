@@ -8,7 +8,7 @@
  */
 
 import { CollectionFieldInterface } from '../../data-source/collection-field-interface/CollectionFieldInterface';
-import { defaultProps, operators, DefaultValueProps } from './properties';
+import { defaultProps, operators, getDefaultValueProps } from './properties';
 
 export class TimeFieldInterface extends CollectionFieldInterface {
   name = 'time';
@@ -45,7 +45,7 @@ export class TimeFieldInterface extends CollectionFieldInterface {
         },
       ],
     },
-    ...DefaultValueProps(this),
+    ...getDefaultValueProps(this),
   };
   filterable = {
     operators: operators.time,

@@ -12,7 +12,7 @@ import { isArr, isEmpty, isValid } from '@formily/shared';
 import { registerValidateRules } from '@formily/validator';
 import { CollectionFieldInterface } from '../../data-source/collection-field-interface/CollectionFieldInterface';
 import { i18n } from '../../i18n';
-import { defaultProps, operators, primaryKey, unique, DefaultValueProps } from './properties';
+import { defaultProps, operators, primaryKey, unique, getDefaultValueProps } from './properties';
 
 const isValidateEmpty = (value: any) => {
   if (isArr(value)) {
@@ -62,7 +62,6 @@ export class InputFieldInterface extends CollectionFieldInterface {
   hasDefaultValue = true;
   properties = {
     ...defaultProps,
-    ...DefaultValueProps(this),
     layout: {
       type: 'void',
       title: '{{t("Index")}}',
@@ -78,6 +77,7 @@ export class InputFieldInterface extends CollectionFieldInterface {
         unique,
       },
     },
+    ...getDefaultValueProps(this),
   };
   filterable = {
     operators: operators.string,

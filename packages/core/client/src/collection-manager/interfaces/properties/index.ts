@@ -450,8 +450,7 @@ export const collectionDataSource: ISchema = {
   enum: '{{collections}}',
 };
 
-export const DefaultValueProps = (field) => {
-  console.log(field);
+export const getDefaultValueProps = (field) => {
   return {
     defaultValue: {
       ...cloneDeep(field?.default?.uiSchema),

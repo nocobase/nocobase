@@ -9,7 +9,7 @@
 
 import { CollectionFieldInterface } from '../../data-source/collection-field-interface/CollectionFieldInterface';
 import { i18n } from '../../i18n';
-import { defaultProps, operators, unique, DefaultValueProps } from './properties';
+import { defaultProps, operators, unique, getDefaultValueProps } from './properties';
 
 export class NumberFieldInterface extends CollectionFieldInterface {
   name = 'number';
@@ -49,7 +49,7 @@ export class NumberFieldInterface extends CollectionFieldInterface {
         { value: '0.00001', label: '1.00000' },
       ],
     },
-    ...DefaultValueProps(this),
+    ...getDefaultValueProps(this),
   };
   filterable = {
     operators: operators.number,

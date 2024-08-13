@@ -8,7 +8,7 @@
  */
 
 import { CollectionFieldInterface } from '../../data-source/collection-field-interface/CollectionFieldInterface';
-import { defaultProps, DefaultValueProps } from './properties';
+import { defaultProps, getDefaultValueProps } from './properties';
 
 export class IconFieldInterface extends CollectionFieldInterface {
   name = 'icon';
@@ -27,6 +27,6 @@ export class IconFieldInterface extends CollectionFieldInterface {
   hasDefaultValue = true;
   properties = {
     ...defaultProps,
-    ...DefaultValueProps(this),
+    ...getDefaultValueProps(this),
   };
 }
