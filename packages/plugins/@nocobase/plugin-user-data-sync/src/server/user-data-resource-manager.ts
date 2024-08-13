@@ -47,7 +47,7 @@ export class UserDataResourceManager {
       });
       if (syncRecord) {
         syncRecord.lastMetaData = syncRecord.metaData;
-        syncRecord.metaData = JSON.stringify(record);
+        syncRecord.metaData = record;
         await syncRecord.save();
       } else {
         await this.syncRecordRepo.create({
@@ -55,7 +55,7 @@ export class UserDataResourceManager {
             sourceName: data.sourceName,
             resource: data.dataType,
             sourceUk,
-            metaData: JSON.stringify(record),
+            metaData: record,
           },
         });
       }

@@ -38,13 +38,13 @@ export class DefaultUserDataResource implements UserDataResource {
     const { metaData, resourcePk, sourceName } = originRecord;
     this.logger.info(`update: ${JSON.stringify(originRecord)}`);
     if (originRecord.resource === 'user') {
-      const sourceUser = JSON.parse(metaData);
+      const sourceUser = metaData;
       const user = await this.userRepo.findOne({
         filterByTk: resourcePk,
       });
       await this.updateUser(user, sourceUser, sourceName);
     } else if (originRecord.resource === 'department') {
-      const sourceDepartment = JSON.parse(metaData);
+      const sourceDepartment = metaData;
       const department = await this.deptRepo.findOne({
         filterByTk: resourcePk,
       });
@@ -58,7 +58,7 @@ export class DefaultUserDataResource implements UserDataResource {
     const { metaData, sourceName } = originRecord;
     this.logger.info(`create: ${JSON.stringify(originRecord)}`);
     if (originRecord.resource === 'user') {
-      const sourceUser = JSON.parse(metaData);
+      const sourceUser = metaData;
       const filter = {};
       if (uniqueKey === 'id') {
         filter['username'] = sourceUser[uniqueKey];
@@ -75,7 +75,7 @@ export class DefaultUserDataResource implements UserDataResource {
         return await this.createUser(uniqueKey, sourceUser, sourceName);
       }
     } else if (originRecord.resource === 'department') {
-      const sourceDepartment = JSON.parse(metaData);
+      const sourceDepartment = metaData;
       return await this.createDepartment(sourceDepartment, sourceName);
     } else {
       this.logger.warn(`create: unsupported data type: ${originRecord.resource}`);

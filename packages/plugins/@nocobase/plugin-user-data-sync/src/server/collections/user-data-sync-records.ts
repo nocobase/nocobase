@@ -52,11 +52,11 @@ export default defineCollection({
       allowNull: true,
     },
     {
-      type: 'text',
+      type: 'json',
       name: 'metaData',
     },
     {
-      type: 'text',
+      type: 'json',
       name: 'lastMetaData',
     },
   ],
