@@ -219,6 +219,9 @@ export class Database extends EventEmitter implements AsyncEmitter {
       }
     }
 
+    // @ts-ignore
+    opts.rawTimezone = opts.timezone;
+
     if (options.dialect === 'sqlite') {
       delete opts.timezone;
     } else if (!opts.timezone) {
