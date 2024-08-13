@@ -13,7 +13,6 @@ import {
   useActionAvailable,
   useCollection,
   useCollectionManager_deprecated,
-  useCollection_deprecated,
   useCreateAssociationDetailsBlock,
   useCreateAssociationDetailsWithoutPagination,
   useCreateAssociationFormBlock,
@@ -46,7 +45,7 @@ export const canMakeAssociationBlock = (field) => {
 };
 
 function useRecordBlocks() {
-  const collection = useCollection_deprecated();
+  const collection = useCollection();
   const { getChildrenCollections } = useCollectionManager_deprecated();
   const collectionsWithView = getChildrenCollections(collection.name, true, collection.dataSource).filter(
     (v) => v?.filterTargetKey,
@@ -60,7 +59,7 @@ function useRecordBlocks() {
       collectionName: collection.name,
       dataSource: collection.dataSource,
       useComponentProps() {
-        const currentCollection = useCollection_deprecated();
+        const currentCollection = useCollection();
         const { createSingleDetailsSchema, templateWrap } = useCreateSingleDetailsSchema();
         const { createAssociationDetailsBlock } = useCreateAssociationDetailsBlock();
         const {
@@ -126,7 +125,7 @@ function useRecordBlocks() {
       collectionName: collection.name,
       dataSource: collection.dataSource,
       useComponentProps() {
-        const currentCollection = useCollection_deprecated();
+        const currentCollection = useCollection();
         const { createEditFormBlock, templateWrap: templateWrapEdit } = useCreateEditFormBlock();
         const collectionsNeedToDisplay = [currentCollection, ...collectionsWithView];
 
