@@ -10,7 +10,6 @@
 import { Mutex, withTimeout } from 'async-mutex';
 
 import { Application } from '../application';
-import { LocalLock } from '../lock-manager';
 
 function sleep(ms = 1000) {
   return new Promise((resolve) => {
