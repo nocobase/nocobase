@@ -32,7 +32,7 @@ export const ActionContextProvider: React.FC<ActionContextProps & { value?: Acti
     return () => {
       setSubmitted(false);
     };
-  }, [visible, service]);
+  }, [visible, service?.refresh, setParentSubmitted]);
 
   return (
     <ActionContext.Provider value={{ ...props, ...props?.value, submitted, setSubmitted }}>
