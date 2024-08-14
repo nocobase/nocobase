@@ -23,7 +23,6 @@ import { useResourceActionContext, useResourceContext } from '../ResourceActionP
 import { useCancelAction } from '../action-hooks';
 import { useCollectionManager_deprecated } from '../hooks';
 import useDialect from '../hooks/useDialect';
-import { IField } from '../interfaces/types';
 import * as components from './components';
 import { useFieldInterfaceOptions } from './interfaces';
 

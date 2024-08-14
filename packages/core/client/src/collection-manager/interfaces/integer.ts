@@ -39,7 +39,6 @@ export class IntegerFieldInterface extends CollectionFieldInterface {
   availableTypes = ['bigInt', 'integer', 'sort'];
   hasDefaultValue = true;
   properties = {
-    ...defaultProps,
     layout: {
       type: 'void',
       title: '{{t("Index")}}',

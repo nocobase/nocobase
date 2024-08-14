@@ -71,23 +71,6 @@ export class O2OFieldInterface extends CollectionFieldInterface {
       targetCollection?.titleField || getUniqueKeyFromCollection(targetCollection);
   }
   properties = {
-    'uiSchema.title': {
-      type: 'string',
-      title: '{{t("Field display name")}}',
-      required: true,
-      'x-decorator': 'FormItem',
-      'x-component': 'Input',
-    },
-    name: {
-      type: 'string',
-      title: '{{t("Field name")}}',
-      required: true,
-      'x-disabled': '{{ !createOnly }}',
-      'x-decorator': 'FormItem',
-      'x-component': 'Input',
-      description:
-        "{{t('Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.')}}",
-    },
     type: relationshipType,
     grid: {
       type: 'void',

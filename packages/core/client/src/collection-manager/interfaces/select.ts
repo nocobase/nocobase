@@ -29,7 +29,6 @@ export class SelectFieldInterface extends CollectionFieldInterface {
   availableTypes = ['string', 'bigInt', 'boolean'];
   hasDefaultValue = true;
   properties = {
-    ...defaultProps,
     'uiSchema.enum': dataSource,
   };
   filterable = {

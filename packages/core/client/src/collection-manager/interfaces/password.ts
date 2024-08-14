@@ -28,7 +28,6 @@ export class PasswordFieldInterface extends CollectionFieldInterface {
   availableTypes = ['password', 'string'];
   hasDefaultValue = true;
   properties = {
-    ...defaultProps,
     unique,
   };
   validateSchema = (fieldSchema) => {

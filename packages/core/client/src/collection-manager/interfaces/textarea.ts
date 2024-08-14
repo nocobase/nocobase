@@ -28,9 +28,7 @@ export class TextareaFieldInterface extends CollectionFieldInterface {
   };
   availableTypes = ['text', 'json', 'string'];
   hasDefaultValue = true;
-  properties = {
-    ...defaultProps,
-  };
+  properties = {};
   schemaInitialize(schema: ISchema, { block }) {
     if (['Table', 'Kanban'].includes(block)) {
       schema['x-component-props'] = schema['x-component-props'] || {};

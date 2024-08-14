@@ -32,7 +32,6 @@ export class MultipleSelectFieldInterface extends CollectionFieldInterface {
   availableTypes = ['array', 'json'];
   hasDefaultValue = true;
   properties = {
-    ...defaultProps,
     'uiSchema.enum': dataSource,
   };
   filterable = {

@@ -30,7 +30,6 @@ export class UpdatedAtFieldInterface extends CollectionFieldInterface {
   };
   availableTypes = ['date'];
   properties = {
-    ...defaultProps,
     ...dateTimeProps,
   };
   filterable = {

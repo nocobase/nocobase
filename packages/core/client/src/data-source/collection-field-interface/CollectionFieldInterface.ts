@@ -85,10 +85,10 @@ export abstract class CollectionFieldInterface {
     this.componentOptions.push(componentOption);
   }
   getConfigureFormProperties() {
+    const defaultValueProps = this.hasDefaultValue ? this.getDefaultValueProperty() : {};
     return {
-      ...defaultProps,
-      ...cloneDeep(this?.properties),
-      ...this.getDefaultValueProperty(),
+      ...cloneDeep({ ...defaultProps, ...this?.properties }),
+      ...defaultValueProps,
     };
   }
   getDefaultValueProperty() {

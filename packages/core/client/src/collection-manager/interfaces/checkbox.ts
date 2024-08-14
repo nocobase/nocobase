@@ -26,9 +26,7 @@ export class CheckboxFieldInterface extends CollectionFieldInterface {
   };
   availableTypes = ['boolean', 'integer', 'bigInt'];
   hasDefaultValue = true;
-  properties = {
-    ...defaultProps,
-  };
+  properties = {};
   filterable = {
     operators: operators.boolean,
   };

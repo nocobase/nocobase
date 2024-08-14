@@ -37,9 +37,7 @@ export class CreatedByFieldInterface extends CollectionFieldInterface {
     },
   };
   availableTypes = ['belongsTo'];
-  properties = {
-    ...defaultProps,
-  };
+  properties = {};
   filterable = {
     nested: true,
     children: [],

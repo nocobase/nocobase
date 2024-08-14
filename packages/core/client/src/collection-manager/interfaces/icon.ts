@@ -25,7 +25,5 @@ export class IconFieldInterface extends CollectionFieldInterface {
   };
   availableTypes = ['string'];
   hasDefaultValue = true;
-  properties = {
-    ...defaultProps,
-  };
+  properties = {};
 }

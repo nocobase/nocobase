@@ -8,7 +8,7 @@
  */
 
 import { ISchema } from '@formily/react';
-import { defaultProps, operators, unique, getDefaultValueProps } from './properties';
+import { defaultProps, operators, unique } from './properties';
 import { CollectionFieldInterface } from '../../data-source/collection-field-interface/CollectionFieldInterface';
 
 export class EmailFieldInterface extends CollectionFieldInterface {
@@ -29,7 +29,6 @@ export class EmailFieldInterface extends CollectionFieldInterface {
   availableTypes = ['string'];
   hasDefaultValue = true;
   properties = {
-    ...defaultProps,
     unique,
   };
   filterable = {

@@ -34,7 +34,6 @@ export class SortFieldInterface extends CollectionFieldInterface {
   availableTypes = ['sort'];
   hasDefaultValue = false;
   properties = {
-    ...defaultProps,
     scopeKey: {
       type: 'string',
       title: '{{t("Grouped sorting")}}',

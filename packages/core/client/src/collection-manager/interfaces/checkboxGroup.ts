@@ -29,7 +29,6 @@ export class CheckboxGroupFieldInterface extends CollectionFieldInterface {
   availableTypes = ['array', 'json'];
   hasDefaultValue = true;
   properties = {
-    ...defaultProps,
     'uiSchema.enum': dataSource,
   };
   filterable = {

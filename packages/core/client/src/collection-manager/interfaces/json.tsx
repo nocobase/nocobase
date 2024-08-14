@@ -53,7 +53,6 @@ export class JsonFieldInterface extends CollectionFieldInterface {
   availableTypes = ['json', 'array', 'set', 'jsonb', 'text', 'circle', 'lineString', 'point', 'polygon'];
   hasDefaultValue = true;
   properties = {
-    ...defaultProps,
     jsonb: {
       type: 'boolean',
       title: 'JSONB',

@@ -87,7 +87,6 @@ export class PercentFieldInterface extends CollectionFieldInterface {
   availableTypes = ['float', 'double', 'decimal'];
   hasDefaultValue = true;
   properties = {
-    ...defaultProps,
     unique,
     'uiSchema.x-component-props.step': {
       type: 'string',

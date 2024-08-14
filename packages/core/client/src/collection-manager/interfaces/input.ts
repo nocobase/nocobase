@@ -61,7 +61,6 @@ export class InputFieldInterface extends CollectionFieldInterface {
   availableTypes = ['string', 'uid'];
   hasDefaultValue = true;
   properties = {
-    ...defaultProps,
     layout: {
       type: 'void',
       title: '{{t("Index")}}',

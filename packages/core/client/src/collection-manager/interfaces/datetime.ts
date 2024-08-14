@@ -30,7 +30,6 @@ export class DatetimeFieldInterface extends CollectionFieldInterface {
   availableTypes = ['date', 'dateOnly', 'string'];
   hasDefaultValue = true;
   properties = {
-    ...defaultProps,
     ...dateTimeProps,
     'uiSchema.x-component-props.gmt': {
       type: 'boolean',
