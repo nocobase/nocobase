@@ -9,12 +9,11 @@
 
 import React, { useState, useContext, useEffect } from 'react';
 import { SchemaComponent } from '@nocobase/client';
-import { ChannelTypeMapContext } from '../../../../hooks';
 import { observer, useField } from '@formily/react';
 import { useAPIClient } from '@nocobase/client';
 import { useChannelTypeMap } from '../../../../hooks';
 import { useNotificationTranslation } from '../../../../locale';
-
+import { COLLECTION_NAME } from '../../../../../constant';
 export const MessageConfigForm = observer<{ variableOptions: any }>(
   ({ variableOptions }) => {
     const field = useField();
@@ -29,7 +28,7 @@ export const MessageConfigForm = observer<{ variableOptions: any }>(
           return;
         }
         const { data } = await api.request({
-          url: '/channels:get',
+          url: `/${COLLECTION_NAME.channels}:get`,
           method: 'get',
           params: {
             filterByTk: channelId,
@@ -56,10 +55,10 @@ export const MessageConfigForm = observer<{ variableOptions: any }>(
             manual: false,
             fieldNames: {
               label: 'title',
-              value: 'id',
+              value: 'name',
             },
             service: {
-              resource: 'channels',
+              resource: COLLECTION_NAME.channels,
               action: 'list',
             },
             style: {

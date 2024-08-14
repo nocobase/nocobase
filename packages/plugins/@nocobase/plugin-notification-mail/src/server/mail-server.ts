@@ -16,7 +16,7 @@ export class MailServer extends NotificationServerBase {
   }
   send: SendFnType = async function (args) {
     const { message, channel } = args;
-    const { host, port, secure, account, password } = channel.options;
+    const { host, port, secure, account, password, from } = channel.options;
     const transpoter: Transporter = nodemailer.createTransport({
       host,
       port,
@@ -27,7 +27,7 @@ export class MailServer extends NotificationServerBase {
       },
     });
     const receivers = message.receivers;
-    const { from, subject } = message.content.config;
+    const { subject } = message.content.config;
     const sendMail = async ({ receiver }) => {
       try {
         const res = await transpoter.sendMail({
