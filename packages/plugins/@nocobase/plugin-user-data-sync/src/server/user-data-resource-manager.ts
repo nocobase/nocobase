@@ -22,6 +22,7 @@ export type FormatUser = {
 };
 
 export type FormatDepartment = {
+  id?: string;
   title?: string;
   parentId?: string;
   isDeleted?: boolean;
@@ -116,9 +117,13 @@ export class UserDataResourceManager {
     this.syncRecordRepo = value.getRepository('userDataSyncRecords');
   }
 
+  getSourceUk(record: UserDataRecord, uniqueKey: string) {
+    return record[uniqueKey].toString();
+  }
+
   async saveOriginRecords(data: UserData): Promise<void> {
     for (const record of data.records) {
-      const sourceUk = record[data.uniqueKey];
+      const sourceUk = this.getSourceUk(record, data.uniqueKey);
       const syncRecord = await this.syncRecordRepo.findOne({
         where: {
           sourceName: data.sourceName,
@@ -167,7 +172,7 @@ export class UserDataResourceManager {
   async updateOrCreate(data: UserData) {
     await this.saveOriginRecords(data);
     const { dataType, sourceName, records, uniqueKey } = data;
-    const sourceUks = records.map((record) => record[uniqueKey]);
+    const sourceUks = records.map((record) => this.getSourceUk(record, uniqueKey));
     for (const resource of this.resources.nodes) {
       const associateResource = resource.parseAccepts(dataType);
       if (!associateResource) {

@@ -100,7 +100,7 @@ describe('user-data-resource-manager', () => {
     const originRecords = await resourceManager.findOriginRecords({
       sourceName: 'test',
       dataType: 'user',
-      sourceUks: [1],
+      sourceUks: ['1'],
     });
     expect(originRecords.length).toBe(1);
     expect(originRecords[0]).toMatchObject({
@@ -158,7 +158,7 @@ describe('user-data-resource-manager', () => {
     const originRecords = await resourceManager.findOriginRecords({
       sourceName: 'test',
       dataType: 'user',
-      sourceUks: [1],
+      sourceUks: ['1'],
     });
     expect(originRecords.length).toBe(1);
     expect(originRecords[0]).toMatchObject({
