@@ -12,7 +12,13 @@ import { OriginRecord, SyncDataType, UserDataResource } from './user-data-resour
 // TODO(yangqia): 在部门插件定义
 export class DepartmentDataSyncResource extends UserDataResource {
   name = 'departments';
-  accepts: SyncDataType[] = ['user', 'department'];
+  accepts: SyncDataType[] = [
+    {
+      dataType: 'user',
+      associateResource: 'users',
+    },
+    'department',
+  ];
 
   get userRepo() {
     return this.db.getRepository('users');

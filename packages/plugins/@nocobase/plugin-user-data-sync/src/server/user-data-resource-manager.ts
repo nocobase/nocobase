@@ -30,7 +30,14 @@ export type FormatDepartment = {
 
 export type UserDataRecord = FormatUser | FormatDepartment;
 
-export type SyncDataType = 'user' | 'department';
+export type SyncDataType =
+  | 'user'
+  | 'department'
+  | {
+      dataType: SyncDataType;
+      // set resource name if this data type is associate with other resource
+      associateResource: string;
+    };
 
 export type OriginRecord = {
   id: number;
@@ -72,6 +79,22 @@ export abstract class UserDataResource {
   get syncRecordResourceRepo() {
     return this.db.getRepository('userDataSyncRecordsResources');
   }
+
+  parseAccepts(dataType: string) {
+    const accept = this.accepts.filter((accept) => {
+      if (typeof accept === 'string') {
+        return accept === dataType;
+      }
+      return accept.dataType === dataType;
+    });
+    if (!accept.length) {
+      return null;
+    }
+    if (typeof accept[0] === 'string') {
+      return this.name;
+    }
+    return accept[0].associateResource;
+  }
 }
 
 export class UserDataResourceManager {
@@ -79,6 +102,12 @@ export class UserDataResourceManager {
   syncRecordRepo: Repository;
 
   registerResource(resource: UserDataResource, options?: ToposortOptions) {
+    if (!resource.name) {
+      throw new Error('"name" for user data synchronize resource is required');
+    }
+    if (!resource.accepts) {
+      throw new Error('"accepts" for user data synchronize resource is required');
+    }
     this.resources.add(resource, { tag: resource.name, ...options });
   }
 
@@ -139,7 +168,8 @@ export class UserDataResourceManager {
     const { dataType, sourceName, records, uniqueKey } = data;
     const sourceUks = records.map((record) => record[uniqueKey]);
     for (const resource of this.resources.nodes) {
-      if (!resource.accepts.includes(dataType)) {
+      const associateResource = resource.parseAccepts(dataType);
+      if (!associateResource) {
         continue;
       }
       const originRecords = await this.findOriginRecords({ sourceName, sourceUks, dataType });
@@ -147,17 +177,19 @@ export class UserDataResourceManager {
         continue;
       }
       for (const originRecord of originRecords) {
-        const resourceRecord = originRecord.resources?.find((r: { resource: string }) => r.resource === resource.name);
-        if (resourceRecord.resourcePk) {
+        const resourceRecord = originRecord.resources?.find(
+          (r: { resource: string }) => r.resource === associateResource,
+        );
+        if (resourceRecord?.resourcePk) {
           await resource.update(originRecord, resourceRecord.resourcePk);
         } else {
           const resourcePk = await resource.create(originRecord, uniqueKey);
-          if (!resourcePk) {
+          if (resourcePk === undefined || resourcePk === null) {
             continue;
           }
           await this.addResourceToOriginRecord({
             recordId: originRecord.id,
-            resource: resource.name,
+            resource: associateResource,
             resourcePk,
           });
         }

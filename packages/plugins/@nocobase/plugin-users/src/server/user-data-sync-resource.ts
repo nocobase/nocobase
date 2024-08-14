@@ -34,7 +34,7 @@ export class UserDataSyncResource extends UserDataResource {
       dataChanged = true;
     }
     if (sourceUser.nickname !== undefined && user.nickname !== sourceUser.nickname) {
-      user.name = sourceUser.name;
+      user.nickname = sourceUser.nickname;
       dataChanged = true;
     }
     if (dataChanged) {
