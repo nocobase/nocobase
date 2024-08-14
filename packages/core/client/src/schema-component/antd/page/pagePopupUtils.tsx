@@ -35,6 +35,8 @@ export interface PopupParams {
   sourceid?: string;
   /** tab uid */
   tab?: string;
+  /** collection name */
+  collection?: string;
 }
 
 export interface PopupContextStorage extends PopupContext {
@@ -101,9 +103,11 @@ export const getPopupParamsFromPath = _.memoize((path: string) => {
 });
 
 export const getPopupPathFromParams = (params: PopupParams) => {
-  const { popupuid: popupUid, tab, filterbytk, sourceid } = params;
+  const { popupuid: popupUid, tab, filterbytk, sourceid, collection } = params;
   const popupPath = [
     popupUid,
+    collection && 'collection',
+    collection,
     filterbytk && 'filterbytk',
     filterbytk,
     sourceid && 'sourceid',
@@ -148,15 +152,18 @@ export const usePagePopup = () => {
       popupUid,
       recordData,
       sourceId,
+      collection: _collection,
     }: {
       popupUid: string;
       recordData: Record<string, any>;
       sourceId: string;
       tabKey?: string;
+      collection?: string;
     }) => {
       const filterByTK = cm.getFilterByTK(association || collection, recordData);
       return getPopupPathFromParams({
         popupuid: popupUid,
+        collection: _collection,
         filterbytk: filterByTK,
         sourceid: sourceId,
         tab: tabKey,
@@ -179,9 +186,12 @@ export const usePagePopup = () => {
     ({
       recordData,
       parentRecordData,
+      collectionNameUsedInURL,
     }: {
       recordData?: Record<string, any>;
       parentRecordData?: Record<string, any>;
+      /** if this value exists, it will be saved in the URL */
+      collectionNameUsedInURL?: string;
     } = {}) => {
       if (!isPopupVisibleControlledByURL()) {
         return setVisibleFromAction?.(true);
@@ -190,7 +200,12 @@ export const usePagePopup = () => {
       const sourceId = getSourceId(parentRecordData);
 
       recordData = recordData || record?.data;
-      const pathname = getNewPathname({ popupUid: currentPopupUidWithoutOpened, recordData, sourceId });
+      const pathname = getNewPathname({
+        popupUid: currentPopupUidWithoutOpened,
+        recordData,
+        sourceId,
+        collection: collectionNameUsedInURL,
+      });
       let url = location.pathname;
       if (_.last(url) === '/') {
         url = url.slice(0, -1);
