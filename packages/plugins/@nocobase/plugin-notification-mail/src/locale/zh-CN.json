@@ -12,5 +12,7 @@
   "Secure": "安全模式",
   "Account": "账号",
   "Password" : "密码",
-  "Configure": "编辑"
+  "Configure": "编辑",
+  "The email address that will be used as the sender": "发件人邮件地址",
+  "SMTP mail": "SMTP 邮件"
 }

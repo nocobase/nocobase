@@ -37,7 +37,11 @@ export const ChannelConfigForm = () => {
                         'x-decorator': 'FormItem',
                         type: 'string',
                         title: '{{t("Host")}}',
+                        description: '{{t("SMTP server host")}}',
                         'x-component': 'Input',
+                        'x-component-props': {
+                          placeholder: 'smtp.example.com',
+                        },
                         required: true,
                       },
                     },
@@ -76,6 +80,7 @@ export const ChannelConfigForm = () => {
                         type: 'boolean',
                         title: '{{t("Secure")}}',
                         'x-component': 'Checkbox',
+                        default: true,
                       },
                     },
                   },
@@ -87,19 +92,23 @@ export const ChannelConfigForm = () => {
             type: 'void',
             'x-component': 'Grid',
             properties: {
-              row: {
+              row1: {
                 type: 'void',
                 'x-component': 'Grid.Row',
                 properties: {
                   col1: {
                     type: 'void',
                     'x-component': 'Grid.Col',
+                    'x-component-props': {},
                     properties: {
                       account: {
                         'x-decorator': 'FormItem',
                         type: 'boolean',
                         title: '{{t("Account")}}',
                         'x-component': 'Input',
+                        'x-component-props': {
+                          placeholder: 'example@domain.com',
+                        },
                         required: true,
                       },
                     },
@@ -107,14 +116,51 @@ export const ChannelConfigForm = () => {
                   col2: {
                     type: 'void',
                     'x-component': 'Grid.Col',
+                    'x-component-props': {},
                     properties: {
                       password: {
                         'x-decorator': 'FormItem',
                         type: 'boolean',
                         title: '{{t("Password")}}',
-                        'x-component': 'Input',
+                        'x-component': 'Password',
                         required: true,
                       },
+                    },
+                  },
+                },
+              },
+              row2: {
+                type: 'void',
+                'x-component': 'Grid.Row',
+                properties: {
+                  col1: {
+                    type: 'void',
+                    'x-component': 'Grid.Col',
+                    'x-component-props': {
+                      width: 50,
+                      flex: 'none',
+                    },
+                    properties: {
+                      from: {
+                        type: 'string',
+                        required: true,
+                        title: `{{t("From")}}`,
+                        description: `{{t("The email address that will be used as the sender")}}`,
+                        'x-decorator': 'FormItem',
+                        'x-component': 'Input',
+                        'x-component-props': {
+                          useTypedConstant: ['string'],
+                          placeholder: `noreply <example@domain.com>`,
+                        },
+                      },
+                    },
+                  },
+                  col2: {
+                    type: 'void',
+                    'x-component': 'Grid.Col',
+                    'x-component-props': {
+                      width: 50,
+                      flex: 'none',
                     },
                   },
                 },

@@ -36,18 +36,6 @@ export const ContentConfigForm = ({ variableOptions }) => {
               scope: variableOptions,
             },
           },
-          from: {
-            type: 'string',
-            required: true,
-            title: `{{t("From")}}`,
-            'x-decorator': 'FormItem',
-            'x-component': 'Variable.Input',
-            'x-component-props': {
-              scope: variableOptions,
-              useTypedConstant: ['string'],
-              placeholder: `{{t("Email address")}}`,
-            },
-          },
           cc: {
             type: 'array',
             title: `{{t("CC")}}`,

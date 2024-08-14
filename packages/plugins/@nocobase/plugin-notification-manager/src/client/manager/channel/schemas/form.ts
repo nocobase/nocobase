@@ -8,7 +8,7 @@
  */
 
 export const formProperties = {
-  id: {
+  name: {
     'x-component': 'CollectionField',
     'x-decorator': 'FormItem',
   },
@@ -22,12 +22,5 @@ export const formProperties = {
   },
   options: {
     'x-component': 'CollectionField',
-  },
-  notificationType: {
-    'x-component': 'CollectionField',
-    'x-decorator': 'FormItem',
-    'x-component-props': {
-      options: '{{ notificationTypeOptions }}',
-    },
   },
 };

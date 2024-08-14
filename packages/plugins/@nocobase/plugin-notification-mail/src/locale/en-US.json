@@ -12,5 +12,7 @@
   "Secure": "Secure",
   "Account": "Account",
   "Password" : "Password",
-  "Configure": "Configure"
+  "Configure": "Configure",
+  "The email address that will be used as the sender": "The email address that will be used as the sender",
+  "SMTP mail": "SMTP mail"
 }
