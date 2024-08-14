@@ -18,12 +18,12 @@ export class UnixTimestampFieldInterface extends CollectionFieldInterface {
   title = '{{t("Unix Timestamp")}}';
   sortable = true;
   default = {
-    type: 'bigInt',
+    type: 'unixTimestamp',
+    accuracy: 'second',
     uiSchema: {
-      type: 'unixTimestamp',
+      type: 'number',
       'x-component': 'UnixTimestamp',
       'x-component-props': {
-        accuracy: 'second',
         showTime: true,
         timezone: 'server',
       },
@@ -56,7 +56,7 @@ export class UnixTimestampFieldInterface extends CollectionFieldInterface {
         ],
       },
     },
-    'uiSchema.x-component-props.accuracy': {
+    accuracy: {
       type: 'string',
       title: '{{t("Accuracy")}}',
       'x-component': 'Radio.Group',
