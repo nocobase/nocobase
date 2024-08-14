@@ -18,7 +18,7 @@ export class UnixTimestampFieldInterface extends CollectionFieldInterface {
   title = '{{t("Unix Timestamp")}}';
   sortable = true;
   default = {
-    type: 'unixTimestamp',
+    type: 'bigInt',
     uiSchema: {
       type: 'unixTimestamp',
       'x-component': 'UnixTimestamp',
