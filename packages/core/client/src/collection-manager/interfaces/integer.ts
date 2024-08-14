@@ -9,7 +9,7 @@
 
 import { registerValidateFormats } from '@formily/core';
 import { i18n } from '../../i18n';
-import { defaultProps, operators, unique, autoIncrement, primaryKey, getDefaultValueProps } from './properties';
+import { defaultProps, operators, unique, autoIncrement, primaryKey } from './properties';
 import { CollectionFieldInterface } from '../../data-source/collection-field-interface/CollectionFieldInterface';
 
 registerValidateFormats({
@@ -56,7 +56,6 @@ export class IntegerFieldInterface extends CollectionFieldInterface {
       },
     },
     autoIncrement,
-    ...getDefaultValueProps(this),
   };
   filterable = {
     operators: operators.number,

@@ -16,6 +16,7 @@ import set from 'lodash/set';
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient, useRequest } from '../../api-client';
+import { CollectionFieldInterface } from '../../data-source';
 import { useCollectionParentRecordData } from '../../data-source/collection-record/CollectionRecordProvider';
 import { RecordProvider, useRecord } from '../../record-provider';
 import { ActionContextProvider, SchemaComponent, useActionContext, useCompile } from '../../schema-component';
@@ -26,11 +27,11 @@ import useDialect from '../hooks/useDialect';
 import { IField } from '../interfaces/types';
 import * as components from './components';
 
-const getSchema = (schema: IField, record: any, compile, getContainer): ISchema => {
+const getSchema = (schema: CollectionFieldInterface, record: any, compile, getContainer): ISchema => {
   if (!schema) {
     return;
   }
-  const properties = cloneDeep(schema.properties) as any;
+  const properties = schema.getConfigureFormProperties();
   if (properties?.name) {
     properties.name['x-disabled'] = true;
   }

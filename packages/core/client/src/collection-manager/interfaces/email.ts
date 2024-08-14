@@ -31,7 +31,6 @@ export class EmailFieldInterface extends CollectionFieldInterface {
   properties = {
     ...defaultProps,
     unique,
-    ...getDefaultValueProps(this),
   };
   filterable = {
     operators: operators.string,

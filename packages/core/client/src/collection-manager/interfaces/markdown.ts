@@ -9,7 +9,7 @@
 
 import { ISchema } from '@formily/react';
 import { i18n } from '../../i18n';
-import { defaultProps, operators, getDefaultValueProps } from './properties';
+import { defaultProps, operators } from './properties';
 import { CollectionFieldInterface } from '../../data-source/collection-field-interface/CollectionFieldInterface';
 
 export class MarkdownFieldInterface extends CollectionFieldInterface {
@@ -30,7 +30,6 @@ export class MarkdownFieldInterface extends CollectionFieldInterface {
   hasDefaultValue = true;
   properties = {
     ...defaultProps,
-    ...getDefaultValueProps(this),
   };
   schemaInitialize(schema: ISchema, { block }) {
     if (['Table', 'Kanban'].includes(block)) {

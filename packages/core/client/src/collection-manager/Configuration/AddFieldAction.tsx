@@ -16,6 +16,7 @@ import { cloneDeep } from 'lodash';
 import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useRequest } from '../../api-client';
+import { CollectionFieldInterface } from '../../data-source';
 import { RecordProvider, useRecord } from '../../record-provider';
 import { ActionContextProvider, SchemaComponent, useActionContext, useCompile } from '../../schema-component';
 import { useResourceActionContext, useResourceContext } from '../ResourceActionProvider';
@@ -26,12 +27,12 @@ import { IField } from '../interfaces/types';
 import * as components from './components';
 import { useFieldInterfaceOptions } from './interfaces';
 
-const getSchema = (schema: IField, record: any, compile) => {
+const getSchema = (schema: CollectionFieldInterface, record: any, compile) => {
   if (!schema) {
     return;
   }
 
-  const properties = cloneDeep(schema.properties) as any;
+  const properties = schema.getConfigureFormProperties();
 
   const initialValue: any = {
     name: `f_${uid()}`,
