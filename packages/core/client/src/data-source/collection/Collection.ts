@@ -297,4 +297,12 @@ export class Collection {
   isTitleField(field: CollectionFieldOptions) {
     return this.app.dataSourceManager.collectionFieldInterfaceManager.getFieldInterface(field.interface)?.titleUsable;
   }
+
+  /**
+   * is inherited from other collections
+   * @returns boolean
+   */
+  isInherited() {
+    return this.inherits.length > 0;
+  }
 }
