@@ -11,7 +11,7 @@ import type { ISchema } from '@formily/react';
 import { cloneDeep } from 'lodash';
 import type { CollectionFieldOptions } from '../collection';
 import { CollectionFieldInterfaceManager } from './CollectionFieldInterfaceManager';
-
+import { defaultProps } from '../../collection-manager/interfaces/properties';
 export type CollectionFieldInterfaceFactory = new (
   collectionFieldInterfaceManager: CollectionFieldInterfaceManager,
 ) => CollectionFieldInterface;
@@ -86,6 +86,7 @@ export abstract class CollectionFieldInterface {
   }
   getConfigureFormProperties() {
     return {
+      ...defaultProps,
       ...cloneDeep(this?.properties),
       ...this.getDefaultValueProperty(),
     };

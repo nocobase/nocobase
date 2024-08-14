@@ -24,10 +24,15 @@ import { useResourceActionContext, useResourceContext } from '../ResourceActionP
 import { useCancelAction } from '../action-hooks';
 import { useCollectionManager_deprecated } from '../hooks';
 import useDialect from '../hooks/useDialect';
-import { IField } from '../interfaces/types';
 import * as components from './components';
 
-const getSchema = (schema: CollectionFieldInterface, record: any, compile, getContainer): ISchema => {
+const getSchema = (
+  schema: CollectionFieldInterface,
+  defaultValues: any,
+  record: any,
+  compile,
+  getContainer,
+): ISchema => {
   if (!schema) {
     return;
   }
@@ -51,7 +56,7 @@ const getSchema = (schema: CollectionFieldInterface, record: any, compile, getCo
             return useRequest(
               () =>
                 Promise.resolve({
-                  data: cloneDeep(omit(schema.default, ['uiSchema.rawTitle'])),
+                  data: cloneDeep(omit(defaultValues, ['uiSchema.rawTitle'])),
                 }),
               options,
             );
@@ -189,15 +194,7 @@ export const EditFieldAction = (props) => {
               set(defaultValues.reverseField, 'name', `f_${uid()}`);
               set(defaultValues.reverseField, 'uiSchema.title', record.__parent?.title);
             }
-            const schema = getSchema(
-              {
-                ...interfaceConf,
-                default: defaultValues,
-              },
-              record,
-              compile,
-              getContainer,
-            );
+            const schema = getSchema(interfaceConf, defaultValues, record, compile, getContainer);
             setSchema(schema);
             setVisible(true);
           }}
