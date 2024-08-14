@@ -12,9 +12,10 @@ import { CollectionOptions } from '@nocobase/client';
 import { uid } from '@formily/shared';
 const collection: CollectionOptions = {
   name: COLLECTION_NAME.channels,
+  autoGenId: false,
   fields: [
     {
-      name: 'id',
+      name: 'name',
       type: 'uid',
       primaryKey: true,
       allowNull: false,
@@ -26,8 +27,6 @@ const collection: CollectionOptions = {
         'x-read-pretty': true,
         required: true,
       },
-      unique: true,
-      size: 10,
     },
     {
       name: 'title',

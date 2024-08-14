@@ -9,7 +9,7 @@
 
 export enum COLLECTION_NAME {
   templates = 'templates',
-  channels = 'channels',
+  channels = 'notificationChannels',
   messages = 'messages',
-  messageLogs = 'messageLogs',
+  logs = 'notificationLogs',
 }

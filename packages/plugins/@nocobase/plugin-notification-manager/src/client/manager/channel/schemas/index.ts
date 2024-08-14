@@ -32,7 +32,7 @@ export const createFormSchema: ISchema = {
             () =>
               Promise.resolve({
                 data: {
-                  id: `s_${uid()}`,
+                  name: `s_${uid()}`,
                   notificationType: name,
                 },
               }),
@@ -149,12 +149,12 @@ export const channelsSchema: ISchema = {
         },
       },
       properties: {
-        id: {
+        name: {
           type: 'void',
           'x-decorator': 'Table.Column.Decorator',
           'x-component': 'Table.Column',
           properties: {
-            id: {
+            name: {
               type: 'string',
               'x-component': 'CollectionField',
               'x-read-pretty': true,

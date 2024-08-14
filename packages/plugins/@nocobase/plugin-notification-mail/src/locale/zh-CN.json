@@ -14,5 +14,6 @@
   "Password" : "密码",
   "Configure": "编辑",
   "The email address that will be used as the sender": "发件人邮件地址",
-  "SMTP mail": "SMTP 邮件"
+  "SMTP mail": "SMTP 邮件",
+  "SMTP server host": "SMTP 服务器主机"
 }

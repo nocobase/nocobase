@@ -14,5 +14,6 @@
   "Password" : "Password",
   "Configure": "Configure",
   "The email address that will be used as the sender": "The email address that will be used as the sender",
-  "SMTP mail": "SMTP mail"
+  "SMTP mail": "SMTP mail",
+  "SMTP server host": "SMTP server host"
 }

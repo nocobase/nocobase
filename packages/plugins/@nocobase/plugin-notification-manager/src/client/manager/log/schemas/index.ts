@@ -14,7 +14,7 @@ import { COLLECTION_NAME } from '../../../../constant';
 export const messageLogsManagerSchema: ISchema = {
   type: 'void',
   'x-uid': 't8tkmt2b9dd',
-  name: COLLECTION_NAME.messageLogs,
+  name: COLLECTION_NAME.logs,
   'x-decorator': 'TableBlockProvider',
   'x-decorator-props': {
     collection: collection.name,

@@ -8,10 +8,10 @@
  */
 
 import { Registry } from '@nocobase/utils';
-import { Plugin } from '@nocobase/server';
 import PluginNotificationManagerServer from './plugin';
 import type { NotificationServer } from './types';
 import { SendOptions, IChannel, WriteLogOptions } from './types';
+import { COLLECTION_NAME } from '../constant';
 interface NotificatonType {
   Server: new () => NotificationServer;
 }
@@ -28,13 +28,13 @@ export default class NotificationManager {
     this.notificationTypes.register(type, { server });
   }
   createSendingRecord = async (options: WriteLogOptions) => {
-    const logsRepo = this.plugin.app.db.getRepository('messageLogs');
+    const logsRepo = this.plugin.app.db.getRepository(COLLECTION_NAME.logs);
     return logsRepo.create({ values: options });
   };
 
   async send(options: SendOptions) {
     this.plugin.logger.info('receive sending message request', options);
-    const channelsRepo = this.plugin.app.db.getRepository('channels');
+    const channelsRepo = this.plugin.app.db.getRepository(COLLECTION_NAME.channels);
     const channel: IChannel = await channelsRepo.findOne({ filterByTk: options.channelId });
     const notificationServer = this.notificationTypes.get(channel.notificationType).server;
     const results = await notificationServer.send({ message: options, channel });

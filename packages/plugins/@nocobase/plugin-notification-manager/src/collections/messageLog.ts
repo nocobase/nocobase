@@ -11,7 +11,7 @@ import { CollectionOptions } from '@nocobase/client';
 import { COLLECTION_NAME } from '../constant';
 
 const collectionOption: CollectionOptions = {
-  name: COLLECTION_NAME.messageLogs,
+  name: COLLECTION_NAME.logs,
   title: 'MessageLogs',
   fields: [
     {
@@ -26,12 +26,11 @@ const collectionOption: CollectionOptions = {
         'x-component': 'Input',
         'x-read-pretty': true,
       },
-      unique: true,
     },
     {
       name: 'channel',
       target: COLLECTION_NAME.channels,
-      targetKey: 'id',
+      targetKey: 'name',
       foreignKey: 'channelId',
       interface: 'm2o',
       type: 'belongsTo',
