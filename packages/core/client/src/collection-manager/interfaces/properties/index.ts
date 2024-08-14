@@ -226,7 +226,7 @@ export const reverseFieldProperties: Record<string, ISchema> = {
 };
 
 export const dateTimeProps: { [key: string]: ISchema } = {
-  'uiSchema.x-component-props.timezone': {
+  timezone: {
     type: 'string',
     title: '{{t("Timezone")}}',
     'x-component': CustomRadio,
