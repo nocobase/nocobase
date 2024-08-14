@@ -46,36 +46,34 @@ const app = mockApp({
     'mobileRoutes:list': {
       data: [
         {
-          "id": 10,
-          "createdAt": "2024-07-08T13:22:33.763Z",
-          "updatedAt": "2024-07-08T13:22:33.763Z",
-          "parentId": null,
-          "title": "Test1",
-          "icon": "AppstoreOutlined",
-          "schemaUid": "test",
-          "type": "page",
-          "options": null,
-          "sort": 1,
-          "createdById": 1,
-          "updatedById": 1,
+          id: 10,
+          createdAt: '2024-07-08T13:22:33.763Z',
+          updatedAt: '2024-07-08T13:22:33.763Z',
+          parentId: null,
+          title: 'Test1',
+          icon: 'AppstoreOutlined',
+          schemaUid: 'test',
+          type: 'page',
+          options: null,
+          sort: 1,
+          createdById: 1,
+          updatedById: 1,
         },
         {
-          "id": 13,
-          "createdAt": "2024-07-08T13:23:01.929Z",
-          "updatedAt": "2024-07-08T13:23:12.433Z",
-          "parentId": null,
-          "title": "Test2",
-          "icon": "aliwangwangoutlined",
-          "schemaUid": null,
-          "type": "link",
-          "options": {
-            "schemaUid": null,
-            "url": "https://github.com",
-            "params": [
-              {}
-            ]
-          }
-        }
+          id: 13,
+          createdAt: '2024-07-08T13:23:01.929Z',
+          updatedAt: '2024-07-08T13:23:12.433Z',
+          parentId: null,
+          title: 'Test2',
+          icon: 'aliwangwangoutlined',
+          schemaUid: null,
+          type: 'link',
+          options: {
+            schemaUid: null,
+            url: 'https://github.com',
+            params: [{}],
+          },
+        },
       ],
     },
   },

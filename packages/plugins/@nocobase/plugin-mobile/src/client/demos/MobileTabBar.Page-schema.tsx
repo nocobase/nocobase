@@ -14,13 +14,7 @@ const schema = getMobileTabBarItemSchema({
 });
 
 const Demo = () => {
-  return (
-    <SchemaComponent
-      schema={schemaViewer(
-        schema,
-      )}
-    />
-  );
+  return <SchemaComponent schema={schemaViewer(schema)} />;
 };
 
 class MyPlugin extends Plugin {

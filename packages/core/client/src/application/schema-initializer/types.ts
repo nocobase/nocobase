@@ -110,7 +110,7 @@ export interface SchemaInitializerOptions<P1 = ButtonProps, P2 = {}> {
   insertPosition?: 'beforeBegin' | 'afterBegin' | 'beforeEnd' | 'afterEnd';
   designable?: boolean;
   wrap?: (s: ISchema, options?: any) => ISchema;
-  useWrap?: () => ((s: ISchema, options?: any) => ISchema);
+  useWrap?: () => (s: ISchema, options?: any) => ISchema;
   onSuccess?: (data: any) => void;
   insert?: InsertType;
   useInsert?: () => InsertType;
