@@ -21,6 +21,8 @@ export class UnixTimestampFieldInterface extends CollectionFieldInterface {
     type: 'unixTimestamp',
     accuracy: 'second',
     timezone: 'server',
+    defaultToCurrentTime: false,
+    onUpdateToCurrentTime: false,
     uiSchema: {
       type: 'number',
       'x-component': 'UnixTimestamp',
@@ -72,12 +74,14 @@ export class UnixTimestampFieldInterface extends CollectionFieldInterface {
       'x-decorator': 'FormItem',
       'x-component': 'Checkbox',
       'x-content': '{{t("Default to current time")}}',
+      default: true,
     },
     onUpdateToCurrentTime: {
       type: 'boolean',
       'x-decorator': 'FormItem',
       'x-component': 'Checkbox',
       'x-content': '{{t("Automatically update timestamp on update")}}',
+      default: true,
     },
   };
   filterable = {
