@@ -299,7 +299,7 @@ export class Collection {
   }
 
   /**
-   * is inherited from other collection
+   * is inherited from other collections
    * @returns boolean
    */
   isInherited() {
