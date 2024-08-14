@@ -53,11 +53,7 @@ export class UserDataSyncResource extends UserDataResource {
   async create(record: OriginRecord, uniqueKey: string): Promise<number> {
     const { metaData: sourceUser } = record;
     const filter = {};
-    if (uniqueKey === 'id') {
-      filter['username'] = sourceUser[uniqueKey];
-    } else {
-      filter[uniqueKey] = sourceUser[uniqueKey];
-    }
+    filter[uniqueKey] = sourceUser[uniqueKey];
     let user = await this.userRepo.findOne({
       filter,
     });
@@ -70,7 +66,7 @@ export class UserDataSyncResource extends UserDataResource {
           nickname: sourceUser.nickname,
           phone: sourceUser.phone,
           email: sourceUser.email,
-          username: uniqueKey === 'id' ? sourceUser.id : undefined,
+          username: sourceUser.username,
         },
       });
     }

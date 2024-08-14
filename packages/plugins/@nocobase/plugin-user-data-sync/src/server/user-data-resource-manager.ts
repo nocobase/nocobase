@@ -16,7 +16,7 @@ export type FormatUser = {
   email?: string;
   nickname?: string;
   phone?: string;
-  departsments?: string[];
+  departments?: string[];
   isDeleted?: boolean;
   [key: string]: any;
 };
