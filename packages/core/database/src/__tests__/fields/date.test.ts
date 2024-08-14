@@ -121,16 +121,40 @@ describe('date-field', () => {
           type: 'date',
           onUpdateToCurrentTime: true,
         },
+        {
+          name: 'title',
+          type: 'string',
+        },
       ],
     });
 
     await db.sync();
 
-    const instance = await c1.repository.create({});
+    const instance = await c1.repository.create({
+      values: {
+        title: 'test',
+      },
+    });
 
-    await instance.update({ date1: new Date() });
-    const date2 = instance.get('date1');
-    expect(date2).toBeDefined();
+    const date1Val = instance.get('date1');
+    expect(date1Val).toBeDefined();
+
+    console.log('update');
+    await c1.repository.update({
+      values: {
+        title: 'test2',
+      },
+      filter: {
+        id: instance.get('id'),
+      },
+    });
+
+    await instance.reload();
+
+    const date1Val2 = instance.get('date1');
+    expect(date1Val2).toBeDefined();
+
+    expect(date1Val2.getTime()).toBeGreaterThan(date1Val.getTime());
   });
 
   test('create', async () => {

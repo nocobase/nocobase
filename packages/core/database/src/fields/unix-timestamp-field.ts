@@ -17,7 +17,22 @@ export class UnixTimestampField extends DateField {
   }
 
   additionalSequelizeOptions(): {} {
-    const { name, accuracy = 'second' } = this.options;
+    const { name } = this.options;
+    let { accuracy } = this.options;
+
+    if (this.options?.uiSchema['x-component-props']?.accuracy) {
+      accuracy = this.options?.uiSchema['x-component-props']?.accuracy;
+    }
+
+    if (!accuracy) {
+      accuracy = 'second';
+    }
+
+    let rationalNumber = 1000;
+
+    if (accuracy === 'millisecond') {
+      rationalNumber = 1;
+    }
 
     return {
       get() {
@@ -26,23 +41,14 @@ export class UnixTimestampField extends DateField {
           return value;
         }
 
-        // unix timestamp to date
-        if (accuracy === 'millisecond') {
-          return new Date(value);
-        }
-
-        return new Date(value * 1000);
+        return new Date(value * rationalNumber);
       },
       set(value) {
         if (value === null || value === undefined) {
           this.setDataValue(name, value);
         } else {
           // date to unix timestamp
-          if (accuracy === 'millisecond') {
-            this.setDataValue(name, Math.floor(new Date(value).getTime()));
-          } else {
-            this.setDataValue(name, Math.floor(new Date(value).getTime() / 1000));
-          }
+          this.setDataValue(name, Math.floor(new Date(value).getTime() / rationalNumber));
         }
       },
     };
