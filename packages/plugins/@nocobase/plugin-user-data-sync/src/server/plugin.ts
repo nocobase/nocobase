@@ -14,7 +14,6 @@ import userDataActions from './actions/user-data';
 import { SyncSourceManager } from './sync-source-manager';
 import { SyncSourceModel } from './models/sync-source';
 import { Logger, LoggerOptions } from '@nocobase/logger';
-import { DepartmentDataSyncResource } from './department-data-sync-resource';
 
 export class PluginUserDataSyncServer extends Plugin {
   sourceManager: SyncSourceManager;
