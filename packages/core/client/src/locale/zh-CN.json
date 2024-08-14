@@ -283,7 +283,7 @@
   "Checkbox group": "复选框",
   "China region": "中国行政区",
   "Date & Time": "日期 & 时间",
-  "Datetime": "日期",
+  "Datetime": "日期时间",
   "Relation": "关系类型",
   "Link to": "关联",
   "Link to description": "用于快速创建表关系，可兼容大多数普通场景。适合非开发人员使用。作为字段存在时，它是一个下拉选择用于选择目标数据表的数据。创建后，将同时在目标数据表中生成当前数据表的关联字段。",
