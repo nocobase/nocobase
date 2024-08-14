@@ -7,7 +7,21 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export const submitInReferenceTemplateBlock = {
+import { PageConfig } from '@nocobase/test/e2e';
+
+export const submitInReferenceTemplateBlock: PageConfig = {
+  collections: [
+    {
+      name: 'collection',
+      fields: [
+        {
+          name: 'nickname',
+          title: 'Nickname',
+          interface: 'input',
+        },
+      ],
+    },
+  ],
   pageSchema: {
     _isJSONSchemaObject: true,
     version: '2.0',
@@ -42,10 +56,10 @@ export const submitInReferenceTemplateBlock = {
                     version: '2.0',
                     type: 'void',
                     'x-decorator': 'TableBlockProvider',
-                    'x-acl-action': 'users:list',
+                    'x-acl-action': 'collection:list',
                     'x-use-decorator-props': 'useTableBlockDecoratorProps',
                     'x-decorator-props': {
-                      collection: 'users',
+                      collection: 'collection',
                       dataSource: 'main',
                       action: 'list',
                       params: {
@@ -155,7 +169,7 @@ export const submitInReferenceTemplateBlock = {
                                     },
                                     'x-action-context': {
                                       dataSource: 'main',
-                                      collection: 'users',
+                                      collection: 'collection',
                                     },
                                     'x-decorator': 'ACLActionProvider',
                                     'x-designer-props': {
@@ -214,12 +228,12 @@ export const submitInReferenceTemplateBlock = {
                                                                 _isJSONSchemaObject: true,
                                                                 version: '2.0',
                                                                 type: 'void',
-                                                                'x-acl-action': 'users:get',
+                                                                'x-acl-action': 'collection:get',
                                                                 'x-decorator': 'DetailsBlockProvider',
                                                                 'x-use-decorator-props': 'useDetailsDecoratorProps',
                                                                 'x-decorator-props': {
                                                                   dataSource: 'main',
-                                                                  collection: 'users',
+                                                                  collection: 'collection',
                                                                   readPretty: true,
                                                                   action: 'get',
                                                                 },
@@ -266,7 +280,7 @@ export const submitInReferenceTemplateBlock = {
                                                                             },
                                                                             'x-action-context': {
                                                                               dataSource: 'main',
-                                                                              collection: 'users',
+                                                                              collection: 'collection',
                                                                             },
                                                                             'x-decorator': 'ACLActionProvider',
                                                                             'x-app-version': '1.3.0-alpha',
@@ -342,7 +356,7 @@ export const submitInReferenceTemplateBlock = {
                                                                                                               false,
                                                                                                           },
                                                                                                         'x-acl-action':
-                                                                                                          'users:update',
+                                                                                                          'collection:update',
                                                                                                         'x-decorator':
                                                                                                           'FormBlockProvider',
                                                                                                         'x-use-decorator-props':
@@ -354,7 +368,7 @@ export const submitInReferenceTemplateBlock = {
                                                                                                             dataSource:
                                                                                                               'main',
                                                                                                             collection:
-                                                                                                              'users',
+                                                                                                              'collection',
                                                                                                           },
                                                                                                         'x-toolbar':
                                                                                                           'BlockSchemaToolbar',
@@ -555,7 +569,7 @@ export const submitInReferenceTemplateBlock = {
                                                                                     'x-component': 'CollectionField',
                                                                                     'x-decorator': 'FormItem',
                                                                                     'x-collection-field':
-                                                                                      'users.nickname',
+                                                                                      'collection.nickname',
                                                                                     'x-component-props': {},
                                                                                     'x-app-version': '1.3.0-alpha',
                                                                                     'x-uid': 'hx18y505cn6',
@@ -644,7 +658,7 @@ export const submitInReferenceTemplateBlock = {
                               nickname: {
                                 _isJSONSchemaObject: true,
                                 version: '2.0',
-                                'x-collection-field': 'users.nickname',
+                                'x-collection-field': 'collection.nickname',
                                 'x-component': 'CollectionField',
                                 'x-component-props': {
                                   ellipsis: true,
@@ -708,12 +722,12 @@ export const submitInReferenceTemplateBlock = {
                     'x-acl-action-props': {
                       skipScopeCheck: true,
                     },
-                    'x-acl-action': 'users:create',
+                    'x-acl-action': 'collection:create',
                     'x-decorator': 'FormBlockProvider',
                     'x-use-decorator-props': 'useCreateFormBlockDecoratorProps',
                     'x-decorator-props': {
                       dataSource: 'main',
-                      collection: 'users',
+                      collection: 'collection',
                     },
                     'x-toolbar': 'BlockSchemaToolbar',
                     'x-settings': 'blockSettings:createForm',
@@ -762,7 +776,7 @@ export const submitInReferenceTemplateBlock = {
                                         'x-settings': 'fieldSettings:FormItem',
                                         'x-component': 'CollectionField',
                                         'x-decorator': 'FormItem',
-                                        'x-collection-field': 'users.nickname',
+                                        'x-collection-field': 'collection.nickname',
                                         'x-component-props': {},
                                         'x-app-version': '1.3.0-alpha',
                                         'x-index': 1,
