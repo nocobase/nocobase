@@ -8,11 +8,11 @@
  */
 
 import { Model } from '@nocobase/database';
-import { FormatUser, OriginRecord, SyncDataType, UserDataResource } from '@nocobase/plugin-user-data-sync';
+import { FormatUser, OriginRecord, SyncAccept, UserDataResource } from '@nocobase/plugin-user-data-sync';
 
 export class UserDataSyncResource extends UserDataResource {
   name = 'users';
-  accepts: SyncDataType[] = ['user'];
+  accepts: SyncAccept[] = ['user'];
 
   get userRepo() {
     return this.db.getRepository('users');

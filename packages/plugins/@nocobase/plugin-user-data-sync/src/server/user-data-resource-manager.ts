@@ -22,7 +22,7 @@ export type FormatUser = {
 };
 
 export type FormatDepartment = {
-  name?: string;
+  title?: string;
   parentId?: string;
   isDeleted?: boolean;
   [key: string]: any;
@@ -30,9 +30,10 @@ export type FormatDepartment = {
 
 export type UserDataRecord = FormatUser | FormatDepartment;
 
-export type SyncDataType =
-  | 'user'
-  | 'department'
+export type SyncDataType = 'user' | 'department';
+
+export type SyncAccept =
+  | SyncDataType
   | {
       dataType: SyncDataType;
       // set resource name if this data type is associate with other resource
@@ -60,7 +61,7 @@ export type UserData = {
 
 export abstract class UserDataResource {
   name: string;
-  accepts: SyncDataType[];
+  accepts: SyncAccept[];
   db: Database;
   logger: SystemLogger;
 
@@ -80,7 +81,7 @@ export abstract class UserDataResource {
     return this.db.getRepository('userDataSyncRecordsResources');
   }
 
-  parseAccepts(dataType: string) {
+  parseAccepts(dataType: SyncDataType) {
     const accept = this.accepts.filter((accept) => {
       if (typeof accept === 'string') {
         return accept === dataType;

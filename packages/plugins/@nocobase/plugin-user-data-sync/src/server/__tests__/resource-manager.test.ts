@@ -8,11 +8,11 @@
  */
 
 import { MockDatabase, MockServer, createMockServer } from '@nocobase/test';
-import { OriginRecord, SyncDataType, UserDataResource, UserDataResourceManager } from '../user-data-resource-manager';
+import { OriginRecord, SyncAccept, UserDataResource, UserDataResourceManager } from '../user-data-resource-manager';
 
 class MockUsersResource extends UserDataResource {
   name = 'mock-users';
-  accepts: SyncDataType[] = ['user'];
+  accepts: SyncAccept[] = ['user'];
   data = [];
 
   async update(record: OriginRecord, resourcePk: number) {
