@@ -166,7 +166,9 @@ const useTableColumns = (props: { showDel?: boolean; isSubTable?: boolean }) => 
         title: render(),
         dataIndex: 'TABLE_COLUMN_INITIALIZER',
         key: 'TABLE_COLUMN_INITIALIZER',
-        render: designable ? () => <div style={{ width: '100%' }} /> : null,
+        render: designable
+          ? () => <div style={{ width: '100%', minWidth: '180px' }} className="nb-column-initializer" />
+          : null,
         fixed: designable ? 'right' : 'none',
       },
     ];
