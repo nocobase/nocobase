@@ -60,7 +60,7 @@ export class DateField extends Field {
       return serverTimeZone;
     };
 
-    this.beforeValidate = async (instance, options) => {
+    this.beforeSave = async (instance, options) => {
       const value = instance.get(name);
 
       if (!value && instance.isNewRecord && defaultToCurrentTime) {
@@ -111,12 +111,12 @@ export class DateField extends Field {
       model.refreshAttributes();
     }
 
-    this.on('beforeValidate', this.beforeValidate);
+    this.on('beforeSave', this.beforeSave);
   }
 
   unbind() {
     super.unbind();
-    this.off('beforeValidate', this.beforeValidate);
+    this.off('beforeSave', this.beforeSave);
   }
 }
 
