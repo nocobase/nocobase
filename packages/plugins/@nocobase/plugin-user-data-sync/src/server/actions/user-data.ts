@@ -23,7 +23,7 @@ export default {
     await next();
   },
   push: async (ctx: Context, next: Next) => {
-    const { data } = ctx.action.params;
+    const { data } = ctx.action.params.values || {};
     const plugin = ctx.app.pm.get(PluginUserDataSyncServer) as PluginUserDataSyncServer;
     await plugin.syncService.push(data);
     await next();
