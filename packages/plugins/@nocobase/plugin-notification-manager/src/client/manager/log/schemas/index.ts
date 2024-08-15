@@ -21,6 +21,7 @@ export const messageLogsManagerSchema: ISchema = {
     action: 'list',
     params: {
       appends: 'channel',
+      sort: 'createdAt',
     },
     showIndex: true,
     dragSort: false,

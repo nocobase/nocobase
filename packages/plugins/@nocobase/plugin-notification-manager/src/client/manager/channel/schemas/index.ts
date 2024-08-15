@@ -80,7 +80,7 @@ export const channelsSchema: ISchema = {
       action: 'list',
       params: {
         pageSize: 50,
-        appends: [],
+        sort: 'createdAt',
       },
     },
   },
