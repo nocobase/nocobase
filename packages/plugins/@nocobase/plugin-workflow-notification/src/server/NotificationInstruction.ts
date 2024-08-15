@@ -48,7 +48,7 @@ export default class extends Instruction {
 
         job.set({
           status: JOB_STATUS.RESOLVED,
-          result: res,
+          result: options,
         });
       })
       .catch((error) => {
@@ -56,7 +56,7 @@ export default class extends Instruction {
 
         job.set({
           status: JOB_STATUS.FAILED,
-          result: error,
+          result: options,
         });
       })
       .finally(() => {
