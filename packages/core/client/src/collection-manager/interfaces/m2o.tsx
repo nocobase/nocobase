@@ -72,6 +72,7 @@ export class M2OFieldInterface extends CollectionFieldInterface {
       schema['x-component-props']['size'] = 'small';
     }
   }
+
   properties = {
     'uiSchema.title': {
       type: 'string',
