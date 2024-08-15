@@ -91,7 +91,7 @@ export default class MysqlQueryInterface extends QueryInterface {
   async showTableDefinition(tableInfo: TableInfo): Promise<any> {
     const { tableName } = tableInfo;
 
-    const sql = `SHOW CREATE TABLE ${tableName}`;
+    const sql = `SHOW CREATE TABLE ${this.db.utils.quoteTable(tableName)}`;
 
     const results = await this.db.sequelize.query(sql, { type: 'SELECT' });
 
