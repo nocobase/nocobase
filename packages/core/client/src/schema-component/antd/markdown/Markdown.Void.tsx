@@ -11,9 +11,8 @@ import { observer, useField, useFieldSchema } from '@formily/react';
 import { Input as AntdInput, Button, Space, Spin, theme } from 'antd';
 import type { TextAreaRef } from 'antd/es/input/TextArea';
 import cls from 'classnames';
-import React, { useCallback, useEffect, useState, useRef, useMemo } from 'react';
+import React, { useCallback, useEffect, useState, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import DOMPurify from 'dompurify';
 import { useGlobalTheme } from '../../../global-theme';
 import { useDesignable } from '../../hooks/useDesignable';
 import { MarkdownVoidDesigner } from './Markdown.Void.Designer';
@@ -153,8 +152,8 @@ export const MarkdownVoid: any = withDynamicSchemaProps(
           compile(localVariables),
           parseMarkdown,
         );
-        const sanitizedHtml = DOMPurify.sanitize(replacedContent);
-        setHtml(sanitizedHtml);
+
+        setHtml(replacedContent);
         setLoading(false);
       };
       cvtContentToHTML();
