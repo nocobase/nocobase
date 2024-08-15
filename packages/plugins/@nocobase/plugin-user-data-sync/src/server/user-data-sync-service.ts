@@ -37,7 +37,7 @@ export class UserDataSyncService {
       dataType: data.dataType,
       uniqueKey: data.uniqueKey,
       records: data.records,
-      sourceName: data.sourceName,
+      sourceName: data.sourceName ? data.sourceName : 'api',
     };
     await this.resourceManager.updateOrCreate(userData);
   }
