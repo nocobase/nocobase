@@ -32,7 +32,7 @@ export class UnixTimestampFieldInterface extends CollectionFieldInterface {
     },
   };
   availableTypes = ['integer', 'bigInt', 'unixTimestamp'];
-  hasDefaultValue = true;
+  hasDefaultValue = false;
   properties = {
     ...defaultProps,
     timezone: {
