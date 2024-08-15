@@ -13,6 +13,7 @@ import { uid } from '@formily/shared';
 const collection: CollectionOptions = {
   name: COLLECTION_NAME.channels,
   autoGenId: true,
+  filterTargetKey: 'name',
   fields: [
     {
       name: 'name',
