@@ -9,6 +9,43 @@
 
 import { Database, mockDatabase } from '@nocobase/database';
 
+describe.runIf(process.env.DB_DIALECT === 'mysql')('mysql', async () => {
+  let db: Database;
+
+  beforeEach(async () => {
+    db = mockDatabase({
+      logging: console.log,
+    });
+
+    await db.clean({ drop: true });
+  });
+
+  afterEach(async () => {
+    await db.close();
+  });
+
+  it('should show table def table name has reserved word', async () => {
+    const User = db.collection({
+      name: 'users',
+      tableName: `interval`,
+      fields: [
+        {
+          type: 'string',
+          name: 'name',
+        },
+      ],
+    });
+
+    await db.sync();
+
+    const tableDef = await db.queryInterface.showTableDefinition({
+      tableName: User.options.tableName,
+    });
+
+    expect(tableDef).toBeDefined();
+  });
+});
+
 describe('query interface', async () => {
   let db: Database;
 
