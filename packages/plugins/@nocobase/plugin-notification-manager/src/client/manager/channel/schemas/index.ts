@@ -76,13 +76,11 @@ export const channelsSchema: ISchema = {
   'x-decorator-props': {
     collection,
     resourceName: COLLECTION_NAME.channels,
-    dragSort: true,
     request: {
       resource: COLLECTION_NAME.channels,
       action: 'list',
       params: {
         pageSize: 50,
-        sort: 'sort',
         appends: [],
       },
     },
@@ -134,19 +132,6 @@ export const channelsSchema: ISchema = {
           type: 'checkbox',
         },
         useDataSource: '{{ cm.useDataSourceFromRAC }}',
-        useAction() {
-          // const api = useAPIClient();
-          const { t } = useTranslation();
-          return {
-            async move(from, to) {
-              // await api.resource('authenticators').move({
-              //   sourceId: from.id,
-              //   targetId: to.id,
-              // });
-              message.success(t('Saved successfully'), 0.2);
-            },
-          };
-        },
       },
       properties: {
         name: {

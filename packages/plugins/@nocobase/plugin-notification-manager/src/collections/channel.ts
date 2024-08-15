@@ -12,12 +12,12 @@ import { CollectionOptions } from '@nocobase/client';
 import { uid } from '@formily/shared';
 const collection: CollectionOptions = {
   name: COLLECTION_NAME.channels,
-  autoGenId: false,
+  autoGenId: true,
   fields: [
     {
       name: 'name',
       type: 'uid',
-      primaryKey: true,
+      unique: true,
       allowNull: false,
       interface: 'input',
       uiSchema: {
