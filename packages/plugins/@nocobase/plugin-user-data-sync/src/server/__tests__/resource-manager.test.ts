@@ -8,29 +8,8 @@
  */
 
 import { MockDatabase, MockServer, createMockServer } from '@nocobase/test';
-import { OriginRecord, SyncAccept, UserDataResource, UserDataResourceManager } from '../user-data-resource-manager';
-
-class MockUsersResource extends UserDataResource {
-  name = 'mock-users';
-  accepts: SyncAccept[] = ['user'];
-  data = [];
-
-  async update(record: OriginRecord, resourcePk: number) {
-    this.data[resourcePk] = record.metaData;
-  }
-
-  async create(record: OriginRecord) {
-    this.data.push(record.metaData);
-    return this.data.length - 1;
-  }
-}
-
-class ErrorResource extends UserDataResource {
-  async update() {}
-  async create() {
-    return 0;
-  }
-}
+import { UserDataResourceManager } from '../user-data-resource-manager';
+import { ErrorResource, MockUsersResource } from './mock-resource';
 
 describe('user-data-resource-manager', () => {
   let app: MockServer;
