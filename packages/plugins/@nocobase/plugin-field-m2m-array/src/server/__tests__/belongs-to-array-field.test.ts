@@ -78,8 +78,8 @@ describe('belongs to array field', () => {
 
   describe('association keys check', async () => {
     it('targetKey is required', async () => {
-      try {
-        await db.sequelize.transaction(async (transaction) => {
+      await expect(
+        db.sequelize.transaction(async (transaction) => {
           const field = await fieldRepo.create({
             values: {
               interface: 'mbm',
@@ -92,15 +92,13 @@ describe('belongs to array field', () => {
             transaction,
           });
           await field.load({ transaction });
-        });
-      } catch (error) {
-        expect(error.message).toContain('Target key is required');
-      }
+        }),
+      ).rejects.toThrow(/Target key is required/);
     });
 
     it('foreign field must be an array or set field', async () => {
-      try {
-        await db.sequelize.transaction(async (transaction) => {
+      await expect(
+        db.sequelize.transaction(async (transaction) => {
           const field = await fieldRepo.create({
             values: {
               interface: 'mbm',
@@ -114,20 +112,16 @@ describe('belongs to array field', () => {
             transaction,
           });
           await field.load({ transaction });
-        });
-      } catch (error) {
-        expect(error.message).toContain(
-          'The type of foreign key "username" in collection "users" must be ARRAY, JSON or JSONB',
-        );
-      }
+        }),
+      ).rejects.toThrow(/The type of foreign key "username" in collection "users" must be ARRAY, JSON or JSONB/);
     });
 
     it('element type of foreign field must be match the type of target field', async () => {
       if (db.sequelize.getDialect() !== 'postgres') {
         return;
       }
-      try {
-        await db.sequelize.transaction(async (transaction) => {
+      await expect(
+        db.sequelize.transaction(async (transaction) => {
           const field = await fieldRepo.create({
             values: {
               interface: 'mbm',
@@ -141,14 +135,12 @@ describe('belongs to array field', () => {
             transaction,
           });
           await field.load({ transaction });
-        });
-      } catch (error) {
-        expect(error.message).toContain(
-          'The element type "STRING" of foreign key "tag_ids" does not match the type "BIGINT" of target key "id" in collection "tags"',
-        );
-      }
+        }),
+      ).rejects.toThrow(
+        /The element type "STRING" of foreign key "tag_ids" does not match the type "BIGINT" of target key "id" in collection "tags"/,
+      );
 
-      expect(
+      await expect(
         db.sequelize.transaction(async (transaction) => {
           const field = await fieldRepo.create({
             values: {
@@ -165,6 +157,26 @@ describe('belongs to array field', () => {
           await field.load({ transaction });
         }),
       ).resolves.not.toThrow();
+    });
+
+    it('the name of foreign key must not be the same as the name of the field', async () => {
+      await expect(
+        db.sequelize.transaction(async (transaction) => {
+          const field = await fieldRepo.create({
+            values: {
+              interface: 'mbm',
+              collectionName: 'users',
+              name: 'tag_ids_same',
+              type: 'belongsToArray',
+              foreignKey: 'tag_ids_same',
+              target: 'tags',
+              targetKey: 'stringCode',
+            },
+            transaction,
+          });
+          await field.load({ transaction });
+        }),
+      ).rejects.toThrow(/Naming collision/);
     });
   });
 });

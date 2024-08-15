@@ -12,9 +12,14 @@ import { elementTypeMap } from '../belongs-to-array-field';
 
 export const createForeignKey = (db: Database) => {
   return async (model: Model, { transaction }) => {
-    const { type, collectionName, target, targetKey, foreignKey } = model.get();
+    const { type, collectionName, target, targetKey, foreignKey, name } = model.get();
     if (type !== 'belongsToArray') {
       return;
+    }
+    if (name === foreignKey) {
+      throw new Error(
+        `Naming collision between attribute '${foreignKey}' and association '${name}' on model ${collectionName}. To remedy this, change either foreignKey or as in your association definition`,
+      );
     }
     const r = db.getRepository('fields');
     const instance = await r.findOne({
