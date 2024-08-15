@@ -12,12 +12,17 @@ import { Mutex, tryAcquire, MutexInterface, E_CANCELED } from 'async-mutex';
 
 export type Releaser = () => void | Promise<void>;
 
-export abstract class AbstractLockAdapter {
-  async connect() {}
-  async close() {}
-  abstract acquire(key: string, ttl: number): Releaser | Promise<Releaser>;
-  abstract runExclusive<T>(key: string, fn: () => Promise<T>, ttl: number): Promise<T>;
-  // abstract tryAcquire(key: string, ttl: number): Releaser | Promise<Releaser>;
+export interface ILock {
+  acquire(ttl: number): Releaser | Promise<Releaser>;
+  runExclusive<T>(fn: () => Promise<T>, ttl: number): Promise<T>;
+}
+
+export interface ILockAdapter {
+  connect(): Promise<void>;
+  close(): Promise<void>;
+  acquire(key: string, ttl: number): Releaser | Promise<Releaser>;
+  runExclusive<T>(key: string, fn: () => Promise<T>, ttl: number): Promise<T>;
+  // tryAcquire(key: string, timeout?: number): Promise<ILock>;
 }
 
 export class LockAbortError extends Error {
@@ -26,8 +31,17 @@ export class LockAbortError extends Error {
   }
 }
 
-class LocalLockAdapter extends AbstractLockAdapter {
+export class LockAcquireError extends Error {
+  constructor(message, options) {
+    super(message, options);
+  }
+}
+
+class LocalLockAdapter implements ILockAdapter {
   static locks = new Map<string, MutexInterface>();
+
+  async connect() {}
+  async close() {}
 
   private getLock(key: string): MutexInterface {
     let lock = (<typeof LocalLockAdapter>this.constructor).locks.get(key);
@@ -72,13 +86,26 @@ class LocalLockAdapter extends AbstractLockAdapter {
       clearTimeout(timer);
     }
   }
-  // async tryAcquire(key: string, ttl: number) {
-  //   const lock = this.getLock(key);
-  //   return lock.tryAcquire(ttl);
+
+  // async tryAcquire(key: string) {
+  //   try {
+  //     const lock = this.getLock(key);
+  //     await tryAcquire(lock);
+  //     return {
+  //       async acquire(ttl) {
+  //         return this.acquire(key, ttl);
+  //       },
+  //       async runExclusive(fn: () => Promise<any>, ttl) {
+  //         return this.runExclusive(key, fn, ttl);
+  //       },
+  //     };
+  //   } catch (e) {
+  //     throw new LockAcquireError('Lock acquire error', { cause: e });
+  //   }
   // }
 }
 
-export interface LockAdapterConfig<C extends AbstractLockAdapter = AbstractLockAdapter> {
+export interface LockAdapterConfig<C extends ILockAdapter = ILockAdapter> {
   Adapter: new (...args: any[]) => C;
   options?: Record<string, any>;
 }
@@ -89,7 +116,7 @@ export interface LockManagerOptions {
 
 export class LockManager {
   private registry = new Registry<LockAdapterConfig>();
-  private adapters = new Map<string, AbstractLockAdapter>();
+  private adapters = new Map<string, ILockAdapter>();
 
   constructor(private options: LockManagerOptions = {}) {
     this.registry.register('local', {
@@ -101,7 +128,7 @@ export class LockManager {
     this.registry.register(name, adapterConfig);
   }
 
-  private async getAdapter(): Promise<AbstractLockAdapter> {
+  private async getAdapter(): Promise<ILockAdapter> {
     const type = this.options.defaultAdapter || 'local';
     let client = this.adapters.get(type);
     if (!client) {
