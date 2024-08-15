@@ -75,6 +75,7 @@ export const Edit = withDynamicSchemaProps((props) => {
         headers: apiClient.getHeaders(),
         multiple: false,
         fieldName: 'file',
+        max: 1024 * 1024 * 1024, // 1G
         format(files, responseText) {
           const response = JSON.parse(responseText);
           const formatResponse = {
