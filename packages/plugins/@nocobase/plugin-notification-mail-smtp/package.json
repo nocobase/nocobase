@@ -1,5 +1,5 @@
 {
-  "name": "@nocobase/plugin-notification-mail",
+  "name": "@nocobase/plugin-notification-mail-smtp",
   "version": "1.3.0-alpha",
   "main": "dist/server/index.js",
   "devDependencies": {
