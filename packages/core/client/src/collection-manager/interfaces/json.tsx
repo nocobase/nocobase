@@ -10,7 +10,7 @@
 import { FormItem, FormLayout } from '@formily/antd-v5';
 import { registerValidateRules } from '@formily/core';
 import React from 'react';
-import { defaultProps } from './properties';
+import { defaultProps, operators } from './properties';
 import { CollectionFieldInterface } from '../../data-source/collection-field-interface/CollectionFieldInterface';
 
 registerValidateRules({

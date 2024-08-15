@@ -72,8 +72,24 @@ export class M2OFieldInterface extends CollectionFieldInterface {
       schema['x-component-props']['size'] = 'small';
     }
   }
-
   properties = {
+    'uiSchema.title': {
+      type: 'string',
+      title: '{{t("Field display name")}}',
+      required: true,
+      'x-decorator': 'FormItem',
+      'x-component': 'Input',
+    },
+    name: {
+      type: 'string',
+      title: '{{t("Field name")}}',
+      required: true,
+      'x-disabled': '{{ !createOnly }}',
+      'x-decorator': 'FormItem',
+      'x-component': 'Input',
+      description:
+        "{{t('Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.')}}",
+    },
     type: relationshipType,
     grid: {
       type: 'void',

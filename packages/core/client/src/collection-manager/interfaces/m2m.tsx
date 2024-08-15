@@ -93,6 +93,7 @@ export class M2MFieldInterface extends CollectionFieldInterface {
     }
   }
   properties = {
+    ...defaultProps,
     type: relationshipType,
     grid: {
       type: 'void',
