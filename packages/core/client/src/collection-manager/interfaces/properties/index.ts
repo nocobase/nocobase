@@ -243,7 +243,7 @@ export const dateTimeProps: { [key: string]: ISchema } = {
           value: 'client',
         },
         {
-          label: 'custom',
+          label: '{{t("Custom")}}',
           value: 'custom',
         },
       ],

@@ -22,6 +22,9 @@ export class DateFieldInterface extends CollectionFieldInterface {
     uiSchema: {
       type: 'string',
       'x-component': 'DatePicker',
+      'x-component-props': {
+        dateOnly: true,
+      },
     },
   };
   availableTypes = ['date', 'dateOnly', 'string'];
