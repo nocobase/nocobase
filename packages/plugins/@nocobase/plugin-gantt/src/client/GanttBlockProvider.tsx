@@ -17,6 +17,7 @@ import {
   useTableBlockContext,
   getLabelFormatValue,
   useCollection,
+  useCollectionManager_deprecated,
 } from '@nocobase/client';
 import _ from 'lodash';
 export const GanttBlockContext = createContext<any>({});
@@ -99,8 +100,9 @@ const InternalGanttBlockProvider = (props) => {
 };
 
 export const GanttBlockProvider = (props) => {
-  const params = { filter: props.params?.filter, paginate: false, sort: ['id'] };
-  const collection = useCollection_deprecated();
+  const cm = useCollectionManager_deprecated(props.dataSource);
+  const collection = cm.getCollection(props.collection, props.dataSource);
+  const params = { filter: props.params?.filter, paginate: false, sort: [collection?.primaryKey || 'id'] };
 
   if (collection?.tree) {
     params['tree'] = true;
