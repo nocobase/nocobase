@@ -93,7 +93,9 @@ const usePaginationProps = () => {
   } else {
     return {
       showTotal: false,
+      pageSizeOptions,
       simple: { readOnly: true },
+      pageSize: pageSize || 10,
       showTitle: false,
       showSizeChanger: true,
       hideOnSinglePage: false,
@@ -101,6 +103,9 @@ const usePaginationProps = () => {
       className: css`
         .ant-pagination-simple-pager {
           display: none !important;
+        }
+        li {
+          line-height: 32px !important;
         }
       `,
     };
