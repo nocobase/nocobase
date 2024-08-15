@@ -24,3 +24,22 @@ export const formProperties = {
     'x-component': 'CollectionField',
   },
 };
+
+export const updateFormProperties = {
+  name: {
+    'x-component': 'CollectionField',
+    'x-decorator': 'FormItem',
+    'x-disabled': true,
+  },
+  title: {
+    'x-component': 'CollectionField',
+    'x-decorator': 'FormItem',
+  },
+  description: {
+    'x-component': 'CollectionField',
+    'x-decorator': 'FormItem',
+  },
+  options: {
+    'x-component': 'CollectionField',
+  },
+};

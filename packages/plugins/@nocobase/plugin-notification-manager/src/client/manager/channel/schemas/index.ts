@@ -9,14 +9,13 @@
 
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
-import { i18n, useAPIClient, useActionContext, useRequest } from '@nocobase/client';
+import { useActionContext, useRequest } from '@nocobase/client';
 import { useContext } from 'react';
 import collection from '../../../../collections/channel';
 import { COLLECTION_NAME } from '../../../../constant';
-import { useTranslation } from 'react-i18next';
-import { message } from 'antd';
-import { formProperties } from './form';
+import { formProperties, updateFormProperties } from './form';
 import { NotificationTypeNameContext } from '../context';
+
 export const createFormSchema: ISchema = {
   type: 'object',
   properties: {
@@ -213,7 +212,7 @@ export const channelsSchema: ISchema = {
                       },
                       title: '{{t("Configure")}}',
                       properties: {
-                        ...formProperties,
+                        ...updateFormProperties,
                         footer: {
                           type: 'void',
                           'x-component': 'Action.Drawer.Footer',

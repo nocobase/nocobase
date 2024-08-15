@@ -10,16 +10,17 @@
 import { COLLECTION_NAME } from '../constant';
 import { CollectionOptions } from '@nocobase/client';
 import { uid } from '@formily/shared';
+import { useUpdateAction } from 'packages/core/client/src/collection-manager/action-hooks';
+import { useSubmitActionProps } from '../client/hooks';
 const collection: CollectionOptions = {
   name: COLLECTION_NAME.channels,
-  autoGenId: true,
+  autoGenId: false,
   filterTargetKey: 'name',
   fields: [
     {
       name: 'name',
       type: 'uid',
-      unique: true,
-      allowNull: false,
+      primaryKey: true,
       interface: 'input',
       uiSchema: {
         type: 'string',
