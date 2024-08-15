@@ -28,6 +28,23 @@ export class UUIDFieldInterface extends CollectionFieldInterface {
   };
   availableTypes = ['string', 'uid', 'uuid'];
   properties = {
+    'uiSchema.title': {
+      type: 'string',
+      title: '{{t("Field display name")}}',
+      required: true,
+      'x-decorator': 'FormItem',
+      'x-component': 'Input',
+    },
+    name: {
+      type: 'string',
+      title: '{{t("Field name")}}',
+      required: true,
+      'x-decorator': 'FormItem',
+      'x-component': 'Input',
+      'x-disabled': '{{ !createOnly }}',
+      description:
+        "{{t('Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.')}}",
+    },
     autoFill,
     layout: {
       type: 'void',

@@ -29,6 +29,7 @@ export class EmailFieldInterface extends CollectionFieldInterface {
   availableTypes = ['string'];
   hasDefaultValue = true;
   properties = {
+    ...defaultProps,
     unique,
   };
   filterable = {

@@ -27,6 +27,7 @@ export class RadioGroupFieldInterface extends CollectionFieldInterface {
   availableTypes = ['string', 'integer', 'boolean', 'integer'];
   hasDefaultValue = true;
   properties = {
+    ...defaultProps,
     'uiSchema.enum': dataSource,
   };
   filterable = {

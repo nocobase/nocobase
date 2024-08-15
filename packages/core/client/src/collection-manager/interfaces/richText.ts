@@ -28,7 +28,9 @@ export class RichTextFieldInterface extends CollectionFieldInterface {
   };
   availableTypes = ['text', 'json', 'string'];
   hasDefaultValue = true;
-  properties = {};
+  properties = {
+    ...defaultProps,
+  };
   schemaInitialize(schema: ISchema, { block }) {
     if (['Table', 'Kanban'].includes(block)) {
       schema['x-component-props'] = schema['x-component-props'] || {};

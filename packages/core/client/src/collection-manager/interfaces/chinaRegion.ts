@@ -61,6 +61,7 @@ export class ChinaRegionFieldInterface extends CollectionFieldInterface {
   }
 
   properties = {
+    ...defaultProps,
     'uiSchema.x-component-props.maxLevel': {
       type: 'number',
       'x-component': 'Radio.Group',

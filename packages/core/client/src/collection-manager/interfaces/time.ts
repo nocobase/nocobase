@@ -27,6 +27,7 @@ export class TimeFieldInterface extends CollectionFieldInterface {
   availableTypes = ['time'];
   hasDefaultValue = true;
   properties = {
+    ...defaultProps,
     'uiSchema.x-component-props.format': {
       type: 'string',
       title: '{{t("Time format")}}',

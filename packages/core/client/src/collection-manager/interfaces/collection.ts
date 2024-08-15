@@ -31,6 +31,7 @@ export class CollectionSelectFieldInterface extends CollectionFieldInterface {
   hasDefaultValue = false;
 
   properties = {
+    ...defaultProps,
     'uiSchema.enum': collectionDataSource,
   };
 

@@ -32,6 +32,7 @@ export class NumberFieldInterface extends CollectionFieldInterface {
   availableTypes = ['double', 'float', 'decimal'];
   hasDefaultValue = true;
   properties = {
+    ...defaultProps,
     unique,
     'uiSchema.x-component-props.step': {
       type: 'string',

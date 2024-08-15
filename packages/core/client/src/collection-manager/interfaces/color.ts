@@ -26,7 +26,9 @@ export class ColorFieldInterface extends CollectionFieldInterface {
   };
   availableTypes = ['string'];
   hasDefaultValue = true;
-  properties = {};
+  properties = {
+    ...defaultProps,
+  };
   filterable = {
     operators: operators.string,
   };

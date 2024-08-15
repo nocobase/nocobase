@@ -31,6 +31,7 @@ export class UnixTimestampFieldInterface extends CollectionFieldInterface {
   availableTypes = ['integer', 'bigInt'];
   hasDefaultValue = true;
   properties = {
+    ...defaultProps,
     'uiSchema.x-component-props.accuracy': {
       type: 'string',
       title: '{{t("Accuracy")}}',

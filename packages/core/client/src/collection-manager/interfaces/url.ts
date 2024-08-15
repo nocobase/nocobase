@@ -36,7 +36,9 @@ export class UrlFieldInterface extends CollectionFieldInterface {
   ];
   availableTypes = ['string', 'text'];
   schemaInitialize(schema: ISchema, { block }) {}
-  properties = {};
+  properties = {
+    ...defaultProps,
+  };
   titleUsable = true;
   filterable = {
     operators: operators.string,

@@ -31,6 +31,7 @@ export class PhoneFieldInterface extends CollectionFieldInterface {
   availableTypes = ['string'];
   hasDefaultValue = true;
   properties = {
+    ...defaultProps,
     unique,
   };
   filterable = {

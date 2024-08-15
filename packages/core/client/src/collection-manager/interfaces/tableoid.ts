@@ -30,7 +30,23 @@ export class TableoidFieldInterface extends CollectionFieldInterface {
       'x-read-pretty': true,
     },
   };
-  properties = {};
+  properties = {
+    'uiSchema.title': {
+      type: 'string',
+      title: '{{t("Field display name")}}',
+      required: true,
+      'x-decorator': 'FormItem',
+      'x-component': 'Input',
+    },
+    name: {
+      type: 'string',
+      title: '{{t("Field name")}}',
+      required: true,
+      'x-disabled': true,
+      'x-decorator': 'FormItem',
+      'x-component': 'Input',
+    },
+  };
   filterable = {
     operators: operators.tableoid,
   };
