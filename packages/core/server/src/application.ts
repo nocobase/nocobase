@@ -25,6 +25,7 @@ import {
 import { ResourceOptions, Resourcer } from '@nocobase/resourcer';
 import { Telemetry, TelemetryOptions } from '@nocobase/telemetry';
 import { applyMixins, AsyncEmitter, importModule, Toposort, ToposortOptions } from '@nocobase/utils';
+import { LockManager, LockManagerOptions } from '@nocobase/lock-manager';
 import { Command, CommandOptions, ParseOptions } from 'commander';
 import { randomUUID } from 'crypto';
 import glob from 'glob';
@@ -1239,6 +1240,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
         context: { app: this },
       },
       logger: this._logger.child({ module: 'database' }),
+      lockManager: this.lockManager,
     });
     return db;
   }

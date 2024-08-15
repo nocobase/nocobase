@@ -6,9 +6,9 @@
   "types": "./lib/index.d.ts",
   "license": "AGPL-3.0",
   "dependencies": {
+    "@nocobase/lock-manager": "1.4.0-alpha",
     "@nocobase/logger": "1.4.0-alpha",
     "@nocobase/utils": "1.4.0-alpha",
-    "async-mutex": "^0.5.0",
     "chalk": "^4.1.1",
     "cron-parser": "4.4.0",
     "dayjs": "^1.11.8",

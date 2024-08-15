@@ -165,3 +165,5 @@ export class LockManager {
     return client.tryAcquire(key);
   }
 }
+
+export default LockManager;

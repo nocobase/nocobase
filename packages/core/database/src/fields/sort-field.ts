@@ -7,12 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Mutex } from 'async-mutex';
 import { isNumber } from 'lodash';
 import { DataTypes } from 'sequelize';
 import { BaseColumnFieldOptions, Field } from './field';
-
-const sortFieldMutex = new Mutex();
 
 export class SortField extends Field {
   get dataType() {
@@ -36,7 +33,7 @@ export class SortField extends Field {
       }
     }
 
-    await sortFieldMutex.runExclusive(async () => {
+    await this.database.lockManager.runExclusive(this.context.collection.name, async () => {
       const max = await model.max<number, any>(name, { ...options, where });
       const newValue = (max || 0) + 1;
       instance.set(name, newValue);

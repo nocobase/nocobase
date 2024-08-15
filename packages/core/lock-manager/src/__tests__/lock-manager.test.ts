@@ -9,8 +9,7 @@
 
 import { Mutex, tryAcquire } from 'async-mutex';
 
-import { Application } from '../application';
-import { LockAcquireError } from '../lock-manager';
+import { LockManager, LockAcquireError } from '../lock-manager';
 
 function sleep(ms = 1000) {
   return new Promise((resolve) => {
@@ -59,34 +58,11 @@ describe('lock manager', () => {
   });
 
   describe('local lock', () => {
-    let app: Application;
-
-    beforeEach(() => {
-      app = new Application({
-        database: {
-          dialect: 'sqlite',
-          storage: ':memory:',
-        },
-        resourcer: {
-          prefix: '/api',
-        },
-        acl: false,
-        dataWrapping: false,
-        registerActions: false,
-      });
-    });
-
-    afterEach(async () => {
-      return app.destroy();
-    });
-
-    it('base api', async () => {
-      expect(app.lockManager).toBeDefined();
-    });
+    const lockManager = new LockManager();
 
     it('acquire and release', async () => {
       const order = [];
-      const r1 = await app.lockManager.acquire('test');
+      const r1 = await lockManager.acquire('test');
       order.push(1);
       setTimeout(async () => {
         order.push(2);
@@ -94,7 +70,7 @@ describe('lock manager', () => {
         order.push(3);
       }, 200);
       order.push(4);
-      const r2 = await app.lockManager.acquire('test');
+      const r2 = await lockManager.acquire('test');
       order.push(5);
       await r2();
       order.push(6);
@@ -103,7 +79,7 @@ describe('lock manager', () => {
 
     it('acquire and release with timeout', async () => {
       const order = [];
-      const r1 = await app.lockManager.acquire('test', 200);
+      const r1 = await lockManager.acquire('test', 200);
       order.push(1);
       setTimeout(async () => {
         order.push(2);
@@ -111,7 +87,7 @@ describe('lock manager', () => {
         order.push(3);
       }, 400);
       order.push(4);
-      const r2 = await app.lockManager.acquire('test', 200);
+      const r2 = await lockManager.acquire('test', 200);
       order.push(5);
       await sleep(300);
       await r2();
@@ -122,14 +98,14 @@ describe('lock manager', () => {
     it('runExclusive', async () => {
       const order = [];
       setTimeout(async () => {
-        await app.lockManager.runExclusive('test', async () => {
+        await lockManager.runExclusive('test', async () => {
           order.push(1);
           await sleep(100);
           order.push(2);
         });
       }, 100);
       order.push(3);
-      await app.lockManager.runExclusive('test', async () => {
+      await lockManager.runExclusive('test', async () => {
         order.push(4);
         await sleep(400);
         order.push(5);
@@ -142,7 +118,7 @@ describe('lock manager', () => {
     it('runExclusive with timeout', async () => {
       const order = [];
       setTimeout(async () => {
-        await app.lockManager.runExclusive(
+        await lockManager.runExclusive(
           'test',
           async () => {
             order.push(1);
@@ -153,7 +129,7 @@ describe('lock manager', () => {
         );
       }, 100);
       order.push(3);
-      await app.lockManager.runExclusive(
+      await lockManager.runExclusive(
         'test',
         async () => {
           order.push(4);
@@ -168,10 +144,10 @@ describe('lock manager', () => {
     });
 
     it('tryAcquire', async () => {
-      const release = await app.lockManager.acquire('test');
-      await expect(app.lockManager.tryAcquire('test')).rejects.toThrowError(LockAcquireError);
+      const release = await lockManager.acquire('test');
+      await expect(lockManager.tryAcquire('test')).rejects.toThrowError(LockAcquireError);
       await release();
-      const lock = await app.lockManager.tryAcquire('test');
+      const lock = await lockManager.tryAcquire('test');
       expect(lock.acquire).toBeTypeOf('function');
       expect(lock.runExclusive).toBeTypeOf('function');
 

@@ -8,6 +8,7 @@
  */
 
 import { createConsoleLogger, createLogger, Logger, LoggerOptions } from '@nocobase/logger';
+import { LockManager } from '@nocobase/lock-manager';
 import { applyMixins, AsyncEmitter } from '@nocobase/utils';
 import chalk from 'chalk';
 import merge from 'deepmerge';
@@ -106,6 +107,7 @@ export interface IDatabaseOptions extends Options {
   logger?: LoggerOptions | Logger;
   customHooks?: any;
   instanceId?: string;
+  lockManager?: LockManager;
 }
 
 export type DatabaseOptions = IDatabaseOptions;
@@ -181,6 +183,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
   modelHook: ModelHook;
   delayCollectionExtend = new Map<string, { collectionOptions: CollectionOptions; mergeOptions?: any }[]>();
   logger: Logger;
+  lockManager: LockManager;
   interfaceManager = new InterfaceManager(this);
 
   collectionFactory: CollectionFactory = new CollectionFactory(this);
@@ -198,6 +201,10 @@ export class Database extends EventEmitter implements AsyncEmitter {
       },
       ...lodash.clone(options),
     };
+
+    if (opts.lockManager) {
+      this.lockManager = opts.lockManager;
+    }
 
     if (options.logger) {
       if (typeof options.logger['log'] === 'function') {
