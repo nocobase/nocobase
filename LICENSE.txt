@@ -1,8 +1,8 @@
-Updated Date: July 24, 2024
+Updated Date: August 15, 2024
 
 NocoBase License Agreement
 
-NOCOBASE PTE. LTD. ("The Company") https://www.nocobase.com/ issues this License Agreement ("Agreement") to you. You, as an individual or a company ("User"), will be deemed to voluntarily accept all terms of this Agreement by using NocoBase (including but not limited to obtaining NocoBase source code or installation package in any form, installing and using NocoBase, purchasing NocoBase commercial license and services, purchasing NocoBase commercial plugins). If the User does not agree to any term of this Agreement, or cannot accurately understand our interpretation of the relevant terms, please stop using it immediately.
+NOCOBASE PTE. LTD.，a Singaporean Exempt Private Company Limited by Shares with its principal place of business located at #03-01 ROBINSON 112 ("The Company") https://www.nocobase.com/ issues this License Agreement ("Agreement") to you. You, as an individual or a company ("User"), will be deemed to voluntarily accept all terms of this Agreement by using NocoBase (including but not limited to obtaining NocoBase source code or installation package in any form, installing and using NocoBase, purchasing NocoBase commercial license and services, purchasing NocoBase commercial plugins). If the User does not agree to any term of this Agreement, or cannot accurately understand our interpretation of the relevant terms, please stop using it immediately.
 
 This Agreement applies to any use, quotation, contract, invoice, and all software delivered by the Company. The User and the Company or NocoBase's agents can no longer sign a separate license agreement for the sale and delivery of the software.
 
@@ -80,7 +80,7 @@ Except for Third-Party Open Source Software, the Company owns all copyrights, tr
 
 6.6 Can sell plugins developed for Software in the Marketplace.
 
-6.7 Can sell Upper Layer Applications developed based on Software to Customer who has obtained a commercial license.
+6.7 Users with a Professional or Enterprise Edition license can sell Upper Layer Application to their clients.
 
 6.8 Not restricted by the AGPL-3.0 agreement.
 
@@ -96,7 +96,7 @@ Except for Third-Party Open Source Software, the Company owns all copyrights, tr
 
 7.3 It is not allowed to provide any form of no-code, zero-code, low-code platform SaaS products to the public using the original or modified Software.
 
-7.4 It is not allowed to sell Upper Layer Application to Customer who have not obtained a Commercial License.
+7.4 It is not allowed for Users with a standard license to sell Upper Layer Application to clients without a commercial license.
 
 7.5 It is not allowed to use reverse engineering, decompilation, and other means to try to discover the source code of Commercial Plugins that have not obtained source code license.
 
