@@ -73,7 +73,7 @@ export class UnixTimestampFieldInterface extends CollectionFieldInterface {
       type: 'boolean',
       'x-decorator': 'FormItem',
       'x-component': 'Checkbox',
-      'x-content': '{{t("Default to current time")}}',
+      'x-content': '{{t("Default value to current time")}}',
       default: true,
     },
     onUpdateToCurrentTime: {
