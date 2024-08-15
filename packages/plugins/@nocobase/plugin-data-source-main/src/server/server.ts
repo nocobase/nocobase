@@ -315,9 +315,9 @@ export class PluginDataSourceMainServer extends Plugin {
     this.app.db.on('fields.beforeDestroy', beforeDestoryField(this.app.db));
     this.app.db.on('fields.beforeDestroy', beforeDestroyForeignKey(this.app.db));
 
-    const mutex = new Mutex();
     this.app.db.on('fields.beforeDestroy', async (model: FieldModel, options) => {
-      await mutex.runExclusive(async () => {
+      const lockKey = `${this.name}:fields.beforeDestroy:${model.get('collectionName')}:${model.get('name')}`;
+      await this.app.lockManager.runExclusive(lockKey, async () => {
         await model.remove(options);
 
         this.sendSyncMessage(

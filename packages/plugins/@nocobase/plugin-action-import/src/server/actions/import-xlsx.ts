@@ -11,10 +11,9 @@ import { Context, Next } from '@nocobase/actions';
 import { Repository } from '@nocobase/database';
 import XLSX from 'xlsx';
 import { XlsxImporter } from '../services/xlsx-importer';
-import { Mutex } from 'async-mutex';
 import { DataSource } from '@nocobase/data-source-manager';
-
-const mutex = new Mutex();
+import PluginActionImportServer from '..';
+import { LockAcquireError } from '@nocobase/lock-manager';
 
 const IMPORT_LIMIT_COUNT = 2000;
 
@@ -60,15 +59,24 @@ async function importXlsxAction(ctx: Context, next: Next) {
 }
 
 export async function importXlsx(ctx: Context, next: Next) {
-  if (mutex.isLocked()) {
-    throw new Error(
-      ctx.t(`another import action is running, please try again later.`, {
-        ns: 'action-import',
-      }),
-    );
+  const plugin = ctx.app.pm.get(PluginActionImportServer) as PluginActionImportServer;
+  const { collection } = ctx.getCurrentRepository();
+  const dataSource = ctx.dataSource as DataSource;
+  const lockKey = `${plugin.name}:${dataSource.name}:${collection.name}`;
+  let lock;
+  try {
+    lock = ctx.app.lockManager.tryAcquire(lockKey);
+  } catch (error) {
+    if (error instanceof LockAcquireError) {
+      throw new Error(
+        ctx.t(`another import action is running, please try again later.`, {
+          ns: 'action-import',
+        }),
+      );
+    }
   }
 
-  const release = await mutex.acquire();
+  const release = await lock.acquire(5000);
 
   try {
     await importXlsxAction(ctx, next);

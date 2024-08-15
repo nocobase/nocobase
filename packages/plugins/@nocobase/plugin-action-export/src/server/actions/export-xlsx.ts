@@ -12,10 +12,9 @@ import { Repository } from '@nocobase/database';
 
 import XlsxExporter from '../xlsx-exporter';
 import XLSX from 'xlsx';
-import { Mutex } from 'async-mutex';
 import { DataSource } from '@nocobase/data-source-manager';
-
-const mutex = new Mutex();
+import PluginActionExportServer from '..';
+import { LockAcquireError } from '@nocobase/lock-manager';
 
 async function exportXlsxAction(ctx: Context, next: Next) {
   const { title, filter, sort, fields, except } = ctx.action.params;
@@ -53,15 +52,27 @@ async function exportXlsxAction(ctx: Context, next: Next) {
 }
 
 export async function exportXlsx(ctx: Context, next: Next) {
-  if (mutex.isLocked()) {
-    throw new Error(
-      ctx.t(`another export action is running, please try again later.`, {
-        ns: 'action-export',
-      }),
-    );
+  const plugin = ctx.app.pm.get(PluginActionExportServer) as PluginActionExportServer;
+  const { collection } = ctx.getCurrentRepository();
+  const dataSource = ctx.dataSource as DataSource;
+  const lockKey = `${plugin.name}:${dataSource.name}:${collection.name}`;
+  let lock;
+  try {
+    lock = ctx.app.lockManager.tryAcquire(lockKey);
+  } catch (error) {
+    if (error instanceof LockAcquireError) {
+      throw new Error(
+        ctx.t(`another export action is running, please try again later.`, {
+          ns: 'action-export',
+        }),
+        {
+          cause: error,
+        },
+      );
+    }
   }
 
-  const release = await mutex.acquire();
+  const release = await lock.acquire(5000);
 
   try {
     await exportXlsxAction(ctx, next);
