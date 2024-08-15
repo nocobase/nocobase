@@ -91,11 +91,7 @@ export default class MysqlQueryInterface extends QueryInterface {
   async showTableDefinition(tableInfo: TableInfo): Promise<any> {
     const { tableName } = tableInfo;
 
-    //nint quote table name for it may be special word like group
-    let newTableName = tableName;
-    if (!tableName.startsWith('`')) newTableName = this.db.utils.quoteTable(tableName);
-    const sql = `SHOW CREATE TABLE ${newTableName}`;
-    //const sql = `SHOW CREATE TABLE ${tableName}`;
+    const sql = `SHOW CREATE TABLE ${this.db.utils.quoteTable(tableName)}`;
 
     const results = await this.db.sequelize.query(sql, { type: 'SELECT' });
 
