@@ -8,4 +8,4 @@
  */
 
 export const channelType = 'mail';
-export const NAMESPACE = '@nocobase/plugin-notification-mail';
+export const NAMESPACE = '@nocobase/plugin-notification-mail-smtp';
