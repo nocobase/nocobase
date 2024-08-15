@@ -8,7 +8,7 @@
  */
 
 import { Registry } from '@nocobase/utils';
-import { Mutex, tryAcquire, MutexInterface, E_CANCELED } from 'async-mutex';
+import { Mutex, MutexInterface, E_CANCELED } from 'async-mutex';
 
 export type Releaser = () => void | Promise<void>;
 
@@ -22,7 +22,7 @@ export interface ILockAdapter {
   close(): Promise<void>;
   acquire(key: string, ttl: number): Releaser | Promise<Releaser>;
   runExclusive<T>(key: string, fn: () => Promise<T>, ttl: number): Promise<T>;
-  // tryAcquire(key: string, timeout?: number): Promise<ILock>;
+  tryAcquire(key: string, timeout?: number): Promise<ILock>;
 }
 
 export class LockAbortError extends Error {
@@ -32,7 +32,7 @@ export class LockAbortError extends Error {
 }
 
 export class LockAcquireError extends Error {
-  constructor(message, options) {
+  constructor(message, options?) {
     super(message, options);
   }
 }
@@ -87,22 +87,20 @@ class LocalLockAdapter implements ILockAdapter {
     }
   }
 
-  // async tryAcquire(key: string) {
-  //   try {
-  //     const lock = this.getLock(key);
-  //     await tryAcquire(lock);
-  //     return {
-  //       async acquire(ttl) {
-  //         return this.acquire(key, ttl);
-  //       },
-  //       async runExclusive(fn: () => Promise<any>, ttl) {
-  //         return this.runExclusive(key, fn, ttl);
-  //       },
-  //     };
-  //   } catch (e) {
-  //     throw new LockAcquireError('Lock acquire error', { cause: e });
-  //   }
-  // }
+  async tryAcquire(key: string) {
+    const lock = this.getLock(key);
+    if (lock.isLocked()) {
+      throw new LockAcquireError('lock is locked');
+    }
+    return {
+      acquire: async (ttl) => {
+        return this.acquire(key, ttl);
+      },
+      runExclusive: async (fn: () => Promise<any>, ttl) => {
+        return this.runExclusive(key, fn, ttl);
+      },
+    };
+  }
 }
 
 export interface LockAdapterConfig<C extends ILockAdapter = ILockAdapter> {
@@ -162,8 +160,8 @@ export class LockManager {
     return client.runExclusive(key, fn, ttl);
   }
 
-  // public async tryAcquire(key: string, ttl = 500) {
-  //   const client = await this.getAdapter();
-  //   return client.tryAcquire(key, ttl);
-  // }
+  public async tryAcquire(key: string) {
+    const client = await this.getAdapter();
+    return client.tryAcquire(key);
+  }
 }
