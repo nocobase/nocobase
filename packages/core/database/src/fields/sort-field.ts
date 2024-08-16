@@ -40,9 +40,7 @@ export class SortField extends Field {
         const newValue = (max || 0) + 1;
         instance.set(name, newValue);
       },
-      {
-        ttl: 2000,
-      },
+      2000,
     );
   };
 
