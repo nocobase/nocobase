@@ -11,6 +11,69 @@ import { mockDatabase } from '../';
 import { Database } from '../../database';
 import { Repository } from '../../repository';
 
+describe('timezone', () => {
+  let db: Database;
+
+  beforeEach(async () => {
+    db = mockDatabase({
+      timezone: '+08:00',
+    });
+    await db.clean({ drop: true });
+  });
+
+  afterEach(async () => {
+    await db.close();
+  });
+
+  describe('timezone', () => {
+    test('custom', async () => {
+      db.collection({
+        name: 'tests',
+        timestamps: false,
+        fields: [{ name: 'date1', type: 'date', timezone: '+06:00' }],
+      });
+
+      await db.sync();
+      const repository = db.getRepository('tests');
+      const instance = await repository.create({ values: { date1: '2023-03-24 00:00:00' } });
+      const date1 = instance.get('date1');
+      expect(date1.toISOString()).toEqual('2023-03-23T18:00:00.000Z');
+    });
+
+    test('client', async () => {
+      db.collection({
+        name: 'tests',
+        timestamps: false,
+        fields: [{ name: 'date1', type: 'date', timezone: 'client' }],
+      });
+
+      await db.sync();
+      const repository = db.getRepository('tests');
+      const instance = await repository.create({
+        values: { date1: '2023-03-24 01:00:00' },
+        context: {
+          timezone: '+01:00',
+        },
+      });
+      const date1 = instance.get('date1');
+      expect(date1.toISOString()).toEqual('2023-03-24T00:00:00.000Z');
+    });
+
+    test('server', async () => {
+      db.collection({
+        name: 'tests',
+        fields: [{ name: 'date1', type: 'date', timezone: 'server' }],
+      });
+
+      await db.sync();
+      const repository = db.getRepository('tests');
+      const instance = await repository.create({ values: { date1: '2023-03-24 08:00:00' } });
+      const date1 = instance.get('date1');
+      expect(date1.toISOString()).toEqual('2023-03-24T00:00:00.000Z');
+    });
+  });
+});
+
 describe('date-field', () => {
   let db: Database;
   let repository: Repository;
@@ -30,16 +93,80 @@ describe('date-field', () => {
     await db.close();
   });
 
-  const createExpectToBe = async (key, actual, expected) => {
-    const instance = await repository.create({
+  it('should set default to current time', async () => {
+    const c1 = db.collection({
+      name: 'test11',
+      fields: [
+        {
+          name: 'date1',
+          type: 'date',
+          defaultToCurrentTime: true,
+        },
+      ],
+    });
+
+    await db.sync();
+
+    const instance = await c1.repository.create({});
+    const date1 = instance.get('date1');
+    expect(date1).toBeDefined();
+  });
+
+  it('should set to current time when update', async () => {
+    const c1 = db.collection({
+      name: 'test11',
+      fields: [
+        {
+          name: 'date1',
+          type: 'date',
+          onUpdateToCurrentTime: true,
+        },
+        {
+          name: 'title',
+          type: 'string',
+        },
+      ],
+    });
+
+    await db.sync();
+
+    const instance = await c1.repository.create({
       values: {
-        [key]: actual,
+        title: 'test',
       },
     });
-    return expect(instance.get(key).toISOString()).toEqual(expected);
-  };
+
+    const date1Val = instance.get('date1');
+    expect(date1Val).toBeDefined();
+
+    console.log('update');
+    await c1.repository.update({
+      values: {
+        title: 'test2',
+      },
+      filter: {
+        id: instance.get('id'),
+      },
+    });
+
+    await instance.reload();
+
+    const date1Val2 = instance.get('date1');
+    expect(date1Val2).toBeDefined();
+
+    expect(date1Val2.getTime()).toBeGreaterThan(date1Val.getTime());
+  });
 
   test('create', async () => {
+    const createExpectToBe = async (key, actual, expected) => {
+      const instance = await repository.create({
+        values: {
+          [key]: actual,
+        },
+      });
+      return expect(instance.get(key).toISOString()).toEqual(expected);
+    };
+
     // sqlite 时区不能自定义，只有 +00:00，postgres 和 mysql 可以自定义 DB_TIMEZONE
     await createExpectToBe('date1', '2023-03-24', '2023-03-24T00:00:00.000Z');
     await createExpectToBe('date1', '2023-03-24T16:00:00.000Z', '2023-03-24T16:00:00.000Z');
