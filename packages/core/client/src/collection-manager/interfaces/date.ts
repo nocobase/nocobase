@@ -10,23 +10,20 @@
 import { CollectionFieldInterface } from '../../data-source/collection-field-interface/CollectionFieldInterface';
 import { dateTimeProps, defaultProps, operators } from './properties';
 
-export class DatetimeFieldInterface extends CollectionFieldInterface {
-  name = 'datetime';
+export class DateFieldInterface extends CollectionFieldInterface {
+  name = 'date';
   type = 'object';
   group = 'datetime';
   order = 1;
-  title = '{{t("Datetime")}}';
+  title = '{{t("Date")}}';
   sortable = true;
   default = {
-    type: 'date',
-    defaultToCurrentTime: false,
-    onUpdateToCurrentTime: false,
-    timezone: 'server',
+    type: 'dateOnly',
     uiSchema: {
       type: 'string',
       'x-component': 'DatePicker',
       'x-component-props': {
-        showTime: false,
+        dateOnly: true,
       },
     },
   };
@@ -34,15 +31,26 @@ export class DatetimeFieldInterface extends CollectionFieldInterface {
   hasDefaultValue = true;
   properties = {
     ...defaultProps,
-    ...dateTimeProps,
-    'uiSchema.x-component-props.gmt': {
-      type: 'boolean',
-      title: '{{t("GMT")}}',
-      'x-hidden': true,
-      'x-component': 'Checkbox',
-      'x-content': '{{t("Use the same time zone (GMT) for all users")}}',
+    'uiSchema.x-component-props.dateFormat': {
+      type: 'string',
+      title: '{{t("Date format")}}',
+      'x-component': 'Radio.Group',
       'x-decorator': 'FormItem',
-      default: false,
+      default: 'YYYY-MM-DD',
+      enum: [
+        {
+          label: '{{t("Year/Month/Day")}}',
+          value: 'YYYY/MM/DD',
+        },
+        {
+          label: '{{t("Year-Month-Day")}}',
+          value: 'YYYY-MM-DD',
+        },
+        {
+          label: '{{t("Day/Month/Year")}}',
+          value: 'DD/MM/YYYY',
+        },
+      ],
     },
   };
   filterable = {
