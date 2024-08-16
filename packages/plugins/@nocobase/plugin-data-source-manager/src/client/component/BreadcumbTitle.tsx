@@ -24,7 +24,7 @@ export const BreadcumbTitle = () => {
   const { displayName } = dm.getDataSource(name) || {};
   const { dataSource } = useContext(DataSourceContext);
   const dataSourceValue = useMemo(
-    () => (dataSource?.name === name ? dataSource : dm.getDataSource(name)),
+    () => (dataSource && dataSource?.name === name ? dataSource : dm.getDataSource(name)),
     [dataSource, name],
   );
   const items = useMemo(() => {
