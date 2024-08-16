@@ -7,10 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Spin } from 'antd';
-import { useLocation } from 'react-router-dom';
-import React, { createContext, useContext, useEffect, useMemo } from 'react';
 import { APIClient, useAPIClient, useRequest } from '@nocobase/client';
+import { Spin } from 'antd';
+import React, { createContext, useContext, useEffect, useMemo } from 'react';
+import { useLocation } from 'react-router-dom';
 
 import type { IResource } from '@nocobase/sdk';
 
@@ -27,6 +27,7 @@ export interface MobileRouteItem {
   children?: MobileRouteItem[];
 }
 
+export const MobileRoutesContext = createContext<MobileRoutesContextValue>(null);
 
 export interface MobileRoutesContextValue {
   routeList?: MobileRouteItem[];
@@ -37,8 +38,6 @@ export interface MobileRoutesContextValue {
   activeTabItem?: MobileRouteItem;
   api: APIClient;
 }
-
-export const MobileRoutesContext = createContext<MobileRoutesContextValue>(null);
 MobileRoutesContext.displayName = 'MobileRoutesContext';
 
 export const useMobileRoutes = () => {
@@ -97,7 +96,9 @@ export const MobileRoutesProvider = ({ children }) => {
     data,
     runAsync: refresh,
     loading,
-  } = useRequest<{ data: MobileRouteItem[] }>(() => resource.list({ tree: true, sort: 'sort' }).then((res) => res.data));
+  } = useRequest<{ data: MobileRouteItem[] }>(() =>
+    resource.list({ tree: true, sort: 'sort' }).then((res) => res.data),
+  );
   const routeList = useMemo(() => data?.data || [], [data]);
   const { activeTabBarItem, activeTabItem } = useActiveTabBar(routeList);
 

@@ -8,9 +8,9 @@
  */
 
 const postgres = {
-  'character varying': ['string', 'uuid', 'nanoid'],
-  varchar: ['string', 'uuid', 'nanoid'],
-  char: ['string', 'uuid', 'nanoid'],
+  'character varying': ['string', 'uuid', 'nanoid', 'encryption'],
+  varchar: ['string', 'uuid', 'nanoid', 'encryption'],
+  char: ['string', 'uuid', 'nanoid', 'encryption'],
 
   character: 'string',
   text: 'text',
@@ -18,8 +18,8 @@ const postgres = {
   name: 'string',
 
   smallint: ['integer', 'sort'],
-  integer: ['integer', 'sort'],
-  bigint: ['bigInt', 'sort'],
+  integer: ['integer', 'unixTimestamp', 'sort'],
+  bigint: ['bigInt', 'unixTimestamp', 'sort'],
   decimal: 'decimal',
   numeric: 'float',
   real: 'float',
@@ -53,19 +53,19 @@ const mysql = {
   'tinyint unsigned': ['integer', 'boolean', 'sort'],
   'mediumint unsigned': ['integer', 'boolean', 'sort'],
 
-  char: ['string', 'uuid', 'nanoid'],
-  varchar: ['string', 'uuid', 'nanoid'],
+  char: ['string', 'uuid', 'nanoid', 'encryption'],
+  varchar: ['string', 'uuid', 'nanoid', 'encryption'],
   date: 'date',
   time: 'time',
   tinytext: 'text',
   text: 'text',
   mediumtext: 'text',
   longtext: 'text',
-  int: ['integer', 'sort'],
-  'int unsigned': ['integer', 'sort'],
-  integer: ['integer', 'sort'],
-  bigint: ['bigInt', 'sort'],
-  'bigint unsigned': ['bigInt', 'sort'],
+  int: ['integer', 'unixTimestamp', 'sort'],
+  'int unsigned': ['integer', 'unixTimestamp', 'sort'],
+  integer: ['integer', 'unixTimestamp', 'sort'],
+  bigint: ['bigInt', 'unixTimestamp', 'sort'],
+  'bigint unsigned': ['bigInt', 'unixTimestamp', 'sort'],
   float: 'float',
   double: 'float',
   boolean: 'boolean',
@@ -79,7 +79,7 @@ const mysql = {
 
 const sqlite = {
   text: 'text',
-  varchar: ['string', 'uuid', 'nanoid'],
+  varchar: ['string', 'uuid', 'nanoid', 'encryption'],
 
   integer: 'integer',
   real: 'real',

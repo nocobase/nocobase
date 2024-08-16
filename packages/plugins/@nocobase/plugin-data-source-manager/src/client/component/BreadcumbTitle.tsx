@@ -23,7 +23,10 @@ export const BreadcumbTitle = () => {
   const dm = useDataSourceManager();
   const { displayName } = dm.getDataSource(name) || {};
   const { dataSource } = useContext(DataSourceContext);
-  const dataSourceValue = useMemo(() => dataSource || dm.getDataSource(name), [dataSource, name]);
+  const dataSourceValue = useMemo(
+    () => (dataSource && dataSource?.name === name ? dataSource : dm.getDataSource(name)),
+    [dataSource, name],
+  );
   const items = useMemo(() => {
     const status = dataSourceValue?.status;
     const option = statusEnum.find((v) => v.value === status);

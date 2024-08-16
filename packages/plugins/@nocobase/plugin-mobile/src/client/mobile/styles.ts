@@ -19,6 +19,21 @@ export const useStyles = createStyles(({ token, css }) => {
       .ant-table-thead button[aria-label*='schema-initializer-TableV2-table:configureColumns'] > .ant-btn-icon {
         margin: 0px;
       }
+      .ant-table-tbody .nb-column-initializer {
+        min-width: 40px !important;
+      }
+      // reset Select record popup
+      .ant-table-thead
+        button[aria-label*='schema-initializer-TableV2.Selector-table:configureColumns']
+        > span:last-child {
+        display: none !important;
+      }
+      .ant-table-thead
+        button[aria-label*='schema-initializer-TableV2.Selector-table:configureColumns']
+        > .ant-btn-icon {
+        margin: 0px;
+      }
+
       .ant-pagination .ant-pagination-total-text {
         display: none;
       }
@@ -40,10 +55,6 @@ export const useStyles = createStyles(({ token, css }) => {
       }
       .ant-card-body .nb-action-bar .ant-btn-icon {
         margin-inline-end: 0px !important;
-      }
-      .ant-card-body .ant-table-cell-fix-right:last-child {
-        // display: table-cell;
-        // width: auto;
       }
       .ant-card-body .nb-table-container {
         margin-right: -20px;

@@ -13,4 +13,5 @@ export * from './FixedBlockDesignerItem';
 export * from './Page';
 export * from './Page.Settings';
 export { PagePopups } from './PagePopups';
+export { storePopupContext } from './pagePopupUtils';
 export * from './PageTab.Settings';

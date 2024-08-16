@@ -19,20 +19,17 @@ import { ButtonEditor, RemoveButton } from '../../../schema-component/antd/actio
 import { SchemaSettingsLinkageRules, SchemaSettingsModalItem } from '../../../schema-settings';
 import { useURLAndHTMLSchema } from './useURLAndHTMLSchema';
 
-interface SchemaSettingsActionLinkItemProps {
-  afterSubmit?: () => void;
-}
-
-export const SchemaSettingsActionLinkItem: FC<SchemaSettingsActionLinkItemProps> = ({ afterSubmit }) => {
+export const SchemaSettingsActionLinkItem: FC = () => {
   const field = useField();
   const fieldSchema = useFieldSchema();
   const { dn } = useDesignable();
   const { t } = useTranslation();
   const { urlSchema, paramsSchema, openInNewWindowSchema } = useURLAndHTMLSchema();
+  const componentProps = fieldSchema['x-component-props'] || {};
   const initialValues = {
-    url: field.componentProps.url,
-    params: field.componentProps.params || [{}],
-    openInNewWindow: field.componentProps.openInNewWindow,
+    url: componentProps.url,
+    params: componentProps.params || [{}],
+    openInNewWindow: componentProps.openInNewWindow,
   };
 
   return (
@@ -52,7 +49,6 @@ export const SchemaSettingsActionLinkItem: FC<SchemaSettingsActionLinkItemProps>
         },
       }}
       onSubmit={({ url, params, openInNewWindow }) => {
-        const componentProps = fieldSchema['x-component-props'] || {};
         componentProps.url = url;
         componentProps.params = params;
         componentProps.openInNewWindow = openInNewWindow;
@@ -70,7 +66,6 @@ export const SchemaSettingsActionLinkItem: FC<SchemaSettingsActionLinkItemProps>
           },
         });
         dn.refresh();
-        afterSubmit?.();
       }}
       initialValues={initialValues}
     />

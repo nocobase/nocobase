@@ -165,7 +165,13 @@ export class Dumper extends AppMigrator {
   }
 
   backUpStorageDir() {
-    return path.resolve(process.cwd(), 'storage', 'backups');
+    const paths = [process.cwd(), 'storage', 'backups'];
+
+    if (this.app.name !== 'main') {
+      paths.push(this.app.name);
+    }
+
+    return path.resolve(...paths);
   }
 
   async allBackUpFilePaths(options?: { includeInProgress?: boolean; dir?: string }) {

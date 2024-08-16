@@ -303,6 +303,18 @@ describe('useVariables', () => {
     });
   });
 
+  it('set doNotRequest to true to ensure the result is empty', async () => {
+    const { result } = renderHook(() => useVariables(), {
+      wrapper: Providers,
+    });
+
+    await waitFor(async () => {
+      expect(await result.current.parseVariable('{{ $user.belongsToField }}', undefined, { doNotRequest: true })).toBe(
+        null,
+      );
+    });
+  });
+
   it('long variable path', async () => {
     const { result } = renderHook(() => useVariables(), {
       wrapper: Providers,

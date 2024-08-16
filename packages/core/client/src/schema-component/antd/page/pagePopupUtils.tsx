@@ -35,6 +35,8 @@ export interface PopupParams {
   sourceid?: string;
   /** tab uid */
   tab?: string;
+  /** collection name */
+  collection?: string;
 }
 
 export interface PopupContextStorage extends PopupContext {
@@ -44,6 +46,10 @@ export interface PopupContextStorage extends PopupContext {
   /** used to refresh data for block */
   service?: any;
   sourceId?: string;
+  /**
+   * if true, will not back to the previous path when closing the popup
+   */
+  notBackToPreviousPath?: boolean;
 }
 
 const popupsContextStorage: Record<string, PopupContextStorage> = {};
@@ -53,7 +59,10 @@ export const getStoredPopupContext = (popupUid: string) => {
 };
 
 /**
- * Used to store the context of the current popup when a button is clicked.
+ * Used to store the context of the current popup.
+ *
+ * The context that has already been stored, when displaying the popup,
+ * will directly retrieve the context information from the cache instead of making an API request.
  * @param popupUid
  * @param params
  */
@@ -94,9 +103,11 @@ export const getPopupParamsFromPath = _.memoize((path: string) => {
 });
 
 export const getPopupPathFromParams = (params: PopupParams) => {
-  const { popupuid: popupUid, tab, filterbytk, sourceid } = params;
+  const { popupuid: popupUid, tab, filterbytk, sourceid, collection } = params;
   const popupPath = [
     popupUid,
+    collection && 'collection',
+    collection,
     filterbytk && 'filterbytk',
     filterbytk,
     sourceid && 'sourceid',
@@ -108,6 +119,10 @@ export const getPopupPathFromParams = (params: PopupParams) => {
   return `/popups/${popupPath.map((item) => encodePathValue(item)).join('/')}`;
 };
 
+/**
+ * Note: use this hook in a plugin is not recommended
+ * @returns
+ */
 export const usePagePopup = () => {
   const navigate = useNavigateNoUpdate();
   const location = useLocationNoUpdate();
@@ -137,15 +152,18 @@ export const usePagePopup = () => {
       popupUid,
       recordData,
       sourceId,
+      collection: _collection,
     }: {
       popupUid: string;
       recordData: Record<string, any>;
       sourceId: string;
       tabKey?: string;
+      collection?: string;
     }) => {
       const filterByTK = cm.getFilterByTK(association || collection, recordData);
       return getPopupPathFromParams({
         popupuid: popupUid,
+        collection: _collection,
         filterbytk: filterByTK,
         sourceid: sourceId,
         tab: tabKey,
@@ -168,9 +186,12 @@ export const usePagePopup = () => {
     ({
       recordData,
       parentRecordData,
+      collectionNameUsedInURL,
     }: {
       recordData?: Record<string, any>;
       parentRecordData?: Record<string, any>;
+      /** if this value exists, it will be saved in the URL */
+      collectionNameUsedInURL?: string;
     } = {}) => {
       if (!isPopupVisibleControlledByURL()) {
         return setVisibleFromAction?.(true);
@@ -179,7 +200,12 @@ export const usePagePopup = () => {
       const sourceId = getSourceId(parentRecordData);
 
       recordData = recordData || record?.data;
-      const pathname = getNewPathname({ popupUid: currentPopupUidWithoutOpened, recordData, sourceId });
+      const pathname = getNewPathname({
+        popupUid: currentPopupUidWithoutOpened,
+        recordData,
+        sourceId,
+        collection: collectionNameUsedInURL,
+      });
       let url = location.pathname;
       if (_.last(url) === '/') {
         url = url.slice(0, -1);
@@ -228,13 +254,13 @@ export const usePagePopup = () => {
       // 1. If there is a value in the cache, it means that the current popup was opened by manual click, so we can simply return to the previous record;
       // 2. If there is no value in the cache, it means that the current popup was opened by clicking the URL elsewhere, and since there is no history,
       //    we need to construct the URL of the previous record to return to;
-      if (getStoredPopupContext(currentPopupUid)) {
+      if (getStoredPopupContext(currentPopupUid) && !getStoredPopupContext(currentPopupUid).notBackToPreviousPath) {
         navigate(-1);
       } else {
         navigate(withSearchParams(removeLastPopupPath(location.pathname)));
       }
     },
-    [navigate, location, isPopupVisibleControlledByURL],
+    [isPopupVisibleControlledByURL, setVisibleFromAction, navigate, location?.pathname],
   );
 
   const changeTab = useCallback(

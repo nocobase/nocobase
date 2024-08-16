@@ -24,7 +24,11 @@ import { useStyles } from './style';
 
 const JT_VALUE_RE = /^\s*{{\s*([^{}]+)\s*}}\s*$/;
 
-function parseValue(value: any): string | string[] {
+type ParseOptions = {
+  stringToDate?: boolean;
+};
+
+function parseValue(value: any, options: ParseOptions = {}): string | string[] {
   if (value == null) {
     return 'null';
   }
@@ -34,12 +38,11 @@ function parseValue(value: any): string | string[] {
     if (matched) {
       return matched[1].split('.');
     }
-    // const ts = Date.parse(value);
-    // if (value.match(/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(\.\d{0,3})Z$/) && !Number.isNaN(Date.parse(value))) {
-    //   return {
-    //     type: 'date',
-    //   };
-    // }
+    if (options.stringToDate) {
+      if (!Number.isNaN(Date.parse(value))) {
+        return 'date';
+      }
+    }
   }
   return type === 'object' && value instanceof Date ? 'date' : type;
 }
@@ -153,6 +156,7 @@ export type VariableInputProps = {
   disabled?: boolean;
   style?: React.CSSProperties;
   className?: string;
+  parseOptions?: ParseOptions;
 };
 
 export function Input(props: VariableInputProps) {
@@ -166,6 +170,7 @@ export function Input(props: VariableInputProps) {
     className,
     changeOnSelect,
     fieldNames,
+    parseOptions,
   } = props;
   const scope = typeof props.scope === 'function' ? props.scope() : props.scope;
   const { wrapSSR, hashId, componentCls, rootPrefixCls } = useStyles();
@@ -180,7 +185,7 @@ export function Input(props: VariableInputProps) {
   const [variableText, setVariableText] = React.useState([]);
   const [isFieldValue, setIsFieldValue] = React.useState(children && value != null ? true : false);
 
-  const parsed = useMemo(() => parseValue(value), [value]);
+  const parsed = useMemo(() => parseValue(value, parseOptions), [parseOptions, value]);
   const isConstant = typeof parsed === 'string';
   const type = isConstant ? parsed : '';
   const variable = isConstant ? null : parsed;
@@ -385,7 +390,7 @@ export function Input(props: VariableInputProps) {
               // eslint-disable-next-line react/no-unknown-property
               unselectable="on"
               onClick={() => {
-                setIsFieldValue(false);
+                setIsFieldValue(Boolean(children));
                 onChange(null);
               }}
             >

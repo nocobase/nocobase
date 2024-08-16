@@ -10,19 +10,12 @@
 import { Plugin } from '@nocobase/server';
 
 export class PluginMobileServer extends Plugin {
-  async afterAdd() {}
-
-  async beforeLoad() {}
-
-  async load() {}
-
-  async install() {}
-
-  async afterEnable() {}
-
-  async afterDisable() {}
-
-  async remove() {}
+  async load() {
+    this.app.acl.registerSnippet({
+      name: `pm.${this.name}`,
+      actions: ['mobileRoutes:*'],
+    });
+  }
 }
 
 export default PluginMobileServer;

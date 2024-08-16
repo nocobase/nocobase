@@ -155,7 +155,7 @@ const PagePopupsItemProvider: FC<{
       <PopupVisibleProvider visible={visible} setVisible={setVisible}>
         <DataBlockProvider
           dataSource={context.dataSource}
-          collection={context.collection}
+          collection={params.collection || context.collection}
           association={context.association}
           sourceId={params.sourceid}
           filterByTk={params.filterbytk}

@@ -10,8 +10,14 @@
 import { DataTypes } from 'sequelize';
 import { BaseColumnFieldOptions, Field } from './field';
 
+const datetimeRegex = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/;
+
+function isValidDatetime(str) {
+  return datetimeRegex.test(str);
+}
+
 export class DateField extends Field {
-  get dataType() {
+  get dataType(): any {
     return DataTypes.DATE(3);
   }
 
@@ -33,6 +39,59 @@ export class DateField extends Field {
     return props.gmt;
   }
 
+  init() {
+    const { name, defaultToCurrentTime, onUpdateToCurrentTime, timezone } = this.options;
+
+    this.resolveTimeZone = (context) => {
+      // @ts-ignore
+      const serverTimeZone = this.database.options.rawTimezone;
+      if (timezone === 'server') {
+        return serverTimeZone;
+      }
+
+      if (timezone === 'client') {
+        return context?.timezone || serverTimeZone;
+      }
+
+      if (timezone) {
+        return timezone;
+      }
+
+      return serverTimeZone;
+    };
+
+    this.beforeSave = async (instance, options) => {
+      const value = instance.get(name);
+
+      if (!value && instance.isNewRecord && defaultToCurrentTime) {
+        instance.set(name, new Date());
+        return;
+      }
+
+      if (onUpdateToCurrentTime) {
+        instance.set(name, new Date());
+        return;
+      }
+    };
+  }
+
+  setter(value, options) {
+    if (value === null) {
+      return value;
+    }
+    if (value instanceof Date) {
+      return value;
+    }
+
+    if (typeof value === 'string' && isValidDatetime(value)) {
+      const dateTimezone = this.resolveTimeZone(options?.context);
+      const dateString = `${value} ${dateTimezone}`;
+      return new Date(dateString);
+    }
+
+    return value;
+  }
+
   bind() {
     super.bind();
 
@@ -51,6 +110,13 @@ export class DateField extends Field {
       // @ts-ignore
       model.refreshAttributes();
     }
+
+    this.on('beforeSave', this.beforeSave);
+  }
+
+  unbind() {
+    super.unbind();
+    this.off('beforeSave', this.beforeSave);
   }
 }
 

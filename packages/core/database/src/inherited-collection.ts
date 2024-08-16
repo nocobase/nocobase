@@ -68,13 +68,13 @@ export class InheritedCollection extends Collection {
     for (const parent of this.parents) {
       if (parent.isInherited()) {
         for (const [name, field] of (<InheritedCollection>parent).parentFields()) {
-          fields.set(name, field.options);
+          fields.set(name, field);
         }
       }
 
       const parentFields = parent.fields;
       for (const [name, field] of parentFields) {
-        fields.set(name, field.options);
+        fields.set(name, field);
       }
     }
 
@@ -120,9 +120,23 @@ export class InheritedCollection extends Collection {
   }
 
   protected setParentFields() {
-    for (const [name, fieldOptions] of this.parentFields()) {
+    const delayFields = new Map<string, Field>();
+
+    for (const [name, field] of this.parentFields()) {
+      if (field.isRelationField()) {
+        delayFields.set(name, field);
+        continue;
+      }
+
       this.setField(name, {
-        ...fieldOptions,
+        ...field.options,
+        inherit: true,
+      });
+    }
+
+    for (const [name, field] of delayFields) {
+      this.setField(name, {
+        ...field.options,
         inherit: true,
       });
     }

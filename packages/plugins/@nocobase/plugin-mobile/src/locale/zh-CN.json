@@ -19,5 +19,8 @@
   "Add tab": "添加标签页",
   "Mobile": "移动端",
   "Title field is required": "标题必填",
-  "Icon field is required": "图标必填"
+  "Icon field is required": "图标必填",
+  "Desktop data blocks": "桌面端数据区块",
+  "Other desktop blocks": "其他桌面端区块",
+  "Settings": "设置"
 }
