@@ -53,10 +53,13 @@ export class UserDataSyncResource extends UserDataResource {
   async create(record: OriginRecord, uniqueKey: string): Promise<number> {
     const { metaData: sourceUser } = record;
     const filter = {};
-    filter[uniqueKey] = sourceUser[uniqueKey];
-    let user = await this.userRepo.findOne({
-      filter,
-    });
+    let user: any;
+    if (['phone', 'email', 'username'].includes(uniqueKey)) {
+      filter[uniqueKey] = sourceUser[uniqueKey];
+      user = await this.userRepo.findOne({
+        filter,
+      });
+    }
     if (user) {
       await this.updateUser(user, sourceUser);
       return user.id;
