@@ -9,9 +9,7 @@
 
 import { COLLECTION_NAME } from '../constant';
 import { CollectionOptions } from '@nocobase/client';
-import { uid } from '@formily/shared';
-import { useUpdateAction } from 'packages/core/client/src/collection-manager/action-hooks';
-import { useSubmitActionProps } from '../client/hooks';
+
 const collection: CollectionOptions = {
   name: COLLECTION_NAME.channels,
   autoGenId: false,
