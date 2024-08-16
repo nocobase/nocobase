@@ -7,8 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { SchemaSettings, SchemaSettingsActionLinkItem } from '@nocobase/client';
-import { editTabItemSettingsItem, removeTabItemSettingsItem, useUpdateTabBarItem } from '../../MobileTabBar.Item';
+import { SchemaSettings } from '@nocobase/client';
+import { editTabItemSettingsItem, removeTabItemSettingsItem } from '../../MobileTabBar.Item';
+import { SchemaSettingsActionLinkItem } from './SchemaSettingsActionLinkItem';
 
 export const mobileTabBarLinkSettings = new SchemaSettings({
   name: 'mobile:tab-bar:link',
@@ -17,12 +18,6 @@ export const mobileTabBarLinkSettings = new SchemaSettings({
     {
       name: 'editLink',
       Component: SchemaSettingsActionLinkItem,
-      useComponentProps() {
-        const afterSubmit = useUpdateTabBarItem();
-        return {
-          afterSubmit,
-        };
-      },
     },
     {
       name: 'divider',
