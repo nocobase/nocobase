@@ -24,51 +24,28 @@ export class AdjacencyListRepository extends Repository {
 
   buildRootNodeDataMap(nodeData: Model[]) {
     const rootPathDataMap: {
-      [key: string]: string[];
+      [key: string]: Set<string>;
     } = {};
     for (const node of nodeData) {
-      if (rootPathDataMap[node.get('rootPk')]) {
-        rootPathDataMap[node.get('rootPk')] = [...rootPathDataMap[node.get('rootPk')], node.get('path')];
+      const rootPk = node.get('rootPk');
+      const pathSet = new Set<string>(
+        node
+          .get('path')
+          .split('/')
+          .filter((item: string) => item !== ''),
+      );
+      if (rootPathDataMap[rootPk]) {
+        const set = rootPathDataMap[rootPk];
+        for (const path of pathSet) {
+          set.add(path);
+        }
+        rootPathDataMap[rootPk] = set;
       } else {
-        rootPathDataMap[node.get('rootPk')] = [node.get('path')];
+        rootPathDataMap[rootPk] = pathSet;
       }
     }
 
-    const rebuildTreeRootNodeDataMap: {
-      [key: string]: Set<any>;
-    } = {};
-    //find commons root path
-    for (const pathArray of Object.values(rootPathDataMap)) {
-      const commonParentPath = this.findCommonParent(pathArray);
-      const commonParentPathNodeArray: string[] = commonParentPath.split('/').filter((item) => {
-        return item !== '';
-      });
-      if (pathArray.length == 1) {
-        rebuildTreeRootNodeDataMap[commonParentPathNodeArray[0]] = new Set();
-        for (const i of commonParentPathNodeArray) {
-          rebuildTreeRootNodeDataMap[commonParentPathNodeArray[0]].add(i);
-        }
-        continue;
-      }
-      // get filter root nodeid
-      const commonParentRootNodeId = commonParentPathNodeArray[commonParentPathNodeArray.length - 1];
-      rebuildTreeRootNodeDataMap[commonParentRootNodeId] = new Set([
-        commonParentPathNodeArray[commonParentPathNodeArray.length - 1],
-      ]);
-      for (const path of pathArray) {
-        if (commonParentPath != path) {
-          const commonPathNodeArray = path.split(commonParentPath).filter((item) => {
-            return item !== '';
-          });
-          for (const i of commonPathNodeArray[0].split('/').filter((item) => {
-            return item !== '';
-          })) {
-            rebuildTreeRootNodeDataMap[commonParentRootNodeId].add(i);
-          }
-        }
-      }
-    }
-    return rebuildTreeRootNodeDataMap;
+    return rootPathDataMap;
   }
 
   async buildTree(paths: Model[], options: FindOptions & { addIndex?: boolean } = {}, rootNodes?: Model[]) {
@@ -105,7 +82,6 @@ export class AdjacencyListRepository extends Repository {
         [primaryKey]: childIds,
       },
     };
-
     if (findChildrenOptions.fields) {
       [primaryKey, foreignKey].forEach((field) => {
         if (!findChildrenOptions.fields.includes(field)) {
@@ -113,11 +89,9 @@ export class AdjacencyListRepository extends Repository {
         }
       });
     }
-
     const childInstances = await super.find(findChildrenOptions);
 
     const nodeMap = {};
-
     childInstances.forEach((node) => {
       if (!nodeMap[`${node[foreignKey]}`]) {
         nodeMap[`${node[foreignKey]}`] = [];
@@ -337,23 +311,5 @@ export class AdjacencyListRepository extends Repository {
     }
     this.database.logger.warn(`Collection tree path table: ${pathTableName} not found`);
     return [];
-  }
-
-  private findCommonParent(strings: string[]): string | undefined {
-    if (strings.length === 0) {
-      return undefined;
-    }
-
-    let prefix = strings[0];
-
-    for (let i = 1; i < strings.length; i++) {
-      while (strings[i].indexOf(prefix) !== 0) {
-        if (prefix.length === 0) {
-          return '';
-        }
-        prefix = prefix.slice(0, -1);
-      }
-    }
-    return prefix;
   }
 }
