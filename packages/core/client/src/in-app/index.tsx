@@ -24,10 +24,9 @@ export const InApp = (props) => {
     setVisible(false);
   };
   return (
-    // <ActionContextProvider value={{ visible, setVisible }}>
     <ConfigProvider
       theme={{
-        token: { paddingLG: 0 },
+        components: { Drawer: { paddingLG: 0 } },
       }}
     >
       <div
@@ -63,6 +62,5 @@ export const InApp = (props) => {
         <MessageBox message={'111'} />
       </Drawer>
     </ConfigProvider>
-    // </ActionContextProvider>
   );
 };
