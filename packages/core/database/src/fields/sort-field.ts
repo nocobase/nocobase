@@ -33,11 +33,17 @@ export class SortField extends Field {
       }
     }
 
-    await this.database.lockManager.runExclusive(this.context.collection.name, async () => {
-      const max = await model.max<number, any>(name, { ...options, where });
-      const newValue = (max || 0) + 1;
-      instance.set(name, newValue);
-    });
+    await this.database.lockManager.runExclusive(
+      this.context.collection.name,
+      async () => {
+        const max = await model.max<number, any>(name, { ...options, where });
+        const newValue = (max || 0) + 1;
+        instance.set(name, newValue);
+      },
+      {
+        ttl: 2000,
+      },
+    );
   };
 
   onScopeChange = async (instance, options) => {
