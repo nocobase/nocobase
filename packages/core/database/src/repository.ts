@@ -59,7 +59,10 @@ export interface FilterAble {
   filter: Filter;
 }
 
-export type TargetKey = string | number;
+export type BaseTargetKey = string | number;
+export type MultiTargetKey = Record<string, BaseTargetKey>;
+export type TargetKey = BaseTargetKey | MultiTargetKey;
+
 export type TK = TargetKey | TargetKey[];
 
 type FieldValue = string | number | bigint | boolean | Date | Buffer | null | FieldValue[] | FilterWithOperator;

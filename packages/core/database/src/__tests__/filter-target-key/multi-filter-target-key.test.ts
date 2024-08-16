@@ -22,7 +22,7 @@ describe('multi filter target key', () => {
   });
 
   it('should set multi filter target keys', async () => {
-    db.collection({
+    const Student = db.collection({
       name: 'students',
       autoGenId: false,
       filterTargetKey: ['name', 'classId'],
@@ -41,5 +41,22 @@ describe('multi filter target key', () => {
     });
 
     await db.sync();
+
+    const s1 = await Student.repository.create({
+      values: {
+        name: 's1',
+        classId: 1,
+      },
+    });
+
+    // it should find by name and classId
+    const findRes = await Student.repository.find({
+      filterByTk: {
+        name: 's1',
+        classId: 1,
+      },
+    });
+
+    expect(findRes.length).toBe(0);
   });
 });
