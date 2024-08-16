@@ -8,18 +8,24 @@
  */
 
 import React from 'react';
-import { Action } from '@nocobase/client';
+import { Col, Divider, Row, ConfigProvider } from 'antd';
 
+import Contact from './Contact';
+import Message from './Message';
 interface MessageBoxProps {
   message: string;
 }
 
-const MessageBox: React.FC<MessageBoxProps> = ({ message }) => {
+const MessageBox: React.FC<MessageBoxProps> = () => {
   return (
-    <div className="message-box">
-      <p>{message}</p>
-    </div>
+    <Row style={{ height: '100%' }}>
+      <Col span={6}>
+        <Contact />
+      </Col>
+      <Col span={18} style={{ height: '100%', background: 'rgba(55, 55, 55, 0.05)' }}>
+        <Message />
+      </Col>
+    </Row>
   );
 };
-
 export default MessageBox;
