@@ -99,7 +99,7 @@ export interface CollectionOptions extends Omit<ModelOptions, 'name' | 'hooks'> 
   viewName?: string;
   writableView?: boolean;
 
-  filterTargetKey?: string;
+  filterTargetKey?: string | string[];
   fields?: FieldOptions[];
   model?: string | ModelStatic<Model>;
   repository?: string | RepositoryType;
