@@ -150,7 +150,7 @@ export class LockManager {
     }
   }
 
-  public async acquire(key: string, ttl = 500) {
+  public async acquire(key: string, ttl = 500): Promise<Releaser> {
     const client = await this.getAdapter();
     return client.acquire(key, ttl);
   }

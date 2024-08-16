@@ -325,7 +325,7 @@ export async function createMockCluster({
   };
 }
 
-export async function createMockServer(options: MockServerOptions = {}) {
+export async function createMockServer(options: MockServerOptions = {}): Promise<MockServer> {
   const { version, beforeInstall, skipInstall, skipStart, ...others } = options;
   const app: MockServer = mockServer(others);
   if (!skipInstall) {
