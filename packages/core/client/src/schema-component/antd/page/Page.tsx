@@ -17,7 +17,7 @@ import classNames from 'classnames';
 import React, { memo, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { useTranslation } from 'react-i18next';
-import { Outlet, useOutletContext, useParams, useSearchParams } from 'react-router-dom';
+import { NavigateFunction, Outlet, useOutletContext, useParams, useSearchParams } from 'react-router-dom';
 import { FormDialog } from '..';
 import { useStyles as useAClStyles } from '../../../acl/style';
 import { useRequest } from '../../../api-client';
@@ -112,7 +112,7 @@ export const Page = (props) => {
           }}
           onChange={(activeKey) => {
             setLoading(true);
-            navigate(`/admin/${pageUid}/tabs/${activeKey}`, { replace: true });
+            navigateToTab(activeKey, navigate);
             setTimeout(() => {
               setLoading(false);
             }, 50);
@@ -319,3 +319,24 @@ const PageContent = memo(
   },
 );
 PageContent.displayName = 'PageContent';
+
+export function navigateToTab(activeKey: string, navigate: NavigateFunction, pathname = window.location.pathname) {
+  if (pathname.endsWith('/')) {
+    pathname = pathname.slice(0, -1);
+  }
+
+  if (isTabPage(pathname)) {
+    navigate(`${pathname.replace(/\/tabs\/[^/]+$/, `/tabs/${activeKey}`)}`, { replace: true });
+  } else {
+    navigate(`${pathname}/tabs/${activeKey}`, { replace: true });
+  }
+}
+
+export function isTabPage(pathname: string) {
+  if (pathname.endsWith('/')) {
+    pathname = pathname.slice(0, -1);
+  }
+
+  const list = pathname.split('/');
+  return list[list.length - 2] === 'tabs';
+}
