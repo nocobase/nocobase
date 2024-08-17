@@ -7,11 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { render, screen, waitFor, renderAppOptions, userEvent } from '@nocobase/test/client';
+import { DocumentTitleProvider, Form, FormItem, Grid, IconPicker, Input } from '@nocobase/client';
+import { render, renderAppOptions, screen, userEvent, waitFor } from '@nocobase/test/client';
 import React from 'react';
 import App1 from '../demos/demo1';
-import { Page } from '../Page';
-import { DocumentTitleProvider, Form, FormItem, Grid, IconPicker, Input } from '@nocobase/client';
+import { isTabPage, navigateToTab, Page } from '../Page';
 
 describe('Page', () => {
   it('should render correctly', async () => {
@@ -157,5 +157,48 @@ describe('Page', () => {
         expect(screen.getByText('tab1')).toBeInTheDocument();
       });
     });
+  });
+});
+
+describe('utils', () => {
+  it('isTabPage', () => {
+    expect(isTabPage('/admin')).toBe(false);
+    expect(isTabPage('/admin/test/tabs/tabId')).toBe(true);
+    expect(isTabPage('/admin/test/tabs/tabId/')).toBe(true);
+  });
+
+  it('navigateToTab', () => {
+    const navigate1 = vi.fn();
+    const navigate2 = vi.fn();
+    const navigate3 = vi.fn();
+    const navigate4 = vi.fn();
+    const navigate5 = vi.fn();
+    const navigate6 = vi.fn();
+    const navigate7 = vi.fn();
+    const navigate8 = vi.fn();
+
+    navigateToTab('tabId', navigate1, '/admin/test');
+    expect(navigate1).toBeCalledWith('/admin/test/tabs/tabId', { replace: true });
+
+    navigateToTab('tabId', navigate2, '/admin/test/');
+    expect(navigate2).toBeCalledWith('/admin/test/tabs/tabId', { replace: true });
+
+    navigateToTab('tabId', navigate3, '/admin/test/tabs/oldTabId');
+    expect(navigate3).toBeCalledWith('/admin/test/tabs/tabId', { replace: true });
+
+    navigateToTab('tabId', navigate4, '/admin/test/tabs/oldTabId/');
+    expect(navigate4).toBeCalledWith('/admin/test/tabs/tabId', { replace: true });
+
+    navigateToTab('tabId', navigate5, '/admin/test/tabs/tab1/pages/pageId/tabs/tab2');
+    expect(navigate5).toBeCalledWith('/admin/test/tabs/tab1/pages/pageId/tabs/tabId', { replace: true });
+
+    navigateToTab('tabId', navigate6, '/admin/test/tabs/tab1/pages/pageId/tabs/tab2/');
+    expect(navigate6).toBeCalledWith('/admin/test/tabs/tab1/pages/pageId/tabs/tabId', { replace: true });
+
+    navigateToTab('tabId', navigate7, '/admin/test/tabs/tab1/pages/pageId');
+    expect(navigate7).toBeCalledWith('/admin/test/tabs/tab1/pages/pageId/tabs/tabId', { replace: true });
+
+    navigateToTab('tabId', navigate8, '/admin/test/tabs/tab1/pages/pageId/');
+    expect(navigate8).toBeCalledWith('/admin/test/tabs/tab1/pages/pageId/tabs/tabId', { replace: true });
   });
 });
