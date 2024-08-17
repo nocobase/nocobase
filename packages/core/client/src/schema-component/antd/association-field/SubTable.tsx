@@ -154,6 +154,7 @@ export const SubTable: any = observer(
         onClick() {
           selectedRows.map((v) => field.value.push(v));
           field.onInput(field.value);
+          field.initialValue = field.value;
           setSelectedRows([]);
           setVisible(false);
         },
