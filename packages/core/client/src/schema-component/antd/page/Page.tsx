@@ -112,7 +112,7 @@ export const Page = (props) => {
           }}
           onChange={(activeKey) => {
             setLoading(true);
-            navigateToTab(activeKey, navigate);
+            navigateToTab({ activeKey, navigate });
             setTimeout(() => {
               setLoading(false);
             }, 50);
@@ -320,7 +320,15 @@ const PageContent = memo(
 );
 PageContent.displayName = 'PageContent';
 
-export function navigateToTab(activeKey: string, navigate: NavigateFunction, pathname = window.location.pathname) {
+export function navigateToTab({
+  activeKey,
+  navigate,
+  pathname = window.location.pathname,
+}: {
+  activeKey: string;
+  navigate: NavigateFunction;
+  pathname?: string;
+}) {
   if (pathname.endsWith('/')) {
     pathname = pathname.slice(0, -1);
   }
