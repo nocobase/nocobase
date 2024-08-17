@@ -8,8 +8,8 @@
  */
 
 import { CollectionFieldInterface } from '../../data-source/collection-field-interface/CollectionFieldInterface';
-import { dateTimeProps, defaultProps, operators } from './properties';
-
+import { defaultProps, operators } from './properties';
+import { CustomRadio } from './components';
 export class UnixTimestampFieldInterface extends CollectionFieldInterface {
   name = 'unixTimestamp';
   type = 'object';
@@ -18,21 +18,47 @@ export class UnixTimestampFieldInterface extends CollectionFieldInterface {
   title = '{{t("Unix Timestamp")}}';
   sortable = true;
   default = {
-    type: 'bigInt',
+    type: 'unixTimestamp',
+    accuracy: 'second',
+    timezone: 'server',
+    defaultToCurrentTime: false,
+    onUpdateToCurrentTime: false,
     uiSchema: {
       type: 'number',
       'x-component': 'UnixTimestamp',
       'x-component-props': {
-        accuracy: 'second',
         showTime: true,
       },
     },
   };
-  availableTypes = ['integer', 'bigInt'];
-  hasDefaultValue = true;
+  availableTypes = ['integer', 'bigInt', 'unixTimestamp'];
+  hasDefaultValue = false;
   properties = {
     ...defaultProps,
-    'uiSchema.x-component-props.accuracy': {
+    timezone: {
+      type: 'string',
+      title: '{{t("Timezone")}}',
+      'x-component': CustomRadio,
+      'x-decorator': 'FormItem',
+      default: 'server',
+      'x-component-props': {
+        options: [
+          {
+            label: '{{t("None")}}',
+            value: 'server',
+          },
+          {
+            label: '{{t("Client\'s time zone")}}',
+            value: 'client',
+          },
+          {
+            label: 'custom',
+            value: 'custom',
+          },
+        ],
+      },
+    },
+    accuracy: {
       type: 'string',
       title: '{{t("Accuracy")}}',
       'x-component': 'Radio.Group',
@@ -42,6 +68,20 @@ export class UnixTimestampFieldInterface extends CollectionFieldInterface {
         { value: 'millisecond', label: '{{t("Millisecond")}}' },
         { value: 'second', label: '{{t("Second")}}' },
       ],
+    },
+    defaultToCurrentTime: {
+      type: 'boolean',
+      'x-decorator': 'FormItem',
+      'x-component': 'Checkbox',
+      'x-content': '{{t("Default value to current time")}}',
+      default: true,
+    },
+    onUpdateToCurrentTime: {
+      type: 'boolean',
+      'x-decorator': 'FormItem',
+      'x-component': 'Checkbox',
+      'x-content': '{{t("Automatically update timestamp on update")}}',
+      default: true,
     },
   };
   filterable = {
