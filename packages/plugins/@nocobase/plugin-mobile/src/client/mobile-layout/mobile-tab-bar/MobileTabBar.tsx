@@ -7,19 +7,19 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { FC, useCallback } from 'react';
 import { SafeArea } from 'antd-mobile';
 import 'antd-mobile/es/components/tab-bar/tab-bar.css';
+import React, { FC, useCallback } from 'react';
 import { Navigate } from 'react-router-dom';
 
-import { useStyles } from './styles';
 import { useMobileRoutes } from '../../mobile-providers';
+import { useStyles } from './styles';
 
-import { getMobileTabBarItemSchema, MobileTabBarItem } from './MobileTabBar.Item';
-import { MobileTabBarPage, MobileTabBarLink } from './types';
-import { cx, DndContext, DndContextProps, SchemaComponent, useDesignable, css, useApp } from '@nocobase/client';
-import { MobileTabBarInitializer } from './initializer';
+import { css, cx, DndContext, DndContextProps, SchemaComponent, useApp, useDesignable } from '@nocobase/client';
 import { isInnerLink } from '../../utils';
+import { MobileTabBarInitializer } from './initializer';
+import { getMobileTabBarItemSchema, MobileTabBarItem } from './MobileTabBar.Item';
+import { MobileTabBarLink, MobileTabBarPage } from './types';
 
 export interface MobileTabBarProps {
   /**
@@ -57,7 +57,7 @@ export const MobileTabBar: FC<MobileTabBarProps> & {
   );
 
   if (!hasAuth) {
-    return <Navigate to="/admin" />;
+    return <Navigate to={app.getRouteUrl('/admin')} />;
   }
 
   if (!enableTabBar) {
