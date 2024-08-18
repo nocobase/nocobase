@@ -20,7 +20,7 @@ import omit from 'lodash/omit';
 import qs from 'qs';
 import { ChangeEvent, useCallback, useContext, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { NavigateFunction, useHref } from 'react-router-dom';
+import { NavigateFunction } from 'react-router-dom';
 import { useReactToPrint } from 'react-to-print';
 import {
   AssociationFilter,
@@ -28,6 +28,7 @@ import {
   useCollectionRecord,
   useDataSourceHeaders,
   useFormActiveFields,
+  useRouterBasename,
   useTableBlockContext,
 } from '../..';
 import { useAPIClient, useRequest } from '../../api-client';
@@ -1594,9 +1595,7 @@ export function useLinkActionProps(componentProps?: any) {
   const searchParams = componentPropsValue?.['params'] || [];
   const openInNewWindow = fieldSchema?.['x-component-props']?.['openInNewWindow'];
   const { parseURLAndParams } = useParseURLAndParams();
-
-  // see: https://stackoverflow.com/questions/50449423/accessing-basename-of-browserouter
-  const basenameOfCurrentRouter = useHref('/');
+  const basenameOfCurrentRouter = useRouterBasename();
 
   return {
     type: 'default',

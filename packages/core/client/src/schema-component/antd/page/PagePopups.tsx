@@ -84,7 +84,8 @@ const PopupParamsProvider: FC<Omit<PopupProps, 'hidden'>> = (props) => {
   return <PopupParamsProviderContext.Provider value={value}>{props.children}</PopupParamsProviderContext.Provider>;
 };
 
-const PopupTabsPropsProvider: FC<{ params: PopupParams }> = ({ children, params }) => {
+const PopupTabsPropsProvider: FC = ({ children }) => {
+  const { params } = useCurrentPopupContext();
   const { changeTab } = usePagePopup();
   const onChange = useCallback(
     (key: string) => {
@@ -99,7 +100,7 @@ const PopupTabsPropsProvider: FC<{ params: PopupParams }> = ({ children, params 
   }
 
   return (
-    <TabsContextProvider activeKey={params.tab} onChange={onChange}>
+    <TabsContextProvider activeKey={params?.tab} onChange={onChange}>
       {children}
     </TabsContextProvider>
   );
@@ -166,7 +167,7 @@ const PagePopupsItemProvider: FC<{
         >
           {/* Pass the service of the block where the button is located down, to refresh the block's data when the popup is closed */}
           <BlockRequestContext.Provider value={storedContext.service}>
-            <PopupTabsPropsProvider params={params}>
+            <PopupTabsPropsProvider>
               <div style={{ display: 'none' }}>{children}</div>
             </PopupTabsPropsProvider>
           </BlockRequestContext.Provider>

@@ -167,7 +167,7 @@ describe('utils', () => {
     expect(isTabPage('/admin/test/tabs/tabId/')).toBe(true);
   });
 
-  it('navigateToTab', () => {
+  it('navigateToTab with basename "/"', () => {
     const navigate1 = vi.fn();
     const navigate2 = vi.fn();
     const navigate3 = vi.fn();
@@ -177,28 +177,178 @@ describe('utils', () => {
     const navigate7 = vi.fn();
     const navigate8 = vi.fn();
 
-    navigateToTab('tabId', navigate1, '/admin/test');
+    navigateToTab({ activeKey: 'tabId', navigate: navigate1, pathname: '/admin/test', basename: '/' });
     expect(navigate1).toBeCalledWith('/admin/test/tabs/tabId', { replace: true });
 
-    navigateToTab('tabId', navigate2, '/admin/test/');
+    navigateToTab({ activeKey: 'tabId', navigate: navigate2, pathname: '/admin/test/', basename: '/' });
     expect(navigate2).toBeCalledWith('/admin/test/tabs/tabId', { replace: true });
 
-    navigateToTab('tabId', navigate3, '/admin/test/tabs/oldTabId');
+    navigateToTab({ activeKey: 'tabId', navigate: navigate3, pathname: '/admin/test/tabs/oldTabId', basename: '/' });
     expect(navigate3).toBeCalledWith('/admin/test/tabs/tabId', { replace: true });
 
-    navigateToTab('tabId', navigate4, '/admin/test/tabs/oldTabId/');
+    navigateToTab({ activeKey: 'tabId', navigate: navigate4, pathname: '/admin/test/tabs/oldTabId/', basename: '/' });
     expect(navigate4).toBeCalledWith('/admin/test/tabs/tabId', { replace: true });
 
-    navigateToTab('tabId', navigate5, '/admin/test/tabs/tab1/pages/pageId/tabs/tab2');
+    navigateToTab({
+      activeKey: 'tabId',
+      navigate: navigate5,
+      pathname: '/admin/test/tabs/tab1/pages/pageId/tabs/tab2',
+      basename: '/',
+    });
     expect(navigate5).toBeCalledWith('/admin/test/tabs/tab1/pages/pageId/tabs/tabId', { replace: true });
 
-    navigateToTab('tabId', navigate6, '/admin/test/tabs/tab1/pages/pageId/tabs/tab2/');
+    navigateToTab({
+      activeKey: 'tabId',
+      navigate: navigate6,
+      pathname: '/admin/test/tabs/tab1/pages/pageId/tabs/tab2/',
+      basename: '/',
+    });
     expect(navigate6).toBeCalledWith('/admin/test/tabs/tab1/pages/pageId/tabs/tabId', { replace: true });
 
-    navigateToTab('tabId', navigate7, '/admin/test/tabs/tab1/pages/pageId');
+    navigateToTab({
+      activeKey: 'tabId',
+      navigate: navigate7,
+      pathname: '/admin/test/tabs/tab1/pages/pageId',
+      basename: '/',
+    });
     expect(navigate7).toBeCalledWith('/admin/test/tabs/tab1/pages/pageId/tabs/tabId', { replace: true });
 
-    navigateToTab('tabId', navigate8, '/admin/test/tabs/tab1/pages/pageId/');
+    navigateToTab({
+      activeKey: 'tabId',
+      navigate: navigate8,
+      pathname: '/admin/test/tabs/tab1/pages/pageId/',
+      basename: '/',
+    });
     expect(navigate8).toBeCalledWith('/admin/test/tabs/tab1/pages/pageId/tabs/tabId', { replace: true });
+  });
+
+  it('navigateToTab with basename "/apps/appId"', () => {
+    const navigate1 = vi.fn();
+    const navigate2 = vi.fn();
+    const navigate3 = vi.fn();
+    const navigate4 = vi.fn();
+    const navigate5 = vi.fn();
+    const navigate6 = vi.fn();
+    const navigate7 = vi.fn();
+    const navigate8 = vi.fn();
+
+    navigateToTab({ activeKey: 'tabId', navigate: navigate1, pathname: '/apps/appId/test', basename: '/apps/appId' });
+    expect(navigate1).toBeCalledWith('/test/tabs/tabId', { replace: true });
+
+    navigateToTab({ activeKey: 'tabId', navigate: navigate2, pathname: '/apps/appId/test/', basename: '/apps/appId' });
+    expect(navigate2).toBeCalledWith('/test/tabs/tabId', { replace: true });
+
+    navigateToTab({
+      activeKey: 'tabId',
+      navigate: navigate3,
+      pathname: '/apps/appId/test/tabs/oldTabId',
+      basename: '/apps/appId',
+    });
+    expect(navigate3).toBeCalledWith('/test/tabs/tabId', { replace: true });
+
+    navigateToTab({
+      activeKey: 'tabId',
+      navigate: navigate4,
+      pathname: '/apps/appId/test/tabs/oldTabId/',
+      basename: '/apps/appId',
+    });
+    expect(navigate4).toBeCalledWith('/test/tabs/tabId', { replace: true });
+
+    navigateToTab({
+      activeKey: 'tabId',
+      navigate: navigate5,
+      pathname: '/apps/appId/test/tabs/tab1/pages/pageId/tabs/tab2',
+      basename: '/apps/appId',
+    });
+    expect(navigate5).toBeCalledWith('/test/tabs/tab1/pages/pageId/tabs/tabId', { replace: true });
+
+    navigateToTab({
+      activeKey: 'tabId',
+      navigate: navigate6,
+      pathname: '/apps/appId/test/tabs/tab1/pages/pageId/tabs/tab2/',
+      basename: '/apps/appId',
+    });
+    expect(navigate6).toBeCalledWith('/test/tabs/tab1/pages/pageId/tabs/tabId', { replace: true });
+
+    navigateToTab({
+      activeKey: 'tabId',
+      navigate: navigate7,
+      pathname: '/apps/appId/test/tabs/tab1/pages/pageId',
+      basename: '/apps/appId',
+    });
+    expect(navigate7).toBeCalledWith('/test/tabs/tab1/pages/pageId/tabs/tabId', { replace: true });
+
+    navigateToTab({
+      activeKey: 'tabId',
+      navigate: navigate8,
+      pathname: '/apps/appId/test/tabs/tab1/pages/pageId/',
+      basename: '/apps/appId',
+    });
+    expect(navigate8).toBeCalledWith('/test/tabs/tab1/pages/pageId/tabs/tabId', { replace: true });
+  });
+
+  it('navigateToTab with basename "/apps/appId/"', () => {
+    const navigate1 = vi.fn();
+    const navigate2 = vi.fn();
+    const navigate3 = vi.fn();
+    const navigate4 = vi.fn();
+    const navigate5 = vi.fn();
+    const navigate6 = vi.fn();
+    const navigate7 = vi.fn();
+    const navigate8 = vi.fn();
+
+    navigateToTab({ activeKey: 'tabId', navigate: navigate1, pathname: '/apps/appId/test', basename: '/apps/appId/' });
+    expect(navigate1).toBeCalledWith('/test/tabs/tabId', { replace: true });
+
+    navigateToTab({ activeKey: 'tabId', navigate: navigate2, pathname: '/apps/appId/test/', basename: '/apps/appId/' });
+    expect(navigate2).toBeCalledWith('/test/tabs/tabId', { replace: true });
+
+    navigateToTab({
+      activeKey: 'tabId',
+      navigate: navigate3,
+      pathname: '/apps/appId/test/tabs/oldTabId',
+      basename: '/apps/appId/',
+    });
+    expect(navigate3).toBeCalledWith('/test/tabs/tabId', { replace: true });
+
+    navigateToTab({
+      activeKey: 'tabId',
+      navigate: navigate4,
+      pathname: '/apps/appId/test/tabs/oldTabId/',
+      basename: '/apps/appId/',
+    });
+    expect(navigate4).toBeCalledWith('/test/tabs/tabId', { replace: true });
+
+    navigateToTab({
+      activeKey: 'tabId',
+      navigate: navigate5,
+      pathname: '/apps/appId/test/tabs/tab1/pages/pageId/tabs/tab2',
+      basename: '/apps/appId/',
+    });
+    expect(navigate5).toBeCalledWith('/test/tabs/tab1/pages/pageId/tabs/tabId', { replace: true });
+
+    navigateToTab({
+      activeKey: 'tabId',
+      navigate: navigate6,
+      pathname: '/apps/appId/test/tabs/tab1/pages/pageId/tabs/tab2/',
+      basename: '/apps/appId/',
+    });
+    expect(navigate6).toBeCalledWith('/test/tabs/tab1/pages/pageId/tabs/tabId', { replace: true });
+
+    navigateToTab({
+      activeKey: 'tabId',
+      navigate: navigate7,
+      pathname: '/apps/appId/test/tabs/tab1/pages/pageId',
+      basename: '/apps/appId/',
+    });
+    expect(navigate7).toBeCalledWith('/test/tabs/tab1/pages/pageId/tabs/tabId', { replace: true });
+
+    navigateToTab({
+      activeKey: 'tabId',
+      navigate: navigate8,
+      pathname: '/apps/appId/test/tabs/tab1/pages/pageId/',
+      basename: '/apps/appId/',
+    });
+    expect(navigate8).toBeCalledWith('/test/tabs/tab1/pages/pageId/tabs/tabId', { replace: true });
   });
 });
