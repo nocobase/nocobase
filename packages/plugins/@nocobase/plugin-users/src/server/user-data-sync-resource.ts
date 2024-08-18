@@ -8,7 +8,14 @@
  */
 
 import { Model } from '@nocobase/database';
-import { FormatUser, OriginRecord, SyncAccept, UserDataResource } from '@nocobase/plugin-user-data-sync';
+import {
+  FormatUser,
+  OriginRecord,
+  PrimaryKey,
+  RecordResourceChanged,
+  SyncAccept,
+  UserDataResource,
+} from '@nocobase/plugin-user-data-sync';
 
 export class UserDataSyncResource extends UserDataResource {
   name = 'users';
@@ -42,20 +49,22 @@ export class UserDataSyncResource extends UserDataResource {
     }
   }
 
-  async update(record: OriginRecord, resourcePk: number) {
+  async update(record: OriginRecord, resourcePks: PrimaryKey[]): Promise<RecordResourceChanged[]> {
     const { metaData: sourceUser } = record;
+    const resourcePk = resourcePks[0];
     const user = await this.userRepo.findOne({
       filterByTk: resourcePk,
     });
     await this.updateUser(user, sourceUser);
+    return [];
   }
 
-  async create(record: OriginRecord, uniqueKey: string): Promise<number> {
+  async create(record: OriginRecord, matchKey: string): Promise<RecordResourceChanged[]> {
     const { metaData: sourceUser } = record;
     const filter = {};
     let user: any;
-    if (['phone', 'email', 'username'].includes(uniqueKey)) {
-      filter[uniqueKey] = sourceUser[uniqueKey];
+    if (['phone', 'email', 'username'].includes(matchKey)) {
+      filter[matchKey] = sourceUser[matchKey];
       user = await this.userRepo.findOne({
         filter,
       });
@@ -73,6 +82,6 @@ export class UserDataSyncResource extends UserDataResource {
         },
       });
     }
-    return user.id;
+    return [{ resourcesPk: user.id, isDeleted: false }];
   }
 }

@@ -12,6 +12,7 @@ import Database, { Repository } from '@nocobase/database';
 import { SystemLogger } from '@nocobase/logger';
 
 export type FormatUser = {
+  uid: string;
   username?: string;
   email?: string;
   nickname?: string;
@@ -22,7 +23,7 @@ export type FormatUser = {
 };
 
 export type FormatDepartment = {
-  id?: string;
+  uid: string;
   title?: string;
   parentId?: string;
   isDeleted?: boolean;
@@ -55,9 +56,16 @@ export type OriginRecord = {
 
 export type UserData = {
   dataType: SyncDataType;
-  uniqueKey: string;
+  matchKey?: string;
   records: UserDataRecord[];
   sourceName: string;
+};
+
+export type PrimaryKey = number | string;
+
+export type RecordResourceChanged = {
+  resourcesPk: PrimaryKey;
+  isDeleted: boolean;
 };
 
 export abstract class UserDataResource {
@@ -71,8 +79,8 @@ export abstract class UserDataResource {
     this.logger = logger;
   }
 
-  abstract update(record: OriginRecord, resourcePk: number | string): Promise<void>;
-  abstract create(record: OriginRecord, uniqueKey: string): Promise<string | number>;
+  abstract update(record: OriginRecord, resourcePks: PrimaryKey[]): Promise<RecordResourceChanged[]>;
+  abstract create(record: OriginRecord, matchKey: string): Promise<RecordResourceChanged[]>;
 
   get syncRecordRepo() {
     return this.db.getRepository('userDataSyncRecords');
@@ -98,10 +106,10 @@ export abstract class UserDataResource {
     return accept[0].associateResource;
   }
 }
-
 export class UserDataResourceManager {
   resources = new Toposort<UserDataResource>();
   syncRecordRepo: Repository;
+  syncRecordResourceRepo: Repository;
 
   registerResource(resource: UserDataResource, options?: ToposortOptions) {
     if (!resource.name) {
@@ -115,19 +123,15 @@ export class UserDataResourceManager {
 
   set db(value: Database) {
     this.syncRecordRepo = value.getRepository('userDataSyncRecords');
-  }
-
-  getSourceUk(record: UserDataRecord, uniqueKey: string) {
-    return record[uniqueKey].toString();
+    this.syncRecordResourceRepo = value.getRepository('userDataSyncRecordsResources');
   }
 
   async saveOriginRecords(data: UserData): Promise<void> {
     for (const record of data.records) {
-      const sourceUk = this.getSourceUk(record, data.uniqueKey);
       const syncRecord = await this.syncRecordRepo.findOne({
         where: {
           sourceName: data.sourceName,
-          sourceUk,
+          sourceUk: record.uid,
           dataType: data.dataType,
         },
       });
@@ -139,7 +143,7 @@ export class UserDataResourceManager {
         await this.syncRecordRepo.create({
           values: {
             sourceName: data.sourceName,
-            sourceUk,
+            sourceUk: record.uid,
             dataType: data.dataType,
             metaData: record,
           },
@@ -169,10 +173,23 @@ export class UserDataResourceManager {
     }
   }
 
+  async removeResourceFromOriginRecord({ recordId, resource, resourcePk }): Promise<void> {
+    const recordResource = await this.syncRecordResourceRepo.findOne({
+      where: {
+        recordId,
+        resource,
+        resourcePk,
+      },
+    });
+    if (recordResource) {
+      await recordResource.destroy();
+    }
+  }
+
   async updateOrCreate(data: UserData) {
     await this.saveOriginRecords(data);
-    const { dataType, sourceName, records, uniqueKey } = data;
-    const sourceUks = records.map((record) => this.getSourceUk(record, uniqueKey));
+    const { dataType, sourceName, records, matchKey } = data;
+    const sourceUks = records.map((record) => record.uid);
     for (const resource of this.resources.nodes) {
       const associateResource = resource.parseAccepts(dataType);
       if (!associateResource) {
@@ -183,21 +200,33 @@ export class UserDataResourceManager {
         continue;
       }
       for (const originRecord of originRecords) {
-        const resourceRecord = originRecord.resources?.find(
+        const resourceRecords = originRecord.resources?.filter(
           (r: { resource: string }) => r.resource === associateResource,
         );
-        if (resourceRecord?.resourcePk) {
-          await resource.update(originRecord, resourceRecord.resourcePk);
+        let recordResourceChangeds: RecordResourceChanged[];
+        if (resourceRecords && resourceRecords.length > 0) {
+          const resourcePks = resourceRecords.map((r: { resourcePk: string }) => r.resourcePk);
+          recordResourceChangeds = await resource.update(originRecord, resourcePks);
         } else {
-          const resourcePk = await resource.create(originRecord, uniqueKey);
-          if (resourcePk === undefined || resourcePk === null) {
-            continue;
+          recordResourceChangeds = await resource.create(originRecord, matchKey);
+        }
+        if (!recordResourceChangeds || recordResourceChangeds.length === 0) {
+          continue;
+        }
+        for (const { resourcesPk, isDeleted } of recordResourceChangeds) {
+          if (isDeleted) {
+            await this.removeResourceFromOriginRecord({
+              recordId: originRecord.id,
+              resource: associateResource,
+              resourcePk: resourcesPk,
+            });
+          } else {
+            await this.addResourceToOriginRecord({
+              recordId: originRecord.id,
+              resource: associateResource,
+              resourcePk: resourcesPk,
+            });
           }
-          await this.addResourceToOriginRecord({
-            recordId: originRecord.id,
-            resource: associateResource,
-            resourcePk,
-          });
         }
       }
     }
