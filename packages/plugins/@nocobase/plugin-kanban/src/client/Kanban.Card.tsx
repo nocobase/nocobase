@@ -13,9 +13,8 @@ import { observer, RecursionField, useFieldSchema } from '@formily/react';
 import {
   ActionContextProvider,
   DndContext,
-  RecordProvider,
   useCollection,
-  useCollectionParentRecordData,
+  useCollectionRecordData,
   VariablePopupRecordProvider,
 } from '@nocobase/client';
 import { Card } from 'antd';
@@ -74,11 +73,10 @@ export const KanbanCard: any = observer(
   () => {
     const { t } = useKanbanTranslation();
     const collection = useCollection();
-    const { setDisableCardDrag, cardViewerSchema, card, cardField, columnIndex, cardIndex } =
-      useContext(KanbanCardContext);
-    const parentRecordData = useCollectionParentRecordData();
+    const { setDisableCardDrag, cardViewerSchema, cardField, columnIndex, cardIndex } = useContext(KanbanCardContext);
     const fieldSchema = useFieldSchema();
     const [visible, setVisible] = useState(false);
+    const recordData = useCollectionRecordData();
     const handleCardClick = useCallback((e: React.MouseEvent) => {
       const targetElement = e.target as Element; // 将事件目标转换为Element类型
       const currentTargetElement = e.currentTarget as Element;
@@ -132,11 +130,9 @@ export const KanbanCard: any = observer(
         </Card>
         {cardViewerSchema && (
           <ActionContextProvider value={actionContextValue}>
-            <RecordProvider record={card} parent={parentRecordData}>
-              <VariablePopupRecordProvider recordData={card} collection={collection}>
-                <MemorizedRecursionField basePath={cardViewerBasePath} schema={cardViewerSchema} onlyRenderProperties />
-              </VariablePopupRecordProvider>
-            </RecordProvider>
+            <VariablePopupRecordProvider recordData={recordData} collection={collection}>
+              <MemorizedRecursionField basePath={cardViewerBasePath} schema={cardViewerSchema} onlyRenderProperties />
+            </VariablePopupRecordProvider>
           </ActionContextProvider>
         )}
       </>

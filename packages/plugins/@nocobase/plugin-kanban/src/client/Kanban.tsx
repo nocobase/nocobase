@@ -136,7 +136,7 @@ export const Kanban: any = withDynamicSchemaProps(
               <Tag color={color}>{title}</Tag>
             </div>
           )}
-          renderCard={(card, { column, dragging }) => {
+          renderCard={(card, { column }) => {
             const columnIndex = dataSource?.indexOf(column);
             const cardIndex = column?.cards?.indexOf(card);
             const { ref, inView } = useInView({
@@ -152,9 +152,6 @@ export const Kanban: any = withDynamicSchemaProps(
                       setDisableCardDrag,
                       cardViewerSchema: schemas.cardViewer,
                       cardField: field,
-                      card,
-                      column,
-                      dragging,
                       columnIndex,
                       cardIndex,
                     }}
