@@ -37,6 +37,10 @@ describe('multi filter target key', () => {
           type: 'bigInt',
           primaryKey: true,
         },
+        {
+          name: 'age',
+          type: 'integer',
+        },
       ],
     });
 
@@ -46,6 +50,7 @@ describe('multi filter target key', () => {
       values: {
         name: 's1',
         classId: 1,
+        age: 10,
       },
     });
 
@@ -57,6 +62,36 @@ describe('multi filter target key', () => {
       },
     });
 
-    expect(findRes.length).toBe(0);
+    expect(findRes.length).toBe(1);
+
+    // update
+    await Student.repository.update({
+      filterByTk: {
+        name: 's1',
+        classId: 1,
+      },
+      values: {
+        age: '20',
+      },
+    });
+
+    const s1Updated = await Student.repository.findOne({
+      filterByTk: {
+        name: 's1',
+        classId: 1,
+      },
+    });
+
+    expect(s1Updated.age).toBe(20);
+
+    // destroy
+    await Student.repository.destroy({
+      filterByTk: {
+        name: 's1',
+        classId: 1,
+      },
+    });
+
+    expect(await Student.repository.count()).toBe(0);
   });
 });
