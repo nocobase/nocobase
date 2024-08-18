@@ -22,6 +22,7 @@ export class HasManyRepository extends MultipleRelationRepository {
     };
 
     if (options?.filterByTk) {
+      // @ts-ignore
       addFilter[this.associationField.targetKey] = options.filterByTk;
     }
 
