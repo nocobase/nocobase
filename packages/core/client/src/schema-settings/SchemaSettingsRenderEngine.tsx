@@ -34,7 +34,7 @@ export function SchemaSettingsRenderEngine() {
   return (
     <SchemaSettingsSelectItem
       key="render-template"
-      title={t('Set Template Engine')}
+      title={t('Template engine')}
       options={options}
       value={field.decoratorProps.engine || 'string'}
       onChange={(engine) => {

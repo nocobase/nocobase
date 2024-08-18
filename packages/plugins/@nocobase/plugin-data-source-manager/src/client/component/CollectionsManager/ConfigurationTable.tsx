@@ -134,7 +134,7 @@ export const ConfigurationTable = () => {
             method: 'post',
           });
           field.data.loading = false;
-          setDataSource(data?.data);
+          setDataSource({ ...data?.data, name });
           if (data?.data?.status === 'reloading') {
             message.warning(t('Data source synchronization in progress'));
           } else if (data?.data?.status === 'loaded') {
