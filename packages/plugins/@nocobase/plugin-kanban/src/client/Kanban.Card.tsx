@@ -9,10 +9,12 @@
 
 import { css } from '@emotion/css';
 import { FormLayout } from '@formily/antd-v5';
+import { createForm } from '@formily/core';
 import { observer, RecursionField, useFieldSchema } from '@formily/react';
 import {
   ActionContextProvider,
   DndContext,
+  FormProvider,
   useCollection,
   useCollectionRecordData,
   VariablePopupRecordProvider,
@@ -73,7 +75,7 @@ export const KanbanCard: any = observer(
   () => {
     const { t } = useKanbanTranslation();
     const collection = useCollection();
-    const { setDisableCardDrag, cardViewerSchema, cardField, columnIndex, cardIndex } = useContext(KanbanCardContext);
+    const { setDisableCardDrag } = useContext(KanbanCardContext) || {};
     const fieldSchema = useFieldSchema();
     const [visible, setVisible] = useState(false);
     const recordData = useCollectionRecordData();
@@ -94,12 +96,18 @@ export const KanbanCard: any = observer(
       };
     }, []);
 
+    const form = useMemo(() => {
+      return createForm({
+        values: recordData,
+      });
+    }, [recordData]);
+
     const onDragStart = useCallback(() => {
-      setDisableCardDrag(true);
-    }, []);
+      setDisableCardDrag?.(true);
+    }, [setDisableCardDrag]);
     const onDragEnd = useCallback(() => {
-      setDisableCardDrag(false);
-    }, []);
+      setDisableCardDrag?.(false);
+    }, [setDisableCardDrag]);
 
     const actionContextValue = useMemo(() => {
       return {
@@ -110,31 +118,24 @@ export const KanbanCard: any = observer(
       };
     }, [fieldSchema, visible]);
 
-    const basePath = useMemo(
-      () => cardField.address.concat(`${columnIndex}.cards.${cardIndex}`),
-      [cardField, columnIndex, cardIndex],
-    );
-    const cardViewerBasePath = useMemo(
-      () => cardField.address.concat(`${columnIndex}.cardViewer.${cardIndex}`),
-      [cardField, columnIndex, cardIndex],
-    );
+    const popupSchema = fieldSchema.parent.properties.cardViewer;
 
     return (
       <>
         <Card onClick={handleCardClick} bordered={false} hoverable style={cardStyle} className={cardCss}>
           <DndContext onDragStart={onDragStart} onDragEnd={onDragEnd}>
             <FormLayout layout={'vertical'}>
-              <MemorizedRecursionField basePath={basePath} schema={fieldSchema} onlyRenderProperties />
+              <FormProvider form={form}>
+                <MemorizedRecursionField schema={fieldSchema} onlyRenderProperties />
+              </FormProvider>
             </FormLayout>
           </DndContext>
         </Card>
-        {cardViewerSchema && (
-          <ActionContextProvider value={actionContextValue}>
-            <VariablePopupRecordProvider recordData={recordData} collection={collection}>
-              <MemorizedRecursionField basePath={cardViewerBasePath} schema={cardViewerSchema} onlyRenderProperties />
-            </VariablePopupRecordProvider>
-          </ActionContextProvider>
-        )}
+        <ActionContextProvider value={actionContextValue}>
+          <VariablePopupRecordProvider recordData={recordData} collection={collection}>
+            <MemorizedRecursionField schema={popupSchema} />
+          </VariablePopupRecordProvider>
+        </ActionContextProvider>
       </>
     );
   },

@@ -144,21 +144,18 @@ export const Kanban: any = withDynamicSchemaProps(
               triggerOnce: true,
               initialInView: lastDraggedCard.current && lastDraggedCard.current === card[primaryKey],
             });
+
             return (
               schemas.card && (
                 <RecordProvider record={card} parent={parentRecordData}>
                   <KanbanCardContext.Provider
                     value={{
                       setDisableCardDrag,
-                      cardViewerSchema: schemas.cardViewer,
-                      cardField: field,
-                      columnIndex,
-                      cardIndex,
                     }}
                   >
                     <div ref={ref}>
                       {inView ? (
-                        <MemorizedRecursionField name={schemas.card.name} schema={schemas.card} />
+                        <MemorizedRecursionField name={'card'} schema={fieldSchema.properties.card} />
                       ) : (
                         <Card bordered={false}>
                           <Skeleton paragraph={{ rows: 4 }} />
