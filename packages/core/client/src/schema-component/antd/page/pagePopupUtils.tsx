@@ -123,7 +123,7 @@ export const getPopupPathFromParams = (params: PopupParams) => {
  * Note: use this hook in a plugin is not recommended
  * @returns
  */
-export const usePagePopup = () => {
+export const usePopupUtils = () => {
   const navigate = useNavigateNoUpdate();
   const location = useLocationNoUpdate();
   const fieldSchema = useFieldSchema();
@@ -292,10 +292,30 @@ export const usePagePopup = () => {
      * used to close popup by changing the url
      */
     closePopup,
+    /**
+     * @deprecated
+     * TODO: remove this
+     */
     visibleWithURL: visible,
+    /**
+     * @deprecated
+     * TODO: remove this
+     */
     setVisibleWithURL: setVisible,
+    /**
+     * @deprecated
+     * TODO: remove this
+     */
     popupParams,
+    /**
+     * @deprecated
+     * TODO: remove this
+     */
     changeTab,
+    /**
+     * @deprecated
+     * TODO: remove this
+     */
     getPopupContext,
   };
 };

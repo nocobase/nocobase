@@ -21,7 +21,7 @@ import { SchemaComponent } from '../../core';
 import { TabsContextProvider } from '../tabs/context';
 import { usePopupSettings } from './PopupSettingsProvider';
 import { deleteRandomNestedSchemaKey, getRandomNestedSchemaKey } from './nestedSchemaKeyStorage';
-import { PopupParams, getPopupParamsFromPath, getStoredPopupContext, usePagePopup } from './pagePopupUtils';
+import { PopupParams, getPopupParamsFromPath, getStoredPopupContext, usePopupUtils } from './pagePopupUtils';
 import {
   PopupContext,
   getPopupContextFromActionOrAssociationFieldSchema,
@@ -86,7 +86,7 @@ const PopupParamsProvider: FC<Omit<PopupProps, 'hidden'>> = (props) => {
 
 const PopupTabsPropsProvider: FC = ({ children }) => {
   const { params } = useCurrentPopupContext();
-  const { changeTab } = usePagePopup();
+  const { changeTab } = usePopupUtils();
   const onChange = useCallback(
     (key: string) => {
       changeTab(key);
@@ -114,7 +114,7 @@ const PagePopupsItemProvider: FC<{
    */
   currentLevel: number;
 }> = ({ params, context, currentLevel, children }) => {
-  const { closePopup } = usePagePopup();
+  const { closePopup } = usePopupUtils();
   const [visible, _setVisible] = useState(true);
   const setVisible = (visible: boolean) => {
     if (!visible) {

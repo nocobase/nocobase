@@ -19,7 +19,7 @@ import { useCompile } from '../../hooks';
 import { ActionContextProvider, useActionContext } from '../action';
 import { EllipsisWithTooltip } from '../input/EllipsisWithTooltip';
 import { PopupVisibleProvider } from '../page/PagePopups';
-import { usePagePopup } from '../page/pagePopupUtils';
+import { usePopupUtils } from '../page/pagePopupUtils';
 import { useAssociationFieldContext, useFieldNames, useInsertSchema } from './hooks';
 import { transformNestedData } from './InternalCascadeSelect';
 import schema from './schema';
@@ -62,7 +62,7 @@ const ButtonLinkList: FC<ButtonListProps> = (props) => {
   const isTreeCollection = targetCollection?.template === 'tree';
   const ellipsisWithTooltipRef = useRef<IEllipsisWithTooltipRef>();
   const getLabelUiSchema = useLabelUiSchemaV2();
-  const { openPopup } = usePagePopup();
+  const { openPopup } = usePopupUtils();
   const recordData = useCollectionRecordData();
 
   const renderRecords = () =>
@@ -143,7 +143,7 @@ export const ReadPrettyInternalViewer: React.FC = observer(
     const [visible, setVisible] = useState(false);
     const { options: collectionField } = useAssociationFieldContext();
     const ellipsisWithTooltipRef = useRef<IEllipsisWithTooltipRef>();
-    const { visibleWithURL, setVisibleWithURL } = usePagePopup();
+    const { visibleWithURL, setVisibleWithURL } = usePopupUtils();
     const [btnHover, setBtnHover] = useState(!!visibleWithURL);
     const { defaultOpenMode } = useOpenModeContext();
 
