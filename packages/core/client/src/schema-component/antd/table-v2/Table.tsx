@@ -517,7 +517,6 @@ export const Table: any = withDynamicSchemaProps(
           // 使用多个字段值组合生成唯一键
           return rowKey
             .map((keyField) => {
-              console.log(keyField);
               return record[keyField]?.toString() || '';
             })
             .join('-');
