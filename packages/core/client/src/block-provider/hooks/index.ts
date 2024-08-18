@@ -1076,13 +1076,25 @@ export const useBulkDestroyActionProps = () => {
   const { field } = useBlockRequestContext();
   const { resource, service } = useBlockRequestContext();
   const { setSubmitted } = useActionContext();
+  const collection = useCollection_deprecated();
+  const { filterTargetKey } = collection;
   return {
     async onClick(e?, callBack?) {
+      let filterByTk = field.data?.selectedRowKeys;
+      if (Array.isArray(filterTargetKey)) {
+        filterByTk = field.data.selectedRowData.map((v) => {
+          const obj = {};
+          filterTargetKey.map((j) => {
+            obj[j] = v[j];
+          });
+          return obj;
+        });
+      }
       if (!field?.data?.selectedRowKeys?.length) {
         return;
       }
       await resource.destroy({
-        filterByTk: field.data?.selectedRowKeys,
+        filterByTk,
       });
       field.data.selectedRowKeys = [];
       const currentPage = service.params[0]?.page;
@@ -1094,7 +1106,7 @@ export const useBulkDestroyActionProps = () => {
         callBack?.();
       }
       setSubmitted?.(true);
-      // service?.refresh?.();
+      service?.refresh?.();
     },
   };
 };

@@ -498,6 +498,9 @@ export const Table: any = withDynamicSchemaProps(
      * @returns
      */
     const defaultRowKey = useCallback((record: any) => {
+      if (rowKey) {
+        return getRowKey(record);
+      }
       if (record.key) {
         return record.key;
       }
@@ -754,7 +757,7 @@ export const Table: any = withDynamicSchemaProps(
         <SortableWrapper>
           <MemoizedAntdTable
             ref={tableSizeRefCallback}
-            rowKey={rowKey ?? defaultRowKey}
+            rowKey={defaultRowKey}
             dataSource={dataSource}
             tableLayout="auto"
             {...others}

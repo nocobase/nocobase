@@ -58,9 +58,11 @@ export const useTableBlockProps = () => {
     dragSort: ctx.dragSort && ctx.dragSortBy,
     rowKey: ctx.rowKey || 'id',
     pagination: fieldSchema?.['x-component-props']?.pagination === false ? false : field.componentProps.pagination,
-    onRowSelectionChange: useCallback((selectedRowKeys) => {
+    onRowSelectionChange: useCallback((selectedRowKeys, selectedRowData) => {
+      console.log(selectedRowData);
       ctx.field.data = ctx?.field?.data || {};
       ctx.field.data.selectedRowKeys = selectedRowKeys;
+      ctx.field.data.selectedRowData = selectedRowData;
       ctx?.field?.onRowSelect?.(selectedRowKeys);
     }, []),
     onRowDragEnd: useCallback(
