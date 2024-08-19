@@ -504,6 +504,10 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
     return this.collection.model.findByPk(id);
   }
 
+  findByTargetKey(targetKey: TargetKey) {
+    return this.findOne({ filterByTk: targetKey });
+  }
+
   /**
    * Find one record from database
    *
