@@ -16,7 +16,6 @@ import { findFilterTargets } from '../../../../../block-provider/hooks';
 import { DataBlock, useFilterBlock } from '../../../../../filter-provider/FilterProvider';
 import { mergeFilter } from '../../../../../filter-provider/utils';
 import { removeNullCondition } from '../../../../../schema-component';
-import { useCollection } from '../../../../../data-source';
 
 export const useTableBlockProps = () => {
   const field = useField<ArrayField>();
@@ -59,7 +58,6 @@ export const useTableBlockProps = () => {
     rowKey: ctx.rowKey || 'id',
     pagination: fieldSchema?.['x-component-props']?.pagination === false ? false : field.componentProps.pagination,
     onRowSelectionChange: useCallback((selectedRowKeys, selectedRowData) => {
-      console.log(selectedRowData);
       ctx.field.data = ctx?.field?.data || {};
       ctx.field.data.selectedRowKeys = selectedRowKeys;
       ctx.field.data.selectedRowData = selectedRowData;

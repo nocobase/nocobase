@@ -530,7 +530,7 @@ export const Table: any = withDynamicSchemaProps(
           return (rowKey ?? defaultRowKey)(record)?.toString();
         }
       },
-      [rowKey, defaultRowKey],
+      [JSON.stringify(rowKey), defaultRowKey],
     );
 
     const dataSourceKeys = field?.value?.map?.(getRowKey);
@@ -706,7 +706,7 @@ export const Table: any = withDynamicSchemaProps(
 
     const rowClassName = useCallback(
       (record) => (selectedRow.includes(record[rowKey]) ? highlightRow : ''),
-      [selectedRow, highlightRow, rowKey],
+      [selectedRow, highlightRow, JSON.stringify(rowKey)],
     );
 
     const onExpandValue = useCallback(
