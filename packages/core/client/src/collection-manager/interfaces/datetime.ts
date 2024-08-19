@@ -19,9 +19,6 @@ export class DatetimeFieldInterface extends CollectionFieldInterface {
   sortable = true;
   default = {
     type: 'date',
-    defaultToCurrentTime: false,
-    onUpdateToCurrentTime: false,
-    timezone: 'server',
     uiSchema: {
       type: 'string',
       'x-component': 'DatePicker',

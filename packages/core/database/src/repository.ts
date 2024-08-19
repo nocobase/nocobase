@@ -573,7 +573,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
       underscored: this.collection.options.underscored,
     });
 
-    const values = (this.model as typeof Model).callSetters(guard.sanitize(options.values || {}), options);
+    const values = guard.sanitize(options.values || {});
 
     const instance = await this.model.create<any>(values, {
       ...options,
@@ -645,7 +645,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
 
     const guard = UpdateGuard.fromOptions(this.model, { ...options, underscored: this.collection.options.underscored });
 
-    const values = (this.model as typeof Model).callSetters(guard.sanitize(options.values || {}), options);
+    const values = guard.sanitize(options.values);
 
     // NOTE:
     // 1. better to be moved to separated API like bulkUpdate/updateMany

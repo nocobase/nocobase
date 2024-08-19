@@ -52,7 +52,6 @@ import {
   UUIDFieldInterface,
   NanoidFieldInterface,
   UnixTimestampFieldInterface,
-  DateFieldInterface,
 } from './interfaces';
 import {
   GeneralCollectionTemplate,
@@ -174,7 +173,6 @@ export class CollectionPlugin extends Plugin {
       UUIDFieldInterface,
       NanoidFieldInterface,
       UnixTimestampFieldInterface,
-      DateFieldInterface,
     ]);
   }
 
