@@ -11,6 +11,7 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import { getApp } from '.';
 import { FILE_FIELD_NAME, FILE_SIZE_LIMIT_DEFAULT, STORAGE_TYPE_LOCAL } from '../../constants';
+import PluginFileManagerServer from '../server';
 
 const { LOCAL_STORAGE_BASE_URL, LOCAL_STORAGE_DEST = 'storage/uploads', APP_PORT = '13000' } = process.env;
 
@@ -50,6 +51,23 @@ describe('action', () => {
 
   describe('create / upload', () => {
     describe('default storage', () => {
+      it('createFileRecord', async () => {
+        const Plugin = app.pm.get(PluginFileManagerServer) as PluginFileManagerServer;
+        const model = await Plugin.createFileRecord({
+          collection: 'attachments',
+          filePath: path.resolve(__dirname, './files/text.txt'),
+        });
+        const matcher = {
+          title: 'text',
+          extname: '.txt',
+          path: '',
+          // size: 13,
+          meta: {},
+          storageId: 1,
+        };
+        expect(model.toJSON()).toMatchObject(matcher);
+      });
+
       it('upload file should be ok', async () => {
         const { body } = await agent.resource('attachments').create({
           [FILE_FIELD_NAME]: path.resolve(__dirname, './files/text.txt'),
