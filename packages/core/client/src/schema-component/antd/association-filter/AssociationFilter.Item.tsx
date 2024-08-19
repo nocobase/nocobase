@@ -48,7 +48,7 @@ export const AssociationFilterItem = withDynamicSchemaProps(
 
     const defaultActiveKeyCollapse = useMemo<React.Key[]>(
       () => (defaultCollapse && collectionField?.name ? [collectionField.name] : []),
-      [],
+      [collectionField.name, defaultCollapse],
     );
     const valueKey = _valueKey || collectionField?.targetKey || 'id';
     const labelKey = _labelKey || fieldSchema['x-component-props']?.fieldNames?.label || valueKey;

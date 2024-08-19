@@ -17,12 +17,13 @@ import classNames from 'classnames';
 import React, { memo, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { useTranslation } from 'react-i18next';
-import { Outlet, useOutletContext, useParams, useSearchParams } from 'react-router-dom';
+import { NavigateFunction, Outlet, useOutletContext, useParams, useSearchParams } from 'react-router-dom';
 import { FormDialog } from '..';
 import { useStyles as useAClStyles } from '../../../acl/style';
 import { useRequest } from '../../../api-client';
 import { useNavigateNoUpdate } from '../../../application/CustomRouterContextProvider';
 import { useAppSpin } from '../../../application/hooks/useAppSpin';
+import { useRouterBasename } from '../../../application/hooks/useRouterBasename';
 import { useDocumentTitle } from '../../../document-title';
 import { useGlobalTheme } from '../../../global-theme';
 import { Icon } from '../../../icon';
@@ -47,6 +48,7 @@ export const Page = (props) => {
   const { theme } = useGlobalTheme();
   const { getAriaLabel } = useGetAriaLabelOfSchemaInitializer();
   const { tabUid, name: pageUid } = useParams();
+  const basenameOfCurrentRouter = useRouterBasename();
 
   // react18  tab 动画会卡顿，所以第一个 tab 时，动画禁用，后面的 tab 才启用
   const [hasMounted, setHasMounted] = useState(false);
@@ -112,7 +114,7 @@ export const Page = (props) => {
           }}
           onChange={(activeKey) => {
             setLoading(true);
-            navigate(`/admin/${pageUid}/tabs/${activeKey}`, { replace: true });
+            navigateToTab({ activeKey, navigate, basename: basenameOfCurrentRouter });
             setTimeout(() => {
               setLoading(false);
             }, 50);
@@ -319,3 +321,41 @@ const PageContent = memo(
   },
 );
 PageContent.displayName = 'PageContent';
+
+export function navigateToTab({
+  activeKey,
+  navigate,
+  basename,
+  pathname = window.location.pathname,
+}: {
+  activeKey: string;
+  navigate: NavigateFunction;
+  /** the router basename */
+  basename: string;
+  pathname?: string;
+}) {
+  pathname = pathname.replace(basename, '');
+
+  if (pathname.endsWith('/')) {
+    pathname = pathname.slice(0, -1);
+  }
+
+  if (!pathname.startsWith('/')) {
+    pathname = `/${pathname}`;
+  }
+
+  if (isTabPage(pathname)) {
+    navigate(`${pathname.replace(/\/tabs\/[^/]+$/, `/tabs/${activeKey}`)}`, { replace: true });
+  } else {
+    navigate(`${pathname}/tabs/${activeKey}`, { replace: true });
+  }
+}
+
+export function isTabPage(pathname: string) {
+  if (pathname.endsWith('/')) {
+    pathname = pathname.slice(0, -1);
+  }
+
+  const list = pathname.split('/');
+  return list[list.length - 2] === 'tabs';
+}

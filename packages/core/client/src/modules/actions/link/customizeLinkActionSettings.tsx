@@ -19,11 +19,7 @@ import { ButtonEditor, RemoveButton } from '../../../schema-component/antd/actio
 import { SchemaSettingsLinkageRules, SchemaSettingsModalItem } from '../../../schema-settings';
 import { useURLAndHTMLSchema } from './useURLAndHTMLSchema';
 
-interface SchemaSettingsActionLinkItemProps {
-  afterSubmit?: () => void;
-}
-
-export const SchemaSettingsActionLinkItem: FC<SchemaSettingsActionLinkItemProps> = ({ afterSubmit }) => {
+export const SchemaSettingsActionLinkItem: FC = () => {
   const field = useField();
   const fieldSchema = useFieldSchema();
   const { dn } = useDesignable();
@@ -70,7 +66,6 @@ export const SchemaSettingsActionLinkItem: FC<SchemaSettingsActionLinkItemProps>
           },
         });
         dn.refresh();
-        afterSubmit?.();
       }}
       initialValues={initialValues}
     />

@@ -20,7 +20,7 @@ import omit from 'lodash/omit';
 import qs from 'qs';
 import { ChangeEvent, useCallback, useContext, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { NavigateFunction, useHref } from 'react-router-dom';
+import { NavigateFunction } from 'react-router-dom';
 import { useReactToPrint } from 'react-to-print';
 import {
   AssociationFilter,
@@ -28,6 +28,7 @@ import {
   useCollectionRecord,
   useDataSourceHeaders,
   useFormActiveFields,
+  useRouterBasename,
   useTableBlockContext,
 } from '../..';
 import { useAPIClient, useRequest } from '../../api-client';
@@ -1266,18 +1267,20 @@ export const useAssociationFilterBlockProps = () => {
       },
     },
     {
-      // 由于 选项字段不需要触发当前请求，所以当前请求更改为手动触发
+      // 由于选项字段不需要触发当前请求，所以当前请求更改为手动触发
       manual: true,
       debounceWait: 300,
     },
   ));
 
   useEffect(() => {
-    // 由于 选项字段不需要触发当前请求，所以请求单独在 关系字段的时候触发
+    // 由于选项字段不需要触发当前请求，所以请求单独在关系字段的时候触发
     if (!isOptionalField(collectionField)) {
       run();
     }
-  }, [collectionField, labelKey, run, valueKey]);
+
+    // do not format the dependencies
+  }, [collectionField, labelKey, run, valueKey, field.componentProps?.params, field.componentProps?.params?.sort]);
 
   if (!collectionField) {
     return {};
@@ -1592,9 +1595,7 @@ export function useLinkActionProps(componentProps?: any) {
   const searchParams = componentPropsValue?.['params'] || [];
   const openInNewWindow = fieldSchema?.['x-component-props']?.['openInNewWindow'];
   const { parseURLAndParams } = useParseURLAndParams();
-
-  // see: https://stackoverflow.com/questions/50449423/accessing-basename-of-browserouter
-  const basenameOfCurrentRouter = useHref('/');
+  const basenameOfCurrentRouter = useRouterBasename();
 
   return {
     type: 'default',

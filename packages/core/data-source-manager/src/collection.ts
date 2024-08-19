@@ -30,6 +30,10 @@ export class Collection implements ICollection {
     return this.options.name;
   }
 
+  get filterTargetKey() {
+    return this.options.filterTargetKey;
+  }
+
   updateOptions(options: CollectionOptions, mergeOptions?: any) {
     const newOptions = {
       ...this.options,
