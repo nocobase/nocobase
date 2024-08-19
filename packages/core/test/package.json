@@ -59,7 +59,7 @@
     "@testing-library/user-event": "^14.4.3",
     "@types/supertest": "^2.0.11",
     "@vitejs/plugin-react": "^4.0.0",
-    "@vitest/coverage-istanbul": "^1.5.0",
+    "@vitest/coverage-istanbul": "^2.0.5",
     "@vitest/coverage-v8": "^1.5.0",
     "axios-mock-adapter": "1.22.0",
     "jsdom": "^16.0.0",
