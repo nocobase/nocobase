@@ -1,4 +1,4 @@
-[English](./README.md) | 简体中文
+[English](./README.md) | 简体中文 | [日本語](./README.ja-JP.md)
  
 https://github.com/nocobase/nocobase/assets/1267426/29623e45-9a48-4598-bb9e-9dd173ade553
 
