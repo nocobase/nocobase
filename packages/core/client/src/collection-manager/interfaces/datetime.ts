@@ -21,12 +21,12 @@ export class DatetimeFieldInterface extends CollectionFieldInterface {
     type: 'date',
     defaultToCurrentTime: false,
     onUpdateToCurrentTime: false,
-    timezone: 'server',
     uiSchema: {
       type: 'string',
       'x-component': 'DatePicker',
       'x-component-props': {
         showTime: false,
+        timezone: 'server',
       },
     },
   };

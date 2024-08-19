@@ -28,6 +28,7 @@ export class UnixTimestampFieldInterface extends CollectionFieldInterface {
       'x-component': 'UnixTimestamp',
       'x-component-props': {
         showTime: true,
+        timezone: 'server',
       },
     },
   };
@@ -35,7 +36,7 @@ export class UnixTimestampFieldInterface extends CollectionFieldInterface {
   hasDefaultValue = false;
   properties = {
     ...defaultProps,
-    timezone: {
+    'uiSchema.x-component-props.timezone': {
       type: 'string',
       title: '{{t("Timezone")}}',
       'x-component': CustomRadio,
