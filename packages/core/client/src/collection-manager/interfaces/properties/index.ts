@@ -10,7 +10,6 @@
 import { Field } from '@formily/core';
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
-import { CustomRadio } from '../components';
 export * as operators from './operators';
 
 export const type: ISchema = {
@@ -226,29 +225,6 @@ export const reverseFieldProperties: Record<string, ISchema> = {
 };
 
 export const dateTimeProps: { [key: string]: ISchema } = {
-  'uiSchema.x-component-props.timezone': {
-    type: 'string',
-    title: '{{t("Timezone")}}',
-    'x-component': CustomRadio,
-    'x-decorator': 'FormItem',
-    default: 'server',
-    'x-component-props': {
-      options: [
-        {
-          label: '{{t("None")}}',
-          value: 'server',
-        },
-        {
-          label: '{{t("Client\'s time zone")}}',
-          value: 'client',
-        },
-        {
-          label: '{{t("Custom")}}',
-          value: 'custom',
-        },
-      ],
-    },
-  },
   'uiSchema.x-component-props.dateFormat': {
     type: 'string',
     title: '{{t("Date format")}}',

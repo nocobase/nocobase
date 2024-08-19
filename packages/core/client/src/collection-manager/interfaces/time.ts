@@ -14,7 +14,7 @@ export class TimeFieldInterface extends CollectionFieldInterface {
   name = 'time';
   type = 'object';
   group = 'datetime';
-  order = 2;
+  order = 4;
   title = '{{t("Time")}}';
   sortable = true;
   default = {

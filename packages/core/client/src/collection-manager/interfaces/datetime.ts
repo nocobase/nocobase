@@ -15,18 +15,20 @@ export class DatetimeFieldInterface extends CollectionFieldInterface {
   type = 'object';
   group = 'datetime';
   order = 1;
-  title = '{{t("Datetime")}}';
+  title = '{{t("Datetime(with time zone)")}}';
+  description = '{{t("One to one description")}}';
   sortable = true;
   default = {
     type: 'date',
     defaultToCurrentTime: false,
     onUpdateToCurrentTime: false,
+    timezone: true,
     uiSchema: {
       type: 'string',
       'x-component': 'DatePicker',
       'x-component-props': {
         showTime: false,
-        timezone: 'server',
+        utc: true,
       },
     },
   };

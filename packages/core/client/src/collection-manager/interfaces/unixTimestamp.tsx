@@ -9,18 +9,17 @@
 
 import { CollectionFieldInterface } from '../../data-source/collection-field-interface/CollectionFieldInterface';
 import { defaultProps, operators } from './properties';
-import { CustomRadio } from './components';
 export class UnixTimestampFieldInterface extends CollectionFieldInterface {
   name = 'unixTimestamp';
   type = 'object';
   group = 'datetime';
-  order = 1;
+  order = 4;
   title = '{{t("Unix Timestamp")}}';
   sortable = true;
   default = {
     type: 'unixTimestamp',
     accuracy: 'second',
-    timezone: 'server',
+    timezone: true,
     defaultToCurrentTime: false,
     onUpdateToCurrentTime: false,
     uiSchema: {
@@ -28,7 +27,6 @@ export class UnixTimestampFieldInterface extends CollectionFieldInterface {
       'x-component': 'UnixTimestamp',
       'x-component-props': {
         showTime: true,
-        timezone: 'server',
       },
     },
   };
@@ -36,29 +34,6 @@ export class UnixTimestampFieldInterface extends CollectionFieldInterface {
   hasDefaultValue = false;
   properties = {
     ...defaultProps,
-    'uiSchema.x-component-props.timezone': {
-      type: 'string',
-      title: '{{t("Timezone")}}',
-      'x-component': CustomRadio,
-      'x-decorator': 'FormItem',
-      default: 'server',
-      'x-component-props': {
-        options: [
-          {
-            label: '{{t("None")}}',
-            value: 'server',
-          },
-          {
-            label: '{{t("Client\'s time zone")}}',
-            value: 'client',
-          },
-          {
-            label: 'custom',
-            value: 'custom',
-          },
-        ],
-      },
-    },
     accuracy: {
       type: 'string',
       title: '{{t("Accuracy")}}',
