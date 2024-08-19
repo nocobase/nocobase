@@ -75,7 +75,10 @@ test.describe('configure fields', () => {
     await addField('Attachment');
 
     // 添加 date & time 字段
-    await addField('Datetime');
+    await addField('Datetime(with time zone)');
+    await addField('Datetime(without time zone)');
+    await addField('Date');
+    await addField('Unix Timestamp');
     await addField('Time');
 
     // 添加 relation 字段
