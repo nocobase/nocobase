@@ -1,6 +1,6 @@
 [English](./README.md) | [简体中文](./README.zh-CN.md) | 日本語
- 
-https://github.com/nocobase/nocobase/assets/1267426/29623e45-9a48-4598-bb9e-9dd173ade553
+
+https://github.com/user-attachments/assets/b11cbb68-76bc-4e8b-a2aa-2a1feed0ab77
 
 ## ご協力ありがとうございます！
 <a href="https://trendshift.io/repositories/4112" target="_blank"><img src="https://trendshift.io/api/badge/repositories/4112" alt="nocobase%2Fnocobase | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/></a>
