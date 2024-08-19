@@ -12,17 +12,18 @@ import { FormLayout } from '@formily/antd-v5';
 import { createForm } from '@formily/core';
 import { observer, RecursionField, useFieldSchema } from '@formily/react';
 import {
-  ActionContextProvider,
   DndContext,
   FormProvider,
+  PopupContextProvider,
   useCollection,
   useCollectionRecordData,
+  usePopupUtils,
   VariablePopupRecordProvider,
 } from '@nocobase/client';
+import { Schema } from '@nocobase/utils';
 import { Card } from 'antd';
-import React, { useCallback, useContext, useMemo, useState } from 'react';
+import React, { useCallback, useContext, useMemo } from 'react';
 import { KanbanCardContext } from './context';
-import { useKanbanTranslation } from './locale';
 
 const cardCss = css`
   .ant-card-body {
@@ -73,22 +74,27 @@ MemorizedRecursionField.displayName = 'MemorizedRecursionField';
 
 export const KanbanCard: any = observer(
   () => {
-    const { t } = useKanbanTranslation();
     const collection = useCollection();
     const { setDisableCardDrag } = useContext(KanbanCardContext) || {};
     const fieldSchema = useFieldSchema();
-    const [visible, setVisible] = useState(false);
+    const { openPopup, getPopupSchemaFromSchema } = usePopupUtils();
     const recordData = useCollectionRecordData();
-    const handleCardClick = useCallback((e: React.MouseEvent) => {
-      const targetElement = e.target as Element; // 将事件目标转换为Element类型
-      const currentTargetElement = e.currentTarget as Element;
-      if (currentTargetElement.contains(targetElement)) {
-        setVisible(true);
-        e.stopPropagation();
-      } else {
-        e.stopPropagation();
-      }
-    }, []);
+    const popupSchema = getPopupSchemaFromSchema(fieldSchema) || getPopupSchemaFromParent(fieldSchema);
+    const handleCardClick = useCallback(
+      (e: React.MouseEvent) => {
+        const targetElement = e.target as Element; // 将事件目标转换为Element类型
+        const currentTargetElement = e.currentTarget as Element;
+        if (currentTargetElement.contains(targetElement)) {
+          openPopup({
+            popupUidUsedInURL: popupSchema?.['x-uid'],
+          });
+          e.stopPropagation();
+        } else {
+          e.stopPropagation();
+        }
+      },
+      [openPopup, popupSchema],
+    );
     const cardStyle = useMemo(() => {
       return {
         cursor: 'pointer',
@@ -109,16 +115,15 @@ export const KanbanCard: any = observer(
       setDisableCardDrag?.(false);
     }, [setDisableCardDrag]);
 
-    const actionContextValue = useMemo(() => {
+    // if not wrapped, only Tab component's content will be rendered, Drawer component's content will not be rendered
+    const wrappedPopupSchema = useMemo(() => {
       return {
-        openMode: fieldSchema['x-component-props']?.['openMode'] || 'drawer',
-        openSize: fieldSchema['x-component-props']?.['openSize'],
-        visible,
-        setVisible,
+        type: 'void',
+        properties: {
+          drawer: popupSchema,
+        },
       };
-    }, [fieldSchema, visible]);
-
-    const popupSchema = fieldSchema.parent.properties.cardViewer;
+    }, [popupSchema]);
 
     return (
       <>
@@ -131,13 +136,36 @@ export const KanbanCard: any = observer(
             </FormLayout>
           </DndContext>
         </Card>
-        <ActionContextProvider value={actionContextValue}>
+        <PopupContextProvider>
           <VariablePopupRecordProvider recordData={recordData} collection={collection}>
-            <MemorizedRecursionField schema={popupSchema} />
+            <MemorizedRecursionField schema={wrappedPopupSchema} />
           </VariablePopupRecordProvider>
-        </ActionContextProvider>
+        </PopupContextProvider>
       </>
     );
   },
   { displayName: 'KanbanCard' },
 );
+
+function getPopupSchemaFromParent(fieldSchema: Schema) {
+  if (fieldSchema.parent?.properties?.cardViewer?.properties?.drawer) {
+    return fieldSchema.parent.properties.cardViewer.properties.drawer;
+  }
+
+  const cardSchema = findSchemaByUid(fieldSchema['x-uid'], fieldSchema.root);
+  return cardSchema.parent.properties.cardViewer.properties.drawer;
+}
+
+function findSchemaByUid(uid: string, rootSchema: Schema, resultRef: { value: Schema } = { value: null }) {
+  resultRef = resultRef || {
+    value: null,
+  };
+  rootSchema.mapProperties((schema) => {
+    if (schema['x-uid'] === uid) {
+      resultRef.value = schema;
+    } else {
+      findSchemaByUid(uid, schema, resultRef);
+    }
+  });
+  return resultRef.value;
+}

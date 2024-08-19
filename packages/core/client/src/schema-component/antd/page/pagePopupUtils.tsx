@@ -37,6 +37,8 @@ export interface PopupParams {
   tab?: string;
   /** collection name */
   collection?: string;
+  /** popup uid */
+  puid?: string;
 }
 
 export interface PopupContextStorage extends PopupContext {
@@ -103,9 +105,11 @@ export const getPopupParamsFromPath = _.memoize((path: string) => {
 });
 
 export const getPopupPathFromParams = (params: PopupParams) => {
-  const { popupuid: popupUid, tab, filterbytk, sourceid, collection } = params;
+  const { popupuid: popupUid, tab, filterbytk, sourceid, collection, puid } = params;
   const popupPath = [
     popupUid,
+    puid && 'puid',
+    puid,
     collection && 'collection',
     collection,
     filterbytk && 'filterbytk',
@@ -153,16 +157,23 @@ export const usePopupUtils = () => {
       recordData,
       sourceId,
       collection: _collection,
+      puid,
     }: {
+      /**
+       * this is the schema uid of the button that triggers the popup, while puid is the schema uid of the popup, they are different;
+       */
       popupUid: string;
       recordData: Record<string, any>;
       sourceId: string;
       tabKey?: string;
       collection?: string;
+      /** popup uid */
+      puid?: string;
     }) => {
       const filterByTK = cm.getFilterByTK(association || collection, recordData);
       return getPopupPathFromParams({
         popupuid: popupUid,
+        puid,
         collection: _collection,
         filterbytk: filterByTK,
         sourceid: sourceId,
@@ -187,11 +198,14 @@ export const usePopupUtils = () => {
       recordData,
       parentRecordData,
       collectionNameUsedInURL,
+      popupUidUsedInURL,
     }: {
       recordData?: Record<string, any>;
       parentRecordData?: Record<string, any>;
       /** if this value exists, it will be saved in the URL */
       collectionNameUsedInURL?: string;
+      /** if this value exists, it will be saved in the URL */
+      popupUidUsedInURL?: string;
     } = {}) => {
       if (!isPopupVisibleControlledByURL()) {
         return setVisibleFromAction?.(true);
@@ -205,6 +219,7 @@ export const usePopupUtils = () => {
         recordData,
         sourceId,
         collection: collectionNameUsedInURL,
+        puid: popupUidUsedInURL,
       });
       let url = location.pathname;
       if (_.last(url) === '/') {
@@ -283,6 +298,14 @@ export const usePopupUtils = () => {
     [getNewPathname, navigate, popupParams?.popupuid, record?.data, location],
   );
 
+  const savePopupSchemaToSchema = useCallback((popupSchema: ISchema, targetSchema: ISchema) => {
+    targetSchema['__popup'] = popupSchema;
+  }, []);
+
+  const getPopupSchemaFromSchema = useCallback((schema: ISchema) => {
+    return schema['__popup'];
+  }, []);
+
   return {
     /**
      * used to open popup by changing the url
@@ -292,6 +315,8 @@ export const usePopupUtils = () => {
      * used to close popup by changing the url
      */
     closePopup,
+    savePopupSchemaToSchema,
+    getPopupSchemaFromSchema,
     /**
      * @deprecated
      * TODO: remove this
