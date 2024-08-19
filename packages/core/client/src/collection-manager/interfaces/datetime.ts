@@ -16,7 +16,6 @@ export class DatetimeFieldInterface extends CollectionFieldInterface {
   group = 'datetime';
   order = 1;
   title = '{{t("Datetime(with time zone)")}}';
-  description = '{{t("One to one description")}}';
   sortable = true;
   default = {
     type: 'date',
