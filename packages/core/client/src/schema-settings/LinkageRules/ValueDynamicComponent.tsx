@@ -135,7 +135,7 @@ export const ValueDynamicComponent = (props: ValueDynamicComponentProps) => {
         // @ts-ignore
         role="button"
         data-testid="select-linkage-value-type"
-        value={mode}
+        value={fieldValue?.mode}
         style={{ width: 150 }}
         onChange={(value) => {
           setMode(value);
@@ -150,7 +150,7 @@ export const ValueDynamicComponent = (props: ValueDynamicComponentProps) => {
           </Option>
         ))}
       </Select>
-      {modeMap[mode]}
+      {modeMap[fieldValue?.mode]}
     </Input.Group>
   );
 };
