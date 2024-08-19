@@ -166,10 +166,10 @@ export const ConfigurationTable = () => {
   };
 
   const loadFilterTargetKeys = async (field) => {
-    const { name } = field.form.values;
-    const { fields } = getCollection(name);
+    const { name, fields: targetFields } = field.form.values;
+    const { fields } = getCollection(name) || {};
     return Promise.resolve({
-      data: fields,
+      data: fields || targetFields,
     }).then(({ data }) => {
       return data
         .filter((field) => {
