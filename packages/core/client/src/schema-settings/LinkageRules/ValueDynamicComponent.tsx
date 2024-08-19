@@ -122,7 +122,7 @@ export const ValueDynamicComponent = (props: ValueDynamicComponentProps) => {
         onChange={(value) => {
           setMode(value);
           setValue({
-            mode: value,
+            mode: fieldValue?.mode,
           });
         }}
       >
@@ -130,7 +130,7 @@ export const ValueDynamicComponent = (props: ValueDynamicComponentProps) => {
         <Option value="express">{t('Expression')}</Option>
         <Option value="empty">{t('Empty')}</Option>
       </Select>
-      {modeMap[mode]}
+      {modeMap[fieldValue?.mode]}
     </Input.Group>
   );
 };
