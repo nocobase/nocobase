@@ -75,7 +75,7 @@
     "@types/markdown-it": "14.1.1",
     "@types/markdown-it-highlightjs": "3.3.1",
     "@types/react-big-calendar": "^1.6.4",
-    "axios-mock-adapter": "^1.20.0",
+    "axios-mock-adapter": "^2.0.0",
     "dumi": "2.2.14",
     "dumi-theme-nocobase": "^0.2.28"
   },
