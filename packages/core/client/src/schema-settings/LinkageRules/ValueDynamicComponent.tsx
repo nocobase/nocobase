@@ -110,7 +110,6 @@ export const ValueDynamicComponent = (props: ValueDynamicComponentProps) => {
       </div>
     ),
   };
-
   return (
     <Input.Group compact>
       <Select
@@ -130,7 +129,7 @@ export const ValueDynamicComponent = (props: ValueDynamicComponentProps) => {
         <Option value="express">{t('Expression')}</Option>
         <Option value="empty">{t('Empty')}</Option>
       </Select>
-      {modeMap[fieldValue?.mode]}
+      {modeMap[fieldValue?.mode || mode]}
     </Input.Group>
   );
 };
