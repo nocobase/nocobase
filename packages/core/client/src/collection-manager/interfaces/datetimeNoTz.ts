@@ -16,7 +16,6 @@ export class DatetimeNoTzFieldInterface extends CollectionFieldInterface {
   group = 'datetime';
   order = 2;
   title = '{{t("Datetime(without time zone)")}}';
-  description = '{{t("One to one description")}}';
   sortable = true;
   default = {
     type: 'date',
