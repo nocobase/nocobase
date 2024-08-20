@@ -60,8 +60,8 @@ const getSchema = (schema: IField, record: any, compile, getContainer): ISchema 
         },
       },
       {
-        dependencies: ['primaryKey', 'unique', 'autoIncrement'],
-        when: '{{$deps[0]||$deps[1]||$deps[2]}}',
+        dependencies: ['primaryKey', 'unique', 'autoIncrement', 'defaultToCurrentTime'],
+        when: '{{$deps[0]||$deps[1]||$deps[2]||$deps[3]}}',
         fulfill: {
           state: {
             hidden: true,
