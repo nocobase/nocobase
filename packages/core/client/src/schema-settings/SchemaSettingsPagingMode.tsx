@@ -40,7 +40,13 @@ export function SchemaSettingsPagingMode() {
       value={field.decoratorProps.pagingMode || 'default'}
       onChange={(pagingMode) => {
         fieldSchema['x-decorator-props'].pagingMode = pagingMode;
-        service.run({ ...service.params?.[0], simplePaginate: pagingMode === 'simplePaginate' });
+        const params = { ...service.params?.[0] };
+        if (pagingMode === 'simplePaginate') {
+          params['simplePaginate'] = true;
+        } else {
+          delete params['simplePaginate'];
+        }
+        service.run({ params });
         field.decoratorProps.pagingMode = pagingMode;
         dn.emit('patch', {
           schema: {

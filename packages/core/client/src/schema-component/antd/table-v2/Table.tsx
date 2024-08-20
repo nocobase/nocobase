@@ -259,6 +259,7 @@ const TableIndex = (props) => {
 const usePaginationProps = (pagination1, pagination2) => {
   const { t } = useTranslation();
   const field: any = useField();
+  const { token } = useToken();
   const pagination = useMemo(
     () => ({ ...pagination1, ...pagination2 }),
     [JSON.stringify({ ...pagination1, ...pagination2 })],
@@ -280,7 +281,7 @@ const usePaginationProps = (pagination1, pagination2) => {
     } else {
       return {
         showTotal: false,
-        simple: { readOnly: true },
+        simple: true,
         showTitle: false,
         showSizeChanger: true,
         hideOnSinglePage: false,
@@ -291,6 +292,24 @@ const usePaginationProps = (pagination1, pagination2) => {
             display: none !important;
           }
         `,
+        itemRender: (_, type, originalElement) => {
+          if (type === 'prev') {
+            return (
+              <div
+                style={{ display: 'flex' }}
+                className={css`
+                  .ant-pagination-item-link {
+                    min-width: ${token.controlHeight}px;
+                  }
+                `}
+              >
+                {originalElement} <div style={{ marginLeft: '7px' }}>{current}</div>
+              </div>
+            );
+          } else {
+            return originalElement;
+          }
+        },
       };
     }
   }, [pagination, t, showTotal]);
