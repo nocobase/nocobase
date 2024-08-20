@@ -8,9 +8,9 @@
  */
 
 const postgres = {
-  'character varying': ['string', 'uuid', 'nanoid', 'encryption'],
-  varchar: ['string', 'uuid', 'nanoid', 'encryption'],
-  char: ['string', 'uuid', 'nanoid', 'encryption'],
+  'character varying': ['string', 'uuid', 'nanoid', 'encryption', 'datetimeNoTz'],
+  varchar: ['string', 'uuid', 'nanoid', 'encryption', 'datetimeNoTz'],
+  char: ['string', 'uuid', 'nanoid', 'encryption', 'datetimeNoTz'],
 
   character: 'string',
   text: 'text',
@@ -25,7 +25,7 @@ const postgres = {
   real: 'float',
   'double precision': 'float',
 
-  'timestamp without time zone': 'date',
+  'timestamp without time zone': ['date', 'datetimeNoTz'],
   'timestamp with time zone': 'date',
   'time without time zone': 'time',
 
@@ -55,7 +55,7 @@ const mysql = {
 
   char: ['string', 'uuid', 'nanoid', 'encryption'],
   varchar: ['string', 'uuid', 'nanoid', 'encryption'],
-  date: 'date',
+  date: ['date', 'datetimeNoTz'],
   time: 'time',
   tinytext: 'text',
   text: 'text',
