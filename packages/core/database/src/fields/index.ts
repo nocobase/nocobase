@@ -38,6 +38,7 @@ import { NanoidFieldOptions } from './nanoid-field';
 import { EncryptionField } from './encryption-field';
 import { UnixTimestampFieldOptions } from './unix-timestamp-field';
 import { DateOnlyFieldOptions } from './date-only-field';
+import { DatetimeNoTzField, DatetimeNoTzFieldOptions } from './datetime-no-tz-field';
 
 export * from './array-field';
 export * from './belongs-to-field';
@@ -45,6 +46,7 @@ export * from './belongs-to-many-field';
 export * from './boolean-field';
 export * from './context-field';
 export * from './date-field';
+export * from './datetime-no-tz-field';
 export * from './date-only-field';
 export * from './field';
 export * from './has-many-field';
@@ -85,6 +87,7 @@ export type FieldOptions =
   | SetFieldOptions
   | TimeFieldOptions
   | DateFieldOptions
+  | DatetimeNoTzFieldOptions
   | DateOnlyFieldOptions
   | UnixTimestampFieldOptions
   | UidFieldOptions

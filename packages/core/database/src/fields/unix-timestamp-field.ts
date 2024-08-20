@@ -56,5 +56,5 @@ export class UnixTimestampField extends DateField {
 }
 
 export interface UnixTimestampFieldOptions extends BaseColumnFieldOptions {
-  type: 'unix-timestamp';
+  type: 'unixTimestamp';
 }
