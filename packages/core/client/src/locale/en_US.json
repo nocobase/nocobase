@@ -833,5 +833,7 @@
   "Expand All": "Expand All",
   "Search": "Search",
   "Clear default value": "Clear default value",
-  "Open in new window": "Open in new window"
+  "Open in new window": "Open in new window",
+  "is none of": "is none of",
+  "is any of": "is any of"
 }

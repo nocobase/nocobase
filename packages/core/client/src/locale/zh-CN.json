@@ -964,5 +964,7 @@
   "Expand All": "展开全部",
   "Search": "搜索",
   "Clear default value": "清除默认值",
-  "Open in new window": "新窗口打开"
+  "Open in new window": "新窗口打开",
+  "is none of": "不包含任何一个",
+  "is any of": "包含任何一个"
 }
