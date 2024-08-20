@@ -30,33 +30,72 @@ export type * from './storages';
 const DEFAULT_STORAGE_TYPE = STORAGE_TYPE_LOCAL;
 
 export type FileRecordOptions = {
-  collection: string;
+  collectionName: string;
   filePath: string;
+  storageName?: string;
+  values?: any;
 } & Transactionable;
+
+export type UploadFileOptions = {
+  filePath: string;
+  storageName?: string;
+  documentRoot?: string;
+};
 
 export default class PluginFileManagerServer extends Plugin {
   storageTypes = new Registry<IStorage>();
   storagesCache = new Map<number, StorageModel>();
 
   async createFileRecord(options: FileRecordOptions) {
-    const { collection, filePath, transaction } = options;
+    const { values, storageName, collectionName, filePath, transaction } = options;
+    const collection = this.db.getCollection(collectionName);
+    if (!collection) {
+      throw new Error(`collection does not exist`);
+    }
+    const collectionRepository = this.db.getRepository(collectionName);
+    const name = storageName || collection.options.storage;
+    const data = await this.uploadFile({ storageName: name, filePath });
+    return await collectionRepository.create({ values: { ...data, ...values }, transaction });
+  }
+
+  async uploadFile(options: UploadFileOptions) {
+    const { storageName, filePath, documentRoot } = options;
     const storageRepository = this.db.getRepository('storages');
-    const collectionRepository = this.db.getRepository(collection);
-    const storage = await storageRepository.findOne();
+    let storageInstance;
+
+    if (storageName) {
+      storageInstance = await storageRepository.findOne({
+        filter: {
+          name: storageName,
+        },
+      });
+    }
+
+    if (!storageInstance) {
+      storageInstance = await storageRepository.findOne({
+        filter: {
+          default: true,
+        },
+      });
+    }
 
     const fileStream = fs.createReadStream(filePath);
 
-    if (!storage) {
+    if (!storageInstance) {
       throw new Error('[file-manager] no linked or default storage provided');
     }
 
-    const storageConfig = this.storageTypes.get(storage.type);
-
-    if (!storageConfig) {
-      throw new Error(`[file-manager] storage type "${storage.type}" is not defined`);
+    if (documentRoot) {
+      storageInstance.options['documentRoot'] = documentRoot;
     }
 
-    const engine = storageConfig.make(storage);
+    const storageConfig = this.storageTypes.get(storageInstance.type);
+
+    if (!storageConfig) {
+      throw new Error(`[file-manager] storage type "${storageInstance.type}" is not defined`);
+    }
+
+    const engine = storageConfig.make(storageInstance);
 
     const file = {
       originalname: basename(filePath),
@@ -74,8 +113,7 @@ export default class PluginFileManagerServer extends Plugin {
       });
     });
 
-    const values = getFileData({ app: this.app, file, storage, request: { body: {} } } as any);
-    return await collectionRepository.create({ values, transaction });
+    return getFileData({ app: this.app, file, storage: storageInstance, request: { body: {} } } as any);
   }
 
   async loadStorages(options?: { transaction: any }) {
