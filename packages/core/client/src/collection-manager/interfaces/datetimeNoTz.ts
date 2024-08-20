@@ -18,7 +18,7 @@ export class DatetimeNoTzFieldInterface extends CollectionFieldInterface {
   title = '{{t("Datetime(without time zone)")}}';
   sortable = true;
   default = {
-    type: 'date',
+    type: 'datetimeNoTz',
     defaultToCurrentTime: false,
     onUpdateToCurrentTime: false,
     timezone: false,
@@ -31,7 +31,7 @@ export class DatetimeNoTzFieldInterface extends CollectionFieldInterface {
       },
     },
   };
-  availableTypes = ['date', 'dateOnly', 'string'];
+  availableTypes = ['date', 'dateOnly', 'string', 'datetimeNoTz'];
   hasDefaultValue = true;
   properties = {
     ...defaultProps,
