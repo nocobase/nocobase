@@ -8,6 +8,7 @@
  */
 
 import { Input, Select } from 'antd';
+import { css } from '@emotion/css';
 import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useFormBlockContext } from '../../block-provider/FormBlockProvider';
@@ -45,7 +46,7 @@ export const ValueDynamicComponent = (props: ValueDynamicComponentProps) => {
     blockCollectionName: collectionName,
   });
   const constantStyle = useMemo(() => {
-    return { minWidth: 150, maxWidth: 430, marginLeft: 5 };
+    return { minWidth: 150, maxWidth: 430 };
   }, []);
   const handleChangeOfConstant = useCallback(
     (value) => {
@@ -71,7 +72,7 @@ export const ValueDynamicComponent = (props: ValueDynamicComponentProps) => {
     [collectionName, mode, setValue],
   );
   const textAreaStyle = useMemo(() => {
-    return { minWidth: 460 };
+    return { minWidth: 460, borderRadius: 0 };
   }, []);
   const compatScope = useMemo(() => {
     return compatOldVariables(scope, {
@@ -81,7 +82,16 @@ export const ValueDynamicComponent = (props: ValueDynamicComponentProps) => {
   const modeMap = {
     // 常量
     constant: (
-      <div role="button" aria-label="dynamic-component-linkage-rules" style={constantStyle}>
+      <div
+        role="button"
+        aria-label="dynamic-component-linkage-rules"
+        style={constantStyle}
+        className={css`
+          .ant-input-affix-wrapper {
+            border-radius: 0px;
+          }
+        `}
+      >
         {React.createElement(DynamicComponent, {
           value: fieldValue?.value,
           schema,
