@@ -51,10 +51,10 @@ describe('action', () => {
 
   describe('create / upload', () => {
     describe('default storage', () => {
-      it('createFileRecord', async () => {
+      it('should be create file record', async () => {
         const Plugin = app.pm.get(PluginFileManagerServer) as PluginFileManagerServer;
         const model = await Plugin.createFileRecord({
-          collection: 'attachments',
+          collectionName: 'attachments',
           filePath: path.resolve(__dirname, './files/text.txt'),
         });
         const matcher = {
@@ -62,6 +62,55 @@ describe('action', () => {
           extname: '.txt',
           path: '',
           // size: 13,
+          meta: {},
+          storageId: 1,
+        };
+        expect(model.toJSON()).toMatchObject(matcher);
+      });
+
+      it('should be local2 storage', async () => {
+        const storage = await StorageRepo.create({
+          values: {
+            name: 'local2',
+            type: STORAGE_TYPE_LOCAL,
+            baseUrl: DEFAULT_LOCAL_BASE_URL,
+            rules: {
+              size: 1024,
+            },
+            paranoid: true,
+          },
+        });
+        const Plugin = app.pm.get(PluginFileManagerServer) as PluginFileManagerServer;
+        const model = await Plugin.createFileRecord({
+          collectionName: 'attachments',
+          storageName: 'local2',
+          filePath: path.resolve(__dirname, './files/text.txt'),
+        });
+        const matcher = {
+          title: 'text',
+          extname: '.txt',
+          path: '',
+          // size: 13,
+          meta: {},
+          storageId: storage.id,
+        };
+        expect(model.toJSON()).toMatchObject(matcher);
+      });
+
+      it.only('should be custom values', async () => {
+        const Plugin = app.pm.get(PluginFileManagerServer) as PluginFileManagerServer;
+        const model = await Plugin.createFileRecord({
+          collectionName: 'attachments',
+          filePath: path.resolve(__dirname, './files/text.txt'),
+          values: {
+            size: 22,
+          },
+        });
+        const matcher = {
+          title: 'text',
+          extname: '.txt',
+          path: '',
+          size: 22,
           meta: {},
           storageId: 1,
         };
