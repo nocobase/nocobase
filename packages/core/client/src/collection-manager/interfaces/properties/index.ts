@@ -255,6 +255,7 @@ export const dateTimeProps: { [key: string]: ISchema } = {
       `{{(field) => {
          field.query('..[].timeFormat').take(f => {
            f.display = field.value ? 'visible' : 'none';
+           f.value='HH:mm:ss'
          });
        }}}`,
     ],
