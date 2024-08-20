@@ -36,6 +36,12 @@ export type FileRecordOptions = {
   values?: any;
 } & Transactionable;
 
+export type UploadFileOptions = {
+  filePath: string;
+  storageName?: string;
+  documentRoot?: string;
+};
+
 export default class PluginFileManagerServer extends Plugin {
   storageTypes = new Registry<IStorage>();
   storagesCache = new Map<number, StorageModel>();
@@ -46,15 +52,21 @@ export default class PluginFileManagerServer extends Plugin {
     if (!collection) {
       throw new Error(`collection does not exist`);
     }
-    const storageRepository = this.db.getRepository('storages');
     const collectionRepository = this.db.getRepository(collectionName);
     const name = storageName || collection.options.storage;
+    const data = await this.uploadFile({ storageName: name, filePath });
+    return await collectionRepository.create({ values: { ...data, ...values }, transaction });
+  }
 
+  async uploadFile(options: UploadFileOptions) {
+    const { storageName, filePath, documentRoot } = options;
+    const storageRepository = this.db.getRepository('storages');
     let storageInstance;
-    if (name) {
+
+    if (storageName) {
       storageInstance = await storageRepository.findOne({
         filter: {
-          name,
+          name: storageName,
         },
       });
     }
@@ -71,6 +83,10 @@ export default class PluginFileManagerServer extends Plugin {
 
     if (!storageInstance) {
       throw new Error('[file-manager] no linked or default storage provided');
+    }
+
+    if (documentRoot) {
+      storageInstance.options['documentRoot'] = documentRoot;
     }
 
     const storageConfig = this.storageTypes.get(storageInstance.type);
@@ -97,8 +113,7 @@ export default class PluginFileManagerServer extends Plugin {
       });
     });
 
-    const data = getFileData({ app: this.app, file, storage: storageInstance, request: { body: {} } } as any);
-    return await collectionRepository.create({ values: { ...data, ...values }, transaction });
+    return getFileData({ app: this.app, file, storage: storageInstance, request: { body: {} } } as any);
   }
 
   async loadStorages(options?: { transaction: any }) {

@@ -97,7 +97,7 @@ describe('action', () => {
         expect(model.toJSON()).toMatchObject(matcher);
       });
 
-      it.only('should be custom values', async () => {
+      it('should be custom values', async () => {
         const Plugin = app.pm.get(PluginFileManagerServer) as PluginFileManagerServer;
         const model = await Plugin.createFileRecord({
           collectionName: 'attachments',
@@ -115,6 +115,22 @@ describe('action', () => {
           storageId: 1,
         };
         expect(model.toJSON()).toMatchObject(matcher);
+      });
+
+      it('should be upload file', async () => {
+        const Plugin = app.pm.get(PluginFileManagerServer) as PluginFileManagerServer;
+        const data = await Plugin.uploadFile({
+          filePath: path.resolve(__dirname, './files/text.txt'),
+          documentRoot: 'storage/backups/test',
+        });
+        const matcher = {
+          title: 'text',
+          extname: '.txt',
+          path: '',
+          meta: {},
+          storageId: 1,
+        };
+        expect(data).toMatchObject(matcher);
       });
 
       it('upload file should be ok', async () => {
