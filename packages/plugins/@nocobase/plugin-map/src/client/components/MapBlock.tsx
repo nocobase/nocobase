@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { PopupContextProvider } from '@nocobase/client';
 import React, { useMemo } from 'react';
 import { useMapTranslation } from '../locale';
 import { AMapBlock } from './AMap';
@@ -29,5 +30,9 @@ export const MapBlockComponent: React.FC<any> = (props) => {
     return <div>{t(`The ${mapType} cannot found`)}</div>;
   }
 
-  return <Component {...props} />;
+  return (
+    <PopupContextProvider>
+      <Component {...props} />
+    </PopupContextProvider>
+  );
 };

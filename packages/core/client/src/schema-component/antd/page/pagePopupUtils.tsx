@@ -143,6 +143,7 @@ export const usePopupUtils = () => {
   const { isPopupVisibleControlledByURL } = usePopupSettings();
   const { setVisible: setVisibleFromAction } = useContext(ActionContext);
   const { updatePopupContext } = usePopupContextInActionOrAssociationField();
+  const currentPopupContext = useCurrentPopupContext();
   const getSourceId = useCallback(
     (_parentRecordData?: Record<string, any>) =>
       (_parentRecordData || parentRecord?.data)?.[cm.getSourceKeyByAssociation(association)],
@@ -317,6 +318,7 @@ export const usePopupUtils = () => {
     closePopup,
     savePopupSchemaToSchema,
     getPopupSchemaFromSchema,
+    context: currentPopupContext,
     /**
      * @deprecated
      * TODO: remove this
