@@ -276,18 +276,6 @@ export const dateTimeProps: { [key: string]: ISchema } = {
       },
     ],
   },
-  defaultToCurrentTime: {
-    type: 'boolean',
-    'x-decorator': 'FormItem',
-    'x-component': 'Checkbox',
-    'x-content': '{{t("Default value to current time")}}',
-  },
-  onUpdateToCurrentTime: {
-    type: 'boolean',
-    'x-decorator': 'FormItem',
-    'x-component': 'Checkbox',
-    'x-content': '{{t("Automatically update timestamp on update")}}',
-  },
 };
 
 export const dataSource: ISchema = {

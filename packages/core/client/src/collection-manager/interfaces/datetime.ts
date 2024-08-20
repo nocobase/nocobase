@@ -36,6 +36,18 @@ export class DatetimeFieldInterface extends CollectionFieldInterface {
   properties = {
     ...defaultProps,
     ...dateTimeProps,
+    defaultToCurrentTime: {
+      type: 'boolean',
+      'x-decorator': 'FormItem',
+      'x-component': 'Checkbox',
+      'x-content': '{{t("Default value to current time")}}',
+    },
+    onUpdateToCurrentTime: {
+      type: 'boolean',
+      'x-decorator': 'FormItem',
+      'x-component': 'Checkbox',
+      'x-content': '{{t("Automatically update timestamp on update")}}',
+    },
     'uiSchema.x-component-props.gmt': {
       type: 'boolean',
       title: '{{t("GMT")}}',
