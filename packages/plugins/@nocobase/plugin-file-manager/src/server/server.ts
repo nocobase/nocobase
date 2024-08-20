@@ -30,8 +30,10 @@ export type * from './storages';
 const DEFAULT_STORAGE_TYPE = STORAGE_TYPE_LOCAL;
 
 export type FileRecordOptions = {
-  collection: string;
+  collectionName: string;
   filePath: string;
+  storageName?: string;
+  values?: any;
 } & Transactionable;
 
 export default class PluginFileManagerServer extends Plugin {
@@ -39,24 +41,45 @@ export default class PluginFileManagerServer extends Plugin {
   storagesCache = new Map<number, StorageModel>();
 
   async createFileRecord(options: FileRecordOptions) {
-    const { collection, filePath, transaction } = options;
+    const { values, storageName, collectionName, filePath, transaction } = options;
+    const collection = this.db.getCollection(collectionName);
+    if (!collection) {
+      throw new Error(`collection does not exist`);
+    }
     const storageRepository = this.db.getRepository('storages');
-    const collectionRepository = this.db.getRepository(collection);
-    const storage = await storageRepository.findOne();
+    const collectionRepository = this.db.getRepository(collectionName);
+    const name = storageName || collection.options.storage;
+
+    let storageInstance;
+    if (name) {
+      storageInstance = await storageRepository.findOne({
+        filter: {
+          name,
+        },
+      });
+    }
+
+    if (!storageInstance) {
+      storageInstance = await storageRepository.findOne({
+        filter: {
+          default: true,
+        },
+      });
+    }
 
     const fileStream = fs.createReadStream(filePath);
 
-    if (!storage) {
+    if (!storageInstance) {
       throw new Error('[file-manager] no linked or default storage provided');
     }
 
-    const storageConfig = this.storageTypes.get(storage.type);
+    const storageConfig = this.storageTypes.get(storageInstance.type);
 
     if (!storageConfig) {
-      throw new Error(`[file-manager] storage type "${storage.type}" is not defined`);
+      throw new Error(`[file-manager] storage type "${storageInstance.type}" is not defined`);
     }
 
-    const engine = storageConfig.make(storage);
+    const engine = storageConfig.make(storageInstance);
 
     const file = {
       originalname: basename(filePath),
@@ -74,8 +97,8 @@ export default class PluginFileManagerServer extends Plugin {
       });
     });
 
-    const values = getFileData({ app: this.app, file, storage, request: { body: {} } } as any);
-    return await collectionRepository.create({ values, transaction });
+    const data = getFileData({ app: this.app, file, storage: storageInstance, request: { body: {} } } as any);
+    return await collectionRepository.create({ values: { ...data, ...values }, transaction });
   }
 
   async loadStorages(options?: { transaction: any }) {
