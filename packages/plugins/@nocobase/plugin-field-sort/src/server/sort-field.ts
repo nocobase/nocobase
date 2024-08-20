@@ -9,9 +9,12 @@
 
 import { isNumber } from 'lodash';
 import { DataTypes } from 'sequelize';
-import { BaseColumnFieldOptions, Field } from './field';
+import { BaseColumnFieldOptions, Field } from '@nocobase/database';
+import { LockManager } from '@nocobase/lock-manager';
 
 export class SortField extends Field {
+  static lockManager: LockManager;
+
   get dataType() {
     return DataTypes.BIGINT;
   }
@@ -33,7 +36,7 @@ export class SortField extends Field {
       }
     }
 
-    await this.database.lockManager.runExclusive(
+    await (<typeof SortField>this.constructor).lockManager.runExclusive(
       this.context.collection.name,
       async () => {
         const max = await model.max<number, any>(name, { ...options, where });

@@ -1240,7 +1240,6 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
         context: { app: this },
       },
       logger: this._logger.child({ module: 'database' }),
-      lockManager: this.lockManager,
     });
     return db;
   }

@@ -7,9 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Database } from '../../database';
-import { mockDatabase } from '../';
-import { SortField } from '../../fields';
+import { Database, mockDatabase } from '@nocobase/database';
+import { SortField } from '../sort-field';
 
 describe('string field', () => {
   let db: Database;

@@ -101,10 +101,6 @@ export function mockDatabase(options: IDatabaseOptions = {}): MockDatabase {
     }
   }
 
-  if (!options.lockManager) {
-    dbOptions.lockManager = new LockManager();
-  }
-
   const db = new MockDatabase(dbOptions);
 
   return db;

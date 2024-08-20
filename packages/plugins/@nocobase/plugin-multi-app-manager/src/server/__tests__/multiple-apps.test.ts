@@ -22,7 +22,7 @@ describe('multiple apps', () => {
 
   beforeEach(async () => {
     app = await createMockServer({
-      plugins: ['nocobase', 'multi-app-manager'],
+      plugins: ['nocobase', 'field-sort', 'multi-app-manager'],
     });
     db = app.db;
   });
