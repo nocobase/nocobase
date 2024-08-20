@@ -9,6 +9,7 @@
 
 import { BaseColumnFieldOptions, Field } from './field';
 import { DataTypes } from 'sequelize';
+import moment from 'moment';
 
 export class DatetimeNoTzField extends Field {
   get dataType() {
@@ -19,6 +20,24 @@ export class DatetimeNoTzField extends Field {
     return DataTypes.DATE(3);
   }
 
+  init() {
+    const { name, defaultToCurrentTime, onUpdateToCurrentTime, timezone } = this.options;
+
+    this.beforeSave = async (instance, options) => {
+      const value = instance.get(name);
+
+      if (!value && instance.isNewRecord && defaultToCurrentTime) {
+        instance.set(name, new Date());
+        return;
+      }
+
+      if (onUpdateToCurrentTime) {
+        instance.set(name, new Date());
+        return;
+      }
+    };
+  }
+
   additionalSequelizeOptions(): {} {
     const { name } = this.options;
     return {
@@ -27,9 +46,25 @@ export class DatetimeNoTzField extends Field {
       },
 
       set(val) {
+        if (val && val instanceof Date) {
+          // format to YYYY-MM-DD HH:mm:ss
+          const momentVal = moment(val);
+          val = momentVal.format('YYYY-MM-DD HH:mm:ss');
+        }
+
         return this.setDataValue(name, val);
       },
     };
+  }
+
+  bind() {
+    super.bind();
+    this.on('beforeSave', this.beforeSave);
+  }
+
+  unbind() {
+    super.unbind();
+    this.off('beforeSave', this.beforeSave);
   }
 }
 

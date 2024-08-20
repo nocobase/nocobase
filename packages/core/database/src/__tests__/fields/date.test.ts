@@ -109,7 +109,7 @@ describe('date-field', () => {
 
     const instance = await c1.repository.create({});
     const date1 = instance.get('date1');
-    expect(date1).toBeDefined();
+    expect(date1).toBeTruthy();
   });
 
   it('should set to current time when update', async () => {
