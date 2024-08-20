@@ -7,14 +7,17 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { resolve } from 'path';
-
 import { Plugin } from '@nocobase/server';
 import { Registry } from '@nocobase/utils';
 
+import { basename, resolve } from 'path';
+
+import { Transactionable } from '@nocobase/database';
+import fs from 'fs';
 import { STORAGE_TYPE_ALI_OSS, STORAGE_TYPE_LOCAL, STORAGE_TYPE_S3, STORAGE_TYPE_TX_COS } from '../constants';
 import { FileModel } from './FileModel';
 import initActions from './actions';
+import { getFileData } from './actions/attachments';
 import { AttachmentInterface } from './interfaces/attachment-interface';
 import { IStorage, StorageModel } from './storages';
 import StorageTypeAliOss from './storages/ali-oss';
@@ -26,9 +29,77 @@ export type * from './storages';
 
 const DEFAULT_STORAGE_TYPE = STORAGE_TYPE_LOCAL;
 
+export type FileRecordOptions = {
+  collectionName: string;
+  filePath: string;
+  storageName?: string;
+  values?: any;
+} & Transactionable;
+
 export default class PluginFileManagerServer extends Plugin {
   storageTypes = new Registry<IStorage>();
   storagesCache = new Map<number, StorageModel>();
+
+  async createFileRecord(options: FileRecordOptions) {
+    const { values, storageName, collectionName, filePath, transaction } = options;
+    const collection = this.db.getCollection(collectionName);
+    if (!collection) {
+      throw new Error(`collection does not exist`);
+    }
+    const storageRepository = this.db.getRepository('storages');
+    const collectionRepository = this.db.getRepository(collectionName);
+    const name = storageName || collection.options.storage;
+
+    let storageInstance;
+    if (name) {
+      storageInstance = await storageRepository.findOne({
+        filter: {
+          name,
+        },
+      });
+    }
+
+    if (!storageInstance) {
+      storageInstance = await storageRepository.findOne({
+        filter: {
+          default: true,
+        },
+      });
+    }
+
+    const fileStream = fs.createReadStream(filePath);
+
+    if (!storageInstance) {
+      throw new Error('[file-manager] no linked or default storage provided');
+    }
+
+    const storageConfig = this.storageTypes.get(storageInstance.type);
+
+    if (!storageConfig) {
+      throw new Error(`[file-manager] storage type "${storageInstance.type}" is not defined`);
+    }
+
+    const engine = storageConfig.make(storageInstance);
+
+    const file = {
+      originalname: basename(filePath),
+      path: filePath,
+      stream: fileStream,
+    } as any;
+
+    await new Promise((resolve, reject) => {
+      engine._handleFile({} as any, file, (error, info) => {
+        if (error) {
+          reject(error);
+        }
+        Object.assign(file, info);
+        resolve(info);
+      });
+    });
+
+    const data = getFileData({ app: this.app, file, storage: storageInstance, request: { body: {} } } as any);
+    return await collectionRepository.create({ values: { ...data, ...values }, transaction });
+  }
 
   async loadStorages(options?: { transaction: any }) {
     const repository = this.db.getRepository('storages');

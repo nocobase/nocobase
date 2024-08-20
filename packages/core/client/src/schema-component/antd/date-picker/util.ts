@@ -78,20 +78,17 @@ export const mapDatePicker = function () {
   return (props: any) => {
     const format = getDefaultFormat(props) as any;
     const onChange = props.onChange;
+
     return {
       ...props,
       format: format,
       value: str2moment(props.value, props),
-      onChange: (value: Dayjs | null, dateString) => {
+      onChange: (value: Dayjs | null) => {
         if (onChange) {
           if (!props.showTime && value) {
             value = value.startOf('day');
           }
-          if (props.dateOnly) {
-            onChange(dateString);
-          } else {
-            onChange(moment2str(value, props));
-          }
+          onChange(moment2str(value, props));
         }
       },
     };

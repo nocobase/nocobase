@@ -7,14 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { FC, useState } from 'react';
-import { QRCode, Popover, Button } from 'antd';
 import { QrcodeOutlined } from '@ant-design/icons';
+import { Button, Popover, QRCode } from 'antd';
+import React, { FC, useState } from 'react';
 
+import { CustomIconComponentProps } from '@ant-design/icons/lib/components/Icon';
+import { css, DesignableSwitch, Icon, useApp } from '@nocobase/client';
 import { usePluginTranslation } from '../locale';
 import { useSize } from './sizeContext';
-import { css, DesignableSwitch, Icon } from '@nocobase/client';
-import { CustomIconComponentProps } from '@ant-design/icons/lib/components/Icon';
 
 const PadSvg = () => (
   <svg
@@ -58,6 +58,7 @@ const MobileIcon = (props: Partial<CustomIconComponentProps>) => <Icon type={''}
 
 export const DesktopModeHeader: FC = () => {
   const { t } = usePluginTranslation();
+  const app = useApp();
   const { setSize } = useSize();
   const [open, setOpen] = useState(false);
   const handleQrcodeOpen = (newOpen: boolean) => {
@@ -93,7 +94,7 @@ export const DesktopModeHeader: FC = () => {
         }
       `}
     >
-      <Button style={{ color: 'white' }} href="/admin">
+      <Button style={{ color: 'white' }} href={app.getRouteUrl('/admin')}>
         {t('Back')}
       </Button>
       <div style={{ display: 'flex', alignItems: 'center' }}>

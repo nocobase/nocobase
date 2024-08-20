@@ -224,12 +224,18 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   public requestLogger: Logger;
   protected plugins = new Map<string, Plugin>();
   protected _appSupervisor: AppSupervisor = AppSupervisor.getInstance();
+  protected _started: Date | null = null;
   private _authenticated = false;
   private _maintaining = false;
   private _maintainingCommandStatus: MaintainingCommandStatus;
   private _maintainingStatusBeforeCommand: MaintainingCommandStatus | null;
   private _actionCommand: Command;
+
+  /**
+   * @internal
+   */
   private sqlLogger: Logger;
+  protected _logger: SystemLogger;
 
   constructor(public options: ApplicationOptions) {
     super();
@@ -242,16 +248,12 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     }
   }
 
-  protected _started: Date | null = null;
-
   /**
    * @experimental
    */
   get started() {
     return this._started;
   }
-
-  protected _logger: SystemLogger;
 
   get logger() {
     return this._logger;
