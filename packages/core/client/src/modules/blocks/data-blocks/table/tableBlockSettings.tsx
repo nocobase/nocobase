@@ -24,6 +24,7 @@ import { setDataLoadingModeSettingsItem } from '../details-multi/setDataLoadingM
 import { setDefaultSortingRulesSchemaSettingsItem } from '../../../../schema-settings/setDefaultSortingRulesSchemaSettingsItem';
 import { setTheDataScopeSchemaSettingsItem } from '../../../../schema-settings/setTheDataScopeSchemaSettingsItem';
 import { createSwitchSettingsItem } from '../../../../application/schema-settings/utils';
+import { SchemaSettingsPagingMode } from '../../../../schema-settings/SchemaSettingsPagingMode';
 
 export const tableBlockSettings = new SchemaSettings({
   name: 'blockSettings:table',
@@ -184,6 +185,10 @@ export const tableBlockSettings = new SchemaSettings({
           },
         };
       },
+    },
+    {
+      name: 'pagingMode',
+      Component: SchemaSettingsPagingMode,
     },
     {
       name: 'ConnectDataBlocks',

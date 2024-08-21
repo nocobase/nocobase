@@ -258,21 +258,61 @@ const TableIndex = (props) => {
 
 const usePaginationProps = (pagination1, pagination2) => {
   const { t } = useTranslation();
+  const field: any = useField();
+  const { token } = useToken();
   const pagination = useMemo(
     () => ({ ...pagination1, ...pagination2 }),
     [JSON.stringify({ ...pagination1, ...pagination2 })],
   );
-
-  const showTotal = useCallback((total) => t('Total {{count}} items', { count: total }), [t]);
-
-  const result = useMemo(
-    () => ({
-      showTotal,
-      showSizeChanger: true,
-      ...pagination,
-    }),
-    [pagination, t, showTotal],
+  const { total: totalCount, current, pageSize } = pagination || {};
+  const showTotal = useCallback(
+    (total) => {
+      return t('Total {{count}} items', { count: total });
+    },
+    [t, totalCount],
   );
+  const result = useMemo(() => {
+    if (totalCount) {
+      return {
+        showTotal,
+        showSizeChanger: true,
+        ...pagination,
+      };
+    } else {
+      return {
+        showTotal: false,
+        simple: true,
+        showTitle: false,
+        showSizeChanger: true,
+        hideOnSinglePage: false,
+        ...pagination,
+        total: field.value?.length < pageSize ? pageSize * current : pageSize * current + 1,
+        className: css`
+          .ant-pagination-simple-pager {
+            display: none !important;
+          }
+        `,
+        itemRender: (_, type, originalElement) => {
+          if (type === 'prev') {
+            return (
+              <div
+                style={{ display: 'flex' }}
+                className={css`
+                  .ant-pagination-item-link {
+                    min-width: ${token.controlHeight}px;
+                  }
+                `}
+              >
+                {originalElement} <div style={{ marginLeft: '7px' }}>{current}</div>
+              </div>
+            );
+          } else {
+            return originalElement;
+          }
+        },
+      };
+    }
+  }, [pagination, t, showTotal]);
 
   if (pagination2 === false) {
     return false;
