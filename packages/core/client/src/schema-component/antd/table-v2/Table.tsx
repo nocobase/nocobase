@@ -611,6 +611,7 @@ export const Table: any = withDynamicSchemaProps(
               onChange(selectedRowKeys: any[], selectedRows: any[]) {
                 field.data = field.data || {};
                 field.data.selectedRowKeys = selectedRowKeys;
+                field.data.selectedRowData = selectedRows;
                 setSelectedRowKeys(selectedRowKeys);
                 onRowSelectionChange?.(selectedRowKeys, selectedRows);
               },
