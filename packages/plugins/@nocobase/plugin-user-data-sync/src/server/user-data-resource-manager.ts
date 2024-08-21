@@ -80,7 +80,7 @@ export abstract class UserDataResource {
   }
 
   abstract update(record: OriginRecord, resourcePks: PrimaryKey[]): Promise<RecordResourceChanged[]>;
-  abstract create(record: OriginRecord, matchKey: string): Promise<RecordResourceChanged[]>;
+  abstract create(record: OriginRecord, matchKey: string, associateResource: string): Promise<RecordResourceChanged[]>;
 
   get syncRecordRepo() {
     return this.db.getRepository('userDataSyncRecords');
@@ -217,7 +217,7 @@ export class UserDataResourceManager {
           }
         } else {
           try {
-            recordResourceChangeds = await resource.create(originRecord, matchKey);
+            recordResourceChangeds = await resource.create(originRecord, matchKey, associateResource);
           } catch (error) {
             this.logger?.warn(`create record error: ${error}, record: ${originRecord}`);
             continue;

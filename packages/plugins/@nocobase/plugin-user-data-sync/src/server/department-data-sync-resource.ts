@@ -22,7 +22,7 @@ export class DepartmentDataSyncResource extends UserDataResource {
   accepts: SyncAccept[] = [
     {
       dataType: 'user',
-      associateResource: 'department',
+      associateResource: 'departments',
     },
     'department',
   ];
@@ -46,7 +46,7 @@ export class DepartmentDataSyncResource extends UserDataResource {
       const user = await this.userRepo.findOne({
         filterByTk: resources[0].resourcePk,
       });
-      await this.updateUserDepartments(user, resourcePks, sourceUser.departments);
+      await this.updateUserDepartments(user, resourcePks, sourceUser.departments, sourceName);
     } else if (dataType === 'department') {
       const sourceDepartment = metaData;
       const department = await this.deptRepo.findOne({
@@ -59,10 +59,19 @@ export class DepartmentDataSyncResource extends UserDataResource {
     return [];
   }
 
-  async create(record: OriginRecord, matchKey: string): Promise<RecordResourceChanged[]> {
+  async create(record: OriginRecord, matchKey: string, associateResource: string): Promise<RecordResourceChanged[]> {
     const { dataType, metaData, sourceName } = record;
-    if (dataType === 'user') {
-      return [];
+    this.logger.info(`create department: ${dataType} associate resource: ${associateResource}`);
+    if (dataType === 'user' && associateResource === 'departments') {
+      const sourceUser = metaData;
+      const resources = record.resources.filter((r) => r.resource === 'users');
+      if (!resources.length) {
+        return [];
+      }
+      const user = await this.userRepo.findOne({
+        filterByTk: resources[0].resourcePk,
+      });
+      return await this.updateUserDepartments(user, [], sourceUser.departments, sourceName);
     } else if (dataType === 'department') {
       const sourceDepartment = metaData;
       const newDepartmentId = await this.createDepartment(sourceDepartment, sourceName);
@@ -73,10 +82,27 @@ export class DepartmentDataSyncResource extends UserDataResource {
     return [];
   }
 
+  async getDepartmentIdsBySourceUks(sourceUks: PrimaryKey[], sourceName: string) {
+    const syncDepartmentRecords = await this.syncRecordRepo.find({
+      filter: {
+        sourceName,
+        dataType: 'department',
+        sourceUk: { $in: sourceUks },
+        'resources.resource': this.name,
+      },
+      appends: ['resources'],
+    });
+    const departmentIds = syncDepartmentRecords
+      .filter((record) => record.resources?.length)
+      .map((record) => record.resources[0].resourcePk);
+    return departmentIds;
+  }
+
   async updateUserDepartments(
     user: any,
     currentDepartmentIds: PrimaryKey[],
     sourceDepartmentIds: PrimaryKey[],
+    sourceName: string,
   ): Promise<RecordResourceChanged[]> {
     if (!this.deptRepo) {
       return;
@@ -93,7 +119,8 @@ export class DepartmentDataSyncResource extends UserDataResource {
         });
       }
     } else {
-      const departments = await this.deptRepo.find({ filter: { id: { $in: sourceDepartmentIds } } });
+      const newDepartmentIds = await this.getDepartmentIdsBySourceUks(sourceDepartmentIds, sourceName);
+      const departments = await this.deptRepo.find({ filter: { id: { $in: newDepartmentIds } } });
       const userDepartments = await this.deptRepo.find({ filter: { id: { $in: currentDepartmentIds } } });
       // 需要删除的部门
       const toRemoveDepartments = userDepartments.filter((department) => {

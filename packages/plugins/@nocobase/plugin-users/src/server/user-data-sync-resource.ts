@@ -70,7 +70,7 @@ export class UserDataSyncResource extends UserDataResource {
     return [];
   }
 
-  async create(record: OriginRecord, matchKey: string): Promise<RecordResourceChanged[]> {
+  async create(record: OriginRecord, matchKey: string, associateResource: string): Promise<RecordResourceChanged[]> {
     const { metaData: sourceUser } = record;
     const filter = {};
     let user: any;
