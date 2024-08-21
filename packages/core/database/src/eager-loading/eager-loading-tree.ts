@@ -12,7 +12,7 @@ import { Association, HasOne, HasOneOptions, Includeable, Model, ModelStatic, Op
 import Database from '../database';
 import { appendChildCollectionNameAfterRepositoryFind } from '../listeners/append-child-collection-name-after-repository-find';
 import { OptionsParser } from '../options-parser';
-import { AdjacencyListRepository } from '../repositories/tree-repository/adjacency-list-repository';
+import { Collection } from '../collection';
 
 interface EagerLoadingNode {
   model: ModelStatic<any>;
@@ -53,6 +53,33 @@ const EagerLoadingNodeProto = {
       this.inspectInheritAttribute = true;
     }
   },
+};
+
+const queryParentSQL = (options: {
+  db: Database;
+  nodeIds: any[];
+  collection: Collection;
+  foreignKey: string;
+  targetKey: string;
+}) => {
+  const { collection, db, nodeIds } = options;
+  const tableName = collection.quotedTableName();
+  const { foreignKey, targetKey } = options;
+  const foreignKeyField = collection.model.rawAttributes[foreignKey].field;
+  const targetKeyField = collection.model.rawAttributes[targetKey].field;
+
+  const queryInterface = db.sequelize.getQueryInterface();
+  const q = queryInterface.quoteIdentifier.bind(queryInterface);
+  return `WITH RECURSIVE cte AS (
+      SELECT ${q(targetKeyField)}, ${q(foreignKeyField)}
+      FROM ${tableName}
+      WHERE ${q(targetKeyField)} IN (${nodeIds.join(',')})
+      UNION ALL
+      SELECT t.${q(targetKeyField)}, t.${q(foreignKeyField)}
+      FROM ${tableName} AS t
+      INNER JOIN cte ON t.${q(targetKeyField)} = cte.${q(foreignKeyField)}
+      )
+      SELECT ${q(targetKeyField)} AS ${q(targetKey)}, ${q(foreignKeyField)} AS ${q(foreignKey)} FROM cte`;
 };
 
 export class EagerLoadingTree {
@@ -356,7 +383,7 @@ export class EagerLoadingTree {
           // load parent instances recursively
           if (node.includeOption.recursively && instances.length > 0) {
             const targetKey = association.targetKey;
-            const sql = AdjacencyListRepository.queryParentSQL({
+            const sql = queryParentSQL({
               db: this.db,
               collection,
               foreignKey,
