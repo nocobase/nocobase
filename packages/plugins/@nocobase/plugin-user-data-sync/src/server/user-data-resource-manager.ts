@@ -9,7 +9,7 @@
 
 import { Toposort, ToposortOptions } from '@nocobase/utils';
 import Database, { Repository } from '@nocobase/database';
-import { Logger } from '@nocobase/logger';
+import { SystemLogger } from '@nocobase/logger';
 
 export type FormatUser = {
   uid: string;
@@ -66,9 +66,9 @@ export abstract class UserDataResource {
   name: string;
   accepts: SyncAccept[];
   db: Database;
-  logger: Logger;
+  logger: SystemLogger;
 
-  constructor(db: Database, logger: Logger) {
+  constructor(db: Database, logger: SystemLogger) {
     this.db = db;
     this.logger = logger;
   }
@@ -104,7 +104,7 @@ export class UserDataResourceManager {
   resources = new Toposort<UserDataResource>();
   syncRecordRepo: Repository;
   syncRecordResourceRepo: Repository;
-  logger: Logger;
+  logger: SystemLogger;
 
   registerResource(resource: UserDataResource, options?: ToposortOptions) {
     if (!resource.name) {

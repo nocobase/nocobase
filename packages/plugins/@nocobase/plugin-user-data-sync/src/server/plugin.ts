@@ -40,7 +40,7 @@ export class PluginUserDataSyncServer extends Plugin {
   async load() {
     const logger = this.getLogger();
     this.resourceManager.db = this.app.db;
-    this.resourceManager.logger = logger;
+    this.resourceManager.logger = this.app.logger;
     this.syncService = new UserDataSyncService(this.resourceManager, this.sourceManager, logger);
     this.app.resourceManager.define({
       name: 'userData',
