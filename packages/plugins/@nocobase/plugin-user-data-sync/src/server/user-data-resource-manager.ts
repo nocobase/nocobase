@@ -110,6 +110,7 @@ export class UserDataResourceManager {
   resources = new Toposort<UserDataResource>();
   syncRecordRepo: Repository;
   syncRecordResourceRepo: Repository;
+  logger: SystemLogger;
 
   registerResource(resource: UserDataResource, options?: ToposortOptions) {
     if (!resource.name) {
@@ -190,11 +191,13 @@ export class UserDataResourceManager {
     await this.saveOriginRecords(data);
     const { dataType, sourceName, records, matchKey } = data;
     const sourceUks = records.map((record) => record.uid);
+    let processed = false;
     for (const resource of this.resources.nodes) {
       const associateResource = resource.parseAccepts(dataType);
       if (!associateResource) {
         continue;
       }
+      processed = true;
       const originRecords = await this.findOriginRecords({ sourceName, sourceUks, dataType });
       if (!(originRecords && originRecords.length)) {
         continue;
@@ -206,9 +209,19 @@ export class UserDataResourceManager {
         let recordResourceChangeds: RecordResourceChanged[];
         if (resourceRecords && resourceRecords.length > 0) {
           const resourcePks = resourceRecords.map((r: { resourcePk: string }) => r.resourcePk);
-          recordResourceChangeds = await resource.update(originRecord, resourcePks);
+          try {
+            recordResourceChangeds = await resource.update(originRecord, resourcePks);
+          } catch (error) {
+            this.logger?.warn(`update record error: ${error}, record: ${originRecord}`);
+            continue;
+          }
         } else {
-          recordResourceChangeds = await resource.create(originRecord, matchKey);
+          try {
+            recordResourceChangeds = await resource.create(originRecord, matchKey);
+          } catch (error) {
+            this.logger?.warn(`create record error: ${error}, record: ${originRecord}`);
+            continue;
+          }
         }
         if (!recordResourceChangeds || recordResourceChangeds.length === 0) {
           continue;
@@ -228,6 +241,13 @@ export class UserDataResourceManager {
             });
           }
         }
+      }
+    }
+    if (!processed) {
+      if (dataType === 'department') {
+        throw new Error(`dataType "${dataType}" is not support, please install department plugin`);
+      } else {
+        throw new Error(`dataType "${dataType}" is not support`);
       }
     }
   }

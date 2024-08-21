@@ -11,14 +11,14 @@ import { UserData, UserDataResourceManager } from './user-data-resource-manager'
 import { SyncSourceManager } from './sync-source-manager';
 import { Context } from '@nocobase/actions';
 import { SyncSource } from './sync-source';
-import { Logger } from '@nocobase/logger';
+import { Logger, SystemLogger } from '@nocobase/logger';
 
 export class UserDataSyncService {
   resourceManager: UserDataResourceManager;
   sourceManager: SyncSourceManager;
-  logger: Logger;
+  logger: SystemLogger;
 
-  constructor(resourceManager: UserDataResourceManager, sourceManager: SyncSourceManager, logger: Logger) {
+  constructor(resourceManager: UserDataResourceManager, sourceManager: SyncSourceManager, logger: SystemLogger) {
     this.resourceManager = resourceManager;
     this.sourceManager = sourceManager;
     this.logger = logger;
@@ -33,9 +33,19 @@ export class UserDataSyncService {
   }
 
   async push(data: any) {
+    const { dataType, records } = data;
+    if (dataType === undefined) {
+      throw new Error('dataType for user data synchronize is required');
+    }
+    if (records === undefined) {
+      throw new Error('records for user data synchronize is required');
+    }
+    if (records.length === 0) {
+      throw new Error('records must have at least one piece of data');
+    }
     const userData: UserData = {
       dataType: data.dataType,
-      uniqueKey: data.uniqueKey,
+      matchKey: data.matchKey,
       records: data.records,
       sourceName: data.sourceName ? data.sourceName : 'api',
     };

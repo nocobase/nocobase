@@ -65,15 +65,15 @@ describe('user-data-resource-manager', () => {
       dataType: 'user',
       records: [
         {
-          id: 1,
+          uid: '1',
           nickname: 'test',
         },
       ],
-      uniqueKey: 'id',
+      matchKey: 'uid',
     });
     expect(mockUsersResource.data.length).toBe(1);
     expect(mockUsersResource.data[0]).toMatchObject({
-      id: 1,
+      uid: '1',
       nickname: 'test',
     });
     const originRecords = await resourceManager.findOriginRecords({
@@ -87,7 +87,7 @@ describe('user-data-resource-manager', () => {
       dataType: 'user',
       sourceUk: '1',
       metaData: {
-        id: 1,
+        uid: '1',
         nickname: 'test',
       },
       resources: [
@@ -107,11 +107,11 @@ describe('user-data-resource-manager', () => {
       dataType: 'user',
       records: [
         {
-          id: 1,
+          uid: '1',
           nickname: 'test',
         },
       ],
-      uniqueKey: 'id',
+      matchKey: 'id',
     });
     expect(mockUsersResource.data.length).toBe(1);
     expect(mockUsersResource.data[0]).toMatchObject({
@@ -123,11 +123,11 @@ describe('user-data-resource-manager', () => {
       dataType: 'user',
       records: [
         {
-          id: 1,
+          uid: '1',
           nickname: 'test2',
         },
       ],
-      uniqueKey: 'id',
+      matchKey: 'id',
     });
     expect(mockUsersResource.data.length).toBe(1);
     expect(mockUsersResource.data[0]).toMatchObject({
@@ -145,11 +145,11 @@ describe('user-data-resource-manager', () => {
       dataType: 'user',
       sourceUk: '1',
       metaData: {
-        id: 1,
+        uid: '1',
         nickname: 'test2',
       },
       lastMetaData: {
-        id: 1,
+        uid: '1',
         nickname: 'test',
       },
     });
@@ -176,11 +176,11 @@ describe('user-data-resource-manager', () => {
       dataType: 'user',
       records: [
         {
-          id: 1,
+          uid: '1',
           nickname: 'test',
         },
       ],
-      uniqueKey: 'id',
+      matchKey: 'uid',
     });
     expect(spyCreate1).toBeCalledTimes(1);
     expect(spyUpdate1).toBeCalledTimes(0);

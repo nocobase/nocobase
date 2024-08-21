@@ -39,18 +39,17 @@ describe('api', async () => {
           dataType: 'user',
           records: [
             {
-              id: 1,
+              uid: 1,
               nickname: 'test',
             },
           ],
-          uniqueKey: 'id',
         },
       },
     });
     expect(res.status).toBe(200);
     expect(usersResource.data.length).toBe(1);
     expect(usersResource.data[0]).toMatchObject({
-      id: 1,
+      uid: 1,
       nickname: 'test',
     });
   });

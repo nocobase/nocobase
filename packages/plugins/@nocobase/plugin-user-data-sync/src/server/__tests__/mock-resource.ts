@@ -7,26 +7,35 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { OriginRecord, SyncAccept, UserDataResource } from '../user-data-resource-manager';
+import {
+  OriginRecord,
+  PrimaryKey,
+  RecordResourceChanged,
+  SyncAccept,
+  UserDataResource,
+} from '../user-data-resource-manager';
 
 export class MockUsersResource extends UserDataResource {
   name = 'mock-users';
   accepts: SyncAccept[] = ['user'];
   data = [];
 
-  async update(record: OriginRecord, resourcePk: number) {
-    this.data[resourcePk] = record.metaData;
+  async update(record: OriginRecord, resourcePks: PrimaryKey[]): Promise<RecordResourceChanged[]> {
+    this.data[resourcePks[0]] = record.metaData;
+    return [];
   }
 
-  async create(record: OriginRecord) {
+  async create(record: OriginRecord, matchKey: string): Promise<RecordResourceChanged[]> {
     this.data.push(record.metaData);
-    return this.data.length - 1;
+    return [{ resourcesPk: this.data.length - 1, isDeleted: false }];
   }
 }
 
 export class ErrorResource extends UserDataResource {
-  async update() {}
-  async create() {
-    return 0;
+  async update(record: OriginRecord, resourcePks: PrimaryKey[]): Promise<RecordResourceChanged[]> {
+    return [];
+  }
+  async create(record: OriginRecord, matchKey: string): Promise<RecordResourceChanged[]> {
+    return [];
   }
 }

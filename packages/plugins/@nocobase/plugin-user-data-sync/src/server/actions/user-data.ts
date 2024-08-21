@@ -23,9 +23,16 @@ export default {
     await next();
   },
   push: async (ctx: Context, next: Next) => {
-    const { data } = ctx.action.params.values || {};
+    const data = ctx.action.params.values || {};
     const plugin = ctx.app.pm.get(PluginUserDataSyncServer) as PluginUserDataSyncServer;
-    await plugin.syncService.push(data);
+    try {
+      await plugin.syncService.push(data);
+      ctx.body = { code: 0, message: 'success' };
+    } catch (error) {
+      ctx.status = 500;
+      ctx.body = { code: 500, message: error.message };
+      return;
+    }
     await next();
   },
   retry: async (ctx: Context, next: Next) => {

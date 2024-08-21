@@ -10,18 +10,19 @@
 import { Model } from '@nocobase/database';
 import {
   FormatDepartment,
-  FormatUser,
   OriginRecord,
+  PrimaryKey,
+  RecordResourceChanged,
   SyncAccept,
   UserDataResource,
-} from '@nocobase/plugin-user-data-sync';
+} from './user-data-resource-manager';
 
 export class DepartmentDataSyncResource extends UserDataResource {
   name = 'departments';
   accepts: SyncAccept[] = [
     {
       dataType: 'user',
-      associateResource: 'users',
+      associateResource: 'department',
     },
     'department',
   ];
@@ -34,39 +35,49 @@ export class DepartmentDataSyncResource extends UserDataResource {
     return this.db.getRepository('departments');
   }
 
-  async update(record: OriginRecord, resourcePk: number): Promise<void> {
+  async update(record: OriginRecord, resourcePks: PrimaryKey[]): Promise<RecordResourceChanged[]> {
     const { dataType, metaData, sourceName } = record;
     if (dataType === 'user') {
       const sourceUser = metaData;
+      const resources = record.resources.filter((r) => r.resource === 'users');
+      if (!resources.length) {
+        return [];
+      }
       const user = await this.userRepo.findOne({
-        filterByTk: resourcePk,
+        filterByTk: resources[0].resourcePk,
       });
-      await this.updateUserDepartments(user, sourceUser.departments, sourceName);
+      await this.updateUserDepartments(user, resourcePks, sourceUser.departments);
     } else if (dataType === 'department') {
       const sourceDepartment = metaData;
       const department = await this.deptRepo.findOne({
-        filterByTk: resourcePk,
+        filterByTk: resourcePks[0],
       });
       await this.updateDepartment(department, sourceDepartment, sourceName);
     } else {
       this.logger.warn(`update department: unsupported data type: ${dataType}`);
     }
+    return [];
   }
 
-  async create(record: OriginRecord, uniqueKey: string): Promise<string> {
+  async create(record: OriginRecord, matchKey: string): Promise<RecordResourceChanged[]> {
     const { dataType, metaData, sourceName } = record;
     if (dataType === 'user') {
-      return;
+      return [];
     } else if (dataType === 'department') {
       const sourceDepartment = metaData;
-      return await this.createDepartment(sourceDepartment, sourceName);
+      const newDepartmentId = await this.createDepartment(sourceDepartment, sourceName);
+      return [{ resourcesPk: newDepartmentId, isDeleted: false }];
     } else {
       this.logger.warn(`create department: unsupported data type: ${dataType}`);
     }
-    return;
+    return [];
   }
 
-  async updateUserDepartments(user: FormatUser, sourceDepartmentIds: (number | string)[], sourceName: string) {
+  async updateUserDepartments(
+    user: any,
+    currentDepartmentIds: PrimaryKey[],
+    sourceDepartmentIds: PrimaryKey[],
+  ): Promise<RecordResourceChanged[]> {
     if (!this.deptRepo) {
       return;
     }
@@ -74,29 +85,31 @@ export class DepartmentDataSyncResource extends UserDataResource {
       const userDepartments = await user.getDepartments();
       if (userDepartments.length) {
         await user.removeDepartments(userDepartments);
+        return userDepartments.map((department) => {
+          return {
+            resourcesPk: department.id,
+            isDeleted: true,
+          };
+        });
       }
     } else {
-      // 查询部门同步记录
-      const syncDepartmentRecords = await this.syncRecordRepo.find({
-        filter: {
-          sourceName,
-          dataType: 'department',
-          sourceUk: { $in: sourceDepartmentIds },
-          'resources.resource': this.name,
-        },
-        appends: ['resources'],
-      });
-      const departmentIds = syncDepartmentRecords
-        .filter((record) => record.resources?.length)
-        .map((record) => record.resources[0].resourcePk);
-      const departments = await this.deptRepo.find({ filter: { id: { $in: departmentIds } } });
-      const userDepartments = await user.getDepartments();
+      const departments = await this.deptRepo.find({ filter: { id: { $in: sourceDepartmentIds } } });
+      const userDepartments = await this.deptRepo.find({ filter: { id: { $in: currentDepartmentIds } } });
       // 需要删除的部门
       const toRemoveDepartments = userDepartments.filter((department) => {
         return !departments.find((sourceDepartment) => sourceDepartment.id === department.id);
       });
+      const recordResourceChangeds: RecordResourceChanged[] = [];
       if (toRemoveDepartments.length) {
         await user.removeDepartments(toRemoveDepartments);
+        recordResourceChangeds.push(
+          ...toRemoveDepartments.map((department) => {
+            return {
+              resourcesPk: department.id,
+              isDeleted: true,
+            };
+          }),
+        );
       }
       // 需要添加的部门
       const toAddDepartments = departments.filter((department) => {
@@ -107,7 +120,16 @@ export class DepartmentDataSyncResource extends UserDataResource {
       });
       if (toAddDepartments.length) {
         await user.addDepartments(toAddDepartments);
+        recordResourceChangeds.push(
+          ...toAddDepartments.map((department) => {
+            return {
+              resourcesPk: department.id,
+              isDeleted: false,
+            };
+          }),
+        );
       }
+      return recordResourceChangeds;
     }
   }
 

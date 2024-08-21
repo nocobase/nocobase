@@ -28,10 +28,21 @@ export class UserDataSyncResource extends UserDataResource {
   async updateUser(user: Model, sourceUser: FormatUser) {
     if (sourceUser.isDeleted) {
       // 删除用户
+      const roles = await user.getRoles();
+      // 是否有Root角色
+      for (const role of roles) {
+        if (role.name === 'Root') {
+          return;
+        }
+      }
       await user.destroy();
       return;
     }
     let dataChanged = false;
+    if (sourceUser.username !== undefined && user.username !== sourceUser.username) {
+      user.username = sourceUser.username;
+      dataChanged = true;
+    }
     if (sourceUser.phone !== undefined && user.phone !== sourceUser.phone) {
       user.phone = sourceUser.phone;
       dataChanged = true;
