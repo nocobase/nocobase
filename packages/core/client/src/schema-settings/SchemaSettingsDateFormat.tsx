@@ -89,6 +89,7 @@ export const SchemaSettingsDateFormat = function DateFormatConfig(props: { field
               'x-decorator': 'FormItem',
               'x-component': 'Checkbox',
               'x-content': '{{t("Show time")}}',
+              'x-hidden': collectionField?.type === 'dateOnly',
               'x-reactions': [
                 `{{(field) => {
               field.query('.timeFormat').take(f => {
