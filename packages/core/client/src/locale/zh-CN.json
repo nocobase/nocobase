@@ -967,6 +967,5 @@
   "Open in new window": "新窗口打开",
   "is none of": "不包含任何一个",
   "is any of": "包含任何一个",
-  "Paging mode": "分页模式",
-  "Simple Paginate": "简单分页"
+  "Use simple pagination mode": "使用简单分页模式"
 }
