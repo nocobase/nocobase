@@ -8,7 +8,10 @@
  */
 
 import { Plugin } from '@nocobase/server';
+import { DataSource } from '@nocobase/data-source-manager';
+
 import { SortField } from './sort-field';
+import { move } from './action';
 
 export class PluginFieldSortServer extends Plugin {
   async afterAdd() {}
@@ -19,6 +22,13 @@ export class PluginFieldSortServer extends Plugin {
     SortFieldClass.lockManager = lockManager;
     this.app.db.registerFieldTypes({
       sort: SortFieldClass,
+    });
+
+    this.app.dataSourceManager.beforeAddDataSource((dataSource: DataSource) => {
+      // @ts-ignore
+      if (dataSource.collectionManager.db) {
+        dataSource.resourceManager.registerActionHandlers({ move });
+      }
     });
   }
 
