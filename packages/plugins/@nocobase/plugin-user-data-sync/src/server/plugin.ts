@@ -32,6 +32,7 @@ export class PluginUserDataSyncServer extends Plugin {
     const logger = this.createLogger({
       dirname: 'user-data-sync',
       filename: '%DATE%.log',
+      format: 'json',
     } as LoggerOptions);
 
     return logger;

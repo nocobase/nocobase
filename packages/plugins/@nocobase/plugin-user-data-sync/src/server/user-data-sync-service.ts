@@ -49,12 +49,10 @@ export class UserDataSyncService {
       records: data.records,
       sourceName: data.sourceName ? data.sourceName : 'api',
     };
-    this.logger.info('receive data from api', {
-      data: {
-        source: data.sourceName ? data.sourceName : 'api',
-        sourceType: 'api',
-        data: data,
-      },
+    this.logger.info({
+      source: data.sourceName ? data.sourceName : 'api',
+      sourceType: 'api',
+      data: data,
     });
     return await this.resourceManager.updateOrCreate(userData);
   }
@@ -79,13 +77,11 @@ export class UserDataSyncService {
       });
       const data = await source.pull();
       // 输出拉取的数据
-      this.logger.info('pull data of source', {
-        data: {
-          source: source.instance.name,
-          sourceType: source.instance.sourceType,
-          batch: task.batch,
-          data: data,
-        },
+      this.logger.info({
+        source: source.instance.name,
+        sourceType: source.instance.sourceType,
+        batch: task.batch,
+        data: data,
       });
       ctx.log.info('end pull data of source', { source: source.instance.name, sourceType: source.instance.sourceType });
       ctx.log.info('begin update data of source', {
