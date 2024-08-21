@@ -13,7 +13,7 @@ import { UserDataSyncService } from './user-data-sync-service';
 import userDataActions from './actions/user-data';
 import { SyncSourceManager } from './sync-source-manager';
 import { SyncSourceModel } from './models/sync-source';
-import { Logger, LoggerOptions } from '@nocobase/logger';
+import { LoggerOptions, SystemLogger, createSystemLogger } from '@nocobase/logger';
 
 export class PluginUserDataSyncServer extends Plugin {
   sourceManager: SyncSourceManager;
@@ -28,8 +28,8 @@ export class PluginUserDataSyncServer extends Plugin {
     this.resourceManager = new UserDataResourceManager();
   }
 
-  getLogger(): Logger {
-    const logger = this.createLogger({
+  getLogger(): SystemLogger {
+    const logger = createSystemLogger({
       dirname: 'user-data-sync',
       filename: '%DATE%.log',
     } as LoggerOptions);
