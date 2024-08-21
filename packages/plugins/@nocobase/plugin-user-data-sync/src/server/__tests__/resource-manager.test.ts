@@ -10,11 +10,13 @@
 import { MockDatabase, MockServer, createMockServer } from '@nocobase/test';
 import { UserDataResourceManager } from '../user-data-resource-manager';
 import { ErrorResource, MockUsersResource } from './mock-resource';
+import { Logger, LoggerOptions } from '@nocobase/logger';
 
 describe('user-data-resource-manager', () => {
   let app: MockServer;
   let db: MockDatabase;
   let resourceManager: UserDataResourceManager;
+  let logger: Logger;
 
   beforeEach(async () => {
     app = await createMockServer({
@@ -23,6 +25,10 @@ describe('user-data-resource-manager', () => {
     db = app.db;
     resourceManager = new UserDataResourceManager();
     resourceManager.db = db;
+    logger = app.createLogger({
+      dirname: 'user-data-sync',
+      filename: '%DATE%.log',
+    } as LoggerOptions);
   });
 
   afterEach(async () => {
@@ -32,11 +38,11 @@ describe('user-data-resource-manager', () => {
 
   it('register resource error', async () => {
     try {
-      const errResource = new ErrorResource(db, app.logger);
+      const errResource = new ErrorResource(db, logger);
       expect(resourceManager.registerResource(errResource)).toThrowError(
         '"name" for user data synchronize resource is required',
       );
-      const errResource2 = new ErrorResource(db, app.logger);
+      const errResource2 = new ErrorResource(db, logger);
       errResource2.name = 'error';
       expect(resourceManager.registerResource(errResource2)).toThrowError(
         '"accepts" for user data synchronize resource is required',
@@ -47,9 +53,9 @@ describe('user-data-resource-manager', () => {
   });
 
   it('register resource in order', async () => {
-    const usersResource = new MockUsersResource(db, app.logger);
+    const usersResource = new MockUsersResource(db, logger);
     resourceManager.registerResource(usersResource, { after: 'mock-users2' });
-    const usersResource2 = new MockUsersResource(db, app.logger);
+    const usersResource2 = new MockUsersResource(db, logger);
     usersResource2.name = 'mock-users2';
     resourceManager.registerResource(usersResource2);
     const nodes = resourceManager.resources.nodes;
@@ -58,7 +64,7 @@ describe('user-data-resource-manager', () => {
   });
 
   it('create for a resource', async () => {
-    const mockUsersResource = new MockUsersResource(db, app.logger);
+    const mockUsersResource = new MockUsersResource(db, logger);
     resourceManager.registerResource(mockUsersResource);
     await resourceManager.updateOrCreate({
       sourceName: 'test',
@@ -100,7 +106,7 @@ describe('user-data-resource-manager', () => {
   });
 
   it('update for a resource', async () => {
-    const mockUsersResource = new MockUsersResource(db, app.logger);
+    const mockUsersResource = new MockUsersResource(db, logger);
     resourceManager.registerResource(mockUsersResource);
     await resourceManager.updateOrCreate({
       sourceName: 'test',
@@ -156,16 +162,11 @@ describe('user-data-resource-manager', () => {
   });
 
   it('should update by associate resource', async () => {
-    const mockUsersResource = new MockUsersResource(db, app.logger);
+    const mockUsersResource = new MockUsersResource(db, logger);
     resourceManager.registerResource(mockUsersResource);
-    const mockUsersResource2 = new MockUsersResource(db, app.logger);
+    const mockUsersResource2 = new MockUsersResource(db, logger);
     mockUsersResource2.name = 'mock-users2';
-    mockUsersResource2.accepts = [
-      {
-        dataType: 'user',
-        associateResource: 'mock-users',
-      },
-    ];
+    mockUsersResource2.accepts = ['user'];
     resourceManager.registerResource(mockUsersResource2, { after: 'mock-users' });
     const spyCreate1 = vi.spyOn(mockUsersResource, 'create');
     const spyUpdate1 = vi.spyOn(mockUsersResource, 'update');
