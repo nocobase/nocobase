@@ -14,7 +14,6 @@ import userDataActions from './actions/user-data';
 import { SyncSourceManager } from './sync-source-manager';
 import { SyncSourceModel } from './models/sync-source';
 import { Logger, LoggerOptions } from '@nocobase/logger';
-import { DepartmentDataSyncResource } from './department-data-sync-resource';
 
 export class PluginUserDataSyncServer extends Plugin {
   sourceManager: SyncSourceManager;
@@ -41,11 +40,6 @@ export class PluginUserDataSyncServer extends Plugin {
   async load() {
     const logger = this.getLogger();
     this.resourceManager.db = this.app.db;
-    this.resourceManager.registerResource(new DepartmentDataSyncResource(this.db, this.app.logger), {
-      // write department records after writing user records
-      after: 'users',
-    });
-
     this.syncService = new UserDataSyncService(this.resourceManager, this.sourceManager, logger);
     this.app.resourceManager.define({
       name: 'userData',
