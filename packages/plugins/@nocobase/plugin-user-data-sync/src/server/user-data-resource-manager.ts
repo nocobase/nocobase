@@ -25,7 +25,7 @@ export type FormatUser = {
 export type FormatDepartment = {
   uid: string;
   title?: string;
-  parentId?: string;
+  parentUid?: string;
   isDeleted?: boolean;
   [key: string]: any;
 };
@@ -73,7 +73,7 @@ export abstract class UserDataResource {
     this.logger = logger;
   }
 
-  abstract update(record: OriginRecord, resourcePks: PrimaryKey[], matchKey): Promise<RecordResourceChanged[]>;
+  abstract update(record: OriginRecord, resourcePks: PrimaryKey[], matchKey?: string): Promise<RecordResourceChanged[]>;
   abstract create(record: OriginRecord, matchKey: string): Promise<RecordResourceChanged[]>;
 
   get syncRecordRepo() {
