@@ -20,7 +20,7 @@ export async function move(ctx: Context, next) {
     return next();
   }
 
-  if (repository.database) {
+  if (!repository.database) {
     return ctx.throw(new Error(`Repository can not handle action move for ${ctx.action.resourceName}`));
   }
 
