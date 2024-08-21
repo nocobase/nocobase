@@ -82,7 +82,6 @@ export class UserDataSyncResource extends UserDataResource {
     }
     if (user) {
       await this.updateUser(user, sourceUser);
-      return user.id;
     } else {
       user = await this.userRepo.create({
         values: {
