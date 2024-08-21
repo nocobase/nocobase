@@ -19,6 +19,7 @@ type MeasureProps = {
   type?: string;
   aggregation?: string;
   alias?: string;
+  distinct?: boolean;
 };
 
 type DimensionProps = {
@@ -117,7 +118,7 @@ export const parseBuilder = async (ctx: Context, next: Next) => {
   let hasAgg = false;
 
   measures.forEach((measure: MeasureProps & { field: string }) => {
-    const { field, aggregation, alias } = measure;
+    const { field, aggregation, alias, distinct } = measure;
     const attribute = [];
     const col = sequelize.col(field);
     if (aggregation) {
@@ -125,7 +126,7 @@ export const parseBuilder = async (ctx: Context, next: Next) => {
         throw new Error(`Invalid aggregation function: ${aggregation}`);
       }
       hasAgg = true;
-      attribute.push(sequelize.fn(aggregation, col));
+      attribute.push(sequelize.fn(aggregation, distinct ? sequelize.fn('DISTINCT', col) : col));
     } else {
       attribute.push(col);
     }
