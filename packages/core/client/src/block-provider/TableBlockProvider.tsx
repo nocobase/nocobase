@@ -169,7 +169,7 @@ export const TableBlockProvider = withDynamicSchemaProps((props) => {
   if (pagingMode === 'simplePaginate') {
     params['simplePaginate'] = true;
   } else {
-    delete params['simplePaginate'];
+    delete params?.['simplePaginate'];
   }
   const form = useMemo(() => createForm(), [treeTable]);
 
