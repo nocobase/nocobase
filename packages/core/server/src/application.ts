@@ -62,6 +62,7 @@ import { InstallOptions, PluginManager } from './plugin-manager';
 import { SyncManager } from './sync-manager';
 
 import packageJson from '../package.json';
+import { AuditManageOptions, AuditManager } from './AuditManager';
 
 export type PluginType = string | typeof Plugin;
 export type PluginConfiguration = PluginType | [PluginType, any];
@@ -111,6 +112,7 @@ export interface ApplicationOptions {
   pmSock?: string;
   name?: string;
   authManager?: AuthManagerOptions;
+  auditManager?: AuditManager;
   /**
    * @internal
    */
@@ -351,6 +353,11 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   get authManager() {
     return this._authManager;
+  }
+
+  protected _auditManager: AuditManager;
+  get auditManager() {
+    return this._auditManager;
   }
 
   protected _locales: Locale;
@@ -1151,6 +1158,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       default: 'basic',
       ...(this.options.authManager || {}),
     });
+
+    this._auditManager = new AuditManager();
 
     this.resourceManager.define({
       name: 'auth',
