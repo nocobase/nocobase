@@ -127,7 +127,16 @@ export const getPopupPathFromParams = (params: PopupParams) => {
  * Note: use this hook in a plugin is not recommended
  * @returns
  */
-export const usePopupUtils = (options: { setVisible?: (visible: boolean) => void } = {}) => {
+export const usePopupUtils = (
+  options: {
+    /**
+     * when the popup does not support opening via URL, you can control the display status of the popup through this method
+     * @param visible
+     * @returns
+     */
+    setVisible?: (visible: boolean) => void;
+  } = {},
+) => {
   const navigate = useNavigateNoUpdate();
   const location = useLocationNoUpdate();
   const fieldSchema = useFieldSchema();
@@ -230,8 +239,6 @@ export const usePopupUtils = (options: { setVisible?: (visible: boolean) => void
       if (_.last(url) === '/') {
         url = url.slice(0, -1);
       }
-
-      console.log('customActionSchema', customActionSchema);
 
       storePopupContext(currentPopupUidWithoutOpened, {
         schema: customActionSchema || fieldSchema,
