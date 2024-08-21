@@ -35,7 +35,7 @@ export const array = [
     },
   },
   {
-    label: '{{t("contains")}}',
+    label: '{{t("is any of")}}',
     value: '$anyOf',
     schema: {
       'x-component': 'Select',
@@ -43,7 +43,7 @@ export const array = [
     },
   },
   {
-    label: '{{t("does not contain")}}',
+    label: '{{t("is none of")}}',
     value: '$noneOf',
     schema: {
       'x-component': 'Select',
@@ -102,7 +102,7 @@ export const enumType = [
     schema: { 'x-component': 'Select' },
   },
   {
-    label: '{{t("contains")}}',
+    label: '{{t("is any of")}}',
     value: '$in',
     schema: {
       'x-component': 'Select',
@@ -110,7 +110,7 @@ export const enumType = [
     },
   },
   {
-    label: '{{t("does not contain")}}',
+    label: '{{t("is none of")}}',
     value: '$notIn',
     schema: {
       'x-component': 'Select',
@@ -135,7 +135,7 @@ export const boolean = [
 
 export const tableoid = [
   {
-    label: '{{t("contains")}}',
+    label: '{{t("is any of")}}',
     value: '$childIn',
     schema: {
       'x-component': 'CollectionSelect',
@@ -143,7 +143,7 @@ export const tableoid = [
     },
   },
   {
-    label: '{{t("does not contain")}}',
+    label: '{{t("is none of")}}',
     value: '$childNotIn',
     schema: {
       'x-component': 'CollectionSelect',
@@ -165,7 +165,7 @@ export const collection = [
     schema: { 'x-component': 'CollectionSelect' },
   },
   {
-    label: '{{t("contains")}}',
+    label: '{{t("is any of")}}',
     value: '$in',
     schema: {
       'x-component': 'CollectionSelect',
@@ -173,7 +173,7 @@ export const collection = [
     },
   },
   {
-    label: '{{t("does not contain")}}',
+    label: '{{t("is none of")}}',
     value: '$notIn',
     schema: {
       'x-component': 'CollectionSelect',
