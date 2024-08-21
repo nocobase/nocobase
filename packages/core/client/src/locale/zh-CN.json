@@ -965,6 +965,8 @@
   "Search": "搜索",
   "Clear default value": "清除默认值",
   "Open in new window": "新窗口打开",
+  "is none of": "不包含任何一个",
+  "is any of": "包含任何一个",
   "Paging mode": "分页模式",
   "Simple Paginate": "简单分页"
 }
