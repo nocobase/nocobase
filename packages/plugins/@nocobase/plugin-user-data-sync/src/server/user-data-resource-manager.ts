@@ -85,6 +85,21 @@ export abstract class UserDataResource {
   }
 }
 
+export type SyncResult = {
+  resource: string;
+  detail: {
+    count: {
+      all: number;
+      success: number;
+      failed: number;
+    };
+    failedRecords: {
+      record: UserDataRecord;
+      message: string;
+    }[];
+  };
+};
+
 export class UserDataResourceManager {
   resources = new Toposort<UserDataResource>();
   syncRecordRepo: Repository;
@@ -169,11 +184,12 @@ export class UserDataResourceManager {
     }
   }
 
-  async updateOrCreate(data: UserData) {
+  async updateOrCreate(data: UserData): Promise<SyncResult[]> {
     await this.saveOriginRecords(data);
     const { dataType, sourceName, records, matchKey } = data;
     const sourceUks = records.map((record) => record.uid);
     let processed = false;
+    const syncResults: SyncResult[] = [];
     for (const resource of this.resources.nodes) {
       if (!resource.accepts.includes(dataType)) {
         continue;
@@ -184,6 +200,8 @@ export class UserDataResourceManager {
       if (!(originRecords && originRecords.length)) {
         continue;
       }
+      const successRecords = [];
+      const failedRecords = [];
       for (const originRecord of originRecords) {
         const resourceRecords = originRecord.resources?.filter(
           (r: { resource: string }) => r.resource === associateResource,
@@ -193,15 +211,19 @@ export class UserDataResourceManager {
           const resourcePks = resourceRecords.map((r: { resourcePk: string }) => r.resourcePk);
           try {
             recordResourceChangeds = await resource.update(originRecord, resourcePks, matchKey);
+            successRecords.push(originRecord.metaData);
           } catch (error) {
-            this.logger?.error(`update record error: ${error}`, { originRecord });
+            this.logger?.warn(`update record error: ${error.message}`, { originRecord });
+            failedRecords.push({ record: originRecord.metaData, message: error.message });
             continue;
           }
         } else {
           try {
             recordResourceChangeds = await resource.create(originRecord, matchKey);
+            successRecords.push(originRecord.metaData);
           } catch (error) {
-            this.logger?.error(`create record error: ${error}`, { originRecord });
+            this.logger?.warn(`create record error: ${error.message}`, { originRecord });
+            failedRecords.push({ record: originRecord.metaData, message: error.message });
             continue;
           }
         }
@@ -224,9 +246,21 @@ export class UserDataResourceManager {
           }
         }
       }
+      syncResults.push({
+        resource: associateResource,
+        detail: {
+          count: {
+            all: originRecords.length,
+            success: successRecords.length,
+            failed: failedRecords.length,
+          },
+          failedRecords,
+        },
+      });
     }
     if (!processed) {
       throw new Error(`dataType "${dataType}" is not support`);
     }
+    return syncResults;
   }
 }

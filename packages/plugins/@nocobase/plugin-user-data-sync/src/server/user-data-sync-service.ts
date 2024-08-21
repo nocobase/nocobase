@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { UserData, UserDataResourceManager } from './user-data-resource-manager';
+import { SyncResult, UserData, UserDataResourceManager } from './user-data-resource-manager';
 import { SyncSourceManager } from './sync-source-manager';
 import { Context } from '@nocobase/actions';
 import { SyncSource } from './sync-source';
@@ -32,7 +32,7 @@ export class UserDataSyncService {
     this.runSync(source, task, ctx);
   }
 
-  async push(data: any) {
+  async push(data: any): Promise<SyncResult[]> {
     const { dataType, records } = data;
     if (dataType === undefined) {
       throw new Error('dataType for user data synchronize is required');
@@ -49,7 +49,14 @@ export class UserDataSyncService {
       records: data.records,
       sourceName: data.sourceName ? data.sourceName : 'api',
     };
-    await this.resourceManager.updateOrCreate(userData);
+    this.logger.info('receive data from api', {
+      data: {
+        source: data.sourceName ? data.sourceName : 'api',
+        sourceType: 'api',
+        data: data,
+      },
+    });
+    return await this.resourceManager.updateOrCreate(userData);
   }
 
   async retry(sourceId: number, taskId: number, ctx: Context) {
