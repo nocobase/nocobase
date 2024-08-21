@@ -147,7 +147,7 @@ export const TableBlockProvider = withDynamicSchemaProps((props) => {
   const fieldSchema = useFieldSchema();
   const { getCollection, getCollectionField } = useCollectionManager_deprecated(props.dataSource);
   const collection = getCollection(props.collection, props.dataSource);
-  const { treeTable } = fieldSchema?.['x-decorator-props'] || {};
+  const { treeTable, pagingMode } = fieldSchema?.['x-decorator-props'] || {};
   const { params, parseVariableLoading } = useTableBlockParamsCompat(props);
   let childrenColumnName = 'children';
 
@@ -165,6 +165,11 @@ export const TableBlockProvider = withDynamicSchemaProps((props) => {
       }
       params['tree'] = true;
     }
+  }
+  if (pagingMode === 'simplePaginate') {
+    params['simplePaginate'] = true;
+  } else {
+    delete params?.['simplePaginate'];
   }
   const form = useMemo(() => createForm(), [treeTable]);
 
