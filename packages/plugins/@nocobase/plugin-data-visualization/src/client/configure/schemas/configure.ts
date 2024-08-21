@@ -289,6 +289,12 @@ export const querySchema: ISchema = {
                             },
                           },
                         },
+                        distinct: {
+                          type: 'boolean',
+                          'x-decorator': 'FormItem',
+                          'x-component': 'Checkbox',
+                          'x-content': '{{t("Distinct")}}',
+                        },
                       },
                       {
                         required: true,

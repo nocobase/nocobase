@@ -31,12 +31,12 @@ export const markdownBlockSettings = new SchemaSettings({
       },
     },
     {
-      name: 'setBlockTemplate',
-      Component: SchemaSettingsRenderEngine,
-    },
-    {
       name: 'setTheBlockHeight',
       Component: SchemaSettingsBlockHeightItem,
+    },
+    {
+      name: 'setBlockTemplate',
+      Component: SchemaSettingsRenderEngine,
     },
     {
       name: 'divider',

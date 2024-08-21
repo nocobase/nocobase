@@ -928,7 +928,7 @@
   "Unix Timestamp": "Unix 时间戳",
   "Field value do not meet the requirements": "字符不符合要求",
   "Field value size is": "字符长度要求",
-  "Style": "风格",
+  "Style": "样式",
   "Unit conversion": "单位换算",
   "Separator": "分隔符",
   "Prefix": "前缀",
@@ -966,6 +966,8 @@
   "Search": "搜索",
   "Clear default value": "清除默认值",
   "Open in new window": "新窗口打开",
+  "Paging mode": "分页模式",
+  "Simple Paginate": "简单分页",
   "Sorry, the page you visited does not exist.": "抱歉，你访问的页面不存在。",
   "Set Template Engine": "设置模板引擎"
 }

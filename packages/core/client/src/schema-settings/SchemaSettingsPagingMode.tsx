@@ -15,7 +15,7 @@ import { useTableBlockContext } from '../block-provider';
 import { useDesignable } from '../schema-component/hooks/useDesignable';
 import { SchemaSettingsSelectItem } from './SchemaSettings';
 
-export function SchemaSettingsRenderEngine() {
+export function SchemaSettingsPagingMode() {
   const field = useField<Field>();
   const fieldSchema = useFieldSchema();
   const { t } = useTranslation();
@@ -23,23 +23,31 @@ export function SchemaSettingsRenderEngine() {
   const { service } = useTableBlockContext();
   const options = [
     {
-      value: 'string',
-      label: t('String template'),
+      value: 'default',
+      label: t('Default'),
     },
     {
-      value: 'handlebars',
-      label: t('Handlebars'),
+      value: 'simplePaginate',
+      label: t('Simple Paginate'),
     },
   ];
+
   return (
     <SchemaSettingsSelectItem
-      key="render-template"
-      title={t('Template engine')}
+      key="paging-mode"
+      title={t('Paging mode')}
       options={options}
-      value={field.decoratorProps.engine || 'string'}
-      onChange={(engine) => {
-        fieldSchema['x-decorator-props'].engine = engine;
-        field.decoratorProps.engine = engine;
+      value={field.decoratorProps.pagingMode || 'default'}
+      onChange={(pagingMode) => {
+        fieldSchema['x-decorator-props'].pagingMode = pagingMode;
+        const params = { ...service.params?.[0] };
+        if (pagingMode === 'simplePaginate') {
+          params['simplePaginate'] = true;
+        } else {
+          delete params['simplePaginate'];
+        }
+        service.run({ params });
+        field.decoratorProps.pagingMode = pagingMode;
         dn.emit('patch', {
           schema: {
             ['x-uid']: fieldSchema['x-uid'],

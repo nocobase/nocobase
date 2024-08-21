@@ -41,7 +41,7 @@ describe('insertToPopupSchema', () => {
       },
     };
 
-    insertChildToParentSchema(childSchema, { params, context }, parentSchema);
+    insertChildToParentSchema({ childSchema, props: { params, context } as any, parentSchema });
 
     expect(parentSchema).toEqual({
       type: 'object',
