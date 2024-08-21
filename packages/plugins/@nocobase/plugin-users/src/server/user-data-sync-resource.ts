@@ -31,7 +31,7 @@ export class UserDataSyncResource extends UserDataResource {
       const roles = await user.getRoles();
       // 是否有Root角色
       for (const role of roles) {
-        if (role.name === 'Root') {
+        if (role.name === 'root') {
           return;
         }
       }
@@ -70,7 +70,7 @@ export class UserDataSyncResource extends UserDataResource {
     return [];
   }
 
-  async create(record: OriginRecord, matchKey: string, associateResource: string): Promise<RecordResourceChanged[]> {
+  async create(record: OriginRecord, matchKey: string): Promise<RecordResourceChanged[]> {
     const { metaData: sourceUser } = record;
     const filter = {};
     let user: any;

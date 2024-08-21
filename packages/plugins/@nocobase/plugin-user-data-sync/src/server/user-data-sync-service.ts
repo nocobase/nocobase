@@ -11,14 +11,14 @@ import { UserData, UserDataResourceManager } from './user-data-resource-manager'
 import { SyncSourceManager } from './sync-source-manager';
 import { Context } from '@nocobase/actions';
 import { SyncSource } from './sync-source';
-import { Logger, SystemLogger } from '@nocobase/logger';
+import { Logger } from '@nocobase/logger';
 
 export class UserDataSyncService {
   resourceManager: UserDataResourceManager;
   sourceManager: SyncSourceManager;
-  logger: SystemLogger;
+  logger: Logger;
 
-  constructor(resourceManager: UserDataResourceManager, sourceManager: SyncSourceManager, logger: SystemLogger) {
+  constructor(resourceManager: UserDataResourceManager, sourceManager: SyncSourceManager, logger: Logger) {
     this.resourceManager = resourceManager;
     this.sourceManager = sourceManager;
     this.logger = logger;

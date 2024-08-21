@@ -34,13 +34,7 @@ export type UserDataRecord = FormatUser | FormatDepartment;
 
 export type SyncDataType = 'user' | 'department';
 
-export type SyncAccept =
-  | SyncDataType
-  | {
-      dataType: SyncDataType;
-      // set resource name if this data type is associate with other resource
-      associateResource: string;
-    };
+export type SyncAccept = SyncDataType;
 
 export type OriginRecord = {
   id: number;
@@ -80,7 +74,7 @@ export abstract class UserDataResource {
   }
 
   abstract update(record: OriginRecord, resourcePks: PrimaryKey[]): Promise<RecordResourceChanged[]>;
-  abstract create(record: OriginRecord, matchKey: string, associateResource: string): Promise<RecordResourceChanged[]>;
+  abstract create(record: OriginRecord, matchKey: string): Promise<RecordResourceChanged[]>;
 
   get syncRecordRepo() {
     return this.db.getRepository('userDataSyncRecords');
@@ -89,23 +83,8 @@ export abstract class UserDataResource {
   get syncRecordResourceRepo() {
     return this.db.getRepository('userDataSyncRecordsResources');
   }
-
-  parseAccepts(dataType: SyncDataType) {
-    const accept = this.accepts.filter((accept) => {
-      if (typeof accept === 'string') {
-        return accept === dataType;
-      }
-      return accept.dataType === dataType;
-    });
-    if (!accept.length) {
-      return null;
-    }
-    if (typeof accept[0] === 'string') {
-      return this.name;
-    }
-    return accept[0].associateResource;
-  }
 }
+
 export class UserDataResourceManager {
   resources = new Toposort<UserDataResource>();
   syncRecordRepo: Repository;
@@ -193,10 +172,10 @@ export class UserDataResourceManager {
     const sourceUks = records.map((record) => record.uid);
     let processed = false;
     for (const resource of this.resources.nodes) {
-      const associateResource = resource.parseAccepts(dataType);
-      if (!associateResource) {
+      if (!resource.accepts.includes(dataType)) {
         continue;
       }
+      const associateResource = resource.name;
       processed = true;
       const originRecords = await this.findOriginRecords({ sourceName, sourceUks, dataType });
       if (!(originRecords && originRecords.length)) {
@@ -212,14 +191,14 @@ export class UserDataResourceManager {
           try {
             recordResourceChangeds = await resource.update(originRecord, resourcePks);
           } catch (error) {
-            this.logger?.warn(`update record error: ${error}, record: ${originRecord}`);
+            this.logger?.error(`update record error: ${error}`, { originRecord });
             continue;
           }
         } else {
           try {
-            recordResourceChangeds = await resource.create(originRecord, matchKey, associateResource);
+            recordResourceChangeds = await resource.create(originRecord, matchKey);
           } catch (error) {
-            this.logger?.warn(`create record error: ${error}, record: ${originRecord}`);
+            this.logger?.error(`create record error: ${error}`, { originRecord });
             continue;
           }
         }
@@ -244,11 +223,7 @@ export class UserDataResourceManager {
       }
     }
     if (!processed) {
-      if (dataType === 'department') {
-        throw new Error(`dataType "${dataType}" is not support, please install department plugin`);
-      } else {
-        throw new Error(`dataType "${dataType}" is not support`);
-      }
+      throw new Error(`dataType "${dataType}" is not support`);
     }
   }
 }
