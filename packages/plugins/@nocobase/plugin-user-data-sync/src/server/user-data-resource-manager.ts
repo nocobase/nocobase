@@ -192,7 +192,7 @@ export class UserDataResourceManager {
         if (resourceRecords && resourceRecords.length > 0) {
           const resourcePks = resourceRecords.map((r: { resourcePk: string }) => r.resourcePk);
           try {
-            recordResourceChangeds = await resource.update(originRecord, resourcePks);
+            recordResourceChangeds = await resource.update(originRecord, resourcePks, matchKey);
           } catch (error) {
             this.logger?.error(`update record error: ${error}`, { originRecord });
             continue;
