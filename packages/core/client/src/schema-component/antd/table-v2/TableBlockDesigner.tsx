@@ -30,7 +30,6 @@ import {
 } from '../../../schema-settings';
 import { SchemaSettingsBlockHeightItem } from '../../../schema-settings/SchemaSettingsBlockHeightItem';
 import { SchemaSettingsBlockTitleItem } from '../../../schema-settings/SchemaSettingsBlockTitleItem';
-import { SchemaSettingsPagingMode } from '../../../schema-settings/SchemaSettingsPagingMode';
 import { SchemaSettingsConnectDataBlocks } from '../../../schema-settings/SchemaSettingsConnectDataBlocks';
 import { SchemaSettingsDataScope } from '../../../schema-settings/SchemaSettingsDataScope';
 import { SchemaSettingsTemplate } from '../../../schema-settings/SchemaSettingsTemplate';
@@ -301,7 +300,6 @@ export const TableBlockDesigner = () => {
           });
         }}
       />
-      <SchemaSettingsPagingMode />
       <SchemaSettingsConnectDataBlocks type={FilterBlockType.TABLE} emptyDescription={t('No blocks to connect')} />
       {supportTemplate && <SchemaSettingsDivider />}
       {supportTemplate && (
