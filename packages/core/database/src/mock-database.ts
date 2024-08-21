@@ -9,7 +9,6 @@
 
 /* istanbul ignore file -- @preserve */
 import { merge } from '@nocobase/utils';
-import { LockManager } from '@nocobase/lock-manager';
 import { customAlphabet } from 'nanoid';
 import fetch from 'node-fetch';
 import path from 'path';

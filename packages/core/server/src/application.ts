@@ -63,7 +63,6 @@ import { Plugin } from './plugin';
 import { InstallOptions, PluginManager } from './plugin-manager';
 import { createPubSubManager, PubSubManager, PubSubManagerOptions } from './pub-sub-manager';
 import { SyncMessageManager } from './sync-message-manager';
-import { LockManager, LockManagerOptions } from './lock-manager';
 
 export type PluginType = string | typeof Plugin;
 export type PluginConfiguration = PluginType | [PluginType, any];
@@ -532,10 +531,6 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     if (this.telemetry.started) {
       await this.telemetry.shutdown();
-    }
-
-    if (this.lockManager) {
-      await this.lockManager.close();
     }
 
     this.closeLogger();

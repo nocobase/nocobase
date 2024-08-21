@@ -7,14 +7,23 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Model, Op } from 'sequelize';
+import { BelongsToManyRepository, Collection, HasManyRepository, TargetKey, Model, Op } from '@nocobase/database';
+import { Context } from '@nocobase/actions';
 
-import { BelongsToManyRepository, Collection, HasManyRepository, SortField, TargetKey } from '@nocobase/database';
-import { Context } from '..';
-import { getRepositoryFromParams } from '../utils';
+import { SortField } from './sort-field';
 
 export async function move(ctx: Context, next) {
-  const repository = ctx.databaseRepository || getRepositoryFromParams(ctx);
+  const repository = ctx.getCurrentRepository();
+
+  if (repository.move) {
+    ctx.body = await repository.move(ctx.action.params);
+    return next();
+  }
+
+  if (repository.database) {
+    return ctx.throw(new Error(`Repository can not handle action move for ${ctx.action.resourceName}`));
+  }
+
   const { sourceId, targetId, targetScope, sticky, method } = ctx.action.params;
 
   let sortField = ctx.action.params.sortField;

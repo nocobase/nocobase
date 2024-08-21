@@ -62,8 +62,8 @@ async function importXlsxAction(ctx: Context, next: Next) {
 export async function importXlsx(ctx: Context, next: Next) {
   if (mutex.isLocked()) {
     throw new Error(
-      ctx.t(`another export action is running, please try again later.`, {
-        ns: 'action-export',
+      ctx.t(`another import action is running, please try again later.`, {
+        ns: 'action-import',
       }),
     );
   }
