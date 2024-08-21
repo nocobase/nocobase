@@ -60,12 +60,17 @@ export class UserDataSyncResource extends UserDataResource {
     }
   }
 
-  async update(record: OriginRecord, resourcePks: PrimaryKey[]): Promise<RecordResourceChanged[]> {
+  async update(record: OriginRecord, resourcePks: PrimaryKey[], matchKey: string): Promise<RecordResourceChanged[]> {
     const { metaData: sourceUser } = record;
     const resourcePk = resourcePks[0];
     const user = await this.userRepo.findOne({
       filterByTk: resourcePk,
     });
+    if (!user) {
+      // 用户不存在, 重新创建用户
+      const result = await this.create(record, matchKey);
+      return [...result, { resourcesPk: resourcePk, isDeleted: true }];
+    }
     await this.updateUser(user, sourceUser);
     return [];
   }

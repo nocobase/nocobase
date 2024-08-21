@@ -9,7 +9,7 @@
 
 import { Toposort, ToposortOptions } from '@nocobase/utils';
 import Database, { Repository } from '@nocobase/database';
-import { SystemLogger } from '@nocobase/logger';
+import { Logger } from '@nocobase/logger';
 
 export type FormatUser = {
   uid: string;
@@ -66,14 +66,14 @@ export abstract class UserDataResource {
   name: string;
   accepts: SyncAccept[];
   db: Database;
-  logger: SystemLogger;
+  logger: Logger;
 
-  constructor(db: Database, logger: SystemLogger) {
+  constructor(db: Database, logger: Logger) {
     this.db = db;
     this.logger = logger;
   }
 
-  abstract update(record: OriginRecord, resourcePks: PrimaryKey[]): Promise<RecordResourceChanged[]>;
+  abstract update(record: OriginRecord, resourcePks: PrimaryKey[], matchKey): Promise<RecordResourceChanged[]>;
   abstract create(record: OriginRecord, matchKey: string): Promise<RecordResourceChanged[]>;
 
   get syncRecordRepo() {
@@ -89,7 +89,7 @@ export class UserDataResourceManager {
   resources = new Toposort<UserDataResource>();
   syncRecordRepo: Repository;
   syncRecordResourceRepo: Repository;
-  logger: SystemLogger;
+  logger: Logger;
 
   registerResource(resource: UserDataResource, options?: ToposortOptions) {
     if (!resource.name) {
@@ -108,6 +108,9 @@ export class UserDataResourceManager {
 
   async saveOriginRecords(data: UserData): Promise<void> {
     for (const record of data.records) {
+      if (record.uid === undefined) {
+        throw new Error(`record must has uid, error record: ${JSON.stringify(record)}`);
+      }
       const syncRecord = await this.syncRecordRepo.findOne({
         where: {
           sourceName: data.sourceName,
