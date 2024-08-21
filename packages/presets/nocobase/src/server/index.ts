@@ -53,6 +53,7 @@ export class PresetNocoBase extends Plugin {
     'action-duplicate',
     'action-print',
     'collection-sql',
+    'collection-tree',
   ];
 
   localPlugins = [
