@@ -19,7 +19,7 @@ export const DuplicateActionInitializer = (props) => {
     'x-acl-action': 'create',
     title: '{{ t("Duplicate") }}',
     'x-component': 'Action.Link',
-    'x-decorator': 'ACLActionProvider',
+    'x-decorator': 'DuplicateActionDecorator',
     'x-component-props': {
       openMode: defaultOpenMode,
       component: 'DuplicateAction',
