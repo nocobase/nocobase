@@ -149,7 +149,6 @@ const PagePopupsItemProvider: FC<{
       </PopupVisibleProvider>
     );
   }
-
   return (
     <PopupParamsProvider params={params} context={context} currentLevel={currentLevel}>
       <PopupVisibleProvider visible={visible} setVisible={setVisible}>
@@ -158,7 +157,7 @@ const PagePopupsItemProvider: FC<{
           collection={params.collection || context.collection}
           association={context.association}
           sourceId={params.sourceid}
-          filterByTk={params.filterbytk}
+          filterByTk={parseQueryString(params.filterbytk)}
           // @ts-ignore
           record={storedContext.record}
           parentRecord={storedContext.parentRecord}
@@ -259,7 +258,6 @@ export const PagePopups = (props: { paramsList?: PopupParams[] }) => {
     };
     run();
   }, [popupParams, requestSchema]);
-
   const components = useMemo(() => ({ PagePopupsItemProvider }), []);
 
   if (!rootSchema) {
@@ -404,4 +402,26 @@ function get404Schema() {
     'x-index': 2,
     'x-read-pretty': true,
   };
+}
+
+function parseQueryString(queryString) {
+  // 如果没有 '&'，直接返回原始字符串
+  if (!queryString.includes('&')) {
+    return queryString;
+  }
+
+  // 解码查询字符串
+  const decodedString = decodeURIComponent(queryString);
+
+  // 将解码后的字符串按 '&' 分隔成键值对
+  const pairs = decodedString.split('&');
+
+  // 将键值对转换为对象
+  const params = pairs.reduce((acc, pair) => {
+    const [key, value] = pair.split('=');
+    acc[key] = value;
+    return acc;
+  }, {});
+
+  return params;
 }
