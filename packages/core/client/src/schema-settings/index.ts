@@ -21,7 +21,6 @@ export * from './SchemaSettingsSortingRule';
 export * from './SchemaSettingsTemplate';
 export * from './SchemaSettingsBlockHeightItem';
 export * from './setDefaultSortingRulesSchemaSettingsItem';
-export * from './SchemaSettingsPagingMode';
 export * from './setTheDataScopeSchemaSettingsItem';
 export * from './hooks/useGetAriaLabelOfDesigner';
 export * from './hooks/useIsAllowToSetDefaultValue';
