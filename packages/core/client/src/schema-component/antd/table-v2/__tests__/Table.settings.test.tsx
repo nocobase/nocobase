@@ -220,6 +220,10 @@ describe('Table.settings', () => {
           ],
         },
         {
+          title: 'Paging mode',
+          type: 'select',
+        },
+        {
           title: 'Save as template',
           type: 'modal',
         },

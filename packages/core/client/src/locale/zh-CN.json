@@ -966,6 +966,10 @@
   "Search": "搜索",
   "Clear default value": "清除默认值",
   "Open in new window": "新窗口打开",
+  "is none of": "不包含任何一个",
+  "is any of": "包含任何一个",
+  "Paging mode": "分页模式",
+  "Simple Paginate": "简单分页",
   "Sorry, the page you visited does not exist.": "抱歉，你访问的页面不存在。",
   "Set Template Engine": "设置模板引擎"
 }

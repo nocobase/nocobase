@@ -30,7 +30,7 @@ function findArgs(ctx: Context) {
 }
 
 async function listWithPagination(ctx: Context) {
-  const { page = DEFAULT_PAGE, pageSize = DEFAULT_PER_PAGE } = ctx.action.params;
+  const { page = DEFAULT_PAGE, pageSize = DEFAULT_PER_PAGE, simplePaginate } = ctx.action.params;
 
   const repository = getRepositoryFromParams(ctx);
 
@@ -46,15 +46,24 @@ async function listWithPagination(ctx: Context) {
     }
   });
 
-  const [rows, count] = await repository.findAndCount(options);
+  if (simplePaginate) {
+    const rows = await repository.find(options);
+    ctx.body = {
+      rows,
+      page: Number(page),
+      pageSize: Number(pageSize),
+    };
+  } else {
+    const [rows, count] = await repository.findAndCount(options);
 
-  ctx.body = {
-    count,
-    rows,
-    page: Number(page),
-    pageSize: Number(pageSize),
-    totalPage: totalPage(count, pageSize),
-  };
+    ctx.body = {
+      count,
+      rows,
+      page: Number(page),
+      pageSize: Number(pageSize),
+      totalPage: totalPage(count, pageSize),
+    };
+  }
 }
 
 async function listWithNonPaged(ctx: Context) {
