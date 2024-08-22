@@ -34,10 +34,10 @@ describe('user data sync', () => {
     await resourceManager.updateOrCreate({
       sourceName: 'test',
       dataType: 'user',
-      uniqueKey: 'email',
+      matchKey: 'email',
       records: [
         {
-          id: 1,
+          uid: '1',
           nickname: 'test',
           email: 'test@nocobase.com',
         },
@@ -62,10 +62,10 @@ describe('user data sync', () => {
     await resourceManager.updateOrCreate({
       sourceName: 'test',
       dataType: 'user',
-      uniqueKey: 'email',
+      matchKey: 'email',
       records: [
         {
-          id: 1,
+          uid: '1',
           nickname: 'test',
           email: 'test@nocobase.com',
         },
@@ -84,10 +84,10 @@ describe('user data sync', () => {
     await resourceManager.updateOrCreate({
       sourceName: 'test',
       dataType: 'user',
-      uniqueKey: 'email',
+      matchKey: 'email',
       records: [
         {
-          id: 1,
+          uid: '1',
           nickname: 'test',
           email: 'test@nocobase.com',
         },
@@ -102,10 +102,10 @@ describe('user data sync', () => {
     await resourceManager.updateOrCreate({
       sourceName: 'test',
       dataType: 'user',
-      uniqueKey: 'email',
+      matchKey: 'email',
       records: [
         {
-          id: 1,
+          uid: '1',
           nickname: 'test2',
           email: 'test@nocobase.com',
         },
