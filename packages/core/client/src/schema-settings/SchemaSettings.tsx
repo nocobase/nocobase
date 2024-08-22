@@ -636,8 +636,20 @@ export const SchemaSettingsActionModalItem: FC<SchemaSettingsActionModalItemProp
 
   const submitHandler = useCallback(async () => {
     await form.submit();
-    onSubmit?.(cloneDeep(form.values));
-    setVisible(false);
+    try {
+      const allValues = form.values;
+      // 过滤掉那些在表单 Schema 中未定义的字段
+      const visibleValues = Object.keys(allValues).reduce((result, key) => {
+        if (form.query(key).take()) {
+          result[key] = allValues[key];
+        }
+        return result;
+      }, {});
+      await onSubmit?.(cloneDeep(visibleValues));
+      setVisible(false);
+    } catch (err) {
+      console.error(err);
+    }
   }, [form, onSubmit]);
 
   const openAssignedFieldValueHandler = useCallback(async () => {
