@@ -35,21 +35,19 @@ describe('api', async () => {
     resourceManager.registerResource(usersResource);
     const res = await agent.resource('userData').push({
       values: {
-        data: {
-          dataType: 'user',
-          records: [
-            {
-              uid: 1,
-              nickname: 'test',
-            },
-          ],
-        },
+        dataType: 'user',
+        records: [
+          {
+            uid: '1',
+            nickname: 'test',
+          },
+        ],
       },
     });
     expect(res.status).toBe(200);
     expect(usersResource.data.length).toBe(1);
     expect(usersResource.data[0]).toMatchObject({
-      uid: 1,
+      uid: '1',
       nickname: 'test',
     });
   });
