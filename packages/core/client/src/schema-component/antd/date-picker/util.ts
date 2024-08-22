@@ -88,7 +88,7 @@ export const mapDatePicker = function () {
             value = value.startOf('day');
           }
           if (props.dateOnly) {
-            onChange(dateString);
+            onChange(dateString !== '' ? dateString : undefined);
           } else {
             onChange(moment2str(value, props));
           }
