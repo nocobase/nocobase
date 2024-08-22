@@ -15,7 +15,7 @@ import { useCollectionManager_deprecated } from '../../../collection-manager';
 import { useCollectionRecordData } from '../../../data-source/collection-record/CollectionRecordProvider';
 import { useCompile } from '../../hooks';
 import { useActionContext } from '../action';
-import { usePagePopup } from '../page/pagePopupUtils';
+import { usePopupUtils } from '../page/pagePopupUtils';
 import { transformNestedData } from './InternalCascadeSelect';
 import { ButtonListProps, ReadPrettyInternalViewer, isObject } from './InternalViewer';
 import { useAssociationFieldContext, useFieldNames, useInsertSchema } from './hooks';
@@ -47,7 +47,7 @@ const ButtonTabList: React.FC<ButtonListProps> = (props) => {
   const { getCollection } = useCollectionManager_deprecated();
   const targetCollection = getCollection(collectionField?.target);
   const isTreeCollection = targetCollection?.template === 'tree';
-  const { openPopup } = usePagePopup();
+  const { openPopup } = usePopupUtils();
   const recordData = useCollectionRecordData();
 
   const renderRecords = () =>

@@ -29,7 +29,7 @@ import { SortableItem } from '../../common';
 import { useCompile, useComponent, useDesigner } from '../../hooks';
 import { useProps } from '../../hooks/useProps';
 import { PopupVisibleProvider } from '../page/PagePopups';
-import { usePagePopup } from '../page/pagePopupUtils';
+import { usePopupUtils } from '../page/pagePopupUtils';
 import { usePopupSettings } from '../page/PopupSettingsProvider';
 import ActionContainer from './Action.Container';
 import { ActionDesigner } from './Action.Designer';
@@ -77,7 +77,7 @@ export const Action: ComposedAction = withDynamicSchemaProps(
     const aclCtx = useACLActionParamsContext();
     const { wrapSSR, componentCls, hashId } = useStyles();
     const { t } = useTranslation();
-    const { visibleWithURL, setVisibleWithURL } = usePagePopup();
+    const { visibleWithURL, setVisibleWithURL } = usePopupUtils();
     const [visible, setVisible] = useState(false);
     const [formValueChanged, setFormValueChanged] = useState(false);
     const { setSubmitted: setParentSubmitted } = useActionContext();
@@ -307,7 +307,7 @@ function RenderButton({
 }) {
   const { t } = useTranslation();
   const { isPopupVisibleControlledByURL } = usePopupSettings();
-  const { openPopup } = usePagePopup();
+  const { openPopup } = usePopupUtils();
 
   const handleButtonClick = useCallback(
     (e: React.MouseEvent, checkPortal = true) => {

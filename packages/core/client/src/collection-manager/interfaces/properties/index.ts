@@ -10,7 +10,6 @@
 import { Field } from '@formily/core';
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
-import { CustomRadio } from '../components';
 export * as operators from './operators';
 
 export const type: ISchema = {
@@ -226,29 +225,6 @@ export const reverseFieldProperties: Record<string, ISchema> = {
 };
 
 export const dateTimeProps: { [key: string]: ISchema } = {
-  timezone: {
-    type: 'string',
-    title: '{{t("Timezone")}}',
-    'x-component': CustomRadio,
-    'x-decorator': 'FormItem',
-    default: 'server',
-    'x-component-props': {
-      options: [
-        {
-          label: '{{t("None")}}',
-          value: 'server',
-        },
-        {
-          label: '{{t("Client\'s time zone")}}',
-          value: 'client',
-        },
-        {
-          label: '{{t("Custom")}}',
-          value: 'custom',
-        },
-      ],
-    },
-  },
   'uiSchema.x-component-props.dateFormat': {
     type: 'string',
     title: '{{t("Date format")}}',
@@ -277,10 +253,10 @@ export const dateTimeProps: { [key: string]: ISchema } = {
     'x-content': '{{t("Show time")}}',
     'x-reactions': [
       `{{(field) => {
-         field.query('..[].timeFormat').take(f => {
-           f.display = field.value ? 'visible' : 'none';
-         });
-       }}}`,
+        field.query('..[].timeFormat').take(f => {
+          f.display = field.value ? 'visible' : 'none';
+        });
+      }}}`,
     ],
   },
   'uiSchema.x-component-props.timeFormat': {
@@ -299,18 +275,6 @@ export const dateTimeProps: { [key: string]: ISchema } = {
         value: 'HH:mm:ss',
       },
     ],
-  },
-  defaultToCurrentTime: {
-    type: 'boolean',
-    'x-decorator': 'FormItem',
-    'x-component': 'Checkbox',
-    'x-content': '{{t("Default value to current time")}}',
-  },
-  onUpdateToCurrentTime: {
-    type: 'boolean',
-    'x-decorator': 'FormItem',
-    'x-component': 'Checkbox',
-    'x-content': '{{t("Automatically update timestamp on update")}}',
   },
 };
 

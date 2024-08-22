@@ -78,13 +78,11 @@ export const useTableBlockProps = () => {
     ),
     onChange: useCallback(
       ({ current, pageSize }, filters, sorter) => {
-        const sort = !ctx.dragSort
-          ? sorter.order
-            ? sorter.order === `ascend`
-              ? [sorter.field]
-              : [`-${sorter.field}`]
-            : globalSort || ctx.dragSortBy
-          : ctx.dragSortBy;
+        const sort = sorter.order
+          ? sorter.order === `ascend`
+            ? [sorter.field]
+            : [`-${sorter.field}`]
+          : globalSort || ctx.dragSortBy;
         const currentPageSize = pageSize || fieldSchema.parent?.['x-decorator-props']?.['params']?.pageSize;
         const args = { ...params?.[0], page: current || 1, pageSize: currentPageSize };
         if (sort) {
@@ -92,7 +90,7 @@ export const useTableBlockProps = () => {
         }
         ctx.service.run(args);
       },
-      [globalSort, params],
+      [globalSort, params, ctx.dragSort],
     ),
     onClickRow: useCallback(
       (record, setSelectedRow, selectedRow) => {

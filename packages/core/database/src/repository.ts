@@ -137,7 +137,7 @@ export interface DestroyOptions extends SequelizeDestroyOptions {
   context?: any;
 }
 
-type FindAndCountOptions = Omit<SequelizeAndCountOptions, 'where' | 'include' | 'order'> & CommonFindOptions;
+export type FindAndCountOptions = Omit<SequelizeAndCountOptions, 'where' | 'include' | 'order'> & CommonFindOptions;
 
 export interface CreateOptions extends SequelizeCreateOptions {
   values?: Values | Values[];
@@ -577,7 +577,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
       underscored: this.collection.options.underscored,
     });
 
-    const values = (this.model as typeof Model).callSetters(guard.sanitize(options.values || {}), options);
+    const values = guard.sanitize(options.values || {});
 
     const instance = await this.model.create<any>(values, {
       ...options,
@@ -649,7 +649,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
 
     const guard = UpdateGuard.fromOptions(this.model, { ...options, underscored: this.collection.options.underscored });
 
-    const values = (this.model as typeof Model).callSetters(guard.sanitize(options.values || {}), options);
+    const values = guard.sanitize(options.values);
 
     // NOTE:
     // 1. better to be moved to separated API like bulkUpdate/updateMany

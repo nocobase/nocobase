@@ -60,6 +60,13 @@ export const defaultConfigurableProperties = {
     'x-decorator': 'FormItem',
     'x-component': 'Input.TextArea',
   },
+  simplePaginate: {
+    'x-content': '{{t("Use simple pagination mode")}}',
+    type: 'string',
+    name: 'simplePaginate',
+    'x-decorator': 'FormItem',
+    'x-component': 'Checkbox',
+  },
   presetFields: {
     title: '{{t("Preset fields")}}',
     type: 'void',
@@ -92,6 +99,7 @@ export type DefaultConfigurableKeys =
   | 'updatedAt'
   | 'sortable'
   | 'description'
+  | 'simplePaginate'
   | 'presetFields';
 
 export const getConfigurableProperties = (...keys: DefaultConfigurableKeys[]) => {

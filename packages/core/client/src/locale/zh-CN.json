@@ -283,7 +283,7 @@
   "Checkbox group": "复选框",
   "China region": "中国行政区",
   "Date & Time": "日期 & 时间",
-  "Datetime": "日期时间",
+  "Datetime": "日期",
   "Relation": "关系类型",
   "Link to": "关联",
   "Link to description": "用于快速创建表关系，可兼容大多数普通场景。适合非开发人员使用。作为字段存在时，它是一个下拉选择用于选择目标数据表的数据。创建后，将同时在目标数据表中生成当前数据表的关联字段。",
@@ -928,7 +928,7 @@
   "Unix Timestamp": "Unix 时间戳",
   "Field value do not meet the requirements": "字符不符合要求",
   "Field value size is": "字符长度要求",
-  "Style": "风格",
+  "Style": "样式",
   "Unit conversion": "单位换算",
   "Separator": "分隔符",
   "Prefix": "前缀",
@@ -966,9 +966,9 @@
   "Search": "搜索",
   "Clear default value": "清除默认值",
   "Open in new window": "新窗口打开",
+  "is none of": "不包含任何一个",
+  "is any of": "包含任何一个",
+  "Use simple pagination mode": "使用简单分页模式",
   "Sorry, the page you visited does not exist.": "抱歉，你访问的页面不存在。",
-  "Set Template Engine": "设置模板引擎",
-  "Default value to current time":"设置字段默认值为当前时间",
-  "Automatically update timestamp on update":"当记录更新时自动设置字段值为当前时间",
-  "Client's time zone":"客户端时区"
+  "Set Template Engine": "设置模板引擎"
 }

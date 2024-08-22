@@ -264,6 +264,7 @@ const TableIndex = (props) => {
 const usePaginationProps = (pagination1, pagination2) => {
   const { t } = useTranslation();
   const field: any = useField();
+  const { token } = useToken();
   const pagination = useMemo(
     () => ({ ...pagination1, ...pagination2 }),
     [JSON.stringify({ ...pagination1, ...pagination2 })],
@@ -285,7 +286,7 @@ const usePaginationProps = (pagination1, pagination2) => {
     } else {
       return {
         showTotal: false,
-        simple: { readOnly: true },
+        simple: true,
         showTitle: false,
         showSizeChanger: true,
         hideOnSinglePage: false,
@@ -296,6 +297,24 @@ const usePaginationProps = (pagination1, pagination2) => {
             display: none !important;
           }
         `,
+        itemRender: (_, type, originalElement) => {
+          if (type === 'prev') {
+            return (
+              <div
+                style={{ display: 'flex' }}
+                className={css`
+                  .ant-pagination-item-link {
+                    min-width: ${token.controlHeight}px;
+                  }
+                `}
+              >
+                {originalElement} <div style={{ marginLeft: '7px' }}>{current}</div>
+              </div>
+            );
+          } else {
+            return originalElement;
+          }
+        },
       };
     }
   }, [pagination, t, showTotal]);
@@ -624,8 +643,9 @@ export const Table: any = withDynamicSchemaProps(
                 if (!dragSort && !showIndex) {
                   return originNode;
                 }
-                const current = props?.pagination?.current;
-                const pageSize = props?.pagination?.pageSize || 20;
+                const current = paginationProps?.current;
+
+                const pageSize = paginationProps?.pageSize || 20;
                 if (current) {
                   index = index + (current - 1) * pageSize + 1;
                 } else {
@@ -674,6 +694,7 @@ export const Table: any = withDynamicSchemaProps(
         getRowKey,
         isRowSelect,
         memoizedRowSelection,
+        paginationProps,
       ],
     );
 
