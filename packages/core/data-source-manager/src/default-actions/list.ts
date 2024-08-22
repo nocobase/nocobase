@@ -42,7 +42,7 @@ async function listWithPagination(ctx: Context) {
 
   const repository = ctx.getCurrentRepository();
 
-  const { simplePaginate } = repository.collection.options || {};
+  const { simplePaginate } = repository.collection?.options || {};
 
   const options = {
     context: ctx,
