@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import crypto from 'node:crypto';
 import _ from 'lodash';
 import { type PubSubManagerSubscribeOptions } from './types';
 
