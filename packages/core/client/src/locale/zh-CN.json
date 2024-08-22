@@ -967,5 +967,6 @@
   "Open in new window": "新窗口打开",
   "is none of": "不包含任何一个",
   "is any of": "包含任何一个",
-  "Use simple pagination mode": "使用简单分页模式"
+  "Use simple pagination mode": "使用简单分页模式",
+  "Skip getting the total number of table records during paging to speed up loading. It is recommended to enable this option for data tables with a large amount of data": "在分页时跳过获取表记录总数，以加快加载速度，建议对有大量数据的数据表开启此选项"
 }
