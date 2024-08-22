@@ -26,80 +26,6 @@ import { createRendererSchema } from '../utils';
 import { ChartRendererContext } from './ChartRendererProvider';
 import { ChartDataContext } from '../block/ChartDataProvider';
 
-export const SchemaSettingsAutoRefresh: React.FC = () => {
-  const { t } = useChartsTranslation();
-  const field = useField();
-  const fieldSchema = useFieldSchema();
-  const { dn } = useDesignable();
-  return (
-    <SchemaSettingsSelectItem
-      title={t('Auto refresh')}
-      value={field.decoratorProps?.config?.autoRefresh || false}
-      onChange={(v) => {
-        const config = {
-          ...field.decoratorProps?.config,
-          autoRefresh: v,
-        };
-        field.decoratorProps.config = config;
-        fieldSchema['x-decorator-props'] = field.decoratorProps;
-        dn.emit('patch', {
-          schema: {
-            ['x-uid']: fieldSchema['x-uid'],
-            'x-decorator-props': field.decoratorProps,
-          },
-        });
-        dn.refresh();
-      }}
-      options={[
-        {
-          label: t('Off'),
-          value: false,
-        },
-        {
-          label: '5s',
-          value: 5,
-        },
-        {
-          label: '10s',
-          value: 10,
-        },
-        {
-          label: '30s',
-          value: 30,
-        },
-        {
-          label: '1m',
-          value: 60,
-        },
-        {
-          label: '5m',
-          value: 300,
-        },
-        {
-          label: '15m',
-          value: 900,
-        },
-        {
-          label: '30m',
-          value: 1800,
-        },
-        {
-          label: '1h',
-          value: 3600,
-        },
-        {
-          label: '2h',
-          value: 7200,
-        },
-        {
-          label: '1d',
-          value: 86400,
-        },
-      ]}
-    />
-  );
-};
-
 export function ChartRendererDesigner() {
   const { t } = useChartsTranslation();
   const { setVisible, setCurrent } = useContext(ChartConfigContext);
@@ -129,7 +55,6 @@ export function ChartRendererDesigner() {
       >
         {t('Duplicate')}
       </SchemaSettingsItem>
-      <SchemaSettingsAutoRefresh />
       {/* <SchemaSettingsBlockTitleItem /> */}
       <SchemaSettingsDivider />
       <SchemaSettingsRemove

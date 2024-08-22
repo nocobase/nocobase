@@ -15,11 +15,12 @@ import {
   useAPIClient,
   useRequest,
 } from '@nocobase/client';
-import React, { createContext, useContext, useEffect } from 'react';
+import React, { createContext, useCallback, useContext, useEffect } from 'react';
 import { parseField, removeUnparsableFilter } from '../utils';
 import { ChartDataContext } from '../block/ChartDataProvider';
 import { useChartFilter } from '../hooks';
 import { ChartFilterContext } from '../filter/FilterProvider';
+import { ChartBlockContext } from '../block/ChartBlockProvider';
 
 export type MeasureProps = {
   field: string | string[];
@@ -65,7 +66,6 @@ export type ChartRendererProps = {
     advanced: any;
     title?: string;
     bordered?: boolean;
-    autoRefresh?: number | boolean;
   };
   transform?: TransformProps[];
   mode?: 'builder' | 'sql';
@@ -75,6 +75,9 @@ export const ChartRendererContext = createContext<
   {
     service: any;
     data?: any[];
+    autoRefresh?: number | boolean;
+    setAutoRefresh?: (autoRefresh: number | boolean) => void;
+    showActionBar?: boolean;
   } & ChartRendererProps
 >({} as any);
 ChartRendererContext.displayName = 'ChartRendererContext';
@@ -82,11 +85,13 @@ ChartRendererContext.displayName = 'ChartRendererContext';
 export const ChartRendererProvider: React.FC<ChartRendererProps> = (props) => {
   const { query, config, collection, transform, dataSource = DEFAULT_DATA_SOURCE_KEY } = props;
   const { addChart } = useContext(ChartDataContext);
+  const { autoRefresh: defaultAutoRefresh } = useContext(ChartBlockContext);
   const { ready, form, enabled } = useContext(ChartFilterContext);
   const { getFilter, hasFilter, appendFilter, parseFilter } = useChartFilter();
-  const { autoRefresh = false } = config || {};
   const schema = useFieldSchema();
   const api = useAPIClient();
+  const [autoRefresh, setAutoRefresh] = React.useState<number | boolean>(false);
+  const [showActionBar, setShowActionBar] = React.useState<boolean>(false);
   const service = useRequest(
     async (dataSource, collection, query, manual) => {
       if (!(collection && query?.measures?.length)) return;
@@ -146,18 +151,33 @@ export const ChartRendererProvider: React.FC<ChartRendererProps> = (props) => {
   );
 
   useEffect(() => {
-    if (!autoRefresh) {
+    if (!autoRefresh && !defaultAutoRefresh) {
       return;
     }
-    const timer = setInterval(service.refresh, (autoRefresh as number) * 1000);
+    const refresh = (autoRefresh || defaultAutoRefresh) as number;
+    const timer = setInterval(service.refresh, refresh * 1000);
     return () => clearInterval(timer);
-  }, [autoRefresh]);
+  }, [autoRefresh, defaultAutoRefresh]);
 
   return (
     <CollectionManagerProvider dataSource={dataSource}>
       <MaybeCollectionProvider collection={collection}>
-        <ChartRendererContext.Provider value={{ dataSource, collection, config, transform, service, query }}>
-          {props.children}
+        <ChartRendererContext.Provider
+          value={{
+            dataSource,
+            collection,
+            config,
+            transform,
+            service,
+            query,
+            autoRefresh,
+            setAutoRefresh,
+            showActionBar,
+          }}
+        >
+          <div onMouseOver={() => setShowActionBar(true)} onMouseOut={() => setShowActionBar(false)}>
+            {props.children}
+          </div>
         </ChartRendererContext.Provider>
       </MaybeCollectionProvider>
     </CollectionManagerProvider>
