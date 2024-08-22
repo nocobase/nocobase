@@ -316,7 +316,7 @@ export class PluginDataSourceMainServer extends Plugin {
     this.app.db.on('fields.beforeDestroy', beforeDestroyForeignKey(this.app.db));
 
     this.app.db.on('fields.beforeDestroy', async (model: FieldModel, options) => {
-      const lockKey = `${this.name}:fields.beforeDestroy:${model.get('collectionName')}:${model.get('name')}`;
+      const lockKey = `${this.name}:fields.beforeDestroy:${model.get('collectionName')}`;
       await this.app.lockManager.runExclusive(lockKey, async () => {
         await model.remove(options);
 
