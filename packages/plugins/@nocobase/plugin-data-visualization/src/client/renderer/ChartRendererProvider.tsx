@@ -13,14 +13,11 @@ import {
   DEFAULT_DATA_SOURCE_KEY,
   MaybeCollectionProvider,
   useAPIClient,
-  useDataSourceManager,
-  useParsedFilter,
   useRequest,
 } from '@nocobase/client';
-import React, { createContext, useContext } from 'react';
+import React, { createContext, useContext, useEffect } from 'react';
 import { parseField, removeUnparsableFilter } from '../utils';
 import { ChartDataContext } from '../block/ChartDataProvider';
-import { ConfigProvider } from 'antd';
 import { useChartFilter } from '../hooks';
 import { ChartFilterContext } from '../filter/FilterProvider';
 
@@ -66,6 +63,9 @@ export type ChartRendererProps = {
     chartType: string;
     general: any;
     advanced: any;
+    title?: string;
+    bordered?: boolean;
+    autoRefresh?: number | boolean;
   };
   transform?: TransformProps[];
   mode?: 'builder' | 'sql';
@@ -84,6 +84,7 @@ export const ChartRendererProvider: React.FC<ChartRendererProps> = (props) => {
   const { addChart } = useContext(ChartDataContext);
   const { ready, form, enabled } = useContext(ChartFilterContext);
   const { getFilter, hasFilter, appendFilter, parseFilter } = useChartFilter();
+  const { autoRefresh = false } = config || {};
   const schema = useFieldSchema();
   const api = useAPIClient();
   const service = useRequest(
@@ -143,6 +144,14 @@ export const ChartRendererProvider: React.FC<ChartRendererProps> = (props) => {
       ready: ready && (!enabled || !!form),
     },
   );
+
+  useEffect(() => {
+    if (!autoRefresh) {
+      return;
+    }
+    const timer = setInterval(service.refresh, (autoRefresh as number) * 1000);
+    return () => clearInterval(timer);
+  }, [autoRefresh]);
 
   return (
     <CollectionManagerProvider dataSource={dataSource}>
