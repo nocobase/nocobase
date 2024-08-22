@@ -144,7 +144,7 @@ export const transformToFilter = (
           key = `${key}.${collectionField.targetKey || 'id'}`;
         }
 
-        if (_.isNil(value)) {
+        if (!value && value !== 0 && value !== false) {
           return null;
         }
 
@@ -167,7 +167,7 @@ export const useAssociatedFields = () => {
 };
 
 export const isAssocField = (field?: FieldOptions) => {
-  return ['o2o', 'oho', 'obo', 'm2o', 'createdBy', 'updatedBy', 'o2m', 'm2m', 'linkTo', 'chinaRegion'].includes(
+  return ['o2o', 'oho', 'obo', 'm2o', 'createdBy', 'updatedBy', 'o2m', 'm2m', 'linkTo', 'chinaRegion', 'mbm'].includes(
     field?.interface,
   );
 };
