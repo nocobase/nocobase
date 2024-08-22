@@ -26,51 +26,7 @@ export const isPdf = (file) => {
   return match(file.mimetype || file.type, 'application/pdf');
 };
 
-export const toMap = (fileList: any) => {
-  if (!fileList) {
-    return [];
-  }
-  if (typeof fileList !== 'object') {
-    return [];
-  }
-  let list = fileList;
-  if (!Array.isArray(fileList)) {
-    if (Object.keys({ ...fileList }).length === 0) {
-      return [];
-    }
-    list = [fileList];
-  }
-  return list.map((item) => {
-    return [item.id || item.uid, toItem(item)];
-  });
-};
-
-export const toImages = (fileList) => {
-  if (!fileList) {
-    return [];
-  }
-  if (typeof fileList !== 'object') {
-    return [];
-  }
-  if (Object.keys(fileList).length === 0) {
-    return [];
-  }
-  let list = fileList;
-  if (!Array.isArray(fileList) && typeof fileList === 'object') {
-    list = [fileList];
-  }
-  return list.map((item) => {
-    return {
-      ...item,
-      title: item.title || item.name,
-      imageUrl: getImageByUrl(item.url, {
-        exclude: ['.png', '.jpg', '.jpeg', '.gif'],
-      }),
-    };
-  });
-};
-
-export const toArr = (value) => {
+const toArr = (value) => {
   if (!isValid(value)) {
     return [];
   }
@@ -210,9 +166,11 @@ export const toItem = (file) => {
     ...file,
     id: file.id || file.uid,
     title: file.title || file.name,
-    imageUrl: getImageByUrl(file.url, {
-      exclude: ['.png', '.jpg', '.jpeg', '.gif'],
-    }),
+    imageUrl: isImage(file)
+      ? file.url
+      : getImageByUrl(file.url, {
+          exclude: ['.png', '.jpg', '.jpeg', '.gif', '.svg', '.webp', '.bmp', '.ico'],
+        }),
   };
 };
 
