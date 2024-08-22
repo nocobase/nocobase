@@ -26,7 +26,7 @@ export class PluginFieldSortServer extends Plugin {
 
     this.app.dataSourceManager.beforeAddDataSource((dataSource: DataSource) => {
       // @ts-ignore
-      if (dataSource.collectionManager.db) {
+      if (dataSource.collectionManager?.db) {
         dataSource.resourceManager.registerActionHandlers({ move });
       }
     });
