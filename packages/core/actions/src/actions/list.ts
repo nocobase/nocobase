@@ -30,9 +30,11 @@ function findArgs(ctx: Context) {
 }
 
 async function listWithPagination(ctx: Context) {
-  const { page = DEFAULT_PAGE, pageSize = DEFAULT_PER_PAGE, simplePaginate } = ctx.action.params;
+  const { page = DEFAULT_PAGE, pageSize = DEFAULT_PER_PAGE } = ctx.action.params;
 
   const repository = getRepositoryFromParams(ctx);
+
+  const { simplePaginate } = repository.collection?.options || {};
 
   const options = {
     context: ctx,
