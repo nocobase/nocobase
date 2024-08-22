@@ -171,6 +171,7 @@ export const useFormBlockProps = (shouldClearInitialValues = false) => {
         // 这些默认值是不需要的，需要清除掉，不然会导致一些问题。比如：https://github.com/nocobase/nocobase/issues/4868
         if (shouldClearInitialValues) {
           form.initialValues = {};
+          form.reset();
         }
         form.setInitialValues(ctx.service?.data?.data);
       }
