@@ -50,14 +50,12 @@ export class UnixTimestampFieldInterface extends CollectionFieldInterface {
       'x-decorator': 'FormItem',
       'x-component': 'Checkbox',
       'x-content': '{{t("Default value to current time")}}',
-      default: true,
     },
     onUpdateToCurrentTime: {
       type: 'boolean',
       'x-decorator': 'FormItem',
       'x-component': 'Checkbox',
       'x-content': '{{t("Automatically update timestamp on update")}}',
-      default: true,
     },
   };
   filterable = {
