@@ -100,7 +100,7 @@ export const Action: ComposedAction = withDynamicSchemaProps(
     const tarComponent = useComponent(component) || component;
     const { modal } = App.useApp();
     const variables = useVariables();
-    const localVariables = useLocalVariables({ currentForm: { values: recordData } as any });
+    const localVariables = useLocalVariables({ currentForm: { values: recordData, readPretty: false } as any });
     const { getAriaLabel } = useGetAriaLabelOfAction(title);
     const service = useDataBlockRequest();
 
