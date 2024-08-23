@@ -50,9 +50,16 @@ export const RefreshButton: React.FC = forwardRef<HTMLButtonElement | HTMLAnchor
         ],
       }}
       icon={<DownOutlined />}
+      buttonsRender={([_, rightButton]) => [
+        _,
+        React.cloneElement(
+          rightButton as React.ReactElement<any, string>,
+          { iconPosition: 'end' },
+          autoRefresh ? interval[autoRefresh as number] : null,
+        ),
+      ]}
     >
       <ReloadOutlined />
-      {autoRefresh ? interval[autoRefresh as number] : null}
       {props.children}
     </Dropdown.Button>
   ) : null;

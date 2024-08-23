@@ -69,6 +69,7 @@ export type ChartRendererProps = {
   };
   transform?: TransformProps[];
   mode?: 'builder' | 'sql';
+  disableAutoRefresh?: boolean;
 };
 
 export const ChartRendererContext = createContext<
@@ -83,7 +84,7 @@ export const ChartRendererContext = createContext<
 ChartRendererContext.displayName = 'ChartRendererContext';
 
 export const ChartRendererProvider: React.FC<ChartRendererProps> = (props) => {
-  const { query, config, collection, transform, dataSource = DEFAULT_DATA_SOURCE_KEY } = props;
+  const { query, config, collection, transform, dataSource = DEFAULT_DATA_SOURCE_KEY, disableAutoRefresh } = props;
   const { addChart } = useContext(ChartDataContext);
   const { autoRefresh: defaultAutoRefresh } = useContext(ChartBlockContext);
   const { ready, form, enabled } = useContext(ChartFilterContext);
@@ -151,12 +152,15 @@ export const ChartRendererProvider: React.FC<ChartRendererProps> = (props) => {
   );
 
   useEffect(() => {
-    if (!autoRefresh && !defaultAutoRefresh) {
+    if ((!autoRefresh && !defaultAutoRefresh) || disableAutoRefresh) {
       return;
     }
     const refresh = (autoRefresh || defaultAutoRefresh) as number;
     const timer = setInterval(service.refresh, refresh * 1000);
-    return () => clearInterval(timer);
+    return () => {
+      console.log('clearInterval');
+      clearInterval(timer);
+    };
   }, [autoRefresh, defaultAutoRefresh]);
 
   return (

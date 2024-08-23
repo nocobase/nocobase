@@ -49,9 +49,17 @@ export const BlockRefreshButton: React.FC = forwardRef<HTMLButtonElement | HTMLA
         ],
       }}
       icon={<DownOutlined />}
+      buttonsRender={([_, rightButton]) => [
+        _,
+        React.cloneElement(
+          rightButton as React.ReactElement<any, string>,
+          { iconPosition: 'end' },
+          autoRefresh ? interval[autoRefresh as number] : null,
+        ),
+      ]}
     >
       <ReloadOutlined />
-      {autoRefresh ? interval[autoRefresh as number] : null}
+      {t('Refresh')}
       {props.children}
     </Dropdown.Button>
   );
