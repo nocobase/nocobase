@@ -12,7 +12,7 @@ import _ from 'lodash';
 import qs from 'qs';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useLocation } from 'react-router-dom';
+import { useLocation, Location } from 'react-router-dom';
 import { useFlag } from '../../../flag-provider/hooks/useFlag';
 import { Option } from '../type';
 import { getLabelWithTooltip } from './useBaseVariable';
@@ -55,6 +55,16 @@ export const useURLSearchParamsCtx = (search: string) => {
     return _urlSearchParamsCtx;
   }, [_urlSearchParamsCtx, search]);
 };
+const useSafeLocation = () => {
+  let location;
+  try {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    location = useLocation();
+  } catch (error) {
+    location = {}; // 在没有 Router 上下文时，将 location 设置为{}
+  }
+  return location;
+};
 
 /**
  * 变量：`URL search params`
@@ -64,7 +74,7 @@ export const useURLSearchParamsCtx = (search: string) => {
 export const useURLSearchParamsVariable = (props: any = {}) => {
   const variableName = '$nURLSearchParams';
   const { t } = useTranslation();
-  const location = useLocation();
+  const location = useSafeLocation();
   const { isVariableParsedInOtherContext } = useFlag();
   const urlSearchParamsCtx = useURLSearchParamsCtx(location.search);
   const disabled = useMemo(() => _.isEmpty(urlSearchParamsCtx), [urlSearchParamsCtx]);
