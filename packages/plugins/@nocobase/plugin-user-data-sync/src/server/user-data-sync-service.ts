@@ -37,6 +37,9 @@ export class UserDataSyncService {
     if (dataType === undefined) {
       throw new Error('dataType for user data synchronize is required');
     }
+    if (dataType !== 'user' && dataType !== 'department') {
+      throw new Error('dataType must be user or department');
+    }
     if (records === undefined) {
       throw new Error('records for user data synchronize is required');
     }

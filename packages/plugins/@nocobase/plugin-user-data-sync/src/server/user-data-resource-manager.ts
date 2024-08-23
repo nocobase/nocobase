@@ -211,6 +211,7 @@ export class UserDataResourceManager {
           const resourcePks = resourceRecords.map((r: { resourcePk: string }) => r.resourcePk);
           try {
             recordResourceChangeds = await resource.update(originRecord, resourcePks, matchKey);
+            this.logger?.debug(`update record success. Data changed: ${JSON.stringify(recordResourceChangeds)}`);
             successRecords.push(originRecord.metaData);
           } catch (error) {
             this.logger?.warn(`update record error: ${error.message}`, { originRecord });
@@ -220,6 +221,7 @@ export class UserDataResourceManager {
         } else {
           try {
             recordResourceChangeds = await resource.create(originRecord, matchKey);
+            this.logger?.debug(`create record success. Data changed: ${JSON.stringify(recordResourceChangeds)}`);
             successRecords.push(originRecord.metaData);
           } catch (error) {
             this.logger?.warn(`create record error: ${error.message}`, { originRecord });
