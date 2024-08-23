@@ -12,7 +12,7 @@ import _ from 'lodash';
 import qs from 'qs';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useLocation, Location } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import { useFlag } from '../../../flag-provider/hooks/useFlag';
 import { Option } from '../type';
 import { getLabelWithTooltip } from './useBaseVariable';
