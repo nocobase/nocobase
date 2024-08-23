@@ -2,10 +2,13 @@
  
 https://github.com/nocobase/nocobase/assets/1267426/29623e45-9a48-4598-bb9e-9dd173ade553
 
-## 感谢你的支持！
+## 感谢支持
 <a href="https://trendshift.io/repositories/4112" target="_blank"><img src="https://trendshift.io/api/badge/repositories/4112" alt="nocobase%2Fnocobase | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/></a>
 
 <a href="https://www.producthunt.com/posts/nocobase?embed=true&utm_source=badge-top-post-topic-badge&utm_medium=badge&utm_souce=badge-nocobase" target="_blank"><img src="https://api.producthunt.com/widgets/embed-image/v1/top-post-topic-badge.svg?post_id=456520&theme=light&period=weekly&topic_id=267" alt="NocoBase - Scalability&#0045;first&#0044;&#0032;open&#0045;source&#0032;no&#0045;code&#0032;platform | Product Hunt" style="width: 250px; height: 54px;" width="250" height="54" /></a>
+
+## 加入我们
+我们正在招聘**远程开发工程师**和**远程测试工程师**。 欢迎对 NocoBase 有强烈兴趣的伙伴加入。[查看详情](https://www.nocobase.com/cn/recruitment)
 
 ## 最近重要更新
 - [v1.0.1-alpha.1：区块支持高度设置 - 2024/06/07](https://docs-cn.nocobase.com/welcome/changelog/20240607)
