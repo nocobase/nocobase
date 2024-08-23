@@ -26,8 +26,9 @@ export const FilterFormBlockProvider = withDynamicSchemaProps((props) => {
         <ActionBarProvider
           forceProps={{
             style: {
-              overflowY: 'auto',
-              width: '100%',
+              overflowX: 'auto',
+              maxWidth: '100%',
+              float: 'right',
             },
           }}
         >
