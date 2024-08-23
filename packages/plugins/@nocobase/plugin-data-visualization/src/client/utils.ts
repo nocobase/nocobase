@@ -93,7 +93,7 @@ export const processData = (selectedFields: FieldOption[], data: any[], scope: a
     if (Array.isArray(value)) {
       return value.map((v) => parseEnum(field, v));
     }
-    const option = options.find((option) => option.value === value.toString?.() || value);
+    const option = options.find((option) => option.value === (value?.toString?.() || value));
     return Schema.compile(option?.label || value, scope);
   };
   return data.map((record) => {
