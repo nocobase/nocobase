@@ -169,8 +169,9 @@ export const useFormBlockProps = (shouldClearInitialValues = false) => {
       if (form) {
         // form 字段中可能一开始就存在一些默认值（比如设置了字段默认值的模板区块）。在编辑表单中，
         // 这些默认值是不需要的，需要清除掉，不然会导致一些问题。比如：https://github.com/nocobase/nocobase/issues/4868
-        if (shouldClearInitialValues) {
+        if (shouldClearInitialValues === true) {
           form.initialValues = {};
+          form.reset();
         }
         form.setInitialValues(ctx.service?.data?.data);
       }

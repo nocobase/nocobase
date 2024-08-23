@@ -65,4 +65,17 @@ describe('removeNullCondition', () => {
     const result = removeNullCondition(filter);
     expect(result).toEqual(expected);
   });
+
+  it('should keep 0 value', () => {
+    const filter = {
+      field1: 0,
+      field2: 'value2',
+    };
+    const expected = {
+      field1: 0,
+      field2: 'value2',
+    };
+    const result = removeNullCondition(filter);
+    expect(result).toEqual(expected);
+  });
 });

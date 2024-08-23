@@ -631,8 +631,9 @@ export const Table: any = withDynamicSchemaProps(
                 if (!dragSort && !showIndex) {
                   return originNode;
                 }
-                const current = props?.pagination?.current;
-                const pageSize = props?.pagination?.pageSize || 20;
+                const current = paginationProps?.current;
+
+                const pageSize = paginationProps?.pageSize || 20;
                 if (current) {
                   index = index + (current - 1) * pageSize + 1;
                 } else {
@@ -681,6 +682,7 @@ export const Table: any = withDynamicSchemaProps(
         getRowKey,
         isRowSelect,
         memoizedRowSelection,
+        paginationProps,
       ],
     );
 
