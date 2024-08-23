@@ -25,7 +25,7 @@ import { updateModelByValues } from '../update-associations';
 import { UpdateGuard } from '../update-guard';
 import { RelationRepository, transaction } from './relation-repository';
 
-export type FindAndCountOptions = CommonFindOptions;
+type FindAndCountOptions = CommonFindOptions;
 
 export interface AssociatedOptions extends Transactionable {
   tk?: TK;

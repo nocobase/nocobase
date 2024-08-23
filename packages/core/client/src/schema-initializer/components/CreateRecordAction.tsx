@@ -19,7 +19,7 @@ import { useTreeParentRecord } from '../../modules/blocks/data-blocks/table/Tree
 import { useRecord } from '../../record-provider';
 import { useCompile } from '../../schema-component';
 import { linkageAction } from '../../schema-component/antd/action/utils';
-import { usePagePopup } from '../../schema-component/antd/page/pagePopupUtils';
+import { usePopupUtils } from '../../schema-component/antd/page/pagePopupUtils';
 import { parseVariables } from '../../schema-component/common/utils/uitls';
 import { useLocalVariables, useVariables } from '../../variables';
 
@@ -70,7 +70,7 @@ const InternalCreateRecordAction = (props: any, ref) => {
   const values = useRecord();
   const variables = useVariables();
   const localVariables = useLocalVariables({ currentForm: { values } as any });
-  const { openPopup } = usePagePopup();
+  const { openPopup } = usePopupUtils();
   const treeRecordData = useTreeParentRecord();
   const cm = useCollectionManager();
 

@@ -144,7 +144,7 @@ export const transformToFilter = (
           key = `${key}.${collectionField.targetKey || 'id'}`;
         }
 
-        if (!value) {
+        if (!value && value !== 0 && value !== false) {
           return null;
         }
 
