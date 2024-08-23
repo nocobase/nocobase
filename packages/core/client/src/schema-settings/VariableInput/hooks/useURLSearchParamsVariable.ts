@@ -61,7 +61,7 @@ const useSafeLocation = () => {
     // eslint-disable-next-line react-hooks/rules-of-hooks
     location = useLocation();
   } catch (error) {
-    location = {}; // 在没有 Router 上下文时，将 location 设置为{}
+    location = undefined; // 在没有 Router 上下文时，将 location 设置为 undefined
   }
   return location;
 };
@@ -76,7 +76,7 @@ export const useURLSearchParamsVariable = (props: any = {}) => {
   const { t } = useTranslation();
   const location = useSafeLocation();
   const { isVariableParsedInOtherContext } = useFlag();
-  const urlSearchParamsCtx = useURLSearchParamsCtx(location.search);
+  const urlSearchParamsCtx = useURLSearchParamsCtx(location ? location.search : '');
   const disabled = useMemo(() => _.isEmpty(urlSearchParamsCtx), [urlSearchParamsCtx]);
   const urlSearchParamsSettings: Option = useMemo(() => {
     return {
