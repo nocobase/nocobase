@@ -292,7 +292,7 @@ export const PagePopups = (props: { paramsList?: PopupParams[] }) => {
       setRootSchema(rootSchema);
     };
     run();
-  }, [fieldSchema.root, getPopupSchemaFromSchema, popupParams, requestSchema, savePopupSchemaToSchema]);
+  }, [fieldSchema, getPopupSchemaFromSchema, popupParams, requestSchema, savePopupSchemaToSchema]);
 
   const components = useMemo(() => ({ PagePopupsItemProvider }), []);
 
@@ -444,7 +444,7 @@ function findSchemaByUid(uid: string, rootSchema: Schema, resultRef: { value: Sc
   resultRef = resultRef || {
     value: null,
   };
-  rootSchema.mapProperties((schema) => {
+  rootSchema?.mapProperties?.((schema) => {
     if (schema['x-uid'] === uid) {
       resultRef.value = schema;
     } else {

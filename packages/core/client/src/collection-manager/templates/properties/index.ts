@@ -66,6 +66,8 @@ export const defaultConfigurableProperties = {
     name: 'simplePaginate',
     'x-decorator': 'FormItem',
     'x-component': 'Checkbox',
+    description:
+      '{{t("Skip getting the total number of table records during paging to speed up loading. It is recommended to enable this option for data tables with a large amount of data")}}',
   },
   presetFields: {
     title: '{{t("Preset fields")}}',
