@@ -120,7 +120,7 @@ export default class extends Instruction {
     });
 
     if (job.status === JOB_STATUS.PENDING) {
-      await job.save();
+      await job.save({ transaction: processor.transaction });
       return processor.exit();
     }
 
