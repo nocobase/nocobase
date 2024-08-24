@@ -19,7 +19,6 @@ import {
 import React from 'react';
 import { useNotificationTranslation } from '../../../locale';
 import channelCollection from '../../../../collections/channel';
-import messageCollection from '../../../../collections/message';
 import messageLogCollection from '../../../../collections/messageLog';
 import { MessageComponentNames, MessageScopeNames } from '../types';
 import ReceiverConfigForm from './ReceiverConfigForm';
@@ -32,7 +31,7 @@ export const MessageManager = () => {
   const { t } = useNotificationTranslation();
   const scCtx = useSchemaComponentContext();
   return (
-    <ExtendCollectionsProvider collections={[channelCollection, messageCollection, messageLogCollection]}>
+    <ExtendCollectionsProvider collections={[channelCollection, messageLogCollection]}>
       <SchemaComponentContext.Provider value={{ ...scCtx, designable: false }}>
         <Card bordered={false}>
           <SchemaComponent

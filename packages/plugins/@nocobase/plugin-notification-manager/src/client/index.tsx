@@ -8,22 +8,19 @@
  */
 
 import { Plugin } from '@nocobase/client';
-import { Registry } from '@nocobase/utils/client';
 import { NAMESPACE } from './locale';
-import { ManagementList } from './Management';
 import { ChannelManager } from './manager/channel/components';
 import { LogManager } from './manager/log/components/Manager';
 import { lang as t } from './locale';
-import { ChannelType } from './manager/channel/types';
-
+import NotificationManager from './notification-manager';
 export class PluginNotificationManagerClient extends Plugin {
-  channelTypes = new Registry<ChannelType>();
-  registerChannelType(channelTypeName: string, options: ChannelType) {
-    this.channelTypes.register(channelTypeName, options);
-  }
+  manager: NotificationManager;
+
   async afterAdd() {}
 
-  async beforeLoad() {}
+  async beforeLoad() {
+    this.manager = new NotificationManager();
+  }
 
   // You can get and modify the app instance here
   async load() {
@@ -39,13 +36,6 @@ export class PluginNotificationManagerClient extends Plugin {
       aclSnippet: 'pm.notification.channels',
       sort: 1,
     });
-    // this.app.pluginSettingsManager.add(`${NAMESPACE}.templates`, {
-    //   title: t('Templates'),
-    //   Component: ManagementList,
-    //   icon: 'SnippetsOutlined',
-    //   aclSnippet: 'pm.notification.core',
-    //   sort: 2,
-    // });
     this.app.pluginSettingsManager.add(`${NAMESPACE}.logs`, {
       title: t('Logs'),
       Component: LogManager,

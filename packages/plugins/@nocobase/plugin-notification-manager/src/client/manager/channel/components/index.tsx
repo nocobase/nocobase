@@ -14,31 +14,19 @@ import {
   useActionContext,
   useAsyncData,
   usePlugin,
-  SchemaComponentOptions,
 } from '@nocobase/client';
 import { Card } from 'antd';
-import React, { useEffect, useState, useContext, useMemo, useCallback } from 'react';
+import React, { useState } from 'react';
 import { channelsSchema, createFormSchema } from '../schemas';
 import { Button, Dropdown } from 'antd';
 import { PlusOutlined, DownOutlined } from '@ant-design/icons';
-import {
-  NotificationTypeNameContext,
-  NotificationTypesContext,
-  useChannelTypes,
-  useNotificationTypeNameProvider,
-} from '../context';
+import { NotificationTypesContext, useChannelTypes, useNotificationTypeNameProvider } from '../context';
 import { useTranslation } from 'react-i18next';
 import { useNotificationTranslation } from '../../../locale';
 import { Schema } from '@formily/react';
 import { PluginNotificationManagerClient } from '../../..';
-import { ChannelType, NotificationType } from '../types';
+import { ChannelType } from '../types';
 import { ConfigForm } from './ConfigForm';
-
-type NotificationTypeOption = {
-  key: NotificationType;
-  value: NotificationType;
-  label: string;
-};
 
 const useCloseAction = () => {
   const { setVisible } = useActionContext();
@@ -93,7 +81,7 @@ export const ChannelManager = () => {
   const api = useAPIClient();
   const plugin = usePlugin(PluginNotificationManagerClient);
   const notificationTypes: Array<ChannelType> = [];
-  for (const [key, val] of plugin.channelTypes.getEntities()) {
+  for (const [key, val] of plugin.manager.channelTypes.getEntities()) {
     const type = {
       ...val,
       title: Schema.compile(val.title, { t }) as string,
