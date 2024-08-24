@@ -6,10 +6,7 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
-
-import { name } from 'packages/core/database/src/__tests__/fixtures/collections/tags';
 import NotificationManager from '../notification-manager';
-import components from 'packages/plugins/@nocobase/plugin-api-doc/src/server/swagger/collections/components';
 
 describe('registerType', () => {
   let plugin: NotificationManager;
