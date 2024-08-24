@@ -7,13 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 import React from 'react';
-
-import { ArrayItems } from '@formily/antd-v5';
-
-import { SchemaComponentContext, css } from '@nocobase/client';
 import { Instruction, useWorkflowVariableOptions } from '@nocobase/plugin-workflow/client';
-import { MessageConfigForm, NotificationVariableProvider } from '@nocobase/plugin-notification-manager/client';
-
+import { MessageConfigForm } from '@nocobase/plugin-notification-manager/client';
 import { NAMESPACE } from '../locale';
 
 const LocalProvider = () => {
