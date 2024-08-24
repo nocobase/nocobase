@@ -399,7 +399,7 @@ exports.initEnv = function initEnv() {
 
   if (!process.env.TZ) {
     const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    process.env.TZ = process.env.DB_TIMEZONE || timeZone;
+    process.env.TZ = getTimezonesByOffset(process.env.DB_TIMEZONE || timeZone);
   }
 
   if (!process.env.DB_TIMEZONE) {
