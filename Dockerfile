@@ -20,7 +20,7 @@ RUN cd /tmp && \
 RUN  yarn install && yarn build --no-dts
 
 RUN git checkout -b release-$(date +'%Y%m%d%H%M%S') \
-    && yarn version:alpha -y
+    && yarn lerna version ${NEWVERSION} -y --no-git-tag-version
 RUN git config user.email "test@mail.com"  \
     && git config user.name "test" && git add .  \
     && git commit -m "chore(versions): test publish packages"
