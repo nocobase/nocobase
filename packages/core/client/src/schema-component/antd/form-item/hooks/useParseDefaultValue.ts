@@ -86,7 +86,8 @@ const useParseDefaultValue = () => {
           }
         }
 
-        const value = transformVariableValue(await variables.parseVariable(fieldSchema.default, localVariables), {
+        const { value: parsedValue } = await variables.parseVariable(fieldSchema.default, localVariables);
+        const value = transformVariableValue(parsedValue, {
           targetCollectionField: collectionField,
         });
 
