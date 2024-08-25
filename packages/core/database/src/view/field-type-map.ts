@@ -68,7 +68,7 @@ const mysql = {
   double: 'float',
   boolean: 'boolean',
   decimal: 'decimal',
-
+  year: ['string', 'integer'],
   datetime: 'date',
   timestamp: 'date',
   json: ['json', 'array'],
