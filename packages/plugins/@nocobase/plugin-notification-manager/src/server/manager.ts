@@ -48,5 +48,6 @@ export default class NotificationManager {
         reason: result.reason,
       });
     });
+    return results;
   }
 }
