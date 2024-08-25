@@ -693,15 +693,35 @@ describe('useVariables', () => {
     });
 
     expect(
-      await result.current
-        .parseVariable('{{ $local.name }}', {
-          name: '$local',
-          ctx: {
-            name: 'local variable',
-          },
-        })
-        .then(({ value }) => value),
-    ).toBe('local variable');
+      await result.current.parseVariable('{{ $local.name }}', {
+        name: '$local',
+        ctx: {
+          name: 'local variable',
+        },
+        collectionName: 'local',
+        dataSource: 'local',
+      }),
+    ).toEqual({
+      value: 'local variable',
+      dataSource: 'local',
+    });
+
+    expect(
+      await result.current.parseVariable('{{ $local }}', {
+        name: '$local',
+        ctx: {
+          name: 'local variable',
+        },
+        collectionName: 'local',
+        dataSource: 'local',
+      }),
+    ).toEqual({
+      value: {
+        name: 'local variable',
+      },
+      collectionName: 'local',
+      dataSource: 'local',
+    });
 
     // 由于 $local 是一个局部变量，所以不会被缓存到 ctx 中
     expect(result.current.getVariable('$local')).toBe(null);

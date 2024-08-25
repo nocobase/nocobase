@@ -86,7 +86,7 @@ const VariablesProvider = ({ children }) => {
       let current = mergeCtxWithLocalVariables(ctxRef.current, localVariables);
       const { fieldPath, dataSource, variableOption } = getFieldPath(variableName, _variableToCollectionName);
       let collectionName = fieldPath;
-      let variableCollectionName: string;
+      let variableCollectionName: string = variableOption.collectionName;
 
       if (!(variableName in current)) {
         throw new Error(`VariablesProvider: ${variableName} is not found`);
@@ -169,10 +169,10 @@ const VariablesProvider = ({ children }) => {
           current = removeThroughCollectionFields(getValuesByPath(current, key), associationField);
         }
 
-        if (associationField?.target) {
+        if (associationField?.target && index === list.length - 1) {
           collectionName = associationField.target;
           variableCollectionName = associationField.target;
-        } else {
+        } else if (list.length > 1) {
           variableCollectionName = undefined;
         }
       }
