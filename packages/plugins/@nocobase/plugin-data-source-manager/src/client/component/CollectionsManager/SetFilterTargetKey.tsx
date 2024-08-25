@@ -108,7 +108,7 @@ export const SetFilterTargetKey = (props) => {
             }
             ctx?.refresh?.();
             refresh();
-            // await app.dataSourceManager.getDataSource(dataSourceKey).reload();
+            await app.dataSourceManager.getDataSource(dataSourceKey).reload();
             collection.setOption('filterTargetKey', filterTargetKey);
           }}
         >
