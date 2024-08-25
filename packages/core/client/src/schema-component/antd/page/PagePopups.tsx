@@ -456,7 +456,7 @@ function findSchemaByUid(uid: string, rootSchema: Schema, resultRef: { value: Sc
 
 function parseQueryString(queryString) {
   // 如果没有 '&'，直接返回原始字符串
-  if (!queryString?.includes?.('&')) {
+  if (!queryString?.includes?.('=')) {
     return queryString;
   }
 
