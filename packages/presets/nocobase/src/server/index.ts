@@ -55,6 +55,7 @@ export class PresetNocoBase extends Plugin {
     'action-print',
     'collection-sql',
     'collection-tree',
+    'notification-manager',
   ];
 
   localPlugins = [
