@@ -78,6 +78,5 @@
     "axios-mock-adapter": "^1.20.0",
     "dumi": "2.2.14",
     "dumi-theme-nocobase": "^0.2.28"
-  },
-  "gitHead": "d0b4efe4be55f8c79a98a331d99d9f8cf99021a1"
+  }
 }
