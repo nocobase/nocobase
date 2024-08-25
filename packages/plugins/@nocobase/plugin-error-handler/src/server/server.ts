@@ -11,13 +11,15 @@ import { Schema } from '@formily/json-schema';
 import { BaseError } from '@nocobase/database';
 import { Plugin } from '@nocobase/server';
 import lodash from 'lodash';
-import { ErrorHandler } from './error-handler';
 import enUS from './locale/en_US';
 import zhCN from './locale/zh_CN';
 
 export class PluginErrorHandlerServer extends Plugin {
-  errorHandler: ErrorHandler = new ErrorHandler();
   i18nNs = 'error-handler';
+
+  get errorHandler() {
+    return this.app.errorHandler;
+  }
 
   beforeLoad() {
     this.registerSequelizeValidationErrorHandler();
@@ -46,7 +48,7 @@ export class PluginErrorHandlerServer extends Plugin {
       return title;
     };
 
-    this.errorHandler.register(
+    this.app.errorHandler.register(
       (err) => err?.errors?.length && err instanceof BaseError,
       (err, ctx) => {
         ctx.body = {
@@ -69,6 +71,5 @@ export class PluginErrorHandlerServer extends Plugin {
   async load() {
     this.app.i18n.addResources('zh-CN', this.i18nNs, zhCN);
     this.app.i18n.addResources('en-US', this.i18nNs, enUS);
-    this.app.use(this.errorHandler.middleware(), { before: 'cors', tag: 'errorHandler' });
   }
 }

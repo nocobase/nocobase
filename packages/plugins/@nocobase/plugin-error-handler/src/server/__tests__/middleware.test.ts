@@ -7,9 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Database } from '@nocobase/database';
-import { MockServer, createMockServer } from '@nocobase/test';
-import Plugin from '..';
+import { createMockServer, MockServer } from '@nocobase/test';
 
 describe('middleware', () => {
   let app: MockServer;
@@ -44,7 +42,7 @@ describe('middleware', () => {
       }
     }
 
-    (app.pm.get(Plugin) as Plugin).errorHandler.register(
+    app.errorHandler.register(
       (err) => err instanceof CustomError,
       (err, ctx) => {
         ctx.body = {

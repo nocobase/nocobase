@@ -44,6 +44,7 @@ describe('create with exception', () => {
 
     expect(response.body.errors[0].message).contains('original error');
   });
+
   it('should handle not null error', async () => {
     const collection = app.collection({
       name: 'users',
