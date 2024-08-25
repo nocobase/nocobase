@@ -21,6 +21,14 @@ export class ViewCollection extends Collection {
     return true;
   }
 
+  unavailableActions(): Array<string> {
+    if (this.options.writableView) {
+      return [];
+    }
+
+    return ['create', 'update', 'destroy'];
+  }
+
   protected sequelizeModelOptions(): any {
     const modelOptions = super.sequelizeModelOptions();
     modelOptions.tableName = this.options.viewName || this.options.name;
