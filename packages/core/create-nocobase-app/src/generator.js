@@ -78,7 +78,7 @@ class AppGenerator extends Generator {
     const { dbDialect, allDbDialect } = this.args;
 
     if (allDbDialect) {
-      dependencies.push(`"mysql2": "^2.3.3"`);
+      dependencies.push(`"mysql2": "^3.11.0"`);
       dependencies.push(`"mariadb": "^2.5.6"`);
       dependencies.push(`"pg": "^8.7.3"`);
       dependencies.push(`"pg-hstore": "^2.3.4"`);
@@ -94,7 +94,7 @@ class AppGenerator extends Generator {
         break;
       case 'mysql':
         if (!allDbDialect) {
-          dependencies.push(`"mysql2": "^2.3.3"`);
+          dependencies.push(`"mysql2": "^3.11.0"`);
         }
         envs.push(`DB_HOST=${env.DB_HOST || 'localhost'}`);
         envs.push(`DB_PORT=${env.DB_PORT || 3306}`);

@@ -30,11 +30,7 @@ describe('Markdown', () => {
 
 describe('Markdown.Void', function () {
   it('should display the value of user input', async () => {
-    const { container } = render(
-      <MemoryRouter>
-        <App2 />
-      </MemoryRouter>,
-    );
+    const { container } = render(<App2 />);
     const button = container.querySelector('.ant-btn') as HTMLButtonElement;
 
     expect(button).not.toBeNull();

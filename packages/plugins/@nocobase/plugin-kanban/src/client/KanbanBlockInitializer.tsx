@@ -130,7 +130,7 @@ export const KanbanBlockInitializer = ({
   return (
     <DataBlockInitializer
       {...itemConfig}
-      componentType={`Calendar`}
+      componentType={`Kanban`}
       icon={<FormOutlined />}
       onCreateBlockSchema={async (options) => {
         if (createBlockSchema) {

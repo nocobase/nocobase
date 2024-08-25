@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import lodash from 'lodash';
+import lodash, { isPlainObject } from 'lodash';
 import { Model as SequelizeModel, ModelStatic } from 'sequelize';
 import { Collection } from './collection';
 import { Database } from './database';
@@ -48,21 +48,6 @@ export class Model<TModelAttributes extends {} = any, TCreationAttributes extend
   static async sync(options) {
     const runner = new SyncRunner(this);
     return await runner.runSync(options);
-  }
-
-  static callSetters(values, options) {
-    // map values
-    const result = {};
-    for (const key of Object.keys(values)) {
-      const field = this.collection.getField(key);
-      if (field && field.setter) {
-        result[key] = field.setter.call(field, values[key], options, values, key);
-      } else {
-        result[key] = values[key];
-      }
-    }
-
-    return result;
   }
 
   // TODO
