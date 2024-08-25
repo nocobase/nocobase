@@ -2,8 +2,7 @@ current_version=$(jq -r '.version' lerna.json)
 IFS='.-' read -r major minor patch label <<< "$current_version"
 
 if [ "$1" == '--is-feat' ]; then
-    new_minor=$((minor + 1))
-    new_version="$major.$new_minor.0-beta"
+    new_version="$major.$minor.0-beta"
     echo $new_version;
 else
     new_patch=$((patch + 1))
