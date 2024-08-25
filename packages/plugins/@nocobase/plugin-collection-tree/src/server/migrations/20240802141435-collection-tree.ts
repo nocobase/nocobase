@@ -14,7 +14,7 @@ import lodash from 'lodash';
 
 export default class extends Migration {
   on = 'afterLoad'; // 'beforeLoad' or 'afterLoad'
-  appVersion = '<=1.3.0-alpha';
+  appVersion = '<=1.3.0-beta';
 
   async up() {
     await this.db.sequelize.transaction(async (transaction) => {
