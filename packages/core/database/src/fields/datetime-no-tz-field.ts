@@ -21,7 +21,7 @@ export class DatetimeNoTzField extends Field {
   }
 
   init() {
-    const { name, defaultToCurrentTime, onUpdateToCurrentTime, timezone } = this.options;
+    const { name, defaultToCurrentTime, onUpdateToCurrentTime } = this.options;
 
     this.beforeSave = async (instance, options) => {
       const value = instance.get(name);
@@ -40,6 +40,8 @@ export class DatetimeNoTzField extends Field {
 
   additionalSequelizeOptions(): {} {
     const { name } = this.options;
+    const timezone = this.database.options.timezone || '+00:00';
+
     return {
       get() {
         return this.getDataValue(name);
@@ -48,7 +50,7 @@ export class DatetimeNoTzField extends Field {
       set(val) {
         if (val && val instanceof Date) {
           // format to YYYY-MM-DD HH:mm:ss
-          const momentVal = moment(val);
+          const momentVal = moment(val).utcOffset(timezone);
           val = momentVal.format('YYYY-MM-DD HH:mm:ss');
         }
 
