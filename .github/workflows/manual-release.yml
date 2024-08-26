@@ -29,7 +29,7 @@ jobs:
         with:
           app-id: ${{ vars.NOCOBASE_APP_ID }}
           private-key: ${{ secrets.NOCOBASE_APP_PRIVATE_KEY }}
-          owner: '2013xile'
+          repositories: nocobase/pro-plugins,${{ join(fromJSON(vars.PRO_PLUGIN_REPOS), ',') }}
       - name: Get GitHub App User ID
         id: get-user-id
         run: echo "user-id=$(gh api "/users/${{ steps.app-token.outputs.app-slug }}[bot]" --jq .id)" >> "$GITHUB_OUTPUT"
