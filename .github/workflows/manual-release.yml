@@ -101,7 +101,7 @@ jobs:
           git checkout main
           for repo in ${{ join(fromJSON(vars.PRO_PLUGIN_REPOS), ' ') }}
           do
-          echo "@nocobase/$repo" >> .git/info/exclude
+            echo "@nocobase/$repo" >> .git/info/exclude
           done
           cd ./../..
           git checkout feat/publish-pro-plugin-repo
