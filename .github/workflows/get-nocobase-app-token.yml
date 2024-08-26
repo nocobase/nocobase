@@ -29,7 +29,7 @@ jobs:
         run: |
           APP_TOKEN=${{ steps.app-token.outputs.token  }};
           BINARY_ENCRYPTED_SECRET=$(echo -n "$APP_TOKEN" | openssl enc -aes-256-cbc -pbkdf2 -salt -k "${{ secrets.APP_TOKEN_ENCRYPTION_PASSWORD }}");
-          ENCRYPTED_SECRET=$(echo -n "$BINARY_ENCRYPTED_SECRET" | base64);
+          ENCRYPTED_SECRET=$(echo -n "$BINARY_ENCRYPTED_SECRET" | base64 -w 0);
           echo "token=$ENCRYPTED_SECRET" >> $GITHUB_OUTPUT
       - name: Get GitHub App User ID
         id: get-user-id
