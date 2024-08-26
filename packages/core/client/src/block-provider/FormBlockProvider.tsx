@@ -87,7 +87,7 @@ const InternalFormBlockProvider = (props) => {
     updateAssociationValues,
   ]);
 
-  if (service.loading && Object.keys(form?.initialValues)?.length === 0 && action) {
+  if (service.loading && Object.keys(form?.initialValues || {})?.length === 0 && action) {
     return <Spin />;
   }
 
@@ -170,13 +170,12 @@ export const useFormBlockProps = (shouldClearInitialValues = false) => {
         // form 字段中可能一开始就存在一些默认值（比如设置了字段默认值的模板区块）。在编辑表单中，
         // 这些默认值是不需要的，需要清除掉，不然会导致一些问题。比如：https://github.com/nocobase/nocobase/issues/4868
         if (shouldClearInitialValues === true) {
-          form.initialValues = {};
-          form.reset();
+          form.initialValues = null;
         }
-        form.setInitialValues(ctx.service?.data?.data);
+        form.setValues(ctx.service?.data?.data);
       }
     }
-  }, [ctx?.service?.loading]);
+  }, [ctx.form, ctx.service?.data?.data, ctx.service?.loading, shouldClearInitialValues]);
   return {
     form: ctx.form,
   };
