@@ -10,6 +10,9 @@ on:
       - 'v*'
 
 jobs:
+  app-token:
+    uses: nocobase/nocobase/.github/workflows/get-nocobase-app-token.yml@main
+    secrets: inherit
   publish-npm:
     runs-on: ubuntu-latest
     container: node:18
@@ -55,12 +58,27 @@ jobs:
           yarn config set //registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}
           npm whoami
           yarn release:force --no-verify-access --no-git-reset --registry https://registry.npmjs.org/
+      - name: Decrypt app token
+        id: app-token
+        shell: bash
+        run: |
+          ENCRYPTED_SECRET=${{ needs.app-token.outputs.token }};
+          BINARY_ENCRYPTED_SECRET=$(echo -n "$ENCRYPTED_SECRET" | base64 --decode);
+          APP_TOKEN=$(echo -n "$BINARY_ENCRYPTED_SECRET" | openssl enc -aes-256-cbc -pbkdf2 -d -salt -k "${{ secrets.APP_TOKEN_ENCRYPTION_PASSWORD }}");
+          echo "token=$APP_TOKEN" >> $GITHUB_OUTPUT
       - name: Checkout pro-plugins
         uses: actions/checkout@v3
         with:
           repository: nocobase/pro-plugins
           path: packages/pro-plugins
-          ssh-key: ${{ secrets.SUBMODULE_SSH_KEY }}
+          token: ${{ steps.app-token.outputs.token }}
+      - name: Clone pro repos
+        shell: bash
+        run: |
+          for repo in ${{ join(fromJSON(vars.PRO_PLUGIN_REPOS), ' ') }}
+          do
+          git clone -b main https://x-access-token:${{ steps.app-token.outputs.token }}@github.com/nocobase/$repo.git packages/pro-plugins/@nocobase/$repo
+          done
       - name: Build Pro plugins
         continue-on-error: true
         run: |

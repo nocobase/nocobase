@@ -1,0 +1,40 @@
+name: Get nocobase app github token
+
+on:
+  workflow_call:
+    outputs:
+      token:
+        value: ${{ jobs.get-app-token.outputs.token }}
+      user-id:
+        value: ${{ jobs.get-app-token.outputs.user-id }}
+      app-slug:
+        value: ${{ jobs.get-app-token.outputs.app-slug }}
+
+jobs:
+  get-app-token:
+    runs-on: ubuntu-latest
+    outputs:
+      token: ${{ steps.encrypt-token.outputs.token }}
+      app-slug: ${{ steps.app-token.outputs.app-slug }}
+      user-id: ${{ steps.get-user-id.outputs.user-id }}
+    steps:
+      - uses: actions/create-github-app-token@v1
+        id: app-token
+        with:
+          app-id: ${{ vars.NOCOBASE_APP_ID }}
+          private-key: ${{ secrets.NOCOBASE_APP_PRIVATE_KEY }}
+          repositories: nocobase,pro-plugins,${{ join(fromJSON(vars.PRO_PLUGIN_REPOS), ',') }}
+          skip-token-revoke: true
+      - name: Encrypt token
+        id: encrypt-token
+        shell: bash
+        run: |
+          APP_TOKEN=${{ steps.app-token.outputs.token  }};
+          BINARY_ENCRYPTED_SECRET=$(echo -n "$APP_TOKEN" | openssl enc -aes-256-cbc -pbkdf2 -salt -k "${{ secrets.APP_TOKEN_ENCRYPTION_PASSWORD }}");
+          ENCRYPTED_SECRET=$(echo -n "$BINARY_ENCRYPTED_SECRET" | base64 -w 0);
+          echo "token=$ENCRYPTED_SECRET" >> $GITHUB_OUTPUT
+      - name: Get GitHub App User ID
+        id: get-user-id
+        run: echo "user-id=$(gh api "/users/${{ steps.app-token.outputs.app-slug }}[bot]" --jq .id)" >> "$GITHUB_OUTPUT"
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
