@@ -32,7 +32,8 @@ jobs:
         id: app-token
         run: |
           ENCRYPTED_SECRET=${{ needs.app-token.outputs.token }};
-          APP_TOKEN=$(echo -n "$ENCRYPTED_SECRET" | base64 --decode | openssl enc -aes-256-cbc -pbkdf2 -d -salt -k "${{ secrets.APP_TOKEN_ENCRYPTION_PASSWORD }}");
+          BINARY_ENCRYPTED_SECRET=$(echo -n "$ENCRYPTED_SECRET" | base64 --decode);
+          APP_TOKEN=$(echo -n "$BINARY_ENCRYPTED_SECRET" | openssl enc -aes-256-cbc -pbkdf2 -d -salt -k "${{ secrets.APP_TOKEN_ENCRYPTION_PASSWORD }}");
           echo "token=$APP_TOKEN" >> $GITHUB_OUTPUT
       - name: Checkout
         uses: actions/checkout@v4
@@ -59,7 +60,8 @@ jobs:
       - name: Decrypt app token
         id: app-token
         run: |
-          BINARY_ENCRYPTED_SECRET=${{ needs.app-token.outputs.token }};
+          ENCRYPTED_SECRET=${{ needs.app-token.outputs.token }};
+          BINARY_ENCRYPTED_SECRET=$(echo -n "$ENCRYPTED_SECRET" | base64 --decode);
           APP_TOKEN=$(echo -n "$BINARY_ENCRYPTED_SECRET" | openssl enc -aes-256-cbc -pbkdf2 -d -salt -k "${{ secrets.APP_TOKEN_ENCRYPTION_PASSWORD }}");
           echo "token=$APP_TOKEN" >> $GITHUB_OUTPUT
       - name: Checkout
@@ -83,30 +85,30 @@ jobs:
           do
             git clone -b main https://${{ steps.app-token.outputs.token }}@github.com/nocobase/$repo.git packages/pro-plugins
           done
-  #     - name: Set Node.js 18
-  #       uses: actions/setup-node@v3
-  #       with:
-  #         node-version: 18
-  #     - name: Install Lerna
-  #       run: npm install -g lerna@4 auto-changelog@2
-  #     - name: Run release.sh
-  #       run: |
-  #         cd ./packages/pro-plugins
-  #         git checkout main
-  #         cd ./../..
-  #         git checkout main
-  #         git config --global user.email "actions@github.com"
-  #         git config --global user.name "GitHub Actions Bot"
-  #         echo "packages/pro-plugins/" >> .git/info/exclude
-  #         bash release.sh $IS_FEAT
-  #       env:
-  #         IS_FEAT: ${{ inputs.is_feat && '--is-feat' || '' }}
-  #         PRO_PLUGIN_REPOS: ${{ vars.PRO_PLUGIN_REPOS }}
+      # - name: Set Node.js 18
+      #   uses: actions/setup-node@v3
+      #   with:
+      #     node-version: 18
+      # - name: Install Lerna
+      #   run: npm install -g lerna@4 auto-changelog@2
+      # - name: Run release.sh
+      #   run: |
+      #     cd ./packages/pro-plugins
+      #     git checkout main
+      #     cd ./../..
+      #     git checkout main
+      #     git config --global user.email "actions@github.com"
+      #     git config --global user.name "GitHub Actions Bot"
+      #     echo "packages/pro-plugins/" >> .git/info/exclude
+      #     bash release.sh $IS_FEAT
+      #   env:
+      #     IS_FEAT: ${{ inputs.is_feat && '--is-feat' || '' }}
+      #     PRO_PLUGIN_REPOS: ${{ vars.PRO_PLUGIN_REPOS }}
   #     - name: push pro repos
   #       run: |
   #         for repo in ${{ join(fromJSON($vars.PRO_PLUGIN_REPOS), ' ') }}
   #         do
-  #           cd ./packages/pro-plugins/$repo
+  #           cd ./packages/pro-plugins/@nocobase/$repo
   #           git push origin main --atomic --tags
   #         done
   #     - name: push pro plugins

@@ -28,7 +28,8 @@ jobs:
         id: encrypt-token
         run: |
           APP_TOKEN=${{ steps.app-token.outputs.token  }};
-          ENCRYPTED_SECRET=$(echo -n "$APP_TOKEN" | openssl enc -aes-256-cbc -pbkdf2 -salt -k "${{ secrets.APP_TOKEN_ENCRYPTION_PASSWORD }}" | base64)
+          BINARY_ENCRYPTED_SECRET=$(echo -n "$APP_TOKEN" | openssl enc -aes-256-cbc -pbkdf2 -salt -k "${{ secrets.APP_TOKEN_ENCRYPTION_PASSWORD }}");
+          ENCRYPTED_SECRET=$(echo -n "$BINARY_ENCRYPTED_SECRET" | base64);
           echo "token=$ENCRYPTED_SECRET" >> $GITHUB_OUTPUT
       - name: Get GitHub App User ID
         id: get-user-id
