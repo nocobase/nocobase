@@ -9,7 +9,6 @@ on:
     branches:
       - 'main'
       - 'next'
-      - 'chore/pro-image-ci'
     paths:
       - 'packages/**'
       - 'Dockerfile'
