@@ -25,7 +25,7 @@ jobs:
       matrix:
         repo:
           - 'nocobase'
-          - 'nocobase'
+          - 'pro-plugins'
           - ${{ fromJSON(vars.PRO_PLUGIN_REPOS) }}
     steps:
       - name: Decrypt app token
