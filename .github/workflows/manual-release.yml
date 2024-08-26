@@ -99,11 +99,15 @@ jobs:
         run: |
           cd ./packages/pro-plugins
           git checkout main
+          for repo in ${{ join(fromJSON(vars.PRO_PLUGIN_REPOS), ' ') }}
+          do
+          echo "@nocobase/${{ repo }}" >> .git/info/exclude
+          done
           cd ./../..
           git checkout main
           git config --global user.name '${{ needs.app-token.outputs.app-slug }}[bot]'
           git config --global user.email '${{ needs.app-token.outputs.user-id }}+${{ needs.app-token.outputs.app-slug }}[bot]@users.noreply.github.com>'
-          echo "packages/pro-plugins/*" >> .git/info/exclude
+          echo "packages/pro-plugins" >> .git/info/exclude
           bash release.sh $IS_FEAT
         env:
           IS_FEAT: ${{ inputs.is_feat && '--is-feat' || '' }}
