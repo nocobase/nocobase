@@ -5,9 +5,6 @@ concurrency:
   cancel-in-progress: true
 
 on:
-  push:
-    branches:
-      - 'feat/publish-pro-plugin-repo'
   workflow_dispatch:
     inputs:
       is_feat:
@@ -16,7 +13,7 @@ on:
 
 jobs:
   app-token:
-    uses: nocobase/nocobase/.github/workflows/get-nocobase-app-token.yml@feat/publish-pro-plugin-repo
+    uses: nocobase/nocobase/.github/workflows/get-nocobase-app-token.yml@main
     secrets: inherit
   pre-merge-main-into-next:
     runs-on: ubuntu-latest
@@ -51,7 +48,7 @@ jobs:
           git pull origin main
           git checkout next
           git merge main
-          # git push origin next --tags --atomic
+          git push origin next --tags --atomic
   update-version:
     needs:
       - app-token
@@ -106,7 +103,7 @@ jobs:
           done
           echo "$(<.git/info/exclude )"
           cd ./../..
-          git checkout feat/publish-pro-plugin-repo
+          git checkout main
           git config --global user.name '${{ needs.app-token.outputs.app-slug }}[bot]'
           git config --global user.email '${{ needs.app-token.outputs.user-id }}+${{ needs.app-token.outputs.app-slug }}[bot]@users.noreply.github.com>'
           echo "packages/pro-plugins" >> .git/info/exclude
@@ -119,27 +116,27 @@ jobs:
           for repo in ${{ join(fromJSON(vars.PRO_PLUGIN_REPOS), ' ') }}
           do
             cd ./packages/pro-plugins/@nocobase/$repo
-            # git push origin main --atomic --tags
+            git push origin main --atomic --tags
             cd ../../../../
           done
-  #     - name: push pro plugins
-  #       continue-on-error: true
-  #       uses: ad-m/github-push-action@master
-  #       with:
-  #         ssh: true
-  #         branch: main
-  #         directory: packages/pro-plugins
-  #         repository: nocobase/pro-plugins
-  #         tags: true
-  #         atomic: true
-  #     - name: push nocobase
-  #       uses: ad-m/github-push-action@master
-  #       with:
-  #         branch: main
-  #         ssh: true
-  #         repository: nocobase/nocobase
-  #         tags: true
-  #         atomic: true
+      - name: push pro plugins
+        continue-on-error: true
+        uses: ad-m/github-push-action@master
+        with:
+          ssh: true
+          branch: main
+          directory: packages/pro-plugins
+          repository: nocobase/pro-plugins
+          tags: true
+          atomic: true
+      - name: push nocobase
+        uses: ad-m/github-push-action@master
+        with:
+          branch: main
+          ssh: true
+          repository: nocobase/nocobase
+          tags: true
+          atomic: true
   post-merge-main-into-next:
     needs:
       - app-token
@@ -166,7 +163,7 @@ jobs:
         with:
           repository: nocobase/${{ matrix.repo }}
           fetch-depth: 0
-          token: ${{ SECRETS.GITHUB_APP_TOKEN }}
+          token: ${{ steps.app-token.outputs.token }}
       - name: main -> next (nocobase/${{ matrix.repo }})
         run: |
           git config --global user.name '${{ needs.app-token.outputs.app-slug }}[bot]'
@@ -175,4 +172,4 @@ jobs:
           git pull origin main
           git checkout next
           git merge -X ours main --no-edit
-          # git push origin next --tags --atomic
+          git push origin next --tags --atomic
