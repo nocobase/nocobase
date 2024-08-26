@@ -24,12 +24,17 @@ jobs:
           - 'nocobase/pro-plugins'
           - ${{ fromJSON(vars.PRO_PLUGIN_REPOS) }}
     steps:
+      - name: Get repo name
+        id: repo-name
+        run: |
+          REPO_NAME=$(echo ${{ matrix.repo }} | sed "s/nocobase\///")
+          echo "repoName=$REPO_NAME" >> $GITHUB_OUTPUT
       - uses: actions/create-github-app-token@v1
         id: app-token
         with:
           app-id: ${{ vars.NOCOBASE_APP_ID }}
           private-key: ${{ secrets.NOCOBASE_APP_PRIVATE_KEY }}
-          repositories: nocobase/pro-plugins,${{ join(fromJSON(vars.PRO_PLUGIN_REPOS), ',') }}
+          repositories: ${{ steps.repo-name.outputs.repoName }}
       - name: Get GitHub App User ID
         id: get-user-id
         run: echo "user-id=$(gh api "/users/${{ steps.app-token.outputs.app-slug }}[bot]" --jq .id)" >> "$GITHUB_OUTPUT"
