@@ -7,16 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Plugin } from '@nocobase/client';
+import { Icon, PinnedPluginListProvider, SchemaComponentOptions, useApp, useRequest } from '@nocobase/client';
 
-export class PluginNotificationInAppClient extends Plugin {
-  async afterAdd() {}
-
-  async beforeLoad() {}
-
-  async load() {
-    console.log(this.app);
-  }
-}
-
-export default PluginNotificationInAppClient;
+export const MessageManagerProvider = (props: any) => {};
