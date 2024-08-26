@@ -116,7 +116,7 @@ jobs:
           PRO_PLUGIN_REPOS: ${{ vars.PRO_PLUGIN_REPOS }}
       - name: push pro repos
         run: |
-          for repo in ${{ join(fromJSON($vars.PRO_PLUGIN_REPOS), ' ') }}
+          for repo in ${{ join(fromJSON(vars.PRO_PLUGIN_REPOS), ' ') }}
           do
             cd ./packages/pro-plugins/@nocobase/$repo
             # git push origin main --atomic --tags
