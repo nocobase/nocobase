@@ -8,15 +8,21 @@
  */
 
 import { useField, useFieldSchema, useForm } from '@formily/react';
-import { useAPIClient, useActionContext, useCompile, useDataSourceKey, useRecord } from '@nocobase/client';
+import {
+  useAPIClient,
+  useActionContext,
+  useCompile,
+  useDataSourceKey,
+  useNavigateNoUpdate,
+  useRecord,
+} from '@nocobase/client';
 import { isURL } from '@nocobase/utils/client';
 import { App } from 'antd';
 import { saveAs } from 'file-saver';
-import { useNavigate } from 'react-router-dom';
 
 export const useCustomizeRequestActionProps = () => {
   const apiClient = useAPIClient();
-  const navigate = useNavigate();
+  const navigate = useNavigateNoUpdate();
   const actionSchema = useFieldSchema();
   const compile = useCompile();
   const form = useForm();

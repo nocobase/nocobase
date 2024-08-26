@@ -26,7 +26,7 @@ import {
   DataSourceContext_deprecated,
   AddSubFieldAction,
   EditSubFieldAction,
-  CollectionCategroriesContext,
+  CollectionCategoriesContext,
   FieldSummary,
   TemplateSummary,
   useRequest,
@@ -108,7 +108,7 @@ export const ConfigurationTable = () => {
     data: { database },
   } = useCurrentAppInfo();
 
-  const data = useContext(CollectionCategroriesContext);
+  const data = useContext(CollectionCategoriesContext);
   const api = useAPIClient();
   const resource = api.resource('dbViews');
   const compile = useCompile();

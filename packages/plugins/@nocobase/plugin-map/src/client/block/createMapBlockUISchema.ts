@@ -9,7 +9,6 @@
 
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
-import { theme } from 'antd';
 
 export const createMapBlockUISchema = (options: {
   collectionName: string;
@@ -49,7 +48,7 @@ export const createMapBlockUISchema = (options: {
         properties: {
           drawer: {
             type: 'void',
-            'x-component': 'Action.Drawer',
+            'x-component': 'Action.Container',
             'x-component-props': {
               className: 'nb-action-popup',
             },

@@ -12,7 +12,7 @@ import type { Plugin } from './Plugin';
 import { getPlugins } from './utils/remotePlugins';
 
 export type PluginOptions<T = any> = { name?: string; packageName?: string; config?: T };
-export type PluginType<Opts = any> = typeof Plugin | [typeof Plugin, PluginOptions<Opts>];
+export type PluginType<Opts = any> = typeof Plugin | [typeof Plugin<Opts>, PluginOptions<Opts>];
 export type PluginData = {
   name: string;
   packageName: string;

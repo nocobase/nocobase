@@ -48,7 +48,6 @@ test.describe('creation form block schema settings', () => {
 
     // 刷新页面后，显示的应该依然是上次设置的值
     await page.reload();
-    await page.getByRole('button', { name: 'Add new' }).click();
     await runExpect();
   });
 
@@ -68,7 +67,6 @@ test.describe('creation form block schema settings', () => {
 
     // 刷新页面
     await page.reload();
-    await page.getByRole('button', { name: 'Add new' }).click();
     await page.getByLabel('block-item-CardItem-general-form').hover();
     await page.getByLabel('designer-schema-settings-CardItem-FormV2.Designer-general').hover();
     await expect(page.getByRole('menuitem', { name: 'Save as block template' })).not.toBeVisible();
@@ -82,7 +80,6 @@ test.describe('creation form block schema settings', () => {
 
     // 刷新页面
     await page.reload();
-    await page.getByRole('button', { name: 'Add new' }).click();
     await page.getByLabel('block-item-CardItem-general-form').hover();
     await page.getByLabel('designer-schema-settings-CardItem-FormV2.Designer-general').hover();
     await expect(page.getByRole('menuitem', { name: 'Save as block template' })).toBeVisible();
@@ -115,7 +112,6 @@ test.describe('creation form block schema settings', () => {
 
     // 刷新页面后，区块依然是被删除状态
     await page.reload();
-    await page.getByRole('button', { name: 'Add new' }).click();
     await expect(page.getByLabel('block-item-CardItem-general-form')).not.toBeVisible();
   });
 

@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { css } from '@emotion/css';
 import { Field, Form } from '@formily/core';
 import { SchemaExpressionScopeContext, useField, useFieldSchema, useForm } from '@formily/react';
 import { untracked } from '@formily/reactive';
@@ -19,7 +20,7 @@ import omit from 'lodash/omit';
 import qs from 'qs';
 import { ChangeEvent, useCallback, useContext, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { NavigateFunction, useNavigate } from 'react-router-dom';
+import { NavigateFunction } from 'react-router-dom';
 import { useReactToPrint } from 'react-to-print';
 import {
   AssociationFilter,
@@ -27,9 +28,11 @@ import {
   useCollectionRecord,
   useDataSourceHeaders,
   useFormActiveFields,
+  useRouterBasename,
   useTableBlockContext,
 } from '../..';
 import { useAPIClient, useRequest } from '../../api-client';
+import { useNavigateNoUpdate } from '../../application/CustomRouterContextProvider';
 import { useFormBlockContext } from '../../block-provider/FormBlockProvider';
 import { useCollectionManager_deprecated, useCollection_deprecated } from '../../collection-manager';
 import { DataBlock, useFilterBlock } from '../../filter-provider/FilterProvider';
@@ -206,7 +209,7 @@ export const useCreateActionProps = () => {
   const form = useForm();
   const { field, resource } = useBlockRequestContext();
   const { setVisible, setSubmitted, setFormValueChanged } = useActionContext();
-  const navigate = useNavigate();
+  const navigate = useNavigateNoUpdate();
   const actionSchema = useFieldSchema();
   const actionField = useField();
   const compile = useCompile();
@@ -550,7 +553,7 @@ export const useCustomizeUpdateActionProps = () => {
   const { resource, __parent, service } = useBlockRequestContext();
   const filterByTk = useFilterByTk();
   const actionSchema = useFieldSchema();
-  const navigate = useNavigate();
+  const navigate = useNavigateNoUpdate();
   const compile = useCompile();
   const form = useForm();
   const { modal } = App.useApp();
@@ -645,7 +648,7 @@ export const useCustomizeBulkUpdateActionProps = () => {
   const { rowKey } = tableBlockContext;
   const selectedRecordKeys =
     tableBlockContext.field?.data?.selectedRowKeys ?? expressionScope?.selectedRecordKeys ?? {};
-  const navigate = useNavigate();
+  const navigate = useNavigateNoUpdate();
   const compile = useCompile();
   const { t } = useTranslation();
   const actionField = useField();
@@ -756,7 +759,7 @@ export const useCustomizeBulkUpdateActionProps = () => {
 
 export const useCustomizeRequestActionProps = () => {
   const apiClient = useAPIClient();
-  const navigate = useNavigate();
+  const navigate = useNavigateNoUpdate();
   const filterByTk = useFilterByTk();
   const actionSchema = useFieldSchema();
   const compile = useCompile();
@@ -852,7 +855,7 @@ export const useUpdateActionProps = () => {
   const { field, resource, __parent } = useBlockRequestContext();
   const { setVisible, setSubmitted, setFormValueChanged } = useActionContext();
   const actionSchema = useFieldSchema();
-  const navigate = useNavigate();
+  const navigate = useNavigateNoUpdate();
   const { fields, getField, name } = useCollection_deprecated();
   const compile = useCompile();
   const actionField = useField();
@@ -1055,13 +1058,13 @@ export const useDetailPrintActionProps = () => {
   const printHandler = useReactToPrint({
     content: () => formBlockRef.current,
     pageStyle: `@media print {
-       * {
-         margin: 0;
-       }
-       :not(.ant-formily-item-control-content-component) > div.ant-formily-layout>div:first-child {
-         overflow: hidden; height: 0;
-       }
-     }`,
+        * {
+          margin: 0;
+        }
+        :not(.ant-formily-item-control-content-component) > div.ant-formily-layout>div:first-child {
+          overflow: hidden; height: 0;
+        }
+      }`,
   });
   return {
     async onClick() {
@@ -1109,6 +1112,31 @@ export const useRefreshActionProps = () => {
 export const useDetailsPaginationProps = () => {
   const ctx = useDetailsBlockContext();
   const count = ctx.service?.data?.meta?.count || 0;
+  const current = ctx.service?.data?.meta?.page;
+  if (!count && current) {
+    return {
+      simple: true,
+      current: ctx.service?.data?.meta?.page || 1,
+      pageSize: 1,
+      showSizeChanger: false,
+      async onChange(page) {
+        const params = ctx.service?.params?.[0];
+        ctx.service.run({ ...params, page });
+      },
+      style: {
+        marginTop: 24,
+        textAlign: 'center',
+      },
+      showTotal: false,
+      showTitle: false,
+      total: ctx.service?.data?.data?.length ? 1 * current + 1 : 1 * current,
+      className: css`
+        .ant-pagination-simple-pager {
+          display: none !important;
+        }
+      `,
+    };
+  }
   return {
     simple: true,
     hidden: count <= 1,
@@ -1239,18 +1267,20 @@ export const useAssociationFilterBlockProps = () => {
       },
     },
     {
-      // 由于 选项字段不需要触发当前请求，所以当前请求更改为手动触发
+      // 由于选项字段不需要触发当前请求，所以当前请求更改为手动触发
       manual: true,
       debounceWait: 300,
     },
   ));
 
   useEffect(() => {
-    // 由于 选项字段不需要触发当前请求，所以请求单独在 关系字段的时候触发
+    // 由于选项字段不需要触发当前请求，所以请求单独在关系字段的时候触发
     if (!isOptionalField(collectionField)) {
       run();
     }
-  }, [collectionField, labelKey, run, valueKey]);
+
+    // do not format the dependencies
+  }, [collectionField, labelKey, run, valueKey, field.componentProps?.params, field.componentProps?.params?.sort]);
 
   if (!collectionField) {
     return {};
@@ -1404,7 +1434,8 @@ export const useAssociationNames = (dataSource?: string) => {
       const collectionField = s['x-collection-field'] && getCollectionJoinField(s['x-collection-field'], dataSource);
       const isAssociationSubfield = s.name.includes('.');
       const isAssociationField =
-        collectionField && ['hasOne', 'hasMany', 'belongsTo', 'belongsToMany'].includes(collectionField.type);
+        collectionField &&
+        ['hasOne', 'hasMany', 'belongsTo', 'belongsToMany', 'belongsToArray'].includes(collectionField.type);
 
       // 根据联动规则中条件的字段获取一些 appends
       if (s['x-linkage-rules']) {
@@ -1474,6 +1505,7 @@ export const useAssociationNames = (dataSource?: string) => {
     updateAssociationValues = new Set([]);
     appends = new Set([]);
     _getAssociationAppends(fieldSchema, '');
+    appends = fillParentFields(appends);
     return { appends: [...appends], updateAssociationValues: [...updateAssociationValues] };
   };
 
@@ -1554,14 +1586,16 @@ export const useParseURLAndParams = () => {
   return { parseURLAndParams };
 };
 
-export function useLinkActionProps() {
-  const navigate = useNavigate();
+export function useLinkActionProps(componentProps?: any) {
+  const navigate = useNavigateNoUpdate();
   const fieldSchema = useFieldSchema();
+  const componentPropsValue = fieldSchema?.['x-component-props'] || componentProps;
   const { t } = useTranslation();
-  const url = fieldSchema?.['x-component-props']?.['url'];
-  const searchParams = fieldSchema?.['x-component-props']?.['params'] || [];
+  const url = componentPropsValue?.['url'];
+  const searchParams = componentPropsValue?.['params'] || [];
   const openInNewWindow = fieldSchema?.['x-component-props']?.['openInNewWindow'];
   const { parseURLAndParams } = useParseURLAndParams();
+  const basenameOfCurrentRouter = useRouterBasename();
 
   return {
     type: 'default',
@@ -1576,7 +1610,7 @@ export function useLinkActionProps() {
         if (openInNewWindow) {
           window.open(completeURL(link), '_blank');
         } else {
-          navigateWithinSelf(link, navigate);
+          navigateWithinSelf(link, navigate, window.location.origin + basenameOfCurrentRouter);
         }
       } else {
         console.error('link should be a string');
@@ -1690,18 +1724,37 @@ export function completeURL(url: string, origin = window.location.origin) {
   return url.startsWith('/') ? `${origin}${url}` : `${origin}/${url}`;
 }
 
-export function navigateWithinSelf(link: string, navigate: NavigateFunction, origin = window.location.origin) {
+export function navigateWithinSelf(link: string, navigate: NavigateFunction, basePath = window.location.origin) {
   if (!_.isString(link)) {
     return console.error('link should be a string');
   }
 
   if (isURL(link)) {
-    if (link.startsWith(origin)) {
-      navigate(link.replace(origin, ''));
+    if (link.startsWith(basePath)) {
+      navigate(completeURL(link.replace(basePath, ''), ''));
     } else {
       window.open(link, '_self');
     }
   } else {
-    navigate(link.startsWith('/') ? link : `/${link}`);
+    navigate(completeURL(link, ''));
   }
+}
+
+/**
+ * 为多层级的关系字段补充上父级字段
+ * e.g. ['a', 'b.c'] => ['a', 'b', 'b.c']
+ * @param appends
+ * @returns
+ */
+export function fillParentFields(appends: Set<string>) {
+  const depFields = Array.from(appends).filter((field) => field.includes('.'));
+
+  depFields.forEach((field) => {
+    const fields = field.split('.');
+    fields.pop();
+    const parentField = fields.join('.');
+    appends.add(parentField);
+  });
+
+  return appends;
 }

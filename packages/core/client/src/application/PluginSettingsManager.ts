@@ -32,12 +32,15 @@ export interface PluginSettingOptions {
    */
   sort?: number;
   aclSnippet?: string;
+  link?: string;
+  isTopLevel?: boolean;
   [index: string]: any;
 }
 
 export interface PluginSettingsPageType {
   label?: string | React.ReactElement;
   title: string | React.ReactElement;
+  link?: string;
   key: string;
   icon: any;
   path: string;
@@ -145,6 +148,7 @@ export class PluginSettingsManager {
       .sort((a, b) => (a.sort || 0) - (b.sort || 0));
     const { title, icon, aclSnippet, ...others } = pluginSetting;
     return {
+      isTopLevel: name === pluginSetting.topLevelName,
       ...others,
       aclSnippet: this.getAclSnippet(name),
       title,

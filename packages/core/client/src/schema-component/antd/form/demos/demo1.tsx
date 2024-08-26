@@ -1,9 +1,15 @@
-
-
 import { FormItem, Input } from '@formily/antd-v5';
 import { ISchema, observer, useForm } from '@formily/react';
-import { Action, Form, SchemaComponent, SchemaComponentProvider, useCloseAction } from '@nocobase/client';
+import {
+  Action,
+  CustomRouterContextProvider,
+  Form,
+  SchemaComponent,
+  SchemaComponentProvider,
+  useCloseAction,
+} from '@nocobase/client';
 import React from 'react';
+import { Router } from 'react-router-dom';
 
 const schema: ISchema = {
   type: 'object',
@@ -60,8 +66,12 @@ const Output = observer(
 
 export default observer(() => {
   return (
-    <SchemaComponentProvider scope={{ useCloseAction }} components={{ Output, Form, Action, Input, FormItem }}>
-      <SchemaComponent schema={schema} />
-    </SchemaComponentProvider>
+    <Router location={window.location} navigator={null}>
+      <CustomRouterContextProvider>
+        <SchemaComponentProvider scope={{ useCloseAction }} components={{ Output, Form, Action, Input, FormItem }}>
+          <SchemaComponent schema={schema} />
+        </SchemaComponentProvider>
+      </CustomRouterContextProvider>
+    </Router>
   );
 });

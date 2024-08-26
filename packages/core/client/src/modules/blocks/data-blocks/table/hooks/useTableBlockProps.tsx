@@ -16,6 +16,7 @@ import { findFilterTargets } from '../../../../../block-provider/hooks';
 import { DataBlock, useFilterBlock } from '../../../../../filter-provider/FilterProvider';
 import { mergeFilter } from '../../../../../filter-provider/utils';
 import { removeNullCondition } from '../../../../../schema-component';
+import { useCollection } from '../../../../../data-source';
 
 export const useTableBlockProps = () => {
   const field = useField<ArrayField>();
@@ -25,7 +26,6 @@ export const useTableBlockProps = () => {
   const { getDataBlocks } = useFilterBlock();
   const isLoading = ctx?.service?.loading;
   const params = useMemo(() => ctx?.service?.params, [JSON.stringify(ctx?.service?.params)]);
-
   useEffect(() => {
     if (!isLoading) {
       const serviceResponse = ctx?.service?.data;
@@ -78,17 +78,19 @@ export const useTableBlockProps = () => {
     ),
     onChange: useCallback(
       ({ current, pageSize }, filters, sorter) => {
-        const sort = !ctx.dragSort
-          ? sorter.order
-            ? sorter.order === `ascend`
-              ? [sorter.field]
-              : [`-${sorter.field}`]
-            : globalSort || ctx.dragSortBy
-          : ctx.dragSortBy;
+        const sort = sorter.order
+          ? sorter.order === `ascend`
+            ? [sorter.field]
+            : [`-${sorter.field}`]
+          : globalSort || ctx.dragSortBy;
         const currentPageSize = pageSize || fieldSchema.parent?.['x-decorator-props']?.['params']?.pageSize;
-        ctx.service.run({ ...params?.[0], page: current || 1, pageSize: currentPageSize, sort });
+        const args = { ...params?.[0], page: current || 1, pageSize: currentPageSize };
+        if (sort) {
+          args['sort'] = sort;
+        }
+        ctx.service.run(args);
       },
-      [globalSort, params],
+      [globalSort, params, ctx.dragSort],
     ),
     onClickRow: useCallback(
       (record, setSelectedRow, selectedRow) => {

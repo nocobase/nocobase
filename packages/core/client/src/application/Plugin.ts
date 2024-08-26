@@ -12,7 +12,7 @@ import type { Application } from './Application';
 
 export class Plugin<T = any> {
   constructor(
-    protected options: T,
+    public options: T,
     protected app: Application,
   ) {
     this.options = options;

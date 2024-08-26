@@ -24,7 +24,6 @@ export class DataSourcesFieldModel extends MagicAttributeModel {
     const dataSource = app.dataSourceManager.dataSources.get(dataSourceKey);
     const collection = dataSource.collectionManager.getCollection(collectionName);
     const oldField = collection.getField(name);
-
     const newOptions = mergeOptions(oldField ? oldField.options : {}, options);
 
     collection.setField(name, newOptions);

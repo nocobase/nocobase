@@ -113,11 +113,15 @@ export class OptionsParser {
       sort = sort.split(',');
     }
 
-    const primaryKeyField = this.model.primaryKeyAttribute;
+    let defaultSortField = this.model.primaryKeyAttribute;
 
-    if (primaryKeyField && !this.options?.group) {
-      if (!sort.includes(primaryKeyField)) {
-        sort.push(primaryKeyField);
+    if (!defaultSortField && this.collection.filterTargetKey) {
+      defaultSortField = this.collection.filterTargetKey;
+    }
+
+    if (defaultSortField && !this.options?.group) {
+      if (!sort.includes(defaultSortField)) {
+        sort.push(defaultSortField);
       }
     }
 

@@ -11,6 +11,7 @@ import { useField, useFieldSchema } from '@formily/react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient } from '../../../../api-client';
 import { SchemaSettings } from '../../../../application/schema-settings/SchemaSettings';
+import { createSwitchSettingsItem } from '../../../../application/schema-settings/utils/createSwitchSettingsItem';
 import { useTableBlockContext } from '../../../../block-provider';
 import { useCollectionManager_deprecated, useCollection_deprecated } from '../../../../collection-manager';
 import { FilterBlockType } from '../../../../filter-provider/utils';
@@ -20,10 +21,10 @@ import { SchemaSettingsBlockTitleItem } from '../../../../schema-settings/Schema
 import { SchemaSettingsConnectDataBlocks } from '../../../../schema-settings/SchemaSettingsConnectDataBlocks';
 import { SchemaSettingsSortField } from '../../../../schema-settings/SchemaSettingsSortField';
 import { SchemaSettingsTemplate } from '../../../../schema-settings/SchemaSettingsTemplate';
-import { setDataLoadingModeSettingsItem } from '../details-multi/setDataLoadingModeSettingsItem';
 import { setDefaultSortingRulesSchemaSettingsItem } from '../../../../schema-settings/setDefaultSortingRulesSchemaSettingsItem';
 import { setTheDataScopeSchemaSettingsItem } from '../../../../schema-settings/setTheDataScopeSchemaSettingsItem';
-import { createSwitchSettingsItem } from '../../../../application/schema-settings/utils';
+import { useBlockTemplateContext } from '../../../../schema-templates/BlockTemplateProvider';
+import { setDataLoadingModeSettingsItem } from '../details-multi/setDataLoadingModeSettingsItem';
 
 export const tableBlockSettings = new SchemaSettings({
   name: 'blockSettings:table',
@@ -211,10 +212,11 @@ export const tableBlockSettings = new SchemaSettings({
       useComponentProps() {
         const { name } = useCollection_deprecated();
         const fieldSchema = useFieldSchema();
+        const { componentNamePrefix } = useBlockTemplateContext();
         const defaultResource =
           fieldSchema?.['x-decorator-props']?.resource || fieldSchema?.['x-decorator-props']?.association;
         return {
-          componentName: 'Table',
+          componentName: `${componentNamePrefix}Table`,
           collectionName: name,
           resourceName: defaultResource,
         };

@@ -20,7 +20,7 @@ import { Instruction } from '.';
 export default class extends Instruction {
   title = `{{t("Calculation", { ns: "${NAMESPACE}" })}}`;
   type = 'calculation';
-  group = 'control';
+  group = 'calculation';
   description = `{{t("Calculate an expression based on a calculation engine and obtain a value as the result. Variables in the upstream nodes can be used in the expression.", { ns: "${NAMESPACE}" })}}`;
   fieldset = {
     engine: {

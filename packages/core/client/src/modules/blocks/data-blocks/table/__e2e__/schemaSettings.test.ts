@@ -17,7 +17,13 @@ import {
   oneTableBlockWithAddNewAndViewAndEditAndBasicFields,
   test,
 } from '@nocobase/test/e2e';
-import { T3843, oneTableWithColumnFixed, oneTableWithUpdateRecord } from './templatesOfBug';
+import {
+  T3843,
+  oneTableWithColumnFixed,
+  oneTableWithUpdateRecord,
+  testingOfOpenModeForAddChild,
+  testingWithPageMode,
+} from './templatesOfBug';
 
 const addSomeCustomActions = async (page: Page) => {
   // 先删除掉之前的 actions
@@ -50,7 +56,7 @@ test.describe('actions schema settings', () => {
       await page.getByRole('button', { name: 'designer-schema-settings-Action-Action.Designer-general' }).hover();
     };
 
-    test('supported options', async ({ page, mockPage, mockRecord }) => {
+    test('supported options', async ({ page, mockPage }) => {
       await mockPage(oneEmptyTableBlockWithActions).goto();
 
       await expectSettingsMenu({
@@ -60,7 +66,7 @@ test.describe('actions schema settings', () => {
       });
     });
 
-    test('edit button', async ({ page, mockPage, mockRecord }) => {
+    test('edit button', async ({ page, mockPage }) => {
       await mockPage(oneEmptyTableBlockWithActions).goto();
 
       await showMenu(page);
@@ -72,7 +78,7 @@ test.describe('actions schema settings', () => {
       await expect(page.getByRole('button', { name: '1234' })).toBeVisible();
     });
 
-    test('open mode', async ({ page, mockPage, mockRecord }) => {
+    test('open mode', async ({ page, mockPage }) => {
       await mockPage(oneEmptyTableBlockWithActions).goto();
       await showMenu(page);
 
@@ -85,9 +91,43 @@ test.describe('actions schema settings', () => {
 
       await page.getByRole('button', { name: 'Add new' }).click();
       await expect(page.getByTestId('modal-Action.Container-general-Add record')).toBeVisible();
+      await page.getByLabel('modal-Action.Container-general-Add record-mask').click();
+
+      // 切换为 page
+      await page.getByLabel('action-Action-Add new-create-').hover();
+      await page.getByRole('button', { name: 'designer-schema-settings-Action-Action.Designer-general' }).hover();
+      await page.getByRole('menuitem', { name: 'Open mode Dialog' }).click();
+      await page.getByRole('option', { name: 'Page' }).click();
+
+      // 点击按钮后会跳转到一个页面
+      await page.getByLabel('action-Action-Add new-create-').click();
+
+      // 配置出一个表单
+      await page.getByLabel('schema-initializer-Grid-popup').hover();
+      await page.getByRole('menuitem', { name: 'form Form right' }).hover();
+      await page.getByRole('menuitem', { name: 'Current collection' }).click();
+
+      await page.getByLabel('schema-initializer-Grid-form:').hover();
+      await page.getByRole('menuitem', { name: 'Single select' }).click();
+      await page.mouse.move(300, 0);
+
+      await page.getByLabel('schema-initializer-ActionBar-createForm:configureActions-general').hover();
+      await page.getByRole('menuitem', { name: 'Submit' }).click();
+
+      // 创建一条数据后返回，列表中应该有这条数据
+      await page.getByTestId('select-single').click();
+      await page.getByRole('option', { name: 'option3' }).click();
+
+      // 提交后会自动返回
+      await page.getByLabel('action-Action-Submit-submit-').click();
+
+      await page.getByLabel('schema-initializer-TableV2-').hover();
+      await page.getByRole('menuitem', { name: 'Single select' }).click();
+      await page.mouse.move(300, 0);
+      await expect(page.getByRole('button', { name: 'option3' })).toHaveCount(1);
     });
 
-    test('popup size', async ({ page, mockPage, mockRecord }) => {
+    test('popup size', async ({ page, mockPage }) => {
       await mockPage(oneEmptyTableBlockWithActions).goto();
 
       await showMenu(page);
@@ -116,7 +156,7 @@ test.describe('actions schema settings', () => {
       expect(drawerWidth2).toBeGreaterThanOrEqual(800);
     });
 
-    test('delete', async ({ page, mockPage, mockRecord }) => {
+    test('delete', async ({ page, mockPage }) => {
       await mockPage(oneEmptyTableBlockWithActions).goto();
 
       await showMenu(page);
@@ -149,7 +189,7 @@ test.describe('actions schema settings', () => {
       await page.getByLabel('designer-schema-settings-Filter.Action-Filter.Action.Designer-general').hover();
     };
 
-    test('supported options', async ({ page, mockPage, mockRecord }) => {
+    test('supported options', async ({ page, mockPage }) => {
       await mockPage(oneEmptyTableBlockWithActions).goto();
 
       await expectSettingsMenu({
@@ -316,6 +356,390 @@ test.describe('actions schema settings', () => {
         '',
       );
     });
+
+    test('open mode: page', async ({ page, mockPage }) => {
+      test.slow();
+      await mockPage(testingWithPageMode).goto();
+
+      // 打开弹窗
+      await page.getByLabel('action-Action.Link-View').click();
+
+      // 详情区块
+      await expect(
+        page
+          .getByLabel('block-item-CardItem-users-details')
+          .getByLabel('block-item-CollectionField-users-details-users.nickname-Nickname'),
+      ).toHaveText('Nickname:Super Admin');
+
+      // 关系区块
+      await expect(
+        page
+          .getByLabel('block-item-CardItem-roles-details')
+          .getByLabel('block-item-CollectionField-roles-details-roles.name-Role UID'),
+      ).toHaveText('Role UID:admin');
+
+      // 使用变量 `Current role` 设置默认值
+      await expect(page.getByLabel('block-item-CardItem-roles-form').getByRole('textbox')).toHaveValue('root');
+
+      // 使用变量 `Current popup record` 设置默认值
+      await expect(page.getByLabel('block-item-CardItem-users-form').getByRole('textbox')).toHaveValue('Super Admin');
+
+      // -----------------------------------------------------------------------------------------------
+
+      // 打开嵌套弹窗
+      await page.getByLabel('action-Action.Link-View role-view-roles-table-admin').click();
+
+      // 详情区块
+      await expect(page.getByLabel('block-item-CollectionField-roles-details-roles.title-Role name')).toHaveText(
+        'Role name:Admin',
+      );
+
+      // 使用变量 `Parent popup record` 设置数据范围
+      await expect(
+        page
+          .getByTestId('drawer-Action.Container-roles-View record')
+          .getByLabel('block-item-CardItem-roles-table')
+          .getByRole('button', { name: 'Admin', exact: true }),
+      ).toBeVisible();
+      await expect(
+        page
+          .getByTestId('drawer-Action.Container-roles-View record')
+          .getByLabel('block-item-CardItem-roles-table')
+          .getByRole('button', { name: 'Member', exact: true }),
+      ).toBeVisible();
+      await expect(
+        page
+          .getByTestId('drawer-Action.Container-roles-View record')
+          .getByLabel('block-item-CardItem-roles-table')
+          .getByRole('button', { name: 'Root', exact: true }),
+      ).toBeVisible();
+
+      // 使用变量 `Current popup record` 和 `Parent popup record` 设置默认值
+      await expect(
+        page
+          .getByTestId('drawer-Action.Container-roles-View record')
+          .getByLabel('block-item-CardItem-users-form')
+          .getByLabel('block-item-CollectionField-users-form-users.nickname-Nickname')
+          .getByRole('textbox'),
+      ).toHaveValue('admin');
+      await expect(
+        page
+          .getByTestId('drawer-Action.Container-roles-View record')
+          .getByLabel('block-item-CardItem-users-form')
+          .getByLabel('block-item-CollectionField-users-form-users.username-Username')
+          .getByRole('textbox'),
+      ).toHaveValue('nocobase');
+
+      // -----------------------------------------------------------------------------------
+
+      // 关闭嵌套弹窗后，再点击不同的行打开嵌套弹窗，应该显示不同的数据
+      await page.getByLabel('drawer-Action.Container-roles-View record-mask').click();
+      await page.getByLabel('action-Action.Link-View role-view-roles-table-member').click();
+
+      // 详情区块
+      await expect(page.getByLabel('block-item-CollectionField-roles-details-roles.title-Role name')).toHaveText(
+        'Role name:Member',
+      );
+
+      // 使用变量 `Parent popup record` 设置数据范围
+      await expect(
+        page
+          .getByTestId('drawer-Action.Container-roles-View record')
+          .getByLabel('block-item-CardItem-roles-table')
+          .getByRole('button', { name: 'Admin', exact: true }),
+      ).toBeVisible();
+      await expect(
+        page
+          .getByTestId('drawer-Action.Container-roles-View record')
+          .getByLabel('block-item-CardItem-roles-table')
+          .getByRole('button', { name: 'Member', exact: true }),
+      ).toBeVisible();
+      await expect(
+        page
+          .getByTestId('drawer-Action.Container-roles-View record')
+          .getByLabel('block-item-CardItem-roles-table')
+          .getByRole('button', { name: 'Root', exact: true }),
+      ).toBeVisible();
+
+      // 使用变量 `Current popup record` 和 `Parent popup record` 设置默认值
+      await expect(
+        page
+          .getByTestId('drawer-Action.Container-roles-View record')
+          .getByLabel('block-item-CardItem-users-form')
+          .getByLabel('block-item-CollectionField-users-form-users.nickname-Nickname')
+          .getByRole('textbox'),
+      ).toHaveValue('member');
+      await expect(
+        page
+          .getByTestId('drawer-Action.Container-roles-View record')
+          .getByLabel('block-item-CardItem-users-form')
+          .getByLabel('block-item-CollectionField-users-form-users.username-Username')
+          .getByRole('textbox'),
+      ).toHaveValue('nocobase');
+
+      // -----------------------------------------------------------------------------------
+
+      // 刷新页面后，弹窗中的内容不变
+      await page.reload();
+
+      // 详情区块
+      await expect(page.getByLabel('block-item-CollectionField-roles-details-roles.title-Role name')).toHaveText(
+        'Role name:Member',
+      );
+
+      // 使用变量 `Parent popup record` 设置数据范围
+      await expect(
+        page
+          .getByTestId('drawer-Action.Container-roles-View record')
+          .getByLabel('block-item-CardItem-roles-table')
+          .getByRole('button', { name: 'Admin', exact: true }),
+      ).toBeVisible();
+      await expect(
+        page
+          .getByTestId('drawer-Action.Container-roles-View record')
+          .getByLabel('block-item-CardItem-roles-table')
+          .getByRole('button', { name: 'Member', exact: true }),
+      ).toBeVisible();
+      await expect(
+        page
+          .getByTestId('drawer-Action.Container-roles-View record')
+          .getByLabel('block-item-CardItem-roles-table')
+          .getByRole('button', { name: 'Root', exact: true }),
+      ).toBeVisible();
+
+      // 使用变量 `Current popup record` 和 `Parent popup record` 设置默认值
+      await expect(
+        page
+          .getByTestId('drawer-Action.Container-roles-View record')
+          .getByLabel('block-item-CardItem-users-form')
+          .getByLabel('block-item-CollectionField-users-form-users.nickname-Nickname')
+          .getByRole('textbox'),
+      ).toHaveValue('member');
+      await expect(
+        page
+          .getByTestId('drawer-Action.Container-roles-View record')
+          .getByLabel('block-item-CardItem-users-form')
+          .getByLabel('block-item-CollectionField-users-form-users.username-Username')
+          .getByRole('textbox'),
+      ).toHaveValue('nocobase');
+
+      // -----------------------------------------------------------------------------------
+
+      // 关闭弹窗，然后将 Open mode 调整为 page
+      await page.getByLabel('drawer-Action.Container-roles-View record-mask').click();
+      await page.locator('.ant-drawer-mask').click();
+
+      await page.getByLabel('action-Action.Link-View').hover();
+      await page.getByLabel('designer-schema-settings-Action.Link-actionSettings:view-users').hover();
+      await page.getByRole('menuitem', { name: 'Open mode Drawer' }).click();
+      await page.getByRole('option', { name: 'Page' }).click();
+
+      // 跳转到子页面后，其内容应该和弹窗中的内容一致
+      await page.getByLabel('action-Action.Link-View').click();
+
+      // 详情区块
+      await expect(
+        page
+          .getByLabel('block-item-CardItem-users-details')
+          .getByLabel('block-item-CollectionField-users-details-users.nickname-Nickname'),
+      ).toHaveText('Nickname:Super Admin');
+
+      // 关系区块
+      await expect(
+        page
+          .getByLabel('block-item-CardItem-roles-details')
+          .getByLabel('block-item-CollectionField-roles-details-roles.name-Role UID'),
+      ).toHaveText('Role UID:admin');
+
+      // 使用变量 `Current role` 设置默认值
+      await expect(page.getByLabel('block-item-CardItem-roles-form').getByRole('textbox')).toHaveValue('root');
+
+      // 使用变量 `Current popup record` 设置默认值
+      await expect(page.getByLabel('block-item-CardItem-users-form').getByRole('textbox')).toHaveValue('Super Admin');
+
+      // ---------------------------------------------------------------------------------------------------------------
+
+      // 打开子页面中的弹窗
+      await page.getByLabel('action-Action.Link-View role-view-roles-table-member').click();
+
+      // 详情区块
+      await expect(page.getByLabel('block-item-CollectionField-roles-details-roles.title-Role name')).toHaveText(
+        'Role name:Member',
+      );
+
+      // 使用变量 `Parent popup record` 设置数据范围
+      await expect(
+        page
+          .getByTestId('drawer-Action.Container-roles-View record')
+          .getByLabel('block-item-CardItem-roles-table')
+          .getByRole('button', { name: 'Admin', exact: true }),
+      ).toBeVisible();
+      await expect(
+        page
+          .getByTestId('drawer-Action.Container-roles-View record')
+          .getByLabel('block-item-CardItem-roles-table')
+          .getByRole('button', { name: 'Member', exact: true }),
+      ).toBeVisible();
+      await expect(
+        page
+          .getByTestId('drawer-Action.Container-roles-View record')
+          .getByLabel('block-item-CardItem-roles-table')
+          .getByRole('button', { name: 'Root', exact: true }),
+      ).toBeVisible();
+
+      // 使用变量 `Current popup record` 和 `Parent popup record` 设置默认值
+      await expect(
+        page
+          .getByTestId('drawer-Action.Container-roles-View record')
+          .getByLabel('block-item-CardItem-users-form')
+          .getByLabel('block-item-CollectionField-users-form-users.nickname-Nickname')
+          .getByRole('textbox'),
+      ).toHaveValue('member');
+      await expect(
+        page
+          .getByTestId('drawer-Action.Container-roles-View record')
+          .getByLabel('block-item-CardItem-users-form')
+          .getByLabel('block-item-CollectionField-users-form-users.username-Username')
+          .getByRole('textbox'),
+      ).toHaveValue('nocobase');
+
+      // -----------------------------------------------------------------------------------
+
+      // 关闭弹窗后，重新选择一条不同的数据打开，应该显示不同的数据
+      await page.getByLabel('drawer-Action.Container-roles-View record-mask').click();
+      await page.getByLabel('action-Action.Link-View role-view-roles-table-admin').click();
+
+      // 详情区块
+      await expect(page.getByLabel('block-item-CollectionField-roles-details-roles.title-Role name')).toHaveText(
+        'Role name:Admin',
+      );
+
+      // 使用变量 `Parent popup record` 设置数据范围
+      await expect(
+        page
+          .getByTestId('drawer-Action.Container-roles-View record')
+          .getByLabel('block-item-CardItem-roles-table')
+          .getByRole('button', { name: 'Admin', exact: true }),
+      ).toBeVisible();
+      await expect(
+        page
+          .getByTestId('drawer-Action.Container-roles-View record')
+          .getByLabel('block-item-CardItem-roles-table')
+          .getByRole('button', { name: 'Member', exact: true }),
+      ).toBeVisible();
+      await expect(
+        page
+          .getByTestId('drawer-Action.Container-roles-View record')
+          .getByLabel('block-item-CardItem-roles-table')
+          .getByRole('button', { name: 'Root', exact: true }),
+      ).toBeVisible();
+
+      // 使用变量 `Current popup record` 和 `Parent popup record` 设置默认值
+      await expect(
+        page
+          .getByTestId('drawer-Action.Container-roles-View record')
+          .getByLabel('block-item-CardItem-users-form')
+          .getByLabel('block-item-CollectionField-users-form-users.nickname-Nickname')
+          .getByRole('textbox'),
+      ).toHaveValue('admin');
+      await expect(
+        page
+          .getByTestId('drawer-Action.Container-roles-View record')
+          .getByLabel('block-item-CardItem-users-form')
+          .getByLabel('block-item-CollectionField-users-form-users.username-Username')
+          .getByRole('textbox'),
+      ).toHaveValue('nocobase');
+
+      // -----------------------------------------------------------------------------------
+
+      // 刷新页面后，弹窗中的内容不变
+      await page.reload();
+
+      // 详情区块
+      await expect(page.getByLabel('block-item-CollectionField-roles-details-roles.title-Role name')).toHaveText(
+        'Role name:Admin',
+      );
+
+      // 使用变量 `Parent popup record` 设置数据范围
+      await expect(
+        page
+          .getByTestId('drawer-Action.Container-roles-View record')
+          .getByLabel('block-item-CardItem-roles-table')
+          .getByRole('button', { name: 'Admin', exact: true }),
+      ).toBeVisible();
+      await expect(
+        page
+          .getByTestId('drawer-Action.Container-roles-View record')
+          .getByLabel('block-item-CardItem-roles-table')
+          .getByRole('button', { name: 'Member', exact: true }),
+      ).toBeVisible();
+      await expect(
+        page
+          .getByTestId('drawer-Action.Container-roles-View record')
+          .getByLabel('block-item-CardItem-roles-table')
+          .getByRole('button', { name: 'Root', exact: true }),
+      ).toBeVisible();
+
+      // 使用变量 `Current popup record` 和 `Parent popup record` 设置默认值
+      await expect(
+        page
+          .getByTestId('drawer-Action.Container-roles-View record')
+          .getByLabel('block-item-CardItem-users-form')
+          .getByLabel('block-item-CollectionField-users-form-users.nickname-Nickname')
+          .getByRole('textbox'),
+      ).toHaveValue('admin');
+      await expect(
+        page
+          .getByTestId('drawer-Action.Container-roles-View record')
+          .getByLabel('block-item-CardItem-users-form')
+          .getByLabel('block-item-CollectionField-users-form-users.username-Username')
+          .getByRole('textbox'),
+      ).toHaveValue('nocobase');
+
+      // -----------------------------------------------------------------------------------
+
+      // 关闭弹窗后，将子页面中的 Open mode 调整为 page
+      await page.goBack();
+      await page.getByLabel('action-Action.Link-View role-view-roles-table-admin').hover();
+      await page
+        .getByRole('button', { name: 'designer-schema-settings-Action.Link-actionSettings:view-roles' })
+        .hover();
+      await page.getByRole('menuitem', { name: 'Open mode Drawer' }).click();
+      await page.getByRole('option', { name: 'Page' }).click();
+
+      // 点击按钮跳转到子页面
+      await page.getByLabel('action-Action.Link-View role-view-roles-table-admin').click();
+
+      // 详情区块
+      await expect(page.getByLabel('block-item-CollectionField-roles-details-roles.title-Role name')).toHaveText(
+        'Role name:Admin',
+      );
+
+      // 使用变量 `Parent popup record` 设置数据范围
+      await expect(
+        page.getByLabel('block-item-CardItem-roles-table').getByRole('button', { name: 'Admin', exact: true }),
+      ).toBeVisible();
+      await expect(
+        page.getByLabel('block-item-CardItem-roles-table').getByRole('button', { name: 'Member', exact: true }),
+      ).toBeVisible();
+      await expect(
+        page.getByLabel('block-item-CardItem-roles-table').getByRole('button', { name: 'Root', exact: true }),
+      ).toBeVisible();
+
+      // 使用变量 `Current popup record` 和 `Parent popup record` 设置默认值
+      await expect(
+        page
+          .getByText("UsersUse 'Current popup")
+          .getByLabel('block-item-CollectionField-users-form-users.nickname-Nickname')
+          .getByRole('textbox'),
+      ).toHaveValue('admin');
+      await expect(
+        page
+          .getByLabel('block-item-CardItem-users-form')
+          .getByLabel('block-item-CollectionField-users-form-users.username-Username')
+          .getByRole('textbox'),
+      ).toHaveValue('nocobase');
+    });
   });
 
   test.describe('popup', () => {
@@ -460,7 +884,7 @@ test.describe('actions schema settings', () => {
       await page.getByLabel('designer-schema-settings-Action.Link-actionSettings:addChild-tree').hover();
     };
 
-    test('supported options', async ({ page, mockPage, mockRecord }) => {
+    test('supported options', async ({ page, mockPage }) => {
       const nocoPage = await mockPage(oneEmptyTableWithTreeCollection).waitForInit();
       await nocoPage.goto();
       await page.getByLabel('block-item-CardItem-treeCollection-table').hover();
@@ -512,6 +936,35 @@ test.describe('actions schema settings', () => {
           .getByText('1', { exact: true }),
       ).toBeVisible();
     });
+
+    test('open mode', async ({ page, mockPage }) => {
+      const nocoPage = await mockPage(testingOfOpenModeForAddChild).waitForInit();
+      await nocoPage.goto();
+
+      // add a record
+      await page.getByLabel('action-Action-Add new-create-').click();
+      await page.getByLabel('action-Action-Submit-submit-').click();
+
+      // open popup with drawer mode
+      await page.getByLabel('action-Action.Link-Add child-').click();
+      await expect(page.getByTestId('select-object-single')).toHaveText('1');
+
+      await page.reload();
+      await expect(page.getByTestId('select-object-single')).toHaveText('1');
+
+      await page.goBack();
+      await page.getByLabel('action-Action.Link-Add child-').hover();
+      await page.getByLabel('designer-schema-settings-Action.Link-actionSettings:addChild-treeCollection').hover();
+      await page.getByRole('menuitem', { name: 'Open mode Drawer' }).click();
+      await page.getByRole('option', { name: 'Page' }).click();
+
+      // open popup with page mode
+      await page.getByLabel('action-Action.Link-Add child-').click();
+      await expect(page.getByTestId('select-object-single')).toHaveText('1');
+
+      await page.reload();
+      await expect(page.getByTestId('select-object-single')).toHaveText('1');
+    });
   });
 
   test.describe('add record', () => {
@@ -520,7 +973,7 @@ test.describe('actions schema settings', () => {
       await page.getByRole('button', { name: 'designer-schema-settings-Action-Action.Designer-general' }).hover();
     };
 
-    test('supported options', async ({ page, mockPage, mockRecord }) => {
+    test('supported options', async ({ page, mockPage }) => {
       await mockPage(oneEmptyTableBlockWithActions).goto();
 
       await expectSettingsMenu({

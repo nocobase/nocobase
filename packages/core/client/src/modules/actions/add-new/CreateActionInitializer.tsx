@@ -9,9 +9,14 @@
 
 import React from 'react';
 import { useSchemaInitializerItem } from '../../../application';
+import { usePopupUtils } from '../../../schema-component/antd/page/pagePopupUtils';
+import { CONTEXT_SCHEMA_KEY } from '../../../schema-component/antd/page/usePopupContextInActionOrAssociationField';
 import { ActionInitializerItem } from '../../../schema-initializer/items/ActionInitializerItem';
+import { useOpenModeContext } from '../../popup/OpenModeProvider';
 
 export const CreateActionInitializer = () => {
+  const { defaultOpenMode } = useOpenModeContext();
+  const { getPopupContext } = usePopupUtils();
   const schema = {
     type: 'void',
     'x-action': 'create',
@@ -22,7 +27,7 @@ export const CreateActionInitializer = () => {
     'x-component': 'Action',
     'x-decorator': 'ACLActionProvider',
     'x-component-props': {
-      openMode: 'drawer',
+      openMode: defaultOpenMode,
       type: 'primary',
       component: 'CreateRecordAction',
       icon: 'PlusOutlined',
@@ -65,6 +70,7 @@ export const CreateActionInitializer = () => {
         },
       },
     },
+    [CONTEXT_SCHEMA_KEY]: getPopupContext(),
   };
   const itemConfig = useSchemaInitializerItem();
   return <ActionInitializerItem {...itemConfig} item={itemConfig} schema={schema} />;

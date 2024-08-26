@@ -81,9 +81,9 @@ const myInitializer = new SchemaInitializer({
               'x-component': 'Hello',
             });
           },
-        }
+        };
       },
-    }
+    },
   ],
 });
 

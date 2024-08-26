@@ -8,10 +8,12 @@
  */
 
 import _, { every, findIndex, some } from 'lodash';
+import Handlebars from 'handlebars';
 import { VariableOption, VariablesContextType } from '../../../variables/types';
 import { isVariable } from '../../../variables/utils/isVariable';
 import { transformVariableValue } from '../../../variables/utils/transformVariableValue';
 import { getJsonLogic } from '../../common/utils/logic';
+import { replaceVariableValue } from '../../../block-provider/hooks';
 
 type VariablesCtx = {
   /** 当前登录的用户 */
@@ -100,7 +102,9 @@ export const conditionAnalyses = async ({
     }
 
     const targetVariableName = targetFieldToVariableString(getTargetField(condition));
-    const targetValue = variables.parseVariable(targetVariableName, localVariables);
+    const targetValue = variables.parseVariable(targetVariableName, localVariables, {
+      doNotRequest: true,
+    });
 
     const parsingResult = isVariable(jsonlogic?.value)
       ? [variables.parseVariable(jsonlogic?.value, localVariables), targetValue]
@@ -137,4 +141,34 @@ export const conditionAnalyses = async ({
 export function targetFieldToVariableString(targetField: string[]) {
   // Action 中的联动规则虽然没有 form 上下文但是在这里也使用的是 `$nForm` 变量，这样实现更简单
   return `{{ $nForm.${targetField.join('.')} }}`;
+}
+
+const getVariablesData = (localVariables) => {
+  const data = {};
+  localVariables.map((v) => {
+    data[v.name] = v.ctx;
+  });
+  return data;
+};
+
+export async function getRenderContent(templateEngine, content, variables, localVariables, defaultParse) {
+  if (content && templateEngine === 'handlebars') {
+    try {
+      const renderedContent = Handlebars.compile(content);
+      // 处理渲染后的内容
+      const data = getVariablesData(localVariables);
+      const html = renderedContent({ ...variables.ctxRef.current, ...data });
+      return await defaultParse(html);
+    } catch (error) {
+      console.log(error);
+      return content;
+    }
+  } else {
+    try {
+      const html = await replaceVariableValue(content, variables, localVariables);
+      return await defaultParse(html);
+    } catch (error) {
+      return content;
+    }
+  }
 }

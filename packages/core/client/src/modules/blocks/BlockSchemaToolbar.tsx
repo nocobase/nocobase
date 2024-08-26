@@ -20,7 +20,7 @@ export const BlockSchemaToolbar = (props) => {
   const cm = useCollectionManager();
   let { name: currentCollectionName, title: currentCollectionTitle } = useCollection() || {};
   const template = useSchemaTemplate();
-  const { association } = useDataBlockProps() || {};
+  const { association, collection } = useDataBlockProps() || {};
   const compile = useCompile();
 
   if (association) {
@@ -31,7 +31,10 @@ export const BlockSchemaToolbar = (props) => {
   }
 
   const associationField = cm.getCollectionField(association);
-  const associationCollection = cm.getCollection(associationField?.target);
+  // If both the collection and association parameters exist at the same time,
+  // it means that the collection of the current block is a child collection of inheritance,
+  // and the title of the child collection needs to be displayed at this time
+  const associationCollection = cm.getCollection(collection || associationField?.target);
   const templateName = ['FormItem', 'ReadPrettyFormItem'].includes(template?.componentName)
     ? `${template?.name} ${t('(Fields only)')}`
     : template?.name;

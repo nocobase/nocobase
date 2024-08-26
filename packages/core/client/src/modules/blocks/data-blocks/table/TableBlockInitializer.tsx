@@ -44,7 +44,7 @@ export const TableBlockInitializer = ({
     <DataBlockInitializer
       {...itemConfig}
       icon={<TableOutlined />}
-      componentType={'Table'}
+      componentType={`Table`}
       onCreateBlockSchema={async (options) => {
         if (createBlockSchema) {
           return createBlockSchema(options);

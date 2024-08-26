@@ -46,10 +46,12 @@ ReadPretty.Input = (props: InputReadPrettyProps) => {
   // eslint-disable-next-line react-hooks/rules-of-hooks
   const compile = useCompile();
   return (
-    <div className={cls(prefixCls, props.className)} style={props.style}>
+    <div className={cls(prefixCls, props.className)} style={{ ...props.style, overflowWrap: 'break-word' }}>
       {props.addonBefore}
       {props.prefix}
-      <EllipsisWithTooltip ellipsis={props.ellipsis}>{compile(props.value)}</EllipsisWithTooltip>
+      <EllipsisWithTooltip ellipsis={props.ellipsis}>
+        {props.value && typeof props.value === 'object' ? JSON.stringify(props.value) : compile(props.value)}
+      </EllipsisWithTooltip>
       {props.suffix}
       {props.addonAfter}
     </div>

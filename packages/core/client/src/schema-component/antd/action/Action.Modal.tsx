@@ -8,13 +8,14 @@
  */
 
 import { css } from '@emotion/css';
-import { observer, RecursionField, useField, useFieldSchema } from '@formily/react';
+import { observer, RecursionField, useField, useFieldSchema, useForm } from '@formily/react';
 import { Modal, ModalProps } from 'antd';
 import classNames from 'classnames';
-import React from 'react';
+import React, { useMemo } from 'react';
 import { ErrorBoundary, FallbackProps } from 'react-error-boundary';
 import { useToken } from '../../../style';
 import { ErrorFallback } from '../error-fallback';
+import { useCurrentPopupContext } from '../page/PagePopups';
 import { useActionContext } from './hooks';
 import { useSetAriaLabelForModal } from './hooks/useSetAriaLabelForModal';
 import { ActionDrawerProps, ComposedActionDrawer, OpenSize } from './types';
@@ -33,12 +34,14 @@ const openSizeWidthMap = new Map<OpenSize, string>([
   ['middle', '60%'],
   ['large', '80%'],
 ]);
+
 export const InternalActionModal: React.FC<ActionDrawerProps<ModalProps>> = observer(
   (props) => {
     const { footerNodeName = 'Action.Modal.Footer', width, ...others } = props;
     const { visible, setVisible, openSize = 'middle', modalProps } = useActionContext();
     const actualWidth = width ?? openSizeWidthMap.get(openSize);
     const schema = useFieldSchema();
+    const form = useForm();
     const field = useField();
     const { token } = useToken();
     const footerSchema = schema.reduceProperties((buf, s) => {
@@ -47,6 +50,18 @@ export const InternalActionModal: React.FC<ActionDrawerProps<ModalProps>> = obse
       }
       return buf;
     });
+    const { hidden } = useCurrentPopupContext();
+    const styles: any = useMemo(() => {
+      return {
+        mask: {
+          display: hidden ? 'none' : 'block',
+        },
+        content: {
+          display: hidden ? 'none' : 'block',
+        },
+      };
+    }, [hidden]);
+
     const showFooter = !!footerSchema;
     if (process.env.__E2E__) {
       useSetAriaLabelForModal(visible);
@@ -58,13 +73,17 @@ export const InternalActionModal: React.FC<ActionDrawerProps<ModalProps>> = obse
         title={field.title}
         {...(others as ModalProps)}
         {...modalProps}
+        styles={styles}
         style={{
           ...modalProps?.style,
           ...others?.style,
         }}
         destroyOnClose
         open={visible}
-        onCancel={() => setVisible(false, true)}
+        onCancel={() => {
+          setVisible(false, true);
+          form.reset();
+        }}
         className={classNames(
           others.className,
           modalProps?.className,

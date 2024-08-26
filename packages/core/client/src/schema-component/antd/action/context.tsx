@@ -7,9 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { createContext, useEffect, useRef, useState } from 'react';
-import { useActionContext } from './hooks';
+import { useFieldSchema } from '@formily/react';
+import React, { createContext, useEffect, useState } from 'react';
 import { useDataBlockRequest } from '../../../data-source';
+import { useCurrentPopupContext } from '../page/PagePopups';
+import { getBlockService, storeBlockService } from '../page/pagePopupUtils';
 import { ActionContextProps } from './types';
 
 export const ActionContext = createContext<ActionContextProps>({});
@@ -17,30 +19,46 @@ ActionContext.displayName = 'ActionContext';
 
 export const ActionContextProvider: React.FC<ActionContextProps & { value?: ActionContextProps }> = (props) => {
   const [submitted, setSubmitted] = useState(false); //是否有提交记录
-  const contextProps = useActionContext();
   const { visible } = { ...props, ...props.value } || {};
-  const isFirstRender = useRef(true); // 使用ref跟踪是否为首次渲染
-  const service = useDataBlockRequest();
-  const { setSubmitted: setParentSubmitted } = { ...props, ...props.value, ...contextProps };
+  const { setSubmitted: setParentSubmitted } = { ...props, ...props.value };
+  const service = useBlockServiceInActionButton();
+
   useEffect(() => {
-    if (visible !== undefined) {
-      if (isFirstRender.current) {
-        isFirstRender.current = false;
-      } else {
-        if (visible === false && submitted && service) {
-          service.refresh();
-          setParentSubmitted?.(true); //传递给上一层
-        }
-      }
+    if (visible === false && submitted && service) {
+      service.refresh();
+      setParentSubmitted?.(true); //传递给上一层
     }
+
     return () => {
       setSubmitted(false);
     };
-  }, [visible]);
+  }, [visible, service?.refresh, setParentSubmitted]);
 
   return (
-    <ActionContext.Provider value={{ ...contextProps, ...props, ...props?.value, submitted, setSubmitted }}>
+    <ActionContext.Provider value={{ ...props, ...props?.value, submitted, setSubmitted }}>
       {props.children}
     </ActionContext.Provider>
   );
+};
+
+const useBlockServiceInActionButton = () => {
+  const { params } = useCurrentPopupContext();
+  const fieldSchema = useFieldSchema();
+  const popupUidWithoutOpened = useFieldSchema()?.['x-uid'];
+  const service = useDataBlockRequest();
+  const currentPopupUid = params?.popupuid;
+
+  // 把 service 存起来
+  useEffect(() => {
+    if (popupUidWithoutOpened && currentPopupUid !== popupUidWithoutOpened) {
+      storeBlockService(popupUidWithoutOpened, { service });
+    }
+  }, [popupUidWithoutOpened, service, currentPopupUid, fieldSchema]);
+
+  // 关闭弹窗时，获取到对应的 service
+  if (currentPopupUid === popupUidWithoutOpened) {
+    return getBlockService(currentPopupUid)?.service || service;
+  }
+
+  return service;
 };
