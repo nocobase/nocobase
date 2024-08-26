@@ -123,7 +123,7 @@ jobs:
         continue-on-error: true
         uses: ad-m/github-push-action@master
         with:
-          ssh: true
+          github_token: ${{ steps.app-token.outputs.token }}
           branch: main
           directory: packages/pro-plugins
           repository: nocobase/pro-plugins
@@ -133,7 +133,7 @@ jobs:
         uses: ad-m/github-push-action@master
         with:
           branch: main
-          ssh: true
+          github_token: ${{ steps.app-token.outputs.token }}
           repository: nocobase/nocobase
           tags: true
           atomic: true
