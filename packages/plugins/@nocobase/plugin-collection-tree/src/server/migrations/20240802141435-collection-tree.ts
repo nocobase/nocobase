@@ -28,9 +28,8 @@ export default class extends Migration {
 
       for (const treeCollection of treeCollections) {
         const name = `main_${treeCollection.name}_path`;
-        this.app.db.collection({
+        const collectionOptions = {
           name,
-          schema: treeCollection.options.schema,
           autoGenId: false,
           timestamps: false,
           fields: [
@@ -43,20 +42,27 @@ export default class extends Migration {
               fields: [{ name: 'path', length: 191 }],
             },
           ],
-        });
+        };
+        if (treeCollection.options.schema) {
+          collectionOptions['schema'] = treeCollection.options.schema;
+        }
+        this.app.db.collection(collectionOptions);
         const treeExistsInDb = await this.app.db.getCollection(name).existsInDb({ transaction });
         if (!treeExistsInDb) {
           await this.app.db.getCollection(name).sync({ transaction } as SyncOptions);
-          this.app.db.collection({
+          const opts = {
             name: treeCollection.name,
-            schema: treeCollection.options.schema,
             autoGenId: false,
             timestamps: false,
             fields: [
               { type: 'integer', name: 'id' },
               { type: 'integer', name: 'parentId' },
             ],
-          });
+          };
+          if (treeCollection.options.schema) {
+            opts['schema'] = treeCollection.options.schema;
+          }
+          this.app.db.collection(opts);
           const chunkSize = 1000;
           await this.app.db.getRepository(treeCollection.name).chunk({
             chunkSize: chunkSize,
