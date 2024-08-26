@@ -49,8 +49,6 @@ jobs:
       - pre-merge-main-into-next
     runs-on: ubuntu-latest
     steps:
-      - uses: nocobase/nocobase/.github/workflows/get-nocobase-app-token.yml@v1
-        id: app-token
       - name: Checkout
         uses: actions/checkout@v4
         with:
