@@ -5,6 +5,9 @@ concurrency:
   cancel-in-progress: true
 
 on:
+  push:
+    branches:
+      - 'feat/publish-pro-plugin-repo'
   workflow_dispatch:
     inputs:
       is_feat:
