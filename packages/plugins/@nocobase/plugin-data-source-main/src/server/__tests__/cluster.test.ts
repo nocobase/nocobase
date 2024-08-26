@@ -13,7 +13,7 @@ describe('cluster', () => {
   let cluster;
   beforeEach(async () => {
     cluster = await createMockCluster({
-      plugins: ['error-handler', 'data-source-main', 'ui-schema-storage'],
+      plugins: ['error-handler', 'field-sort', 'data-source-main', 'ui-schema-storage'],
       acl: false,
     });
   });

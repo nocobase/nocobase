@@ -10,7 +10,6 @@
     "@nocobase/cache": "1.4.0-alpha",
     "@nocobase/database": "1.4.0-alpha",
     "@nocobase/resourcer": "1.4.0-alpha",
-    "@nocobase/test": "1.4.0-alpha",
     "@nocobase/utils": "1.4.0-alpha",
     "@types/jsonwebtoken": "^8.5.8",
     "jsonwebtoken": "^8.5.1"

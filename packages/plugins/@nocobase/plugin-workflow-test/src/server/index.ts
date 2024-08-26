@@ -43,6 +43,7 @@ export async function getApp({
   const app = await createMockServer({
     ...options,
     plugins: [
+      'field-sort',
       [
         'workflow',
         {

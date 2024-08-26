@@ -19,7 +19,7 @@ describe('external data source', () => {
   beforeAll(async () => {
     process.env.INIT_ROOT_USERNAME = 'test';
     app = await createMockServer({
-      plugins: ['data-source-manager', 'users', 'acl'],
+      plugins: ['field-sort', 'data-source-manager', 'users', 'acl'],
     });
     db = app.db;
     ctx = {

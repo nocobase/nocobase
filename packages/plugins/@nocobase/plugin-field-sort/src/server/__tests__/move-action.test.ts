@@ -7,22 +7,30 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { mockServer, MockServer } from './index';
-import { registerActions } from '@nocobase/actions';
+import { createMockServer, MockServer } from '@nocobase/test';
 import { Collection, Database } from '@nocobase/database';
 import { waitSecond } from '@nocobase/test';
 
-describe('sort action', () => {
-  describe('associations', () => {
-    let api: MockServer;
+import Plugin from '..';
 
+describe('sort action', () => {
+  let api: MockServer;
+  let db: Database;
+
+  beforeEach(async () => {
+    api = await createMockServer({
+      plugins: [Plugin, 'data-source-main', 'error-handler'],
+    });
+  });
+
+  afterEach(async () => {
+    return api.destroy();
+  });
+
+  describe('associations', () => {
     let UserCollection: Collection;
 
     beforeEach(async () => {
-      api = mockServer();
-
-      registerActions(api);
-
       UserCollection = api.db.collection({
         name: 'users',
         fields: [
@@ -65,10 +73,6 @@ describe('sort action', () => {
           },
         });
       }
-    });
-
-    afterEach(async () => {
-      return api.destroy();
     });
 
     it('should not move association items when association not sortable', async () => {
@@ -143,7 +147,7 @@ describe('sort action', () => {
         });
 
       expect(u1Posts.body).toMatchObject({
-        rows: [
+        data: [
           {
             title: 'u1p2',
           },
@@ -162,12 +166,7 @@ describe('sort action', () => {
   });
 
   describe('same scope', () => {
-    let api: MockServer;
-
     beforeEach(async () => {
-      api = mockServer();
-
-      registerActions(api);
       api.db.collection({
         name: 'tests',
         fields: [
@@ -202,7 +201,7 @@ describe('sort action', () => {
         });
 
       expect(response.body).toMatchObject({
-        rows: [
+        data: [
           {
             title: 't2',
             sort: 1,
@@ -237,7 +236,7 @@ describe('sort action', () => {
         });
 
       expect(response.body).toMatchObject({
-        rows: [
+        data: [
           {
             title: 't3',
             sort: 1,
@@ -272,7 +271,7 @@ describe('sort action', () => {
           sort: ['sort2'],
         });
       expect(response.body).toMatchObject({
-        rows: [
+        data: [
           {
             title: 't2',
             sort2: 1,
@@ -306,7 +305,7 @@ describe('sort action', () => {
           sort: ['sort'],
         });
       expect(response.body).toMatchObject({
-        rows: [
+        data: [
           {
             title: 't3',
             sort: 0,
@@ -329,14 +328,9 @@ describe('sort action', () => {
   });
 
   describe('different scope', () => {
-    let api: MockServer;
-    let db: Database;
-
     beforeEach(async () => {
-      api = mockServer();
       db = api.db;
 
-      registerActions(api);
       api.db.collection({
         name: 'tests',
         fields: [
@@ -495,7 +489,7 @@ describe('sort action', () => {
         });
 
       expect(response.body).toMatchObject({
-        rows: [
+        data: [
           {
             title: 't12',
             sort: 2,
@@ -520,7 +514,7 @@ describe('sort action', () => {
         });
 
       expect(response.body).toMatchObject({
-        rows: [
+        data: [
           {
             title: 't21',
             sort: 1,
@@ -561,7 +555,7 @@ describe('sort action', () => {
         });
 
       expect(response.body).toMatchObject({
-        rows: [
+        data: [
           {
             title: 't12',
             sort: 2,
@@ -584,7 +578,7 @@ describe('sort action', () => {
           filter: { state: 2 },
         });
       expect(response.body).toMatchObject({
-        rows: [
+        data: [
           {
             title: 't21',
             sort: 1,
@@ -622,7 +616,7 @@ describe('sort action', () => {
           filter: { state: 1 },
         });
       expect(response.body).toMatchObject({
-        rows: [
+        data: [
           {
             title: 't11',
             sort: 1,
@@ -653,7 +647,7 @@ describe('sort action', () => {
           filter: { state: 2 },
         });
       expect(response.body).toMatchObject({
-        rows: [
+        data: [
           {
             title: 't21',
             sort: 1,
@@ -684,7 +678,7 @@ describe('sort action', () => {
           filter: { state: 1 },
         });
       expect(response.body).toMatchObject({
-        rows: [
+        data: [
           {
             title: 't11',
             sort: 1,
@@ -715,7 +709,7 @@ describe('sort action', () => {
           filter: { state: 2 },
         });
       expect(response.body).toMatchObject({
-        rows: [
+        data: [
           {
             title: 't21',
             sort: 1,
@@ -750,7 +744,7 @@ describe('sort action', () => {
           filter: { state: 1 },
         });
       expect(response.body).toMatchObject({
-        rows: [
+        data: [
           {
             title: 't12',
             sort: 2,
@@ -773,7 +767,7 @@ describe('sort action', () => {
           filter: { state: 2 },
         });
       expect(response.body).toMatchObject({
-        rows: [
+        data: [
           {
             title: 't21',
             sort: 1,
@@ -817,7 +811,7 @@ describe('sort action', () => {
           filter: { state: 1 },
         });
       expect(response.body).toMatchObject({
-        rows: [
+        data: [
           {
             title: 't12',
           },
@@ -837,7 +831,7 @@ describe('sort action', () => {
           filter: { state: 2 },
         });
       expect(response.body).toMatchObject({
-        rows: [
+        data: [
           {
             title: 't11',
           },
