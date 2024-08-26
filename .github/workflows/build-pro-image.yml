@@ -15,8 +15,12 @@ on:
       - '.github/workflows/build-pro-image.yml'
 
 jobs:
-  build-and-push:
+  app-token:
     if: github.event.pull_request.head.repo.fork != true
+    uses: nocobase/nocobase/.github/workflows/get-nocobase-app-token.yml@main
+    secrets: inherit
+  build-and-push:
+    needs: app-token
     runs-on: ubuntu-latest
     services:
       verdaccio:
@@ -24,10 +28,18 @@ jobs:
         ports:
           - 4873:4873
     steps:
+      - name: Decrypt app token
+        id: app-token
+        shell: bash
+        run: |
+          ENCRYPTED_SECRET=${{ needs.app-token.outputs.token }};
+          BINARY_ENCRYPTED_SECRET=$(echo -n "$ENCRYPTED_SECRET" | base64 --decode);
+          APP_TOKEN=$(echo -n "$BINARY_ENCRYPTED_SECRET" | openssl enc -aes-256-cbc -pbkdf2 -d -salt -k "${{ secrets.APP_TOKEN_ENCRYPTION_PASSWORD }}");
+          echo "token=$APP_TOKEN" >> $GITHUB_OUTPUT
       - name: Checkout
         uses: actions/checkout@v3
         with:
-          ssh-key: ${{ secrets.SUBMODULE_SSH_KEY }}
+          token: ${{ steps.app-token.outputs.token }}
           submodules: true
       - name: Checkout pro-plugins
         uses: actions/checkout@v3
@@ -36,7 +48,14 @@ jobs:
           ref: main
           path: packages/pro-plugins
           fetch-depth: 0
-          ssh-key: ${{ secrets.SUBMODULE_SSH_KEY }}
+          token: ${{ steps.app-token.outputs.token }}
+      - name: Clone pro repos
+        shell: bash
+        run: |
+          for repo in ${{ join(fromJSON(vars.PRO_PLUGIN_REPOS), ' ') }}
+          do
+          git clone -b main https://x-access-token:${{ steps.app-token.outputs.token }}@github.com/nocobase/$repo.git packages/pro-plugins/@nocobase/$repo
+          done
       - run: |
           cd packages/pro-plugins &&
           if git show-ref --quiet refs/remotes/origin/${{ github.head_ref || github.ref_name }}; then
@@ -48,8 +67,30 @@ jobs:
               git checkout main
             fi
           fi
+      - run: |
+          for repo in ${{ join(fromJSON(vars.PRO_PLUGIN_REPOS), ' ') }}
+          do
+            cd ./packages/pro-plugins/@nocobase/$repo
+            if git show-ref --quiet refs/remotes/origin/${{ github.head_ref || github.ref_name }}; then
+              git checkout ${{ github.head_ref || github.ref_name }}
+            else
+              if git show-ref --quiet refs/remotes/origin/${{ github.event.pull_request.base.ref }}; then
+                git checkout ${{ github.event.pull_request.base.ref }}
+              else
+                git checkout main
+              fi
+            fi
+            cd ../../../../
+          done
       - name: rm .git
-        run: rm -rf packages/pro-plugins/.git &&  git config --global user.email "you@example.com"  &&  git config --global user.name "Your Name" && git add -A && git commit -m "tmp commit"
+        run: |
+          rm -rf packages/pro-plugins/.git
+          for repo in ${{ join(fromJSON(vars.PRO_PLUGIN_REPOS), ' ') }}
+          do
+            rm -rf packages/pro-plugins/@nocobase/$repo/.git
+          done
+          git config --global user.email "you@example.com"
+          git config --global user.name "Your Name" && git add -A && git commit -m "tmp commit"
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
       - name: Set up Docker Buildx
