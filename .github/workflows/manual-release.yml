@@ -66,7 +66,7 @@ jobs:
           persist-credentials: true
       - name: Clone pro repos
         run: |
-          for repo in ${{ join(fromJSON($vars.PRO_PLUGIN_REPOS), ' ') }}
+          for repo in ${{ join(fromJSON(vars.PRO_PLUGIN_REPOS), ' ') }}
           do
             git clone -b main https://${{ secrets.GITHUB_APP_TOKEN }}@github.com/nocobase/$repo.git packages/pro-plugins
           done
