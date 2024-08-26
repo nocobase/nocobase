@@ -24,6 +24,7 @@ jobs:
           app-id: ${{ vars.NOCOBASE_APP_ID }}
           private-key: ${{ secrets.NOCOBASE_APP_PRIVATE_KEY }}
           repositories: nocobase,pro-plugins,${{ join(fromJSON(vars.PRO_PLUGIN_REPOS), ',') }}
+          skip-token-revoke: true
       - name: Encrypt token
         id: encrypt-token
         run: |
