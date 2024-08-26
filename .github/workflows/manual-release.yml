@@ -18,39 +18,39 @@ jobs:
   app-token:
     uses: nocobase/nocobase/.github/workflows/get-nocobase-app-token.yml@feat/publish-pro-plugin-repo
     secrets: inherit
-  pre-merge-main-into-next:
-    runs-on: ubuntu-latest
-    needs: app-token
-    strategy:
-      matrix:
-        repo:
-          - 'nocobase'
-          - 'pro-plugins'
-          - ${{ fromJSON(vars.PRO_PLUGIN_REPOS) }}
-    steps:
-      - name: Decrypt app token
-        id: app-token
-        run: |
-          ENCRYPTED_SECRET=${{ needs.app-token.outputs.token }};
-          BINARY_ENCRYPTED_SECRET=$(echo -n "$ENCRYPTED_SECRET" | base64 --decode);
-          APP_TOKEN=$(echo -n "$BINARY_ENCRYPTED_SECRET" | openssl enc -aes-256-cbc -pbkdf2 -d -salt -k "${{ secrets.APP_TOKEN_ENCRYPTION_PASSWORD }}");
-          echo "token=$APP_TOKEN" >> $GITHUB_OUTPUT
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          # ref: 'main'
-          repository: nocobase/${{ matrix.repo }}
-          fetch-depth: 0
-          token: ${{ steps.app-token.outputs.token }}
-      - name: main -> next (nocobase/${{ matrix.repo }})
-        run: |
-          git config --global user.name '${{ needs.app-token.outputs.app-slug }}[bot]'
-          git config --global user.email '${{ needs.app-token.outputs.user-id }}+${{ needs.app-token.outputs.app-slug }}[bot]@users.noreply.github.com>'
-          git checkout main
-          git pull origin main
-          git checkout next
-          git merge main
-          # git push origin next --tags --atomic
+  # pre-merge-main-into-next:
+  #   runs-on: ubuntu-latest
+  #   needs: app-token
+  #   strategy:
+  #     matrix:
+  #       repo:
+  #         - 'nocobase'
+  #         - 'pro-plugins'
+  #         - ${{ fromJSON(vars.PRO_PLUGIN_REPOS) }}
+  #   steps:
+  #     - name: Decrypt app token
+  #       id: app-token
+  #       run: |
+  #         ENCRYPTED_SECRET=${{ needs.app-token.outputs.token }};
+  #         BINARY_ENCRYPTED_SECRET=$(echo -n "$ENCRYPTED_SECRET" | base64 --decode);
+  #         APP_TOKEN=$(echo -n "$BINARY_ENCRYPTED_SECRET" | openssl enc -aes-256-cbc -pbkdf2 -d -salt -k "${{ secrets.APP_TOKEN_ENCRYPTION_PASSWORD }}");
+  #         echo "token=$APP_TOKEN" >> $GITHUB_OUTPUT
+  #     - name: Checkout
+  #       uses: actions/checkout@v4
+  #       with:
+  #         # ref: 'main'
+  #         repository: nocobase/${{ matrix.repo }}
+  #         fetch-depth: 0
+  #         token: ${{ steps.app-token.outputs.token }}
+  #     - name: main -> next (nocobase/${{ matrix.repo }})
+  #       run: |
+  #         git config --global user.name '${{ needs.app-token.outputs.app-slug }}[bot]'
+  #         git config --global user.email '${{ needs.app-token.outputs.user-id }}+${{ needs.app-token.outputs.app-slug }}[bot]@users.noreply.github.com>'
+  #         git checkout main
+  #         git pull origin main
+  #         git checkout next
+  #         git merge main
+  #         # git push origin next --tags --atomic
   update-version:
     needs:
       - app-token
@@ -83,7 +83,7 @@ jobs:
         run: |
           for repo in ${{ join(fromJSON(vars.PRO_PLUGIN_REPOS), ' ') }}
           do
-            git clone -b main https://${{ steps.app-token.outputs.token }}@github.com/nocobase/$repo.git packages/pro-plugins/$repo
+          git clone -b main https://x-access-token:${{ steps.app-token.outputs.token }}@github.com/nocobase/$repo.git packages/pro-plugins/$repo
           done
       # - name: Set Node.js 18
       #   uses: actions/setup-node@v3
