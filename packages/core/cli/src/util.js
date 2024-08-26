@@ -406,6 +406,10 @@ exports.initEnv = function initEnv() {
     process.env.DB_TIMEZONE = process.env.TZ;
   }
 
+  if (!/^[+-]\d{1,2}:\d{2}$/.test(process.env.DB_TIMEZONE)) {
+    process.env.DB_TIMEZONE = moment.tz(process.env.DB_TIMEZONE).format('Z');
+  }
+
   if (!areTimeZonesEqual(process.env.DB_TIMEZONE, process.env.TZ)) {
     throw new Error(
       `process.env.DB_TIMEZONE="${process.env.DB_TIMEZONE}" and process.env.TZ="${process.env.TZ}" are different`,
