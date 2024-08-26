@@ -7,11 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Plugin } from '@nocobase/server';
-import { Collection, Model, SyncOptions, DestroyOptions } from '@nocobase/database';
 import { DataSource, SequelizeCollectionManager } from '@nocobase/data-source-manager';
-import { Transaction } from 'sequelize';
+import { Collection, DestroyOptions, Model, SyncOptions } from '@nocobase/database';
+import { Plugin } from '@nocobase/server';
 import lodash from 'lodash';
+import { Transaction } from 'sequelize';
 import { TreeCollection } from './tree-collection';
 
 const getFilterTargetKey = (model: Model) => {
@@ -40,7 +40,11 @@ class PluginCollectionTreeServer extends Plugin {
           const parentForeignKey = collection.treeParentField?.foreignKey || 'parentId';
 
           //always define tree path collection
-          this.defineTreePathCollection(name);
+          const options = {};
+          if (collection.options.schema) {
+            options['schema'] = collection.options.schema;
+          }
+          this.defineTreePathCollection(name, options);
 
           //afterSync
           collectionManager.db.on(`${collection.name}.afterSync`, async ({ transaction }) => {
@@ -134,7 +138,7 @@ class PluginCollectionTreeServer extends Plugin {
     });
   }
 
-  private async defineTreePathCollection(name: string) {
+  private async defineTreePathCollection(name: string, options: { schema?: string }) {
     this.db.collection({
       name,
       autoGenId: false,
@@ -149,6 +153,7 @@ class PluginCollectionTreeServer extends Plugin {
           fields: [{ name: 'path', length: 191 }],
         },
       ],
+      ...options,
     });
   }
 
