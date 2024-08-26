@@ -28,7 +28,7 @@
     "eslint-plugin-react": "^7.33.0",
     "eslint-plugin-react-hooks": "^4.6.0",
     "fast-glob": "^3.3.1",
-    "lerna": "^4.0.0",
+    "lerna": "^8.1.8",
     "prettier": "^3.0.0",
     "pretty-format": "^24.0.0",
     "pretty-quick": "^3.1.0",
