@@ -21,21 +21,31 @@ jobs:
           - 'nocobase/pro-plugins'
           - ${{ fromJSON(vars.PRO_PLUGIN_REPOS) }}
     steps:
+      - uses: actions/create-github-app-token@v1
+        id: app-token
+        with:
+          app-id: ${{ vars.NOCOBASE_APP_ID }}
+          private-key: ${{ secrets.NOCOBASE_APP_PRIVATE_KEY }}
       - name: Checkout
         uses: actions/checkout@v4
         with:
           repository: ${{ matrix.repo }}
           fetch-depth: 0
-          token: ${{ SECRETS.GITHUB_APP_TOKEN }}
+          token: ${{ steps.app-token.outputs.token }}
+      - name: Get GitHub App User ID
+        id: get-user-id
+        run: echo "user-id=$(gh api "/users/${{ steps.app-token.outputs.app-slug }}[bot]" --jq .id)" >> "$GITHUB_OUTPUT"
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
       - name: main -> next(${{ matrix.repo }})
         run: |
-          git config --global user.email "actions@github.com"
-          git config --global user.name "GitHub Actions Bot"
-          git checkout main
-          git pull origin main
-          git checkout next
-          git merge main
-          git push origin next --tags --atomic
+          git config --global user.name '${{ steps.app-token.outputs.app-slug }}[bot]'
+          git config --global user.email '${{ steps.get-user-id.outputs.user-id }}+${{ steps.app-token.outputs.app-slug }}[bot]@users.noreply.github.com>'
+          # git checkout main
+          # git pull origin main
+          # git checkout next
+          # git merge main
+          # git push origin next --tags --atomic
   # update-version:
   #   needs: pre-merge-main-into-next
   #   runs-on: ubuntu-latest
