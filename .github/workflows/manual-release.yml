@@ -83,7 +83,7 @@ jobs:
         run: |
           for repo in ${{ join(fromJSON(vars.PRO_PLUGIN_REPOS), ' ') }}
           do
-            git clone -b main https://${{ steps.app-token.outputs.token }}@github.com/nocobase/$repo.git packages/pro-plugins
+            git clone -b main https://${{ steps.app-token.outputs.token }}@github.com/nocobase/$repo.git packages/pro-plugins/$repo
           done
       # - name: Set Node.js 18
       #   uses: actions/setup-node@v3
