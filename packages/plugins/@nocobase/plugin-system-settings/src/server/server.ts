@@ -17,16 +17,24 @@ export class PluginSystemSettingsServer extends Plugin {
   }
 
   async install(options?: InstallOptions) {
-    const plugin = this.pm.get(PluginFileManagerServer) as PluginFileManagerServer;
-    const logo = await plugin.createFileRecord({
-      filePath: resolve(__dirname, './logo.png'),
-      collectionName: 'attachments',
-      values: {
-        title: 'nocobase-logo',
-        extname: '.png',
-        mimetype: 'image/png',
-      },
-    });
+    const plugin = this.pm.get('file-manager') as PluginFileManagerServer;
+    const logo = plugin
+      ? await plugin.createFileRecord({
+          filePath: resolve(__dirname, './logo.png'),
+          collectionName: 'attachments',
+          values: {
+            title: 'nocobase-logo',
+            extname: '.png',
+            mimetype: 'image/png',
+          },
+        })
+      : {
+          title: 'nocobase-logo',
+          filename: '682e5ad037dd02a0fe4800a3e91c283b.png',
+          extname: '.png',
+          mimetype: 'image/png',
+          url: '/nocobase.png',
+        };
     await this.db.getRepository('systemSettings').create({
       values: {
         title: 'NocoBase',
