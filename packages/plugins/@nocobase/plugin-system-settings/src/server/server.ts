@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import PluginFileManagerServer from '@nocobase/plugin-file-manager';
 import { InstallOptions, Plugin } from '@nocobase/server';
 import { resolve } from 'path';
 
@@ -16,18 +17,22 @@ export class PluginSystemSettingsServer extends Plugin {
   }
 
   async install(options?: InstallOptions) {
+    const plugin = this.pm.get(PluginFileManagerServer) as PluginFileManagerServer;
+    const logo = await plugin.createFileRecord({
+      filePath: resolve(__dirname, './logo.png'),
+      collectionName: 'attachments',
+      values: {
+        title: 'nocobase-logo',
+        extname: '.png',
+        mimetype: 'image/png',
+      },
+    });
     await this.db.getRepository('systemSettings').create({
       values: {
         title: 'NocoBase',
         appLang: this.getInitAppLang(options),
         enabledLanguages: [this.getInitAppLang(options)],
-        logo: {
-          title: 'nocobase-logo',
-          filename: '682e5ad037dd02a0fe4800a3e91c283b.png',
-          extname: '.png',
-          mimetype: 'image/png',
-          url: '/nocobase.png',
-        },
+        logo,
       },
     });
   }
