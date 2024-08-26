@@ -9,7 +9,7 @@
 
 import { IResource } from '@nocobase/sdk';
 import React, { FC, ReactNode, createContext, useContext, useMemo } from 'react';
-
+import { isArray } from 'lodash';
 import { useAPIClient } from '../../api-client';
 import { useCollectionManager } from '../collection';
 import { CollectionRecord } from '../collection-record';
@@ -34,7 +34,16 @@ export const DataBlockResourceProvider: FC<{ children?: ReactNode }> = ({ childr
     if (association && parentRecord) {
       const sourceKey = cm.getSourceKeyByAssociation(association);
       const parentRecordData = parentRecord instanceof CollectionRecord ? parentRecord.data : parentRecord;
-      return parentRecordData[sourceKey];
+      if (isArray(sourceKey)) {
+        const filterByTk = {};
+        for (const key of sourceKey) {
+          filterByTk[key] = parentRecordData?.[key];
+        }
+
+        return encodeURIComponent(JSON.stringify(filterByTk));
+      } else {
+        return parentRecordData[sourceKey];
+      }
     }
   }, [association, sourceId, parentRecord]);
 
