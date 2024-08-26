@@ -25,7 +25,6 @@ import { setDefaultSortingRulesSchemaSettingsItem } from '../../../../schema-set
 import { setTheDataScopeSchemaSettingsItem } from '../../../../schema-settings/setTheDataScopeSchemaSettingsItem';
 import { useBlockTemplateContext } from '../../../../schema-templates/BlockTemplateProvider';
 import { setDataLoadingModeSettingsItem } from '../details-multi/setDataLoadingModeSettingsItem';
-import { SchemaSettingsPagingMode } from '../../../../schema-settings/SchemaSettingsPagingMode';
 
 export const tableBlockSettings = new SchemaSettings({
   name: 'blockSettings:table',
@@ -186,10 +185,6 @@ export const tableBlockSettings = new SchemaSettings({
           },
         };
       },
-    },
-    {
-      name: 'pagingMode',
-      Component: SchemaSettingsPagingMode,
     },
     {
       name: 'ConnectDataBlocks',

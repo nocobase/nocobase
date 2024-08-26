@@ -15,6 +15,7 @@ import { action } from '@formily/reactive';
 import { each } from '@formily/shared';
 import { Button, Card, Divider, Tooltip } from 'antd';
 import React, { useCallback, useContext } from 'react';
+import { spliceArrayState } from '@formily/core/esm/shared/internals';
 import { useTranslation } from 'react-i18next';
 import { FormActiveFieldsProvider } from '../../../block-provider/hooks/useFormActiveFields';
 import { useCollection } from '../../../data-source';
@@ -186,6 +187,10 @@ const ToManyNester = observer(
                       style={{ zIndex: 1000, color: '#a8a3a3' }}
                       onClick={() => {
                         action(() => {
+                          spliceArrayState(field as any, {
+                            startIndex: index,
+                            deleteCount: 1,
+                          });
                           field.value.splice(index, 1);
                           return field.onInput(field.value);
                         });

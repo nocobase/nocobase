@@ -114,6 +114,8 @@ export interface CollectionOptions extends Omit<ModelOptions, 'name' | 'hooks'> 
   tree?: string;
   template?: string;
 
+  simplePaginate?: boolean;
+
   /**
    * where is the collection from
    *
