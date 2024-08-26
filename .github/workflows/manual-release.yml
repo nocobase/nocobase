@@ -104,7 +104,7 @@ jobs:
           echo "@nocobase/$repo" >> .git/info/exclude
           done
           cd ./../..
-          git checkout main
+          git checkout feat/publish-pro-plugin-repo
           git config --global user.name '${{ needs.app-token.outputs.app-slug }}[bot]'
           git config --global user.email '${{ needs.app-token.outputs.user-id }}+${{ needs.app-token.outputs.app-slug }}[bot]@users.noreply.github.com>'
           echo "packages/pro-plugins" >> .git/info/exclude
