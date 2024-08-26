@@ -60,7 +60,6 @@ jobs:
       - name: Test with Sqlite
         run: yarn test --server --single-thread=false
         env:
-          TZ: UTC
           LOGGER_LEVEL: error
           DB_DIALECT: sqlite
           DB_STORAGE: /tmp/db.sqlite
@@ -112,7 +111,6 @@ jobs:
           sleep 1
           yarn test --server --single-thread=false
         env:
-          TZ: UTC
           LOGGER_LEVEL: error
           DB_DIALECT: postgres
           DB_HOST: postgres
@@ -162,7 +160,6 @@ jobs:
           sleep 1
           yarn test --server --single-thread=false
         env:
-          TZ: UTC
           LOGGER_LEVEL: error
           DB_DIALECT: mysql
           DB_HOST: mysql
@@ -211,7 +208,6 @@ jobs:
           sleep 1
           yarn test --server --single-thread=false
         env:
-          TZ: UTC
           LOGGER_LEVEL: error
           DB_DIALECT: mariadb
           DB_HOST: mariadb
