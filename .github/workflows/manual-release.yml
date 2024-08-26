@@ -24,63 +24,51 @@ jobs:
           - 'nocobase/pro-plugins'
           - ${{ fromJSON(vars.PRO_PLUGIN_REPOS) }}
     steps:
-      - name: Get repo name
-        id: repo-name
-        run: |
-          REPO_NAME=$(echo ${{ matrix.repo }} | sed "s/nocobase\///")
-          echo "repoName=$REPO_NAME" >> $GITHUB_OUTPUT
-      - uses: actions/create-github-app-token@v1
+      - uses: nocobase/nocobase/.github/workflows/get-nocobase-app-token.yml@v1
         id: app-token
-        with:
-          app-id: ${{ vars.NOCOBASE_APP_ID }}
-          private-key: ${{ secrets.NOCOBASE_APP_PRIVATE_KEY }}
-          repositories: ${{ steps.repo-name.outputs.repoName }}
-      - name: Get GitHub App User ID
-        id: get-user-id
-        run: echo "user-id=$(gh api "/users/${{ steps.app-token.outputs.app-slug }}[bot]" --jq .id)" >> "$GITHUB_OUTPUT"
-        env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
       - name: Checkout
         uses: actions/checkout@v4
         with:
           # ref: 'main'
-          repository: ${{ matrix.repo }}
+          repository: nocobase/${{ matrix.repo }}
           fetch-depth: 0
           token: ${{ steps.app-token.outputs.token }}
-      - name: main -> next(${{ matrix.repo }})
+      - name: main -> next (nocobase/${{ matrix.repo }})
         run: |
           git config --global user.name '${{ steps.app-token.outputs.app-slug }}[bot]'
-          git config --global user.email '${{ steps.get-user-id.outputs.user-id }}+${{ steps.app-token.outputs.app-slug }}[bot]@users.noreply.github.com>'
-          # git checkout main
-          # git pull origin main
-          # git checkout next
-          # git merge main
+          git config --global user.email '${{ steps.app-token.outputs.user-id }}+${{ steps.app-token.outputs.app-slug }}[bot]@users.noreply.github.com>'
+          git checkout main
+          git pull origin main
+          git checkout next
+          git merge main
           # git push origin next --tags --atomic
-  # update-version:
-  #   needs: pre-merge-main-into-next
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Checkout
-  #       uses: actions/checkout@v4
-  #       with:
-  #         repository: nocobase/nocobase
-  #         ssh-key: ${{ secrets.NOCOBASE_DEPLOY_KEY }}
-  #         persist-credentials: true
-  #         fetch-depth: 0
-  #     - name: Checkout pro-plugins
-  #       uses: actions/checkout@v4
-  #       with:
-  #         repository: nocobase/pro-plugins
-  #         path: packages/pro-plugins
-  #         fetch-depth: 0
-  #         ssh-key: ${{ secrets.PRO_PLUGINS_DEPLOY_KEY }}
-  #         persist-credentials: true
-  #     - name: Clone pro repos
-  #       run: |
-  #         for repo in ${{ join(fromJSON($vars.PRO_PLUGIN_REPOS), ' ') }}
-  #         do
-  #           git clone -b main https://${{ secrets.GITHUB_APP_TOKEN }}@github.com/$repo.git packages/pro-plugins
-  #         done
+  update-version:
+    needs: pre-merge-main-into-next
+    runs-on: ubuntu-latest
+    steps:
+      - uses: nocobase/nocobase/.github/workflows/get-nocobase-app-token.yml@v1
+        id: app-token
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          repository: nocobase/nocobase
+          token: ${{ steps.app-token.outputs.token }}
+          persist-credentials: true
+          fetch-depth: 0
+      - name: Checkout pro-plugins
+        uses: actions/checkout@v4
+        with:
+          repository: nocobase/pro-plugins
+          path: packages/pro-plugins
+          fetch-depth: 0
+          token: ${{ steps.app-token.outputs.token }}
+          persist-credentials: true
+      - name: Clone pro repos
+        run: |
+          for repo in ${{ join(fromJSON($vars.PRO_PLUGIN_REPOS), ' ') }}
+          do
+            git clone -b main https://${{ secrets.GITHUB_APP_TOKEN }}@github.com/nocobase/$repo.git packages/pro-plugins
+          done
   #     - name: Set Node.js 18
   #       uses: actions/setup-node@v3
   #       with:
