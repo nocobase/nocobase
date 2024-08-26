@@ -132,14 +132,14 @@ function getTypedConstantOption(type: string, types: UseTypeConstantType, fieldN
         )
       : allTypes
   ).map((item) =>
-    Object.keys(item).reduce(
+    Object.keys(fieldNames).reduce(
       (result, key) =>
-        fieldNames[key] in item
+        key in item
           ? Object.assign(result, {
               [fieldNames[key]]: item[key],
             })
           : result,
-      item,
+      { ...item },
     ),
   );
   return {
