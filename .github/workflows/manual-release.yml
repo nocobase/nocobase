@@ -28,8 +28,8 @@ jobs:
           - 'nocobase'
           - ${{ fromJSON(vars.PRO_PLUGIN_REPOS) }}
     steps:
-      - name: Get app token
-        id: get-token
+      - name: Decrypt app token
+        id: app-token
         run: |
           BINARY_ENCRYPTED_SECRET=${{ needs.app-token.outputs.token }};
           APP_TOKEN=$(echo -n "$BINARY_ENCRYPTED_SECRET" | openssl enc -aes-256-cbc -pbkdf2 -d -salt -k "${{ secrets.APP_TOKEN_ENCRYPTION_PASSWORD }}");
@@ -40,7 +40,7 @@ jobs:
           # ref: 'main'
           repository: nocobase/${{ matrix.repo }}
           fetch-depth: 0
-          token: ${{ steps.get-token.outputs.token }}
+          token: ${{ steps.app-token.outputs.token }}
       - name: main -> next (nocobase/${{ matrix.repo }})
         run: |
           git config --global user.name '${{ needs.app-token.outputs.app-slug }}[bot]'
@@ -56,8 +56,8 @@ jobs:
       - pre-merge-main-into-next
     runs-on: ubuntu-latest
     steps:
-      - name: Get app token
-        id: get-token
+      - name: Decrypt app token
+        id: app-token
         run: |
           BINARY_ENCRYPTED_SECRET=${{ needs.app-token.outputs.token }};
           APP_TOKEN=$(echo -n "$BINARY_ENCRYPTED_SECRET" | openssl enc -aes-256-cbc -pbkdf2 -d -salt -k "${{ secrets.APP_TOKEN_ENCRYPTION_PASSWORD }}");
@@ -75,7 +75,7 @@ jobs:
           repository: nocobase/pro-plugins
           path: packages/pro-plugins
           fetch-depth: 0
-          token: ${{ needs.app-token.outputs.token }}
+          token: ${{ steps.app-token.outputs.token }}
           persist-credentials: true
       - name: Clone pro repos
         run: |
