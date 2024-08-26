@@ -16,6 +16,14 @@ jobs:
     container: node:18
     needs: app-token
     steps:
+      - name: Decrypt app token
+        id: app-token
+        shell: bash
+        run: |
+          ENCRYPTED_SECRET=${{ needs.app-token.outputs.token }};
+          BINARY_ENCRYPTED_SECRET=$(echo -n "$ENCRYPTED_SECRET" | base64 --decode);
+          APP_TOKEN=$(echo -n "$BINARY_ENCRYPTED_SECRET" | openssl enc -aes-256-cbc -pbkdf2 -d -salt -k "${{ secrets.APP_TOKEN_ENCRYPTION_PASSWORD }}");
+          echo "token=$APP_TOKEN" >> $GITHUB_OUTPUT
       - name: Checkout
         uses: actions/checkout@v4
         with:
@@ -85,14 +93,6 @@ jobs:
           git commit -m "chore(versions): test publish packages xxx"
           cat lerna.json
           yarn release:force --no-verify-access --no-git-reset --registry https://registry.npmjs.org/ --dist-tag=next
-      - name: Decrypt app token
-        id: app-token
-        shell: bash
-        run: |
-          ENCRYPTED_SECRET=${{ needs.app-token.outputs.token }};
-          BINARY_ENCRYPTED_SECRET=$(echo -n "$ENCRYPTED_SECRET" | base64 --decode);
-          APP_TOKEN=$(echo -n "$BINARY_ENCRYPTED_SECRET" | openssl enc -aes-256-cbc -pbkdf2 -d -salt -k "${{ secrets.APP_TOKEN_ENCRYPTION_PASSWORD }}");
-          echo "token=$APP_TOKEN" >> $GITHUB_OUTPUT
       - name: Checkout pro-plugins
         uses: actions/checkout@v3
         with:
