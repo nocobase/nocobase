@@ -4,7 +4,7 @@ on:
   workflow_call:
     outputs:
       app-token:
-        value: ${{ jobs.encode-token.outputs.token }}
+        value: ${{ jobs.get-app-token.outputs.token }}
       user-id:
         value: ${{ jobs.get-app-token.outputs.user-id }}
       app-slug:
@@ -14,7 +14,7 @@ jobs:
   get-app-token:
     runs-on: ubuntu-latest
     outputs:
-      token: ${{ steps.app-token.outputs.token }}
+      token: ${{ steps.encode-token.outputs.token }}
       app-slug: ${{ steps.app-token.outputs.app-slug }}
       user-id: ${{ steps.get-user-id.outputs.user-id }}
     steps:
