@@ -96,7 +96,6 @@ jobs:
         run: |
           cd ./packages/pro-plugins
           git checkout main
-          git rm -rf --cached .
           for repo in ${{ join(fromJSON(vars.PRO_PLUGIN_REPOS), ' ') }}
           do
             echo "@nocobase/$repo" >> .git/info/exclude
@@ -111,65 +110,24 @@ jobs:
         env:
           IS_FEAT: ${{ inputs.is_feat && '--is-feat' || '' }}
           PRO_PLUGIN_REPOS: ${{ vars.PRO_PLUGIN_REPOS }}
-      - name: push pro repos
+      - name: Push and merge into next
         run: |
           for repo in ${{ join(fromJSON(vars.PRO_PLUGIN_REPOS), ' ') }}
           do
             cd ./packages/pro-plugins/@nocobase/$repo
             git push origin main --atomic --tags
+            git checkout next
+            git merge -X ours main --no-edit
+            git push origin next --tags --atomic
             cd ../../../../
           done
-      - name: push pro plugins
-        continue-on-error: true
-        uses: ad-m/github-push-action@master
-        with:
-          github_token: ${{ steps.app-token.outputs.token }}
-          branch: main
-          directory: packages/pro-plugins
-          repository: nocobase/pro-plugins
-          tags: true
-          atomic: true
-      - name: push nocobase
-        uses: ad-m/github-push-action@master
-        with:
-          branch: main
-          github_token: ${{ steps.app-token.outputs.token }}
-          repository: nocobase/nocobase
-          tags: true
-          atomic: true
-  post-merge-main-into-next:
-    needs:
-      - app-token
-      - pre-merge-main-into-next
-      - update-version
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        repo:
-          - 'nocobase'
-          - 'pro-plugins'
-          - ${{ fromJSON(vars.PRO_PLUGIN_REPOS) }}
-    steps:
-      - name: Decrypt app token
-        id: app-token
-        shell: bash
-        run: |
-          ENCRYPTED_SECRET=${{ needs.app-token.outputs.token }};
-          BINARY_ENCRYPTED_SECRET=$(echo -n "$ENCRYPTED_SECRET" | base64 --decode);
-          APP_TOKEN=$(echo -n "$BINARY_ENCRYPTED_SECRET" | openssl enc -aes-256-cbc -pbkdf2 -d -salt -k "${{ secrets.APP_TOKEN_ENCRYPTION_PASSWORD }}");
-          echo "token=$APP_TOKEN" >> $GITHUB_OUTPUT
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          repository: nocobase/${{ matrix.repo }}
-          fetch-depth: 0
-          token: ${{ steps.app-token.outputs.token }}
-      - name: main -> next (nocobase/${{ matrix.repo }})
-        run: |
-          git config --global user.name '${{ needs.app-token.outputs.app-slug }}[bot]'
-          git config --global user.email '${{ needs.app-token.outputs.user-id }}+${{ needs.app-token.outputs.app-slug }}[bot]@users.noreply.github.com>'
-          git checkout main
-          git pull origin main
+          cd ./packages/pro-plugins
+          git push origin main --atomic --tags
+          git checkout next
+          git merge -X ours main --no-edit
+          git push origin next --tags --atomic
+          cd ../../
+          git push origin main --atomic --tags
           git checkout next
           git merge -X ours main --no-edit
           git push origin next --tags --atomic
