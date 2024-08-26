@@ -12,7 +12,7 @@ fi
 
 lerna version $new_version --preid alpha --force-publish=* --no-git-tag-version -y
 
-echo $PRO_PLUGIN_REPOS | jq '.[]' | while read i; do
+echo $PRO_PLUGIN_REPOS | jq -r '.[]' | while read i; do
   cd ./packages/pro-plugins/@nocobase/$i
   git add .
   git commit -m "chore(versions): 😊 publish v$(jq -r '.version' ../../../lerna.json)"
