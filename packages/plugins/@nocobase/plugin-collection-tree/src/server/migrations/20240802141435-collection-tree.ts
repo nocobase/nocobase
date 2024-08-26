@@ -7,10 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Migration } from '@nocobase/server';
 import { Model, SyncOptions } from '@nocobase/database';
-import { Transaction } from 'sequelize';
+import { Migration } from '@nocobase/server';
 import lodash from 'lodash';
+import { Transaction } from 'sequelize';
 
 export default class extends Migration {
   on = 'afterLoad'; // 'beforeLoad' or 'afterLoad'
@@ -30,6 +30,7 @@ export default class extends Migration {
         const name = `main_${treeCollection.name}_path`;
         this.app.db.collection({
           name,
+          schema: treeCollection.options.schema,
           autoGenId: false,
           timestamps: false,
           fields: [
@@ -48,6 +49,7 @@ export default class extends Migration {
           await this.app.db.getCollection(name).sync({ transaction } as SyncOptions);
           this.app.db.collection({
             name: treeCollection.name,
+            schema: treeCollection.options.schema,
             autoGenId: false,
             timestamps: false,
             fields: [
