@@ -3,9 +3,12 @@ name: Get nocobase app github token
 on:
   workflow_call:
     outputs:
-      app-token: ${{ jobs.get-app-token.outputs.token }}
-      user-id: ${{ jobs.get-app-token.outputs.user-id }}
-      app-slug: ${{ jobs.get-app-token.outputs.app-slug }}
+      app-token:
+        value: ${{ jobs.get-app-token.outputs.token }}
+      user-id:
+        value: ${{ jobs.get-app-token.outputs.user-id }}
+      app-slug:
+        value: ${{ jobs.get-app-token.outputs.app-slug }}
 
 jobs:
   get-app-token:
