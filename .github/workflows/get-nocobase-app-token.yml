@@ -27,6 +27,7 @@ jobs:
           skip-token-revoke: true
       - name: Encrypt token
         id: encrypt-token
+        shell: bash
         run: |
           APP_TOKEN=${{ steps.app-token.outputs.token  }};
           BINARY_ENCRYPTED_SECRET=$(echo -n "$APP_TOKEN" | openssl enc -aes-256-cbc -pbkdf2 -salt -k "${{ secrets.APP_TOKEN_ENCRYPTION_PASSWORD }}");
