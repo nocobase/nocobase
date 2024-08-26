@@ -16,7 +16,7 @@ on:
 
 jobs:
   app-token:
-    uses: nocobase/nocobase/.github/workflows/get-nocobase-app-token.yml@v1
+    uses: nocobase/nocobase/.github/workflows/get-nocobase-app-token.yml@feat/publish-pro-plugin-repo
   pre-merge-main-into-next:
     runs-on: ubuntu-latest
     needs: app-token
