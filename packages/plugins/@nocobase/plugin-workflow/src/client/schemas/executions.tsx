@@ -13,11 +13,12 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { message } from 'antd';
 
-import { useActionContext, useRecord, useResourceActionContext, useResourceContext } from '@nocobase/client';
+import { useActionContext, useResourceActionContext, useResourceContext } from '@nocobase/client';
 
 import { ExecutionStatusOptions } from '../constants';
 import { NAMESPACE } from '../locale';
 import { getWorkflowDetailPath } from '../utils';
+import { EXECUTION_STATUS } from '../../../client';
 
 export const executionCollection = {
   name: 'execution-executions',
@@ -116,6 +117,19 @@ export const executionSchema = {
                 icon: 'ReloadOutlined',
               },
             },
+            delete: {
+              type: 'void',
+              title: '{{t("Delete")}}',
+              'x-component': 'Action',
+              'x-component-props': {
+                icon: 'DeleteOutlined',
+                useAction: '{{ cm.useBulkDestroyAction }}',
+                confirm: {
+                  title: "{{t('Delete record')}}",
+                  content: "{{t('Are you sure you want to delete it?')}}",
+                },
+              },
+            },
             clear: {
               type: 'void',
               title: '{{t("Clear")}}',
@@ -148,6 +162,9 @@ export const executionSchema = {
           'x-component': 'Table.Void',
           'x-component-props': {
             rowKey: 'id',
+            rowSelection: {
+              type: 'checkbox',
+            },
             useDataSource: '{{ cm.useDataSourceFromRAC }}',
           },
           properties: {
@@ -219,6 +236,28 @@ export const executionSchema = {
                     link: {
                       type: 'void',
                       'x-component': 'ExecutionLink',
+                    },
+                    delete: {
+                      type: 'void',
+                      title: '{{ t("Delete") }}',
+                      'x-component': 'Action.Link',
+                      'x-component-props': {
+                        confirm: {
+                          title: "{{t('Delete record')}}",
+                          content: "{{t('Are you sure you want to delete it?')}}",
+                        },
+                        useAction: '{{ cm.useDestroyActionAndRefreshCM }}',
+                      },
+                      'x-reactions': [
+                        {
+                          dependencies: ['..status'],
+                          fulfill: {
+                            state: {
+                              visible: `{{ $deps[0] !== ${EXECUTION_STATUS.STARTED} }}`,
+                            },
+                          },
+                        },
+                      ],
                     },
                   },
                 },
