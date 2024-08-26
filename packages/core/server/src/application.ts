@@ -64,8 +64,6 @@ import { createPubSubManager, PubSubManager, PubSubManagerOptions } from './pub-
 import { SyncMessageManager } from './sync-message-manager';
 import { LockManager, LockManagerOptions } from './lock-manager';
 
-import packageJson from '../package.json';
-
 export type PluginType = string | typeof Plugin;
 export type PluginConfiguration = PluginType | [PluginType, any];
 
