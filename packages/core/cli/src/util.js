@@ -313,7 +313,7 @@ function areTimeZonesEqual(timeZone1, timeZone2) {
   }
   timeZone1 = getTimezonesByOffset(timeZone1);
   timeZone2 = getTimezonesByOffset(timeZone2);
-  return moment.tz(timeZone1).format() === moment.tz(timeZone2).format();
+  return moment.tz(timeZone1).format('Z') === moment.tz(timeZone2).format('Z');
 }
 
 exports.initEnv = function initEnv() {
