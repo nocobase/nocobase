@@ -2,6 +2,9 @@ name: Get nocobase app github token
 
 on:
   workflow_call:
+    secrets:
+      NOCOBASE_APP_PRIVATE_KEY:
+        required: true
     outputs:
       app-token:
         value: ${{ jobs.get-app-token.outputs.token }}
