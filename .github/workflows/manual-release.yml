@@ -103,6 +103,7 @@ jobs:
           do
             echo "@nocobase/$repo" >> .git/info/exclude
           done
+          echo "$(<.git/info/exclude )"
           cd ./../..
           git checkout feat/publish-pro-plugin-repo
           git config --global user.name '${{ needs.app-token.outputs.app-slug }}[bot]'
