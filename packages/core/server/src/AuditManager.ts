@@ -8,7 +8,6 @@
  */
 
 import { Context } from '@nocobase/actions';
-import { app } from 'packages/core/app/client/src/pages';
 
 interface AuditLog {
   uuid: string;
@@ -24,11 +23,11 @@ interface AuditLog {
   ua: string;
   status: number;
   createdAt: string;
-  metadata: Record<string, any>;
+  metadata: string;
 }
 
 export interface AuditLogger {
-  log(auditLog: AuditLog): void;
+  log(auditLog: AuditLog, ctx): void;
 }
 
 type Action =
@@ -47,6 +46,10 @@ export interface AuditManageOptions {
 export class AuditManager {
   logger: AuditLogger;
   resources: Map<string, Map<string, Action>>; // 不一定是这个类型，根据存取方便处理
+
+  constructor() {
+    this.resources = new Map();
+  }
 
   public setLogger(logger: AuditLogger) {
     this.logger = logger;
@@ -76,7 +79,7 @@ export class AuditManager {
       if (typeof action === 'string') {
         this.registerAction(action);
       } else {
-        this.registerAction(action.name, action.getMetaData);
+        this.registerAction(action.name, action);
       }
     });
   }
@@ -86,10 +89,15 @@ export class AuditManager {
   // registerAction('app:*')
   // registerAction('pm:update')
   // registerAction('create', { getMetaData })
-  registerAction(actionName: string, options?: Omit<Action, 'name'>) {
+  registerAction(actionName: string, options?: Action) {
     const resourceMap = new Map<string, Action>();
     const { actionName: name, resouceName } = this.formatActionAndResource(actionName);
-    resourceMap.set(resouceName, null);
+    if (options && typeof options !== 'string') {
+      const { getMetaData } = options;
+      resourceMap.set(resouceName, { name: name, getMetaData: getMetaData });
+    } else {
+      resourceMap.set(resouceName, name);
+    }
     this.resources.set(name, resourceMap);
   }
 
@@ -97,8 +105,8 @@ export class AuditManager {
     if (actionName.indexOf(':') >= 0) {
       const names = actionName.split(':');
       return {
-        actionName: names[0],
-        resourceName: names[1],
+        actionName: names[1],
+        resouceName: names[0],
       };
     }
 
@@ -111,6 +119,7 @@ export class AuditManager {
   // 获取action
   getAction(action: string, resource?: string) {
     const act: Map<string, Action> = this.resources.get(action);
+    if (!act) return null;
 
     if (resource) {
       return act.get(resource);
@@ -119,66 +128,78 @@ export class AuditManager {
     }
   }
 
-  async getDefaultMetaData(ctx: Context) {
-    return {
-      request: {
-        params: {},
-        body: {},
-      },
-      response: {
-        body: {},
-      },
-    };
+  async getDefaultMetaData(ctx: any) {
+    if (ctx.response.status !== 200) {
+      return {
+        request: ctx.request,
+        response: ctx.response,
+      };
+    } else {
+      return null;
+    }
   }
 
-  getMetaData(actionName: string, resouceName: string) {}
-
   formatAuditData(ctx: any) {
+    const { filterByTk } = ctx.action.params;
+    const { resourceName } = ctx.action;
+    const resourceArray = resourceName.split('.');
+    let association = '';
+    if (resourceArray.length > 0) {
+      association = resourceArray[1];
+    }
+
     const auditLog: AuditLog = {
-      uuid: ctx.app.reqId,
-      dataSource: ctx.db.database,
-      resource: ctx.action.resouceName,
-      association: ctx.db.association,
-      action: ctx.action,
-      resourceUk: ctx.resourceUk,
-      userId: ctx.app.userId,
-      roleName: ctx.app.roleName,
-      ip: ctx.app.ip,
-      ua: ctx.app.ua,
-      status: ctx.app.status,
-      createdAt: ctx.app.createdAt,
+      uuid: ctx.reqId,
+      dataSource: ctx.action.sourceId,
+      resource: resourceName,
+      association: association,
+      collection: ctx.action.sourceId,
+      action: ctx.action.name,
+      resourceUk: filterByTk,
+      userId: ctx.state?.currentUser?.id,
+      roleName: ctx.state?.currentRole,
+      ip: ctx.request.header['host'],
+      ua: ctx.request.header['user-agent'],
+      status: ctx.response.status,
+      createdAt: new Date() + '',
       metadata: null,
     };
     return auditLog;
   }
 
-  async output(ctx: Context, status: number, metadata: Record<string, any>) {
+  async output(ctx: any, status: number, metadata?: Record<string, any>) {
     // 操作后，记录审计日志
     // 1. 从ctx.action 获取 resourceName, actionName,
     const { resourceName, actionName } = ctx.action;
     // 2. 判断操作是否需要审计
-    const action = this.getAction(actionName, resourceName);
+    const action: Action = this.getAction(resourceName, actionName);
+    console.log('resource===', action, resourceName, actionName);
     if (!action) {
       return;
     }
     // 3. 从上下文获取各种信息，可以抽一个方法
-    // let uuid = ctx.reqId;
-
-    // let dataSource
-    // ...
     const auditLog: AuditLog = this.formatAuditData(ctx);
     // 4.获取默认metadata
     const defaultMetaData = await this.getDefaultMetaData(ctx);
     // 5. 用操作注册的 getMetadata 方法获取metadata
-    const extra = await action.getMetaData?.(ctx);
-    metadata = { ...defaultMetaData, ...metadata, ...extra };
-    auditLog.metadata = metadata;
-    this.logger.log(auditLog);
+    if (defaultMetaData) {
+      metadata = { ...defaultMetaData };
+    }
+    if (typeof action !== 'string') {
+      const extra = await action.getMetaData(ctx);
+      metadata = { ...metadata, ...extra };
+    }
+    if (metadata && Object.keys(metadata).length !== 0) {
+      auditLog.metadata = JSON.stringify(metadata);
+    }
+
+    this.logger.log(auditLog, ctx);
   }
 
   // 中间件
   middleware() {
     return async (ctx, next) => {
+      // console.log('middleware', ctx)
       const metadata = {};
       let status = 0;
       try {
@@ -195,12 +216,3 @@ export class AuditManager {
     };
   }
 }
-
-class Application {
-  auditManager: AuditManager;
-}
-
-app.use(app.auditManager.middleware, {
-  tag: 'audit',
-  after: 'dataWrapping',
-});

@@ -24,6 +24,7 @@ interface AuditLog {
   metadata: Record<string, any>;
 }
 
+import { utils } from '@nocobase/actions';
 import { Plugin } from '@nocobase/server';
 
 export class PluginAuditLoggerServer extends Plugin {
@@ -32,30 +33,36 @@ export class PluginAuditLoggerServer extends Plugin {
   async beforeLoad() {}
 
   async load() {
-    console.log('this', this.app.resourceManager);
+    // console.log('fff', this.app.auditManager);
+    const subApp = this.app;
     this.app.auditManager.setLogger({
       // 记录方法，输出日志文件和写入文件日志表
-      log(auditLog: AuditLog) {
+      async log(auditLog: AuditLog) {
         // 默认注册数据表的资源操作
+        const auditTrail = subApp.db.getCollection('auditTrails');
+        await auditTrail.repository.create({
+          values: auditLog,
+        });
       },
     });
 
-    // this.app.auditManager.registerActions([
-    //   'create',
-    //   'update',
-    //   'destroy',
-    //   'firstOrCreate',
-    //   'updateOrCreate',
-    //   'move',
-    //   'set',
-    //   'add',
-    //   'remove',
-    //   'toggle',
-    //   // 下面的特定接口后面会整理出来
-    //   'app:restart',
-    //   'pm:update',
-    //   // ...
-    // ]);
+    this.app.auditManager.registerActions([
+      'create',
+      'update',
+      'destroy',
+      'firstOrCreate',
+      'updateOrCreate',
+      'move',
+      'set',
+      'add',
+      'remove',
+      'toggle',
+      // 下面的特定接口后面会整理出来
+      'app:restart',
+      'pm:update',
+      'app:getInfo',
+      // ...
+    ]);
 
     this.app.resourceManager.define({
       name: 'auditTrails',
@@ -65,6 +72,11 @@ export class PluginAuditLoggerServer extends Plugin {
     this.app.acl.registerSnippet({
       name: `pm.${this.name}`,
       actions: ['auditTrails:*'],
+    });
+
+    this.app.use(this.app.auditManager.middleware(), {
+      tag: 'audit',
+      after: 'dataWrapping',
     });
   }
 

@@ -10,7 +10,6 @@
 import React from 'react';
 import { ExtendCollectionsProvider, SchemaComponent, useFilterActionProps, useFormBlockProps } from '@nocobase/client';
 import { ISchema } from '@nocobase/client';
-import { uid } from '@formily/shared';
 
 const auditLogCollection = {
   name: 'auditTrails',
@@ -87,7 +86,7 @@ const auditLogCollection = {
     //   },
     // },
     {
-      type: 'string',
+      type: 'array',
       name: 'action',
       interface: 'richText',
       uiSchema: {
@@ -154,6 +153,7 @@ const auditLogCollection = {
         title: '{{ t("ua") }}',
         required: true,
         'x-component': 'RichText',
+        'x-read-pretty': true,
       },
     },
     {
@@ -169,11 +169,12 @@ const auditLogCollection = {
     {
       type: 'string',
       name: 'createdAt',
-      interface: 'richText',
+      interface: 'createdAt',
       uiSchema: {
-        title: '{{ t("metadata") }}',
+        title: '{{ t("Created at") }}',
         required: true,
         'x-component': 'RichText',
+        'x-read-pretty': true,
       },
     },
   ],
@@ -219,14 +220,54 @@ const schema: ISchema = {
               title: '{{ t("Export") }}',
               'x-action': 'export',
               'x-action-settings': {
-                exportSettings: [],
+                exportSettings: [
+                  {
+                    dataIndex: ['action'],
+                  },
+                  {
+                    dataIndex: ['uuid'],
+                  },
+                  {
+                    dataIndex: ['resource'],
+                  },
+                  {
+                    dataIndex: ['collection'],
+                  },
+                  {
+                    dataIndex: ['association'],
+                  },
+                  {
+                    dataIndex: ['resouceUk'],
+                  },
+                  {
+                    dataIndex: ['resourceId'],
+                  },
+                  {
+                    dataIndex: ['userId'],
+                  },
+                  {
+                    dataIndex: ['user'],
+                  },
+                  {
+                    dataIndex: ['ip'],
+                  },
+                  {
+                    dataIndex: ['ua'],
+                  },
+                  {
+                    dataIndex: ['metadata'],
+                  },
+                  {
+                    dataIndex: ['createdAt'],
+                  },
+                ],
               },
               'x-component-props': {
                 icon: 'clouddownloadoutlined',
+                useProps: '{{ useExportAction }}',
               },
               'x-component': 'Action',
               'x-align': 'right',
-              'x-use-component-props': 'useRefreshActionProps',
             },
             refresh: {
               title: 'Refresh',
@@ -393,7 +434,7 @@ const schema: ISchema = {
             },
             createdAt: {
               type: 'void',
-              title: '{{ t("createdAt") }}',
+              title: '{{ t("Created at") }}',
               'x-component': 'TableV2.Column',
               properties: {
                 createdAt: {
@@ -402,190 +443,6 @@ const schema: ISchema = {
                   'x-pattern': 'readPretty',
                 },
               },
-            },
-          },
-        },
-      },
-    },
-  },
-};
-
-const scheme: ISchema = {
-  type: 'void',
-  name: uid(),
-  'x-component': 'CardItem',
-  'x-decorator': 'TableBlockProvider',
-  'x-decorator-props': {
-    collection: auditLogCollection.name,
-    action: 'list',
-    showIndex: true,
-    dragSort: false,
-  },
-  properties: {
-    table: {
-      type: 'array',
-      'x-component': 'TableV2',
-      'x-use-component-props': 'useTableBlockProps',
-      'x-component-props': {
-        rowKey: 'id',
-        rowSelection: {
-          type: 'checkbox',
-        },
-      },
-      properties: {
-        action: {
-          type: 'void',
-          title: '{{ t("Actions") }}',
-          'x-component': 'TableV2.Column',
-          properties: {
-            action: {
-              type: 'string',
-              'x-component': 'CollectionField',
-              'x-pattern': 'readPretty',
-            },
-          },
-        },
-        uuid: {
-          type: 'void',
-          title: '{{ t("UUID") }}',
-          'x-component': 'TableV2.Column',
-          properties: {
-            uuid: {
-              type: 'string',
-              'x-component': 'CollectionField',
-              'x-pattern': 'readPretty',
-            },
-          },
-        },
-        resource: {
-          type: 'void',
-          title: '{{ t("resource") }}',
-          'x-component': 'TableV2.Column',
-          properties: {
-            resource: {
-              type: 'string',
-              'x-component': 'CollectionField',
-              'x-pattern': 'readPretty',
-            },
-          },
-        },
-        collection: {
-          type: 'void',
-          title: '{{ t("collection") }}',
-          'x-component': 'TableV2.Column',
-          properties: {
-            collection: {
-              type: 'string',
-              'x-component': 'CollectionField',
-              'x-pattern': 'readPretty',
-            },
-          },
-        },
-        association: {
-          type: 'void',
-          title: '{{ t("association") }}',
-          'x-component': 'TableV2.Column',
-          properties: {
-            association: {
-              type: 'string',
-              'x-component': 'CollectionField',
-              'x-pattern': 'readPretty',
-            },
-          },
-        },
-        resourceUk: {
-          type: 'void',
-          title: '{{ t("resourceUk") }}',
-          'x-component': 'TableV2.Column',
-          properties: {
-            resourceUk: {
-              type: 'string',
-              'x-component': 'CollectionField',
-              'x-pattern': 'readPretty',
-            },
-          },
-        },
-        resourceId: {
-          type: 'void',
-          title: '{{ t("resourceId") }}',
-          'x-component': 'TableV2.Column',
-          properties: {
-            resourceId: {
-              type: 'string',
-              'x-component': 'CollectionField',
-              'x-pattern': 'readPretty',
-            },
-          },
-        },
-        userId: {
-          type: 'void',
-          title: '{{ t("userId") }}',
-          'x-component': 'TableV2.Column',
-          properties: {
-            userId: {
-              type: 'string',
-              'x-component': 'CollectionField',
-              'x-pattern': 'readPretty',
-            },
-          },
-        },
-        user: {
-          type: 'void',
-          title: '{{ t("user") }}',
-          'x-component': 'TableV2.Column',
-          properties: {
-            user: {
-              type: 'string',
-              'x-component': 'CollectionField',
-              'x-pattern': 'readPretty',
-            },
-          },
-        },
-        ip: {
-          type: 'void',
-          title: '{{ t("IP") }}',
-          'x-component': 'TableV2.Column',
-          properties: {
-            ip: {
-              type: 'string',
-              'x-component': 'CollectionField',
-              'x-pattern': 'readPretty',
-            },
-          },
-        },
-        ua: {
-          type: 'void',
-          title: '{{ t("UA") }}',
-          'x-component': 'TableV2.Column',
-          properties: {
-            ua: {
-              type: 'string',
-              'x-component': 'CollectionField',
-              'x-pattern': 'readPretty',
-            },
-          },
-        },
-        metadata: {
-          type: 'void',
-          title: '{{ t("metadata") }}',
-          'x-component': 'TableV2.Column',
-          properties: {
-            metadata: {
-              type: 'string',
-              'x-component': 'CollectionField',
-              'x-pattern': 'readPretty',
-            },
-          },
-        },
-        createdAt: {
-          type: 'void',
-          title: '{{ t("createdAt") }}',
-          'x-component': 'TableV2.Column',
-          properties: {
-            createdAt: {
-              type: 'string',
-              'x-component': 'CollectionField',
-              'x-pattern': 'readPretty',
             },
           },
         },

@@ -45,32 +45,32 @@ export default defineCollection({
       name: 'action',
       type: 'string',
     },
-    {
-      name: 'resourceId',
-      type: 'string',
-    },
+    // {
+    //   name: 'resourceId',
+    //   type: 'string',
+    // },
     {
       name: 'userId',
       type: 'bigInt',
     },
-    {
-      type: 'belongsTo',
-      name: 'user',
-      target: 'users',
-      targetKey: 'id',
-      foreignKey: 'userId',
-    },
+    // {
+    //   type: 'belongsTo',
+    //   name: 'user',
+    //   target: 'users',
+    //   targetKey: 'id',
+    //   foreignKey: 'userId',
+    // },
     {
       name: 'roleName',
       type: 'string',
     },
-    {
-      type: 'belongsTo',
-      name: 'role',
-      target: 'roles',
-      targetKey: 'name',
-      foreignKey: 'roleName',
-    },
+    // {
+    //   type: 'belongsTo',
+    //   name: 'role',
+    //   target: 'roles',
+    //   targetKey: 'name',
+    //   foreignKey: 'roleName',
+    // },
     {
       name: 'ip',
       type: 'string',
