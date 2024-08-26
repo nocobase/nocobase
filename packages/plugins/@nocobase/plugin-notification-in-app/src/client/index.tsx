@@ -8,10 +8,11 @@
  */
 
 import { Plugin } from '@nocobase/client';
-
+import { MessageManagerProvider } from './MessageManagerProvider';
 export class PluginNotificationInAppClient extends Plugin {
-  async afterAdd() {}
-
+  async afterAdd() {
+    this.app.use(MessageManagerProvider);
+  }
   async beforeLoad() {}
 
   async load() {

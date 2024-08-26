@@ -33,7 +33,6 @@ import {
   useSystemSettings,
   useToken,
 } from '../../../';
-import { InApp } from '../../../in-app';
 import { useLocationNoUpdate, useNavigateNoUpdate } from '../../../application/CustomRouterContextProvider';
 import { Plugin } from '../../../application/Plugin';
 import { useAppSpin } from '../../../application/hooks/useAppSpin';
@@ -470,7 +469,6 @@ export const InternalAdminLayout = () => {
               <Divider type="vertical" />
             </ConfigProvider>
             <Help />
-            <InApp />
             <CurrentUser />
           </div>
         </div>
