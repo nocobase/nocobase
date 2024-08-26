@@ -16,6 +16,7 @@ jobs:
   publish-npm:
     runs-on: ubuntu-latest
     container: node:18
+    needs: app-token
     steps:
       - name: Checkout
         uses: actions/checkout@v3
