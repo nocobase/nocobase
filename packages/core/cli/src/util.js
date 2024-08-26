@@ -16,6 +16,7 @@ const { readFile, writeFile } = require('fs').promises;
 const { existsSync, mkdirSync, cpSync, writeFileSync } = require('fs');
 const dotenv = require('dotenv');
 const fs = require('fs');
+const moment = require('moment-timezone');
 
 exports.isPackageValid = (pkg) => {
   try {
@@ -296,6 +297,25 @@ function buildIndexHtml(force = false) {
 
 exports.buildIndexHtml = buildIndexHtml;
 
+function getTimezonesByOffset(offset) {
+  if (!/^[+-]\d{1,2}:\d{2}$/.test(offset)) {
+    return offset;
+  }
+  const offsetMinutes = moment.duration(offset).asMinutes();
+  return moment.tz.names().find((timezone) => {
+    return moment.tz(timezone).utcOffset() === offsetMinutes;
+  });
+}
+
+function areTimeZonesEqual(timeZone1, timeZone2) {
+  if (timeZone1 === timeZone2) {
+    return true;
+  }
+  timeZone1 = getTimezonesByOffset(timeZone1);
+  timeZone2 = getTimezonesByOffset(timeZone2);
+  return moment.tz(timeZone1).format() === moment.tz(timeZone2).format();
+}
+
 exports.initEnv = function initEnv() {
   const env = {
     APP_ENV: 'development',
@@ -305,7 +325,7 @@ exports.initEnv = function initEnv() {
     API_CLIENT_STORAGE_PREFIX: 'NOCOBASE_',
     DB_DIALECT: 'sqlite',
     DB_STORAGE: 'storage/db/nocobase.sqlite',
-    DB_TIMEZONE: '+00:00',
+    // DB_TIMEZONE: '+00:00',
     DB_UNDERSCORED: parseEnv('DB_UNDERSCORED'),
     DEFAULT_STORAGE_TYPE: 'local',
     LOCAL_STORAGE_DEST: 'storage/uploads',
@@ -375,5 +395,20 @@ exports.initEnv = function initEnv() {
   if (!process.env.__env_modified__ && process.env.APP_SERVER_BASE_URL && !process.env.API_BASE_URL) {
     process.env.API_BASE_URL = process.env.APP_SERVER_BASE_URL + process.env.API_BASE_PATH;
     process.env.__env_modified__ = true;
+  }
+
+  if (!process.env.TZ) {
+    const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    process.env.TZ = getTimezonesByOffset(process.env.DB_TIMEZONE || timeZone);
+  }
+
+  if (!process.env.DB_TIMEZONE) {
+    process.env.DB_TIMEZONE = process.env.TZ;
+  }
+
+  if (!areTimeZonesEqual(process.env.DB_TIMEZONE, process.env.TZ)) {
+    throw new Error(
+      `process.env.DB_TIMEZONE="${process.env.DB_TIMEZONE}" and process.env.TZ="${process.env.TZ}" are different`,
+    );
   }
 };
