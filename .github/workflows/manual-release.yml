@@ -99,6 +99,7 @@ jobs:
         run: |
           cd ./packages/pro-plugins
           git checkout main
+          git rm -rf --cached .
           for repo in ${{ join(fromJSON(vars.PRO_PLUGIN_REPOS), ' ') }}
           do
             echo "@nocobase/$repo" >> .git/info/exclude
