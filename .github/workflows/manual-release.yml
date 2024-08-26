@@ -32,8 +32,7 @@ jobs:
         id: app-token
         run: |
           ENCRYPTED_SECRET=${{ needs.app-token.outputs.token }};
-          BINARY_ENCRYPTED_SECRET=$(echo -n "$ENCRYPTED_SECRET" | base64 --decode);
-          APP_TOKEN=$(echo -n "$BINARY_ENCRYPTED_SECRET" | openssl enc -aes-256-cbc -pbkdf2 -d -salt -k "${{ secrets.APP_TOKEN_ENCRYPTION_PASSWORD }}");
+          APP_TOKEN=$(echo -n "$ENCRYPTED_SECRET" | base64 --decode | openssl enc -aes-256-cbc -pbkdf2 -d -salt -k "${{ secrets.APP_TOKEN_ENCRYPTION_PASSWORD }}");
           echo "token=$APP_TOKEN" >> $GITHUB_OUTPUT
       - name: Checkout
         uses: actions/checkout@v4
