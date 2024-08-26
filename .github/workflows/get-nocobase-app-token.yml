@@ -1,4 +1,4 @@
-name: Get nocobase app token
+name: Get nocobase app github token
 
 on:
   workflow_call:
