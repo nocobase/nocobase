@@ -54,7 +54,7 @@ jobs:
   update-version:
     needs:
       - app-token
-      - pre-merge-main-into-next
+      # - pre-merge-main-into-next
     runs-on: ubuntu-latest
     steps:
       - name: Decrypt app token
