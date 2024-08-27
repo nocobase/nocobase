@@ -52,6 +52,7 @@
     "@nocobase/plugin-theme-editor": "1.4.0-alpha",
     "@nocobase/plugin-ui-schema-storage": "1.4.0-alpha",
     "@nocobase/plugin-users": "1.4.0-alpha",
+    "@nocobase/plugin-user-data-sync": "1.4.0-alpha",
     "@nocobase/plugin-verification": "1.4.0-alpha",
     "@nocobase/plugin-workflow": "1.4.0-alpha",
     "@nocobase/plugin-workflow-action-trigger": "1.4.0-alpha",
