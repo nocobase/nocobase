@@ -15,45 +15,41 @@ import { BackButtonUsedInSubPage } from '../page/BackButtonUsedInSubPage';
 import { TabsContextProvider, useTabsContext } from '../tabs/context';
 import { useActionPageStyle } from './Action.Page.style';
 import { usePopupOrSubpagesContainerDOM } from './hooks/usePopupSlotDOM';
-import { ComposedActionDrawer } from './types';
 
-export const ActionPage: ComposedActionDrawer = observer(
-  ({ level }) => {
-    const filedSchema = useFieldSchema();
-    const ctx = useActionContext();
-    const { getContainerDOM } = usePopupOrSubpagesContainerDOM();
-    const { styles } = useActionPageStyle();
-    const tabContext = useTabsContext();
+export function ActionPage({ level }) {
+  const filedSchema = useFieldSchema();
+  const ctx = useActionContext();
+  const { getContainerDOM } = usePopupOrSubpagesContainerDOM();
+  const { styles } = useActionPageStyle();
+  const tabContext = useTabsContext();
 
-    const style = useMemo(() => {
-      return {
-        // 20 is the z-index value of the main page
-        zIndex: 20 + level,
-      };
-    }, [level]);
+  const style = useMemo(() => {
+    return {
+      // 20 is the z-index value of the main page
+      zIndex: 20 + level,
+    };
+  }, [level]);
 
-    if (!ctx.visible) {
-      return null;
-    }
+  if (!ctx.visible) {
+    return null;
+  }
 
-    const actionPageNode = (
-      <div className={styles.container} style={style}>
-        <TabsContextProvider {...tabContext} tabBarExtraContent={<BackButtonUsedInSubPage />}>
-          <RecursionField schema={filedSchema} onlyRenderProperties />
-        </TabsContextProvider>
-      </div>
-    );
+  const actionPageNode = (
+    <div className={styles.container} style={style}>
+      <TabsContextProvider {...tabContext} tabBarExtraContent={<BackButtonUsedInSubPage />}>
+        <RecursionField schema={filedSchema} onlyRenderProperties />
+      </TabsContextProvider>
+    </div>
+  );
 
-    const container = getContainerDOM();
+  const container = getContainerDOM();
 
-    if (container) {
-      return createPortal(actionPageNode, container);
-    }
+  if (container) {
+    return createPortal(actionPageNode, container);
+  }
 
-    return actionPageNode;
-  },
-  { displayName: 'ActionPage' },
-);
+  return actionPageNode;
+}
 
 ActionPage.Footer = observer(
   () => {

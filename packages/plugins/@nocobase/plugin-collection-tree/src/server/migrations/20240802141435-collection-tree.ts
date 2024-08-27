@@ -7,14 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Migration } from '@nocobase/server';
 import { Model, SyncOptions } from '@nocobase/database';
-import { Transaction } from 'sequelize';
+import { Migration } from '@nocobase/server';
 import lodash from 'lodash';
+import { Transaction } from 'sequelize';
 
 export default class extends Migration {
   on = 'afterLoad'; // 'beforeLoad' or 'afterLoad'
-  appVersion = '<=1.3.0-alpha';
+  appVersion = '<=1.3.0-beta';
 
   async up() {
     await this.db.sequelize.transaction(async (transaction) => {
@@ -28,7 +28,7 @@ export default class extends Migration {
 
       for (const treeCollection of treeCollections) {
         const name = `main_${treeCollection.name}_path`;
-        this.app.db.collection({
+        const collectionOptions = {
           name,
           autoGenId: false,
           timestamps: false,
@@ -42,11 +42,15 @@ export default class extends Migration {
               fields: [{ name: 'path', length: 191 }],
             },
           ],
-        });
+        };
+        if (treeCollection.options.schema) {
+          collectionOptions['schema'] = treeCollection.options.schema;
+        }
+        this.app.db.collection(collectionOptions);
         const treeExistsInDb = await this.app.db.getCollection(name).existsInDb({ transaction });
         if (!treeExistsInDb) {
           await this.app.db.getCollection(name).sync({ transaction } as SyncOptions);
-          this.app.db.collection({
+          const opts = {
             name: treeCollection.name,
             autoGenId: false,
             timestamps: false,
@@ -54,7 +58,11 @@ export default class extends Migration {
               { type: 'integer', name: 'id' },
               { type: 'integer', name: 'parentId' },
             ],
-          });
+          };
+          if (treeCollection.options.schema) {
+            opts['schema'] = treeCollection.options.schema;
+          }
+          this.app.db.collection(opts);
           const chunkSize = 1000;
           await this.app.db.getRepository(treeCollection.name).chunk({
             chunkSize: chunkSize,

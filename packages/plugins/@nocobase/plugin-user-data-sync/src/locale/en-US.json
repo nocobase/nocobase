@@ -1,0 +1,19 @@
+{
+  "Synchronize": "Synchronize",
+  "Source name": "Source name",
+  "Source display name": "Source display name",
+  "Type": "Type",
+  "Sync": "Sync",
+  "Tasks": "Tasks",
+  "Batch": "Batch",
+  "Status": "Status",
+  "Message": "Message",
+  "Init": "Init",
+  "Processing": "Processing",
+  "Success": "Success",
+  "Failed": "Failed",
+  "Authenticator": "Authenticator",
+  "Retry": "Retry",
+  "No user data source plugin installed": "No user data source plugin installed",
+  "View documentation": "View documentation"
+}
