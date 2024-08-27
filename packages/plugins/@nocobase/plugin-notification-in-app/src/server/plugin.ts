@@ -12,7 +12,23 @@ import { Plugin } from '@nocobase/server';
 export class PluginNotificationInAppServer extends Plugin {
   async afterAdd() {}
 
-  async beforeLoad() {}
+  async beforeLoad() {
+    // this.app.resourceManager.registerActionHandler('inAppMessages:sse', async (ctx, next) => {
+    //   console.log(ctx.action);
+    //   next();
+    // });
+    this.app.resourceManager.define({
+      name: 'inAppMessages',
+      actions: {
+        sse: {
+          async handler(ctx, next) {
+            const userId = ctx.state.user.id;
+            next();
+          },
+        },
+      },
+    });
+  }
 
   async load() {}
 

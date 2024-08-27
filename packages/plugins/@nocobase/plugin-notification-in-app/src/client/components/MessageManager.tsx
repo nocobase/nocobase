@@ -7,13 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useState } from 'react';
-import { css } from '@emotion/css';
-import { MailOutlined } from '@ant-design/icons';
+import React, { useState, useEffect } from 'react';
 import { Badge, Button, ConfigProvider } from 'antd';
 import { Drawer } from 'antd';
 import { createStyles } from 'antd-style';
 import { Icon } from '@nocobase/client';
+import { useAPIClient } from '@nocobase/client';
 
 import MessageBox from './MessageBox';
 const useStyles = createStyles(({ token }) => {
@@ -27,7 +26,14 @@ const useStyles = createStyles(({ token }) => {
 
 export const MessageManager = (props) => {
   const [visible, setVisible] = useState(false);
+  const apiClient = useAPIClient();
+  const baseURL = apiClient.axios.defaults.baseURL;
   const { styles } = useStyles();
+  useEffect(() => {
+    const res = apiClient.request({
+      url: 'inAppMessages:sse',
+    });
+  }, [apiClient]);
   const onOpen = () => {
     setVisible(true);
   };
