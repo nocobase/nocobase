@@ -8,10 +8,22 @@ on:
   workflow_dispatch:
 
 jobs:
+  app-token:
+    uses: nocobase/nocobase/.github/workflows/get-nocobase-app-token.yml@main
+    secrets: inherit
   publish-npm:
     runs-on: ubuntu-latest
     container: node:18
+    needs: app-token
     steps:
+      - name: Decrypt app token
+        id: app-token
+        shell: bash
+        run: |
+          ENCRYPTED_SECRET=${{ needs.app-token.outputs.token }};
+          BINARY_ENCRYPTED_SECRET=$(echo -n "$ENCRYPTED_SECRET" | base64 --decode);
+          APP_TOKEN=$(echo -n "$BINARY_ENCRYPTED_SECRET" | openssl enc -aes-256-cbc -pbkdf2 -d -salt -k "${{ secrets.APP_TOKEN_ENCRYPTION_PASSWORD }}");
+          echo "token=$APP_TOKEN" >> $GITHUB_OUTPUT
       - name: Checkout
         uses: actions/checkout@v4
         with:
@@ -87,9 +99,15 @@ jobs:
           repository: nocobase/pro-plugins
           path: packages/pro-plugins
           ref: next
-          ssh-key: ${{ secrets.SUBMODULE_SSH_KEY }}
+          token: ${{ steps.app-token.outputs.token }}
+      - name: Clone pro repos
+        shell: bash
+        run: |
+          for repo in ${{ join(fromJSON(vars.PRO_PLUGIN_REPOS), ' ') }}
+          do
+          git clone -b next https://x-access-token:${{ steps.app-token.outputs.token }}@github.com/nocobase/$repo.git packages/pro-plugins/@nocobase/$repo
+          done
       - name: Build Pro plugins
-        continue-on-error: true
         run: |
           yarn config set registry https://registry.npmjs.org/
           yarn install
