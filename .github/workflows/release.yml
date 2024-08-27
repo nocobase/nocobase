@@ -81,7 +81,6 @@ jobs:
           git clone -b main https://x-access-token:${{ steps.app-token.outputs.token }}@github.com/nocobase/$repo.git packages/pro-plugins/@nocobase/$repo
           done
       - name: Build Pro plugins
-        continue-on-error: true
         run: |
           yarn config set registry https://registry.npmjs.org/
           yarn install
