@@ -18,10 +18,15 @@ import { QRCodeScanner } from './components/qrcode-scanner';
 import { workbenchBlockInitializerItem } from './workbenchBlockInitializerItem';
 import { workbenchBlockSettings } from './workbenchBlockSettings';
 import { workbenchConfigureActions } from './workbenchConfigureActions';
-
+import {
+  WorkbenchPopupActionSchemaInitializerItem,
+  workbenchActionSettingsPopup,
+} from './WorkbenchPopupActionSchemaInitializerItem';
+import { usePopupActionProps } from './WorkbenchPopupActionSchemaInitializerItem';
 export class PluginBlockWorkbenchClient extends Plugin {
   async load() {
     this.app.addComponents({ WorkbenchBlock, QRCodeScanner });
+    this.app.addScopes({ usePopupActionProps });
 
     // 新增工作台区块的设置器
     this.app.schemaSettingsManager.add(workbenchBlockSettings);
@@ -55,6 +60,12 @@ export class PluginBlockWorkbenchClient extends Plugin {
     this.app.schemaSettingsManager.add(workbenchActionSettingsScanQrCode);
     this.app.schemaInitializerManager.addItem('workbench:configureActions', `qrcode`, {
       Component: WorkbenchScanActionSchemaInitializerItem,
+    });
+
+    // 打开弹窗
+    this.app.schemaSettingsManager.add(workbenchActionSettingsPopup);
+    this.app.schemaInitializerManager.addItem('workbench:configureActions', `popup`, {
+      Component: WorkbenchPopupActionSchemaInitializerItem,
     });
   }
 }
