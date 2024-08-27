@@ -8,6 +8,8 @@
  */
 
 import { Plugin } from '@nocobase/server';
+import { COLLECTION_NAME } from '@nocobase/plugin-notification-manager/src/constant';
+import { inAppTypeName } from '../types';
 
 export class PluginNotificationInAppServer extends Plugin {
   async afterAdd() {}
@@ -30,7 +32,15 @@ export class PluginNotificationInAppServer extends Plugin {
     });
   }
 
-  async load() {}
+  async load() {
+    const channelsRepo = this.app.db.getRepository(COLLECTION_NAME.channels);
+    const channel = await channelsRepo.findOne({ filter: { notificationType: inAppTypeName } });
+    if (!channel) {
+      await channelsRepo.create({
+        values: { name: inAppTypeName, title: '站内信', notificationType: inAppTypeName, description: '站内信' },
+      });
+    }
+  }
 
   async install() {}
 

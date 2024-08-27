@@ -28,3 +28,25 @@ export interface Message {
 type MessageKeys = keyof Message;
 
 const a: MessageKeys = 'type';
+
+export const InAppMessagesDefinition = {
+  name: 'inappMessages',
+  fieldNameMap: {
+    id: 'id',
+    chatId: 'chatId',
+    senderId: 'senderId',
+    content: 'content',
+    status: 'status',
+  },
+};
+
+export const ChatsDefinition = {
+  name: 'inappChats',
+  fieldNameMap: {
+    id: 'id',
+    title: 'title',
+    lastMsgId: 'lastMsgId',
+  },
+};
+
+export const inAppTypeName = 'InApp';
