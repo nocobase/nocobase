@@ -86,7 +86,12 @@ const VariablesProvider = ({ children }) => {
       let current = mergeCtxWithLocalVariables(ctxRef.current, localVariables);
       const { fieldPath, dataSource, variableOption } = getFieldPath(variableName, _variableToCollectionName);
       let collectionName = fieldPath;
-      let variableCollectionName: string = variableOption.collectionName;
+
+      const { fieldPath: fieldPathOfVariable } = getFieldPath(variablePath, _variableToCollectionName);
+      const collectionNameOfVariable =
+        list.length === 1
+          ? variableOption.collectionName
+          : getCollectionJoinField(fieldPathOfVariable, dataSource)?.target;
 
       if (!(variableName in current)) {
         throw new Error(`VariablesProvider: ${variableName} is not found`);
@@ -96,6 +101,8 @@ const VariablesProvider = ({ children }) => {
         if (current == null) {
           return {
             value: current === undefined ? variableOption.defaultValue : current,
+            dataSource,
+            collectionName: collectionNameOfVariable,
           };
         }
 
@@ -169,21 +176,16 @@ const VariablesProvider = ({ children }) => {
           current = removeThroughCollectionFields(getValuesByPath(current, key), associationField);
         }
 
-        if (associationField?.target && index === list.length - 1) {
+        if (associationField?.target) {
           collectionName = associationField.target;
-          variableCollectionName = associationField.target;
-        } else if (list.length > 1) {
-          variableCollectionName = undefined;
         }
       }
 
       const _value = compile(_.isFunction(current) ? current() : current);
-      const value = _value === undefined ? variableOption.defaultValue : _value;
-
       return {
-        value,
-        collectionName: variableCollectionName,
+        value: _value === undefined ? variableOption.defaultValue : _value,
         dataSource,
+        collectionName: collectionNameOfVariable,
       };
     },
     [getCollectionJoinField],
@@ -252,9 +254,7 @@ const VariablesProvider = ({ children }) => {
       },
     ) => {
       if (!isVariable(str)) {
-        return {
-          value: str,
-        };
+        return str;
       }
 
       if (localVariables) {
@@ -262,11 +262,11 @@ const VariablesProvider = ({ children }) => {
       }
 
       const path = getPath(str);
-      const { value, ...context } = await getResult(path, localVariables as VariableOption[], options);
+      const result = await getResult(path, localVariables as VariableOption[], options);
 
       return {
-        value: uniq(filterEmptyValues(value)),
-        ...context,
+        ...result,
+        value: uniq(filterEmptyValues(result.value)),
       };
     },
     [getResult],

@@ -369,6 +369,25 @@ describe('useVariables', () => {
     });
   });
 
+  it('$user.hasManyField', async () => {
+    const { result } = renderHook(() => useVariables(), {
+      wrapper: Providers,
+    });
+
+    await waitFor(async () => {
+      expect(await result.current.parseVariable('{{ $user.hasManyField }}')).toEqual({
+        collectionName: 'test',
+        dataSource: 'main',
+        value: [
+          {
+            id: 0,
+            name: '$user.hasManyField',
+          },
+        ],
+      });
+    });
+  });
+
   it('$user.hasManyField.hasManyField.name', async () => {
     const { result } = renderHook(() => useVariables(), {
       wrapper: Providers,
