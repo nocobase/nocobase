@@ -23,6 +23,7 @@ export class PresetNocoBase extends Plugin {
     'field-sort',
     'verification',
     'users',
+    'user-data-sync',
     'acl',
     'field-china-region',
     'workflow',
