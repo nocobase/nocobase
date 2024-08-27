@@ -62,6 +62,14 @@ const useParseDefaultValue = () => {
       isSubMode(fieldSchema) ||
       (!record?.isNew && !isInAssignFieldValues)
     ) {
+      // fix https://github.com/nocobase/nocobase/issues/4868
+      // fix http://localhost:12000/admin/ugmnj2ycfgg/popups/1qlw5c38t3b/puid/dz42x7ffr7i/filterbytk/182
+      // to clear the default value of the field
+      if (fieldSchema.default) {
+        field.setInitialValue(null);
+        field.setValue?.(record?.data?.[fieldSchema.name]);
+      }
+
       return;
     }
 
