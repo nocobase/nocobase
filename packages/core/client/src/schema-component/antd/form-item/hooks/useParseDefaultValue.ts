@@ -14,7 +14,7 @@ import { getValuesByPath } from '@nocobase/utils/client';
 import _ from 'lodash';
 import { useCallback, useEffect } from 'react';
 import { useRecordIndex } from '../../../../../src/record-provider';
-import { useFormBlockType } from '../../../../block-provider/FormBlockProvider';
+import { useFormBlockContext } from '../../../../block-provider/FormBlockProvider';
 import { useCollection_deprecated } from '../../../../collection-manager';
 import { useCollectionRecord } from '../../../../data-source/collection-record/CollectionRecordProvider';
 import { useFlag } from '../../../../flag-provider';
@@ -40,7 +40,7 @@ const useParseDefaultValue = () => {
   const { getField } = useCollection_deprecated();
   const { isSpecialCase, setDefaultValue } = useSpecialCase();
   const index = useRecordIndex();
-  const { type } = useFormBlockType();
+  const { type, form } = useFormBlockContext();
 
   /**
    * name: 如 $user
@@ -60,7 +60,7 @@ const useParseDefaultValue = () => {
     // fix https://github.com/nocobase/nocobase/issues/4868
     // fix http://localhost:12000/admin/ugmnj2ycfgg/popups/1qlw5c38t3b/puid/dz42x7ffr7i/filterbytk/182
     // to clear the default value of the field
-    if (type === 'update' && fieldSchema.default) {
+    if (type === 'update' && fieldSchema.default && field.form === form) {
       field.setValue?.(record?.data?.[fieldSchema.name]);
     }
 
