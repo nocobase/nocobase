@@ -9,15 +9,15 @@
 
 import { RecursionField, observer, useFieldSchema } from '@formily/react';
 import {
+  CollectionContext,
+  DataSourceContext,
   DndContext,
-  SchemaComponentOptions,
   useDesignable,
   useSchemaInitializerRender,
   withDynamicSchemaProps,
 } from '@nocobase/client';
 import { Space } from 'antd';
 import React from 'react';
-import { WorkbenchAction } from './WorkbenchAction';
 
 const ConfigureActionsButton = observer(
   () => {
@@ -49,7 +49,9 @@ export const WorkbenchBlock: any = withDynamicSchemaProps(
   (props) => {
     return (
       <div>
-        <SchemaComponentOptions components={{ WorkbenchAction }}>{props.children}</SchemaComponentOptions>
+        <DataSourceContext.Provider value={undefined}>
+          <CollectionContext.Provider value={undefined}>{props.children}</CollectionContext.Provider>
+        </DataSourceContext.Provider>
       </div>
     );
   },
