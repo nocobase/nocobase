@@ -172,7 +172,7 @@ export function WorkbenchPopupActionSchemaInitializerItem(props) {
               },
             },
           },
-          // [CONTEXT_SCHEMA_KEY]: getPopupContext(),
+          [CONTEXT_SCHEMA_KEY]: getPopupContext(),
         });
       }}
     />

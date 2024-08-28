@@ -22,6 +22,11 @@ import {
   WorkbenchPopupActionSchemaInitializerItem,
   workbenchActionSettingsPopup,
 } from './WorkbenchPopupActionSchemaInitializerItem';
+
+import {
+  WorkbenchCustomRequestActionSchemaInitializerItem,
+  workbenchActionSettingsCustomRequest,
+} from './WorkbenchCustomRequestActionSchemaInitializerItem';
 export class PluginBlockWorkbenchClient extends Plugin {
   async load() {
     this.app.addComponents({ WorkbenchBlock, QRCodeScanner });
@@ -64,6 +69,11 @@ export class PluginBlockWorkbenchClient extends Plugin {
     this.app.schemaSettingsManager.add(workbenchActionSettingsPopup);
     this.app.schemaInitializerManager.addItem('workbench:configureActions', `popup`, {
       Component: WorkbenchPopupActionSchemaInitializerItem,
+    });
+    // 自定义请求
+    this.app.schemaSettingsManager.add(workbenchActionSettingsCustomRequest);
+    this.app.schemaInitializerManager.addItem('workbench:configureActions', `customRequest`, {
+      Component: WorkbenchCustomRequestActionSchemaInitializerItem,
     });
   }
 }
