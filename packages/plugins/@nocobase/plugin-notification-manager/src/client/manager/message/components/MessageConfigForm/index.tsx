@@ -66,6 +66,17 @@ export const MessageConfigForm = observer<{ variableOptions: any }>(
             },
           },
         },
+        receiverType: {
+          type: 'string',
+          title: '{{t("Receiver Type")}}',
+          required: true,
+          'x-decorator': 'FormItem',
+          'x-component': 'Radio.Group',
+          enum: [
+            { label: '{{t("Manual input")}}', value: 'manual' },
+            { label: '{{t("Select user")}}', value: 'input' },
+          ],
+        },
         receivers: {
           type: 'array',
           name: 'receivers',
