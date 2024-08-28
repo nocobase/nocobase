@@ -47,7 +47,14 @@ export interface VariablesContextType {
       /** do not request when the association field is empty */
       doNotRequest?: boolean;
     },
-  ) => Promise<any>;
+  ) => Promise<{
+    value: any;
+    /**
+     * 当前变量所对应的数据表的名称，如果为空，则表示当前变量是一个普通类型的变量（字符串、数字等）
+     */
+    collectionName?: string;
+    dataSource?: string;
+  }>;
   /**
    * 注册变量
    * @param variableOption 新变量的配置

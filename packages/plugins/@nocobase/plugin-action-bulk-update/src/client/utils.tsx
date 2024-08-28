@@ -64,7 +64,7 @@ export const useCustomizeBulkUpdateActionProps = () => {
         }
 
         if (isVariable(value)) {
-          const result = await variables?.parseVariable(value, localVariables);
+          const result = await variables?.parseVariable(value, localVariables).then(({ value }) => value);
           if (result) {
             assignedValues[key] = transformVariableValue(result, { targetCollectionField: collectionField });
           }
