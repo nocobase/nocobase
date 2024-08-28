@@ -6,7 +6,7 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
-
+import PluginNotificationManagerServer from './plugin';
 export type WriteLogOptions = {
   receiver: string;
   status: 'success' | 'fail';
@@ -21,6 +21,11 @@ export type SendFnType = (args: {
   channel: IChannel;
 }) => Promise<Array<{ receiver: string; content: any; status: 'success' | 'fail'; reason?: string }>>;
 export abstract class NotificationServerBase {
+  public pluginCtx: PluginNotificationManagerServer;
+
+  setPluginCtx({ pluginCtx }: { pluginCtx: PluginNotificationManagerServer }) {
+    this.pluginCtx = pluginCtx;
+  }
   abstract send: SendFnType;
 }
 
@@ -33,6 +38,7 @@ export interface SendOptions {
   };
   receivers: string[];
   triggerFrom: string;
+  channelId: string;
 }
 
 export interface IChannel {
@@ -41,5 +47,4 @@ export interface IChannel {
   notificationType: string;
 }
 
-// export type NotificationServer = new () => NotificationServerBase;
 export type NotificationServer = NotificationServerBase;

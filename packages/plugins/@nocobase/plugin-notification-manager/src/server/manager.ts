@@ -13,7 +13,7 @@ import type { NotificationServer } from './types';
 import { SendOptions, IChannel, WriteLogOptions } from './types';
 import { COLLECTION_NAME } from '../constant';
 interface NotificatonType {
-  Server: new () => NotificationServer;
+  server: NotificationServer;
 }
 
 export default class NotificationManager {
@@ -23,8 +23,10 @@ export default class NotificationManager {
   constructor({ plugin }: { plugin: PluginNotificationManagerServer }) {
     this.plugin = plugin;
   }
+
   registerTypes(type: string, config: NotificatonType) {
-    const server = new config.Server();
+    const server = config.server;
+    config.server.setPluginCtx({ pluginCtx: this.plugin });
     this.notificationTypes.register(type, { server });
   }
   createSendingRecord = async (options: WriteLogOptions) => {
