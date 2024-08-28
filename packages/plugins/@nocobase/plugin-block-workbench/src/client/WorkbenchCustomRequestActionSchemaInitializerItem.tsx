@@ -17,7 +17,7 @@ import {
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { ModalActionSchemaInitializerItem } from './ModalActionSchemaInitializerItem';
-
+import { WorkbenchAction } from './WorkbenchAction';
 export const workbenchActionSettingsCustomRequest = new SchemaSettings({
   name: 'workbench:actionSettings:customRequest',
   items: [
@@ -52,7 +52,7 @@ export function WorkbenchCustomRequestActionSchemaInitializerItem(props) {
   const { t } = useTranslation();
   return (
     <ModalActionSchemaInitializerItem
-      title={itemConfig.title}
+      title={t('Custom request', { ns: 'block-workbench' })}
       modalSchema={{
         title: t('Add custom request'),
         properties: {
@@ -81,10 +81,15 @@ export function WorkbenchCustomRequestActionSchemaInitializerItem(props) {
         insert({
           type: 'void',
           title: values.title,
-          'x-component': 'CustomRequestAction',
+          'x-component': 'WorkbenchAction',
+          'x-component-props': {
+            icon: values.icon,
+            iconColor: values.iconColor,
+            targetComponent: 'CustomRequestAction',
+          },
           'x-action': 'customize:form:request',
           'x-toolbar': 'ActionSchemaToolbar',
-          'x-settings': 'workbench:actionSettings:customRequest',
+          'x-settings': 'actionSettings:customRequest',
           'x-decorator': 'CustomRequestAction.Decorator',
           'x-action-settings': {
             onSuccess: {

@@ -101,8 +101,9 @@ export function WorkbenchPopupActionSchemaInitializerItem(props) {
         insert({
           type: 'void',
           title: values.title,
+          'x-action': 'customize:popup',
           'x-toolbar': 'ActionSchemaToolbar',
-          'x-settings': 'actionSettings:popup',
+          'x-settings': 'workbench:actionSettings:popup',
           'x-component': 'WorkbenchAction',
           'x-component-props': {
             icon: values.icon,

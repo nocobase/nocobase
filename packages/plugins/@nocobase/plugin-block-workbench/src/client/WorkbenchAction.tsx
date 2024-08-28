@@ -8,7 +8,7 @@
  */
 
 import { useFieldSchema } from '@formily/react';
-import { Action, Icon, withDynamicSchemaProps } from '@nocobase/client';
+import { Action, Icon, useComponent, withDynamicSchemaProps } from '@nocobase/client';
 import { Avatar } from 'antd';
 import { createStyles } from 'antd-style';
 import React from 'react';
@@ -43,5 +43,6 @@ function Button() {
 export const WorkbenchAction = withDynamicSchemaProps((props) => {
   const { className, ...others } = props;
   const { styles, cx } = useStyles();
-  return <Action className={cx(className, styles.action)} {...others} icon={null} title={<Button />} />;
+  const Component = useComponent(props?.targetComponent) || Action;
+  return <Component className={cx(className, styles.action)} {...others} icon={null} title={<Button />} />;
 });

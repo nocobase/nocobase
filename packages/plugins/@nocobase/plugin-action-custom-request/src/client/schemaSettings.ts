@@ -38,12 +38,16 @@ export const customizeCustomRequestActionSettings = new SchemaSettings({
       name: 'linkageRules',
       Component: SchemaSettingsLinkageRules,
       useComponentProps() {
-        const { name } = useCollection();
+        const { name } = useCollection() || {};
         const { linkageRulesProps } = useSchemaToolbar();
         return {
           ...linkageRulesProps,
           collectionName: name,
         };
+      },
+      useVisible() {
+        const { name } = useCollection() || {};
+        return !!name;
       },
     },
     {
