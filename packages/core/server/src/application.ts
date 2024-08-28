@@ -218,6 +218,12 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
    * @internal
    */
   public perfHistograms = new Map<string, RecordableHistogram>();
+  /**
+   * @internal
+   */
+  public pubSubManager: PubSubManager;
+  public syncMessageManager: SyncMessageManager;
+  public requestLogger: Logger;
   protected plugins = new Map<string, Plugin>();
   protected _appSupervisor: AppSupervisor = AppSupervisor.getInstance();
   protected _started: Date | null = null;
@@ -232,9 +238,6 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   /**
    * @internal
    */
-  public pubSubManager: PubSubManager;
-  public syncMessageManager: SyncMessageManager;
-  public requestLogger: Logger;
   private sqlLogger: Logger;
   protected _logger: SystemLogger;
 
