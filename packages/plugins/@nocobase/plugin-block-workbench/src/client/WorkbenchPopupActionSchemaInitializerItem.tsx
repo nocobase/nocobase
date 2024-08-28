@@ -9,37 +9,14 @@
 
 import {
   ButtonEditor,
-  SchemaSettings,
   SchemaSettingOpenModeSchemaItems,
-  useSchemaInitializer,
-  useSchemaInitializerItem,
+  SchemaSettings,
   useOpenModeContext,
-  usePopupUtils,
-  usePopupSettings,
-  encodePathValue,
-  // ActionContext,
-  storePopupContext,
-  // useCollectionManager,
-  // useNavigateNoUpdate,
-  CollectionRecord,
-  // getPopupPathFromParams,
-  withSearchParams,
-  useDataBlockRequest,
-  // CollectionRecord,
-  useDataSourceKey,
-  // useCollectionParentRecord,
-  // useCollection,
-  // usePopupContextInActionOrAssociationField,
-  CONTEXT_SCHEMA_KEY,
+  useSchemaInitializer,
 } from '@nocobase/client';
-import { uid } from '@nocobase/utils';
-import { last } from 'lodash';
-import { useNavigate } from 'react-router-dom';
-import React, { useContext, useCallback } from 'react';
-import { useFieldSchema } from '@formily/react';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { ModalActionSchemaInitializerItem } from './ModalActionSchemaInitializerItem';
-import { ConsoleSqlOutlined } from '@ant-design/icons';
 
 export const workbenchActionSettingsPopup = new SchemaSettings({
   name: 'workbench:actionSettings:popup',
@@ -80,10 +57,6 @@ export function WorkbenchPopupActionSchemaInitializerItem(props) {
   // 调用插入功能
   const { insert } = useSchemaInitializer();
   const { t } = useTranslation();
-  const { getPopupContext } = usePopupUtils();
-  const fieldSchema = useFieldSchema();
-  const currentPopupUidWithoutOpened = fieldSchema?.['x-uid'];
-  const navigate = useNavigate();
 
   return (
     <ModalActionSchemaInitializerItem
@@ -172,7 +145,6 @@ export function WorkbenchPopupActionSchemaInitializerItem(props) {
               },
             },
           },
-          // [CONTEXT_SCHEMA_KEY]: getPopupContext(),
         });
       }}
     />
