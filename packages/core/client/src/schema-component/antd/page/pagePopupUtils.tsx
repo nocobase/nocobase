@@ -232,7 +232,7 @@ export const usePopupUtils = () => {
         parentRecord: parentRecordData ? new CollectionRecord({ isNew: false, data: parentRecordData }) : parentRecord,
         service,
         dataSource: dataSourceKey,
-        collection: collection.name,
+        collection: collection?.name,
         association,
         sourceId,
       });
