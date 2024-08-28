@@ -79,9 +79,6 @@ const InternalAssociationSelect = observer(
         //支持深层次子表单
         onFieldInputValueChange('*', (fieldPath: any) => {
           const linkageFields = filterAnalyses(field.componentProps?.service?.params?.filter) || [];
-          console.log(linkageFields);
-          console.log(field.componentProps?.service?.params?.filter);
-          console.log(linkageFields.includes(fieldPath?.props?.name), field.value);
           if (linkageFields.includes(fieldPath?.props?.name) && field.value) {
             field.setValue(field.initialValue);
             setInnerValue(field.initialValue);
