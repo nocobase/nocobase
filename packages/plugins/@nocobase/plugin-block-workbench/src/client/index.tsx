@@ -22,11 +22,9 @@ import {
   WorkbenchPopupActionSchemaInitializerItem,
   workbenchActionSettingsPopup,
 } from './WorkbenchPopupActionSchemaInitializerItem';
-import { usePopupActionProps } from './WorkbenchPopupActionSchemaInitializerItem';
 export class PluginBlockWorkbenchClient extends Plugin {
   async load() {
     this.app.addComponents({ WorkbenchBlock, QRCodeScanner });
-    this.app.addScopes({ usePopupActionProps });
 
     // 新增工作台区块的设置器
     this.app.schemaSettingsManager.add(workbenchBlockSettings);

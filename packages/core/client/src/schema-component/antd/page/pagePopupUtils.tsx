@@ -186,7 +186,7 @@ export const usePopupUtils = () => {
   const getPopupContext = useCallback(() => {
     const context = {
       dataSource: dataSourceKey,
-      collection: association ? undefined : collection.name,
+      collection: association ? undefined : collection?.name,
       association,
     };
 
