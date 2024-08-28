@@ -123,7 +123,7 @@ export class AuditManager {
   calculatePriority(resouceName: string, actionName: string, options?: Action) {
     let priority = 0;
 
-    if (options && options !== 'string') {
+    if (options && typeof options !== 'string') {
       const { getMetaData } = options;
       if (getMetaData) {
         priority = priority + 100;
@@ -238,9 +238,9 @@ export class AuditManager {
 
   // 中间件
   middleware() {
-    return async (ctx, next) => {
+    return async (ctx: any, next: any) => {
       // console.log('middleware', ctx)
-      const metadata = {};
+      let metadata = {};
       let status = 0;
       try {
         await next();
@@ -248,8 +248,10 @@ export class AuditManager {
       } catch (err) {
         // 操作失败的时候
         // HTTP相应状态码和error message 放到 metadata
-        metadata.status = ctx.status;
-        metadata.errMsg = err.message;
+        metadata = {
+          status: ctx.status,
+          errMsg: err.message,
+        };
       } finally {
         this.output(ctx, status, metadata);
       }
