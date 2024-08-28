@@ -17,8 +17,8 @@ export type WriteLogOptions = {
   channelTitle: string;
 };
 
-export type SendFnType = (args: {
-  message: SendOptions;
+export type SendFnType<Message = {}> = (args: {
+  message: Message & SendOptions;
   channel: IChannel;
 }) => Promise<{ receivers: string[]; content: any; status: 'success' | 'fail'; reason?: string }>;
 export abstract class NotificationServerBase {
@@ -31,12 +31,6 @@ export abstract class NotificationServerBase {
 }
 
 export interface SendOptions {
-  channelId: string;
-  content: {
-    body: string;
-    type: 'html' | 'string';
-    config: Record<string, any>;
-  };
   receivers: string[];
   triggerFrom: string;
 }

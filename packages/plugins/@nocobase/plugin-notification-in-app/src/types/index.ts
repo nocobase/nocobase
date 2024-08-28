@@ -7,10 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export interface Contact {
+export interface Chat {
   id: string;
-  userid: string;
-  name: string;
+  userId: string;
+  title: string;
+  lastMsgId: string;
+  unreadMsgCnt: number;
   avatar: string;
   lastMessage: string | Record<string, any>;
   lastMessageTime: string;
@@ -19,15 +21,17 @@ export interface Contact {
 
 export interface Message {
   id: string;
-  userid: string;
-  message: string | Record<string, any>;
-  time: string;
-  type: string;
+  chatId: string;
+  content: string;
+  receiveTime: string;
+  status: 'read' | 'unread';
 }
 
-type MessageKeys = keyof Message;
-
-const a: MessageKeys = 'type';
+export interface InAppMessageFormValues {
+  content: string;
+  senderName: string;
+  senderId: string;
+}
 
 export const InAppMessagesDefinition = {
   name: 'inappMessages',

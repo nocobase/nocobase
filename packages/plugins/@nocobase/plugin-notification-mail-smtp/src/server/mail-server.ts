@@ -8,7 +8,7 @@
  */
 
 import nodemailer, { Transporter } from 'nodemailer';
-import NotificationsServerPlugin, { SendFnType, NotificationServerBase } from '@nocobase/plugin-notification-manager';
+import { SendFnType, NotificationServerBase } from '@nocobase/plugin-notification-manager';
 export class MailServer extends NotificationServerBase {
   transpoter: Transporter;
   constructor() {
