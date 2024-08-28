@@ -8,7 +8,6 @@
   "dependencies": {
     "@nocobase/logger": "1.4.0-alpha",
     "@nocobase/utils": "1.4.0-alpha",
-    "async-mutex": "^0.3.2",
     "chalk": "^4.1.1",
     "cron-parser": "4.4.0",
     "dayjs": "^1.11.8",

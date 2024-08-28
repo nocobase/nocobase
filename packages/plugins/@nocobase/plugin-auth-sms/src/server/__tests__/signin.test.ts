@@ -30,7 +30,7 @@ describe('signin', () => {
 
   beforeAll(async () => {
     app = await createMockServer({
-      plugins: ['users', 'auth', 'verification', 'acl', 'auth-sms', 'data-source-manager'],
+      plugins: ['field-sort', 'users', 'auth', 'verification', 'acl', 'auth-sms', 'data-source-manager'],
     });
     db = app.db;
     agent = app.agent();

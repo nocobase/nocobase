@@ -10,7 +10,6 @@
 import { Filter, InheritedCollection, UniqueConstraintError } from '@nocobase/database';
 import PluginErrorHandler from '@nocobase/plugin-error-handler';
 import { Plugin } from '@nocobase/server';
-import { Mutex } from 'async-mutex';
 import lodash from 'lodash';
 import path from 'path';
 import * as process from 'process';
@@ -315,9 +314,9 @@ export class PluginDataSourceMainServer extends Plugin {
     this.app.db.on('fields.beforeDestroy', beforeDestoryField(this.app.db));
     this.app.db.on('fields.beforeDestroy', beforeDestroyForeignKey(this.app.db));
 
-    const mutex = new Mutex();
     this.app.db.on('fields.beforeDestroy', async (model: FieldModel, options) => {
-      await mutex.runExclusive(async () => {
+      const lockKey = `${this.name}:fields.beforeDestroy:${model.get('collectionName')}`;
+      await this.app.lockManager.runExclusive(lockKey, async () => {
         await model.remove(options);
 
         this.sendSyncMessage(

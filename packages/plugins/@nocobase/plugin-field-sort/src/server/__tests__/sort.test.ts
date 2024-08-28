@@ -7,24 +7,24 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Database } from '../../database';
-import { mockDatabase } from '../';
-import { SortField } from '../../fields';
+import { Database } from '@nocobase/database';
+import { createMockServer, MockServer } from '@nocobase/test';
+
+import Plugin from '..';
 
 describe('string field', () => {
+  let app: MockServer;
   let db: Database;
 
   beforeEach(async () => {
-    db = mockDatabase();
-    await db.clean({ drop: true });
-
-    db.registerFieldTypes({
-      sort: SortField,
+    app = await createMockServer({
+      plugins: [Plugin, 'data-source-main', 'error-handler'],
     });
+    db = app.db;
   });
 
   afterEach(async () => {
-    await db.close();
+    await app.destroy();
   });
 
   it('should init with camelCase scope key', async () => {

@@ -18,7 +18,7 @@ describe('AuthModel', () => {
 
   beforeEach(async () => {
     app = await createMockServer({
-      plugins: ['auth', 'users'],
+      plugins: ['field-sort', 'auth', 'users'],
     });
     db = app.db;
     repo = db.getRepository('authenticators');

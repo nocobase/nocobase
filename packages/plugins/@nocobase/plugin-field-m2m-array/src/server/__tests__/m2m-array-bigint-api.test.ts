@@ -17,7 +17,7 @@ describe('m2m array api, bigInt targetKey', () => {
 
   beforeEach(async () => {
     app = await createMockServer({
-      plugins: ['field-m2m-array', 'data-source-manager', 'data-source-main', 'error-handler'],
+      plugins: ['field-m2m-array', 'data-source-manager', 'field-sort', 'data-source-main', 'error-handler'],
     });
     db = app.db;
     await db.getRepository('collections').create({

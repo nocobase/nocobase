@@ -17,7 +17,7 @@ describe('models', () => {
 
   beforeEach(async () => {
     app = await createMockServer({
-      plugins: ['auth', 'users'],
+      plugins: ['field-sort', 'auth', 'users'],
     });
     db = app.db;
   });

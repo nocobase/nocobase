@@ -10,13 +10,13 @@
 import { Context, Next } from '@nocobase/actions';
 import { Repository } from '@nocobase/database';
 import XLSX from 'xlsx';
-import { XlsxImporter } from '../services/xlsx-importer';
 import { Mutex } from 'async-mutex';
+import { XlsxImporter } from '../services/xlsx-importer';
 import { DataSource } from '@nocobase/data-source-manager';
 
-const mutex = new Mutex();
-
 const IMPORT_LIMIT_COUNT = 2000;
+
+const mutex = new Mutex();
 
 async function importXlsxAction(ctx: Context, next: Next) {
   let columns = (ctx.request.body as any).columns as any[];
