@@ -95,7 +95,18 @@ const useParseDefaultValue = () => {
           }
         }
 
-        const value = transformVariableValue(await variables.parseVariable(fieldSchema.default, localVariables), {
+        const { value: parsedValue, collectionName: collectionNameOfVariable } = await variables.parseVariable(
+          fieldSchema.default,
+          localVariables,
+        );
+
+        // fix https://tasks.aliyun.nocobase.com/admin/ugmnj2ycfgg/popups/1qlw5c38t3b/puid/dz42x7ffr7i/filterbytk/199
+        if (collectionField.target && collectionField.target !== collectionNameOfVariable) {
+          field.loading = false;
+          return;
+        }
+
+        const value = transformVariableValue(parsedValue, {
           targetCollectionField: collectionField,
         });
 
