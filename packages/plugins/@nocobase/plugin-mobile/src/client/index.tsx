@@ -179,22 +179,26 @@ export class PluginMobileClient extends Plugin {
       Component: 'MobileHomePage',
     });
 
-    // 跳转到主应用的登录页
+    // redirect to main app signin page
+    // e.g. /m/signin => /signin
     this.mobileRouter.add('signin', {
       path: '/signin',
       Component: () => {
         window.location.href = window.location.href
-          .replace(this.mobilePath, '')
+          .replace(this.mobilePath + '/', '/')
           .replace('redirect=', `redirect=${this.mobilePath}`);
         return null;
       },
     });
 
-    // 跳转到主应用的页面
+    // redirect to main app admin page
+    // e.g. /m/admin/xxx => /admin/xxx
     this.mobileRouter.add('admin', {
       path: `/admin/*`,
       Component: () => {
-        window.location.replace(window.location.href.replace(this.mobilePath, ''));
+        if (window.location.pathname.startsWith(this.mobilePath + '/')) {
+          window.location.replace(window.location.href.replace(this.mobilePath + '/', '/'));
+        }
         return null;
       },
     });

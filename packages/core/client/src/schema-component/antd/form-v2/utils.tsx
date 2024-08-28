@@ -156,14 +156,14 @@ export async function replaceVariables(
   }
 
   const waitForParsing = value.match(REGEX_OF_VARIABLE_IN_EXPRESSION)?.map(async (item) => {
-    const result = await variables.parseVariable(item, localVariables);
+    const { value: parsedValue } = await variables.parseVariable(item, localVariables);
 
     // 在开头加 `_` 是为了保证 id 不能以数字开头，否则在解析表达式的时候（不是解析变量）会报错
     const id = `_${uid()}`;
 
-    scope[id] = result;
+    scope[id] = parsedValue;
     store[item] = id;
-    return result;
+    return parsedValue;
   });
 
   if (waitForParsing) {
