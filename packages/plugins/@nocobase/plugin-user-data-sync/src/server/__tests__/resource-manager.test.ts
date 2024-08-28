@@ -18,7 +18,7 @@ describe('user-data-resource-manager', () => {
 
   beforeEach(async () => {
     app = await createMockServer({
-      plugins: ['user-data-sync'],
+      plugins: ['field-sort', 'user-data-sync'],
     });
     db = app.db;
     resourceManager = new UserDataResourceManager();
