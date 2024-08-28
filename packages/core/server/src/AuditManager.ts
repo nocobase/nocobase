@@ -9,7 +9,7 @@
 
 import { Context } from '@nocobase/actions';
 
-interface AuditLog {
+export interface AuditLog {
   uuid: string;
   dataSource: string;
   resource: string;
@@ -27,7 +27,7 @@ interface AuditLog {
 }
 
 export interface AuditLogger {
-  log(auditLog: AuditLog, ctx): void;
+  log(auditLog: AuditLog): Promise<void>;
 }
 
 type Action =
@@ -69,7 +69,7 @@ export class AuditManager {
    *  { name: 'auth:signIn', getMetaData}
    * ])
    *
-   * 当注册的接口有重叠是，颗粒度洗的注册方法优先级更高 ？怎么进行判断？
+   * 当注册的接口有重叠是，颗粒度细的注册方法优先级更高 ？怎么进行判断？
    * registerActions(['create']);
    * registerAction([{ name: 'xxx:create', getMetaData }]); // 采用这个
    */
@@ -90,15 +90,57 @@ export class AuditManager {
   // registerAction('pm:update')
   // registerAction('create', { getMetaData })
   registerAction(actionName: string, options?: Action) {
+    const { actionName: name, resourceName } = this.formatActionAndResource(actionName);
+
+    if (this.resources.has(name)) {
+      const preResourceMap: Map<string, Action> = this.resources.get(name);
+      const preResouceName: string = Object.keys(preResourceMap)[0];
+      const preOptions: Action = preResourceMap.get(preResouceName);
+      const prePriority = this.calculatePriority(preResouceName, name, preOptions);
+      const priority = this.calculatePriority(resourceName, name, options);
+
+      if (prePriority < priority) {
+        this.setResource(name, resourceName, options);
+      }
+    } else {
+      this.setResource(name, resourceName, options);
+    }
+
+    console.log('register', this.resources);
+  }
+
+  setResource(actionName: string, resouceName: string, options?: Action) {
     const resourceMap = new Map<string, Action>();
-    const { actionName: name, resouceName } = this.formatActionAndResource(actionName);
     if (options && typeof options !== 'string') {
       const { getMetaData } = options;
-      resourceMap.set(resouceName, { name: name, getMetaData: getMetaData });
+      resourceMap.set(resouceName, { name: actionName, getMetaData: getMetaData });
     } else {
-      resourceMap.set(resouceName, name);
+      resourceMap.set(resouceName, actionName);
     }
-    this.resources.set(name, resourceMap);
+    this.resources.set(actionName, resourceMap);
+  }
+
+  calculatePriority(resouceName: string, actionName: string, options?: Action) {
+    let priority = 0;
+
+    if (options && options !== 'string') {
+      const { getMetaData } = options;
+      if (getMetaData) {
+        priority = priority + 100;
+      }
+    }
+
+    if (resouceName === '*') {
+      priority = priority + 25;
+    } else {
+      priority = priority + 50;
+    }
+
+    if (actionName) {
+      priority = priority + 1;
+    }
+
+    return priority;
   }
 
   formatActionAndResource(actionName: string) {
@@ -106,17 +148,16 @@ export class AuditManager {
       const names = actionName.split(':');
       return {
         actionName: names[1],
-        resouceName: names[0],
+        resourceName: names[0],
       };
     }
 
     return {
       actionName: actionName,
-      resouceName: '*',
+      resourceName: '*',
     };
   }
 
-  // 获取action
   getAction(action: string, resource?: string) {
     const act: Map<string, Action> = this.resources.get(action);
     if (!act) return null;
@@ -172,8 +213,7 @@ export class AuditManager {
     // 1. 从ctx.action 获取 resourceName, actionName,
     const { resourceName, actionName } = ctx.action;
     // 2. 判断操作是否需要审计
-    const action: Action = this.getAction(resourceName, actionName);
-    console.log('resource===', action, resourceName, actionName);
+    const action: Action = this.getAction(actionName, resourceName);
     if (!action) {
       return;
     }
@@ -193,7 +233,7 @@ export class AuditManager {
       auditLog.metadata = JSON.stringify(metadata);
     }
 
-    this.logger.log(auditLog, ctx);
+    this.logger.log(auditLog);
   }
 
   // 中间件
