@@ -48,13 +48,6 @@ jobs:
           path: packages/pro-plugins
           fetch-depth: 0
           token: ${{ steps.app-token.outputs.token }}
-      - name: Clone pro repos
-        shell: bash
-        run: |
-          for repo in ${{ join(fromJSON(vars.PRO_PLUGIN_REPOS), ' ') }}
-          do
-          git clone -b main https://x-access-token:${{ steps.app-token.outputs.token }}@github.com/nocobase/$repo.git packages/pro-plugins/@nocobase/$repo
-          done
       - run: |
           cd packages/pro-plugins &&
           if git show-ref --quiet refs/remotes/origin/${{ github.head_ref || github.ref_name }}; then
@@ -66,6 +59,13 @@ jobs:
               git checkout main
             fi
           fi
+      - name: Clone pro repos
+        shell: bash
+        run: |
+          for repo in ${{ join(fromJSON(vars.PRO_PLUGIN_REPOS), ' ') }}
+          do
+          git clone -b main https://x-access-token:${{ steps.app-token.outputs.token }}@github.com/nocobase/$repo.git packages/pro-plugins/@nocobase/$repo
+          done
       - run: |
           for repo in ${{ join(fromJSON(vars.PRO_PLUGIN_REPOS), ' ') }}
           do
