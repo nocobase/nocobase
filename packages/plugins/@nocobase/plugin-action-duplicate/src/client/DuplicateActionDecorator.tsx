@@ -7,8 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { useFormBlockProps } from '../../../../../block-provider/FormBlockProvider';
+import { ACLActionProvider } from '@nocobase/client';
+import React, { FC } from 'react';
 
-export function useEditFormBlockProps() {
-  return useFormBlockProps();
-}
+export const DuplicateActionDecorator: FC = (props) => {
+  return <ACLActionProvider>{props.children}</ACLActionProvider>;
+};

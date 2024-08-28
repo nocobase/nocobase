@@ -7,13 +7,31 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { useCallback } from 'react';
+import React, { FC, useCallback, useMemo } from 'react';
+
+const PopupSettingsContext = React.createContext({
+  enableURL: true,
+});
+
+export const PopupSettingsProvider: FC<{
+  /**
+   * @default true
+   */
+  enableURL?: boolean;
+}> = (props) => {
+  const { enableURL = true } = props;
+  const value = useMemo(() => ({ enableURL }), [enableURL]);
+
+  return <PopupSettingsContext.Provider value={value}>{props.children}</PopupSettingsContext.Provider>;
+};
 
 /**
  * Hook for accessing the popup settings.
  * @returns The popup settings.
  */
 export const usePopupSettings = () => {
+  const { enableURL } = React.useContext(PopupSettingsContext);
+
   const isPopupVisibleControlledByURL = useCallback(() => {
     const pathname = window.location.pathname;
     const hash = window.location.hash;
@@ -21,8 +39,8 @@ export const usePopupSettings = () => {
     const isNewMobileMode = pathname?.includes('/m/');
     const isPCMode = pathname?.includes('/admin/');
 
-    return (isPCMode || isNewMobileMode) && !isOldMobileMode;
-  }, []);
+    return (isPCMode || isNewMobileMode) && !isOldMobileMode && enableURL;
+  }, [enableURL]);
 
   return {
     /** 弹窗窗口的显隐是否由 URL 控制 */

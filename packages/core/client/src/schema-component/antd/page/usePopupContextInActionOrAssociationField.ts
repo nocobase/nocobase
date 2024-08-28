@@ -29,18 +29,19 @@ export const usePopupContextInActionOrAssociationField = () => {
   const { dn } = useDesignable();
 
   const updatePopupContext = useCallback(
-    (context: PopupContext) => {
+    (context: PopupContext, customSchema?: ISchema) => {
+      customSchema = customSchema || fieldSchema;
       context = _.omitBy(context, _.isNil) as PopupContext;
 
-      if (_.isEqual(context, getPopupContextFromActionOrAssociationFieldSchema(fieldSchema))) {
+      if (_.isEqual(context, getPopupContextFromActionOrAssociationFieldSchema(customSchema))) {
         return;
       }
 
-      fieldSchema[CONTEXT_SCHEMA_KEY] = context;
+      customSchema[CONTEXT_SCHEMA_KEY] = context;
 
       return dn.emit('patch', {
         schema: {
-          'x-uid': fieldSchema['x-uid'],
+          'x-uid': customSchema['x-uid'],
           [CONTEXT_SCHEMA_KEY]: context,
         },
       });
