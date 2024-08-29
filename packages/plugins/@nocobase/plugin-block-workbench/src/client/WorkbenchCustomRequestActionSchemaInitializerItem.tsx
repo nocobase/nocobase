@@ -17,7 +17,6 @@ import {
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { ModalActionSchemaInitializerItem } from './ModalActionSchemaInitializerItem';
-import { WorkbenchAction } from './WorkbenchAction';
 export const workbenchActionSettingsCustomRequest = new SchemaSettings({
   name: 'workbench:actionSettings:customRequest',
   items: [

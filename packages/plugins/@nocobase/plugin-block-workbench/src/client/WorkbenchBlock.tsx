@@ -16,7 +16,7 @@ import {
   useSchemaInitializerRender,
   withDynamicSchemaProps,
 } from '@nocobase/client';
-import { Space } from 'antd';
+import { Space, List } from 'antd';
 import React from 'react';
 
 const ConfigureActionsButton = observer(
@@ -31,15 +31,25 @@ const ConfigureActionsButton = observer(
 const InternalIcons = () => {
   const fieldSchema = useFieldSchema();
   const { designable } = useDesignable();
-
+  const { layout = 'grid' } = fieldSchema.parent['x-component-props'] || {};
   return (
     <div style={{ marginBottom: designable ? '1rem' : 0 }}>
       <DndContext>
-        <Space wrap>
-          {fieldSchema.mapProperties((s, key) => (
-            <RecursionField name={key} schema={s} key={key} />
-          ))}
-        </Space>
+        {layout === 'grid' ? (
+          <Space wrap>
+            {fieldSchema.mapProperties((s, key) => (
+              <RecursionField name={key} schema={s} key={key} />
+            ))}
+          </Space>
+        ) : (
+          <List itemLayout="horizontal">
+            {fieldSchema.mapProperties((s, key) => (
+              <List.Item key={key}>
+                <RecursionField name={key} schema={s} key={key} />
+              </List.Item>
+            ))}
+          </List>
+        )}
       </DndContext>
     </div>
   );
@@ -47,6 +57,7 @@ const InternalIcons = () => {
 
 export const WorkbenchBlock: any = withDynamicSchemaProps(
   (props) => {
+    const fieldSchema = useFieldSchema();
     return (
       <div>
         <DataSourceContext.Provider value={undefined}>

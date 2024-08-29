@@ -17,6 +17,7 @@ import {
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { ModalActionSchemaInitializerItem } from './ModalActionSchemaInitializerItem';
+import { useField, useFieldSchema } from '@formily/react';
 
 export const workbenchActionSettingsPopup = new SchemaSettings({
   name: 'workbench:actionSettings:popup',
