@@ -30,7 +30,6 @@ export const GlobalAutoRefreshProvider: React.FC = (props) => {
       return;
     }
     charts.current[uid] = { service: chart.service, selfAutoRefresh: true };
-    console.log('removeChart', uid, charts.current);
   });
   const refreshCharts = useMemoizedFn(() => {
     for (const chart of Object.values(charts.current)) {
@@ -44,7 +43,6 @@ export const GlobalAutoRefreshProvider: React.FC = (props) => {
     const timer = setInterval(
       () => {
         const refreshCharts = Object.values(charts.current).filter((chart) => !chart.selfAutoRefresh);
-        console.log('autoRefreshCharts', refreshCharts);
         for (const chart of refreshCharts) {
           chart?.service.refresh();
         }
