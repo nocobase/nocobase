@@ -8,17 +8,22 @@
  */
 
 import React, { useState, useContext, useEffect } from 'react';
+import { ArrayItems } from '@formily/antd-v5';
 import { SchemaComponent, css } from '@nocobase/client';
-import { observer, useField } from '@formily/react';
+import { onFieldValueChange } from '@formily/core';
+import { observer, useField, useForm, useFormEffects } from '@formily/react';
+
 import { useAPIClient } from '@nocobase/client';
 import { useChannelTypeMap } from '../../../../hooks';
 import { useNotificationTranslation } from '../../../../locale';
 import { COLLECTION_NAME } from '../../../../../constant';
 import { UsersAddition } from '../ReceiverConfigForm/Users/UsersAddition';
 import { UsersSelect } from '../ReceiverConfigForm/Users/Select';
+import users from 'packages/plugins/@nocobase/plugin-acl/src/server/collections/users';
 export const MessageConfigForm = observer<{ variableOptions: any }>(
   ({ variableOptions }) => {
     const field = useField();
+    const form = useForm();
     const { channelId, receiverType } = field.form.values;
     const [providerName, setProviderName] = useState(null);
     const { t } = useNotificationTranslation();
@@ -41,11 +46,20 @@ export const MessageConfigForm = observer<{ variableOptions: any }>(
       onChannelChange();
     }, [channelId, api]);
 
+    useFormEffects(() => {
+      onFieldValueChange('receiverType', (value) => {
+        field.form.values.receivers = [];
+      });
+    });
+
+    // useEffect(() => {
+    //   field.form.values.receivers = [];
+    // }, [field.form.values, receiverType]);
     const providerMap = useChannelTypeMap();
     const { ContentConfigForm = () => null } = (providerMap[providerName] ?? {}).components || {};
 
     const ReceiverInputComponent = receiverType === 'user' ? 'UsersSelect' : 'Variable.Input';
-    const ReceiverAddition = receiverType === 'user' ? 'UsersAddition' : 'ArrayItems.Addition';
+    const ReceiverAddition = receiverType === 'user' ? UsersAddition : ArrayItems.Addition;
     const createMessageFormSchema = {
       type: 'object',
       properties: {
@@ -135,7 +149,7 @@ export const MessageConfigForm = observer<{ variableOptions: any }>(
             add: {
               type: 'void',
               title: '{{t("Add new receiver")}}',
-              'x-component': ReceiverAddition,
+              'x-component': 'ReceiverAddition',
             },
           },
         },
@@ -170,7 +184,7 @@ export const MessageConfigForm = observer<{ variableOptions: any }>(
     return (
       <SchemaComponent
         schema={createMessageFormSchema}
-        components={{ ContentConfigForm, UsersAddition, UsersSelect }}
+        components={{ ContentConfigForm, ReceiverAddition, UsersSelect, ArrayItems }}
         scope={{ t }}
       />
     );
