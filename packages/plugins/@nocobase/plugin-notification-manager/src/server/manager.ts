@@ -34,6 +34,29 @@ export default class NotificationManager {
     return logsRepo.create({ values: options });
   };
 
+  async parseReceivers(receiverType, receiversConfig, processor, node) {
+    const configAssignees = processor
+      .getParsedValue(node.config.assignees ?? [], node.id)
+      .flat()
+      .filter(Boolean);
+    const assignees = new Set();
+    const UserRepo = processor.options.plugin.app.db.getRepository('users');
+    for (const item of configAssignees) {
+      if (typeof item === 'object') {
+        const result = await UserRepo.find({
+          ...item,
+          fields: ['id'],
+          transaction: processor.transaction,
+        });
+        result.forEach((item) => assignees.add(item.id));
+      } else {
+        assignees.add(item);
+      }
+    }
+
+    return [...assignees];
+  }
+
   async send(options: SendOptions) {
     this.plugin.logger.info('receive sending message request', options);
     const channelsRepo = this.plugin.app.db.getRepository(COLLECTION_NAME.channels);

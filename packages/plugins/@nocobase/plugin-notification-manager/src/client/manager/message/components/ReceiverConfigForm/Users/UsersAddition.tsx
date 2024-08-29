@@ -7,9 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ArrayItems } from '@formily/antd-v5';
-import { ISchema, RecursionField, observer, useField, useFieldSchema, useForm } from '@formily/react';
-import { uid } from '@formily/shared';
+import { useField } from '@formily/react';
 import { ArrayField as ArrayFieldModel } from '@formily/core';
 import { Button, Popover, Radio, Space, Spin, Tag, Tooltip, Typography } from 'antd';
 import { PlusOutlined, QuestionCircleOutlined } from '@ant-design/icons';
