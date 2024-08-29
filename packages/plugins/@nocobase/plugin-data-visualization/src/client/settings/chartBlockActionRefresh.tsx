@@ -12,7 +12,7 @@ import { SchemaSettings, useDesignable } from '@nocobase/client';
 import { useChartsTranslation } from '../locale';
 import { AutoRefreshItem } from './AutoRefreshItem';
 import { useField, useFieldSchema } from '@formily/react';
-import { ChartBlockContext } from '../block';
+import { GlobalAutoRefreshContext } from '../block';
 
 export const chartBlockActionRefreshSettings = new SchemaSettings({
   name: 'chartBlockActionSettings:refresh',
@@ -23,7 +23,7 @@ export const chartBlockActionRefreshSettings = new SchemaSettings({
         const field = useField();
         const fieldSchema = useFieldSchema();
         const { dn } = useDesignable();
-        const { setAutoRefresh } = useContext(ChartBlockContext);
+        const { setAutoRefresh } = useContext(GlobalAutoRefreshContext);
         return (
           <AutoRefreshItem
             value={field.decoratorProps?.autoRefresh || false}

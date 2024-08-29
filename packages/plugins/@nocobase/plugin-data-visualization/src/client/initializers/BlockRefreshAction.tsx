@@ -13,11 +13,11 @@ import { useChartsTranslation } from '../locale';
 import { Dropdown, MenuProps } from 'antd';
 import { DownOutlined, ReloadOutlined } from '@ant-design/icons';
 import { useFieldSchema } from '@formily/react';
-import { ChartBlockContext } from '../block/ChartBlockProvider';
+import { GlobalAutoRefreshContext } from '../block/GlobalAutoRefreshProvider';
 
 export const BlockRefreshButton: React.FC = forwardRef<HTMLButtonElement | HTMLAnchorElement, any>((props, ref) => {
   const { t } = useChartsTranslation();
-  const { autoRefresh, setAutoRefresh } = useContext(ChartBlockContext);
+  const { autoRefresh, setAutoRefresh } = useContext(GlobalAutoRefreshContext);
   const interval = {
     5: '5s',
     10: '10s',
@@ -67,7 +67,7 @@ export const BlockRefreshButton: React.FC = forwardRef<HTMLButtonElement | HTMLA
 
 export const useChartBlockRefreshActionProps = () => {
   const fieldSchema = useFieldSchema();
-  const { setAutoRefresh, refreshChartsFunc } = useContext(ChartBlockContext);
+  const { setAutoRefresh, refreshCharts } = useContext(GlobalAutoRefreshContext);
   useEffect(() => {
     setAutoRefresh(fieldSchema['x-decorator-props']?.autoRefresh);
     return () => {
@@ -76,8 +76,7 @@ export const useChartBlockRefreshActionProps = () => {
   }, [fieldSchema, setAutoRefresh]);
   return {
     onClick: () => {
-      console.log('refreshChartsFunc', refreshChartsFunc);
-      refreshChartsFunc?.();
+      refreshCharts?.();
     },
   };
 };

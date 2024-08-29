@@ -15,12 +15,12 @@ import {
   useAPIClient,
   useRequest,
 } from '@nocobase/client';
-import React, { createContext, useCallback, useContext, useEffect } from 'react';
+import React, { createContext, useContext, useEffect } from 'react';
 import { parseField, removeUnparsableFilter } from '../utils';
 import { ChartDataContext } from '../block/ChartDataProvider';
 import { useChartFilter } from '../hooks';
 import { ChartFilterContext } from '../filter/FilterProvider';
-import { ChartBlockContext } from '../block/ChartBlockProvider';
+import { GlobalAutoRefreshContext } from '../block/GlobalAutoRefreshProvider';
 
 export type MeasureProps = {
   field: string | string[];
@@ -86,7 +86,8 @@ ChartRendererContext.displayName = 'ChartRendererContext';
 export const ChartRendererProvider: React.FC<ChartRendererProps> = (props) => {
   const { query, config, collection, transform, dataSource = DEFAULT_DATA_SOURCE_KEY, disableAutoRefresh } = props;
   const { addChart } = useContext(ChartDataContext);
-  const { autoRefresh: defaultAutoRefresh } = useContext(ChartBlockContext);
+  const { addChart: addGlobalAutoRefreshChart, removeChart: removeGlobalAutoRefreshChart } =
+    useContext(GlobalAutoRefreshContext);
   const { ready, form, enabled } = useContext(ChartFilterContext);
   const { getFilter, hasFilter, appendFilter, parseFilter } = useChartFilter();
   const schema = useFieldSchema();
@@ -140,6 +141,9 @@ export const ChartRendererProvider: React.FC<ChartRendererProps> = (props) => {
       } finally {
         if (!manual && schema?.['x-uid']) {
           addChart(schema?.['x-uid'], { dataSource, collection, service, query });
+          if (!autoRefresh) {
+            addGlobalAutoRefreshChart(schema?.['x-uid'], { service });
+          }
         }
       }
     },
@@ -152,16 +156,20 @@ export const ChartRendererProvider: React.FC<ChartRendererProps> = (props) => {
   );
 
   useEffect(() => {
-    if ((!autoRefresh && !defaultAutoRefresh) || disableAutoRefresh) {
+    if (disableAutoRefresh) {
       return;
     }
-    const refresh = (autoRefresh || defaultAutoRefresh) as number;
+    if (!autoRefresh) {
+      addGlobalAutoRefreshChart(schema?.['x-uid'], { service });
+      return;
+    }
+    removeGlobalAutoRefreshChart(schema?.['x-uid']);
+    const refresh = autoRefresh as number;
     const timer = setInterval(service.refresh, refresh * 1000);
     return () => {
-      console.log('clearInterval');
       clearInterval(timer);
     };
-  }, [autoRefresh, defaultAutoRefresh]);
+  }, [autoRefresh, disableAutoRefresh]);
 
   return (
     <CollectionManagerProvider dataSource={dataSource}>

@@ -7,9 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import React, { createContext, useState } from 'react';
 import { useMemoizedFn } from 'ahooks';
-import { ChartBlockContext, ChartBlockProvider } from './ChartBlockProvider';
 
 type ChartData = {
   dataSource: string;
@@ -35,18 +34,6 @@ export const ChartDataProvider: React.FC = (props) => {
   const removeChart = useMemoizedFn((uid: string) => {
     setCharts((charts) => ({ ...charts, [uid]: undefined }));
   });
-
-  const { setRefreshChartsFunc } = useContext(ChartBlockContext);
-  const refreshCharts = useCallback(() => {
-    for (const chart of Object.values(charts)) {
-      chart?.service.refresh();
-    }
-  }, [charts]);
-  useEffect(() => {
-    setRefreshChartsFunc?.({
-      func: refreshCharts,
-    });
-  }, [setRefreshChartsFunc, refreshCharts]);
 
   return (
     <ChartDataContext.Provider value={{ charts, addChart, removeChart }}>{props.children}</ChartDataContext.Provider>
