@@ -48,14 +48,12 @@ import './js-bridge';
 import { MobileSettings } from './mobile-blocks/settings-block/MobileSettings';
 import { MobileSettingsBlockInitializer } from './mobile-blocks/settings-block/MobileSettingsBlockInitializer';
 import { MobileSettingsBlockSchemaSettings } from './mobile-blocks/settings-block/schemaSettings';
-import { MobileCheckerProvider } from './providers';
 
 export * from './desktop-mode';
 export * from './mobile';
 export * from './mobile-layout';
 export * from './mobile-providers';
 export * from './pages';
-export * from './providers';
 
 export class PluginMobileClient extends Plugin {
   mobileRouter?: RouterManager;
@@ -107,7 +105,6 @@ export class PluginMobileClient extends Plugin {
     this.addInitializers();
     this.addSettings();
     this.addScopes();
-    this.app.addProvider(MobileCheckerProvider);
 
     this.app.pluginSettingsManager.add('mobile', {
       title: generatePluginTranslationTemplate('Mobile'),
@@ -196,7 +193,7 @@ export class PluginMobileClient extends Plugin {
     this.mobileRouter.add('admin', {
       path: `/admin/*`,
       Component: () => {
-        if (window.location.pathname.startsWith(this.mobilePath + '/')) {
+        if (window.location.pathname.includes(`${this.mobilePath}/admin/`)) {
           window.location.replace(window.location.href.replace(this.mobilePath + '/', '/'));
         }
         return null;
