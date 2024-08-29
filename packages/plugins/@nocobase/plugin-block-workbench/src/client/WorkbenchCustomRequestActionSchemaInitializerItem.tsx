@@ -7,13 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import {
-  ButtonEditor,
-  SchemaSettings,
-  SchemaSettingsActionLinkItem,
-  useSchemaInitializer,
-  useSchemaInitializerItem,
-} from '@nocobase/client';
+import { ButtonEditor, SchemaSettings, SchemaSettingsActionLinkItem, useSchemaInitializer } from '@nocobase/client';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { ModalActionSchemaInitializerItem } from './ModalActionSchemaInitializerItem';
@@ -45,7 +39,6 @@ export const workbenchActionSettingsCustomRequest = new SchemaSettings({
 });
 
 export function WorkbenchCustomRequestActionSchemaInitializerItem(props) {
-  const itemConfig = useSchemaInitializerItem();
   // 调用插入功能
   const { insert } = useSchemaInitializer();
   const { t } = useTranslation();

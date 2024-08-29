@@ -11,6 +11,10 @@ import { SchemaSettings, SchemaSettingsSelectItem, useDesignable } from '@nocoba
 import React from 'react';
 import { useField, useFieldSchema } from '@formily/react';
 import { useTranslation } from 'react-i18next';
+export const WorkbenchLayout = {
+  Grid: 'grid',
+  List: 'list',
+};
 
 const ActionPanelLayout = () => {
   const { t } = useTranslation();
@@ -21,10 +25,10 @@ const ActionPanelLayout = () => {
     <SchemaSettingsSelectItem
       title={t('Layout')}
       options={[
-        { label: t('Grid'), value: 'grid' },
-        { label: t('List'), value: 'list' },
+        { label: t('Grid'), value: WorkbenchLayout.Grid },
+        { label: t('List'), value: WorkbenchLayout.List },
       ]}
-      value={fieldSchema?.['x-component-props']?.layout || 'grid'}
+      value={fieldSchema?.['x-component-props']?.layout || WorkbenchLayout.Grid}
       onChange={(value) => {
         field.componentProps.layout = value;
         const schema = {

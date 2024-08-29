@@ -11,7 +11,9 @@ import { useFieldSchema } from '@formily/react';
 import { Action, Icon, useComponent, withDynamicSchemaProps } from '@nocobase/client';
 import { Avatar } from 'antd';
 import { createStyles } from 'antd-style';
-import React from 'react';
+import React, { useContext } from 'react';
+import { WorkbenchBlockContext } from './WorkbenchBlock';
+import { WorkbenchLayout } from './workbenchBlockSettings';
 
 const useStyles = createStyles(({ token, css }) => ({
   // 支持 css object 的写法
@@ -30,13 +32,15 @@ function Button() {
   const fieldSchema = useFieldSchema();
   const icon = fieldSchema['x-component-props']?.['icon'];
   const backgroundColor = fieldSchema['x-component-props']?.['iconColor'];
+  const { layout } = useContext(WorkbenchBlockContext);
   const { styles, cx } = useStyles();
-
-  return (
+  return layout === WorkbenchLayout.Grid ? (
     <div>
       <Avatar style={{ backgroundColor }} size={64} icon={<Icon type={icon} />} />
       <div className={cx(styles.title)}>{fieldSchema.title}</div>
     </div>
+  ) : (
+    <h3>{fieldSchema.title}</h3>
   );
 }
 

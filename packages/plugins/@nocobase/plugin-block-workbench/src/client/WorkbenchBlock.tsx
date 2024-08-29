@@ -15,9 +15,11 @@ import {
   useDesignable,
   useSchemaInitializerRender,
   withDynamicSchemaProps,
+  Icon,
 } from '@nocobase/client';
-import { Space, List } from 'antd';
-import React from 'react';
+import { Space, List, Avatar } from 'antd';
+import React, { createContext } from 'react';
+import { WorkbenchLayout } from './workbenchBlockSettings';
 
 const ConfigureActionsButton = observer(
   () => {
@@ -31,11 +33,11 @@ const ConfigureActionsButton = observer(
 const InternalIcons = () => {
   const fieldSchema = useFieldSchema();
   const { designable } = useDesignable();
-  const { layout = 'grid' } = fieldSchema.parent['x-component-props'] || {};
+  const { layout = WorkbenchLayout.Grid } = fieldSchema.parent['x-component-props'] || {};
   return (
     <div style={{ marginBottom: designable ? '1rem' : 0 }}>
       <DndContext>
-        {layout === 'grid' ? (
+        {layout === WorkbenchLayout.Grid ? (
           <Space wrap>
             {fieldSchema.mapProperties((s, key) => (
               <RecursionField name={key} schema={s} key={key} />
@@ -43,11 +45,18 @@ const InternalIcons = () => {
           </Space>
         ) : (
           <List itemLayout="horizontal">
-            {fieldSchema.mapProperties((s, key) => (
-              <List.Item key={key}>
-                <RecursionField name={key} schema={s} key={key} />
-              </List.Item>
-            ))}
+            {fieldSchema.mapProperties((s, key) => {
+              const icon = s['x-component-props']?.['icon'];
+              const backgroundColor = s['x-component-props']?.['iconColor'];
+              return (
+                <List.Item key={key}>
+                  <List.Item.Meta
+                    avatar={<Avatar style={{ backgroundColor }} icon={<Icon type={icon} />} />}
+                    title={<RecursionField name={key} schema={s} key={key} />}
+                  ></List.Item.Meta>
+                </List.Item>
+              );
+            })}
           </List>
         )}
       </DndContext>
@@ -55,15 +64,19 @@ const InternalIcons = () => {
   );
 };
 
+export const WorkbenchBlockContext = createContext({ layout: 'grid' });
+
 export const WorkbenchBlock: any = withDynamicSchemaProps(
   (props) => {
     const fieldSchema = useFieldSchema();
+    const { layout = 'grid' } = fieldSchema['x-component-props'] || {};
+
     return (
-      <div>
+      <WorkbenchBlockContext.Provider value={{ layout }}>
         <DataSourceContext.Provider value={undefined}>
           <CollectionContext.Provider value={undefined}>{props.children}</CollectionContext.Provider>
         </DataSourceContext.Provider>
-      </div>
+      </WorkbenchBlockContext.Provider>
     );
   },
   { displayName: 'WorkbenchBlock' },
