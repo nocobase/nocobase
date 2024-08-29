@@ -95,7 +95,7 @@ const MarkdownEditor = (props: MarkdownEditorProps) => {
         <VariableSelect options={options} setOptions={setOptions} onInsert={onInsert} />
       </div>
 
-      <Space style={{ position: 'absolute', bottom: 25, right: 5 }}>
+      <Space style={{ position: 'absolute', bottom: 30, right: 5 }}>
         <Button
           onClick={(e) => {
             props.onCancel?.(e);
