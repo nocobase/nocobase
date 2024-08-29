@@ -80,8 +80,8 @@ const InternalAssociationSelect = observer(
         onFieldInputValueChange('*', (fieldPath: any) => {
           const linkageFields = filterAnalyses(field.componentProps?.service?.params?.filter) || [];
           if (linkageFields.includes(fieldPath?.props?.name) && field.value) {
-            field.setValue(field.initialValue);
-            setInnerValue(field.initialValue);
+            field.setValue(undefined);
+            setInnerValue(undefined);
           }
         });
       });
