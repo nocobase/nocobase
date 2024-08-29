@@ -105,8 +105,6 @@ export class AuditManager {
     } else {
       this.setResource(name, resourceName, options);
     }
-
-    console.log('register', this.resources);
   }
 
   setResource(actionName: string, resouceName: string, options?: Action) {
@@ -183,10 +181,17 @@ export class AuditManager {
   formatAuditData(ctx: any) {
     const { filterByTk } = ctx.action.params;
     const { resourceName } = ctx.action;
-    const resourceArray = resourceName.split('.');
+
     let association = '';
-    if (resourceArray.length > 0) {
-      association = resourceArray[1];
+    let collection = '';
+    if (resourceName) {
+      const resourceArray = resourceName.split('.');
+      if (resourceArray.length > 0) {
+        association = resourceArray[1];
+        collection = resourceArray[1];
+      } else {
+        collection = resourceName;
+      }
     }
 
     const auditLog: AuditLog = {
@@ -194,12 +199,12 @@ export class AuditManager {
       dataSource: ctx.action.sourceId,
       resource: resourceName,
       association: association,
-      collection: ctx.action.sourceId,
+      collection: collection,
       action: ctx.action.name,
       resourceUk: filterByTk,
       userId: ctx.state?.currentUser?.id,
       roleName: ctx.state?.currentRole,
-      ip: ctx.request.header['host'],
+      ip: ctx.request.ip,
       ua: ctx.request.header['user-agent'],
       status: ctx.response.status,
       createdAt: new Date() + '',
