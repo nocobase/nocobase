@@ -142,7 +142,7 @@ export const ChartRendererProvider: React.FC<ChartRendererProps> = (props) => {
         if (!manual && schema?.['x-uid']) {
           addChart(schema?.['x-uid'], { dataSource, collection, service, query });
           if (!autoRefresh) {
-            addGlobalAutoRefreshChart(schema?.['x-uid'], { service });
+            addGlobalAutoRefreshChart?.(schema?.['x-uid'], { service });
           }
         }
       }
@@ -160,10 +160,10 @@ export const ChartRendererProvider: React.FC<ChartRendererProps> = (props) => {
       return;
     }
     if (!autoRefresh) {
-      addGlobalAutoRefreshChart(schema?.['x-uid'], { service });
+      addGlobalAutoRefreshChart?.(schema?.['x-uid'], { service });
       return;
     }
-    removeGlobalAutoRefreshChart(schema?.['x-uid']);
+    removeGlobalAutoRefreshChart?.(schema?.['x-uid']);
     const refresh = autoRefresh as number;
     const timer = setInterval(service.refresh, refresh * 1000);
     return () => {
