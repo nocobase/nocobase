@@ -193,7 +193,7 @@ export class PluginMobileClient extends Plugin {
     this.mobileRouter.add('admin', {
       path: `/admin/*`,
       Component: () => {
-        if (window.location.pathname.startsWith(this.mobilePath + '/')) {
+        if (window.location.pathname.includes(`${this.mobilePath}/admin/`)) {
           window.location.replace(window.location.href.replace(this.mobilePath + '/', '/'));
         }
         return null;
