@@ -8,16 +8,18 @@
  */
 
 import React, { useState, useContext, useEffect } from 'react';
-import { SchemaComponent } from '@nocobase/client';
+import { SchemaComponent, css } from '@nocobase/client';
 import { observer, useField } from '@formily/react';
 import { useAPIClient } from '@nocobase/client';
 import { useChannelTypeMap } from '../../../../hooks';
 import { useNotificationTranslation } from '../../../../locale';
 import { COLLECTION_NAME } from '../../../../../constant';
+import { UsersAddition } from '../ReceiverConfigForm/Users/UsersAddition';
+import { UsersSelect } from '../ReceiverConfigForm/Users/Select';
 export const MessageConfigForm = observer<{ variableOptions: any }>(
   ({ variableOptions }) => {
     const field = useField();
-    const { channelId } = field.form.values;
+    const { channelId, receiverType } = field.form.values;
     const [providerName, setProviderName] = useState(null);
     const { t } = useNotificationTranslation();
     const api = useAPIClient();
@@ -38,9 +40,12 @@ export const MessageConfigForm = observer<{ variableOptions: any }>(
       };
       onChannelChange();
     }, [channelId, api]);
+
     const providerMap = useChannelTypeMap();
     const { ContentConfigForm = () => null } = (providerMap[providerName] ?? {}).components || {};
 
+    const ReceiverInputComponent = receiverType === 'user' ? 'UsersSelect' : 'Variable.Input';
+    const ReceiverAddition = receiverType === 'user' ? 'UsersAddition' : 'ArrayItems.Addition';
     const createMessageFormSchema = {
       type: 'object',
       properties: {
@@ -70,11 +75,12 @@ export const MessageConfigForm = observer<{ variableOptions: any }>(
           type: 'string',
           title: '{{t("Receiver Type")}}',
           required: true,
+          default: 'manual',
           'x-decorator': 'FormItem',
           'x-component': 'Radio.Group',
           enum: [
             { label: '{{t("Manual input")}}', value: 'manual' },
-            { label: '{{t("Select user")}}', value: 'input' },
+            { label: '{{t("Select user")}}', value: 'user' },
           ],
         },
         receivers: {
@@ -84,14 +90,38 @@ export const MessageConfigForm = observer<{ variableOptions: any }>(
           title: '{{t("Receivers")}}',
           'x-decorator': 'FormItem',
           'x-component': 'ArrayItems',
+          'x-component-props': {
+            className: css`
+              &[disabled] {
+                > .ant-formily-array-base-addition {
+                  display: none;
+                }
+                > .ant-formily-array-items-item .ant-space-item:not(:nth-child(2)) {
+                  display: none;
+                }
+              }
+            `,
+          },
+          default: [],
           items: {
             type: 'void',
             'x-component': 'Space',
+            'x-component-props': {
+              className: css`
+                width: 100%;
+                &.ant-space.ant-space-horizontal {
+                  flex-wrap: nowrap;
+                }
+                > .ant-space-item:nth-child(1) {
+                  flex-grow: 1;
+                }
+              `,
+            },
             properties: {
               input: {
                 type: 'string',
                 'x-decorator': 'FormItem',
-                'x-component': 'Variable.Input',
+                'x-component': ReceiverInputComponent,
                 'x-component-props': { scope: variableOptions, useTypedConstant: ['string'] },
               },
               remove: {
@@ -105,7 +135,7 @@ export const MessageConfigForm = observer<{ variableOptions: any }>(
             add: {
               type: 'void',
               title: '{{t("Add new receiver")}}',
-              'x-component': 'ArrayItems.Addition',
+              'x-component': ReceiverAddition,
             },
           },
         },
@@ -137,7 +167,13 @@ export const MessageConfigForm = observer<{ variableOptions: any }>(
         },
       },
     };
-    return <SchemaComponent schema={createMessageFormSchema} components={{ ContentConfigForm }} scope={{ t }} />;
+    return (
+      <SchemaComponent
+        schema={createMessageFormSchema}
+        components={{ ContentConfigForm, UsersAddition, UsersSelect }}
+        scope={{ t }}
+      />
+    );
   },
   { displayName: 'MessageConfigForm' },
 );

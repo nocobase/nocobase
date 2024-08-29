@@ -11,7 +11,6 @@ import { Card } from 'antd';
 import { messageManagerSchema } from '../schemas';
 import {
   SchemaComponent,
-  useActionContext,
   SchemaComponentContext,
   useSchemaComponentContext,
   ExtendCollectionsProvider,
@@ -21,7 +20,6 @@ import { useNotificationTranslation } from '../../../locale';
 import channelCollection from '../../../../collections/channel';
 import messageLogCollection from '../../../../collections/messageLog';
 import { MessageComponentNames, MessageScopeNames } from '../types';
-import ReceiverConfigForm from './ReceiverConfigForm';
 import MessageInput from './MessageInput';
 import { LogManager } from '../../log/components/Manager';
 import { useSendAction } from './useSendAction';
@@ -38,7 +36,6 @@ export const MessageManager = () => {
             schema={messageManagerSchema}
             scope={{ t, [MessageScopeNames.useSendAction]: useSendAction, useSubmitActionProps, useEditFormProps }}
             components={{
-              [MessageComponentNames.ReceiverConfigForm]: ReceiverConfigForm,
               [MessageComponentNames.MessageInput]: MessageInput,
               [MessageComponentNames.MessageLogManager]: LogManager,
             }}

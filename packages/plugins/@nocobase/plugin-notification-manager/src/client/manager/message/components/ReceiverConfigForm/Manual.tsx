@@ -7,14 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useState } from 'react';
-import { FormItem, Input, SchemaComponent, Space } from '@nocobase/client';
-import { Radio } from 'antd';
-import { ArrayField as ArrayFieldModel, VoidField } from '@formily/core';
-import { ArrayField, Field, useField, observer } from '@formily/react';
-import { useNotificationTranslation } from '../../../../locale';
-import { ArrayItems } from '@formily/antd-v5';
+import React from 'react';
+import { SchemaComponent } from '@nocobase/client';
+import { observer } from '@formily/react';
 import { ISchema } from '@formily/react';
+import { UsersAddition } from './Users/UsersAddition';
 
 export const ManualConfigForm = observer(
   () => {
@@ -49,12 +46,12 @@ export const ManualConfigForm = observer(
         add: {
           type: 'void',
           title: 'Add entry',
-          'x-component': 'ArrayItems.Addition',
+          'x-component': 'UsersAddition',
         },
       },
     };
 
-    return <SchemaComponent schema={schema} />;
+    return <SchemaComponent schema={schema} components={{ UsersAddition }} />;
   },
   { displayName: 'ConfigForm' },
 );
