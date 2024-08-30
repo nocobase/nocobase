@@ -179,7 +179,7 @@ export const setDefaultValue = async (field: any, variables: any) => {
     field.setInitialValue(defaultValue);
   } else {
     field.loading = true;
-    const value = await variables.parseVariable(defaultValue);
+    const { value } = await variables.parseVariable(defaultValue);
     const transformedValue = transformValue(value, field.componentProps);
     field.setValue(transformedValue);
     field.setInitialValue(transformedValue);
