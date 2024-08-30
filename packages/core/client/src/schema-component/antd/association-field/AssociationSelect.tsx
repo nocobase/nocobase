@@ -82,7 +82,7 @@ const InternalAssociationSelect = observer(
           if (
             linkageFields.includes(fieldPath?.props?.name) &&
             field.value &&
-            fieldPath.indexes[0] === field.indexes[0]
+            fieldPath?.indexes?.[0] === field?.indexes?.[0]
           ) {
             field.setValue(undefined);
             setInnerValue(undefined);
