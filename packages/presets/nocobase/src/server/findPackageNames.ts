@@ -26,8 +26,8 @@ function trim(packageNames: string[]) {
 
 export async function findPackageNames() {
   const patterns = [
-    './packages/plugins/*/package.json',
-    './packages/plugins/*/*/package.json',
+    // './packages/plugins/*/package.json',
+    // './packages/plugins/*/*/package.json',
     './packages/pro-plugins/*/*/package.json',
     './storage/plugins/*/package.json',
     './storage/plugins/*/*/package.json',
@@ -36,7 +36,6 @@ export async function findPackageNames() {
     const packageJsonPaths = await fg(patterns, {
       cwd: process.cwd(),
       absolute: true,
-      ignore: ['**/external-db-data-source/**'],
     });
     const packageNames = await Promise.all(
       packageJsonPaths.map(async (packageJsonPath) => {

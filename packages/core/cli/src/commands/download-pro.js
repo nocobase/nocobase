@@ -45,7 +45,6 @@ class Package {
       },
       responseType: 'json',
     });
-    console.log(res.data);
     this.data = res.data;
   }
 

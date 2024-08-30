@@ -72,7 +72,6 @@ export class PresetNocoBase extends Plugin {
     const allPlugins = await findPackageNames();
     const builtInPlugins = await findBuiltInPlugins();
     this.builtInPlugins = await this.toModelData(builtInPlugins, true);
-    console.log('this.builtInPlugins', _.difference(allPlugins, builtInPlugins));
     this.localPlugins = await this.toModelData(_.difference(allPlugins, builtInPlugins));
   }
 
