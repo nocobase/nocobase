@@ -61,6 +61,7 @@ export function WorkbenchPopupActionSchemaInitializerItem(props) {
   // 调用插入功能
   const { insert } = useSchemaInitializer();
   const { t } = useTranslation();
+  const { hideOpenMode } = useOpenModeContext();
 
   return (
     <ModalActionSchemaInitializerItem
@@ -93,11 +94,16 @@ export function WorkbenchPopupActionSchemaInitializerItem(props) {
             default: 'drawer',
             'x-component': 'Select',
             'x-decorator': 'FormItem',
-            enum: [
-              { label: t('Drawer'), value: 'drawer' },
-              { label: t('Dialog'), value: 'modal' },
-              { label: t('Page'), value: 'page' },
-            ],
+            enum: hideOpenMode
+              ? [
+                  { label: t('Drawer'), value: 'drawer' },
+                  { label: t('Page'), value: 'page' },
+                ]
+              : [
+                  { label: t('Drawer'), value: 'drawer' },
+                  { label: t('Dialog'), value: 'modal' },
+                  { label: t('Page'), value: 'page' },
+                ],
           },
         },
       }}
