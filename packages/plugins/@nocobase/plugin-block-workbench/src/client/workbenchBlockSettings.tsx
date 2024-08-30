@@ -23,10 +23,10 @@ const ActionPanelLayout = () => {
   const { dn } = useDesignable();
   return (
     <SchemaSettingsSelectItem
-      title={t('Layout')}
+      title={t('Layout', { ns: 'block-workbench' })}
       options={[
-        { label: t('Grid'), value: WorkbenchLayout.Grid },
-        { label: t('List'), value: WorkbenchLayout.List },
+        { label: t('Grid', { ns: 'block-workbench' }), value: WorkbenchLayout.Grid },
+        { label: t('List', { ns: 'block-workbench' }), value: WorkbenchLayout.List },
       ]}
       value={fieldSchema?.['x-component-props']?.layout || WorkbenchLayout.Grid}
       onChange={(value) => {

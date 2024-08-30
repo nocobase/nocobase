@@ -6,5 +6,10 @@
   "You have not granted permission to use the camera": "您未授权使用摄像头",
   "Unknown error": "未知错误",
   "The image size is too large. Please compress it to below 1MB before uploading": "图片尺寸过大，请压缩到1MB以下上传",
-  "QR code recognition failed, please scan again": "二维码识别失败，请重新扫描"
+  "QR code recognition failed, please scan again": "二维码识别失败，请重新扫描",
+  "Layout": "布局",
+  "Grid": "栅格",
+  "List": "列表",
+  "Add popup": "添加弹窗",
+  "Add custom request":"添加自定义请求"
 }

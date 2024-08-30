@@ -44,9 +44,9 @@ export function WorkbenchCustomRequestActionSchemaInitializerItem(props) {
   const { t } = useTranslation();
   return (
     <ModalActionSchemaInitializerItem
-      title={t('Custom request', { ns: 'block-workbench' })}
+      title={t('Custom request')}
       modalSchema={{
-        title: t('Add custom request'),
+        title: t('Add custom request', { ns: 'block-workbench' }),
         properties: {
           title: {
             title: t('Title'),

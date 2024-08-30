@@ -17,7 +17,6 @@ import {
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { ModalActionSchemaInitializerItem } from './ModalActionSchemaInitializerItem';
-import { useField, useFieldSchema } from '@formily/react';
 
 export const workbenchActionSettingsPopup = new SchemaSettings({
   name: 'workbench:actionSettings:popup',
@@ -61,9 +60,9 @@ export function WorkbenchPopupActionSchemaInitializerItem(props) {
 
   return (
     <ModalActionSchemaInitializerItem
-      title={t('Popup', { ns: 'block-workbench' })}
+      title={t('Popup')}
       modalSchema={{
-        title: t('Add popup'),
+        title: t('Add popup', { ns: 'block-workbench' }),
         properties: {
           title: {
             title: t('Title'),
@@ -85,7 +84,7 @@ export function WorkbenchPopupActionSchemaInitializerItem(props) {
             'x-decorator': 'FormItem',
           },
           openMode: {
-            title: t('openMode'),
+            title: t('Open mode'),
             required: false,
             default: 'drawer',
             'x-component': 'Select',
