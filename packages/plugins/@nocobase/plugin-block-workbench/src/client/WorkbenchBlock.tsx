@@ -45,7 +45,7 @@ const InternalIcons = () => {
             ))}
           </Space>
         ) : (
-          <List itemLayout="horizontal" bordered>
+          <List itemLayout="horizontal">
             {fieldSchema.mapProperties((s, key) => {
               const icon = s['x-component-props']?.['icon'];
               const backgroundColor = s['x-component-props']?.['iconColor'];
