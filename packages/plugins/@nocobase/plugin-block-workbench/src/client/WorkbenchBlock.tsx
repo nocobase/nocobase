@@ -17,6 +17,7 @@ import {
   withDynamicSchemaProps,
   Icon,
 } from '@nocobase/client';
+import { css, cx } from '@emotion/css';
 import { Space, List, Avatar } from 'antd';
 import React, { createContext } from 'react';
 import { WorkbenchLayout } from './workbenchBlockSettings';
@@ -49,7 +50,18 @@ const InternalIcons = () => {
               const icon = s['x-component-props']?.['icon'];
               const backgroundColor = s['x-component-props']?.['iconColor'];
               return (
-                <List.Item key={key}>
+                <List.Item
+                  key={key}
+                  className={css`
+                    .ant-list-item-meta-avatar {
+                      margin-inline-end: 0px !important;
+                    }
+                    .ant-list-item-meta-title a {
+                      font-weight: 700;
+                      font-size: 16px;
+                    }
+                  `}
+                >
                   <List.Item.Meta
                     avatar={<Avatar style={{ backgroundColor }} icon={<Icon type={icon} />} />}
                     title={<RecursionField name={key} schema={s} key={key} />}
