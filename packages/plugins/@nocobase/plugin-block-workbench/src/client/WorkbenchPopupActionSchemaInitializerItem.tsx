@@ -33,10 +33,14 @@ export const workbenchActionSettingsPopup = new SchemaSettings({
       name: 'openMode',
       Component: SchemaSettingOpenModeSchemaItems,
       useComponentProps() {
+        const { t } = useTranslation();
         const { hideOpenMode } = useOpenModeContext();
         return {
-          openMode: !hideOpenMode,
           openSize: !hideOpenMode,
+          modeOptions: hideOpenMode && [
+            { label: t('Drawer'), value: 'drawer' },
+            { label: t('Page'), value: 'page' },
+          ],
         };
       },
     },
