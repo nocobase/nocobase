@@ -20,7 +20,11 @@ module.exports = (cli) => {
     .allowUnknownOption()
     .option('-h, --help')
     .option('--ts-node-dev')
-    .action((options) => {
+    .action(async (options) => {
+      const cmd = process.argv.slice(2)?.[0];
+      if (cmd === 'install') {
+        await run('yarn', ['nocobase', 'download-pro']);
+      }
       if (isDev()) {
         promptForTs();
         run('tsx', [
