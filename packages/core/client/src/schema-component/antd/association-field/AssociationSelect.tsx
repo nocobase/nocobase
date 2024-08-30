@@ -79,7 +79,11 @@ const InternalAssociationSelect = observer(
         //支持深层次子表单
         onFieldInputValueChange('*', (fieldPath: any) => {
           const linkageFields = filterAnalyses(field.componentProps?.service?.params?.filter) || [];
-          if (linkageFields.includes(fieldPath?.props?.name) && field.value) {
+          if (
+            linkageFields.includes(fieldPath?.props?.name) &&
+            field.value &&
+            fieldPath.indexes[0] === field.indexes[0]
+          ) {
             field.setValue(undefined);
             setInnerValue(undefined);
           }
