@@ -19,6 +19,7 @@ import { useAttach, useComponent, useDesignable } from '../..';
 import { useTemplateBlockContext } from '../../../block-provider/TemplateBlockProvider';
 import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
 import { bindLinkageRulesToFiled } from '../../../schema-settings/LinkageRules/bindLinkageRulesToFiled';
+import { forEachLinkageRule } from '../../../schema-settings/LinkageRules/forEachLinkageRule';
 import { useToken } from '../../../style';
 import { useLocalVariables, useVariables } from '../../../variables';
 import { useProps } from '../../hooks/useProps';
@@ -135,27 +136,25 @@ const WithForm = (props: WithFormProps) => {
     const disposes = [];
 
     form.addEffects(id, () => {
-      linkageRules.forEach((rule) => {
-        rule.actions?.forEach((action) => {
-          if (action.targetFields?.length) {
-            const fields = action.targetFields.join(',');
+      forEachLinkageRule(linkageRules, (action, rule) => {
+        if (action.targetFields?.length) {
+          const fields = action.targetFields.join(',');
 
-            // 之前使用的 `onFieldReact` 有问题，没有办法被取消监听，所以这里用 `onFieldInit` 和 `reaction` 代替
-            onFieldInit(`*(${fields})`, (field: any, form) => {
-              disposes.push(
-                bindLinkageRulesToFiled({
-                  field,
-                  linkageRules,
-                  formValues: form.values,
-                  localVariables,
-                  action,
-                  rule,
-                  variables,
-                }),
-              );
-            });
-          }
-        });
+          // 之前使用的 `onFieldReact` 有问题，没有办法被取消监听，所以这里用 `onFieldInit` 和 `reaction` 代替
+          onFieldInit(`*(${fields})`, (field: any, form) => {
+            disposes.push(
+              bindLinkageRulesToFiled({
+                field,
+                linkageRules,
+                formValues: form.values,
+                localVariables,
+                action,
+                rule,
+                variables,
+              }),
+            );
+          });
+        }
       });
     });
 
