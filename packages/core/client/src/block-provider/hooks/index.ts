@@ -41,7 +41,7 @@ import { useTreeParentRecord } from '../../modules/blocks/data-blocks/table/Tree
 import { useRecord } from '../../record-provider';
 import { removeNullCondition, useActionContext, useCompile } from '../../schema-component';
 import { isSubMode } from '../../schema-component/antd/association-field/util';
-import { replaceVariables } from '../../schema-component/antd/form-v2/utils';
+import { replaceVariables } from '../../schema-settings/LinkageRules/bindLinkageRulesToFiled';
 import { useCurrentUserContext } from '../../user';
 import { useLocalVariables, useVariables } from '../../variables';
 import { VariableOption, VariablesContextType } from '../../variables/types';
