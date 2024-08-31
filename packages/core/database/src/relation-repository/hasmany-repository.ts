@@ -17,9 +17,11 @@ export class HasManyRepository extends MultipleRelationRepository {
   async find(options?: FindOptions): Promise<any> {
     const targetRepository = this.targetCollection.repository;
 
-    const addFilter = {
-      [this.association.foreignKey]: this.sourceKeyValue,
-    };
+    const addFilter = this.isMultiTargetKey()
+      ? {}
+      : {
+          [this.association.foreignKey]: this.sourceKeyValue,
+        };
 
     if (options?.filterByTk) {
       // @ts-ignore
