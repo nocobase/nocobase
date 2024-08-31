@@ -302,6 +302,9 @@ async function generateChangelog() {
 
 async function writeChangelog() {
   const { cn, en, to } = await generateChangelog();
+  if (!cn && !en) {
+    throw new Error('No changelog generated');
+  }
   const write = async (lang) => {
     const file = lang === 'cn' ? 'CHANGELOG.zh-CN.md' : 'CHANGELOG.md';
     const oldChangelog = await fs.readFile(path.join(__dirname, `../../${file}`), 'utf8');
