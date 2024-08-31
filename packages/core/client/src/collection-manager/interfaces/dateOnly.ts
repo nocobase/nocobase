@@ -15,7 +15,7 @@ export class DateFieldInterface extends CollectionFieldInterface {
   type = 'object';
   group = 'datetime';
   order = 3;
-  title = '{{t("Date")}}';
+  title = '{{t("DateOnly")}}';
   sortable = true;
   default = {
     type: 'dateOnly',
