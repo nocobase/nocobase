@@ -72,5 +72,10 @@ test.describe('desktop devices: redirect to other page', () => {
 
     // but the "Add blocks" button should not be visible
     await expect(page.getByTestId('schema-initializer-MobileTabBar')).not.toBeVisible();
+
+    // reset role
+    await page.evaluate(() => {
+      localStorage.setItem('NOCOBASE_ROLE', 'root');
+    });
   });
 });
