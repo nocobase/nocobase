@@ -8,13 +8,13 @@
  */
 
 import { GeneralField } from '@formily/core';
-import { useField, useFieldSchema } from '@formily/react';
+import { Schema, useField, useFieldSchema } from '@formily/react';
 import { reaction } from '@formily/reactive';
 import { flatten, getValuesByPath } from '@nocobase/utils/client';
 import _, { isString } from 'lodash';
 import cloneDeep from 'lodash/cloneDeep';
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { useCollectionManager_deprecated, useCollection_deprecated } from '../../../collection-manager';
+import React, { createContext, FC, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { useCollection_deprecated, useCollectionManager_deprecated } from '../../../collection-manager';
 import { Collection } from '../../../data-source';
 import { isInFilterFormBlock } from '../../../filter-provider';
 import { mergeFilter } from '../../../filter-provider/utils';
@@ -202,12 +202,23 @@ export const useFieldNames = (
   return { label: 'label', value: 'value', ...fieldNames };
 };
 
-const SubFormContext = createContext<{
+interface SubFormProviderProps {
   value: any;
   collection: Collection;
-}>(null);
+  /**
+   * the schema of the current sub-table or sub-form
+   */
+  fieldSchema?: Schema;
+}
+
+const SubFormContext = createContext<SubFormProviderProps>(null);
 SubFormContext.displayName = 'SubFormContext';
-export const SubFormProvider = SubFormContext.Provider;
+
+export const SubFormProvider: FC<{ value: SubFormProviderProps }> = (props) => {
+  const { value, collection, fieldSchema } = props.value;
+  const memoValue = useMemo(() => ({ value, collection, fieldSchema }), [value, collection, fieldSchema]);
+  return <SubFormContext.Provider value={memoValue}>{props.children}</SubFormContext.Provider>;
+};
 
 /**
  * 用于获取子表单所对应的 form 对象，其应该保持响应性，即一个 Proxy 对象；
@@ -219,9 +230,10 @@ export const SubFormProvider = SubFormContext.Provider;
  * @returns
  */
 export const useSubFormValue = () => {
-  const { value, collection } = useContext(SubFormContext) || {};
+  const { value, collection, fieldSchema } = useContext(SubFormContext) || {};
   return {
     formValue: value,
     collection,
+    fieldSchema,
   };
 };

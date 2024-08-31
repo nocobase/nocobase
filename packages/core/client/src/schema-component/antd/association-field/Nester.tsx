@@ -10,12 +10,12 @@
 import { CloseOutlined, PlusOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { ArrayField } from '@formily/core';
+import { spliceArrayState } from '@formily/core/esm/shared/internals';
 import { RecursionField, observer, useFieldSchema } from '@formily/react';
 import { action } from '@formily/reactive';
 import { each } from '@formily/shared';
 import { Button, Card, Divider, Tooltip } from 'antd';
 import React, { useCallback, useContext } from 'react';
-import { spliceArrayState } from '@formily/core/esm/shared/internals';
 import { useTranslation } from 'react-i18next';
 import { FormActiveFieldsProvider } from '../../../block-provider/hooks/useFormActiveFields';
 import { useCollection } from '../../../data-source';
@@ -58,6 +58,7 @@ const ToOneNester = (props) => {
   const { field } = useAssociationFieldContext<ArrayField>();
   const recordV2 = useCollectionRecord();
   const collection = useCollection();
+  const fieldSchema = useFieldSchema();
 
   const isAllowToSetDefaultValue = useCallback(
     ({ form, fieldSchema, collectionField, getInterface, formBlockType }: IsAllowToSetDefaultValueParams) => {
@@ -94,7 +95,7 @@ const ToOneNester = (props) => {
 
   return (
     <FormActiveFieldsProvider name="nester">
-      <SubFormProvider value={{ value: field.value, collection }}>
+      <SubFormProvider value={{ value: field.value, collection, fieldSchema }}>
         <RecordProvider isNew={recordV2?.isNew} record={field.value} parent={recordV2?.data}>
           <DefaultValueProvider isAllowToSetDefaultValue={isAllowToSetDefaultValue}>
             <Card bordered={true}>{props.children}</Card>
@@ -200,7 +201,7 @@ const ToManyNester = observer(
                 )}
               </div>
               <FormActiveFieldsProvider name="nester">
-                <SubFormProvider value={{ value, collection }}>
+                <SubFormProvider value={{ value, collection, fieldSchema }}>
                   <RecordProvider isNew={isNewRecord(value)} record={value} parent={recordData}>
                     <RecordIndexProvider index={index}>
                       <DefaultValueProvider isAllowToSetDefaultValue={isAllowToSetDefaultValue}>
