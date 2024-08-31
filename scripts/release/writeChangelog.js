@@ -91,8 +91,21 @@ async function parsePackage(files, pkgType, pkg) {
 
 async function parsePR(number, pkgType, pkg) {
   // gh pr view 5112 --json author,body,files
-  const { stdout } = await execa('gh', ['pr', 'view', number, '--json', 'author,body,files']);
-  const { author, body, files } = JSON.parse(stdout);
+  let res;
+  let retries = 10;
+  try {
+    const { stdout } = await execa('gh', ['pr', 'view', number, '--json', 'author,body,files']);
+    res = stdout;
+  } catch (error) {
+    console.error(`Get PR #${number} failed, error: ${error.message}`);
+    if (retries > 0) {
+      console.log(`Retrying... ${retries}`);
+      retries -= 1;
+      return parsePR(number, pkgType, pkg);
+    }
+    return { number };
+  }
+  const { author, body, files } = JSON.parse(res);
   const typeRegExp = /\[x\] ([^(\\\r)]+)/;
   const typeMatch = body.match(typeRegExp);
   const prType = typeMatch ? typeMatch[1] : '';
@@ -247,6 +260,7 @@ async function generateChangelog() {
             const { number, author, pro } = changelog;
             const { description, docTitle, docLink } = changelog[lang];
             if (!description) {
+              console.warn(`PR #${number} has no ${lang} changelog`);
               continue;
             }
             const pr = pro ? '' : ` ([#${number}](https://github.com/nocobase/nocobase/pull/${number}))`;
