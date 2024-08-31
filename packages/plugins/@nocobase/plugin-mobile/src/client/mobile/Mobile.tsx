@@ -9,6 +9,7 @@
 
 import {
   Action,
+  AdminProvider,
   AntdAppProvider,
   AssociationFieldModeProvider,
   BlockTemplateProvider,
@@ -28,7 +29,7 @@ import { MobileActionPage } from '../adaptor-of-desktop/mobile-action-page/Mobil
 import { ResetSchemaOptionsProvider } from '../adaptor-of-desktop/ResetSchemaOptionsProvider';
 import { PageBackgroundColor } from '../constants';
 import { DesktopMode } from '../desktop-mode/DesktopMode';
-import { MobileProviders, PluginMobileClient } from '../index';
+import { PluginMobileClient } from '../index';
 import { MobileAppProvider } from './MobileAppContext';
 import { useStyles } from './styles';
 
@@ -39,6 +40,7 @@ export const Mobile = () => {
   const { styles } = useStyles();
   const mobilePlugin = usePlugin(PluginMobileClient);
   const MobileRouter = mobilePlugin.getRouterComponent();
+  const AdminProviderComponent = mobilePlugin?.options?.config?.skipLogin ? React.Fragment : AdminProvider;
   // 设置的移动端 meta
   React.useEffect(() => {
     if (!isDesktop) {
@@ -70,7 +72,7 @@ export const Mobile = () => {
   }, []);
 
   return (
-    <MobileProviders skipLogin={mobilePlugin?.options?.config?.skipLogin}>
+    <AdminProviderComponent>
       <DesktopComponent>
         {/* 目前移动端由于和客户端的主题对不上，所以先使用 `GlobalThemeProvider` 和 `AntdAppProvider` 进行重置为默认主题  */}
         <GlobalThemeProvider
@@ -108,6 +110,6 @@ export const Mobile = () => {
           </AntdAppProvider>
         </GlobalThemeProvider>
       </DesktopComponent>
-    </MobileProviders>
+    </AdminProviderComponent>
   );
 };
