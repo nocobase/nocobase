@@ -13,7 +13,7 @@ test.use({
   ...devices['Galaxy S9+'],
 });
 
-test.describe('redirect to other page from mobile', () => {
+test.describe('mobile devices: redirect to other page', () => {
   test('redirect to signin page', async ({ page }) => {
     const baseURL = process.env.APP_BASE_URL || `http://localhost:${process.env.APP_PORT || 20000}`;
 
