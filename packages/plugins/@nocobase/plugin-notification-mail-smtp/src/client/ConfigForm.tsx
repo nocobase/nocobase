@@ -149,7 +149,7 @@ export const ChannelConfigForm = () => {
                         'x-decorator': 'FormItem',
                         'x-component': 'Input',
                         'x-component-props': {
-                          useTypedConstant: ['string'],
+                          // useTypedConstant: ['string'],
                           placeholder: `noreply <example@domain.com>`,
                         },
                       },

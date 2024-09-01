@@ -22,23 +22,8 @@ export const createFormSchema: ISchema = {
     drawer: {
       type: 'void',
       'x-component': 'Action.Drawer',
-      'x-decorator': 'Form',
-      'x-decorator-props': {
-        useValues(options) {
-          const ctx = useActionContext();
-          const { name } = useContext(NotificationTypeNameContext);
-          return useRequest(
-            () =>
-              Promise.resolve({
-                data: {
-                  name: `s_${uid()}`,
-                  notificationType: name,
-                },
-              }),
-            { ...options, refreshDeps: [ctx.visible] },
-          );
-        },
-      },
+      'x-decorator': 'FormV2',
+      'x-use-decorator-props': 'useCreateFormProps',
       title: '{{t("Add new")}}',
       properties: {
         ...formProperties,
@@ -49,17 +34,12 @@ export const createFormSchema: ISchema = {
             cancel: {
               title: '{{t("Cancel")}}',
               'x-component': 'Action',
-              'x-component-props': {
-                useAction: '{{ cm.useCancelAction }}',
-              },
+              'x-use-component-props': 'useCloseActionProps',
             },
             submit: {
               title: '{{t("Submit")}}',
               'x-component': 'Action',
-              'x-component-props': {
-                type: 'primary',
-                useAction: '{{ cm.useCreateAction }}',
-              },
+              'x-use-component-props': 'useCreateActionProps',
             },
           },
         },
@@ -70,24 +50,18 @@ export const createFormSchema: ISchema = {
 
 export const channelsSchema: ISchema = {
   type: 'void',
-  name: COLLECTION_NAME.channels,
-  'x-decorator': 'ResourceActionProvider',
+  name: uid(),
+  'x-decorator': 'TableBlockProvider',
   'x-decorator-props': {
-    collection,
-    resourceName: COLLECTION_NAME.channels,
-    request: {
-      resource: COLLECTION_NAME.channels,
-      action: 'list',
-      params: {
-        pageSize: 50,
-        sort: 'createdAt',
-      },
+    collection: COLLECTION_NAME.channels,
+    action: 'list',
+    dragSort: false,
+    params: {
+      sort: ['createdAt'],
+      pageSize: 20,
     },
   },
-  'x-component': 'CollectionProvider_deprecated',
-  'x-component-props': {
-    collection,
-  },
+  'x-component': 'CardItem',
   properties: {
     actions: {
       type: 'void',
@@ -98,19 +72,19 @@ export const channelsSchema: ISchema = {
         },
       },
       properties: {
-        delete: {
-          type: 'void',
-          title: '{{t("Delete")}}',
-          'x-component': 'Action',
-          'x-component-props': {
-            icon: 'DeleteOutlined',
-            useAction: '{{ cm.useBulkDestroyAction }}',
-            confirm: {
-              title: "{{t('Delete')}}",
-              content: "{{t('Are you sure you want to delete it?')}}",
-            },
-          },
-        },
+        // delete: {
+        //   type: 'void',
+        //   title: '{{t("Delete")}}',
+        //   'x-component': 'Action',
+        //   'x-component-props': {
+        //     icon: 'DeleteOutlined',
+        //     useAction: '{{ cm.useBulkDestroyAction }}',
+        //     confirm: {
+        //       title: "{{t('Delete')}}",
+        //       content: "{{t('Are you sure you want to delete it?')}}",
+        //     },
+        //   },
+        // },
         create: {
           type: 'void',
           title: '{{t("Add new")}}',
@@ -122,21 +96,20 @@ export const channelsSchema: ISchema = {
       },
     },
     table: {
-      type: 'void',
-      'x-uid': 'input',
-      'x-component': 'Table.Void',
+      type: 'array',
+      'x-component': 'TableV2',
+      'x-use-component-props': 'useTableBlockProps',
       'x-component-props': {
         rowKey: 'id',
         rowSelection: {
           type: 'checkbox',
         },
-        useDataSource: '{{ cm.useDataSourceFromRAC }}',
       },
       properties: {
         name: {
           type: 'void',
-          'x-decorator': 'Table.Column.Decorator',
-          'x-component': 'Table.Column',
+          'x-component': 'TableV2.Column',
+          title: '{{t("ID")}}',
           properties: {
             name: {
               type: 'string',
@@ -150,20 +123,23 @@ export const channelsSchema: ISchema = {
         },
         title: {
           type: 'void',
-          'x-decorator': 'Table.Column.Decorator',
-          'x-component': 'Table.Column',
+          'x-component': 'TableV2.Column',
+          title: '{{t("Title")}}',
           properties: {
             title: {
               type: 'string',
               'x-component': 'CollectionField',
               'x-read-pretty': true,
+              'x-component-props': {
+                ellipsis: true,
+              },
             },
           },
         },
         description: {
           type: 'void',
-          'x-decorator': 'Table.Column.Decorator',
-          'x-component': 'Table.Column',
+          'x-component': 'TableV2.Column',
+          title: '{{t("Description")}}',
           properties: {
             description: {
               type: 'boolean',
@@ -178,8 +154,7 @@ export const channelsSchema: ISchema = {
         notificationType: {
           title: '{{t("Notification type")}}',
           type: 'void',
-          'x-decorator': 'Table.Column.Decorator',
-          'x-component': 'Table.Column',
+          'x-component': 'TableV2.Column',
           properties: {
             notificationType: {
               type: 'string',
@@ -192,51 +167,36 @@ export const channelsSchema: ISchema = {
         actions: {
           type: 'void',
           title: '{{t("Actions")}}',
-          'x-component': 'Table.Column',
+          'x-component': 'TableV2.Column',
           properties: {
-            actions: {
+            edit: {
               type: 'void',
-              'x-component': 'Space',
+              title: 'Edit',
+              'x-component': 'Action.Link',
               'x-component-props': {
-                split: '|',
+                openMode: 'drawer',
+                icon: 'EditOutlined',
               },
               properties: {
-                update: {
+                drawer: {
                   type: 'void',
-                  title: '{{t("Configure")}}',
-                  'x-component': 'Action.Link',
-                  'x-component-props': {
-                    type: 'primary',
-                  },
+                  title: 'Edit',
+                  'x-component': 'Action.Drawer',
                   properties: {
-                    drawer: {
+                    form: {
                       type: 'void',
-                      'x-component': 'Action.Drawer',
-                      'x-decorator': 'Form',
-                      'x-decorator-props': {
-                        useValues: '{{ cm.useValuesFromRecord }}',
-                      },
-                      title: '{{t("Configure")}}',
+                      'x-component': 'FormV2',
+                      'x-use-component-props': 'useEditFormProps',
                       properties: {
                         ...updateFormProperties,
                         footer: {
                           type: 'void',
                           'x-component': 'Action.Drawer.Footer',
                           properties: {
-                            cancel: {
-                              title: '{{t("Cancel")}}',
-                              'x-component': 'Action',
-                              'x-component-props': {
-                                useAction: '{{ cm.useCancelAction }}',
-                              },
-                            },
                             submit: {
-                              title: '{{t("Submit")}}',
+                              title: 'Submit',
                               'x-component': 'Action',
-                              'x-component-props': {
-                                type: 'primary',
-                                useAction: '{{ cm.useUpdateAction }}',
-                              },
+                              'x-use-component-props': 'useEditActionProps',
                             },
                           },
                         },
@@ -244,18 +204,139 @@ export const channelsSchema: ISchema = {
                     },
                   },
                 },
-                delete: {
-                  type: 'void',
-                  title: '{{ t("Delete") }}',
-                  'x-component': 'Action.Link',
-                  'x-component-props': {
-                    confirm: {
-                      title: "{{t('Delete record')}}",
-                      content: "{{t('Are you sure you want to delete it?')}}",
-                    },
-                    useAction: '{{cm.useDestroyAction}}',
+              },
+            },
+            delete: {
+              type: 'void',
+              title: '{{t("Delete")}}',
+              'x-component': 'Action.Link',
+              'x-use-component-props': 'useDeleteActionProps',
+            },
+          },
+        },
+        // actions: {
+        //   type: 'void',
+        //   title: '{{t("Actions")}}',
+        //   'x-component': 'Table.Column',
+        //   properties: {
+        //     actions: {
+        //       type: 'void',
+        //       'x-component': 'Space',
+        //       'x-component-props': {
+        //         split: '|',
+        //       },
+        //       properties: {
+        //         update: {
+        //           type: 'void',
+        //           title: '{{t("Configure")}}',
+        //           'x-component': 'Action.Link',
+        //           'x-component-props': {
+        //             type: 'primary',
+        //           },
+        //           properties: {
+        //             drawer: {
+        //               type: 'void',
+        //               'x-component': 'Action.Drawer',
+        //               'x-decorator': 'Form',
+        //               'x-decorator-props': {
+        //                 useValues: '{{ cm.useValuesFromRecord }}',
+        //               },
+        //               title: '{{t("Configure")}}',
+        //               properties: {
+        //                 ...updateFormProperties,
+        //                 footer: {
+        //                   type: 'void',
+        //                   'x-component': 'Action.Drawer.Footer',
+        //                   properties: {
+        //                     cancel: {
+        //                       title: '{{t("Cancel")}}',
+        //                       'x-component': 'Action',
+        //                       'x-component-props': {
+        //                         useAction: '{{ cm.useCancelAction }}',
+        //                       },
+        //                     },
+        //                     submit: {
+        //                       title: '{{t("Submit")}}',
+        //                       'x-component': 'Action',
+        //                       'x-component-props': {
+        //                         type: 'primary',
+        //                         useAction: '{{ cm.useUpdateAction }}',
+        //                       },
+        //                     },
+        //                   },
+        //                 },
+        //               },
+        //             },
+        //           },
+        //         },
+        //         delete: {
+        //           type: 'void',
+        //           title: '{{ t("Delete") }}',
+        //           'x-component': 'Action.Link',
+        //           'x-component-props': {
+        //             confirm: {
+        //               title: "{{t('Delete record')}}",
+        //               content: "{{t('Are you sure you want to delete it?')}}",
+        //             },
+        //             useAction: '{{cm.useDestroyAction}}',
+        //           },
+        //           'x-disabled': '{{ useCanNotDelete() }}',
+        //         },
+        //       },
+        //     },
+        //   },
+        // },
+      },
+    },
+  },
+};
+
+export const a = {
+  actions: {
+    type: 'void',
+    'x-component': 'Space',
+    'x-component-props': {
+      split: '|',
+    },
+    properties: {
+      edit: {
+        type: 'void',
+        title: 'Edit',
+        'x-component': 'Action.Link',
+        'x-component-props': {
+          openMode: 'drawer',
+          icon: 'EditOutlined',
+        },
+        properties: {
+          drawer: {
+            type: 'void',
+            title: 'Edit',
+            'x-component': 'Action.Drawer',
+            properties: {
+              form: {
+                type: 'void',
+                'x-component': 'FormV2',
+                'x-use-component-props': 'useEditFormProps',
+                properties: {
+                  subject: {
+                    'x-decorator': 'FormItem',
+                    'x-component': 'CollectionField',
                   },
-                  'x-disabled': '{{ useCanNotDelete() }}',
+                  content: {
+                    'x-decorator': 'FormItem',
+                    'x-component': 'CollectionField',
+                  },
+                  footer: {
+                    type: 'void',
+                    'x-component': 'Action.Drawer.Footer',
+                    properties: {
+                      submit: {
+                        title: 'Submit',
+                        'x-component': 'Action',
+                        'x-use-component-props': 'useSubmitActionProps',
+                      },
+                    },
+                  },
                 },
               },
             },

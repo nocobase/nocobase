@@ -9,9 +9,8 @@
 
 import React, { useContext } from 'react';
 import { observer, useForm } from '@formily/react';
-import { NotificationTypeNameContext } from '../context';
 import { NotificationTypesContext } from '../context';
-import { useActionContext, usePlugin, useCollectionRecord, useRequest } from '@nocobase/client';
+import { useCollectionRecord } from '@nocobase/client';
 
 export const ConfigForm = observer(
   () => {

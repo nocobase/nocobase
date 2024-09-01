@@ -19,5 +19,9 @@
   "Add new": "新增",
   "Trigger from": "触发来源",
   "Status": "状态",
-  "Created at": "发送时间"
+  "Created at": "发送时间",
+  "Delete record": "删除记录",
+  "Are you sure you want to delete it?": "确定要删除吗？",
+  "Deleted successfully!": "删除成功！",
+  "Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.": "随机生成，可修改。支持字母、数字和下划线，必须以字母开头。"
 }

@@ -19,5 +19,9 @@
   "Add new": "Add new",
   "Trigger From": "Trigger From",
   "Status": "Status",
-  "Created At": "Created At"
+  "Created At": "Created At",
+  "Delete record": "Delete record",
+  "Are you sure you want to delete it?": "Are you sure you want to delete it?",
+  "Deleted successfully!": "Deleted successfully!",
+  "Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.": "Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter."
 }

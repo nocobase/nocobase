@@ -16,14 +16,14 @@ import {
   useDataBlockRequest,
   useDataBlockResource,
 } from '@nocobase/client';
+import { uid } from '@formily/shared';
 import { App as AntdApp } from 'antd';
 import { createForm } from '@formily/core';
 import { useForm } from '@formily/react';
-import { useNotificationTranslation } from '../locale';
+import { NotificationTypeNameContext } from './context';
+import { useNotificationTranslation } from '../../locale';
 
-export { ChannelTypeMapContext, useChannelTypeMap } from './channel';
-
-export const useSubmitActionProps = () => {
+export const useCreateActionProps = () => {
   const { setVisible } = useActionContext();
   const { message } = AntdApp.useApp();
   const form = useForm();
@@ -35,16 +35,34 @@ export const useSubmitActionProps = () => {
     async onClick() {
       await form.submit();
       const values = form.values;
-      if (values[collection.filterTargetKey]) {
-        await resource.update({
-          values,
-          filterByTk: values[collection.filterTargetKey],
-        });
-      } else {
-        await resource.create({
-          values,
-        });
-      }
+      await resource.create({
+        values,
+      });
+
+      await runAsync();
+      message.success('Saved successfully!');
+      setVisible(false);
+    },
+  };
+};
+
+export const useEditActionProps = () => {
+  const { setVisible } = useActionContext();
+  const { message } = AntdApp.useApp();
+  const form = useForm();
+  const resource = useDataBlockResource();
+  const { runAsync } = useDataBlockRequest();
+  const collection = useCollection();
+  return {
+    type: 'primary',
+    async onClick() {
+      await form.submit();
+      const values = form.values;
+      await resource.update({
+        values,
+        filterByTk: values[collection.filterTargetKey],
+      });
+
       await runAsync();
       message.success('Saved successfully!');
       setVisible(false);
@@ -67,6 +85,25 @@ export const useEditFormProps = () => {
   };
 };
 
+export const useCreateFormProps = () => {
+  const ctx = useActionContext();
+  const { name } = useContext(NotificationTypeNameContext);
+  const recordData = useCollectionRecordData();
+  const form = useMemo(
+    () =>
+      createForm({
+        values: {
+          name: `s_${uid()}`,
+          notificationType: name,
+        },
+      }),
+    [name],
+  );
+
+  return {
+    form,
+  };
+};
 export const useCloseActionProps = () => {
   const { setVisible } = useActionContext();
   return {

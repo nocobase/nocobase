@@ -14,6 +14,7 @@ import {
   useActionContext,
   useAsyncData,
   usePlugin,
+  ExtendCollectionsProvider,
 } from '@nocobase/client';
 import { Card } from 'antd';
 import React, { useState } from 'react';
@@ -21,13 +22,21 @@ import { channelsSchema, createFormSchema } from '../schemas';
 import { Button, Dropdown } from 'antd';
 import { PlusOutlined, DownOutlined } from '@ant-design/icons';
 import { NotificationTypesContext, useChannelTypes, useNotificationTypeNameProvider } from '../context';
-import { useTranslation } from 'react-i18next';
 import { useNotificationTranslation } from '../../../locale';
 import { Schema } from '@formily/react';
 import { PluginNotificationManagerClient } from '../../..';
 import { ChannelType } from '../types';
 import { ConfigForm } from './ConfigForm';
-
+import channelCollection from '../../../../collections/channel';
+import messageLogCollection from '../../../../collections/messageLog';
+import {
+  useCreateActionProps,
+  useEditActionProps,
+  useCloseActionProps,
+  useEditFormProps,
+  useCreateFormProps,
+  useDeleteActionProps,
+} from '../hooks';
 const useCloseAction = () => {
   const { setVisible } = useActionContext();
   return {
@@ -38,7 +47,7 @@ const useCloseAction = () => {
 };
 
 const AddNew = () => {
-  const { t } = useTranslation();
+  const { t } = useNotificationTranslation();
   const [visible, setVisible] = useState(false);
   const { NotificationTypeNameProvider, name, setName } = useNotificationTypeNameProvider();
   const channelTypes = useChannelTypes();
@@ -60,7 +69,14 @@ const AddNew = () => {
           </Button>
         </Dropdown>
         <SchemaComponent
-          scope={{ useCloseAction }}
+          scope={{
+            useCloseAction,
+            useCreateActionProps,
+            useEditActionProps,
+            useCloseActionProps,
+            useEditFormProps,
+            useCreateFormProps,
+          }}
           schema={createFormSchema}
           // components={{ ConfigForm: getConfigForm(typeName) }}
         />
@@ -96,15 +112,27 @@ export const ChannelManager = () => {
   }));
 
   return (
-    <Card bordered={false}>
-      <NotificationTypesContext.Provider value={{ channelTypes: notificationTypes }}>
-        <SchemaComponent
-          schema={channelsSchema}
-          components={{ AddNew, ConfigForm }}
-          scope={{ useCanNotDelete, t, notificationTypeOptions }}
-        />
-      </NotificationTypesContext.Provider>
-    </Card>
+    <ExtendCollectionsProvider collections={[channelCollection, messageLogCollection]}>
+      <Card bordered={false}>
+        <NotificationTypesContext.Provider value={{ channelTypes: notificationTypes }}>
+          <SchemaComponent
+            schema={channelsSchema}
+            components={{ AddNew, ConfigForm }}
+            scope={{
+              useCanNotDelete,
+              t,
+              notificationTypeOptions,
+              useCreateActionProps,
+              useEditActionProps,
+              useCloseActionProps,
+              useEditFormProps,
+              useCreateFormProps,
+              useDeleteActionProps,
+            }}
+          />
+        </NotificationTypesContext.Provider>
+      </Card>
+    </ExtendCollectionsProvider>
   );
 };
 
