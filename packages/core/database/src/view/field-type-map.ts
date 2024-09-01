@@ -25,11 +25,11 @@ const postgres = {
   real: 'float',
   'double precision': 'float',
 
-  'timestamp without time zone': ['date', 'datetimeNoTz'],
-  'timestamp with time zone': 'date',
+  'timestamp without time zone': 'datetimeNoTz',
+  'timestamp with time zone': 'datetime',
   'time without time zone': 'time',
 
-  date: 'date',
+  date: 'dateOnly',
   boolean: 'boolean',
 
   json: ['json', 'array'],
@@ -55,7 +55,7 @@ const mysql = {
 
   char: ['string', 'uuid', 'nanoid', 'encryption'],
   varchar: ['string', 'uuid', 'nanoid', 'encryption'],
-  date: ['date', 'datetimeNoTz'],
+  date: 'dateOnly',
   time: 'time',
   tinytext: 'text',
   text: 'text',
@@ -71,8 +71,8 @@ const mysql = {
   boolean: 'boolean',
   decimal: 'decimal',
 
-  datetime: 'date',
-  timestamp: 'date',
+  datetime: ['datetime', 'datetimeNoTz'],
+  timestamp: 'datetime',
   json: ['json', 'array'],
   enum: 'string',
 };

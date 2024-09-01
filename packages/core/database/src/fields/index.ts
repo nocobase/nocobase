@@ -46,6 +46,7 @@ export * from './belongs-to-many-field';
 export * from './boolean-field';
 export * from './context-field';
 export * from './date-field';
+export * from './datetime-field';
 export * from './datetime-no-tz-field';
 export * from './date-only-field';
 export * from './field';
