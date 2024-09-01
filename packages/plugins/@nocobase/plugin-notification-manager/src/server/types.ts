@@ -38,7 +38,6 @@ export interface SendOptions {
   };
   receivers: string[];
   triggerFrom: string;
-  channelId: string;
 }
 
 export interface IChannel {
