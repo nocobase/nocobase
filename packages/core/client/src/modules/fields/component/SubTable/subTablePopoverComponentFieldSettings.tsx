@@ -7,12 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Field } from '@formily/core';
-import { useField, useFieldSchema, ISchema } from '@formily/react';
-import { useTranslation } from 'react-i18next';
 import { ArrayItems } from '@formily/antd-v5';
+import { Field } from '@formily/core';
+import { ISchema, useField, useFieldSchema } from '@formily/react';
+import { useTranslation } from 'react-i18next';
 import { SchemaSettings } from '../../../../application/schema-settings/SchemaSettings';
+import { useCollectionManager_deprecated, useSortFields } from '../../../../collection-manager';
 import { useFieldComponentName } from '../../../../common/useFieldComponentName';
+import { useCollectionManager } from '../../../../data-source';
 import {
   useDesignable,
   useFieldModeOptions,
@@ -20,8 +22,8 @@ import {
   useIsFieldReadPretty,
 } from '../../../../schema-component';
 import { isSubMode } from '../../../../schema-component/antd/association-field/util';
-import { useCollectionManager_deprecated, useSortFields } from '../../../../collection-manager';
 import { useIsAssociationField } from '../../../../schema-component/antd/form-item';
+import { SchemaSettingsLinkageRules } from '../../../../schema-settings/SchemaSettings';
 
 const fieldComponent: any = {
   name: 'fieldComponent',
@@ -253,7 +255,22 @@ export const allowAddNewData = {
     };
   },
 };
+
+export const linkageRules = {
+  name: 'linkageRules',
+  Component: SchemaSettingsLinkageRules,
+  useComponentProps() {
+    const fieldSchema = useFieldSchema();
+    const cm = useCollectionManager();
+    const collectionField = cm.getCollectionField(fieldSchema['x-collection-field']);
+
+    return {
+      collectionName: collectionField?.target,
+    };
+  },
+};
+
 export const subTablePopoverComponentFieldSettings = new SchemaSettings({
   name: 'fieldSettings:component:SubTable',
-  items: [fieldComponent, allowAddNewData, allowSelectExistingRecord, setDefaultSortingRules],
+  items: [fieldComponent, allowAddNewData, allowSelectExistingRecord, setDefaultSortingRules, linkageRules],
 });

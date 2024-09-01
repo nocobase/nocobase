@@ -95,7 +95,7 @@ const ToOneNester = (props) => {
 
   return (
     <FormActiveFieldsProvider name="nester">
-      <SubFormProvider value={{ value: field.value, collection, fieldSchema }}>
+      <SubFormProvider value={{ value: field.value, collection, fieldSchema: fieldSchema.parent }}>
         <RecordProvider isNew={recordV2?.isNew} record={field.value} parent={recordV2?.data}>
           <DefaultValueProvider isAllowToSetDefaultValue={isAllowToSetDefaultValue}>
             <Card bordered={true}>{props.children}</Card>
@@ -201,7 +201,7 @@ const ToManyNester = observer(
                 )}
               </div>
               <FormActiveFieldsProvider name="nester">
-                <SubFormProvider value={{ value, collection, fieldSchema }}>
+                <SubFormProvider value={{ value, collection, fieldSchema: fieldSchema.parent }}>
                   <RecordProvider isNew={isNewRecord(value)} record={value} parent={recordData}>
                     <RecordIndexProvider index={index}>
                       <DefaultValueProvider isAllowToSetDefaultValue={isAllowToSetDefaultValue}>

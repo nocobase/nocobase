@@ -132,7 +132,7 @@ const useTableColumns = (props: { showDel?: boolean; isSubTable?: boolean }) => 
             const index = field.value?.indexOf(record);
             const basePath = field.address.concat(record.__index || index);
             return (
-              <SubFormProvider value={{ value: record, collection, fieldSchema: schema }}>
+              <SubFormProvider value={{ value: record, collection, fieldSchema: schema.parent }}>
                 <RecordIndexProvider index={record.__index || index}>
                   <RecordProvider isNew={isNewRecord(record)} record={record} parent={parentRecordData}>
                     <ColumnFieldProvider schema={s} basePath={basePath}>

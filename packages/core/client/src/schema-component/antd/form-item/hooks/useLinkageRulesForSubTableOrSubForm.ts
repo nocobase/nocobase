@@ -36,14 +36,29 @@ export const useLinkageRulesForSubTableOrSubForm = () => {
 
   const linkageRules = getLinkageRules(schemaOfSubTableOrSubForm);
 
-  console.log('linkageRules', linkageRules);
-
   useEffect(() => {
+    if (!(field.onUnmount as any).__rested) {
+      const _onUnmount = field.onUnmount;
+      field.onUnmount = () => {
+        (field as any).__disposes.forEach((dispose) => {
+          dispose();
+        });
+        _onUnmount();
+      };
+      (field.onUnmount as any).__rested = true;
+    }
+
     if (!linkageRules) {
       return;
     }
 
-    const disposes = [];
+    if ((field as any).__disposes) {
+      (field as any).__disposes.forEach((dispose) => {
+        dispose();
+      });
+    }
+
+    const disposes = ((field as any).__disposes = []);
 
     forEachLinkageRule(linkageRules, (action, rule) => {
       if (action.targetFields?.includes(fieldSchema.name)) {
@@ -61,12 +76,8 @@ export const useLinkageRulesForSubTableOrSubForm = () => {
       }
     });
 
-    return () => {
-      disposes.forEach((dispose) => {
-        dispose();
-      });
-    };
-  }, [field, fieldSchema?.name, formValue, linkageRules, localVariables, variables]);
+    (field as any).__linkageRules = linkageRules;
+  }, [field, fieldSchema?.name, formValue, JSON.stringify(linkageRules), localVariables, variables]);
 };
 
 function getLinkageRules(fieldSchema) {

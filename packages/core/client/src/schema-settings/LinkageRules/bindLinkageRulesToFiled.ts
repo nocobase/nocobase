@@ -32,6 +32,11 @@ interface Props {
   condition;
   variables: VariablesContextType;
   localVariables: VariableOption[];
+  /**
+   * used to parse the variable name of the left condition value
+   * @default '$nForm'
+   */
+  variableNameOfLeftCondition?: string;
 }
 
 export function bindLinkageRulesToFiled({
@@ -182,6 +187,7 @@ function getSubscriber(
       condition: rule.condition,
       variables,
       localVariables,
+      variableNameOfLeftCondition: '$iteration',
     });
 
     // 当条件改变时，有可能会触发多个 reaction，所以这里需要延迟一下，确保所有的 reaction 都执行完毕后，
@@ -252,27 +258,25 @@ export const collectFieldStateOfLinkageRules = ({
   condition,
   variables,
   localVariables,
+  variableNameOfLeftCondition,
 }: Props) => {
   const requiredResult = field?.stateOfLinkageRules?.required || [field?.initStateOfLinkageRules?.required];
   const displayResult = field?.stateOfLinkageRules?.display || [field?.initStateOfLinkageRules?.display];
   const patternResult = field?.stateOfLinkageRules?.pattern || [field?.initStateOfLinkageRules?.pattern];
   const valueResult = field?.stateOfLinkageRules?.value || [field?.initStateOfLinkageRules?.value];
   const { evaluate } = evaluators.get('formula.js');
+  const paramsToGetConditionResult = { ruleGroup: condition, variables, localVariables, variableNameOfLeftCondition };
 
   switch (operator) {
     case ActionType.Required:
-      requiredResult.push(
-        getTempFieldState(conditionAnalyses({ ruleGroup: condition, variables, localVariables }), true),
-      );
+      requiredResult.push(getTempFieldState(conditionAnalyses(paramsToGetConditionResult), true));
       field.stateOfLinkageRules = {
         ...field.stateOfLinkageRules,
         required: requiredResult,
       };
       break;
     case ActionType.InRequired:
-      requiredResult.push(
-        getTempFieldState(conditionAnalyses({ ruleGroup: condition, variables, localVariables }), false),
-      );
+      requiredResult.push(getTempFieldState(conditionAnalyses(paramsToGetConditionResult), false));
       field.stateOfLinkageRules = {
         ...field.stateOfLinkageRules,
         required: requiredResult,
@@ -281,9 +285,7 @@ export const collectFieldStateOfLinkageRules = ({
     case ActionType.Visible:
     case ActionType.None:
     case ActionType.Hidden:
-      displayResult.push(
-        getTempFieldState(conditionAnalyses({ ruleGroup: condition, variables, localVariables }), operator),
-      );
+      displayResult.push(getTempFieldState(conditionAnalyses(paramsToGetConditionResult), operator));
       field.stateOfLinkageRules = {
         ...field.stateOfLinkageRules,
         display: displayResult,
@@ -292,9 +294,7 @@ export const collectFieldStateOfLinkageRules = ({
     case ActionType.Editable:
     case ActionType.ReadOnly:
     case ActionType.ReadPretty:
-      patternResult.push(
-        getTempFieldState(conditionAnalyses({ ruleGroup: condition, variables, localVariables }), operator),
-      );
+      patternResult.push(getTempFieldState(conditionAnalyses(paramsToGetConditionResult), operator));
       field.stateOfLinkageRules = {
         ...field.stateOfLinkageRules,
         pattern: patternResult,
@@ -329,9 +329,7 @@ export const collectFieldStateOfLinkageRules = ({
         if (isConditionEmpty(condition)) {
           valueResult.push(getTempFieldState(true, getValue()));
         } else {
-          valueResult.push(
-            getTempFieldState(conditionAnalyses({ ruleGroup: condition, variables, localVariables }), getValue()),
-          );
+          valueResult.push(getTempFieldState(conditionAnalyses(paramsToGetConditionResult), getValue()));
         }
         field.stateOfLinkageRules = {
           ...field.stateOfLinkageRules,
