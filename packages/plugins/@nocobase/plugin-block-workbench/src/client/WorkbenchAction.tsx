@@ -25,6 +25,8 @@ const useStyles = createStyles(({ token, css }) => ({
   `,
   title: css`
     margin-top: ${token.marginSM}px;
+    text-overflow: ellipsis;
+    overflow: hidden;
   `,
 }));
 
@@ -35,7 +37,7 @@ function Button() {
   const { layout } = useContext(WorkbenchBlockContext);
   const { styles, cx } = useStyles();
   return layout === WorkbenchLayout.Grid ? (
-    <div>
+    <div title={fieldSchema.title} style={{ width: '90px', overflow: 'hidden' }}>
       <Avatar style={{ backgroundColor }} size={64} icon={<Icon type={icon} />} />
       <div className={cx(styles.title)}>{fieldSchema.title}</div>
     </div>
