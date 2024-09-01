@@ -214,7 +214,7 @@ class RelationRepositoryBuilder<R extends RelationRepository> {
     }
   }
 
-  of(id: string | number): R {
+  of(id: TargetKey): R {
     if (!this.association) {
       return;
     }

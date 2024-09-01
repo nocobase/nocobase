@@ -131,6 +131,15 @@ describe('multi target key in association repository', () => {
       expect(b2a1).toBeDefined();
       expect(b2a1.get('name')).toBe('b2');
       expect(b2a1.get('author')).toBe('a1');
+
+      await db
+        .getRepository<HasManyRepository>('students.books', {
+          name: 's2',
+          classId: 2,
+        })
+        .destroy({});
+
+      expect(await db.getRepository('books').count()).toBe(2);
     });
   });
 });
