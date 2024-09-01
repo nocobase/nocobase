@@ -71,6 +71,7 @@ export const useLinkageRulesForSubTableOrSubForm = () => {
             action,
             rule,
             variables,
+            variableNameOfLeftCondition: '$iteration',
           }),
         );
       }

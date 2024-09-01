@@ -47,6 +47,7 @@ export function bindLinkageRulesToFiled({
   action,
   rule,
   variables,
+  variableNameOfLeftCondition,
 }: {
   field: any;
   linkageRules: any[];
@@ -55,6 +56,11 @@ export function bindLinkageRulesToFiled({
   action: any;
   rule: any;
   variables: VariablesContextType;
+  /**
+   * used to parse the variable name of the left condition value
+   * @default '$nForm'
+   */
+  variableNameOfLeftCondition?: string;
 }) {
   field['initStateOfLinkageRules'] = {
     display: field.initStateOfLinkageRules?.display || getTempFieldState(true, field.display),
@@ -83,7 +89,7 @@ export function bindLinkageRulesToFiled({
         .join(',');
       return result;
     },
-    getSubscriber(action, field, rule, variables, localVariables),
+    getSubscriber({ action, field, rule, variables, localVariables, variableNameOfLeftCondition }),
     { fireImmediately: true, equals: _.isEqual },
   );
 }
@@ -171,13 +177,25 @@ function getVariableValue(variableString: string, localVariables: VariableOption
   return getValuesByPath(ctx, getPath(variableString));
 }
 
-function getSubscriber(
-  action: any,
-  field: any,
-  rule: any,
-  variables: VariablesContextType,
-  localVariables: VariableOption[],
-): (value: string, oldValue: string) => void {
+function getSubscriber({
+  action,
+  field,
+  rule,
+  variables,
+  localVariables,
+  variableNameOfLeftCondition,
+}: {
+  action: any;
+  field: any;
+  rule: any;
+  variables: VariablesContextType;
+  localVariables: VariableOption[];
+  /**
+   * used to parse the variable name of the left condition value
+   * @default '$nForm'
+   */
+  variableNameOfLeftCondition?: string;
+}): (value: string, oldValue: string) => void {
   return () => {
     // 当条件改变触发 reaction 时，会同步收集字段状态，并保存到 field.stateOfLinkageRules 中
     collectFieldStateOfLinkageRules({
@@ -187,7 +205,7 @@ function getSubscriber(
       condition: rule.condition,
       variables,
       localVariables,
-      variableNameOfLeftCondition: '$iteration',
+      variableNameOfLeftCondition,
     });
 
     // 当条件改变时，有可能会触发多个 reaction，所以这里需要延迟一下，确保所有的 reaction 都执行完毕后，
