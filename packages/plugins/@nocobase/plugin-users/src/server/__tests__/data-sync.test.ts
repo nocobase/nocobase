@@ -123,6 +123,9 @@ describe('user data sync', () => {
   it('should update user custom field', async () => {
     const userCollection = db.getCollection('users');
     userCollection.addField('customField', { type: 'string' });
+    await db.sync({
+      alter: true,
+    });
     await resourceManager.updateOrCreate({
       sourceName: 'test',
       dataType: 'user',
