@@ -27,7 +27,7 @@ export class DateFieldInterface extends CollectionFieldInterface {
       },
     },
   };
-  availableTypes = ['date', 'dateOnly', 'string'];
+  availableTypes = ['dateOnly'];
   hasDefaultValue = true;
   properties = {
     ...defaultProps,
