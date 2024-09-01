@@ -142,6 +142,9 @@ export const channelsSchema: ISchema = {
               type: 'string',
               'x-component': 'CollectionField',
               'x-read-pretty': true,
+              'x-component-props': {
+                ellipsis: true,
+              },
             },
           },
         },
@@ -166,6 +169,9 @@ export const channelsSchema: ISchema = {
               type: 'boolean',
               'x-component': 'CollectionField',
               'x-read-pretty': true,
+              'x-component-props': {
+                ellipsis: true,
+              },
             },
           },
         },
