@@ -79,6 +79,7 @@ export const postProcess = async (ctx: Context, next: Next) => {
         case 'integer':
         case 'float':
         case 'double':
+        case 'decimal':
           record[key] = Number(value);
           break;
       }
