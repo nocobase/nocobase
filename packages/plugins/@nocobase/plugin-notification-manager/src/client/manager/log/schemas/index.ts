@@ -55,7 +55,10 @@ export const messageLogsManagerSchema: ISchema = {
             triggerFrom: {
               type: 'string',
               'x-component': 'CollectionField',
-              'x-pattern': 'readPretty',
+              'x-read-pretty': true,
+              'x-component-props': {
+                ellipsis: true,
+              },
             },
           },
         },
@@ -68,7 +71,10 @@ export const messageLogsManagerSchema: ISchema = {
             'channel.title': {
               type: 'string',
               'x-component': 'CollectionField',
-              'x-pattern': 'readPretty',
+              'x-read-pretty': true,
+              'x-component-props': {
+                ellipsis: true,
+              },
             },
           },
         },
@@ -81,7 +87,10 @@ export const messageLogsManagerSchema: ISchema = {
             receiver: {
               type: 'string',
               'x-component': 'CollectionField',
-              'x-pattern': 'readPretty',
+              'x-read-pretty': true,
+              'x-component-props': {
+                ellipsis: true,
+              },
             },
           },
         },
