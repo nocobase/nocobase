@@ -8,88 +8,19 @@
  */
 
 import { Plugin, PluginManager } from '@nocobase/server';
-import _ from 'lodash';
+import { findBuiltInPlugins, findLocalPlugins } from './findPackageNames';
 
 export class PresetNocoBase extends Plugin {
-  builtInPlugins = [
-    'data-source-manager',
-    'error-handler',
-    'data-source-main',
-    'ui-schema-storage',
-    // 'ui-routes-storage',
-    'file-manager',
-    'system-settings',
-    'field-sequence',
-    'verification',
-    'users',
-    'acl',
-    'field-china-region',
-    'workflow',
-    'workflow-action-trigger',
-    'workflow-aggregate',
-    'workflow-delay',
-    'workflow-dynamic-calculation',
-    'workflow-loop',
-    'workflow-manual',
-    'workflow-parallel',
-    'workflow-request',
-    'workflow-sql',
-    'client',
-    'action-import',
-    'action-export',
-    'backup-restore',
-    'block-iframe',
-    'block-workbench',
-    'field-formula',
-    'data-visualization',
-    'auth',
-    'logger',
-    'action-custom-request',
-    'calendar',
-    'action-bulk-update',
-    'action-bulk-edit',
-    'gantt',
-    'kanban',
-    'action-duplicate',
-    'action-print',
-    'collection-sql',
-    'collection-tree',
-  ];
-
-  localPlugins = [
-    'multi-app-manager>=0.7.0-alpha.1',
-    // 'audit-logs>=0.7.1-alpha.4',
-    'map>=0.8.1-alpha.3',
-    // 'snapshot-field>=0.8.1-alpha.3',
-    'graph-collection-manager>=0.9.0-alpha.1',
-    // 'multi-app-share-collection>=0.9.2-alpha.1',
-    'mobile',
-    // 'mobile-client>=0.10.0-alpha.2',
-    'api-keys>=0.10.1-alpha.1',
-    'localization>=0.11.1-alpha.1',
-    'theme-editor>=0.11.1-alpha.1',
-    'api-doc>=0.13.0-alpha.1',
-    'auth-sms>=0.10.0-alpha.2',
-    'field-markdown-vditor>=0.21.0-alpha.16',
-    'workflow-mailer',
-    'field-m2m-array',
-  ];
-
   splitNames(name: string) {
     return (name || '').split(',').filter(Boolean);
   }
 
   async getBuiltInPlugins() {
-    const { APPEND_PRESET_BUILT_IN_PLUGINS } = process.env;
-    return _.uniq(this.splitNames(APPEND_PRESET_BUILT_IN_PLUGINS).concat(this.builtInPlugins));
+    return await findBuiltInPlugins();
   }
 
   async getLocalPlugins() {
-    const { APPEND_PRESET_LOCAL_PLUGINS } = process.env;
-    const plugins = this.splitNames(APPEND_PRESET_LOCAL_PLUGINS)
-      .concat(this.localPlugins)
-      .map((name) => name.split('>='));
-    return plugins;
+    return (await findLocalPlugins()).map((name) => name.split('>='));
   }
 
   async getPackageJson(name) {
