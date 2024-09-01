@@ -10,11 +10,14 @@
 import { ArrayItems } from '@formily/antd-v5';
 import { Field } from '@formily/core';
 import { ISchema, useField, useFieldSchema } from '@formily/react';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { SchemaSettings } from '../../../../application/schema-settings/SchemaSettings';
 import { useCollectionManager_deprecated, useSortFields } from '../../../../collection-manager';
 import { useFieldComponentName } from '../../../../common/useFieldComponentName';
 import { useCollectionManager } from '../../../../data-source';
+import { FlagProvider } from '../../../../flag-provider/FlagProvider';
+import { withDynamicSchemaProps } from '../../../../hoc/withDynamicSchemaProps';
 import {
   useDesignable,
   useFieldModeOptions,
@@ -23,6 +26,7 @@ import {
 } from '../../../../schema-component';
 import { isSubMode } from '../../../../schema-component/antd/association-field/util';
 import { useIsAssociationField } from '../../../../schema-component/antd/form-item';
+import { FormLinkageRules } from '../../../../schema-settings/LinkageRules';
 import { SchemaSettingsLinkageRules } from '../../../../schema-settings/SchemaSettings';
 
 const fieldComponent: any = {
@@ -256,6 +260,18 @@ export const allowAddNewData = {
   },
 };
 
+const LinkageRulesComponent = withDynamicSchemaProps(
+  (props) => {
+    return (
+      // the purpose is to display the `Current object` variable in the linkage rule configuration dialog
+      <FlagProvider isInSubForm>
+        <FormLinkageRules {...props} />
+      </FlagProvider>
+    );
+  },
+  { displayName: 'LinkageRulesComponent' },
+);
+
 export const linkageRules = {
   name: 'linkageRules',
   Component: SchemaSettingsLinkageRules,
@@ -266,6 +282,7 @@ export const linkageRules = {
 
     return {
       collectionName: collectionField?.target,
+      Component: LinkageRulesComponent,
     };
   },
 };

@@ -40,7 +40,7 @@ export const useLinkageRulesForSubTableOrSubForm = () => {
     if (!(field.onUnmount as any).__rested) {
       const _onUnmount = field.onUnmount;
       field.onUnmount = () => {
-        (field as any).__disposes.forEach((dispose) => {
+        (field as any).__disposes?.forEach((dispose) => {
           dispose();
         });
         _onUnmount();
