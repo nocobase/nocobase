@@ -296,12 +296,12 @@ test.describe('where to open a popup and what can be added to it', () => {
     await addBlock('form Table');
     await addBlock('form Form');
     await addBlock('Collapse');
-    await addBlock('Add text');
+    await addBlock('Markdown');
 
     await expect(page.getByLabel('block-item-CardItem-roles-table-selector')).toBeVisible();
     await expect(page.getByLabel('block-item-CardItem-roles-filter-form')).toBeVisible();
     await expect(page.getByLabel('block-item-CardItem-roles-filter-collapse')).toBeVisible();
-    await expect(page.getByLabel('block-item-Markdown.Void-roles-form')).toBeVisible();
+    await expect(page.getByLabel('block-item-Markdown.Void-')).toBeVisible();
 
     async function addBlock(name: string) {
       await page.getByLabel('schema-initializer-Grid-popup:tableSelector:addBlock-roles').hover();
