@@ -3,8 +3,8 @@
  * compact: true
  */
 import { Plugin } from '@nocobase/client';
-import { MobileProviders, MobileTabBar, mobileTabBarInitializer } from '@nocobase/plugin-mobile/client';
 import { mockApp } from '@nocobase/client/demo-utils';
+import { MobileProviders, MobileTabBar, mobileTabBarInitializer } from '@nocobase/plugin-mobile/client';
 import React from 'react';
 
 class DemoPlugin extends Plugin {
@@ -15,7 +15,7 @@ class DemoPlugin extends Plugin {
     this.app.router.add('schema.page', {
       path: '/page/:pageSchemaUid',
       element: (
-        <MobileProviders skipLogin={true}>
+        <MobileProviders>
           <MobileTabBar enableTabBar={false} />
         </MobileProviders>
       ),
