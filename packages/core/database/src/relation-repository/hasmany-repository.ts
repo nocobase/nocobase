@@ -14,24 +14,38 @@ import { AssociatedOptions, MultipleRelationRepository } from './multiple-relati
 import { transaction } from './relation-repository';
 
 export class HasManyRepository extends MultipleRelationRepository {
+  async targetRepositoryFilterOptionsBySourceValue(): Promise<any> {
+    let filterForeignKeyValue = this.sourceKeyValue;
+
+    if (this.isMultiTargetKey()) {
+      const sourceModel = await this.getSourceModel();
+
+      // @ts-ignore
+      filterForeignKeyValue = sourceModel.get(this.association.sourceKey);
+    }
+
+    return {
+      [this.association.foreignKey]: filterForeignKeyValue,
+    };
+  }
+
   async find(options?: FindOptions): Promise<any> {
     const targetRepository = this.targetCollection.repository;
 
-    const addFilter = this.isMultiTargetKey()
-      ? {}
-      : {
-          [this.association.foreignKey]: this.sourceKeyValue,
-        };
+    const targetFilterOptions = await this.targetRepositoryFilterOptionsBySourceValue();
 
-    if (options?.filterByTk) {
+    const findOptionsOmit = ['where', 'values', 'attributes'];
+
+    if (options?.filterByTk && !this.isMultiTargetKey(options.filterByTk)) {
       // @ts-ignore
-      addFilter[this.associationField.targetKey] = options.filterByTk;
+      targetFilterOptions[this.associationField.targetKey] = options.filterByTk;
+      findOptionsOmit.push('filterByTk');
     }
 
     const findOptions = {
-      ...omit(options, ['filterByTk', 'where', 'values', 'attributes']),
+      ...omit(options, findOptionsOmit),
       filter: {
-        $and: [options.filter || {}, addFilter],
+        $and: [options?.filter || {}, targetFilterOptions],
       },
     };
 
@@ -40,14 +54,11 @@ export class HasManyRepository extends MultipleRelationRepository {
 
   async aggregate(options: AggregateOptions) {
     const targetRepository = this.targetCollection.repository;
-    const addFilter = {
-      [this.association.foreignKey]: this.sourceKeyValue,
-    };
 
     const aggOptions = {
       ...options,
       filter: {
-        $and: [options.filter || {}, addFilter],
+        $and: [options.filter || {}, await this.targetRepositoryFilterOptionsBySourceValue()],
       },
     };
 

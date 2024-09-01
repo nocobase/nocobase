@@ -67,8 +67,8 @@ export abstract class RelationRepository {
       typeof sourceKeyValue === 'string' ? this.decodeMultiTargetKey(sourceKeyValue) || sourceKeyValue : sourceKeyValue;
   }
 
-  isMultiTargetKey() {
-    return lodash.isPlainObject(this.sourceKeyValue);
+  isMultiTargetKey(value?: any) {
+    return lodash.isPlainObject(value || this.sourceKeyValue);
   }
 
   get collection() {
@@ -127,12 +127,20 @@ export abstract class RelationRepository {
 
   async getSourceModel(transaction?: Transaction) {
     if (!this.sourceInstance) {
-      this.sourceInstance = await this.sourceCollection.model.findOne({
-        where: {
-          [this.associationField.sourceKey]: this.sourceKeyValue,
-        },
-        transaction,
-      });
+      this.sourceInstance = this.isMultiTargetKey()
+        ? await this.sourceCollection.repository.findOne({
+            filter: {
+              // @ts-ignore
+              ...this.sourceKeyValue,
+            },
+            transaction,
+          })
+        : await this.sourceCollection.model.findOne({
+            where: {
+              [this.associationField.sourceKey]: this.sourceKeyValue,
+            },
+            transaction,
+          });
     }
 
     return this.sourceInstance;

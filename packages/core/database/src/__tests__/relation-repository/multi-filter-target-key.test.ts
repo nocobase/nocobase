@@ -57,10 +57,18 @@ describe('multi target key in association repository', () => {
 
       const Book = db.collection({
         name: 'books',
+        autoGenId: false,
+        filterTargetKey: ['name', 'author'],
         fields: [
           {
             name: 'name',
             type: 'string',
+            primaryKey: true,
+          },
+          {
+            name: 'author',
+            type: 'string',
+            primaryKey: true,
           },
           {
             name: 'student',
@@ -74,19 +82,34 @@ describe('multi target key in association repository', () => {
       await db.sync();
 
       await Student.repository.create({
-        values: {
-          name: 's1',
-          classId: 1,
-          age: 10,
-          books: [
-            {
-              name: 'b1',
-            },
-            {
-              name: 'b2',
-            },
-          ],
-        },
+        values: [
+          {
+            name: 's1',
+            classId: 1,
+            age: 10,
+            books: [
+              {
+                name: 'b1',
+                author: 'a1',
+              },
+              {
+                name: 'b2',
+                author: 'a1',
+              },
+            ],
+          },
+          {
+            name: 's2',
+            classId: 2,
+            age: 11,
+            books: [
+              {
+                name: 'b3',
+                author: 'a1',
+              },
+            ],
+          },
+        ],
       });
 
       const hasManyRepo = db.getRepository<HasManyRepository>(
@@ -97,6 +120,17 @@ describe('multi target key in association repository', () => {
       const res = await hasManyRepo.find();
 
       expect(res.length).toBe(2);
+
+      const b2a1 = await hasManyRepo.findOne({
+        filterByTk: {
+          name: 'b2',
+          author: 'a1',
+        },
+      });
+
+      expect(b2a1).toBeDefined();
+      expect(b2a1.get('name')).toBe('b2');
+      expect(b2a1.get('author')).toBe('a1');
     });
   });
 });
