@@ -79,12 +79,12 @@ export class PresetNocoBase extends Plugin {
     return (name || '').split(',').filter(Boolean);
   }
 
-  getBuiltInPlugins() {
+  async getBuiltInPlugins() {
     const { APPEND_PRESET_BUILT_IN_PLUGINS } = process.env;
     return _.uniq(this.splitNames(APPEND_PRESET_BUILT_IN_PLUGINS).concat(this.builtInPlugins));
   }
 
-  getLocalPlugins() {
+  async getLocalPlugins() {
     const { APPEND_PRESET_LOCAL_PLUGINS } = process.env;
     const plugins = this.splitNames(APPEND_PRESET_LOCAL_PLUGINS)
       .concat(this.localPlugins)
@@ -99,9 +99,11 @@ export class PresetNocoBase extends Plugin {
   }
 
   async allPlugins() {
+    const builtInPlugins = await this.getBuiltInPlugins();
+    const localPlugins = await this.getLocalPlugins();
     return (
       await Promise.all(
-        this.getBuiltInPlugins().map(async (pkgOrName) => {
+        builtInPlugins.map(async (pkgOrName) => {
           const { name } = await PluginManager.parseName(pkgOrName);
           const packageJson = await this.getPackageJson(pkgOrName);
           return {
@@ -115,7 +117,7 @@ export class PresetNocoBase extends Plugin {
       )
     ).concat(
       await Promise.all(
-        this.getLocalPlugins().map(async (plugin) => {
+        localPlugins.map(async (plugin) => {
           const { name } = await PluginManager.parseName(plugin[0]);
           const packageJson = await this.getPackageJson(plugin[0]);
           return { name, packageName: packageJson.name, version: packageJson.version };
@@ -127,8 +129,10 @@ export class PresetNocoBase extends Plugin {
   async getPluginToBeUpgraded() {
     const repository = this.app.db.getRepository<any>('applicationPlugins');
     const items = (await repository.find()).map((item) => item.name);
+    const builtInPlugins = await this.getBuiltInPlugins();
+    const localPlugins = await this.getLocalPlugins();
     const plugins = await Promise.all(
-      this.getBuiltInPlugins().map(async (pkgOrName) => {
+      builtInPlugins.map(async (pkgOrName) => {
         const { name } = await PluginManager.parseName(pkgOrName);
         const packageJson = await this.getPackageJson(pkgOrName);
         return {
@@ -140,7 +144,7 @@ export class PresetNocoBase extends Plugin {
         } as any;
       }),
     );
-    for (const plugin of this.getLocalPlugins()) {
+    for (const plugin of localPlugins) {
       if (plugin[1]) {
         // 不在插件列表，并且插件最低版本小于当前应用版本，跳过不处理
         if (!items.includes(plugin[0]) && (await this.app.version.satisfies(`>${plugin[1]}`))) {

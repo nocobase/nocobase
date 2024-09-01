@@ -14,6 +14,7 @@ const zlib = require('zlib');
 const tar = require('tar');
 const path = require('path');
 const { createStoragePluginsSymlink } = require('@nocobase/utils/plugin-symlink');
+const chalk = require('chalk');
 
 class Package {
   data;
@@ -39,13 +40,17 @@ class Package {
   }
 
   async getInfo() {
-    const res = await axios.get(this.url(this.packageName), {
-      headers: {
-        Authorization: `Bearer ${this.token}`,
-      },
-      responseType: 'json',
-    });
-    this.data = res.data;
+    try {
+      const res = await axios.get(this.url(this.packageName), {
+        headers: {
+          Authorization: `Bearer ${this.token}`,
+        },
+        responseType: 'json',
+      });
+      this.data = res.data;
+    } catch (error) {
+      return;
+    }
   }
 
   getTarball(version = 'latest') {
@@ -53,6 +58,9 @@ class Package {
       version = this.data['dist-tags']['latest'];
     } else if (version === 'next') {
       version = this.data['dist-tags']['next'];
+    }
+    if (!version || !this.data.versions[version]) {
+      version = this.data['dist-tags']['latest'];
     }
     return this.data.versions[version].dist.tarball;
   }
@@ -71,29 +79,37 @@ class Package {
 
   async download(options = {}) {
     if (await this.isCorePackage()) {
-      console.log(this.packageName, 'is core package');
+      console.log(chalk.yellowBright(`Skipped: ${this.packageName} is core package`));
       return;
     }
-
     const { version } = options;
     await this.getInfo();
-    const url = this.getTarball(version);
-    const response = await axios({
-      url,
-      responseType: 'stream',
-      method: 'GET',
-      headers: {
-        Authorization: `Bearer ${this.token}`,
-      },
-    });
-    await this.mkdir();
-    await new Promise((resolve, reject) => {
-      response.data
-        .pipe(zlib.createGunzip()) // 解压 gzip
-        .pipe(tar.extract({ cwd: this.outputDir, strip: 1 })) // 解压 tar
-        .on('finish', resolve)
-        .on('error', reject);
-    });
+    if (!this.data) {
+      console.log(chalk.redBright(`Download failed: ${this.packageName} package does not exist`));
+      return;
+    }
+    try {
+      const url = this.getTarball(version);
+      const response = await axios({
+        url,
+        responseType: 'stream',
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${this.token}`,
+        },
+      });
+      await this.mkdir();
+      await new Promise((resolve, reject) => {
+        response.data
+          .pipe(zlib.createGunzip()) // 解压 gzip
+          .pipe(tar.extract({ cwd: this.outputDir, strip: 1 })) // 解压 tar
+          .on('finish', resolve)
+          .on('error', reject);
+      });
+      console.log(chalk.greenBright(`Download success: ${this.packageName}`));
+    } catch (error) {
+      console.log(chalk.redBright(`Download failed: ${this.packageName}`));
+    }
   }
 }
 
@@ -124,7 +140,7 @@ class PackageManager {
       });
       this.token = res1.data.token;
     } catch (error) {
-      // empty
+      console.error(chalk.redBright(`Login failed: ${this.baseURL}`));
     }
   }
 
@@ -159,15 +175,22 @@ class PackageManager {
  * @param {Command} cli
  */
 module.exports = (cli) => {
-  cli
+  const pkg = cli.command('pkg');
+  pkg
     .command('download-pro')
     .option('-V, --version [version]')
-    .action(async (options) => {
-      const baseURL = 'http://localhost:4873/';
-      const credentials = { username: 'nocobase', password: 'nocobase' };
-      const pm = new PackageManager({ baseURL });
+    .action(async () => {
+      const { NOCOBASE_PKG_URL, NOCOBASE_PKG_USERNAME, NOCOBASE_PKG_PASSWORD } = process.env;
+      if (!(NOCOBASE_PKG_URL && NOCOBASE_PKG_USERNAME && NOCOBASE_PKG_PASSWORD)) {
+        return;
+      }
+      const credentials = { username: NOCOBASE_PKG_USERNAME, password: NOCOBASE_PKG_PASSWORD };
+      const pm = new PackageManager({ baseURL: NOCOBASE_PKG_URL });
       await pm.login(credentials);
       await pm.download({ version: 'latest' });
       await createStoragePluginsSymlink();
     });
+  pkg.command('export-all').action(async () => {
+    console.log('Todo...');
+  });
 };

@@ -39,7 +39,7 @@ module.exports = (cli) => {
     .allowUnknownOption()
     .action(async (opts) => {
       if (opts.quickstart) {
-        await run('yarn', ['nocobase', 'download-pro']);
+        await run('yarn', ['nocobase', 'pkg', 'download-pro']);
       }
       if (opts.port) {
         process.env.APP_PORT = opts.port;

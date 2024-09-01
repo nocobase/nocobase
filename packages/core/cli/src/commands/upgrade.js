@@ -27,7 +27,7 @@ module.exports = (cli) => {
     .option('-S|--skip-code-update')
     .action(async (options) => {
       if (hasTsNode()) promptForTs();
-      await run('yarn', ['nocobase', 'download-pro']);
+      await run('yarn', ['nocobase', 'pkg', 'download-pro']);
       if (hasCorePackages()) {
         // await run('yarn', ['install']);
         await runAppCommand('upgrade');

@@ -23,7 +23,7 @@ module.exports = (cli) => {
     .action(async (options) => {
       const cmd = process.argv.slice(2)?.[0];
       if (cmd === 'install') {
-        await run('yarn', ['nocobase', 'download-pro']);
+        await run('yarn', ['nocobase', 'pkg', 'download-pro']);
       }
       if (isDev()) {
         promptForTs();
