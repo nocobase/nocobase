@@ -21,12 +21,42 @@ export const messageLogsManagerSchema: ISchema = {
     action: 'list',
     params: {
       appends: 'channel',
-      sort: 'createdAt',
+      sort: ['-createdAt'],
     },
     showIndex: true,
     dragSort: false,
   },
   properties: {
+    actions: {
+      type: 'void',
+      'x-component': 'ActionBar',
+      'x-component-props': {
+        style: {
+          marginBottom: 16,
+        },
+      },
+      properties: {
+        refresh: {
+          title: "{{t('Refresh')}}",
+          'x-action': 'refresh',
+          'x-component': 'Action',
+          'x-use-component-props': 'useRefreshActionProps',
+          'x-component-props': {
+            icon: 'ReloadOutlined',
+          },
+        },
+        filter: {
+          'x-action': 'filter',
+          'x-component': 'Filter.Action',
+          title: "{{t('Filter')}}",
+          'x-use-component-props': 'useFilterActionProps',
+          'x-component-props': {
+            icon: 'FilterOutlined',
+          },
+          'x-align': 'left',
+        },
+      },
+    },
     table: {
       type: 'array',
       'x-component': 'TableV2',

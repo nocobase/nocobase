@@ -93,6 +93,25 @@ export const channelsSchema: ISchema = {
             type: 'primary',
           },
         },
+        refresh: {
+          title: "{{t('Refresh')}}",
+          'x-action': 'refresh',
+          'x-component': 'Action',
+          'x-use-component-props': 'useRefreshActionProps',
+          'x-component-props': {
+            icon: 'ReloadOutlined',
+          },
+        },
+        filter: {
+          'x-action': 'filter',
+          'x-component': 'Filter.Action',
+          title: "{{t('Filter')}}",
+          'x-use-component-props': 'useFilterActionProps',
+          'x-component-props': {
+            icon: 'FilterOutlined',
+          },
+          'x-align': 'left',
+        },
       },
     },
     table: {
