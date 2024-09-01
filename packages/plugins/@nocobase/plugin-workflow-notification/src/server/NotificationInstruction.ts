@@ -24,12 +24,12 @@ export default class extends Instruction {
         if (results.some((result) => result.status === 'success')) {
           return {
             status: JOB_STATUS.RESOLVED,
-            results,
+            result: results,
           };
         } else {
           return {
             status: JOB_STATUS.FAILED,
-            results,
+            result: results,
           };
         }
       } catch (error) {
@@ -55,13 +55,13 @@ export default class extends Instruction {
           processor.logger.info(`notification (#${node.id}) sent successfully.`);
           job.set({
             status: JOB_STATUS.RESOLVED,
-            result: options,
+            result: results,
           });
         } else {
           processor.logger.info(`notification (#${node.id}) sent failed.`);
           job.set({
             status: JOB_STATUS.FAILED,
-            result: options,
+            result: results,
           });
         }
       })
@@ -70,7 +70,7 @@ export default class extends Instruction {
 
         job.set({
           status: JOB_STATUS.FAILED,
-          result: options,
+          result: error,
         });
       })
       .finally(() => {

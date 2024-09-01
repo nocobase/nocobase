@@ -19,7 +19,6 @@ import { useNotificationTranslation } from '../../../../locale';
 import { COLLECTION_NAME } from '../../../../../constant';
 import { UsersAddition } from '../ReceiverConfigForm/Users/UsersAddition';
 import { UsersSelect } from '../ReceiverConfigForm/Users/Select';
-import users from 'packages/plugins/@nocobase/plugin-acl/src/server/collections/users';
 export const MessageConfigForm = observer<{ variableOptions: any }>(
   ({ variableOptions }) => {
     const field = useField();
