@@ -33,7 +33,7 @@ interface PopupsVisibleProviderProps {
   setVisible?: (value: boolean) => void;
 }
 
-interface PopupProps {
+export interface PopupProps {
   params: PopupParams;
   context: PopupContext;
   /**

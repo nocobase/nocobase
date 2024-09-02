@@ -19,6 +19,7 @@
     "@nocobase/database": "1.x",
     "@nocobase/plugin-acl": "1.x",
     "@nocobase/plugin-auth": "1.x",
+    "@nocobase/plugin-user-data-sync": "1.x",
     "@nocobase/resourcer": "1.x",
     "@nocobase/server": "1.x",
     "@nocobase/test": "1.x",

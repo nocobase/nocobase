@@ -7,13 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import _, { every, findIndex, some } from 'lodash';
 import Handlebars from 'handlebars';
+import _, { every, findIndex, some } from 'lodash';
+import { replaceVariableValue } from '../../../block-provider/hooks';
 import { VariableOption, VariablesContextType } from '../../../variables/types';
 import { isVariable } from '../../../variables/utils/isVariable';
 import { transformVariableValue } from '../../../variables/utils/transformVariableValue';
 import { getJsonLogic } from '../../common/utils/logic';
-import { replaceVariableValue } from '../../../block-provider/hooks';
 
 type VariablesCtx = {
   /** 当前登录的用户 */
@@ -102,12 +102,14 @@ export const conditionAnalyses = async ({
     }
 
     const targetVariableName = targetFieldToVariableString(getTargetField(condition));
-    const targetValue = variables.parseVariable(targetVariableName, localVariables, {
-      doNotRequest: true,
-    });
+    const targetValue = variables
+      .parseVariable(targetVariableName, localVariables, {
+        doNotRequest: true,
+      })
+      .then(({ value }) => value);
 
     const parsingResult = isVariable(jsonlogic?.value)
-      ? [variables.parseVariable(jsonlogic?.value, localVariables), targetValue]
+      ? [variables.parseVariable(jsonlogic?.value, localVariables).then(({ value }) => value), targetValue]
       : [jsonlogic?.value, targetValue];
 
     try {
