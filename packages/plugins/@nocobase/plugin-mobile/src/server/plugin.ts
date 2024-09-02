@@ -22,6 +22,25 @@ export class PluginMobileServer extends Plugin {
     });
 
     this.app.acl.allow('mobileRoutes', 'list', 'loggedIn');
+
+    this.extendRoleField();
+  }
+
+  extendRoleField() {
+    this.db.extendCollection({
+      name: 'roles',
+      fields: [
+        {
+          type: 'belongsToMany',
+          name: 'mobileMenuUiSchemas',
+          target: 'mobileRoutes',
+        },
+        {
+          type: 'boolean',
+          name: 'allowNewMobileMenu',
+        },
+      ],
+    });
   }
 }
 

@@ -43,11 +43,15 @@ import {
   useMobileNavigationBarLink,
 } from './pages';
 
+import PluginACLClient from '@nocobase/plugin-acl/client';
+import { MenuPermissions } from './MenuPermissions';
+
 // 导出 JSBridge，会挂在到 window 上
 import './js-bridge';
 import { MobileSettings } from './mobile-blocks/settings-block/MobileSettings';
 import { MobileSettingsBlockInitializer } from './mobile-blocks/settings-block/MobileSettingsBlockInitializer';
 import { MobileSettingsBlockSchemaSettings } from './mobile-blocks/settings-block/schemaSettings';
+import { MobileRoutesProvider } from './mobile-providers';
 
 export * from './desktop-mode';
 export * from './mobile';
@@ -105,6 +109,7 @@ export class PluginMobileClient extends Plugin {
     this.addInitializers();
     this.addSettings();
     this.addScopes();
+    this.addPermissionsSettingsUI();
 
     this.app.pluginSettingsManager.add('mobile', {
       title: generatePluginTranslationTemplate('Mobile'),
@@ -239,6 +244,20 @@ export class PluginMobileClient extends Plugin {
 
   getRouterComponent() {
     return this.mobileRouter.getRouterComponent();
+  }
+
+  addPermissionsSettingsUI() {
+    this.app.pm.get(PluginACLClient).settingsUI.addPermissionsTab(({ t, TabLayout, activeKey }) => ({
+      key: 'mobile-menu',
+      label: t('Mobile menu'),
+      children: (
+        <TabLayout>
+          <MobileRoutesProvider>
+            <MenuPermissions active={activeKey === 'mobile-menu'} />
+          </MobileRoutesProvider>
+        </TabLayout>
+      ),
+    }));
   }
 }
 
