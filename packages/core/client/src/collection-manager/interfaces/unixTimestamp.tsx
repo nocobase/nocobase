@@ -30,7 +30,7 @@ export class UnixTimestampFieldInterface extends CollectionFieldInterface {
       },
     },
   };
-  availableTypes = ['integer', 'bigInt', 'unixTimestamp'];
+  availableTypes = ['unixTimestamp'];
   hasDefaultValue = false;
   properties = {
     ...defaultProps,
