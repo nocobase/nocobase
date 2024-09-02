@@ -23,6 +23,7 @@ interface MenuItem {
   title: string;
   id: number;
   children?: MenuItem[];
+  parent?: MenuItem;
 }
 
 const style = css`
@@ -63,28 +64,8 @@ const findIDList = (items) => {
   }
   return IDList;
 };
-const getParentIDList = (tree, func, path = []) => {
-  if (!tree) return [];
-  for (const data of tree) {
-    path.push(data.id);
-    if (func(data)) return path;
-    if (data.children) {
-      const findChildren = getParentIDList(data.children, func, path);
-      if (findChildren.length) return findChildren;
-    }
-    path.pop();
-  }
-  return [];
-};
-const getChildrenIDList = (data = [], arr = []) => {
-  for (const item of data) {
-    arr.push(item.id);
-    if (item.children && item.children.length) getChildrenIDList(item.children, arr);
-  }
-  return arr;
-};
 
-const toItems = (items): MenuItem[] => {
+const toItems = (items, parent?: MenuItem): MenuItem[] => {
   if (!Array.isArray(items)) {
     return [];
   }
@@ -93,7 +74,8 @@ const toItems = (items): MenuItem[] => {
     return {
       title: item.title,
       id: item.id,
-      children: toItems(item.children),
+      children: toItems(item.children, item),
+      parent,
     };
   });
 };
@@ -128,23 +110,48 @@ export const MenuPermissions: React.FC<{
   const resource = api.resource('roles.mobileMenuUiSchemas', role.name);
   const allChecked = allIDList.length === IDList.length;
 
-  const handleChange = async (checked, schema) => {
-    const parentIDList = getParentIDList(items, (data) => data.id === schema.id);
-    const childrenIDList = getChildrenIDList(schema?.children, []);
+  const handleChange = async (checked, menuItem) => {
     if (checked) {
-      const totalIDList = childrenIDList.concat(schema.id);
-      const newIDList = IDList.filter((v) => !totalIDList.includes(v));
-      setIDList([...newIDList]);
+      let newIDList = IDList.filter((id) => id !== menuItem.id);
+      const shouldRemove = [menuItem.id];
+
+      if (menuItem.parent) {
+        const selectedChildren = menuItem.parent.children.filter((item) => newIDList.includes(item.id));
+        if (selectedChildren.length === 0) {
+          newIDList = newIDList.filter((id) => id !== menuItem.parent.id);
+          shouldRemove.push(menuItem.parent.id);
+        }
+      }
+
+      if (menuItem.children) {
+        newIDList = newIDList.filter((id) => !menuItem.children.map((item) => item.id).includes(id));
+        shouldRemove.push(...menuItem.children.map((item) => item.id));
+      }
+
+      setIDList(newIDList);
       await resource.remove({
-        values: totalIDList,
+        values: shouldRemove,
       });
     } else {
-      const totalIDList = childrenIDList.concat(parentIDList);
-      setIDList((prev) => {
-        return uniq([...prev, ...totalIDList]);
-      });
+      const newIDList = [...IDList, menuItem.id];
+      const shouldAdd = [menuItem.id];
+
+      if (menuItem.parent) {
+        if (!newIDList.includes(menuItem.parent.id)) {
+          newIDList.push(menuItem.parent.id);
+          shouldAdd.push(menuItem.parent.id);
+        }
+      }
+
+      if (menuItem.children) {
+        const childrenIDList = menuItem.children.map((item) => item.id);
+        newIDList.push(...childrenIDList);
+        shouldAdd.push(...childrenIDList);
+      }
+
+      setIDList(uniq(newIDList));
       await resource.add({
-        values: totalIDList,
+        values: shouldAdd,
       });
     }
     message.success(t('Saved successfully'));

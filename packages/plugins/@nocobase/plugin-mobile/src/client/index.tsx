@@ -252,7 +252,7 @@ export class PluginMobileClient extends Plugin {
       label: t('Mobile menu'),
       children: (
         <TabLayout>
-          <MobileRoutesProvider>
+          <MobileRoutesProvider action="list">
             <MenuPermissions active={activeKey === 'mobile-menu'} />
           </MobileRoutesProvider>
         </TabLayout>
