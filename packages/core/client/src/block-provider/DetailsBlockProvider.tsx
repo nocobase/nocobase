@@ -141,6 +141,7 @@ export const useDetailsBlockProps = () => {
       ctx.form
         .reset()
         .then(() => {
+          ctx.form.setInitialValues(data || {});
           ctx.form.setValues(data || {});
         })
         .catch(console.error);

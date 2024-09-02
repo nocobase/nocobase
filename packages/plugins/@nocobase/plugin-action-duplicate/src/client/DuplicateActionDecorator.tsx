@@ -7,4 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from './MobileCheckerProvider';
+import { ACLActionProvider } from '@nocobase/client';
+import React, { FC } from 'react';
+
+export const DuplicateActionDecorator: FC = (props) => {
+  return <ACLActionProvider>{props.children}</ACLActionProvider>;
+};

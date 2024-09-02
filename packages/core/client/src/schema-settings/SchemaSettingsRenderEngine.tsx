@@ -38,6 +38,7 @@ export function SchemaSettingsRenderEngine() {
       options={options}
       value={field.decoratorProps.engine || 'string'}
       onChange={(engine) => {
+        fieldSchema['x-decorator-props'] = fieldSchema['x-decorator-props'] || {};
         fieldSchema['x-decorator-props'].engine = engine;
         field.decoratorProps.engine = engine;
         dn.emit('patch', {

@@ -8,6 +8,8 @@
  */
 
 import { Model } from '@nocobase/database';
+import lodash from 'lodash';
+
 import {
   FormatUser,
   OriginRecord,
@@ -24,7 +26,24 @@ export class UserDataSyncResource extends UserDataResource {
   get userRepo() {
     return this.db.getRepository('users');
   }
-
+  getFlteredSourceUser(sourceUser: FormatUser) {
+    const deleteProps = [
+      'id',
+      'uid',
+      'createdAt',
+      'updatedAt',
+      'appLang',
+      'resetToken',
+      'systemSettings',
+      'password',
+      'sort',
+      'createdById',
+      'updatedById',
+      'isDeleted',
+      'departments',
+    ];
+    return lodash.omit(sourceUser, deleteProps);
+  }
   async updateUser(user: Model, sourceUser: FormatUser) {
     if (sourceUser.isDeleted) {
       // 删除用户
@@ -39,22 +58,13 @@ export class UserDataSyncResource extends UserDataResource {
       return;
     }
     let dataChanged = false;
-    if (sourceUser.username !== undefined && user.username !== sourceUser.username) {
-      user.username = sourceUser.username;
-      dataChanged = true;
-    }
-    if (sourceUser.phone !== undefined && user.phone !== sourceUser.phone) {
-      user.phone = sourceUser.phone;
-      dataChanged = true;
-    }
-    if (sourceUser.email !== undefined && user.email !== sourceUser.email) {
-      user.email = sourceUser.email;
-      dataChanged = true;
-    }
-    if (sourceUser.nickname !== undefined && user.nickname !== sourceUser.nickname) {
-      user.nickname = sourceUser.nickname;
-      dataChanged = true;
-    }
+    const filteredSourceUser = this.getFlteredSourceUser(sourceUser);
+    lodash.forOwn(filteredSourceUser, (value, key) => {
+      if (user[key] !== value) {
+        user[key] = value;
+        dataChanged = true;
+      }
+    });
     if (dataChanged) {
       await user.save();
     }
@@ -88,13 +98,9 @@ export class UserDataSyncResource extends UserDataResource {
     if (user) {
       await this.updateUser(user, sourceUser);
     } else {
+      const filteredSourceUser = this.getFlteredSourceUser(sourceUser);
       user = await this.userRepo.create({
-        values: {
-          nickname: sourceUser.nickname,
-          phone: sourceUser.phone,
-          email: sourceUser.email,
-          username: sourceUser.username,
-        },
+        values: filteredSourceUser,
       });
     }
     return [{ resourcesPk: user.id, isDeleted: false }];
