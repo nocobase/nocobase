@@ -16,6 +16,7 @@ import set from 'lodash/set';
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient, useRequest } from '../../api-client';
+import { CollectionFieldInterface } from '../../data-source';
 import { useCollectionParentRecordData } from '../../data-source/collection-record/CollectionRecordProvider';
 import { RecordProvider, useRecord } from '../../record-provider';
 import { ActionContextProvider, SchemaComponent, useActionContext, useCompile } from '../../schema-component';
@@ -23,58 +24,21 @@ import { useResourceActionContext, useResourceContext } from '../ResourceActionP
 import { useCancelAction } from '../action-hooks';
 import { useCollectionManager_deprecated } from '../hooks';
 import useDialect from '../hooks/useDialect';
-import { IField } from '../interfaces/types';
 import * as components from './components';
 
-const getSchema = (schema: IField, record: any, compile, getContainer): ISchema => {
+const getSchema = (
+  schema: CollectionFieldInterface,
+  defaultValues: any,
+  record: any,
+  compile,
+  getContainer,
+): ISchema => {
   if (!schema) {
     return;
   }
-  const properties = cloneDeep(schema.properties) as any;
+  const properties = schema.getConfigureFormProperties();
   if (properties?.name) {
     properties.name['x-disabled'] = true;
-  }
-
-  if (schema.hasDefaultValue === true) {
-    properties['defaultValue'] = cloneDeep(schema.default.uiSchema) || {};
-    properties.defaultValue.required = false;
-    properties['defaultValue']['title'] = compile('{{ t("Default value") }}');
-    properties['defaultValue']['x-decorator'] = 'FormItem';
-    properties['defaultValue']['x-reactions'] = [
-      {
-        dependencies: [
-          'uiSchema.x-component-props.gmt',
-          'uiSchema.x-component-props.showTime',
-          'uiSchema.x-component-props.dateFormat',
-          'uiSchema.x-component-props.timeFormat',
-        ],
-        fulfill: {
-          state: {
-            componentProps: {
-              gmt: '{{$deps[0]}}',
-              showTime: '{{$deps[1]}}',
-              dateFormat: '{{$deps[2]}}',
-              timeFormat: '{{$deps[3]}}',
-            },
-          },
-        },
-      },
-      {
-        dependencies: ['primaryKey', 'unique', 'autoIncrement'],
-        when: '{{$deps[0]||$deps[1]||$deps[2]}}',
-        fulfill: {
-          state: {
-            hidden: true,
-            value: undefined,
-          },
-        },
-        otherwise: {
-          state: {
-            hidden: false,
-          },
-        },
-      },
-    ];
   }
 
   return {
@@ -92,7 +56,7 @@ const getSchema = (schema: IField, record: any, compile, getContainer): ISchema 
             return useRequest(
               () =>
                 Promise.resolve({
-                  data: cloneDeep(omit(schema.default, ['uiSchema.rawTitle'])),
+                  data: cloneDeep(omit(defaultValues, ['uiSchema.rawTitle'])),
                 }),
               options,
             );
@@ -230,15 +194,7 @@ export const EditFieldAction = (props) => {
               set(defaultValues.reverseField, 'name', `f_${uid()}`);
               set(defaultValues.reverseField, 'uiSchema.title', record.__parent?.title);
             }
-            const schema = getSchema(
-              {
-                ...interfaceConf,
-                default: defaultValues,
-              },
-              record,
-              compile,
-              getContainer,
-            );
+            const schema = getSchema(interfaceConf, defaultValues, record, compile, getContainer);
             setSchema(schema);
             setVisible(true);
           }}
