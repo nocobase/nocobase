@@ -135,7 +135,7 @@ export const MessageConfigForm = observer<{ variableOptions: any }>(
                 type: 'string',
                 'x-decorator': 'FormItem',
                 'x-component': ReceiverInputComponent,
-                'x-component-props': { scope: variableOptions, useTypedConstant: ['string'] },
+                'x-component-props': { scope: variableOptions },
               },
               remove: {
                 type: 'void',
