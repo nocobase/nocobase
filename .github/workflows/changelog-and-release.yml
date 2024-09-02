@@ -43,7 +43,7 @@ jobs:
         with:
           node-version: 18
       - name: Install dependencies
-        run: npm install -g execa commander
+        run: npm install -D execa commander
       - name: Run script
         shell: bash
         run: |
