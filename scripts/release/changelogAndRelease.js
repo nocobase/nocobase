@@ -4,7 +4,7 @@ const path = require('path');
 const { Command } = require('commander');
 const program = new Command();
 
-program.option('-f, --from [from]').option('-t, --to [to]').option('-b, --branch [branch]');
+program.option('-f, --from [from]').option('-t, --to [to]').option('-v, --version [version]');
 program.parse(process.argv);
 
 const header = {
@@ -179,10 +179,10 @@ function arrangeChangelogs(changelogs) {
 }
 
 async function collect() {
-  let { from, to, branch = 'main' } = program.opts();
+  let { from, to, version = 'beta' } = program.opts();
   if (!from || !to) {
     // git describe --tags $(git rev-list --tags --max-count=2) --abbrev=0
-    const tagPattern = branch === 'main' ? 'v*-beta' : 'v*-alpha';
+    const tagPattern = `v*-${version}`;
     const { stdout: tags } = await execa(
       'git',
       ['describe', '--tags', `$(git rev-list --tags=${tagPattern} --max-count=2)`, '--abbrev=0'],
@@ -320,16 +320,24 @@ async function writeChangelog(cn, en, from, to) {
 }
 
 async function createRelease(cn, en, to) {
+  let { version = 'beta' } = program.opts();
   // gh release create -t title -n note -d
+  if (version === 'alpha') {
+    await execa('gh', ['release', 'create', to, '-t', to, '-n', `${en}\n---\n${cn}`, '-d', '-p']);
+    return;
+  }
   await execa('gh', ['release', 'create', to, '-t', to, '-n', `${en}\n---\n${cn}`, '-d']);
 }
 
 async function writeChangelogAndCreateRelease() {
+  let { version = 'beta' } = program.opts();
   const { cn, en, from, to } = await generateChangelog();
   if (!cn && !en) {
     throw new Error('No changelog generated');
   }
-  await writeChangelog(cn, en, from, to);
+  if (version === 'beta') {
+    await writeChangelog(cn, en, from, to);
+  }
   await createRelease(cn, en, to);
 }
 
