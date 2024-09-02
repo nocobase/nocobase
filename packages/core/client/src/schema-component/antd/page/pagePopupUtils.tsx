@@ -127,7 +127,16 @@ export const getPopupPathFromParams = (params: PopupParams) => {
  * Note: use this hook in a plugin is not recommended
  * @returns
  */
-export const usePopupUtils = () => {
+export const usePopupUtils = (
+  options: {
+    /**
+     * when the popup does not support opening via URL, you can control the display status of the popup through this method
+     * @param visible
+     * @returns
+     */
+    setVisible?: (visible: boolean) => void;
+  } = {},
+) => {
   const navigate = useNavigateNoUpdate();
   const location = useLocationNoUpdate();
   const fieldSchema = useFieldSchema();
@@ -141,14 +150,16 @@ export const usePopupUtils = () => {
   const { params: popupParams } = useCurrentPopupContext();
   const service = useDataBlockRequest();
   const { isPopupVisibleControlledByURL } = usePopupSettings();
-  const { setVisible: setVisibleFromAction } = useContext(ActionContext);
+  const { setVisible: _setVisibleFromAction } = useContext(ActionContext);
   const { updatePopupContext } = usePopupContextInActionOrAssociationField();
+  const currentPopupContext = useCurrentPopupContext();
   const getSourceId = useCallback(
     (_parentRecordData?: Record<string, any>) =>
       (_parentRecordData || parentRecord?.data)?.[cm.getSourceKeyByAssociation(association)],
     [parentRecord, association],
   );
-  const currentPopupUidWithoutOpened = fieldSchema?.['x-uid'];
+
+  const setVisibleFromAction = options.setVisible || _setVisibleFromAction;
 
   const getNewPathname = useCallback(
     ({
@@ -199,6 +210,7 @@ export const usePopupUtils = () => {
       parentRecordData,
       collectionNameUsedInURL,
       popupUidUsedInURL,
+      customActionSchema,
     }: {
       recordData?: Record<string, any>;
       parentRecordData?: Record<string, any>;
@@ -206,11 +218,13 @@ export const usePopupUtils = () => {
       collectionNameUsedInURL?: string;
       /** if this value exists, it will be saved in the URL */
       popupUidUsedInURL?: string;
+      customActionSchema?: ISchema;
     } = {}) => {
       if (!isPopupVisibleControlledByURL()) {
         return setVisibleFromAction?.(true);
       }
 
+      const currentPopupUidWithoutOpened = customActionSchema?.['x-uid'] || fieldSchema?.['x-uid'];
       const sourceId = getSourceId(parentRecordData);
 
       recordData = recordData || record?.data;
@@ -227,7 +241,7 @@ export const usePopupUtils = () => {
       }
 
       storePopupContext(currentPopupUidWithoutOpened, {
-        schema: fieldSchema,
+        schema: customActionSchema || fieldSchema,
         record: new CollectionRecord({ isNew: false, data: recordData }),
         parentRecord: parentRecordData ? new CollectionRecord({ isNew: false, data: parentRecordData }) : parentRecord,
         service,
@@ -237,7 +251,7 @@ export const usePopupUtils = () => {
         sourceId,
       });
 
-      updatePopupContext(getPopupContext());
+      updatePopupContext(getPopupContext(), customActionSchema);
 
       navigate(withSearchParams(`${url}${pathname}`));
     },
@@ -256,7 +270,6 @@ export const usePopupUtils = () => {
       isPopupVisibleControlledByURL,
       getSourceId,
       getPopupContext,
-      currentPopupUidWithoutOpened,
     ],
   );
 
@@ -317,6 +330,7 @@ export const usePopupUtils = () => {
     closePopup,
     savePopupSchemaToSchema,
     getPopupSchemaFromSchema,
+    context: currentPopupContext,
     /**
      * @deprecated
      * TODO: remove this

@@ -9,6 +9,7 @@
 
 import { Field } from '@formily/core';
 import { useField, useFieldSchema, useForm } from '@formily/react';
+import { untracked } from '@formily/reactive';
 import { nextTick } from '@nocobase/utils/client';
 import _ from 'lodash';
 import { useEffect, useMemo, useRef } from 'react';
@@ -20,7 +21,6 @@ import { useVariables } from '../../../../variables';
 import { transformVariableValue } from '../../../../variables/utils/transformVariableValue';
 import { useSubFormValue } from '../../association-field/hooks';
 import { isDisplayField } from '../utils';
-import { untracked } from '@formily/reactive';
 
 /**
  * 用于懒加载 Form 区块中只用于展示的关联字段的值
@@ -97,7 +97,7 @@ const useLazyLoadDisplayAssociationFieldsOfForm = () => {
 
     variables
       .parseVariable(variableString, formVariable, { appends })
-      .then((value) => {
+      .then(({ value }) => {
         nextTick(() => {
           const result = transformVariableValue(value, { targetCollectionField: collectionFieldRef.current });
           // fix https://nocobase.height.app/T-2608

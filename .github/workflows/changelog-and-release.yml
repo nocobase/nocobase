@@ -1,0 +1,72 @@
+name: Write changelog and create release
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*-beta'
+
+jobs:
+  app-token:
+    uses: nocobase/nocobase/.github/workflows/get-nocobase-app-token.yml@main
+    secrets: inherit
+  write-changelog-and-release:
+    needs:
+      - app-token
+    runs-on: ubuntu-latest
+    steps:
+      - name: Decrypt app token
+        id: app-token
+        shell: bash
+        run: |
+          ENCRYPTED_SECRET=${{ needs.app-token.outputs.token }};
+          APP_TOKEN=$(echo -n "$ENCRYPTED_SECRET" | base64 --decode | openssl enc -aes-256-cbc -pbkdf2 -d -salt -k "${{ secrets.APP_TOKEN_ENCRYPTION_PASSWORD }}");
+          echo "token=$APP_TOKEN" >> $GITHUB_OUTPUT
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          repository: nocobase/nocobase
+          token: ${{ steps.app-token.outputs.token }}
+          persist-credentials: true
+          fetch-depth: 0
+      - name: Checkout pro-plugins
+        uses: actions/checkout@v4
+        with:
+          repository: nocobase/pro-plugins
+          path: packages/pro-plugins
+          fetch-depth: 0
+          token: ${{ steps.app-token.outputs.token }}
+          persist-credentials: true
+      - name: Clone pro repos
+        shell: bash
+        run: |
+          for repo in ${{ join(fromJSON(vars.PRO_PLUGIN_REPOS), ' ') }}
+          do
+          git clone -b main https://x-access-token:${{ steps.app-token.outputs.token }}@github.com/nocobase/$repo.git packages/pro-plugins/@nocobase/$repo
+          done
+      - name: Set user
+        run: |
+          git config --global user.name '${{ needs.app-token.outputs.app-slug }}[bot]'
+          git config --global user.email '${{ needs.app-token.outputs.user-id }}+${{ needs.app-token.outputs.app-slug }}[bot]@users.noreply.github.com>'
+      - name: Set Node.js 18
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+      - name: Run script
+        shell: bash
+        run: |
+          node scripts/release/changelogAndRelease.js
+        env:
+          PRO_PLUGIN_REPOS: ${{ vars.PRO_PLUGIN_REPOS }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+      - name: Commit and push
+        run: |
+          git add .
+          git commit -m "docs: update changelogs"
+          git push origin main

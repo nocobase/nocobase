@@ -70,7 +70,7 @@ const mysql = {
   double: 'float',
   boolean: 'boolean',
   decimal: 'decimal',
-
+  year: ['string', 'integer'],
   datetime: ['datetime', 'datetimeNoTz'],
   timestamp: 'datetime',
   json: ['json', 'array'],

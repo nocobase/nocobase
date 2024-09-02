@@ -53,7 +53,7 @@ export default class extends Instruction {
                   'x-component': 'Grid.Col',
                   'x-component-props': {
                     // flex: 'auto',
-                    width: 64,
+                    width: 50,
                   },
                   properties: {
                     host: {
@@ -61,7 +61,10 @@ export default class extends Instruction {
                       required: true,
                       title: `{{t("SMTP host", { ns: "${NAMESPACE}" })}}`,
                       'x-decorator': 'FormItem',
-                      'x-component': 'Input',
+                      'x-component': 'WorkflowVariableInput',
+                      'x-component-props': {
+                        useTypedConstant: ['string'],
+                      },
                     },
                   },
                 },
@@ -70,7 +73,7 @@ export default class extends Instruction {
                   'x-component': 'Grid.Col',
                   'x-component-props': {
                     // flex: '6em',
-                    width: 16,
+                    width: 25,
                   },
                   properties: {
                     port: {
@@ -78,11 +81,18 @@ export default class extends Instruction {
                       required: true,
                       title: `{{t("Port", { ns: "${NAMESPACE}" })}}`,
                       'x-decorator': 'FormItem',
-                      'x-component': 'InputNumber',
+                      'x-component': 'WorkflowVariableInput',
                       'x-component-props': {
-                        min: 1,
-                        max: 65535,
-                        step: 1,
+                        useTypedConstant: [
+                          [
+                            'number',
+                            {
+                              min: 1,
+                              max: 65535,
+                              step: 1,
+                            },
+                          ],
+                        ],
                       },
                       default: 465,
                     },
@@ -93,14 +103,17 @@ export default class extends Instruction {
                   'x-component': 'Grid.Col',
                   'x-component-props': {
                     // flex: '4em',
-                    width: 16,
+                    width: 25,
                   },
                   properties: {
                     secure: {
                       type: 'boolean',
                       title: `{{t("Secure", { ns: "${NAMESPACE}" })}}`,
                       'x-decorator': 'FormItem',
-                      'x-component': 'Checkbox',
+                      'x-component': 'WorkflowVariableInput',
+                      'x-component-props': {
+                        useTypedConstant: [['boolean', { style: { width: '100%' } }]],
+                      },
                       default: true,
                     },
                   },
@@ -130,7 +143,10 @@ export default class extends Instruction {
                       required: true,
                       title: `{{t("User", { ns: "${NAMESPACE}" })}}`,
                       'x-decorator': 'FormItem',
-                      'x-component': 'Input',
+                      'x-component': 'WorkflowVariableInput',
+                      'x-component-props': {
+                        useTypedConstant: ['string'],
+                      },
                     },
                   },
                 },
@@ -143,7 +159,10 @@ export default class extends Instruction {
                       required: true,
                       title: `{{t("Password", { ns: "${NAMESPACE}" })}}`,
                       'x-decorator': 'FormItem',
-                      'x-component': 'Password',
+                      'x-component': 'WorkflowVariableInput',
+                      'x-component-props': {
+                        useTypedConstant: [['string', { type: 'password' }]],
+                      },
                     },
                   },
                 },

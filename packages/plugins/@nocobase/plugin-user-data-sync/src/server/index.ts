@@ -7,4 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from './MobileCheckerProvider';
+export { SyncSource } from './sync-source';
+export * from './user-data-resource-manager';
+export { default } from './plugin';

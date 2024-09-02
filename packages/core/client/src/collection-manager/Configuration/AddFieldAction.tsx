@@ -16,64 +16,23 @@ import { cloneDeep } from 'lodash';
 import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useRequest } from '../../api-client';
+import { CollectionFieldInterface } from '../../data-source';
 import { RecordProvider, useRecord } from '../../record-provider';
 import { ActionContextProvider, SchemaComponent, useActionContext, useCompile } from '../../schema-component';
 import { useResourceActionContext, useResourceContext } from '../ResourceActionProvider';
 import { useCancelAction } from '../action-hooks';
 import { useCollectionManager_deprecated } from '../hooks';
 import useDialect from '../hooks/useDialect';
-import { IField } from '../interfaces/types';
 import * as components from './components';
 import { useFieldInterfaceOptions } from './interfaces';
 
-const getSchema = (schema: IField, record: any, compile) => {
+const getSchema = (schema: CollectionFieldInterface, record: any, compile) => {
   if (!schema) {
     return;
   }
 
-  const properties = cloneDeep(schema.properties) as any;
+  const properties = schema.getConfigureFormProperties();
 
-  if (schema.hasDefaultValue === true) {
-    properties['defaultValue'] = cloneDeep(schema?.default?.uiSchema);
-    properties.defaultValue.required = false;
-    properties['defaultValue']['title'] = compile('{{ t("Default value") }}');
-    properties['defaultValue']['x-decorator'] = 'FormItem';
-    properties['defaultValue']['x-reactions'] = [
-      {
-        dependencies: [
-          'uiSchema.x-component-props.gmt',
-          'uiSchema.x-component-props.showTime',
-          'uiSchema.x-component-props.dateFormat',
-          'uiSchema.x-component-props.timeFormat',
-        ],
-        fulfill: {
-          state: {
-            componentProps: {
-              gmt: '{{$deps[0]}}',
-              showTime: '{{$deps[1]}}',
-              dateFormat: '{{$deps[2]}}',
-              timeFormat: '{{$deps[3]}}',
-            },
-          },
-        },
-      },
-      {
-        dependencies: ['primaryKey', 'unique', 'autoIncrement', 'defaultToCurrentTime'],
-        when: '{{$deps[0]||$deps[1]||$deps[2]||$deps[3]}}',
-        fulfill: {
-          state: {
-            hidden: true,
-            value: null,
-          },
-        },
-        otherwise: {
-          state: {
-            hidden: false,
-          },
-        },
-      },
-    ];
-  }
   const initialValue: any = {
     name: `f_${uid()}`,
     ...cloneDeep(schema.default),

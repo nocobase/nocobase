@@ -24,7 +24,7 @@ describe('parseVariablesAndChangeParamsToQueryString', () => {
       { name: 'param3', value: 'value3' },
     ];
     const variables: any = {
-      parseVariable: vi.fn().mockResolvedValue('parsedValue'),
+      parseVariable: vi.fn().mockResolvedValue({ value: 'parsedValue' }),
     };
     const localVariables: any = [
       { name: '$var1', ctx: { value: 'localValue1' } },

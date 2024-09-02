@@ -13,6 +13,7 @@ import {
   ActionContextProvider,
   CollectionProvider_deprecated,
   FormBlockContext,
+  PopupSettingsProvider,
   RecordProvider,
   fetchTemplateData,
   useACLActionParamsContext,
@@ -203,7 +204,9 @@ export const DuplicateAction = observer(
               {/* 这里的 record 就是弹窗中创建表单的 sourceRecord */}
               <RecordProvider record={{ ...parentRecordData, __collection: duplicateCollection || __collection }}>
                 <ActionContextProvider value={{ ...ctx, visible, setVisible }}>
-                  <RecursionField schema={fieldSchema} basePath={field.address} onlyRenderProperties />
+                  <PopupSettingsProvider enableURL={false}>
+                    <RecursionField schema={fieldSchema} basePath={field.address} onlyRenderProperties />
+                  </PopupSettingsProvider>
                 </ActionContextProvider>
               </RecordProvider>
             </CollectionProvider_deprecated>

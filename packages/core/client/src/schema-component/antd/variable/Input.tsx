@@ -118,19 +118,28 @@ const ConstantTypes = {
   },
 };
 
-function getTypedConstantOption(type: string, types: true | string[], fieldNames) {
+type UseTypeConstantType = true | (string | [string, Record<string, any>])[];
+
+function getTypedConstantOption(type: string, types: UseTypeConstantType, fieldNames) {
   const allTypes = Object.values(ConstantTypes).filter((item) => item.value !== 'null');
   const children = (
-    types ? allTypes.filter((item) => (Array.isArray(types) && types.includes(item.value)) || types === true) : allTypes
+    types
+      ? allTypes.filter(
+          (item) =>
+            (Array.isArray(types) &&
+              types.filter((t) => (Array.isArray(t) ? t[0] === item.value : t === item.value)).length) ||
+            types === true,
+        )
+      : allTypes
   ).map((item) =>
-    Object.keys(item).reduce(
+    Object.keys(fieldNames).reduce(
       (result, key) =>
-        fieldNames[key] in item
+        key in item
           ? Object.assign(result, {
               [fieldNames[key]]: item[key],
             })
           : result,
-      item,
+      { ...item },
     ),
   );
   return {
@@ -150,7 +159,7 @@ export type VariableInputProps = {
   onChange: (value: string, optionPath?: any[]) => void;
   children?: any;
   button?: React.ReactElement;
-  useTypedConstant?: true | string[];
+  useTypedConstant?: UseTypeConstantType;
   changeOnSelect?: CascaderProps['changeOnSelect'];
   fieldNames?: CascaderProps['fieldNames'];
   disabled?: boolean;
@@ -214,6 +223,9 @@ export function Input(props: VariableInputProps) {
   }, [type, useTypedConstant]);
 
   const ConstantComponent = constantOption && !children ? constantOption.component : NullComponent;
+  const constantComponentProps = Array.isArray(useTypedConstant)
+    ? (useTypedConstant.find((item) => Array.isArray(item) && item[0] === type)?.[1] as Record<string, any>) ?? {}
+    : {};
   let cValue;
   if (value == null) {
     if (children && isFieldValue) {
@@ -403,7 +415,13 @@ export function Input(props: VariableInputProps) {
           {children && isFieldValue ? (
             children
           ) : ConstantComponent ? (
-            <ConstantComponent role="button" aria-label="variable-constant" value={value} onChange={onChange} />
+            <ConstantComponent
+              role="button"
+              aria-label="variable-constant"
+              {...constantComponentProps}
+              value={value}
+              onChange={onChange}
+            />
           ) : null}
         </div>
       )}

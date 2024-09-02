@@ -9,6 +9,7 @@
 
 import { Plugin, useActionAvailable } from '@nocobase/client';
 import { bulkEditActionSettings, deprecatedBulkEditActionSettings } from './BulkEditAction.Settings';
+import { BulkEditActionDecorator } from './BulkEditActionDecorator';
 import { BulkEditActionInitializer } from './BulkEditActionInitializer';
 import {
   BulkEditBlockInitializers_deprecated,
@@ -25,7 +26,7 @@ import { BulkEditField } from './component/BulkEditField';
 import { useCustomizeBulkEditActionProps } from './utils';
 export class PluginActionBulkEditClient extends Plugin {
   async load() {
-    this.app.addComponents({ BulkEditField });
+    this.app.addComponents({ BulkEditField, BulkEditActionDecorator });
     this.app.addScopes({ useCustomizeBulkEditActionProps });
     this.app.schemaSettingsManager.add(deprecatedBulkEditActionSettings);
     this.app.schemaSettingsManager.add(bulkEditActionSettings);
@@ -45,7 +46,7 @@ export class PluginActionBulkEditClient extends Plugin {
       Component: BulkEditActionInitializer,
       schema: {
         'x-align': 'right',
-        'x-decorator': 'ACLActionProvider',
+        'x-decorator': 'BulkEditActionDecorator',
         'x-action': 'customize:bulkEdit',
         'x-toolbar': 'ActionSchemaToolbar',
         'x-settings': 'actionSettings:bulkEdit',

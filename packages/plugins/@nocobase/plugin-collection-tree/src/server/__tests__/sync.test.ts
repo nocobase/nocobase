@@ -7,9 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { Repository } from '@nocobase/database';
 import { MockDatabase, MockServer, createMockServer } from '@nocobase/test';
 import Migration from '../migrations/20240802141435-collection-tree';
-import { Repository } from '@nocobase/database';
 
 describe('tree collection sync', async () => {
   let app: MockServer;
@@ -77,38 +77,25 @@ describe('collection tree migrate test', () => {
           {
             type: 'belongsTo',
             name: 'parent',
+            foreignKey: 'parentId',
+            target: 'test_tree',
             treeParent: true,
           },
           {
             type: 'hasMany',
             name: 'children',
+            foreignKey: 'parentId',
+            target: 'test_tree',
             treeChildren: true,
           },
         ],
       },
+      context: {},
     });
-    const collection = db.collection({
-      name: 'test_tree',
-      tree: 'adjacency-list',
-      fields: [
-        {
-          type: 'string',
-          name: 'name',
-        },
-        {
-          type: 'belongsTo',
-          name: 'parent',
-          treeParent: true,
-        },
-        {
-          type: 'hasMany',
-          name: 'children',
-          treeChildren: true,
-        },
-      ],
-    });
-    await collection.sync();
-    await collection.repository.create({
+    await app.db.getCollection('test_tree').model.truncate();
+    await app.db.getCollection('main_test_tree_path').model.truncate();
+    const repository = app.db.getRepository('test_tree');
+    await repository.create({
       values: [
         {
           name: 'c1',
@@ -131,7 +118,6 @@ describe('collection tree migrate test', () => {
   });
 
   afterEach(async () => {
-    await app.db.clean({ drop: true });
     await app.destroy();
   });
 
@@ -164,26 +150,7 @@ describe('collection tree migrate test', () => {
       },
     });
     expect(p.name).toBe('collection-tree');
-    const collection1 = db.collection({
-      name: 'test_tree',
-      tree: 'adjacency-list',
-      fields: [
-        {
-          type: 'string',
-          name: 'name',
-        },
-        {
-          type: 'belongsTo',
-          name: 'parent',
-          treeParent: true,
-        },
-        {
-          type: 'hasMany',
-          name: 'children',
-          treeChildren: true,
-        },
-      ],
-    });
+    const collection1 = db.getCollection('test_tree');
     const pathCollection1 = db.getCollection(name);
     expect(pathCollection1).toBeTruthy();
     expect(await pathCollection1.existsInDb()).toBeTruthy();

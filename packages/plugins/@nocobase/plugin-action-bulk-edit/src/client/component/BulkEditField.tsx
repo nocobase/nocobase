@@ -95,7 +95,7 @@ export const BulkEditField = (props: any) => {
   const { t } = useTranslation();
   const fieldSchema = useFieldSchema();
   const field = useField<Field>();
-  const [type, setType] = useState<number>(BulkEditFormItemValueType.ChangedTo);
+  const [type, setType] = useState<number>(BulkEditFormItemValueType.RemainsTheSame);
   const [value, setValue] = useState(null);
   const { getField } = useCollection_deprecated();
   const collectionField = getField(fieldSchema.name) || {};
