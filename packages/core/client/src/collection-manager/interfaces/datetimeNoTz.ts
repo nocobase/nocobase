@@ -40,13 +40,13 @@ export class DatetimeNoTzFieldInterface extends CollectionFieldInterface {
       type: 'boolean',
       'x-decorator': 'FormItem',
       'x-component': 'Checkbox',
-      'x-content': '{{t("Default value to current time")}}',
+      'x-content': '{{t("Default value to current server time")}}',
     },
     onUpdateToCurrentTime: {
       type: 'boolean',
       'x-decorator': 'FormItem',
       'x-component': 'Checkbox',
-      'x-content': '{{t("Automatically update timestamp on update")}}',
+      'x-content': '{{t("Automatically update timestamp to the current server time on update")}}',
     },
     'uiSchema.x-component-props.gmt': {
       type: 'boolean',
