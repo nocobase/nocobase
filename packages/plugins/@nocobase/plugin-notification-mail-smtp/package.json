@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-notification-mail-smtp",
-  "version": "1.3.0-alpha",
+  "version": "1.4.0-alpha",
   "displayName": "Notification: SMTP mailer",
   "displayName.zh-CN": "通知：SMTP 邮件发送",
   "description": "Send email notifications using SMTP in Notification Manager.",
