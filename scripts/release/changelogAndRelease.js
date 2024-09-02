@@ -321,12 +321,12 @@ async function writeChangelog(cn, en, from, to) {
 
 async function createRelease(cn, en, to) {
   let { ver = 'beta' } = program.opts();
-  // gh release create -t title -n note -d
+  // gh release create -t title -n note
   if (ver === 'alpha') {
-    await execa('gh', ['release', 'create', to, '-t', to, '-n', `${en}\n---\n${cn}`, '-d', '-p']);
+    await execa('gh', ['release', 'create', to, '-t', to, '-n', `${en}\n---\n${cn}`, '-p']);
     return;
   }
-  await execa('gh', ['release', 'create', to, '-t', to, '-n', `${en}\n---\n${cn}`, '-d']);
+  await execa('gh', ['release', 'create', to, '-t', to, '-n', `${en}\n---\n${cn}`]);
 }
 
 async function writeChangelogAndCreateRelease() {

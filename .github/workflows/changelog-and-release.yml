@@ -5,9 +5,8 @@ concurrency:
   cancel-in-progress: true
 
 on:
+  workflow_dispatch:
   push:
-    branches:
-      - feat/auto-changelog
     tags:
       - 'v*-beta'
 
@@ -70,4 +69,4 @@ jobs:
         run: |
           git add .
           git commit -m "docs: update changelogs"
-          # git push origin main
+          git push origin main
