@@ -99,6 +99,7 @@ export function Result(props) {
         setEditingValue(v);
       }
       setEditingValue(v);
+      v = v instanceof Date ? v.toISOString() : v; //treat Date as string for value compare
       if (v !== field.value) {
         field.value = v;
       }
