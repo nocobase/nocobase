@@ -21,7 +21,9 @@ export class SubqueryField extends Field {
     this.listener = async (attributes) => {
       const pushTarget = attributes?.include ? attributes.include : attributes;
 
-      pushTarget.push([Sequelize.literal(`(${sql})`), name]);
+      if (pushTarget.length == 0 || pushTarget.indexOf(name) !== -1) {
+        pushTarget.push([Sequelize.literal(`(${sql})`), name]);
+      }
     };
   }
 

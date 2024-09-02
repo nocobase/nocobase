@@ -37,4 +37,40 @@ describe('subquery', () => {
 
     expect(instance.get('subquery1')).toEqual(2);
   });
+
+  it('should query subquery field with fields', async () => {
+    const Test = db.collection({
+      name: 'tests',
+      fields: [
+        {
+          name: 'name',
+          type: 'string',
+        },
+        { name: 'subquery1', type: 'subquery', sql: `SELECT 1+1` },
+        { name: 'subquery2', type: 'subquery', sql: `SELECT 2+2` },
+      ],
+    });
+
+    await db.sync();
+
+    await Test.repository.create({
+      values: [
+        {
+          name: 'test1',
+        },
+        {
+          name: 'test2',
+        },
+      ],
+    });
+
+    const res = await Test.repository.find({
+      fields: ['name', 'subquery2'],
+    });
+
+    expect(res[0].get('subquery2')).toEqual(4);
+    expect(res[0].get('subquery1')).toBeUndefined();
+  });
+
+  it('should query subquery field in relation associations', async () => {});
 });
