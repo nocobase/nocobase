@@ -119,4 +119,52 @@ describe('user data sync', () => {
     expect(user2).toBeTruthy();
     expect(user2.nickname).toBe('test2');
   });
+
+  it('should update user custom field', async () => {
+    const userCollection = db.getCollection('users');
+    userCollection.addField('customField', { type: 'string' });
+    await db.sync({
+      alter: true,
+    });
+    await resourceManager.updateOrCreate({
+      sourceName: 'test',
+      dataType: 'user',
+      matchKey: 'email',
+      records: [
+        {
+          uid: '1',
+          nickname: 'test',
+          email: 'test@nocobase.com',
+          customField: 'test',
+        },
+      ],
+    });
+    const user = await db.getRepository('users').findOne({
+      filter: {
+        email: 'test@nocobase.com',
+      },
+    });
+    expect(user).toBeTruthy();
+    expect(user.customField).toBe('test');
+    await resourceManager.updateOrCreate({
+      sourceName: 'test',
+      dataType: 'user',
+      matchKey: 'email',
+      records: [
+        {
+          uid: '1',
+          nickname: 'test',
+          email: 'test@nocobase.com',
+          customField: 'test2',
+        },
+      ],
+    });
+    const user2 = await db.getRepository('users').findOne({
+      filter: {
+        id: user.id,
+      },
+    });
+    expect(user2).toBeTruthy();
+    expect(user2.customField).toBe('test2');
+  });
 });
