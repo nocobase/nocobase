@@ -43,7 +43,7 @@ jobs:
         with:
           node-version: 18
       - name: Install dependencies
-        run: npm install -D execa commander
+        run: yarn install --frozen-lockfile
       - name: Run script
         shell: bash
         run: |
