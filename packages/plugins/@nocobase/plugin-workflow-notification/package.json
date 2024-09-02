@@ -19,5 +19,8 @@
     "@nocobase/plugin-workflow": ">=0.17.0-alpha.3",
     "@nocobase/server": "1.x",
     "@nocobase/test": "1.x"
-  }
+  },
+  "keywords": [
+    "Workflow"
+  ]
 }

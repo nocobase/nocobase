@@ -1,6 +1,10 @@
 {
   "name": "@nocobase/plugin-notification-mail-smtp",
   "version": "1.3.0-alpha",
+  "displayName": "Notification: SMTP mailer",
+  "displayName.zh-CN": "通知：SMTP 邮件发送",
+  "description": "Send email notifications using SMTP in Notification Manager.",
+  "description.zh-CN": "在通知管理中使用 SMTP 发送电子邮件通知。",
   "main": "dist/server/index.js",
   "devDependencies": {
     "nodemailer": "^6.x",
@@ -11,5 +15,8 @@
     "@nocobase/plugin-notification-manager": "1.x",
     "@nocobase/server": "1.x",
     "@nocobase/test": "1.x"
-  }
+  },
+  "keywords": [
+    "System management"
+  ]
 }

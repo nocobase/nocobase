@@ -1,6 +1,10 @@
 {
   "name": "@nocobase/plugin-notification-manager",
-  "version": "1.3.0-alpha",
+  "displayName": "Notification manager",
+  "description": "The Notification Manager Plugin is a versatile tool designed to streamline and enhance your application's notification system. It provides a centralized interface to manage, customize, and deliver notifications.Designed for extensibility, it enables easy customization and expansion to meet your growing needs.",
+  "displayName.zh-CN": "通知管理",
+  "description.zh-CN": "通知管理插件是一个多功能工具，旨在简化和增强您的应用程序通知系统。它提供了一个集中式界面，用于管理、自定义和传递通知。设计用于可扩展性，它可以轻松定制和扩展，以满足您不断增长的需求。",
+  "version": "1.4.0-alpha",
   "main": "dist/server/index.js",
   "dependencies": {
   },
@@ -23,5 +27,8 @@
     "@nocobase/test": "1.x",
     "@nocobase/utils": "1.x",
     "@nocobase/plugin-workflow": ">=0.17.0-alpha.3"
-  }
+  },
+  "keywords": [
+    "System management"
+  ]
 }
