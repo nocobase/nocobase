@@ -50,6 +50,7 @@ jobs:
           node scripts/release/changelogAndRelease.js
         env:
           PRO_PLUGIN_REPOS: ${{ vars.PRO_PLUGIN_REPOS }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
       - name: Commit and push
         run: |
           git add .
