@@ -4,7 +4,7 @@ const path = require('path');
 const { Command } = require('commander');
 const program = new Command();
 
-program.option('-f, --from [from]').option('-t, --to [to]');
+program.option('-f, --from [from]').option('-t, --to [to]').option('-b, --branch [branch]');
 program.parse(process.argv);
 
 const header = {
@@ -19,7 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 本项目的所有重要更改都将记录在此文件中。
 
-格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)
+格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/),
 并且本项目遵循 [语义化版本](https://semver.org/spec/v2.0.0.html)。
 `,
 };
@@ -89,19 +89,18 @@ async function parsePackage(files, pkgType, pkg) {
   return { displayName, cnDisplayName, name };
 }
 
-async function parsePR(number, pkgType, pkg) {
+async function parsePR(number, pkgType, cwd, pkg, retries = 10) {
   // gh pr view 5112 --json author,body,files
   let res;
-  let retries = 10;
   try {
-    const { stdout } = await execa('gh', ['pr', 'view', number, '--json', 'author,body,files']);
+    const { stdout } = await execa('gh', ['pr', 'view', number, '--json', 'author,body,files'], { cwd });
     res = stdout;
   } catch (error) {
     console.error(`Get PR #${number} failed, error: ${error.message}`);
     if (retries > 0) {
       console.log(`Retrying... ${retries}`);
       retries -= 1;
-      return parsePR(number, pkgType, pkg);
+      return parsePR(number, pkgType, cwd, pkg, retries);
     }
     return { number };
   }
@@ -180,12 +179,13 @@ function arrangeChangelogs(changelogs) {
 }
 
 async function collect() {
-  let { from, to } = program.opts();
+  let { from, to, branch = 'main' } = program.opts();
   if (!from || !to) {
     // git describe --tags $(git rev-list --tags --max-count=2) --abbrev=0
+    const tagPattern = branch === 'main' ? 'v*-beta' : 'v*-alpha';
     const { stdout: tags } = await execa(
       'git',
-      ['describe', '--tags', '$(git rev-list --tags --max-count=2)', '--abbrev=0'],
+      ['describe', '--tags', `$(git rev-list --tags=${tagPattern} --max-count=2)`, '--abbrev=0'],
       { shell: true },
     );
     [from, to] = tags.split('\n').reverse();
@@ -197,7 +197,7 @@ async function collect() {
     await Promise.all(
       prs.map(async (pr) => {
         console.log(`Parsing PR #${pr}`);
-        const changelog = await parsePR(pr, pkgType, pkg);
+        const changelog = await parsePR(pr, pkgType, cwd, pkg);
         if (pkgType !== 'oss') {
           changelog.pro = true;
         }
@@ -213,7 +213,11 @@ async function collect() {
     const repos = JSON.parse(process.env.PRO_PLUGIN_REPOS);
     for (const repo of repos) {
       console.log(`===nocobase/${repo}===`);
-      await get(changelogs, 'pro', path.join(__dirname, '../../packages/pro-plugins/@nocobase', repo), repo);
+      try {
+        await get(changelogs, 'pro', path.join(__dirname, '../../packages/pro-plugins/@nocobase', repo), repo);
+      } catch (error) {
+        console.error(`Generate changelog for ${repo} failed, error: ${error.message}`);
+      }
     }
   }
   return { changelogs: arrangeChangelogs(changelogs), from, to };
@@ -221,19 +225,18 @@ async function collect() {
 
 async function generateChangelog() {
   const { changelogs, from, to } = await collect();
-  const date = new Date().toISOString().split('T')[0];
   const prTypeLocale = {
     'New feature': {
-      en: 'New Features',
-      cn: '新特性',
+      en: '🎉 New Features',
+      cn: '🎉 新特性',
     },
     Improvement: {
-      en: 'Improvements',
-      cn: '优化',
+      en: '🚀 Improvements',
+      cn: '🚀 优化',
     },
     'Bug fix': {
-      en: 'Bug Fixes',
-      cn: '修复',
+      en: '🐛 Bug Fixes',
+      cn: '🐛 修复',
     },
   };
   const moduleTypeLocale = {
@@ -294,17 +297,14 @@ async function generateChangelog() {
     return result;
   };
 
-  const title = `## [${to}](https://github.com/nocobase/nocobase/compare/${from}...${to}) - ${date}`;
   const cn = generate(changelogs, 'cn');
   const en = generate(changelogs, 'en');
-  return { cn: cn ? `${title}\n\n${cn}` : '', en: en ? `${title}\n\n${en}` : '', from, to };
+  return { cn, en, from, to };
 }
 
-async function writeChangelog() {
-  const { cn, en, to } = await generateChangelog();
-  if (!cn && !en) {
-    throw new Error('No changelog generated');
-  }
+async function writeChangelog(cn, en, from, to) {
+  const date = new Date().toISOString().split('T')[0];
+  const title = `## [${to}](https://github.com/nocobase/nocobase/compare/${from}...${to}) - ${date}`;
   const write = async (lang) => {
     const file = lang === 'cn' ? 'CHANGELOG.zh-CN.md' : 'CHANGELOG.md';
     const oldChangelog = await fs.readFile(path.join(__dirname, `../../${file}`), 'utf8');
@@ -312,11 +312,25 @@ async function writeChangelog() {
       return;
     }
     const fromIndex = oldChangelog.indexOf(`## [`);
-    const newChangelog = `${header[lang]}\n${lang === 'cn' ? cn : en}\n${oldChangelog.slice(fromIndex)}`;
+    const newChangelog = `${header[lang]}\n${title}\n\n${lang === 'cn' ? cn : en}${oldChangelog.slice(fromIndex)}`;
     await fs.writeFile(path.join(__dirname, `../../${file}`), newChangelog);
   };
   write('cn');
   write('en');
 }
 
-writeChangelog();
+async function createRelease(cn, en, to) {
+  // gh release create -t title -n note -d
+  await execa('gh', ['release', 'create', to, '-t', to, '-n', `${en}\n---\n${cn}`, '-d']);
+}
+
+async function writeChangelogAndCreateRelease() {
+  const { cn, en, from, to } = await generateChangelog();
+  if (!cn && !en) {
+    throw new Error('No changelog generated');
+  }
+  await writeChangelog(cn, en, from, to);
+  await createRelease(cn, en, to);
+}
+
+writeChangelogAndCreateRelease();
