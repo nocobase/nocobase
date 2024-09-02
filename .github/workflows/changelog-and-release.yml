@@ -42,7 +42,9 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: 18
-      - name: Run release.sh
+      - name: Install dependencies
+        run: npm install -g execa commander
+      - name: Run script
         shell: bash
         run: |
           node scripts/release/changelogAndRelease.js
