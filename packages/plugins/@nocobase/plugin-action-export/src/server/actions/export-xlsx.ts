@@ -33,6 +33,7 @@ async function exportXlsxAction(ctx: Context, next: Next) {
   const xlsxExporter = new XlsxExporter({
     collectionManager: dataSource.collectionManager,
     collection,
+    repository,
     columns,
     findOptions: {
       filter,
