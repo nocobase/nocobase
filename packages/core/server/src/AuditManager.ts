@@ -160,11 +160,7 @@ export class AuditManager {
     const act: Map<string, Action> = this.resources.get(action);
     if (!act) return null;
 
-    if (resource) {
-      return act.get(resource);
-    } else {
-      return act.get('*');
-    }
+    return act.get(resource) || act.get('*');
   }
 
   async getDefaultMetaData(ctx: any) {
@@ -207,7 +203,7 @@ export class AuditManager {
       ip: ctx.request.ip,
       ua: ctx.request.header['user-agent'],
       status: ctx.response.status,
-      createdAt: new Date() + '',
+      createdAt: new Date().toISOString(),
       metadata: null,
     };
     return auditLog;
