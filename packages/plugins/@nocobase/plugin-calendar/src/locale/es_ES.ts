@@ -50,5 +50,6 @@ export default {
   "Weekly": "Semanal",
   "Monthly": "Mensual",
   "Yearly": "Anual",
-  "Repeats": "se repite"
+  "Repeats": "se repite",
+  "Background color field": "Background color field"
 };
