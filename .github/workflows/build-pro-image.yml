@@ -11,7 +11,7 @@ on:
       - 'next'
     paths:
       - 'packages/**'
-      - 'Dockerfile'
+      - 'Dockerfile.pro'
       - '.github/workflows/build-pro-image.yml'
 
 jobs:
@@ -135,7 +135,7 @@ jobs:
         uses: docker/build-push-action@v3
         with:
           context: .
-          file: Dockerfile
+          file: Dockerfile.pro
           build-args: |
             VERDACCIO_URL=http://localhost:4873/
             COMMIT_HASH=${GITHUB_SHA}
