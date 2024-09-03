@@ -151,7 +151,7 @@ export const DataTypeTransformers = {
 };
 
 export function toDbType(value: any, type: string) {
-  if (value == null) {
+  if (value == null || (!value && type === 'date')) {
     return null;
   }
 

@@ -18,8 +18,8 @@ import {
   useCollection_deprecated,
   useCollectionManager_deprecated,
   useFormBlockContext,
-  ActionContext,
 } from '@nocobase/client';
+import _ from 'lodash';
 import { Evaluator, evaluators } from '@nocobase/evaluators/client';
 import { Registry, toFixedByStep } from '@nocobase/utils/client';
 import React, { useEffect, useState, useContext } from 'react';
@@ -61,6 +61,22 @@ function getValuesByPath(values, key, index?) {
   }
 }
 
+function areValuesEqual(value1, value2) {
+  if (_.isString(value1) && !isNaN(Date.parse(value1))) {
+    value1 = new Date(value1);
+  }
+
+  if (_.isString(value2) && !isNaN(Date.parse(value2))) {
+    value2 = new Date(value2);
+  }
+
+  if (_.isDate(value1) && _.isDate(value2)) {
+    return value1.getTime() === value2.getTime();
+  }
+
+  return _.isEqual(value1, value2);
+}
+
 export function Result(props) {
   const { value, ...others } = props;
   const fieldSchema = useFieldSchema();
@@ -99,11 +115,16 @@ export function Result(props) {
         setEditingValue(v);
       }
       setEditingValue(v);
-      if (v !== field.value) {
-        field.value = v;
-      }
     });
   });
+
+  useEffect(() => {
+    if (!areValuesEqual(field.value, editingValue)) {
+      setTimeout(() => {
+        field.value = editingValue;
+      });
+    }
+  }, [editingValue]);
   const Component = TypedComponents[dataType] ?? InputString;
   return (
     <Component {...others} value={dataType === 'double' ? toFixedByStep(editingValue, props.step) : editingValue} />
