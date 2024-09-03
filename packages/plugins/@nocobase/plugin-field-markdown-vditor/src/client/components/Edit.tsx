@@ -57,9 +57,7 @@ export const Edit = withDynamicSchemaProps((props) => {
       after: () => {
         vdRef.current = vditor;
         setEditorReady(true); // Notify that the editor is ready
-        if (value !== undefined) {
-          vditor.setValue(value);
-        }
+        vditor.setValue(value ?? '');
         if (disabled) {
           vditor.disabled();
         } else {
@@ -103,7 +101,7 @@ export const Edit = withDynamicSchemaProps((props) => {
       const editor = vdRef.current;
       if (value !== editor.getValue()) {
         editor.setValue(value ?? '');
-        editor.focus();
+        // editor.focus();
 
         const preArea = containerRef.current?.querySelector(
           'div.vditor-content > div.vditor-ir > pre',
