@@ -5,6 +5,9 @@ concurrency:
   cancel-in-progress: true
 
 on:
+  push:
+    branches:
+      - feat/tag-release
   workflow_dispatch:
 
 jobs:
@@ -75,8 +78,8 @@ jobs:
       - name: publish npmjs.org
         continue-on-error: true
         run: |
-          git config --global user.email "test@mail.com"
-          git config --global user.name "test"
+          git config --global user.name '${{ needs.app-token.outputs.app-slug }}[bot]'
+          git config --global user.email '${{ needs.app-token.outputs.user-id }}+${{ needs.app-token.outputs.app-slug }}[bot]@users.noreply.github.com>'
           git config --global --add safe.directory /__w/nocobase/nocobase
           npm config set access public
           npm config set registry https://registry.npmjs.org/
@@ -86,40 +89,42 @@ jobs:
           yarn config set //registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}
           yarn install
           yarn lerna version ${{ env.NEWVERSION }} -y --no-git-tag-version
+          git tag ${{ env.NEWVERSION }}
+          git push origin ${{ env.NEWVERSION }}
           yarn build
           echo "# test" >> Release.md
           git add .
           git commit -m "chore(versions): test publish packages xxx"
           cat lerna.json
           yarn release:force --no-verify-access --no-git-reset --registry https://registry.npmjs.org/ --dist-tag=next
-      - name: Checkout pro-plugins
-        uses: actions/checkout@v3
-        with:
-          repository: nocobase/pro-plugins
-          path: packages/pro-plugins
-          ref: next
-          token: ${{ steps.app-token.outputs.token }}
-      - name: Clone pro repos
-        shell: bash
-        run: |
-          for repo in ${{ join(fromJSON(vars.PRO_PLUGIN_REPOS), ' ') }}
-          do
-          git clone -b next https://x-access-token:${{ steps.app-token.outputs.token }}@github.com/nocobase/$repo.git packages/pro-plugins/@nocobase/$repo
-          done
-      - name: Build Pro plugins
-        run: |
-          yarn config set registry https://registry.npmjs.org/
-          yarn install
-          yarn lerna version ${{ env.NEWVERSION }} -y --no-git-tag-version
-          yarn build packages/pro-plugins
-      - name: publish pkg.nocobase.com
-        run: |
-          git reset --hard
-          npm config set //pkg.nocobase.com/:_authToken=${{ env.PKG_NOCOBASE_TOKEN }}
-          yarn release:force --no-verify-access --no-git-reset --registry https://pkg.nocobase.com --dist-tag=next
-      - name: publish pkg-src.nocobase.com
-        run: |
-          git reset --hard
-          bash generate-npmignore.sh ignore-src
-          npm config set //pkg-src.nocobase.com/:_authToken=${{ env.PKG_SRC_NOCOBASE_TOKEN }}
-          yarn release:force --no-verify-access --no-git-reset --registry https://pkg-src.nocobase.com --dist-tag=next
+      # - name: Checkout pro-plugins
+      #   uses: actions/checkout@v3
+      #   with:
+      #     repository: nocobase/pro-plugins
+      #     path: packages/pro-plugins
+      #     ref: next
+      #     token: ${{ steps.app-token.outputs.token }}
+      # - name: Clone pro repos
+      #   shell: bash
+      #   run: |
+      #     for repo in ${{ join(fromJSON(vars.PRO_PLUGIN_REPOS), ' ') }}
+      #     do
+      #     git clone -b next https://x-access-token:${{ steps.app-token.outputs.token }}@github.com/nocobase/$repo.git packages/pro-plugins/@nocobase/$repo
+      #     done
+      # - name: Build Pro plugins
+      #   run: |
+      #     yarn config set registry https://registry.npmjs.org/
+      #     yarn install
+      #     yarn lerna version ${{ env.NEWVERSION }} -y --no-git-tag-version
+      #     yarn build packages/pro-plugins
+      # - name: publish pkg.nocobase.com
+      #   run: |
+      #     git reset --hard
+      #     npm config set //pkg.nocobase.com/:_authToken=${{ env.PKG_NOCOBASE_TOKEN }}
+      #     yarn release:force --no-verify-access --no-git-reset --registry https://pkg.nocobase.com --dist-tag=next
+      # - name: publish pkg-src.nocobase.com
+      #   run: |
+      #     git reset --hard
+      #     bash generate-npmignore.sh ignore-src
+      #     npm config set //pkg-src.nocobase.com/:_authToken=${{ env.PKG_SRC_NOCOBASE_TOKEN }}
+      #     yarn release:force --no-verify-access --no-git-reset --registry https://pkg-src.nocobase.com --dist-tag=next
