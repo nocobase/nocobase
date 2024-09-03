@@ -54,7 +54,7 @@ export class ACLSettingsUI {
     }),
     ({ activeKey, t, TabLayout }) => ({
       key: 'menu',
-      label: t('Menu'),
+      label: t('Desktop menu'),
       children: (
         <TabLayout>
           <MenuItemsProvider>
