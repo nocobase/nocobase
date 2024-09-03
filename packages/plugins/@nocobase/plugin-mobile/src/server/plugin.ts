@@ -40,7 +40,6 @@ const filterMobileRoutes = (items: any[], callback: (node: { id: number }) => bo
 export class PluginMobileServer extends Plugin {
   async load() {
     this.registerActionHandlers();
-    this.extendRoleField();
     this.bindNewMenuToRoles();
     this.setACL();
   }
@@ -117,24 +116,6 @@ export class PluginMobileServer extends Plugin {
       ctx.body = result;
 
       await next();
-    });
-  }
-
-  extendRoleField() {
-    this.db.extendCollection({
-      name: 'roles',
-      fields: [
-        {
-          type: 'belongsToMany',
-          name: 'mobileMenuUiSchemas',
-          target: 'mobileRoutes',
-        },
-        {
-          type: 'boolean',
-          name: 'allowNewMobileMenu',
-          defaultValue: true,
-        },
-      ],
     });
   }
 }
