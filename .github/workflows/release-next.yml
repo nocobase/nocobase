@@ -110,15 +110,18 @@ jobs:
           done
       - name: Tag Pro plugins
         run: |
-          cd packages/pro-plugins
+          cd ./packages/pro-plugins
           git tag ${{ env.NEWVERSION }}
           git push origin ${{ env.NEWVERSION }}
+          cd ../../
           for repo in ${{ join(fromJSON(vars.PRO_PLUGIN_REPOS), ' ') }}
           do
-          git tag ${{ env.NEWVERSION }}
-          git push origin ${{ env.NEWVERSION }}
+            cd ./packages/pro-plugins/@nocobase/$repo
+            git tag ${{ env.NEWVERSION }}
+            git push origin ${{ env.NEWVERSION }}
+            cd ../../../../
           done
-      - name: Tag and Build Pro plugins
+      - name: Build Pro plugins
         run: |
           yarn config set registry https://registry.npmjs.org/
           yarn install
