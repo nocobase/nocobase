@@ -1,0 +1,141 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+.codeBody {
+  position: absolute;
+  top: 0%;
+  left: 0%;
+  width: 100vw;
+  height: 100vh;
+  background-color: #00000020;
+}
+.codeBody .code {
+  position: absolute;
+  top: 36%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: calc(444 * 100vw / 1920);
+  height: calc(565 * 100vw / 1920);
+  /* background-color: #ffffff; */
+  border-radius: calc(12 * 100vw / 1920);
+}
+.codeBody .code #captcha-box #tianai-captcha-parent #tianai-captcha-box {
+  height: 90%;
+}
+.codeBody .code #captcha-box #tianai-captcha-parent .slider-bottom {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 10%;
+}
+.codeBody .code #captcha-box #tianai-captcha-parent .slider-bottom .close-btn {
+  position: absolute;
+  top: 50%;
+  right: 10%;
+  transform: translate(-50%, -50%);
+  cursor: pointer;
+  width: 20px;
+  height: 20px;
+  background-image: url(../assets/icon.png);
+  background-repeat: no-repeat;
+  background-position: 0 -40px;
+}
+.codeBody .code #captcha-box #tianai-captcha-parent .slider-bottom .refresh-btn {
+  cursor: pointer;
+  width: 20px;
+  height: 20px;
+  background-image: url(../assets/icon.png);
+  background-repeat: no-repeat;
+  background-position: 0 -193px;
+}
+.changePassword {
+  position: absolute;
+  top: 0%;
+  left: 0%;
+  width: 100vw;
+  height: 100vh;
+  background-color: #00000020;
+}
+.changePassword .changePassword-body {
+  padding: calc(16 * 100vw / 1920) calc(20 * 100vw / 1920);
+  position: absolute;
+  top: 30%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: calc(680 * 100vw / 1920);
+  height: calc(285 * 100vw / 1920);
+  background-color: #ffffff;
+  border-radius: calc(12 * 100vw / 1920);
+}
+.changePassword .changePassword-body .changePassword-title {
+  position: relative;
+  font-size: calc(20 * 100vw / 1920);
+  color: #333333;
+  margin-bottom: calc(20 * 100vw / 1920);
+  margin-left: calc(12 * 100vw / 1920);
+  font-weight: 600;
+}
+.changePassword .changePassword-body .changePassword-title::before {
+  position: absolute;
+  top: 56%;
+  left: -2%;
+  transform: translate(-50%, -50%);
+  content: ' ';
+  display: inline-block;
+  width: calc(4 * 100vw / 1920);
+  height: calc(24 * 100vw / 1920);
+  background-color: #1890ff;
+}
+.changePassword .changePassword-body .changePassword-form {
+  padding: calc(0 * 100vw / 1920) calc(48 * 100vw / 1920);
+  width: 100%;
+}
+.changePassword .changePassword-body .changePassword-form .changePassword-form-item {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  height: calc(72 * 100vw / 1920);
+  margin-bottom: calc(8 * 100vw / 1920);
+}
+.changePassword .changePassword-body .changePassword-form .changePassword-form-item .text {
+  position: relative;
+  width: calc(120 * 100vw / 1920);
+  font-size: calc(16 * 100vw / 1920);
+  color: #333333;
+  font-weight: 600;
+}
+.changePassword .changePassword-body .changePassword-form .changePassword-form-item .text::before {
+  position: absolute;
+  top: 0%;
+  left: -6%;
+  transform: translate(-50%, -50%);
+  content: '*';
+  display: inline-block;
+  width: calc(4 * 100vw / 1920);
+  height: calc(4 * 100vw / 1920);
+  color: #ff0004;
+}
+.changePassword .changePassword-body .changePassword-form .changePassword-form-item .statustext {
+  position: absolute;
+  bottom: calc(-4 * 100vw / 1920);
+  left: calc(100 * 100vw / 1920);
+  font-size: calc(12 * 100vw / 1920);
+  color: #ff0004;
+  font-weight: 500;
+}
+.changePassword .changePassword-body .changePassword-form .changePassword-form-item input {
+  height: calc(28 * 100vw / 1920);
+}
+.changePassword .changePassword-body .changePassword-form .changePassword-form-button {
+  width: 100%;
+  display: flex;
+  justify-content: flex-end;
+}
