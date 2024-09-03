@@ -53,7 +53,6 @@ export const ValueDynamicComponent = (props: ValueDynamicComponentProps) => {
   const handleChangeOfConstant = useCallback(
     (value) => {
       setValue({
-        mode,
         value,
       });
     },
@@ -66,7 +65,6 @@ export const ValueDynamicComponent = (props: ValueDynamicComponentProps) => {
     (value) => {
       const result = value.replaceAll(`${collectionName}.`, '').replaceAll('$system.', '').trim();
       setValue({
-        mode,
         value,
         result,
       });
