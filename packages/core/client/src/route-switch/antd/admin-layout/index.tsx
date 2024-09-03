@@ -441,12 +441,12 @@ export const InternalAdminLayout = () => {
                 />
               ) : (
                 <span
+                  style={{ fontSize: token.fontSizeHeading1 }}
                   className={css`
                     padding: 0 16px;
                     width: 100%;
                     height: 100%;
                     font-weight: 500;
-                    font-size: 2em;
                   `}
                 >
                   {result?.data?.data?.title}
