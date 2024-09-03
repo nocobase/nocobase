@@ -75,8 +75,8 @@ jobs:
       - name: publish npmjs.org
         continue-on-error: true
         run: |
-          git config --global user.email "test@mail.com"
-          git config --global user.name "test"
+          git config --global user.name '${{ needs.app-token.outputs.app-slug }}[bot]'
+          git config --global user.email '${{ needs.app-token.outputs.user-id }}+${{ needs.app-token.outputs.app-slug }}[bot]@users.noreply.github.com>'
           git config --global --add safe.directory /__w/nocobase/nocobase
           npm config set access public
           npm config set registry https://registry.npmjs.org/
@@ -86,6 +86,8 @@ jobs:
           yarn config set //registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}
           yarn install
           yarn lerna version ${{ env.NEWVERSION }} -y --no-git-tag-version
+          git tag ${{ env.NEWVERSION }}
+          git push origin ${{ env.NEWVERSION }}
           yarn build
           echo "# test" >> Release.md
           git add .
@@ -106,11 +108,19 @@ jobs:
           do
           git clone -b next https://x-access-token:${{ steps.app-token.outputs.token }}@github.com/nocobase/$repo.git packages/pro-plugins/@nocobase/$repo
           done
-      - name: Build Pro plugins
+      - name: Tag and Build Pro plugins
         run: |
           yarn config set registry https://registry.npmjs.org/
           yarn install
           yarn lerna version ${{ env.NEWVERSION }} -y --no-git-tag-version
+          cd packages/pro-plugins
+          git tag ${{ env.NEWVERSION }}
+          git push origin ${{ env.NEWVERSION }}
+          for repo in ${{ join(fromJSON(vars.PRO_PLUGIN_REPOS), ' ') }}
+          do
+          git tag ${{ env.NEWVERSION }}
+          git push origin ${{ env.NEWVERSION }}
+          done
           yarn build packages/pro-plugins
       - name: publish pkg.nocobase.com
         run: |
