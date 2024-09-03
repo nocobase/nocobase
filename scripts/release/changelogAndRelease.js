@@ -59,8 +59,13 @@ async function getPackageJson(pkg, pkgType) {
   } else {
     dir = `pro-plugins/@nocobase/${pkg}`;
   }
-  const pkgJSON = await fs.readFile(path.join(__dirname, '../../packages', dir, 'package.json'), 'utf8');
-  return JSON.parse(pkgJSON);
+  try {
+    const pkgJSON = await fs.readFile(path.join(__dirname, '../../packages', dir, 'package.json'), 'utf8');
+    return JSON.parse(pkgJSON);
+  } catch (error) {
+    console.error(`Get package.json for ${pkg} failed, error: ${error.message}`);
+    return {};
+  }
 }
 
 async function parsePackage(files, pkgType, pkg) {
@@ -114,7 +119,7 @@ async function parsePR(number, pkgType, cwd, pkg, retries = 10) {
   const { description, docTitle, docLink } = parsePRBody(body, 'English');
   const { description: cnDescription, docTitle: cnDocTitle, docLink: cnDocLink } = parsePRBody(body, 'Chinese');
   const { displayName, cnDisplayName, name } = await parsePackage(files, pkgType, pkg);
-  const pkgName = name.split('/').pop();
+  const pkgName = name?.split('/').pop();
   const changelog = {
     prType,
     number,
