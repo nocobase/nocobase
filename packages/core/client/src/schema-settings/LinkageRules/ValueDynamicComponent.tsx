@@ -9,7 +9,7 @@
 
 import { Input, Select } from 'antd';
 import { css } from '@emotion/css';
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useFormBlockContext } from '../../block-provider/FormBlockProvider';
 import { useRecord } from '../../record-provider';
@@ -50,9 +50,15 @@ export const ValueDynamicComponent = (props: ValueDynamicComponentProps) => {
   const constantStyle = useMemo(() => {
     return { minWidth: 150, maxWidth: 430 };
   }, []);
+
+  useEffect(() => {
+    setMode(fieldValue?.mode || 'constant');
+  }, [fieldValue?.mode]);
+
   const handleChangeOfConstant = useCallback(
     (value) => {
       setValue({
+        mode,
         value,
       });
     },
@@ -65,6 +71,7 @@ export const ValueDynamicComponent = (props: ValueDynamicComponentProps) => {
     (value) => {
       const result = value.replaceAll(`${collectionName}.`, '').replaceAll('$system.', '').trim();
       setValue({
+        mode,
         value,
         result,
       });
@@ -158,7 +165,7 @@ export const ValueDynamicComponent = (props: ValueDynamicComponentProps) => {
           </Option>
         ))}
       </Select>
-      {modeMap[fieldValue?.mode || mode]}
+      {modeMap[mode]}
     </Input.Group>
   );
 };
