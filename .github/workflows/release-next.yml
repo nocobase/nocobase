@@ -86,8 +86,8 @@ jobs:
           yarn config set //registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}
           yarn install
           yarn lerna version ${{ env.NEWVERSION }} -y --no-git-tag-version
-          git tag ${{ env.NEWVERSION }}
-          git push origin ${{ env.NEWVERSION }}
+          git tag v${{ env.NEWVERSION }}
+          git push origin v${{ env.NEWVERSION }}
           yarn build
           echo "# test" >> Release.md
           git add .
@@ -111,14 +111,14 @@ jobs:
       - name: Tag Pro plugins
         run: |
           cd ./packages/pro-plugins
-          git tag ${{ env.NEWVERSION }}
-          git push origin ${{ env.NEWVERSION }}
+          git tag v${{ env.NEWVERSION }}
+          git push origin v${{ env.NEWVERSION }}
           cd ../../
           for repo in ${{ join(fromJSON(vars.PRO_PLUGIN_REPOS), ' ') }}
           do
             cd ./packages/pro-plugins/@nocobase/$repo
-            git tag ${{ env.NEWVERSION }}
-            git push origin ${{ env.NEWVERSION }}
+            git tag v${{ env.NEWVERSION }}
+            git push origin v${{ env.NEWVERSION }}
             cd ../../../../
           done
       - name: Build Pro plugins
