@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.3.14-beta](https://github.com/nocobase/nocobase/compare/v1.3.13-beta...v1.3.14-beta) - 2024-09-03
+
+### 🎉 New Features
+
+- **[client]** Add support for many-to-many association fields. ([#5178](https://github.com/nocobase/nocobase/pull/5178)) by @zhangzhonghe
+
+### 🚀 Improvements
+
+- **[Action: Custom request]** remove linkageRule for custom request in create form ([#5179](https://github.com/nocobase/nocobase/pull/5179)) by @katherinehhh
+
+### 🐛 Bug Fixes
+
+- **[Collection field: Formula]** formula field adaptation time field ([#5168](https://github.com/nocobase/nocobase/pull/5168)) by @katherinehhh
+
 ## [v1.3.13-beta](https://github.com/nocobase/nocobase/compare/v1.3.12-beta...v1.3.13-beta) - 2024-09-03
 
 ### 🐛 Bug Fixes
