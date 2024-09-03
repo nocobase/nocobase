@@ -108,11 +108,8 @@ jobs:
           do
           git clone -b next https://x-access-token:${{ steps.app-token.outputs.token }}@github.com/nocobase/$repo.git packages/pro-plugins/@nocobase/$repo
           done
-      - name: Tag and Build Pro plugins
+      - name: Tag Pro plugins
         run: |
-          yarn config set registry https://registry.npmjs.org/
-          yarn install
-          yarn lerna version ${{ env.NEWVERSION }} -y --no-git-tag-version
           cd packages/pro-plugins
           git tag ${{ env.NEWVERSION }}
           git push origin ${{ env.NEWVERSION }}
@@ -121,6 +118,11 @@ jobs:
           git tag ${{ env.NEWVERSION }}
           git push origin ${{ env.NEWVERSION }}
           done
+      - name: Tag and Build Pro plugins
+        run: |
+          yarn config set registry https://registry.npmjs.org/
+          yarn install
+          yarn lerna version ${{ env.NEWVERSION }} -y --no-git-tag-version
           yarn build packages/pro-plugins
       - name: publish pkg.nocobase.com
         run: |
