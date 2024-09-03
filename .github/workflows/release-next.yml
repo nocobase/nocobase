@@ -96,7 +96,7 @@ jobs:
           git add .
           git commit -m "chore(versions): test publish packages xxx"
           cat lerna.json
-          yarn release:force --no-verify-access --no-git-reset --registry https://registry.npmjs.org/ --dist-tag=next
+          # yarn release:force --no-verify-access --no-git-reset --registry https://registry.npmjs.org/ --dist-tag=next
       # - name: Checkout pro-plugins
       #   uses: actions/checkout@v3
       #   with:
