@@ -34,8 +34,7 @@ import { useCalenderHeight } from './hook';
 import useStyle from './style';
 import type { ToolbarProps } from './types';
 import { formatDate } from './utils';
-import style from './style';
-import { color } from 'packages/plugins/@nocobase/plugin-mock-collections/src/server/field-interfaces';
+import { TinyColor } from '@ctrl/tinycolor';
 
 const Weeks = ['month', 'week', 'day'] as View[];
 const localizer = dayjsLocalizer(dayjs);
@@ -265,9 +264,10 @@ export const Calendar: any = withDynamicSchemaProps(
       };
 
       const eventPropGetter = (event) => {
-        // const backgroundColor = isColor(event.color) ? event.color : ''; // 默认颜色
-        const backgroundColor = getColor(event.color) ? getColor(event.color) : ''; // 默认颜色
-        return { style: { color: backgroundColor } };
+        const fontColor = new TinyColor(event.color).isLight() ? '#282c34' : '#f5f5f5';
+        const textShadow = new TinyColor(event.color).isLight() ? '#f5f5f5' : '#282c34';
+        const backgroundColor = getColor(event.color) ? getColor(event.color) : '';
+        return { style: { color: fontColor, backgroundColor, fontWeight: '600', textShadow: `0 0 2px ${textShadow}` } };
       };
       const isColor = (str) => {
         const colorRegex = /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/;

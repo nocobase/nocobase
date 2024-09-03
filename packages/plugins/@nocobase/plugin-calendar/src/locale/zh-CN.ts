@@ -52,4 +52,5 @@ export default {
   Monthly: '每月',
   Yearly: '每年',
   Repeats: '重复',
+  'Background color field': '背景颜色字段'
 };
