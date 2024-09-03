@@ -186,14 +186,12 @@ function arrangeChangelogs(changelogs) {
 async function collect() {
   let { from, to, ver = 'beta' } = program.opts();
   if (!from || !to) {
-    // git describe --tags $(git rev-list --tags --max-count=2) --abbrev=0
+    // git tag -l --sort=version:refname | grep "v*-ver" | tail -2
     const tagPattern = `v*-${ver}`;
-    const { stdout: tags } = await execa(
-      'git',
-      ['describe', '--tags', `$(git rev-list --tags=${tagPattern} --max-count=2)`, '--abbrev=0'],
-      { shell: true },
-    );
-    [from, to] = tags.split('\n').reverse();
+    const { stdout: tags } = await execa(`git tag -l --sort=version:refname | grep "${tagPattern}" | tail -2`, {
+      shell: true,
+    });
+    [from, to] = tags.split('\n');
   }
   console.log(`From: ${from}, To: ${to}`);
   const changelogs = [];
