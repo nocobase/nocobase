@@ -96,7 +96,7 @@ export const Edit = withDynamicSchemaProps((props) => {
       vdRef.current?.destroy();
       vdRef.current = undefined;
     };
-  }, [fileCollection, toolbar?.join(','), lang, app, apiClient, cdn]);
+  }, [fileCollection, toolbar?.join(',')]);
 
   useEffect(() => {
     if (editorReady && vdRef.current) {
