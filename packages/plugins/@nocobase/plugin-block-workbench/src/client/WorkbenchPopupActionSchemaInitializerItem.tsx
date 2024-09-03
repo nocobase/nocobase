@@ -88,23 +88,6 @@ export function WorkbenchPopupActionSchemaInitializerItem(props) {
             'x-component': 'ColorPicker',
             'x-decorator': 'FormItem',
           },
-          openMode: {
-            title: t('Open mode'),
-            required: false,
-            default: 'drawer',
-            'x-component': 'Select',
-            'x-decorator': 'FormItem',
-            enum: hideOpenMode
-              ? [
-                  { label: t('Drawer'), value: 'drawer' },
-                  { label: t('Page'), value: 'page' },
-                ]
-              : [
-                  { label: t('Drawer'), value: 'drawer' },
-                  { label: t('Dialog'), value: 'modal' },
-                  { label: t('Page'), value: 'page' },
-                ],
-          },
         },
       }}
       onSubmit={(values) => {
@@ -118,7 +101,6 @@ export function WorkbenchPopupActionSchemaInitializerItem(props) {
           'x-component-props': {
             icon: values.icon,
             iconColor: values.iconColor,
-            openMode: values.openMode,
             refreshDataBlockRequest: false,
           },
           properties: {
