@@ -52,6 +52,8 @@ import { MobileSettings } from './mobile-blocks/settings-block/MobileSettings';
 import { MobileSettingsBlockInitializer } from './mobile-blocks/settings-block/MobileSettingsBlockInitializer';
 import { MobileSettingsBlockSchemaSettings } from './mobile-blocks/settings-block/schemaSettings';
 import { MobileRoutesProvider } from './mobile-providers';
+// @ts-ignore
+import pkg from './../../package.json';
 
 export * from './desktop-mode';
 export * from './mobile';
@@ -249,7 +251,9 @@ export class PluginMobileClient extends Plugin {
   addPermissionsSettingsUI() {
     this.app.pm.get(PluginACLClient)?.settingsUI.addPermissionsTab(({ t, TabLayout, activeKey }) => ({
       key: 'mobile-menu',
-      label: t('Mobile menu'),
+      label: t('Mobile menu', {
+        ns: pkg.name,
+      }),
       children: (
         <TabLayout>
           <MobileRoutesProvider action="list">
