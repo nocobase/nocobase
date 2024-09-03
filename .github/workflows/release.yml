@@ -10,21 +10,17 @@ on:
       - 'v*'
 
 jobs:
-  app-token:
-    uses: nocobase/nocobase/.github/workflows/get-nocobase-app-token.yml@main
-    secrets: inherit
   publish-npm:
     runs-on: ubuntu-latest
     container: node:18
-    needs: app-token
     steps:
-      - name: Decrypt app token
+      - uses: actions/create-github-app-token@v1
         id: app-token
-        shell: bash
-        run: |
-          ENCRYPTED_SECRET=${{ needs.app-token.outputs.token }};
-          APP_TOKEN=$(echo -n "$ENCRYPTED_SECRET" | base64 --decode | openssl enc -aes-256-cbc -pbkdf2 -d -salt -k "${{ secrets.APP_TOKEN_ENCRYPTION_PASSWORD }}");
-          echo "token=$APP_TOKEN" >> $GITHUB_OUTPUT
+        with:
+          app-id: ${{ vars.NOCOBASE_APP_ID }}
+          private-key: ${{ secrets.NOCOBASE_APP_PRIVATE_KEY }}
+          repositories: nocobase,pro-plugins,${{ join(fromJSON(vars.PRO_PLUGIN_REPOS), ',') }}
+          skip-token-revoke: true
       - name: Checkout
         uses: actions/checkout@v3
       - name: Send curl request and parse response
