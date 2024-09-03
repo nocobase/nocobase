@@ -17,6 +17,7 @@ import {
   useCollection,
   useSchemaToolbar,
   RefreshDataBlockRequest,
+  useCollectionRecord,
 } from '@nocobase/client';
 import { CustomRequestACL, CustomRequestSettingsItem } from './components/CustomRequestActionDesigner';
 import { useFieldSchema } from '@formily/react';
@@ -44,6 +45,10 @@ export const customizeCustomRequestActionSettings = new SchemaSettings({
           ...linkageRulesProps,
           collectionName: name,
         };
+      },
+      useVisible() {
+        const record = useCollectionRecord();
+        return !record?.isNew;
       },
     },
     {
