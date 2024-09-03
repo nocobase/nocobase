@@ -1,7 +1,7 @@
 {
   "name": "@nocobase/plugin-backup-restore",
-  "displayName": "App backup & restore",
-  "displayName.zh-CN": "应用的备份与还原",
+  "displayName": "App backup & restore (deprecated)",
+  "displayName.zh-CN": "应用的备份与还原（废弃）",
   "description": "Backup and restore applications for scenarios such as application replication, migration, and upgrades.",
   "description.zh-CN": "备份和还原应用，可用于应用的复制、迁移、升级等场景。",
   "version": "1.4.0-alpha",
