@@ -247,7 +247,7 @@ export class PluginMobileClient extends Plugin {
   }
 
   addPermissionsSettingsUI() {
-    this.app.pm.get(PluginACLClient).settingsUI.addPermissionsTab(({ t, TabLayout, activeKey }) => ({
+    this.app.pm.get(PluginACLClient)?.settingsUI.addPermissionsTab(({ t, TabLayout, activeKey }) => ({
       key: 'mobile-menu',
       label: t('Mobile menu'),
       children: (

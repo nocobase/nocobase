@@ -2,8 +2,8 @@
  * iframe: true
  */
 import { Plugin } from '@nocobase/client';
-import PluginMobileClient, { Mobile } from '@nocobase/plugin-mobile/client';
 import { mockApp } from '@nocobase/client/demo-utils';
+import PluginMobileClient, { Mobile } from '@nocobase/plugin-mobile/client';
 import React from 'react';
 
 class DemoPlugin extends Plugin {
@@ -40,7 +40,7 @@ const app = mockApp({
     DemoPlugin,
   ],
   apis: {
-    'mobileRoutes:list': {
+    'mobileRoutes:listAccessible': {
       data: [
         {
           id: '1',
