@@ -37,7 +37,7 @@ export class PresetNocoBase extends Plugin {
     'client',
     'action-import',
     'action-export',
-    'backup-restore',
+    // 'backup-restore',
     'block-iframe',
     'block-workbench',
     'field-formula',
