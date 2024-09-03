@@ -500,9 +500,11 @@ const associationFieldToMenu = (
   processedCollections: string[],
 ) => {
   if (field.target && field.uiSchema) {
-    if (processedCollections.includes(field.target)) return null;
+    if (processedCollections.includes(field.target) || processedCollections.length >= 1) return;
 
     const subFields = getCollectionFields(field.target);
+
+    if (!subFields?.length) return;
 
     return {
       type: 'subMenu',
@@ -519,7 +521,7 @@ const associationFieldToMenu = (
     } as SchemaInitializerItemType;
   }
 
-  if (!field.uiSchema) return null;
+  if (!field.uiSchema) return;
 
   const schema = {
     type: 'string',
