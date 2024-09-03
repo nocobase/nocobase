@@ -67,7 +67,7 @@ jobs:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
       - name: Commit and push
         run: |
-          git pull
+          git pull origin main
           git add .
           git commit -m "docs: update changelogs"
           git push origin main
