@@ -441,7 +441,7 @@ export const InternalAdminLayout = () => {
                 />
               ) : (
                 <span
-                  style={{ fontSize: token.fontSizeHeading1 }}
+                  style={{ fontSize: token.fontSizeHeading3 }}
                   className={css`
                     padding: 0 16px;
                     width: 100%;
