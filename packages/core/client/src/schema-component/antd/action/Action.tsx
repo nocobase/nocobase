@@ -332,7 +332,11 @@ function RenderButton({
             setVisible(true);
             run?.();
           } else {
-            if (fieldSchema['x-uid']) {
+            // Currently, only buttons of these types can control the visibility of popups through URLs.
+            if (
+              ['view', 'update', 'create', 'customize:popup'].includes(fieldSchema['x-action']) &&
+              fieldSchema['x-uid']
+            ) {
               openPopup();
             } else {
               setVisible(true);
