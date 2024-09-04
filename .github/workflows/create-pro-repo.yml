@@ -1,0 +1,38 @@
+name: Create pro plugin repo
+
+on:
+  push:
+    branches:
+      - chore/ci-create-repo
+  workflow_dispatch:
+    inputs:
+      name:
+        type: string
+        description: 'Please enter the repository name'
+        required: true
+        default: pro-tpl-test
+
+jobs:
+  create:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/create-github-app-token@v1
+        id: app-token
+        with:
+          app-id: ${{ vars.NOCOBASE_APP_ID }}
+          private-key: ${{ secrets.NOCOBASE_APP_PRIVATE_KEY }}
+          owner: nocobase
+          skip-token-revoke: true
+      - name: Create repository
+        run: |
+          gh repo create ${{ inputs.name }} --private -p pluin-pro-tpl
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+      - name: Write secrets
+        run: |
+          gh secret set NOCOBASE_DEPLOY_HOST --body ${{ secrets.NOCOBASE_DEPLOY_HOST }} --repo nocobase/${{ inputs.name }}
+          gh secret set ALI_DOCKER_REGISTRY --body ${{ secrets.ALI_DOCKER_REGISTRY }} --repo nocobase/${{ inputs.name }}
+          gh secret set ALI_DOCKER_USERNAME --body ${{ secrets.ALI_DOCKER_USERNAME }} --repo nocobase/${{ inputs.name }}
+          gh secret set ALI_DOCKER_PASSWORD --body ${{ secrets.ALI_DOCKER_PASSWORD }} --repo nocobase/${{ inputs.name }}
+          gh secret set NOCOBASE_APP_PRIVATE_KEY --body ${{ secrets.NOCOBASE_APP_PRIVATE_KEY }} --repo nocobase/${{ inputs.name }}
+          gh variable set NOCOBASE_APP_ID --body ${{ vars.NOCOBASE_APP_ID }} --repo nocobase/${{ inputs.name }}
