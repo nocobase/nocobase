@@ -29,21 +29,20 @@ export class PluginNotificationInAppServer extends Plugin {
             ctx.request.socket.setTimeout(0);
             ctx.req.socket.setNoDelay(true);
             ctx.req.socket.setKeepAlive(true);
-            ctx.set('Content-Type', 'text/event-stream');
-            ctx.set('Cache-Control', 'no-cache');
-            ctx.set('Connection', 'keep-alive');
+            ctx.set({
+              'Content-Type': 'text/event-stream',
+              'Cache-Control': 'no-cache',
+              Connection: 'keep-alive',
+            });
+
             ctx.status = 200;
+            const stream = new PassThrough();
+            ctx.body = stream;
 
-            const sendEvent = (data) => {
-              ctx.res.write(`data: ${JSON.stringify(data)}\n\n`);
-            };
-
-            // Example: Send a message every 5 seconds
-            const interval = setInterval(() => {
-              sendEvent({ message: 'Hello from server' });
-            }, 5000);
-
-            // Handle client disconnect
+            setInterval(() => {
+              stream.write(`data: ${new Date()}\n\n`);
+            }, 10);
+            await next();
           },
         },
       },

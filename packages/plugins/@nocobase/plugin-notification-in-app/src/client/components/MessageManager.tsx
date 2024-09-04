@@ -33,6 +33,7 @@ export const MessageManager = (props) => {
     const request = async () => {
       const res = await apiClient.request({
         url: 'inAppMessages:sse',
+        method: 'get',
         headers: {
           Accept: 'text/event-stream',
         },
