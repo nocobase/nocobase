@@ -24,6 +24,23 @@ describe('datetime no tz field', () => {
     await db.close();
   });
 
+  it('should not get timezone part', async () => {
+    db.collection({
+      name: 'tests',
+      fields: [{ name: 'date1', type: 'datetimeNoTz' }],
+    });
+
+    await db.sync();
+
+    const item = await db.getRepository('tests').create({
+      values: {
+        date1: '2023-03-24 12:00:00',
+      },
+    });
+
+    expect(item.get('date1')).toBe('2023-03-24 12:00:00');
+  });
+
   it('should set datetime no tz field', async () => {
     db.collection({
       name: 'tests',

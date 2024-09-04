@@ -8,16 +8,28 @@
  */
 
 import { BaseColumnFieldOptions, Field } from './field';
-import { DataTypes } from 'sequelize';
+import { DataTypes, Utils } from 'sequelize';
 import moment from 'moment';
+
+class DatetimeNoTzTypeMySQL extends DataTypes.ABSTRACT {
+  key = 'DATETIME';
+}
+
+class DatetimeNoTzTypePostgres extends DataTypes.ABSTRACT {
+  key = 'TIMESTAMP WITHOUT TIME ZONE';
+}
 
 export class DatetimeNoTzField extends Field {
   get dataType() {
     if (this.database.inDialect('postgres')) {
-      return DataTypes.STRING;
+      return DatetimeNoTzTypePostgres;
     }
 
-    return DataTypes.DATE(3);
+    if (this.database.isMySQLCompatibleDialect()) {
+      return DatetimeNoTzTypeMySQL;
+    }
+
+    return DataTypes.STRING;
   }
 
   init() {
