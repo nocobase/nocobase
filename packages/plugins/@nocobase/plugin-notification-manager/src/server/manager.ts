@@ -60,7 +60,7 @@ export default class NotificationManager {
   async send(options: SendOptions) {
     this.plugin.logger.info('receive sending message request', options);
     const channelsRepo = this.plugin.app.db.getRepository(COLLECTION_NAME.channels);
-    const channel: IChannel = await channelsRepo.findOne({ filterByTk: options.channelId });
+    const channel = await channelsRepo.findOne({ filterByTk: options.channelId });
     const notificationServer = this.notificationTypes.get(channel.notificationType).server;
     const results = await notificationServer.send({ message: options, channel });
     results.forEach(async (result) => {
@@ -71,6 +71,7 @@ export default class NotificationManager {
         triggerFrom: options.triggerFrom,
         channelId: options.channelId,
         reason: result.reason,
+        channelTitle: channel.title,
       });
     });
     return results;

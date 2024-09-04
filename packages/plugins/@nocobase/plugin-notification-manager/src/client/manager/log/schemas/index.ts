@@ -92,13 +92,28 @@ export const messageLogsManagerSchema: ISchema = {
             },
           },
         },
-        channel: {
+        // channel: {
+        //   type: 'void',
+        //   'x-decorator': 'TableV2.Column.Decorator',
+        //   'x-component': 'TableV2.Column',
+        //   title: '{{t("Channel title")}}',
+        //   properties: {
+        //     'channel.title': {
+        //       type: 'string',
+        //       'x-component': 'CollectionField',
+        //       'x-read-pretty': true,
+        //       'x-component-props': {
+        //         ellipsis: true,
+        //       },
+        //     },
+        //   },
+        // },
+        channelTitle: {
           type: 'void',
-          'x-decorator': 'TableV2.Column.Decorator',
           'x-component': 'TableV2.Column',
           title: '{{t("Channel title")}}',
           properties: {
-            'channel.title': {
+            channelTitle: {
               type: 'string',
               'x-component': 'CollectionField',
               'x-read-pretty': true,

@@ -34,7 +34,7 @@ const collectionOption: CollectionOptions = {
       foreignKey: 'channelId',
       interface: 'm2o',
       type: 'belongsTo',
-      onDelete: 'SET NULL',
+      onDelete: 'NO ACTION',
       uiSchema: {
         type: 'string',
         title: '{{t("Channel")}}',
@@ -42,6 +42,16 @@ const collectionOption: CollectionOptions = {
         'x-component-props': {
           multiple: false,
         },
+      },
+    },
+    {
+      name: 'channelTitle',
+      type: 'string',
+      interface: 'input',
+      uiSchema: {
+        type: 'string',
+        'x-component': 'Input',
+        title: '{{t("Channel Title")}}',
       },
     },
     {

@@ -14,6 +14,7 @@ export type WriteLogOptions = {
   triggerFrom: string;
   reason?: string;
   channelId: string;
+  channelTitle: string;
 };
 
 export type SendFnType = (args: {

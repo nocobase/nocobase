@@ -13,7 +13,7 @@ import { SchemaComponent, css } from '@nocobase/client';
 import { onFieldValueChange } from '@formily/core';
 import { observer, useField, useForm, useFormEffects } from '@formily/react';
 
-import { useAPIClient } from '@nocobase/client';
+import { useAPIClient, Variable } from '@nocobase/client';
 import { useChannelTypeMap } from '../../../../hooks';
 import { useNotificationTranslation } from '../../../../locale';
 import { COLLECTION_NAME } from '../../../../../constant';
@@ -57,7 +57,7 @@ export const MessageConfigForm = observer<{ variableOptions: any }>(
     const providerMap = useChannelTypeMap();
     const { ContentConfigForm = () => null } = (providerMap[providerName] ?? {}).components || {};
 
-    const ReceiverInputComponent = receiverType === 'user' ? 'UsersSelect' : 'Variable.Input';
+    const ReceiverInputComponent = receiverType === 'user' ? 'UsersSelect' : 'VariableInput';
     const ReceiverAddition = receiverType === 'user' ? UsersAddition : ArrayItems.Addition;
     const createMessageFormSchema = {
       type: 'object',
@@ -134,8 +134,9 @@ export const MessageConfigForm = observer<{ variableOptions: any }>(
               input: {
                 type: 'string',
                 'x-decorator': 'FormItem',
+                default: ' ',
                 'x-component': ReceiverInputComponent,
-                'x-component-props': { scope: variableOptions },
+                'x-component-props': { scope: variableOptions, useTypedConstant: ['string'] },
               },
               remove: {
                 type: 'void',
@@ -183,7 +184,7 @@ export const MessageConfigForm = observer<{ variableOptions: any }>(
     return (
       <SchemaComponent
         schema={createMessageFormSchema}
-        components={{ ContentConfigForm, ReceiverAddition, UsersSelect, ArrayItems }}
+        components={{ ContentConfigForm, ReceiverAddition, UsersSelect, ArrayItems, VariableInput: Variable.Input }}
         scope={{ t }}
       />
     );
