@@ -20,13 +20,14 @@ jobs:
           - 'nocobase'
           - 'pro-plugins'
           - ${{ fromJSON(vars.PRO_PLUGIN_REPOS) }}
+          - ${{ fromJSON(vars.CUSTOM_PRO_PLUGIN_REPOS) }}
     steps:
       - uses: actions/create-github-app-token@v1
         id: app-token
         with:
           app-id: ${{ vars.NOCOBASE_APP_ID }}
           private-key: ${{ secrets.NOCOBASE_APP_PRIVATE_KEY }}
-          repositories: nocobase,pro-plugins,${{ join(fromJSON(vars.PRO_PLUGIN_REPOS), ',') }}
+          repositories: nocobase,pro-plugins,${{ join(fromJSON(vars.PRO_PLUGIN_REPOS), ',') }},${{ join(fromJSON(vars.CUSTOM_PRO_PLUGIN_REPOS), ',') }}
           skip-token-revoke: true
       - name: Get GitHub App User ID
         id: get-user-id
@@ -59,7 +60,7 @@ jobs:
         with:
           app-id: ${{ vars.NOCOBASE_APP_ID }}
           private-key: ${{ secrets.NOCOBASE_APP_PRIVATE_KEY }}
-          repositories: nocobase,pro-plugins,${{ join(fromJSON(vars.PRO_PLUGIN_REPOS), ',') }}
+          repositories: nocobase,pro-plugins,${{ join(fromJSON(vars.PRO_PLUGIN_REPOS), ',') }},${{ join(fromJSON(vars.CUSTOM_PRO_PLUGIN_REPOS), ',') }}
           skip-token-revoke: true
       - name: Get GitHub App User ID
         id: get-user-id
@@ -84,7 +85,7 @@ jobs:
       - name: Clone pro repos
         shell: bash
         run: |
-          for repo in ${{ join(fromJSON(vars.PRO_PLUGIN_REPOS), ' ') }}
+          for repo in ${{ join(fromJSON(vars.PRO_PLUGIN_REPOS), ' ') }} ${{ join(fromJSON(vars.CUSTOM_PRO_PLUGIN_REPOS), ' ') }}
           do
           git clone -b main https://x-access-token:${{ steps.app-token.outputs.token }}@github.com/nocobase/$repo.git packages/pro-plugins/@nocobase/$repo
           done
@@ -99,7 +100,7 @@ jobs:
         run: |
           cd ./packages/pro-plugins
           git checkout main
-          for repo in ${{ join(fromJSON(vars.PRO_PLUGIN_REPOS), ' ') }}
+          for repo in ${{ join(fromJSON(vars.PRO_PLUGIN_REPOS), ' ') }} ${{ join(fromJSON(vars.CUSTOM_PRO_PLUGIN_REPOS), ' ') }}
           do
             echo "@nocobase/$repo" >> .git/info/exclude
           done
@@ -115,7 +116,7 @@ jobs:
           PRO_PLUGIN_REPOS: ${{ vars.PRO_PLUGIN_REPOS }}
       - name: Push and merge into next
         run: |
-          for repo in ${{ join(fromJSON(vars.PRO_PLUGIN_REPOS), ' ') }}
+          for repo in ${{ join(fromJSON(vars.PRO_PLUGIN_REPOS), ' ') }} ${{ join(fromJSON(vars.CUSTOM_PRO_PLUGIN_REPOS), ' ') }}
           do
             cd ./packages/pro-plugins/@nocobase/$repo
             git push origin main --atomic --tags
