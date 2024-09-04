@@ -7,7 +7,7 @@ concurrency:
 on:
   push:
     branches:
-      - 'feat/ci-pro-plugins'
+      - 'fix/ci-pro-plugins'
   workflow_dispatch:
     inputs:
       is_feat:

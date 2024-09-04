@@ -9,7 +9,7 @@ on:
     branches:
       - 'main'
       - 'next'
-      - 'feat/ci-pro-plugins'
+      - 'fix/ci-pro-plugins'
     paths:
       - 'packages/**'
       - 'Dockerfile'
