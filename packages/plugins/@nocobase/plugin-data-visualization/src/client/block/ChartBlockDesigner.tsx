@@ -12,7 +12,6 @@ import {
   SchemaSettingsBlockTitleItem,
   SchemaSettingsDivider,
   SchemaSettingsRemove,
-  SchemaSettingsSelectItem,
   SchemaSettingsSwitchItem,
   useDesignable,
   useToken,

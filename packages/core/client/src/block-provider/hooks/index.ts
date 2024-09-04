@@ -163,9 +163,9 @@ export function useCollectValuesToSubmit() {
       }
 
       if (isVariable(value)) {
-        const result = await variables?.parseVariable(value, localVariables);
-        if (result) {
-          assignedValues[key] = transformVariableValue(result, { targetCollectionField: collectionField });
+        const { value: parsedValue } = (await variables?.parseVariable(value, localVariables)) || {};
+        if (parsedValue) {
+          assignedValues[key] = transformVariableValue(parsedValue, { targetCollectionField: collectionField });
         }
       } else if (value != null && value !== '') {
         assignedValues[key] = value;
@@ -324,9 +324,9 @@ export const useAssociationCreateActionProps = () => {
         }
 
         if (isVariable(value)) {
-          const result = await variables?.parseVariable(value, localVariables);
-          if (result) {
-            assignedValues[key] = transformVariableValue(result, { targetCollectionField: collectionField });
+          const { value: parsedValue } = (await variables?.parseVariable(value, localVariables)) || {};
+          if (parsedValue) {
+            assignedValues[key] = transformVariableValue(parsedValue, { targetCollectionField: collectionField });
           }
         } else if (value != null && value !== '') {
           assignedValues[key] = value;
@@ -582,9 +582,9 @@ export const useCustomizeUpdateActionProps = () => {
         }
 
         if (isVariable(value)) {
-          const result = await variables?.parseVariable(value, localVariables);
-          if (result) {
-            assignedValues[key] = transformVariableValue(result, { targetCollectionField: collectionField });
+          const { value: parsedValue } = (await variables?.parseVariable(value, localVariables)) || {};
+          if (parsedValue) {
+            assignedValues[key] = transformVariableValue(parsedValue, { targetCollectionField: collectionField });
           }
         } else if (value != null && value !== '') {
           assignedValues[key] = value;
@@ -680,9 +680,9 @@ export const useCustomizeBulkUpdateActionProps = () => {
         }
 
         if (isVariable(value)) {
-          const result = await variables?.parseVariable(value, localVariables);
-          if (result) {
-            assignedValues[key] = transformVariableValue(result, { targetCollectionField: collectionField });
+          const { value: parsedValue } = (await variables?.parseVariable(value, localVariables)) || {};
+          if (parsedValue) {
+            assignedValues[key] = transformVariableValue(parsedValue, { targetCollectionField: collectionField });
           }
         } else if (value != null && value !== '') {
           assignedValues[key] = value;
@@ -888,9 +888,9 @@ export const useUpdateActionProps = () => {
         }
 
         if (isVariable(value)) {
-          const result = await variables?.parseVariable(value, localVariables);
-          if (result) {
-            assignedValues[key] = transformVariableValue(result, { targetCollectionField: collectionField });
+          const { value: parsedValue } = (await variables?.parseVariable(value, localVariables)) || {};
+          if (parsedValue) {
+            assignedValues[key] = transformVariableValue(parsedValue, { targetCollectionField: collectionField });
           }
         } else if (value != null && value !== '') {
           assignedValues[key] = value;
@@ -1661,8 +1661,8 @@ export async function parseVariablesAndChangeParamsToQueryString({
     searchParams.map(async ({ name, value }) => {
       if (typeof value === 'string') {
         if (isVariable(value)) {
-          const result = await variables.parseVariable(value, localVariables);
-          return { name, value: result };
+          const { value: parsedValue } = (await variables.parseVariable(value, localVariables)) || {};
+          return { name, value: parsedValue };
         }
         const result = await replaceVariableValue(value, variables, localVariables);
         return { name, value: result };

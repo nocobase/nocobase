@@ -492,17 +492,19 @@ export const useAssociatedFormItemInitializerFields = (options?: any) => {
   return groups;
 };
 
-const getItem = (
+const associationFieldToMenu = (
   field: FieldOptions,
   schemaName: string,
   collectionName: string,
   getCollectionFields,
   processedCollections: string[],
 ) => {
-  if (field.interface === 'm2o') {
-    if (processedCollections.includes(field.target)) return null;
+  if (field.target && field.uiSchema) {
+    if (processedCollections.includes(field.target) || processedCollections.length >= 1) return;
 
     const subFields = getCollectionFields(field.target);
+
+    if (!subFields?.length) return;
 
     return {
       type: 'subMenu',
@@ -510,7 +512,7 @@ const getItem = (
       title: field.uiSchema?.title,
       children: subFields
         .map((subField) =>
-          getItem(subField, `${schemaName}.${subField.name}`, collectionName, getCollectionFields, [
+          associationFieldToMenu(subField, `${schemaName}.${subField.name}`, collectionName, getCollectionFields, [
             ...processedCollections,
             field.target,
           ]),
@@ -519,12 +521,11 @@ const getItem = (
     } as SchemaInitializerItemType;
   }
 
-  if (isAssocField(field)) return null;
+  if (!field.uiSchema) return;
 
   const schema = {
     type: 'string',
     name: schemaName,
-    // 'x-designer': 'FormItem.FilterFormDesigner',
     'x-toolbar': 'FormItemSchemaToolbar',
     'x-settings': 'fieldSettings:FilterFormItem',
     'x-designer-props': {
@@ -551,13 +552,10 @@ const getItem = (
 export const useFilterAssociatedFormItemInitializerFields = () => {
   const { name, fields } = useCollection_deprecated();
   const { getCollectionFields } = useCollectionManager_deprecated();
-  const interfaces = ['m2o'];
-  const groups = fields
-    ?.filter((field) => {
-      return interfaces.includes(field.interface);
-    })
-    ?.map((field) => getItem(field, field.name, name, getCollectionFields, []));
-  return groups;
+  return fields
+    ?.filter((field) => field.target && field.uiSchema)
+    .map((field) => associationFieldToMenu(field, field.name, name, getCollectionFields, []))
+    .filter(Boolean);
 };
 
 export const useInheritsFormItemInitializerFields = (options?) => {

@@ -16,12 +16,8 @@ on:
         required: true
 
 jobs:
-  app-token:
-    if: github.event.pull_request.head.repo.fork != true
-    uses: nocobase/nocobase/.github/workflows/get-nocobase-app-token.yml@main
-    secrets: inherit
   build-and-push:
-    needs: app-token
+    if: github.event.pull_request.head.repo.fork != true
     runs-on: ubuntu-latest
     services:
       verdaccio:
@@ -29,14 +25,21 @@ jobs:
         ports:
           - 4873:4873
     steps:
-      - name: Decrypt app token
-        id: app-token
-        shell: bash
+      - name: Get pro plugins
+        id: get-pro-plugins
         run: |
-          ENCRYPTED_SECRET=${{ needs.app-token.outputs.token }};
-          BINARY_ENCRYPTED_SECRET=$(echo -n "$ENCRYPTED_SECRET" | base64 --decode);
-          APP_TOKEN=$(echo -n "$BINARY_ENCRYPTED_SECRET" | openssl enc -aes-256-cbc -pbkdf2 -d -salt -k "${{ secrets.APP_TOKEN_ENCRYPTION_PASSWORD }}");
-          echo "token=$APP_TOKEN" >> $GITHUB_OUTPUT
+          if [[ "${{ github.head_ref || github.ref_name }}" == "main" ]]; then
+            echo "proRepos=$(echo '${{ vars.PRO_PLUGIN_REPOS }}')" >> $GITHUB_OUTPUT
+          else
+            echo "proRepos=$(echo '${{ vars.NEXT_PRO_PLUGIN_REPOS }}')" >> $GITHUB_OUTPUT
+          fi
+      - uses: actions/create-github-app-token@v1
+        id: app-token
+        with:
+          app-id: ${{ vars.NOCOBASE_APP_ID }}
+          private-key: ${{ secrets.NOCOBASE_APP_PRIVATE_KEY }}
+          repositories: nocobase,pro-plugins,${{ join(fromJSON(steps.get-pro-plugins.outputs.proRepos), ',') }}
+          skip-token-revoke: true
       - name: Checkout
         uses: actions/checkout@v3
         with:
@@ -59,14 +62,14 @@ jobs:
       - name: Clone pro repos
         shell: bash
         run: |
-          for repo in ${{ join(fromJSON(vars.PRO_PLUGIN_REPOS), ' ') }}
+          for repo in ${{ join(fromJSON(steps.get-pro-plugins.outputs.proRepos), ' ') }}
           do
           git clone -b ${{ steps.set_pro_pr_branch.outputs.pr_branch || 'main' }} https://x-access-token:${{ steps.app-token.outputs.token }}@github.com/nocobase/$repo.git packages/pro-plugins/@nocobase/$repo
           done
       - name: rm .git
         run: |
           rm -rf packages/pro-plugins/.git
-          for repo in ${{ join(fromJSON(vars.PRO_PLUGIN_REPOS), ' ') }}
+          for repo in ${{ join(fromJSON(steps.get-pro-plugins.outputs.proRepos), ' ') }}
           do
             rm -rf packages/pro-plugins/@nocobase/$repo/.git
           done

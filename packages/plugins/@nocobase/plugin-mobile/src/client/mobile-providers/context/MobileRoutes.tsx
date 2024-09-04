@@ -104,6 +104,11 @@ export const MobileRoutesProvider = ({ children }) => {
 
   useTitle(activeTabBarItem);
 
+  const value = useMemo(
+    () => ({ api, activeTabBarItem, activeTabItem, routeList, refresh, resource, schemaResource }),
+    [activeTabBarItem, activeTabItem, api, refresh, resource, routeList, schemaResource],
+  );
+
   if (loading) {
     return (
       <div data-testid="mobile-loading" style={{ textAlign: 'center', margin: '20px 0' }}>
@@ -111,11 +116,6 @@ export const MobileRoutesProvider = ({ children }) => {
       </div>
     );
   }
-  return (
-    <MobileRoutesContext.Provider
-      value={{ api, activeTabBarItem, activeTabItem, routeList, refresh, resource, schemaResource }}
-    >
-      {children}
-    </MobileRoutesContext.Provider>
-  );
+
+  return <MobileRoutesContext.Provider value={value}>{children}</MobileRoutesContext.Provider>;
 };

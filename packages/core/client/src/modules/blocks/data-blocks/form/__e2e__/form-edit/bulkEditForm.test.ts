@@ -26,7 +26,10 @@ test.describe('bulk edit form', () => {
     // 2. 打开弹窗，显示出批量编辑表单
     await page.getByLabel('action-Action-Bulk edit-').click();
 
-    // 默认为 "Changed to" 模式，此时应该显示字段是必填的
+    await page.getByLabel('block-item-BulkEditField-').click();
+    await page.getByRole('option', { name: 'Changed to' }).click();
+
+    //  "Changed to" 模式，此时应该显示字段是必填的
     await expect(page.getByLabel('block-item-BulkEditField-').getByText('*')).toBeVisible();
 
     // 3. 输入值，点击提交
@@ -45,7 +48,10 @@ test.describe('bulk edit form', () => {
     // 1. 打开弹窗，显示出批量编辑表单
     await page.getByLabel('action-Action-Bulk edit-').click();
 
-    // 默认为 "Changed to" 模式，此时应该显示字段是必填的
+    await page.getByLabel('block-item-BulkEditField-').click();
+    await page.getByRole('option', { name: 'Changed to' }).click();
+
+    //  "Changed to" 模式，此时应该显示字段是必填的
     await expect(page.getByLabel('block-item-BulkEditField-').getByText('*')).toBeVisible();
 
     // 2. 切换为其它模式，此时应该不显示字段是必填的
