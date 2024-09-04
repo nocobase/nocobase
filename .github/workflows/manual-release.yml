@@ -5,9 +5,6 @@ concurrency:
   cancel-in-progress: true
 
 on:
-  push:
-    branches:
-      - 'fix/ci-pro-plugins'
   workflow_dispatch:
     inputs:
       is_feat:
@@ -48,11 +45,11 @@ jobs:
         run: |
           git config --global user.name '${{ steps.app-token.outputs.app-slug }}[bot]'
           git config --global user.email '${{ steps.get-user-id.outputs.user-id }}+${{ steps.app-token.outputs.app-slug }}[bot]@users.noreply.github.com>'
-          # git checkout main
-          # git pull origin main
-          # git checkout next
-          # git merge main
-          # git push origin next --tags --atomic
+          git checkout main
+          git pull origin main
+          git checkout next
+          git merge main
+          git push origin next --tags --atomic
   update-version:
     needs:
       - pre-merge-main-into-next
@@ -92,49 +89,49 @@ jobs:
           do
           git clone -b main https://x-access-token:${{ steps.app-token.outputs.token }}@github.com/nocobase/$repo.git packages/pro-plugins/@nocobase/$repo
           done
-      # - name: Set Node.js 18
-      #   uses: actions/setup-node@v3
-      #   with:
-      #     node-version: 18
-      # - name: Install Lerna
-      #   run: npm install -g lerna@4 auto-changelog@2
-      # - name: Run release.sh
-      #   shell: bash
-      #   run: |
-      #     cd ./packages/pro-plugins
-      #     git checkout main
-      #     for repo in ${{ join(fromJSON(vars.PRO_PLUGIN_REPOS), ' ') }} ${{ join(fromJSON(vars.CUSTOM_PRO_PLUGIN_REPOS), ' ') }}
-      #     do
-      #       echo "@nocobase/$repo" >> .git/info/exclude
-      #     done
-      #     echo "$(<.git/info/exclude )"
-      #     cd ./../..
-      #     git checkout main
-      #     git config --global user.name '${{ steps.app-token.outputs.app-slug }}[bot]'
-      #     git config --global user.email '${{ steps.get-user-id.outputs.user-id }}+${{ steps.app-token.outputs.app-slug }}[bot]@users.noreply.github.com>'
-      #     echo "packages/pro-plugins" >> .git/info/exclude
-      #     bash release.sh $IS_FEAT
-      #   env:
-      #     IS_FEAT: ${{ inputs.is_feat && '--is-feat' || '' }}
-      #     PRO_PLUGIN_REPOS: ${{ vars.PRO_PLUGIN_REPOS }}
-      # - name: Push and merge into next
-      #   run: |
-      #     for repo in ${{ join(fromJSON(vars.PRO_PLUGIN_REPOS), ' ') }} ${{ join(fromJSON(vars.CUSTOM_PRO_PLUGIN_REPOS), ' ') }}
-      #     do
-      #       cd ./packages/pro-plugins/@nocobase/$repo
-      #       git push origin main --atomic --tags
-      #       git checkout next
-      #       git merge -X ours main --no-edit
-      #       git push origin next --tags --atomic
-      #       cd ../../../../
-      #     done
-      #     cd ./packages/pro-plugins
-      #     git push origin main --atomic --tags
-      #     git checkout next
-      #     git merge -X ours main --no-edit
-      #     git push origin next --tags --atomic
-      #     cd ../../
-      #     git push origin main --atomic --tags
-      #     git checkout next
-      #     git merge -X ours main --no-edit
-      #     git push origin next --tags --atomic
+      - name: Set Node.js 18
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+      - name: Install Lerna
+        run: npm install -g lerna@4 auto-changelog@2
+      - name: Run release.sh
+        shell: bash
+        run: |
+          cd ./packages/pro-plugins
+          git checkout main
+          for repo in ${{ join(fromJSON(vars.PRO_PLUGIN_REPOS), ' ') }} ${{ join(fromJSON(vars.CUSTOM_PRO_PLUGIN_REPOS), ' ') }}
+          do
+            echo "@nocobase/$repo" >> .git/info/exclude
+          done
+          echo "$(<.git/info/exclude )"
+          cd ./../..
+          git checkout main
+          git config --global user.name '${{ steps.app-token.outputs.app-slug }}[bot]'
+          git config --global user.email '${{ steps.get-user-id.outputs.user-id }}+${{ steps.app-token.outputs.app-slug }}[bot]@users.noreply.github.com>'
+          echo "packages/pro-plugins" >> .git/info/exclude
+          bash release.sh $IS_FEAT
+        env:
+          IS_FEAT: ${{ inputs.is_feat && '--is-feat' || '' }}
+          PRO_PLUGIN_REPOS: ${{ vars.PRO_PLUGIN_REPOS }}
+      - name: Push and merge into next
+        run: |
+          for repo in ${{ join(fromJSON(vars.PRO_PLUGIN_REPOS), ' ') }} ${{ join(fromJSON(vars.CUSTOM_PRO_PLUGIN_REPOS), ' ') }}
+          do
+            cd ./packages/pro-plugins/@nocobase/$repo
+            git push origin main --atomic --tags
+            git checkout next
+            git merge -X ours main --no-edit
+            git push origin next --tags --atomic
+            cd ../../../../
+          done
+          cd ./packages/pro-plugins
+          git push origin main --atomic --tags
+          git checkout next
+          git merge -X ours main --no-edit
+          git push origin next --tags --atomic
+          cd ../../
+          git push origin main --atomic --tags
+          git checkout next
+          git merge -X ours main --no-edit
+          git push origin next --tags --atomic
