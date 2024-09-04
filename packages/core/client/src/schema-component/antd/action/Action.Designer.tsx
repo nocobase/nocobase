@@ -835,7 +835,7 @@ export function SecondConFirm() {
             enable: {
               'x-decorator': 'FormItem',
               'x-component': 'Checkbox',
-              title: t('Enable secondary confirmation'),
+              'x-content': t('Enable secondary confirmation'),
               default:
                 fieldSchema?.['x-component-props']?.confirm?.enable !== false &&
                 !!fieldSchema?.['x-component-props']?.confirm?.content,
