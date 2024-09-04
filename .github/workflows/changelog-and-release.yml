@@ -30,6 +30,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: nocobase/nocobase
+          ref: main
           token: ${{ steps.app-token.outputs.token }}
           persist-credentials: true
           fetch-depth: 0
