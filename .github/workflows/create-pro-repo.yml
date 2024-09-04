@@ -3,7 +3,7 @@ name: Create pro plugin repo
 on:
   push:
     branches:
-      - chore/ci-create-repo
+      - chore/ci-create-pro
   workflow_dispatch:
     inputs:
       name:
