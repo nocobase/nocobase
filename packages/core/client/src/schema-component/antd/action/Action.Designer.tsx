@@ -823,6 +823,10 @@ export function SecondConFirm() {
   return (
     <SchemaSettingsModalItem
       title={t('Secondary confirmation')}
+      initialValues={{
+        title: fieldSchema?.['x-component-props']?.confirm?.title || fieldSchema.title,
+        content: fieldSchema?.['x-component-props']?.confirm?.content,
+      }}
       schema={
         {
           type: 'object',
@@ -831,7 +835,7 @@ export function SecondConFirm() {
             enable: {
               'x-decorator': 'FormItem',
               'x-component': 'Checkbox',
-              'x-content': t('Enable'),
+              title: t('Enable secondary confirmation'),
               default:
                 fieldSchema?.['x-component-props']?.confirm?.enable !== false &&
                 !!fieldSchema?.['x-component-props']?.confirm?.content,
@@ -840,8 +844,7 @@ export function SecondConFirm() {
             title: {
               'x-decorator': 'FormItem',
               'x-component': 'Input.TextArea',
-              title: t('Confirm title'),
-              default: fieldSchema?.['x-component-props']?.confirm?.title || fieldSchema.title,
+              title: t('Title'),
               'x-reactions': {
                 dependencies: ['enable'],
                 fulfill: {
@@ -854,8 +857,7 @@ export function SecondConFirm() {
             content: {
               'x-decorator': 'FormItem',
               'x-component': 'Input.TextArea',
-              title: t('Confirm content'),
-              default: fieldSchema?.['x-component-props']?.confirm?.content,
+              title: t('Content'),
               'x-reactions': {
                 dependencies: ['enable'],
                 fulfill: {
