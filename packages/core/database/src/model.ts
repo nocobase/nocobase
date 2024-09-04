@@ -30,7 +30,8 @@ interface JSONTransformerOptions {
 
 export class Model<TModelAttributes extends {} = any, TCreationAttributes extends {} = TModelAttributes>
   extends SequelizeModel<TModelAttributes, TCreationAttributes>
-  implements IModel {
+  implements IModel
+{
   public static database: Database;
   public static collection: Collection;
 

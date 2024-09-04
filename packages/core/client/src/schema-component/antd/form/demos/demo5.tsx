@@ -1,10 +1,9 @@
-
-
 import { FormItem, Input } from '@formily/antd-v5';
 import { ISchema, observer, useForm } from '@formily/react';
 import {
   APIClientProvider,
   Action,
+  CustomRouterContextProvider,
   Form,
   SchemaComponent,
   SchemaComponentProvider,
@@ -12,6 +11,7 @@ import {
 } from '@nocobase/client';
 import { Card, Space } from 'antd';
 import React from 'react';
+import { Router } from 'react-router-dom';
 import { apiClient } from './apiClient';
 
 const schema: ISchema = {
@@ -105,13 +105,17 @@ const useRefresh = () => {
 
 export default observer(() => {
   return (
-    <APIClientProvider apiClient={apiClient}>
-      <SchemaComponentProvider
-        scope={{ useSubmit, useRefresh }}
-        components={{ Space, Card, Output, Action, Form, Input, FormItem }}
-      >
-        <SchemaComponent schema={schema} />
-      </SchemaComponentProvider>
-    </APIClientProvider>
+    <Router location={window.location} navigator={null}>
+      <CustomRouterContextProvider>
+        <APIClientProvider apiClient={apiClient}>
+          <SchemaComponentProvider
+            scope={{ useSubmit, useRefresh }}
+            components={{ Space, Card, Output, Action, Form, Input, FormItem }}
+          >
+            <SchemaComponent schema={schema} />
+          </SchemaComponentProvider>
+        </APIClientProvider>
+      </CustomRouterContextProvider>
+    </Router>
   );
 });

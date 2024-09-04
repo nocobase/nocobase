@@ -9,10 +9,10 @@
 
 import { PagePopups, Plugin, RouterManager, createRouterManager } from '@nocobase/client';
 import React from 'react';
-import { Outlet } from 'react-router-dom';
-
 // @ts-ignore
 import { name } from '../../package.json';
+
+import { Outlet } from 'react-router-dom';
 
 import { generatePluginTranslationTemplate } from './locale';
 import { Mobile } from './mobile';
@@ -45,14 +45,15 @@ import {
 
 // 导出 JSBridge，会挂在到 window 上
 import './js-bridge';
-import { MobileCheckerProvider } from './providers';
+import { MobileSettings } from './mobile-blocks/settings-block/MobileSettings';
+import { MobileSettingsBlockInitializer } from './mobile-blocks/settings-block/MobileSettingsBlockInitializer';
+import { MobileSettingsBlockSchemaSettings } from './mobile-blocks/settings-block/schemaSettings';
 
 export * from './desktop-mode';
 export * from './mobile';
 export * from './mobile-layout';
 export * from './mobile-providers';
 export * from './pages';
-export * from './providers';
 
 export class PluginMobileClient extends Plugin {
   mobileRouter?: RouterManager;
@@ -104,7 +105,6 @@ export class PluginMobileClient extends Plugin {
     this.addInitializers();
     this.addSettings();
     this.addScopes();
-    this.app.addProvider(MobileCheckerProvider);
 
     this.app.pluginSettingsManager.add('mobile', {
       title: generatePluginTranslationTemplate('Mobile'),
@@ -135,6 +135,7 @@ export class PluginMobileClient extends Plugin {
       mobileTabBarLinkSettings,
       mobilePageTabsSettings,
       mobileNavigationBarLinkSettings,
+      MobileSettingsBlockSchemaSettings,
     );
   }
 
@@ -150,6 +151,8 @@ export class PluginMobileClient extends Plugin {
       MobilePageTabs,
       MobileNavigationActionBar,
       MobileNotFoundPage,
+      MobileSettingsBlockInitializer,
+      MobileSettings,
     });
   }
 
@@ -173,13 +176,26 @@ export class PluginMobileClient extends Plugin {
       Component: 'MobileHomePage',
     });
 
-    // 跳转到主应用的登录页
+    // redirect to main app signin page
+    // e.g. /m/signin => /signin
     this.mobileRouter.add('signin', {
       path: '/signin',
       Component: () => {
         window.location.href = window.location.href
-          .replace(this.mobilePath, '')
+          .replace(this.mobilePath + '/', '/')
           .replace('redirect=', `redirect=${this.mobilePath}`);
+        return null;
+      },
+    });
+
+    // redirect to main app admin page
+    // e.g. /m/admin/xxx => /admin/xxx
+    this.mobileRouter.add('admin', {
+      path: `/admin/*`,
+      Component: () => {
+        if (window.location.pathname.includes(`${this.mobilePath}/admin/`)) {
+          window.location.replace(window.location.href.replace(this.mobilePath + '/', '/'));
+        }
         return null;
       },
     });

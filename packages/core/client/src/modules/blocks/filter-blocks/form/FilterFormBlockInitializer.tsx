@@ -10,9 +10,10 @@
 import { FormOutlined } from '@ant-design/icons';
 import React from 'react';
 import { useSchemaInitializer, useSchemaInitializerItem } from '../../../../application';
-import { createFilterFormBlockSchema } from './createFilterFormBlockSchema';
-import { FilterBlockInitializer } from '../../../../schema-initializer/items/FilterBlockInitializer';
 import { Collection, CollectionFieldOptions } from '../../../../data-source';
+import { FilterBlockInitializer } from '../../../../schema-initializer/items/FilterBlockInitializer';
+import { useBlockTemplateContext } from '../../../../schema-templates/BlockTemplateProvider';
+import { createFilterFormBlockSchema } from './createFilterFormBlockSchema';
 
 export const FilterFormBlockInitializer = ({
   filterCollections,
@@ -25,13 +26,14 @@ export const FilterFormBlockInitializer = ({
 }) => {
   const itemConfig = useSchemaInitializerItem();
   const { insert } = useSchemaInitializer();
+  const { componentNamePrefix } = useBlockTemplateContext();
 
   return (
     <FilterBlockInitializer
       {...itemConfig}
       icon={<FormOutlined />}
       onlyCurrentDataSource={onlyCurrentDataSource}
-      componentType={'FilterFormItem'}
+      componentType={`${componentNamePrefix}FilterFormItem`}
       templateWrap={(templateSchema, { item }) => {
         const s = createFilterFormBlockSchema({
           templateSchema: templateSchema,

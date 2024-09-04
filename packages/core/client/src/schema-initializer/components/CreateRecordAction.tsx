@@ -12,14 +12,14 @@ import { observer, useField, useFieldSchema, useForm } from '@formily/react';
 import { Button, Dropdown, MenuProps } from 'antd';
 import { composeRef } from 'rc-util/lib/ref';
 import React, { createRef, forwardRef, useEffect, useMemo } from 'react';
-import { Collection, useDesignable } from '../../';
+import { Collection, useCollectionManager, useDesignable } from '../../';
 import { useACLActionParamsContext, useACLRolesCheck, useRecordPkValue } from '../../acl/ACLProvider';
 import { useCollectionManager_deprecated, useCollection_deprecated } from '../../collection-manager';
 import { useTreeParentRecord } from '../../modules/blocks/data-blocks/table/TreeRecordProvider';
 import { useRecord } from '../../record-provider';
 import { useCompile } from '../../schema-component';
 import { linkageAction } from '../../schema-component/antd/action/utils';
-import { usePagePopup } from '../../schema-component/antd/page/pagePopupUtils';
+import { usePopupUtils } from '../../schema-component/antd/page/pagePopupUtils';
 import { parseVariables } from '../../schema-component/common/utils/uitls';
 import { useLocalVariables, useVariables } from '../../variables';
 
@@ -65,14 +65,14 @@ function useAclCheckFn() {
 
 const InternalCreateRecordAction = (props: any, ref) => {
   const fieldSchema = useFieldSchema();
-  const openMode = fieldSchema?.['x-component-props']?.['openMode'];
   const field: any = useField();
   const linkageRules: any[] = fieldSchema?.['x-linkage-rules'] || [];
   const values = useRecord();
   const variables = useVariables();
   const localVariables = useLocalVariables({ currentForm: { values } as any });
-  const { openPopup } = usePagePopup();
+  const { openPopup } = usePopupUtils();
   const treeRecordData = useTreeParentRecord();
+  const cm = useCollectionManager();
 
   useEffect(() => {
     field.stateOfLinkageRules = {};
@@ -98,13 +98,22 @@ const InternalCreateRecordAction = (props: any, ref) => {
     <div ref={buttonRef as React.Ref<HTMLButtonElement>}>
       <CreateAction
         {...props}
-        onClick={(collection: Collection) => {
+        onClick={(collection: Partial<Collection>) => {
+          collection = cm.getCollection(collection.name) || collection;
+
           if (treeRecordData) {
             openPopup({
               recordData: treeRecordData,
             });
           } else {
-            openPopup();
+            // fix https://nocobase.height.app/T-5084/description
+            if (collection.isInherited?.()) {
+              openPopup({
+                collectionNameUsedInURL: collection.name,
+              });
+            } else {
+              openPopup();
+            }
           }
         }}
       />
@@ -271,7 +280,7 @@ function FinallyButton({
             }),
             React.cloneElement(rightButton as React.ReactElement<any, string>, {
               loading: false,
-              style: props?.style,
+              style: { ...props?.style, justifyContent: 'center' },
             }),
           ]}
           menu={menu}

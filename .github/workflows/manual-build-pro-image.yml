@@ -25,11 +25,18 @@ jobs:
         ports:
           - 4873:4873
     steps:
+      - uses: actions/create-github-app-token@v1
+        id: app-token
+        with:
+          app-id: ${{ vars.NOCOBASE_APP_ID }}
+          private-key: ${{ secrets.NOCOBASE_APP_PRIVATE_KEY }}
+          repositories: nocobase,pro-plugins,${{ join(fromJSON(vars.PRO_PLUGIN_REPOS), ',') }}
+          skip-token-revoke: true
       - name: Checkout
         uses: actions/checkout@v3
         with:
           ref: ${{ github.event.inputs.base_branch }}
-          ssh-key: ${{ secrets.SUBMODULE_SSH_KEY }}
+          token: ${{ steps.app-token.outputs.token }}
           submodules: true
       - name: Set PR branch
         id: set_pro_pr_branch
@@ -43,9 +50,23 @@ jobs:
           repository: nocobase/pro-plugins
           path: packages/pro-plugins
           ref: ${{ steps.set_pro_pr_branch.outputs.pr_branch || 'main' }}
-          ssh-key: ${{ secrets.SUBMODULE_SSH_KEY }}
+          token: ${{ steps.app-token.outputs.token }}
+      - name: Clone pro repos
+        shell: bash
+        run: |
+          for repo in ${{ join(fromJSON(vars.PRO_PLUGIN_REPOS), ' ') }}
+          do
+          git clone -b ${{ steps.set_pro_pr_branch.outputs.pr_branch || 'main' }} https://x-access-token:${{ steps.app-token.outputs.token }}@github.com/nocobase/$repo.git packages/pro-plugins/@nocobase/$repo
+          done
       - name: rm .git
-        run: rm -rf packages/pro-plugins/.git &&  git config --global user.email "you@example.com"  &&  git config --global user.name "Your Name" && git add -A && git commit -m "tmp commit"
+        run: |
+          rm -rf packages/pro-plugins/.git
+          for repo in ${{ join(fromJSON(vars.PRO_PLUGIN_REPOS), ' ') }}
+          do
+            rm -rf packages/pro-plugins/@nocobase/$repo/.git
+          done
+          git config --global user.email "you@example.com"
+          git config --global user.name "Your Name" && git add -A && git commit -m "tmp commit"
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
       - name: Set up Docker Buildx

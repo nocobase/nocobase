@@ -9,6 +9,7 @@
 
 import { ArrayField } from '@formily/core';
 import { RecursionField, useField, useFieldSchema } from '@formily/react';
+import { toArr } from '@formily/shared';
 import { Select } from 'antd';
 import { differenceBy, unionBy } from 'lodash';
 import React, { createContext, useContext, useEffect, useState } from 'react';
@@ -20,10 +21,9 @@ import { CollectionProvider_deprecated, useCollection_deprecated } from '../../.
 import { FormProvider, SchemaComponentOptions } from '../../core';
 import { useCompile } from '../../hooks';
 import { ActionContextProvider, useActionContext } from '../action';
+import { Upload } from '../upload';
 import { useFieldNames } from './useFieldNames';
 import { getLabelFormatValue, useLabelUiSchema } from './util';
-import { Upload } from '../upload';
-import { toArr } from '@formily/shared';
 
 export const RecordPickerContext = createContext(null);
 RecordPickerContext.displayName = 'RecordPickerContext';
@@ -146,11 +146,6 @@ export const InputRecordPicker: React.FC<any> = (props: IRecordPickerProps) => {
     if (multiple == null) return null;
 
     return Array.isArray(value) ? value?.map((v) => v[fieldNames.value]) : value?.[fieldNames.value];
-  };
-
-  const handleSelect = () => {
-    setVisible(true);
-    setSelectedRows([]);
   };
 
   // const handleRemove = (file) => {

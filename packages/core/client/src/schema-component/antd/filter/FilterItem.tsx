@@ -62,7 +62,7 @@ export const FilterItem = observer(
     return (
       // 添加 nc-filter-item 类名是为了帮助编写测试时更容易选中该元素
       <div style={style} className="nc-filter-item">
-        <Space>
+        <Space wrap>
           <Cascader
             // @ts-ignore
             role="button"
@@ -90,14 +90,16 @@ export const FilterItem = observer(
             onChange={onOperatorsChange}
             placeholder={t('Comparision')}
           />
-          {!operator?.noValue ? (
-            <DynamicComponent value={value} schema={schema} collectionField={collectionField} onChange={setValue} />
-          ) : null}
-          {!props.disabled && (
-            <a role="button" aria-label="icon-close">
-              <CloseCircleOutlined onClick={remove} style={removeStyle} />
-            </a>
-          )}
+          <Space>
+            {!operator?.noValue ? (
+              <DynamicComponent value={value} schema={schema} collectionField={collectionField} onChange={setValue} />
+            ) : null}
+            {!props.disabled && (
+              <a role="button" aria-label="icon-close">
+                <CloseCircleOutlined onClick={remove} style={removeStyle} />
+              </a>
+            )}
+          </Space>
         </Space>
       </div>
     );

@@ -134,7 +134,7 @@ export interface DestroyOptions extends SequelizeDestroyOptions {
   context?: any;
 }
 
-type FindAndCountOptions = Omit<SequelizeAndCountOptions, 'where' | 'include' | 'order'> & CommonFindOptions;
+export type FindAndCountOptions = Omit<SequelizeAndCountOptions, 'where' | 'include' | 'order'> & CommonFindOptions;
 
 export interface CreateOptions extends SequelizeCreateOptions {
   values?: Values | Values[];

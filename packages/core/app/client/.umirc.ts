@@ -25,10 +25,6 @@ export default defineConfig({
   favicons: [`${appPublicPath}favicon/favicon.ico`],
   metas: [{ name: 'viewport', content: 'initial-scale=0.1' }],
   links: [
-    { rel: 'apple-touch-icon', size: '180x180', ref: `${appPublicPath}favicon/apple-touch-icon.png` },
-    { rel: 'icon', type: 'image/png', size: '32x32', ref: `${appPublicPath}favicon/favicon-32x32.png` },
-    { rel: 'icon', type: 'image/png', size: '16x16', ref: `${appPublicPath}favicon/favicon-16x16.png` },
-    { rel: 'manifest', href: `${appPublicPath}favicon/site.webmanifest` },
     { rel: 'stylesheet', href: `${appPublicPath}global.css` },
   ],
   headScripts: [

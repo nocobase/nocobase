@@ -22,6 +22,7 @@ export class PresetNocoBase extends Plugin {
     'field-sequence',
     'verification',
     'users',
+    'user-data-sync',
     'acl',
     'field-china-region',
     'workflow',
@@ -37,7 +38,6 @@ export class PresetNocoBase extends Plugin {
     'client',
     'action-import',
     'action-export',
-    'backup-restore',
     'block-iframe',
     'block-workbench',
     'field-formula',
@@ -53,6 +53,7 @@ export class PresetNocoBase extends Plugin {
     'action-duplicate',
     'action-print',
     'collection-sql',
+    'collection-tree',
   ];
 
   localPlugins = [
@@ -73,6 +74,7 @@ export class PresetNocoBase extends Plugin {
     'workflow-mailer',
     'field-m2m-array',
     'field-json-document',
+    'backup-restore',
   ];
 
   splitNames(name: string) {

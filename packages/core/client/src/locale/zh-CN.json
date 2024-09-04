@@ -127,8 +127,8 @@
   "Set the data scope": "设置数据范围",
   "Data loading mode": "数据加载方式",
   "Set data loading mode": "设置数据加载方式",
-  "Automatically load data": "自动加载数据",
-  "Load data after filtering": "筛选后才加载数据",
+  "Load all data when filter is empty": "筛选条件为空时加载全部数据",
+  "Do not load data when filter is empty": "筛选条件为空时不加载数据",
   "Block": "区块",
   "Data blocks": "数据区块",
   "Filter blocks": "筛选区块",
@@ -928,7 +928,7 @@
   "Unix Timestamp": "Unix 时间戳",
   "Field value do not meet the requirements": "字符不符合要求",
   "Field value size is": "字符长度要求",
-  "Style": "风格",
+  "Style": "样式",
   "Unit conversion": "单位换算",
   "Separator": "分隔符",
   "Prefix": "前缀",
@@ -966,5 +966,10 @@
   "Search": "搜索",
   "Clear default value": "清除默认值",
   "Open in new window": "新窗口打开",
-  "Sorry, the page you visited does not exist.": "抱歉，你访问的页面不存在。"
+  "is none of": "不包含任何一个",
+  "is any of": "包含任何一个",
+  "Use simple pagination mode": "使用简单分页模式",
+  "Sorry, the page you visited does not exist.": "抱歉，你访问的页面不存在。",
+  "Set Template Engine": "设置模板引擎",
+  "Skip getting the total number of table records during paging to speed up loading. It is recommended to enable this option for data tables with a large amount of data": "在分页时跳过获取表记录总数，以加快加载速度，建议对有大量数据的数据表开启此选项"
 }

@@ -35,6 +35,7 @@ import { UidFieldOptions } from './uid-field';
 import { UUIDFieldOptions } from './uuid-field';
 import { VirtualFieldOptions } from './virtual-field';
 import { NanoidFieldOptions } from './nanoid-field';
+import { EncryptionField } from './encryption-field';
 
 export * from './array-field';
 export * from './belongs-to-field';
@@ -59,6 +60,7 @@ export * from './uid-field';
 export * from './uuid-field';
 export * from './virtual-field';
 export * from './nanoid-field';
+export * from './encryption-field';
 
 export type FieldOptions =
   | BaseFieldOptions
@@ -87,4 +89,5 @@ export type FieldOptions =
   | BelongsToFieldOptions
   | HasOneFieldOptions
   | HasManyFieldOptions
-  | BelongsToManyFieldOptions;
+  | BelongsToManyFieldOptions
+  | EncryptionField;

@@ -11,22 +11,23 @@ import { observer, useField, useFieldSchema } from '@formily/react';
 import { Input as AntdInput, Button, Space, Spin, theme } from 'antd';
 import type { TextAreaRef } from 'antd/es/input/TextArea';
 import cls from 'classnames';
-import React, { useCallback, useEffect, useState, useRef, useMemo } from 'react';
+import React, { useCallback, useEffect, useState, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useGlobalTheme } from '../../../global-theme';
 import { useDesignable } from '../../hooks/useDesignable';
 import { MarkdownVoidDesigner } from './Markdown.Void.Designer';
 import { useStyles } from './style';
-import { parseMarkdown } from './util';
 import { TextAreaProps } from 'antd/es/input';
 import { useBlockHeight } from '../../hooks/useBlockSize';
 import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
 import { useCollectionRecord } from '../../../data-source';
 import { useVariableOptions } from '../../../schema-settings/VariableInput/hooks/useVariableOptions';
 import { VariableSelect } from '../variable/VariableSelect';
-import { replaceVariableValue } from '../../../block-provider/hooks';
 import { useLocalVariables, useVariables } from '../../../variables';
 import { registerQrcodeWebComponent } from './qrcode-webcom';
+import { getRenderContent } from '../../common/utils/uitls';
+import { parseMarkdown } from './util';
+import { useCompile } from '../../';
 export interface MarkdownEditorProps extends Omit<TextAreaProps, 'onSubmit'> {
   scope: any[];
   defaultValue?: string;
@@ -82,11 +83,19 @@ const MarkdownEditor = (props: MarkdownEditorProps) => {
         }}
         style={{ paddingBottom: '40px' }}
       />
+      <>
+        <span style={{ marginLeft: '.25em' }} className={'ant-formily-item-extra'}>
+          {t('Syntax references')}:
+        </span>
+        <a href="https://handlebarsjs.com/guide/" target="_blank" rel="noreferrer">
+          Handlebars.js
+        </a>
+      </>
       <div style={{ position: 'absolute', top: 21, right: 1 }}>
         <VariableSelect options={options} setOptions={setOptions} onInsert={onInsert} />
       </div>
 
-      <Space style={{ position: 'absolute', bottom: 5, right: 5 }}>
+      <Space style={{ position: 'absolute', bottom: 30, right: 5 }}>
         <Button
           onClick={(e) => {
             props.onCancel?.(e);
@@ -129,17 +138,27 @@ export const MarkdownVoid: any = withDynamicSchemaProps(
     const [html, setHtml] = useState('');
     const variables = useVariables();
     const localVariables = useLocalVariables();
+    const { engine } = schema?.['x-decorator-props'] || {};
     const [loading, setLoading] = useState(false);
+    const compile = useCompile();
+
     useEffect(() => {
       setLoading(true);
       const cvtContentToHTML = async () => {
-        const replacedContent = await replaceVariableValue(content, variables, localVariables);
-        const html = await parseMarkdown(replacedContent);
-        setHtml(html);
+        const replacedContent = await getRenderContent(
+          engine,
+          content,
+          compile(variables),
+          compile(localVariables),
+          parseMarkdown,
+        );
+
+        setHtml(replacedContent);
         setLoading(false);
       };
       cvtContentToHTML();
-    }, [content, variables, localVariables]);
+    }, [content, variables, localVariables, engine]);
+
     const height = useMarkdownHeight();
     const scope = useVariableOptions({
       collectionField: { uiSchema: schema },

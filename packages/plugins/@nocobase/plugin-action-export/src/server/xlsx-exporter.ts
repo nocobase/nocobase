@@ -29,6 +29,7 @@ type ExportColumn = {
 type ExportOptions = {
   collectionManager: ICollectionManager;
   collection: ICollection;
+  repository?: any;
   columns: Array<ExportColumn>;
   findOptions?: FindOptions;
   chunkSize?: number;
@@ -51,7 +52,7 @@ class XlsxExporter {
   constructor(private options: ExportOptions) {}
 
   async run(ctx?): Promise<XLSX.WorkBook> {
-    const { collection, columns, chunkSize } = this.options;
+    const { collection, columns, chunkSize, repository } = this.options;
 
     const workbook = XLSX.utils.book_new();
     const worksheet = XLSX.utils.sheet_new();
@@ -63,7 +64,7 @@ class XlsxExporter {
 
     let startRowNumber = 2;
 
-    await collection.repository.chunk({
+    await (repository || collection.repository).chunk({
       ...this.getFindOptions(),
       chunkSize: chunkSize || 200,
       callback: async (rows, options) => {
@@ -114,6 +115,9 @@ class XlsxExporter {
         }
 
         const field = this.options.collection.getField(col.dataIndex[0]);
+        if (!field) {
+          throw new Error(`Field "${col.dataIndex[0]}" not found: , please check the columns configuration.`);
+        }
 
         if (field.isRelationField()) {
           return col.dataIndex[0];

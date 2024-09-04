@@ -29,7 +29,7 @@ export class PluginMobileClient extends Plugin {
 
   addSettings() {
     this.app.pluginSettingsManager.add(NAMESPACE, {
-      title: `{{t("Mobile Client-side", { ns: "${NAMESPACE}" })}}`,
+      title: `{{t("Mobile Client-side(Deprecated)", { ns: "${NAMESPACE}" })}}`,
       icon: 'MobileOutlined',
       Component: () => <Outlet />,
     });

@@ -16,6 +16,7 @@ import {
   SchemaSettingsTemplate,
   removeNullCondition,
   setDataLoadingModeSettingsItem,
+  useBlockTemplateContext,
   useCollection,
   useCollection_deprecated,
   useCompile,
@@ -245,8 +246,9 @@ export const oldGanttSettings = new SchemaSettings({
       Component: SchemaSettingsTemplate,
       useComponentProps() {
         const { name } = useCollection_deprecated();
+        const { componentNamePrefix } = useBlockTemplateContext();
         return {
-          componentName: 'Gantt',
+          componentName: `${componentNamePrefix}Gantt`,
           collectionName: name,
         };
       },
@@ -485,8 +487,9 @@ export const ganttSettings = new SchemaSettings({
       Component: SchemaSettingsTemplate,
       useComponentProps() {
         const { name } = useCollection();
+        const { componentNamePrefix } = useBlockTemplateContext();
         return {
-          componentName: 'Gantt',
+          componentName: `${componentNamePrefix}Gantt`,
           collectionName: name,
         };
       },

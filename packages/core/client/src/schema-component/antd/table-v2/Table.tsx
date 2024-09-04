@@ -10,7 +10,7 @@
 import { DeleteOutlined, MenuOutlined } from '@ant-design/icons';
 import { TinyColor } from '@ctrl/tinycolor';
 import { SortableContext, SortableContextProps, useSortable } from '@dnd-kit/sortable';
-import { css } from '@emotion/css';
+import { css, cx } from '@emotion/css';
 import { ArrayField } from '@formily/core';
 import { spliceArrayState } from '@formily/core/esm/shared/internals';
 import { RecursionField, Schema, observer, useField, useFieldSchema } from '@formily/react';
@@ -96,7 +96,7 @@ const useTableColumns = (props: { showDel?: boolean; isSubTable?: boolean }) => 
     return buf;
   }, []);
 
-  // const hasChangedColumns = useColumnsDeepMemoized(columnsSchema);
+  const hasChangedColumns = useColumnsDeepMemoized(columnsSchema);
 
   const schemaToolbarBigger = useMemo(() => {
     return css`
@@ -149,11 +149,11 @@ const useTableColumns = (props: { showDel?: boolean; isSubTable?: boolean }) => 
             return { record, schema: s };
           },
         } as TableColumnProps<any>;
-
-        // 这里不能把 columnsSchema 作为依赖，因为其每次都会变化，这里使用 hasChangedColumns 作为依赖
-        // eslint-disable-next-line react-hooks/exhaustive-deps
       }),
-    [columnsSchema, field.value, field.address, collection, parentRecordData, schemaToolbarBigger],
+
+    // 这里不能把 columnsSchema 作为依赖，因为其每次都会变化，这里使用 hasChangedColumns 作为依赖
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [hasChangedColumns, field.value, field.address, collection, parentRecordData, schemaToolbarBigger],
   );
 
   const tableColumns = useMemo(() => {
@@ -166,7 +166,9 @@ const useTableColumns = (props: { showDel?: boolean; isSubTable?: boolean }) => 
         title: render(),
         dataIndex: 'TABLE_COLUMN_INITIALIZER',
         key: 'TABLE_COLUMN_INITIALIZER',
-        render: designable ? () => <div style={{ minWidth: 180 }} /> : null,
+        render: designable
+          ? () => <div style={{ width: '100%', minWidth: '180px' }} className="nb-column-initializer" />
+          : null,
         fixed: designable ? 'right' : 'none',
       },
     ];
@@ -262,6 +264,7 @@ const TableIndex = (props) => {
 const usePaginationProps = (pagination1, pagination2) => {
   const { t } = useTranslation();
   const field: any = useField();
+  const { token } = useToken();
   const pagination = useMemo(
     () => ({ ...pagination1, ...pagination2 }),
     [JSON.stringify({ ...pagination1, ...pagination2 })],
@@ -283,7 +286,7 @@ const usePaginationProps = (pagination1, pagination2) => {
     } else {
       return {
         showTotal: false,
-        simple: { readOnly: true },
+        simple: true,
         showTitle: false,
         showSizeChanger: true,
         hideOnSinglePage: false,
@@ -294,6 +297,24 @@ const usePaginationProps = (pagination1, pagination2) => {
             display: none !important;
           }
         `,
+        itemRender: (_, type, originalElement) => {
+          if (type === 'prev') {
+            return (
+              <div
+                style={{ display: 'flex' }}
+                className={css`
+                  .ant-pagination-item-link {
+                    min-width: ${token.controlHeight}px;
+                  }
+                `}
+              >
+                {originalElement} <div style={{ marginLeft: '7px' }}>{current}</div>
+              </div>
+            );
+          } else {
+            return originalElement;
+          }
+        },
       };
     }
   }, [pagination, t, showTotal]);
@@ -610,8 +631,9 @@ export const Table: any = withDynamicSchemaProps(
                 if (!dragSort && !showIndex) {
                   return originNode;
                 }
-                const current = props?.pagination?.current;
-                const pageSize = props?.pagination?.pageSize || 20;
+                const current = paginationProps?.current;
+
+                const pageSize = paginationProps?.pageSize || 20;
                 if (current) {
                   index = index + (current - 1) * pageSize + 1;
                 } else {
@@ -660,6 +682,7 @@ export const Table: any = withDynamicSchemaProps(
         getRowKey,
         isRowSelect,
         memoizedRowSelection,
+        paginationProps,
       ],
     );
 
@@ -715,28 +738,31 @@ export const Table: any = withDynamicSchemaProps(
     }, [expandedKeys, onExpandValue]);
     return (
       <div
-        className={css`
-          height: 100%;
-          overflow: hidden;
-          .ant-table-wrapper {
+        className={cx(
+          css`
             height: 100%;
-            .ant-spin-nested-loading {
+            overflow: hidden;
+            .ant-table-wrapper {
               height: 100%;
-              .ant-spin-container {
+              .ant-spin-nested-loading {
                 height: 100%;
-                display: flex;
-                flex-direction: column;
-                .ant-table-body {
-                  min-height: ${tableHeight}px;
+                .ant-spin-container {
+                  height: 100%;
+                  display: flex;
+                  flex-direction: column;
+                  .ant-table-body {
+                    min-height: ${tableHeight}px;
+                  }
                 }
               }
             }
-          }
-          .ant-table {
-            overflow-x: auto;
-            overflow-y: hidden;
-          }
-        `}
+            .ant-table {
+              overflow-x: auto;
+              overflow-y: hidden;
+            }
+          `,
+          'nb-table-container',
+        )}
       >
         <SortableWrapper>
           <MemoizedAntdTable

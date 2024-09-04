@@ -12,7 +12,8 @@ import { uid } from '@formily/shared';
 import lodash from 'lodash';
 import { SelectedField } from './configure';
 import { FieldOption } from './hooks';
-import { QueryProps } from './renderer';
+import { ChartRendererContext, QueryProps } from './renderer';
+import { useContext } from 'react';
 
 export const createRendererSchema = (decoratorProps: any, componentProps = {}) => {
   const { collection, config } = decoratorProps;
@@ -31,6 +32,26 @@ export const createRendererSchema = (decoratorProps: any, componentProps = {}) =
     },
     'x-initializer': 'charts:addBlock',
     properties: {
+      actions: {
+        type: 'void',
+        'x-decorator': 'div',
+        'x-decorator-props': {
+          style: {
+            position: 'absolute',
+            top: 0,
+            right: 0,
+            zIndex: 10,
+          },
+        },
+        'x-component': 'ActionBar',
+        'x-component-props': {
+          style: {
+            marginRight: 'var(--nb-designer-offset)',
+            marginTop: 'var(--nb-designer-offset)',
+          },
+        },
+        'x-initializer': 'chart:configureActions',
+      },
       [uid()]: {
         type: 'void',
         'x-component': 'ChartRenderer',
@@ -93,7 +114,7 @@ export const processData = (selectedFields: FieldOption[], data: any[], scope: a
     if (Array.isArray(value)) {
       return value.map((v) => parseEnum(field, v));
     }
-    const option = options.find((option) => option.value === value);
+    const option = options.find((option) => option.value === (value?.toString?.() || value));
     return Schema.compile(option?.label || value, scope);
   };
   return data.map((record) => {

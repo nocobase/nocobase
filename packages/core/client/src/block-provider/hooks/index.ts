@@ -28,6 +28,7 @@ import {
   useCollectionRecord,
   useDataSourceHeaders,
   useFormActiveFields,
+  useRouterBasename,
   useTableBlockContext,
 } from '../..';
 import { useAPIClient, useRequest } from '../../api-client';
@@ -162,9 +163,9 @@ export function useCollectValuesToSubmit() {
       }
 
       if (isVariable(value)) {
-        const result = await variables?.parseVariable(value, localVariables);
-        if (result) {
-          assignedValues[key] = transformVariableValue(result, { targetCollectionField: collectionField });
+        const { value: parsedValue } = (await variables?.parseVariable(value, localVariables)) || {};
+        if (parsedValue) {
+          assignedValues[key] = transformVariableValue(parsedValue, { targetCollectionField: collectionField });
         }
       } else if (value != null && value !== '') {
         assignedValues[key] = value;
@@ -323,9 +324,9 @@ export const useAssociationCreateActionProps = () => {
         }
 
         if (isVariable(value)) {
-          const result = await variables?.parseVariable(value, localVariables);
-          if (result) {
-            assignedValues[key] = transformVariableValue(result, { targetCollectionField: collectionField });
+          const { value: parsedValue } = (await variables?.parseVariable(value, localVariables)) || {};
+          if (parsedValue) {
+            assignedValues[key] = transformVariableValue(parsedValue, { targetCollectionField: collectionField });
           }
         } else if (value != null && value !== '') {
           assignedValues[key] = value;
@@ -581,9 +582,9 @@ export const useCustomizeUpdateActionProps = () => {
         }
 
         if (isVariable(value)) {
-          const result = await variables?.parseVariable(value, localVariables);
-          if (result) {
-            assignedValues[key] = transformVariableValue(result, { targetCollectionField: collectionField });
+          const { value: parsedValue } = (await variables?.parseVariable(value, localVariables)) || {};
+          if (parsedValue) {
+            assignedValues[key] = transformVariableValue(parsedValue, { targetCollectionField: collectionField });
           }
         } else if (value != null && value !== '') {
           assignedValues[key] = value;
@@ -679,9 +680,9 @@ export const useCustomizeBulkUpdateActionProps = () => {
         }
 
         if (isVariable(value)) {
-          const result = await variables?.parseVariable(value, localVariables);
-          if (result) {
-            assignedValues[key] = transformVariableValue(result, { targetCollectionField: collectionField });
+          const { value: parsedValue } = (await variables?.parseVariable(value, localVariables)) || {};
+          if (parsedValue) {
+            assignedValues[key] = transformVariableValue(parsedValue, { targetCollectionField: collectionField });
           }
         } else if (value != null && value !== '') {
           assignedValues[key] = value;
@@ -887,9 +888,9 @@ export const useUpdateActionProps = () => {
         }
 
         if (isVariable(value)) {
-          const result = await variables?.parseVariable(value, localVariables);
-          if (result) {
-            assignedValues[key] = transformVariableValue(result, { targetCollectionField: collectionField });
+          const { value: parsedValue } = (await variables?.parseVariable(value, localVariables)) || {};
+          if (parsedValue) {
+            assignedValues[key] = transformVariableValue(parsedValue, { targetCollectionField: collectionField });
           }
         } else if (value != null && value !== '') {
           assignedValues[key] = value;
@@ -1266,18 +1267,20 @@ export const useAssociationFilterBlockProps = () => {
       },
     },
     {
-      // 由于 选项字段不需要触发当前请求，所以当前请求更改为手动触发
+      // 由于选项字段不需要触发当前请求，所以当前请求更改为手动触发
       manual: true,
       debounceWait: 300,
     },
   ));
 
   useEffect(() => {
-    // 由于 选项字段不需要触发当前请求，所以请求单独在 关系字段的时候触发
+    // 由于选项字段不需要触发当前请求，所以请求单独在关系字段的时候触发
     if (!isOptionalField(collectionField)) {
       run();
     }
-  }, [collectionField, labelKey, run, valueKey]);
+
+    // do not format the dependencies
+  }, [collectionField, labelKey, run, valueKey, field.componentProps?.params, field.componentProps?.params?.sort]);
 
   if (!collectionField) {
     return {};
@@ -1504,6 +1507,7 @@ export const useAssociationNames = (dataSource?: string) => {
     updateAssociationValues = new Set([]);
     appends = new Set([]);
     _getAssociationAppends(fieldSchema, '');
+    appends = fillParentFields(appends);
     return { appends: [...appends], updateAssociationValues: [...updateAssociationValues] };
   };
 
@@ -1593,6 +1597,7 @@ export function useLinkActionProps(componentProps?: any) {
   const searchParams = componentPropsValue?.['params'] || [];
   const openInNewWindow = fieldSchema?.['x-component-props']?.['openInNewWindow'];
   const { parseURLAndParams } = useParseURLAndParams();
+  const basenameOfCurrentRouter = useRouterBasename();
 
   return {
     type: 'default',
@@ -1607,7 +1612,7 @@ export function useLinkActionProps(componentProps?: any) {
         if (openInNewWindow) {
           window.open(completeURL(link), '_blank');
         } else {
-          navigateWithinSelf(link, navigate);
+          navigateWithinSelf(link, navigate, window.location.origin + basenameOfCurrentRouter);
         }
       } else {
         console.error('link should be a string');
@@ -1658,8 +1663,8 @@ export async function parseVariablesAndChangeParamsToQueryString({
     searchParams.map(async ({ name, value }) => {
       if (typeof value === 'string') {
         if (isVariable(value)) {
-          const result = await variables.parseVariable(value, localVariables);
-          return { name, value: result };
+          const { value: parsedValue } = (await variables.parseVariable(value, localVariables)) || {};
+          return { name, value: parsedValue };
         }
         const result = await replaceVariableValue(value, variables, localVariables);
         return { name, value: result };
@@ -1721,18 +1726,37 @@ export function completeURL(url: string, origin = window.location.origin) {
   return url.startsWith('/') ? `${origin}${url}` : `${origin}/${url}`;
 }
 
-export function navigateWithinSelf(link: string, navigate: NavigateFunction, origin = window.location.origin) {
+export function navigateWithinSelf(link: string, navigate: NavigateFunction, basePath = window.location.origin) {
   if (!_.isString(link)) {
     return console.error('link should be a string');
   }
 
   if (isURL(link)) {
-    if (link.startsWith(origin)) {
-      navigate(link.replace(origin, ''));
+    if (link.startsWith(basePath)) {
+      navigate(completeURL(link.replace(basePath, ''), ''));
     } else {
       window.open(link, '_self');
     }
   } else {
-    navigate(link.startsWith('/') ? link : `/${link}`);
+    navigate(completeURL(link, ''));
   }
+}
+
+/**
+ * 为多层级的关系字段补充上父级字段
+ * e.g. ['a', 'b.c'] => ['a', 'b', 'b.c']
+ * @param appends
+ * @returns
+ */
+export function fillParentFields(appends: Set<string>) {
+  const depFields = Array.from(appends).filter((field) => field.includes('.'));
+
+  depFields.forEach((field) => {
+    const fields = field.split('.');
+    fields.pop();
+    const parentField = fields.join('.');
+    appends.add(parentField);
+  });
+
+  return appends;
 }

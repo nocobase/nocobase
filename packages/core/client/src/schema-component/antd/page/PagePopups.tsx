@@ -7,7 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ISchema } from '@formily/json-schema';
+import { ISchema, Schema } from '@formily/json-schema';
+import { useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import { Result } from 'antd';
 import _ from 'lodash';
@@ -21,7 +22,7 @@ import { SchemaComponent } from '../../core';
 import { TabsContextProvider } from '../tabs/context';
 import { usePopupSettings } from './PopupSettingsProvider';
 import { deleteRandomNestedSchemaKey, getRandomNestedSchemaKey } from './nestedSchemaKeyStorage';
-import { PopupParams, getPopupParamsFromPath, getStoredPopupContext, usePagePopup } from './pagePopupUtils';
+import { PopupParams, getPopupParamsFromPath, getStoredPopupContext, usePopupUtils } from './pagePopupUtils';
 import {
   PopupContext,
   getPopupContextFromActionOrAssociationFieldSchema,
@@ -32,7 +33,7 @@ interface PopupsVisibleProviderProps {
   setVisible?: (value: boolean) => void;
 }
 
-interface PopupProps {
+export interface PopupProps {
   params: PopupParams;
   context: PopupContext;
   /**
@@ -84,8 +85,9 @@ const PopupParamsProvider: FC<Omit<PopupProps, 'hidden'>> = (props) => {
   return <PopupParamsProviderContext.Provider value={value}>{props.children}</PopupParamsProviderContext.Provider>;
 };
 
-const PopupTabsPropsProvider: FC<{ params: PopupParams }> = ({ children, params }) => {
-  const { changeTab } = usePagePopup();
+const PopupTabsPropsProvider: FC = ({ children }) => {
+  const { params } = useCurrentPopupContext();
+  const { changeTab } = usePopupUtils();
   const onChange = useCallback(
     (key: string) => {
       changeTab(key);
@@ -99,7 +101,7 @@ const PopupTabsPropsProvider: FC<{ params: PopupParams }> = ({ children, params 
   }
 
   return (
-    <TabsContextProvider activeKey={params.tab} onChange={onChange}>
+    <TabsContextProvider activeKey={params?.tab} onChange={onChange}>
       {children}
     </TabsContextProvider>
   );
@@ -113,7 +115,7 @@ const PagePopupsItemProvider: FC<{
    */
   currentLevel: number;
 }> = ({ params, context, currentLevel, children }) => {
-  const { closePopup } = usePagePopup();
+  const { closePopup } = usePopupUtils();
   const [visible, _setVisible] = useState(true);
   const setVisible = (visible: boolean) => {
     if (!visible) {
@@ -155,7 +157,7 @@ const PagePopupsItemProvider: FC<{
       <PopupVisibleProvider visible={visible} setVisible={setVisible}>
         <DataBlockProvider
           dataSource={context.dataSource}
-          collection={context.collection}
+          collection={params.collection || context.collection}
           association={context.association}
           sourceId={params.sourceid}
           filterByTk={params.filterbytk}
@@ -166,7 +168,7 @@ const PagePopupsItemProvider: FC<{
         >
           {/* Pass the service of the block where the button is located down, to refresh the block's data when the popup is closed */}
           <BlockRequestContext.Provider value={storedContext.service}>
-            <PopupTabsPropsProvider params={params}>
+            <PopupTabsPropsProvider>
               <div style={{ display: 'none' }}>{children}</div>
             </PopupTabsPropsProvider>
           </BlockRequestContext.Provider>
@@ -182,7 +184,17 @@ const PagePopupsItemProvider: FC<{
  * @param props
  * @param parentSchema
  */
-export const insertChildToParentSchema = (childSchema: ISchema, props: PopupProps, parentSchema: ISchema) => {
+export const insertChildToParentSchema = ({
+  childSchema,
+  props,
+  parentSchema,
+  getPopupSchema = (currentSchema) => _.get(currentSchema.properties, Object.keys(currentSchema.properties)[0]),
+}: {
+  childSchema: ISchema;
+  props: PopupProps;
+  parentSchema: ISchema;
+  getPopupSchema?: (currentSchema: ISchema) => ISchema;
+}) => {
   const { params, context, currentLevel } = props;
 
   const componentSchema = {
@@ -202,7 +214,7 @@ export const insertChildToParentSchema = (childSchema: ISchema, props: PopupProp
   const nestedPopupKey = getRandomNestedSchemaKey(params.popupuid);
 
   if (parentSchema.properties) {
-    const popupSchema = _.get(parentSchema.properties, Object.keys(parentSchema.properties)[0]);
+    const popupSchema = getPopupSchema(parentSchema);
     if (_.isEmpty(_.get(popupSchema, `properties.${nestedPopupKey}`))) {
       _.set(popupSchema, `properties.${nestedPopupKey}`, componentSchema);
     }
@@ -210,11 +222,13 @@ export const insertChildToParentSchema = (childSchema: ISchema, props: PopupProp
 };
 
 export const PagePopups = (props: { paramsList?: PopupParams[] }) => {
+  const fieldSchema = useFieldSchema();
   const location = useLocation();
   const popupParams = props.paramsList || getPopupParamsFromPath(getPopupPath(location));
   const { requestSchema } = useRequestSchema();
   const [rootSchema, setRootSchema] = useState<ISchema>(null);
   const popupPropsRef = useRef<PopupProps[]>([]);
+  const { savePopupSchemaToSchema, getPopupSchemaFromSchema } = usePopupUtils();
 
   useEffect(() => {
     const run = async () => {
@@ -222,13 +236,23 @@ export const PagePopups = (props: { paramsList?: PopupParams[] }) => {
         (params) => getStoredPopupContext(params.popupuid)?.schema || requestSchema(params.popupuid),
       );
       const schemas = await Promise.all(waitList);
-      const clonedSchemas = schemas.map((schema) => {
+      const clonedSchemas = schemas.map((schema, index) => {
         if (_.isEmpty(schema)) {
           return get404Schema();
         }
 
-        const result = _.cloneDeep(_.omit(schema, 'parent'));
+        const params = popupParams[index];
+
+        if (params.puid) {
+          const popupSchema = findSchemaByUid(params.puid, fieldSchema.root);
+          if (popupSchema) {
+            savePopupSchemaToSchema(_.omit(popupSchema, 'parent'), schema);
+          }
+        }
+
+        const result = _.cloneDeep(_.omit(schema, 'parent')) as Schema;
         result['x-read-pretty'] = true;
+
         return result;
       });
       popupPropsRef.current = clonedSchemas.map((schema, index, items) => {
@@ -253,12 +277,22 @@ export const PagePopups = (props: { paramsList?: PopupParams[] }) => {
       });
       const rootSchema = clonedSchemas[0];
       for (let i = 1; i < clonedSchemas.length; i++) {
-        insertChildToParentSchema(clonedSchemas[i], popupPropsRef.current[i], clonedSchemas[i - 1]);
+        insertChildToParentSchema({
+          childSchema: clonedSchemas[i],
+          props: popupPropsRef.current[i],
+          parentSchema: clonedSchemas[i - 1],
+          getPopupSchema: (currentSchema) => {
+            return (
+              getPopupSchemaFromSchema(currentSchema) ||
+              _.get(currentSchema.properties, Object.keys(currentSchema.properties)[0])
+            );
+          },
+        });
       }
       setRootSchema(rootSchema);
     };
     run();
-  }, [popupParams, requestSchema]);
+  }, [fieldSchema, getPopupSchemaFromSchema, popupParams, requestSchema, savePopupSchemaToSchema]);
 
   const components = useMemo(() => ({ PagePopupsItemProvider }), []);
 
@@ -404,4 +438,18 @@ function get404Schema() {
     'x-index': 2,
     'x-read-pretty': true,
   };
+}
+
+function findSchemaByUid(uid: string, rootSchema: Schema, resultRef: { value: Schema } = { value: null }) {
+  resultRef = resultRef || {
+    value: null,
+  };
+  rootSchema?.mapProperties?.((schema) => {
+    if (schema['x-uid'] === uid) {
+      resultRef.value = schema;
+    } else {
+      findSchemaByUid(uid, schema, resultRef);
+    }
+  });
+  return resultRef.value;
 }

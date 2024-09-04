@@ -11,11 +11,13 @@ import { useFieldSchema } from '@formily/react';
 import { useTranslation } from 'react-i18next';
 import { SchemaSettings } from '../../../../application/schema-settings/SchemaSettings';
 import { useCollection_deprecated } from '../../../../collection-manager';
+import { useCollection } from '../../../../data-source/collection/CollectionProvider';
 import { FilterBlockType } from '../../../../filter-provider';
 import { SchemaSettingsFormItemTemplate, SchemaSettingsLinkageRules } from '../../../../schema-settings';
+import { SchemaSettingsBlockHeightItem } from '../../../../schema-settings/SchemaSettingsBlockHeightItem';
 import { SchemaSettingsBlockTitleItem } from '../../../../schema-settings/SchemaSettingsBlockTitleItem';
 import { SchemaSettingsConnectDataBlocks } from '../../../../schema-settings/SchemaSettingsConnectDataBlocks';
-import { SchemaSettingsBlockHeightItem } from '../../../../schema-settings/SchemaSettingsBlockHeightItem';
+import { useBlockTemplateContext } from '../../../../schema-templates/BlockTemplateProvider';
 
 export const filterFormBlockSettings = new SchemaSettings({
   name: 'blockSettings:filterForm',
@@ -32,12 +34,13 @@ export const filterFormBlockSettings = new SchemaSettings({
       name: 'formItemTemplate',
       Component: SchemaSettingsFormItemTemplate,
       useComponentProps() {
-        const { name } = useCollection_deprecated();
+        const { componentNamePrefix } = useBlockTemplateContext();
+        const { name } = useCollection();
         const fieldSchema = useFieldSchema();
         const defaultResource =
           fieldSchema?.['x-decorator-props']?.resource || fieldSchema?.['x-decorator-props']?.association;
         return {
-          componentName: 'FilterFormItem',
+          componentName: `${componentNamePrefix}FilterFormItem`,
           collectionName: name,
           resourceName: defaultResource,
         };

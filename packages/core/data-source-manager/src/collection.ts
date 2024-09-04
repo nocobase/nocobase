@@ -15,12 +15,23 @@ export class Collection implements ICollection {
   repository: IRepository;
   fields: Map<string, IField> = new Map<string, IField>();
 
-  constructor(protected options: CollectionOptions, protected collectionManager: ICollectionManager) {
+  constructor(
+    protected options: CollectionOptions,
+    protected collectionManager: ICollectionManager,
+  ) {
     this.setRepository(options.repository);
 
     if (options.fields) {
       this.setFields(options.fields);
     }
+  }
+
+  get name() {
+    return this.options.name;
+  }
+
+  get filterTargetKey() {
+    return this.options.filterTargetKey;
   }
 
   updateOptions(options: CollectionOptions, mergeOptions?: any) {

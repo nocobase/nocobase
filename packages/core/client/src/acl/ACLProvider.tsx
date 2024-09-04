@@ -204,6 +204,17 @@ export function useACLRoleContext() {
   };
 }
 
+/**
+ * Used to get whether the current user has permission to configure UI
+ * @returns {allowConfigUI: boolean}
+ */
+export function useUIConfigurationPermissions(): { allowConfigUI: boolean } {
+  const { allowAll, snippets } = useACLRoleContext();
+  return {
+    allowConfigUI: allowAll || snippets.includes('ui.*'),
+  };
+}
+
 export const ACLCollectionProvider = (props) => {
   const { allowAll, parseAction } = useACLRoleContext();
   const app = useApp();
@@ -312,7 +323,10 @@ export const ACLCollectionFieldProvider = (props) => {
   const { allowAll } = useACLRoleContext();
   const { whitelist } = useACLFieldWhitelist();
   const [name] = (fieldSchema.name as string).split('.');
-  const allowed = !fieldSchema['x-acl-ignore'] && whitelist.length > 0 ? whitelist.includes(name) : true;
+  const allowed =
+    !fieldSchema['x-acl-ignore'] && whitelist.length > 0 && fieldSchema?.['x-collection-field']
+      ? whitelist.includes(name)
+      : true;
   useEffect(() => {
     if (!allowed) {
       field.required = false;

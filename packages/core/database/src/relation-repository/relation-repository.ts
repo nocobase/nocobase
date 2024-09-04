@@ -55,6 +55,44 @@ export abstract class RelationRepository {
     return this.db.getCollection(this.targetModel.name);
   }
 
+  abstract find(options?: FindOptions): Promise<any>;
+
+  async chunk(
+    options: FindOptions & { chunkSize: number; callback: (rows: Model[], options: FindOptions) => Promise<void> },
+  ) {
+    const { chunkSize, callback, limit: overallLimit } = options;
+    const transaction = await this.getTransaction(options);
+
+    let offset = 0;
+    let totalProcessed = 0;
+
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+      // Calculate the limit for the current chunk
+      const currentLimit = overallLimit !== undefined ? Math.min(chunkSize, overallLimit - totalProcessed) : chunkSize;
+
+      const rows = await this.find({
+        ...options,
+        limit: currentLimit,
+        offset,
+        transaction,
+      });
+
+      if (rows.length === 0) {
+        break;
+      }
+
+      await callback(rows, options);
+
+      offset += currentLimit;
+      totalProcessed += rows.length;
+
+      if (overallLimit !== undefined && totalProcessed >= overallLimit) {
+        break;
+      }
+    }
+  }
+
   convertTk(options: any) {
     let tk = options;
     if (typeof options === 'object' && options['tk']) {

@@ -7,19 +7,21 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ActionInitializerItem } from '@nocobase/client';
+import { ActionInitializerItem, useOpenModeContext } from '@nocobase/client';
 import React from 'react';
 
 export const DuplicateActionInitializer = (props) => {
+  const { defaultOpenMode } = useOpenModeContext();
+
   const schema = {
     type: 'void',
     'x-action': 'duplicate',
     'x-acl-action': 'create',
     title: '{{ t("Duplicate") }}',
     'x-component': 'Action.Link',
-    'x-decorator': 'ACLActionProvider',
+    'x-decorator': 'DuplicateActionDecorator',
     'x-component-props': {
-      openMode: 'drawer',
+      openMode: defaultOpenMode,
       component: 'DuplicateAction',
     },
     properties: {

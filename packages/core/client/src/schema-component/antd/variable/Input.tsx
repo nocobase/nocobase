@@ -24,7 +24,11 @@ import { useStyles } from './style';
 
 const JT_VALUE_RE = /^\s*{{\s*([^{}]+)\s*}}\s*$/;
 
-function parseValue(value: any): string | string[] {
+type ParseOptions = {
+  stringToDate?: boolean;
+};
+
+function parseValue(value: any, options: ParseOptions = {}): string | string[] {
   if (value == null) {
     return 'null';
   }
@@ -34,12 +38,11 @@ function parseValue(value: any): string | string[] {
     if (matched) {
       return matched[1].split('.');
     }
-    // const ts = Date.parse(value);
-    // if (value.match(/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(\.\d{0,3})Z$/) && !Number.isNaN(Date.parse(value))) {
-    //   return {
-    //     type: 'date',
-    //   };
-    // }
+    if (options.stringToDate) {
+      if (!Number.isNaN(Date.parse(value))) {
+        return 'date';
+      }
+    }
   }
   return type === 'object' && value instanceof Date ? 'date' : type;
 }
@@ -115,19 +118,28 @@ const ConstantTypes = {
   },
 };
 
-function getTypedConstantOption(type: string, types: true | string[], fieldNames) {
+type UseTypeConstantType = true | (string | [string, Record<string, any>])[];
+
+function getTypedConstantOption(type: string, types: UseTypeConstantType, fieldNames) {
   const allTypes = Object.values(ConstantTypes).filter((item) => item.value !== 'null');
   const children = (
-    types ? allTypes.filter((item) => (Array.isArray(types) && types.includes(item.value)) || types === true) : allTypes
+    types
+      ? allTypes.filter(
+          (item) =>
+            (Array.isArray(types) &&
+              types.filter((t) => (Array.isArray(t) ? t[0] === item.value : t === item.value)).length) ||
+            types === true,
+        )
+      : allTypes
   ).map((item) =>
-    Object.keys(item).reduce(
+    Object.keys(fieldNames).reduce(
       (result, key) =>
-        fieldNames[key] in item
+        key in item
           ? Object.assign(result, {
               [fieldNames[key]]: item[key],
             })
           : result,
-      item,
+      { ...item },
     ),
   );
   return {
@@ -147,12 +159,13 @@ export type VariableInputProps = {
   onChange: (value: string, optionPath?: any[]) => void;
   children?: any;
   button?: React.ReactElement;
-  useTypedConstant?: true | string[];
+  useTypedConstant?: UseTypeConstantType;
   changeOnSelect?: CascaderProps['changeOnSelect'];
   fieldNames?: CascaderProps['fieldNames'];
   disabled?: boolean;
   style?: React.CSSProperties;
   className?: string;
+  parseOptions?: ParseOptions;
 };
 
 export function Input(props: VariableInputProps) {
@@ -166,6 +179,7 @@ export function Input(props: VariableInputProps) {
     className,
     changeOnSelect,
     fieldNames,
+    parseOptions,
   } = props;
   const scope = typeof props.scope === 'function' ? props.scope() : props.scope;
   const { wrapSSR, hashId, componentCls, rootPrefixCls } = useStyles();
@@ -180,7 +194,7 @@ export function Input(props: VariableInputProps) {
   const [variableText, setVariableText] = React.useState([]);
   const [isFieldValue, setIsFieldValue] = React.useState(children && value != null ? true : false);
 
-  const parsed = useMemo(() => parseValue(value), [value]);
+  const parsed = useMemo(() => parseValue(value, parseOptions), [parseOptions, value]);
   const isConstant = typeof parsed === 'string';
   const type = isConstant ? parsed : '';
   const variable = isConstant ? null : parsed;
@@ -209,6 +223,9 @@ export function Input(props: VariableInputProps) {
   }, [type, useTypedConstant]);
 
   const ConstantComponent = constantOption && !children ? constantOption.component : NullComponent;
+  const constantComponentProps = Array.isArray(useTypedConstant)
+    ? (useTypedConstant.find((item) => Array.isArray(item) && item[0] === type)?.[1] as Record<string, any>) ?? {}
+    : {};
   let cValue;
   if (value == null) {
     if (children && isFieldValue) {
@@ -385,7 +402,7 @@ export function Input(props: VariableInputProps) {
               // eslint-disable-next-line react/no-unknown-property
               unselectable="on"
               onClick={() => {
-                setIsFieldValue(false);
+                setIsFieldValue(Boolean(children));
                 onChange(null);
               }}
             >
@@ -398,7 +415,13 @@ export function Input(props: VariableInputProps) {
           {children && isFieldValue ? (
             children
           ) : ConstantComponent ? (
-            <ConstantComponent role="button" aria-label="variable-constant" value={value} onChange={onChange} />
+            <ConstantComponent
+              role="button"
+              aria-label="variable-constant"
+              {...constantComponentProps}
+              value={value}
+              onChange={onChange}
+            />
           ) : null}
         </div>
       )}

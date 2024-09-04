@@ -22,6 +22,28 @@ describe('string field', () => {
     await db.close();
   });
 
+  it.skipIf(process.env['DB_DIALECT'] === 'sqlite')('should define string with length options', async () => {
+    const Test = db.collection({
+      name: 'tests',
+      fields: [{ type: 'string', name: 'name', length: 10 }],
+    });
+    await db.sync();
+
+    let err;
+
+    try {
+      await Test.repository.create({
+        values: {
+          name: '123456789011',
+        },
+      });
+    } catch (e) {
+      err = e;
+    }
+
+    expect(err).toBeDefined();
+  });
+
   it('define', async () => {
     const Test = db.collection({
       name: 'tests',

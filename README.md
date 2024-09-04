@@ -1,4 +1,4 @@
-English | [中文](./README.zh-CN.md)
+English | [中文](./README.zh-CN.md) | [日本語](./README.ja-JP.md)
 
 https://github.com/nocobase/nocobase/assets/1267426/1d6a3979-d1eb-4e50-b726-2f90c3f82eeb
 
@@ -10,18 +10,19 @@ https://github.com/nocobase/nocobase/assets/1267426/1d6a3979-d1eb-4e50-b726-2f90
 
 ## Recent major updates
 
-- [v1.0.1-alpha.1: Blocks support height settings - 2024/06/07](https://docs.nocobase.com/welcome/changelog/20240607)
-- [v1.0.0-alpha.15: New Plugins and Improved “Configure actions” Interaction - 2024/05/19](https://docs.nocobase.com/welcome/changelog/20240519)
-- [v1.0: Significant Milestone - 2024/04/28](https://docs.nocobase.com/welcome/release/v1001-changelog)
-- [v0.21: Block performance optimization - 2024/03/29](https://docs.nocobase.com/welcome/release/v0210-changelog)
-- [v0.20: Support for multiple data sources - 2024/03/03](https://docs.nocobase.com/welcome/release/v0200-changelog)
-- [v0.19: Application process optimization - 2024/01/08](https://docs.nocobase.com/welcome/release/v0190-changelog)
-- [v0.18: Establish a sound testing system - 2023/12/21](https://docs.nocobase.com/welcome/release/v0180-changelog)
-- [v0.17: New SchemaInitializer and SchemaSettings - 2023/12/11](https://docs.nocobase.com/welcome/release/v0170-changelog)
-- [v0.16: New cache manager - 2023/11/20](https://docs.nocobase.com/welcome/release/v0160-changelog)
-- [v0.15: New plugin settings manager - 2023/11/13](https://docs.nocobase.com/welcome/release/v0150-changelog)
-- [v0.14: New plugin manager, supports adding plugins through UI - 2023/09/11](https://docs.nocobase.com/welcome/release/v0140-changelog)
-- [v0.13: New application status flow - 2023/08/24](https://docs.nocobase.com/welcome/release/v0130-changelog)
+- [v1.3: REST API data source, mobile v2, and more features - 2024/08/29](https://www.nocobase.com/en/blog/nocobase-1-3)
+- [v1.0.1-alpha.1: Blocks support height settings - 2024/06/07](https://www.nocobase.com/en/blog/release-v101-alpha1)
+- [v1.0.0-alpha.15: New Plugins and Improved “Configure actions” Interaction - 2024/05/19](https://www.nocobase.com/en/blog/release-v100-alpha15)
+- [v1.0: Significant Milestone - 2024/04/28](https://www.nocobase.com/en/blog/release-v10)
+- [v0.21: Block performance optimization - 2024/03/29](https://www.nocobase.com/en/blog/release-v021)
+- [v0.20: Support for multiple data sources - 2024/03/03](https://www.nocobase.com/en/blog/release-v020)
+- [v0.19: Application process optimization - 2024/01/08](https://www.nocobase.com/en/blog/release-v019)
+- [v0.18: Establish a sound testing system - 2023/12/21](https://www.nocobase.com/en/blog/release-v018)
+- [v0.17: New SchemaInitializer and SchemaSettings - 2023/12/11](https://www.nocobase.com/en/blog/release-v017)
+- [v0.16: New cache manager - 2023/11/20](https://www.nocobase.com/en/blog/release-v016)
+- [v0.15: New plugin settings manager - 2023/11/13](https://www.nocobase.com/en/blog/release-v015)
+- [v0.14: New plugin manager, supports adding plugins through UI - 2023/09/11](https://www.nocobase.com/en/blog/release-v014)
+- [v0.13: New application status flow - 2023/08/24](https://www.nocobase.com/en/blog/release-v013)
 
 ## What is NocoBase
 

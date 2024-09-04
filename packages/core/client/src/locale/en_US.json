@@ -108,8 +108,8 @@
   "Close": "Close",
   "Set the data scope": "Set the data scope",
   "Set data loading mode": "Set data loading mode",
-  "Automatically load data": "Automatically load data",
-  "Load data after filtering": "Load data after filtering",
+  "Load all data when filter is empty": "Load all data when filter is empty",
+  "Do not load data when filter is empty": "Do not load data when filter is empty",
   "Data loading mode": "Data loading mode",
   "Data blocks": "Data blocks",
   "Filter blocks": "Filter blocks",
@@ -836,5 +836,7 @@
   "Search": "Search",
   "Clear default value": "Clear default value",
   "Open in new window": "Open in new window",
-  "Sorry, the page you visited does not exist.": "Sorry, the page you visited does not exist."
+  "Sorry, the page you visited does not exist.": "Sorry, the page you visited does not exist.",
+  "is none of": "is none of",
+  "is any of": "is any of"
 }

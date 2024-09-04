@@ -7,16 +7,16 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { FC, useCallback } from 'react';
 import { Space, Tabs, TabsProps } from 'antd-mobile';
-import { useParams, useNavigate, Navigate } from 'react-router-dom';
+import React, { FC, useCallback } from 'react';
+import { Navigate, useNavigate, useParams } from 'react-router-dom';
 
-import { useMobileRoutes } from '../../../../mobile-providers';
 import { DndContext, DndContextProps, Icon, SortableItem } from '@nocobase/client';
-import { useStyles } from './styles';
-import { MobilePageTabsSettings } from './settings';
-import { MobilePageTabInitializer } from './initializer';
+import { useMobileRoutes } from '../../../../mobile-providers';
 import { useMobilePage } from '../../context';
+import { MobilePageTabInitializer } from './initializer';
+import { MobilePageTabsSettings } from './settings';
+import { useStyles } from './styles';
 
 export const MobilePageTabs: FC = () => {
   const { activeTabBarItem, resource, refresh } = useMobileRoutes();
@@ -26,7 +26,7 @@ export const MobilePageTabs: FC = () => {
   const { styles } = useStyles();
   const { tabSchemaUid } = useParams<{ tabSchemaUid: string }>();
   const [activeKey, setActiveKey] = React.useState<string>(() => {
-    return tabSchemaUid || activeTabBarItem?.children[0]?.schemaUid;
+    return tabSchemaUid || activeTabBarItem?.children?.[0]?.schemaUid;
   });
   const handleChange: TabsProps['onChange'] = (schemaUid) => {
     setActiveKey(schemaUid);

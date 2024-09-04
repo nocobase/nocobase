@@ -52,6 +52,7 @@ import {
   useBlockContext,
   useBlockRequestContext,
 } from '../block-provider/BlockProvider';
+import { CollectOperators, useOperators } from '../block-provider/CollectOperators';
 import {
   FormBlockContext,
   findFormBlock,
@@ -94,14 +95,14 @@ import { SchemaComponentOptions } from '../schema-component/core/SchemaComponent
 import { useCompile } from '../schema-component/hooks/useCompile';
 import { Designable, createDesignable, useDesignable } from '../schema-component/hooks/useDesignable';
 import { useSchemaTemplateManager } from '../schema-templates';
-import { useBlockTemplateContext } from '../schema-templates/BlockTemplate';
+import { useBlockTemplateContext } from '../schema-templates/BlockTemplateProvider';
 import { useLocalVariables, useVariables } from '../variables';
 import { FormDataTemplates } from './DataTemplates';
 import { EnableChildCollections } from './EnableChildCollections';
 import { ChildDynamicComponent } from './EnableChildCollections/DynamicComponent';
 import { FormLinkageRules } from './LinkageRules';
 import { useLinkageCollectionFieldOptions } from './LinkageRules/action-hooks';
-import { LinkageRuleDataKeyMap, LinkageRuleCategory } from './LinkageRules/type';
+import { LinkageRuleCategory, LinkageRuleDataKeyMap } from './LinkageRules/type';
 
 export interface SchemaSettingsProps {
   title?: any;
@@ -652,7 +653,15 @@ export const SchemaSettingsActionModalItem: FC<SchemaSettingsActionModalItemProp
   const submitHandler = useCallback(async () => {
     await form.submit();
     try {
-      await onSubmit?.(cloneDeep(form.values));
+      const allValues = form.values;
+      // 过滤掉那些在表单 Schema 中未定义的字段
+      const visibleValues = Object.keys(allValues).reduce((result, key) => {
+        if (form.query(key).take()) {
+          result[key] = allValues[key];
+        }
+        return result;
+      }, {});
+      await onSubmit?.(cloneDeep(visibleValues));
       setVisible(false);
     } catch (err) {
       console.error(err);
@@ -767,6 +776,7 @@ export const SchemaSettingsModalItem: FC<SchemaSettingsModalItemProps> = (props)
   const { association } = useDataBlockProps() || {};
   const formCtx = useFormBlockContext();
   const blockOptions = useBlockContext();
+  const { getOperators } = useOperators();
   const locationSearch = useLocationSearch();
 
   // 解决变量`当前对象`值在弹窗中丢失的问题
@@ -790,64 +800,66 @@ export const SchemaSettingsModalItem: FC<SchemaSettingsModalItemProps> = (props)
           { title: schema.title || title, width },
           () => {
             return (
-              <BlockContext.Provider value={blockOptions}>
-                <VariablePopupRecordProvider
-                  recordData={popupRecordVariable?.value}
-                  collection={popupRecordVariable?.collection}
-                  parent={{
-                    recordData: parentPopupRecordVariable?.value,
-                    collection: parentPopupRecordVariable?.collection,
-                  }}
-                >
-                  <CollectionRecordProvider record={noRecord ? null : record}>
-                    <FormBlockContext.Provider value={formCtx}>
-                      <SubFormProvider value={{ value: subFormValue, collection: subFormCollection }}>
-                        <FormActiveFieldsProvider
-                          name="form"
-                          getActiveFieldsName={upLevelActiveFields?.getActiveFieldsName}
-                        >
-                          <LocationSearchContext.Provider value={locationSearch}>
-                            <BlockRequestContext_deprecated.Provider value={ctx}>
-                              <DataSourceApplicationProvider dataSourceManager={dm} dataSource={dataSourceKey}>
-                                <AssociationOrCollectionProvider
-                                  allowNull
-                                  collection={collection.name}
-                                  association={association}
-                                >
-                                  <SchemaComponentOptions scope={options.scope} components={options.components}>
-                                    <FormLayout
-                                      layout={'vertical'}
-                                      className={css`
-                                        // screen > 576px
-                                        @media (min-width: 576px) {
-                                          min-width: 520px;
-                                        }
+              <CollectOperators defaultOperators={getOperators()}>
+                <BlockContext.Provider value={blockOptions}>
+                  <VariablePopupRecordProvider
+                    recordData={popupRecordVariable?.value}
+                    collection={popupRecordVariable?.collection}
+                    parent={{
+                      recordData: parentPopupRecordVariable?.value,
+                      collection: parentPopupRecordVariable?.collection,
+                    }}
+                  >
+                    <CollectionRecordProvider record={noRecord ? null : record}>
+                      <FormBlockContext.Provider value={formCtx}>
+                        <SubFormProvider value={{ value: subFormValue, collection: subFormCollection }}>
+                          <FormActiveFieldsProvider
+                            name="form"
+                            getActiveFieldsName={upLevelActiveFields?.getActiveFieldsName}
+                          >
+                            <LocationSearchContext.Provider value={locationSearch}>
+                              <BlockRequestContext_deprecated.Provider value={ctx}>
+                                <DataSourceApplicationProvider dataSourceManager={dm} dataSource={dataSourceKey}>
+                                  <AssociationOrCollectionProvider
+                                    allowNull
+                                    collection={collection.name}
+                                    association={association}
+                                  >
+                                    <SchemaComponentOptions scope={options.scope} components={options.components}>
+                                      <FormLayout
+                                        layout={'vertical'}
+                                        className={css`
+                                          // screen > 576px
+                                          @media (min-width: 576px) {
+                                            min-width: 520px;
+                                          }
 
-                                        // screen <= 576px
-                                        @media (max-width: 576px) {
-                                          min-width: 320px;
-                                        }
-                                      `}
-                                    >
-                                      <ApplicationContext.Provider value={app}>
-                                        <APIClientProvider apiClient={apiClient}>
-                                          <ConfigProvider locale={locale}>
-                                            <SchemaComponent components={components} scope={scope} schema={schema} />
-                                          </ConfigProvider>
-                                        </APIClientProvider>
-                                      </ApplicationContext.Provider>
-                                    </FormLayout>
-                                  </SchemaComponentOptions>
-                                </AssociationOrCollectionProvider>
-                              </DataSourceApplicationProvider>
-                            </BlockRequestContext_deprecated.Provider>
-                          </LocationSearchContext.Provider>
-                        </FormActiveFieldsProvider>
-                      </SubFormProvider>
-                    </FormBlockContext.Provider>
-                  </CollectionRecordProvider>
-                </VariablePopupRecordProvider>
-              </BlockContext.Provider>
+                                          // screen <= 576px
+                                          @media (max-width: 576px) {
+                                            min-width: 320px;
+                                          }
+                                        `}
+                                      >
+                                        <ApplicationContext.Provider value={app}>
+                                          <APIClientProvider apiClient={apiClient}>
+                                            <ConfigProvider locale={locale}>
+                                              <SchemaComponent components={components} scope={scope} schema={schema} />
+                                            </ConfigProvider>
+                                          </APIClientProvider>
+                                        </ApplicationContext.Provider>
+                                      </FormLayout>
+                                    </SchemaComponentOptions>
+                                  </AssociationOrCollectionProvider>
+                                </DataSourceApplicationProvider>
+                              </BlockRequestContext_deprecated.Provider>
+                            </LocationSearchContext.Provider>
+                          </FormActiveFieldsProvider>
+                        </SubFormProvider>
+                      </FormBlockContext.Provider>
+                    </CollectionRecordProvider>
+                  </VariablePopupRecordProvider>
+                </BlockContext.Provider>
+              </CollectOperators>
             );
           },
           theme,

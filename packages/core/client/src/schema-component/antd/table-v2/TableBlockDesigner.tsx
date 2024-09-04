@@ -30,11 +30,11 @@ import {
 } from '../../../schema-settings';
 import { SchemaSettingsBlockHeightItem } from '../../../schema-settings/SchemaSettingsBlockHeightItem';
 import { SchemaSettingsBlockTitleItem } from '../../../schema-settings/SchemaSettingsBlockTitleItem';
-
 import { SchemaSettingsConnectDataBlocks } from '../../../schema-settings/SchemaSettingsConnectDataBlocks';
 import { SchemaSettingsDataScope } from '../../../schema-settings/SchemaSettingsDataScope';
 import { SchemaSettingsTemplate } from '../../../schema-settings/SchemaSettingsTemplate';
 import { useSchemaTemplate } from '../../../schema-templates';
+import { useBlockTemplateContext } from '../../../schema-templates/BlockTemplateProvider';
 import { useDesignable } from '../../hooks';
 import { removeNullCondition } from '../filter';
 
@@ -86,6 +86,7 @@ export const TableBlockDesigner = () => {
   const { service } = useTableBlockContext();
   const { t } = useTranslation();
   const { dn } = useDesignable();
+  const { componentNamePrefix } = useBlockTemplateContext();
 
   const defaultSort = fieldSchema?.['x-decorator-props']?.params?.sort || [];
   const defaultResource =
@@ -304,7 +305,11 @@ export const TableBlockDesigner = () => {
       <SchemaSettingsConnectDataBlocks type={FilterBlockType.TABLE} emptyDescription={t('No blocks to connect')} />
       {supportTemplate && <SchemaSettingsDivider />}
       {supportTemplate && (
-        <SchemaSettingsTemplate componentName={'Table'} collectionName={name} resourceName={defaultResource} />
+        <SchemaSettingsTemplate
+          componentName={`${componentNamePrefix}Table`}
+          collectionName={name}
+          resourceName={defaultResource}
+        />
       )}
       <SchemaSettingsDivider />
       <SchemaSettingsRemove

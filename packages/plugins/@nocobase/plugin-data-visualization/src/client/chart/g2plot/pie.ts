@@ -27,6 +27,7 @@ export class Pie extends G2PlotChart {
         title: 'colorField',
         required: true,
       },
+      'size',
     ];
   }
 

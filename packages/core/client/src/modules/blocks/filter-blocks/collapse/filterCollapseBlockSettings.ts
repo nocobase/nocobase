@@ -12,10 +12,11 @@ import { useTranslation } from 'react-i18next';
 import { SchemaSettings } from '../../../../application/schema-settings/SchemaSettings';
 import { useCollection_deprecated } from '../../../../collection-manager';
 import { FilterBlockType } from '../../../../filter-provider';
+import { SchemaSettingsBlockHeightItem } from '../../../../schema-settings/SchemaSettingsBlockHeightItem';
 import { SchemaSettingsBlockTitleItem } from '../../../../schema-settings/SchemaSettingsBlockTitleItem';
 import { SchemaSettingsConnectDataBlocks } from '../../../../schema-settings/SchemaSettingsConnectDataBlocks';
 import { SchemaSettingsTemplate } from '../../../../schema-settings/SchemaSettingsTemplate';
-import { SchemaSettingsBlockHeightItem } from '../../../../schema-settings/SchemaSettingsBlockHeightItem';
+import { useBlockTemplateContext } from '../../../../schema-templates/BlockTemplateProvider';
 
 export const filterCollapseBlockSettings = new SchemaSettings({
   name: 'blockSettings:filterCollapse',
@@ -34,11 +35,12 @@ export const filterCollapseBlockSettings = new SchemaSettings({
       useComponentProps() {
         const { name } = useCollection_deprecated();
         const fieldSchema = useFieldSchema();
+        const { componentNamePrefix } = useBlockTemplateContext();
         const defaultResource =
           fieldSchema?.['x-decorator-props']?.resource || fieldSchema?.['x-decorator-props']?.association;
 
         return {
-          componentName: 'FilterCollapse',
+          componentName: `${componentNamePrefix}FilterCollapse`,
           collectionName: name,
           resourceName: defaultResource,
         };

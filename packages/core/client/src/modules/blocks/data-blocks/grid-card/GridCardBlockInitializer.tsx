@@ -49,7 +49,7 @@ export const GridCardBlockInitializer = ({
     <DataBlockInitializer
       {...itemConfig}
       icon={<OrderedListOutlined />}
-      componentType={'GridCard'}
+      componentType={`GridCard`}
       onCreateBlockSchema={async (options) => {
         if (createBlockSchema) {
           return createBlockSchema(options);

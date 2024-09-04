@@ -35,6 +35,10 @@ export interface PopupParams {
   sourceid?: string;
   /** tab uid */
   tab?: string;
+  /** collection name */
+  collection?: string;
+  /** popup uid */
+  puid?: string;
 }
 
 export interface PopupContextStorage extends PopupContext {
@@ -44,6 +48,10 @@ export interface PopupContextStorage extends PopupContext {
   /** used to refresh data for block */
   service?: any;
   sourceId?: string;
+  /**
+   * if true, will not back to the previous path when closing the popup
+   */
+  notBackToPreviousPath?: boolean;
 }
 
 const popupsContextStorage: Record<string, PopupContextStorage> = {};
@@ -53,7 +61,10 @@ export const getStoredPopupContext = (popupUid: string) => {
 };
 
 /**
- * Used to store the context of the current popup when a button is clicked.
+ * Used to store the context of the current popup.
+ *
+ * The context that has already been stored, when displaying the popup,
+ * will directly retrieve the context information from the cache instead of making an API request.
  * @param popupUid
  * @param params
  */
@@ -94,9 +105,13 @@ export const getPopupParamsFromPath = _.memoize((path: string) => {
 });
 
 export const getPopupPathFromParams = (params: PopupParams) => {
-  const { popupuid: popupUid, tab, filterbytk, sourceid } = params;
+  const { popupuid: popupUid, tab, filterbytk, sourceid, collection, puid } = params;
   const popupPath = [
     popupUid,
+    puid && 'puid',
+    puid,
+    collection && 'collection',
+    collection,
     filterbytk && 'filterbytk',
     filterbytk,
     sourceid && 'sourceid',
@@ -108,7 +123,20 @@ export const getPopupPathFromParams = (params: PopupParams) => {
   return `/popups/${popupPath.map((item) => encodePathValue(item)).join('/')}`;
 };
 
-export const usePagePopup = () => {
+/**
+ * Note: use this hook in a plugin is not recommended
+ * @returns
+ */
+export const usePopupUtils = (
+  options: {
+    /**
+     * when the popup does not support opening via URL, you can control the display status of the popup through this method
+     * @param visible
+     * @returns
+     */
+    setVisible?: (visible: boolean) => void;
+  } = {},
+) => {
   const navigate = useNavigateNoUpdate();
   const location = useLocationNoUpdate();
   const fieldSchema = useFieldSchema();
@@ -122,14 +150,16 @@ export const usePagePopup = () => {
   const { params: popupParams } = useCurrentPopupContext();
   const service = useDataBlockRequest();
   const { isPopupVisibleControlledByURL } = usePopupSettings();
-  const { setVisible: setVisibleFromAction } = useContext(ActionContext);
+  const { setVisible: _setVisibleFromAction } = useContext(ActionContext);
   const { updatePopupContext } = usePopupContextInActionOrAssociationField();
+  const currentPopupContext = useCurrentPopupContext();
   const getSourceId = useCallback(
     (_parentRecordData?: Record<string, any>) =>
       (_parentRecordData || parentRecord?.data)?.[cm.getSourceKeyByAssociation(association)],
     [parentRecord, association],
   );
-  const currentPopupUidWithoutOpened = fieldSchema?.['x-uid'];
+
+  const setVisibleFromAction = options.setVisible || _setVisibleFromAction;
 
   const getNewPathname = useCallback(
     ({
@@ -137,15 +167,25 @@ export const usePagePopup = () => {
       popupUid,
       recordData,
       sourceId,
+      collection: _collection,
+      puid,
     }: {
+      /**
+       * this is the schema uid of the button that triggers the popup, while puid is the schema uid of the popup, they are different;
+       */
       popupUid: string;
       recordData: Record<string, any>;
       sourceId: string;
       tabKey?: string;
+      collection?: string;
+      /** popup uid */
+      puid?: string;
     }) => {
       const filterByTK = cm.getFilterByTK(association || collection, recordData);
       return getPopupPathFromParams({
         popupuid: popupUid,
+        puid,
+        collection: _collection,
         filterbytk: filterByTK,
         sourceid: sourceId,
         tab: tabKey,
@@ -168,25 +208,40 @@ export const usePagePopup = () => {
     ({
       recordData,
       parentRecordData,
+      collectionNameUsedInURL,
+      popupUidUsedInURL,
+      customActionSchema,
     }: {
       recordData?: Record<string, any>;
       parentRecordData?: Record<string, any>;
+      /** if this value exists, it will be saved in the URL */
+      collectionNameUsedInURL?: string;
+      /** if this value exists, it will be saved in the URL */
+      popupUidUsedInURL?: string;
+      customActionSchema?: ISchema;
     } = {}) => {
       if (!isPopupVisibleControlledByURL()) {
         return setVisibleFromAction?.(true);
       }
 
+      const currentPopupUidWithoutOpened = customActionSchema?.['x-uid'] || fieldSchema?.['x-uid'];
       const sourceId = getSourceId(parentRecordData);
 
       recordData = recordData || record?.data;
-      const pathname = getNewPathname({ popupUid: currentPopupUidWithoutOpened, recordData, sourceId });
+      const pathname = getNewPathname({
+        popupUid: currentPopupUidWithoutOpened,
+        recordData,
+        sourceId,
+        collection: collectionNameUsedInURL,
+        puid: popupUidUsedInURL,
+      });
       let url = location.pathname;
       if (_.last(url) === '/') {
         url = url.slice(0, -1);
       }
 
       storePopupContext(currentPopupUidWithoutOpened, {
-        schema: fieldSchema,
+        schema: customActionSchema || fieldSchema,
         record: new CollectionRecord({ isNew: false, data: recordData }),
         parentRecord: parentRecordData ? new CollectionRecord({ isNew: false, data: parentRecordData }) : parentRecord,
         service,
@@ -196,7 +251,7 @@ export const usePagePopup = () => {
         sourceId,
       });
 
-      updatePopupContext(getPopupContext());
+      updatePopupContext(getPopupContext(), customActionSchema);
 
       navigate(withSearchParams(`${url}${pathname}`));
     },
@@ -215,7 +270,6 @@ export const usePagePopup = () => {
       isPopupVisibleControlledByURL,
       getSourceId,
       getPopupContext,
-      currentPopupUidWithoutOpened,
     ],
   );
 
@@ -228,13 +282,13 @@ export const usePagePopup = () => {
       // 1. If there is a value in the cache, it means that the current popup was opened by manual click, so we can simply return to the previous record;
       // 2. If there is no value in the cache, it means that the current popup was opened by clicking the URL elsewhere, and since there is no history,
       //    we need to construct the URL of the previous record to return to;
-      if (getStoredPopupContext(currentPopupUid)) {
+      if (getStoredPopupContext(currentPopupUid) && !getStoredPopupContext(currentPopupUid).notBackToPreviousPath) {
         navigate(-1);
       } else {
         navigate(withSearchParams(removeLastPopupPath(location.pathname)));
       }
     },
-    [navigate, location, isPopupVisibleControlledByURL],
+    [isPopupVisibleControlledByURL, setVisibleFromAction, navigate, location?.pathname],
   );
 
   const changeTab = useCallback(
@@ -257,6 +311,14 @@ export const usePagePopup = () => {
     [getNewPathname, navigate, popupParams?.popupuid, record?.data, location],
   );
 
+  const savePopupSchemaToSchema = useCallback((popupSchema: ISchema, targetSchema: ISchema) => {
+    targetSchema['__popup'] = popupSchema;
+  }, []);
+
+  const getPopupSchemaFromSchema = useCallback((schema: ISchema) => {
+    return schema['__popup'];
+  }, []);
+
   return {
     /**
      * used to open popup by changing the url
@@ -266,10 +328,33 @@ export const usePagePopup = () => {
      * used to close popup by changing the url
      */
     closePopup,
+    savePopupSchemaToSchema,
+    getPopupSchemaFromSchema,
+    context: currentPopupContext,
+    /**
+     * @deprecated
+     * TODO: remove this
+     */
     visibleWithURL: visible,
+    /**
+     * @deprecated
+     * TODO: remove this
+     */
     setVisibleWithURL: setVisible,
+    /**
+     * @deprecated
+     * TODO: remove this
+     */
     popupParams,
+    /**
+     * @deprecated
+     * TODO: remove this
+     */
     changeTab,
+    /**
+     * @deprecated
+     * TODO: remove this
+     */
     getPopupContext,
   };
 };

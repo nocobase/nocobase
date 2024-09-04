@@ -7,18 +7,18 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { FC, useCallback } from 'react';
 import { SafeArea } from 'antd-mobile';
 import 'antd-mobile/es/components/tab-bar/tab-bar.css';
+import React, { FC, useCallback } from 'react';
 
-import { useStyles } from './styles';
 import { useMobileRoutes } from '../../mobile-providers';
+import { useStyles } from './styles';
 
-import { getMobileTabBarItemSchema, MobileTabBarItem } from './MobileTabBar.Item';
-import { MobileTabBarPage, MobileTabBarLink } from './types';
-import { cx, DndContext, DndContextProps, SchemaComponent, useDesignable, css } from '@nocobase/client';
-import { MobileTabBarInitializer } from './initializer';
+import { css, cx, DndContext, DndContextProps, SchemaComponent, useDesignable } from '@nocobase/client';
 import { isInnerLink } from '../../utils';
+import { MobileTabBarInitializer } from './initializer';
+import { getMobileTabBarItemSchema, MobileTabBarItem } from './MobileTabBar.Item';
+import { MobileTabBarLink, MobileTabBarPage } from './types';
 
 export interface MobileTabBarProps {
   /**

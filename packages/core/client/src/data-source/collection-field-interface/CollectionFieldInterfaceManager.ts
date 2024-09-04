@@ -8,11 +8,21 @@
  */
 
 import type { DataSourceManager } from '../data-source';
-import type { CollectionFieldInterface, CollectionFieldInterfaceFactory } from './CollectionFieldInterface';
+import type {
+  CollectionFieldInterface,
+  CollectionFieldInterfaceComponentOption,
+  CollectionFieldInterfaceFactory,
+} from './CollectionFieldInterface';
+
+interface ActionType {
+  type: 'addComponentOption';
+  data: any;
+}
 
 export class CollectionFieldInterfaceManager {
   protected collectionFieldInterfaceInstances: Record<string, CollectionFieldInterface> = {};
   protected collectionFieldGroups: Record<string, { label: string; order?: number }> = {};
+  protected actionList: Record<string, ActionType[]> = {};
 
   constructor(
     fieldInterfaceClasses: CollectionFieldInterfaceFactory[],
@@ -27,11 +37,30 @@ export class CollectionFieldInterfaceManager {
     const newCollectionFieldInterfaces = fieldInterfaceClasses.reduce((acc, Interface) => {
       const instance = new Interface(this);
       acc[instance.name] = instance;
+      if (Array.isArray(this.actionList[instance.name])) {
+        this.actionList[instance.name].forEach((item) => {
+          instance[item.type](item.data);
+        });
+        this.actionList[instance.name] = undefined;
+      }
       return acc;
     }, {});
 
     Object.assign(this.collectionFieldInterfaceInstances, newCollectionFieldInterfaces);
   }
+
+  addFieldInterfaceComponentOption(interfaceName: string, componentOption: CollectionFieldInterfaceComponentOption) {
+    const fieldInterface = this.getFieldInterface(interfaceName);
+    if (!fieldInterface) {
+      if (!this.actionList[interfaceName]) {
+        this.actionList[interfaceName] = [];
+      }
+      this.actionList[interfaceName].push({ type: 'addComponentOption', data: componentOption });
+      return;
+    }
+    fieldInterface.addComponentOption(componentOption);
+  }
+
   getFieldInterface<T extends CollectionFieldInterface>(name: string) {
     return this.collectionFieldInterfaceInstances[name] as T;
   }
