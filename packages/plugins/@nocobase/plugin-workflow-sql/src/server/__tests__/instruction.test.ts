@@ -211,7 +211,7 @@ describe('workflow > instructions > sql', () => {
       const n1 = await w2.createNode({
         type: 'sql',
         config: {
-          sql: `select count(id) from ${CategoryCollection.quotedTableName()}`,
+          sql: `select count(id) as count from ${CategoryCollection.quotedTableName()}`,
         },
       });
 
@@ -243,7 +243,7 @@ describe('workflow > instructions > sql', () => {
       const n1 = await w2.createNode({
         type: 'sql',
         config: {
-          sql: `select count(id) from ${CategoryCollection.quotedTableName()}`,
+          sql: `select count(id) as count from ${CategoryCollection.quotedTableName()}`,
           withMeta: true,
         },
       });
