@@ -310,6 +310,7 @@ function RenderButton({
   const { t } = useTranslation();
   const { isPopupVisibleControlledByURL } = usePopupSettings();
   const { openPopup } = usePopupUtils();
+  const compile = useCompile();
 
   const handleButtonClick = useCallback(
     (e: React.MouseEvent, checkPortal = true) => {
@@ -346,8 +347,8 @@ function RenderButton({
         };
         if (confirm?.enable !== false && confirm?.content) {
           modal.confirm({
-            title: t(confirm.title, { title: actionTitle }),
-            content: t(confirm.content, { title: actionTitle }),
+            title: compile(confirm.title, { title: actionTitle }),
+            content: compile(confirm.content, { title: actionTitle }),
             onOk,
           });
         } else {
