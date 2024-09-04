@@ -72,6 +72,7 @@ export const Action: ComposedAction = withDynamicSchemaProps(
       addChild,
       onMouseEnter,
       refreshDataBlockRequest: propsRefreshDataBlockRequest,
+      confirmTitle,
       ...others
     } = useProps(props); // 新版 UISchema（1.0 之后）中已经废弃了 useProps，这里之所以继续保留是为了兼容旧版的 UISchema
     const aclCtx = useACLActionParamsContext();
@@ -172,6 +173,7 @@ export const Action: ComposedAction = withDynamicSchemaProps(
       run,
       confirm,
       modal,
+      confirmTitle,
     };
 
     const buttonElement = RenderButton(buttonProps);
@@ -304,6 +306,7 @@ function RenderButton({
   run,
   confirm,
   modal,
+  confirmTitle,
 }) {
   const { t } = useTranslation();
   const { isPopupVisibleControlledByURL } = usePopupSettings();
@@ -339,8 +342,8 @@ function RenderButton({
         };
         if (confirm?.content) {
           modal.confirm({
-            title: t(confirm.title, { title: actionTitle }),
-            content: t(confirm.content, { title: actionTitle }),
+            title: t(confirm.title, { title: confirmTitle || actionTitle }),
+            content: t(confirm.content, { title: confirmTitle || actionTitle }),
             onOk,
           });
         } else {

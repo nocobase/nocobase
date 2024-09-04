@@ -49,6 +49,15 @@ function Button() {
 export const WorkbenchAction = withDynamicSchemaProps((props) => {
   const { className, ...others } = props;
   const { styles, cx } = useStyles();
+  const fieldSchema = useFieldSchema();
   const Component = useComponent(props?.targetComponent) || Action;
-  return <Component className={cx(className, styles.action)} {...others} icon={null} title={<Button />} />;
+  return (
+    <Component
+      className={cx(className, styles.action)}
+      {...others}
+      icon={null}
+      title={<Button />}
+      confirmTitle={fieldSchema.title}
+    />
+  );
 });
