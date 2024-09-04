@@ -819,34 +819,73 @@ export function SecondConFirm() {
   const { dn } = useDesignable();
   const fieldSchema = useFieldSchema();
   const { t } = useTranslation();
-  const field = useField<Field>();
-
+  const field = useField();
   return (
-    <SchemaSettingsSwitchItem
+    <SchemaSettingsModalItem
       title={t('Secondary confirmation')}
-      checked={!!fieldSchema?.['x-component-props']?.confirm?.content}
-      onChange={(value) => {
-        if (!fieldSchema['x-component-props']) {
-          fieldSchema['x-component-props'] = {};
-        }
-        if (value) {
-          fieldSchema['x-component-props'].confirm = value
-            ? {
-                title: 'Perform the {{title}}',
-                content: 'Are you sure you want to perform the {{title}} action?',
-              }
-            : {};
-        } else {
-          fieldSchema['x-component-props'].confirm = {};
-        }
+      initialValues={{
+        title: fieldSchema?.['x-component-props']?.confirm?.title || fieldSchema.title,
+        content: fieldSchema?.['x-component-props']?.confirm?.content,
+      }}
+      schema={
+        {
+          type: 'object',
+          title: t('Secondary confirmation'),
+          properties: {
+            enable: {
+              'x-decorator': 'FormItem',
+              'x-component': 'Checkbox',
+              'x-content': t('Enable secondary confirmation'),
+              default:
+                fieldSchema?.['x-component-props']?.confirm?.enable !== false &&
+                !!fieldSchema?.['x-component-props']?.confirm?.content,
+              'x-component-props': {},
+            },
+            title: {
+              'x-decorator': 'FormItem',
+              'x-component': 'Input.TextArea',
+              title: t('Title'),
+              'x-reactions': {
+                dependencies: ['enable'],
+                fulfill: {
+                  state: {
+                    required: '{{$deps[0]}}',
+                  },
+                },
+              },
+            },
+            content: {
+              'x-decorator': 'FormItem',
+              'x-component': 'Input.TextArea',
+              title: t('Content'),
+              'x-reactions': {
+                dependencies: ['enable'],
+                fulfill: {
+                  state: {
+                    required: '{{$deps[0]}}',
+                  },
+                },
+              },
+            },
+          },
+        } as ISchema
+      }
+      onSubmit={({ enable, title, content }) => {
+        fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
+        fieldSchema['x-component-props'].confirm = {};
+        fieldSchema['x-component-props'].confirm.enable = enable;
+        fieldSchema['x-component-props'].confirm.title = title;
+        fieldSchema['x-component-props'].confirm.content = content;
         field.componentProps.confirm = { ...fieldSchema['x-component-props']?.confirm };
-
         dn.emit('patch', {
           schema: {
             ['x-uid']: fieldSchema['x-uid'],
-            'x-component-props': { ...fieldSchema['x-component-props'] },
+            'x-component-props': {
+              ...fieldSchema['x-component-props'],
+            },
           },
         });
+        dn.refresh();
       }}
     />
   );
