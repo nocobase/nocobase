@@ -30,9 +30,30 @@ export const MessageManager = (props) => {
   const baseURL = apiClient.axios.defaults.baseURL;
   const { styles } = useStyles();
   useEffect(() => {
-    const res = apiClient.request({
-      url: 'inAppMessages:sse',
-    });
+    const request = async () => {
+      const res = await apiClient.request({
+        url: 'inAppMessages:sse',
+        headers: {
+          Accept: 'text/event-stream',
+        },
+        responseType: 'stream',
+        adapter: 'fetch',
+      });
+      const stream = res.data;
+      const reader = stream.pipeThrough(new TextDecoderStream()).getReader();
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        try {
+          const { value, done } = await reader.read();
+          if (done) break;
+          console.log(value);
+        } catch (error) {
+          console.error(error);
+          break;
+        }
+      }
+    };
+    request();
   }, [apiClient]);
   const onOpen = () => {
     setVisible(true);

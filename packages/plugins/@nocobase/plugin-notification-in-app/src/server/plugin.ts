@@ -10,6 +10,7 @@
 import { Plugin } from '@nocobase/server';
 import { COLLECTION_NAME } from '@nocobase/plugin-notification-manager/src/constant';
 import { inAppTypeName } from '../types';
+import { PassThrough } from 'stream';
 
 export class PluginNotificationInAppServer extends Plugin {
   async afterAdd() {}
@@ -24,8 +25,25 @@ export class PluginNotificationInAppServer extends Plugin {
       actions: {
         sse: {
           async handler(ctx, next) {
-            const userId = ctx.state.user.id;
-            next();
+            const userId = ctx.state.currentUser.id;
+            ctx.request.socket.setTimeout(0);
+            ctx.req.socket.setNoDelay(true);
+            ctx.req.socket.setKeepAlive(true);
+            ctx.set('Content-Type', 'text/event-stream');
+            ctx.set('Cache-Control', 'no-cache');
+            ctx.set('Connection', 'keep-alive');
+            ctx.status = 200;
+
+            const sendEvent = (data) => {
+              ctx.res.write(`data: ${JSON.stringify(data)}\n\n`);
+            };
+
+            // Example: Send a message every 5 seconds
+            const interval = setInterval(() => {
+              sendEvent({ message: 'Hello from server' });
+            }, 5000);
+
+            // Handle client disconnect
           },
         },
       },
