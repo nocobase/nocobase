@@ -173,6 +173,7 @@ export const Action: ComposedAction = withDynamicSchemaProps(
       run,
       confirm,
       modal,
+      setSubmitted: setParentSubmitted,
       confirmTitle,
     };
 
@@ -306,6 +307,7 @@ function RenderButton({
   run,
   confirm,
   modal,
+  setSubmitted,
   confirmTitle,
 }) {
   const { t } = useTranslation();
@@ -325,6 +327,7 @@ function RenderButton({
           if (onClick) {
             onClick(e, () => {
               if (refreshDataBlockRequest !== false) {
+                setSubmitted?.(true);
                 service?.refresh?.();
               }
             });

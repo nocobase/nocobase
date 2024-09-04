@@ -853,7 +853,7 @@ export const useUpdateActionProps = () => {
   const form = useForm();
   const filterByTk = useFilterByTk();
   const { field, resource, __parent } = useBlockRequestContext();
-  const { setVisible, setSubmitted, setFormValueChanged } = useActionContext();
+  const { setVisible, setFormValueChanged } = useActionContext();
   const actionSchema = useFieldSchema();
   const navigate = useNavigateNoUpdate();
   const { fields, getField, name } = useCollection_deprecated();
@@ -867,7 +867,7 @@ export const useUpdateActionProps = () => {
   const { getActiveFieldsName } = useFormActiveFields() || {};
 
   return {
-    async onClick() {
+    async onClick(e?, callBack?) {
       const {
         assignedValues: originalAssignedValues = {},
         onSuccess,
@@ -930,8 +930,10 @@ export const useUpdateActionProps = () => {
         });
         actionField.data.loading = false;
         // __parent?.service?.refresh?.();
+        if (callBack) {
+          callBack?.();
+        }
         setVisible?.(false);
-        setSubmitted?.(true);
         setFormValueChanged?.(false);
         if (!onSuccess?.successMessage) {
           return;
