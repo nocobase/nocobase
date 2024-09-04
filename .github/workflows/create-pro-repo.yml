@@ -21,7 +21,7 @@ jobs:
           app-id: ${{ vars.NOCOBASE_APP_ID }}
           private-key: ${{ secrets.NOCOBASE_APP_PRIVATE_KEY }}
           owner: nocobase
-          repositories: pluin-pro-tpl
+          repositories: plugin-pro-tpl
           skip-token-revoke: true
       - name: Create repository
         run: |
