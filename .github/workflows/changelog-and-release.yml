@@ -30,6 +30,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: nocobase/nocobase
+          ref: main
           token: ${{ steps.app-token.outputs.token }}
           persist-credentials: true
           fetch-depth: 0
@@ -67,7 +68,7 @@ jobs:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
       - name: Commit and push
         run: |
-          git pull
+          git pull origin main
           git add .
           git commit -m "docs: update changelogs"
           git push origin main

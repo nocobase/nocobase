@@ -35,13 +35,12 @@ const getContentWidth = (element) => {
 };
 
 function DisplayInner(props: { value: string; style?: CSSProperties }) {
-  const containerRef = useRef<HTMLDivElement>();
+  const containerRef = useRef<HTMLDivElement>(null);
   const { wrapSSR, componentCls, hashId } = useStyle();
   const cdn = useCDN();
 
   useEffect(() => {
-    if (!props.value) return;
-    Vditor.preview(containerRef.current, props.value, {
+    Vditor.preview(containerRef.current, props.value ?? '', {
       mode: 'light',
       cdn,
     });
@@ -67,7 +66,6 @@ export const Display = withDynamicSchemaProps((props) => {
   const [text, setText] = useState('');
 
   const elRef = useRef<HTMLDivElement>();
-
   useEffect(() => {
     if (!props.value || !field.value) return;
     if (props.ellipsis) {
@@ -125,6 +123,5 @@ export const Display = withDynamicSchemaProps((props) => {
       </Popover>
     );
   }
-
   return <DisplayInner value={value} />;
 });
