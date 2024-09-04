@@ -29,9 +29,9 @@ jobs:
         id: get-pro-plugins
         run: |
           if [[ "${{ github.head_ref || github.ref_name }}" == "main" ]]; then
-            echo "proRepos=$(echo '{{ vars.PRO_PLUGIN_REPOS }}')" >> $GITHUB_OUTPUT
+            echo "proRepos=$(echo '${{ vars.PRO_PLUGIN_REPOS }}')" >> $GITHUB_OUTPUT
           else
-            echo "proRepos=$(echo '{{ vars.NEXT_PRO_PLUGIN_REPOS }}')" >> $GITHUB_OUTPUT
+            echo "proRepos=$(echo '${{ vars.NEXT_PRO_PLUGIN_REPOS }}')" >> $GITHUB_OUTPUT
           fi
       - uses: actions/create-github-app-token@v1
         id: app-token
