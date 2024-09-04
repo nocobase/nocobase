@@ -114,6 +114,7 @@ jobs:
         env:
           IS_FEAT: ${{ inputs.is_feat && '--is-feat' || '' }}
           PRO_PLUGIN_REPOS: ${{ vars.PRO_PLUGIN_REPOS }}
+          CUSTOM_PRO_PLUGIN_REPOS: ${{ vars.CUSTOM_PRO_PLUGIN_REPOS }}
       - name: Push and merge into next
         run: |
           for repo in ${{ join(fromJSON(vars.PRO_PLUGIN_REPOS), ' ') }} ${{ join(fromJSON(vars.CUSTOM_PRO_PLUGIN_REPOS), ' ') }}
