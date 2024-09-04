@@ -4,7 +4,7 @@
   "displayName.zh-CN": "数据表字段：JSON 文档",
   "description": "",
   "description.zh-CN": "",
-  "version": "1.3.0-alpha",
+  "version": "1.4.0-alpha",
   "main": "dist/server/index.js",
   "dependencies": {},
   "peerDependencies": {
