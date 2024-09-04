@@ -34,7 +34,7 @@ export interface VariablesContextType {
    * @returns 变量解析后的值
    *
    * ```ts
-   * const value = await parseVariable('{{ $user.name }}');
+   * const { value } = await parseVariable('{{ $user.name }}');
    * console.log(value); // test
    * ```
    */

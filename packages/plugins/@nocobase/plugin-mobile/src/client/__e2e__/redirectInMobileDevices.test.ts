@@ -13,7 +13,7 @@ test.use({
   ...devices['Galaxy S9+'],
 });
 
-test.describe('redirect to other page from mobile', () => {
+test.describe('mobile devices: redirect to other page', () => {
   test('redirect to signin page', async ({ page }) => {
     const baseURL = process.env.APP_BASE_URL || `http://localhost:${process.env.APP_PORT || 20000}`;
 
@@ -31,6 +31,10 @@ test.describe('redirect to other page from mobile', () => {
 
     await page.goto('/m/admin/settings/@nocobase/plugin-api-keys');
     await page.waitForURL(`${baseURL}/admin/settings/@nocobase/plugin-api-keys`);
+    expect(page.url()).toBe(`${baseURL}/admin/settings/@nocobase/plugin-api-keys`);
+
+    // do not redirect to mobile page
+    await page.waitForTimeout(5000);
     expect(page.url()).toBe(`${baseURL}/admin/settings/@nocobase/plugin-api-keys`);
   });
 });

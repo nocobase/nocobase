@@ -16,12 +16,8 @@ on:
         required: true
 
 jobs:
-  app-token:
-    if: github.event.pull_request.head.repo.fork != true
-    uses: nocobase/nocobase/.github/workflows/get-nocobase-app-token.yml@main
-    secrets: inherit
   build-and-push:
-    needs: app-token
+    if: github.event.pull_request.head.repo.fork != true
     runs-on: ubuntu-latest
     services:
       verdaccio:
@@ -29,13 +25,13 @@ jobs:
         ports:
           - 4873:4873
     steps:
-      - name: Decrypt app token
+      - uses: actions/create-github-app-token@v1
         id: app-token
-        shell: bash
-        run: |
-          ENCRYPTED_SECRET=${{ needs.app-token.outputs.token }};
-          APP_TOKEN=$(echo -n "$ENCRYPTED_SECRET" | base64 --decode | openssl enc -aes-256-cbc -pbkdf2 -d -salt -k "${{ secrets.APP_TOKEN_ENCRYPTION_PASSWORD }}");
-          echo "token=$APP_TOKEN" >> $GITHUB_OUTPUT
+        with:
+          app-id: ${{ vars.NOCOBASE_APP_ID }}
+          private-key: ${{ secrets.NOCOBASE_APP_PRIVATE_KEY }}
+          repositories: nocobase,pro-plugins,${{ join(fromJSON(vars.PRO_PLUGIN_REPOS), ',') }}
+          skip-token-revoke: true
       - name: Checkout
         uses: actions/checkout@v4
         with:
