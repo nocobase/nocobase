@@ -56,9 +56,17 @@ const InternalIcons = () => {
                     .ant-list-item-meta-avatar {
                       margin-inline-end: 0px !important;
                     }
-                    .ant-list-item-meta-title a {
+                    .ant-list-item-meta-title {
+                      overflow: hidden;
+                      text-overflow: ellipsis;
+                    }
+                    .ant-list-item-meta-title button {
                       font-weight: 700;
                       font-size: 16px;
+                      overflow: hidden;
+                      text-overflow: ellipsis;
+                      width: 100%;
+                      text-align: left;
                     }
                   `}
                 >
