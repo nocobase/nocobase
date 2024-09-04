@@ -56,7 +56,15 @@ export class DatetimeNoTzField extends Field {
 
     return {
       get() {
-        return this.getDataValue(name);
+        const val = this.getDataValue(name);
+
+        if (val instanceof Date) {
+          // format to YYYY-MM-DD HH:mm:ss
+          const momentVal = moment(val).utcOffset(timezone);
+          return momentVal.format('YYYY-MM-DD HH:mm:ss');
+        }
+
+        return val;
       },
 
       set(val) {

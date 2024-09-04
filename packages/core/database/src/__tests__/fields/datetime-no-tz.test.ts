@@ -15,7 +15,7 @@ describe('datetime no tz field', () => {
 
   beforeEach(async () => {
     db = mockDatabase({
-      timezone: '+00:00',
+      timezone: '+01:00',
     });
     await db.clean({ drop: true });
   });
@@ -32,13 +32,14 @@ describe('datetime no tz field', () => {
 
     await db.sync();
 
-    const item = await db.getRepository('tests').create({
+    await db.getRepository('tests').create({
       values: {
         date1: '2023-03-24 12:00:00',
       },
     });
 
-    expect(item.get('date1')).toBe('2023-03-24 12:00:00');
+    const item = await db.getRepository('tests').findOne();
+    expect(item.toJSON()['date1']).toBe('2023-03-24 12:00:00');
   });
 
   it('should set datetime no tz field', async () => {
