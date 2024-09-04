@@ -24,7 +24,7 @@ jobs:
           skip-token-revoke: true
       - name: Create repository
         run: |
-          gh repo create ${{ inputs.name || 'pro-tpl-test' }} --private -p pluin-pro-tpl
+          gh repo create nocobase/${{ inputs.name || 'pro-tpl-test' }} --private -p pluin-pro-tpl
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
       - name: Write secrets
