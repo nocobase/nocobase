@@ -23,5 +23,8 @@
   "Delete record": "Delete record",
   "Are you sure you want to delete it?": "Are you sure you want to delete it?",
   "Deleted successfully!": "Deleted successfully!",
-  "Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.": "Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter."
+  "Add user": "Add user",
+  "Select users": "Select users",
+  "Query users": "Query users",
+  "Receiver type": "Receiver type"
 }

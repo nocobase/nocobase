@@ -23,5 +23,10 @@
   "Delete record": "删除记录",
   "Are you sure you want to delete it?": "确定要删除吗？",
   "Deleted successfully!": "删除成功！",
-  "Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.": "随机生成，可修改。支持字母、数字和下划线，必须以字母开头。"
+  "Add user": "添加用户",
+  "Select users": "选择用户",
+  "Query users": "查询用户",
+  "Receiver type": "接收人类型",
+  "Manual input": "手动输入",
+  "Select user": "选择用户"
 }

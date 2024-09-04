@@ -86,7 +86,7 @@ export const MessageConfigForm = observer<{ variableOptions: any }>(
         },
         receiverType: {
           type: 'string',
-          title: '{{t("Receiver Type")}}',
+          title: '{{t("Receiver type")}}',
           required: true,
           default: 'manual',
           'x-decorator': 'FormItem',
