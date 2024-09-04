@@ -48,7 +48,7 @@ export const customizeCustomRequestActionSettings = new SchemaSettings({
       },
       useVisible() {
         const record = useCollectionRecord();
-        return !record?.isNew;
+        return record && !record?.isNew;
       },
     },
     {
@@ -74,6 +74,10 @@ export const customizeCustomRequestActionSettings = new SchemaSettings({
         return {
           isPopupAction: false,
         };
+      },
+      useVisible() {
+        const collection = useCollection();
+        return !!collection;
       },
     },
     {
