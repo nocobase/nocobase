@@ -100,6 +100,39 @@ export const calendarBlockSettings = new SchemaSettings({
       },
     },
     {
+      name: 'colorField',
+      Component: SchemaSettingsSelectItem,
+      useComponentProps() {
+        const { t } = useTranslation();
+        const fieldSchema = useFieldSchema();
+        const fieldNames = fieldSchema?.['x-decorator-props']?.['fieldNames'] || {};
+        const { service } = useCalendarBlockContext();
+        const { getCollectionFieldsOptions } = useCollectionManager_deprecated();
+        const { name } = useCollection();
+        const field = useField();
+        const { dn } = useDesignable();
+        return {
+          title: t('Background color field'),
+          value: fieldNames.color,
+          options: getCollectionFieldsOptions(name, 'string'),
+          onChange: (color) => {
+            const fieldNames = field.decoratorProps.fieldNames || {};
+            fieldNames['color'] = color;
+            field.decoratorProps.fieldNames = fieldNames;
+            fieldSchema['x-decorator-props']['fieldNames'] = fieldNames;
+            service.refresh();
+            dn.emit('patch', {
+              schema: {
+                ['x-uid']: fieldSchema['x-uid'],
+                'x-decorator-props': field.decoratorProps,
+              },
+            });
+            dn.refresh();
+          },
+        };
+      },
+    },
+    {
       name: 'showLunar',
       Component: ShowLunarDesignerItem,
     },
