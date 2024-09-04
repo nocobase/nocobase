@@ -182,7 +182,7 @@ export default class PluginUsersServer extends Plugin {
     });
 
     const userDataSyncPlugin = this.app.pm.get('user-data-sync') as PluginUserDataSyncServer;
-    if (userDataSyncPlugin) {
+    if (userDataSyncPlugin && userDataSyncPlugin.enabled) {
       userDataSyncPlugin.resourceManager.registerResource(new UserDataSyncResource(this.db, this.app.logger));
     }
   }

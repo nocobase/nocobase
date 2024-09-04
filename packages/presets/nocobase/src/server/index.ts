@@ -38,7 +38,6 @@ export class PresetNocoBase extends Plugin {
     'client',
     'action-import',
     'action-export',
-    'backup-restore',
     'block-iframe',
     'block-workbench',
     'field-formula',
@@ -77,6 +76,7 @@ export class PresetNocoBase extends Plugin {
     'workflow-notification',
     'field-m2m-array',
     'notification-mail-smtp',
+    'backup-restore',
   ];
 
   splitNames(name: string) {
