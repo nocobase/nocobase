@@ -837,10 +837,24 @@ export function SecondConFirm() {
                 !!fieldSchema?.['x-component-props']?.confirm?.content,
               'x-component-props': {},
             },
+            title: {
+              'x-decorator': 'FormItem',
+              'x-component': 'Input.TextArea',
+              title: t('Confirm title'),
+              default: fieldSchema?.['x-component-props']?.confirm?.title || fieldSchema.title,
+              'x-reactions': {
+                dependencies: ['enable'],
+                fulfill: {
+                  state: {
+                    required: '{{$deps[0]}}',
+                  },
+                },
+              },
+            },
             content: {
               'x-decorator': 'FormItem',
               'x-component': 'Input.TextArea',
-              title: t('Confirm message'),
+              title: t('Confirm content'),
               default: fieldSchema?.['x-component-props']?.confirm?.content,
               'x-reactions': {
                 dependencies: ['enable'],
@@ -854,10 +868,11 @@ export function SecondConFirm() {
           },
         } as ISchema
       }
-      onSubmit={({ enable, content }) => {
+      onSubmit={({ enable, title, content }) => {
         fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
         fieldSchema['x-component-props'].confirm = {};
         fieldSchema['x-component-props'].confirm.enable = enable;
+        fieldSchema['x-component-props'].confirm.title = title;
         fieldSchema['x-component-props'].confirm.content = content;
         field.componentProps.confirm = { ...fieldSchema['x-component-props']?.confirm };
         dn.emit('patch', {
