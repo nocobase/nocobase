@@ -419,7 +419,7 @@ test.describe('select data', () => {
     const jobs = getWorkflowNodeExecutionsObj[0].jobs;
     const sqlNodeJob = jobs.find((job) => job.nodeId.toString() === sqlNodeId);
     const sqlNodeJobResult = sqlNodeJob.result;
-    const nodeResultRecordLength = sqlNodeJobResult[0].length;
+    const nodeResultRecordLength = sqlNodeJobResult.length;
     expect(nodeResultRecordLength).toBe(7);
     // 4、后置处理：删除工作流
     await apiDeleteWorkflow(workflowId);
@@ -629,7 +629,7 @@ test.describe('select data', () => {
     const jobs = getWorkflowNodeExecutionsObj[0].jobs;
     const sqlNodeJob = jobs.find((job) => job.nodeId.toString() === sqlNodeId);
     const sqlNodeJobResult = sqlNodeJob.result;
-    const nodeResultRecordLength = sqlNodeJobResult[0].length;
+    const nodeResultRecordLength = sqlNodeJobResult.length;
     expect(nodeResultRecordLength).toBe(8);
     // 4、后置处理：删除工作流
     await apiDeleteWorkflow(workflowId);
@@ -801,7 +801,7 @@ test.describe('insert data', () => {
     const jobs = getWorkflowNodeExecutionsObj[0].jobs;
     const sqlNodeJob = jobs.find((job) => job.nodeId.toString() === sqlNodeId);
     const sqlNodeJobResult = sqlNodeJob.result;
-    const nodeResultRecordLength = sqlNodeJobResult[0].length;
+    const nodeResultRecordLength = sqlNodeJobResult.length;
     expect(nodeResultRecordLength).toBe(3);
     // 4、后置处理：删除工作流
     await apiDeleteWorkflow(workflowId);
@@ -1001,7 +1001,7 @@ test.describe('update data', () => {
     const jobs = getWorkflowNodeExecutionsObj[0].jobs;
     const sqlNodeJob = jobs.find((job) => job.nodeId.toString() === sqlNodeId);
     const sqlNodeJobResult = sqlNodeJob.result;
-    const nodeResultRecordLength = sqlNodeJobResult[0].length;
+    const nodeResultRecordLength = sqlNodeJobResult.length;
     expect(nodeResultRecordLength).toBe(8);
 
     // 4、后置处理：删除工作流
