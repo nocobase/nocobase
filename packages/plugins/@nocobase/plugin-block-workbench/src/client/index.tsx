@@ -8,20 +8,29 @@
  */
 
 import { Plugin } from '@nocobase/client';
+import { QRCodeScanner } from './components/qrcode-scanner';
+import { WorkbenchAction } from './WorkbenchAction';
 import { WorkbenchBlock } from './WorkbenchBlock';
+import { workbenchBlockInitializerItem } from './workbenchBlockInitializerItem';
+import { workbenchBlockSettings } from './workbenchBlockSettings';
+import { workbenchConfigureActions } from './workbenchConfigureActions';
 import { workbenchActionSettingsLink } from './WorkbenchLinkActionSchemaInitializerItem';
+import {
+  WorkbenchPopupActionSchemaInitializerItem,
+  workbenchActionSettingsPopup,
+} from './WorkbenchPopupActionSchemaInitializerItem';
 import {
   WorkbenchScanActionSchemaInitializerItem,
   workbenchActionSettingsScanQrCode,
 } from './WorkbenchScanActionSchemaInitializerItem';
-import { QRCodeScanner } from './components/qrcode-scanner';
-import { workbenchBlockInitializerItem } from './workbenchBlockInitializerItem';
-import { workbenchBlockSettings } from './workbenchBlockSettings';
-import { workbenchConfigureActions } from './workbenchConfigureActions';
 
+import {
+  WorkbenchCustomRequestActionSchemaInitializerItem,
+  workbenchActionSettingsCustomRequest,
+} from './WorkbenchCustomRequestActionSchemaInitializerItem';
 export class PluginBlockWorkbenchClient extends Plugin {
   async load() {
-    this.app.addComponents({ WorkbenchBlock, QRCodeScanner });
+    this.app.addComponents({ WorkbenchBlock, QRCodeScanner, WorkbenchAction });
 
     // 新增工作台区块的设置器
     this.app.schemaSettingsManager.add(workbenchBlockSettings);
@@ -55,6 +64,17 @@ export class PluginBlockWorkbenchClient extends Plugin {
     this.app.schemaSettingsManager.add(workbenchActionSettingsScanQrCode);
     this.app.schemaInitializerManager.addItem('workbench:configureActions', `qrcode`, {
       Component: WorkbenchScanActionSchemaInitializerItem,
+    });
+
+    // 打开弹窗
+    this.app.schemaSettingsManager.add(workbenchActionSettingsPopup);
+    this.app.schemaInitializerManager.addItem('workbench:configureActions', `popup`, {
+      Component: WorkbenchPopupActionSchemaInitializerItem,
+    });
+    // 自定义请求
+    this.app.schemaSettingsManager.add(workbenchActionSettingsCustomRequest);
+    this.app.schemaInitializerManager.addItem('workbench:configureActions', `customRequest`, {
+      Component: WorkbenchCustomRequestActionSchemaInitializerItem,
     });
   }
 }
