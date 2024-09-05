@@ -820,19 +820,13 @@ export function SecondConFirm() {
   const fieldSchema = useFieldSchema();
   const { t } = useTranslation();
   const field = useField();
-
-  const getValue = (str) => {
-    const regex = /t\(['"](.+?)['"]\)/;
-    const match = str?.match(regex)?.[1];
-
-    return match || str;
-  };
+  const compile = useCompile();
   return (
     <SchemaSettingsModalItem
       title={t('Secondary confirmation')}
       initialValues={{
-        title: getValue(fieldSchema?.['x-component-props']?.confirm?.title || fieldSchema.title),
-        content: getValue(fieldSchema?.['x-component-props']?.confirm?.content),
+        title: compile(fieldSchema?.['x-component-props']?.confirm?.title || fieldSchema.title),
+        content: compile(fieldSchema?.['x-component-props']?.confirm?.content),
       }}
       schema={
         {
