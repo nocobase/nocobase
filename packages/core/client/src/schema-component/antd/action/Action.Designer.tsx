@@ -820,12 +820,19 @@ export function SecondConFirm() {
   const fieldSchema = useFieldSchema();
   const { t } = useTranslation();
   const field = useField();
+
+  const getValue = (str) => {
+    const regex = /t\(['"](.+?)['"]\)/;
+    const match = str?.match(regex)?.[1];
+
+    return match || str;
+  };
   return (
     <SchemaSettingsModalItem
       title={t('Secondary confirmation')}
       initialValues={{
-        title: (fieldSchema?.['x-component-props']?.confirm?.title || fieldSchema.title).match(/t\("([^"]+)"\)/)?.[1],
-        content: fieldSchema?.['x-component-props']?.confirm?.content?.match(/t\("([^"]+)"\)/)?.[1],
+        title: getValue(fieldSchema?.['x-component-props']?.confirm?.title || fieldSchema.title),
+        content: getValue(fieldSchema?.['x-component-props']?.confirm?.content),
       }}
       schema={
         {
@@ -845,6 +852,7 @@ export function SecondConFirm() {
               'x-decorator': 'FormItem',
               'x-component': 'Input.TextArea',
               title: t('Title'),
+
               'x-reactions': {
                 dependencies: ['enable'],
                 fulfill: {
