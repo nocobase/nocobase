@@ -26,7 +26,7 @@ const postgres = {
   'double precision': 'float',
 
   'timestamp without time zone': 'datetimeNoTz',
-  'timestamp with time zone': 'datetime',
+  'timestamp with time zone': 'datetimeTz',
   'time without time zone': 'time',
 
   date: 'dateOnly',
@@ -71,8 +71,8 @@ const mysql = {
   boolean: 'boolean',
   decimal: 'decimal',
   year: ['string', 'integer'],
-  datetime: ['datetimeNoTz', 'datetime'],
-  timestamp: 'datetime',
+  datetime: ['datetimeNoTz', 'datetimeTz'],
+  timestamp: 'datetimeTz',
   json: ['json', 'array'],
   enum: 'string',
 };
@@ -84,7 +84,7 @@ const sqlite = {
   integer: 'integer',
   real: 'real',
 
-  datetime: 'date',
+  datetime: 'datetimeTz',
   date: 'date',
   time: 'time',
 
