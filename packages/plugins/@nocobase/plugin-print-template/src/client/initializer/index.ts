@@ -8,16 +8,18 @@
  */
 
 import { useSchemaInitializer, SchemaInitializerItemType } from '@nocobase/client';
-import { PrintTemplateActionNameLowercase } from '../constants';
+import { PrintTemplateActionName, PrintTemplateActionNameLowercase } from '../constants';
 import { createPrintTemplateActionSchema } from '../schema';
-
+import { useT } from '../locale';
 export const createPrintTemplateActionInitializerItem = (blockComponent: string): SchemaInitializerItemType => {
   return {
     type: 'item',
     name: PrintTemplateActionNameLowercase,
     useComponentProps() {
       const { insert } = useSchemaInitializer(); // SchemaInitializerContext - 上下文
+      const t = useT();
       return {
+        title: t(PrintTemplateActionName),
         onClick: () => {
           insert(createPrintTemplateActionSchema(blockComponent));
         },

@@ -14,5 +14,6 @@
   "confirm delete title": "Delete",
   "confirm delete content": "Are you sure you want to delete it?",
   "delete success": "Delete success",
-  "print template setting menu": "Print Template"
+  "print template setting menu": "Print Template",
+  "print template action":"Print Template"
 }

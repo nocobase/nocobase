@@ -32,8 +32,9 @@ export class PluginPrintTemplateClient extends Plugin {
       usePrintTemplateActionProps,
     });
     this.app.schemaSettingsManager.add(printTemplateActionSettings);
+
     this.app.schemaInitializerManager.addItem(
-      'table:configuration',
+      'table:configureActions',
       'printTemplate',
       createPrintTemplateActionInitializerItem('table-v2'),
     );

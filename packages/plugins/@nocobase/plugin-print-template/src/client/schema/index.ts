@@ -7,11 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { PrintTemplateActionNameLowercase } from '../constants';
+import { tStr } from 'packages/core/cli/templates/plugin/src/client/locale';
+import { PrintTemplateActionName, PrintTemplateActionNameLowercase } from '../constants';
 import { printTemplateActionSettings } from '../settings';
 export function usePrintTemplateActionProps() {
   return {
-    title: '打印模板',
+    title: tStr(PrintTemplateActionName),
     type: 'primary',
     onClick() {
       console.log(PrintTemplateActionNameLowercase);
@@ -23,6 +24,7 @@ export const createPrintTemplateActionSchema = (blockComponent: string) => {
     type: 'void',
     'x-component': 'Action',
     'x-use-component-props': 'usePrintTemplateActionProps',
+
     'x-settings': printTemplateActionSettings.name,
   };
 };
