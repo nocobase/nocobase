@@ -44,9 +44,6 @@ const subTableContainer = css`
   .ant-formily-item-error-help {
     display: none;
   }
-  .ant-description-textarea {
-    line-height: 34px;
-  }
   .ant-table-cell .ant-formily-item-error-help {
     display: block;
     position: absolute;
