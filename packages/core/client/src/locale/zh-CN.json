@@ -973,5 +973,15 @@
   "Set Template Engine": "设置模板引擎",
   "Skip getting the total number of table records during paging to speed up loading. It is recommended to enable this option for data tables with a large amount of data": "在分页时跳过获取表记录总数，以加快加载速度，建议对有大量数据的数据表开启此选项",
   "Enable secondary confirmation": "启用二次确认",
-  "Content": "内容"
+  "Content": "内容",
+  "Perform the Update record": "执行更新数据",
+  "Are you sure you want to perform the Update record action?": "你确定执行更新数据操作吗？",
+  "Perform the Custom request": "执行自定义请求",
+  "Are you sure you want to perform the Custom request action":"你确定执行自定义请求操作吗？",
+  "Perform the Refresh":"执行刷新",
+  "Are you sure you want to perform the Refresh action?":"你确定执行刷新操作吗？",
+  "Perform the Submit":"执行提交",
+  "Are you sure you want to perform the Submit action?":"你确定执行提交操作吗？",
+  "Perform the Trigger workflow":"执行触发工作流",
+  "Are you sure you want to perform the Trigger workflow action?":"你确定执行触发工作流吗？"
 }
