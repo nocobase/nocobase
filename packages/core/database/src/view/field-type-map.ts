@@ -71,7 +71,7 @@ const mysql = {
   boolean: 'boolean',
   decimal: 'decimal',
   year: ['string', 'integer'],
-  datetime: ['datetime', 'datetimeNoTz'],
+  datetime: ['datetimeNoTz', 'datetime'],
   timestamp: 'datetime',
   json: ['json', 'array'],
   enum: 'string',
