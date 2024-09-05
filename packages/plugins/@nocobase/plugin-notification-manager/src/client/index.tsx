@@ -8,11 +8,12 @@
  */
 
 import { Plugin } from '@nocobase/client';
-import { NAMESPACE } from './locale';
 import { ChannelManager } from './manager/channel/components';
 import { LogManager } from './manager/log/components/Manager';
 import { lang as t } from './locale';
 import NotificationManager from './notification-manager';
+
+const NAMESPACE = 'notification-manager';
 export class PluginNotificationManagerClient extends Plugin {
   manager: NotificationManager;
 
@@ -32,14 +33,12 @@ export class PluginNotificationManagerClient extends Plugin {
     this.app.pluginSettingsManager.add(`${NAMESPACE}.channels`, {
       title: t('Channels'),
       Component: ChannelManager,
-      icon: 'SendOutlined',
       aclSnippet: 'pm.notification.channels',
       sort: 1,
     });
     this.app.pluginSettingsManager.add(`${NAMESPACE}.logs`, {
       title: t('Logs'),
       Component: LogManager,
-      icon: 'MessageOutlined',
       aclSnippet: 'pm.notification.logs',
       sort: 3,
     });

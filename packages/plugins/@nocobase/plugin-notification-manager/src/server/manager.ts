@@ -62,18 +62,17 @@ export default class NotificationManager {
     const channelsRepo = this.plugin.app.db.getRepository(COLLECTION_NAME.channels);
     const channel = await channelsRepo.findOne({ filterByTk: options.channelId });
     const notificationServer = this.notificationTypes.get(channel.notificationType).server;
-    const results = await notificationServer.send({ message: options, channel });
-    results.forEach(async (result) => {
-      await this.createSendingRecord({
-        receiver: result.receiver,
-        status: result.status,
-        content: result.content,
-        triggerFrom: options.triggerFrom,
-        channelId: options.channelId,
-        reason: result.reason,
-        channelTitle: channel.title,
-      });
+    const result = await notificationServer.send({ message: options, channel });
+
+    this.createSendingRecord({
+      receiver: result.receivers.join(','),
+      status: result.status,
+      content: result.content,
+      triggerFrom: options.triggerFrom,
+      channelId: options.channelId,
+      reason: result.reason,
+      channelTitle: channel.title,
     });
-    return results;
+    return result;
   }
 }

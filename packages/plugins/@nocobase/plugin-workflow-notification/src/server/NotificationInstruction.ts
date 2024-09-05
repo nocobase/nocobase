@@ -20,16 +20,16 @@ export default class extends Instruction {
     const sync = this.workflow.isWorkflowSync(workflow);
     if (sync) {
       try {
-        const results = await notificationServer.notificationManager.send({ ...options, triggerFrom: 'workflow' });
-        if (results.some((result) => result.status === 'success')) {
+        const result = await notificationServer.notificationManager.send({ ...options, triggerFrom: 'workflow' });
+        if (result.status === 'success') {
           return {
             status: JOB_STATUS.RESOLVED,
-            result: results,
+            result,
           };
         } else {
           return {
             status: JOB_STATUS.FAILED,
-            result: results,
+            result,
           };
         }
       } catch (error) {
@@ -50,18 +50,18 @@ export default class extends Instruction {
     // eslint-disable-next-line promise/catch-or-return
     notificationServer.notificationManager
       .send({ ...options, triggerFrom: 'workflow' })
-      .then((results) => {
-        if (results.some((result) => result.status === 'success')) {
+      .then((result) => {
+        if (result.status === 'success') {
           processor.logger.info(`notification (#${node.id}) sent successfully.`);
           job.set({
             status: JOB_STATUS.RESOLVED,
-            result: results,
+            result,
           });
         } else {
           processor.logger.info(`notification (#${node.id}) sent failed.`);
           job.set({
             status: JOB_STATUS.FAILED,
-            result: results,
+            result: result,
           });
         }
       })
@@ -85,10 +85,6 @@ export default class extends Instruction {
   }
 
   async resume(node: FlowNodeModel, job, processor: Processor) {
-    const { ignoreFail } = node.config;
-    if (ignoreFail) {
-      job.set('status', JOB_STATUS.RESOLVED);
-    }
     return job;
   }
 }
