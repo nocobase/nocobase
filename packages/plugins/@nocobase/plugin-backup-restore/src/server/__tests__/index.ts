@@ -11,7 +11,7 @@ import { createMockServer } from '@nocobase/test';
 
 export default async function createApp() {
   const app = await createMockServer({
-    plugins: ['nocobase', 'collection-sql'],
+    plugins: ['nocobase', 'collection-sql', 'backup-restore'],
   });
   return app;
 }
