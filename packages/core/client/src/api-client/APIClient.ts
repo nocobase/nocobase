@@ -98,6 +98,10 @@ export class APIClient extends APIClientSDK {
         if (errs.find((error: { code?: string }) => error.code === 'ROLE_NOT_FOUND_ERR')) {
           this.auth.setRole(null);
         }
+        if (errs.find((error: { code?: string }) => error.code === 'TOKEN_INVALID')) {
+          this.auth.setToken(null);
+          window.location.href = '/signin';
+        }
         throw error;
       },
     );
@@ -119,7 +123,7 @@ export class APIClient extends APIClientSDK {
         }
         return response;
       },
-      (error) => {
+      async (error) => {
         if (this.silence) {
           throw error;
         }
@@ -156,7 +160,10 @@ export class APIClient extends APIClientSDK {
             throw error;
           }
 
-          notify('error', errs, this.notification);
+          await new Promise((resolve) => {
+            notify('error', errs, this.notification);
+            resolve(true);
+          });
         }
         throw error;
       },

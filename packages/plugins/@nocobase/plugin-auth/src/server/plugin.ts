@@ -29,15 +29,6 @@ export class PluginAuthServer extends Plugin {
   }
 
   async load() {
-    // Set up database
-    await this.importCollections(resolve(__dirname, 'collections'));
-    this.db.addMigrations({
-      namespace: 'auth',
-      directory: resolve(__dirname, 'migrations'),
-      context: {
-        plugin: this,
-      },
-    });
     this.cache = await this.app.cacheManager.createCache({
       name: 'auth',
       prefix: 'auth',

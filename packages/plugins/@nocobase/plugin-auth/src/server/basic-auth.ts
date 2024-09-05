@@ -161,6 +161,7 @@ export class BasicAuth extends BaseAuth {
     }
     user.password = newPassword;
     await user.save();
+    await ctx.auth.signOut();
     return currentUser;
   }
 }
