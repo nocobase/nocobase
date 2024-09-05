@@ -55,7 +55,6 @@ export const Action: ComposedAction = withDynamicSchemaProps(
   observer((props: ActionProps) => {
     const {
       popover,
-      confirm,
       containerRefKey,
       component,
       useAction = useA,
@@ -93,6 +92,7 @@ export const Action: ComposedAction = withDynamicSchemaProps(
     const openMode = fieldSchema?.['x-component-props']?.['openMode'];
     const openSize = fieldSchema?.['x-component-props']?.['openSize'];
     const refreshDataBlockRequest = fieldSchema?.['x-component-props']?.['refreshDataBlockRequest'];
+    const confirm = fieldSchema['x-component-props'].confirm;
 
     const disabled = form.disabled || field.disabled || field.data?.disabled || propsDisabled || disableAction;
     const linkageRules = useMemo(() => fieldSchema?.['x-linkage-rules'] || [], [fieldSchema?.['x-linkage-rules']]);
@@ -176,7 +176,6 @@ export const Action: ComposedAction = withDynamicSchemaProps(
     };
 
     const buttonElement = RenderButton(buttonProps);
-
     // if (!btnHover) {
     //   return buttonElement;
     // }
@@ -310,8 +309,6 @@ function RenderButton({
   const { t } = useTranslation();
   const { isPopupVisibleControlledByURL } = usePopupSettings();
   const { openPopup } = usePopupUtils();
-  const compile = useCompile();
-
   const handleButtonClick = useCallback(
     (e: React.MouseEvent, checkPortal = true) => {
       if (checkPortal && isPortalInBody(e.target as Element)) {
@@ -361,6 +358,7 @@ function RenderButton({
       actionTitle,
       confirm?.content,
       confirm?.title,
+      confirm?.enable,
       disabled,
       modal,
       onClick,
