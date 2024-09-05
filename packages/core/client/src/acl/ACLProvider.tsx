@@ -204,6 +204,17 @@ export function useACLRoleContext() {
   };
 }
 
+/**
+ * Used to get whether the current user has permission to configure UI
+ * @returns {allowConfigUI: boolean}
+ */
+export function useUIConfigurationPermissions(): { allowConfigUI: boolean } {
+  const { allowAll, snippets } = useACLRoleContext();
+  return {
+    allowConfigUI: allowAll || snippets.includes('ui.*'),
+  };
+}
+
 export const ACLCollectionProvider = (props) => {
   const { allowAll, parseAction } = useACLRoleContext();
   const app = useApp();

@@ -1,12 +1,12 @@
-import React from 'react';
+import { Plugin, SchemaComponent } from '@nocobase/client';
 import { mockApp } from '@nocobase/client/demo-utils';
-import { SchemaComponent, Plugin } from '@nocobase/client';
 import {
-  mobileTabBarPageSettings,
   MobileProviders,
   MobileTabBar,
   getMobileTabBarItemSchema,
+  mobileTabBarPageSettings,
 } from '@nocobase/plugin-mobile/client';
+import React from 'react';
 
 import { schemaViewer } from './fixtures/schemaViewer';
 
@@ -21,7 +21,7 @@ const schema = getMobileTabBarItemSchema({
 const Demo = () => {
   return (
     <div>
-      <MobileProviders skipLogin={true}>
+      <MobileProviders>
         <SchemaComponent schema={schemaViewer(schema, 'x-component-props')} />
       </MobileProviders>
     </div>
