@@ -18,7 +18,6 @@ export class PluginCollectionTreeClient extends Plugin {
 
   // You can get and modify the app instance here
   async load() {
-    console.log(this.app);
     // this.app.addComponents({})
     // this.app.addScopes({})
     // this.app.addProvider()
