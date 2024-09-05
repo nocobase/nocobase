@@ -824,8 +824,8 @@ export function SecondConFirm() {
     <SchemaSettingsModalItem
       title={t('Secondary confirmation')}
       initialValues={{
-        title: fieldSchema?.['x-component-props']?.confirm?.title || fieldSchema.title,
-        content: fieldSchema?.['x-component-props']?.confirm?.content,
+        title: (fieldSchema?.['x-component-props']?.confirm?.title || fieldSchema.title).match(/t\("([^"]+)"\)/)?.[1],
+        content: fieldSchema?.['x-component-props']?.confirm?.content?.match(/t\("([^"]+)"\)/)?.[1],
       }}
       schema={
         {

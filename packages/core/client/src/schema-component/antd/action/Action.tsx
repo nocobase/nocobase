@@ -347,8 +347,8 @@ function RenderButton({
         };
         if (confirm?.enable !== false && confirm?.content) {
           modal.confirm({
-            title: compile(confirm.title, { title: actionTitle }),
-            content: compile(confirm.content, { title: actionTitle }),
+            title: t(confirm.title, { title: actionTitle }),
+            content: t(confirm.content, { title: actionTitle }),
             onOk,
           });
         } else {
