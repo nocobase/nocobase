@@ -9,7 +9,7 @@
 
 import { Cache } from '@nocobase/cache';
 import { Repository, Transaction, Transactionable } from '@nocobase/database';
-import { uid } from '@nocobase/utils';
+import { Schema, uid } from '@nocobase/utils';
 import lodash from 'lodash';
 import { ChildOptions, SchemaNode, TargetPosition } from './dao/ui_schema_node_dao';
 
@@ -329,6 +329,24 @@ export class UiSchemaRepository extends Repository {
     };
 
     await traverSchemaTree(newSchema);
+  }
+
+  async upgrade(newSchema: Partial<Schema>, options?) {
+    if (!newSchema['x-uid'] || !newSchema['x-action-context']) {
+      return;
+    }
+
+    const nodeModel = await this.findOne({
+      filter: {
+        'x-uid': newSchema['x-uid'],
+      },
+    });
+
+    if (!lodash.isEmpty(nodeModel?.get('schema')['x-action-context'])) {
+      return;
+    }
+
+    return this.patch(lodash.pick(newSchema, ['x-uid', 'x-action-context']), options);
   }
 
   @transaction()

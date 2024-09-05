@@ -80,7 +80,7 @@ export class PluginUISchemaStorageServer extends Plugin {
       actions: uiSchemaActions,
     });
 
-    this.app.acl.allow('uiSchemas', ['getProperties', 'getJsonSchema', 'getParentJsonSchema'], 'loggedIn');
+    this.app.acl.allow('uiSchemas', ['getProperties', 'getJsonSchema', 'getParentJsonSchema', 'upgrade'], 'loggedIn');
     this.app.acl.allow('uiSchemaTemplates', ['get', 'list'], 'loggedIn');
   }
 

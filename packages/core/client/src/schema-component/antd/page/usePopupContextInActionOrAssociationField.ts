@@ -39,7 +39,7 @@ export const usePopupContextInActionOrAssociationField = () => {
 
       customSchema[CONTEXT_SCHEMA_KEY] = context;
 
-      return dn.emit('patch', {
+      return dn.emit('upgrade', {
         schema: {
           'x-uid': customSchema['x-uid'],
           [CONTEXT_SCHEMA_KEY]: context,
