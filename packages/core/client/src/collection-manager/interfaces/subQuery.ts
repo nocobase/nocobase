@@ -22,8 +22,8 @@ export class SubQueryFieldInterface extends CollectionFieldInterface {
     type: 'subquery',
     uiSchema: {
       type: 'string',
-      readPretty: true,
-      'x-component': 'Input.ReadPretty',
+      'x-component': 'Input',
+      'x-read-pretty': true,
     },
   };
   availableTypes = ['subquery'];
