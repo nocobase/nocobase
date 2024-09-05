@@ -1,0 +1,18 @@
+{
+  "template name": "Template name",
+  "template remark": "Template remark",
+  "template type": "Template type",
+  "support table": "Support table",
+  "template file": "Template file",
+  "actions": "Actions",
+  "edit action": "Edit",
+  "add action": "Add action",
+  "submit": "Submit",
+  "delete action": "Delete action",
+  "template type inconsistent": "Template type is inconsistent with template file type!",
+  "save success": "save success",
+  "confirm delete title": "Delete",
+  "confirm delete content": "Are you sure you want to delete it?",
+  "delete success": "Delete success",
+  "print template setting menu": "Print Template"
+}

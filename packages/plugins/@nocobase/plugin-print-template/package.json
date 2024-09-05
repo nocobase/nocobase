@@ -1,0 +1,15 @@
+{
+  "name": "@nocobase/plugin-print-template",
+  "displayName": "Simple：Print-template",
+  "displayName.zh-CN": "单独功能：打印模板功能",
+  "version": "1.3.9-beta",
+  "description": "使用魔法系统变量，对上传后的文档word或者excle进行变量替换，然后把数据库数据生成一份新的带有数据库数据的文档",
+  "description.zh-CN": "使用魔法系统变量，对上传后的文档word或者excle进行变量替换，然后把数据库数据生成一份新的带有数据库数据的文档",
+  "main": "dist/server/index.js",
+  "dependencies": {},
+  "peerDependencies": {
+    "@nocobase/client": "1.x",
+    "@nocobase/server": "1.x",
+    "@nocobase/test": "1.x"
+  }
+}
