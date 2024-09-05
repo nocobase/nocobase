@@ -15,7 +15,7 @@ import { useTranslation } from 'react-i18next';
 import { SchemaSettings } from '../../../../application/schema-settings/SchemaSettings';
 import { useCollectionManager_deprecated, useSortFields } from '../../../../collection-manager';
 import { useFieldComponentName } from '../../../../common/useFieldComponentName';
-import { useCollectionManager } from '../../../../data-source';
+import { useCollectionManager, useRerenderDataBlock } from '../../../../data-source';
 import { FlagProvider } from '../../../../flag-provider/FlagProvider';
 import { withDynamicSchemaProps } from '../../../../hoc/withDynamicSchemaProps';
 import {
@@ -280,11 +280,13 @@ export const linkageRules = {
     const fieldSchema = useFieldSchema();
     const cm = useCollectionManager();
     const collectionField = cm.getCollectionField(fieldSchema['x-collection-field']);
+    const { rerenderDataBlock } = useRerenderDataBlock();
 
     return {
       collectionName: collectionField?.target,
       Component: LinkageRulesComponent,
       readPretty: field.readPretty,
+      afterSubmit: rerenderDataBlock,
     };
   },
 };

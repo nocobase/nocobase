@@ -1007,7 +1007,7 @@ export const SchemaSettingsDefaultSortingRules = function DefaultSortingRules(pr
 };
 
 export const SchemaSettingsLinkageRules = function LinkageRules(props) {
-  const { collectionName, readPretty, Component } = props;
+  const { collectionName, readPretty, Component, afterSubmit } = props;
   const fieldSchema = useFieldSchema();
   const { form } = useFormBlockContext();
   const { dn } = useDesignable();
@@ -1079,8 +1079,9 @@ export const SchemaSettingsLinkageRules = function LinkageRules(props) {
         schema,
       });
       dn.refresh();
+      afterSubmit?.();
     },
-    [dn, getTemplateById, gridSchema, dataKey],
+    [dn, getTemplateById, gridSchema, dataKey, afterSubmit],
   );
 
   return (
