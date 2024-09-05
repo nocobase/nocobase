@@ -16,7 +16,7 @@ import {
   usePlugin,
   ExtendCollectionsProvider,
 } from '@nocobase/client';
-import { Card } from 'antd';
+import { Empty } from 'antd';
 import React, { useState } from 'react';
 import { channelsSchema, createFormSchema } from '../schemas';
 import { Button, Dropdown } from 'antd';
@@ -51,14 +51,32 @@ const AddNew = () => {
   const [visible, setVisible] = useState(false);
   const { NotificationTypeNameProvider, name, setName } = useNotificationTypeNameProvider();
   const channelTypes = useChannelTypes();
-  const items = channelTypes.map((item) => ({
-    key: item.name,
-    label: item.title,
-    onClick: () => {
-      setVisible(true);
-      setName(item.name);
-    },
-  }));
+  const items =
+    channelTypes.length === 0
+      ? [
+          {
+            key: '__empty__',
+            label: (
+              <Empty
+                image={Empty.PRESENTED_IMAGE_SIMPLE}
+                description={
+                  <>
+                    {t('No channel enabled yet')}
+                    <br />{' '}
+                  </>
+                }
+              />
+            ),
+          },
+        ]
+      : channelTypes.map((item) => ({
+          key: item.name,
+          label: item.title,
+          onClick: () => {
+            setVisible(true);
+            setName(item.name);
+          },
+        }));
 
   return (
     <ActionContextProvider value={{ visible, setVisible }}>
@@ -113,25 +131,23 @@ export const ChannelManager = () => {
 
   return (
     <ExtendCollectionsProvider collections={[channelCollection, messageLogCollection]}>
-      <Card bordered={false}>
-        <NotificationTypesContext.Provider value={{ channelTypes: notificationTypes }}>
-          <SchemaComponent
-            schema={channelsSchema}
-            components={{ AddNew, ConfigForm }}
-            scope={{
-              useCanNotDelete,
-              t,
-              notificationTypeOptions,
-              useCreateActionProps,
-              useEditActionProps,
-              useCloseActionProps,
-              useEditFormProps,
-              useCreateFormProps,
-              useDeleteActionProps,
-            }}
-          />
-        </NotificationTypesContext.Provider>
-      </Card>
+      <NotificationTypesContext.Provider value={{ channelTypes: notificationTypes }}>
+        <SchemaComponent
+          schema={channelsSchema}
+          components={{ AddNew, ConfigForm }}
+          scope={{
+            useCanNotDelete,
+            t,
+            notificationTypeOptions,
+            useCreateActionProps,
+            useEditActionProps,
+            useCloseActionProps,
+            useEditFormProps,
+            useCreateFormProps,
+            useDeleteActionProps,
+          }}
+        />
+      </NotificationTypesContext.Provider>
     </ExtendCollectionsProvider>
   );
 };
