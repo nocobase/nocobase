@@ -383,7 +383,7 @@ function getNormalizedFields(collectionName, { compile, getCollectionFields }) {
   const fkFields: any[] = [];
   const result: any[] = [];
   fields.forEach((field) => {
-    if (field.isForeignKey) {
+    if (field.isForeignKey && !field.primaryKey) {
       fkFields.push(field);
     } else {
       const fkField = fields.find((f) => f.name === field.foreignKey);
@@ -394,11 +394,13 @@ function getNormalizedFields(collectionName, { compile, getCollectionFields }) {
     }
   });
   const foreignKeyFields = uniqBy(fkFields, 'name');
+  // NOTE: for all foreignKey fields
   for (let i = result.length - 1; i >= 0; i--) {
     const field = result[i];
     if (field.type === 'belongsTo') {
-      const foreignKeyField = foreignKeyFields.find((f) => f.name === field.foreignKey);
-      if (foreignKeyField) {
+      const foreignKeyFieldIndex = foreignKeyFields.findIndex((f) => f.name === field.foreignKey);
+      if (foreignKeyFieldIndex > -1) {
+        const foreignKeyField = foreignKeyFields[foreignKeyFieldIndex];
         result.splice(i, 0, {
           ...field,
           ...foreignKeyField,
@@ -407,6 +409,7 @@ function getNormalizedFields(collectionName, { compile, getCollectionFields }) {
             title: foreignKeyField.uiSchema?.title ? compile(foreignKeyField.uiSchema?.title) : foreignKeyField.name,
           },
         });
+        foreignKeyFields.splice(foreignKeyFieldIndex, 1);
       } else {
         result.splice(i, 0, {
           ...field,
@@ -424,6 +427,7 @@ function getNormalizedFields(collectionName, { compile, getCollectionFields }) {
       result.splice(i, 1);
     }
   }
+  result.push(...foreignKeyFields);
 
   return uniqBy(result, 'name').filter((field) => field.interface && !field.hidden);
 }

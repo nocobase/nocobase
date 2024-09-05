@@ -143,6 +143,26 @@ describe('workflow > instructions > request', () => {
     await app.destroy();
   });
 
+  describe('params processing', () => {
+    it('trim should not crash', async () => {
+      await workflow.createNode({
+        type: 'request',
+        config: {
+          url: api.URL_DATA,
+          method: 'GET',
+          params: [{ name: 'id', value: '{{$context.data.id}}' }],
+        } as RequestConfig,
+      });
+
+      await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
+
+      const [execution] = await workflow.getExecutions();
+      expect(execution.status).toBe(EXECUTION_STATUS.RESOLVED);
+    });
+  });
+
   describe('request static app routes', () => {
     it('get data (legacy)', async () => {
       await workflow.createNode({
