@@ -276,6 +276,7 @@ export const linkageRules = {
   name: 'linkageRules',
   Component: SchemaSettingsLinkageRules,
   useComponentProps() {
+    const field = useField();
     const fieldSchema = useFieldSchema();
     const cm = useCollectionManager();
     const collectionField = cm.getCollectionField(fieldSchema['x-collection-field']);
@@ -283,6 +284,7 @@ export const linkageRules = {
     return {
       collectionName: collectionField?.target,
       Component: LinkageRulesComponent,
+      readPretty: field.readPretty,
     };
   },
 };
