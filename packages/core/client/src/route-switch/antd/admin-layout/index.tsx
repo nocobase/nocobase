@@ -447,6 +447,10 @@ export const InternalAdminLayout = () => {
                     width: 100%;
                     height: 100%;
                     font-weight: 500;
+                    text-align: center;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    white-space: nowrap;
                   `}
                 >
                   {result?.data?.data?.title}
