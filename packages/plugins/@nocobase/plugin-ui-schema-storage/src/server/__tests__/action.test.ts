@@ -248,6 +248,65 @@ describe('action test', () => {
     expect(data.properties.b['properties']['c']['title']).toEqual('c-title');
   });
 
+  test('upgrade', async () => {
+    await app
+      .agent()
+      .resource('uiSchemas')
+      .insert({
+        values: {
+          'x-uid': 'n1',
+          name: 'a',
+          type: 'object',
+          properties: {
+            b: {
+              'x-uid': 'n2',
+              type: 'object',
+              properties: {
+                c: { 'x-uid': 'n3' },
+              },
+            },
+            d: { 'x-uid': 'n4' },
+          },
+        },
+      });
+
+    let response = await app
+      .agent()
+      .resource('uiSchemas')
+      .upgrade({
+        values: {
+          'x-uid': 'n1',
+          'x-action-context': {
+            field1: 'field1',
+            field2: 'field2',
+          },
+          properties: {
+            b: {
+              properties: {
+                c: {
+                  title: 'c-title',
+                },
+              },
+            },
+          },
+        },
+      });
+
+    expect(response.statusCode).toEqual(200);
+    response = await app.agent().resource('uiSchemas').getJsonSchema({
+      resourceIndex: 'n1',
+    });
+
+    const { data } = response.body;
+
+    // only update the x-action-context
+    expect(data.properties.b['properties']['c']['title']).toBe(undefined);
+    expect(data['x-action-context']).toEqual({
+      field1: 'field1',
+      field2: 'field2',
+    });
+  });
+
   test('insert adjacent', async () => {
     await app
       .agent()
