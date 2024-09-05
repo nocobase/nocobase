@@ -41,7 +41,7 @@ export class PluginNotificationInAppServer extends Plugin {
 
             setInterval(() => {
               stream.write(`data: ${new Date()}\n\n`);
-            }, 10);
+            }, 10000);
             await next();
           },
         },
