@@ -10,11 +10,11 @@
 import { Database } from '@nocobase/database';
 import { MockServer } from '@nocobase/test';
 import fs from 'fs';
+import * as process from 'node:process';
 import path from 'path';
 import { Dumper } from '../dumper';
 import { Restorer } from '../restorer';
 import createApp from './index';
-import * as process from 'node:process';
 
 describe('dumper', () => {
   let app: MockServer;

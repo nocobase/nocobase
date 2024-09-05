@@ -20,6 +20,7 @@ import { useResourceActionContext } from '../collection-manager/ResourceActionPr
 import { useDataSourceKey } from '../data-source/data-source/DataSourceProvider';
 import { useRecord } from '../record-provider';
 import { SchemaComponentOptions, useDesignable } from '../schema-component';
+import { CollectionNotAllowViewPlaceholder } from '../data-source';
 
 import { useApp } from '../application';
 
@@ -233,7 +234,7 @@ export const ACLCollectionProvider = (props) => {
   }
   const params = parseAction(actionPath, { schema });
   if (!params) {
-    return null;
+    return <CollectionNotAllowViewPlaceholder />;
   }
   const [_, actionName] = actionPath.split(':');
   params.actionName = actionName;
