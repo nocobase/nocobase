@@ -15,20 +15,20 @@ import { useTranslation } from 'react-i18next';
 
 import {
   APIClientProvider,
-  useCollectionManager_deprecated,
-  useGlobalTheme,
+  Collection,
+  CollectionFieldOptions,
+  DataBlockInitializer,
   FormDialog,
   SchemaComponent,
   SchemaComponentOptions,
-  DataBlockInitializer,
+  useAPIClient,
+  useCollectionManager_deprecated,
+  useGlobalTheme,
   useSchemaInitializer,
   useSchemaInitializerItem,
-  useAPIClient,
-  Collection,
-  CollectionFieldOptions,
 } from '@nocobase/client';
-import { createKanbanBlockUISchema } from './createKanbanBlockUISchema';
 import { CreateAndSelectSort } from './CreateAndSelectSort';
+import { createKanbanBlockUISchema } from './createKanbanBlockUISchema';
 import { NAMESPACE } from './locale';
 
 const CreateKanbanForm = ({ item, sortFields, collectionFields, fields, options, api }) => {
@@ -130,7 +130,7 @@ export const KanbanBlockInitializer = ({
   return (
     <DataBlockInitializer
       {...itemConfig}
-      componentType={'Calendar'}
+      componentType={`Kanban`}
       icon={<FormOutlined />}
       onCreateBlockSchema={async (options) => {
         if (createBlockSchema) {

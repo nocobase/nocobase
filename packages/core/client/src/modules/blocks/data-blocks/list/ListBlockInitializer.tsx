@@ -49,7 +49,7 @@ export const ListBlockInitializer = ({
     <DataBlockInitializer
       {...itemConfig}
       icon={<OrderedListOutlined />}
-      componentType={'List'}
+      componentType={`List`}
       onCreateBlockSchema={async (options) => {
         if (createBlockSchema) {
           return createBlockSchema(options);

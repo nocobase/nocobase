@@ -13,14 +13,8 @@ import React from 'react';
 import { SchemaComponentOptions } from '../../';
 import { useAssociationCreateActionProps as useCAP } from '../../../block-provider/hooks';
 import { useCollection_deprecated } from '../../../collection-manager';
+import { useAssociationFieldModeContext } from './AssociationFieldModeProvider';
 import { AssociationFieldProvider } from './AssociationFieldProvider';
-import { AssociationSelect } from './AssociationSelect';
-import { InternalFileManager } from './FileManager';
-import { InternalCascadeSelect } from './InternalCascadeSelect';
-import { InternalNester } from './InternalNester';
-import { InternalPicker } from './InternalPicker';
-import { InternalPopoverNester } from './InternalPopoverNester';
-import { InternalSubTable } from './InternalSubTable';
 import { CreateRecordAction } from './components/CreateRecordAction';
 import { useAssociationFieldContext } from './hooks';
 
@@ -30,6 +24,7 @@ const EditableAssociationField = observer(
     const field: Field = useField();
     const form = useForm();
     const { options: collectionField, currentMode } = useAssociationFieldContext();
+    const { getComponent } = useAssociationFieldModeContext();
 
     const useCreateActionProps = () => {
       const { onClick } = useCAP();
@@ -57,15 +52,11 @@ const EditableAssociationField = observer(
       };
     };
 
+    const Component = getComponent(currentMode);
+
     return (
       <SchemaComponentOptions scope={{ useCreateActionProps }} components={{ CreateRecordAction }}>
-        {currentMode === 'Picker' && <InternalPicker {...props} />}
-        {currentMode === 'Nester' && <InternalNester {...props} />}
-        {currentMode === 'PopoverNester' && <InternalPopoverNester {...props} />}
-        {currentMode === 'Select' && <AssociationSelect {...props} />}
-        {currentMode === 'SubTable' && <InternalSubTable {...props} />}
-        {currentMode === 'FileManager' && <InternalFileManager {...props} />}
-        {currentMode === 'CascadeSelect' && <InternalCascadeSelect {...props} />}
+        <Component {...props} />
       </SchemaComponentOptions>
     );
   },

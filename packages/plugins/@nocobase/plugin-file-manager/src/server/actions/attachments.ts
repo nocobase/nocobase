@@ -11,15 +11,15 @@ import { Context, Next } from '@nocobase/actions';
 import { koaMulter as multer } from '@nocobase/utils';
 import Path from 'path';
 
+import Plugin from '..';
 import {
+  FILE_FIELD_NAME,
   FILE_SIZE_LIMIT_DEFAULT,
   FILE_SIZE_LIMIT_MAX,
-  FILE_FIELD_NAME,
-  LIMIT_FILES,
   FILE_SIZE_LIMIT_MIN,
+  LIMIT_FILES,
 } from '../../constants';
 import * as Rules from '../rules';
-import Plugin from '..';
 
 // TODO(optimize): 需要优化错误处理，计算失败后需要抛出对应错误，以便程序处理
 function getFileFilter(storage) {
@@ -33,7 +33,7 @@ function getFileFilter(storage) {
   };
 }
 
-function getFileData(ctx: Context) {
+export function getFileData(ctx: Context) {
   const { [FILE_FIELD_NAME]: file, storage } = ctx;
   if (!file) {
     return ctx.throw(400, 'file validation failed');

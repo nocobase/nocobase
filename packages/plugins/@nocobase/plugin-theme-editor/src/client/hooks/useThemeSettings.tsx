@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { SelectWithTitle, useAPIClient, useCurrentUserContext, useSystemSettings } from '@nocobase/client';
+import { SelectWithTitle, useCurrentUserContext, useSystemSettings } from '@nocobase/client';
 import { error } from '@nocobase/utils/client';
 import { MenuProps } from 'antd';
 import React, { useEffect, useMemo } from 'react';

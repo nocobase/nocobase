@@ -1,5 +1,3 @@
-
-
 /**
  * title: Markdown.Void
  */
@@ -8,6 +6,7 @@ import { observer, useField } from '@formily/react';
 import { Markdown, SchemaComponent, SchemaComponentProvider } from '@nocobase/client';
 import { Button } from 'antd';
 import React from 'react';
+import { Router } from 'react-router-dom';
 
 const schema = {
   type: 'object',
@@ -49,8 +48,10 @@ const Editable = observer(
 
 export default () => {
   return (
-    <SchemaComponentProvider components={{ Editable, Markdown, FormItem }}>
-      <SchemaComponent schema={schema} />
-    </SchemaComponentProvider>
+    <Router location={window.location} navigator={null}>
+      <SchemaComponentProvider components={{ Editable, Markdown, FormItem }}>
+        <SchemaComponent schema={schema} />
+      </SchemaComponentProvider>
+    </Router>
   );
 };

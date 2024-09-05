@@ -38,6 +38,7 @@ export function AddButton(props: AddButtonProps) {
   const groups = useMemo(() => {
     return [
       { key: 'control', label: `{{t("Control", { ns: "${NAMESPACE}" })}}` },
+      { key: 'calculation', label: `{{t("Calculation", { ns: "${NAMESPACE}" })}}` },
       { key: 'collection', label: `{{t("Collection operations", { ns: "${NAMESPACE}" })}}` },
       { key: 'manual', label: `{{t("Manual", { ns: "${NAMESPACE}" })}}` },
       { key: 'extended', label: `{{t("Extended types", { ns: "${NAMESPACE}" })}}` },

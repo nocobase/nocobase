@@ -23,6 +23,7 @@ import {
 import { removeNullCondition, useDesignable } from '../../../../schema-component';
 import { SchemaSettingsDataScope } from '../../../../schema-settings/SchemaSettingsDataScope';
 import { setDataLoadingModeSettingsItem, useDataLoadingMode } from '../details-multi/setDataLoadingModeSettingsItem';
+import { useCollection } from '../../../../data-source';
 
 export const tableSelectorBlockSettings = new SchemaSettings({
   name: 'blockSettings:tableSelector',

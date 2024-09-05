@@ -9,10 +9,26 @@
 
 const { Command } = require('commander');
 const { run, isDev, isPackageValid, generatePlaywrightPath } = require('../util');
-const { resolve } = require('path');
-const { existsSync } = require('fs');
+const { dirname, resolve } = require('path');
+const { existsSync, mkdirSync, readFileSync, appendFileSync } = require('fs');
 const { readFile, writeFile } = require('fs').promises;
 const { createStoragePluginsSymlink, createDevPluginsSymlink } = require('@nocobase/utils/plugin-symlink');
+
+function writeToExclude() {
+  const excludePath = resolve(process.cwd(), '.git', 'info', 'exclude');
+  const content = 'packages/pro-plugins/\n';
+  const dirPath = dirname(excludePath);
+  if (!existsSync(dirPath)) {
+    mkdirSync(dirPath, { recursive: true });
+  }
+  let fileContent = '';
+  if (existsSync(excludePath)) {
+    fileContent = readFileSync(excludePath, 'utf-8');
+  }
+  if (!fileContent.includes(content)) {
+    appendFileSync(excludePath, content);
+  }
+}
 
 /**
  * @param {Command} cli
@@ -24,6 +40,8 @@ module.exports = (cli) => {
     .allowUnknownOption()
     .option('--skip-umi')
     .action(async (options) => {
+      writeToExclude();
+
       generatePlaywrightPath(true);
       await createStoragePluginsSymlink();
       if (!isDev()) {

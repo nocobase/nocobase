@@ -8,7 +8,7 @@
  */
 
 import { Context, Next } from '@nocobase/actions';
-import { Field, FilterParser } from '@nocobase/database';
+import { BelongsToArrayAssociation, Field, FilterParser } from '@nocobase/database';
 import { formatter } from './formatter';
 import compose from 'koa-compose';
 import { Cache } from '@nocobase/cache';
@@ -19,6 +19,7 @@ type MeasureProps = {
   type?: string;
   aggregation?: string;
   alias?: string;
+  distinct?: boolean;
 };
 
 type DimensionProps = {
@@ -78,6 +79,7 @@ export const postProcess = async (ctx: Context, next: Next) => {
         case 'integer':
         case 'float':
         case 'double':
+        case 'decimal':
           record[key] = Number(value);
           break;
       }
@@ -117,7 +119,7 @@ export const parseBuilder = async (ctx: Context, next: Next) => {
   let hasAgg = false;
 
   measures.forEach((measure: MeasureProps & { field: string }) => {
-    const { field, aggregation, alias } = measure;
+    const { field, aggregation, alias, distinct } = measure;
     const attribute = [];
     const col = sequelize.col(field);
     if (aggregation) {
@@ -125,7 +127,7 @@ export const parseBuilder = async (ctx: Context, next: Next) => {
         throw new Error(`Invalid aggregation function: ${aggregation}`);
       }
       hasAgg = true;
-      attribute.push(sequelize.fn(aggregation, col));
+      attribute.push(sequelize.fn(aggregation, distinct ? sequelize.fn('DISTINCT', col) : col));
     } else {
       attribute.push(col);
     }
@@ -190,6 +192,7 @@ export const parseFieldAndAssociations = async (ctx: Context, next: Next) => {
   const db = getDB(ctx, dataSource) || ctx.db;
   const collection = db.getCollection(collectionName);
   const fields = collection.fields;
+  const associations = collection.model.associations;
   const models: {
     [target: string]: {
       type: string;
@@ -234,11 +237,25 @@ export const parseFieldAndAssociations = async (ctx: Context, next: Next) => {
   const parsedMeasures = measures?.map(parseField) || [];
   const parsedDimensions = dimensions?.map(parseField) || [];
   const parsedOrders = orders?.map(parseField) || [];
-  const include = Object.entries(models).map(([target, { type }]) => ({
-    association: target,
-    attributes: [],
-    ...(type === 'belongsToMany' ? { through: { attributes: [] } } : {}),
-  }));
+  const include = Object.entries(models).map(([target, { type }]) => {
+    let options = {
+      association: target,
+      attributes: [],
+    };
+    if (type === 'belongsToMany') {
+      options['through'] = { attributes: [] };
+    }
+    if (type === 'belongsToArray') {
+      const association = associations[target] as BelongsToArrayAssociation;
+      if (association) {
+        options = {
+          ...options,
+          ...association.generateInclude(),
+        };
+      }
+    }
+    return options;
+  });
 
   const filterParser = new FilterParser(filter, {
     collection,

@@ -48,6 +48,7 @@ export default defineCollection({
       name: 'collections',
       target: 'dataSourcesCollections',
       foreignKey: 'dataSourceKey',
+      targetKey: 'name',
     },
     {
       type: 'hasMany',

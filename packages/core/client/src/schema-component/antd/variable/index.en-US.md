@@ -18,7 +18,12 @@ import type { DefaultOptionType } from 'antd/lib/cascader';
   disabled?: boolean;
   style?: React.CSSProperties;
   className?: string;
+  parseOptions?: ParseOptions;
 }
+
+type ParseOptions = {
+  stringToDate?: boolean;
+};
 ```
 
 <code src="./demos/demo1.tsx"></code>

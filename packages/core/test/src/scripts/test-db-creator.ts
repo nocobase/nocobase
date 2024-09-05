@@ -38,9 +38,12 @@ abstract class BaseClient<Client> {
     this.createdDBs.add(name);
 
     // remove db after 3 minutes
-    setTimeout(async () => {
-      await this.removeDB(name);
-    }, 3 * 60 * 1000);
+    setTimeout(
+      async () => {
+        await this.removeDB(name);
+      },
+      3 * 60 * 1000,
+    );
   }
 
   async releaseAll() {

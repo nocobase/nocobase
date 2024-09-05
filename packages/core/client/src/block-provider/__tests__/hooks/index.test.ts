@@ -10,6 +10,7 @@
 import {
   appendQueryStringToUrl,
   completeURL,
+  fillParentFields,
   navigateWithinSelf,
   parseVariablesAndChangeParamsToQueryString,
   reduceValueSize,
@@ -23,7 +24,7 @@ describe('parseVariablesAndChangeParamsToQueryString', () => {
       { name: 'param3', value: 'value3' },
     ];
     const variables: any = {
-      parseVariable: vi.fn().mockResolvedValue('parsedValue'),
+      parseVariable: vi.fn().mockResolvedValue({ value: 'parsedValue' }),
     };
     const localVariables: any = [
       { name: '$var1', ctx: { value: 'localValue1' } },
@@ -233,5 +234,25 @@ describe('navigateWithinSelf', () => {
     navigateWithinSelf(link, () => {});
 
     expect(console.error).toHaveBeenCalledWith('link should be a string');
+  });
+});
+
+describe('fillParentFields', () => {
+  it('should fill parent fields for multi-level fields', () => {
+    const appends = new Set<string>(['a', 'b.c']);
+    const result = fillParentFields(appends);
+    expect(result).toEqual(new Set<string>(['a', 'b', 'b.c']));
+  });
+
+  it('[a, b.c.d] -> [a, b.c, b.c.d]', () => {
+    const appends = new Set<string>(['a', 'b.c.d']);
+    const result = fillParentFields(appends);
+    expect(result).toEqual(new Set<string>(['a', 'b.c', 'b.c.d']));
+  });
+
+  it('should not modify the set if there are no multi-level fields', () => {
+    const appends = new Set<string>(['a', 'b', 'c']);
+    const result = fillParentFields(appends);
+    expect(result).toEqual(new Set<string>(['a', 'b', 'c']));
   });
 });

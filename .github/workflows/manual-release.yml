@@ -6,16 +6,72 @@ concurrency:
 
 on:
   workflow_dispatch:
+    inputs:
+      is_feat:
+        description: 'is feat'
+        type: boolean
 
 jobs:
-  push-commit:
+  pre-merge-main-into-next:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        repo:
+          - 'nocobase'
+          - 'pro-plugins'
+          - ${{ fromJSON(vars.PRO_PLUGIN_REPOS) }}
+          - ${{ fromJSON(vars.CUSTOM_PRO_PLUGIN_REPOS) }}
+    steps:
+      - uses: actions/create-github-app-token@v1
+        id: app-token
+        with:
+          app-id: ${{ vars.NOCOBASE_APP_ID }}
+          private-key: ${{ secrets.NOCOBASE_APP_PRIVATE_KEY }}
+          repositories: nocobase,pro-plugins,${{ join(fromJSON(vars.PRO_PLUGIN_REPOS), ',') }},${{ join(fromJSON(vars.CUSTOM_PRO_PLUGIN_REPOS), ',') }}
+          skip-token-revoke: true
+      - name: Get GitHub App User ID
+        id: get-user-id
+        run: echo "user-id=$(gh api "/users/${{ steps.app-token.outputs.app-slug }}[bot]" --jq .id)" >> "$GITHUB_OUTPUT"
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # ref: 'main'
+          repository: nocobase/${{ matrix.repo }}
+          fetch-depth: 0
+          token: ${{ steps.app-token.outputs.token }}
+      - name: main -> next (nocobase/${{ matrix.repo }})
+        run: |
+          git config --global user.name '${{ steps.app-token.outputs.app-slug }}[bot]'
+          git config --global user.email '${{ steps.get-user-id.outputs.user-id }}+${{ steps.app-token.outputs.app-slug }}[bot]@users.noreply.github.com>'
+          git checkout main
+          git pull origin main
+          git checkout next
+          git merge main
+          git push origin next --tags --atomic
+  update-version:
+    needs:
+      - pre-merge-main-into-next
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/create-github-app-token@v1
+        id: app-token
+        with:
+          app-id: ${{ vars.NOCOBASE_APP_ID }}
+          private-key: ${{ secrets.NOCOBASE_APP_PRIVATE_KEY }}
+          repositories: nocobase,pro-plugins,${{ join(fromJSON(vars.PRO_PLUGIN_REPOS), ',') }},${{ join(fromJSON(vars.CUSTOM_PRO_PLUGIN_REPOS), ',') }}
+          skip-token-revoke: true
+      - name: Get GitHub App User ID
+        id: get-user-id
+        run: echo "user-id=$(gh api "/users/${{ steps.app-token.outputs.app-slug }}[bot]" --jq .id)" >> "$GITHUB_OUTPUT"
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
       - name: Checkout
         uses: actions/checkout@v4
         with:
           repository: nocobase/nocobase
-          ssh-key: ${{ secrets.NOCOBASE_DEPLOY_KEY }}
+          token: ${{ steps.app-token.outputs.token }}
           persist-credentials: true
           fetch-depth: 0
       - name: Checkout pro-plugins
@@ -24,43 +80,15 @@ jobs:
           repository: nocobase/pro-plugins
           path: packages/pro-plugins
           fetch-depth: 0
-          ssh-key: ${{ secrets.PRO_PLUGINS_DEPLOY_KEY }}
+          token: ${{ steps.app-token.outputs.token }}
           persist-credentials: true
-      - name: main -> next(nocobase)
+      - name: Clone pro repos
+        shell: bash
         run: |
-          git config --global user.email "actions@github.com"
-          git config --global user.name "GitHub Actions Bot"
-          git checkout main
-          git pull origin main
-          git checkout next
-          git merge main
-          git push origin next
-      - name: main -> next(pro-plugins)
-        run: |
-          cd ./packages/pro-plugins
-          git checkout main
-          git pull origin main
-          git checkout next
-          git merge main
-          git push origin next
-      - name: push pro plugins(next)
-        continue-on-error: true
-        uses: ad-m/github-push-action@master
-        with:
-          ssh: true
-          branch: next
-          directory: packages/pro-plugins
-          repository: nocobase/pro-plugins
-          tags: true
-          atomic: true
-      - name: push nocobase(next)
-        uses: ad-m/github-push-action@master
-        with:
-          branch: next
-          ssh: true
-          repository: nocobase/nocobase
-          tags: true
-          atomic: true
+          for repo in ${{ join(fromJSON(vars.PRO_PLUGIN_REPOS), ' ') }} ${{ join(fromJSON(vars.CUSTOM_PRO_PLUGIN_REPOS), ' ') }}
+          do
+          git clone -b main https://x-access-token:${{ steps.app-token.outputs.token }}@github.com/nocobase/$repo.git packages/pro-plugins/@nocobase/$repo
+          done
       - name: Set Node.js 18
         uses: actions/setup-node@v3
         with:
@@ -68,67 +96,43 @@ jobs:
       - name: Install Lerna
         run: npm install -g lerna@4 auto-changelog@2
       - name: Run release.sh
+        shell: bash
         run: |
           cd ./packages/pro-plugins
           git checkout main
+          for repo in ${{ join(fromJSON(vars.PRO_PLUGIN_REPOS), ' ') }} ${{ join(fromJSON(vars.CUSTOM_PRO_PLUGIN_REPOS), ' ') }}
+          do
+            echo "@nocobase/$repo" >> .git/info/exclude
+          done
+          echo "$(<.git/info/exclude )"
           cd ./../..
           git checkout main
-          git config --global user.email "actions@github.com"
-          git config --global user.name "GitHub Actions Bot"
-          echo "packages/pro-plugins/" >> .git/info/exclude
+          git config --global user.name '${{ steps.app-token.outputs.app-slug }}[bot]'
+          git config --global user.email '${{ steps.get-user-id.outputs.user-id }}+${{ steps.app-token.outputs.app-slug }}[bot]@users.noreply.github.com>'
+          echo "packages/pro-plugins" >> .git/info/exclude
           bash release.sh $IS_FEAT
         env:
-          IS_FEAT: false
-      - name: push pro plugins
-        continue-on-error: true
-        uses: ad-m/github-push-action@master
-        with:
-          ssh: true
-          branch: main
-          directory: packages/pro-plugins
-          repository: nocobase/pro-plugins
-          tags: true
-          atomic: true
-      - name: push nocobase
-        uses: ad-m/github-push-action@master
-        with:
-          branch: main
-          ssh: true
-          repository: nocobase/nocobase
-          tags: true
-          atomic: true
-      - name: main -> next
+          IS_FEAT: ${{ inputs.is_feat && '--is-feat' || '' }}
+          PRO_PLUGIN_REPOS: ${{ vars.PRO_PLUGIN_REPOS }}
+          CUSTOM_PRO_PLUGIN_REPOS: ${{ vars.CUSTOM_PRO_PLUGIN_REPOS }}
+      - name: Push and merge into next
         run: |
-          git config --global user.email "actions@github.com"
-          git config --global user.name "GitHub Actions Bot"
-          git checkout main
-          git pull origin main
-          git checkout next
-          git merge -X ours main --no-edit
-          git push origin next
-      - name: main -> next
-        run: |
+          for repo in ${{ join(fromJSON(vars.PRO_PLUGIN_REPOS), ' ') }} ${{ join(fromJSON(vars.CUSTOM_PRO_PLUGIN_REPOS), ' ') }}
+          do
+            cd ./packages/pro-plugins/@nocobase/$repo
+            git push origin main --atomic --tags
+            git checkout next
+            git merge -X ours main --no-edit
+            git push origin next --tags --atomic
+            cd ../../../../
+          done
           cd ./packages/pro-plugins
-          git checkout main
-          git pull origin main
+          git push origin main --atomic --tags
           git checkout next
           git merge -X ours main --no-edit
-          git push origin next
-      - name: push pro plugins
-        continue-on-error: true
-        uses: ad-m/github-push-action@master
-        with:
-          ssh: true
-          branch: next
-          directory: packages/pro-plugins
-          repository: nocobase/pro-plugins
-          tags: true
-          atomic: true
-      - name: push nocobase
-        uses: ad-m/github-push-action@master
-        with:
-          branch: next
-          ssh: true
-          repository: nocobase/nocobase
-          tags: true
-          atomic: true
+          git push origin next --tags --atomic
+          cd ../../
+          git push origin main --atomic --tags
+          git checkout next
+          git merge -X ours main --no-edit
+          git push origin next --tags --atomic

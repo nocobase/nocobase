@@ -136,7 +136,7 @@ export const Kanban: any = withDynamicSchemaProps(
               <Tag color={color}>{title}</Tag>
             </div>
           )}
-          renderCard={(card, { column, dragging }) => {
+          renderCard={(card, { column }) => {
             const columnIndex = dataSource?.indexOf(column);
             const cardIndex = column?.cards?.indexOf(card);
             const { ref, inView } = useInView({
@@ -144,24 +144,18 @@ export const Kanban: any = withDynamicSchemaProps(
               triggerOnce: true,
               initialInView: lastDraggedCard.current && lastDraggedCard.current === card[primaryKey],
             });
+
             return (
               schemas.card && (
                 <RecordProvider record={card} parent={parentRecordData}>
                   <KanbanCardContext.Provider
                     value={{
                       setDisableCardDrag,
-                      cardViewerSchema: schemas.cardViewer,
-                      cardField: field,
-                      card,
-                      column,
-                      dragging,
-                      columnIndex,
-                      cardIndex,
                     }}
                   >
                     <div ref={ref}>
                       {inView ? (
-                        <MemorizedRecursionField name={schemas.card.name} schema={schemas.card} />
+                        <MemorizedRecursionField name={'card'} schema={fieldSchema.properties.card} />
                       ) : (
                         <Card bordered={false}>
                           <Skeleton paragraph={{ rows: 4 }} />

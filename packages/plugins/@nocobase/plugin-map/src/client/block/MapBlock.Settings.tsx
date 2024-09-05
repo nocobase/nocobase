@@ -11,6 +11,7 @@ import { ISchema, useField, useFieldSchema } from '@formily/react';
 import {
   FilterBlockType,
   SchemaSettings,
+  SchemaSettingsBlockHeightItem,
   SchemaSettingsBlockTitleItem,
   SchemaSettingsCascaderItem,
   SchemaSettingsConnectDataBlocks,
@@ -20,11 +21,11 @@ import {
   SchemaSettingsSelectItem,
   SchemaSettingsTemplate,
   setDataLoadingModeSettingsItem,
+  useBlockTemplateContext,
   useCollection,
   useCollectionManager_deprecated,
   useDesignable,
   useFormBlockContext,
-  SchemaSettingsBlockHeightItem,
 } from '@nocobase/client';
 import _ from 'lodash';
 import { useMapTranslation } from '../locale';
@@ -231,10 +232,11 @@ export const mapBlockSettings = new SchemaSettings({
       useComponentProps() {
         const { name } = useCollection();
         const fieldSchema = useFieldSchema();
+        const { componentNamePrefix } = useBlockTemplateContext();
         const defaultResource =
           fieldSchema?.['x-decorator-props']?.resource || fieldSchema?.['x-decorator-props']?.association;
         return {
-          componentName: 'Map',
+          componentName: `${componentNamePrefix}Map`,
           collectionName: name,
           resourceName: defaultResource,
         };

@@ -8,8 +8,13 @@
  */
 
 import React from 'react';
+import { usePopupUtils } from '../../../schema-component/antd/page/pagePopupUtils';
+import { CONTEXT_SCHEMA_KEY } from '../../../schema-component/antd/page/usePopupContextInActionOrAssociationField';
 import { ActionInitializerItem } from '../../../schema-initializer/items/ActionInitializerItem';
+import { useOpenModeContext } from '../../popup/OpenModeProvider';
 export const CreateChildInitializer = (props) => {
+  const { defaultOpenMode } = useOpenModeContext();
+  const { getPopupContext } = usePopupUtils();
   const schema = {
     type: 'void',
     title: '{{ t("Add child") }}',
@@ -19,7 +24,7 @@ export const CreateChildInitializer = (props) => {
     'x-component': 'Action',
     'x-visible': '{{treeTable}}',
     'x-component-props': {
-      openMode: 'drawer',
+      openMode: defaultOpenMode,
       type: 'link',
       addChild: true,
       style: { height: 'auto', lineHeight: 'normal' },
@@ -63,6 +68,7 @@ export const CreateChildInitializer = (props) => {
         },
       },
     },
+    [CONTEXT_SCHEMA_KEY]: getPopupContext(),
   };
   return <ActionInitializerItem {...props} schema={schema} />;
 };

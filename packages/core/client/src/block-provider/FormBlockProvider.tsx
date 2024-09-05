@@ -87,7 +87,7 @@ const InternalFormBlockProvider = (props) => {
     updateAssociationValues,
   ]);
 
-  if (service.loading && Object.keys(form?.initialValues)?.length === 0 && action) {
+  if (service.loading && Object.keys(form?.initialValues || {})?.length === 0 && action) {
     return <Spin />;
   }
 
@@ -151,13 +151,12 @@ export const useFormBlockContext = () => {
 /**
  * @internal
  */
-export const useFormBlockProps = (shouldClearInitialValues = false) => {
+export const useFormBlockProps = () => {
   const ctx = useFormBlockContext();
   const treeParentRecord = useTreeParentRecord();
-  const { fieldSchema } = useActionContext();
-  const addChild = fieldSchema?.['x-component-props']?.addChild;
+
   useEffect(() => {
-    if (addChild) {
+    if (treeParentRecord) {
       ctx.form?.query('parent').take((field) => {
         field.disabled = true;
         field.value = treeParentRecord;
@@ -166,18 +165,14 @@ export const useFormBlockProps = (shouldClearInitialValues = false) => {
   });
 
   useEffect(() => {
-    if (!ctx?.service?.loading) {
-      const form: Form = ctx.form;
-      if (form) {
-        // form 字段中可能一开始就存在一些默认值（比如设置了字段默认值的模板区块）。在编辑表单中，
-        // 这些默认值是不需要的，需要清除掉，不然会导致一些问题。比如：https://github.com/nocobase/nocobase/issues/4868
-        if (shouldClearInitialValues) {
-          form.initialValues = {};
-        }
-        form.setInitialValues(ctx.service?.data?.data);
-      }
+    const form: Form = ctx.form;
+
+    if (!form || ctx.service?.loading) {
+      return;
     }
-  }, [ctx?.service?.loading]);
+
+    form.setInitialValues(ctx.service?.data?.data);
+  }, [ctx.form, ctx.service?.data?.data, ctx.service?.loading]);
   return {
     form: ctx.form,
   };

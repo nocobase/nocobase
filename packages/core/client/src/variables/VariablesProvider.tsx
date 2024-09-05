@@ -69,13 +69,15 @@ const VariablesProvider = ({ children }) => {
    * 2. 如果某个 `key` 不存在，且 `key` 是一个关联字段，则从 api 中获取数据，并缓存到 `ctx` 中
    * 3. 如果某个 `key` 不存在，且 `key` 不是一个关联字段，则返回当前值
    */
-  const getValue = useCallback(
+  const getResult = useCallback(
     async (
       variablePath: string,
       localVariables?: VariableOption[],
       options?: {
         /** 第一次请求时，需要包含的关系字段 */
         appends?: string[];
+        /** do not request when the association field is empty */
+        doNotRequest?: boolean;
       },
     ) => {
       const list = variablePath.split('.');
@@ -85,13 +87,23 @@ const VariablesProvider = ({ children }) => {
       const { fieldPath, dataSource, variableOption } = getFieldPath(variableName, _variableToCollectionName);
       let collectionName = fieldPath;
 
+      const { fieldPath: fieldPathOfVariable } = getFieldPath(variablePath, _variableToCollectionName);
+      const collectionNameOfVariable =
+        list.length === 1
+          ? variableOption.collectionName
+          : getCollectionJoinField(fieldPathOfVariable, dataSource)?.target;
+
       if (!(variableName in current)) {
         throw new Error(`VariablesProvider: ${variableName} is not found`);
       }
 
       for (let index = 0; index < list.length; index++) {
         if (current == null) {
-          return current === undefined ? variableOption.defaultValue : current;
+          return {
+            value: current === undefined ? variableOption.defaultValue : current,
+            dataSource,
+            collectionName: collectionNameOfVariable,
+          };
         }
 
         const key = list[index];
@@ -100,7 +112,7 @@ const VariablesProvider = ({ children }) => {
         const collectionPrimaryKey = getCollection(collectionName)?.getPrimaryKey();
         if (Array.isArray(current)) {
           const result = current.map((item) => {
-            if (shouldToRequest(item?.[key]) && item?.[collectionPrimaryKey] != null) {
+            if (!options?.doNotRequest && shouldToRequest(item?.[key]) && item?.[collectionPrimaryKey] != null) {
               if (associationField?.target) {
                 const url = `/${collectionName}/${
                   item[associationField.sourceKey || collectionPrimaryKey]
@@ -128,7 +140,12 @@ const VariablesProvider = ({ children }) => {
             return item?.[key];
           });
           current = removeThroughCollectionFields(_.flatten(await Promise.all(result)), associationField);
-        } else if (shouldToRequest(current[key]) && current[collectionPrimaryKey] != null && associationField?.target) {
+        } else if (
+          !options?.doNotRequest &&
+          shouldToRequest(current[key]) &&
+          current[collectionPrimaryKey] != null &&
+          associationField?.target
+        ) {
           const url = `/${collectionName}/${
             current[associationField.sourceKey || collectionPrimaryKey]
           }/${key}:${getAction(associationField.type)}`;
@@ -164,8 +181,12 @@ const VariablesProvider = ({ children }) => {
         }
       }
 
-      const result = compile(_.isFunction(current) ? current() : current);
-      return result === undefined ? variableOption.defaultValue : result;
+      const _value = compile(_.isFunction(current) ? current() : current);
+      return {
+        value: _value === undefined ? variableOption.defaultValue : _value,
+        dataSource,
+        collectionName: collectionNameOfVariable,
+      };
     },
     [getCollectionJoinField],
   );
@@ -228,6 +249,8 @@ const VariablesProvider = ({ children }) => {
       options?: {
         /** 第一次请求时，需要包含的关系字段 */
         appends?: string[];
+        /** do not request when the association field is empty */
+        doNotRequest?: boolean;
       },
     ) => {
       if (!isVariable(str)) {
@@ -239,11 +262,14 @@ const VariablesProvider = ({ children }) => {
       }
 
       const path = getPath(str);
-      const value = await getValue(path, localVariables as VariableOption[], options);
+      const result = await getResult(path, localVariables as VariableOption[], options);
 
-      return uniq(filterEmptyValues(value));
+      return {
+        ...result,
+        value: uniq(filterEmptyValues(result.value)),
+      };
     },
-    [getValue],
+    [getResult],
   );
 
   const getCollectionField = useCallback(

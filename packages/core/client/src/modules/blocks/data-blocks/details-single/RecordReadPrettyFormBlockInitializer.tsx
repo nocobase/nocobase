@@ -11,10 +11,10 @@ import { FormOutlined } from '@ant-design/icons';
 import React, { useCallback } from 'react';
 import { SchemaInitializerItem, useSchemaInitializer, useSchemaInitializerItem } from '../../../../application';
 import { useCollection_deprecated } from '../../../../collection-manager';
+import { useAssociationName, useCollectionManager } from '../../../../data-source';
 import { useRecordCollectionDataSourceItems } from '../../../../schema-initializer/utils';
 import { useSchemaTemplateManager } from '../../../../schema-templates';
 import { createDetailsUISchema } from './createDetailsUISchema';
-import { useAssociationName } from '../../../../data-source';
 
 export const RecordReadPrettyFormBlockInitializer = () => {
   const itemConfig = useSchemaInitializerItem();
@@ -37,21 +37,26 @@ export function useCreateSingleDetailsSchema() {
   const { insert } = useSchemaInitializer();
   const { getTemplateSchemaByMode } = useSchemaTemplateManager();
   const association = useAssociationName();
+  const cm = useCollectionManager();
 
   const templateWrap = useCallback(
     (templateSchema, options) => {
       const { item } = options;
       if (item.template.componentName === 'ReadPrettyFormItem') {
+        const collectionName = item.collectionName || item.name;
+        const collection = cm.getCollection(collectionName);
         const blockSchema = createDetailsUISchema(
           association
             ? {
                 association,
+                // see: https://applink.feishu.cn/client/message/link/open?token=AmP9n9dkwcABZrr3nBdAwAI%3D
+                collectionName: collection.isInherited() ? collectionName : undefined,
                 dataSource: item.dataSource,
                 templateSchema: templateSchema,
                 isCurrent: true,
               }
             : {
-                collectionName: item.collectionName || item.name,
+                collectionName,
                 dataSource: item.dataSource,
                 templateSchema: templateSchema,
               },
@@ -64,7 +69,7 @@ export function useCreateSingleDetailsSchema() {
         return templateSchema;
       }
     },
-    [association],
+    [association, cm],
   );
 
   const createSingleDetailsSchema = useCallback(
@@ -73,23 +78,27 @@ export function useCreateSingleDetailsSchema() {
         const template = await getTemplateSchemaByMode(item);
         insert(templateWrap(template, { item }));
       } else {
+        const collectionName = item.collectionName || item.name;
+        const collection = cm.getCollection(collectionName);
         insert(
           createDetailsUISchema(
             association
               ? {
                   association,
+                  // see: https://applink.feishu.cn/client/message/link/open?token=AmP9n9dkwcABZrr3nBdAwAI%3D
+                  collectionName: collection.isInherited() ? collectionName : undefined,
                   dataSource: item.dataSource,
                   isCurrent: true,
                 }
               : {
-                  collectionName: item.collectionName || item.name,
+                  collectionName,
                   dataSource: item.dataSource,
                 },
           ),
         );
       }
     },
-    [association, getTemplateSchemaByMode, insert, templateWrap],
+    [association, cm, getTemplateSchemaByMode, insert, templateWrap],
   );
 
   return { createSingleDetailsSchema, templateWrap };

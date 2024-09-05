@@ -7,7 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { SchemaInitializer, SchemaInitializerItemType, useCollection_deprecated } from '@nocobase/client';
+import {
+  SchemaInitializer,
+  SchemaInitializerItemType,
+  useCollection_deprecated,
+  useActionAvailable,
+} from '@nocobase/client';
 import { generateNTemplate } from '../../../locale';
 import { DeleteEventActionInitializer } from '../items/DeleteEventActionInitializer';
 export const deleteEventActionInitializer: SchemaInitializerItemType<any> = {
@@ -52,10 +57,7 @@ export const CalendarFormActionInitializers = new SchemaInitializer({
               type: 'primary',
             },
           },
-          useVisible() {
-            const collection = useCollection_deprecated();
-            return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
-          },
+          useVisible: () => useActionAvailable('update'),
         },
         {
           name: 'delete',
@@ -65,10 +67,7 @@ export const CalendarFormActionInitializers = new SchemaInitializer({
             'x-component': 'Action',
             'x-decorator': 'ACLActionProvider',
           },
-          useVisible: function useVisible() {
-            const collection = useCollection_deprecated();
-            return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
-          },
+          useVisible: () => useActionAvailable('destroy'),
         },
         deleteEventActionInitializer,
       ],
@@ -157,19 +156,12 @@ export const CalendarFormActionInitializers = new SchemaInitializer({
               triggerWorkflows: [],
             },
           },
-          useVisible() {
-            const collection = useCollection_deprecated();
-            return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
-          },
+          useVisible: () => useActionAvailable('update'),
         },
         {
           name: 'customRequest',
           title: generateNTemplate('Custom request'),
           Component: 'CustomRequestInitializer',
-          useVisible() {
-            const collection = useCollection_deprecated();
-            return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
-          },
         },
       ],
     },

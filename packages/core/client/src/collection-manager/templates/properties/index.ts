@@ -60,6 +60,15 @@ export const defaultConfigurableProperties = {
     'x-decorator': 'FormItem',
     'x-component': 'Input.TextArea',
   },
+  simplePaginate: {
+    'x-content': '{{t("Use simple pagination mode")}}',
+    type: 'string',
+    name: 'simplePaginate',
+    'x-decorator': 'FormItem',
+    'x-component': 'Checkbox',
+    description:
+      '{{t("Skip getting the total number of table records during paging to speed up loading. It is recommended to enable this option for data tables with a large amount of data")}}',
+  },
   presetFields: {
     title: '{{t("Preset fields")}}',
     type: 'void',
@@ -92,6 +101,7 @@ export type DefaultConfigurableKeys =
   | 'updatedAt'
   | 'sortable'
   | 'description'
+  | 'simplePaginate'
   | 'presetFields';
 
 export const getConfigurableProperties = (...keys: DefaultConfigurableKeys[]) => {

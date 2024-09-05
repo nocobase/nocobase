@@ -23,6 +23,7 @@ import {
 } from '../../../schema-settings';
 import { SchemaSettingsTemplate } from '../../../schema-settings/SchemaSettingsTemplate';
 import { useSchemaTemplate } from '../../../schema-templates';
+import { useBlockTemplateContext } from '../../../schema-templates/BlockTemplateProvider';
 import { useDesignable } from '../../hooks';
 
 export const TableVoidDesigner = () => {
@@ -48,6 +49,7 @@ export const TableVoidDesigner = () => {
         };
   });
   const template = useSchemaTemplate();
+  const { componentNamePrefix } = useBlockTemplateContext();
   return (
     <GeneralSchemaDesigner template={template} title={title || name}>
       <SchemaSettingsSwitchItem
@@ -214,7 +216,7 @@ export const TableVoidDesigner = () => {
         }}
       />
       <SchemaSettingsDivider />
-      <SchemaSettingsTemplate componentName={'Table'} collectionName={name} />
+      <SchemaSettingsTemplate componentName={`${componentNamePrefix}Table`} collectionName={name} />
       <SchemaSettingsDivider />
       <SchemaSettingsRemove
         removeParentsIfNoChildren

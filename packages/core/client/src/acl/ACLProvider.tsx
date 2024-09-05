@@ -45,7 +45,6 @@ const getRouteUrl = (props) => {
 };
 
 export const ACLRolesCheckProvider = (props) => {
-  const route = getRouteUrl(props.children.props);
   const { setDesignable } = useDesignable();
   const { render } = useAppSpin();
   const api = useAPIClient();
@@ -202,6 +201,17 @@ export function useACLRoleContext() {
       }
       return getStrategyActionParams(actionPath);
     },
+  };
+}
+
+/**
+ * Used to get whether the current user has permission to configure UI
+ * @returns {allowConfigUI: boolean}
+ */
+export function useUIConfigurationPermissions(): { allowConfigUI: boolean } {
+  const { allowAll, snippets } = useACLRoleContext();
+  return {
+    allowConfigUI: allowAll || snippets.includes('ui.*'),
   };
 }
 
