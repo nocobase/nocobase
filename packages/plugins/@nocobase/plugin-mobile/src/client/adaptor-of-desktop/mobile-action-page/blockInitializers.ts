@@ -37,6 +37,11 @@ export const getMobilePopupBlockInitializers = (desktopPopupBlockInitializers: S
 export const useToAddMobilePopupBlockInitializers = () => {
   const app = useApp();
   const desktopPopupBlockInitializers = app.schemaInitializerManager.get('popup:common:addBlock');
+
+  if (!desktopPopupBlockInitializers) {
+    return;
+  }
+
   const mobilePopupBlockInitializers = getMobilePopupBlockInitializers(desktopPopupBlockInitializers);
   app.schemaInitializerManager.add(mobilePopupBlockInitializers);
 };
