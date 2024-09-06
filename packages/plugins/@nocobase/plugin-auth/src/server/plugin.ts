@@ -76,6 +76,9 @@ export class PluginAuthServer extends Plugin {
       const cache = this.app.cache as Cache;
       await cache.del(`auth:${user.id}`);
     });
+    this.app.on('cache:del:auth', async ({ userId }) => {
+      await this.cache.del(`auth:${userId}`);
+    });
   }
 
   async install(options?: InstallOptions) {

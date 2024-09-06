@@ -92,6 +92,10 @@ export default defineCollection({
       },
     },
     {
+      name: 'passwordChangeTZ',
+      type: 'bigInt',
+    },
+    {
       type: 'string',
       name: 'appLang',
     },

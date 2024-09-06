@@ -111,7 +111,7 @@ export class AuthManager {
       if (token && (await ctx.app.authManager.jwt.blacklist?.has(token))) {
         return ctx.throw(401, {
           code: 'TOKEN_INVALID',
-          message: ctx.t('token is invalid'),
+          message: ctx.t('Token is invalid'),
         });
       }
 
