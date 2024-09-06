@@ -38,7 +38,7 @@ export const SetFilterTargetKey = (props) => {
         const interfaceOptions = app.dataSourceManager.collectionFieldInterfaceManager.getFieldInterface(
           field.interface,
         );
-        if (interfaceOptions.titleUsable) {
+        if (interfaceOptions?.titleUsable) {
           return true;
         }
         return false;
