@@ -15,15 +15,15 @@ class DatetimeNoTzTypeMySQL extends DataTypes.ABSTRACT {
   key = 'DATETIME';
 }
 
-// class DatetimeNoTzTypePostgres extends DataTypes.ABSTRACT {
-//   key = 'TIMESTAMP WITHOUT TIME ZONE';
-// }
+class DatetimeNoTzTypePostgres extends DataTypes.ABSTRACT {
+  key = 'TIMESTAMP';
+}
 
 export class DatetimeNoTzField extends Field {
   get dataType() {
-    // if (this.database.inDialect('postgres')) {
-    //   return DatetimeNoTzTypePostgres;
-    // }
+    if (this.database.inDialect('postgres')) {
+      return DatetimeNoTzTypePostgres;
+    }
 
     if (this.database.isMySQLCompatibleDialect()) {
       return DatetimeNoTzTypeMySQL;
@@ -54,11 +54,16 @@ export class DatetimeNoTzField extends Field {
     const { name } = this.options;
     const timezone = this.database.options.timezone || '+00:00';
 
+    const isPg = this.database.inDialect('postgres');
+
     return {
       get() {
         const val = this.getDataValue(name);
 
         if (val instanceof Date) {
+          if (isPg) {
+            return moment(val).format('YYYY-MM-DD HH:mm:ss');
+          }
           // format to YYYY-MM-DD HH:mm:ss
           const momentVal = moment(val).utcOffset(timezone);
           return momentVal.format('YYYY-MM-DD HH:mm:ss');
@@ -68,6 +73,11 @@ export class DatetimeNoTzField extends Field {
       },
 
       set(val) {
+        if (typeof val === 'string' && isIso8601(val)) {
+          const momentVal = moment(val).utcOffset(timezone);
+          val = momentVal.format('YYYY-MM-DD HH:mm:ss');
+        }
+
         if (val && val instanceof Date) {
           // format to YYYY-MM-DD HH:mm:ss
           const momentVal = moment(val).utcOffset(timezone);
@@ -92,4 +102,9 @@ export class DatetimeNoTzField extends Field {
 
 export interface DatetimeNoTzFieldOptions extends BaseColumnFieldOptions {
   type: 'datetimeNoTz';
+}
+
+function isIso8601(str) {
+  const iso8601StrictRegex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
+  return iso8601StrictRegex.test(str);
 }
