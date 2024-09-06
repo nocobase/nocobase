@@ -27,6 +27,7 @@ describe('datetime no tz field', () => {
   it('should not get timezone part', async () => {
     db.collection({
       name: 'tests',
+      timestamps: false,
       fields: [{ name: 'date1', type: 'datetimeNoTz' }],
     });
 
@@ -45,6 +46,7 @@ describe('datetime no tz field', () => {
   it('should set datetime no tz field', async () => {
     db.collection({
       name: 'tests',
+      timestamps: false,
       fields: [{ name: 'date1', type: 'datetimeNoTz' }],
     });
 

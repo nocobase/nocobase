@@ -15,15 +15,15 @@ class DatetimeNoTzTypeMySQL extends DataTypes.ABSTRACT {
   key = 'DATETIME';
 }
 
-// class DatetimeNoTzTypePostgres extends DataTypes.ABSTRACT {
-//   key = 'TIMESTAMP WITHOUT TIME ZONE';
-// }
+class DatetimeNoTzTypePostgres extends DataTypes.ABSTRACT {
+  key = 'TIMESTAMP';
+}
 
 export class DatetimeNoTzField extends Field {
   get dataType() {
-    // if (this.database.inDialect('postgres')) {
-    //   return DatetimeNoTzTypePostgres;
-    // }
+    if (this.database.inDialect('postgres')) {
+      return DatetimeNoTzTypePostgres;
+    }
 
     if (this.database.isMySQLCompatibleDialect()) {
       return DatetimeNoTzTypeMySQL;
@@ -54,11 +54,16 @@ export class DatetimeNoTzField extends Field {
     const { name } = this.options;
     const timezone = this.database.options.timezone || '+00:00';
 
+    const isPg = this.database.inDialect('postgres');
+
     return {
       get() {
         const val = this.getDataValue(name);
 
         if (val instanceof Date) {
+          if (isPg) {
+            return moment(val).format('YYYY-MM-DD HH:mm:ss');
+          }
           // format to YYYY-MM-DD HH:mm:ss
           const momentVal = moment(val).utcOffset(timezone);
           return momentVal.format('YYYY-MM-DD HH:mm:ss');
