@@ -98,6 +98,9 @@ export class APIClient extends APIClientSDK {
         if (errs.find((error: { code?: string }) => error.code === 'ROLE_NOT_FOUND_ERR')) {
           this.auth.setRole(null);
         }
+        if (errs.find((error: { code?: string }) => error.code === 'TOKEN_INVALID')) {
+          this.auth.setToken(null);
+        }
         throw error;
       },
     );
@@ -156,10 +159,7 @@ export class APIClient extends APIClientSDK {
             throw error;
           }
 
-          await new Promise((resolve) => {
-            notify('error', errs, this.notification);
-            resolve(true);
-          });
+          notify('error', errs, this.notification);
         }
         throw error;
       },
