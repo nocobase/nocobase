@@ -252,6 +252,10 @@ async function generateChangelog() {
       cn: '插件',
     },
   };
+  const referenceLocale = {
+    en: 'Reference: ',
+    cn: '参考文档：',
+  };
 
   const generate = (changelogs, lang) => {
     let result = '';
@@ -270,7 +274,7 @@ async function generateChangelog() {
               continue;
             }
             const pr = pro ? '' : ` ([#${number}](https://github.com/nocobase/nocobase/pull/${number}))`;
-            const doc = docTitle && docLink ? `Reference: [${docTitle}](${docLink})` : '';
+            const doc = docTitle && docLink ? `${referenceLocale[lang]}[${docTitle}](${docLink})` : '';
             lists.push(`${description}${pr} by @${author}\n${doc}`);
           }
           if (!lists.length) {
