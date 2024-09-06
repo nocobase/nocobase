@@ -8,7 +8,7 @@
     "axios": "^0.26.1",
     "chalk": "^4.1.1",
     "commander": "^9.2.0",
-    "tar": "6.1.11"
+    "tar": "7.4.3"
   },
   "bin": {
     "create-nocobase-app": "./bin/index.js"
