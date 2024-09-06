@@ -10,9 +10,9 @@
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/data-source-manager",
   "peerDependencies": {
     "@nocobase/client": "1.x",
+    "@nocobase/plugin-acl": "1.x",
     "@nocobase/server": "1.x",
-    "@nocobase/test": "1.x",
-    "@nocobase/plugin-acl": "1.x"
+    "@nocobase/test": "1.x"
   },
   "keywords": [
     "Data model tools"
