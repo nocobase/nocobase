@@ -5,6 +5,47 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.3.16-beta](https://github.com/nocobase/nocobase/compare/v1.3.15-beta...v1.3.16-beta) - 2024-09-06
+
+### 🚀 Improvements
+
+- **[client]**
+  - Placeholder added when the user has UI configuration permissions but no view permissions for the collection ([#5208](https://github.com/nocobase/nocobase/pull/5208)) by @katherinehhh
+
+  - Display system title when logo is missing. ([#5175](https://github.com/nocobase/nocobase/pull/5175)) by @maoyutofu
+
+- **[Authentication]** support line break in system title ([#5211](https://github.com/nocobase/nocobase/pull/5211)) by @chenos
+
+- **[Workflow: SQL node]** Change result data structure of SQL node to only contains data. ([#5189](https://github.com/nocobase/nocobase/pull/5189)) by @mytharcher
+Reference: [SQL Operation](https://docs.nocobase.com/handbook/workflow/nodes/sql)
+- **[Access control]** Make the `Permissions` Tab pannel of the `Users & Permissions` configuration page expandable. ([#5216](https://github.com/nocobase/nocobase/pull/5216)) by @zhangzhonghe
+Reference: [Development Guide](https://docs.nocobase.com/handbook/acl#development-guide)
+- **[Action: Batch edit]** batch updated and batch edit, change 'All' to 'Entire collection" ([#5200](https://github.com/nocobase/nocobase/pull/5200)) by @katherinehhh
+
+### 🐛 Bug Fixes
+
+- **[client]**
+  - component display error when switching assignment types in linkage rules ([#5180](https://github.com/nocobase/nocobase/pull/5180)) by @katherinehhh
+
+  - Fix an issue where using variables in data scope reported an error. ([#5195](https://github.com/nocobase/nocobase/pull/5195)) by @zhangzhonghe
+
+  - issue with  custom request refreshDataBlockRequest ([#5188](https://github.com/nocobase/nocobase/pull/5188)) by @katherinehhh
+
+- **[Data visualization]** Fixed the issue of getting wrong value when aggregating select fields ([#5214](https://github.com/nocobase/nocobase/pull/5214)) by @2013xile
+
+- **[Data source manager]** Fixed incorrect `rowKey` of the datasource table in `Users & Permissions` page ([#5215](https://github.com/nocobase/nocobase/pull/5215)) by @gchust
+
+- **[Workflow: HTTP request node]** Fix error when using non-string variable in request parameters. ([#5204](https://github.com/nocobase/nocobase/pull/5204)) by @mytharcher
+
+- **[Collection field: Formula]** fix formula field serve test ([#5197](https://github.com/nocobase/nocobase/pull/5197)) by @katherinehhh
+
+- **[App backup & restore (deprecated)]** fix test case errors ([#5201](https://github.com/nocobase/nocobase/pull/5201)) by @chenos
+
+- **[Data source: REST API]**
+  - collection name should be disabled in rest-api collection by @katherinehhh
+
+  - Rest api locale improve by @katherinehhh
+
 ## [v1.3.15-beta](https://github.com/nocobase/nocobase/compare/v1.3.14-beta...v1.3.15-beta) - 2024-09-04
 
 ### 🐛 Bug Fixes
