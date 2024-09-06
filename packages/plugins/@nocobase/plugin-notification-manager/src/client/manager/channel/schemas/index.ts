@@ -107,10 +107,7 @@ export const channelsSchema: ISchema = {
       'x-component': 'TableV2',
       'x-use-component-props': 'useTableBlockProps',
       'x-component-props': {
-        rowKey: 'id',
-        rowSelection: {
-          type: 'checkbox',
-        },
+        rowKey: 'name',
       },
       properties: {
         name: {
@@ -165,9 +162,8 @@ export const channelsSchema: ISchema = {
           properties: {
             notificationType: {
               type: 'string',
-              'x-component': 'Select',
+              'x-component': 'CollectionField',
               'x-read-pretty': true,
-              enum: '{{ notificationTypeOptions }}',
             },
           },
         },
