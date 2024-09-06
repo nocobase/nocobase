@@ -13,7 +13,7 @@ import { useCallback } from 'react';
 import { useDesignable } from '../../hooks/useDesignable';
 
 export interface PopupContext {
-  dataSource: string;
+  dataSource?: string;
   collection?: string;
   association?: string;
 }

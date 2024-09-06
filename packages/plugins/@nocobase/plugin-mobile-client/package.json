@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-mobile-client",
-  "version": "1.3.15-beta",
+  "version": "1.4.0-alpha",
   "main": "./dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/mobile-client",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/mobile-client",

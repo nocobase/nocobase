@@ -141,14 +141,23 @@ const PagePopupsItemProvider: FC<{
   const storedContext = { ...getStoredPopupContext(params.popupuid) };
 
   if (!context) {
-    context = storedContext;
+    context = _.omitBy(
+      {
+        dataSource: storedContext.dataSource,
+        collection: storedContext.collection,
+        association: storedContext.association,
+      },
+      _.isNil,
+    ) as PopupContext;
   }
 
   if (_.isEmpty(context)) {
     return (
-      <PopupVisibleProvider visible={visible} setVisible={setVisible}>
-        <div style={{ display: 'none' }}>{children}</div>
-      </PopupVisibleProvider>
+      <PopupParamsProvider params={params} context={context} currentLevel={currentLevel}>
+        <PopupVisibleProvider visible={visible} setVisible={setVisible}>
+          <div style={{ display: 'none' }}>{children}</div>
+        </PopupVisibleProvider>
+      </PopupParamsProvider>
     );
   }
 
@@ -275,7 +284,9 @@ export const PagePopups = (props: { paramsList?: PopupParams[] }) => {
           isSubPage: isSubPageSchema(schema),
         };
       });
+
       const rootSchema = clonedSchemas[0];
+
       for (let i = 1; i < clonedSchemas.length; i++) {
         insertChildToParentSchema({
           childSchema: clonedSchemas[i],
@@ -289,6 +300,7 @@ export const PagePopups = (props: { paramsList?: PopupParams[] }) => {
           },
         });
       }
+
       setRootSchema(rootSchema);
     };
     run();

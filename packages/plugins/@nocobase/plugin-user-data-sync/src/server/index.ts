@@ -7,14 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { SchemaSettings } from '@nocobase/client';
-
-export const workbenchBlockSettings = new SchemaSettings({
-  name: 'blockSettings:workbench',
-  items: [
-    {
-      type: 'remove',
-      name: 'remove',
-    },
-  ],
-});
+export { SyncSource } from './sync-source';
+export * from './user-data-resource-manager';
+export { default } from './plugin';
