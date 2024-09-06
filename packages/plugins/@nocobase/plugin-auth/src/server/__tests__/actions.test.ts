@@ -286,6 +286,7 @@ describe('actions', () => {
       const userAgent = await agent.login(user);
       const res = await userAgent.post('/auth:check').set({ 'X-Authenticator': 'basic' }).send();
       expect(res.statusCode).toEqual(200);
+      expect(res.body.data.id).toBeDefined();
       const res2 = await userAgent.post('/auth:changePassword').set({ 'X-Authenticator': 'basic' }).send({
         oldPassword: '12345',
         newPassword: '123456',
@@ -293,8 +294,8 @@ describe('actions', () => {
       });
       expect(res2.statusCode).toEqual(200);
       const res3 = await userAgent.post('/auth:check').set({ 'X-Authenticator': 'basic' }).send();
-      expect(res3.statusCode).toEqual(401);
-      expect(res3.error.text).toBe('Token is invalid');
+      expect(res3.statusCode).toEqual(200);
+      expect(res3.body.data.id).toBeUndefined();
     });
   });
 });
