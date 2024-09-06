@@ -73,6 +73,11 @@ export class DatetimeNoTzField extends Field {
       },
 
       set(val) {
+        if (typeof val === 'string' && isIso8601(val)) {
+          const momentVal = moment(val);
+          val = momentVal.format('YYYY-MM-DD HH:mm:ss');
+        }
+
         if (val && val instanceof Date) {
           // format to YYYY-MM-DD HH:mm:ss
           const momentVal = moment(val).utcOffset(timezone);
@@ -97,4 +102,8 @@ export class DatetimeNoTzField extends Field {
 
 export interface DatetimeNoTzFieldOptions extends BaseColumnFieldOptions {
   type: 'datetimeNoTz';
+}
+
+function isIso8601(str) {
+  return moment(str, moment.ISO_8601, true).isValid();
 }
