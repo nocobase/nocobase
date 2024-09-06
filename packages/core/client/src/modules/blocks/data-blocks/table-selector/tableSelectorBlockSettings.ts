@@ -251,6 +251,7 @@ export const tableSelectorBlockSettings = new SchemaSettings({
           title: t('Records per page'),
           value: field.decoratorProps?.params?.pageSize || 20,
           options: [
+            { label: '5', value: 5 },
             { label: '10', value: 10 },
             { label: '20', value: 20 },
             { label: '50', value: 50 },
