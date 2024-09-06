@@ -104,6 +104,9 @@ export class APIClient extends APIClientSDK {
   }
 
   toErrMessages(error) {
+    if (typeof error?.response?.data === 'string') {
+      return [{ message: error?.response?.data }];
+    }
     return (
       error?.response?.data?.errors ||
       error?.response?.data?.messages ||
