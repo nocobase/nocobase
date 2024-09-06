@@ -72,19 +72,6 @@ export const channelsSchema: ISchema = {
         },
       },
       properties: {
-        // delete: {
-        //   type: 'void',
-        //   title: '{{t("Delete")}}',
-        //   'x-component': 'Action',
-        //   'x-component-props': {
-        //     icon: 'DeleteOutlined',
-        //     useAction: '{{ cm.useBulkDestroyAction }}',
-        //     confirm: {
-        //       title: "{{t('Delete')}}",
-        //       content: "{{t('Are you sure you want to delete it?')}}",
-        //     },
-        //   },
-        // },
         create: {
           type: 'void',
           title: '{{t("Add new")}}',
@@ -104,6 +91,7 @@ export const channelsSchema: ISchema = {
         },
         filter: {
           'x-action': 'filter',
+          type: 'object',
           'x-component': 'Filter.Action',
           title: "{{t('Filter')}}",
           'x-use-component-props': 'useFilterActionProps',
@@ -230,139 +218,6 @@ export const channelsSchema: ISchema = {
               title: '{{t("Delete")}}',
               'x-component': 'Action.Link',
               'x-use-component-props': 'useDeleteActionProps',
-            },
-          },
-        },
-        // actions: {
-        //   type: 'void',
-        //   title: '{{t("Actions")}}',
-        //   'x-component': 'Table.Column',
-        //   properties: {
-        //     actions: {
-        //       type: 'void',
-        //       'x-component': 'Space',
-        //       'x-component-props': {
-        //         split: '|',
-        //       },
-        //       properties: {
-        //         update: {
-        //           type: 'void',
-        //           title: '{{t("Configure")}}',
-        //           'x-component': 'Action.Link',
-        //           'x-component-props': {
-        //             type: 'primary',
-        //           },
-        //           properties: {
-        //             drawer: {
-        //               type: 'void',
-        //               'x-component': 'Action.Drawer',
-        //               'x-decorator': 'Form',
-        //               'x-decorator-props': {
-        //                 useValues: '{{ cm.useValuesFromRecord }}',
-        //               },
-        //               title: '{{t("Configure")}}',
-        //               properties: {
-        //                 ...updateFormProperties,
-        //                 footer: {
-        //                   type: 'void',
-        //                   'x-component': 'Action.Drawer.Footer',
-        //                   properties: {
-        //                     cancel: {
-        //                       title: '{{t("Cancel")}}',
-        //                       'x-component': 'Action',
-        //                       'x-component-props': {
-        //                         useAction: '{{ cm.useCancelAction }}',
-        //                       },
-        //                     },
-        //                     submit: {
-        //                       title: '{{t("Submit")}}',
-        //                       'x-component': 'Action',
-        //                       'x-component-props': {
-        //                         type: 'primary',
-        //                         useAction: '{{ cm.useUpdateAction }}',
-        //                       },
-        //                     },
-        //                   },
-        //                 },
-        //               },
-        //             },
-        //           },
-        //         },
-        //         delete: {
-        //           type: 'void',
-        //           title: '{{ t("Delete") }}',
-        //           'x-component': 'Action.Link',
-        //           'x-component-props': {
-        //             confirm: {
-        //               title: "{{t('Delete record')}}",
-        //               content: "{{t('Are you sure you want to delete it?')}}",
-        //             },
-        //             useAction: '{{cm.useDestroyAction}}',
-        //           },
-        //           'x-disabled': '{{ useCanNotDelete() }}',
-        //         },
-        //       },
-        //     },
-        //   },
-        // },
-      },
-    },
-  },
-};
-
-export const a = {
-  actions: {
-    type: 'void',
-    'x-component': 'Space',
-    'x-component-props': {
-      split: '|',
-    },
-    properties: {
-      edit: {
-        type: 'void',
-        title: 'Edit',
-        'x-component': 'Action.Link',
-        'x-component-props': {
-          openMode: 'drawer',
-          icon: 'EditOutlined',
-        },
-        properties: {
-          drawer: {
-            type: 'void',
-            title: 'Edit',
-            'x-component': 'Action.Drawer',
-            properties: {
-              form: {
-                type: 'void',
-                'x-component': 'FormV2',
-                'x-use-component-props': 'useEditFormBlockProps',
-                properties: {
-                  subject: {
-                    'x-decorator': 'FormItem',
-                    'x-component': 'CollectionField',
-                  },
-                  content: {
-                    'x-decorator': 'FormItem',
-                    'x-component': 'CollectionField',
-                  },
-                  footer: {
-                    type: 'void',
-                    'x-component': 'Action.Drawer.Footer',
-                    properties: {
-                      cancel: {
-                        title: '{{t("Cancel")}}',
-                        'x-component': 'Action',
-                        'x-use-component-props': 'useCloseActionProps',
-                      },
-                      submit: {
-                        title: 'Submit',
-                        'x-component': 'Action',
-                        'x-use-component-props': 'useSubmitActionProps',
-                      },
-                    },
-                  },
-                },
-              },
             },
           },
         },

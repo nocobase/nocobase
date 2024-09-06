@@ -52,6 +52,7 @@ export const messageLogsManagerSchema: ISchema = {
           'x-use-component-props': 'useFilterActionProps',
           'x-component-props': {
             icon: 'FilterOutlined',
+            nonfilterable: ['receiver', 'reason'],
           },
           'x-align': 'left',
         },
