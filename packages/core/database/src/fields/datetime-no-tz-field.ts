@@ -105,5 +105,6 @@ export interface DatetimeNoTzFieldOptions extends BaseColumnFieldOptions {
 }
 
 function isIso8601(str) {
-  return moment(str, moment.ISO_8601, true).isValid();
+  const iso8601StrictRegex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
+  return iso8601StrictRegex.test(str);
 }
