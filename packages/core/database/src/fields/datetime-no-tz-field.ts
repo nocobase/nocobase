@@ -74,7 +74,7 @@ export class DatetimeNoTzField extends Field {
 
       set(val) {
         if (typeof val === 'string' && isIso8601(val)) {
-          const momentVal = moment(val);
+          const momentVal = moment(val).utcOffset(timezone);
           val = momentVal.format('YYYY-MM-DD HH:mm:ss');
         }
 

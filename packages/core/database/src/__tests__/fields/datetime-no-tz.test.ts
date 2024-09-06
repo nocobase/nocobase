@@ -59,7 +59,7 @@ describe('datetime no tz field', () => {
     });
 
     const item = await db.getRepository('tests').findOne();
-    expect(item.get('date1')).toBe('2023-03-24 20:00:00');
+    expect(item.get('date1')).toBe('2023-03-24 13:00:00');
   });
 
   it('should set datetime no tz field', async () => {
