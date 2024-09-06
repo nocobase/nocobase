@@ -26,5 +26,9 @@
   "Add user": "Add user",
   "Select users": "Select users",
   "Query users": "Query users",
-  "Receiver type": "Receiver type"
+  "Receiver type": "Receiver type",
+  "No channel enabled yet": "No channel enabled yet",
+  "Success": "Success",
+  "Fail": "Fail",
+  "Reason": "Reason"
 }

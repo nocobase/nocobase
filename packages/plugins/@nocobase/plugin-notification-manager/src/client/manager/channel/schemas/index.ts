@@ -335,7 +335,7 @@ export const a = {
               form: {
                 type: 'void',
                 'x-component': 'FormV2',
-                'x-use-component-props': 'useEditFormProps',
+                'x-use-component-props': 'useEditFormBlockProps',
                 properties: {
                   subject: {
                     'x-decorator': 'FormItem',
@@ -349,6 +349,11 @@ export const a = {
                     type: 'void',
                     'x-component': 'Action.Drawer.Footer',
                     properties: {
+                      cancel: {
+                        title: '{{t("Cancel")}}',
+                        'x-component': 'Action',
+                        'x-use-component-props': 'useCloseActionProps',
+                      },
                       submit: {
                         title: 'Submit',
                         'x-component': 'Action',

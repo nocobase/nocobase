@@ -51,7 +51,7 @@ const collectionOption: CollectionOptions = {
       uiSchema: {
         type: 'string',
         'x-component': 'Input',
-        title: '{{t("Channel Title")}}',
+        title: '{{t("Channel title")}}',
       },
     },
     {
@@ -61,16 +61,20 @@ const collectionOption: CollectionOptions = {
       uiSchema: {
         type: 'string',
         'x-component': 'Input',
-        title: '{{t("Trigger From")}}',
+        title: '{{t("Trigger from")}}',
       },
     },
     {
       name: 'status',
       type: 'string',
-      interface: 'input',
+      interface: 'select',
       uiSchema: {
         type: 'string',
-        'x-component': 'Input',
+        'x-component': 'Select',
+        enum: [
+          { label: '{{t("Success")}}', value: 'success' },
+          { label: '{{t("Fail")}}', value: 'fail' },
+        ],
         title: '{{t("Status")}}',
       },
     },

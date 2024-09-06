@@ -57,7 +57,7 @@ export const useEditFormProps = () => {
   const form = useMemo(
     () =>
       createForm({
-        values: recordData,
+        initialValues: recordData,
       }),
     [],
   );

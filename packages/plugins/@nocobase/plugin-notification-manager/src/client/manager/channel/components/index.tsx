@@ -50,6 +50,7 @@ const AddNew = () => {
   const { t } = useNotificationTranslation();
   const [visible, setVisible] = useState(false);
   const { NotificationTypeNameProvider, name, setName } = useNotificationTypeNameProvider();
+  const api = useAPIClient();
   const channelTypes = useChannelTypes();
   const items =
     channelTypes.length === 0
@@ -63,6 +64,17 @@ const AddNew = () => {
                   <>
                     {t('No channel enabled yet')}
                     <br />{' '}
+                    <a
+                      target="_blank"
+                      href={
+                        api.auth.locale === 'zh-CN'
+                          ? 'https://docs-cn.nocobase.com/handbook/notification-manager'
+                          : 'https://docs.nocobase.com/handbook/notification-manager'
+                      }
+                      rel="noreferrer"
+                    >
+                      {t('View documentation')}
+                    </a>
                   </>
                 }
               />

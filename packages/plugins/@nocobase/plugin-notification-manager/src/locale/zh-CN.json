@@ -28,5 +28,9 @@
   "Query users": "查询用户",
   "Receiver type": "接收人类型",
   "Manual input": "手动输入",
-  "Select user": "选择用户"
+  "Select user": "选择用户",
+  "No channel enabled yet": "暂无启用的渠道",
+  "Success": "成功",
+  "Fail": "失败",
+  "Reason": "原因"
 }

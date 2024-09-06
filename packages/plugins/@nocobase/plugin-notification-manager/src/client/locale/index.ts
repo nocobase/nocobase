@@ -21,7 +21,7 @@ export function generateNTemplate(key: string) {
 }
 
 export function useNotificationTranslation() {
-  return useTranslation([NAMESPACE,'client'], {
+  return useTranslation([NAMESPACE,'client', 'data-source-manager'], {
     nsMode: 'fallback',
   });
 }
