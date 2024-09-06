@@ -331,15 +331,19 @@ export class UiSchemaRepository extends Repository {
     await traverSchemaTree(newSchema);
   }
 
-  async initializeActionContext(newSchema: any, options?) {
+  @transaction()
+  async initializeActionContext(newSchema: any, options?: any = {}) {
     if (!newSchema['x-uid'] || !newSchema['x-action-context']) {
       return;
     }
+
+    const { transaction } = options;
 
     const nodeModel = await this.findOne({
       filter: {
         'x-uid': newSchema['x-uid'],
       },
+      transaction,
     });
 
     if (!lodash.isEmpty(nodeModel?.get('schema')['x-action-context'])) {
