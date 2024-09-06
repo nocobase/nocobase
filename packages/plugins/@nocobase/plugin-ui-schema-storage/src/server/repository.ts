@@ -332,7 +332,7 @@ export class UiSchemaRepository extends Repository {
   }
 
   @transaction()
-  async initializeActionContext(newSchema: any, options?: any = {}) {
+  async initializeActionContext(newSchema: any, options: any = {}) {
     if (!newSchema['x-uid'] || !newSchema['x-action-context']) {
       return;
     }
