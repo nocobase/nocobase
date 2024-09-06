@@ -10,7 +10,7 @@
 export const createActionSchema = {
   type: 'void',
   'x-component': 'Action',
-  title: 'Add New',
+  title: "{{t('Add New')}}",
   'x-align': 'right',
   'x-component-props': {
     type: 'primary',
@@ -19,7 +19,7 @@ export const createActionSchema = {
     drawer: {
       type: 'void',
       'x-component': 'Action.Drawer',
-      title: 'Add new',
+      title: "{{t('Add New')}}",
       properties: {
         form: {
           type: 'void',
@@ -57,6 +57,7 @@ export const createActionSchema = {
               type: 'string',
               'x-decorator': 'FormItem',
               'x-component': 'CollectionField',
+              default: true,
             },
             footer: {
               type: 'void',

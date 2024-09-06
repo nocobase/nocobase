@@ -3,6 +3,13 @@
   "version": "1.4.0-alpha",
   "main": "dist/server/index.js",
   "dependencies": {},
+  "displayName": "Public forms",
+  "displayName.zh-CN": "公开表单",
+  "description": "Provides a public form that allows users to submit information without requiring registration or login.",
+  "description.zh-CN": "提供了一种无需用户注册或登录即可提交信息的表单",
+  "license": "AGPL-3.0",
+  "homepage": "https://docs.nocobase.com/handbook/public-form",
+  "homepage.zh-CN": "https://docs-cn.nocobase.com/public-form",
   "peerDependencies": {
     "@nocobase/client": "1.x",
     "@nocobase/server": "1.x",

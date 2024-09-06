@@ -12,7 +12,7 @@ import { AdminPublicFormList } from './components/AdminPublicFormList';
 import { AdminPublicFormPage } from './components/AdminPublicFormPage';
 import { PublicFormPage } from './components/PublicFormPage';
 import { formSchemaCallback } from './schemas/formSchemaCallback';
-
+import { publicFormBlockSettings } from './settings';
 export class PluginPublicFormsClient extends Plugin {
   protected formTypes = new Map();
 
@@ -38,6 +38,7 @@ export class PluginPublicFormsClient extends Plugin {
   }
 
   async load() {
+    this.app.schemaSettingsManager.add(publicFormBlockSettings);
     this.registerFormType('form', {
       label: 'Form',
       uiSchema: formSchemaCallback,

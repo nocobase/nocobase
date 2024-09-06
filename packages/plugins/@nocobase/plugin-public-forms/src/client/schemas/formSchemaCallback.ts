@@ -13,7 +13,7 @@ export const formSchemaCallback = (options) => ({
   'x-toolbar-props': {
     draggable: false,
   },
-  'x-settings': 'blockSettings:createForm',
+  'x-settings': 'blockSettings:publicForm',
   'x-component': 'CardItem',
   'x-decorator': 'FormBlockProvider',
   'x-decorator-props': {

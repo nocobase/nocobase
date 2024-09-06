@@ -121,7 +121,7 @@ function InternalPublicForm() {
   if (loading) {
     return <Spin />;
   }
-
+  console.log(data?.data?.dataSource);
   return (
     <div
       style={{

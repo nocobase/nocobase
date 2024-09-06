@@ -17,7 +17,7 @@ export const publicFormsCollection = {
       interface: 'input',
       uiSchema: {
         type: 'string',
-        title: 'Title',
+        title: "{{t('Title')}}",
         required: true,
         'x-component': 'Input',
       },
@@ -28,7 +28,7 @@ export const publicFormsCollection = {
       interface: 'textarea',
       uiSchema: {
         type: 'string',
-        title: 'Description',
+        title: "{{t('Description')}}",
         'x-component': 'Input.TextArea',
       },
     },
@@ -38,7 +38,7 @@ export const publicFormsCollection = {
       interface: 'radioGroup',
       uiSchema: {
         type: 'string',
-        title: 'Type',
+        title: "{{t('Type')}}",
         'x-component': 'Radio.Group',
       },
     },
@@ -48,9 +48,9 @@ export const publicFormsCollection = {
       interface: 'collection',
       uiSchema: {
         type: 'string',
-        title: 'Collection',
+        title: "{{t('Collection')}}",
         required: true,
-        'x-component': 'CollectionSelect',
+        'x-component': 'DataSourceCollectionCascader',
       },
     },
     {
@@ -59,7 +59,7 @@ export const publicFormsCollection = {
       interface: 'password',
       uiSchema: {
         type: 'string',
-        title: 'Password',
+        title: "{{t('Password')}}",
         'x-component': 'Password',
       },
     },
@@ -69,8 +69,9 @@ export const publicFormsCollection = {
       interface: 'checkbox',
       uiSchema: {
         type: 'string',
-        title: 'Enable form',
+        title: "{{t('Enable form')}}",
         'x-component': 'Checkbox',
+        default: true,
       },
     },
   ],

@@ -14,6 +14,20 @@ import { Plugin } from '@nocobase/server';
 class PasswordError extends Error {}
 
 export class PluginPublicFormsServer extends Plugin {
+  async handleGetCollectionData(schema, formCollection) {
+    const collection = this.db.getCollection(formCollection);
+    const collections = [
+      {
+        name: collection.name,
+        fields: collection.getFields().map((v) => {
+          return {
+            ...v.options,
+          };
+        }),
+      },
+    ];
+    return collections;
+  }
   // TODO
   async getMetaByTk(filterByTk: string, options: { password?: string; token?: string }) {
     const { token, password } = options;
@@ -37,123 +51,12 @@ export class PluginPublicFormsServer extends Plugin {
     const collectionName = keys.pop();
     const dataSourceKey = keys.pop() || 'main';
     const schema = await uiSchema.getJsonSchema(filterByTk);
-
+    const collections = await this.handleGetCollectionData(schema, collectionName);
     return {
       dataSource: {
         key: dataSourceKey,
         displayName: dataSourceKey,
-        collections: [
-          {
-            name: 'users',
-            fields: [
-              {
-                key: '9nlc0hg2yw3',
-                name: 'id',
-                type: 'bigInt',
-                interface: 'id',
-                description: null,
-                collectionName: 'users',
-                parentKey: null,
-                reverseKey: null,
-                uiSchema: {
-                  type: 'number',
-                  title: '{{t("ID")}}',
-                  'x-component': 'InputNumber',
-                  'x-read-pretty': true,
-                },
-                allowNull: false,
-                primaryKey: true,
-                autoIncrement: true,
-              },
-              {
-                key: '7wkjj2n3ngj',
-                name: 'nickname',
-                type: 'string',
-                interface: 'input',
-                description: null,
-                collectionName: 'users',
-                parentKey: null,
-                reverseKey: null,
-                uiSchema: {
-                  type: 'string',
-                  title: '{{t("Nickname")}}',
-                  'x-component': 'Input',
-                },
-              },
-              {
-                key: 'js94s37qyzg',
-                name: 'username',
-                type: 'string',
-                interface: 'input',
-                description: null,
-                collectionName: 'users',
-                parentKey: null,
-                reverseKey: null,
-                unique: true,
-                uiSchema: {
-                  type: 'string',
-                  title: '{{t("Username")}}',
-                  required: true,
-                  'x-component': 'Input',
-                  'x-validator': {
-                    username: true,
-                  },
-                },
-              },
-              {
-                key: 'uj0pbokt8o9',
-                name: 'email',
-                type: 'string',
-                interface: 'email',
-                description: null,
-                collectionName: 'users',
-                parentKey: null,
-                reverseKey: null,
-                unique: true,
-                uiSchema: {
-                  type: 'string',
-                  title: '{{t("Email")}}',
-                  required: true,
-                  'x-component': 'Input',
-                  'x-validator': 'email',
-                },
-              },
-              {
-                key: 'rdhnp68luwv',
-                name: 'phone',
-                type: 'string',
-                interface: 'input',
-                description: null,
-                collectionName: 'users',
-                parentKey: null,
-                reverseKey: null,
-                unique: true,
-                uiSchema: {
-                  type: 'string',
-                  title: '{{t("Phone")}}',
-                  required: true,
-                  'x-component': 'Input',
-                },
-              },
-              {
-                key: 'lhhaalru7om',
-                name: 'password',
-                type: 'password',
-                interface: 'password',
-                description: null,
-                collectionName: 'users',
-                parentKey: null,
-                reverseKey: null,
-                hidden: true,
-                uiSchema: {
-                  type: 'string',
-                  title: '{{t("Password")}}',
-                  'x-component': 'Password',
-                },
-              },
-            ],
-          },
-        ],
+        collections,
       },
       token: this.app.authManager.jwt.sign({
         // todo

@@ -159,7 +159,7 @@ export async function getRenderContent(templateEngine, content, variables, local
       const renderedContent = Handlebars.compile(content);
       // 处理渲染后的内容
       const data = getVariablesData(localVariables);
-      const html = renderedContent({ ...variables.ctxRef.current, ...data });
+      const html = renderedContent({ ...variables?.ctxRef?.current, ...data });
       return await defaultParse(html);
     } catch (error) {
       console.log(error);
