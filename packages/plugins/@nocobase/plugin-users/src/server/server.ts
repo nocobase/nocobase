@@ -176,7 +176,7 @@ export default class PluginUsersServer extends Plugin {
       if (!model._changed.has('password')) {
         return;
       }
-      model.set('passwordChangeTZ', Date.now());
+      model.set('passwordChangeTz', Date.now());
       await this.app.emitAsync('cache:del:roles', { userId: model.get('id') });
       await this.app.emitAsync('cache:del:auth', { userId: model.get('id') });
     });

@@ -84,7 +84,7 @@ export class BaseAuth extends Auth {
           raw: true,
         }),
       );
-      if (temp && user.passwordChangeTZ && iat * 1000 < user.passwordChangeTZ) {
+      if (temp && user.passwordChangeTz && iat * 1000 < user.passwordChangeTz) {
         throw new Error('Token is invalid');
       }
       return user;

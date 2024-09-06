@@ -92,7 +92,7 @@ export default defineCollection({
       },
     },
     {
-      name: 'passwordChangeTZ',
+      name: 'passwordChangeTz',
       type: 'bigInt',
     },
     {
