@@ -151,7 +151,10 @@ export function useUploadProps<T extends IUploadProps = UploadProps>(props: T) {
   };
 }
 
-export function toValueItem(file) {
+export function toValueItem(file, targetValue?) {
+  if (targetValue) {
+    return file.response?.data?.[targetValue];
+  }
   return file.response?.data;
 }
 
@@ -160,6 +163,11 @@ export const toItem = (file) => {
     file = {
       uid: file.uid,
       ...file.response.data,
+    };
+  }
+  if (typeof file === 'string') {
+    return {
+      imageUrl: file,
     };
   }
   return {

@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ISchema } from '@formily/react';
+import { ISchema, useField } from '@formily/react';
 import { defaultProps, operators } from './properties';
 import { CollectionFieldInterface } from '../../data-source/collection-field-interface/CollectionFieldInterface';
 
@@ -32,6 +32,24 @@ export class UrlFieldInterface extends CollectionFieldInterface {
     {
       label: 'Preview',
       value: 'Input.Preview',
+      useVisible: () => {
+        const field = useField();
+        return !field.editable;
+      },
+    },
+    {
+      label: 'Upload',
+      value: 'Upload.Attachment',
+      useVisible: () => {
+        const field = useField();
+        return field.editable;
+      },
+      useProps: () => {
+        return {
+          targetValue: 'url',
+          action: `attachments:create`,
+        };
+      },
     },
   ];
   availableTypes = ['string', 'text'];

@@ -19,6 +19,7 @@ export type UploadProps = Omit<AntdUploadProps, 'onChange'> & {
   value?: any;
   size?: string;
   rules?: PropsRules;
+  targetValue?: string; //要存储的key
 };
 
 export type DraggerProps = Omit<AntdDraggerProps, 'onChange'> & {

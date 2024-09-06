@@ -340,7 +340,7 @@ export function AttachmentList(props) {
 }
 
 export function Uploader({ rules, ...props }: UploadProps) {
-  const { disabled, multiple, value, onChange } = props;
+  const { disabled, multiple, value, targetValue, onChange } = props;
   const [pendingList, setPendingList] = useState<any[]>([]);
   const { t } = useTranslation();
   const { componentCls: prefixCls } = useStyles();
@@ -375,7 +375,7 @@ export function Uploader({ rules, ...props }: UploadProps) {
         // NOTE: 用 fileList 里的才有附加的验证状态信息，file 没有（不清楚为何）
         const file = info.fileList.find((f) => f.uid === info.file.uid);
         if (file.status === 'done') {
-          onChange?.(toValueItem(file));
+          onChange?.(toValueItem(file, targetValue));
           setPendingList([]);
         } else {
           setPendingList([normalizeFile(file)]);
