@@ -376,7 +376,6 @@ export const usersSchema: ISchema = {
                             phone: {
                               title: '{{t("Phone")}}',
                               'x-component': 'Input',
-                              'x-validator': 'phone',
                               'x-decorator': 'FormItem',
                               required: false,
                             },
