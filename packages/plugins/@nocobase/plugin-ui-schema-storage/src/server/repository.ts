@@ -331,7 +331,7 @@ export class UiSchemaRepository extends Repository {
     await traverSchemaTree(newSchema);
   }
 
-  async upgrade(newSchema: any, options?) {
+  async initializeActionContext(newSchema: any, options?) {
     if (!newSchema['x-uid'] || !newSchema['x-action-context']) {
       return;
     }

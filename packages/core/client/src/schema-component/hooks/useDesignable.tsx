@@ -217,13 +217,13 @@ export class Designable {
       });
       message.success(t('Saved successfully'), 0.2);
     });
-    this.on('upgrade', async ({ schema }) => {
+    this.on('initializeActionContext', async ({ schema }) => {
       this.refresh();
       if (!schema?.['x-uid']) {
         return;
       }
       await api.request({
-        url: `/uiSchemas:upgrade`,
+        url: `/uiSchemas:initializeActionContext`,
         method: 'post',
         data: {
           ...schema,
@@ -280,14 +280,17 @@ export class Designable {
     generateUid(schema);
   }
 
-  on(name: 'insertAdjacent' | 'remove' | 'error' | 'patch' | 'batchPatch' | 'upgrade', listener: any) {
+  on(name: 'insertAdjacent' | 'remove' | 'error' | 'patch' | 'batchPatch' | 'initializeActionContext', listener: any) {
     if (!this.events[name]) {
       this.events[name] = [];
     }
     this.events[name].push(listener);
   }
 
-  async emit(name: 'insertAdjacent' | 'remove' | 'error' | 'patch' | 'batchPatch' | 'upgrade', ...args) {
+  async emit(
+    name: 'insertAdjacent' | 'remove' | 'error' | 'patch' | 'batchPatch' | 'initializeActionContext',
+    ...args
+  ) {
     if (!this.events[name]) {
       return;
     }

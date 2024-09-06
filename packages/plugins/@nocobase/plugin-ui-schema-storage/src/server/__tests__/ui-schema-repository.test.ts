@@ -952,7 +952,7 @@ describe('ui_schema repository', () => {
     });
   });
 
-  describe('upgrade', function () {
+  describe('initializeActionContext', function () {
     let rootNode;
     let rootUid: string;
     let oldTree;
@@ -999,7 +999,7 @@ describe('ui_schema repository', () => {
     });
 
     it('should update root ui schema and only have x-action-context to be updated', async () => {
-      await repository.upgrade({
+      await repository.initializeActionContext({
         'x-uid': rootUid,
         title: 'test-title',
         ['x-action-context']: {
@@ -1025,7 +1025,7 @@ describe('ui_schema repository', () => {
       });
 
       // will not updated when x-action-context existed
-      await repository.upgrade({
+      await repository.initializeActionContext({
         'x-uid': rootUid,
         ['x-action-context']: {
           field3: 'field3',

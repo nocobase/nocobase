@@ -248,7 +248,7 @@ describe('action test', () => {
     expect(data.properties.b['properties']['c']['title']).toEqual('c-title');
   });
 
-  test('upgrade', async () => {
+  test('initializeActionContext', async () => {
     await app
       .agent()
       .resource('uiSchemas')
@@ -273,7 +273,7 @@ describe('action test', () => {
     let response = await app
       .agent()
       .resource('uiSchemas')
-      .upgrade({
+      .initializeActionContext({
         values: {
           'x-uid': 'n1',
           'x-action-context': {

@@ -58,7 +58,7 @@ describe('usePopupContextInActionOrAssociationField', () => {
 
     result.current.updatePopupContext(context);
 
-    expect(dnMock.emit).toHaveBeenCalledWith('upgrade', {
+    expect(dnMock.emit).toHaveBeenCalledWith('initializeActionContext', {
       schema: {
         'x-uid': fieldSchemaMock['x-uid'],
         'x-action-context': context,
@@ -84,7 +84,7 @@ describe('usePopupContextInActionOrAssociationField', () => {
       ...context,
       collection: undefined,
     });
-    expect(dnMock.emit).toHaveBeenCalledWith('upgrade', {
+    expect(dnMock.emit).toHaveBeenCalledWith('initializeActionContext', {
       schema: {
         'x-uid': fieldSchemaMock['x-uid'],
         'x-action-context': {
