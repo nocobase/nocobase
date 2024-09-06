@@ -6,7 +6,12 @@
   "description": "使用魔法系统变量，对上传后的文档word或者excle进行变量替换，然后把数据库数据生成一份新的带有数据库数据的文档",
   "description.zh-CN": "使用魔法系统变量，对上传后的文档word或者excle进行变量替换，然后把数据库数据生成一份新的带有数据库数据的文档",
   "main": "dist/server/index.js",
-  "dependencies": {},
+  "dependencies": {
+    "content-disposition": "^0.5.4",
+    "docxtemplater": "^3.50.0",
+    "pizzip": "^3.1.7",
+    "xlsx-template": "^1.4.4"
+  },
   "peerDependencies": {
     "@nocobase/client": "1.x",
     "@nocobase/server": "1.x",

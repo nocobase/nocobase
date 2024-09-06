@@ -12,7 +12,11 @@ import PluginFileManagerServer from '@nocobase/plugin-file-manager';
 import { ResourcerContext } from '@nocobase/resourcer';
 import { resolve } from 'path';
 import os from 'os';
-export async function tableListAction(ctx: ResourcerContext, next: Next, dictionaryCollections: any) {
-  ctx.body = dictionaryCollections;
+import { Collection } from '@nocobase/database';
+export async function allListAction(ctx: ResourcerContext, next: Next, c: Collection) {
+  // ctx.body = dictionaryCollections;
+  // ctx.db.getCollection("printTemplate").model.findAll()
+  //  await c.model.findAll()
+  ctx.body = await c.model.findAll();
   await next();
 }

@@ -10,10 +10,11 @@
 import { Context, Next } from '@nocobase/actions';
 import { koaMulter as multer } from '@nocobase/utils';
 
-const mimeTypeToExtensionMap = {
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'docx',
-  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'xlsx',
-};
+// const mimeTypeToExtensionMap = {
+//   'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'docx',
+//   'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'xlsx',
+// };
+import { mimeTypeToExtensionMap } from './../util';
 const storage = multer.diskStorage({
   // destination: os.tmpdir(), //  If no destination is given, the operating system's default directory for temporary files is used.
   filename(req, file, cb) {

@@ -17,22 +17,33 @@ import { uploadSelfAction } from './actions/uploadSelfAction';
 import { createAction } from './actions/createAction';
 import { updateAction } from './actions/updateAction';
 import { tableListAction } from './actions/tableList';
+import { allListAction } from './actions/allListAction';
+import { formatTemplateAction } from './actions/formatTemplateAction';
 
 export class PluginPrintTemplateServer extends Plugin {
   private currentDictionaryCollections = [];
 
   private fileManagerPlugin: PluginFileManagerServer;
-  init() {
+  async init() {
     this.fileManagerPlugin = this.pm.get('file-manager') as PluginFileManagerServer;
     if (!this.fileManagerPlugin) {
       throw new Error('File manager plugin is not installed.');
     }
-    this.currentDictionaryCollections = Array.from(this.db.collections.keys()).map((name, index) => {
+    const canUseCollection = await this.db.getCollection('collections').model.findAll();
+
+    this.currentDictionaryCollections = canUseCollection.map((item) => {
+      const tmpItem = item.toJSON();
       return {
-        name,
-        id: index,
+        id: tmpItem.name,
+        name: tmpItem.name,
       };
     });
+    // this.currentDictionaryCollections = Array.from(this.db.collections.keys()).map((name, index) => {
+    //   return {
+    //     name,
+    //     id: index,
+    //   };
+    // });
   }
   async afterAdd() {}
 
@@ -51,6 +62,13 @@ export class PluginPrintTemplateServer extends Plugin {
     });
     this.app.resourceManager.registerActionHandler('update', (ctx, next) => {
       return updateAction(ctx, next, this.fileManagerPlugin);
+    });
+
+    this.app.resourceManager.registerActionHandler('allList', (ctx, next) => {
+      return allListAction(ctx, next, this.db.getCollection('printTemplate'));
+    });
+    this.app.resourceManager.registerActionHandler('formatTemplate', (ctx, next) => {
+      return formatTemplateAction(ctx, next, this.app, this.db, this.fileManagerPlugin);
     });
     this.app.acl.allow('printTemplate', '*', 'public');
   }
