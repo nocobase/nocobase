@@ -11,12 +11,13 @@ import { observer } from '@formily/react';
 import { useRecord } from '@nocobase/client';
 import { Select, Tag } from 'antd';
 import React from 'react';
+import { omit } from 'lodash';
 
 export const FieldType = observer(
   (props: any) => {
     const { value, handleFieldChange, onChange } = props;
     const record = useRecord();
-    const item = record;
+    const item = omit(record, ['__parent']);
     return !item?.possibleTypes ? (
       <Tag>{value}</Tag>
     ) : (
