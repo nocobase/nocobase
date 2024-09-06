@@ -89,6 +89,7 @@ const usePaginationProps = () => {
       pageSize: pageSize || 10,
       current: page || 1,
       pageSizeOptions,
+      showSizeChanger: true,
     };
   } else {
     return {

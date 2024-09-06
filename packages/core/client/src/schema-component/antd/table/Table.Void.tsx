@@ -26,6 +26,8 @@ type TableVoidProps = TableProps<any> & {
   ) => Result<any, any> & { state?: any; setState?: any };
 };
 
+const pageSizeOptions = [5, 10, 20, 50, 100, 200];
+
 const usePaginationProps = (props: TableProps<any> & { request?: any }, service): TablePaginationConfig | false => {
   if (props.pagination === false) {
     return false;
@@ -41,6 +43,7 @@ const usePaginationProps = (props: TableProps<any> & { request?: any }, service)
     pagination.pageSize = pageSize;
   }
   return {
+    pageSizeOptions,
     showSizeChanger: true,
     ...pagination,
     onChange(page, pageSize) {
