@@ -1,1 +1,1 @@
-# @nocobase/plugin-print-template
+# @nocobase/plugin-template-print

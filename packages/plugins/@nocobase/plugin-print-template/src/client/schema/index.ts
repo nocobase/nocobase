@@ -31,7 +31,7 @@ export function usePrintTemplateActionProps() {
   const t = useT();
 
   return {
-    title: t('print template action'),
+    title: t('template print action'),
     type: 'primary',
   };
 }
@@ -121,7 +121,7 @@ export const createPrintTemplateActionSchema = (blockComponent: string) => {
       listTemplate: {
         type: 'void',
         'x-component': 'Action.Modal',
-        title: tStr('print template modal title'),
+        title: tStr('template print modal title'),
         'x-decorator': 'FormV2',
 
         properties: {

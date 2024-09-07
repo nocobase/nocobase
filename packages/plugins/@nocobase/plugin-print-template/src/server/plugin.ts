@@ -20,7 +20,7 @@ import { tableListAction } from './actions/tableList';
 import { allListAction } from './actions/allListAction';
 import { formatTemplateAction } from './actions/formatTemplateAction';
 
-export class PluginPrintTemplateServer extends Plugin {
+export class PluginTemplatePrintServer extends Plugin {
   private currentDictionaryCollections = [];
 
   private fileManagerPlugin: PluginFileManagerServer;
@@ -82,4 +82,4 @@ export class PluginPrintTemplateServer extends Plugin {
   async remove() {}
 }
 
-export default PluginPrintTemplateServer;
+export default PluginTemplatePrintServer;

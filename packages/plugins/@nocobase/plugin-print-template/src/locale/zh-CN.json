@@ -14,8 +14,8 @@
   "confirm delete title": "删除",
   "confirm delete content": "确认删除？",
   "delete success": "删除成功",
-  "print template setting menu": "模板打印",
-  "print template action":"模板打印",
-  "print template modal title":"模板打印",
+  "template print setting menu": "模板打印",
+  "template print action":"模板打印",
+  "template print modal title":"模板打印",
   "select template":"选择模板"
 }

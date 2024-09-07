@@ -8,5 +8,5 @@
  */
 
 // 打印模板按钮
-export const PrintTemplateActionName = 'print template action';
+export const PrintTemplateActionName = 'template print action';
 export const PrintTemplateActionNameLowercase = PrintTemplateActionName.toLowerCase();

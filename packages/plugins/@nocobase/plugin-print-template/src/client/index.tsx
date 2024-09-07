@@ -23,17 +23,17 @@ import {
 import { printTemplateActionSettings } from './settings';
 import { createPrintTemplateActionInitializerItem } from './initializer';
 
-export class PluginPrintTemplateClient extends Plugin {
+export class PluginTemplatePrintClient extends Plugin {
   async load() {
     // 打印模板设置路由
-    this.app.pluginSettingsManager.add('print-template', {
-      title: tStr('print template setting menu'),
+    this.app.pluginSettingsManager.add('template-print', {
+      title: tStr('template print setting menu'),
       icon: 'PrinterOutlined',
       Component: PluginSettingsTable,
     });
     this.app.addProvider(PluginSettingsTableProvider);
 
-    // Action Button - Print Template Action
+    // Action Button - Template Print Action
     this.app.addScopes({
       usePrintTemplateActionProps,
       useDownloadPrintTemplateFile,
@@ -50,10 +50,10 @@ export class PluginPrintTemplateClient extends Plugin {
 
     this.app.schemaInitializerManager.addItem(
       'details:configureActions',
-      'enableActions.printTemplate',
+      'enableActions.templatePrint',
       createPrintTemplateActionInitializerItem('details'),
     );
   }
 }
 
-export default PluginPrintTemplateClient;
+export default PluginTemplatePrintClient;
