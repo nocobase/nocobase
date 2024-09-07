@@ -72,6 +72,7 @@ export const Action: ComposedAction = withDynamicSchemaProps(
       addChild,
       onMouseEnter,
       refreshDataBlockRequest: propsRefreshDataBlockRequest,
+      confirmTitle,
       ...others
     } = useProps(props); // 新版 UISchema（1.0 之后）中已经废弃了 useProps，这里之所以继续保留是为了兼容旧版的 UISchema
     const aclCtx = useACLActionParamsContext();
@@ -172,6 +173,8 @@ export const Action: ComposedAction = withDynamicSchemaProps(
       run,
       confirm,
       modal,
+      setSubmitted: setParentSubmitted,
+      confirmTitle,
     };
 
     const buttonElement = RenderButton(buttonProps);
@@ -304,6 +307,8 @@ function RenderButton({
   run,
   confirm,
   modal,
+  setSubmitted,
+  confirmTitle,
 }) {
   const { t } = useTranslation();
   const { isPopupVisibleControlledByURL } = usePopupSettings();
@@ -322,6 +327,7 @@ function RenderButton({
           if (onClick) {
             onClick(e, () => {
               if (refreshDataBlockRequest !== false) {
+                setSubmitted?.(true);
                 service?.refresh?.();
               }
             });
@@ -329,8 +335,8 @@ function RenderButton({
             setVisible(true);
             run?.();
           } else {
+            // Currently, only buttons of these types can control the visibility of popups through URLs.
             if (
-              // Currently, only buttons of these types can control the visibility of popups through URLs.
               ['view', 'update', 'create', 'customize:popup'].includes(fieldSchema['x-action']) &&
               fieldSchema['x-uid']
             ) {
@@ -343,8 +349,8 @@ function RenderButton({
         };
         if (confirm?.content) {
           modal.confirm({
-            title: t(confirm.title, { title: actionTitle }),
-            content: t(confirm.content, { title: actionTitle }),
+            title: t(confirm.title, { title: confirmTitle || actionTitle }),
+            content: t(confirm.content, { title: confirmTitle || actionTitle }),
             onOk,
           });
         } else {

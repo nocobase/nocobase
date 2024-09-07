@@ -95,6 +95,9 @@ export const FilterGroup = connect((props) => {
                 field.value = {
                   [logic]: items,
                 };
+                field.initialValue = {
+                  [logic]: items,
+                };
               }}
             >
               {t('Add condition')}

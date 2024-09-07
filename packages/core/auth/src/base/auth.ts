@@ -69,14 +69,14 @@ export class BaseAuth extends Auth {
       return null;
     }
     try {
-      const { userId, roleName } = await this.jwt.decode(token);
+      const { userId, roleName, iat, temp } = await this.jwt.decode(token);
 
       if (roleName) {
         this.ctx.headers['x-role'] = roleName;
       }
 
       const cache = this.ctx.cache as Cache;
-      return await cache.wrap(this.getCacheKey(userId), () =>
+      const user = await cache.wrap(this.getCacheKey(userId), () =>
         this.userRepository.findOne({
           filter: {
             id: userId,
@@ -84,6 +84,10 @@ export class BaseAuth extends Auth {
           raw: true,
         }),
       );
+      if (temp && user.passwordChangeTz && iat * 1000 < user.passwordChangeTz) {
+        throw new Error('Token is invalid');
+      }
+      return user;
     } catch (err) {
       this.ctx.logger.error(err, { method: 'check' });
       return null;
@@ -106,6 +110,7 @@ export class BaseAuth extends Auth {
     }
     const token = this.jwt.sign({
       userId: user.id,
+      temp: true,
     });
     return {
       user,
@@ -119,7 +124,7 @@ export class BaseAuth extends Auth {
       return;
     }
     const { userId } = await this.jwt.decode(token);
-    await this.ctx.app.emitAsync('beforeSignOut', { userId });
+    await this.ctx.app.emitAsync('cache:del:roles', { userId });
     await this.ctx.cache.del(this.getCacheKey(userId));
     return await this.jwt.block(token);
   }
