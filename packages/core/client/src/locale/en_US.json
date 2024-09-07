@@ -838,5 +838,7 @@
   "Open in new window": "Open in new window",
   "Sorry, the page you visited does not exist.": "Sorry, the page you visited does not exist.",
   "is none of": "is none of",
-  "is any of": "is any of"
+  "is any of": "is any of",
+  "Plugin dependency version mismatch": "Plugin dependency version mismatch",
+  "The current dependency version of the plugin does not match the version of the application and may not work properly. Are you sure you want to continue enabling the plugin?": "The current dependency version of the plugin does not match the version of the application and may not work properly. Are you sure you want to continue enabling the plugin?"
 }
