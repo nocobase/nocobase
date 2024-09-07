@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { App, Card, Divider, Popconfirm, Space, Switch, Typography, message } from 'antd';
+import { App, Card, Divider, Popconfirm, Space, Switch, Typography } from 'antd';
 import classnames from 'classnames';
 import React, { FC, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -157,7 +157,20 @@ function PluginInfo(props: IPluginInfo) {
             onChange={async (checked, e) => {
               e.stopPropagation();
               if (!isCompatible && checked) {
-                message.error(t("Dependencies check failed, can't enable."));
+                modal.confirm({
+                  title: t('Plugin dependency version mismatch'),
+                  content: t(
+                    'The current dependency version of the plugin does not match the version of the application and may not work properly. Are you sure you want to continue enabling the plugin?',
+                  ),
+                  onOk: async () => {
+                    await api.request({
+                      url: `pm:enable`,
+                      params: {
+                        filterByTk: name,
+                      },
+                    });
+                  },
+                });
                 return;
               }
               if (!checked) {
