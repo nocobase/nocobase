@@ -359,15 +359,15 @@ function WorkflowSelect({ formAction, buttonAction, actionType, ...props }) {
   const compile = useCompile();
 
   const workflowPlugin = usePlugin('workflow') as any;
+  const triggerOptions = workflowPlugin.useTriggersOptions();
   const workflowTypes = useMemo(
     () =>
-      workflowPlugin
-        .getTriggersOptions()
+      triggerOptions
         .filter((item) => {
           return typeof item.options.isActionTriggerable === 'function' || item.options.isActionTriggerable === true;
         })
         .map((item) => item.value),
-    [workflowPlugin],
+    [triggerOptions],
   );
 
   useFormEffects(() => {
