@@ -88,9 +88,16 @@ function TriggerExecution() {
 
   return (
     <SchemaComponent
+      components={{
+        Tooltip,
+      }}
       schema={{
         type: 'void',
         name: 'execution',
+        'x-decorator': 'Tooltip',
+        'x-decorator-props': {
+          title: lang('View result'),
+        },
         'x-component': 'Action',
         'x-component-props': {
           title: <InfoOutlined />,
@@ -133,7 +140,7 @@ function TriggerExecution() {
                 'x-component-props': {
                   className: css`
                     padding: 1em;
-                    background-color: #eee;
+                    background-color: #f3f3f3;
                   `,
                 },
                 'x-read-pretty': true,
