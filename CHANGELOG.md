@@ -5,6 +5,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.3.17-beta](https://github.com/nocobase/nocobase/compare/v1.3.16-beta...v1.3.17-beta) - 2024-09-07
+
+### 🎉 New Features
+
+- **[client]** Supports configuration of linkage rules in sub-forms and sub-forms. ([#5159](https://github.com/nocobase/nocobase/pull/5159)) by @zhangzhonghe
+
+### 🚀 Improvements
+
+- **[client]**
+  - default time for display is 00:00:00 ([#5226](https://github.com/nocobase/nocobase/pull/5226)) by @chenos
+
+  - plugins can also be enabled when the plugin dependency version is inconsistent ([#5225](https://github.com/nocobase/nocobase/pull/5225)) by @chenos
+
+- **[server]** provide more user-friendly application-level error messages ([#5220](https://github.com/nocobase/nocobase/pull/5220)) by @chenos
+
+### 🐛 Bug Fixes
+
+- **[client]** Fix the "Maximum call stack size exceeded" error that occurs in the details block ([#5228](https://github.com/nocobase/nocobase/pull/5228)) by @zhangzhonghe
+
+- **[Collection field: Many to many (array)]** Fix the error where setting a field of `uid` type as target key for a many to many (array) field ([#5229](https://github.com/nocobase/nocobase/pull/5229)) by @2013xile
+
+- **[UI schema storage]** Fix the issue that member roles clicking the button reported no permission ([#5206](https://github.com/nocobase/nocobase/pull/5206)) by @zhangzhonghe
+
+- **[Workflow]** Fix trigger type column showing wrong text after new workflow created ([#5222](https://github.com/nocobase/nocobase/pull/5222)) by @mytharcher
+
+- **[Users]** Remove phone format validation when editing user phones in user management ([#5221](https://github.com/nocobase/nocobase/pull/5221)) by @2013xile
+
 ## [v1.3.16-beta](https://github.com/nocobase/nocobase/compare/v1.3.15-beta...v1.3.16-beta) - 2024-09-06
 
 ### 🚀 Improvements
