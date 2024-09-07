@@ -5,6 +5,9 @@ concurrency:
   cancel-in-progress: true
 
 on:
+  push:
+    branches:
+      - fix/release-next-ci
   workflow_dispatch:
 
 jobs:
@@ -87,14 +90,12 @@ jobs:
           yarn config set //registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}
           yarn install
           yarn lerna version ${{ env.NEWVERSION }} -y --no-git-tag-version
-          git tag v${{ env.NEWVERSION }}
-          git push origin v${{ env.NEWVERSION }}
           yarn build
           echo "# test" >> Release.md
           git add .
           git commit -m "chore(versions): test publish packages xxx"
           cat lerna.json
-          yarn release:force --no-verify-access --no-git-reset --registry https://registry.npmjs.org/ --dist-tag=next
+          # yarn release:force --no-verify-access --no-git-reset --registry https://registry.npmjs.org/ --dist-tag=next
       - name: Checkout pro-plugins
         uses: actions/checkout@v3
         with:
@@ -109,19 +110,6 @@ jobs:
           do
           git clone -b next https://x-access-token:${{ steps.app-token.outputs.token }}@github.com/nocobase/$repo.git packages/pro-plugins/@nocobase/$repo
           done
-      - name: Tag Pro plugins
-        run: |
-          cd ./packages/pro-plugins
-          git tag v${{ env.NEWVERSION }}
-          git push origin v${{ env.NEWVERSION }}
-          cd ../../
-          for repo in ${{ join(fromJSON(vars.NEXT_PRO_PLUGIN_REPOS), ' ') }} ${{ join(fromJSON(vars.CUSTOM_PRO_PLUGIN_REPOS), ' ') }}
-          do
-            cd ./packages/pro-plugins/@nocobase/$repo
-            git tag v${{ env.NEWVERSION }}
-            git push origin v${{ env.NEWVERSION }}
-            cd ../../../../
-          done
       - name: Build Pro plugins
         run: |
           yarn config set registry https://registry.npmjs.org/
@@ -132,17 +120,36 @@ jobs:
         run: |
           git reset --hard
           npm config set //pkg.nocobase.com/:_authToken=${{ env.PKG_NOCOBASE_TOKEN }}
-          yarn release:force --no-verify-access --no-git-reset --registry https://pkg.nocobase.com --dist-tag=next
+          # yarn release:force --no-verify-access --no-git-reset --registry https://pkg.nocobase.com --dist-tag=next
       - name: publish pkg-src.nocobase.com
         run: |
           git reset --hard
           bash generate-npmignore.sh ignore-src
           npm config set //pkg-src.nocobase.com/:_authToken=${{ env.PKG_SRC_NOCOBASE_TOKEN }}
-          yarn release:force --no-verify-access --no-git-reset --registry https://pkg-src.nocobase.com --dist-tag=next
-      - name: Run script
+          # yarn release:force --no-verify-access --no-git-reset --registry https://pkg-src.nocobase.com --dist-tag=next
+      - name: Tag
+        run: |
+          git reset --hard
+          git tag v${{ env.NEWVERSION }}
+          # git push origin v${{ env.NEWVERSION }}
+          cd ./packages/pro-plugins
+          git reset --hard
+          git tag v${{ env.NEWVERSION }}
+          # git push origin v${{ env.NEWVERSION }}
+          cd ../../
+          for repo in ${{ join(fromJSON(vars.NEXT_PRO_PLUGIN_REPOS), ' ') }} ${{ join(fromJSON(vars.CUSTOM_PRO_PLUGIN_REPOS), ' ') }}
+          do
+            cd ./packages/pro-plugins/@nocobase/$repo
+            git reset --hard
+            git tag v${{ env.NEWVERSION }}
+            # git push origin v${{ env.NEWVERSION }}
+            cd ../../../../
+          done
+      - name: Run release script
         shell: bash
         run: |
-          node scripts/release/changelogAndRelease.js --ver alpha
+          git checkout fix/release-next-ci
+          node scripts/release/changelogAndRelease.js --ver alpha --test
         env:
           PRO_PLUGIN_REPOS: ${{ vars.NEXT_PRO_PLUGIN_REPOS }}
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
