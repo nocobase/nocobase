@@ -114,11 +114,7 @@ export const CollectionDeletedPlaceholder: FC<CollectionDeletedPlaceholderProps>
   return null;
 };
 
-/**
- * @internal
- */
-export const CollectionNotAllowViewPlaceholder: FC<any> = () => {
-  const { designable } = useDesignable();
+const CollectionNotAllowView = () => {
   const { t } = useTranslation();
   const dataSource = useDataSource();
   const compile = useCompile();
@@ -146,13 +142,21 @@ export const CollectionNotAllowViewPlaceholder: FC<any> = () => {
       },
     ).replaceAll('&gt;', '>');
   }, [nameValue, t]);
+  return (
+    <BlockItemCard>
+      <Result status="404" subTitle={messageValue} />
+    </BlockItemCard>
+  );
+};
+
+/**
+ * @internal
+ */
+export const CollectionNotAllowViewPlaceholder: FC<any> = () => {
+  const { designable } = useDesignable();
 
   if (designable) {
-    return (
-      <BlockItemCard>
-        <Result status="404" subTitle={messageValue} />
-      </BlockItemCard>
-    );
+    return <CollectionNotAllowView />;
   }
 
   return null;
