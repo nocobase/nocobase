@@ -148,6 +148,7 @@ jobs:
       - name: Run release script
         shell: bash
         run: |
+          git fetch
           git checkout fix/release-next-ci
           node scripts/release/changelogAndRelease.js --ver alpha --test
         env:
