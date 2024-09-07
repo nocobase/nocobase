@@ -261,6 +261,8 @@ const TableIndex = (props) => {
   );
 };
 
+const pageSizeOptions = [5, 10, 20, 50, 100, 200];
+
 const usePaginationProps = (pagination1, pagination2) => {
   const { t } = useTranslation();
   const field: any = useField();
@@ -279,12 +281,14 @@ const usePaginationProps = (pagination1, pagination2) => {
   const result = useMemo(() => {
     if (totalCount) {
       return {
+        pageSizeOptions,
         showTotal,
         showSizeChanger: true,
         ...pagination,
       };
     } else {
       return {
+        pageSizeOptions,
         showTotal: false,
         simple: true,
         showTitle: false,

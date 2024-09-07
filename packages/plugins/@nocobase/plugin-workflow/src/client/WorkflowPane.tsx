@@ -66,7 +66,7 @@ function useWorkflowSyncAction(field) {
 
 export function WorkflowPane() {
   const ctx = useContext(SchemaComponentContext);
-  const { getTriggersOptions } = usePlugin(WorkflowPlugin);
+  const { useTriggersOptions } = usePlugin(WorkflowPlugin);
   return (
     <Card bordered={false}>
       <SchemaComponentContext.Provider value={{ ...ctx, designable: false }}>
@@ -83,7 +83,7 @@ export function WorkflowPane() {
             Tooltip,
           }}
           scope={{
-            getTriggersOptions,
+            useTriggersOptions,
             useWorkflowSyncAction,
             useRefreshActionProps,
           }}

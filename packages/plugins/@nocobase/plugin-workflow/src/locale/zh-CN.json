@@ -117,6 +117,7 @@
   "Canceled": "已取消",
   "Rejected": "已拒绝",
   "Retry needed": "需重试",
+  "View result": "查看结果",
 
   "Triggered but still waiting in queue to execute.": "已触发但仍在队列中等待执行。",
   "Started and executing, maybe waiting for an async callback (manual, delay etc.).":

@@ -79,7 +79,7 @@ export const dataSourceSchema: ISchema = {
           'x-uid': 'input',
           'x-component': 'Table.Void',
           'x-component-props': {
-            rowKey: 'name',
+            rowKey: 'key',
             rowSelection: {
               type: 'checkbox',
             },
