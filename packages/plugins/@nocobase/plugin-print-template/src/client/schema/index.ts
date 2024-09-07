@@ -8,7 +8,7 @@
  */
 
 import React, { useState } from 'react';
-import { useT } from './../locale';
+import { tStr, useT } from './../locale';
 import { PrintTemplateActionName, PrintTemplateActionNameLowercase } from '../constants';
 import { printTemplateActionSettings } from '../settings';
 import {
@@ -104,20 +104,6 @@ export function useDownloadPrintTemplateFile() {
     },
   };
 }
-
-// const handleDownload = async (fileData) => {
-//   setDownloadTarget(fileData.name);
-//   const data = await apiClient.request({
-//     url: 'backupFiles:download',
-//     method: 'get',
-//     params: {
-//       filterByTk: fileData.name,
-//     },
-//     responseType: 'blob',
-//   });
-//   setDownloadTarget(false);
-//   const blob = new Blob([data.data]);
-//
 export const usePrintTemplateListSelect = () => {
   return [{}];
 };
@@ -135,13 +121,13 @@ export const createPrintTemplateActionSchema = (blockComponent: string) => {
       listTemplate: {
         type: 'void',
         'x-component': 'Action.Modal',
-        title: '模板通知',
+        title: tStr('print template modal title'),
         'x-decorator': 'FormV2',
 
         properties: {
           name: {
             type: 'string',
-            title: '选择模板',
+            title: tStr('select template'),
             required: true,
             'x-component': 'RemoteSelect',
             'x-decorator': 'FormItem',
