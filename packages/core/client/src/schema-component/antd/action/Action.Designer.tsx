@@ -435,7 +435,7 @@ function WorkflowSelect({ formAction, buttonAction, actionType, ...props }) {
         }}
         optionFilter={optionFilter}
         optionRender={({ label, data }) => {
-          const typeOption = workflowPlugin.getTriggersOptions().find((item) => item.value === data.type);
+          const typeOption = triggerOptions.find((item) => item.value === data.type);
           return typeOption ? (
             <Flex justify="space-between">
               <span>{label}</span>
