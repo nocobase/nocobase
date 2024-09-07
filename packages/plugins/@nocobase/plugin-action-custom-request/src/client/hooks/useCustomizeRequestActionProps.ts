@@ -65,7 +65,7 @@ export const useCustomizeRequestActionProps = () => {
         if (res.headers['content-disposition']) {
           const regex = /attachment;\s*filename="([^"]+)"/;
           const match = res.headers['content-disposition'].match(regex);
-          if (match[1]) {
+          if (match?.[1]) {
             saveAs(res.data, match[1]);
           }
         }

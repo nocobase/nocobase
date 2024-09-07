@@ -14,6 +14,7 @@ import React, { useContext, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActionContextProvider, DropdownVisibleContext, SchemaComponent, useActionContext } from '../';
 import { useAPIClient } from '../api-client';
+import { useNavigate } from 'react-router-dom';
 
 const useCloseAction = () => {
   const { setVisible } = useActionContext();
@@ -29,6 +30,7 @@ const useCloseAction = () => {
 };
 
 const useSaveCurrentUserValues = () => {
+  const navigate = useNavigate();
   const { setVisible } = useActionContext();
   const form = useForm();
   const api = useAPIClient();
@@ -40,6 +42,7 @@ const useSaveCurrentUserValues = () => {
       });
       await form.reset();
       setVisible(false);
+      navigate('/signin');
     },
   };
 };

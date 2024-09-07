@@ -95,10 +95,11 @@ async function parsePackage(files, pkgType, pkg) {
 }
 
 async function parsePR(number, pkgType, cwd, pkg, retries = 10) {
+  let { ver = 'beta' } = program.opts();
   // gh pr view 5112 --json author,body,files
   let res;
   try {
-    const { stdout } = await execa('gh', ['pr', 'view', number, '--json', 'author,body,files'], { cwd });
+    const { stdout } = await execa('gh', ['pr', 'view', number, '--json', 'author,body,files,baseRefName'], { cwd });
     res = stdout;
   } catch (error) {
     console.error(`Get PR #${number} failed, error: ${error.message}`);
@@ -109,7 +110,10 @@ async function parsePR(number, pkgType, cwd, pkg, retries = 10) {
     }
     return { number };
   }
-  const { author, body, files } = JSON.parse(res);
+  const { author, body, files, baseRefName } = JSON.parse(res);
+  if (ver === 'alpha' && baseRefName !== 'next') {
+    return { number };
+  }
   const typeRegExp = /\[x\] ([^(\\\r)]+)/;
   const typeMatch = body.match(typeRegExp);
   const prType = typeMatch ? typeMatch[1] : '';
@@ -211,7 +215,11 @@ async function collect() {
   console.log('===nocobase/nocobase===');
   await get(changelogs, 'oss');
   console.log('===nocobase/pro-plugins===');
-  await get(changelogs, 'pro', path.join(__dirname, '../../packages/pro-plugins/'));
+  try {
+    await get(changelogs, 'pro', path.join(__dirname, '../../packages/pro-plugins/'));
+  } catch (error) {
+    console.error(`Generate changelog for pro-plugins failed, error: ${error.message}`);
+  }
   if (process.env.PRO_PLUGIN_REPOS) {
     const repos = JSON.parse(process.env.PRO_PLUGIN_REPOS);
     for (const repo of repos) {
@@ -252,6 +260,10 @@ async function generateChangelog() {
       cn: '插件',
     },
   };
+  const referenceLocale = {
+    en: 'Reference: ',
+    cn: '参考文档：',
+  };
 
   const generate = (changelogs, lang) => {
     let result = '';
@@ -270,7 +282,7 @@ async function generateChangelog() {
               continue;
             }
             const pr = pro ? '' : ` ([#${number}](https://github.com/nocobase/nocobase/pull/${number}))`;
-            const doc = docTitle && docLink ? `Reference: [${docTitle}](${docLink})` : '';
+            const doc = docTitle && docLink ? `${referenceLocale[lang]}[${docTitle}](${docLink})` : '';
             lists.push(`${description}${pr} by @${author}\n${doc}`);
           }
           if (!lists.length) {
