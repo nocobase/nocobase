@@ -109,7 +109,10 @@ export class AuthManager {
     return async (ctx: Context & { auth: Auth }, next: Next) => {
       const token = ctx.getBearerToken();
       if (token && (await ctx.app.authManager.jwt.blacklist?.has(token))) {
-        return ctx.throw(401, ctx.t('token is not available'));
+        return ctx.throw(401, {
+          code: 'TOKEN_INVALID',
+          message: ctx.t('Token is invalid'),
+        });
       }
 
       const name = ctx.get(this.options.authKey) || this.options.default;
