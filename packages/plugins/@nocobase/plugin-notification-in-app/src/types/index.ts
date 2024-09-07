@@ -28,21 +28,22 @@ export interface Message {
 }
 
 export interface InAppMessageFormValues {
-  content: string;
+  content: Record<string, any>;
   senderName: string;
   senderId: string;
 }
 
 export const InAppMessagesDefinition = {
-  name: 'inappMessages',
+  name: 'notificationInSiteMessages',
   fieldNameMap: {
     id: 'id',
     chatId: 'chatId',
+    userId: 'userId',
     senderId: 'senderId',
     content: 'content',
     status: 'status',
   },
-};
+} as const;
 
 export const ChatsDefinition = {
   name: 'inappChats',
@@ -53,4 +54,4 @@ export const ChatsDefinition = {
   },
 };
 
-export const inAppTypeName = 'InApp';
+export const inAppTypeName = 'in-site-message';

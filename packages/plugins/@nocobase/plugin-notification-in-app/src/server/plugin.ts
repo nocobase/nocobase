@@ -11,45 +11,21 @@ import { Plugin } from '@nocobase/server';
 import { COLLECTION_NAME } from '@nocobase/plugin-notification-manager/src/constant';
 import { inAppTypeName } from '../types';
 import { PassThrough } from 'stream';
-
+import NotificationsServerPlugin, { SendFnType, NotificationServerBase } from '@nocobase/plugin-notification-manager';
+import NotificationInSiteServer from './NotificationServer';
 export class PluginNotificationInAppServer extends Plugin {
   async afterAdd() {}
 
-  async beforeLoad() {
-    // this.app.resourceManager.registerActionHandler('inAppMessages:sse', async (ctx, next) => {
-    //   console.log(ctx.action);
-    //   next();
-    // });
-    this.app.resourceManager.define({
-      name: 'inAppMessages',
-      actions: {
-        sse: {
-          async handler(ctx, next) {
-            const userId = ctx.state.currentUser.id;
-            ctx.request.socket.setTimeout(0);
-            ctx.req.socket.setNoDelay(true);
-            ctx.req.socket.setKeepAlive(true);
-            ctx.set({
-              'Content-Type': 'text/event-stream',
-              'Cache-Control': 'no-cache',
-              Connection: 'keep-alive',
-            });
-
-            ctx.status = 200;
-            const stream = new PassThrough();
-            ctx.body = stream;
-
-            setInterval(() => {
-              stream.write(`data: ${new Date()}\n\n`);
-            }, 10000);
-            await next();
-          },
-        },
-      },
-    });
-  }
+  async beforeLoad() {}
 
   async load() {
+    const inSiteServer = new NotificationInSiteServer({ plugin: this });
+    inSiteServer.defineActions();
+
+    const notificationServer = this.pm.get(NotificationsServerPlugin) as NotificationsServerPlugin;
+    notificationServer.notificationManager.registerTypes(inAppTypeName, {
+      server: inSiteServer,
+    });
     const channelsRepo = this.app.db.getRepository(COLLECTION_NAME.channels);
     const channel = await channelsRepo.findOne({ filter: { notificationType: inAppTypeName } });
     if (!channel) {

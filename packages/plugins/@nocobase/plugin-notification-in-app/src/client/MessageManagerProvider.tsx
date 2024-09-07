@@ -8,15 +8,15 @@
  */
 import React from 'react';
 import { Icon, PinnedPluginListProvider, SchemaComponentOptions, useApp, useRequest } from '@nocobase/client';
-import { MessageManager } from './components/MessageManager';
+import { Inbox } from './components/Inbox';
 export const MessageManagerProvider = (props: any) => {
   return (
     <PinnedPluginListProvider
       items={{
-        am: { order: 1000, component: 'MessageManager', pin: true },
+        inbox: { order: 301, component: 'Inbox', pin: true },
       }}
     >
-      <SchemaComponentOptions components={{ MessageManager }}>{props.children}</SchemaComponentOptions>
+      <SchemaComponentOptions components={{ Inbox }}>{props.children}</SchemaComponentOptions>
     </PinnedPluginListProvider>
   );
 };

@@ -9,6 +9,12 @@
 
 import { Plugin } from '@nocobase/client';
 import { MessageManagerProvider } from './MessageManagerProvider';
+import NotificationManager from '@nocobase/plugin-notification-manager/client';
+import { tval } from '@nocobase/utils/client';
+import { lang as t } from '../locale';
+import { ContentConfigForm } from './components/MessageConfigForm';
+import { MessageList } from './components/MessageList/index';
+const NAMESPACE = 'inbox';
 export class PluginNotificationInAppClient extends Plugin {
   async afterAdd() {
     this.app.use(MessageManagerProvider);
@@ -16,7 +22,21 @@ export class PluginNotificationInAppClient extends Plugin {
   async beforeLoad() {}
 
   async load() {
-    console.log(this.app);
+    this.app.pluginSettingsManager.add(NAMESPACE, {
+      title: t('Inbox'),
+      icon: 'NotificationOutlined',
+      aclSnippet: 'pm.notification',
+      Component: MessageList,
+    });
+    const notification = this.pm.get(NotificationManager);
+    notification.manager.registerChannelType({
+      title: tval('In-site message', { ns: NAMESPACE }),
+      name: 'in-site-message',
+      components: {
+        ChannelConfigForm: null,
+        ContentConfigForm: ContentConfigForm,
+      },
+    });
   }
 }
 

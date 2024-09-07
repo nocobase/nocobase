@@ -7,8 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useState, useEffect } from 'react';
-import { Badge, Button, ConfigProvider } from 'antd';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Badge, Button, ConfigProvider, notification } from 'antd';
 import { Drawer } from 'antd';
 import { createStyles } from 'antd-style';
 import { Icon } from '@nocobase/client';
@@ -24,18 +24,33 @@ const useStyles = createStyles(({ token }) => {
   };
 });
 
-export const MessageManager = (props) => {
-  const [visible, setVisible] = useState(false);
+export const Inbox = (props) => {
   const apiClient = useAPIClient();
-  const baseURL = apiClient.axios.defaults.baseURL;
+  const [unreadCount, setUnreadCount] = useState(0);
   const { styles } = useStyles();
+  const updateUnreadCount = useCallback(async () => {
+    const res = await apiClient.request({
+      url: 'myInAppMessages:count',
+      method: 'get',
+      params: {
+        status: 'unread',
+      },
+    });
+    setUnreadCount(res.data.data.count);
+  }, [apiClient]);
+  useEffect(() => {
+    updateUnreadCount();
+  }, [updateUnreadCount]);
   useEffect(() => {
     const request = async () => {
       const res = await apiClient.request({
-        url: 'inAppMessages:sse',
+        url: 'myInAppMessages:sse',
         method: 'get',
         headers: {
           Accept: 'text/event-stream',
+        },
+        params: {
+          id: crypto.randomUUID(),
         },
         responseType: 'stream',
         adapter: 'fetch',
@@ -47,7 +62,9 @@ export const MessageManager = (props) => {
         try {
           const { value, done } = await reader.read();
           if (done) break;
-          console.log(value);
+          const data = JSON.parse(value.replace(/^data:\s*/, '').trim());
+          notification.info({ message: data.title, description: data.content });
+          updateUnreadCount();
         } catch (error) {
           console.error(error);
           break;
@@ -56,24 +73,14 @@ export const MessageManager = (props) => {
     };
     request();
   }, [apiClient]);
-  const onOpen = () => {
-    setVisible(true);
-  };
-  const onClose = () => {
-    setVisible(false);
-  };
   return (
     <ConfigProvider
       theme={{
         components: { Drawer: { paddingLG: 0 } },
       }}
     >
-      <Button className={styles.button} title={'Apps'} icon={<Icon type={'MailOutlined'} />} onClick={onOpen} />
-      <Badge count={5} size="small" offset={[-18, -16]}></Badge>
-
-      <Drawer title={'站内信'} open={visible} onClose={onClose} size="large">
-        <MessageBox message={'111'} />
-      </Drawer>
+      <Button className={styles.button} title={'Apps'} icon={<Icon type={'MailOutlined'} />} />
+      {unreadCount > 0 && <Badge count={unreadCount} size="small" offset={[-18, -16]}></Badge>}
     </ConfigProvider>
   );
 };
