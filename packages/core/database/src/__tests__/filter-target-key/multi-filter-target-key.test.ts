@@ -94,4 +94,94 @@ describe('multi filter target key', () => {
 
     expect(await Student.repository.count()).toBe(0);
   });
+
+  it('should save multi filter target keys association', async () => {
+    const Class = db.collection({
+      name: 'classes',
+      autoGenId: true,
+      fields: [
+        {
+          name: 'name',
+          type: 'string',
+        },
+        {
+          name: 'students',
+          type: 'hasMany',
+          target: 'students',
+          foreignKey: 'classId',
+          targetKey: 'name',
+        },
+      ],
+    });
+
+    const Student = db.collection({
+      name: 'students',
+      autoGenId: false,
+      filterTargetKey: ['key1', 'key2'],
+      fields: [
+        {
+          name: 'name',
+          type: 'string',
+          primaryKey: true,
+        },
+        {
+          name: 'key1',
+          type: 'bigInt',
+        },
+        {
+          name: 'key2',
+          type: 'string',
+        },
+        {
+          name: 'age',
+          type: 'integer',
+        },
+      ],
+    });
+
+    await db.sync();
+
+    const s1 = await Student.repository.create({
+      values: {
+        name: 's1',
+        key1: 1,
+        key2: 'k1',
+      },
+    });
+
+    const s2 = await Student.repository.create({
+      values: {
+        name: 's2',
+        key1: 2,
+        key2: 'k2',
+      },
+    });
+
+    const c1 = await Class.repository.create({
+      values: {
+        name: 'c1',
+        students: [
+          {
+            name: 's1',
+            key1: 1,
+            key2: 'k1',
+          },
+          {
+            name: 's2',
+            key1: 2,
+            key2: 'k2',
+          },
+        ],
+      },
+    });
+
+    const c1Students = await Class.repository.find({
+      filterByTk: {
+        name: 'c1',
+      },
+      appends: ['students'],
+    });
+
+    expect(c1Students[0].students.length).toBe(2);
+  });
 });
