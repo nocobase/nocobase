@@ -20,6 +20,10 @@ const toDate = (date, options: any = {}) => {
   const val = isDate(date) ? date : new Date(date);
   const field = ctx.db.getFieldByPath(ctx.fieldPath);
 
+  if (!field) {
+    return val;
+  }
+
   if (field.constructor.name === 'UnixTimestampField') {
     return field.dateToValue(val);
   }
@@ -37,6 +41,10 @@ const toDate = (date, options: any = {}) => {
 
 function parseDateTimezone(ctx) {
   const field = ctx.db.getFieldByPath(ctx.fieldPath);
+
+  if (!field) {
+    return ctx.db.options.timezone;
+  }
 
   if (field.constructor.name === 'DatetimeNoTzField') {
     return '+00:00';
