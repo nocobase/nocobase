@@ -10,7 +10,7 @@
 import { ISchema } from '@formily/react';
 import { InAppMessagesDefinition } from '../../../types';
 import { uid } from '@formily/shared';
-import { titleField } from 'packages/core/client/src/modules/fields/component/Picker/recordPickerComponentFieldSettings';
+
 export const messagelistSchema: ISchema = {
   type: 'void',
   name: uid(),
