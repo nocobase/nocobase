@@ -67,6 +67,7 @@ export const Action: ComposedAction = withDynamicSchemaProps(
       openSize: os,
       disabled: propsDisabled,
       actionCallback,
+      confirm: propsConfirm,
       /** 如果为 true 则说明该按钮是树表格的 Add child 按钮 */
       addChild,
       onMouseEnter,
@@ -93,7 +94,7 @@ export const Action: ComposedAction = withDynamicSchemaProps(
     const openMode = fieldSchema?.['x-component-props']?.['openMode'];
     const openSize = fieldSchema?.['x-component-props']?.['openSize'];
     const refreshDataBlockRequest = fieldSchema?.['x-component-props']?.['refreshDataBlockRequest'];
-    const confirm = fieldSchema['x-component-props']?.confirm;
+    const confirm = fieldSchema['x-component-props']?.confirm || propsConfirm;
 
     const disabled = form.disabled || field.disabled || field.data?.disabled || propsDisabled || disableAction;
     const linkageRules = useMemo(() => fieldSchema?.['x-linkage-rules'] || [], [fieldSchema?.['x-linkage-rules']]);
