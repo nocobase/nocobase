@@ -92,6 +92,7 @@ export default {
     const r = parseDate(value, {
       timezone: parseDateTimezone(ctx),
     });
+
     if (typeof r === 'string') {
       return {
         [Op.lt]: toDate(r, { ctx }),

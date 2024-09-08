@@ -11,7 +11,7 @@ describe('datetimeNoTz date operator test', () => {
 
   beforeEach(async () => {
     db = mockDatabase({
-      timezone: '+08:00',
+      timezone: '+00:00',
     });
 
     await db.clean({ drop: true });
@@ -111,6 +111,27 @@ describe('datetimeNoTz date operator test', () => {
     });
 
     expect(count).toBe(0);
+  });
+
+  test('$dateBefore2', async () => {
+    await repository.create({
+      values: [
+        {
+          date1: '2024-09-08 15:33:54',
+          name: 'u0',
+        },
+      ],
+    });
+
+    let count: number;
+
+    count = await repository.count({
+      filter: {
+        'date1.$dateBefore': '2024-09-08 15:33:55',
+      },
+    });
+
+    expect(count).toBe(1);
   });
 
   test('dateBetween', async () => {
