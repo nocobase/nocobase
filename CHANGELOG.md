@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.3.18-beta](https://github.com/nocobase/nocobase/compare/v1.3.17-beta...v1.3.18-beta) - 2024-09-08
+
+### 🐛 Bug Fixes
+
+- **[Collection field: Many to many (array)]** Fix the error when deleting a collection contains m2m array fields ([#5231](https://github.com/nocobase/nocobase/pull/5231)) by @2013xile
+
 ## [v1.3.17-beta](https://github.com/nocobase/nocobase/compare/v1.3.16-beta...v1.3.17-beta) - 2024-09-07
 
 ### 🎉 New Features
