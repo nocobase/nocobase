@@ -131,7 +131,7 @@ jobs:
           # yarn release:force --no-verify-access --no-git-reset --registry https://pkg-src.nocobase.com --dist-tag=next
       - name: Tag
         run: |
-          git reset --hard
+          git reset --hard HEAD~
           git tag v${{ env.NEWVERSION }}
           # git push origin v${{ env.NEWVERSION }}
           cd ./packages/pro-plugins
