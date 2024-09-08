@@ -9,7 +9,6 @@
 
 import { parseDate } from '@nocobase/utils';
 import { Op } from 'sequelize';
-import { UnixTimestampField } from '../index';
 
 function isDate(input) {
   return input instanceof Date || Object.prototype.toString.call(input) === '[object Date]';
@@ -20,7 +19,7 @@ const toDate = (date, options: any = {}) => {
   const val = isDate(date) ? date : new Date(date);
   const field = ctx.db.getFieldByPath(ctx.fieldPath);
 
-  if (field instanceof UnixTimestampField) {
+  if (field.constructor.name === 'UnixTimestampField') {
     return field.dateToValue(val);
   }
 
