@@ -184,7 +184,7 @@ export const parseFilter = async (filter: any, opts: ParseFilterOptions = {}) =>
       if (isDateOperator(operator)) {
         const field = getField?.(path);
 
-        if (field.constructor.name === 'DateOnlyField' || field.constructor.name === 'DatetimeNoTzField') {
+        if (field?.constructor.name === 'DateOnlyField' || field?.constructor.name === 'DatetimeNoTzField') {
           return value;
         }
 
