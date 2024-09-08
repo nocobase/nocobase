@@ -101,6 +101,29 @@ export class DateField extends Field {
     return value;
   }
 
+  additionalSequelizeOptions() {
+    const { name } = this.options;
+    // @ts-ignore
+    const serverTimeZone = this.database.options.rawTimezone;
+
+    return {
+      get() {
+        const value = this.getDataValue(name);
+
+        if (value === null || value === undefined) {
+          return value;
+        }
+
+        if (typeof value === 'string' && isValidDatetime(value)) {
+          const dateString = `${value} ${serverTimeZone}`;
+          return new Date(dateString);
+        }
+
+        return new Date(value);
+      },
+    };
+  }
+
   bind() {
     super.bind();
 

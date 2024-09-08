@@ -40,7 +40,7 @@ export class UnixTimestampField extends DateField {
     return Math.floor(new Date(val).getTime() / rationalNumber);
   }
 
-  additionalSequelizeOptions(): {} {
+  additionalSequelizeOptions() {
     const { name } = this.options;
     let { accuracy } = this.options;
 

@@ -25,6 +25,22 @@ describe('timezone', () => {
     await db.close();
   });
 
+  it('should save with timezone value', async () => {
+    db.collection({
+      name: 'tests',
+      timestamps: false,
+      fields: [{ name: 'date1', type: 'datetimeTz' }],
+    });
+
+    await db.sync();
+
+    const repository = db.getRepository('tests');
+
+    const instance = await repository.create({ values: { date1: '2023-03-23T12:00:00.000Z' } });
+    const date1 = instance.get('date1');
+    expect(date1.toISOString()).toEqual('2023-03-23T12:00:00.000Z');
+  });
+
   it('should create field with default value', async () => {
     db.collection({
       name: 'tests',
@@ -40,6 +56,13 @@ describe('timezone', () => {
     }
 
     expect(err).toBeUndefined();
+
+    const repository = db.getRepository('tests');
+
+    const instance = await repository.create({});
+    const date1 = instance.get('date1');
+
+    expect(date1.toISOString()).toEqual('2023-03-23T18:00:00.000Z');
   });
 
   describe('timezone', () => {
