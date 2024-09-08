@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.3.19-beta](https://github.com/nocobase/nocobase/compare/v1.3.18-beta...v1.3.19-beta) - 2024-09-08
+
+### 🐛 Bug Fixes
+
+- **[client]** Fix URL anomalies caused by using popups together with Link buttons ([#5219](https://github.com/nocobase/nocobase/pull/5219)) by @zhangzhonghe
+
 ## [v1.3.18-beta](https://github.com/nocobase/nocobase/compare/v1.3.17-beta...v1.3.18-beta) - 2024-09-08
 
 ### 🐛 Bug Fixes
