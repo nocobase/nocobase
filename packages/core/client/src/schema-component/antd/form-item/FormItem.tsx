@@ -18,15 +18,16 @@ import { useFormActiveFields } from '../../../block-provider/hooks/useFormActive
 import { Collection_deprecated } from '../../../collection-manager';
 import { CollectionFieldProvider } from '../../../data-source/collection-field/CollectionFieldProvider';
 import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
+import { useDataFormItemProps } from '../../../modules/blocks/data-blocks/form/hooks/useDataFormItemProps';
 import { GeneralSchemaDesigner } from '../../../schema-settings';
+import { useContextVariable, useVariables } from '../../../variables';
 import { BlockItem } from '../block-item';
 import { HTMLEncode } from '../input/shared';
 import { FilterFormDesigner } from './FormItem.FilterFormDesigner';
 import { useEnsureOperatorsValid } from './SchemaSettingOptions';
 import useLazyLoadDisplayAssociationFieldsOfForm from './hooks/useLazyLoadDisplayAssociationFieldsOfForm';
+import { useLinkageRulesForSubTableOrSubForm } from './hooks/useLinkageRulesForSubTableOrSubForm';
 import useParseDefaultValue from './hooks/useParseDefaultValue';
-import { useVariables, useContextVariable } from '../../../variables';
-import { useDataFormItemProps } from '../../../modules/blocks/data-blocks/form/hooks/useDataFormItemProps';
 
 Item.displayName = 'FormilyFormItem';
 
@@ -61,6 +62,7 @@ export const FormItem: any = withDynamicSchemaProps(
     // 需要放在注冊完变量之后
     useParseDefaultValue();
     useLazyLoadDisplayAssociationFieldsOfForm();
+    useLinkageRulesForSubTableOrSubForm();
 
     useEffect(() => {
       addActiveFieldName?.(schema.name as string);
