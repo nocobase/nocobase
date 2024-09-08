@@ -47,7 +47,7 @@ export default class NotificationServer extends NotificationServerBase {
       }
     }
     const messages = this.plugin.app.db.getRepository(InAppMessagesDefinition.name);
-    const records = receivers.map((userId) => ({ content, userId, status: 'unread', title }));
+    const records = receivers.map((userId) => ({ content: content.body, userId, status: 'unread', title }));
     await messages.createMany({ records });
     return { status: 'success', receivers, content: content.body, title };
   };
