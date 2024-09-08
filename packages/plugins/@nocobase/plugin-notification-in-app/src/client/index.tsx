@@ -14,7 +14,7 @@ import { tval } from '@nocobase/utils/client';
 import { lang as t } from '../locale';
 import { ContentConfigForm } from './components/MessageConfigForm';
 import { MessageList } from './components/MessageList/index';
-const NAMESPACE = 'inbox';
+export const NAMESPACE = 'inbox';
 export class PluginNotificationInAppClient extends Plugin {
   async afterAdd() {
     this.app.use(MessageManagerProvider);
@@ -24,8 +24,8 @@ export class PluginNotificationInAppClient extends Plugin {
   async load() {
     this.app.pluginSettingsManager.add(NAMESPACE, {
       title: t('Inbox'),
-      icon: 'NotificationOutlined',
-      aclSnippet: 'pm.notification',
+      icon: 'MailOutlined',
+      aclSnippet: 'pm.inbox',
       Component: MessageList,
     });
     const notification = this.pm.get(NotificationManager);

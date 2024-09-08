@@ -10,6 +10,7 @@
 import { ISchema } from '@formily/react';
 import { InAppMessagesDefinition } from '../../../types';
 import { uid } from '@formily/shared';
+import { titleField } from 'packages/core/client/src/modules/fields/component/Picker/recordPickerComponentFieldSettings';
 export const messagelistSchema: ISchema = {
   type: 'void',
   name: uid(),
@@ -125,23 +126,59 @@ export const messagelistSchema: ISchema = {
               type: 'void',
               'x-uid': 'message-detail',
               title: '{{ t("View") }}',
-              'x-action': 'view',
+              // 'x-action': 'view',
               'x-settings': 'actionSettings:view',
               'x-component': 'Action.Link',
-              'x-action-context': {
-                dataSource: 'main',
-                collection: InAppMessagesDefinition.name,
-              },
-              'x-component-props': {
-                openMode: 'drawer',
-              },
+              // 'x-action-context': {
+              //   dataSource: 'main',
+              //   collection: InAppMessagesDefinition.name,
+              // },
+              // 'x-component-props': {
+              //   openMode: 'drawer',
+              // },
               'x-decorator': 'ACLActionProvider',
               properties: {
                 drawer: {
-                  title: '{{ t("View record") }}',
-                  'x-component': 'Action.Container',
-                  'x-component-props': {
-                    className: 'nb-action-popup',
+                  type: 'void',
+                  title: 'View',
+                  'x-component': 'Action.Drawer',
+                  // 'x-component-props': {
+                  //   className: 'nb-action-popup',
+                  // },
+                  properties: {
+                    card: {
+                      type: 'void',
+                      'x-component': 'Details',
+                      'x-use-component-props': 'useDetailsProps',
+                      'x-decorator': 'DetailsBlockProvider',
+                      'x-use-decorator-props': 'useDetailsDecoratorProps',
+                      'x-decorator-props': {
+                        dataSource: 'main',
+                        collection: InAppMessagesDefinition.name,
+                        readPretty: true,
+                        action: 'get',
+                      },
+                      properties: {
+                        id: {
+                          type: 'string',
+                          'x-component': 'CollectionField',
+                          'x-decorator': 'FormItem',
+                          'x-read-pretty': true,
+                        },
+                        title: {
+                          type: 'string',
+                          'x-component': 'CollectionField',
+                          'x-decorator': 'FormItem',
+                          'x-read-pretty': true,
+                        },
+                        content: {
+                          type: 'string',
+                          'x-component': 'CollectionField',
+                          'x-decorator': 'FormItem',
+                          'x-read-pretty': true,
+                        },
+                      },
+                    },
                   },
                 },
               },

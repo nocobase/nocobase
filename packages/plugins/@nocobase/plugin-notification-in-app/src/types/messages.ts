@@ -49,8 +49,13 @@ export const messageCollection: CollectionOptions = {
     },
     {
       name: InAppMessagesDefinition.fieldNameMap.content,
-      type: 'json',
-      interface: 'json',
+      type: 'string',
+      interface: 'string',
+      uiSchema: {
+        type: 'string',
+        title: '{{t("Content")}}',
+        'x-component': 'Input',
+      },
     },
     {
       name: InAppMessagesDefinition.fieldNameMap.status,
