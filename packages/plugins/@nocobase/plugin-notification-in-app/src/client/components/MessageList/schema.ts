@@ -165,6 +165,17 @@ export const messagelistSchema: ISchema = {
                           'x-decorator': 'FormItem',
                           'x-read-pretty': true,
                         },
+                        createdAt: {
+                          type: 'string',
+                          'x-component': 'CollectionField',
+                          'x-decorator': 'FormItem',
+                          'x-component-props': {
+                            dateFormat: 'YYYY-MM-DD',
+                            showTime: true,
+                            timeFormat: 'HH:mm:ss',
+                            'x-read-pretty': true,
+                          },
+                        },
                         title: {
                           type: 'string',
                           'x-component': 'CollectionField',
