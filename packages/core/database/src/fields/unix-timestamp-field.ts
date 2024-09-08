@@ -16,11 +16,35 @@ export class UnixTimestampField extends DateField {
     return DataTypes.BIGINT;
   }
 
+  dateToValue(val) {
+    if (val === null || val === undefined) {
+      return val;
+    }
+
+    let { accuracy } = this.options;
+
+    if (this.options?.uiSchema?.['x-component-props']?.accuracy) {
+      accuracy = this.options?.uiSchema['x-component-props']?.accuracy;
+    }
+
+    if (!accuracy) {
+      accuracy = 'second';
+    }
+
+    let rationalNumber = 1000;
+
+    if (accuracy === 'millisecond') {
+      rationalNumber = 1;
+    }
+
+    return Math.floor(new Date(val).getTime() / rationalNumber);
+  }
+
   additionalSequelizeOptions(): {} {
     const { name } = this.options;
     let { accuracy } = this.options;
 
-    if (this.options?.uiSchema['x-component-props']?.accuracy) {
+    if (this.options?.uiSchema?.['x-component-props']?.accuracy) {
       accuracy = this.options?.uiSchema['x-component-props']?.accuracy;
     }
 

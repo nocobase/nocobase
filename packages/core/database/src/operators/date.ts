@@ -9,16 +9,23 @@
 
 import { parseDate } from '@nocobase/utils';
 import { Op } from 'sequelize';
+import moment from 'moment';
+import { UnixTimestampField } from '@nocobase/database';
 
 function isDate(input) {
   return input instanceof Date || Object.prototype.toString.call(input) === '[object Date]';
 }
 
-const toDate = (date) => {
-  if (isDate(date)) {
-    return date;
+const toDate = (date, options: any = {}) => {
+  const { ctx } = options;
+  const val = isDate(date) ? date : new Date(date);
+  const field = ctx.db.getFieldByPath(ctx.fieldPath);
+
+  if (field instanceof UnixTimestampField) {
+    return field.dateToValue(val);
   }
-  return new Date(date);
+
+  return val;
 };
 
 export default {
@@ -26,16 +33,19 @@ export default {
     const r = parseDate(value, {
       timezone: ctx.db.options.timezone,
     });
+
     if (typeof r === 'string') {
       return {
-        [Op.eq]: toDate(r),
+        [Op.eq]: toDate(r, { ctx }),
       };
     }
+
     if (Array.isArray(r)) {
       return {
-        [Op.and]: [{ [Op.gte]: toDate(r[0]) }, { [Op.lt]: toDate(r[1]) }],
+        [Op.and]: [{ [Op.gte]: toDate(r[0], { ctx }) }, { [Op.lt]: toDate(r[1], { ctx }) }],
       };
     }
+
     throw new Error(`Invalid Date ${JSON.stringify(value)}`);
   },
 
@@ -45,14 +55,15 @@ export default {
     });
     if (typeof r === 'string') {
       return {
-        [Op.ne]: toDate(r),
+        [Op.ne]: toDate(r, { ctx }),
       };
     }
     if (Array.isArray(r)) {
       return {
-        [Op.or]: [{ [Op.lt]: toDate(r[0]) }, { [Op.gte]: toDate(r[1]) }],
+        [Op.or]: [{ [Op.lt]: toDate(r[0], { ctx }) }, { [Op.gte]: toDate(r[1], { ctx }) }],
       };
     }
+
     throw new Error(`Invalid Date ${JSON.stringify(value)}`);
   },
 
@@ -62,13 +73,14 @@ export default {
     });
     if (typeof r === 'string') {
       return {
-        [Op.lt]: toDate(r),
+        [Op.lt]: toDate(r, { ctx }),
       };
     } else if (Array.isArray(r)) {
       return {
-        [Op.lt]: toDate(r[0]),
+        [Op.lt]: toDate(r[0], { ctx }),
       };
     }
+
     throw new Error(`Invalid Date ${JSON.stringify(value)}`);
   },
 
@@ -78,11 +90,11 @@ export default {
     });
     if (typeof r === 'string') {
       return {
-        [Op.gte]: toDate(r),
+        [Op.gte]: toDate(r, { ctx }),
       };
     } else if (Array.isArray(r)) {
       return {
-        [Op.gte]: toDate(r[0]),
+        [Op.gte]: toDate(r[0], { ctx }),
       };
     }
     throw new Error(`Invalid Date ${JSON.stringify(value)}`);
@@ -94,11 +106,11 @@ export default {
     });
     if (typeof r === 'string') {
       return {
-        [Op.gt]: toDate(r),
+        [Op.gt]: toDate(r, { ctx }),
       };
     } else if (Array.isArray(r)) {
       return {
-        [Op.gte]: toDate(r[1]),
+        [Op.gte]: toDate(r[1], { ctx }),
       };
     }
     throw new Error(`Invalid Date ${JSON.stringify(value)}`);
@@ -110,11 +122,11 @@ export default {
     });
     if (typeof r === 'string') {
       return {
-        [Op.lte]: toDate(r),
+        [Op.lte]: toDate(r, { ctx }),
       };
     } else if (Array.isArray(r)) {
       return {
-        [Op.lt]: toDate(r[1]),
+        [Op.lt]: toDate(r[1], { ctx }),
       };
     }
     throw new Error(`Invalid Date ${JSON.stringify(value)}`);
@@ -126,7 +138,7 @@ export default {
     });
     if (r) {
       return {
-        [Op.and]: [{ [Op.gte]: toDate(r[0]) }, { [Op.lt]: toDate(r[1]) }],
+        [Op.and]: [{ [Op.gte]: toDate(r[0], { ctx }) }, { [Op.lt]: toDate(r[1], { ctx }) }],
       };
     }
     throw new Error(`Invalid Date ${JSON.stringify(value)}`);
