@@ -10,11 +10,12 @@
 import { PasswordField } from '@nocobase/database';
 import { UiSchemaRepository } from '@nocobase/plugin-ui-schema-storage';
 import { Plugin } from '@nocobase/server';
+import { parseAssociationNames } from './hook';
 
 class PasswordError extends Error {}
 
 export class PluginPublicFormsServer extends Plugin {
-  async handleGetCollectionData(schema, formCollection) {
+  async parseCollectionData(schema, formCollection, dataSourceKey = 'main') {
     const collection = this.db.getCollection(formCollection);
     const collections = [
       {
@@ -26,7 +27,22 @@ export class PluginPublicFormsServer extends Plugin {
         }),
       },
     ];
-    return collections;
+
+    const { getAssociationAppends } = parseAssociationNames(dataSourceKey, formCollection, this.app, schema);
+    const { appends } = getAssociationAppends();
+    return collections.concat(
+      appends.map((v) => {
+        const targetCollection = this.db.getCollection(v);
+        return {
+          name: targetCollection.name,
+          fields: targetCollection.getFields().map((v) => {
+            return {
+              ...v.options,
+            };
+          }),
+        };
+      }),
+    );
   }
   // TODO
   async getMetaByTk(filterByTk: string, options: { password?: string; token?: string }) {
@@ -51,7 +67,7 @@ export class PluginPublicFormsServer extends Plugin {
     const collectionName = keys.pop();
     const dataSourceKey = keys.pop() || 'main';
     const schema = await uiSchema.getJsonSchema(filterByTk);
-    const collections = await this.handleGetCollectionData(schema, collectionName);
+    const collections = await this.parseCollectionData(schema, collectionName);
     return {
       dataSource: {
         key: dataSourceKey,
@@ -59,6 +75,8 @@ export class PluginPublicFormsServer extends Plugin {
         collections,
       },
       token: this.app.authManager.jwt.sign({
+        collectionName,
+        formKey: filterByTk,
         // todo
       }),
       schema,
