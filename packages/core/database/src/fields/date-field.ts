@@ -9,6 +9,7 @@
 
 import { DataTypes } from 'sequelize';
 import { BaseColumnFieldOptions, Field } from './field';
+import moment from 'moment';
 
 const datetimeRegex = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/;
 
@@ -73,6 +74,14 @@ export class DateField extends Field {
         return;
       }
     };
+
+    if (this.options.defaultValue) {
+      if (typeof this.options.defaultValue === 'string' && isIso8601(this.options.defaultValue)) {
+        this.options.defaultValue = moment(this.options.defaultValue)
+          .utcOffset(this.resolveTimeZone())
+          .format('YYYY-MM-DD HH:mm:ss');
+      }
+    }
   }
 
   setter(value, options) {
@@ -122,4 +131,9 @@ export class DateField extends Field {
 
 export interface DateFieldOptions extends BaseColumnFieldOptions {
   type: 'date';
+}
+
+function isIso8601(str) {
+  const iso8601StrictRegex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
+  return iso8601StrictRegex.test(str);
 }

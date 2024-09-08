@@ -25,6 +25,23 @@ describe('timezone', () => {
     await db.close();
   });
 
+  it('should create field with default value', async () => {
+    db.collection({
+      name: 'tests',
+      timestamps: false,
+      fields: [{ name: 'date1', type: 'datetimeTz', defaultValue: '2023-03-23T18:00:00.000Z' }],
+    });
+
+    let err;
+    try {
+      await db.sync();
+    } catch (e) {
+      err = e;
+    }
+
+    expect(err).toBeUndefined();
+  });
+
   describe('timezone', () => {
     test('custom', async () => {
       db.collection({
