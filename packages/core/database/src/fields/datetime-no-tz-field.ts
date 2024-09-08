@@ -52,7 +52,9 @@ export class DatetimeNoTzField extends Field {
 
   additionalSequelizeOptions(): {} {
     const { name } = this.options;
-    const timezone = this.database.options.timezone || '+00:00';
+
+    // @ts-ignore
+    const timezone = this.database.options.rawTimezone || '+00:00';
 
     const isPg = this.database.inDialect('postgres');
 
