@@ -49,6 +49,12 @@ export const useStyles = genStyleHook('upload', (token) => {
           img: {
             objectFit: 'cover !important',
           },
+          video: {
+            display: 'block !important',
+            position: 'static !important',
+            width: '100%',
+            height: '100%',
+          },
         },
         [`${componentCls}-list-item-actions`]: {
           left: 'auto !important',

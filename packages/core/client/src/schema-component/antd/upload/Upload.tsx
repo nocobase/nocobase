@@ -106,13 +106,14 @@ function AttachmentListItem(props) {
 
   const item = [
     <span key="thumbnail" className={`${prefixCls}-list-item-thumbnail`}>
-      {file.imageUrl && (
+      {file.imageUrl && !file.videoUrl && (
         <img
           src={`${file.imageUrl}${file.thumbnailRule || ''}`}
           alt={file.title}
           className={`${prefixCls}-list-item-image`}
         />
       )}
+      {file.videoUrl && <video src={file.videoUrl} className={`${prefixCls}-list-item-video`} />}
     </span>,
     <span key="title" className={`${prefixCls}-list-item-name`} title={file.title}>
       {file.status === 'uploading' ? t('Uploading') : file.title}
