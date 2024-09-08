@@ -75,7 +75,7 @@ export class DateField extends Field {
       }
     };
 
-    if (this.options.defaultValue) {
+    if (this.options.defaultValue && this.database.isMySQLCompatibleDialect()) {
       if (typeof this.options.defaultValue === 'string' && isIso8601(this.options.defaultValue)) {
         this.options.defaultValue = moment(this.options.defaultValue)
           .utcOffset(this.resolveTimeZone())
