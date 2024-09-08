@@ -59,7 +59,7 @@ export class UnixTimestampFieldInterface extends CollectionFieldInterface {
     },
   };
   filterable = {
-    operators: operators.number,
+    operators: operators.datetime,
   };
   titleUsable = true;
 }
