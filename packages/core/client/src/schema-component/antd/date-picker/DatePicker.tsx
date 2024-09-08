@@ -9,11 +9,12 @@
 
 import { connect, mapProps, mapReadPretty } from '@formily/react';
 import { DatePicker as AntdDatePicker, DatePickerProps as AntdDatePickerProps } from 'antd';
-import React, { FC } from 'react';
+import { RangePickerProps } from 'antd/es/date-picker';
+import dayjs from 'dayjs';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { ReadPretty, ReadPrettyComposed } from './ReadPretty';
 import { getDateRanges, mapDatePicker, mapRangePicker } from './util';
-import { RangePickerProps } from 'antd/es/date-picker';
 
 interface IDatePickerProps {
   utc?: boolean;
@@ -45,16 +46,20 @@ const InternalRangePicker = connect(
   mapReadPretty(ReadPretty.DateRangePicker),
 );
 
-export const DatePicker: ComposedDatePicker = (props) => {
+export const DatePicker: ComposedDatePicker = (props: any) => {
   const { utc = true } = useDatePickerContext();
   const value = Array.isArray(props.value) ? props.value[0] : props.value;
-  const newProps = { utc, ...props };
+  const newProps = {
+    utc,
+    ...props,
+    showTime: props.showTime ? { defaultValue: dayjs('00:00:00', 'HH:mm:ss') } : false,
+  };
   return <InternalDatePicker {...newProps} value={value} />;
 };
 
 DatePicker.ReadPretty = ReadPretty.DatePicker;
 
-DatePicker.RangePicker = function RangePicker(props) {
+DatePicker.RangePicker = function RangePicker(props: any) {
   const { t } = useTranslation();
   const { utc = true } = useDatePickerContext();
   const rangesValue = getDateRanges();
@@ -79,7 +84,12 @@ DatePicker.RangePicker = function RangePicker(props) {
     { label: t('Last 90 days'), value: rangesValue.last90Days },
     { label: t('Next 90 days'), value: rangesValue.next90Days },
   ];
-  const newProps: any = { utc, presets, ...props };
+  const newProps: any = {
+    utc,
+    presets,
+    ...props,
+    showTime: props.showTime ? { defaultValue: [dayjs('00:00:00', 'HH:mm:ss'), dayjs('00:00:00', 'HH:mm:ss')] } : false,
+  };
   return <InternalRangePicker {...newProps} />;
 };
 
