@@ -57,8 +57,16 @@ function parseDateTimezone(ctx) {
   return ctx.db.options.timezone;
 }
 
+function isDatetimeString(str) {
+  return /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(str);
+}
+
 export default {
   $dateOn(value, ctx) {
+    if (isDatetimeString(value)) {
+      value = moment(value).format('YYYY-MM-DD');
+    }
+
     const r = parseDate(value, {
       timezone: parseDateTimezone(ctx),
     });
