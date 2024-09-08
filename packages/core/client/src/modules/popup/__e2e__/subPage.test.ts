@@ -40,7 +40,7 @@ test.describe('sub page', () => {
       page.getByLabel('block-item-Markdown.Void-').getByText('Markdown：从弹窗中打开的子页面，tab2。'),
     ).toBeVisible();
     await page.getByLabel('back-button').click();
-    await page.goBack();
+    await page.getByLabel('drawer-Action.Container-users-View record-mask').click();
 
     // 从嵌套弹窗中打开子页面 --------------------------------------------------------------------
     await page.getByLabel('action-Action.Link-View-view-').nth(2).click();
