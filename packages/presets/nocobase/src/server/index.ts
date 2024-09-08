@@ -55,6 +55,7 @@ export class PresetNocoBase extends Plugin {
     'collection-sql',
     'collection-tree',
     'notification-manager',
+    'notification-in-app',
   ];
 
   localPlugins = [
