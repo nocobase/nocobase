@@ -24,6 +24,8 @@ export class PluginManagerRepository extends Repository {
     this.pm = pm;
   }
 
+  async createByName(nameOrPkgs) {}
+
   async has(nameOrPkg: string) {
     const { name } = await PluginManager.parseName(nameOrPkg);
     const instance = await this.findOne({
@@ -117,6 +119,9 @@ export class PluginManagerRepository extends Repository {
     }
     return await this.find({
       sort: 'id',
+      filter: {
+        enabled: true,
+      },
     });
   }
 

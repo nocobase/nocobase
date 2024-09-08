@@ -26,6 +26,7 @@ import resourceOptions from './options/resource';
 import { PluginManagerRepository } from './plugin-manager-repository';
 import { PluginData } from './types';
 import {
+  checkAndGetCompatible,
   copyTempPackageToStorageAndLinkToNodeModules,
   downloadAndUnzipToTempDir,
   getNpmInfo,
@@ -56,6 +57,8 @@ export interface InstallOptions {
 export class AddPresetError extends Error {}
 
 export class PluginManager {
+  static checkAndGetCompatible = checkAndGetCompatible;
+
   /**
    * @internal
    */
@@ -316,15 +319,15 @@ export class PluginManager {
       packageName,
       version: json.version,
     });
-    await this.repository.updateOrCreate({
-      values: {
-        name,
-        packageName,
-        version: json.version,
-      },
-      filterKeys: ['name'],
-    });
-    await sleep(1000);
+    // await this.repository.updateOrCreate({
+    //   values: {
+    //     name,
+    //     packageName,
+    //     version: json.version,
+    //   },
+    //   filterKeys: ['name'],
+    // });
+    // await sleep(1000);
     await tsxRerunning();
   }
 
@@ -374,14 +377,14 @@ export class PluginManager {
     if (options.packageName) {
       this.pluginAliases.set(options.packageName, instance);
     }
-    if (insert && options.name) {
-      await this.repository.updateOrCreate({
-        values: {
-          ...options,
-        },
-        filterKeys: ['name'],
-      });
-    }
+    // if (insert && options.name) {
+    //   await this.repository.updateOrCreate({
+    //     values: {
+    //       ...options,
+    //     },
+    //     filterKeys: ['name'],
+    //   });
+    // }
     await instance.afterAdd();
   }
 
@@ -523,11 +526,12 @@ export class PluginManager {
 
   async enable(nameOrPkg: string | string[]) {
     let pluginNames = nameOrPkg;
+    await this.repository.createByName(nameOrPkg);
     if (nameOrPkg === '*') {
       const items = await this.repository.find();
       pluginNames = items.map((item: any) => item.name);
     }
-    pluginNames = this.sort(pluginNames);
+    pluginNames = await this.sort(pluginNames);
     this.app.log.debug(`enabling plugin ${pluginNames.join(',')}`);
     this.app.setMaintainingMessage(`enabling plugin ${pluginNames.join(',')}`);
     const toBeUpdated = [];
@@ -748,7 +752,6 @@ export class PluginManager {
       for (const packageName of urlOrName) {
         await this.addViaCLI(packageName, _.omit(options, 'name'), false);
       }
-      await this.app.emitStartedEvent();
       await execa('yarn', ['nocobase', 'postinstall']);
       return;
     }
@@ -778,19 +781,8 @@ export class PluginManager {
         },
         emitStartedEvent,
       );
-    } else {
-      const { name, packageName } = await PluginManager.parseName(urlOrName);
-      const opts = {
-        ...options,
-        name,
-        packageName,
-      };
-      // 下面这行代码删了，测试会报错 packages/core/server/src/__tests__/gateway.test.ts:407:29
-      await this.repository.findOne({ filter: { packageName } });
-      await this.add(name, opts, true);
     }
     if (emitStartedEvent) {
-      await this.app.emitStartedEvent();
       await execa('yarn', ['nocobase', 'postinstall']);
     }
   }
@@ -1152,16 +1144,16 @@ export class PluginManager {
     this['_initPresetPlugins'] = true;
   }
 
-  private sort(names: string | string[]) {
+  private async sort(names: string | string[]) {
     const pluginNames = _.castArray(names);
     if (pluginNames.length === 1) {
       return pluginNames;
     }
     const sorter = new Topo.Sorter<string>();
     for (const pluginName of pluginNames) {
-      const plugin = this.get(pluginName);
-      const peerDependencies = Object.keys(plugin.options?.packageJson?.peerDependencies || {});
-      sorter.add(pluginName, { after: peerDependencies, group: plugin.options?.packageName || pluginName });
+      const packageJson = await PluginManager.getPackageJson(pluginName);
+      const peerDependencies = Object.keys(packageJson?.peerDependencies || {});
+      sorter.add(pluginName, { after: peerDependencies, group: packageJson?.packageName || pluginName });
     }
     return sorter.nodes;
   }

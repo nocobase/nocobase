@@ -20,7 +20,48 @@ export class PresetNocoBase extends Plugin {
   }
 
   async getLocalPlugins() {
+    return [];
     return (await findLocalPlugins()).map((name) => name.split('>='));
+  }
+
+  async getAllPluginNames() {
+    const plugins1 = await findBuiltInPlugins();
+    const plugins2 = await findLocalPlugins();
+    return [...plugins1, ...plugins2];
+  }
+
+  async getAllPlugins(locale = 'en-US') {
+    const plugins = await this.getAllPluginNames();
+    const packageJsons = [];
+    for (const name of plugins) {
+      packageJsons.push(await this.getPluginInfo(name, locale));
+    }
+    return packageJsons;
+  }
+
+  async getPluginInfo(name, locale = 'en-US') {
+    const repository = this.app.db.getRepository<any>('applicationPlugins');
+    const packageJson = await this.getPackageJson(name);
+    const deps = await PluginManager.checkAndGetCompatible(packageJson.name);
+    const instance = await repository.findOne({
+      filter: {
+        packageName: packageJson.name,
+      },
+    });
+    return {
+      packageName: packageJson.name,
+      name: name,
+      version: packageJson.version,
+      enabled: !!instance?.enabled,
+      installed: !!instance?.installed,
+      builtIn: !!instance?.builtIn,
+      keywords: packageJson.keywords,
+      author: packageJson.author,
+      packageJson,
+      displayName: packageJson?.[`displayName.${locale}`] || packageJson?.displayName || name,
+      description: packageJson?.[`description.${locale}`] || packageJson.description,
+      ...deps,
+    };
   }
 
   async getPackageJson(name) {
