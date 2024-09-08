@@ -74,6 +74,7 @@ export class PresetNocoBase extends Plugin {
     'workflow-mailer',
     'field-m2m-array',
     'backup-restore',
+    'public-forms',
   ];
 
   splitNames(name: string) {

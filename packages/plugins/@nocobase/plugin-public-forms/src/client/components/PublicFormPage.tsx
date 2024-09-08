@@ -83,6 +83,7 @@ function InternalPublicForm() {
           if (config.headers) {
             config.headers['X-Form-Token'] = data?.data?.token || '';
           }
+          apiClient.storage.setItem('NOCOBASE_FORM_TOKEN', data?.data?.token);
           return config;
         });
       },

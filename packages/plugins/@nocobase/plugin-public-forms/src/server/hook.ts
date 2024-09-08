@@ -41,10 +41,12 @@ export const parseAssociationNames = (dataSourceKey: string, collectionName: str
   const _getAssociationAppends = (schema, str) => {
     // 定义 reduceProperties 函数来遍历 properties
     const reduceProperties = (schema, reducer, initialValue) => {
-      if (!schema || typeof schema !== 'object') return initialValue;
+      if (!schema || typeof schema !== 'object') {
+        return initialValue;
+      }
       if (schema.properties && typeof schema.properties === 'object') {
         for (const key in schema.properties) {
-          if (schema.properties.key) {
+          if (schema.properties[key]) {
             const property = schema.properties[key];
             // 调用 reducer 函数
             initialValue = reducer(initialValue, property, key);
@@ -92,13 +94,11 @@ export const parseAssociationNames = (dataSourceKey: string, collectionName: str
     // 使用 reduceProperties 遍历 schema
     reduceProperties(schema, customReducer, str);
   };
-
   const getAssociationAppends = () => {
     appends = new Set([]);
     _getAssociationAppends(fieldSchema.properties.form, '');
     appends = fillParentFields(appends);
     return { appends: [...appends] };
   };
-
   return { getAssociationAppends };
 };

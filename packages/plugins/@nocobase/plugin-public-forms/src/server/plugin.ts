@@ -15,7 +15,7 @@ import { parseAssociationNames } from './hook';
 class PasswordError extends Error {}
 
 export class PluginPublicFormsServer extends Plugin {
-  async parseCollectionData(schema, formCollection, dataSourceKey = 'main') {
+  async parseCollectionData(formCollection, appends) {
     const collection = this.db.getCollection(formCollection);
     const collections = [
       {
@@ -27,9 +27,6 @@ export class PluginPublicFormsServer extends Plugin {
         }),
       },
     ];
-
-    const { getAssociationAppends } = parseAssociationNames(dataSourceKey, formCollection, this.app, schema);
-    const { appends } = getAssociationAppends();
     return collections.concat(
       appends.map((v) => {
         const targetCollection = this.db.getCollection(v);
@@ -67,7 +64,9 @@ export class PluginPublicFormsServer extends Plugin {
     const collectionName = keys.pop();
     const dataSourceKey = keys.pop() || 'main';
     const schema = await uiSchema.getJsonSchema(filterByTk);
-    const collections = await this.parseCollectionData(schema, collectionName);
+    const { getAssociationAppends } = parseAssociationNames(dataSourceKey, collectionName, this.app, schema);
+    const { appends } = getAssociationAppends();
+    const collections = await this.parseCollectionData(collectionName, appends);
     return {
       dataSource: {
         key: dataSourceKey,
@@ -77,7 +76,7 @@ export class PluginPublicFormsServer extends Plugin {
       token: this.app.authManager.jwt.sign({
         collectionName,
         formKey: filterByTk,
-        // todo
+        targetCollections: appends,
       }),
       schema,
     };
@@ -113,8 +112,13 @@ export class PluginPublicFormsServer extends Plugin {
     const token = ctx.get('X-Form-Token');
     if (token) {
       try {
+        const tokenData = await jwt.decode(token);
         // TODO：decode token
-        ctx.PublicForm = {};
+        ctx.PublicForm = {
+          collectionName: tokenData.collectionName,
+          formKey: tokenData.formKey,
+          targetCollections: tokenData.targetCollections,
+        };
         // 将 publicSubmit 转为 create（用于触发工作流的 Action 事件）
         const actionName = ctx.action.actionName;
         if (actionName === 'publicSubmit') {
@@ -129,9 +133,10 @@ export class PluginPublicFormsServer extends Plugin {
 
   // TODO：用于处理哪些可选项的接口可以访问
   parseACL = async (ctx, next) => {
+    const { resourceName } = ctx.action;
     if (ctx.PublicForm) {
       ctx.permission = {
-        skip: true,
+        skip: ctx.PublicForm['targetCollections'].includes(resourceName),
       };
     }
     await next();
