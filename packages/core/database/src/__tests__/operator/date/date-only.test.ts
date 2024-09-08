@@ -11,8 +11,9 @@ describe('dateOnly operator', () => {
 
   beforeEach(async () => {
     db = mockDatabase({
-      timezone: '+00:00',
+      timezone: '+08:00',
     });
+
     await db.clean({ drop: true });
     const Test = db.collection({
       name: 'tests',
@@ -57,7 +58,7 @@ describe('dateOnly operator', () => {
 
     count = await repository.count({
       filter: {
-        'date1.$dateOn': '2023-01-01',
+        'date1.$dateOn': '2022-12-31',
       },
     });
 
@@ -65,7 +66,7 @@ describe('dateOnly operator', () => {
 
     count = await repository.count({
       filter: {
-        'date1.$dateOn': '2022-12-31',
+        'date1.$dateOn': '2023-01-01',
       },
     });
 

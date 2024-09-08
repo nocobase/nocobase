@@ -11,8 +11,9 @@ describe('datetimeNoTz date operator test', () => {
 
   beforeEach(async () => {
     db = mockDatabase({
-      timezone: '+00:00',
+      timezone: '+08:00',
     });
+
     await db.clean({ drop: true });
     const Test = db.collection({
       name: 'tests',

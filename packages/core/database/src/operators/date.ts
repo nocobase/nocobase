@@ -9,6 +9,7 @@
 
 import { parseDate } from '@nocobase/utils';
 import { Op } from 'sequelize';
+import moment from 'moment';
 
 function isDate(input) {
   return input instanceof Date || Object.prototype.toString.call(input) === '[object Date]';
@@ -23,13 +24,35 @@ const toDate = (date, options: any = {}) => {
     return field.dateToValue(val);
   }
 
+  if (field.constructor.name === 'DatetimeNoTzField') {
+    return moment(val).utcOffset('+00:00').format('YYYY-MM-DD HH:mm:ss');
+  }
+
+  if (field.constructor.name === 'DateOnlyField') {
+    return moment(val).format('YYYY-MM-DD HH:mm:ss');
+  }
+
   return val;
 };
+
+function parseDateTimezone(ctx) {
+  const field = ctx.db.getFieldByPath(ctx.fieldPath);
+
+  if (field.constructor.name === 'DatetimeNoTzField') {
+    return '+00:00';
+  }
+
+  if (field.constructor.name === 'DateOnlyField') {
+    return '+00:00';
+  }
+
+  return ctx.db.options.timezone;
+}
 
 export default {
   $dateOn(value, ctx) {
     const r = parseDate(value, {
-      timezone: ctx.db.options.timezone,
+      timezone: parseDateTimezone(ctx),
     });
 
     if (typeof r === 'string') {
@@ -49,7 +72,7 @@ export default {
 
   $dateNotOn(value, ctx) {
     const r = parseDate(value, {
-      timezone: ctx.db.options.timezone,
+      timezone: parseDateTimezone(ctx),
     });
     if (typeof r === 'string') {
       return {
@@ -67,7 +90,7 @@ export default {
 
   $dateBefore(value, ctx) {
     const r = parseDate(value, {
-      timezone: ctx.db.options.timezone,
+      timezone: parseDateTimezone(ctx),
     });
     if (typeof r === 'string') {
       return {
@@ -84,7 +107,7 @@ export default {
 
   $dateNotBefore(value, ctx) {
     const r = parseDate(value, {
-      timezone: ctx.db.options.timezone,
+      timezone: parseDateTimezone(ctx),
     });
     if (typeof r === 'string') {
       return {
@@ -100,7 +123,7 @@ export default {
 
   $dateAfter(value, ctx) {
     const r = parseDate(value, {
-      timezone: ctx.db.options.timezone,
+      timezone: parseDateTimezone(ctx),
     });
     if (typeof r === 'string') {
       return {
@@ -116,7 +139,7 @@ export default {
 
   $dateNotAfter(value, ctx) {
     const r = parseDate(value, {
-      timezone: ctx.db.options.timezone,
+      timezone: parseDateTimezone(ctx),
     });
     if (typeof r === 'string') {
       return {
@@ -132,7 +155,7 @@ export default {
 
   $dateBetween(value, ctx) {
     const r = parseDate(value, {
-      timezone: ctx.db.options.timezone,
+      timezone: parseDateTimezone(ctx),
     });
     if (r) {
       return {

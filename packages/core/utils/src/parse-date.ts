@@ -180,6 +180,7 @@ export function parseDate(value: any, options = {} as { timezone?: string }) {
   }
 
   let timezone = options.timezone || '+00:00';
+
   const input = value;
   if (typeof value === 'string') {
     const match = /(.+)((\+|\-)\d\d\:\d\d)$/.exec(value);
