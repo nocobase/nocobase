@@ -1,4 +1,4 @@
-import Database, { mockDatabase, Repository } from '@nocobase/database';
+import Database, { mockDatabase, Repository } from '../../../index';
 
 describe('unix timestamp date operator test', () => {
   let db: Database;

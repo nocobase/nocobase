@@ -9,8 +9,7 @@
 
 import { parseDate } from '@nocobase/utils';
 import { Op } from 'sequelize';
-import moment from 'moment';
-import { UnixTimestampField } from '@nocobase/database';
+import { UnixTimestampField } from '../index';
 
 function isDate(input) {
   return input instanceof Date || Object.prototype.toString.call(input) === '[object Date]';
