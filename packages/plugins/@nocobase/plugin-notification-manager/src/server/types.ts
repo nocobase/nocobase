@@ -34,6 +34,7 @@ export interface SendOptions {
   receivers: string[];
   triggerFrom: string;
   channelId: string;
+  content: Record<string, any>;
 }
 
 export interface IChannel {
