@@ -1,0 +1,109 @@
+name: Build Pro Plugin Docker Image
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+on:
+  workflow_dispatch:
+    inputs:
+      pro_plugin:
+        description: 'Please enter a pro plugin name'
+        required: true
+      pr_number:
+        description: 'Please enter the pr number of pro plugin repository'
+        required: false
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    services:
+      verdaccio:
+        image: verdaccio/verdaccio:latest
+        ports:
+          - 4873:4873
+    steps:
+      - uses: actions/create-github-app-token@v1
+        id: app-token
+        with:
+          app-id: ${{ vars.NOCOBASE_APP_ID }}
+          private-key: ${{ secrets.NOCOBASE_APP_PRIVATE_KEY }}
+          repositories: nocobase,pro-plugins,${{ join(fromJSON(vars.NEXT_PRO_PLUGIN_REPOS), ',') }},${{ join(fromJSON(vars.CUSTOM_PRO_PLUGIN_REPOS), ',') }}
+          skip-token-revoke: true
+      - name: Checkout nocobase/nocobase
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref || github.ref_name }}
+          fetch-depth: 0
+      - name: Checkout plugin
+        uses: actions/checkout@v3
+        with:
+          repository: nocobase/plugin-${{ inputs.pro_plugin }}
+          path: packages/pro-plugins/@nocobase/plugin-${{ inputs.pro_plugin }}
+      - name: Checkout pr
+        shell: bash
+        run: |
+          cd ./packages/pro-plugins/@nocobase/plugin-${{ inputs.pro_plugin }}
+          gh pr checkout ${{ inputs.pr_number }}
+        env:
+          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
+      - name: rm .git
+        run: rm -rf packages/pro-plugins/@nocobase/plugin-${{ inputs.pro_plugin }}/.git &&  git config --global user.email "you@example.com"  &&  git config --global user.name "Your Name" && git add -A && git commit -m "tmp commit"
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+        with:
+          driver-opts: network=host
+      - name: Login to Aliyun Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ secrets.ALI_DOCKER_REGISTRY }}
+          username: ${{ secrets.ALI_DOCKER_USERNAME }}
+          password: ${{ secrets.ALI_DOCKER_PASSWORD }}
+      - name: Set tags
+        id: set-tags
+        run: |
+          echo "::set-output name=tags::${{ secrets.ALI_DOCKER_REGISTRY }}/pr-${{ inputs.pr_number }}-${{ inputs.pro_plugin }}"
+      - name: IMAGE_TAG
+        env:
+          IMAGE_TAG: pr-${{ inputs.pr_number }}
+        run: |
+          echo $IMAGE_TAG
+      - name: Set variables
+        run: |
+          target_directory="./packages/pro-plugins/@nocobase"
+          subdirectories=$(find "$target_directory" -mindepth 1 -maxdepth 1 -type d -exec basename {} \; | tr '\n' ' ')
+          trimmed_variable=$(echo "$subdirectories" | xargs)
+          packageNames="@nocobase/${trimmed_variable// / @nocobase/}"
+          pluginNames="${trimmed_variable//plugin-/}"
+          BEFORE_PACK_NOCOBASE="yarn add $packageNames -W"
+          APPEND_PRESET_LOCAL_PLUGINS="${pluginNames// /,}"
+          echo "var1=$BEFORE_PACK_NOCOBASE" >> $GITHUB_OUTPUT
+          echo "var2=$APPEND_PRESET_LOCAL_PLUGINS" >> $GITHUB_OUTPUT
+        id: vars
+      - name: Build and push
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          file: Dockerfile
+          build-args: |
+            VERDACCIO_URL=http://localhost:4873/
+            COMMIT_HASH=${GITHUB_SHA}
+            PLUGINS_DIRS=pro-plugins
+            BEFORE_PACK_NOCOBASE=${{ steps.vars.outputs.var1 }}
+            APPEND_PRESET_LOCAL_PLUGINS=${{ steps.vars.outputs.var2 }}
+          push: true
+          tags: ${{ steps.set-tags.outputs.tags }}
+      - name: Deploy NocoBase
+        env:
+          IMAGE_TAG: pr-${{ inputs.pr_number }}
+        run: |
+          echo $IMAGE_TAG
+          export APP_NAME=$(echo $IMAGE_TAG | cut -d ":" -f 2)-${{ inputs.pro_plugin }}
+          echo $APP_NAME
+          curl --retry 2 --location --request POST "${{secrets.NOCOBASE_DEPLOY_HOST}}$APP_NAME" \
+            --header 'Content-Type: application/json' \
+            -d "{
+                \"tag\": \"$APP_NAME\",
+                \"dialect\": \"postgres\"
+            }"

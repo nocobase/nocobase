@@ -4,7 +4,7 @@ const path = require('path');
 const { Command } = require('commander');
 const program = new Command();
 
-program.option('-f, --from [from]').option('-t, --to [to]').option('-v, --ver [ver]');
+program.option('-f, --from [from]').option('-t, --to [to]').option('-v, --ver [ver]').option('--test');
 program.parse(process.argv);
 
 const header = {
@@ -345,10 +345,15 @@ async function createRelease(cn, en, to) {
 }
 
 async function writeChangelogAndCreateRelease() {
-  let { ver = 'beta' } = program.opts();
+  let { ver = 'beta', test } = program.opts();
   const { cn, en, from, to } = await generateChangelog();
   if (!cn && !en) {
     throw new Error('No changelog generated');
+  }
+  if (test) {
+    console.log(en);
+    console.log(cn);
+    return;
   }
   if (ver === 'beta') {
     await writeChangelog(cn, en, from, to);
