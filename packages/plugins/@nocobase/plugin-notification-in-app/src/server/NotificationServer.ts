@@ -11,7 +11,8 @@ import { SendFnType, NotificationServerBase } from '@nocobase/plugin-notificatio
 import { InAppMessageFormValues } from '../types';
 import { PassThrough } from 'stream';
 import PluginNotificationInAppServer from './plugin';
-import { InAppMessagesDefinition } from '../types';
+import { InAppMessagesDefinition, ChatsDefinition } from '../types';
+import { FindAttributeOptions, ModelStatic, Op, Sequelize } from 'sequelize';
 
 type UserID = string;
 type ClientID = string;
@@ -35,20 +36,27 @@ export default class NotificationServer extends NotificationServerBase {
   send: SendFnType<InAppMessageFormValues> = async (options) => {
     const { message } = options;
     const { content, receivers } = message;
-    const { title } = content.config;
-    for (const receiver of receivers) {
-      const clients = this.userClientsMap[receiver];
-      if (clients) {
-        for (const clientId in clients) {
-          const stream = clients[clientId];
-          const messageData = { content: content.body, title };
-          stream.write(`data: ${JSON.stringify(messageData)}\n\n`);
-        }
-      }
-    }
+    const { title, senderId } = content.config;
+    const chats = this.plugin.app.db.getRepository(ChatsDefinition.name);
     const messages = this.plugin.app.db.getRepository(InAppMessagesDefinition.name);
-    const records = receivers.map((userId) => ({ content: content.body, userId, status: 'unread', title }));
-    await messages.createMany({ records });
+
+    await Promise.all(
+      receivers.map(async (userId) => {
+        const clients = this.userClientsMap[userId];
+        if (clients) {
+          for (const clientId in clients) {
+            const stream = clients[clientId];
+            const messageData = { content: content.body, title };
+            stream.write(`data: ${JSON.stringify(messageData)}\n\n`);
+          }
+        }
+        let chat = await chats.findOne({ filter: { senderId, userId } });
+        if (!chat) {
+          chat = await chats.create({ values: { senderId, userId, title } });
+        }
+        await messages.create({ values: { content: content.body, userId, status: 'unread', title, chatId: chat.id } });
+      }),
+    );
     return { status: 'success', receivers, content: content.body, title };
   };
 
@@ -83,6 +91,47 @@ export default class NotificationServer extends NotificationServerBase {
             const messages = this.plugin.app.db.getRepository(InAppMessagesDefinition.name);
             const count = await messages.count({ filter: { userId, status: 'unread' } });
             ctx.body = { count };
+          },
+        },
+      },
+    });
+    this.plugin.app.resourceManager.define({
+      name: 'myInSiteChats',
+      actions: {
+        list: {
+          handler: async (ctx) => {
+            const chatsRepo = this.plugin.app.db.getRepository(ChatsDefinition.name);
+            try {
+              const chats = await chatsRepo.find({
+                attributes: {
+                  include: [
+                    [
+                      Sequelize.literal(`(
+                                  SELECT COUNT(*)
+                                  FROM ${InAppMessagesDefinition.name} AS messages
+                                  WHERE
+                                      messages.chatId = ${ChatsDefinition.name}.id
+                                      AND
+                                      messages.status = "unread"
+                              )`),
+                      'unreadMsgCnt',
+                    ],
+                    [
+                      Sequelize.literal(`(
+                                  SELECT MAX(messages.createdAt)
+                                  FROM ${InAppMessagesDefinition.name} AS messages
+                                  WHERE
+                                      messages.chatId = ${ChatsDefinition.name}.id
+                              )`),
+                      'lastMsgReceivedTime',
+                    ],
+                  ],
+                },
+              });
+              ctx.body = { chats };
+            } catch (error) {
+              console.error(error);
+            }
           },
         },
       },

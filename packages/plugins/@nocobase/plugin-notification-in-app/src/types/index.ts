@@ -39,19 +39,19 @@ export const InAppMessagesDefinition = {
     id: 'id',
     chatId: 'chatId',
     userId: 'userId',
-    senderId: 'senderId',
     content: 'content',
     status: 'status',
   },
 } as const;
 
 export const ChatsDefinition = {
-  name: 'inappChats',
+  name: 'notificationInSiteChats',
   fieldNameMap: {
     id: 'id',
+    senderId: 'senderId',
     title: 'title',
     lastMsgId: 'lastMsgId',
   },
-};
+} as const;
 
 export const inAppTypeName = 'in-site-message';

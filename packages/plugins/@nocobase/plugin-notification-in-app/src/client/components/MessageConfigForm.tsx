@@ -10,6 +10,7 @@
 import React from 'react';
 import { SchemaComponent, css } from '@nocobase/client';
 import { useLocalTranslation } from '../../locale';
+
 const emailsClass = css`
   width: 100%;
 
@@ -48,6 +49,13 @@ export const ContentConfigForm = ({ variableOptions }) => {
               placeholder: 'https://example.com',
               useTypedConstant: ['string'],
             },
+          },
+          senderId: {
+            type: 'string',
+            default: crypto.randomUUID(),
+            'x-decorator': 'FormItem',
+            'x-component': 'Input',
+            'x-hidden': true,
           },
         },
       }}

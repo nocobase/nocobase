@@ -38,6 +38,19 @@ export const messageCollection: CollectionOptions = {
       },
     },
     {
+      name: 'chat',
+      type: 'belongsTo',
+      interface: 'm2o',
+      target: ChatsDefinition.name,
+      targetKey: ChatsDefinition.fieldNameMap.id,
+      foreignKey: InAppMessagesDefinition.fieldNameMap.chatId,
+      uiSchema: {
+        type: 'string',
+        'x-component': 'AssociationField',
+        title: '{{t("Chat")}}',
+      },
+    },
+    {
       name: 'title',
       type: 'string',
       uiSchema: {

@@ -23,8 +23,6 @@ import { Icon } from '@nocobase/client';
 import { useAPIClient } from '@nocobase/client';
 import { useNavigate } from 'react-router-dom';
 import { NAMESPACE } from '..';
-import useChats from './hooks/useChat';
-
 const useStyles = createStyles(({ token }) => {
   return {
     button: {
@@ -38,10 +36,11 @@ export const Inbox = (props) => {
   const apiClient = useAPIClient();
   const [unreadCount, setUnreadCount] = useState(0);
   const navigate = useNavigate();
+  const onIconClick = useCallback(() => {
+    navigate(`/admin/settings/${NAMESPACE}`);
+  }, [navigate]);
 
   const { styles } = useStyles();
-  const { fetchChats } = useChats();
-
   const updateUnreadCount = useCallback(async () => {
     const res = await apiClient.request({
       url: 'myInAppMessages:count',
@@ -52,14 +51,6 @@ export const Inbox = (props) => {
     });
     setUnreadCount(res.data.data.count);
   }, [apiClient]);
-  useEffect(() => {
-    updateUnreadCount();
-  }, [updateUnreadCount]);
-
-  const onIconClick = useCallback(() => {
-    fetchChats();
-  }, [fetchChats]);
-
   useEffect(() => {
     updateUnreadCount();
   }, [updateUnreadCount]);
@@ -95,7 +86,6 @@ export const Inbox = (props) => {
     };
     request();
   }, [apiClient]);
-
   return (
     <ConfigProvider
       theme={{

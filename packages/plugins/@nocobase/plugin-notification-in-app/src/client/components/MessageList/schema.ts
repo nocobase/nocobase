@@ -140,7 +140,7 @@ export const messagelistSchema: ISchema = {
               properties: {
                 drawer: {
                   type: 'void',
-                  title: 'View',
+                  title: 'Detail',
                   'x-component': 'Action.Drawer',
                   // 'x-component-props': {
                   //   className: 'nb-action-popup',
