@@ -37,6 +37,8 @@ jobs:
       - name: Checkout plugin
         uses: actions/checkout@v3
         with:
+          ref: main
+          token: ${{ steps.app-token.outputs.token }}
           repository: nocobase/plugin-${{ inputs.pro_plugin }}
           path: packages/pro-plugins/@nocobase/plugin-${{ inputs.pro_plugin }}
       - name: Checkout pr
@@ -44,6 +46,7 @@ jobs:
         run: |
           cd ./packages/pro-plugins/@nocobase/plugin-${{ inputs.pro_plugin }}
           gh pr checkout ${{ inputs.pr_number }}
+          cd ../../../../
         env:
           GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
       - name: rm .git
@@ -63,7 +66,7 @@ jobs:
       - name: Set tags
         id: set-tags
         run: |
-          echo "::set-output name=tags::${{ secrets.ALI_DOCKER_REGISTRY }}/pr-${{ inputs.pr_number }}-${{ inputs.pro_plugin }}"
+          echo "::set-output name=tags::${{ secrets.ALI_DOCKER_REGISTRY }}/nocobase/nocobase:pr-${{ inputs.pr_number }}-${{ inputs.pro_plugin }}"
       - name: IMAGE_TAG
         env:
           IMAGE_TAG: pr-${{ inputs.pr_number }}
