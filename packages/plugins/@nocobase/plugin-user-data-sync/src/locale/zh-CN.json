@@ -18,5 +18,6 @@
   "default": "默认",
   "Retry": "重试",
   "No user data source plugin installed": "未安装同步数据源",
-  "View documentation": "查看文档"
+  "View documentation": "查看文档",
+  "The synchronization has started. You can click on 'Tasks' to view the synchronization status.": "已开始同步，可点击「任务」查看同步任务状态"
 }

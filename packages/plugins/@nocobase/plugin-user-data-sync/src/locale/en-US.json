@@ -15,5 +15,6 @@
   "Authenticator": "Authenticator",
   "Retry": "Retry",
   "No user data source plugin installed": "No user data source plugin installed",
-  "View documentation": "View documentation"
+  "View documentation": "View documentation",
+  "The synchronization has started. You can click on 'Tasks' to view the synchronization status.": "The synchronization has started. You can click on 'Tasks' to view the synchronization status."
 }
