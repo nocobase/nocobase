@@ -184,7 +184,7 @@ export function useAssociatedTableColumnInitializerFields() {
       return ['o2o', 'oho', 'obo', 'm2o'].includes(field.interface);
     })
     ?.map((field) => {
-      return getGroup({
+      return getGroupItemForTable({
         getCollectionFields,
         field,
         getInterface,
@@ -200,11 +200,10 @@ export function useAssociatedTableColumnInitializerFields() {
   return groups;
 }
 
-function getGroup({
+function getGroupItemForTable({
   getCollectionFields,
   field,
   getInterface,
-  collectionName,
   getCollection,
   schemaName,
   maxDepth,
@@ -214,35 +213,33 @@ function getGroup({
   getCollectionFields: (name: any, customDataSource?: string) => CollectionFieldOptions_deprecated[];
   field: CollectionFieldOptions;
   getInterface: (name: string) => any;
-  collectionName: string;
   getCollection: (name: any, customDataSource?: string) => CollectionOptions;
   schemaName: string;
   maxDepth: number;
   depth: number;
   t: any;
 }) {
-  const collection = getCollection(field.target);
   const subFields = getCollectionFields(field.target);
   const items = subFields
-    // ?.filter((subField) => subField?.interface && !['o2o', 'oho', 'obo', 'o2m', 'm2o', 'subTable', 'linkTo'].includes(subField?.interface))
     ?.filter(
       (subField) => subField?.interface && !['subTable'].includes(subField?.interface) && !subField?.treeChildren,
     )
     ?.map((subField) => {
       const interfaceConfig = getInterface(subField.interface);
+      const newSchemaName = `${schemaName}.${subField.name}`;
       const schema = {
         // type: 'string',
-        name: `${schemaName}.${subField.name}`,
+        name: newSchemaName,
         // title: subField?.uiSchema?.title || subField.name,
         'x-component': 'CollectionField',
         'x-read-pretty': true,
-        'x-collection-field': `${collectionName}.${field.name}.${subField.name}`,
+        'x-collection-field': `${field.target}.${subField.name}`,
         'x-component-props': {},
       };
 
       return {
         type: 'item',
-        name: `${schemaName}.${subField.name}`,
+        name: newSchemaName,
         title: subField?.uiSchema?.title || subField.name,
         Component: 'TableCollectionFieldInitializer',
         find: findTableColumn,
@@ -262,7 +259,7 @@ function getGroup({
 
   const displayCollectionFields = {
     type: 'itemGroup',
-    name: `${schemaName}.${field.name}-displayCollectionFields`,
+    name: `${schemaName}-displayCollectionFields`,
     title: t('Display fields'),
     children: items,
   };
@@ -271,17 +268,16 @@ function getGroup({
 
   if (depth < maxDepth) {
     const subChildren = subFields
-      ?.filter((field) => {
-        return ['o2o', 'oho', 'obo', 'm2o'].includes(field.interface);
+      ?.filter((subField) => {
+        return ['o2o', 'oho', 'obo', 'm2o'].includes(subField.interface);
       })
-      .map((field) => {
-        return getGroup({
+      .map((subField) => {
+        return getGroupItemForTable({
           getCollectionFields,
-          field,
+          field: subField,
           getInterface,
-          collectionName: collection.name,
           getCollection,
-          schemaName,
+          schemaName: `${schemaName}.${subField.name}`,
           maxDepth,
           depth: depth + 1,
           t,
@@ -291,7 +287,7 @@ function getGroup({
     if (subChildren.length) {
       const group: any = {
         type: 'itemGroup',
-        name: `${schemaName}.${field.name}-associationFields`,
+        name: `${schemaName}-associationFields`,
         title: t('Display association fields'),
         children: subChildren,
       };
@@ -302,7 +298,7 @@ function getGroup({
 
   return {
     type: 'subMenu',
-    name: `${schemaName}.${field.name}`,
+    name: `${schemaName}`,
     title: field.uiSchema?.title,
     children,
   } as SchemaInitializerItemType;
@@ -511,6 +507,7 @@ export const useAssociatedFormItemInitializerFields = (options?: any) => {
   const { name, fields } = useCollection_deprecated();
   const { getInterface, getCollectionFields, getCollection } = useCollectionManager_deprecated();
   const form = useForm();
+  const { t } = useTranslation();
   const { readPretty = form.readPretty, block = 'Form' } = options || {};
   const interfaces = block === 'Form' ? ['m2o'] : ['o2o', 'oho', 'obo', 'm2o'];
   const groups = fields
@@ -518,58 +515,18 @@ export const useAssociatedFormItemInitializerFields = (options?: any) => {
       return interfaces.includes(field.interface);
     })
     ?.map((field) => {
-      const subFields = getCollectionFields(field.target);
-      const items = subFields
-        ?.filter(
-          (subField) => subField?.interface && !['subTable'].includes(subField?.interface) && !subField.treeChildren,
-        )
-        ?.map((subField) => {
-          const interfaceConfig = getInterface(subField.interface);
-          const isFileCollection = field?.target && getCollection(field?.target)?.template === 'file';
-          const schema = {
-            type: 'string',
-            name: `${field.name}.${subField.name}`,
-            // 'x-designer': 'FormItem.Designer',
-            'x-toolbar': 'FormItemSchemaToolbar',
-            'x-settings': 'fieldSettings:FormItem',
-            'x-component': 'CollectionField',
-            'x-read-pretty': readPretty,
-            'x-component-props': {
-              'pattern-disable': block === 'Form' && readPretty,
-              fieldNames: isFileCollection
-                ? {
-                    label: 'preview',
-                    value: 'id',
-                  }
-                : undefined,
-            },
-            'x-decorator': 'FormItem',
-            'x-collection-field': `${name}.${field.name}.${subField.name}`,
-          };
-          return {
-            name: subField?.uiSchema?.title || subField.name,
-            type: 'item',
-            title: subField?.uiSchema?.title || subField.name,
-            Component: 'CollectionFieldInitializer',
-            remove: removeGridFormItem,
-            schemaInitialize: (s) => {
-              interfaceConfig?.schemaInitialize?.(s, {
-                field: subField,
-                block,
-                readPretty,
-                targetCollection: getCollection(field.target),
-              });
-            },
-            schema,
-          } as SchemaInitializerItemType;
-        });
-
-      return {
-        type: 'subMenu',
-        name: field.uiSchema?.title,
-        title: field.uiSchema?.title,
-        children: items,
-      } as SchemaInitializerItemType;
+      return getGroupItemForForm({
+        getCollectionFields,
+        field,
+        getInterface,
+        getCollection,
+        readPretty,
+        block,
+        schemaName: field.name,
+        maxDepth: 2,
+        depth: 1,
+        t,
+      });
     });
   return groups;
 };
@@ -1621,6 +1578,123 @@ const getChildren = ({
       };
     });
 };
+
+function getGroupItemForForm({
+  getCollectionFields,
+  field,
+  getInterface,
+  getCollection,
+  readPretty,
+  block,
+  maxDepth,
+  depth,
+  schemaName,
+  t,
+}: {
+  getCollectionFields: (name: any, customDataSource?: string) => CollectionFieldOptions_deprecated[];
+  field: CollectionFieldOptions;
+  getInterface: (name: string) => any;
+  getCollection: (name: any, customDataSource?: string) => CollectionOptions;
+  readPretty: any;
+  block: any;
+  maxDepth: number;
+  depth: number;
+  schemaName: string;
+  t: any;
+}) {
+  const subFields = getCollectionFields(field.target);
+  const items = subFields
+    ?.filter((subField) => subField?.interface && !['subTable'].includes(subField?.interface) && !subField.treeChildren)
+    ?.map((subField) => {
+      const interfaceConfig = getInterface(subField.interface);
+      const isFileCollection = field?.target && getCollection(field?.target)?.template === 'file';
+      const newSchemaName = `${schemaName}.${subField.name}`;
+      const schema = {
+        type: 'string',
+        name: newSchemaName,
+        // 'x-designer': 'FormItem.Designer',
+        'x-toolbar': 'FormItemSchemaToolbar',
+        'x-settings': 'fieldSettings:FormItem',
+        'x-component': 'CollectionField',
+        'x-read-pretty': readPretty,
+        'x-component-props': {
+          'pattern-disable': block === 'Form' && readPretty,
+          fieldNames: isFileCollection
+            ? {
+                label: 'preview',
+                value: 'id',
+              }
+            : undefined,
+        },
+        'x-decorator': 'FormItem',
+        'x-collection-field': `${field.target}.${subField.name}`,
+      };
+      return {
+        name: newSchemaName,
+        type: 'item',
+        title: subField?.uiSchema?.title || subField.name,
+        Component: 'CollectionFieldInitializer',
+        remove: removeGridFormItem,
+        schemaInitialize: (s) => {
+          interfaceConfig?.schemaInitialize?.(s, {
+            field: subField,
+            block,
+            readPretty,
+            targetCollection: getCollection(field.target),
+          });
+        },
+        schema,
+      } as SchemaInitializerItemType;
+    });
+
+  const displayCollectionFields = {
+    type: 'itemGroup',
+    name: `${schemaName}-displayCollectionFields`,
+    title: t('Display fields'),
+    children: items,
+  };
+
+  const children = [displayCollectionFields];
+
+  if (depth < maxDepth) {
+    const subChildren = subFields
+      ?.filter((subField) => {
+        return ['o2o', 'oho', 'obo', 'm2o'].includes(subField.interface);
+      })
+      .map((subField) => {
+        return getGroupItemForForm({
+          getCollectionFields,
+          field: subField,
+          getInterface,
+          getCollection,
+          schemaName: `${schemaName}.${subField.name}`,
+          readPretty,
+          block,
+          maxDepth,
+          depth: depth + 1,
+          t,
+        });
+      });
+
+    if (subChildren.length) {
+      const group: any = {
+        type: 'itemGroup',
+        name: `${schemaName}-associationFields`,
+        title: t('Display association fields'),
+        children: subChildren,
+      };
+
+      children.push(group);
+    }
+  }
+
+  return {
+    type: 'subMenu',
+    name: `${schemaName}.${field.name}`,
+    title: field.uiSchema?.title,
+    children,
+  } as SchemaInitializerItemType;
+}
 
 function useAssociationFields({
   componentName,
