@@ -70,7 +70,64 @@ describe('subquery', () => {
 
     expect(res[0].get('subquery2')).toEqual(4);
     expect(res[0].get('subquery1')).toBeUndefined();
+
+    // sort
+    const sortRes = await Test.repository.find({
+      sort: ['subquery1'],
+    });
+
+    expect(sortRes[0].get('name')).toEqual('test1');
+
+    // filter
+    const res2 = await Test.repository.find({
+      filter: {
+        subquery1: 2,
+      },
+    });
+
+    expect(res2.length).toEqual(1);
   });
 
-  it('should query subquery field in relation associations', async () => {});
+  it.skip('should query subquery field in relation associations', async () => {
+    const User = db.collection({
+      name: 'users',
+      fields: [
+        { name: 'name', type: 'string' },
+        {
+          name: 'profile',
+          type: 'hasOne',
+          target: 'profiles',
+          foreignKey: 'userId',
+        },
+      ],
+    });
+
+    const Profile = db.collection({
+      name: 'profiles',
+      fields: [
+        { name: 'address', type: 'string' },
+        { name: 'subquery1', type: 'subquery', sql: `SELECT 1+1` },
+      ],
+    });
+
+    await db.sync();
+
+    await User.repository.create({
+      values: {
+        name: 'user1',
+        profile: {
+          address: 'address1',
+        },
+      },
+    });
+
+    let u1 = await User.repository.findOne({
+      appends: ['profile'],
+    });
+
+    u1 = u1.toJSON();
+
+    expect(u1['profile']['address']).toEqual('address1');
+    expect(u1['profile']['subquery1']).toEqual(2);
+  });
 });
