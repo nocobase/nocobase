@@ -162,7 +162,11 @@ const getVariablesData = (localVariables) => {
 export async function getRenderContent(templateEngine, content, variables, localVariables, defaultParse) {
   if (content && templateEngine === 'handlebars') {
     try {
-      await replaceVariableValue(content, variables, localVariables);
+      try {
+        await replaceVariableValue(content, variables, localVariables);
+      } catch (error) {
+        return null;
+      }
       const renderedContent = Handlebars.compile(content);
       // 处理渲染后的内容
       const data = getVariablesData(localVariables);
