@@ -17,13 +17,13 @@
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Badge, Button, ConfigProvider, notification } from 'antd';
+import { Badge, Button, ConfigProvider, notification, Drawer } from 'antd';
 import { createStyles } from 'antd-style';
 import { Icon } from '@nocobase/client';
 import { useAPIClient } from '@nocobase/client';
 import { useNavigate } from 'react-router-dom';
-import { NAMESPACE } from '..';
 import useChats from './hooks/useChat';
+import { InboxContent } from './InboxContent';
 
 const useStyles = createStyles(({ token }) => {
   return {
@@ -37,14 +37,15 @@ const useStyles = createStyles(({ token }) => {
 export const Inbox = (props) => {
   const apiClient = useAPIClient();
   const [unreadCount, setUnreadCount] = useState(0);
+  const [visible, setVisible] = useState(false);
   const navigate = useNavigate();
 
   const { styles } = useStyles();
-  const { fetchChats } = useChats();
+  const { fetchChats, chatList, fetchMessagesByGroupId, chatMap } = useChats();
 
   const updateUnreadCount = useCallback(async () => {
     const res = await apiClient.request({
-      url: 'myInAppMessages:count',
+      url: 'myInSiteMessages:count',
       method: 'get',
       params: {
         status: 'unread',
@@ -58,6 +59,7 @@ export const Inbox = (props) => {
 
   const onIconClick = useCallback(() => {
     fetchChats();
+    setVisible(true);
   }, [fetchChats]);
 
   useEffect(() => {
@@ -66,7 +68,7 @@ export const Inbox = (props) => {
   useEffect(() => {
     const request = async () => {
       const res = await apiClient.request({
-        url: 'myInAppMessages:sse',
+        url: 'myInSiteMessages:sse',
         method: 'get',
         headers: {
           Accept: 'text/event-stream',
@@ -104,6 +106,13 @@ export const Inbox = (props) => {
     >
       <Button className={styles.button} title={'Apps'} icon={<Icon type={'MailOutlined'} />} onClick={onIconClick} />
       {unreadCount > 0 && <Badge count={unreadCount} size="small" offset={[-18, -16]}></Badge>}
+      <Drawer open={visible} closeIcon={false} width={800} onClose={() => setVisible(false)}>
+        <InboxContent
+          groups={chatList}
+          groupMap={chatMap}
+          onGroupClick={(id) => fetchMessagesByGroupId({ groupId: id })}
+        />
+      </Drawer>
     </ConfigProvider>
   );
 };

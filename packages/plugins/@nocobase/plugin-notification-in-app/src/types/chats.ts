@@ -62,3 +62,12 @@ export const chatsCollection: CollectionOptions = {
     },
   ],
 };
+
+export type MsgGroup = {
+  id: string;
+  title: string;
+  userId: string;
+  unreadMsgCnt: number;
+  lastMessageReceiveTime: string;
+  lastMessageTitle: string;
+};

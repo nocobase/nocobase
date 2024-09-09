@@ -8,31 +8,61 @@
  */
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { useAPIClient } from '@nocobase/client';
+import { useAPIClient, useRequest } from '@nocobase/client';
 import { produce } from 'immer';
+import a from 'packages/core/database/src/__tests__/fixtures/c0/a';
+export type Message = {
+  id: string;
+  title: string;
+  receiveTime: string;
+  content: string;
+  status: 'read' | 'unread';
+};
+export type Group = {
+  id: string;
+  title: string;
+  msgMap: Record<string, Message>;
+  unreadMsgCnt: number;
+  lastMsgReceiveTime: string;
+};
 const useChats = () => {
-  const [chatMap, setChatMap] = useState<Record<string, any>>({});
+  const [groupMap, setGroupMap] = useState<Record<string, Group>>({});
   const addChat = useCallback((chat) => {
-    setChatMap(
+    setGroupMap(
       produce((draft) => {
         draft[chat.id] = chat;
       }),
     );
   }, []);
-  const addChats = useCallback((chats) => {
-    setChatMap(
+  const addChats = useCallback((groups) => {
+    setGroupMap(
       produce((draft) => {
-        chats.forEach((chat) => {
-          draft[chat.id] = chat;
+        groups.forEach((group) => {
+          group.msgMap = {};
+          draft[group.id] = group;
         });
       }),
     );
   }, []);
 
+  const addMessagesToGroup = useCallback((groupId: string, messages: Message[]) => {
+    setGroupMap(
+      produce((draft) => {
+        const group = draft[groupId];
+        if (group) {
+          messages.forEach((message) => {
+            group.msgMap[message.id] = message;
+          });
+        }
+      }),
+    );
+  }, []);
+
   const chatList = useMemo(() => {
-    return Object.values(chatMap).sort((a, b) => (a.createdAt > b.createdAt ? -1 : 1));
-  }, [chatMap]);
+    return Object.values(groupMap).sort((a, b) => (a.lastMsgReceiveTime > b.lastMsgReceiveTime ? -1 : 1));
+  }, [groupMap]);
   const apiClient = useAPIClient();
+
   const fetchChats = useCallback(async () => {
     const res = await apiClient.request({
       url: 'myInSiteChats:list',
@@ -41,12 +71,26 @@ const useChats = () => {
     const chats = res.data.data.chats;
     if (Array.isArray(chats)) addChats(chats);
   }, [apiClient, addChats]);
+
+  const fetchMessagesByGroupId = useCallback(
+    async ({ groupId }) => {
+      const res = await apiClient.request({
+        url: 'myInSiteMessages:list',
+        method: 'get',
+        params: {
+          groupId,
+        },
+      });
+    },
+    [apiClient, addMessagesToGroup],
+  );
   return {
-    chatMap,
+    chatMap: groupMap,
     chatList,
     addChat,
     addChats,
     fetchChats,
+    fetchMessagesByGroupId,
   };
 };
 

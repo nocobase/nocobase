@@ -62,7 +62,7 @@ export default class NotificationServer extends NotificationServerBase {
 
   defineActions() {
     this.plugin.app.resourceManager.define({
-      name: 'myInAppMessages',
+      name: 'myInSiteMessages',
       actions: {
         sse: {
           handler: async (ctx, next) => {
@@ -91,6 +91,19 @@ export default class NotificationServer extends NotificationServerBase {
             const messages = this.plugin.app.db.getRepository(InAppMessagesDefinition.name);
             const count = await messages.count({ filter: { userId, status: 'unread' } });
             ctx.body = { count };
+          },
+        },
+        list: {
+          handler: async (ctx) => {
+            const messagesRepo = this.plugin.app.db.getRepository(InAppMessagesDefinition.name);
+            const groupId = ctx.action.params.groupId;
+            const messageList = await messagesRepo.find({
+              filter: {
+                chatId: groupId,
+                userId: ctx.state.currentUser.id,
+              },
+            });
+            ctx.body = { messages: messageList };
           },
         },
       },

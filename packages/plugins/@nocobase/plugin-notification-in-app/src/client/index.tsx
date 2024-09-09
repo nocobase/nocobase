@@ -16,12 +16,12 @@ import { ContentConfigForm } from './components/MessageConfigForm';
 import { MessageList } from './components/MessageList/index';
 export const NAMESPACE = 'inbox';
 export class PluginNotificationInAppClient extends Plugin {
-  async afterAdd() {
-    this.app.use(MessageManagerProvider);
-  }
+  async afterAdd() {}
+
   async beforeLoad() {}
 
   async load() {
+    this.app.use(MessageManagerProvider);
     this.app.pluginSettingsManager.add(NAMESPACE, {
       title: t('Inbox'),
       icon: 'MailOutlined',

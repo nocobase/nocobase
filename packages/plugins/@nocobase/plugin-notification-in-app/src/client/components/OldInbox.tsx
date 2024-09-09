@@ -43,7 +43,7 @@ export const Inbox = (props) => {
   const { styles } = useStyles();
   const updateUnreadCount = useCallback(async () => {
     const res = await apiClient.request({
-      url: 'myInAppMessages:count',
+      url: 'myInSiteMessages:count',
       method: 'get',
       params: {
         status: 'unread',
@@ -57,7 +57,7 @@ export const Inbox = (props) => {
   useEffect(() => {
     const request = async () => {
       const res = await apiClient.request({
-        url: 'myInAppMessages:sse',
+        url: 'myInSiteMessages:sse',
         method: 'get',
         headers: {
           Accept: 'text/event-stream',
