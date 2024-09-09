@@ -11,8 +11,8 @@ import {
   ButtonEditor,
   SchemaSettingOpenModeSchemaItems,
   SchemaSettings,
-  useOpenModeContext,
   useSchemaInitializer,
+  useOpenModeContext,
 } from '@nocobase/client';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
@@ -61,7 +61,7 @@ export function WorkbenchPopupActionSchemaInitializerItem(props) {
   // 调用插入功能
   const { insert } = useSchemaInitializer();
   const { t } = useTranslation();
-  const { hideOpenMode } = useOpenModeContext();
+  const { isMobile } = useOpenModeContext();
 
   return (
     <ModalActionSchemaInitializerItem
@@ -128,7 +128,7 @@ export function WorkbenchPopupActionSchemaInitializerItem(props) {
                         grid: {
                           type: 'void',
                           'x-component': 'Grid',
-                          'x-initializer': 'page:addBlock',
+                          'x-initializer': isMobile ? 'mobile:addBlock' : 'page:addBlock',
                           properties: {},
                         },
                       },
