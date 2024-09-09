@@ -10,8 +10,10 @@
 import { useFilterByTk } from '@nocobase/client';
 import React from 'react';
 import { Link } from 'react-router-dom';
-
+import { useT } from '../locale';
 export function ConfigureLink() {
   const value = useFilterByTk();
-  return <Link to={`/admin/settings/public-forms/${value}`}>Configure</Link>;
+  const t = useT();
+
+  return <Link to={`/admin/settings/public-forms/${value}`}>{t('Configure')}</Link>;
 }

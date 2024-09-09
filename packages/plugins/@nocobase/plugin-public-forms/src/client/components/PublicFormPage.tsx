@@ -61,7 +61,7 @@ function PublicAPIClientProvider({ children }) {
     apiClient.app = app;
     apiClient.axios.interceptors.request.use((config) => {
       if (config.headers) {
-        config.headers['X-Form-Token'] = apiClient.storage.getItem('NOCOBASE_FORM_TOKEN') || '';
+        config.headers['X-Form-Token'] = localStorage.getItem('NOCOBASE_FORM_TOKEN') || '';
       }
       return config;
     });
@@ -79,11 +79,11 @@ function InternalPublicForm() {
     },
     {
       onSuccess(data) {
+        localStorage.setItem('NOCOBASE_FORM_TOKEN', data?.data?.token);
         apiClient.axios.interceptors.request.use((config) => {
           if (config.headers) {
             config.headers['X-Form-Token'] = data?.data?.token || '';
           }
-          apiClient.storage.setItem('NOCOBASE_FORM_TOKEN', data?.data?.token);
           return config;
         });
       },
@@ -122,30 +122,30 @@ function InternalPublicForm() {
   if (loading) {
     return <Spin />;
   }
-  console.log(data?.data?.dataSource);
   return (
-    <div
-      style={{
-        height: '100vh',
-        background: '#f5f5f5',
-      }}
-    >
-      <div style={{ maxWidth: 800, margin: '0 auto', paddingTop: '10vh' }}>
-        <PublicPublicFormProvider dataSource={data?.data?.dataSource}>
-          <SchemaComponentContext.Provider value={{ ...ctx, designable: false }}>
-            <SchemaComponent schema={data?.data?.schema} scope={{ useCreateActionProps: usePublicSubmitActionProps }} />
-          </SchemaComponentContext.Provider>
-        </PublicPublicFormProvider>
-        <PoweredBy />
+    <PublicAPIClientProvider>
+      <div
+        style={{
+          height: '100vh',
+          background: '#f5f5f5',
+        }}
+      >
+        <div style={{ maxWidth: 800, margin: '0 auto', paddingTop: '10vh' }}>
+          <PublicPublicFormProvider dataSource={data?.data?.dataSource}>
+            <SchemaComponentContext.Provider value={{ ...ctx, designable: false }}>
+              <SchemaComponent
+                schema={data?.data?.schema}
+                scope={{ useCreateActionProps: usePublicSubmitActionProps }}
+              />
+            </SchemaComponentContext.Provider>
+          </PublicPublicFormProvider>
+          <PoweredBy />
+        </div>
       </div>
-    </div>
+    </PublicAPIClientProvider>
   );
 }
 
 export function PublicFormPage() {
-  return (
-    <PublicAPIClientProvider>
-      <InternalPublicForm />
-    </PublicAPIClientProvider>
-  );
+  return <InternalPublicForm />;
 }
