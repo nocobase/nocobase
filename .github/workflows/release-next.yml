@@ -5,9 +5,6 @@ concurrency:
   cancel-in-progress: true
 
 on:
-  push:
-    branches:
-      - fix/release-next-ci
   workflow_dispatch:
 
 jobs:
@@ -96,7 +93,7 @@ jobs:
           git add .
           git commit -m "chore(versions): test publish packages xxx"
           cat lerna.json
-          # yarn release:force --no-verify-access --no-git-reset --registry https://registry.npmjs.org/ --dist-tag=next
+          yarn release:force --no-verify-access --no-git-reset --registry https://registry.npmjs.org/ --dist-tag=next
       - name: Checkout pro-plugins
         uses: actions/checkout@v3
         with:
@@ -128,30 +125,29 @@ jobs:
           git reset --hard
           bash generate-npmignore.sh ignore-src
           npm config set //pkg-src.nocobase.com/:_authToken=${{ env.PKG_SRC_NOCOBASE_TOKEN }}
-          # yarn release:force --no-verify-access --no-git-reset --registry https://pkg-src.nocobase.com --dist-tag=next
+          yarn release:force --no-verify-access --no-git-reset --registry https://pkg-src.nocobase.com --dist-tag=next
       - name: Tag
         run: |
           git reset --hard HEAD~
           git tag v${{ env.NEWVERSION }}
-          # git push origin v${{ env.NEWVERSION }}
+          git push origin v${{ env.NEWVERSION }}
           cd ./packages/pro-plugins
           git reset --hard
           git tag v${{ env.NEWVERSION }}
-          # git push origin v${{ env.NEWVERSION }}
+          git push origin v${{ env.NEWVERSION }}
           cd ../../
           for repo in ${{ join(fromJSON(vars.NEXT_PRO_PLUGIN_REPOS), ' ') }} ${{ join(fromJSON(vars.CUSTOM_PRO_PLUGIN_REPOS), ' ') }}
           do
             cd ./packages/pro-plugins/@nocobase/$repo
             git reset --hard
             git tag v${{ env.NEWVERSION }}
-            # git push origin v${{ env.NEWVERSION }}
+            git push origin v${{ env.NEWVERSION }}
             cd ../../../../
           done
       - name: Run release script
         shell: bash
         run: |
           git fetch
-          git checkout fix/release-next-ci
           node scripts/release/changelogAndRelease.js --ver alpha --test
         env:
           PRO_PLUGIN_REPOS: ${{ vars.NEXT_PRO_PLUGIN_REPOS }}
