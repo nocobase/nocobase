@@ -133,11 +133,17 @@ export class PluginPublicFormsServer extends Plugin {
 
   // TODO：用于处理哪些可选项的接口可以访问
   parseACL = async (ctx, next) => {
-    const { resourceName } = ctx.action;
+    const { resourceName, actionName } = ctx.action;
     if (ctx.PublicForm) {
-      ctx.permission = {
-        skip: ctx.PublicForm['targetCollections'].includes(resourceName),
-      };
+      if (actionName === 'create') {
+        ctx.permission = {
+          skip: ctx.PublicForm['collectionName'] === resourceName,
+        };
+      } else {
+        ctx.permission = {
+          skip: ctx.PublicForm['targetCollections'].includes(resourceName),
+        };
+      }
     }
     await next();
   };

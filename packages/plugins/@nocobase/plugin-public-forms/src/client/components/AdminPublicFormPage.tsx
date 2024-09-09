@@ -116,11 +116,12 @@ export function AdminPublicFormPage() {
           onCancel={() => setOpenPassword(false)}
           onOk={() => {
             setOpenPassword(false);
-            handleEditPublicForm({ password: pwd });
+            handleEditPublicForm({ password: pwd === '' ? undefined : pwd });
           }}
         >
           <Input.Password
             defaultValue={password}
+            visibilityToggle={true}
             onChange={(e) => {
               setPwd(e.target.value);
             }}
