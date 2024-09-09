@@ -38,7 +38,7 @@ export function useSchemaInitializerRender<P1 = ButtonProps, P2 = {}>(
   options?: Omit<SchemaInitializerOptions<P1, P2>, 'name'>,
 ) {
   const app = useApp();
-  const { isMobile } = useOpenModeContext();
+  const { isMobile } = useOpenModeContext() || {};
 
   // compatible with mobile
   // TODO: delete this code
