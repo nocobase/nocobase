@@ -94,8 +94,7 @@ export const Action: ComposedAction = withDynamicSchemaProps(
     const openMode = fieldSchema?.['x-component-props']?.['openMode'];
     const openSize = fieldSchema?.['x-component-props']?.['openSize'];
     const refreshDataBlockRequest = fieldSchema?.['x-component-props']?.['refreshDataBlockRequest'];
-    const confirm = fieldSchema['x-component-props']?.confirm || propsConfirm;
-
+    const confirm = compile(fieldSchema['x-component-props']?.confirm) || propsConfirm;
     const disabled = form.disabled || field.disabled || field.data?.disabled || propsDisabled || disableAction;
     const linkageRules = useMemo(() => fieldSchema?.['x-linkage-rules'] || [], [fieldSchema?.['x-linkage-rules']]);
     const { designable } = useDesignable();
