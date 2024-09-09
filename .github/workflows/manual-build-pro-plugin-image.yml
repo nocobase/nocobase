@@ -37,6 +37,8 @@ jobs:
       - name: Checkout plugin
         uses: actions/checkout@v3
         with:
+          ref: main
+          token: ${{ steps.app-token.outputs.token }}
           repository: nocobase/plugin-${{ inputs.pro_plugin }}
           path: packages/pro-plugins/@nocobase/plugin-${{ inputs.pro_plugin }}
       - name: Checkout pr
