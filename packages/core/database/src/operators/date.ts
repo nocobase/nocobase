@@ -63,10 +63,6 @@ function isDatetimeString(str) {
 
 export default {
   $dateOn(value, ctx) {
-    if (isDatetimeString(value)) {
-      value = moment(value).format('YYYY-MM-DD');
-    }
-
     const r = parseDate(value, {
       timezone: parseDateTimezone(ctx),
     });

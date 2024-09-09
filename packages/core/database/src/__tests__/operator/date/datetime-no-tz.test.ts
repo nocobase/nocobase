@@ -74,11 +74,19 @@ describe('datetimeNoTz date operator test', () => {
 
     count = await repository.count({
       filter: {
-        'date1.$dateOn': '2022-12-31 00:00:00',
+        'date1.$dateOn': '2022-12-31 16:00:00',
       },
     });
 
     expect(count).toBe(2);
+
+    count = await repository.count({
+      filter: {
+        'date1.$dateOn': '2022-12-31 16:00:01',
+      },
+    });
+
+    expect(count).toBe(0);
   });
 
   test('$dateBefore', async () => {
