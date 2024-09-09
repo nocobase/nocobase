@@ -89,6 +89,7 @@ export const Mobile = () => {
           <AntdAppProvider className={`mobile-container ${styles.nbMobile}`}>
             <OpenModeProvider
               defaultOpenMode="page"
+              isMobile={true}
               hideOpenMode
               openModeToComponent={{
                 page: MobileActionPage,
