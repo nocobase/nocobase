@@ -9,6 +9,7 @@
 
 import { BaseColumnFieldOptions, Field } from './field';
 import { DataTypes, Sequelize } from 'sequelize';
+import sqlParser from '../sql-parser';
 
 export class SubqueryField extends Field {
   get dataType() {
@@ -25,15 +26,28 @@ export class SubqueryField extends Field {
         pushTarget.push([Sequelize.literal(`(${sql})`), name]);
       }
     };
+
+    this.onSelectQuery = (options) => {
+      const { collection } = options;
+      const collectionName = collection.name;
+      const fieldName = name;
+      const str = this.database.sequelize.getQueryInterface().quoteIdentifiers(`${collectionName}.${fieldName}`);
+      if (options.sql.includes(str)) {
+        const newSQL = options.sql.replace(str, `(${sql})`);
+        options.sql = newSQL;
+      }
+    };
   }
 
   bind() {
     super.bind();
     this.collection.on('beforeParseAttributes', this.listener);
+    this.collection.on('selectQuery', this.onSelectQuery);
   }
   unbind() {
     super.unbind();
     this.collection.off('beforeParseAttributes', this.listener);
+    this.collection.off('selectQuery', this.onSelectQuery);
   }
 }
 

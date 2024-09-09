@@ -85,7 +85,7 @@ describe('subquery', () => {
       },
     });
 
-    expect(res2.length).toEqual(1);
+    expect(res2.length).toEqual(2);
   });
 
   it.skip('should query subquery field in relation associations', async () => {
