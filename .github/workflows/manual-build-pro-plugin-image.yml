@@ -46,6 +46,7 @@ jobs:
         run: |
           cd ./packages/pro-plugins/@nocobase/plugin-${{ inputs.pro_plugin }}
           gh pr checkout ${{ inputs.pr_number }}
+          cd ../../../../
         env:
           GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
       - name: rm .git
