@@ -50,8 +50,8 @@ export const DatePicker: ComposedDatePicker = (props: any) => {
   const { utc = true } = useDatePickerContext();
   const value = Array.isArray(props.value) ? props.value[0] : props.value;
   const newProps = {
-    utc,
     ...props,
+    utc,
     showTime: props.showTime ? { defaultValue: dayjs('00:00:00', 'HH:mm:ss') } : false,
   };
   return <InternalDatePicker {...newProps} value={value} />;
