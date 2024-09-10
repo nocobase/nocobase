@@ -9,7 +9,7 @@
 
 import { Field } from '@formily/core';
 import { reaction } from '@formily/reactive';
-import evaluators from '@nocobase/evaluators/client';
+import { evaluators } from '@nocobase/evaluators/client';
 import { getValuesByPath, uid } from '@nocobase/utils/client';
 import _ from 'lodash';
 import { conditionAnalyses, getInnermostKeyAndValue, getTargetField } from '../../schema-component/common/utils/uitls';
