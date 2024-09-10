@@ -24,6 +24,7 @@ import { useAPIClient } from '@nocobase/client';
 import { useNavigate } from 'react-router-dom';
 import useChats from './hooks/useChat';
 import { InboxContent } from './InboxContent';
+import { useLocalTranslation } from '../../locale';
 
 const useStyles = createStyles(({ token }) => {
   return {
@@ -36,6 +37,7 @@ const useStyles = createStyles(({ token }) => {
 
 export const Inbox = (props) => {
   const apiClient = useAPIClient();
+  const { t } = useLocalTranslation();
   const [unreadCount, setUnreadCount] = useState(0);
   const [visible, setVisible] = useState(false);
   const navigate = useNavigate();
@@ -106,7 +108,7 @@ export const Inbox = (props) => {
     >
       <Button className={styles.button} title={'Apps'} icon={<Icon type={'MailOutlined'} />} onClick={onIconClick} />
       {unreadCount > 0 && <Badge count={unreadCount} size="small" offset={[-18, -16]}></Badge>}
-      <Drawer open={visible} closeIcon={false} width={800} onClose={() => setVisible(false)}>
+      <Drawer title={t('Inbox')} open={visible} closeIcon={true} width={800} onClose={() => setVisible(false)}>
         <InboxContent
           groups={chatList}
           groupMap={chatMap}

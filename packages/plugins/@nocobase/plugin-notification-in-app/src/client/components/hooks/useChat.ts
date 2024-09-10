@@ -10,11 +10,10 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAPIClient, useRequest } from '@nocobase/client';
 import { produce } from 'immer';
-import a from 'packages/core/database/src/__tests__/fixtures/c0/a';
 export type Message = {
   id: string;
   title: string;
-  receiveTime: string;
+  createdAt: string;
   content: string;
   status: 'read' | 'unread';
 };
@@ -81,6 +80,7 @@ const useChats = () => {
           groupId,
         },
       });
+      addMessagesToGroup(groupId, res.data.data.messages);
     },
     [apiClient, addMessagesToGroup],
   );

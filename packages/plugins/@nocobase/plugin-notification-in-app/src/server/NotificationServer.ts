@@ -13,6 +13,8 @@ import { PassThrough } from 'stream';
 import PluginNotificationInAppServer from './plugin';
 import { InAppMessagesDefinition, ChatsDefinition } from '../types';
 import { FindAttributeOptions, ModelStatic, Op, Sequelize } from 'sequelize';
+import { randomUUID } from 'crypto';
+import { uid } from '@nocobase/utils';
 
 type UserID = string;
 type ClientID = string;
@@ -33,12 +35,47 @@ export default class NotificationServer extends NotificationServerBase {
     this.userClientsMap[userId][clientId] = stream;
   }
 
+  saveMessageToDB = async ({
+    content,
+    senderName,
+    senderId,
+    status,
+    userId,
+    title,
+    receiveTime,
+  }: {
+    content: string;
+    senderName: string;
+    senderId: string;
+    userId: string;
+    title: string;
+    status: 'read' | 'unread';
+    receiveTime?: Date;
+  }): Promise<boolean> => {
+    const chats = this.plugin.app.db.getRepository(ChatsDefinition.name);
+    const messages = this.plugin.app.db.getRepository(InAppMessagesDefinition.name);
+    let chat = await chats.findOne({ filter: { senderId, userId } });
+    if (!chat) {
+      chat = await chats.create({ values: { senderId, userId, title: senderName } });
+    }
+    await messages.create({
+      values: {
+        content,
+        title,
+        chatId: chat.id,
+        senderName,
+        status,
+        userId,
+        createdAt: receiveTime || new Date(),
+      },
+    });
+    return true;
+  };
+
   send: SendFnType<InAppMessageFormValues> = async (options) => {
     const { message } = options;
     const { content, receivers } = message;
     const { title, senderId } = content.config;
-    const chats = this.plugin.app.db.getRepository(ChatsDefinition.name);
-    const messages = this.plugin.app.db.getRepository(InAppMessagesDefinition.name);
 
     await Promise.all(
       receivers.map(async (userId) => {
@@ -50,14 +87,45 @@ export default class NotificationServer extends NotificationServerBase {
             stream.write(`data: ${JSON.stringify(messageData)}\n\n`);
           }
         }
-        let chat = await chats.findOne({ filter: { senderId, userId } });
-        if (!chat) {
-          chat = await chats.create({ values: { senderId, userId, title } });
-        }
-        await messages.create({ values: { content: content.body, userId, status: 'unread', title, chatId: chat.id } });
+
+        this.saveMessageToDB({
+          title,
+          content: content.body,
+          senderName: title,
+          senderId,
+          status: 'unread',
+          userId,
+        });
       }),
     );
+    // 测试用
+    this.mockMessages();
     return { status: 'success', receivers, content: content.body, title };
+  };
+
+  mockMessages = async () => {
+    function randomDate(start, end) {
+      return new Date(start.getTime() + Math.random() * (end.getTime() - start.getTime()));
+    }
+
+    for (let i = 0; i < 1000; i++) {
+      const senderId = randomUUID();
+      const userId = '1';
+      const senderName = `senderName${uid()}`;
+      for (let j = 0; j < 100; j++) {
+        const content = `${senderName}-content-${uid()}`;
+        const title = `title${j}`;
+        await this.saveMessageToDB({
+          content,
+          title,
+          senderName,
+          senderId,
+          status: 'unread',
+          userId,
+          receiveTime: randomDate(new Date(2021, 0, 1), new Date()),
+        });
+      }
+    }
   };
 
   defineActions() {

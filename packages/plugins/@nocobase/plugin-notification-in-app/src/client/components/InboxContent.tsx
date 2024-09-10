@@ -10,6 +10,8 @@
 import React, { useMemo, useState } from 'react';
 import { Layout, List, Card, Descriptions, Typography, Badge } from 'antd';
 import type { Group as MsgGroup } from './hooks/useChat';
+import { css } from '@emotion/css';
+
 export const InboxContent = ({
   groups,
   groupMap,
@@ -26,7 +28,7 @@ export const InboxContent = ({
       return [];
     }
     const msgMap = groups.find((group) => group.id === selectedGroupId).msgMap;
-    return Object.values(msgMap).sort((a, b) => (a.receiveTime > b.receiveTime ? -1 : 1));
+    return Object.values(msgMap).sort((a, b) => (a.createdAt > b.createdAt ? -1 : 1));
   }, [groups, selectedGroupId]);
 
   const MessageList = () => {
@@ -40,7 +42,7 @@ export const InboxContent = ({
           <Card size={'small'} style={{ marginTop: 24 }} title={message.title} key={message.id}>
             <Descriptions key={index} column={1}>
               <Descriptions.Item label="内容">{message.content}</Descriptions.Item>
-              <Descriptions.Item label="时间">{message.receiveTime}</Descriptions.Item>
+              <Descriptions.Item label="时间">{message.createdAt}</Descriptions.Item>
             </Descriptions>
           </Card>
         ))}
@@ -50,13 +52,22 @@ export const InboxContent = ({
 
   return (
     <Layout style={{ height: '100%' }}>
-      <Layout.Sider width={300} style={{ height: '100vh', overflowY: 'auto', background: '#fff' }}>
+      <Layout.Sider width={300} style={{ height: '100%', overflowY: 'auto', background: '#fff' }}>
         <List
           itemLayout="horizontal"
           dataSource={groups}
           renderItem={(item) => (
             <List.Item
-              style={{ paddingLeft: '12px' }}
+              className={css`
+                &:hover {
+                  background-color: #e4e5e6};
+                }
+              `}
+              style={{
+                paddingLeft: '12px',
+                backgroundColor: selectedGroupId === item.id ? '#e4e5e6' : null,
+                cursor: 'pointer',
+              }}
               onClick={() => {
                 setSelectedGroupId(item.id);
                 onGroupClick(item.id);
@@ -85,7 +96,7 @@ export const InboxContent = ({
           )}
         />
       </Layout.Sider>
-      <Layout.Content style={{ padding: '0 24px', minHeight: 280 }}>
+      <Layout.Content style={{ padding: '0 24px 30px 24px', height: '100%', overflowY: 'auto' }}>
         {selectedGroupId ? <MessageList /> : null}
       </Layout.Content>
     </Layout>
