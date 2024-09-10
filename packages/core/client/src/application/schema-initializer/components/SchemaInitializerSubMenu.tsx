@@ -10,7 +10,7 @@
 import Icon, { RightOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { uid } from '@formily/shared';
-import { ConfigProvider, Menu, MenuProps, theme } from 'antd';
+import { Menu, MenuProps, theme } from 'antd';
 import React, { FC, ReactNode, useMemo } from 'react';
 import { useCompile } from '../../../schema-component';
 import { useSchemaInitializerItem } from '../context';
@@ -58,47 +58,45 @@ export const SchemaInitializerMenu: FC<MenuProps> = (props) => {
   // selectedKeys 为了不让有选中效果
   return (
     <SchemaInitializerMenuProvider>
-      <ConfigProvider>
-        <Menu
-          selectable={false}
-          expandIcon={<RightOutlined style={{ fontSize: token.fontSizeSM, color: token.colorTextDescription }} />}
-          rootClassName={css`
-            box-shadow: none !important;
-            border-inline-end: 0 !important;
-            .ant-menu-sub {
-              max-height: 50vh !important;
-              padding: ${token.paddingXXS}px !important;
-            }
-            .ant-menu-item {
-              margin-inline: ${token.marginXXS}px !important;
-              margin-block: 0 !important;
-              width: auto !important;
-              padding: 0 ${token.paddingSM}px 0 ${token.padding}px !important;
-            }
-            .ant-menu-item-group-title {
-              padding: 0 ${token.padding}px;
+      <Menu
+        selectable={false}
+        expandIcon={<RightOutlined style={{ fontSize: token.fontSizeSM, color: token.colorTextDescription }} />}
+        rootClassName={css`
+          box-shadow: none !important;
+          border-inline-end: 0 !important;
+          .ant-menu-sub {
+            max-height: 50vh !important;
+            padding: ${token.paddingXXS}px !important;
+          }
+          .ant-menu-item {
+            margin-inline: ${token.marginXXS}px !important;
+            margin-block: 0 !important;
+            width: auto !important;
+            padding: 0 ${token.paddingSM}px 0 ${token.padding}px !important;
+          }
+          .ant-menu-item-group-title {
+            padding: 0 ${token.padding}px;
+            margin-inline: 0;
+            line-height: 32px;
+          }
+          .ant-menu-submenu-title {
+            margin: 0 ${token.marginXXS}px !important;
+            padding-left: ${token.padding}px !important;
+            width: auto !important;
+          }
+          .ant-menu-root {
+            margin: 0 -${token.margin}px;
+            .ant-menu-submenu-title,
+            .ant-menu-item-only-child {
               margin-inline: 0;
-              line-height: 32px;
+              margin-block: 0;
+              width: 100%;
             }
-            .ant-menu-submenu-title {
-              margin: 0 ${token.marginXXS}px !important;
-              padding-left: ${token.padding}px !important;
-              width: auto !important;
-            }
-            .ant-menu-root {
-              margin: 0 -${token.margin}px;
-              .ant-menu-submenu-title,
-              .ant-menu-item-only-child {
-                margin-inline: 0;
-                margin-block: 0;
-                width: 100%;
-              }
-            }
-          `}
-          items={itemsWithPopupClass}
-          {...others}
-        />
-      </ConfigProvider>
+          }
+        `}
+        items={itemsWithPopupClass}
+        {...others}
+      />
     </SchemaInitializerMenuProvider>
   );
 };
