@@ -44,14 +44,13 @@ import {
 } from './pages';
 
 import PluginACLClient from '@nocobase/plugin-acl/client';
-import { MenuPermissions } from './MenuPermissions';
+import { MenuPermissions, MobileAllRoutesProvider } from './MenuPermissions';
 
 // 导出 JSBridge，会挂在到 window 上
 import './js-bridge';
 import { MobileSettings } from './mobile-blocks/settings-block/MobileSettings';
 import { MobileSettingsBlockInitializer } from './mobile-blocks/settings-block/MobileSettingsBlockInitializer';
 import { MobileSettingsBlockSchemaSettings } from './mobile-blocks/settings-block/schemaSettings';
-import { MobileRoutesProvider } from './mobile-providers';
 // @ts-ignore
 import pkg from './../../package.json';
 
@@ -256,9 +255,9 @@ export class PluginMobileClient extends Plugin {
       }),
       children: (
         <TabLayout>
-          <MobileRoutesProvider action="list">
+          <MobileAllRoutesProvider active={activeKey === 'mobile-menu'}>
             <MenuPermissions active={activeKey === 'mobile-menu'} />
-          </MobileRoutesProvider>
+          </MobileAllRoutesProvider>
         </TabLayout>
       ),
     }));

@@ -15,9 +15,9 @@ import { RolesManagerContext } from '@nocobase/plugin-acl/client';
 import { useMemoizedFn } from 'ahooks';
 import { Checkbox, message, Table } from 'antd';
 import { uniq } from 'lodash';
-import React, { useContext, useMemo, useState } from 'react';
+import React, { useContext, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useMobileRoutes } from './mobile-providers';
+import { MobileRoutesProvider, useMobileRoutes } from './mobile-providers';
 
 interface MenuItem {
   title: string;
@@ -241,5 +241,21 @@ export const MenuPermissions: React.FC<{
         dataSource={translateTitle(items, t)}
       />
     </>
+  );
+};
+
+export const MobileAllRoutesProvider: React.FC<{ active: boolean }> = ({ children, active }) => {
+  const refreshRef = React.useRef(() => {});
+
+  useEffect(() => {
+    if (active) {
+      refreshRef.current?.();
+    }
+  }, [active]);
+
+  return (
+    <MobileRoutesProvider action="list" refreshRef={refreshRef} manual>
+      {children}
+    </MobileRoutesProvider>
   );
 };

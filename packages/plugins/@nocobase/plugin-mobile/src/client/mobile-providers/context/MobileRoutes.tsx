@@ -96,7 +96,9 @@ export const MobileRoutesProvider: FC<{
    * @default 'listAccessible'
    */
   action?: 'list' | 'listAccessible';
-}> = ({ children, action = 'listAccessible' }) => {
+  refreshRef?: any;
+  manual?: boolean;
+}> = ({ children, refreshRef, manual, action = 'listAccessible' }) => {
   const api = useAPIClient();
   const resource = useMemo(() => api.resource('mobileRoutes'), [api]);
   const schemaResource = useMemo(() => api.resource('uiSchemas'), [api]);
@@ -104,9 +106,17 @@ export const MobileRoutesProvider: FC<{
     data,
     runAsync: refresh,
     loading,
-  } = useRequest<{ data: MobileRouteItem[] }>(() =>
-    resource[action]({ tree: true, sort: 'sort' }).then((res) => res.data),
+  } = useRequest<{ data: MobileRouteItem[] }>(
+    () => resource[action]({ tree: true, sort: 'sort' }).then((res) => res.data),
+    {
+      manual,
+    },
   );
+
+  if (refreshRef) {
+    refreshRef.current = refresh;
+  }
+
   const routeList = useMemo(() => data?.data || [], [data]);
   const { activeTabBarItem, activeTabItem } = useActiveTabBar(routeList);
 
