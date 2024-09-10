@@ -62,13 +62,16 @@ export const SetFilterTargetKey = (props) => {
       {size === 'small' ? <br /> : ' '}
       <Space.Compact style={{ marginTop: 5 }}>
         <Select
-          onChange={(value, option) => {
+          onChange={(value, option: any) => {
+            console.log(value, option);
             setFilterTargetKey(value);
-            setTitle(option['label']);
+            setTitle(option.map((v) => v['label']).join(','));
           }}
           placeholder={t('Select field')}
           size={'small'}
           options={options}
+          mode="multiple"
+          style={{ width: '200px' }}
         />
         <Popconfirm
           placement="bottom"
@@ -105,7 +108,7 @@ export const SetFilterTargetKey = (props) => {
             }
             ctx?.refresh?.();
             refresh();
-            // await app.dataSourceManager.getDataSource(dataSourceKey).reload();
+            await app.dataSourceManager.getDataSource(dataSourceKey).reload();
             collection.setOption('filterTargetKey', filterTargetKey);
           }}
         >

@@ -10,7 +10,7 @@
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import { CollectionFieldInterface } from '../../data-source/collection-field-interface/CollectionFieldInterface';
-import { getUniqueKeyFromCollection } from './o2m';
+import { getUniqueKeyFromCollection } from './utils';
 import { defaultProps, relationshipType, reverseFieldProperties } from './properties';
 
 export class M2MFieldInterface extends CollectionFieldInterface {

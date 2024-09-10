@@ -59,7 +59,10 @@ export interface FilterAble {
   filter: Filter;
 }
 
-export type TargetKey = string | number;
+export type BaseTargetKey = string | number;
+export type MultiTargetKey = Record<string, BaseTargetKey>;
+export type TargetKey = BaseTargetKey | MultiTargetKey;
+
 export type TK = TargetKey | TargetKey[];
 
 type FieldValue = string | number | bigint | boolean | Date | Buffer | null | FieldValue[] | FilterWithOperator;
@@ -211,7 +214,7 @@ class RelationRepositoryBuilder<R extends RelationRepository> {
     }
   }
 
-  of(id: string | number): R {
+  of(id: TargetKey): R {
     if (!this.association) {
       return;
     }
@@ -312,13 +315,12 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
     }
 
     if (countOptions?.filterByTk) {
+      const optionParser = new OptionsParser(options, {
+        collection: this.collection,
+      });
+
       options['where'] = {
-        [Op.and]: [
-          options['where'] || {},
-          {
-            [this.collection.filterTargetKey]: options.filterByTk,
-          },
-        ],
+        [Op.and]: [options['where'] || {}, optionParser.filterByTkToWhereOption()],
       };
     }
 
@@ -331,13 +333,11 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
       delete queryOptions.include;
     }
 
-    const count = await this.collection.model.count({
+    // @ts-ignore
+    return await this.collection.model.count({
       ...queryOptions,
       transaction,
     });
-
-    // @ts-ignore
-    return count;
   }
 
   async aggregate(options: AggregateOptions & { optionsTransformer?: (options: any) => any }): Promise<any> {
@@ -502,6 +502,10 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
    */
   findById(id: string | number) {
     return this.collection.model.findByPk(id);
+  }
+
+  findByTargetKey(targetKey: TargetKey) {
+    return this.findOne({ filterByTk: targetKey });
   }
 
   /**
@@ -767,15 +771,30 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
     }
 
     if (filterByTk && !options.filter) {
-      return await this.model.destroy({
+      const where = [];
+
+      for (const tk of filterByTk) {
+        const optionParser = new OptionsParser(
+          {
+            filterByTk: tk,
+          },
+          {
+            collection: this.collection,
+          },
+        );
+
+        where.push(optionParser.filterByTkToWhereOption());
+      }
+
+      const destroyOptions = {
         ...options,
         where: {
-          [modelFilterKey]: {
-            [Op.in]: filterByTk,
-          },
+          [Op.or]: where,
         },
         transaction,
-      });
+      };
+
+      return await this.model.destroy(destroyOptions);
     }
 
     if (options.filter && isValidFilter(options.filter)) {
