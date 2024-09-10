@@ -23,5 +23,7 @@
   "Desktop data blocks": "桌面端数据区块",
   "Other desktop blocks": "其他桌面端区块",
   "Settings": "设置",
-  "Mobile menu": "移动端菜单"
+  "Mobile menu": "移动端菜单",
+  "No accessible pages found": "没有找到你可以访问的页面",
+  "This might be due to permission configuration issues": "这可能是权限配置的问题"
 }
