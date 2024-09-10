@@ -188,7 +188,6 @@ export function useAssociatedTableColumnInitializerFields() {
         getCollectionFields,
         field,
         getInterface,
-        collectionName: name,
         getCollection,
         schemaName: field.name,
         maxDepth: 2,
