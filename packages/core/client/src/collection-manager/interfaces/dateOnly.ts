@@ -8,46 +8,53 @@
  */
 
 import { CollectionFieldInterface } from '../../data-source/collection-field-interface/CollectionFieldInterface';
-import { defaultProps, operators } from './properties';
+import { dateTimeProps, defaultProps, operators } from './properties';
 
-export class TimeFieldInterface extends CollectionFieldInterface {
-  name = 'time';
+export class DateFieldInterface extends CollectionFieldInterface {
+  name = 'date';
   type = 'object';
   group = 'datetime';
-  order = 4;
-  title = '{{t("Time")}}';
+  order = 3;
+  title = '{{t("DateOnly")}}';
   sortable = true;
   default = {
-    type: 'time',
+    type: 'dateOnly',
     uiSchema: {
       type: 'string',
-      'x-component': 'TimePicker',
+      'x-component': 'DatePicker',
+      'x-component-props': {
+        dateOnly: true,
+      },
     },
   };
-  availableTypes = ['time'];
+  availableTypes = ['dateOnly'];
   hasDefaultValue = true;
   properties = {
     ...defaultProps,
-    'uiSchema.x-component-props.format': {
+    'uiSchema.x-component-props.dateFormat': {
       type: 'string',
-      title: '{{t("Time format")}}',
+      title: '{{t("Date format")}}',
       'x-component': 'Radio.Group',
       'x-decorator': 'FormItem',
-      default: 'HH:mm:ss',
+      default: 'YYYY-MM-DD',
       enum: [
         {
-          label: '{{t("12 hour")}}',
-          value: 'hh:mm:ss a',
+          label: '{{t("Year/Month/Day")}}',
+          value: 'YYYY/MM/DD',
         },
         {
-          label: '{{t("24 hour")}}',
-          value: 'HH:mm:ss',
+          label: '{{t("Year-Month-Day")}}',
+          value: 'YYYY-MM-DD',
+        },
+        {
+          label: '{{t("Day/Month/Year")}}',
+          value: 'DD/MM/YYYY',
         },
       ],
     },
   };
   filterable = {
-    operators: operators.time,
+    operators: operators.datetime,
   };
   titleUsable = true;
 }

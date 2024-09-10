@@ -8,54 +8,54 @@
  */
 
 import { CollectionFieldInterface } from '../../data-source/collection-field-interface/CollectionFieldInterface';
-import { defaultProps, operators } from './properties';
-export class UnixTimestampFieldInterface extends CollectionFieldInterface {
-  name = 'unixTimestamp';
+import { dateTimeProps, defaultProps, operators } from './properties';
+
+export class DatetimeNoTzFieldInterface extends CollectionFieldInterface {
+  name = 'datetimeNoTz';
   type = 'object';
   group = 'datetime';
-  order = 4;
-  title = '{{t("Unix Timestamp")}}';
+  order = 2;
+  title = '{{t("Datetime(without time zone)")}}';
   sortable = true;
   default = {
-    type: 'unixTimestamp',
-    accuracy: 'second',
-    timezone: true,
+    type: 'datetimeNoTz',
     defaultToCurrentTime: false,
     onUpdateToCurrentTime: false,
+    timezone: false,
     uiSchema: {
-      type: 'number',
-      'x-component': 'UnixTimestamp',
+      type: 'string',
+      'x-component': 'DatePicker',
       'x-component-props': {
-        showTime: true,
+        showTime: false,
+        utc: false,
       },
     },
   };
-  availableTypes = ['unixTimestamp'];
-  hasDefaultValue = false;
+  availableTypes = ['string', 'datetimeNoTz'];
+  hasDefaultValue = true;
   properties = {
     ...defaultProps,
-    accuracy: {
-      type: 'string',
-      title: '{{t("Accuracy")}}',
-      'x-component': 'Radio.Group',
-      'x-decorator': 'FormItem',
-      default: 'second',
-      enum: [
-        { value: 'millisecond', label: '{{t("Millisecond")}}' },
-        { value: 'second', label: '{{t("Second")}}' },
-      ],
-    },
+    ...dateTimeProps,
     defaultToCurrentTime: {
       type: 'boolean',
       'x-decorator': 'FormItem',
       'x-component': 'Checkbox',
-      'x-content': '{{t("Default value to current time")}}',
+      'x-content': '{{t("Default value to current server time")}}',
     },
     onUpdateToCurrentTime: {
       type: 'boolean',
       'x-decorator': 'FormItem',
       'x-component': 'Checkbox',
-      'x-content': '{{t("Automatically update timestamp on update")}}',
+      'x-content': '{{t("Automatically update timestamp to the current server time on update")}}',
+    },
+    'uiSchema.x-component-props.gmt': {
+      type: 'boolean',
+      title: '{{t("GMT")}}',
+      'x-hidden': true,
+      'x-component': 'Checkbox',
+      'x-content': '{{t("Use the same time zone (GMT) for all users")}}',
+      'x-decorator': 'FormItem',
+      default: false,
     },
   };
   filterable = {

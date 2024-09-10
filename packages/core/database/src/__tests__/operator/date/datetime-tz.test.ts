@@ -7,9 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import Database from '../../database';
-import { Repository } from '../../repository';
-import { mockDatabase } from '../index';
+import Database from '../../../database';
+import { Repository } from '../../../repository';
+import { mockDatabase } from '../../index';
 
 describe('date operator test', () => {
   let db: Database;

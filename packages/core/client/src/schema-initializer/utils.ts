@@ -463,6 +463,7 @@ export const useFilterFormItemInitializerFields = (options?: any) => {
         'x-collection-field': `${name}.${field.name}`,
         'x-component-props': {
           component: interfaceConfig?.filterable?.operators?.[0]?.schema?.['x-component'],
+          utc: false,
         },
       };
       if (isAssocField(field)) {
@@ -571,6 +572,7 @@ const associationFieldToMenu = (
       interface: field.interface,
     },
     'x-component': 'CollectionField',
+    'x-component-props': { utc: false },
     'x-read-pretty': false,
     'x-decorator': 'FormItem',
     'x-collection-field': `${collectionName}.${schemaName}`,
@@ -686,7 +688,7 @@ export const useFilterInheritsFormItemInitializerFields = (options?) => {
             'x-component': 'CollectionField',
             'x-decorator': 'FormItem',
             'x-collection-field': `${name}.${field.name}`,
-            'x-component-props': {},
+            'x-component-props': { utc: false },
             'x-read-pretty': field?.uiSchema?.['x-read-pretty'],
           };
           return {

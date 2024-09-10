@@ -81,13 +81,13 @@ const tableContainer = css`
   }
   td,
   th {
-    flex: 2;
+    flex: 2.3;
     width: 0;
     &:nth-child(5) {
       flex: 1.2;
     }
     &:last-child {
-      flex: 1.8;
+      flex: 1.5;
     }
   }
   .ant-table-selection-column,
