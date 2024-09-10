@@ -55,7 +55,6 @@ export const Action: ComposedAction = withDynamicSchemaProps(
   observer((props: ActionProps) => {
     const {
       popover,
-      confirm,
       containerRefKey,
       component,
       useAction = useA,
@@ -68,6 +67,7 @@ export const Action: ComposedAction = withDynamicSchemaProps(
       openSize: os,
       disabled: propsDisabled,
       actionCallback,
+      confirm: propsConfirm,
       /** 如果为 true 则说明该按钮是树表格的 Add child 按钮 */
       addChild,
       onMouseEnter,
@@ -94,7 +94,7 @@ export const Action: ComposedAction = withDynamicSchemaProps(
     const openMode = fieldSchema?.['x-component-props']?.['openMode'];
     const openSize = fieldSchema?.['x-component-props']?.['openSize'];
     const refreshDataBlockRequest = fieldSchema?.['x-component-props']?.['refreshDataBlockRequest'];
-
+    const confirm = compile(fieldSchema['x-component-props']?.confirm) || propsConfirm;
     const disabled = form.disabled || field.disabled || field.data?.disabled || propsDisabled || disableAction;
     const linkageRules = useMemo(() => fieldSchema?.['x-linkage-rules'] || [], [fieldSchema?.['x-linkage-rules']]);
     const { designable } = useDesignable();
@@ -178,7 +178,6 @@ export const Action: ComposedAction = withDynamicSchemaProps(
     };
 
     const buttonElement = RenderButton(buttonProps);
-
     // if (!btnHover) {
     //   return buttonElement;
     // }
@@ -313,7 +312,6 @@ function RenderButton({
   const { t } = useTranslation();
   const { isPopupVisibleControlledByURL } = usePopupSettings();
   const { openPopup } = usePopupUtils();
-
   const handleButtonClick = useCallback(
     (e: React.MouseEvent, checkPortal = true) => {
       if (checkPortal && isPortalInBody(e.target as Element)) {
@@ -347,7 +345,7 @@ function RenderButton({
             }
           }
         };
-        if (confirm?.content) {
+        if (confirm?.enable !== false && confirm?.content) {
           modal.confirm({
             title: t(confirm.title, { title: confirmTitle || actionTitle }),
             content: t(confirm.content, { title: confirmTitle || actionTitle }),
@@ -363,6 +361,7 @@ function RenderButton({
       actionTitle,
       confirm?.content,
       confirm?.title,
+      confirm?.enable,
       disabled,
       modal,
       onClick,

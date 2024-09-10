@@ -981,5 +981,17 @@
   "Automatically update timestamp to the current server time on update": "当记录更新时自动设置字段值为当前服务端时间",
   "Datetime(with time zone)": "日期时间（含时区）",
   "Datetime(without time zone)": "日期时间（不含时区）",
-  "DateOnly":"仅日期"
+  "DateOnly":"仅日期",
+  "Enable secondary confirmation": "启用二次确认",
+  "Content": "内容",
+  "Perform the Update record": "执行更新数据",
+  "Are you sure you want to perform the Update record action?": "你确定执行更新数据操作吗？",
+  "Perform the Custom request": "执行自定义请求",
+  "Are you sure you want to perform the Custom request action":"你确定执行自定义请求操作吗？",
+  "Perform the Refresh":"执行刷新",
+  "Are you sure you want to perform the Refresh action?":"你确定执行刷新操作吗？",
+  "Perform the Submit":"执行提交",
+  "Are you sure you want to perform the Submit action?":"你确定执行提交操作吗？",
+  "Perform the Trigger workflow":"执行触发工作流",
+  "Are you sure you want to perform the Trigger workflow action?":"你确定执行触发工作流吗？"
 }
