@@ -8,7 +8,7 @@
  */
 
 import React, { useMemo, useState } from 'react';
-import { Layout, List, Card, Descriptions, Typography, Badge } from 'antd';
+import { Layout, List, Card, Descriptions, Typography, Badge, Button } from 'antd';
 import type { Group as MsgGroup } from './hooks/useChat';
 import { css } from '@emotion/css';
 
@@ -30,6 +30,19 @@ export const InboxContent = ({
     const msgMap = groups.find((group) => group.id === selectedGroupId).msgMap;
     return Object.values(msgMap).sort((a, b) => (a.createdAt > b.createdAt ? -1 : 1));
   }, [groups, selectedGroupId]);
+
+  const loadChannelsMore = (
+    <div
+      style={{
+        textAlign: 'center',
+        marginTop: 12,
+        height: 32,
+        lineHeight: '32px',
+      }}
+    >
+      <Button>loading more</Button>
+    </div>
+  );
 
   const MessageList = () => {
     return (
@@ -56,6 +69,8 @@ export const InboxContent = ({
         <List
           itemLayout="horizontal"
           dataSource={groups}
+          loadMore={loadChannelsMore}
+          style={{ paddingBottom: '20px' }}
           renderItem={(item) => (
             <List.Item
               className={css`

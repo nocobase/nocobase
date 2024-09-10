@@ -181,9 +181,12 @@ export default class NotificationServer extends NotificationServerBase {
       actions: {
         list: {
           handler: async (ctx) => {
+            const userId = ctx.state.currentUser.id;
             const chatsRepo = this.plugin.app.db.getRepository(ChatsDefinition.name);
             try {
               const chats = await chatsRepo.find({
+                limit: 30,
+                filter: { userId },
                 attributes: {
                   include: [
                     [
@@ -204,7 +207,7 @@ export default class NotificationServer extends NotificationServerBase {
                                   WHERE
                                       messages.chatId = ${ChatsDefinition.name}.id
                               )`),
-                      'lastMsgReceivedTime',
+                      'lastMsgReceiveTime',
                     ],
                   ],
                 },
