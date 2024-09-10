@@ -449,8 +449,7 @@ export async function updateMultipleAssociation(
     } else if (item.sequelize) {
       setItems.push(item);
     } else if (typeof item === 'object') {
-      // @ts-ignore
-      const targetKey = association.targetKey || association.options.targetKey || 'id';
+      const targetKey = (association as any).targetKey || 'id';
 
       if (item[targetKey]) {
         const attributes = {
