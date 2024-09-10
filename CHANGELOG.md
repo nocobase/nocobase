@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.3.21-beta](https://github.com/nocobase/nocobase/compare/v1.3.20-beta...v1.3.21-beta) - 2024-09-10
+
+### 🐛 Bug Fixes
+
+- **[client]** Fix error when using linkage rules (NocoBase installed via create-nocobase-app) ([#5249](https://github.com/nocobase/nocobase/pull/5249)) by @zhangzhonghe
+
 ## [v1.3.20-beta](https://github.com/nocobase/nocobase/compare/v1.3.19-beta...v1.3.20-beta) - 2024-09-10
 
 ### 🚀 Improvements
