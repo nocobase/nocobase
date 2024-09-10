@@ -45,6 +45,7 @@ export * from './relation-repository/hasmany-repository';
 export * from './relation-repository/multiple-relation-repository';
 export * from './relation-repository/single-relation-repository';
 export * from './relation-repository/belongs-to-array-repository';
+export * from './relation-repository/relation-repository';
 export * from './repository';
 export * from './update-associations';
 export { snakeCase } from './utils';
