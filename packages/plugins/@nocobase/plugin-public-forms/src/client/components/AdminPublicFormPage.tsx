@@ -9,7 +9,7 @@
 
 import { EyeOutlined, SettingOutlined } from '@ant-design/icons';
 import { PoweredBy, RemoteSchemaComponent, useRequest, useAPIClient } from '@nocobase/client';
-import { Breadcrumb, Button, Dropdown, Space, Spin, Switch, Modal, Input } from 'antd';
+import { Breadcrumb, Button, Dropdown, Space, Spin, Switch, Modal, Input, message } from 'antd';
 import React, { useState } from 'react';
 import { useParams } from 'react-router';
 import { Link } from 'react-router-dom';
@@ -38,6 +38,12 @@ export function AdminPublicFormPage() {
 
   const handleSetPassword = () => {
     setOpenPassword(true);
+  };
+  const handleCopyLink = () => {
+    const baseURL = window.location.origin;
+    const link = `${baseURL}/public-forms/${params.name}`;
+    navigator.clipboard.writeText(link);
+    message.success(t('Link copied successfully'));
   };
   return (
     <div>
@@ -93,7 +99,7 @@ export function AdminPublicFormPage() {
                 },
                 {
                   key: 'copyLink',
-                  label: <span>{t('Copy link')}</span>,
+                  label: <span onClick={handleCopyLink}>{t('Copy link')}</span>,
                   disabled: !enabled,
                 },
                 {
