@@ -9,8 +9,8 @@
 
 import { Registry } from '@nocobase/utils/client';
 
-import mathjs from './engines/mathjs';
 import formulajs from './engines/formulajs';
+import mathjs from './engines/mathjs';
 import string from './engines/string';
 
 export interface Evaluator {
@@ -22,9 +22,11 @@ export interface Evaluator {
 
 export const evaluators = new Registry<Evaluator>();
 
-evaluators.register('math.js', mathjs);
-evaluators.register('formula.js', formulajs);
-evaluators.register('string', string);
+export function registerDefaultEvaluators() {
+  evaluators.register('math.js', mathjs);
+  evaluators.register('formula.js', formulajs);
+  evaluators.register('string', string);
+}
 
 export function getOptions() {
   return Array.from((evaluators as Registry<Evaluator>).getEntities()).reduce(

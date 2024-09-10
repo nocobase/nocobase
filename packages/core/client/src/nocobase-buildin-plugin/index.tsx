@@ -10,6 +10,7 @@
 import { DisconnectOutlined, LoadingOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { observer } from '@formily/reactive-react';
+import { registerDefaultEvaluators } from '@nocobase/evaluators/client';
 import { getSubAppName } from '@nocobase/sdk';
 import { Button, Modal, Result, Spin } from 'antd';
 import React, { FC } from 'react';
@@ -278,6 +279,7 @@ export class NocoBaseBuildInPlugin extends Plugin {
       AppNotFound,
     });
     await this.addPlugins();
+    registerDefaultEvaluators();
   }
 
   async load() {
