@@ -14,7 +14,7 @@ import { SchemaComponent, useAPIClient, useRequest } from '@nocobase/client';
 import { RolesManagerContext } from '@nocobase/plugin-acl/client';
 import { useMemoizedFn } from 'ahooks';
 import { Checkbox, message, Table } from 'antd';
-import { uniq } from 'lodash';
+import _, { uniq } from 'lodash';
 import React, { useContext, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { MobileRoutesProvider, useMobileRoutes } from './mobile-providers';
@@ -60,6 +60,9 @@ const findIDList = (items) => {
   const IDList = [];
   for (const item of items) {
     IDList.push(item.id);
+    if (item.hideChildren && !_.isNil(item.firstTabId)) {
+      IDList.push(item.firstTabId);
+    }
     IDList.push(...findIDList(item.children));
   }
   return IDList;
@@ -71,10 +74,15 @@ const toItems = (items, parent?: MenuItem): MenuItem[] => {
   }
 
   return items.map((item) => {
+    const children = toItems(item.children, item);
+    const hideChildren = children.length <= 1;
+
     return {
       title: item.title,
       id: item.id,
-      children: toItems(item.children, item),
+      children: hideChildren ? null : children,
+      hideChildren,
+      firstTabId: children[0]?.id,
       parent,
     };
   });
@@ -128,6 +136,11 @@ export const MenuPermissions: React.FC<{
         shouldRemove.push(...menuItem.children.map((item) => item.id));
       }
 
+      if (menuItem.hideChildren && !_.isNil(menuItem.firstTabId)) {
+        shouldRemove.push(menuItem.firstTabId);
+        newIDList = newIDList.filter((id) => id !== menuItem.firstTabId);
+      }
+
       setIDList(newIDList);
       await resource.remove({
         values: shouldRemove,
@@ -147,6 +160,11 @@ export const MenuPermissions: React.FC<{
         const childrenIDList = menuItem.children.map((item) => item.id);
         newIDList.push(...childrenIDList);
         shouldAdd.push(...childrenIDList);
+      }
+
+      if (menuItem.hideChildren && !_.isNil(menuItem.firstTabId)) {
+        shouldAdd.push(menuItem.firstTabId);
+        newIDList.push(menuItem.firstTabId);
       }
 
       setIDList(uniq(newIDList));
@@ -195,7 +213,6 @@ export const MenuPermissions: React.FC<{
           },
         }}
       />
-
       <Table
         className={style}
         loading={loading}
