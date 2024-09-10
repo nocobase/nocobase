@@ -148,7 +148,7 @@ jobs:
         shell: bash
         run: |
           git fetch
-          node scripts/release/changelogAndRelease.js --ver alpha --test
+          node scripts/release/changelogAndRelease.js --ver alpha
         env:
           PRO_PLUGIN_REPOS: ${{ vars.NEXT_PRO_PLUGIN_REPOS }}
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
