@@ -19,13 +19,34 @@ import {
   useGlobalTheme,
   FormItem,
 } from '@nocobase/client';
-import { Breadcrumb, Button, Dropdown, Space, Spin, Switch, Input, message, Checkbox } from 'antd';
+import { QrcodeOutlined } from '@ant-design/icons';
+import { Breadcrumb, Button, Dropdown, Space, Spin, Switch, Input, message, Checkbox, Popover, QRCode } from 'antd';
 import React, { useState } from 'react';
 import { useParams } from 'react-router';
 import { Link } from 'react-router-dom';
 import { FormLayout } from '@formily/antd-v5';
 import { usePublicSubmitActionProps } from '../hooks';
 import { useT } from '../locale';
+
+const PublicFormQRCode = () => {
+  const params = useParams();
+  const [open, setOpen] = useState(false);
+  const baseURL = window.location.origin;
+  const link = `${baseURL}/public-forms/${params.name}`;
+  const handleQRCodeOpen = (newOpen: boolean) => {
+    setOpen(newOpen);
+  };
+  return (
+    <Popover
+      trigger={'hover'}
+      open={open}
+      onOpenChange={handleQRCodeOpen}
+      content={open ? <QRCode value={link} bordered={false} /> : ' '}
+    >
+      QR code
+    </Popover>
+  );
+};
 export function AdminPublicFormPage() {
   const params = useParams();
   const t = useT();
@@ -152,12 +173,10 @@ export function AdminPublicFormPage() {
                 {
                   key: 'copyLink',
                   label: <span onClick={handleCopyLink}>{t('Copy link')}</span>,
-                  disabled: !enabled,
                 },
                 {
                   key: 'qrcode',
-                  label: <span>{t('Download QR code')}</span>,
-                  disabled: !enabled,
+                  label: <PublicFormQRCode />,
                 },
               ],
             }}
