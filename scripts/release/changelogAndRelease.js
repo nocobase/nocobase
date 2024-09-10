@@ -4,7 +4,7 @@ const path = require('path');
 const { Command } = require('commander');
 const program = new Command();
 
-program.option('-f, --from [from]').option('-t, --to [to]').option('-v, --ver [ver]').option('--test');
+program.option('-f, --from [from]').option('-t, --to [to]').option('-v, --ver [ver]', '', 'beta').option('--test');
 program.parse(process.argv);
 
 const header = {
