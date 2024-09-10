@@ -107,6 +107,7 @@ const dateValueWrapper = (value: any, timezone?: string) => {
   if (!value) {
     return null;
   }
+
   if (Array.isArray(value)) {
     if (value.length === 2) {
       value.push('[]', timezone);
@@ -182,6 +183,11 @@ export const parseFilter = async (filter: any, opts: ParseFilterOptions = {}) =>
       }
       if (isDateOperator(operator)) {
         const field = getField?.(path);
+
+        if (field?.constructor.name === 'DateOnlyField' || field?.constructor.name === 'DatetimeNoTzField') {
+          return value;
+        }
+
         return dateValueWrapper(value, field?.timezone || timezone);
       }
       return value;

@@ -215,6 +215,7 @@ export const querySchema: ISchema = {
           'x-component-props': {
             onChange: '{{ onCollectionChange }}',
             placeholder: '{{t("Collection")}}',
+            showSearch: true,
           },
         },
       },
