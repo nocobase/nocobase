@@ -19,7 +19,6 @@ import {
   useGlobalTheme,
   FormItem,
 } from '@nocobase/client';
-import { QrcodeOutlined } from '@ant-design/icons';
 import { Breadcrumb, Button, Dropdown, Space, Spin, Switch, Input, message, Checkbox, Popover, QRCode } from 'antd';
 import React, { useState } from 'react';
 import { useParams } from 'react-router';

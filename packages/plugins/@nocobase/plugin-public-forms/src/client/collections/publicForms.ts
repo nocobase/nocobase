@@ -61,6 +61,9 @@ export const publicFormsCollection = {
         type: 'string',
         title: "{{t('Password')}}",
         'x-component': 'Password',
+        'x-component-props': {
+          autocomplete: 'new-password',
+        },
       },
     },
     {
