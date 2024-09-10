@@ -51,8 +51,11 @@ export class PluginPublicFormsServer extends Plugin {
         key: filterByTk,
       },
     });
+    if (!instance.get('enabled')) {
+      return null;
+    }
     if (!token) {
-      if (instance.get('password')) {
+      if (instance.get('password') && instance.get('enabledPassword')) {
         const Password = publicForms.collection.getField<PasswordField>('password');
         const r = await Password.verify(password, instance.get('password'));
         if (!r) {

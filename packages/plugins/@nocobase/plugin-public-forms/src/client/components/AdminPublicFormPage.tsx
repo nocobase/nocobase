@@ -116,7 +116,7 @@ export function AdminPublicFormPage() {
           onCancel={() => setOpenPassword(false)}
           onOk={() => {
             setOpenPassword(false);
-            handleEditPublicForm({ password: pwd === '' ? undefined : pwd });
+            handleEditPublicForm({ password: pwd === '' ? null : pwd });
           }}
         >
           <Input.Password

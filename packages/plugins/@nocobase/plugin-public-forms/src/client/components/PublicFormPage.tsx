@@ -25,7 +25,7 @@ import { Input, Modal, Spin } from 'antd';
 import React, { useContext, useMemo, useState } from 'react';
 import { useParams } from 'react-router';
 import { usePublicSubmitActionProps } from '../hooks';
-
+import { UnEnabledFormPlaceholder } from './UnEnabledFormPlaceholder';
 class PublicDataSource extends DataSource {
   async getDataSource() {
     return {};
@@ -119,8 +119,12 @@ function InternalPublicForm() {
     }
     return <div>Error</div>;
   }
+
   if (loading) {
     return <Spin />;
+  }
+  if (!data?.data) {
+    return <UnEnabledFormPlaceholder />;
   }
   return (
     <PublicAPIClientProvider>

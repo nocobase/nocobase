@@ -48,10 +48,23 @@ export const createActionSchema = {
               'x-decorator': 'FormItem',
               'x-component': 'CollectionField',
             },
+            enabledPassword: {
+              type: 'string',
+              'x-decorator': 'FormItem',
+              'x-component': 'CollectionField',
+            },
             password: {
               type: 'string',
               'x-decorator': 'FormItem',
               'x-component': 'CollectionField',
+              'x-reactions': {
+                dependencies: ['enabledPassword'],
+                fulfill: {
+                  state: {
+                    required: '{{$deps[0]}}',
+                  },
+                },
+              },
             },
             enabled: {
               type: 'string',
