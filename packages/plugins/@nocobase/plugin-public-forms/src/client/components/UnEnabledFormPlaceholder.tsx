@@ -16,8 +16,8 @@ export const UnEnabledFormPlaceholder = () => {
   const t = useT();
 
   return (
-    <BlockItemCard>
-      <Result status="404" subTitle={t(`The form is not enabled and cannot be accessed`)} />
+    <BlockItemCard style={{ boxShadow: 'unset' }}>
+      <Result status="403" subTitle={t(`The form is not enabled and cannot be accessed`)} />
     </BlockItemCard>
   );
 };

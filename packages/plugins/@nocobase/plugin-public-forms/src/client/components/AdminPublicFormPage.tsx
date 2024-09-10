@@ -8,37 +8,89 @@
  */
 
 import { EyeOutlined, SettingOutlined } from '@ant-design/icons';
-import { PoweredBy, RemoteSchemaComponent, useRequest, useAPIClient } from '@nocobase/client';
-import { Breadcrumb, Button, Dropdown, Space, Spin, Switch, Modal, Input, message } from 'antd';
+import {
+  PoweredBy,
+  RemoteSchemaComponent,
+  useRequest,
+  useAPIClient,
+  SchemaComponentOptions,
+  FormDialog,
+  SchemaComponent,
+  useGlobalTheme,
+  FormItem,
+} from '@nocobase/client';
+import { Breadcrumb, Button, Dropdown, Space, Spin, Switch, Input, message, Checkbox } from 'antd';
 import React, { useState } from 'react';
 import { useParams } from 'react-router';
 import { Link } from 'react-router-dom';
+import { FormLayout } from '@formily/antd-v5';
 import { usePublicSubmitActionProps } from '../hooks';
 import { useT } from '../locale';
 export function AdminPublicFormPage() {
   const params = useParams();
   const t = useT();
-  const [pwd, setPwd] = useState('');
-  const [openPassword, setOpenPassword] = useState(false);
+  const { theme } = useGlobalTheme();
   const apiClient = useAPIClient();
   const { data, loading, refresh } = useRequest<any>({
     url: `publicForms:get/${params.name}`,
   });
-  const { enabled, password } = data?.data || {};
+  const { enabled, ...others } = data?.data || {};
   if (loading) {
     return <Spin />;
   }
   const handleEditPublicForm = async (values) => {
-    const { data } = await apiClient.resource('publicForms').update({
+    await apiClient.resource('publicForms').update({
       filterByTk: params.name,
       values: { ...values },
     });
     await refresh();
   };
 
-  const handleSetPassword = () => {
-    setOpenPassword(true);
+  const handleSetPassword = async () => {
+    const values = await FormDialog(
+      t('Password') as any,
+      () => {
+        return (
+          <SchemaComponentOptions components={{ Checkbox, Input, FormItem }}>
+            <FormLayout layout={'vertical'}>
+              <SchemaComponent
+                schema={{
+                  properties: {
+                    enabledPassword: {
+                      type: 'boolean',
+                      'x-decorator': 'FormItem',
+                      'x-component': 'Checkbox',
+                      title: t('Enabled password'),
+                    },
+                    password: {
+                      type: 'string',
+                      'x-decorator': 'FormItem',
+                      'x-component': 'Input.Password',
+                      title: t('Password'),
+                      'x-reactions': {
+                        dependencies: ['enabledPassword'],
+                        fulfill: {
+                          state: {
+                            required: '{{$deps[0]}}',
+                          },
+                        },
+                      },
+                    },
+                  },
+                }}
+              />
+            </FormLayout>
+          </SchemaComponentOptions>
+        );
+      },
+      theme,
+    ).open({
+      initialValues: { ...others },
+    });
+    const { enabledPassword, password } = values;
+    await handleEditPublicForm({ enabledPassword, password });
   };
+
   const handleCopyLink = () => {
     const baseURL = window.location.origin;
     const link = `${baseURL}/public-forms/${params.name}`;
@@ -115,7 +167,7 @@ export function AdminPublicFormPage() {
         </Space>
       </div>
       <div style={{ maxWidth: 800, margin: '100px auto' }}>
-        <Modal
+        {/* <Modal
           centered
           title={t('Password')}
           open={openPassword}
@@ -132,7 +184,7 @@ export function AdminPublicFormPage() {
               setPwd(e.target.value);
             }}
           />
-        </Modal>
+        </Modal> */}
         <RemoteSchemaComponent uid={params.name} scope={{ useCreateActionProps: usePublicSubmitActionProps }} />
         <PoweredBy />
       </div>
