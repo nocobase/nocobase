@@ -277,6 +277,7 @@ export class EagerLoadingTree {
           });
 
           const findOptions = {
+            rootQueryOptions: this.rootQueryOptions,
             where: { [primaryKeyField]: ids.map((i) => i.pk) },
             attributes: node.attributes,
           };
@@ -333,6 +334,7 @@ export class EagerLoadingTree {
           }
 
           const findOptions = {
+            rootQueryOptions: this.rootQueryOptions,
             where,
             attributes: node.attributes,
             order: params.order || orderOption(association),
@@ -357,6 +359,7 @@ export class EagerLoadingTree {
           }
 
           const findOptions = {
+            rootQueryOptions: this.rootQueryOptions,
             where,
             attributes: node.attributes,
             order: params.order || orderOption(association),
@@ -378,6 +381,7 @@ export class EagerLoadingTree {
               [association.targetKey]: parentInstancesForeignKeyValues,
             },
             attributes: node.attributes,
+            rootQueryOptions: this.rootQueryOptions,
           });
 
           // load parent instances recursively
@@ -402,6 +406,7 @@ export class EagerLoadingTree {
                 [association.targetKey]: results.map((result) => result[targetKey]),
               },
               attributes: node.attributes,
+              rootQueryOptions: this.rootQueryOptions,
             });
 
             const setInstanceParent = (instance) => {
@@ -436,6 +441,7 @@ export class EagerLoadingTree {
           const pivotAssoc = new HasOne(association.target, association.through.model, hasOneOptions);
 
           instances = await node.model.findAll({
+            rootQueryOptions: this.rootQueryOptions,
             transaction,
             attributes: node.attributes,
             include: [
