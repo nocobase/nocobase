@@ -27,7 +27,7 @@ describe('actions', () => {
     app = await createMockServer({
       registerActions: true,
       acl: false,
-      plugins: ['error-handler', 'users', 'ui-schema-storage', 'data-source-main', 'snapshot-field'],
+      plugins: ['error-handler', 'field-sort', 'users', 'ui-schema-storage', 'data-source-main', 'snapshot-field'],
     });
   });
 

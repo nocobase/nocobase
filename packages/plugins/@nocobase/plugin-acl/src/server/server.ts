@@ -11,7 +11,6 @@ import { Context, utils as actionUtils } from '@nocobase/actions';
 import { Cache } from '@nocobase/cache';
 import { Collection, RelationField, Transaction } from '@nocobase/database';
 import { Plugin } from '@nocobase/server';
-import { Mutex } from 'async-mutex';
 import lodash from 'lodash';
 import { resolve } from 'path';
 import { availableActionResource } from './actions/available-actions';
@@ -275,10 +274,9 @@ export class PluginACLServer extends Plugin {
       }
     });
 
-    const mutex = new Mutex();
-
     this.app.db.on('fields.afterDestroy', async (model, options) => {
-      await mutex.runExclusive(async () => {
+      const lockKey = `${this.name}:fields.afterDestroy:${model.get('collectionName')}:${model.get('name')}`;
+      await this.app.lockManager.runExclusive(lockKey, async () => {
         const collectionName = model.get('collectionName');
         const fieldName = model.get('name');
 

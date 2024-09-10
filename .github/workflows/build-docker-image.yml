@@ -7,6 +7,7 @@ concurrency:
 on:
   push:
     branches:
+      - 'develop'
       - 'main'
       - 'next'
     paths:

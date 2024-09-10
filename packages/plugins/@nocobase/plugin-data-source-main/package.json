@@ -11,13 +11,13 @@
   "license": "AGPL-3.0",
   "devDependencies": {
     "@hapi/topo": "^6.0.0",
-    "async-mutex": "^0.3.2",
     "toposort": "^2.0.2"
   },
   "peerDependencies": {
     "@nocobase/client": "1.x",
     "@nocobase/database": "1.x",
     "@nocobase/plugin-error-handler": "1.x",
+    "@nocobase/plugin-field-sort": "1.x",
     "@nocobase/server": "1.x",
     "@nocobase/test": "1.x",
     "@nocobase/utils": "1.x"

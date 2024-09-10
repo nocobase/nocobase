@@ -20,7 +20,7 @@ describe('api', () => {
   beforeAll(async () => {
     app = await createMockServer({
       acl: true,
-      plugins: ['users', 'auth', 'data-visualization'],
+      plugins: ['field-sort', 'users', 'auth', 'data-visualization'],
     });
     db = app.db;
 

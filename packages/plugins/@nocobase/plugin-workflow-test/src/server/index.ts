@@ -10,43 +10,40 @@
 import path from 'path';
 
 import { ApplicationOptions, Plugin } from '@nocobase/server';
-import { MockServer, createMockServer, mockDatabase } from '@nocobase/test';
+import { MockClusterOptions, MockServer, createMockCluster, createMockServer, mockDatabase } from '@nocobase/test';
 
 import functions from './functions';
 import triggers from './triggers';
 import instructions from './instructions';
 import { SequelizeDataSource } from '@nocobase/data-source-manager';
 import { uid } from '@nocobase/utils';
+export { sleep } from '@nocobase/test';
 
-export interface MockServerOptions extends ApplicationOptions {
+interface WorkflowMockServerOptions extends ApplicationOptions {
   collectionsPath?: string;
 }
 
-// async function createMockServer(options: MockServerOptions) {
-//   const app = mockServer(options);
-//   await app.cleanDb();
-//   await app.runCommand('start', '--quickstart');
-//   return app;
-// }
-
-export function sleep(ms: number) {
-  return new Promise((resolve) => {
-    setTimeout(resolve, ms);
-  });
+interface WorkflowMockClusterOptions extends MockClusterOptions {
+  collectionsPath?: string;
 }
 
-export async function getApp(options: MockServerOptions = {}): Promise<MockServer> {
-  const { plugins = [], collectionsPath, ...others } = options;
-  class TestCollectionPlugin extends Plugin {
-    async load() {
-      if (collectionsPath) {
-        await this.db.import({ directory: collectionsPath });
-      }
+class TestCollectionPlugin extends Plugin {
+  async load() {
+    if (this.options.collectionsPath) {
+      await this.db.import({ directory: this.options.collectionsPath });
     }
   }
+}
+
+export async function getApp({
+  plugins = [],
+  collectionsPath,
+  ...options
+}: WorkflowMockServerOptions = {}): Promise<MockServer> {
   const app = await createMockServer({
-    ...others,
+    ...options,
     plugins: [
+      'field-sort',
       [
         'workflow',
         {
@@ -56,7 +53,7 @@ export async function getApp(options: MockServerOptions = {}): Promise<MockServe
         },
       ],
       'workflow-test',
-      TestCollectionPlugin,
+      [TestCollectionPlugin, { collectionsPath }],
       ...plugins,
     ],
   });
@@ -84,6 +81,25 @@ export async function getApp(options: MockServerOptions = {}): Promise<MockServe
   another.acl.allow('*', '*');
 
   return app;
+}
+
+export async function getCluster({ plugins = [], collectionsPath, ...options }: WorkflowMockClusterOptions) {
+  return createMockCluster({
+    ...options,
+    plugins: [
+      [
+        'workflow',
+        {
+          triggers,
+          instructions,
+          functions,
+        },
+      ],
+      'workflow-test',
+      [TestCollectionPlugin, { collectionsPath }],
+      ...plugins,
+    ],
+  });
 }
 
 export default class WorkflowTestPlugin extends Plugin {

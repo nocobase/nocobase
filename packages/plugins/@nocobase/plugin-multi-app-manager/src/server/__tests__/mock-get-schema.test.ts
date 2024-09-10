@@ -44,7 +44,7 @@ describe('test with start', () => {
     };
 
     const app = await createMockServer({
-      plugins: ['multi-app-manager'],
+      plugins: ['field-sort', 'multi-app-manager'],
     });
 
     const db = app.db;
@@ -74,7 +74,7 @@ describe('test with start', () => {
 
   it('should install into difference database', async () => {
     const app = await createMockServer({
-      plugins: ['multi-app-manager'],
+      plugins: ['field-sort', 'multi-app-manager'],
     });
 
     const db = app.db;
@@ -85,7 +85,7 @@ describe('test with start', () => {
       values: {
         name,
         options: {
-          plugins: ['ui-schema-storage'],
+          plugins: ['field-sort', 'ui-schema-storage'],
         },
       },
       context: {

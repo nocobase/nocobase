@@ -20,6 +20,7 @@ export class PresetNocoBase extends Plugin {
     'file-manager',
     'system-settings',
     'field-sequence',
+    'field-sort',
     'verification',
     'users',
     'user-data-sync',

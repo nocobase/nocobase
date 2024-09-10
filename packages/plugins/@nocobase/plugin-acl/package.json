@@ -14,7 +14,6 @@
   ],
   "devDependencies": {
     "@types/jsonwebtoken": "^8.5.8",
-    "async-mutex": "^0.3.2",
     "jsonwebtoken": "^8.5.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"

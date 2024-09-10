@@ -17,7 +17,7 @@ describe('belongs to array field', () => {
 
   beforeEach(async () => {
     app = await createMockServer({
-      plugins: ['field-m2m-array', 'data-source-manager', 'data-source-main', 'error-handler'],
+      plugins: ['field-m2m-array', 'data-source-manager', 'field-sort', 'data-source-main', 'error-handler'],
     });
     db = app.db;
     fieldRepo = db.getRepository('fields');

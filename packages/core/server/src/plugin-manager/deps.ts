@@ -19,7 +19,7 @@ const deps: Record<string, string> = {
   'cache-manager': '5.x',
   sequelize: '6.x',
   umzug: '3.x',
-  'async-mutex': '0.3.x',
+  'async-mutex': '0.5.x',
   '@formulajs/formulajs': '4.x',
   mathjs: '10.x',
   winston: '3.x',
