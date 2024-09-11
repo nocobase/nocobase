@@ -26,6 +26,9 @@ export class PluginNotificationInAppServer extends Plugin {
     notificationServer.notificationManager.registerTypes(inAppTypeName, {
       server: inSiteServer,
     });
+  }
+
+  async install() {
     const channelsRepo = this.app.db.getRepository(COLLECTION_NAME.channels);
     const channel = await channelsRepo.findOne({ filter: { notificationType: inAppTypeName } });
     if (!channel) {
@@ -34,8 +37,6 @@ export class PluginNotificationInAppServer extends Plugin {
       });
     }
   }
-
-  async install() {}
 
   async afterEnable() {}
 
