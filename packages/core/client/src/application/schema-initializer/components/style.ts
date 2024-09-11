@@ -51,11 +51,6 @@ export const useSchemaInitializerStyles = genStyleHook('nb-schema-initializer', 
         },
       },
     },
-    [`${componentCls}-menu-sub`]: {
-      ul: {
-        maxHeight: '50vh !important',
-      },
-    },
     [`${componentCls}-item-content`]: {
       marginLeft: token.marginXS,
     },

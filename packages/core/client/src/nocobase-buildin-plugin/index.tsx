@@ -142,7 +142,7 @@ const getProps = (app: Application) => {
     };
   }
 
-  if (app.error.code === 'APP_ERROR' || app.error.code === 'LOAD_ERROR') {
+  if (['ENOENT', 'APP_ERROR', 'LOAD_ERROR'].includes(app.error.code)) {
     return {
       status: 'error',
       title: 'App error',
@@ -205,7 +205,11 @@ const getProps = (app: Application) => {
     return { ...props, ...commands[app.error?.command?.name] };
   }
 
-  return {};
+  return {
+    status: 'warning',
+    title: 'App warning',
+    subTitle: app.error?.message,
+  };
 };
 
 const AppMaintaining: FC<{ app: Application; error: Error }> = observer(

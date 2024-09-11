@@ -132,7 +132,7 @@ const useTableColumns = (props: { showDel?: boolean; isSubTable?: boolean }) => 
             const index = field.value?.indexOf(record);
             const basePath = field.address.concat(record.__index || index);
             return (
-              <SubFormProvider value={{ value: record, collection }}>
+              <SubFormProvider value={{ value: record, collection, fieldSchema: schema.parent }}>
                 <RecordIndexProvider index={record.__index || index}>
                   <RecordProvider isNew={isNewRecord(record)} record={record} parent={parentRecordData}>
                     <ColumnFieldProvider schema={s} basePath={basePath}>
@@ -261,6 +261,8 @@ const TableIndex = (props) => {
   );
 };
 
+const pageSizeOptions = [5, 10, 20, 50, 100, 200];
+
 const usePaginationProps = (pagination1, pagination2) => {
   const { t } = useTranslation();
   const field: any = useField();
@@ -279,12 +281,14 @@ const usePaginationProps = (pagination1, pagination2) => {
   const result = useMemo(() => {
     if (totalCount) {
       return {
+        pageSizeOptions,
         showTotal,
         showSizeChanger: true,
         ...pagination,
       };
     } else {
       return {
+        pageSizeOptions,
         showTotal: false,
         simple: true,
         showTitle: false,

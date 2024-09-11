@@ -69,7 +69,6 @@ export const userCollection = {
         type: 'string',
         title: '{{t("Phone")}}',
         'x-component': 'Input',
-        'x-validator': 'phone',
         required: true,
       },
     },
@@ -213,7 +212,6 @@ export const usersSchema: ISchema = {
                     phone: {
                       title: '{{t("Phone")}}',
                       'x-component': 'Input',
-                      'x-validator': 'phone',
                       'x-decorator': 'FormItem',
                       required: false,
                     },
@@ -376,7 +374,6 @@ export const usersSchema: ISchema = {
                             phone: {
                               title: '{{t("Phone")}}',
                               'x-component': 'Input',
-                              'x-validator': 'phone',
                               'x-decorator': 'FormItem',
                               required: false,
                             },

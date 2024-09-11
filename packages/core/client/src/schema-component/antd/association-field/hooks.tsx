@@ -8,22 +8,16 @@
  */
 
 import { GeneralField } from '@formily/core';
-import { useField, useFieldSchema } from '@formily/react';
-import { reaction } from '@formily/reactive';
-import { flatten, getValuesByPath } from '@nocobase/utils/client';
-import _, { isString } from 'lodash';
+import { Schema, useField, useFieldSchema } from '@formily/react';
+import { isString } from 'lodash';
 import cloneDeep from 'lodash/cloneDeep';
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { useCollectionManager_deprecated, useCollection_deprecated } from '../../../collection-manager';
+import React, { createContext, FC, useCallback, useContext, useMemo } from 'react';
+import { useParsedFilter } from '../../../block-provider/hooks/useParsedFilter';
+import { useCollection_deprecated, useCollectionManager_deprecated } from '../../../collection-manager';
 import { Collection } from '../../../data-source';
 import { isInFilterFormBlock } from '../../../filter-provider';
 import { mergeFilter } from '../../../filter-provider/utils';
 import { useRecord } from '../../../record-provider';
-import { useParseDataScopeFilter } from '../../../schema-settings';
-import { DEBOUNCE_WAIT } from '../../../variables';
-import { getPath } from '../../../variables/utils/getPath';
-import { getVariableName } from '../../../variables/utils/getVariableName';
-import { isVariable } from '../../../variables/utils/isVariable';
 import { useDesignable } from '../../hooks';
 import { AssociationFieldMode } from './AssociationFieldModeProvider';
 import { AssociationFieldContext } from './context';
@@ -65,66 +59,12 @@ export default function useServiceOptions(props) {
   const { getField } = useCollection_deprecated();
   const { getCollectionJoinField } = useCollectionManager_deprecated();
   const record = useRecord();
-  const { parseFilter, findVariable } = useParseDataScopeFilter();
-  const [fieldServiceFilter, setFieldServiceFilter] = useState(null);
-
-  useEffect(() => {
-    const filterFromSchema = isString(fieldSchema?.['x-component-props']?.service?.params?.filter)
+  const filterParams =
+    (isString(fieldSchema?.['x-component-props']?.service?.params?.filter)
       ? field.componentProps?.service?.params?.filter
-      : fieldSchema?.['x-component-props']?.service?.params?.filter;
+      : fieldSchema?.['x-component-props']?.service?.params?.filter) || service?.params?.filter;
 
-    const _run = async () => {
-      const result = await parseFilter(mergeFilter([filterFromSchema || service?.params?.filter]));
-      setFieldServiceFilter(result);
-    };
-    const run = _.debounce(_run, DEBOUNCE_WAIT);
-
-    _run();
-
-    const dispose = reaction(
-      () => {
-        // 这一步主要是为了使 reaction 能够收集到依赖
-        const flat = flatten(filterFromSchema, {
-          breakOn({ key }) {
-            return key.startsWith('$') && key !== '$and' && key !== '$or';
-          },
-          transformValue(value) {
-            if (!isVariable(value)) {
-              return value;
-            }
-            const variableName = getVariableName(value);
-            const variable = findVariable(variableName);
-
-            if (process.env.NODE_ENV !== 'production' && !variable) {
-              throw new Error(`useServiceOptions: can not find variable ${variableName}`);
-            }
-
-            const result = getValuesByPath(
-              {
-                [variableName]: variable?.ctx || {},
-              },
-              getPath(value),
-            );
-            return result;
-          },
-        });
-        return flat;
-      },
-      run,
-      {
-        equals: _.isEqual,
-      },
-    );
-
-    return dispose;
-  }, [
-    field.componentProps?.service?.params?.filter,
-    fieldSchema,
-    findVariable,
-    parseFilter,
-    record,
-    service?.params?.filter,
-  ]);
+  const { filter: parsedFilterParams } = useParsedFilter({ filterOption: filterParams });
 
   const collectionField = useMemo(() => {
     return getField(fieldSchema.name) || getCollectionJoinField(fieldSchema?.['x-collection-field']);
@@ -143,7 +83,7 @@ export default function useServiceOptions(props) {
                 },
               }
             : null,
-          fieldServiceFilter,
+          parsedFilterParams,
         ]),
         isOToAny &&
         sourceValue !== undefined &&
@@ -171,7 +111,7 @@ export default function useServiceOptions(props) {
     collectionField?.interface,
     collectionField?.foreignKey,
     fieldSchema,
-    fieldServiceFilter,
+    parsedFilterParams,
     sourceValue,
     useOriginalFilter,
   ]);
@@ -202,12 +142,23 @@ export const useFieldNames = (
   return { label: 'label', value: 'value', ...fieldNames };
 };
 
-const SubFormContext = createContext<{
+interface SubFormProviderProps {
   value: any;
   collection: Collection;
-}>(null);
+  /**
+   * the schema of the current sub-table or sub-form
+   */
+  fieldSchema?: Schema;
+}
+
+const SubFormContext = createContext<SubFormProviderProps>(null);
 SubFormContext.displayName = 'SubFormContext';
-export const SubFormProvider = SubFormContext.Provider;
+
+export const SubFormProvider: FC<{ value: SubFormProviderProps }> = (props) => {
+  const { value, collection, fieldSchema } = props.value;
+  const memoValue = useMemo(() => ({ value, collection, fieldSchema }), [value, collection, fieldSchema]);
+  return <SubFormContext.Provider value={memoValue}>{props.children}</SubFormContext.Provider>;
+};
 
 /**
  * 用于获取子表单所对应的 form 对象，其应该保持响应性，即一个 Proxy 对象；
@@ -219,9 +170,10 @@ export const SubFormProvider = SubFormContext.Provider;
  * @returns
  */
 export const useSubFormValue = () => {
-  const { value, collection } = useContext(SubFormContext) || {};
+  const { value, collection, fieldSchema } = useContext(SubFormContext) || {};
   return {
     formValue: value,
     collection,
+    fieldSchema,
   };
 };
