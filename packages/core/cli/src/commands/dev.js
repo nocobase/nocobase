@@ -9,13 +9,12 @@
 
 const chalk = require('chalk');
 const { Command } = require('commander');
-const { runAppCommand, runInstall, run, postCheck, nodeCheck, promptForTs } = require('../util');
+const { generatePlugins, run, postCheck, nodeCheck, promptForTs } = require('../util');
 const { getPortPromise } = require('portfinder');
 const chokidar = require('chokidar');
 const { uid } = require('@formily/shared');
 const path = require('path');
 const fs = require('fs');
-const { generatePlugins } = require('@nocobase/devtools/umiConfig');
 
 /**
  *

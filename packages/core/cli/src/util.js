@@ -416,3 +416,13 @@ exports.initEnv = function initEnv() {
     );
   }
 };
+
+exports.generatePlugins = function () {
+  try {
+    require.resolve('@nocobase/devtools/umiConfig');
+    const { generatePlugins } = require('@nocobase/devtools/umiConfig');
+    generatePlugins();
+  } catch (error) {
+    return;
+  }
+};
