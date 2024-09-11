@@ -37,7 +37,6 @@ export class PresetNocoBase extends Plugin {
     'client',
     'action-import',
     'action-export',
-    'backup-restore',
     'block-iframe',
     'block-workbench',
     'field-formula',
@@ -73,6 +72,7 @@ export class PresetNocoBase extends Plugin {
     'field-markdown-vditor>=0.21.0-alpha.16',
     'workflow-mailer',
     'field-m2m-array',
+    'backup-restore',
   ];
 
   splitNames(name: string) {
