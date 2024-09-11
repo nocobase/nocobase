@@ -88,6 +88,48 @@ describe('subquery', () => {
     expect(res2.length).toEqual(2);
   });
 
+  it('should get hasMany relation count', async () => {
+    const Post = db.collection({
+      name: 'posts',
+      fields: [
+        { name: 'title', type: 'string' },
+        { name: 'userId', type: 'integer' },
+      ],
+    });
+
+    const User = db.collection({
+      name: 'users',
+      fields: [
+        { name: 'name', type: 'string' },
+        {
+          name: 'posts',
+          type: 'hasMany',
+          target: 'posts',
+          foreignKey: 'userId',
+        },
+        {
+          name: 'postsCount',
+          type: 'subquery',
+          sql: `SELECT COUNT(*) FROM posts WHERE ${db.sequelize
+            .getQueryInterface()
+            .quoteIdentifiers(`posts.${Post.model.rawAttributes['userId'].field}`)} = users.id`,
+        },
+      ],
+    });
+    await db.sync();
+
+    const user = await User.repository.create({
+      values: {
+        name: 'user1',
+        posts: [{ title: 'post1' }, { title: 'post2' }],
+      },
+    });
+
+    const u1 = await User.repository.findOne({});
+
+    expect(u1.get('postsCount')).toEqual(2);
+  });
+
   it.skip('should query subquery field in relation associations', async () => {
     const User = db.collection({
       name: 'users',
