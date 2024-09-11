@@ -16,10 +16,12 @@ export const InboxContent = ({
   groups,
   groupMap,
   onGroupClick,
+  fetchChats,
 }: {
   groups: Array<MsgGroup>;
   groupMap: Record<string, MsgGroup>;
   onGroupClick: (groupId: string) => any;
+  fetchChats: (params: any) => any;
 }) => {
   const [selectedGroupId, setSelectedGroupId] = useState<string>(null);
   const selectedGroup = groupMap[selectedGroupId];
@@ -31,6 +33,17 @@ export const InboxContent = ({
     return Object.values(msgMap).sort((a, b) => (a.createdAt > b.createdAt ? -1 : 1));
   }, [groups, selectedGroupId]);
 
+  const onLoadChannelsMore = () => {
+    const filter: Record<string, any> = {};
+    const lastGroup = groups[groups.length - 1];
+    const beforeDateTime = lastGroup && lastGroup.lastMsgReceiveTime.toISOString();
+    if (beforeDateTime) {
+      filter.lastMsgReceiveTime = {
+        $dateBefore: lastGroup.lastMsgReceiveTime.toISOString(),
+      };
+    }
+    fetchChats({ filter });
+  };
   const loadChannelsMore = (
     <div
       style={{
@@ -40,7 +53,7 @@ export const InboxContent = ({
         lineHeight: '32px',
       }}
     >
-      <Button>loading more</Button>
+      <Button onClick={onLoadChannelsMore}>Loading more</Button>
     </div>
   );
 
@@ -55,7 +68,7 @@ export const InboxContent = ({
           <Card size={'small'} style={{ marginTop: 24 }} title={message.title} key={message.id}>
             <Descriptions key={index} column={1}>
               <Descriptions.Item label="内容">{message.content}</Descriptions.Item>
-              <Descriptions.Item label="时间">{message.createdAt}</Descriptions.Item>
+              <Descriptions.Item label="时间">{message.createdAt.format('YYYY-MM-DD HH:mm:ss')}</Descriptions.Item>
             </Descriptions>
           </Card>
         ))}
@@ -65,7 +78,7 @@ export const InboxContent = ({
 
   return (
     <Layout style={{ height: '100%' }}>
-      <Layout.Sider width={300} style={{ height: '100%', overflowY: 'auto', background: '#fff' }}>
+      <Layout.Sider width={400} style={{ height: '100%', overflowY: 'auto', background: '#fff' }}>
         <List
           itemLayout="horizontal"
           dataSource={groups}
@@ -100,11 +113,11 @@ export const InboxContent = ({
                         paddingRight: 12,
                       }}
                     >
-                      {item.lastMsgReceiveTime}
+                      {item.lastMsgReceiveTime.format('MM-DD HH:mm:ss')}
                     </span>
                   </div>
                 }
-                description={'description'}
+                description={item.latestMsgTitle}
               />
               <Badge offset={[-10, 22]} count={item.unreadMsgCnt}></Badge>
             </List.Item>

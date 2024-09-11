@@ -10,10 +10,11 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAPIClient, useRequest } from '@nocobase/client';
 import { produce } from 'immer';
+import { dayjs } from '@nocobase/utils/client';
 export type Message = {
   id: string;
   title: string;
-  createdAt: string;
+  createdAt: dayjs.Dayjs;
   content: string;
   status: 'read' | 'unread';
 };
@@ -22,7 +23,8 @@ export type Group = {
   title: string;
   msgMap: Record<string, Message>;
   unreadMsgCnt: number;
-  lastMsgReceiveTime: string;
+  lastMsgReceiveTime: dayjs.Dayjs;
+  latestMsgTitle: string;
 };
 const useChats = () => {
   const [groupMap, setGroupMap] = useState<Record<string, Group>>({});
@@ -62,14 +64,21 @@ const useChats = () => {
   }, [groupMap]);
   const apiClient = useAPIClient();
 
-  const fetchChats = useCallback(async () => {
-    const res = await apiClient.request({
-      url: 'myInSiteChats:list',
-      method: 'get',
-    });
-    const chats = res.data.data.chats;
-    if (Array.isArray(chats)) addChats(chats);
-  }, [apiClient, addChats]);
+  const fetchChats = useCallback(
+    async ({ filter = {}, limit = 30 }: { filter?: Record<string, any>; limit?: number }) => {
+      const res = await apiClient.request({
+        url: 'myInSiteChats:list',
+        method: 'get',
+        params: { filter, limit },
+      });
+      const chats = res.data.data.chats.map((chat) => ({
+        ...chat,
+        lastMsgReceiveTime: dayjs(chat.lastMsgReceiveTime),
+      }));
+      if (Array.isArray(chats)) addChats(chats);
+    },
+    [apiClient, addChats],
+  );
 
   const fetchMessagesByGroupId = useCallback(
     async ({ groupId }) => {
@@ -80,7 +89,10 @@ const useChats = () => {
           groupId,
         },
       });
-      addMessagesToGroup(groupId, res.data.data.messages);
+      addMessagesToGroup(
+        groupId,
+        res.data.data.messages.map((message) => ({ ...message, createdAt: dayjs(message.createdAt) })),
+      );
     },
     [apiClient, addMessagesToGroup],
   );

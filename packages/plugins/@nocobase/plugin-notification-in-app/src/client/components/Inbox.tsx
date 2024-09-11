@@ -40,7 +40,6 @@ export const Inbox = (props) => {
   const { t } = useLocalTranslation();
   const [unreadCount, setUnreadCount] = useState(0);
   const [visible, setVisible] = useState(false);
-  const navigate = useNavigate();
 
   const { styles } = useStyles();
   const { fetchChats, chatList, fetchMessagesByGroupId, chatMap } = useChats();
@@ -60,7 +59,7 @@ export const Inbox = (props) => {
   }, [updateUnreadCount]);
 
   const onIconClick = useCallback(() => {
-    fetchChats();
+    fetchChats({});
     setVisible(true);
   }, [fetchChats]);
 
@@ -113,6 +112,7 @@ export const Inbox = (props) => {
           groups={chatList}
           groupMap={chatMap}
           onGroupClick={(id) => fetchMessagesByGroupId({ groupId: id })}
+          fetchChats={fetchChats}
         />
       </Drawer>
     </ConfigProvider>

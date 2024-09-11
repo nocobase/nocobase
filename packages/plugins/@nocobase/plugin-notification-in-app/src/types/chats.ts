@@ -60,6 +60,11 @@ export const chatsCollection: CollectionOptions = {
         required: true,
       },
     },
+    {
+      name: 'latestMsgId',
+      type: 'string',
+      interface: 'input',
+    },
   ],
 };
 
