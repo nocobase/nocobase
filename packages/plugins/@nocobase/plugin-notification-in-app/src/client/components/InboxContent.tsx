@@ -11,6 +11,7 @@ import React, { useMemo, useState } from 'react';
 import { Layout, List, Card, Descriptions, Typography, Badge, Button } from 'antd';
 import type { Group as MsgGroup } from './hooks/useChat';
 import { css } from '@emotion/css';
+import { dayjs } from '@nocobase/utils/client';
 
 export const InboxContent = ({
   groups,
@@ -30,16 +31,16 @@ export const InboxContent = ({
       return [];
     }
     const msgMap = groups.find((group) => group.id === selectedGroupId).msgMap;
-    return Object.values(msgMap).sort((a, b) => (a.createdAt > b.createdAt ? -1 : 1));
+    return Object.values(msgMap).sort((a, b) => (a.receiveTimestamp > b.receiveTimestamp ? -1 : 1));
   }, [groups, selectedGroupId]);
 
   const onLoadChannelsMore = () => {
     const filter: Record<string, any> = {};
     const lastGroup = groups[groups.length - 1];
-    const beforeDateTime = lastGroup && lastGroup.lastMsgReceiveTime.toISOString();
-    if (beforeDateTime) {
-      filter.lastMsgReceiveTime = {
-        $dateBefore: lastGroup.lastMsgReceiveTime.toISOString(),
+    const latestMsgReceiveTimestamp = lastGroup && lastGroup.latestMsgReceiveTimestamp;
+    if (latestMsgReceiveTimestamp) {
+      filter.latestMsgReceiveTimestamp = {
+        $lt: latestMsgReceiveTimestamp,
       };
     }
     fetchChats({ filter });
@@ -68,7 +69,9 @@ export const InboxContent = ({
           <Card size={'small'} style={{ marginTop: 24 }} title={message.title} key={message.id}>
             <Descriptions key={index} column={1}>
               <Descriptions.Item label="内容">{message.content}</Descriptions.Item>
-              <Descriptions.Item label="时间">{message.createdAt.format('YYYY-MM-DD HH:mm:ss')}</Descriptions.Item>
+              <Descriptions.Item label="时间">
+                {dayjs(message.receiveTimestamp).format('YYYY-MM-DD HH:mm:ss')}
+              </Descriptions.Item>
             </Descriptions>
           </Card>
         ))}
@@ -113,7 +116,7 @@ export const InboxContent = ({
                         paddingRight: 12,
                       }}
                     >
-                      {item.lastMsgReceiveTime.format('MM-DD HH:mm:ss')}
+                      {dayjs(item.latestMsgReceiveTimestamp).format('MM-DD HH:mm:ss')}
                     </span>
                   </div>
                 }

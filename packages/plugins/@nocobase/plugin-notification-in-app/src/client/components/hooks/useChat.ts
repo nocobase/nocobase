@@ -14,7 +14,7 @@ import { dayjs } from '@nocobase/utils/client';
 export type Message = {
   id: string;
   title: string;
-  createdAt: dayjs.Dayjs;
+  receiveTimestamp: number;
   content: string;
   status: 'read' | 'unread';
 };
@@ -23,7 +23,7 @@ export type Group = {
   title: string;
   msgMap: Record<string, Message>;
   unreadMsgCnt: number;
-  lastMsgReceiveTime: dayjs.Dayjs;
+  latestMsgReceiveTimestamp: number;
   latestMsgTitle: string;
 };
 const useChats = () => {
@@ -60,7 +60,7 @@ const useChats = () => {
   }, []);
 
   const chatList = useMemo(() => {
-    return Object.values(groupMap).sort((a, b) => (a.lastMsgReceiveTime > b.lastMsgReceiveTime ? -1 : 1));
+    return Object.values(groupMap).sort((a, b) => (a.latestMsgReceiveTimestamp > b.latestMsgReceiveTimestamp ? -1 : 1));
   }, [groupMap]);
   const apiClient = useAPIClient();
 
@@ -71,10 +71,7 @@ const useChats = () => {
         method: 'get',
         params: { filter, limit },
       });
-      const chats = res.data.data.chats.map((chat) => ({
-        ...chat,
-        lastMsgReceiveTime: dayjs(chat.lastMsgReceiveTime),
-      }));
+      const chats = res.data.data.chats;
       if (Array.isArray(chats)) addChats(chats);
     },
     [apiClient, addChats],
@@ -89,10 +86,7 @@ const useChats = () => {
           groupId,
         },
       });
-      addMessagesToGroup(
-        groupId,
-        res.data.data.messages.map((message) => ({ ...message, createdAt: dayjs(message.createdAt) })),
-      );
+      addMessagesToGroup(groupId, res.data.data.messages);
     },
     [apiClient, addMessagesToGroup],
   );

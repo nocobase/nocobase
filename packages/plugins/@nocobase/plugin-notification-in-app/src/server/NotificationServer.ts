@@ -42,7 +42,7 @@ export default class NotificationServer extends NotificationServerBase {
     status,
     userId,
     title,
-    receiveTime,
+    receiveTimestamp,
   }: {
     content: string;
     senderName: string;
@@ -50,7 +50,7 @@ export default class NotificationServer extends NotificationServerBase {
     userId: string;
     title: string;
     status: 'read' | 'unread';
-    receiveTime?: Date;
+    receiveTimestamp?: number;
   }): Promise<boolean> => {
     const chatsRepo = this.plugin.app.db.getRepository(ChatsDefinition.name);
     const messagesRepo = this.plugin.app.db.getRepository(InAppMessagesDefinition.name);
@@ -66,7 +66,7 @@ export default class NotificationServer extends NotificationServerBase {
         senderName,
         status,
         userId,
-        createdAt: receiveTime || new Date(),
+        receiveTimestamp: receiveTimestamp ?? Date.now(),
       },
     });
     await chatsRepo.update({ values: { latestMsgId: message.id }, filterByTk: chat.id });
@@ -105,14 +105,15 @@ export default class NotificationServer extends NotificationServerBase {
   };
 
   mockMessages = async () => {
-    function randomDate(start, end) {
-      return new Date(start.getTime() + Math.random() * (end.getTime() - start.getTime()));
+    function randomTimestamp() {
+      return 1726026118768 - Math.floor(Math.random() * 1000 * 3600 * 24 * 180);
     }
 
-    const writeMessages = async (userId: string, senderId: string, senderName: string) => {
+    const writeMessages = async (i: number, userId: string, senderId: string, senderName: string) => {
       for (let j = 0; j < 100; j++) {
         const content = `${senderName}-content-${uid()}`;
-        const title = `title${uid()}`;
+        const title = `sender${i}-${uid()}`;
+        if (i > 2 && j > 1) break;
         await this.saveMessageToDB({
           content,
           title,
@@ -120,7 +121,7 @@ export default class NotificationServer extends NotificationServerBase {
           senderId,
           status: 'unread',
           userId,
-          receiveTime: randomDate(new Date(2021, 0, 1), new Date()),
+          receiveTimestamp: i < 2 ? Date.now() : randomTimestamp(),
         });
       }
       return true;
@@ -130,7 +131,7 @@ export default class NotificationServer extends NotificationServerBase {
       const senderId = randomUUID();
       const userId = '1';
       const senderName = `senderName${uid()}`;
-      await writeMessages(userId, senderId, senderName);
+      await writeMessages(i, userId, senderId, senderName);
     }
   };
 
@@ -192,13 +193,17 @@ export default class NotificationServer extends NotificationServerBase {
           handler: async (ctx) => {
             const userId = ctx.state.currentUser.id;
             const { filter = {} } = ctx.action.params;
-            const { lastMsgReceiveTime } = filter;
+            const conditions = [];
+            if (filter?.latestMsgReceiveTimestamp?.$lt) {
+              conditions.push(Sequelize.literal(`latestMsgReceiveTimestamp < ${filter.latestMsgReceiveTimestamp.$lt}`));
+            }
+
             const chatsRepo = this.plugin.app.db.getRepository(ChatsDefinition.name);
             try {
               const allChats = await chatsRepo.find({
                 logging: console.log,
-                limit: 10,
-                filter: { userId },
+                limit: 30,
+                filter,
                 attributes: {
                   include: [
                     [
@@ -214,14 +219,14 @@ export default class NotificationServer extends NotificationServerBase {
                     ],
                     [
                       Sequelize.literal(`(
-                                  SELECT messages.createdAt
+                                  SELECT messages.receiveTimestamp
                                   FROM ${InAppMessagesDefinition.name} AS messages
                                   WHERE
                                       messages.chatId = ${ChatsDefinition.name}.id
-                                  ORDER BY messages.createdAt DESC
+                                  ORDER BY messages.receiveTimestamp DESC
                                   LIMIT 1
                               )`),
-                      'lastMsgReceiveTime',
+                      'latestMsgReceiveTimestamp',
                     ],
                     [
                       Sequelize.literal(`(
@@ -229,18 +234,16 @@ export default class NotificationServer extends NotificationServerBase {
                                 FROM ${InAppMessagesDefinition.name} AS messages
                                 WHERE
                                     messages.chatId = ${ChatsDefinition.name}.id
-                                ORDER BY messages.createdAt DESC
+                                ORDER BY messages.receiveTimestamp DESC
                                 LIMIT 1
                     )`),
                       'latestMsgTitle',
                     ],
                   ],
                 },
-                order: [[Sequelize.literal('lastMsgReceiveTime'), 'DESC']],
+                sort: '-latestMsgReceiveTimestamp',
                 where: {
-                  [Op.and]: lastMsgReceiveTime?.$dateBefore
-                    ? [Sequelize.literal(`lastMsgReceiveTime    < '${lastMsgReceiveTime.$dateBefore}'`)]
-                    : [],
+                  [Op.and]: conditions,
                 },
               });
               ctx.body = { chats: allChats };

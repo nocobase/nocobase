@@ -93,5 +93,9 @@ export const messageCollection: CollectionOptions = {
         'x-read-pretty': true,
       },
     },
+    {
+      name: 'receiveTimestamp',
+      type: 'bigInt',
+    },
   ],
 };
