@@ -28,7 +28,7 @@ export class UpdatedAtFieldInterface extends CollectionFieldInterface {
       'x-read-pretty': true,
     },
   };
-  availableTypes = ['date'];
+  availableTypes = [];
   properties = {
     ...defaultProps,
     ...dateTimeProps,

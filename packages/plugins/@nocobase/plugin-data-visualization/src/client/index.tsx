@@ -12,6 +12,7 @@ import {
   ChartV2Block,
   ChartV2BlockDesigner,
   ChartV2BlockInitializer,
+  ChartBlockProvider,
   chartInitializers,
   chartInitializers_deprecated,
 } from './block';
@@ -25,6 +26,12 @@ import {
   chartFilterItemInitializers_deprecated,
 } from './filter';
 import { lang } from './locale';
+import { chartActionsInitializer } from './initializers/chartActions';
+import { chartActionRefreshSettings } from './settings/chartActionRefresh';
+import { useChartRefreshActionProps } from './initializers/RefreshAction';
+import { chartBlockActionsInitializer } from './initializers/chartBlockActions';
+import { useChartBlockRefreshActionProps } from './initializers/BlockRefreshAction';
+import { chartBlockActionRefreshSettings } from './settings/chartBlockActionRefresh';
 
 class PluginDataVisualiztionClient extends Plugin {
   public charts: ChartGroup = new ChartGroup();
@@ -36,14 +43,22 @@ class PluginDataVisualiztionClient extends Plugin {
       ChartV2BlockInitializer,
       ChartV2BlockDesigner,
       ChartV2Block,
+      ChartBlockProvider,
     });
-
+    this.app.addScopes({
+      useChartRefreshActionProps,
+      useChartBlockRefreshActionProps,
+    });
     this.app.schemaInitializerManager.add(chartInitializers_deprecated);
     this.app.schemaInitializerManager.add(chartInitializers);
     this.app.schemaInitializerManager.add(chartFilterItemInitializers_deprecated);
     this.app.schemaInitializerManager.add(chartFilterItemInitializers);
     this.app.schemaInitializerManager.add(chartFilterActionInitializers_deprecated);
     this.app.schemaInitializerManager.add(chartFilterActionInitializers);
+    this.app.schemaInitializerManager.add(chartActionsInitializer);
+    this.app.schemaInitializerManager.add(chartBlockActionsInitializer);
+    this.app.schemaSettingsManager.add(chartActionRefreshSettings);
+    this.app.schemaSettingsManager.add(chartBlockActionRefreshSettings);
 
     const blockInitializers = this.app.schemaInitializerManager.get('page:addBlock');
     blockInitializers?.add('dataBlocks.chartV2', {
@@ -52,6 +67,10 @@ class PluginDataVisualiztionClient extends Plugin {
     });
     this.app.schemaInitializerManager.addItem('mobile:addBlock', 'dataBlocks.chartV2', {
       title: lang('Charts'),
+      Component: 'ChartV2BlockInitializer',
+    });
+    this.app.schemaInitializerManager.addItem('popup:common:addBlock', 'dataBlocks.charts', {
+      title: '{{t("Charts")}}',
       Component: 'ChartV2BlockInitializer',
     });
   }

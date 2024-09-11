@@ -48,10 +48,6 @@ export interface PopupContextStorage extends PopupContext {
   /** used to refresh data for block */
   service?: any;
   sourceId?: string;
-  /**
-   * if true, will not back to the previous path when closing the popup
-   */
-  notBackToPreviousPath?: boolean;
 }
 
 const popupsContextStorage: Record<string, PopupContextStorage> = {};
@@ -194,10 +190,10 @@ export const usePopupUtils = (
     [association, cm, collection, dataSourceKey, parentRecord?.data, association],
   );
 
-  const getPopupContext = useCallback(() => {
+  const getNewPopupContext = useCallback(() => {
     const context = {
       dataSource: dataSourceKey,
-      collection: association ? undefined : collection.name,
+      collection: association ? undefined : collection?.name,
       association,
     };
 
@@ -246,12 +242,12 @@ export const usePopupUtils = (
         parentRecord: parentRecordData ? new CollectionRecord({ isNew: false, data: parentRecordData }) : parentRecord,
         service,
         dataSource: dataSourceKey,
-        collection: collection.name,
+        collection: collection?.name,
         association,
         sourceId,
       });
 
-      updatePopupContext(getPopupContext(), customActionSchema);
+      updatePopupContext(getNewPopupContext(), customActionSchema);
 
       navigate(withSearchParams(`${url}${pathname}`));
     },
@@ -269,7 +265,7 @@ export const usePopupUtils = (
       location,
       isPopupVisibleControlledByURL,
       getSourceId,
-      getPopupContext,
+      getNewPopupContext,
     ],
   );
 
@@ -279,14 +275,7 @@ export const usePopupUtils = (
         return setVisibleFromAction?.(false);
       }
 
-      // 1. If there is a value in the cache, it means that the current popup was opened by manual click, so we can simply return to the previous record;
-      // 2. If there is no value in the cache, it means that the current popup was opened by clicking the URL elsewhere, and since there is no history,
-      //    we need to construct the URL of the previous record to return to;
-      if (getStoredPopupContext(currentPopupUid) && !getStoredPopupContext(currentPopupUid).notBackToPreviousPath) {
-        navigate(-1);
-      } else {
-        navigate(withSearchParams(removeLastPopupPath(location.pathname)));
-      }
+      navigate(withSearchParams(removeLastPopupPath(location.pathname)), { replace: true });
     },
     [isPopupVisibleControlledByURL, setVisibleFromAction, navigate, location?.pathname],
   );
@@ -355,7 +344,7 @@ export const usePopupUtils = (
      * @deprecated
      * TODO: remove this
      */
-    getPopupContext,
+    getPopupContext: getNewPopupContext,
   };
 };
 

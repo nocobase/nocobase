@@ -136,6 +136,10 @@ export const ConfigurationTable = () => {
       if (isFieldInherits && item.template === 'view') {
         return false;
       }
+      //目标表不支持联合主键表
+      if (field.props.name === 'target' && Array.isArray(item.filterTargetKey) && item.filterTargetKey.length > 1) {
+        return false;
+      }
       const templateIncluded = !targetScope?.template || targetScope.template.includes(item.template);
       const nameIncluded = !targetScope?.[field.props?.name] || targetScope[field.props.name].includes(item.name);
       return templateIncluded && nameIncluded;
@@ -166,10 +170,10 @@ export const ConfigurationTable = () => {
   };
 
   const loadFilterTargetKeys = async (field) => {
-    const { name } = field.form.values;
-    const { fields } = getCollection(name);
+    const { name, fields: targetFields } = field.form.values;
+    const { fields } = getCollection(name) || {};
     return Promise.resolve({
-      data: fields,
+      data: fields || targetFields,
     }).then(({ data }) => {
       return data
         .filter((field) => {

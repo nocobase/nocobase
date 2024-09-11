@@ -261,37 +261,41 @@ export function JobButton() {
     setViewJob(job);
   }
 
-  return jobs.length > 1 ? (
-    <Dropdown
-      menu={{
-        items: jobs.map((job) => {
-          return {
-            key: job.id,
-            label: (
-              <>
-                <StatusButton statusMap={JobStatusOptionsMap} status={job.status} />
-                <time>{str2moment(job.updatedAt).format('YYYY-MM-DD HH:mm:ss')}</time>
-              </>
-            ),
-          };
-        }),
-        onClick: onOpenJob,
-        className: styles.dropdownClass,
-      }}
-    >
-      <StatusButton
-        statusMap={JobStatusOptionsMap}
-        status={jobs[jobs.length - 1].status}
-        className={styles.nodeJobButtonClass}
-      />
-    </Dropdown>
-  ) : (
-    <StatusButton
-      statusMap={JobStatusOptionsMap}
-      status={jobs[0].status}
-      onClick={() => setViewJob(jobs[0])}
-      className={styles.nodeJobButtonClass}
-    />
+  return (
+    <Tooltip title={lang('View result')}>
+      {jobs.length > 1 ? (
+        <Dropdown
+          menu={{
+            items: jobs.map((job) => {
+              return {
+                key: job.id,
+                label: (
+                  <>
+                    <StatusButton statusMap={JobStatusOptionsMap} status={job.status} />
+                    <time>{str2moment(job.updatedAt).format('YYYY-MM-DD HH:mm:ss')}</time>
+                  </>
+                ),
+              };
+            }),
+            onClick: onOpenJob,
+            className: styles.dropdownClass,
+          }}
+        >
+          <StatusButton
+            statusMap={JobStatusOptionsMap}
+            status={jobs[jobs.length - 1].status}
+            className={styles.nodeJobButtonClass}
+          />
+        </Dropdown>
+      ) : (
+        <StatusButton
+          statusMap={JobStatusOptionsMap}
+          status={jobs[0].status}
+          onClick={() => setViewJob(jobs[0])}
+          className={styles.nodeJobButtonClass}
+        />
+      )}
+    </Tooltip>
   );
 }
 

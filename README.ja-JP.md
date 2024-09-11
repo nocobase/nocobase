@@ -8,18 +8,20 @@ https://github.com/user-attachments/assets/b11cbb68-76bc-4e8b-a2aa-2a1feed0ab77
 <a href="https://www.producthunt.com/posts/nocobase?embed=true&utm_source=badge-top-post-topic-badge&utm_medium=badge&utm_souce=badge-nocobase" target="_blank"><img src="https://api.producthunt.com/widgets/embed-image/v1/top-post-topic-badge.svg?post_id=456520&theme=light&period=weekly&topic_id=267" alt="NocoBase - Scalability&#0045;first&#0044;&#0032;open&#0045;source&#0032;no&#0045;code&#0032;platform | Product Hunt" style="width: 250px; height: 54px;" width="250" height="54" /></a>
 
 ## 最近の重要なリリース
-- [v1.0.1-alpha.1：ブロックの高さ設定をサポート - 2024/06/07](https://docs-cn.nocobase.com/welcome/changelog/20240607)
-- [v1.0.0-alpha.15：新しいプラグインの追加、「設定操作」インターフェースの改善 - 2024/05/19](https://docs-cn.nocobase.com/welcome/changelog/20240519)
-- [v1.0：新しいマイルストーン - 2024/04/28](https://docs-cn.nocobase.com/welcome/release/v1001-changelog)
-- [v0.21：ブロックのパフォーマンスの最適化 - 2024/03/29](https://docs-cn.nocobase.com/welcome/release/v0210-changelog)
-- [v0.20：複数のデータソースをサポート - 2024/03/03](https://docs-cn.nocobase.com/welcome/release/v0200-changelog)
-- [v0.19：アプリケーションフローの最適化 - 2024/01/08](https://blog-cn.nocobase.com/posts/release-v019/)
-- [v0.18：完全なテストシステムの確立 - 2023/12/21](https://blog-cn.nocobase.com/posts/release-v018/)
-- [v0.17：新しいSchemaInitializerおよびSchemaSettings - 2023/12/11](https://blog-cn.nocobase.com/posts/release-v017/)
-- [v0.16：新しいキャッシュモジュール - 2023/11/20](https://blog-cn.nocobase.com/posts/release-v016/)
-- [v0.15：新しいプラグイン設定センター - 2023/11/13](https://blog-cn.nocobase.com/posts/release-v015/)
-- [v0.14：新しいプラグインマネージャー、インターフェースを通じたプラグインの追加をサポート - 2023/09/11](https://blog-cn.nocobase.com/posts/release-v014/)
-- [v0.13: 新しいアプリケーションステートフロー - 2023/08/24](https://blog-cn.nocobase.com/posts/release-v013/)
+
+- [v1.3：REST API データソース、モバイル版 V2 などの新機能 - 2024/08/29](https://www.nocobase.com/en/blog/nocobase-1-3)
+- [v1.0.1-alpha.1：ブロックの高さ設定をサポート - 2024/06/07](https://www.nocobase.com/en/blog/release-v101-alpha1)
+- [v1.0.0-alpha.15：新しいプラグインの追加、「設定操作」インターフェースの改善 - 2024/05/19](https://www.nocobase.com/en/blog/release-v100-alpha15)
+- [v1.0：新しいマイルストーン - 2024/04/28](https://www.nocobase.com/en/blog/release-v10)
+- [v0.21：ブロックのパフォーマンスの最適化 - 2024/03/29](https://www.nocobase.com/en/blog/release-v021)
+- [v0.20：複数のデータソースをサポート - 2024/03/03](https://www.nocobase.com/en/blog/release-v020)
+- [v0.19：アプリケーションフローの最適化 - 2024/01/08](https://www.nocobase.com/en/blog/release-v019)
+- [v0.18：完全なテストシステムの確立 - 2023/12/21](https://www.nocobase.com/en/blog/release-v018)
+- [v0.17：新しいSchemaInitializerおよびSchemaSettings - 2023/12/11](https://www.nocobase.com/en/blog/release-v017)
+- [v0.16：新しいキャッシュモジュール - 2023/11/20](https://www.nocobase.com/en/blog/release-v016)
+- [v0.15：新しいプラグイン設定センター - 2023/11/13](https://www.nocobase.com/en/blog/release-v015)
+- [v0.14：新しいプラグインマネージャー、インターフェースを通じたプラグインの追加をサポート - 2023/09/11](https://www.nocobase.com/en/blog/release-v014)
+- [v0.13: 新しいアプリケーションステートフロー - 2023/08/24](https://www.nocobase.com/en/blog/release-v013)
 
 ## NocoBaseはなに？
 

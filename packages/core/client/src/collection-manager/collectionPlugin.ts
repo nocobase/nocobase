@@ -53,6 +53,8 @@ import {
   NanoidFieldInterface,
   UnixTimestampFieldInterface,
   SubQueryFieldInterface,
+  DateFieldInterface,
+  DatetimeNoTzFieldInterface,
 } from './interfaces';
 import {
   GeneralCollectionTemplate,
@@ -175,6 +177,8 @@ export class CollectionPlugin extends Plugin {
       NanoidFieldInterface,
       UnixTimestampFieldInterface,
       SubQueryFieldInterface,
+      DateFieldInterface,
+      DatetimeNoTzFieldInterface,
     ]);
   }
 

@@ -6,29 +6,30 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
-import React from 'react';
 import { ArrayCollapse, FormLayout } from '@formily/antd-v5';
 import { Field } from '@formily/core';
 import { ISchema, useField, useFieldSchema } from '@formily/react';
 import _ from 'lodash';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useApp, useSchemaToolbar } from '../../../../application';
 import { SchemaSettings } from '../../../../application/schema-settings/SchemaSettings';
 import { useFormBlockContext } from '../../../../block-provider/FormBlockProvider';
 import { useCollectionManager_deprecated, useCollection_deprecated } from '../../../../collection-manager';
-import { useCollection } from '../../../../data-source';
 import { useFieldComponentName } from '../../../../common/useFieldComponentName';
+import { useCollection } from '../../../../data-source';
+import { fieldComponentSettingsItem } from '../../../../data-source/commonsSettingsItem';
 import { useDesignable, useValidateSchema } from '../../../../schema-component';
-import { useIsFormReadPretty } from '../../../../schema-component/antd/form-item/FormItem.Settings';
-import { getTempFieldState } from '../../../../schema-component/antd/form-v2/utils';
-import { isPatternDisabled } from '../../../../schema-settings';
+import {
+  useIsFieldReadPretty,
+  useIsFormReadPretty,
+} from '../../../../schema-component/antd/form-item/FormItem.Settings';
+import { SchemaSettingsLinkageRules, isPatternDisabled } from '../../../../schema-settings';
+import { useIsAllowToSetDefaultValue } from '../../../../schema-settings/hooks/useIsAllowToSetDefaultValue';
+import { getTempFieldState } from '../../../../schema-settings/LinkageRules/bindLinkageRulesToFiled';
 import { ActionType } from '../../../../schema-settings/LinkageRules/type';
 import { SchemaSettingsDefaultValue } from '../../../../schema-settings/SchemaSettingsDefaultValue';
-import { useIsAllowToSetDefaultValue } from '../../../../schema-settings/hooks/useIsAllowToSetDefaultValue';
-import { fieldComponentSettingsItem } from '../../../../data-source/commonsSettingsItem';
 
-import { SchemaSettingsLinkageRules } from '../../../../schema-settings';
-import { useIsFieldReadPretty } from '../../../../schema-component/antd/form-item/FormItem.Settings';
 export const fieldSettingsFormItem = new SchemaSettings({
   name: 'fieldSettings:FormItem',
   items: [

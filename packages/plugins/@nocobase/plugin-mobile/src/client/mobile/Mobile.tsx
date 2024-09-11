@@ -9,6 +9,7 @@
 
 import {
   Action,
+  AdminProvider,
   AntdAppProvider,
   AssociationFieldModeProvider,
   BlockTemplateProvider,
@@ -24,6 +25,7 @@ import { ActionDrawerUsedInMobile, useToAdaptActionDrawerToMobile } from '../ada
 import { BasicZIndexProvider } from '../adaptor-of-desktop/BasicZIndexProvider';
 import { useToAdaptFilterActionToMobile } from '../adaptor-of-desktop/FilterAction';
 import { InternalPopoverNesterUsedInMobile } from '../adaptor-of-desktop/InternalPopoverNester';
+import { useToAddMobilePopupBlockInitializers } from '../adaptor-of-desktop/mobile-action-page/blockInitializers';
 import { MobileActionPage } from '../adaptor-of-desktop/mobile-action-page/MobileActionPage';
 import { ResetSchemaOptionsProvider } from '../adaptor-of-desktop/ResetSchemaOptionsProvider';
 import { PageBackgroundColor } from '../constants';
@@ -35,10 +37,12 @@ import { useStyles } from './styles';
 export const Mobile = () => {
   useToAdaptFilterActionToMobile();
   useToAdaptActionDrawerToMobile();
+  useToAddMobilePopupBlockInitializers();
 
   const { styles } = useStyles();
   const mobilePlugin = usePlugin(PluginMobileClient);
   const MobileRouter = mobilePlugin.getRouterComponent();
+  const AdminProviderComponent = mobilePlugin?.options?.config?.skipLogin ? React.Fragment : AdminProvider;
   // 设置的移动端 meta
   React.useEffect(() => {
     if (!isDesktop) {
@@ -70,42 +74,45 @@ export const Mobile = () => {
   }, []);
 
   return (
-    <DesktopComponent>
-      {/* 目前移动端由于和客户端的主题对不上，所以先使用 `GlobalThemeProvider` 和 `AntdAppProvider` 进行重置为默认主题  */}
-      <GlobalThemeProvider
-        theme={{
-          token: {
-            marginBlock: 18,
-            borderRadiusBlock: 0,
-            boxShadowTertiary: 'none',
-          },
-        }}
-      >
-        <AntdAppProvider className={`mobile-container ${styles.nbMobile}`}>
-          <OpenModeProvider
-            defaultOpenMode="page"
-            hideOpenMode
-            openModeToComponent={{
-              page: MobileActionPage,
-              drawer: ActionDrawerUsedInMobile,
-              modal: Action.Modal,
-            }}
-          >
-            <BlockTemplateProvider componentNamePrefix="mobile-">
-              <MobileAppProvider>
-                <ResetSchemaOptionsProvider>
-                  <AssociationFieldModeProvider modeToComponent={modeToComponent}>
-                    {/* the z-index of all popups and subpages will be based on this value */}
-                    <BasicZIndexProvider basicZIndex={1000}>
-                      <MobileRouter />
-                    </BasicZIndexProvider>
-                  </AssociationFieldModeProvider>
-                </ResetSchemaOptionsProvider>
-              </MobileAppProvider>
-            </BlockTemplateProvider>
-          </OpenModeProvider>
-        </AntdAppProvider>
-      </GlobalThemeProvider>
-    </DesktopComponent>
+    <AdminProviderComponent>
+      <DesktopComponent>
+        {/* 目前移动端由于和客户端的主题对不上，所以先使用 `GlobalThemeProvider` 和 `AntdAppProvider` 进行重置为默认主题  */}
+        <GlobalThemeProvider
+          theme={{
+            token: {
+              marginBlock: 18,
+              borderRadiusBlock: 0,
+              boxShadowTertiary: 'none',
+            },
+          }}
+        >
+          <AntdAppProvider className={`mobile-container ${styles.nbMobile}`}>
+            <OpenModeProvider
+              defaultOpenMode="page"
+              isMobile={true}
+              hideOpenMode
+              openModeToComponent={{
+                page: MobileActionPage,
+                drawer: ActionDrawerUsedInMobile,
+                modal: Action.Modal,
+              }}
+            >
+              <BlockTemplateProvider componentNamePrefix="mobile-">
+                <MobileAppProvider>
+                  <ResetSchemaOptionsProvider>
+                    <AssociationFieldModeProvider modeToComponent={modeToComponent}>
+                      {/* the z-index of all popups and subpages will be based on this value */}
+                      <BasicZIndexProvider basicZIndex={1000}>
+                        <MobileRouter />
+                      </BasicZIndexProvider>
+                    </AssociationFieldModeProvider>
+                  </ResetSchemaOptionsProvider>
+                </MobileAppProvider>
+              </BlockTemplateProvider>
+            </OpenModeProvider>
+          </AntdAppProvider>
+        </GlobalThemeProvider>
+      </DesktopComponent>
+    </AdminProviderComponent>
   );
 };

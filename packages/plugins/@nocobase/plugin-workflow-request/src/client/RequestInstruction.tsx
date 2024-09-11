@@ -15,6 +15,7 @@ import { ArrayItems } from '@formily/antd-v5';
 import {
   Instruction,
   WorkflowVariableJSON,
+  WorkflowVariableRawTextArea,
   WorkflowVariableTextArea,
   defaultFieldNames,
 } from '@nocobase/plugin-workflow/client';
@@ -91,6 +92,45 @@ const BodySchema = {
       },
     },
   },
+  'application/xml': {
+    type: 'void',
+    properties: {
+      data: {
+        type: 'string',
+        'x-decorator': 'FormItem',
+        'x-component': 'WorkflowVariableRawTextArea',
+        'x-component-props': {
+          placeholder: '<?xml version="1.0" encoding="UTF-8"?>',
+          autoSize: {
+            minRows: 10,
+          },
+          className: css`
+            font-size: 80%;
+            font-family: Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace;
+          `,
+        },
+      },
+    },
+  },
+  'text/plain': {
+    type: 'void',
+    properties: {
+      data: {
+        type: 'string',
+        'x-decorator': 'FormItem',
+        'x-component': 'WorkflowVariableRawTextArea',
+        'x-component-props': {
+          autoSize: {
+            minRows: 10,
+          },
+          className: css`
+            font-size: 80%;
+            font-family: Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace;
+          `,
+        },
+      },
+    },
+  },
 };
 
 function BodyComponent(props) {
@@ -158,6 +198,8 @@ export default class extends Instruction {
       enum: [
         { label: 'application/json', value: 'application/json' },
         { label: 'application/x-www-form-urlencoded', value: 'application/x-www-form-urlencoded' },
+        { label: 'application/xml', value: 'application/xml' },
+        { label: 'text/plain', value: 'text/plain' },
       ],
       default: 'application/json',
     },
@@ -316,8 +358,9 @@ export default class extends Instruction {
   components = {
     ArrayItems,
     BodyComponent,
-    WorkflowVariableTextArea,
     WorkflowVariableJSON,
+    WorkflowVariableTextArea,
+    WorkflowVariableRawTextArea,
   };
   useVariables({ key, title, config }, { types }) {
     // eslint-disable-next-line react-hooks/rules-of-hooks

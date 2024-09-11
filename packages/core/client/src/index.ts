@@ -73,5 +73,7 @@ export * from './modules/blocks/useParentRecordCommon';
 export { OpenModeProvider, useOpenModeContext } from './modules/popup/OpenModeProvider';
 export { PopupContextProvider } from './modules/popup/PopupContextProvider';
 export { usePopupUtils } from './modules/popup/usePopupUtils';
-
-export { VariablePopupRecordProvider } from './modules/variable/variablesProvider/VariablePopupRecordProvider';
+export {
+  VariablePopupRecordProvider,
+  useCurrentPopupRecord,
+} from './modules/variable/variablesProvider/VariablePopupRecordProvider';
