@@ -69,6 +69,10 @@ class PluginDataVisualiztionClient extends Plugin {
       title: lang('Charts'),
       Component: 'ChartV2BlockInitializer',
     });
+    this.app.schemaInitializerManager.addItem('popup:common:addBlock', 'dataBlocks.charts', {
+      title: '{{t("Charts")}}',
+      Component: 'ChartV2BlockInitializer',
+    });
   }
 }
 
