@@ -37,7 +37,6 @@ export function fillParentFields(appends: Set<string>) {
 export const parseAssociationNames = (dataSourceKey: string, collectionName: string, app: any, fieldSchema: any) => {
   let appends = new Set([]);
   const dataSource = app.dataSourceManager.dataSources.get(dataSourceKey);
-  const collection = dataSource.collectionManager.getCollection(collectionName);
   const _getAssociationAppends = (schema, str) => {
     // 定义 reduceProperties 函数来遍历 properties
     const reduceProperties = (schema, reducer, initialValue) => {
@@ -61,6 +60,9 @@ export const parseAssociationNames = (dataSourceKey: string, collectionName: str
     // 定义自定义的 reducer 函数，模仿你的原始逻辑
     const customReducer = (pre, s, key) => {
       const prefix = pre || str;
+      const collection = dataSource.collectionManager.getCollection(
+        s?.['x-collection-field']?.split('.')?.[0] || collectionName,
+      );
       const collectionField = s['x-collection-field'] && collection.getField(s['x-collection-field']?.split('.')[1]);
       const isAssociationField =
         collectionField &&

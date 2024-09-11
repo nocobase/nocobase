@@ -54,6 +54,17 @@ export const publicFormsCollection = {
       },
     },
     {
+      type: 'boolean',
+      name: 'enabledPassword',
+      interface: 'checkbox',
+      uiSchema: {
+        type: 'string',
+        title: "{{t('Enable password')}}",
+        'x-component': 'Checkbox',
+        default: true,
+      },
+    },
+    {
       type: 'password',
       name: 'password',
       interface: 'password',

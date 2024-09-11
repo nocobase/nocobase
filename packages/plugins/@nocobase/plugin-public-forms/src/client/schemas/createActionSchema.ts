@@ -52,6 +52,7 @@ export const createActionSchema = {
               type: 'string',
               'x-decorator': 'FormItem',
               'x-component': 'CollectionField',
+              default: false,
             },
             password: {
               type: 'string',
