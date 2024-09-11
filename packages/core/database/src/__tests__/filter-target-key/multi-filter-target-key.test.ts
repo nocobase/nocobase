@@ -21,6 +21,60 @@ describe('multi filter target key', () => {
     await db.close();
   });
 
+  it('should get count of multi filter target keys', async () => {
+    const Student = db.collection({
+      name: 'students',
+      autoGenId: false,
+      filterTargetKey: ['name', 'classId'],
+      fields: [
+        {
+          name: 'name',
+          type: 'string',
+          primaryKey: true,
+        },
+        {
+          name: 'classId',
+          type: 'bigInt',
+          primaryKey: true,
+        },
+        {
+          name: 'age',
+          type: 'integer',
+        },
+      ],
+    });
+
+    await db.sync();
+
+    const s1 = await Student.repository.create({
+      values: {
+        name: 's1',
+        classId: 1,
+        age: 10,
+      },
+    });
+
+    const s2 = await Student.repository.create({
+      values: {
+        name: 's1',
+        classId: 2,
+        age: 10,
+      },
+    });
+
+    const s3 = await Student.repository.create({
+      values: {
+        name: 's3',
+        classId: 2,
+        age: 10,
+      },
+    });
+
+    const count = await Student.repository.count({});
+
+    expect(count).toBe(3);
+  });
+
   it('should set multi filter target keys', async () => {
     const Student = db.collection({
       name: 'students',

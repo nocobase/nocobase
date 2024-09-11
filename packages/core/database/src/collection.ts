@@ -187,6 +187,10 @@ export class Collection<
     return this.model.primaryKeyAttribute;
   }
 
+  isMultiFilterTargetKey() {
+    return Array.isArray(this.filterTargetKey) && this.filterTargetKey.length > 1;
+  }
+
   get name() {
     return this.options.name;
   }

@@ -326,7 +326,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
 
     const queryOptions: any = {
       ...options,
-      distinct: Boolean(this.collection.model.primaryKeyAttribute),
+      distinct: Boolean(this.collection.model.primaryKeyAttribute) && !this.collection.isMultiFilterTargetKey(),
     };
 
     if (queryOptions.include?.length === 0) {
