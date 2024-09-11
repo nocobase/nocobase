@@ -46,6 +46,10 @@ export interface VariablesContextType {
       appends?: string[];
       /** do not request when the association field is empty */
       doNotRequest?: boolean;
+      /**
+       * The operator related to the current field, provided when parsing the default value of the field
+       */
+      fieldOperator?: string | void;
     },
   ) => Promise<{
     value: any;

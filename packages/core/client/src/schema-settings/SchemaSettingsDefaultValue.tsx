@@ -208,11 +208,11 @@ export const SchemaSettingsDefaultValue = function DefaultValueConfigure(props: 
       const schema: ISchema = {
         ['x-uid']: fieldSchema['x-uid'],
       };
-      fieldSchema.default = v.default;
+      fieldSchema.default = v.default ?? null;
       if (!isVariable(v.default)) {
         field.setInitialValue?.(v.default);
       }
-      schema.default = v.default;
+      schema.default = v.default ?? null;
       dn.emit('patch', {
         schema,
         currentSchema,
