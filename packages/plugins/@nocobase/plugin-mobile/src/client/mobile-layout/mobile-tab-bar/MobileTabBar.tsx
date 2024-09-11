@@ -69,9 +69,9 @@ export const MobileTabBar: FC<MobileTabBarProps> & {
               styles.mobileTabBarList,
               css({
                 maxWidth: designable ? 'calc(100% - 58px)' : '100%',
-                '.nb-block-item': {
-                  maxWidth: `${100 / routeList.length}%`,
-                },
+                // '.nb-block-item': {
+                //   maxWidth: `${100 / routeList.length}%`,
+                // },
               }),
             )}
           >
