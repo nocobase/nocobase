@@ -547,7 +547,7 @@ export const Table: any = withDynamicSchemaProps(
             })
             .join('-');
         } else if (typeof rowKey === 'string') {
-          return record[rowKey]?.toString();
+          return record[rowKey];
         } else {
           // 如果 rowKey 是函数或未提供，使用 defaultRowKey
           return (rowKey ?? defaultRowKey)(record)?.toString();
@@ -784,6 +784,7 @@ export const Table: any = withDynamicSchemaProps(
           <MemoizedAntdTable
             ref={tableSizeRefCallback}
             rowKey={defaultRowKey}
+            // rowKey={(record) => record.id}
             dataSource={dataSource}
             tableLayout="auto"
             {...others}
