@@ -69,6 +69,7 @@
     "@nocobase/server": "1.4.0-alpha",
     "@nocobase/plugin-notification-mail-smtp": "1.4.0-alpha",
     "@nocobase/plugin-notification-manager": "1.4.0-alpha",
+    "@nocobase/plugin-notification-in-app": "1.4.0-alpha",
     "cronstrue": "^2.11.0"
   },
   "repository": {

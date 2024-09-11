@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-notification-in-app",
-  "version": "1.3.0-alpha",
+  "version": "1.4.0-alpha",
   "main": "dist/server/index.js",
   "dependencies": {
     "immer": "^10.1.1"

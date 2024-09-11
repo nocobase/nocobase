@@ -8,7 +8,7 @@
  */
 
 import React, { useMemo, useState } from 'react';
-import { Layout, List, Card, Descriptions, Typography, Badge, Button } from 'antd';
+import { Layout, List, Card, Descriptions, Typography, Badge, Button, Flex } from 'antd';
 import type { Group as MsgGroup } from './hooks/useChat';
 import { css } from '@emotion/css';
 import { dayjs } from '@nocobase/utils/client';
@@ -106,9 +106,9 @@ export const InboxContent = ({
             >
               <List.Item.Meta
                 title={
-                  <div>
-                    {item.title}
-                    <span
+                  <Flex justify="space-between">
+                    <div style={{ width: '100px', textOverflow: 'ellipsis' }}>{item.title}</div>
+                    <div
                       style={{
                         float: 'right',
                         fontWeight: 400,
@@ -117,8 +117,8 @@ export const InboxContent = ({
                       }}
                     >
                       {dayjs(item.latestMsgReceiveTimestamp).format('MM-DD HH:mm:ss')}
-                    </span>
-                  </div>
+                    </div>
+                  </Flex>
                 }
                 description={item.latestMsgTitle}
               />
