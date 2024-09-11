@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { PluginManager } from '@nocobase/server';
 import fg from 'fast-glob';
 import fs from 'fs-extra';
 import _ from 'lodash';
@@ -16,12 +17,19 @@ function splitNames(name: string) {
   return (name || '').split(',').filter(Boolean);
 }
 
-function trim(packageNames: string[]) {
-  return _.uniq(packageNames)
-    .filter(Boolean)
-    .map((packageName) => {
-      return packageName.replace('@nocobase/plugin-', '');
-    });
+async function trim(packageNames: string[]) {
+  const nameOrPkgs = _.uniq(packageNames).filter(Boolean);
+  const names = [];
+  for (const nameOrPkg of nameOrPkgs) {
+    const { name, packageName } = await PluginManager.parseName(nameOrPkg);
+    try {
+      await PluginManager.getPackageJson(packageName);
+      names.push(name);
+    } catch (error) {
+      //
+    }
+  }
+  return names;
 }
 
 export async function findPackageNames() {
@@ -83,7 +91,7 @@ export async function findLocalPlugins() {
   const plugins1 = await findNocobasePlugins();
   const plugins2 = await findPackageNames();
   const builtInPlugins = await findBuiltInPlugins();
-  const items = trim(
+  const items = await trim(
     _.difference(plugins1.concat(plugins2).concat(splitNames(APPEND_PRESET_LOCAL_PLUGINS)), builtInPlugins),
   );
   return items;

@@ -24,6 +24,10 @@ export class PresetNocoBase extends Plugin {
     return (await findLocalPlugins()).map((name) => name.split('>='));
   }
 
+  async findLocalPlugins() {
+    return await findLocalPlugins();
+  }
+
   async getAllPluginNames() {
     const plugins1 = await findBuiltInPlugins();
     const plugins2 = await findLocalPlugins();

@@ -13,6 +13,7 @@ const { dirname, resolve } = require('path');
 const { existsSync, mkdirSync, readFileSync, appendFileSync } = require('fs');
 const { readFile, writeFile } = require('fs').promises;
 const { createStoragePluginsSymlink, createDevPluginsSymlink } = require('@nocobase/utils/plugin-symlink');
+const { generatePlugins } = require('@nocobase/devtools/umiConfig');
 
 function writeToExclude() {
   const excludePath = resolve(process.cwd(), '.git', 'info', 'exclude');
@@ -41,7 +42,7 @@ module.exports = (cli) => {
     .option('--skip-umi')
     .action(async (options) => {
       writeToExclude();
-
+      generatePlugins();
       generatePlaywrightPath(true);
       await createStoragePluginsSymlink();
       if (!isDev()) {

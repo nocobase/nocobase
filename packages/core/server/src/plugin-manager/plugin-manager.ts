@@ -124,7 +124,8 @@ export class PluginManager {
   /**
    * @internal
    */
-  static async getPackageJson(packageName: string) {
+  static async getPackageJson(nameOrPkg: string) {
+    const { packageName } = await this.parseName(nameOrPkg);
     const file = await fs.promises.realpath(resolve(process.env.NODE_MODULES_PATH, packageName, 'package.json'));
     const data = await fs.promises.readFile(file, { encoding: 'utf-8' });
     return JSON.parse(data);
@@ -199,9 +200,7 @@ export class PluginManager {
    */
   static async resolvePlugin(pluginName: string | typeof Plugin, isUpgrade = false, isPkg = false) {
     if (typeof pluginName === 'string') {
-      const packageName = isPkg ? pluginName : await this.getPackageName(pluginName);
-      this.clearCache(packageName);
-
+      const { packageName } = await this.parseName(pluginName);
       return await importModule(packageName);
     } else {
       return pluginName;
@@ -301,16 +300,6 @@ export class PluginManager {
       await generator.run();
     };
     await createPlugin(pluginName);
-    try {
-      await this.app.db.auth({ retry: 1 });
-      const installed = await this.app.isInstalled();
-      if (!installed) {
-        console.log(`yarn pm add ${pluginName}`);
-        return;
-      }
-    } catch (error) {
-      return;
-    }
     this.app.log.info('attempt to add the plugin to the app');
     const { name, packageName } = await PluginManager.parseName(pluginName);
     const json = await PluginManager.getPackageJson(packageName);
@@ -319,15 +308,6 @@ export class PluginManager {
       packageName,
       version: json.version,
     });
-    // await this.repository.updateOrCreate({
-    //   values: {
-    //     name,
-    //     packageName,
-    //     version: json.version,
-    //   },
-    //   filterKeys: ['name'],
-    // });
-    // await sleep(1000);
     await tsxRerunning();
   }
 
@@ -526,18 +506,39 @@ export class PluginManager {
 
   async enable(nameOrPkg: string | string[]) {
     let pluginNames = nameOrPkg;
-    await this.repository.createByName(nameOrPkg);
     if (nameOrPkg === '*') {
-      const items = await this.repository.find();
-      pluginNames = items.map((item: any) => item.name);
+      const plugin = this.get('nocobase') as any;
+      pluginNames = await plugin.findLocalPlugins();
     }
     pluginNames = await this.sort(pluginNames);
+    try {
+      for (const name of pluginNames) {
+        const { name: pluginName } = await PluginManager.parseName(name);
+        await this.add(pluginName);
+        console.log('pluginName', pluginName);
+      }
+      for (const name of pluginNames) {
+        const { name: pluginName } = await PluginManager.parseName(name);
+        const plugin = this.get(pluginName);
+        await plugin.beforeLoad();
+      }
+      for (const name of pluginNames) {
+        const { name: pluginName } = await PluginManager.parseName(name);
+        const plugin = this.get(pluginName);
+        await plugin.loadCollections();
+        await plugin.load();
+      }
+    } catch (error) {
+      await this.app.tryReloadOrRestart({
+        recover: true,
+      });
+      throw error;
+    }
     this.app.log.debug(`enabling plugin ${pluginNames.join(',')}`);
     this.app.setMaintainingMessage(`enabling plugin ${pluginNames.join(',')}`);
     const toBeUpdated = [];
     for (const name of pluginNames) {
       const { name: pluginName } = await PluginManager.parseName(name);
-      console.log('pluginName', pluginName);
       const plugin = this.get(pluginName);
       if (!plugin) {
         throw new Error(`${pluginName} plugin does not exist`);
@@ -548,7 +549,6 @@ export class PluginManager {
       await this.app.emitAsync('beforeEnablePlugin', pluginName);
       try {
         await plugin.beforeEnable();
-        plugin.enabled = true;
         toBeUpdated.push(pluginName);
       } catch (error) {
         if (nameOrPkg === '*') {
@@ -561,16 +561,8 @@ export class PluginManager {
     if (toBeUpdated.length === 0) {
       return;
     }
-    await this.repository.update({
-      filter: {
-        name: toBeUpdated,
-      },
-      values: {
-        enabled: true,
-      },
-    });
     try {
-      await this.app.reload();
+      // await this.app.reload();
       this.app.log.debug(`syncing database in enable plugin ${toBeUpdated.join(',')}...`);
       this.app.setMaintainingMessage(`syncing database in enable plugin ${toBeUpdated.join(',')}...`);
       await this.app.db.sync();
@@ -583,32 +575,36 @@ export class PluginManager {
           plugin.installed = true;
         }
       }
-      await this.repository.update({
+      const values = [];
+      for (const pluginName of toBeUpdated) {
+        const { name } = await PluginManager.parseName(pluginName);
+        const packageJson = await PluginManager.getPackageJson(pluginName);
+        values.push({
+          name,
+          packageName: packageJson.name,
+          enabled: true,
+          installed: true,
+          version: packageJson.version,
+        });
+      }
+      await this.repository.destroy({
         filter: {
           name: toBeUpdated,
         },
-        values: {
-          installed: true,
-        },
+      });
+      await this.repository.create({
+        values: values,
       });
       for (const pluginName of toBeUpdated) {
         const plugin = this.get(pluginName);
         this.app.log.debug(`emit afterEnablePlugin event...`);
         await plugin.afterEnable();
+        plugin.enabled = true;
         await this.app.emitAsync('afterEnablePlugin', pluginName);
         this.app.log.debug(`afterEnablePlugin event emitted`);
       }
       await this.app.tryReloadOrRestart();
     } catch (error) {
-      await this.repository.update({
-        filter: {
-          name: toBeUpdated,
-        },
-        values: {
-          enabled: false,
-          installed: false,
-        },
-      });
       await this.app.tryReloadOrRestart({
         recover: true,
       });
@@ -638,32 +634,21 @@ export class PluginManager {
     if (toBeUpdated.length === 0) {
       return;
     }
-    await this.repository.update({
-      filter: {
-        name: toBeUpdated,
-      },
-      values: {
-        enabled: false,
-      },
-    });
     try {
-      await this.app.tryReloadOrRestart();
-      for (const pluginName of pluginNames) {
+      for (const pluginName of toBeUpdated) {
         const plugin = this.get(pluginName);
         this.app.log.debug(`emit afterDisablePlugin event...`);
         await plugin.afterDisable();
         await this.app.emitAsync('afterDisablePlugin', pluginName);
         this.app.log.debug(`afterDisablePlugin event emitted`);
       }
-    } catch (error) {
-      await this.repository.update({
+      await this.repository.destroy({
         filter: {
           name: toBeUpdated,
         },
-        values: {
-          enabled: true,
-        },
       });
+      await this.app.tryReloadOrRestart();
+    } catch (error) {
       await this.app.tryReloadOrRestart({
         recover: true,
       });
@@ -752,7 +737,8 @@ export class PluginManager {
       for (const packageName of urlOrName) {
         await this.addViaCLI(packageName, _.omit(options, 'name'), false);
       }
-      await execa('yarn', ['nocobase', 'postinstall']);
+      // await execa('yarn', ['nocobase', 'postinstall']);
+      // await tsxRerunning();
       return;
     }
     if (isURL(urlOrName)) {
@@ -783,7 +769,7 @@ export class PluginManager {
       );
     }
     if (emitStartedEvent) {
-      await execa('yarn', ['nocobase', 'postinstall']);
+      // await ('yarn', ['nocobase', 'postinstall']);
     }
   }
 
@@ -865,7 +851,7 @@ export class PluginManager {
       }
     }
     await copyTempPackageToStorageAndLinkToNodeModules(tempFile, tempPackageContentDir, packageName);
-    return this.add(name, { packageName }, true);
+    // return this.add(name, { packageName }, true);
   }
 
   async update(nameOrPkg: string | string[], options: PluginData, emitStartedEvent = true) {
@@ -950,7 +936,7 @@ export class PluginManager {
       repository: this.repository,
     });
     const { name } = await PluginManager.parseName(packageName);
-    await this.add(name, { name, version, packageName }, true, true);
+    // await this.add(name, { name, version, packageName }, true, true);
   }
 
   /**

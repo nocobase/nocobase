@@ -137,14 +137,14 @@ class IndexGenerator {
   generate() {
     this.generatePluginContent();
     if (process.env.NODE_ENV === 'production') return;
-    this.pluginsPath.forEach((pluginPath) => {
-      if (!fs.existsSync(pluginPath)) {
-        return;
-      }
-      fs.watch(pluginPath, { recursive: false }, () => {
-        this.generatePluginContent();
-      });
-    });
+    // this.pluginsPath.forEach((pluginPath) => {
+    //   if (!fs.existsSync(pluginPath)) {
+    //     return;
+    //   }
+    //   fs.watch(pluginPath, { recursive: false }, () => {
+    //     this.generatePluginContent();
+    //   });
+    // });
   }
 
   get indexContent() {
@@ -156,7 +156,11 @@ function devDynamicImport(packageName: string): Promise<any> {
   if (!fileName) {
     return Promise.resolve(null);
   }
-  return import(\`./packages/\${fileName}\`)
+  try {
+    return import(\`./packages/\${fileName}\`)
+  } catch (error) {
+    return Promise.resolve(null);
+  }
 }
 export default devDynamicImport;`;
   }
@@ -170,7 +174,7 @@ export default function devDynamicImport(packageName: string): Promise<any> {
 
   generatePluginContent() {
     if (fs.existsSync(this.outputPath)) {
-      fs.rmdirSync(this.outputPath, { recursive: true, force: true });
+      fs.rmSync(this.outputPath, { recursive: true, force: true });
     }
     fs.mkdirSync(this.outputPath);
     const validPluginPaths = this.pluginsPath.filter((pluginsPath) => fs.existsSync(pluginsPath));
@@ -247,3 +251,13 @@ export default function devDynamicImport(packageName: string): Promise<any> {
 exports.getUmiConfig = getUmiConfig;
 exports.resolveNocobasePackagesAlias = resolveNocobasePackagesAlias;
 exports.IndexGenerator = IndexGenerator;
+
+exports.generatePlugins = function () {
+  const pluginDirs = (process.env.PLUGIN_PATH || 'packages/plugins/,packages/samples/,packages/pro-plugins/')
+    .split(',')
+    .map((item) => path.join(process.cwd(), item));
+
+  const outputPluginPath = path.join(process.env.APP_PACKAGE_ROOT, 'client', 'src', '.plugins');
+  const indexGenerator = new IndexGenerator(outputPluginPath, pluginDirs);
+  indexGenerator.generate();
+};
