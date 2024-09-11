@@ -121,6 +121,12 @@ export class PluginManager {
     return this.app.db.getRepository('applicationPlugins') as PluginManagerRepository;
   }
 
+  static async packageExists(nameOrPkg: string) {
+    const { packageName } = await this.parseName(nameOrPkg);
+    const file = resolve(process.env.NODE_MODULES_PATH, packageName, 'package.json');
+    return fsExists(file);
+  }
+
   /**
    * @internal
    */
@@ -357,14 +363,6 @@ export class PluginManager {
     if (options.packageName) {
       this.pluginAliases.set(options.packageName, instance);
     }
-    // if (insert && options.name) {
-    //   await this.repository.updateOrCreate({
-    //     values: {
-    //       ...options,
-    //     },
-    //     filterKeys: ['name'],
-    //   });
-    // }
     await instance.afterAdd();
   }
 
@@ -512,19 +510,53 @@ export class PluginManager {
     }
     pluginNames = await this.sort(pluginNames);
     try {
+      const added = {};
       for (const name of pluginNames) {
         const { name: pluginName } = await PluginManager.parseName(name);
+        if (this.has(pluginName)) {
+          added[pluginName] = true;
+          continue;
+        }
         await this.add(pluginName);
-        console.log('pluginName', pluginName);
       }
       for (const name of pluginNames) {
         const { name: pluginName } = await PluginManager.parseName(name);
         const plugin = this.get(pluginName);
+        if (!plugin) {
+          throw new Error(`${pluginName} plugin does not exist`);
+        }
+        if (added[pluginName]) {
+          continue;
+        }
+        const instance = await this.repository.findOne({
+          filter: {
+            name: pluginName,
+          },
+        });
+        console.log('instanceinstance', instance);
+        if (instance) {
+          console.log('instance.enabled', instance.enabled);
+          console.log('instance.installed', instance.installed);
+          plugin.enabled = instance.enabled;
+          plugin.installed = instance.installed;
+        }
+        if (plugin.enabled) {
+          continue;
+        }
         await plugin.beforeLoad();
       }
       for (const name of pluginNames) {
         const { name: pluginName } = await PluginManager.parseName(name);
         const plugin = this.get(pluginName);
+        if (!plugin) {
+          throw new Error(`${pluginName} plugin does not exist`);
+        }
+        if (added[pluginName]) {
+          continue;
+        }
+        if (plugin.enabled) {
+          continue;
+        }
         await plugin.loadCollections();
         await plugin.load();
       }
@@ -562,7 +594,6 @@ export class PluginManager {
       return;
     }
     try {
-      // await this.app.reload();
       this.app.log.debug(`syncing database in enable plugin ${toBeUpdated.join(',')}...`);
       this.app.setMaintainingMessage(`syncing database in enable plugin ${toBeUpdated.join(',')}...`);
       await this.app.db.sync();
@@ -575,26 +606,21 @@ export class PluginManager {
           plugin.installed = true;
         }
       }
-      const values = [];
       for (const pluginName of toBeUpdated) {
         const { name } = await PluginManager.parseName(pluginName);
         const packageJson = await PluginManager.getPackageJson(pluginName);
-        values.push({
+        const values = {
           name,
-          packageName: packageJson.name,
+          packageName: packageJson?.name,
           enabled: true,
           installed: true,
-          version: packageJson.version,
+          version: packageJson?.version,
+        };
+        await this.repository.updateOrCreate({
+          values,
+          filterKeys: ['name'],
         });
       }
-      await this.repository.destroy({
-        filter: {
-          name: toBeUpdated,
-        },
-      });
-      await this.repository.create({
-        values: values,
-      });
       for (const pluginName of toBeUpdated) {
         const plugin = this.get(pluginName);
         this.app.log.debug(`emit afterEnablePlugin event...`);
@@ -642,9 +668,12 @@ export class PluginManager {
         await this.app.emitAsync('afterDisablePlugin', pluginName);
         this.app.log.debug(`afterDisablePlugin event emitted`);
       }
-      await this.repository.destroy({
+      await this.repository.update({
         filter: {
           name: toBeUpdated,
+        },
+        values: {
+          enabled: false,
         },
       });
       await this.app.tryReloadOrRestart();
@@ -769,7 +798,7 @@ export class PluginManager {
       );
     }
     if (emitStartedEvent) {
-      // await ('yarn', ['nocobase', 'postinstall']);
+      // await execa('yarn', ['nocobase', 'postinstall']);
     }
   }
 
@@ -816,7 +845,7 @@ export class PluginManager {
       }
     }
     await copyTempPackageToStorageAndLinkToNodeModules(tempFile, tempPackageContentDir, packageName);
-    return this.add(name, { packageName }, true);
+    // return this.add(name, { packageName }, true);
   }
 
   /**
