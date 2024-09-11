@@ -52,10 +52,23 @@ export async function findPackageNames() {
         return packageJson.name;
       }),
     );
+    const excludes = [
+      '@nocobase/plugin-audit-logs',
+      '@nocobase/plugin-backup-restore',
+      '@nocobase/plugin-charts',
+      '@nocobase/plugin-disable-pm-add',
+      '@nocobase/plugin-mobile-client',
+      '@nocobase/plugin-mock-collections',
+      '@nocobase/plugin-multi-app-share-collection',
+      '@nocobase/plugin-notifications',
+      '@nocobase/plugin-snapshot-field',
+      '@nocobase/plugin-workflow-test',
+    ];
     const nocobasePlugins = await findNocobasePlugins();
     const { APPEND_PRESET_BUILT_IN_PLUGINS = '', APPEND_PRESET_LOCAL_PLUGINS = '' } = process.env;
+    console.log(_.difference(packageNames, excludes));
     return trim(
-      packageNames
+      _.difference(packageNames, excludes)
         .filter(Boolean)
         .concat(nocobasePlugins)
         .concat(splitNames(APPEND_PRESET_BUILT_IN_PLUGINS))
@@ -91,8 +104,12 @@ export async function findLocalPlugins() {
   const plugins1 = await findNocobasePlugins();
   const plugins2 = await findPackageNames();
   const builtInPlugins = await findBuiltInPlugins();
+  const packageJson = await fs.readJson(path.resolve(__dirname, '../../package.json'));
   const items = await trim(
-    _.difference(plugins1.concat(plugins2).concat(splitNames(APPEND_PRESET_LOCAL_PLUGINS)), builtInPlugins),
+    _.difference(
+      plugins1.concat(plugins2).concat(splitNames(APPEND_PRESET_LOCAL_PLUGINS)),
+      builtInPlugins.concat(await trim(packageJson.deprecated)),
+    ),
   );
   return items;
 }

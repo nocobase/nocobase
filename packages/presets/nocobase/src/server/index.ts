@@ -8,6 +8,7 @@
  */
 
 import { Plugin, PluginManager } from '@nocobase/server';
+import _ from 'lodash';
 import { findBuiltInPlugins, findLocalPlugins } from './findPackageNames';
 
 export class PresetNocoBase extends Plugin {
@@ -34,8 +35,15 @@ export class PresetNocoBase extends Plugin {
     return [...plugins1, ...plugins2];
   }
 
+  async getAllPluginNamesAndDB() {
+    const items = await this.pm.repository.find();
+    const plugins1 = await findBuiltInPlugins();
+    const plugins2 = await findLocalPlugins();
+    return _.uniq([...plugins1, ...plugins2, ...items.map((item) => item.name)]);
+  }
+
   async getAllPlugins(locale = 'en-US') {
-    const plugins = await this.getAllPluginNames();
+    const plugins = await this.getAllPluginNamesAndDB();
     const packageJsons = [];
     for (const name of plugins) {
       packageJsons.push(await this.getPluginInfo(name, locale));
