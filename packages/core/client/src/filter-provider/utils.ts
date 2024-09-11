@@ -14,11 +14,12 @@ import { useCallback, useEffect, useState } from 'react';
 import { FilterTarget, findFilterTargets } from '../block-provider/hooks';
 import {
   CollectionFieldOptions_deprecated,
-  Collection_deprecated,
   FieldOptions,
   useCollectionManager_deprecated,
   useCollection_deprecated,
 } from '../collection-manager';
+import { Collection } from '../data-source/collection/Collection';
+import { useCollection } from '../data-source/collection/CollectionProvider';
 import { removeNullCondition } from '../schema-component';
 import { DataBlock, useFilterBlock } from './FilterProvider';
 
@@ -50,10 +51,7 @@ export const getSupportFieldsByAssociation = (inheritCollectionsChain: string[],
   );
 };
 
-export const getSupportFieldsByForeignKey = (
-  filterBlockCollection: ReturnType<typeof useCollection_deprecated>,
-  block: DataBlock,
-) => {
+export const getSupportFieldsByForeignKey = (filterBlockCollection: Collection, block: DataBlock) => {
   return block.foreignKeyFields?.filter((foreignKeyField) => {
     return filterBlockCollection.fields.some(
       (field) => field.type !== 'belongsTo' && field.foreignKey === foreignKeyField.name,
@@ -69,7 +67,7 @@ export const getSupportFieldsByForeignKey = (
 export const useSupportedBlocks = (filterBlockType: FilterBlockType) => {
   const { getDataBlocks } = useFilterBlock();
   const fieldSchema = useFieldSchema();
-  const collection = useCollection_deprecated();
+  const collection = useCollection();
   const { getAllCollectionsInheritChain } = useCollectionManager_deprecated();
 
   // Form 和 Collapse 仅支持同表的数据区块
@@ -146,7 +144,7 @@ export const transformToFilter = (
           key = `${key}.${collectionField.targetKey || 'id'}`;
         }
 
-        if (!value) {
+        if (!value && value !== 0 && value !== false) {
           return null;
         }
 
@@ -169,12 +167,12 @@ export const useAssociatedFields = () => {
 };
 
 export const isAssocField = (field?: FieldOptions) => {
-  return ['o2o', 'oho', 'obo', 'm2o', 'createdBy', 'updatedBy', 'o2m', 'm2m', 'linkTo', 'chinaRegion'].includes(
+  return ['o2o', 'oho', 'obo', 'm2o', 'createdBy', 'updatedBy', 'o2m', 'm2m', 'linkTo', 'chinaRegion', 'mbm'].includes(
     field?.interface,
   );
 };
 
-export const isSameCollection = (c1: Collection_deprecated, c2: Collection_deprecated) => {
+export const isSameCollection = (c1: Collection, c2: Collection) => {
   return c1.name === c2.name && c1.dataSource === c2.dataSource;
 };
 
@@ -190,7 +188,7 @@ export const useFilterAPI = () => {
 
   useEffect(() => {
     setIsConnected(targets && targets.some((target) => dataBlocks.some((dataBlock) => dataBlock.uid === target.uid)));
-  }, [targetsKeys.length, dataBlocks]);
+  }, [targetsKeys.length, targets, dataBlocks]);
 
   const doFilter = useCallback(
     (
@@ -242,7 +240,7 @@ export const useFilterAPI = () => {
         );
       });
     },
-    [dataBlocks],
+    [dataBlocks, targets, uid],
   );
 
   return {

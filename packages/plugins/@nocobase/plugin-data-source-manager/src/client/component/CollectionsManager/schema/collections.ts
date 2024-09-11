@@ -9,9 +9,10 @@
 
 import { ISchema, Schema } from '@formily/react';
 import { uid } from '@formily/shared';
+import { CollectionOptions, i18n, useAPIClient } from '@nocobase/client';
 import { message } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { useAPIClient, i18n, CollectionOptions } from '@nocobase/client';
+import { CollectionTitle } from '../CollectionTitle';
 
 export const compile = (source) => {
   return Schema.compile(source, { t: i18n.t });
@@ -30,7 +31,7 @@ export const collection: CollectionOptions = {
       uiSchema: {
         title: '{{ t("Collection display name") }}',
         type: 'number',
-        'x-component': 'Input',
+        'x-component': CollectionTitle,
         required: true,
       },
     },
@@ -168,7 +169,7 @@ export const collectionTableSchema: ISchema = {
             role: 'button',
             isBulk: true,
           },
-          'x-visible': false,
+          'x-visible': '{{allowCollectionDeletion}}',
         },
         create: {
           type: 'void',
@@ -177,7 +178,7 @@ export const collectionTableSchema: ISchema = {
           'x-component-props': {
             type: 'primary',
           },
-          'x-visible': false,
+          'x-visible': '{{allowCollectionCreate}}',
         },
       },
     },
@@ -298,6 +299,7 @@ export const collectionTableSchema: ISchema = {
                       },
                     },
                   },
+                  'x-hidden': '{{disabledConfigureFields}}',
                 },
                 update: {
                   type: 'void',
@@ -312,7 +314,7 @@ export const collectionTableSchema: ISchema = {
                 delete: {
                   type: 'void',
                   title: '{{ t("Delete") }}',
-                  'x-visible': false,
+                  'x-visible': '{{allowCollectionDeletion}}',
                   'x-component': 'DeleteCollection',
                   'x-component-props': {
                     role: 'button',

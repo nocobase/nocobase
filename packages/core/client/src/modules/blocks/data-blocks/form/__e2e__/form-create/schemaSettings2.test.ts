@@ -13,7 +13,7 @@ import {
   oneTableBlockWithAddNewAndViewAndEditAndBasicFields,
   test,
 } from '@nocobase/test/e2e';
-import { T2165, T3251, T3806, T3815 } from './templatesOfBug';
+import { T2165, T3251, T3806, T3815, expressionTemplateInLinkageRules, T4891 } from './templatesOfBug';
 
 test.describe('linkage rules', () => {
   test('basic usage', async ({ page, mockPage }) => {
@@ -86,6 +86,7 @@ test.describe('linkage rules', () => {
       'Constant',
       'Current user',
       'Current role',
+      'API token',
       'Date variables',
       'Current form',
     ]);
@@ -161,7 +162,13 @@ test.describe('linkage rules', () => {
     await page.getByText('Expression').click();
 
     await page.getByText('xSelect a variable').click();
-    await expectSupportedVariables(page, ['Current user', 'Current role', 'Date variables', 'Current form']);
+    await expectSupportedVariables(page, [
+      'Current user',
+      'Current role',
+      'API token',
+      'Date variables',
+      'Current form',
+    ]);
     await page.getByRole('menuitemcheckbox', { name: 'Current form right' }).click();
     await page.getByRole('menuitemcheckbox', { name: 'number' }).click();
     await page.getByRole('button', { name: 'OK', exact: true }).click();
@@ -288,5 +295,63 @@ test.describe('linkage rules', () => {
     await expect(page.getByLabel('block-item-CardItem-general-')).toBeVisible();
     await page.getByLabel('action-Action-Add new-create-').click();
     await expect(page.getByRole('spinbutton')).toHaveValue('88');
+  });
+
+  test('expression', async ({ page, mockPage }) => {
+    // 这里联动规则的表达式是 SUM({{$nForm.m2m.number2}})
+    await mockPage(expressionTemplateInLinkageRules).goto();
+
+    // 1. 一开始 number1 字段的值是 0
+    await expect(
+      page.getByLabel('block-item-CollectionField-general1-form-general1.number1-number1').getByRole('spinbutton'),
+    ).toHaveValue('0');
+
+    // 2. 为 m2m 字段添加一条数据，并将 number2 字段的值设置为 1，此时 number1 字段的值应该是 1
+    await page.getByRole('button', { name: 'Add new' }).click();
+    await page
+      .getByLabel('block-item-CollectionField-general2-form-general2.number2-number2')
+      .getByRole('spinbutton')
+      .fill('1');
+    await expect(
+      page.getByLabel('block-item-CollectionField-general1-form-general1.number1-number1').getByRole('spinbutton'),
+    ).toHaveValue('1');
+
+    // 3. 再为 m2m 字段添加一条数据，并将 number2 字段的值设置为 2，此时 number1 字段的值应该是 3
+    await page.getByRole('button', { name: 'Add new' }).click();
+    await page.getByRole('row', { name: 'table-index-2 block-item-' }).getByRole('spinbutton').fill('2');
+    await expect(
+      page.getByLabel('block-item-CollectionField-general1-form-general1.number1-number1').getByRole('spinbutton'),
+    ).toHaveValue('3');
+  });
+  test('field are set from not displayed to displayed and required', async ({ page, mockPage }) => {
+    await mockPage(T4891).goto();
+
+    await expect(page.getByLabel('block-item-CardItem-general-')).toBeVisible();
+
+    // 初始化时select没有值,name 必填
+    await expect(
+      page.getByLabel('block-item-CollectionField-general-form-general.name-name').locator('.ant-formily-item-label'),
+    ).toContainText('*name');
+
+    //select 为111,name 隐藏
+    await page.getByLabel('block-item-CollectionField-general-form-general.select-select').click();
+    await page.getByText('111').click();
+
+    await expect(page.getByLabel('block-item-CollectionField-general-form-general.name-name')).not.toBeVisible();
+
+    //select 为333,name 显示且必填
+    await page.getByTestId('select-single').click();
+    await page.getByText('333').click();
+    await expect(
+      page.getByLabel('block-item-CollectionField-general-form-general.name-name').locator('.ant-formily-item-label'),
+    ).toContainText('*name');
+
+    //select 为222,name 显示且非必填
+    await page.getByLabel('block-item-CollectionField-general-form-general.select-select').click();
+    await page.getByText('222').click();
+
+    await expect(
+      page.getByLabel('block-item-CollectionField-general-form-general.name-name').locator('.ant-formily-item-label'),
+    ).not.toContainText('*name');
   });
 });

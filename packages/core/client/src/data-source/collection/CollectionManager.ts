@@ -8,6 +8,7 @@
  */
 
 import type { SchemaKey } from '@formily/json-schema';
+import qs from 'qs';
 import type { DataSource } from '../data-source';
 import type { CollectionFieldOptions, CollectionOptions, GetCollectionFieldPredicate } from './Collection';
 
@@ -138,6 +139,69 @@ export class CollectionManager {
 
   getCollectionFields(collectionName: string, predicate?: GetCollectionFieldPredicate) {
     return this.getCollection(collectionName)?.getFields(predicate) || [];
+  }
+
+  /**
+   * @example
+   * getFilterByTK('users', { id: 1 }); // 1
+   * getFilterByTK('users.profile', { name: 'name' }); // name
+   *
+   * @param collectionOrAssociation - collection name or association name
+   * @param collectionRecordOrAssociationRecord - collection record or association record
+   * @returns the value of the filterByTK
+   */
+  getFilterByTK(
+    collectionOrAssociation: string | Collection,
+    collectionRecordOrAssociationRecord: Record<string, any>,
+  ) {
+    if (!collectionOrAssociation || !collectionRecordOrAssociationRecord) {
+      console.error(
+        '@nocobase/client]: CollectionManager.getFilterByTK() collectionOrAssociation or collectionRecordOrAssociationRecord is invalid',
+      );
+      return;
+    }
+    const getTargetKey = (collection: Collection) => collection.filterTargetKey || collection.getPrimaryKey() || 'id';
+
+    const buildFilterByTk = (targetKey: string | string[], record: Record<string, any>) => {
+      if (Array.isArray(targetKey)) {
+        const filterByTk = {};
+        targetKey.forEach((key) => {
+          filterByTk[key] = record[key];
+        });
+        return qs.stringify(filterByTk);
+      } else {
+        return record[targetKey];
+      }
+    };
+
+    if (collectionOrAssociation instanceof Collection) {
+      const targetKey = getTargetKey(collectionOrAssociation);
+      return buildFilterByTk(targetKey, collectionRecordOrAssociationRecord);
+    }
+
+    if (collectionOrAssociation.includes('.')) {
+      const field = this.getCollectionField(collectionOrAssociation);
+      // 字段不存在，返回空
+      if (!field) {
+        console.error(
+          `[@nocobase/client]: CollectionManager.getFilterByTK() field "${collectionOrAssociation}" is invalid`,
+        );
+        return;
+      }
+      if (field.targetKey) {
+        return collectionRecordOrAssociationRecord[field.targetKey];
+      }
+    }
+    const targetCollection = this.getCollection(collectionOrAssociation);
+
+    if (!targetCollection) {
+      console.error(
+        `[@nocobase/client]: CollectionManager.getFilterByTK() collection "${collectionOrAssociation}" is invalid`,
+      );
+      return;
+    }
+    const targetKey = getTargetKey(targetCollection);
+    return buildFilterByTk(targetKey, collectionRecordOrAssociationRecord);
   }
 
   getSourceKeyByAssociation(associationName: string) {

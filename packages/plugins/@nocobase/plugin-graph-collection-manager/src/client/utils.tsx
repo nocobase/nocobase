@@ -59,7 +59,7 @@ export const getChildrenCollections = (collections, name) => {
 };
 export const formatData = (data) => {
   const edgeData = [];
-  const targetTablekeys = [];
+  const targetTableKeys = [];
 
   const tableData = data.map((item) => {
     const ports = [];
@@ -85,10 +85,10 @@ export const formatData = (data) => {
           group: 'list',
           ...field,
         });
-      ['obo', 'oho', 'o2o', 'o2m', 'm2o', 'm2m', 'linkTo'].includes(field.interface) && edgeData.push(field);
+      ['obo', 'oho', 'o2o', 'o2m', 'm2o', 'm2m', 'linkTo', 'mbm'].includes(field.interface) && edgeData.push(field);
     });
 
-    targetTablekeys.push(item.name);
+    targetTableKeys.push(item.name);
     const portsData = formatPortData(ports);
     return {
       id: item.name,
@@ -101,7 +101,7 @@ export const formatData = (data) => {
       item: item,
     };
   });
-  const edges = formatRelationEdgeData(edgeData, targetTablekeys, tableData);
+  const edges = formatRelationEdgeData(edgeData, targetTableKeys, tableData);
   const inheritEdges = formatInheritEdgeData(data);
   return { nodesData: tableData, edgesData: edges, inheritEdges };
 };
@@ -111,7 +111,7 @@ export const formatPortData = (ports) => {
     if (
       v.isForeignKey ||
       v.primaryKey ||
-      ['obo', 'oho', 'o2o', 'o2m', 'm2o', 'm2m', 'linkTo', 'id'].includes(v.interface)
+      ['obo', 'oho', 'o2o', 'o2m', 'm2o', 'm2m', 'linkTo', 'id', 'mbm'].includes(v.interface)
     ) {
       return 'initPorts';
     } else {
@@ -470,6 +470,8 @@ const getRelationship = (relatioship) => {
     case 'obo':
     case 'oho':
       return ['1', '1'];
+    case 'mbm':
+      return ['N', 'N'];
     default:
       return [];
   }

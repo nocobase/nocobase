@@ -8,14 +8,38 @@
  */
 
 import { ISchema } from '@formily/react';
-import { defaultProps, operators, unique, primaryKey } from './properties';
-import { i18n } from '../../i18n';
+import { isArr, isEmpty, isValid } from '@formily/shared';
 import { registerValidateRules } from '@formily/validator';
 import { CollectionFieldInterface } from '../../data-source/collection-field-interface/CollectionFieldInterface';
+import { i18n } from '../../i18n';
+import { defaultProps, operators, primaryKey, unique } from './properties';
+
+const isValidateEmpty = (value: any) => {
+  if (isArr(value)) {
+    for (let i = 0; i < value.length; i++) {
+      if (isValid(value[i])) return false;
+    }
+    return true;
+  } else {
+    //compat to draft-js
+    if (value?.getCurrentContent) {
+      /* istanbul ignore next */
+      return !value.getCurrentContent()?.hasText();
+    }
+    return isEmpty(value);
+  }
+};
 
 registerValidateRules({
   username(value) {
-    return /^[^@.<>"'/]{2,16}$/.test(value) || i18n.t('Must be 2-16 characters in length (excluding @.<>"\'/)');
+    return /^[^@.<>"'/]{1,50}$/.test(value) || i18n.t('Must be 1-50 characters in length (excluding @.<>"\'/)');
+  },
+  required(value, rule) {
+    if (rule.required === false) return '';
+    if (typeof value === 'string') {
+      value = value.trim();
+    }
+    return isValidateEmpty(value) ? rule.message : '';
   },
 });
 

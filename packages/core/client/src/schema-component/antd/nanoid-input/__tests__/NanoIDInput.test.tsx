@@ -8,11 +8,11 @@
  */
 
 import { BlockSchemaComponentPlugin } from '@nocobase/client';
-import { screen, renderApp, renderReadPrettyApp, userEvent, waitFor } from '@nocobase/test/client';
+import { screen, renderAppOptions, renderReadPrettyApp, userEvent, waitFor } from '@nocobase/test/client';
 
 describe('NanoIDInput', () => {
   test('basic', async () => {
-    await renderApp({
+    await renderAppOptions({
       designable: true,
       enableUserListDataBlock: true,
       schema: {

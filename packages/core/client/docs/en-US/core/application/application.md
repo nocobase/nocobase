@@ -20,6 +20,7 @@ export interface ApplicationOptions {
   schemaInitializers?: SchemaInitializer[];
   loadRemotePlugins?: boolean;
   dataSourceManager?: DataSourceManagerOptions;
+  addFieldInterfaceComponentOption(fieldName: string, componentOption: CollectionFieldInterfaceComponentOption): void;
 }
 ```
 
@@ -35,6 +36,7 @@ export interface ApplicationOptions {
 - `schemaInitializers`: Schema addition tool. For more information, refer to: [SchemaInitializerManager](/core/ui-schema/schema-initializer-manager)
 - `loadRemotePlugins`: Used to control whether to load remote plugins. Default is `false`, meaning remote plugins are not loaded (convenient for unit testing and DEMO environments).
 - `dataSourceManager`: Data source manager. For more details, refer to: [DataSourceManager](/core/data-source/data-source-manager)
+- `addFieldInterfaceComponentOption`: Add field interface component options. For more details, refer to: [CollectionFieldInterfaceManager](/core/data-source/collection-field-interface-manager#addfieldinterfacecomponentoption)
 
 ## Example
 
@@ -323,6 +325,42 @@ function useSomeThing() {}
 const anyVar = '';
 
 app.addScopes({ useSomeThing, anyVar })
+```
+
+### app.getCollectionManager()
+
+Get the [collection manager](/core/data-source/collection-manager) instance of the specified data source.
+
+- Type
+
+```tsx | pure
+class Application {
+  getCollectionManager(dataSource?: string): CollectionManager;
+}
+```
+
+- Example
+
+```tsx | pure
+app.getCollectionManager() // Get the default data source collection manager
+app.getCollectionManager('test') // Get the specified data source collection manager
+```
+
+### app.addFieldInterfaceComponentOption()
+
+Add field interface component option.
+
+For a detailed introduction, please refer to: [CollectionFieldInterfaceManager](/core/data-source/collection-field-interface-manager#addfieldinterfacecomponentoption)
+
+```tsx | pure
+class MyPlugin extends Plugin {
+  async load() {
+    this.app.addFieldInterfaceComponentOption('url', {
+      label: 'Preview',
+      value: 'Input.Preview',
+    });
+  }
+}
 ```
 
 ## Hooks

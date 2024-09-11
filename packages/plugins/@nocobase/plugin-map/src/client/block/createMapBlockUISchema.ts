@@ -16,7 +16,6 @@ export const createMapBlockUISchema = (options: {
   fieldNames: object;
 }): ISchema => {
   const { collectionName, fieldNames, dataSource } = options;
-
   return {
     type: 'void',
     'x-acl-action': `${collectionName}:list`,
@@ -40,11 +39,7 @@ export const createMapBlockUISchema = (options: {
         type: 'void',
         'x-initializer': 'map:configureActions',
         'x-component': 'ActionBar',
-        'x-component-props': {
-          style: {
-            marginBottom: 16,
-          },
-        },
+        'x-component-props': {},
       },
       [uid()]: {
         type: 'void',
@@ -53,7 +48,7 @@ export const createMapBlockUISchema = (options: {
         properties: {
           drawer: {
             type: 'void',
-            'x-component': 'Action.Drawer',
+            'x-component': 'Action.Container',
             'x-component-props': {
               className: 'nb-action-popup',
             },

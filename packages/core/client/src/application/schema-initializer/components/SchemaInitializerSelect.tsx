@@ -45,7 +45,7 @@ export const SchemaInitializerSelect: FC<SchemaInitializerSelectItemProps> = (pr
   );
 
   return (
-    <SchemaInitializerItem {...others}>
+    <SchemaInitializerItem closeInitializerMenuWhenClick={false} {...others}>
       <div style={{ alignItems: 'center', display: 'flex', justifyContent: 'space-between' }}>
         {title}
         <Select

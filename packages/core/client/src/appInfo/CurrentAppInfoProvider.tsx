@@ -22,6 +22,7 @@ export const useCurrentAppInfo = () => {
       };
       lang: string;
       version: string;
+      exportLimit?: number;
     };
   }>(CurrentAppInfoContext);
 };

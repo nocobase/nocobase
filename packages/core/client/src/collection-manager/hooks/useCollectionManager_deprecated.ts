@@ -7,17 +7,17 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { uid } from '@formily/shared';
 import { CascaderProps } from 'antd';
 import _ from 'lodash';
 import { useCallback, useMemo, useState } from 'react';
-import { useCompile, useSchemaComponentContext } from '../../schema-component';
-import { CollectionFieldOptions_deprecated, CollectionOptions } from '../types';
-import { InheritanceCollectionMixin } from '../mixins/InheritanceCollectionMixin';
-import { uid } from '@formily/shared';
+import { useCollectionManager } from '../../data-source/collection/CollectionManagerProvider';
+import { DEFAULT_DATA_SOURCE_KEY } from '../../data-source/data-source/DataSourceManager';
 import { useDataSourceManager } from '../../data-source/data-source/DataSourceManagerProvider';
 import { useDataSource } from '../../data-source/data-source/DataSourceProvider';
-import { DEFAULT_DATA_SOURCE_KEY } from '../../data-source/data-source/DataSourceManager';
-import { useCollectionManager } from '../../data-source/collection/CollectionManagerProvider';
+import { useCompile, useSchemaComponentContext } from '../../schema-component';
+import { InheritanceCollectionMixin } from '../mixins/InheritanceCollectionMixin';
+import { CollectionFieldOptions_deprecated, CollectionOptions } from '../types';
 
 /**
  * @deprecated use `useCollectionManager` instead
@@ -273,9 +273,12 @@ export const useCollectionManager_deprecated = (dataSourceName?: string) => {
   );
 
   // 是否可以作为标题字段
-  const isTitleField = (field) => {
-    return !field.isForeignKey && getInterface(field.interface)?.titleUsable;
-  };
+  const isTitleField = useCallback(
+    (field) => {
+      return getInterface(field.interface)?.titleUsable;
+    },
+    [getInterface],
+  );
 
   const getParentCollectionFields = useCallback(
     (parentCollection, currentCollection, customDataSource?: string) => {

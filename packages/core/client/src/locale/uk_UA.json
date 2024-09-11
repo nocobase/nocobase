@@ -104,8 +104,8 @@
   "Set the data scope": "Встановити обсяг даних",
   "Data loading mode": "Режим завантаження даних",
   "Set data loading mode": "Встановити режим завантаження даних",
-  "Automatically load data": "Автоматично завантажувати дані",
-  "Load data after filtering": "Завантажувати дані після фільтрації",
+  "Load all data when filter is empty": "Завантажувати всі дані, коли фільтр порожній",
+  "Do not load data when filter is empty": "Не завантажувати дані, коли фільтр порожній",
   "Data blocks": "Блоки даних",
   "Filter blocks": "Блоки фільтрів",
   "Table": "Таблиця",
@@ -637,6 +637,7 @@
   "Current collection": "Поточна колекція",
   "Other collections": "Інші колекції",
   "Current popup record": "Поточний запис спливаючого вікна",
+  "Parent popup record": "Батьківський запис спливаючого вікна",
   "Associated records": "Пов'язані записи",
   "Parent record": "Батьківський запис",
   "Current time": "Поточний час",
@@ -778,5 +779,11 @@
   "Home page": "Домашня сторінка",
   "Handbook": "Посібник користувача",
   "License": "Ліцензія",
-  "This variable has been deprecated and can be replaced with \"Current form\"": "Змінна була застарілою; \"Поточна форма\" може бути використана як заміна"
+  "This variable has been deprecated and can be replaced with \"Current form\"": "Змінна була застарілою; \"Поточна форма\" може бути використана як заміна",
+  "The value of this variable is derived from the query string of the page URL. This variable can only be used normally when the page has a query string.": "Значення цієї змінної походить з рядка запиту URL-адреси сторінки. Цю змінну можна використовувати нормально лише тоді, коли у сторінки є рядок запиту.",
+  "URL search params": "Параметри пошуку URL",
+  "Expand All": "Розгорнути все",
+  "Clear default value": "Очистити значення за замовчуванням",
+  "Open in new window": "Відкрити в новому вікні",
+  "Sorry, the page you visited does not exist.": "Вибачте, сторінка, яку ви відвідали, не існує."
 }

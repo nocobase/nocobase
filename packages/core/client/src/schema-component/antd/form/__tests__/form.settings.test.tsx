@@ -7,14 +7,16 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { BlockSchemaComponentPlugin, FormBlockProvider, VariablesProvider } from '@nocobase/client';
-import { checkSettings, renderApp } from '@nocobase/test/client';
+import { checkSettings, renderAppOptions } from '@nocobase/test/client';
 import { withSchema } from '@nocobase/test/web';
+import { BlockSchemaComponentPlugin } from '../../../../block-provider/BlockSchemaComponentProvider';
+import { FormBlockProvider } from '../../../../block-provider/FormBlockProvider';
+import VariablesProvider from '../../../../variables/VariablesProvider';
 
 describe('form.settings', () => {
   test('new schema version', async () => {
     const FormBlockProviderWithSchema = withSchema(FormBlockProvider);
-    await renderApp({
+    await renderAppOptions({
       designable: true,
       schema: {
         _isJSONSchemaObject: true,

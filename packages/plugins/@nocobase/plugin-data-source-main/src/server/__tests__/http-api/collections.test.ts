@@ -84,6 +84,41 @@ describe('collections repository', () => {
     await app.destroy();
   });
 
+  it('should throw error when create field with same name', async () => {
+    const response = await agent.resource('collections').create({
+      values: {
+        name: 'test',
+        autoGenId: false,
+        sortable: false,
+        timestamps: false,
+      },
+    });
+
+    expect(response.statusCode).toBe(200);
+
+    const response2 = await agent.resource('fields').create({
+      values: {
+        name: 'field',
+        type: 'string',
+        collectionName: 'test',
+      },
+    });
+
+    expect(response2.statusCode).toBe(200);
+
+    const response3 = await agent.resource('fields').create({
+      values: {
+        name: 'field',
+        type: 'string',
+        collectionName: 'test',
+      },
+    });
+
+    expect(response3.statusCode).toBe(400);
+    const responseBody = response3.body;
+    console.log(responseBody);
+  });
+
   it('should skip sync when create empty collection', async () => {
     const response = await agent.resource('collections').create({
       values: {
@@ -546,5 +581,14 @@ describe('collections repository', () => {
         (index) => index.unique == true && index.fields[0].attribute == columnName && index.fields.length === 1,
       ),
     ).not.toBeDefined();
+  });
+
+  it('should get collection list with unavailableActions', async () => {
+    const response = await app.agent().resource('collections').list();
+    expect(response.statusCode).toBe(200);
+    const data = response.body.data;
+    const firstCollection = data[0];
+    const collectionInMemory = app.db.getCollection(firstCollection.name);
+    expect(firstCollection.unavailableActions).toEqual(collectionInMemory.unavailableActions());
   });
 });

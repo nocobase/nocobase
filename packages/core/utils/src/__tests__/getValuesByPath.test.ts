@@ -90,6 +90,14 @@ describe('getValuesByPath', () => {
     expect(result).toEqual(null);
   });
 
+  it('when return is null', () => {
+    const obj = {
+      a: { b: null },
+    };
+    const result = getValuesByPath(obj, 'a.b');
+    expect(result).toEqual(null);
+  });
+
   it('should return empty array when obj key value is undefined', () => {
     const obj = {
       a: undefined,

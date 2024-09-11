@@ -9,12 +9,7 @@
 
 import { useForm } from '@formily/react';
 
-import {
-  SchemaInitializerItemType,
-  useCollectionDataSource,
-  useCollectionManager_deprecated,
-  useCompile,
-} from '@nocobase/client';
+import { SchemaInitializerItemType, parseCollectionName, useCollectionDataSource, useCompile } from '@nocobase/client';
 import {
   Trigger,
   CollectionBlockInitializer,
@@ -22,6 +17,7 @@ import {
   useWorkflowAnyExecuted,
   CheckboxGroupWithTooltip,
   RadioWithTooltip,
+  useGetCollectionFields,
 } from '@nocobase/plugin-workflow/client';
 import { NAMESPACE, useLang } from '../locale';
 
@@ -32,9 +28,65 @@ const COLLECTION_TRIGGER_ACTION = {
   DESTROY: 'destroy',
 };
 
+function useVariables(config, options) {
+  const [dataSourceName, collection] = parseCollectionName(config.collection);
+  const compile = useCompile();
+  const getCollectionFields = useGetCollectionFields(dataSourceName);
+  const getMainCollectionFields = useGetCollectionFields();
+
+  const langTriggerData = useLang('Trigger data');
+  const langUserSubmittedForm = useLang('User submitted action');
+  const langRoleSubmittedForm = useLang('Role of user submitted action');
+  const result = [
+    ...getCollectionFieldOptions({
+      // depth,
+      appends: ['data', ...(config.appends?.map((item) => `data.${item}`) || [])],
+      ...options,
+      fields: [
+        {
+          collectionName: collection,
+          name: 'data',
+          type: 'hasOne',
+          target: collection,
+          uiSchema: {
+            title: langTriggerData,
+          },
+        },
+      ],
+      compile,
+      getCollectionFields,
+    }),
+    ...getCollectionFieldOptions({
+      // depth,
+      appends: ['user'],
+      ...options,
+      fields: [
+        {
+          collectionName: 'users',
+          name: 'user',
+          type: 'hasOne',
+          target: 'users',
+          uiSchema: {
+            title: langUserSubmittedForm,
+          },
+        },
+        {
+          name: 'roleName',
+          uiSchema: {
+            title: langRoleSubmittedForm,
+          },
+        },
+      ],
+      compile,
+      getCollectionFields: getMainCollectionFields,
+    }),
+  ];
+  return result;
+}
+
 export default class extends Trigger {
   title = `{{t("Post-action event", { ns: "${NAMESPACE}" })}}`;
-  description = `{{t('Triggered after the completion of a request initiated through an action button or API, such as after adding, updating, or deleting data. Suitable for data processing, sending notifications, etc., after actions are completed.', { ns: "${NAMESPACE}" })}}`;
+  description = `{{t('Triggered after the completion of a request initiated through an action button or API, such as after adding or updating data. Suitable for data processing, sending notifications, etc., after actions are completed.', { ns: "${NAMESPACE}" })}}`;
   fieldset = {
     collection: {
       type: 'string',
@@ -153,53 +205,7 @@ export default class extends Trigger {
   isActionTriggerable = (config, context) => {
     return !config.global && ['submit', 'customize:save', 'customize:update'].includes(context.buttonAction);
   };
-  useVariables(config, options) {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    const compile = useCompile();
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    const { getCollectionFields } = useCollectionManager_deprecated();
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    const langTriggerData = useLang('Trigger data');
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    const langUserSubmittedForm = useLang('User submitted action');
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    const langRoleSubmittedForm = useLang('Role of user submitted action');
-    const rootFields = [
-      {
-        collectionName: config.collection,
-        name: 'data',
-        type: 'hasOne',
-        target: config.collection,
-        uiSchema: {
-          title: langTriggerData,
-        },
-      },
-      {
-        collectionName: 'users',
-        name: 'user',
-        type: 'hasOne',
-        target: 'users',
-        uiSchema: {
-          title: langUserSubmittedForm,
-        },
-      },
-      {
-        name: 'roleName',
-        uiSchema: {
-          title: langRoleSubmittedForm,
-        },
-      },
-    ];
-    const result = getCollectionFieldOptions({
-      // depth,
-      appends: ['data', 'user', ...(config.appends?.map((item) => `data.${item}`) || [])],
-      ...options,
-      fields: rootFields,
-      compile,
-      getCollectionFields,
-    });
-    return result;
-  }
+  useVariables = useVariables;
   useInitializers(config): SchemaInitializerItemType | null {
     if (!config.collection) {
       return null;

@@ -7,8 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React from 'react';
 import { uid } from '@formily/shared';
+import React from 'react';
 import { useSchemaInitializerItem } from '../../application';
 import { InitializerWithSwitch } from './InitializerWithSwitch';
 
@@ -18,8 +18,12 @@ export const TableActionColumnInitializer = () => {
     title: '{{ t("Actions") }}',
     'x-decorator': 'TableV2.Column.ActionBar',
     'x-component': 'TableV2.Column',
-    'x-designer': 'TableV2.ActionColumnDesigner',
+    'x-toolbar': 'TableColumnSchemaToolbar',
     'x-initializer': 'table:configureItemActions',
+    'x-settings': 'fieldSettings:TableColumn',
+    'x-toolbar-props': {
+      initializer: 'table:configureItemActions',
+    },
     'x-action-column': 'actions',
     properties: {
       [uid()]: {

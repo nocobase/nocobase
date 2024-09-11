@@ -7,36 +7,45 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { css } from '@emotion/css';
 import { Field, Form } from '@formily/core';
 import { SchemaExpressionScopeContext, useField, useFieldSchema, useForm } from '@formily/react';
 import { untracked } from '@formily/reactive';
+import { evaluators } from '@nocobase/evaluators/client';
 import { isURL, parse } from '@nocobase/utils/client';
 import { App, message } from 'antd';
 import _ from 'lodash';
 import get from 'lodash/get';
 import omit from 'lodash/omit';
-import { ChangeEvent, useCallback, useContext, useEffect } from 'react';
+import qs from 'qs';
+import { ChangeEvent, useCallback, useContext, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
+import { NavigateFunction } from 'react-router-dom';
 import { useReactToPrint } from 'react-to-print';
 import {
   AssociationFilter,
+  useCollection,
   useCollectionRecord,
   useDataSourceHeaders,
   useFormActiveFields,
-  useFormBlockContext,
+  useParsedFilter,
+  useRouterBasename,
   useTableBlockContext,
 } from '../..';
 import { useAPIClient, useRequest } from '../../api-client';
+import { useNavigateNoUpdate } from '../../application/CustomRouterContextProvider';
+import { useFormBlockContext } from '../../block-provider/FormBlockProvider';
 import { useCollectionManager_deprecated, useCollection_deprecated } from '../../collection-manager';
-import { useFilterBlock } from '../../filter-provider/FilterProvider';
+import { DataBlock, useFilterBlock } from '../../filter-provider/FilterProvider';
 import { mergeFilter, transformToFilter } from '../../filter-provider/utils';
 import { useTreeParentRecord } from '../../modules/blocks/data-blocks/table/TreeRecordProvider';
 import { useRecord } from '../../record-provider';
 import { removeNullCondition, useActionContext, useCompile } from '../../schema-component';
 import { isSubMode } from '../../schema-component/antd/association-field/util';
+import { replaceVariables } from '../../schema-settings/LinkageRules/bindLinkageRulesToFiled';
 import { useCurrentUserContext } from '../../user';
 import { useLocalVariables, useVariables } from '../../variables';
+import { VariableOption, VariablesContextType } from '../../variables/types';
 import { isVariable } from '../../variables/utils/isVariable';
 import { transformVariableValue } from '../../variables/utils/transformVariableValue';
 import { useBlockRequestContext, useFilterByTk, useParamsFromRecord } from '../BlockProvider';
@@ -44,6 +53,7 @@ import { useOperators } from '../CollectOperators';
 import { useDetailsBlockContext } from '../DetailsBlockProvider';
 import { TableFieldResource } from '../TableFieldProvider';
 
+export * from './useBlockHeightProps';
 export * from './useDataBlockParentRecord';
 export * from './useFormActiveFields';
 export * from './useParsedFilter';
@@ -154,9 +164,9 @@ export function useCollectValuesToSubmit() {
       }
 
       if (isVariable(value)) {
-        const result = await variables?.parseVariable(value, localVariables);
-        if (result) {
-          assignedValues[key] = transformVariableValue(result, { targetCollectionField: collectionField });
+        const { value: parsedValue } = (await variables?.parseVariable(value, localVariables)) || {};
+        if (parsedValue) {
+          assignedValues[key] = transformVariableValue(parsedValue, { targetCollectionField: collectionField });
         }
       } else if (value != null && value !== '') {
         assignedValues[key] = value;
@@ -200,7 +210,7 @@ export const useCreateActionProps = () => {
   const form = useForm();
   const { field, resource } = useBlockRequestContext();
   const { setVisible, setSubmitted, setFormValueChanged } = useActionContext();
-  const navigate = useNavigate();
+  const navigate = useNavigateNoUpdate();
   const actionSchema = useFieldSchema();
   const actionField = useField();
   const compile = useCompile();
@@ -315,9 +325,9 @@ export const useAssociationCreateActionProps = () => {
         }
 
         if (isVariable(value)) {
-          const result = await variables?.parseVariable(value, localVariables);
-          if (result) {
-            assignedValues[key] = transformVariableValue(result, { targetCollectionField: collectionField });
+          const { value: parsedValue } = (await variables?.parseVariable(value, localVariables)) || {};
+          if (parsedValue) {
+            assignedValues[key] = transformVariableValue(parsedValue, { targetCollectionField: collectionField });
           }
         } else if (value != null && value !== '') {
           assignedValues[key] = value;
@@ -381,6 +391,9 @@ export interface FilterTarget {
     /** associated field */
     field?: string;
   }[];
+  /**
+   * 筛选表单区块的 uid
+   */
   uid?: string;
 }
 
@@ -407,22 +420,26 @@ export const updateFilterTargets = (fieldSchema, targets: FilterTarget['targets'
   }
 };
 
-export const useFilterBlockActionProps = () => {
+/**
+ * 注意：因为筛选表单的字段有可能设置的有默认值，所以筛选表单的筛选操作会在首次渲染时自动执行一次，
+ * 以确保数据区块中首次显示的数据与筛选表单的筛选条件匹配。
+ * @returns
+ */
+const useDoFilter = () => {
   const form = useForm();
-  const actionField = useField();
-  const fieldSchema = useFieldSchema();
   const { getDataBlocks } = useFilterBlock();
-  const { name } = useCollection_deprecated();
   const { getCollectionJoinField } = useCollectionManager_deprecated();
   const { getOperators } = useOperators();
+  const fieldSchema = useFieldSchema();
+  const { name } = useCollection();
+  const { targets = [], uid } = useMemo(() => findFilterTargets(fieldSchema), [fieldSchema]);
 
-  actionField.data = actionField.data || {};
+  const getFilterFromCurrentForm = useCallback(() => {
+    return removeNullCondition(transformToFilter(form.values, getOperators(), getCollectionJoinField, name));
+  }, [form.values, getCollectionJoinField, getOperators, name]);
 
-  return {
-    async onClick() {
-      const { targets = [], uid } = findFilterTargets(fieldSchema);
-
-      actionField.data.loading = true;
+  const doFilter = useCallback(
+    async ({ doNothingWhenFilterIsEmpty = false } = {}) => {
       try {
         // 收集 filter 的值
         await Promise.all(
@@ -434,16 +451,19 @@ export const useFilterBlockActionProps = () => {
             // 保留原有的 filter
             const storedFilter = block.service.params?.[1]?.filters || {};
 
-            storedFilter[uid] = removeNullCondition(
-              transformToFilter(form.values, getOperators(), getCollectionJoinField, name),
-            );
+            // 由当前表单转换而来的 filter
+            storedFilter[uid] = getFilterFromCurrentForm();
 
             const mergedFilter = mergeFilter([
               ...Object.values(storedFilter).map((filter) => removeNullCondition(filter)),
               block.defaultFilter,
             ]);
 
-            if (block.dataLoadingMode === 'manual' && _.isEmpty(mergedFilter)) {
+            if (doNothingWhenFilterIsEmpty && _.isEmpty(storedFilter[uid])) {
+              return;
+            }
+
+            if (block.dataLoadingMode === 'manual' && _.isEmpty(storedFilter[uid])) {
               return block.clearData();
             }
 
@@ -460,57 +480,72 @@ export const useFilterBlockActionProps = () => {
       } catch (error) {
         console.error(error);
       }
+    },
+    [getDataBlocks, getFilterFromCurrentForm, targets, uid],
+  );
+
+  // 这里的代码是为了实现：筛选表单的筛选操作在首次渲染时自动执行一次
+  useEffect(() => {
+    doFilter({ doNothingWhenFilterIsEmpty: true });
+  }, [getDataBlocks().length]);
+
+  return {
+    /**
+     * 用于执行筛选表单的筛选操作
+     */
+    doFilter,
+    /**
+     * 根据当前表单的值获取 filter
+     */
+    getFilterFromCurrentForm,
+  };
+};
+
+export const useFilterBlockActionProps = () => {
+  const { doFilter } = useDoFilter();
+  const actionField = useField();
+  actionField.data = actionField.data || {};
+
+  return {
+    async onClick() {
+      actionField.data.loading = true;
+      await doFilter();
       actionField.data.loading = false;
     },
   };
 };
 
-export const useResetBlockActionProps = () => {
+const useDoReset = () => {
   const form = useForm();
-  const actionField = useField();
   const fieldSchema = useFieldSchema();
   const { getDataBlocks } = useFilterBlock();
+  const { targets, uid } = findFilterTargets(fieldSchema);
+  const { doFilter, getFilterFromCurrentForm } = useDoFilter();
+
+  return {
+    doReset: async () => {
+      await form.reset(undefined, {
+        forceClear: !!fieldSchema?.['x-component-props']?.clearDefaultValue,
+      });
+      if (_.isEmpty(getFilterFromCurrentForm())) {
+        return doReset({ getDataBlocks, targets, uid });
+      }
+      await doFilter();
+    },
+  };
+};
+
+export const useResetBlockActionProps = () => {
+  const actionField = useField();
+  const { doReset } = useDoReset();
 
   actionField.data = actionField.data || {};
 
   return {
     async onClick() {
-      const { targets, uid } = findFilterTargets(fieldSchema);
-
-      form.reset();
       actionField.data.loading = true;
-      try {
-        // 收集 filter 的值
-        await Promise.all(
-          getDataBlocks().map(async (block) => {
-            const target = targets.find((target) => target.uid === block.uid);
-            if (!target) return;
-
-            if (block.dataLoadingMode === 'manual') {
-              return block.clearData();
-            }
-
-            const param = block.service.params?.[0] || {};
-            // 保留原有的 filter
-            const storedFilter = block.service.params?.[1]?.filters || {};
-
-            delete storedFilter[uid];
-            const mergedFilter = mergeFilter([...Object.values(storedFilter), block.defaultFilter]);
-
-            return block.doFilter(
-              {
-                ...param,
-                page: 1,
-                filter: mergedFilter,
-              },
-              { filters: storedFilter },
-            );
-          }),
-        );
-        actionField.data.loading = false;
-      } catch (error) {
-        actionField.data.loading = false;
-      }
+      await doReset();
+      actionField.data.loading = false;
     },
   };
 };
@@ -519,7 +554,7 @@ export const useCustomizeUpdateActionProps = () => {
   const { resource, __parent, service } = useBlockRequestContext();
   const filterByTk = useFilterByTk();
   const actionSchema = useFieldSchema();
-  const navigate = useNavigate();
+  const navigate = useNavigateNoUpdate();
   const compile = useCompile();
   const form = useForm();
   const { modal } = App.useApp();
@@ -548,9 +583,9 @@ export const useCustomizeUpdateActionProps = () => {
         }
 
         if (isVariable(value)) {
-          const result = await variables?.parseVariable(value, localVariables);
-          if (result) {
-            assignedValues[key] = transformVariableValue(result, { targetCollectionField: collectionField });
+          const { value: parsedValue } = (await variables?.parseVariable(value, localVariables)) || {};
+          if (parsedValue) {
+            assignedValues[key] = transformVariableValue(parsedValue, { targetCollectionField: collectionField });
           }
         } else if (value != null && value !== '') {
           assignedValues[key] = value;
@@ -614,7 +649,7 @@ export const useCustomizeBulkUpdateActionProps = () => {
   const { rowKey } = tableBlockContext;
   const selectedRecordKeys =
     tableBlockContext.field?.data?.selectedRowKeys ?? expressionScope?.selectedRecordKeys ?? {};
-  const navigate = useNavigate();
+  const navigate = useNavigateNoUpdate();
   const compile = useCompile();
   const { t } = useTranslation();
   const actionField = useField();
@@ -646,9 +681,9 @@ export const useCustomizeBulkUpdateActionProps = () => {
         }
 
         if (isVariable(value)) {
-          const result = await variables?.parseVariable(value, localVariables);
-          if (result) {
-            assignedValues[key] = transformVariableValue(result, { targetCollectionField: collectionField });
+          const { value: parsedValue } = (await variables?.parseVariable(value, localVariables)) || {};
+          if (parsedValue) {
+            assignedValues[key] = transformVariableValue(parsedValue, { targetCollectionField: collectionField });
           }
         } else if (value != null && value !== '') {
           assignedValues[key] = value;
@@ -725,7 +760,7 @@ export const useCustomizeBulkUpdateActionProps = () => {
 
 export const useCustomizeRequestActionProps = () => {
   const apiClient = useAPIClient();
-  const navigate = useNavigate();
+  const navigate = useNavigateNoUpdate();
   const filterByTk = useFilterByTk();
   const actionSchema = useFieldSchema();
   const compile = useCompile();
@@ -819,9 +854,9 @@ export const useUpdateActionProps = () => {
   const form = useForm();
   const filterByTk = useFilterByTk();
   const { field, resource, __parent } = useBlockRequestContext();
-  const { setVisible, setSubmitted, setFormValueChanged } = useActionContext();
+  const { setVisible, setFormValueChanged } = useActionContext();
   const actionSchema = useFieldSchema();
-  const navigate = useNavigate();
+  const navigate = useNavigateNoUpdate();
   const { fields, getField, name } = useCollection_deprecated();
   const compile = useCompile();
   const actionField = useField();
@@ -833,7 +868,7 @@ export const useUpdateActionProps = () => {
   const { getActiveFieldsName } = useFormActiveFields() || {};
 
   return {
-    async onClick() {
+    async onClick(e?, callBack?) {
       const {
         assignedValues: originalAssignedValues = {},
         onSuccess,
@@ -854,9 +889,9 @@ export const useUpdateActionProps = () => {
         }
 
         if (isVariable(value)) {
-          const result = await variables?.parseVariable(value, localVariables);
-          if (result) {
-            assignedValues[key] = transformVariableValue(result, { targetCollectionField: collectionField });
+          const { value: parsedValue } = (await variables?.parseVariable(value, localVariables)) || {};
+          if (parsedValue) {
+            assignedValues[key] = transformVariableValue(parsedValue, { targetCollectionField: collectionField });
           }
         } else if (value != null && value !== '') {
           assignedValues[key] = value;
@@ -896,8 +931,10 @@ export const useUpdateActionProps = () => {
         });
         actionField.data.loading = false;
         // __parent?.service?.refresh?.();
+        if (callBack) {
+          callBack?.();
+        }
         setVisible?.(false);
-        setSubmitted?.(true);
         setFormValueChanged?.(false);
         if (!onSuccess?.successMessage) {
           return;
@@ -1024,13 +1061,13 @@ export const useDetailPrintActionProps = () => {
   const printHandler = useReactToPrint({
     content: () => formBlockRef.current,
     pageStyle: `@media print {
-      * {
-        margin: 0;
-      }
-      :not(.ant-formily-item-control-content-component) > div.ant-formily-layout>div:first-child {
-        overflow: hidden; height: 0;
-      }
-    }`,
+        * {
+          margin: 0;
+        }
+        :not(.ant-formily-item-control-content-component) > div.ant-formily-layout>div:first-child {
+          overflow: hidden; height: 0;
+        }
+      }`,
   });
   return {
     async onClick() {
@@ -1043,13 +1080,25 @@ export const useBulkDestroyActionProps = () => {
   const { field } = useBlockRequestContext();
   const { resource, service } = useBlockRequestContext();
   const { setSubmitted } = useActionContext();
+  const collection = useCollection_deprecated();
+  const { filterTargetKey } = collection;
   return {
     async onClick(e?, callBack?) {
+      let filterByTk = field.data?.selectedRowKeys;
+      if (Array.isArray(filterTargetKey)) {
+        filterByTk = field.data.selectedRowData.map((v) => {
+          const obj = {};
+          filterTargetKey.map((j) => {
+            obj[j] = v[j];
+          });
+          return obj;
+        });
+      }
       if (!field?.data?.selectedRowKeys?.length) {
         return;
       }
       await resource.destroy({
-        filterByTk: field.data?.selectedRowKeys,
+        filterByTk,
       });
       field.data.selectedRowKeys = [];
       const currentPage = service.params[0]?.page;
@@ -1061,7 +1110,7 @@ export const useBulkDestroyActionProps = () => {
         callBack?.();
       }
       setSubmitted?.(true);
-      // service?.refresh?.();
+      service?.refresh?.();
     },
   };
 };
@@ -1078,6 +1127,31 @@ export const useRefreshActionProps = () => {
 export const useDetailsPaginationProps = () => {
   const ctx = useDetailsBlockContext();
   const count = ctx.service?.data?.meta?.count || 0;
+  const current = ctx.service?.data?.meta?.page;
+  if (!count && current) {
+    return {
+      simple: true,
+      current: ctx.service?.data?.meta?.page || 1,
+      pageSize: 1,
+      showSizeChanger: false,
+      async onChange(page) {
+        const params = ctx.service?.params?.[0];
+        ctx.service.run({ ...params, page });
+      },
+      style: {
+        marginTop: 24,
+        textAlign: 'center',
+      },
+      showTotal: false,
+      showTitle: false,
+      total: ctx.service?.data?.data?.length ? 1 * current + 1 : 1 * current,
+      className: css`
+        .ant-pagination-simple-pager {
+          display: none !important;
+        }
+      `,
+    };
+  }
   return {
     simple: true,
     hidden: count <= 1,
@@ -1186,6 +1260,7 @@ export const useAssociationFilterBlockProps = () => {
   const { props: blockProps } = useBlockRequestContext();
   const headers = useDataSourceHeaders(blockProps?.dataSource);
   const cm = useCollectionManager_deprecated();
+  const { filter, parseVariableLoading } = useParsedFilter({ filterOption: field.componentProps?.params?.filter });
 
   let list, handleSearchInput, params, run, data, valueKey, labelKey, filterKey;
 
@@ -1205,21 +1280,32 @@ export const useAssociationFilterBlockProps = () => {
         pageSize: 200,
         page: 1,
         ...field.componentProps?.params,
+        filter,
       },
     },
     {
-      // 由于 选项字段不需要触发当前请求，所以当前请求更改为手动触发
+      // 由于选项字段不需要触发当前请求，所以当前请求更改为手动触发
       manual: true,
       debounceWait: 300,
     },
   ));
 
   useEffect(() => {
-    // 由于 选项字段不需要触发当前请求，所以请求单独在 关系字段的时候触发
-    if (!isOptionalField(collectionField)) {
+    // 由于选项字段不需要触发当前请求，所以请求单独在关系字段的时候触发
+    if (!isOptionalField(collectionField) && parseVariableLoading === false) {
       run();
     }
-  }, [collectionField, labelKey, run, valueKey]);
+
+    // do not format the dependencies
+  }, [
+    collectionField,
+    labelKey,
+    run,
+    valueKey,
+    field.componentProps?.params,
+    field.componentProps?.params?.sort,
+    parseVariableLoading,
+  ]);
 
   if (!collectionField) {
     return {};
@@ -1308,6 +1394,52 @@ export const useAssociationFilterBlockProps = () => {
     labelKey,
   };
 };
+async function doReset({
+  getDataBlocks,
+  targets,
+  uid,
+}: {
+  getDataBlocks: () => DataBlock[];
+  targets: {
+    /** field uid */
+    uid: string;
+    /** associated field */
+    field?: string;
+  }[];
+  uid: string;
+}) {
+  try {
+    await Promise.all(
+      getDataBlocks().map(async (block) => {
+        const target = targets.find((target) => target.uid === block.uid);
+        if (!target) return;
+
+        if (block.dataLoadingMode === 'manual') {
+          return block.clearData();
+        }
+
+        const param = block.service.params?.[0] || {};
+        // 保留原有的 filter
+        const storedFilter = block.service.params?.[1]?.filters || {};
+
+        delete storedFilter[uid];
+        const mergedFilter = mergeFilter([...Object.values(storedFilter), block.defaultFilter]);
+
+        return block.doFilter(
+          {
+            ...param,
+            page: 1,
+            filter: mergedFilter,
+          },
+          { filters: storedFilter },
+        );
+      }),
+    );
+  } catch (error) {
+    console.error(error);
+  }
+}
+
 export function getAssociationPath(str) {
   const lastIndex = str.lastIndexOf('.');
   if (lastIndex !== -1) {
@@ -1327,7 +1459,8 @@ export const useAssociationNames = (dataSource?: string) => {
       const collectionField = s['x-collection-field'] && getCollectionJoinField(s['x-collection-field'], dataSource);
       const isAssociationSubfield = s.name.includes('.');
       const isAssociationField =
-        collectionField && ['hasOne', 'hasMany', 'belongsTo', 'belongsToMany'].includes(collectionField.type);
+        collectionField &&
+        ['hasOne', 'hasMany', 'belongsTo', 'belongsToMany', 'belongsToArray'].includes(collectionField.type);
 
       // 根据联动规则中条件的字段获取一些 appends
       if (s['x-linkage-rules']) {
@@ -1397,6 +1530,7 @@ export const useAssociationNames = (dataSource?: string) => {
     updateAssociationValues = new Set([]);
     appends = new Set([]);
     _getAssociationAppends(fieldSchema, '');
+    appends = fillParentFields(appends);
     return { appends: [...appends], updateAssociationValues: [...updateAssociationValues] };
   };
 
@@ -1445,4 +1579,207 @@ async function resetFormCorrectly(form: Form) {
     });
   });
   await form.reset();
+}
+
+export function appendQueryStringToUrl(url: string, queryString: string) {
+  if (queryString) {
+    return url + (url.includes('?') ? '&' : '?') + queryString;
+  }
+  return url;
+}
+
+export const useParseURLAndParams = () => {
+  const variables = useVariables();
+  const localVariables = useLocalVariables();
+
+  const parseURLAndParams = useCallback(
+    async (url: string, params: { name: string; value: any }[]) => {
+      const queryString = await parseVariablesAndChangeParamsToQueryString({
+        searchParams: params,
+        variables,
+        localVariables,
+        replaceVariableValue,
+      });
+      const targetUrl = await replaceVariableValue(url, variables, localVariables);
+      const result = appendQueryStringToUrl(targetUrl, queryString);
+
+      return result;
+    },
+    [variables, localVariables],
+  );
+
+  return { parseURLAndParams };
+};
+
+export function useLinkActionProps(componentProps?: any) {
+  const navigate = useNavigateNoUpdate();
+  const fieldSchema = useFieldSchema();
+  const componentPropsValue = fieldSchema?.['x-component-props'] || componentProps;
+  const { t } = useTranslation();
+  const url = componentPropsValue?.['url'];
+  const searchParams = componentPropsValue?.['params'] || [];
+  const openInNewWindow = fieldSchema?.['x-component-props']?.['openInNewWindow'];
+  const { parseURLAndParams } = useParseURLAndParams();
+  const basenameOfCurrentRouter = useRouterBasename();
+
+  return {
+    type: 'default',
+    async onClick() {
+      if (!url) {
+        message.warning(t('Please configure the URL'));
+        return;
+      }
+      const link = await parseURLAndParams(url, searchParams);
+
+      if (link) {
+        if (openInNewWindow) {
+          window.open(completeURL(link), '_blank');
+        } else {
+          navigateWithinSelf(link, navigate, window.location.origin + basenameOfCurrentRouter);
+        }
+      } else {
+        console.error('link should be a string');
+      }
+    },
+  };
+}
+
+export async function replaceVariableValue(
+  url: string,
+  variables: VariablesContextType,
+  localVariables: VariableOption[],
+) {
+  if (!url) {
+    return;
+  }
+  const { evaluate } = evaluators.get('string');
+  // 解析如 `{{$user.name}}` 之类的变量
+  const { exp, scope: expScope } = await replaceVariables(url, {
+    variables,
+    localVariables,
+  });
+
+  try {
+    const result = evaluate(exp, { now: () => new Date().toString(), ...expScope });
+    return result;
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+export async function parseVariablesAndChangeParamsToQueryString({
+  searchParams,
+  variables,
+  localVariables,
+  replaceVariableValue,
+}: {
+  searchParams: { name: string; value: any }[];
+  variables: VariablesContextType;
+  localVariables: VariableOption[];
+  replaceVariableValue: (
+    url: string,
+    variables: VariablesContextType,
+    localVariables: VariableOption[],
+  ) => Promise<any>;
+}) {
+  const parsed = await Promise.all(
+    searchParams.map(async ({ name, value }) => {
+      if (typeof value === 'string') {
+        if (isVariable(value)) {
+          const { value: parsedValue } = (await variables.parseVariable(value, localVariables)) || {};
+          return { name, value: parsedValue };
+        }
+        const result = await replaceVariableValue(value, variables, localVariables);
+        return { name, value: result };
+      }
+      return { name, value };
+    }),
+  );
+
+  const params = {};
+
+  for (const { name, value } of parsed) {
+    if (name && value) {
+      params[name] = reduceValueSize(value);
+    }
+  }
+
+  return qs.stringify(params);
+}
+
+/**
+ * 1. 去除 value 是一个对象或者数组的 key
+ * 2. 去除 value 是一个字符串长度超过 100 个字符的 key
+ */
+export function reduceValueSize(value: any) {
+  if (_.isPlainObject(value)) {
+    const result = {};
+    Object.keys(value).forEach((key) => {
+      if (_.isPlainObject(value[key]) || _.isArray(value[key])) {
+        return;
+      }
+      if (_.isString(value[key]) && value[key].length > 100) {
+        return;
+      }
+      result[key] = value[key];
+    });
+    return result;
+  }
+
+  if (_.isArray(value)) {
+    return value.map((item) => {
+      if (_.isPlainObject(item) || _.isArray(item)) {
+        return reduceValueSize(item);
+      }
+      return item;
+    });
+  }
+
+  return value;
+}
+
+// 补全 URL
+export function completeURL(url: string, origin = window.location.origin) {
+  if (!url) {
+    return '';
+  }
+  if (isURL(url)) {
+    return url;
+  }
+  return url.startsWith('/') ? `${origin}${url}` : `${origin}/${url}`;
+}
+
+export function navigateWithinSelf(link: string, navigate: NavigateFunction, basePath = window.location.origin) {
+  if (!_.isString(link)) {
+    return console.error('link should be a string');
+  }
+
+  if (isURL(link)) {
+    if (link.startsWith(basePath)) {
+      navigate(completeURL(link.replace(basePath, ''), ''));
+    } else {
+      window.open(link, '_self');
+    }
+  } else {
+    navigate(completeURL(link, ''));
+  }
+}
+
+/**
+ * 为多层级的关系字段补充上父级字段
+ * e.g. ['a', 'b.c'] => ['a', 'b', 'b.c']
+ * @param appends
+ * @returns
+ */
+export function fillParentFields(appends: Set<string>) {
+  const depFields = Array.from(appends).filter((field) => field.includes('.'));
+
+  depFields.forEach((field) => {
+    const fields = field.split('.');
+    fields.pop();
+    const parentField = fields.join('.');
+    appends.add(parentField);
+  });
+
+  return appends;
 }

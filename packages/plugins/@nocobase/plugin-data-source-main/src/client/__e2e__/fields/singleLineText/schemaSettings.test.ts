@@ -45,11 +45,13 @@ test.describe('form item & sub form', () => {
         'Constant',
         'Current user',
         'Current role',
+        'API token',
         'Date variables',
         'Current form',
         'Current object',
         'Current popup record',
       ],
+      unsupportedVariables: ['Parent popup record'],
       variableValue: ['Current user', 'Nickname'],
       expectVariableValue: async () => {
         await page
@@ -128,10 +130,12 @@ test.describe('table column & sub-table in edit form', () => {
         'Constant',
         'Current user',
         'Current role',
+        'API token',
         'Current form',
         'Current object',
         'Current popup record',
       ],
+      unsupportedVariables: ['Parent popup record'],
       variableValue: ['Current user', 'Nickname'],
       expectVariableValue: async () => {
         await page.getByRole('button', { name: 'Add new' }).click();

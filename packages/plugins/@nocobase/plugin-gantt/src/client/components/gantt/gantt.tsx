@@ -8,25 +8,24 @@
  */
 
 import { css, cx } from '@emotion/css';
-import { RecursionField, Schema, useFieldSchema } from '@formily/react';
+import { RecursionField, useFieldSchema } from '@formily/react';
 import {
-  ActionContextProvider,
-  DeclareVariable,
+  PopupContextProvider,
   RecordProvider,
   useAPIClient,
   useBlockRequestContext,
-  useCollection,
   useCollectionParentRecordData,
   useCurrentAppInfo,
+  useDesignable,
+  usePopupUtils,
   useProps,
   useTableBlockContext,
   useToken,
   withDynamicSchemaProps,
-  useDesignable,
 } from '@nocobase/client';
-import { message, Spin } from 'antd';
+import { Spin, message } from 'antd';
 import { debounce } from 'lodash';
-import React, { SyntheticEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { SyntheticEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useGanttBlockContext } from '../../GanttBlockProvider';
 import { convertToBarTasks } from '../../helpers/bar-helper';
@@ -41,6 +40,7 @@ import { GridProps } from '../grid/grid';
 import { HorizontalScroll } from '../other/horizontal-scroll';
 import { StandardTooltipContent, Tooltip } from '../other/tooltip';
 import { VerticalScroll } from '../other/vertical-scroll';
+import { GanttRecordViewer } from './GanttRecordViewer';
 import useStyles from './style';
 import { TaskGantt } from './task-gantt';
 import { TaskGanttContentProps } from './task-gantt-content';
@@ -49,39 +49,7 @@ const getColumnWidth = (dataSetLength: any, clientWidth: any) => {
   const columnWidth = clientWidth / dataSetLength > 50 ? Math.floor(clientWidth / dataSetLength) + 20 : 50;
   return columnWidth;
 };
-export const DeleteEventContext = React.createContext({
-  close: () => {},
-});
-const GanttRecordViewer = (props) => {
-  const { visible, setVisible, record } = props;
-  const { t } = useTranslation();
-  const collection = useCollection();
-  const parentRecordData = useCollectionParentRecordData();
-  const fieldSchema = useFieldSchema();
-  const eventSchema: Schema = fieldSchema.properties.detail;
-  const close = useCallback(() => {
-    setVisible(false);
-  }, []);
 
-  return (
-    eventSchema && (
-      <DeleteEventContext.Provider value={{ close }}>
-        <ActionContextProvider value={{ visible, setVisible }}>
-          <RecordProvider record={record} parent={parentRecordData}>
-            <DeclareVariable
-              name="$nPopupRecord"
-              title={t('Current popup record')}
-              value={record}
-              collection={collection}
-            >
-              <RecursionField schema={eventSchema} name={eventSchema.name} />
-            </DeclareVariable>
-          </RecordProvider>
-        </ActionContextProvider>
-      </DeleteEventContext.Provider>
-    )
-  );
-};
 const debounceHandleTaskChange = debounce(async (task: Task, resource, fieldNames, service, t) => {
   await resource.update({
     filterByTk: task.id,
@@ -165,7 +133,11 @@ export const Gantt: any = withDynamicSchemaProps((props: any) => {
     return { viewMode, dates: seedDates(startDate, endDate, viewMode) };
   });
   const [visible, setVisible] = useState(false);
+  const { openPopup } = usePopupUtils({
+    setVisible,
+  });
   const [record, setRecord] = useState<any>({});
+  const parentRecordData = useCollectionParentRecordData();
   const [currentViewDate, setCurrentViewDate] = useState<Date | undefined>(undefined);
   const [taskListWidth, setTaskListWidth] = useState(0);
   const [svgContainerWidth, setSvgContainerWidth] = useState(0);
@@ -478,7 +450,10 @@ export const Gantt: any = withDynamicSchemaProps((props: any) => {
       return;
     }
     setRecord(recordData);
-    setVisible(true);
+    openPopup({
+      recordData,
+      customActionSchema: fieldSchema.properties.detail,
+    });
   };
   const gridProps: GridProps = {
     columnWidth,
@@ -541,55 +516,59 @@ export const Gantt: any = withDynamicSchemaProps((props: any) => {
       `)}
       ref={ganttRef}
     >
-      <GanttRecordViewer visible={visible} setVisible={setVisible} record={record} />
-      <RecursionField name={'anctionBar'} schema={fieldSchema.properties.toolBar} />
-      <RecursionField name={'table'} schema={fieldSchema.properties.table} />
-      <div className={styles.wrapper} onKeyDown={handleKeyDown} tabIndex={0} ref={wrapperRef}>
-        <TaskGantt
-          gridProps={gridProps}
-          calendarProps={calendarProps}
-          barProps={barProps}
-          ganttHeight={ganttHeight}
-          scrollY={scrollY}
-          scrollX={scrollX}
-          ref={verticalGanttContainerRef}
-        />
-        {ganttEvent.changedTask && (
-          <Tooltip
-            arrowIndent={arrowIndent}
-            rowHeight={rowHeight}
-            svgContainerHeight={svgContainerHeight}
-            svgContainerWidth={svgContainerWidth}
-            fontFamily={fontFamily}
-            fontSize={fontSize}
-            scrollX={scrollX}
+      <PopupContextProvider visible={visible} setVisible={setVisible}>
+        <RecordProvider record={record} parent={parentRecordData}>
+          <GanttRecordViewer />
+        </RecordProvider>
+        <RecursionField name={'anctionBar'} schema={fieldSchema.properties.toolBar} />
+        <RecursionField name={'table'} schema={fieldSchema.properties.table} />
+        <div className={styles.wrapper} onKeyDown={handleKeyDown} tabIndex={0} ref={wrapperRef}>
+          <TaskGantt
+            gridProps={gridProps}
+            calendarProps={calendarProps}
+            barProps={barProps}
+            ganttHeight={ganttHeight}
             scrollY={scrollY}
-            task={ganttEvent.changedTask}
+            scrollX={scrollX}
+            ref={verticalGanttContainerRef}
+          />
+          {ganttEvent.changedTask && (
+            <Tooltip
+              arrowIndent={arrowIndent}
+              rowHeight={rowHeight}
+              svgContainerHeight={svgContainerHeight}
+              svgContainerWidth={svgContainerWidth}
+              fontFamily={fontFamily}
+              fontSize={fontSize}
+              scrollX={scrollX}
+              scrollY={scrollY}
+              task={ganttEvent.changedTask}
+              headerHeight={headerHeight}
+              taskListWidth={taskListWidth}
+              TooltipContent={TooltipContent}
+              rtl={rtl}
+              svgWidth={svgWidth}
+            />
+          )}
+          <VerticalScroll
+            ganttFullHeight={ganttFullHeight}
+            ganttHeight={ganttHeight}
             headerHeight={headerHeight}
-            taskListWidth={taskListWidth}
-            TooltipContent={TooltipContent}
+            scroll={scrollY}
+            onScroll={handleScrollY}
             rtl={rtl}
-            svgWidth={svgWidth}
           />
-        )}
-        <VerticalScroll
-          ganttFullHeight={ganttFullHeight}
-          ganttHeight={ganttHeight}
-          headerHeight={headerHeight}
-          scroll={scrollY}
-          onScroll={handleScrollY}
-          rtl={rtl}
-        />
-        <Spin spinning={loading} style={{ visibility: 'hidden' }}>
-          <HorizontalScroll
-            svgWidth={svgWidth}
-            taskListWidth={taskListWidth}
-            scroll={scrollX}
-            rtl={rtl}
-            onScroll={handleScrollX}
-          />
-        </Spin>
-      </div>
+          <Spin spinning={loading} style={{ visibility: 'hidden' }}>
+            <HorizontalScroll
+              svgWidth={svgWidth}
+              taskListWidth={taskListWidth}
+              scroll={scrollX}
+              rtl={rtl}
+              onScroll={handleScrollX}
+            />
+          </Spin>
+        </div>
+      </PopupContextProvider>
     </div>
   );
 });

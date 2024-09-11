@@ -52,10 +52,11 @@ import {
   UUIDFieldInterface,
   NanoidFieldInterface,
   UnixTimestampFieldInterface,
+  DateFieldInterface,
+  DatetimeNoTzFieldInterface,
 } from './interfaces';
 import {
   GeneralCollectionTemplate,
-  ExpressionCollectionTemplate,
   SqlCollectionTemplate,
   TreeCollectionTemplate,
   ViewCollectionTemplate,
@@ -174,13 +175,14 @@ export class CollectionPlugin extends Plugin {
       UUIDFieldInterface,
       NanoidFieldInterface,
       UnixTimestampFieldInterface,
+      DateFieldInterface,
+      DatetimeNoTzFieldInterface,
     ]);
   }
 
   addCollectionTemplates() {
     this.dataSourceManager.addCollectionTemplates([
       GeneralCollectionTemplate,
-      ExpressionCollectionTemplate,
       SqlCollectionTemplate,
       TreeCollectionTemplate,
       ViewCollectionTemplate,

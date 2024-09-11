@@ -9,7 +9,7 @@
 
 import React from 'react';
 import { observer } from '@formily/reactive-react';
-import { renderApp } from '@nocobase/test/client';
+import { renderAppOptions } from '@nocobase/test/client';
 import {
   SchemaComponent,
   SchemaInitializer,
@@ -83,7 +83,7 @@ export async function createApp(options = {}, appOptions = {}) {
       />
     );
   };
-  await renderApp({
+  await renderAppOptions({
     appOptions: {
       providers: [Root],
       schemaInitializers: [testInitializers],

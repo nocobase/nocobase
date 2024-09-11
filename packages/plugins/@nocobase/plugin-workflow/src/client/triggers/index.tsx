@@ -8,15 +8,14 @@
  */
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Button, Input, Tag, message } from 'antd';
+import { Button, Input, Tag, Tooltip, message } from 'antd';
 import { cloneDeep } from 'lodash';
-import { InfoOutlined } from '@ant-design/icons';
+import { InfoOutlined, ThunderboltOutlined } from '@ant-design/icons';
 import { createForm } from '@formily/core';
 import { ISchema, useForm } from '@formily/react';
 
 import {
   ActionContextProvider,
-  FieldNames,
   FormProvider,
   SchemaComponent,
   SchemaInitializerItemType,
@@ -89,9 +88,16 @@ function TriggerExecution() {
 
   return (
     <SchemaComponent
+      components={{
+        Tooltip,
+      }}
       schema={{
         type: 'void',
         name: 'execution',
+        'x-decorator': 'Tooltip',
+        'x-decorator-props': {
+          title: lang('View result'),
+        },
         'x-component': 'Action',
         'x-component-props': {
           title: <InfoOutlined />,
@@ -134,7 +140,7 @@ function TriggerExecution() {
                 'x-component-props': {
                   className: css`
                     padding: 1em;
-                    background-color: #eee;
+                    background-color: #f3f3f3;
                   `,
                 },
                 'x-read-pretty': true,
@@ -161,16 +167,11 @@ export const TriggerConfig = () => {
   const compile = useCompile();
   const trigger = useTrigger();
 
-  const typeTitle = compile(trigger.title);
-  const { fieldset, scope, components } = trigger;
-  const detailText = workflow.executed ? '{{t("View")}}' : '{{t("Configure")}}';
-  const titleText = lang('Trigger');
-
   useEffect(() => {
     if (workflow) {
-      setEditingTitle(workflow.triggerTitle ?? workflow.title ?? typeTitle);
+      setEditingTitle(workflow.triggerTitle ?? workflow.title ?? compile(trigger?.title));
     }
-  }, [workflow]);
+  }, [workflow, trigger]);
 
   const form = useMemo(() => {
     const values = cloneDeep(workflow.config);
@@ -192,7 +193,7 @@ export const TriggerConfig = () => {
 
   const onChangeTitle = useCallback(
     async function (next) {
-      const t = next || typeTitle;
+      const t = next || compile(trigger?.title);
       setEditingTitle(t);
       if (t === workflow.triggerTitle) {
         return;
@@ -205,7 +206,7 @@ export const TriggerConfig = () => {
       });
       refresh();
     },
-    [workflow],
+    [workflow, trigger],
   );
 
   const onOpenDrawer = useCallback(function (ev) {
@@ -223,6 +224,35 @@ export const TriggerConfig = () => {
     }
   }, []);
 
+  const detailText = workflow.executed ? '{{t("View")}}' : '{{t("Configure")}}';
+  const titleText = lang('Trigger');
+
+  if (!trigger) {
+    return (
+      <Tooltip
+        title={lang(
+          'Workflow with unknown type will cause error. Please delete it or check plugin which provide this type.',
+        )}
+      >
+        <div
+          role="button"
+          aria-label={`${titleText}-${editingTitle}`}
+          className={cx(styles.nodeCardClass, 'invalid')}
+          onClick={onOpenDrawer}
+        >
+          <div className={cx(styles.nodeMetaClass, 'workflow-node-meta')}>
+            <Tag color="error">{lang('Unknown trigger')}</Tag>
+          </div>
+          <div className="workflow-node-title">
+            <Input.TextArea value={editingTitle} disabled autoSize />
+          </div>
+        </div>
+      </Tooltip>
+    );
+  }
+
+  const { fieldset, scope, components } = trigger;
+
   return (
     <div
       role="button"
@@ -231,9 +261,12 @@ export const TriggerConfig = () => {
       onClick={onOpenDrawer}
     >
       <div className={cx(styles.nodeMetaClass, 'workflow-node-meta')}>
-        <Tag color="gold">{titleText}</Tag>
+        <Tag color="gold">
+          <ThunderboltOutlined />
+          <span className="type">{compile(trigger.title)}</span>
+        </Tag>
       </div>
-      <div>
+      <div className="workflow-node-title">
         <Input.TextArea
           value={editingTitle}
           onChange={(ev) => setEditingTitle(ev.target.value)}

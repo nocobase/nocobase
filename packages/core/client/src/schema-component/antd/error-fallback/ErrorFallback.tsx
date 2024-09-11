@@ -7,16 +7,59 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { useFieldSchema } from '@formily/react';
 import { Button, Result, Typography } from 'antd';
 import React, { FC } from 'react';
-import { FallbackProps, useErrorBoundary } from 'react-error-boundary';
+import { FallbackProps } from 'react-error-boundary';
 import { Trans, useTranslation } from 'react-i18next';
+import { useAPIClient } from '../../../api-client';
+import { useLocationNoUpdate } from '../../../application';
+import { ErrorFallbackModal } from './ErrorFallbackModal';
 
 const { Paragraph, Text, Link } = Typography;
 
-export const ErrorFallback: FC<FallbackProps> = ({ error }) => {
-  const { resetBoundary } = useErrorBoundary();
+export const useDownloadLogs = (error: any, data: Record<string, any> = {}) => {
+  const location = useLocationNoUpdate();
+  const [loading, setLoading] = React.useState(false);
+  const api = useAPIClient();
+  return {
+    loading,
+    download: async () => {
+      setLoading(true);
+      try {
+        const res = await api.request({
+          url: 'logger:collect',
+          method: 'post',
+          responseType: 'blob',
+          data: {
+            error: {
+              message: error.message,
+              stack: error.stack,
+            },
+            location,
+            ...data,
+          },
+        });
+        const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/gzip' }));
+        const link = document.createElement('a');
+        link.setAttribute('href', url);
+        link.setAttribute('download', 'logs.tar.gz');
+        link.click();
+        link.remove();
+      } catch (err) {
+        console.log(err);
+      }
+      setLoading(false);
+    },
+  };
+};
+
+export const ErrorFallback: FC<FallbackProps> & {
+  Modal: FC<FallbackProps>;
+} = ({ error }) => {
+  const schema = useFieldSchema();
   const { t } = useTranslation();
+  const { loading, download } = useDownloadLogs(error, { schema });
 
   const subTitle = (
     <Trans>
@@ -38,8 +81,8 @@ export const ErrorFallback: FC<FallbackProps> = ({ error }) => {
           <Button type="primary" key="feedback" href="https://github.com/nocobase/nocobase/issues" target="_blank">
             {t('Feedback')}
           </Button>,
-          <Button key="try" onClick={resetBoundary}>
-            {t('Try again')}
+          <Button key="log" loading={loading} onClick={download}>
+            {t('Download logs')}
           </Button>,
         ]}
       >
@@ -52,3 +95,5 @@ export const ErrorFallback: FC<FallbackProps> = ({ error }) => {
     </div>
   );
 };
+
+ErrorFallback.Modal = ErrorFallbackModal;

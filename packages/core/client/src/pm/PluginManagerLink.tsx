@@ -9,7 +9,7 @@
 
 import { ApiOutlined, SettingOutlined } from '@ant-design/icons';
 import { Button, Dropdown, Tooltip } from 'antd';
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
 import { useApp } from '../application';
@@ -47,10 +47,18 @@ export const SettingsCenterDropdown = () => {
         return {
           key: setting.name,
           icon: setting.icon,
-          label: <Link to={setting.path}>{compile(setting.title)}</Link>,
+          label: setting.link ? <div onClick={() => window.open(setting.link)}>{compile(setting.title)}</div> :
+            <Link to={setting.path}>{compile(setting.title)}</Link>
         };
       });
   }, [app, t]);
+
+  useEffect(() => {
+    return () => {
+      app.pluginSettingsManager.clearCache();
+    };
+  }, [app.pluginSettingsManager]);
+
   return (
     <Dropdown
       menu={{

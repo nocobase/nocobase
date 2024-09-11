@@ -7,70 +7,26 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Field } from '@formily/core';
-import { useField } from '@formily/react';
-import { reaction } from '@formily/reactive';
 import { isArr, isValid, toArr as toArray } from '@formily/shared';
 import { UploadFile } from 'antd/es/upload/interface';
-import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
+import match from 'mime-match';
+import { useCallback } from 'react';
 import { useAPIClient } from '../../../api-client';
-import { UPLOAD_PLACEHOLDER } from './placeholder';
+import { UNKNOWN_FILE_ICON, UPLOAD_PLACEHOLDER } from './placeholder';
 import type { IUploadProps, UploadProps } from './type';
 
-export const isImage = (extName: string) => {
-  const reg = /\.(png|jpg|gif|jpeg|webp)$/;
-  return reg.test(extName);
+export const FILE_SIZE_LIMIT_DEFAULT = 1024 * 1024 * 20;
+
+export const isImage = (file) => {
+  return match(file.mimetype || file.type, 'image/*');
 };
 
-export const isPdf = (extName: string) => {
-  return extName.toLowerCase().endsWith('.pdf');
+export const isPdf = (file) => {
+  return match(file.mimetype || file.type, 'application/pdf');
 };
 
-export const toMap = (fileList: any) => {
-  if (!fileList) {
-    return [];
-  }
-  if (typeof fileList !== 'object') {
-    return [];
-  }
-  let list = fileList;
-  if (!Array.isArray(fileList)) {
-    if (Object.keys({ ...fileList }).length === 0) {
-      return [];
-    }
-    list = [fileList];
-  }
-  return list.map((item) => {
-    return [item.id || item.uid, toItem(item)];
-  });
-};
-
-export const toImages = (fileList) => {
-  if (!fileList) {
-    return [];
-  }
-  if (typeof fileList !== 'object') {
-    return [];
-  }
-  if (Object.keys(fileList).length === 0) {
-    return [];
-  }
-  let list = fileList;
-  if (!Array.isArray(fileList) && typeof fileList === 'object') {
-    list = [fileList];
-  }
-  return list.map((item) => {
-    return {
-      ...item,
-      title: item.title || item.name,
-      imageUrl: getImageByUrl(item.url, {
-        exclude: ['.png', '.jpg', '.jpeg', '.gif'],
-      }),
-    };
-  });
-};
-
-export const toArr = (value) => {
+const toArr = (value) => {
   if (!isValid(value)) {
     return [];
   }
@@ -92,93 +48,70 @@ export const testOpts = (ext: RegExp, options: { exclude?: string[]; include?: s
   return true;
 };
 
-export const getImageByUrl = (url: string, options: any) => {
+export const getImageByUrl = (url: string, options: any = {}) => {
   for (let i = 0; i < UPLOAD_PLACEHOLDER.length; i++) {
-    if (UPLOAD_PLACEHOLDER[i].ext.test(url) && testOpts(UPLOAD_PLACEHOLDER[i].ext, options)) {
-      return UPLOAD_PLACEHOLDER[i].icon || url;
+    // console.log(UPLOAD_PLACEHOLDER[i].ext, testOpts(UPLOAD_PLACEHOLDER[i].ext, options));
+    if (UPLOAD_PLACEHOLDER[i].ext.test(url)) {
+      if (testOpts(UPLOAD_PLACEHOLDER[i].ext, options)) {
+        return UPLOAD_PLACEHOLDER[i].icon || UNKNOWN_FILE_ICON;
+      } else {
+        return url;
+      }
     }
   }
-  return url;
+  return UNKNOWN_FILE_ICON;
 };
 
 export const getURL = (target: any) => {
-  return target?.['url'] || target?.['downloadURL'] || target?.['imgURL'];
+  return target?.['url'] || target?.['downloadURL'] || target?.['imgURL'] || target?.['name'];
 };
 export const getThumbURL = (target: any) => {
-  return target?.['thumbUrl'] || target?.['url'] || target?.['downloadURL'] || target?.['imgURL'];
+  return target?.['thumbUrl'] || target?.['url'] || target?.['downloadURL'] || target?.['imgURL'] || target?.['name'];
 };
 
-export const getErrorMessage = (target: any) => {
-  return target?.errorMessage ||
-    target?.errMsg ||
-    target?.errorMsg ||
-    target?.message ||
-    typeof target?.error === 'string'
-    ? target.error
-    : '';
-};
+export function getResponseMessage({ error, response }: UploadFile<any>) {
+  if (error instanceof Error && 'isAxiosError' in error) {
+    // @ts-ignore
+    if (error.response) {
+      // @ts-ignore
+      return error.response.data?.errors?.map?.((item) => item?.message).join(', ');
+    } else {
+      return error.message;
+    }
+  }
+  if (!response) {
+    return '';
+  }
+  if (typeof response === 'string') {
+    return response;
+  }
+  const { errors } = response.data ?? {};
+  if (!errors?.length) {
+    return '';
+  }
+  return errors.map((item) => item?.message).join(', ');
+}
 
-export const getState = (target: any) => {
-  if (target?.success === false) return 'error';
-  if (target?.failed === true) return 'error';
-  if (target?.error) return 'error';
-  return target?.state || target?.status;
-};
+export function normalizeFile(file: UploadFile & Record<string, any>) {
+  const imageUrl = isImage(file) ? URL.createObjectURL(file.originFileObj) : getImageByUrl(file.name);
+  const response = getResponseMessage(file);
+  return {
+    ...file,
+    title: file.name,
+    thumbUrl: imageUrl,
+    imageUrl,
+    response,
+  };
+}
 
 export const normalizeFileList = (fileList: UploadFile[]) => {
   if (fileList && fileList.length) {
-    return fileList.map((file, index) => {
-      return {
-        ...file,
-        uid: file.uid || `${index}`,
-        status: getState(file.response) || getState(file),
-        url: getURL(file) || getURL(file?.response),
-        thumbUrl: getImageByUrl(getThumbURL(file) || getThumbURL(file?.response), {
-          exclude: ['.png', '.jpg', '.jpeg', '.gif'],
-        }),
-      };
-    });
+    return fileList.map(normalizeFile);
   }
   return [];
 };
 
-export const useValidator = (validator: (value: any) => string) => {
-  const field = useField<Field>();
-  useEffect(() => {
-    const dispose = reaction(
-      () => field.value,
-      (value) => {
-        const message = validator(value);
-        field.setFeedback({
-          type: 'error',
-          code: 'UploadError',
-          messages: message ? [message] : [],
-        });
-      },
-    );
-    return () => {
-      dispose();
-    };
-  }, []);
-};
-
-export const useUploadValidator = (serviceErrorMessage = 'Upload Service Error') => {
-  useValidator((value) => {
-    const list = toArr(value);
-    for (let i = 0; i < list.length; i++) {
-      if (list[i]?.status === 'error') {
-        return getErrorMessage(list[i]?.response) || getErrorMessage(list[i]) || serviceErrorMessage;
-      }
-    }
-  });
-};
-
-export function useUploadProps<T extends IUploadProps = UploadProps>({ serviceErrorMessage, ...props }: T) {
-  useUploadValidator(serviceErrorMessage);
-  const onChange = (param: { fileList: any[] }) => {
-    props.onChange?.(normalizeFileList([...param.fileList]));
-  };
-
+export function useUploadProps<T extends IUploadProps = UploadProps>(props: T) {
   const api = useAPIClient();
 
   return {
@@ -215,8 +148,11 @@ export function useUploadProps<T extends IUploadProps = UploadProps>({ serviceEr
         },
       };
     },
-    onChange,
   };
+}
+
+export function toValueItem(file) {
+  return file.response?.data;
 }
 
 export const toItem = (file) => {
@@ -230,9 +166,11 @@ export const toItem = (file) => {
     ...file,
     id: file.id || file.uid,
     title: file.title || file.name,
-    imageUrl: getImageByUrl(file.url, {
-      exclude: ['.png', '.jpg', '.jpeg', '.gif'],
-    }),
+    imageUrl: isImage(file)
+      ? file.url
+      : getImageByUrl(file.url, {
+          exclude: ['.png', '.jpg', '.jpeg', '.gif', '.svg', '.webp', '.bmp', '.ico'],
+        }),
   };
 };
 
@@ -245,3 +183,61 @@ export const toValue = (fileList: any) => {
     .filter((file) => !file.response || file.status === 'done')
     .map((file) => file?.response?.data || file);
 };
+
+const Rules: Record<string, RuleFunction> = {
+  size(file, options: number): null | string {
+    const size = options ?? FILE_SIZE_LIMIT_DEFAULT;
+    if (size === 0) {
+      return null;
+    }
+    return file.size <= size ? null : 'File size exceeds the limit';
+  },
+  mimetype(file, options: string | string[] = '*'): null | string {
+    const pattern = options.toString().trim();
+    if (!pattern || pattern === '*') {
+      return null;
+    }
+    return pattern.split(',').filter(Boolean).some(match(file.type)) ? null : 'File type is not allowed';
+  },
+};
+
+type RuleFunction = (file: UploadFile, options: any) => string | null;
+
+function validate(file, rules: Record<string, any>) {
+  if (!rules) {
+    return null;
+  }
+  const ruleKeys = Object.keys(rules);
+  if (!ruleKeys.length) {
+    return null;
+  }
+  for (const key of ruleKeys) {
+    const error = Rules[key](file, rules[key]);
+    if (error) {
+      return error;
+    }
+  }
+  return null;
+}
+
+export function useBeforeUpload(rules) {
+  const { t } = useTranslation();
+
+  return useCallback(
+    (file) => {
+      const error = validate(file, rules);
+
+      if (error) {
+        file.status = 'error';
+        file.response = t(error);
+      } else {
+        if (file.status === 'error') {
+          delete file.status;
+          delete file.response;
+        }
+      }
+      return !error;
+    },
+    [rules],
+  );
+}

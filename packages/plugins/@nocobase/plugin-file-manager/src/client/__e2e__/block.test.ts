@@ -63,7 +63,7 @@ test.describe('file collection block', () => {
     await expect(page.getByRole('menuitem', { name: 'Size' })).not.toBeVisible();
 
     const imgBox = await page.getByLabel('block-item-CardItem-').locator('.ant-upload-list-item-image').boundingBox();
-    expect(imgBox.width).toBeLessThanOrEqual(24);
+    expect(imgBox.width).toBeLessThanOrEqual(28);
 
     // 2. 弹窗中应该可以配置图片尺寸
     await page.getByLabel('action-Action.Link-View').click();

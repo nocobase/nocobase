@@ -31,6 +31,8 @@ interface Props {
   value: any;
   collectionField: CollectionFieldOptions_deprecated;
   onChange: (value: any) => void;
+  style?: React.CSSProperties;
+  componentProps?: any;
 }
 
 export const DynamicComponent = (props: Props) => {
@@ -50,16 +52,19 @@ export const DynamicComponent = (props: Props) => {
     });
   }, [JSON.stringify(props.value), props.schema]);
   const renderSchemaComponent = useCallback(() => {
+    const componentProps = merge(props?.schema?.['x-component-props'] || {}, props.componentProps || {});
     return (
       <FieldContext.Provider value={null}>
         <SchemaComponent
           schema={{
             'x-component': 'Input',
             ...props.schema,
-            'x-component-props': merge(props?.schema?.['x-component-props'] || {}, {
+            'x-component-props': merge(componentProps, {
               style: {
                 minWidth: 150,
+                ...props.style,
               },
+              utc: false,
             }),
             name: 'value',
             'x-read-pretty': false,
@@ -84,3 +89,5 @@ export const DynamicComponent = (props: Props) => {
     </FormContext.Provider>
   );
 };
+
+export const FilterDynamicComponent = DynamicComponent;

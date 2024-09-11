@@ -8,16 +8,112 @@
  */
 
 import { Plugin } from '@nocobase/server';
-import { resolve } from 'path';
+import { Registry } from '@nocobase/utils';
+
+import { basename, resolve } from 'path';
+
+import { Transactionable } from '@nocobase/database';
+import fs from 'fs';
+import { STORAGE_TYPE_ALI_OSS, STORAGE_TYPE_LOCAL, STORAGE_TYPE_S3, STORAGE_TYPE_TX_COS } from '../constants';
 import { FileModel } from './FileModel';
 import initActions from './actions';
-import { getStorageConfig } from './storages';
+import { getFileData } from './actions/attachments';
+import { AttachmentInterface } from './interfaces/attachment-interface';
+import { IStorage, StorageModel } from './storages';
+import StorageTypeAliOss from './storages/ali-oss';
+import StorageTypeLocal from './storages/local';
+import StorageTypeS3 from './storages/s3';
+import StorageTypeTxCos from './storages/tx-cos';
 
-export { default as storageTypes } from './storages';
+export type * from './storages';
+
+const DEFAULT_STORAGE_TYPE = STORAGE_TYPE_LOCAL;
+
+export type FileRecordOptions = {
+  collectionName: string;
+  filePath: string;
+  storageName?: string;
+  values?: any;
+} & Transactionable;
+
+export type UploadFileOptions = {
+  filePath: string;
+  storageName?: string;
+  documentRoot?: string;
+};
 
 export default class PluginFileManagerServer extends Plugin {
-  storageType() {
-    return 'local';
+  storageTypes = new Registry<IStorage>();
+  storagesCache = new Map<number, StorageModel>();
+
+  async createFileRecord(options: FileRecordOptions) {
+    const { values, storageName, collectionName, filePath, transaction } = options;
+    const collection = this.db.getCollection(collectionName);
+    if (!collection) {
+      throw new Error(`collection does not exist`);
+    }
+    const collectionRepository = this.db.getRepository(collectionName);
+    const name = storageName || collection.options.storage;
+    const data = await this.uploadFile({ storageName: name, filePath });
+    return await collectionRepository.create({ values: { ...data, ...values }, transaction });
+  }
+
+  async uploadFile(options: UploadFileOptions) {
+    const { storageName, filePath, documentRoot } = options;
+    const storageRepository = this.db.getRepository('storages');
+    let storageInstance;
+
+    if (storageName) {
+      storageInstance = await storageRepository.findOne({
+        filter: {
+          name: storageName,
+        },
+      });
+    }
+
+    if (!storageInstance) {
+      storageInstance = await storageRepository.findOne({
+        filter: {
+          default: true,
+        },
+      });
+    }
+
+    const fileStream = fs.createReadStream(filePath);
+
+    if (!storageInstance) {
+      throw new Error('[file-manager] no linked or default storage provided');
+    }
+
+    if (documentRoot) {
+      storageInstance.options['documentRoot'] = documentRoot;
+    }
+
+    const storageConfig = this.storageTypes.get(storageInstance.type);
+
+    if (!storageConfig) {
+      throw new Error(`[file-manager] storage type "${storageInstance.type}" is not defined`);
+    }
+
+    const engine = storageConfig.make(storageInstance);
+
+    const file = {
+      originalname: basename(filePath),
+      path: filePath,
+      stream: fileStream,
+    } as any;
+
+    await new Promise((resolve, reject) => {
+      engine._handleFile({} as any, file, (error, info) => {
+        if (error) {
+          reject(error);
+        }
+        Object.assign(file, info);
+        resolve(info);
+      });
+    });
+
+    return getFileData({ app: this.app, file, storage: storageInstance, request: { body: {} } } as any);
   }
 
   async loadStorages(options?: { transaction: any }) {
@@ -25,15 +121,15 @@ export default class PluginFileManagerServer extends Plugin {
     const storages = await repository.find({
       transaction: options?.transaction,
     });
-    const map = new Map();
+    this.storagesCache = new Map();
     for (const storage of storages) {
-      map.set(storage.get('id'), storage.toJSON());
+      this.storagesCache.set(storage.get('id'), storage.toJSON());
     }
-    this.db['_fileStorages'] = map;
+    this.db['_fileStorages'] = this.storagesCache;
   }
 
   async install() {
-    const defaultStorageConfig = getStorageConfig(this.storageType());
+    const defaultStorageConfig = this.storageTypes.get(DEFAULT_STORAGE_TYPE);
 
     if (defaultStorageConfig) {
       const Storage = this.db.getCollection('storages');
@@ -49,10 +145,25 @@ export default class PluginFileManagerServer extends Plugin {
       await Storage.repository.create({
         values: {
           ...defaultStorageConfig.defaults(),
-          type: this.storageType(),
+          type: DEFAULT_STORAGE_TYPE,
           default: true,
         },
       });
+    }
+  }
+
+  async onSync(message) {
+    if (message.type === 'storageChange') {
+      const storage = await this.db.getRepository('storages').findOne({
+        filterByTk: message.storageId,
+      });
+      if (storage) {
+        this.storagesCache.set(storage.id, storage.toJSON());
+      }
+    }
+    if (message.type === 'storageRemove') {
+      const id = Number.parseInt(message.storageId, 10);
+      this.storagesCache.delete(id);
     }
   }
 
@@ -69,14 +180,29 @@ export default class PluginFileManagerServer extends Plugin {
   }
 
   async load() {
-    await this.importCollections(resolve(__dirname, './collections'));
+    this.storageTypes.register(STORAGE_TYPE_LOCAL, new StorageTypeLocal());
+    this.storageTypes.register(STORAGE_TYPE_ALI_OSS, new StorageTypeAliOss());
+    this.storageTypes.register(STORAGE_TYPE_S3, new StorageTypeS3());
+    this.storageTypes.register(STORAGE_TYPE_TX_COS, new StorageTypeTxCos());
+
+    await this.db.import({
+      directory: resolve(__dirname, './collections'),
+    });
 
     const Storage = this.db.getModel('storages');
-    Storage.afterSave(async (m, { transaction }) => {
-      await this.loadStorages({ transaction });
+    Storage.afterSave((m) => {
+      this.storagesCache.set(m.id, m.toJSON());
+      this.sync({
+        type: 'storageChange',
+        storageId: `${m.id}`,
+      });
     });
-    Storage.afterDestroy(async (m, { transaction }) => {
-      await this.loadStorages({ transaction });
+    Storage.afterDestroy((m) => {
+      this.storagesCache.delete(m.id);
+      this.sync({
+        type: 'storageRemove',
+        storageId: `${m.id}`,
+      });
     });
 
     this.app.acl.registerSnippet({
@@ -96,12 +222,13 @@ export default class PluginFileManagerServer extends Plugin {
 
     this.app.acl.allow('attachments', 'upload', 'loggedIn');
     this.app.acl.allow('attachments', 'create', 'loggedIn');
+    this.app.acl.allow('storages', 'getRules', 'loggedIn');
 
     // this.app.resourcer.use(uploadMiddleware);
     // this.app.resourcer.use(createAction);
     // this.app.resourcer.registerActionHandler('upload', uploadAction);
 
-    const defaultStorageName = getStorageConfig(this.storageType()).defaults().name;
+    const defaultStorageName = this.storageTypes.get(DEFAULT_STORAGE_TYPE).defaults().name;
 
     this.app.acl.addFixedParams('storages', 'destroy', () => {
       return {
@@ -120,5 +247,7 @@ export default class PluginFileManagerServer extends Plugin {
     this.app.acl.addFixedParams('attachments', 'update', ownMerger);
     this.app.acl.addFixedParams('attachments', 'create', ownMerger);
     this.app.acl.addFixedParams('attachments', 'destroy', ownMerger);
+
+    this.app.db.interfaceManager.registerInterfaceType('attachment', AttachmentInterface);
   }
 }

@@ -11,10 +11,9 @@ import { Processor, Instruction, JOB_STATUS, FlowNodeModel } from '@nocobase/plu
 
 export default class extends Instruction {
   async run(node: FlowNodeModel, input, processor: Processor) {
+    const dataSourceName = node.config.dataSource || 'main';
     // @ts-ignore
-    const { db } = this.workflow.app.dataSourceManager.dataSources.get(
-      node.config.dataSource || 'main',
-    ).collectionManager;
+    const { db } = this.workflow.app.dataSourceManager.dataSources.get(dataSourceName).collectionManager;
     if (!db) {
       throw new Error(`type of data source "${node.config.dataSource}" is not database`);
     }
@@ -26,14 +25,14 @@ export default class extends Instruction {
     }
 
     // @ts-ignore
-    const result = await db.sequelize.query(sql, {
-      transaction: processor.transaction,
+    const [result, meta] = await db.sequelize.query(sql, {
+      transaction: this.workflow.useDataSourceTransaction(dataSourceName, processor.transaction),
       // plain: true,
       // model: db.getCollection(node.config.collection).model
     });
 
     return {
-      result,
+      result: node.config.withMeta ? [result, meta] : result,
       status: JOB_STATUS.RESOLVED,
     };
   }

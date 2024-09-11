@@ -14,10 +14,11 @@ import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCompile } from '../../';
 import { useAPIClient } from '../../../api-client';
-import { useFormBlockContext, useTableBlockContext } from '../../../block-provider';
+import { useTableBlockContext } from '../../../block-provider';
+import { useFormBlockContext } from '../../../block-provider/FormBlockProvider';
 import { useCollectionManager_deprecated, useCollection_deprecated } from '../../../collection-manager';
 import { useSortFields } from '../../../collection-manager/action-hooks';
-import { FilterBlockType, mergeFilter } from '../../../filter-provider/utils';
+import { FilterBlockType } from '../../../filter-provider/utils';
 import { SetDataLoadingMode } from '../../../modules/blocks/data-blocks/details-multi/setDataLoadingModeSettingsItem';
 import {
   GeneralSchemaDesigner,
@@ -27,14 +28,15 @@ import {
   SchemaSettingsSelectItem,
   SchemaSettingsSwitchItem,
 } from '../../../schema-settings';
+import { SchemaSettingsBlockHeightItem } from '../../../schema-settings/SchemaSettingsBlockHeightItem';
 import { SchemaSettingsBlockTitleItem } from '../../../schema-settings/SchemaSettingsBlockTitleItem';
 import { SchemaSettingsConnectDataBlocks } from '../../../schema-settings/SchemaSettingsConnectDataBlocks';
 import { SchemaSettingsDataScope } from '../../../schema-settings/SchemaSettingsDataScope';
 import { SchemaSettingsTemplate } from '../../../schema-settings/SchemaSettingsTemplate';
 import { useSchemaTemplate } from '../../../schema-templates';
+import { useBlockTemplateContext } from '../../../schema-templates/BlockTemplateProvider';
 import { useDesignable } from '../../hooks';
 import { removeNullCondition } from '../filter';
-import { FixedBlockDesignerItem } from '../page/FixedBlockDesignerItem';
 
 export const EditSortField = () => {
   const { fields } = useCollection_deprecated();
@@ -84,6 +86,7 @@ export const TableBlockDesigner = () => {
   const { service } = useTableBlockContext();
   const { t } = useTranslation();
   const { dn } = useDesignable();
+  const { componentNamePrefix } = useBlockTemplateContext();
 
   const defaultSort = fieldSchema?.['x-decorator-props']?.params?.sort || [];
   const defaultResource =
@@ -112,17 +115,14 @@ export const TableBlockDesigner = () => {
       params.filter = filter;
       field.decoratorProps.params = params;
       fieldSchema['x-decorator-props']['params'] = params;
-      const filters = service.params?.[1]?.filters || {};
-      service.run(
-        { ...service.params?.[0], filter: mergeFilter([...Object.values(filters), filter]), page: 1 },
-        { filters },
-      );
+
       dn.emit('patch', {
         schema: {
           ['x-uid']: fieldSchema['x-uid'],
           'x-decorator-props': fieldSchema['x-decorator-props'],
         },
       });
+      service.params[0].page = 1;
     },
     [dn, field.decoratorProps, fieldSchema, service],
   );
@@ -130,6 +130,7 @@ export const TableBlockDesigner = () => {
   return (
     <GeneralSchemaDesigner template={template} title={title || name}>
       <SchemaSettingsBlockTitleItem />
+      <SchemaSettingsBlockHeightItem />
       {collection?.tree && collectionField?.collectionName === collectionField?.target && (
         <SchemaSettingsSwitchItem
           title={t('Tree table')}
@@ -176,7 +177,6 @@ export const TableBlockDesigner = () => {
         }}
       />
       {field.decoratorProps.dragSort && <EditSortField />}
-      <FixedBlockDesignerItem />
       <SchemaSettingsDataScope
         collectionName={name}
         defaultFilter={fieldSchema?.['x-decorator-props']?.params?.filter || {}}
@@ -282,6 +282,7 @@ export const TableBlockDesigner = () => {
         title={t('Records per page')}
         value={field.decoratorProps?.params?.pageSize || 20}
         options={[
+          { label: '5', value: 5 },
           { label: '10', value: 10 },
           { label: '20', value: 20 },
           { label: '50', value: 50 },
@@ -305,7 +306,11 @@ export const TableBlockDesigner = () => {
       <SchemaSettingsConnectDataBlocks type={FilterBlockType.TABLE} emptyDescription={t('No blocks to connect')} />
       {supportTemplate && <SchemaSettingsDivider />}
       {supportTemplate && (
-        <SchemaSettingsTemplate componentName={'Table'} collectionName={name} resourceName={defaultResource} />
+        <SchemaSettingsTemplate
+          componentName={`${componentNamePrefix}Table`}
+          collectionName={name}
+          resourceName={defaultResource}
+        />
       )}
       <SchemaSettingsDivider />
       <SchemaSettingsRemove

@@ -56,7 +56,11 @@ export abstract class Field {
     return this.options.type;
   }
 
-  abstract get dataType();
+  abstract get dataType(): any;
+
+  isRelationField() {
+    return false;
+  }
 
   async sync(syncOptions: SyncOptions) {
     await this.collection.sync({
@@ -167,11 +171,13 @@ export abstract class Field {
       Object.assign(opts, { type: this.database.sequelize.normalizeDataType(this.dataType) });
     }
 
+    Object.assign(opts, this.additionalSequelizeOptions());
+
     return opts;
   }
 
-  isSqlite() {
-    return this.database.sequelize.getDialect() === 'sqlite';
+  additionalSequelizeOptions() {
+    return {};
   }
 
   typeToString() {

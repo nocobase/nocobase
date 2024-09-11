@@ -19,6 +19,10 @@ type UploadProps = Omit<AntdUploadProps, 'onChange'> & {
 
 <code src="./demos/new-demos/multiple.tsx"></code>
 
+## Rules
+
+<code src="./demos/new-demos/rules.tsx"></code>
+
 ## Read Pretty
 
 ```ts

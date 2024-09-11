@@ -13,15 +13,17 @@ import { cloneDeep } from 'lodash';
 import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SchemaSettings } from '../../../../application/schema-settings/SchemaSettings';
-import { recursiveParent, useFormBlockContext, useTableSelectorContext } from '../../../../block-provider';
+import { recursiveParent, useTableSelectorContext } from '../../../../block-provider';
+import { useFormBlockContext } from '../../../../block-provider/FormBlockProvider';
 import {
-  useCollection_deprecated,
   useCollectionManager_deprecated,
+  useCollection_deprecated,
   useSortFields,
 } from '../../../../collection-manager';
 import { removeNullCondition, useDesignable } from '../../../../schema-component';
 import { SchemaSettingsDataScope } from '../../../../schema-settings/SchemaSettingsDataScope';
 import { setDataLoadingModeSettingsItem, useDataLoadingMode } from '../details-multi/setDataLoadingModeSettingsItem';
+import { useCollection } from '../../../../data-source';
 
 export const tableSelectorBlockSettings = new SchemaSettings({
   name: 'blockSettings:tableSelector',
@@ -249,6 +251,7 @@ export const tableSelectorBlockSettings = new SchemaSettings({
           title: t('Records per page'),
           value: field.decoratorProps?.params?.pageSize || 20,
           options: [
+            { label: '5', value: 5 },
             { label: '10', value: 10 },
             { label: '20', value: 20 },
             { label: '50', value: 50 },

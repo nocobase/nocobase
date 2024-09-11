@@ -11,12 +11,13 @@ import { ISchema, useField, useFieldSchema } from '@formily/react';
 import _ from 'lodash';
 import { useTranslation } from 'react-i18next';
 import { SchemaSettings } from '../../../../application/schema-settings/SchemaSettings';
-import { useFormBlockContext } from '../../../../block-provider';
+import { useFormBlockContext } from '../../../../block-provider/FormBlockProvider';
 import { useCollectionManager_deprecated, useCollection_deprecated } from '../../../../collection-manager';
 import { useCollectionManager } from '../../../../data-source/collection/CollectionManagerProvider';
 import { useCompile, useDesignable } from '../../../../schema-component';
 import { SchemaSettingsDefaultSortingRules } from '../../../../schema-settings';
 import { SchemaSettingsDataScope } from '../../../../schema-settings/SchemaSettingsDataScope';
+import { fieldComponentSettingsItem } from '../../../../data-source/commonsSettingsItem';
 
 export const filterCollapseItemFieldSettings = new SchemaSettings({
   name: 'fieldSettings:FilterCollapseItem',
@@ -197,6 +198,7 @@ export const filterCollapseItemFieldSettings = new SchemaSettings({
               };
             },
           },
+          fieldComponentSettingsItem,
         ];
       },
     },

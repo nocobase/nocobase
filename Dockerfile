@@ -1,4 +1,4 @@
-FROM node:20-bullseye as builder
+FROM node:20.13-bullseye as builder
 ARG VERDACCIO_URL=http://host.docker.internal:10104/
 ARG COMMIT_HASH
 ARG APPEND_PRESET_LOCAL_PLUGINS
@@ -13,14 +13,12 @@ RUN npx npm-cli-adduser --username test --password test -e test@nocobase.com -r 
 RUN apt-get update && apt-get install -y jq
 WORKDIR /tmp
 COPY . /tmp
-RUN cd /tmp && \
-    NEWVERSION="$(cat lerna.json | jq '.version' | tr -d '"').$(date +'%Y%m%d%H%M%S')" \
-        && tmp=$(mktemp) \
-        && jq ".version = \"${NEWVERSION}\"" lerna.json > "$tmp" && mv "$tmp" lerna.json
 RUN  yarn install && yarn build --no-dts
 
-RUN git checkout -b release-$(date +'%Y%m%d%H%M%S') \
-    && yarn version:alpha -y
+RUN cd /tmp && \
+    NEWVERSION="$(cat lerna.json | jq '.version' | tr -d '"').$(date +'%Y%m%d%H%M%S')" \
+        &&  git checkout -b release-$(date +'%Y%m%d%H%M%S') \
+        && yarn lerna version ${NEWVERSION} -y --no-git-tag-version
 RUN git config user.email "test@mail.com"  \
     && git config user.name "test" && git add .  \
     && git commit -m "chore(versions): test publish packages"
@@ -43,7 +41,7 @@ RUN cd /app \
   && tar -zcf ./nocobase.tar.gz -C /app/my-nocobase-app .
 
 
-FROM node:20-bullseye-slim
+FROM node:20.13-bullseye-slim
 RUN apt-get update && apt-get install -y nginx
 RUN rm -rf /etc/nginx/sites-enabled/default
 COPY ./docker/nocobase/nocobase.conf /etc/nginx/sites-enabled/nocobase.conf

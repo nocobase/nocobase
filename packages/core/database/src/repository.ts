@@ -45,6 +45,7 @@ import { HasOneRepository } from './relation-repository/hasone-repository';
 import { RelationRepository } from './relation-repository/relation-repository';
 import { updateAssociations, updateModelByValues } from './update-associations';
 import { UpdateGuard } from './update-guard';
+import { BelongsToArrayRepository } from './relation-repository/belongs-to-array-repository';
 
 const debug = require('debug')('noco-database');
 
@@ -58,7 +59,10 @@ export interface FilterAble {
   filter: Filter;
 }
 
-export type TargetKey = string | number;
+export type BaseTargetKey = string | number;
+export type MultiTargetKey = Record<string, BaseTargetKey>;
+export type TargetKey = BaseTargetKey | MultiTargetKey;
+
 export type TK = TargetKey | TargetKey[];
 
 type FieldValue = string | number | bigint | boolean | Date | Buffer | null | FieldValue[] | FilterWithOperator;
@@ -133,7 +137,7 @@ export interface DestroyOptions extends SequelizeDestroyOptions {
   context?: any;
 }
 
-type FindAndCountOptions = Omit<SequelizeAndCountOptions, 'where' | 'include' | 'order'> & CommonFindOptions;
+export type FindAndCountOptions = Omit<SequelizeAndCountOptions, 'where' | 'include' | 'order'> & CommonFindOptions;
 
 export interface CreateOptions extends SequelizeCreateOptions {
   values?: Values | Values[];
@@ -188,6 +192,7 @@ class RelationRepositoryBuilder<R extends RelationRepository> {
     BelongsToMany: BelongsToManyRepository,
     HasMany: HasManyRepository,
     ArrayField: ArrayFieldRepository,
+    BelongsToArray: BelongsToArrayRepository,
   };
 
   constructor(collection: Collection, associationName: string) {
@@ -195,17 +200,21 @@ class RelationRepositoryBuilder<R extends RelationRepository> {
     this.associationName = associationName;
     this.association = this.collection.model.associations[this.associationName];
 
-    if (!this.association) {
-      const field = collection.getField(associationName);
-      if (field && field instanceof ArrayField) {
-        this.association = {
-          associationType: 'ArrayField',
-        };
-      }
+    if (this.association) {
+      return;
+    }
+    const field = collection.getField(associationName);
+    if (!field) {
+      return;
+    }
+    if (field instanceof ArrayField) {
+      this.association = {
+        associationType: 'ArrayField',
+      };
     }
   }
 
-  of(id: string | number): R {
+  of(id: TargetKey): R {
     if (!this.association) {
       return;
     }
@@ -306,13 +315,12 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
     }
 
     if (countOptions?.filterByTk) {
+      const optionParser = new OptionsParser(options, {
+        collection: this.collection,
+      });
+
       options['where'] = {
-        [Op.and]: [
-          options['where'] || {},
-          {
-            [this.collection.filterTargetKey]: options.filterByTk,
-          },
-        ],
+        [Op.and]: [options['where'] || {}, optionParser.filterByTkToWhereOption()],
       };
     }
 
@@ -325,13 +333,11 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
       delete queryOptions.include;
     }
 
-    const count = await this.collection.model.count({
+    // @ts-ignore
+    return await this.collection.model.count({
       ...queryOptions,
       transaction,
     });
-
-    // @ts-ignore
-    return count;
   }
 
   async aggregate(options: AggregateOptions & { optionsTransformer?: (options: any) => any }): Promise<any> {
@@ -388,6 +394,42 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
     }
 
     return await this.model.aggregate(field, method, queryOptions);
+  }
+
+  async chunk(
+    options: FindOptions & { chunkSize: number; callback: (rows: Model[], options: FindOptions) => Promise<void> },
+  ) {
+    const { chunkSize, callback, limit: overallLimit } = options;
+    const transaction = await this.getTransaction(options);
+
+    let offset = 0;
+    let totalProcessed = 0;
+
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+      // Calculate the limit for the current chunk
+      const currentLimit = overallLimit !== undefined ? Math.min(chunkSize, overallLimit - totalProcessed) : chunkSize;
+
+      const rows = await this.find({
+        ...options,
+        limit: currentLimit,
+        offset,
+        transaction,
+      });
+
+      if (rows.length === 0) {
+        break;
+      }
+
+      await callback(rows, options);
+
+      offset += currentLimit;
+      totalProcessed += rows.length;
+
+      if (overallLimit !== undefined && totalProcessed >= overallLimit) {
+        break;
+      }
+    }
   }
 
   /**
@@ -462,6 +504,10 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
     return this.collection.model.findByPk(id);
   }
 
+  findByTargetKey(targetKey: TargetKey) {
+    return this.findOne({ filterByTk: targetKey });
+  }
+
   /**
    * Find one record from database
    *
@@ -531,7 +577,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
       underscored: this.collection.options.underscored,
     });
 
-    const values = guard.sanitize(options.values || {});
+    const values = (this.model as typeof Model).callSetters(guard.sanitize(options.values || {}), options);
 
     const instance = await this.model.create<any>(values, {
       ...options,
@@ -603,7 +649,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
 
     const guard = UpdateGuard.fromOptions(this.model, { ...options, underscored: this.collection.options.underscored });
 
-    const values = guard.sanitize(options.values);
+    const values = (this.model as typeof Model).callSetters(guard.sanitize(options.values || {}), options);
 
     // NOTE:
     // 1. better to be moved to separated API like bulkUpdate/updateMany
@@ -725,15 +771,30 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
     }
 
     if (filterByTk && !options.filter) {
-      return await this.model.destroy({
+      const where = [];
+
+      for (const tk of filterByTk) {
+        const optionParser = new OptionsParser(
+          {
+            filterByTk: tk,
+          },
+          {
+            collection: this.collection,
+          },
+        );
+
+        where.push(optionParser.filterByTkToWhereOption());
+      }
+
+      const destroyOptions = {
         ...options,
         where: {
-          [modelFilterKey]: {
-            [Op.in]: filterByTk,
-          },
+          [Op.or]: where,
         },
         transaction,
-      });
+      };
+
+      return await this.model.destroy(destroyOptions);
     }
 
     if (options.filter && isValidFilter(options.filter)) {

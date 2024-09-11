@@ -104,8 +104,8 @@
   "Set the data scope": "Establecer el ámbito de los datos",
   "Data loading mode": "Modo de carga de datos",
   "Set data loading mode": "Establecer el modo de carga de datos",
-  "Automatically load data": "Cargar datos",
-  "Load data after filtering": "Cargar datos después de filtrar",
+  "Load all data when filter is empty": "Cargar todos los datos cuando el filtro esté vacío",
+  "Do not load data when filter is empty": "No cargar datos cuando el filtro esté vacío",
   "Data blocks": "Bloques de datos",
   "Filter blocks": "Bloques de filtro",
   "Table": "Tabla",
@@ -620,6 +620,7 @@
   "Current collection": "Colección actual",
   "Other collections": "Otras colecciones",
   "Current popup record": "Registro actual del popup",
+  "Parent popup record": "Registro padre del popup",
   "Associated records": "Registros asociados",
   "Parent record": "Registro padre",
   "Current time": "Hora actual",
@@ -758,5 +759,11 @@
   "Home page": "Página de inicio",
   "Handbook": "Manual de usuario",
   "License": "Licencia",
-  "This variable has been deprecated and can be replaced with \"Current form\"": "La variable ha sido obsoleta; \"Formulario actual\" puede ser utilizada como sustituto"
+  "This variable has been deprecated and can be replaced with \"Current form\"": "La variable ha sido obsoleta; \"Formulario actual\" puede ser utilizada como sustituto",
+  "The value of this variable is derived from the query string of the page URL. This variable can only be used normally when the page has a query string.": "El valor de esta variable se deriva de la cadena de consulta de la URL de la página. Esta variable sólo puede utilizarse normalmente cuando la página tiene una cadena de consulta.",
+  "URL search params": "Parámetros de búsqueda de URL",
+  "Expand All": "Expandir todo",
+  "Clear default value": "Borrar valor por defecto",
+  "Open in new window": "Abrir en una nueva ventana",
+  "Sorry, the page you visited does not exist.": "Lo siento, la página que visitaste no existe."
 }

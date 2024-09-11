@@ -7,10 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { BlockInitializer, useSchemaInitializerItem } from '@nocobase/client';
+import { BlockInitializer, useOpenModeContext, useSchemaInitializerItem } from '@nocobase/client';
 import React from 'react';
 
 export const BulkEditActionInitializer = () => {
+  const { defaultOpenMode } = useOpenModeContext();
+
   const schema = {
     type: 'void',
     title: '{{t("Bulk edit")}}',
@@ -20,7 +22,7 @@ export const BulkEditActionInitializer = () => {
       updateMode: 'selected',
     },
     'x-component-props': {
-      openMode: 'drawer',
+      openMode: defaultOpenMode,
       icon: 'EditOutlined',
     },
     properties: {

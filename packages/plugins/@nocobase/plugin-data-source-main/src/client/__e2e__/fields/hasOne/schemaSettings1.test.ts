@@ -142,6 +142,7 @@ test.describe('form item & create form', () => {
       'Constant',
       'Current user',
       'Current role',
+      'API token',
       'Date variables',
       'Current form',
     ]);

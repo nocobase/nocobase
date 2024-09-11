@@ -24,6 +24,7 @@ import { AuthTypeContext, AuthTypesContext, useAuthTypes } from './authType';
 import { useValuesFromOptions, Options } from './Options';
 import { useTranslation } from 'react-i18next';
 import { useAuthTranslation } from '../locale';
+import { Schema } from '@formily/react';
 
 const useCloseAction = () => {
   const { setVisible } = useActionContext();
@@ -81,7 +82,7 @@ export const Authenticator = () => {
           const types = res?.data?.data || [];
           return types.map((type: { name: string; title?: string }) => ({
             key: type.name,
-            label: t(type.title || type.name),
+            label: Schema.compile(type.title || type.name, { t }),
             value: type.name,
           }));
         }),

@@ -189,6 +189,12 @@ export interface SchemaToolbarProps {
    */
   showBorder?: boolean;
   showBackground?: boolean;
+  toolbarClassName?: string;
+  toolbarStyle?: React.CSSProperties;
+  spaceWrapperClassName?: string;
+  spaceWrapperStyle?: React.CSSProperties;
+  spaceClassName?: string;
+  spaceStyle?: React.CSSProperties;
 }
 
 const InternalSchemaToolbar: FC<SchemaToolbarProps> = (props) => {
@@ -198,12 +204,22 @@ const InternalSchemaToolbar: FC<SchemaToolbarProps> = (props) => {
     initializer,
     settings,
     showBackground,
+    spaceWrapperClassName,
+    spaceWrapperStyle,
     showBorder = true,
     draggable = true,
-  } = { ...props, ...(fieldSchema['x-toolbar-props'] || {}) } as SchemaToolbarProps;
+    spaceClassName,
+    spaceStyle,
+    toolbarClassName,
+    toolbarStyle = {},
+  } = {
+    ...props,
+    ...(fieldSchema?.['x-toolbar-props'] || {}),
+  } as SchemaToolbarProps;
   const { designable } = useDesignable();
   const compile = useCompile();
   const { styles } = useStyles();
+  const { t } = useTranslation();
   const { getAriaLabel } = useGetAriaLabelOfDesigner();
   const dm = useDataSourceManager();
   const dataSources = dm?.getDataSources();
@@ -216,20 +232,19 @@ const InternalSchemaToolbar: FC<SchemaToolbarProps> = (props) => {
     if (Array.isArray(title)) return title.map((item) => compile(item));
   }, [compile, title]);
   const { render: schemaSettingsRender, exists: schemaSettingsExists } = useSchemaSettingsRender(
-    settings || fieldSchema['x-settings'],
-    fieldSchema['x-settings-props'],
+    settings || fieldSchema?.['x-settings'],
+    fieldSchema?.['x-settings-props'],
   );
   const { render: schemaInitializerRender, exists: schemaInitializerExists } = useSchemaInitializerRender(
-    initializer || fieldSchema['x-initializer'],
-    fieldSchema['x-initializer-props'],
+    initializer || fieldSchema?.['x-initializer'],
+    fieldSchema?.['x-initializer-props'],
   );
   const rowCtx = useGridRowContext();
   const gridContext = useGridContext();
-
   const initializerProps: any = useMemo(() => {
     return {
       insertPosition: 'afterEnd',
-      wrap: rowCtx?.cols?.length > 1 ? undefined : gridRowColWrap,
+      wrap: rowCtx?.cols?.length === 1 ? gridRowColWrap : undefined,
       Component: (props: any) => (
         <PlusOutlined
           {...props}
@@ -252,6 +267,9 @@ const InternalSchemaToolbar: FC<SchemaToolbarProps> = (props) => {
 
   const initializerElement = useMemo(() => {
     if (initializer === false) return null;
+    if (schemaInitializerExists) {
+      return schemaInitializerRender(initializerProps);
+    }
     if (gridContext?.InitializerComponent || gridContext?.renderSchemaInitializer) {
       return gridContext?.InitializerComponent ? (
         <gridContext.InitializerComponent {...initializerProps} />
@@ -259,8 +277,6 @@ const InternalSchemaToolbar: FC<SchemaToolbarProps> = (props) => {
         gridContext.renderSchemaInitializer?.(initializerProps)
       );
     }
-    if (!schemaInitializerExists) return null;
-    return schemaInitializerRender(initializerProps);
   }, [gridContext, initializer, initializerProps, schemaInitializerExists, schemaInitializerRender]);
 
   const settingsElement = useMemo(() => {
@@ -271,7 +287,14 @@ const InternalSchemaToolbar: FC<SchemaToolbarProps> = (props) => {
 
   useEffect(() => {
     const toolbarElement = toolbarRef.current;
-    const parentElement = toolbarElement?.parentElement;
+    let parentElement = toolbarElement?.parentElement;
+    while (parentElement && window.getComputedStyle(parentElement).height === '0px') {
+      parentElement = parentElement.parentElement;
+    }
+    if (!parentElement) {
+      return;
+    }
+
     function show() {
       if (toolbarElement) {
         toolbarElement.style.display = 'block';
@@ -284,21 +307,17 @@ const InternalSchemaToolbar: FC<SchemaToolbarProps> = (props) => {
       }
     }
 
-    if (parentElement) {
-      const style = window.getComputedStyle(parentElement);
-      if (style.position === 'static') {
-        parentElement.style.position = 'relative';
-      }
-
-      parentElement.addEventListener('mouseenter', show);
-      parentElement.addEventListener('mouseleave', hide);
+    const style = window.getComputedStyle(parentElement);
+    if (style.position === 'static') {
+      parentElement.style.position = 'relative';
     }
 
+    parentElement.addEventListener('mouseenter', show);
+    parentElement.addEventListener('mouseleave', hide);
+
     return () => {
-      if (parentElement) {
-        parentElement.removeEventListener('mouseenter', show);
-        parentElement.removeEventListener('mouseleave', hide);
-      }
+      parentElement.removeEventListener('mouseenter', show);
+      parentElement.removeEventListener('mouseleave', hide);
     };
   }, []);
 
@@ -309,22 +328,25 @@ const InternalSchemaToolbar: FC<SchemaToolbarProps> = (props) => {
   return (
     <div
       ref={toolbarRef}
-      className={styles.toolbar}
-      style={{ border: showBorder ? 'auto' : 0, background: showBackground ? 'auto' : 0 }}
+      className={classNames(styles.toolbar, toolbarClassName, 'schema-toolbar')}
+      style={{ border: showBorder ? 'auto' : 0, background: showBackground ? 'auto' : 0, ...toolbarStyle }}
     >
       {titleArr && (
         <div className={styles.toolbarTitle}>
           <Space size={2}>
-            {titleArr.map((item) => (
-              <span key={item} className={styles.toolbarTitleTag}>
-                {dataSource ? `${compile(dataSource?.displayName)} > ${item}` : item}
+            <span key={titleArr[0]} className={styles.toolbarTitleTag}>
+              {dataSource ? `${compile(dataSource?.displayName)} > ${titleArr[0]}` : titleArr[0]}
+            </span>
+            {titleArr[1] && (
+              <span className={styles.toolbarTitleTag}>
+                {`${t('Reference template')}: ${`${titleArr[1]}` || t('Untitled')}`}
               </span>
-            ))}
+            )}
           </Space>
         </div>
       )}
-      <div className={styles.toolbarIcons}>
-        <Space size={3} align={'center'}>
+      <div className={classNames(styles.toolbarIcons, spaceWrapperClassName)} style={spaceWrapperStyle}>
+        <Space size={3} align={'center'} className={spaceClassName} style={spaceStyle}>
           {dragElement}
           {initializerElement}
           {settingsElement}

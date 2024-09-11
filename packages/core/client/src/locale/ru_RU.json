@@ -74,8 +74,8 @@
   "Set the data scope": "Установить область данных",
   "Data loading mode": "Режим загрузки данных",
   "Set data loading mode": "Установить режим загрузки данных",
-  "Automatically load data": "Автоматически загружать данные",
-  "Load data after filtering": "Загружать данные после фильтрации",
+  "Load all data when filter is empty": "Загружать все данные, когда фильтр пуст",
+  "Do not load data when filter is empty": "Не загружать данные, когда фильтр пуст",
   "Data blocks": "Блоки данных",
   "Filter blocks": "Просеивающие блоки",
   "Table": "Таблица",
@@ -455,6 +455,7 @@
   "Current collection": "Текущая коллекция",
   "Other collections": "Другие коллекции",
   "Current popup record": "Текущая запись всплывающего окна",
+  "Parent popup record": "Родительская запись всплывающего окна",
   "Associated records": "Связанные записи",
   "Parent record": "Родительская запись",
   "Popup close method": "Метод закрытия всплывающего окна",
@@ -572,5 +573,11 @@
   "Home page": "Домашняя страница",
   "Handbook": "Руководство пользователя",
   "License": "Лицензия",
-  "This variable has been deprecated and can be replaced with \"Current form\"": "Переменная устарела; \"Текущая форма\" может быть использована в качестве замены"
+  "This variable has been deprecated and can be replaced with \"Current form\"": "Переменная устарела; \"Текущая форма\" может быть использована в качестве замены",
+  "The value of this variable is derived from the query string of the page URL. This variable can only be used normally when the page has a query string.": "Значение этой переменной происходит из строки запроса URL страницы. Эта переменная может использоваться только в том случае, если у страницы есть строка запроса.",
+  "URL search params": "Параметры поиска URL",
+  "Expand All": "Развернуть все",
+  "Clear default value": "Очистить значение по умолчанию",
+  "Open in new window": "Открыть в новом окне",
+  "Sorry, the page you visited does not exist.": "Извините, посещенной вами страницы не существует."
 }

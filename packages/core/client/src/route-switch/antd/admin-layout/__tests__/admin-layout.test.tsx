@@ -8,12 +8,12 @@
  */
 
 import { ACLMenuItemProvider, AdminLayout, BlockSchemaComponentPlugin, CurrentUserProvider } from '@nocobase/client';
-import { renderApp, waitFor, screen } from '@nocobase/test/client';
+import { renderAppOptions, waitFor, screen } from '@nocobase/test/client';
 import React from 'react';
 
 describe('AdminLayout', () => {
   it('should render correctly', async () => {
-    await renderApp({
+    await renderAppOptions({
       designable: true,
       noWrapperSchema: true,
       appOptions: {

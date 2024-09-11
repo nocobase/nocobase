@@ -11,7 +11,7 @@ import { ISchema } from '@formily/react';
 import React, { FC, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { DatePickerProvider, useCollectionManager_deprecated, useRecord } from '..';
-import { useFormBlockContext } from '../block-provider';
+import { useFormBlockContext } from '../block-provider/FormBlockProvider';
 import { useCollectionFilterOptionsV2 } from '../collection-manager/action-hooks';
 import { FlagProvider, useFlag } from '../flag-provider';
 import { DynamicComponentProps } from '../schema-component/antd/filter/DynamicComponent';
@@ -39,6 +39,7 @@ export const SchemaSettingsDataScope: FC<DataScopeProps> = function DataScopeCon
             {...props}
             form={form}
             record={record}
+            noDisabled={true}
             shouldChange={getShouldChange({
               collectionField: props.collectionField,
               variables,

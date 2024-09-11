@@ -11,6 +11,7 @@ import { Field, GeneralField } from '@formily/core';
 import { RecursionField, useField, useFieldSchema } from '@formily/react';
 import { Col, Row } from 'antd';
 import merge from 'deepmerge';
+import { isArray } from 'lodash';
 import template from 'lodash/template';
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
@@ -20,6 +21,7 @@ import {
   WithoutTableFieldResource,
   useCollectionParentRecord,
   useCollectionRecord,
+  useCollectionRecordData,
   useDataBlockProps,
   useDataBlockRequest,
   useDataBlockResource,
@@ -32,7 +34,6 @@ import {
   useCollectionManager_deprecated,
   useCollection_deprecated,
 } from '../collection-manager';
-import { DataBlockCollector } from '../filter-provider/FilterProvider';
 import { useSourceId } from '../modules/blocks/useSourceId';
 import { RecordProvider, useRecordIndex } from '../record-provider';
 import { useAssociationNames } from './hooks';
@@ -271,9 +272,7 @@ export const BlockProvider = (props: {
     <BlockContext.Provider value={blockValue}>
       <DataBlockProvider {...(props as any)} params={params} parentRecord={parentRecord || parentRecordFromHook}>
         <BlockRequestProvider_deprecated {...props} updateAssociationValues={updateAssociationValues} params={params}>
-          <DataBlockCollector {...props} params={params}>
-            {props.children}
-          </DataBlockCollector>
+          {props.children}
         </BlockRequestProvider_deprecated>
       </DataBlockProvider>
     </BlockContext.Provider>
@@ -293,11 +292,12 @@ export const useBlockAssociationContext = () => {
 export const useFilterByTk = () => {
   const { resource, __parent } = useBlockRequestContext();
   const recordIndex = useRecordIndex();
-  const record = useRecord();
+  const recordData = useCollectionRecordData();
   const collection = useCollection_deprecated();
   const { getCollectionField } = useCollectionManager_deprecated();
   const assoc = useBlockAssociationContext();
   const withoutTableFieldResource = useContext(WithoutTableFieldResource);
+
   if (!withoutTableFieldResource) {
     if (resource instanceof TableFieldResource || __parent?.block === 'TableField') {
       return recordIndex;
@@ -306,9 +306,17 @@ export const useFilterByTk = () => {
 
   if (assoc) {
     const association = getCollectionField(assoc);
-    return record?.[association.targetKey || 'id'];
+    return recordData?.[association.targetKey || 'id'];
   }
-  return record?.[collection.filterTargetKey || 'id'];
+  if (isArray(collection.filterTargetKey)) {
+    const filterByTk = {};
+    for (const key of collection.filterTargetKey) {
+      filterByTk[key] = recordData?.[key];
+    }
+    return filterByTk;
+  } else {
+    return recordData?.[collection.filterTargetKey || 'id'];
+  }
 };
 
 /**

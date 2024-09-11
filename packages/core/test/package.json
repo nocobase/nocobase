@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/test",
-  "version": "1.0.0-alpha.15",
+  "version": "1.4.0-alpha",
   "main": "lib/index.js",
   "module": "./src/index.ts",
   "types": "./lib/index.d.ts",
@@ -51,8 +51,8 @@
   },
   "dependencies": {
     "@faker-js/faker": "8.1.0",
-    "@nocobase/server": "1.0.0-alpha.15",
-    "@playwright/test": "^1.44.0",
+    "@nocobase/server": "1.4.0-alpha",
+    "@playwright/test": "^1.45.3",
     "@testing-library/jest-dom": "^6.4.2",
     "@testing-library/react": "^14.0.0",
     "@testing-library/react-hooks": "^8.0.1",
@@ -66,7 +66,7 @@
     "jsdom-worker": "^0.3.0",
     "mariadb": "^2.5.6",
     "mockjs": "^1.1.0",
-    "mysql2": "^2.3.3",
+    "mysql2": "^3.11.0",
     "pg": "^8.7.3",
     "pg-hstore": "^2.3.4",
     "sqlite3": "^5.0.8",

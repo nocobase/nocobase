@@ -64,7 +64,9 @@ test.describe('configure global actions', () => {
 
     await page.getByLabel('schema-initializer-ActionBar-list:configureActions-general').hover();
     await page.getByRole('menuitem', { name: 'Filter' }).click();
+    await page.getByLabel('schema-initializer-ActionBar-list:configureActions-general').hover();
     await page.getByRole('menuitem', { name: 'Add new' }).click();
+    await page.getByLabel('schema-initializer-ActionBar-list:configureActions-general').hover();
     await page.getByRole('menuitem', { name: 'Refresh' }).click();
 
     await page.mouse.move(300, 0);
@@ -92,7 +94,9 @@ test.describe('configure item actions', () => {
 
     await page.getByLabel('schema-initializer-ActionBar-list:configureItemActions-general').first().hover();
     await page.getByRole('menuitem', { name: 'View' }).click();
+    await page.getByLabel('schema-initializer-ActionBar-list:configureItemActions-general').first().hover();
     await page.getByRole('menuitem', { name: 'Edit' }).click();
+    await page.getByLabel('schema-initializer-ActionBar-list:configureItemActions-general').first().hover();
     await page.getByRole('menuitem', { name: 'Delete' }).click();
 
     await page.mouse.move(300, 0);
@@ -118,6 +122,7 @@ test.describe('configure item actions', () => {
 
     await page.getByLabel('schema-initializer-ActionBar-list:configureItemActions-general').first().hover();
     await page.getByRole('menuitem', { name: 'Popup' }).click();
+    await page.getByLabel('schema-initializer-ActionBar-list:configureItemActions-general').first().hover();
     await page.getByRole('menuitem', { name: 'Update record' }).click();
 
     await page.mouse.move(300, 0);
@@ -152,7 +157,7 @@ test.describe('configure fields', () => {
     await page.mouse.move(300, 0);
     await expect(page.getByLabel('block-item-CollectionField-general-list-general.id-ID').first()).toBeVisible();
     await expect(
-      page.getByLabel('block-item-CollectionField-general-list-general.manyToOne.nickname').first(),
+      page.getByLabel('block-item-CollectionField-general-list-users.nickname-Nickname').first(),
     ).toBeVisible();
 
     // delete fields

@@ -107,6 +107,7 @@ const dateValueWrapper = (value: any, timezone?: string) => {
   if (!value) {
     return null;
   }
+
   if (Array.isArray(value)) {
     if (value.length === 2) {
       value.push('[]', timezone);
@@ -182,6 +183,11 @@ export const parseFilter = async (filter: any, opts: ParseFilterOptions = {}) =>
       }
       if (isDateOperator(operator)) {
         const field = getField?.(path);
+
+        if (field?.constructor.name === 'DateOnlyField' || field?.constructor.name === 'DatetimeNoTzField') {
+          return value;
+        }
+
         return dateValueWrapper(value, field?.timezone || timezone);
       }
       return value;
@@ -260,9 +266,15 @@ export function utc2unit(options: Utc2unitOptions) {
   const r = fn[unit]?.();
   return timezone ? r + timezone : r;
 }
-
+type ToUnitParams = {
+  now?: any;
+  timezone?: string | number;
+  field?: {
+    timezone?: string | number;
+  };
+};
 export const toUnit = (unit, offset?: number) => {
-  return ({ now, timezone, field }) => {
+  return ({ now, timezone, field }: ToUnitParams) => {
     if (field?.timezone) {
       timezone = field?.timezone;
     }
@@ -271,7 +283,7 @@ export const toUnit = (unit, offset?: number) => {
 };
 
 const toDays = (offset: number) => {
-  return ({ now, timezone, field }) => {
+  return ({ now, timezone, field }: ToUnitParams) => {
     if (field?.timezone) {
       timezone = field?.timezone;
     }

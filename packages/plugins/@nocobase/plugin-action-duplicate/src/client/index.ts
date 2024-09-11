@@ -7,9 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Plugin, useCollection_deprecated } from '@nocobase/client';
+import { Plugin, useActionAvailable } from '@nocobase/client';
 import { DuplicateAction } from './DuplicateAction';
 import { deprecatedDuplicateActionSettings, duplicateActionSettings } from './DuplicateAction.Settings';
+import { DuplicateActionDecorator } from './DuplicateActionDecorator';
 import { DuplicateActionInitializer } from './DuplicateActionInitializer';
 import { DuplicatePluginProvider } from './DuplicatePluginProvider';
 
@@ -19,32 +20,10 @@ export class PluginActionDuplicateClient extends Plugin {
     this.app.addComponents({
       DuplicateActionInitializer,
       DuplicateAction,
+      DuplicateActionDecorator,
     });
     this.app.schemaSettingsManager.add(deprecatedDuplicateActionSettings);
     this.app.schemaSettingsManager.add(duplicateActionSettings);
-
-    const initializerData = {
-      title: '{{t("Duplicate")}}',
-      Component: 'DuplicateActionInitializer',
-      schema: {
-        'x-component': 'Action',
-        'x-action': 'duplicate',
-        'x-toolbar': 'ActionSchemaToolbar',
-        'x-settings': 'actionSettings:duplicate',
-        'x-decorator': 'ACLActionProvider',
-        'x-component-props': {
-          type: 'primary',
-        },
-      },
-      useVisible() {
-        const collection = useCollection_deprecated();
-        return (
-          (collection.template !== 'view' || collection?.writableView) &&
-          collection.template !== 'file' &&
-          collection.template !== 'sql'
-        );
-      },
-    };
 
     const initializerTableData = {
       title: '{{t("Duplicate")}}',
@@ -54,19 +33,12 @@ export class PluginActionDuplicateClient extends Plugin {
         'x-action': 'duplicate',
         'x-toolbar': 'ActionSchemaToolbar',
         'x-settings': 'actionSettings:duplicate',
-        'x-decorator': 'ACLActionProvider',
+        'x-decorator': 'DuplicateActionDecorator',
         'x-component-props': {
           type: 'primary',
         },
       },
-      useVisible() {
-        const collection = useCollection_deprecated();
-        return (
-          (collection.template !== 'view' || collection?.writableView) &&
-          collection.template !== 'file' &&
-          collection.template !== 'sql'
-        );
-      },
+      useVisible: () => useActionAvailable('create'),
     };
 
     this.app.schemaInitializerManager.addItem('table:configureItemActions', 'actions.duplicate', initializerTableData);

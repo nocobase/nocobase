@@ -120,9 +120,11 @@ export function getJsonLogic() {
       return a.indexOf(b) !== -1;
     },
     $notIncludes: function (a, b) {
-      if (!a || typeof a.indexOf === 'undefined') return false;
-      if (Array.isArray(a)) return !a.some((element) => element.includes(b));
-      return !(a.indexOf(b) !== -1);
+      if (Array.isArray(a)) return !a.some((element) => (element || '').includes(b));
+
+      a = a || '';
+
+      return !a.includes(b);
     },
     $anyOf: function (a, b) {
       if (a.length === 0) {
@@ -134,7 +136,7 @@ export function getJsonLogic() {
       return a.some((element) => b.includes(element));
     },
     $noneOf: function (a, b) {
-      if (a.length === 0) {
+      if (!a || a?.length === 0) {
         return true;
       }
       if (Array.isArray(a) && Array.isArray(b) && a.some((element) => Array.isArray(element))) {

@@ -76,9 +76,7 @@ test.describe('configure fields', () => {
     await expect(
       page.getByLabel('block-item-CollectionField-general-details-general.singleSelect-Single select'),
     ).toBeVisible();
-    await expect(
-      page.getByLabel('block-item-CollectionField-general-details-general.manyToOne.nickname'),
-    ).toBeVisible();
+    await expect(page.getByLabel('block-item-CollectionField-general-details-users.nickname-Nickname')).toBeVisible();
 
     // delete fields
     await formItemInitializer.hover();
@@ -114,6 +112,7 @@ test.describe('configure actions', () => {
 
     await page.getByLabel('schema-initializer-ActionBar-detailsWithPaging:configureActions-general').hover();
     await page.getByRole('menuitem', { name: 'Edit' }).click();
+    await page.getByLabel('schema-initializer-ActionBar-detailsWithPaging:configureActions-general').hover();
     await page.getByRole('menuitem', { name: 'Delete' }).click();
 
     await page.mouse.move(300, 0);

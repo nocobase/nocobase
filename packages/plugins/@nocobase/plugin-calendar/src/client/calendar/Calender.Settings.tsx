@@ -8,22 +8,23 @@
  */
 
 import { useField, useFieldSchema } from '@formily/react';
-import React from 'react';
 import {
   SchemaSettings,
+  SchemaSettingsBlockHeightItem,
   SchemaSettingsBlockTitleItem,
-  SchemaSettingsSelectItem,
-  useCollection,
-  SchemaSettingsSwitchItem,
-  SchemaSettingsDataScope,
-  useDesignable,
-  FixedBlockDesignerItem,
   SchemaSettingsCascaderItem,
-  useFormBlockContext,
-  removeNullCondition,
+  SchemaSettingsDataScope,
+  SchemaSettingsSelectItem,
+  SchemaSettingsSwitchItem,
   SchemaSettingsTemplate,
+  removeNullCondition,
+  useBlockTemplateContext,
+  useCollection,
   useCollectionManager_deprecated,
+  useDesignable,
+  useFormBlockContext,
 } from '@nocobase/client';
+import React from 'react';
 import { useTranslation } from '../../locale';
 import { useCalendarBlockContext } from '../schema-initializer/CalendarBlockProvider';
 
@@ -57,6 +58,10 @@ export const calendarBlockSettings = new SchemaSettings({
     {
       name: 'title',
       Component: SchemaSettingsBlockTitleItem,
+    },
+    {
+      name: 'setTheBlockHeight',
+      Component: SchemaSettingsBlockHeightItem,
     },
     {
       name: 'titleField',
@@ -97,10 +102,6 @@ export const calendarBlockSettings = new SchemaSettings({
     {
       name: 'showLunar',
       Component: ShowLunarDesignerItem,
-    },
-    {
-      name: 'fixBlock',
-      Component: FixedBlockDesignerItem,
     },
     {
       name: 'startDateField',
@@ -152,7 +153,7 @@ export const calendarBlockSettings = new SchemaSettings({
         return {
           title: t('End date field'),
           value: fieldNames.end,
-          options: getCollectionFieldsOptions(name, 'date', {
+          options: getCollectionFieldsOptions(name, ['date', 'datetime', 'dateOnly', 'datetimeNoTz'], {
             association: ['o2o', 'obo', 'oho', 'm2o'],
           }),
           onChange: (end) => {
@@ -181,7 +182,6 @@ export const calendarBlockSettings = new SchemaSettings({
         const fieldSchema = useFieldSchema();
         const { form } = useFormBlockContext();
         const field = useField();
-        const { service } = useCalendarBlockContext();
         const { dn } = useDesignable();
         return {
           collectionName: name,
@@ -193,7 +193,6 @@ export const calendarBlockSettings = new SchemaSettings({
             params.filter = filter;
             field.decoratorProps.params = params;
             fieldSchema['x-decorator-props']['params'] = params;
-            service.run({ ...service?.params?.[0], filter });
             dn.emit('patch', {
               schema: {
                 ['x-uid']: fieldSchema['x-uid'],
@@ -214,10 +213,11 @@ export const calendarBlockSettings = new SchemaSettings({
       useComponentProps() {
         const { name } = useCollection();
         const fieldSchema = useFieldSchema();
+        const { componentNamePrefix } = useBlockTemplateContext();
         const defaultResource =
           fieldSchema?.['x-decorator-props']?.resource || fieldSchema?.['x-decorator-props']?.association;
         return {
-          componentName: 'Calendar',
+          componentName: `${componentNamePrefix}Calendar`,
           collectionName: name,
           resourceName: defaultResource,
         };

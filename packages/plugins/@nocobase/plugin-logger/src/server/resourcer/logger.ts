@@ -9,11 +9,48 @@
 
 import { Context, Next } from '@nocobase/actions';
 import { getLoggerFilePath } from '@nocobase/logger';
-import { readdir } from 'fs/promises';
+import { readdir, stat } from 'fs/promises';
 import { join } from 'path';
 import stream from 'stream';
 import { pack } from 'tar-fs';
 import zlib from 'zlib';
+import lodash from 'lodash';
+
+const envVars = [
+  'APP_ENV',
+  'APP_PORT',
+  'API_BASE_PATH',
+  'API_BASE_URL',
+  'DB_DIALECT',
+  'DB_TABLE_PREFIX',
+  'DB_UNDERSCORED',
+  'DB_TIMEZONE',
+  'DB_LOGGING',
+  'LOGGER_TRANSPORT',
+  'LOGGER_LEVEL',
+];
+
+const getLastestLogs = async (path: string) => {
+  const files = await readdir(path);
+  const prefixes = ['request', 'sql', 'system', 'system_error'];
+  const logs = files.filter((file) => file.endsWith('.log') && prefixes.some((prefix) => file.startsWith(prefix)));
+  if (!logs.length) {
+    return [];
+  }
+  const mtime = async (file: string) => {
+    const info = await stat(join(path, file));
+    return [file, info.mtime];
+  };
+  const logsWithTime = await Promise.all(logs.map(mtime));
+  const getLatestLog = (prefix: string) => {
+    const logs = logsWithTime.filter((file) => (file[0] as string).startsWith(prefix));
+    if (!logs.length) {
+      return null;
+    }
+    return logs.reduce((a, b) => (a[1] > b[1] ? a : b))[0] as string;
+  };
+  return prefixes.map(getLatestLog).filter((file) => file);
+};
 
 const tarFiles = (path: string, files: string[]): Promise<any> => {
   return new Promise((resolve, reject) => {
@@ -88,6 +125,30 @@ export default {
         }
         return file;
       });
+      try {
+        ctx.attachment('logs.tar.gz');
+        ctx.body = await tarFiles(path, files);
+      } catch (err) {
+        ctx.log.error(`download error: ${err.message}`, { files, err: err.stack });
+        ctx.throw(500, ctx.t('Download logs failed.'));
+      }
+      await next();
+    },
+    collect: async (ctx: Context, next: Next) => {
+      const { error, ...info } = ctx.action.params.values || {};
+      const { message, ...e } = error || {};
+      ctx.log.error({ message: `Diagnosis, frontend error, ${message}`, ...e });
+      ctx.log.error(`Diagnostic information`, info);
+      ctx.log.error('Diagnosis, environment variables', lodash.pick(process.env, envVars));
+
+      const path = getLoggerFilePath(ctx.app.name || 'main');
+      const files = await getLastestLogs(path);
+      if (!files.length) {
+        ctx.throw(
+          404,
+          ctx.t('No log files found. Please check the LOGGER_TRANSPORTS environment variable configuration.'),
+        );
+      }
       try {
         ctx.attachment('logs.tar.gz');
         ctx.body = await tarFiles(path, files);

@@ -2,6 +2,12 @@
 
 The component displayed when an error occurs during rendering.
 
-其基于 [react-error-boundary](https://github.com/bvaughn/react-error-boundary) 库。
+Based on the [react-error-boundary](https://github.com/bvaughn/react-error-boundary) library.
 
-<code src="./demos/new-demos/basic.tsx"></code>
+## Basic
+
+<code src="./demos/basic.tsx"></code>
+
+## Modal
+
+<code src="./demos/modal.tsx"></code>

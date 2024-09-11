@@ -132,4 +132,191 @@ describe('CollectionFieldInterfaceManager', () => {
       expect(collectionFieldInterfaceManager.getFieldInterfaceGroup('nonExistentGroup')).toBeUndefined();
     });
   });
+
+  describe('addFieldInterfaceComponentOption', () => {
+    it('should add field interface component option', () => {
+      class A extends CollectionFieldInterface {
+        name = 'a';
+        default = {
+          type: 'string',
+          uiSchema: {
+            type: 'string',
+            'x-component': 'A',
+          },
+        };
+      }
+
+      collectionFieldInterfaceManager.addFieldInterfaces([A]);
+      collectionFieldInterfaceManager.addFieldInterfaceComponentOption('a', {
+        label: 'Test',
+        value: 'test',
+      });
+
+      const fieldInterface = collectionFieldInterfaceManager.getFieldInterface('a');
+      expect(fieldInterface.componentOptions).toMatchInlineSnapshot(`
+        [
+          {
+            "label": "A",
+            "useProps": [Function],
+            "value": "A",
+          },
+          {
+            "label": "Test",
+            "value": "test",
+          },
+        ]
+      `);
+    });
+
+    it('async addFieldInterfaceComponentOptions', async () => {
+      class A extends CollectionFieldInterface {
+        name = 'a';
+        default = {
+          type: 'string',
+          uiSchema: {
+            type: 'string',
+            'x-component': 'A',
+          },
+        };
+      }
+
+      collectionFieldInterfaceManager.addFieldInterfaceComponentOption('a', {
+        label: 'Test',
+        value: 'test',
+      });
+      collectionFieldInterfaceManager.addFieldInterfaces([A]);
+
+      const fieldInterface = collectionFieldInterfaceManager.getFieldInterface('a');
+      expect(fieldInterface.componentOptions).toMatchInlineSnapshot(`
+        [
+          {
+            "label": "A",
+            "useProps": [Function],
+            "value": "A",
+          },
+          {
+            "label": "Test",
+            "value": "test",
+          },
+        ]
+      `);
+    });
+
+    it('not default properties', () => {
+      class A extends CollectionFieldInterface {
+        name = 'a';
+      }
+
+      collectionFieldInterfaceManager.addFieldInterfaces([A]);
+      collectionFieldInterfaceManager.addFieldInterfaceComponentOption('a', {
+        label: 'Test',
+        value: 'test',
+      });
+
+      const fieldInterface = collectionFieldInterfaceManager.getFieldInterface('a');
+      expect(fieldInterface.componentOptions).toMatchInlineSnapshot(`
+        [
+          {
+            "label": "Test",
+            "value": "test",
+          },
+        ]
+      `);
+    });
+
+    it('not uiSchema properties', () => {
+      class A extends CollectionFieldInterface {
+        name = 'a';
+      }
+
+      collectionFieldInterfaceManager.addFieldInterfaces([A]);
+      collectionFieldInterfaceManager.addFieldInterfaceComponentOption('a', {
+        label: 'Test',
+        value: 'test',
+      });
+
+      const fieldInterface = collectionFieldInterfaceManager.getFieldInterface('a');
+      expect(fieldInterface.componentOptions).toMatchInlineSnapshot(`
+        [
+          {
+            "label": "Test",
+            "value": "test",
+          },
+        ]
+      `);
+    });
+
+    it('Label', () => {
+      class A extends CollectionFieldInterface {
+        name = 'a';
+        default = {
+          type: 'string',
+          uiSchema: {
+            type: 'string',
+            'x-component': 'A.B',
+          },
+        };
+      }
+
+      collectionFieldInterfaceManager.addFieldInterfaces([A]);
+      collectionFieldInterfaceManager.addFieldInterfaceComponentOption('a', {
+        label: 'Test',
+        value: 'test',
+      });
+
+      const fieldInterface = collectionFieldInterfaceManager.getFieldInterface('a');
+      expect(fieldInterface.componentOptions).toMatchInlineSnapshot(`
+        [
+          {
+            "label": "B",
+            "useProps": [Function],
+            "value": "A.B",
+          },
+          {
+            "label": "Test",
+            "value": "test",
+          },
+        ]
+      `);
+    });
+
+    it('have componentOptions', () => {
+      class A extends CollectionFieldInterface {
+        name = 'a';
+        default = {
+          type: 'string',
+          uiSchema: {
+            type: 'string',
+            'x-component': 'A',
+          },
+        };
+        componentOptions = [
+          {
+            label: 'A',
+            value: 'A',
+          },
+        ];
+      }
+
+      collectionFieldInterfaceManager.addFieldInterfaces([A]);
+      collectionFieldInterfaceManager.addFieldInterfaceComponentOption('a', {
+        label: 'Test',
+        value: 'test',
+      });
+
+      const fieldInterface = collectionFieldInterfaceManager.getFieldInterface('a');
+      expect(fieldInterface.componentOptions).toMatchInlineSnapshot(`
+        [
+          {
+            "label": "A",
+            "value": "A",
+          },
+          {
+            "label": "Test",
+            "value": "test",
+          },
+        ]
+      `);
+    });
+  });
 });

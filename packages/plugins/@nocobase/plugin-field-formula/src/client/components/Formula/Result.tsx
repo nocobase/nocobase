@@ -10,7 +10,6 @@
 import { onFormValuesChange } from '@formily/core';
 import { useField, useFieldSchema, useFormEffects } from '@formily/react';
 import { toJS } from '@formily/reactive';
-import type { CollectionOptions } from '@nocobase/client';
 import {
   Checkbox,
   DatePicker,
@@ -19,8 +18,8 @@ import {
   useCollection_deprecated,
   useCollectionManager_deprecated,
   useFormBlockContext,
-  ActionContext,
 } from '@nocobase/client';
+import _ from 'lodash';
 import { Evaluator, evaluators } from '@nocobase/evaluators/client';
 import { Registry, toFixedByStep } from '@nocobase/utils/client';
 import React, { useEffect, useState, useContext } from 'react';
@@ -62,6 +61,22 @@ function getValuesByPath(values, key, index?) {
   }
 }
 
+function areValuesEqual(value1, value2) {
+  if (_.isString(value1) && !isNaN(Date.parse(value1))) {
+    value1 = new Date(value1);
+  }
+
+  if (_.isString(value2) && !isNaN(Date.parse(value2))) {
+    value2 = new Date(value2);
+  }
+
+  if (_.isDate(value1) && _.isDate(value2)) {
+    return value1.getTime() === value2.getTime();
+  }
+
+  return _.isEqual(value1, value2);
+}
+
 export function Result(props) {
   const { value, ...others } = props;
   const fieldSchema = useFieldSchema();
@@ -74,8 +89,6 @@ export function Result(props) {
   const fieldPath = path?.replace(`.${fieldSchema.name}`, '');
   const fieldName = fieldPath.split('.')[0];
   const index = parseInt(fieldPath.split('.')?.[1]);
-  const ctx = useContext(ActionContext);
-
   useEffect(() => {
     setEditingValue(value);
   }, [value]);
@@ -85,7 +98,8 @@ export function Result(props) {
       if (
         (fieldSchema.name as string).indexOf('.') >= 0 ||
         !formBlockContext?.form ||
-        formBlockContext.form?.readPretty
+        formBlockContext.form?.readPretty ||
+        fieldSchema['x-decorator'] !== 'FormItem'
       ) {
         return;
       }
@@ -93,7 +107,7 @@ export function Result(props) {
       let v;
       try {
         v = evaluate(expression, scope);
-        v = toDbType(v, dataType);
+        v = v && toDbType(v, dataType);
       } catch (error) {
         v = null;
       }
@@ -101,10 +115,16 @@ export function Result(props) {
         setEditingValue(v);
       }
       setEditingValue(v);
-      props.onChange(v);
-      ctx?.setFormValueChanged?.(false);
     });
   });
+
+  useEffect(() => {
+    if (!areValuesEqual(field.value, editingValue)) {
+      setTimeout(() => {
+        field.value = editingValue;
+      });
+    }
+  }, [editingValue]);
   const Component = TypedComponents[dataType] ?? InputString;
   return (
     <Component {...others} value={dataType === 'double' ? toFixedByStep(editingValue, props.step) : editingValue} />

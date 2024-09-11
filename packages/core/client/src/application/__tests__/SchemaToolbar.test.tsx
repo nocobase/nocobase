@@ -35,7 +35,7 @@ describe('SchemaToolbar', () => {
   });
 
   describe('useSchemaToolbarRender()', () => {
-    const renderApp = (demoSchema: any, designable = true) => {
+    const renderAppOptions = (demoSchema: any, designable = true) => {
       const Demo = () => <div data-testid="demo">Demo</div>;
 
       const CustomToolbar = (props) => {
@@ -81,7 +81,7 @@ describe('SchemaToolbar', () => {
     };
 
     test('Render x-designer if x-designer has a value', () => {
-      renderApp({
+      renderAppOptions({
         'x-designer': 'CustomToolbar',
       });
 
@@ -91,7 +91,7 @@ describe('SchemaToolbar', () => {
     });
 
     test('Render x-toolbar if it has a value', () => {
-      renderApp({
+      renderAppOptions({
         'x-toolbar': 'CustomToolbar',
       });
 
@@ -99,7 +99,7 @@ describe('SchemaToolbar', () => {
     });
 
     test('Render x-toolbar if both x-toolbar and x-designer have values', () => {
-      renderApp({
+      renderAppOptions({
         'x-toolbar': 'CustomToolbar',
         'x-designer': 'CustomToolbar',
       });
@@ -108,7 +108,7 @@ describe('SchemaToolbar', () => {
     });
 
     test('Render the default SchemaToolbar component if x-toolbar and x-designer have no values and x-settings has a value', () => {
-      renderApp({
+      renderAppOptions({
         'x-settings': 'DemoSettings',
       });
 
@@ -117,14 +117,14 @@ describe('SchemaToolbar', () => {
     });
 
     test('Do not render if x-toolbar and x-designer have no values and x-settings also has no value', () => {
-      renderApp({});
+      renderAppOptions({});
 
       expect(screen.getByTestId('toolbar')).toHaveTextContent('');
       expect(screen.getByTestId('toolbar-exists')).toHaveTextContent('false');
     });
 
     test('Do not render if the component corresponding to x-toolbar cannot be found', () => {
-      renderApp({
+      renderAppOptions({
         'x-toolbar': 'NotFound',
       });
 
@@ -132,7 +132,7 @@ describe('SchemaToolbar', () => {
     });
 
     test('Do not render if designable is false', () => {
-      renderApp(
+      renderAppOptions(
         {
           'x-designer': 'CustomToolbar',
         },
@@ -143,7 +143,7 @@ describe('SchemaToolbar', () => {
     });
 
     test('x-toolbar-props and custom Props', () => {
-      renderApp({
+      renderAppOptions({
         'x-toolbar': 'CustomToolbar',
         'x-toolbar-props': {
           test: '123',

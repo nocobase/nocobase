@@ -22,6 +22,8 @@ import {
   WorkflowConfig,
 } from '../../../schema-component/antd/action/Action.Designer';
 import { SaveMode } from './createSubmitActionSettings';
+import { SchemaSettingsLinkageRules } from '../../../schema-settings';
+import { useCollection_deprecated } from '../../../collection-manager';
 
 export const updateSubmitActionSettings = new SchemaSettings({
   name: 'actionSettings:updateSubmit',
@@ -32,6 +34,18 @@ export const updateSubmitActionSettings = new SchemaSettings({
       useComponentProps() {
         const { buttonEditorProps } = useSchemaToolbar();
         return buttonEditorProps;
+      },
+    },
+    {
+      name: 'linkageRules',
+      Component: SchemaSettingsLinkageRules,
+      useComponentProps() {
+        const { name } = useCollection_deprecated();
+        const { linkageRulesProps } = useSchemaToolbar();
+        return {
+          ...linkageRulesProps,
+          collectionName: name,
+        };
       },
     },
     {

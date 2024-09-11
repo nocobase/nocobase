@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { MenuOutlined } from '@ant-design/icons';
+import { PlusOutlined } from '@ant-design/icons';
 import { ISchema, useField, useFieldSchema } from '@formily/react';
 import _ from 'lodash';
 import React from 'react';
@@ -16,13 +16,12 @@ import { useAPIClient } from '../../../../api-client';
 import { CompatibleSchemaInitializer } from '../../../../application/schema-initializer/CompatibleSchemaInitializer';
 import { SchemaInitializerActionModal } from '../../../../application/schema-initializer/components/SchemaInitializerActionModal';
 import { SchemaInitializerItem } from '../../../../application/schema-initializer/components/SchemaInitializerItem';
-import { useSchemaInitializer } from '../../../../application/schema-initializer/context';
-import { useCollection_deprecated } from '../../../../collection-manager';
 import { SelectWithTitle } from '../../../../common/SelectWithTitle';
 import { useDataBlockProps } from '../../../../data-source';
 import { createDesignable, useDesignable } from '../../../../schema-component';
 import { useGetAriaLabelOfDesigner } from '../../../../schema-settings/hooks/useGetAriaLabelOfDesigner';
-
+import { useCollection } from '../../../../data-source';
+import { useActionAvailable } from '../../useActionAvailable';
 export const Resizable = () => {
   const { t } = useTranslation();
   const { dn } = useDesignable();
@@ -32,12 +31,10 @@ export const Resizable = () => {
       title={t('Column width')}
       component={React.forwardRef<any, any>((props, ref) => {
         const { children, onClick, ...others } = props;
-        const { setVisible } = useSchemaInitializer();
         return (
           <SchemaInitializerItem
             ref={ref}
             onClick={({ event }) => {
-              setVisible(false);
               onClick(event);
             }}
             {...others}
@@ -145,10 +142,10 @@ const commonOptions = {
   Component: (props: any) => {
     const { getAriaLabel } = useGetAriaLabelOfDesigner();
     return (
-      <MenuOutlined
+      <PlusOutlined
         {...props}
         role="button"
-        aria-label={getAriaLabel('schema-settings')}
+        aria-label={getAriaLabel('schema-initializer')}
         style={{ cursor: 'pointer' }}
       />
     );
@@ -164,6 +161,7 @@ const commonOptions = {
         'x-action': 'view',
         'x-decorator': 'ACLActionProvider',
       },
+      useVisible: () => useActionAvailable('get'),
     },
     {
       type: 'item',
@@ -175,10 +173,7 @@ const commonOptions = {
         'x-action': 'update',
         'x-decorator': 'ACLActionProvider',
       },
-      useVisible() {
-        const collection = useCollection_deprecated();
-        return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
-      },
+      useVisible: () => useActionAvailable('update'),
     },
     {
       type: 'item',
@@ -190,10 +185,7 @@ const commonOptions = {
         'x-action': 'destroy',
         'x-decorator': 'ACLActionProvider',
       },
-      useVisible() {
-        const collection = useCollection_deprecated();
-        return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
-      },
+      useVisible: () => useActionAvailable('destroy'),
     },
     {
       type: 'item',
@@ -203,17 +195,20 @@ const commonOptions = {
       schema: {
         'x-component': 'Action.Link',
         'x-action': 'disassociate',
-        'x-acl-action': 'destroy',
+        'x-acl-action': 'update',
         'x-decorator': 'ACLActionProvider',
       },
       useVisible() {
         const props = useDataBlockProps();
-        const collection = useCollection_deprecated();
-        return (
-          !!props?.association &&
-          (collection.template !== 'view' || collection?.writableView) &&
-          collection.template !== 'sql'
-        );
+        const collection = useCollection() || ({} as any);
+        const { unavailableActions, availableActions } = collection?.options || {};
+        if (availableActions) {
+          return !!props?.association && availableActions.includes?.('update');
+        }
+        if (unavailableActions) {
+          return !!props?.association && !unavailableActions?.includes?.('update');
+        }
+        return true;
       },
     },
     {
@@ -228,7 +223,7 @@ const commonOptions = {
       },
       useVisible() {
         const fieldSchema = useFieldSchema();
-        const collection = useCollection_deprecated();
+        const collection = useCollection();
         const { treeTable } = fieldSchema?.parent?.parent['x-decorator-props'] || {};
         return collection.tree && treeTable;
       },
@@ -244,10 +239,7 @@ const commonOptions = {
       title: '{{t("Update record")}}',
       name: 'updateRecord',
       Component: 'UpdateRecordActionInitializer',
-      useVisible() {
-        const collection = useCollection_deprecated();
-        return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
-      },
+      useVisible: () => useActionAvailable('update'),
     },
     {
       name: 'customRequest',
@@ -256,29 +248,16 @@ const commonOptions = {
       schema: {
         'x-action': 'customize:table:request',
       },
-      useVisible() {
-        const collection = useCollection_deprecated();
-        return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
+    },
+    {
+      name: 'link',
+      title: '{{t("Link")}}',
+      Component: 'LinkActionInitializer',
+      useComponentProps() {
+        return {
+          'x-component': 'Action.Link',
+        };
       },
-    },
-    {
-      name: 'divider',
-      type: 'divider',
-      sort: 100,
-    },
-    {
-      name: 'fixed',
-      title: 't("Fixed")',
-      type: 'item',
-      Component: SchemaSettingsFixed,
-      sort: 100,
-    },
-    {
-      type: 'item',
-      name: 'columnWidth',
-      title: 't("Column width")',
-      Component: Resizable,
-      sort: 100,
     },
   ],
 };

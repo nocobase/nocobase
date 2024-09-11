@@ -1,4 +1,3 @@
-import _ from 'lodash'
 import { getUmiConfig } from '@nocobase/devtools/umiConfig';
 import { defineConfig } from 'dumi';
 import { defineThemeConfig } from 'dumi-theme-nocobase';
@@ -185,6 +184,10 @@ export default defineConfig({
             {
               title: 'ExtendCollectionsProvider',
               link: '/core/data-source/extend-collections-provider',
+            },
+            {
+              title: 'Collection Fields To Initializer Items',
+              link: '/core/data-source/collection-fields-to-initializer-items',
             },
           ]
         },
@@ -397,10 +400,6 @@ export default defineConfig({
             {
               "title": "Pagination",
               "link": "/components/pagination"
-            },
-            {
-              "title": "Preview",
-              "link": "/components/preview"
             },
           ]
         },

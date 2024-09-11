@@ -14,8 +14,32 @@ jobs:
     runs-on: ubuntu-latest
     container: node:18
     steps:
+      - uses: actions/create-github-app-token@v1
+        id: app-token
+        with:
+          app-id: ${{ vars.NOCOBASE_APP_ID }}
+          private-key: ${{ secrets.NOCOBASE_APP_PRIVATE_KEY }}
+          repositories: nocobase,pro-plugins,${{ join(fromJSON(vars.PRO_PLUGIN_REPOS), ',') }},${{ join(fromJSON(vars.CUSTOM_PRO_PLUGIN_REPOS), ',') }}
+          skip-token-revoke: true
       - name: Checkout
         uses: actions/checkout@v3
+      - name: Send curl request and parse response
+        env:
+          PKG_USERNAME: ${{ secrets.PKG_USERNAME }}
+          PKG_PASSWORD: ${{ secrets.PKG_PASSWORD }}
+        run: |
+          mkdir git-ci-cache
+          apt-get update && apt-get install -y jq
+          response1=$(curl -s 'https://pkg.nocobase.com/-/verdaccio/sec/login' \
+            -H 'content-type: application/json' \
+            --data-raw '{"username":"'$PKG_USERNAME'","password":"'$PKG_PASSWORD'"}')
+          token1=$(echo $response1 | jq -r '.token')
+          response2=$(curl -s 'https://pkg-src.nocobase.com/-/verdaccio/sec/login' \
+            -H 'content-type: application/json' \
+            --data-raw '{"username":"'$PKG_USERNAME'","password":"'$PKG_PASSWORD'"}')
+          token2=$(echo $response2 | jq -r '.token')
+          echo "PKG_NOCOBASE_TOKEN=$token1" >> $GITHUB_ENV
+          echo "PKG_SRC_NOCOBASE_TOKEN=$token2" >> $GITHUB_ENV
       - name: yarn install and build
         run: |
           yarn config set registry https://registry.npmjs.org/
@@ -43,9 +67,15 @@ jobs:
         with:
           repository: nocobase/pro-plugins
           path: packages/pro-plugins
-          ssh-key: ${{ secrets.SUBMODULE_SSH_KEY }}
+          token: ${{ steps.app-token.outputs.token }}
+      - name: Clone pro repos
+        shell: bash
+        run: |
+          for repo in ${{ join(fromJSON(vars.PRO_PLUGIN_REPOS), ' ') }} ${{ join(fromJSON(vars.CUSTOM_PRO_PLUGIN_REPOS), ' ') }}
+          do
+          git clone -b main https://x-access-token:${{ steps.app-token.outputs.token }}@github.com/nocobase/$repo.git packages/pro-plugins/@nocobase/$repo
+          done
       - name: Build Pro plugins
-        continue-on-error: true
         run: |
           yarn config set registry https://registry.npmjs.org/
           yarn install
@@ -53,13 +83,13 @@ jobs:
       - name: publish pkg.nocobase.com
         run: |
           git reset --hard
-          npm config set //pkg.nocobase.com/:_authToken=${{ secrets.PKG_NOCOBASE_TOKEN }}
+          npm config set //pkg.nocobase.com/:_authToken=${{ env.PKG_NOCOBASE_TOKEN }}
           yarn release:force --no-verify-access --no-git-reset --registry https://pkg.nocobase.com
       - name: publish pkg-src.nocobase.com
         run: |
           git reset --hard
           bash generate-npmignore.sh ignore-src
-          npm config set //pkg-src.nocobase.com/:_authToken=${{ secrets.PKG_SRC_NOCOBASE_TOKEN }}
+          npm config set //pkg-src.nocobase.com/:_authToken=${{ env.PKG_SRC_NOCOBASE_TOKEN }}
           yarn release:force --no-verify-access --no-git-reset --registry https://pkg-src.nocobase.com
   push-docker:
     runs-on: ubuntu-latest
@@ -87,10 +117,16 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Login to Aliyun Container Registry (Public)
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ secrets.ALI_DOCKER_PUBLIC_REGISTRY }}
+          username: ${{ secrets.ALI_DOCKER_USERNAME }}
+          password: ${{ secrets.ALI_DOCKER_PASSWORD }}
       - name: Build and push
         uses: docker/build-push-action@v3
         with:
           context: ./docker/nocobase
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: nocobase/nocobase:latest,${{ steps.meta.outputs.tags }}
+          tags: nocobase/nocobase:latest,${{ steps.meta.outputs.tags }},${{ secrets.ALI_DOCKER_PUBLIC_REGISTRY }}/nocobase/nocobase:latest,${{ secrets.ALI_DOCKER_PUBLIC_REGISTRY }}/${{ steps.meta.outputs.tags }}

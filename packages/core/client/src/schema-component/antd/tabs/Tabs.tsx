@@ -12,13 +12,13 @@ import { observer, RecursionField, useField, useFieldSchema } from '@formily/rea
 import { Tabs as AntdTabs, TabPaneProps, TabsProps } from 'antd';
 import classNames from 'classnames';
 import React, { useMemo } from 'react';
+import { useSchemaInitializerRender } from '../../../application';
 import { Icon } from '../../../icon';
 import { DndContext, SortableItem } from '../../common';
+import { SchemaComponent } from '../../core';
 import { useDesigner } from '../../hooks/useDesigner';
 import { useTabsContext } from './context';
 import { TabsDesigner } from './Tabs.Designer';
-import { useSchemaInitializerRender } from '../../../application';
-import { SchemaComponent } from '../../core';
 
 export const Tabs: any = observer(
   (props: TabsProps) => {
@@ -48,7 +48,10 @@ export const Tabs: any = observer(
         <AntdTabs
           {...contextProps}
           destroyInactiveTabPane
-          tabBarExtraContent={render()}
+          tabBarExtraContent={{
+            right: render(),
+            left: contextProps?.tabBarExtraContent,
+          }}
           style={props.style}
           items={items}
         />

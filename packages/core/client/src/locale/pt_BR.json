@@ -78,8 +78,8 @@
   "Set the data scope": "Definir o escopo de dados",
   "Data loading mode": "Modo de carregamento de dados",
   "Set data loading mode": "Definir modo de carregamento de dados",
-  "Automatically load data": "Carregar dados automaticamente",
-  "Load data after filtering": "Carregar dados após filtragem",
+  "Load all data when filter is empty": "Carregar todos os dados quando o filtro estiver vazio",
+  "Do not load data when filter is empty": "Não carregar dados quando o filtro estiver vazio",
   "Data blocks": "Blocos de dados",
   "Filter blocks": "Blocos de filtro",
   "Table": "Tabela",
@@ -734,5 +734,13 @@
   "Home page": "Página inicial",
   "Handbook": "Manual do usuário",
   "License": "Licença",
-  "This variable has been deprecated and can be replaced with \"Current form\"": "A variável foi descontinuada; \"Formulário atual\" pode ser usada como substituto"
+  "This variable has been deprecated and can be replaced with \"Current form\"": "A variável foi descontinuada; \"Formulário atual\" pode ser usada como substituto",
+  "The value of this variable is derived from the query string of the page URL. This variable can only be used normally when the page has a query string.": "O valor desta variável é derivado da string de consulta da URL da página. Esta variável só pode ser usada normalmente quando a página tem uma string de consulta.",
+  "URL search params": "Parâmetros de pesquisa de URL",
+  "Expand All": "Expandir tudo",
+  "Parent popup record": "Registro pop-up pai",
+  "Current popup record": "Registro pop-up atual",
+  "Clear default value": "Limpar valor padrão",
+  "Open in new window": "Abrir em nova janela",
+  "Sorry, the page you visited does not exist.": "Desculpe, a página que você visitou não existe."
 }

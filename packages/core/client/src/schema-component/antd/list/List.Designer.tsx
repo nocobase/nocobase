@@ -12,10 +12,9 @@ import { ISchema, useField, useFieldSchema } from '@formily/react';
 import _ from 'lodash';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { useFormBlockContext } from '../../../block-provider';
+import { useFormBlockContext } from '../../../block-provider/FormBlockProvider';
 import { useCollection_deprecated, useSortFields } from '../../../collection-manager';
 import { SetDataLoadingMode } from '../../../modules/blocks/data-blocks/details-multi/setDataLoadingModeSettingsItem';
-import { useRecord } from '../../../record-provider';
 import {
   GeneralSchemaDesigner,
   SchemaSettingsDivider,
@@ -27,6 +26,7 @@ import { SchemaSettingsBlockTitleItem } from '../../../schema-settings/SchemaSet
 import { SchemaSettingsDataScope } from '../../../schema-settings/SchemaSettingsDataScope';
 import { SchemaSettingsTemplate } from '../../../schema-settings/SchemaSettingsTemplate';
 import { useSchemaTemplate } from '../../../schema-templates';
+import { useBlockTemplateContext } from '../../../schema-templates/BlockTemplateProvider';
 import { useDesignable } from '../../hooks';
 import { removeNullCondition } from '../filter';
 
@@ -42,7 +42,6 @@ export const ListDesigner = () => {
   const field = useField();
   const { dn } = useDesignable();
   const sortFields = useSortFields(name);
-  const record = useRecord();
   const defaultSort = fieldSchema?.['x-decorator-props']?.params?.sort || [];
   const defaultResource =
     fieldSchema?.['x-decorator-props']?.resource || fieldSchema?.['x-decorator-props']?.association;
@@ -57,6 +56,7 @@ export const ListDesigner = () => {
           direction: 'asc',
         };
   });
+  const { componentNamePrefix } = useBlockTemplateContext();
   return (
     <GeneralSchemaDesigner template={template} title={title || name}>
       <SchemaSettingsBlockTitleItem />
@@ -170,11 +170,12 @@ export const ListDesigner = () => {
         title={t('Records per page')}
         value={field.decoratorProps?.params?.pageSize || 20}
         options={[
+          { label: '5', value: 5 },
           { label: '10', value: 10 },
           { label: '20', value: 20 },
           { label: '50', value: 50 },
-          { label: '80', value: 80 },
           { label: '100', value: 100 },
+          { label: '200', value: 200 },
         ]}
         onChange={(pageSize) => {
           _.set(fieldSchema, 'x-decorator-props.params.pageSize', pageSize);
@@ -187,7 +188,11 @@ export const ListDesigner = () => {
           });
         }}
       />
-      <SchemaSettingsTemplate componentName={'List'} collectionName={name} resourceName={defaultResource} />
+      <SchemaSettingsTemplate
+        componentName={`${componentNamePrefix}List`}
+        collectionName={name}
+        resourceName={defaultResource}
+      />
       <SchemaSettingsDivider />
       <SchemaSettingsRemove
         removeParentsIfNoChildren

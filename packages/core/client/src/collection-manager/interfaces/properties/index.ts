@@ -86,6 +86,17 @@ export const autoIncrement = {
   'x-decorator': 'FormItem',
   'x-component': 'Checkbox',
   'x-disabled': '{{ !createMainOnly }}',
+  'x-reactions': [
+    {
+      dependencies: ['primaryKey'],
+      when: '{{$deps[0]&&createMainOnly}}',
+      fulfill: {
+        state: {
+          value: true,
+        },
+      },
+    },
+  ],
 };
 
 export const autoFill = {
@@ -242,10 +253,11 @@ export const dateTimeProps: { [key: string]: ISchema } = {
     'x-content': '{{t("Show time")}}',
     'x-reactions': [
       `{{(field) => {
-        field.query('..[].timeFormat').take(f => {
-          f.display = field.value ? 'visible' : 'none';
-        });
-      }}}`,
+         field.query('..[].timeFormat').take(f => {
+           f.display = field.value ? 'visible' : 'none';
+           f.value='HH:mm:ss'
+         });
+       }}}`,
     ],
   },
   'uiSchema.x-component-props.timeFormat': {

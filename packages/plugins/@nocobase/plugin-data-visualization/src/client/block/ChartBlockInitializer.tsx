@@ -17,6 +17,7 @@ import {
   useACLRoleContext,
   useSchemaInitializer,
   useSchemaInitializerItem,
+  useToken,
 } from '@nocobase/client';
 import React, { useCallback, useContext } from 'react';
 import { ChartConfigContext } from '../configure';
@@ -103,6 +104,7 @@ export const chartInitializers = new CompatibleSchemaInitializer(
 export const ChartV2BlockInitializer: React.FC = () => {
   const itemConfig = useSchemaInitializerItem();
   const { insert } = useSchemaInitializer();
+  const { token } = useToken();
   return (
     <SchemaInitializerItem
       {...itemConfig}
@@ -113,9 +115,23 @@ export const ChartV2BlockInitializer: React.FC = () => {
           'x-component': 'CardItem',
           'x-component-props': {
             name: 'charts',
+            bodyStyle: {
+              padding: `${token.paddingLG}px ${token.paddingLG}px 0`,
+            },
           },
           'x-designer': 'ChartV2BlockDesigner',
+          'x-decorator': 'ChartBlockProvider',
           properties: {
+            actions: {
+              type: 'void',
+              'x-component': 'ActionBar',
+              'x-component-props': {
+                style: {
+                  marginBottom: 'var(--nb-designer-offset)',
+                },
+              },
+              'x-initializer': 'chartBlock:configureActions',
+            },
             [uid()]: {
               type: 'void',
               'x-component': 'Grid',

@@ -16,13 +16,13 @@ import {
   useCollection_deprecated,
   useCompile,
   useLocalVariables,
+  useNavigateNoUpdate,
   useTableBlockContext,
   useVariables,
 } from '@nocobase/client';
 import { isURL } from '@nocobase/utils/client';
 import { App, message } from 'antd';
 import { useContext } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useBulkUpdateTranslation } from './locale';
 
 export const useCustomizeBulkUpdateActionProps = () => {
@@ -32,7 +32,7 @@ export const useCustomizeBulkUpdateActionProps = () => {
   const tableBlockContext = useTableBlockContext();
   const { rowKey } = tableBlockContext;
 
-  const navigate = useNavigate();
+  const navigate = useNavigateNoUpdate();
   const compile = useCompile();
   const { t } = useBulkUpdateTranslation();
   const actionField: any = useField();
@@ -64,7 +64,7 @@ export const useCustomizeBulkUpdateActionProps = () => {
         }
 
         if (isVariable(value)) {
-          const result = await variables?.parseVariable(value, localVariables);
+          const result = await variables?.parseVariable(value, localVariables).then(({ value }) => value);
           if (result) {
             assignedValues[key] = transformVariableValue(result, { targetCollectionField: collectionField });
           }

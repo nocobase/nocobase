@@ -19,14 +19,16 @@ import { isInitializersSame, useApp } from '../../../application';
 import { usePlugin } from '../../../application/hooks';
 import { SchemaSettingOptions, SchemaSettings } from '../../../application/schema-settings';
 import { useSchemaToolbar } from '../../../application/schema-toolbar';
-import { useFormBlockContext } from '../../../block-provider';
+import { useFormBlockContext } from '../../../block-provider/FormBlockProvider';
 import {
   joinCollectionName,
   useCollectionManager_deprecated,
   useCollection_deprecated,
 } from '../../../collection-manager';
+import { DataSourceProvider, useDataSourceKey } from '../../../data-source';
 import { FlagProvider } from '../../../flag-provider';
 import { SaveMode } from '../../../modules/actions/submit/createSubmitActionSettings';
+import { useOpenModeContext } from '../../../modules/popup/OpenModeProvider';
 import { SchemaSettingOpenModeSchemaItems } from '../../../schema-items';
 import { GeneralSchemaDesigner } from '../../../schema-settings/GeneralSchemaDesigner';
 import {
@@ -41,7 +43,6 @@ import {
 import { DefaultValueProvider } from '../../../schema-settings/hooks/useIsAllowToSetDefaultValue';
 import { useLinkageAction } from './hooks';
 import { requestSettingsSchema } from './utils';
-import { DataSourceProvider, useDataSourceKey } from '../../../data-source';
 
 const MenuGroup = (props) => {
   return props.children;
@@ -79,6 +80,14 @@ export function ButtonEditor(props) {
               'x-visible': !isLink,
               // description: `原字段标题：${collectionField?.uiSchema?.title}`,
             },
+            iconColor: {
+              title: t('Color'),
+              required: true,
+              default: fieldSchema?.['x-component-props']?.iconColor || '#1677FF',
+              'x-hidden': !props.hasIconColor,
+              'x-component': 'ColorPicker',
+              'x-decorator': 'FormItem',
+            },
             type: {
               'x-decorator': 'FormItem',
               'x-component': 'Radio.Group',
@@ -93,18 +102,20 @@ export function ButtonEditor(props) {
                 { value: 'primary', label: '{{t("Highlight")}}' },
                 { value: 'danger', label: '{{t("Danger red")}}' },
               ],
-              'x-visible': !isLink,
+              'x-visible': !props.hasIconColor && !isLink,
             },
           },
         } as ISchema
       }
-      onSubmit={({ title, icon, type }) => {
+      onSubmit={({ title, icon, type, iconColor }) => {
         fieldSchema.title = title;
         field.title = title;
+        field.componentProps.iconColor = iconColor;
         field.componentProps.icon = icon;
         field.componentProps.danger = type === 'danger';
         field.componentProps.type = type || field.componentProps.type;
         fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
+        fieldSchema['x-component-props'].iconColor = iconColor;
         fieldSchema['x-component-props'].icon = icon;
         fieldSchema['x-component-props'].danger = type === 'danger';
         fieldSchema['x-component-props'].type = type || field.componentProps.type;
@@ -311,6 +322,7 @@ export function AfterSuccess() {
 export function RemoveButton(
   props: {
     onConfirmOk?: ModalProps['onOk'];
+    disabled?: boolean;
   } = {},
 ) {
   const { t } = useTranslation();
@@ -325,6 +337,7 @@ export function RemoveButton(
           breakRemoveOn={(s) => {
             return s['x-component'] === 'Space' || s['x-component'].endsWith('ActionBar');
           }}
+          disabled={props.disabled}
           confirm={{
             title: t('Delete action'),
             onOk: props.onConfirmOk,
@@ -346,15 +359,15 @@ function WorkflowSelect({ formAction, buttonAction, actionType, ...props }) {
   const compile = useCompile();
 
   const workflowPlugin = usePlugin('workflow') as any;
+  const triggerOptions = workflowPlugin.useTriggersOptions();
   const workflowTypes = useMemo(
     () =>
-      workflowPlugin
-        .getTriggersOptions()
+      triggerOptions
         .filter((item) => {
           return typeof item.options.isActionTriggerable === 'function' || item.options.isActionTriggerable === true;
         })
         .map((item) => item.value),
-    [workflowPlugin],
+    [triggerOptions],
   );
 
   useFormEffects(() => {
@@ -422,7 +435,7 @@ function WorkflowSelect({ formAction, buttonAction, actionType, ...props }) {
         }}
         optionFilter={optionFilter}
         optionRender={({ label, data }) => {
-          const typeOption = workflowPlugin.getTriggersOptions().find((item) => item.value === data.type);
+          const typeOption = triggerOptions.find((item) => item.value === data.type);
           return typeOption ? (
             <Flex justify="space-between">
               <span>{label}</span>
@@ -644,6 +657,7 @@ export const actionSettingsItems: SchemaSettingOptions['items'] = [
         name: 'openMode',
         Component: SchemaSettingOpenModeSchemaItems,
         useComponentProps() {
+          const { hideOpenMode } = useOpenModeContext();
           const fieldSchema = useFieldSchema();
           const isPopupAction = [
             'create',
@@ -655,8 +669,8 @@ export const actionSettingsItems: SchemaSettingOptions['items'] = [
           ].includes(fieldSchema['x-action'] || '');
 
           return {
-            openMode: isPopupAction,
-            openSize: isPopupAction,
+            openMode: isPopupAction && !hideOpenMode,
+            openSize: isPopupAction && !hideOpenMode,
           };
         },
       },
@@ -759,6 +773,33 @@ export const actionSettingsItems: SchemaSettingOptions['items'] = [
         },
       },
       {
+        type: 'switch',
+        name: 'clearDefaultValue',
+        useComponentProps() {
+          const { t } = useTranslation();
+          const fieldSchema = useFieldSchema();
+          const { dn } = useDesignable();
+
+          return {
+            title: t('Clear default value'),
+            checked: fieldSchema?.['x-component-props']?.clearDefaultValue,
+            onChange: (value) => {
+              dn.deepMerge({
+                ['x-uid']: fieldSchema['x-uid'],
+                'x-component-props': {
+                  clearDefaultValue: value,
+                },
+              });
+            },
+          };
+        },
+        useVisible() {
+          const fieldSchema = useFieldSchema();
+          const isResetButton = fieldSchema['x-use-component-props'] === 'useResetBlockActionProps';
+          return isResetButton;
+        },
+      },
+      {
         name: 'remove',
         sort: 100,
         Component: RemoveButton as any,
@@ -778,34 +819,80 @@ export function SecondConFirm() {
   const { dn } = useDesignable();
   const fieldSchema = useFieldSchema();
   const { t } = useTranslation();
-  const field = useField<Field>();
+  const field = useField();
+  const compile = useCompile();
 
   return (
-    <SchemaSettingsSwitchItem
+    <SchemaSettingsModalItem
       title={t('Secondary confirmation')}
-      checked={!!fieldSchema?.['x-component-props']?.confirm?.content}
-      onChange={(value) => {
-        if (!fieldSchema['x-component-props']) {
-          fieldSchema['x-component-props'] = {};
-        }
-        if (value) {
-          fieldSchema['x-component-props'].confirm = value
-            ? {
-                title: 'Perform the {{title}}',
-                content: 'Are you sure you want to perform the {{title}} action?',
-              }
-            : {};
-        } else {
-          fieldSchema['x-component-props'].confirm = {};
-        }
-        field.componentProps.confirm = { ...fieldSchema['x-component-props']?.confirm };
+      initialValues={{
+        title:
+          compile(fieldSchema?.['x-component-props']?.confirm?.title) ||
+          t('Perform the {{title}}', { title: compile(fieldSchema.title) }),
+        content:
+          compile(fieldSchema?.['x-component-props']?.confirm?.content) ||
+          t('Are you sure you want to perform the {{title}} action?', { title: compile(fieldSchema.title) }),
+      }}
+      schema={
+        {
+          type: 'object',
+          title: t('Secondary confirmation'),
+          properties: {
+            enable: {
+              'x-decorator': 'FormItem',
+              'x-component': 'Checkbox',
+              'x-content': t('Enable secondary confirmation'),
+              default:
+                fieldSchema?.['x-component-props']?.confirm?.enable !== false &&
+                !!fieldSchema?.['x-component-props']?.confirm?.content,
+              'x-component-props': {},
+            },
+            title: {
+              'x-decorator': 'FormItem',
+              'x-component': 'Input.TextArea',
+              title: t('Title'),
 
+              'x-reactions': {
+                dependencies: ['enable'],
+                fulfill: {
+                  state: {
+                    required: '{{$deps[0]}}',
+                  },
+                },
+              },
+            },
+            content: {
+              'x-decorator': 'FormItem',
+              'x-component': 'Input.TextArea',
+              title: t('Content'),
+              'x-reactions': {
+                dependencies: ['enable'],
+                fulfill: {
+                  state: {
+                    required: '{{$deps[0]}}',
+                  },
+                },
+              },
+            },
+          },
+        } as ISchema
+      }
+      onSubmit={({ enable, title, content }) => {
+        fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
+        fieldSchema['x-component-props'].confirm = {};
+        fieldSchema['x-component-props'].confirm.enable = enable;
+        fieldSchema['x-component-props'].confirm.title = title;
+        fieldSchema['x-component-props'].confirm.content = content;
+        field.componentProps.confirm = { ...fieldSchema['x-component-props']?.confirm };
         dn.emit('patch', {
           schema: {
             ['x-uid']: fieldSchema['x-uid'],
-            'x-component-props': { ...fieldSchema['x-component-props'] },
+            'x-component-props': {
+              ...fieldSchema['x-component-props'],
+            },
           },
         });
+        dn.refresh();
       }}
     />
   );

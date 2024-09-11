@@ -27,6 +27,10 @@ import { beforeCreateForViewCollection } from './hooks/beforeCreateForViewCollec
 import { CollectionModel, FieldModel } from './models';
 import collectionActions from './resourcers/collections';
 import viewResourcer from './resourcers/views';
+import { FieldNameExistsError } from './errors/field-name-exists-error';
+import { beforeDestoryField } from './hooks/beforeDestoryField';
+import { FieldIsDependedOnByOtherError } from './errors/field-is-depended-on-by-other';
+import { beforeCreateCheckFieldInMySQL } from './hooks/beforeCreateCheckFieldInMySQL';
 
 export class PluginDataSourceMainServer extends Plugin {
   public schema: string;
@@ -35,6 +39,19 @@ export class PluginDataSourceMainServer extends Plugin {
 
   setLoadFilter(filter: Filter) {
     this.loadFilter = filter;
+  }
+
+  async onSync(message) {
+    const { type, collectionName } = message;
+    if (type === 'newCollection') {
+      const collectionModel: CollectionModel = await this.app.db.getCollection('collections').repository.findOne({
+        filter: {
+          name: collectionName,
+        },
+      });
+
+      await collectionModel.load();
+    }
   }
 
   async beforeLoad() {
@@ -74,6 +91,11 @@ export class PluginDataSourceMainServer extends Plugin {
           await model.migrate({
             transaction,
           });
+
+          this.app.syncManager.publish(this.name, {
+            type: 'newCollection',
+            collectionName: model.get('name'),
+          });
         }
       },
     );
@@ -84,7 +106,7 @@ export class PluginDataSourceMainServer extends Plugin {
         removeOptions['transaction'] = options.transaction;
       }
 
-      const cascade = lodash.get(options, 'context.action.params.cascade', false);
+      const cascade = options.cascade || lodash.get(options, 'context.action.params.cascade', false);
 
       if (cascade === true || cascade === 'true') {
         removeOptions['cascade'] = true;
@@ -94,6 +116,8 @@ export class PluginDataSourceMainServer extends Plugin {
     });
 
     // 要在 beforeInitOptions 之前处理
+    this.app.db.on('fields.beforeCreate', beforeCreateCheckFieldInMySQL(this.app.db));
+
     this.app.db.on('fields.beforeCreate', beforeCreateForReverseField(this.app.db));
 
     this.app.db.on('fields.beforeCreate', async (model, options) => {
@@ -128,6 +152,30 @@ export class PluginDataSourceMainServer extends Plugin {
     this.app.db.on('fields.beforeCreate', beforeCreateForValidateField(this.app.db));
 
     this.app.db.on('fields.afterCreate', afterCreateForReverseField(this.app.db));
+
+    this.app.db.on('fields.beforeCreate', async (model: FieldModel, options) => {
+      const { transaction } = options;
+      // validate field name
+      const collectionName = model.get('collectionName');
+      const name = model.get('name');
+
+      if (!collectionName || !name) {
+        return;
+      }
+
+      const exists = await this.app.db.getRepository('fields').findOne({
+        filter: {
+          collectionName,
+          name,
+        },
+        transaction,
+      });
+
+      if (exists) {
+        throw new FieldNameExistsError(name, collectionName);
+      }
+    });
+
     this.app.db.on('fields.beforeUpdate', beforeUpdateForValidateField(this.app.db));
 
     this.app.db.on('fields.beforeUpdate', async (model, options) => {
@@ -218,6 +266,7 @@ export class PluginDataSourceMainServer extends Plugin {
     });
 
     // before field remove
+    this.app.db.on('fields.beforeDestroy', beforeDestoryField(this.app.db));
     this.app.db.on('fields.beforeDestroy', beforeDestroyForeignKey(this.app.db));
 
     const mutex = new Mutex();
@@ -305,6 +354,46 @@ export class PluginDataSourceMainServer extends Plugin {
       },
       (err, ctx) => {
         return ctx.throw(400, ctx.t(`The value of ${Object.keys(err.fields)} field duplicated`));
+      },
+    );
+
+    errorHandlerPlugin.errorHandler.register(
+      (err) => err instanceof FieldIsDependedOnByOtherError,
+      (err, ctx) => {
+        ctx.status = 400;
+        ctx.body = {
+          errors: [
+            {
+              message: ctx.i18n.t('field-is-depended-on-by-other', {
+                fieldName: err.options.fieldName,
+                fieldCollectionName: err.options.fieldCollectionName,
+                dependedFieldName: err.options.dependedFieldName,
+                dependedFieldCollectionName: err.options.dependedFieldCollectionName,
+                dependedFieldAs: err.options.dependedFieldAs,
+                ns: 'data-source-main',
+              }),
+            },
+          ],
+        };
+      },
+    );
+
+    errorHandlerPlugin.errorHandler.register(
+      (err) => err instanceof FieldNameExistsError,
+      (err, ctx) => {
+        ctx.status = 400;
+
+        ctx.body = {
+          errors: [
+            {
+              message: ctx.i18n.t('field-name-exists', {
+                name: err.value,
+                collectionName: err.collectionName,
+                ns: 'data-source-main',
+              }),
+            },
+          ],
+        };
       },
     );
 

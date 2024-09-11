@@ -7,15 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { uid } from '@formily/shared';
-import { BlockInitializer, useSchemaInitializerItem } from '@nocobase/client';
+import { merge, uid } from '@formily/shared';
+import { SchemaInitializerItem, useSchemaInitializer, useSchemaInitializerItem } from '@nocobase/client';
 import React from 'react';
 import { useCustomRequestsResource } from '../hooks/useCustomRequestsResource';
 
-export const CustomRequestInitializer: React.FC<any> = (props) => {
-  const customRequestsResource = useCustomRequestsResource();
-
-  const schema = {
+export const getNewSchema = () => {
+  return {
     title: '{{ t("Custom request") }}',
     'x-component': 'CustomRequestAction',
     'x-action': 'customize:form:request',
@@ -31,13 +29,21 @@ export const CustomRequestInitializer: React.FC<any> = (props) => {
       },
     },
   };
+};
 
+export const CustomRequestInitializer: React.FC<any> = (props) => {
+  const customRequestsResource = useCustomRequestsResource();
   const itemConfig = useSchemaInitializerItem();
+  const { insert } = useSchemaInitializer();
+  const schema = getNewSchema();
+
   return (
-    <BlockInitializer
+    <SchemaInitializerItem
       {...itemConfig}
-      item={itemConfig}
-      onClick={async (s) => {
+      onClick={async () => {
+        const s = merge(schema || {}, itemConfig.schema || {});
+        itemConfig?.schemaInitialize?.(s);
+        insert(s);
         // create a custom request
         await customRequestsResource.create({
           values: {
@@ -45,7 +51,6 @@ export const CustomRequestInitializer: React.FC<any> = (props) => {
           },
         });
       }}
-      schema={schema}
     />
   );
 };

@@ -8,37 +8,94 @@
  */
 
 import { observer, useField, useFieldSchema } from '@formily/react';
-import { Input as AntdInput, Button, Space, Spin } from 'antd';
+import { Input as AntdInput, Button, Space, Spin, theme } from 'antd';
+import type { TextAreaRef } from 'antd/es/input/TextArea';
 import cls from 'classnames';
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useState, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useGlobalTheme } from '../../../global-theme';
 import { useDesignable } from '../../hooks/useDesignable';
 import { MarkdownVoidDesigner } from './Markdown.Void.Designer';
 import { useStyles } from './style';
-import { useParseMarkdown } from './util';
 import { TextAreaProps } from 'antd/es/input';
-
+import { useBlockHeight } from '../../hooks/useBlockSize';
+import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
+import { useCollectionRecord } from '../../../data-source';
+import { useVariableOptions } from '../../../schema-settings/VariableInput/hooks/useVariableOptions';
+import { VariableSelect } from '../variable/VariableSelect';
+import { useLocalVariables, useVariables } from '../../../variables';
+import { registerQrcodeWebComponent } from './qrcode-webcom';
+import { getRenderContent } from '../../common/utils/uitls';
+import { parseMarkdown } from './util';
+import { useCompile } from '../../';
 export interface MarkdownEditorProps extends Omit<TextAreaProps, 'onSubmit'> {
+  scope: any[];
   defaultValue?: string;
   onSubmit?: (value: string) => void;
   onCancel?: (e: React.MouseEvent) => void;
 }
 
 const MarkdownEditor = (props: MarkdownEditorProps) => {
+  const { scope } = props;
   const { t } = useTranslation();
   const [value, setValue] = useState(props.defaultValue);
+  const inputRef = useRef<TextAreaRef>(null);
+  const [options, setOptions] = useState([]);
+  const [curPos, setCurPos] = useState(null);
+  useEffect(() => {
+    setOptions(scope);
+  }, [scope]);
+
+  useEffect(() => {
+    const inputEle = inputRef?.current?.resizableTextArea?.textArea;
+    if (curPos && inputEle) {
+      inputEle.setSelectionRange(curPos, curPos);
+    }
+  }, [curPos]);
+
+  const onInsert = useCallback(
+    function (paths: string[]) {
+      const variable: string[] = paths.filter((key) => Boolean(key.trim()));
+      const { current } = inputRef;
+      const inputEle = current?.resizableTextArea?.textArea;
+      if (!inputEle || !variable) {
+        return;
+      }
+      current.focus();
+      const templateVar = `{{${paths.join('.')}}}`;
+      const startPos = inputEle.selectionStart || 0;
+      const newVal = value.substring(0, startPos) + templateVar + value.substring(startPos, value.length);
+      const newPos = startPos + templateVar.length;
+      setValue(newVal);
+      setCurPos(newPos);
+    },
+    [value],
+  );
   return (
-    <div className={'mb-markdown'} style={{ position: 'relative' }}>
+    <div className={'mb-markdown'} style={{ position: 'relative', paddingTop: '20px' }}>
       <AntdInput.TextArea
+        ref={inputRef}
         autoSize={{ minRows: 3 }}
         {...(props as any)}
         value={value}
         onChange={(e) => {
           setValue(e.target.value);
         }}
+        style={{ paddingBottom: '40px' }}
       />
-      <Space style={{ position: 'absolute', bottom: 5, right: 5 }}>
+      <>
+        <span style={{ marginLeft: '.25em' }} className={'ant-formily-item-extra'}>
+          {t('Syntax references')}:
+        </span>
+        <a href="https://handlebarsjs.com/guide/" target="_blank" rel="noreferrer">
+          Handlebars.js
+        </a>
+      </>
+      <div style={{ position: 'absolute', top: 21, right: 1 }}>
+        <VariableSelect options={options} setOptions={setOptions} onInsert={onInsert} />
+      </div>
+
+      <Space style={{ position: 'absolute', bottom: 30, right: 5 }}>
         <Button
           onClick={(e) => {
             props.onCancel?.(e);
@@ -59,21 +116,64 @@ const MarkdownEditor = (props: MarkdownEditorProps) => {
   );
 };
 
-export const MarkdownVoid: any = observer(
-  (props: any) => {
+const useMarkdownHeight = () => {
+  const { token } = theme.useToken();
+  const height = useBlockHeight();
+  if (!height) {
+    return;
+  }
+  return height - 2 * token.paddingLG;
+};
+
+export const MarkdownVoid: any = withDynamicSchemaProps(
+  observer((props: any) => {
     const { isDarkTheme } = useGlobalTheme();
     const { componentCls, hashId } = useStyles({ isDarkTheme });
     const { content, className } = props;
     const field = useField();
     const schema = useFieldSchema();
     const { dn } = useDesignable();
-    const { onSave, onCancel } = props;
-    const { html, loading } = useParseMarkdown(content);
-    if (loading) {
-      return <Spin />;
-    }
+    const { onSave, onCancel, form } = props;
+    const record = useCollectionRecord();
+    const [html, setHtml] = useState('');
+    const variables = useVariables();
+    const localVariables = useLocalVariables();
+    const { engine } = schema?.['x-decorator-props'] || {};
+    const [loading, setLoading] = useState(false);
+    const compile = useCompile();
+
+    useEffect(() => {
+      setLoading(true);
+      const cvtContentToHTML = async () => {
+        const replacedContent = await getRenderContent(
+          engine,
+          content,
+          compile(variables),
+          compile(localVariables),
+          parseMarkdown,
+        );
+
+        setHtml(replacedContent);
+        setLoading(false);
+      };
+      cvtContentToHTML();
+    }, [content, variables, localVariables, engine]);
+
+    const height = useMarkdownHeight();
+    const scope = useVariableOptions({
+      collectionField: { uiSchema: schema },
+      form,
+      record,
+      uiSchema: schema,
+      noDisabled: true,
+    });
+    useEffect(() => {
+      registerQrcodeWebComponent();
+    }, []);
+    if (loading) return <Spin />;
     return field?.editable ? (
       <MarkdownEditor
+        scope={scope}
         {...props}
         className
         defaultValue={content}
@@ -100,11 +200,11 @@ export const MarkdownVoid: any = observer(
     ) : (
       <div
         className={cls([componentCls, hashId, 'nb-markdown nb-markdown-default nb-markdown-table', className])}
-        style={props.style}
+        style={{ ...props.style, height: height || '100%', overflowY: height ? 'auto' : 'null' }}
         dangerouslySetInnerHTML={{ __html: html }}
       />
     );
-  },
+  }),
   { displayName: 'MarkdownVoid' },
 );
 

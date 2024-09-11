@@ -32,7 +32,7 @@ export const useFieldModeOptions = (props?) => {
       return;
     }
     if (
-      !['o2o', 'oho', 'obo', 'o2m', 'linkTo', 'm2o', 'm2m', 'updatedBy', 'createdBy'].includes(
+      !['o2o', 'oho', 'obo', 'o2m', 'linkTo', 'm2o', 'm2m', 'updatedBy', 'createdBy', 'mbm'].includes(
         collectionField.interface,
       )
     )
@@ -62,8 +62,9 @@ export const useFieldModeOptions = (props?) => {
         : [
             { label: t('Select'), value: 'Select' },
             { label: t('Record picker'), value: 'Picker' },
-            ['m2m', 'o2m'].includes(collectionField.interface) && { label: t('Sub-table'), value: 'SubTable' },
-            { label: t('Cascade Select'), value: 'CascadeSelect' },
+            !isTableField &&
+              ['m2m', 'o2m'].includes(collectionField.interface) && { label: t('Sub-table'), value: 'SubTable' },
+            !isTableField && { label: t('Cascade Select'), value: 'CascadeSelect' },
             !isTableField && { label: t('Sub-form'), value: 'Nester' },
             { label: t('Sub-form(Popover)'), value: 'PopoverNester' },
           ];
@@ -85,6 +86,7 @@ export const useFieldModeOptions = (props?) => {
               !isTableField && { label: t('Sub-table'), value: 'SubTable' },
             ];
       case 'm2m':
+      case 'mbm':
         return isReadPretty
           ? [
               { label: t('Title'), value: 'Select' },

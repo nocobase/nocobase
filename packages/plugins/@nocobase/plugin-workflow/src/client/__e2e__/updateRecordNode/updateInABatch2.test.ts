@@ -29,8 +29,8 @@ test('Collection event add data trigger, filter integer field not empty, common 
   mockRecords,
 }) => {
   //数据表后缀标识
-  const triggerNodeAppendText = 'a' + faker.string.alphanumeric(4);
-  const updateNodeAppendText = 'b' + faker.string.alphanumeric(4);
+  const triggerNodeAppendText = 'a' + Math.random().toString(36).substring(2, 12);
+  const updateNodeAppendText = 'b' + Math.random().toString(36).substring(2, 12);
   //创建触发器节点数据表
   const triggerNodeCollectionDisplayName = `自动>组织[普通表]${triggerNodeAppendText}`;
   const triggerNodeCollectionName = `tt_amt_org${triggerNodeAppendText}`;
@@ -103,14 +103,18 @@ test('Collection event add data trigger, filter integer field not empty, common 
   await page.getByRole('option', { name: 'is not empty' }).click();
 
   // 设置字段
-  await updateRecordNode.addFieldsButton.click();
+  await updateRecordNode.addFieldsButton.hover();
   await page.getByRole('menuitem', { name: updateNodeFieldDisplayName }).click();
   await page.getByLabel('variable-button').click();
   await page.getByRole('menuitemcheckbox', { name: 'Trigger variables' }).click();
   await page.getByRole('menuitemcheckbox', { name: 'Trigger data' }).click();
   await page.getByRole('menuitemcheckbox', { name: triggerNodeFieldDisplayName }).click();
   await expect(
-    page.getByLabel('block-item-CollectionFieldset-workflows-Fields values').getByLabel('variable-tag'),
+    page
+      .getByLabel(
+        `block-item-AssignedField-${updateNodeCollectionName}-${updateNodeCollectionName}.${updateNodeFieldName}-${updateNodeFieldDisplayName}`,
+      )
+      .getByLabel('variable-tag'),
   ).toHaveText(`Trigger variables / Trigger data / ${triggerNodeFieldDisplayName}`);
   await updateRecordNode.submitButton.click();
   const updateRecordNodefieldData = faker.number.int();
@@ -181,8 +185,8 @@ test('Collection event add data trigger, filter numeric field not null, common t
   mockRecords,
 }) => {
   //数据表后缀标识
-  const triggerNodeAppendText = 'a' + faker.string.alphanumeric(4);
-  const updateNodeAppendText = 'b' + faker.string.alphanumeric(4);
+  const triggerNodeAppendText = 'a' + Math.random().toString(36).substring(2, 12);
+  const updateNodeAppendText = 'b' + Math.random().toString(36).substring(2, 12);
   //创建触发器节点数据表
   const triggerNodeCollectionDisplayName = `自动>组织[普通表]${triggerNodeAppendText}`;
   const triggerNodeCollectionName = `tt_amt_org${triggerNodeAppendText}`;
@@ -257,11 +261,13 @@ test('Collection event add data trigger, filter numeric field not null, common t
   await page.getByRole('option', { name: 'is not empty' }).click();
 
   // 设置字段
-  await updateRecordNode.addFieldsButton.click();
+  await updateRecordNode.addFieldsButton.hover();
   await page.getByRole('menuitem', { name: updateNodeFieldDisplayName }).click();
   const updateRecordNodefieldData = faker.number.float({ min: 0, max: 999999999, precision: 0.0001 });
   await page
-    .getByLabel('block-item-CollectionFieldset')
+    .getByLabel(
+      `block-item-AssignedField-${updateNodeCollectionName}-${updateNodeCollectionName}.${updateNodeFieldName}-${updateNodeFieldDisplayName}`,
+    )
     .getByRole('spinbutton')
     .fill(updateRecordNodefieldData.toString());
   await updateRecordNode.submitButton.click();
@@ -332,8 +338,8 @@ test('Collection event add data trigger, filter numeric field not empty, common 
   mockRecords,
 }) => {
   //数据表后缀标识
-  const triggerNodeAppendText = 'a' + faker.string.alphanumeric(4);
-  const updateNodeAppendText = 'b' + faker.string.alphanumeric(4);
+  const triggerNodeAppendText = 'a' + Math.random().toString(36).substring(2, 12);
+  const updateNodeAppendText = 'b' + Math.random().toString(36).substring(2, 12);
   //创建触发器节点数据表
   const triggerNodeCollectionDisplayName = `自动>组织[普通表]${triggerNodeAppendText}`;
   const triggerNodeCollectionName = `tt_amt_org${triggerNodeAppendText}`;
@@ -406,14 +412,18 @@ test('Collection event add data trigger, filter numeric field not empty, common 
   await page.getByRole('option', { name: 'is not empty' }).click();
 
   // 设置字段
-  await updateRecordNode.addFieldsButton.click();
+  await updateRecordNode.addFieldsButton.hover();
   await page.getByRole('menuitem', { name: updateNodeFieldDisplayName }).click();
   await page.getByLabel('variable-button').click();
   await page.getByRole('menuitemcheckbox', { name: 'Trigger variables' }).click();
   await page.getByRole('menuitemcheckbox', { name: 'Trigger data' }).click();
   await page.getByRole('menuitemcheckbox', { name: triggerNodeFieldDisplayName }).click();
   await expect(
-    page.getByLabel('block-item-CollectionFieldset-workflows-Fields values').getByLabel('variable-tag'),
+    page
+      .getByLabel(
+        `block-item-AssignedField-${updateNodeCollectionName}-${updateNodeCollectionName}.${updateNodeFieldName}-${updateNodeFieldDisplayName}`,
+      )
+      .getByLabel('variable-tag'),
   ).toHaveText(`Trigger variables / Trigger data / ${triggerNodeFieldDisplayName}`);
   await updateRecordNode.submitButton.click();
 
@@ -485,8 +495,8 @@ test('Collection event add data trigger, filter dropdown radio field not null, c
   mockRecords,
 }) => {
   //数据表后缀标识
-  const triggerNodeAppendText = 'a' + faker.string.alphanumeric(4);
-  const updateNodeAppendText = 'b' + faker.string.alphanumeric(4);
+  const triggerNodeAppendText = 'a' + Math.random().toString(36).substring(2, 12);
+  const updateNodeAppendText = 'b' + Math.random().toString(36).substring(2, 12);
   //创建触发器节点数据表
   const triggerNodeCollectionDisplayName = `自动>组织[普通表]${triggerNodeAppendText}`;
   const triggerNodeCollectionName = `tt_amt_org${triggerNodeAppendText}`;
@@ -558,10 +568,15 @@ test('Collection event add data trigger, filter dropdown radio field not null, c
   await page.getByRole('option', { name: 'is not empty' }).click();
 
   // 设置字段
-  await updateRecordNode.addFieldsButton.click();
+  await updateRecordNode.addFieldsButton.hover();
   await page.getByRole('menuitem', { name: updateNodeFieldDisplayName }).click();
   const updateRecordNodefieldData = '4';
-  await page.getByLabel('block-item-CollectionFieldset-workflows-Fields values').getByTestId('select-single').click();
+  await page
+    .getByLabel(
+      `block-item-AssignedField-${updateNodeCollectionName}-${updateNodeCollectionName}.${updateNodeFieldName}-${updateNodeFieldDisplayName}`,
+    )
+    .getByTestId('select-single')
+    .click();
   await page.getByRole('option', { name: '注销' }).click();
   await updateRecordNode.submitButton.click();
 
@@ -633,8 +648,8 @@ test('Collection event add data trigger, filter dropdown radio field not empty, 
   mockRecords,
 }) => {
   //数据表后缀标识
-  const triggerNodeAppendText = 'a' + faker.string.alphanumeric(4);
-  const updateNodeAppendText = 'b' + faker.string.alphanumeric(4);
+  const triggerNodeAppendText = 'a' + Math.random().toString(36).substring(2, 12);
+  const updateNodeAppendText = 'b' + Math.random().toString(36).substring(2, 12);
   //创建触发器节点数据表
   const triggerNodeCollectionDisplayName = `自动>组织[普通表]${triggerNodeAppendText}`;
   const triggerNodeCollectionName = `tt_amt_org${triggerNodeAppendText}`;
@@ -707,14 +722,18 @@ test('Collection event add data trigger, filter dropdown radio field not empty, 
   await page.getByRole('option', { name: 'is not empty' }).click();
 
   // 设置字段
-  await updateRecordNode.addFieldsButton.click();
+  await updateRecordNode.addFieldsButton.hover();
   await page.getByRole('menuitem', { name: updateNodeFieldDisplayName }).click();
   await page.getByLabel('variable-button').click();
   await page.getByRole('menuitemcheckbox', { name: 'Trigger variables' }).click();
   await page.getByRole('menuitemcheckbox', { name: 'Trigger data' }).click();
   await page.getByRole('menuitemcheckbox', { name: triggerNodeFieldDisplayName }).click();
   await expect(
-    page.getByLabel('block-item-CollectionFieldset-workflows-Fields values').getByLabel('variable-tag'),
+    page
+      .getByLabel(
+        `block-item-AssignedField-${updateNodeCollectionName}-${updateNodeCollectionName}.${updateNodeFieldName}-${updateNodeFieldDisplayName}`,
+      )
+      .getByLabel('variable-tag'),
   ).toHaveText(`Trigger variables / Trigger data / ${triggerNodeFieldDisplayName}`);
   await updateRecordNode.submitButton.click();
 

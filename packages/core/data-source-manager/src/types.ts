@@ -10,6 +10,7 @@
 export type CollectionOptions = {
   name: string;
   repository?: string;
+  filterTargetKey?: string;
   fields: any[];
   [key: string]: any;
 };
@@ -24,8 +25,8 @@ export type FieldOptions = {
   uiSchema?: any;
   possibleTypes?: string[];
   defaultValue?: any;
-  primaryKey: boolean;
-  unique: boolean;
+  primaryKey?: boolean;
+  unique?: boolean;
   allowNull?: boolean;
   autoIncrement?: boolean;
   [key: string]: any;
@@ -33,7 +34,23 @@ export type FieldOptions = {
 
 export interface IField {
   options: FieldOptions;
+
+  isRelationField(): boolean;
 }
+
+export interface IRelationField extends IField {
+  targetCollection(): ICollection;
+}
+
+export interface IFieldInterface {
+  options: FieldOptions;
+
+  toString(value: any, ctx?: any): string;
+
+  toValue(str: string, ctx?: any): any;
+}
+
+export type FindOptions = any;
 
 export interface ICollection {
   repository: IRepository;
@@ -49,6 +66,9 @@ export interface ICollection {
   getField(name: string): IField;
 
   [key: string]: any;
+
+  unavailableActions?: () => string[];
+  availableActions?: () => string[];
 }
 
 export interface IModel {
@@ -58,7 +78,7 @@ export interface IModel {
 }
 
 export interface IRepository {
-  find(options?: any): Promise<IModel[]>;
+  find(options?: FindOptions): Promise<IModel[]>;
 
   findOne(options?: any): Promise<IModel>;
 
@@ -82,15 +102,19 @@ export type MergeOptions = {
 export interface ICollectionManager {
   registerFieldTypes(types: Record<string, any>): void;
 
-  registerFieldInterfaces(interfaces: Record<string, any>): void;
+  registerFieldInterfaces(interfaces: Record<string, new (options: any) => IFieldInterface>): void;
+
+  registerFieldInterface(name: string, fieldInterface: new (options: any) => IFieldInterface): void;
+
+  getFieldInterface(name: string): new (options: any) => IFieldInterface | undefined;
 
   registerCollectionTemplates(templates: Record<string, any>): void;
 
   registerModels(models: Record<string, any>): void;
 
-  registerRepositories(repositories: Record<string, any>): void;
+  registerRepositories(repositories: Record<string, new (collection: ICollection) => IRepository>): void;
 
-  getRegisteredRepository(key: string): IRepository;
+  getRegisteredRepository(key: string): new (collection: ICollection) => IRepository;
 
   defineCollection(options: CollectionOptions): ICollection;
 
@@ -101,6 +125,8 @@ export interface ICollectionManager {
   getCollection(name: string): ICollection;
 
   getCollections(): Array<ICollection>;
+
+  removeCollection(name: string): void;
 
   getRepository(name: string, sourceId?: string | number): IRepository;
 

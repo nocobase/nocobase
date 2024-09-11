@@ -14,12 +14,14 @@ import React, { ComponentType, useCallback, useMemo, useState } from 'react';
 import { css } from '@emotion/css';
 import { useNiceDropdownMaxHeight } from '../../common/useNiceDropdownHeight';
 import { useFlag } from '../../flag-provider';
-import { useDesignable } from '../../schema-component';
+import { ErrorFallback, useDesignable } from '../../schema-component';
 import { useSchemaInitializerStyles } from './components/style';
 import { SchemaInitializerContext } from './context';
 import { SchemaInitializerOptions } from './types';
+import { ErrorBoundary } from 'react-error-boundary';
 
 const defaultWrap = (s: ISchema) => s;
+const useWrapDefault = (wrap = defaultWrap) => wrap;
 
 export function withInitializer<T>(C: ComponentType<T>) {
   const WithInitializer = observer(
@@ -29,6 +31,7 @@ export function withInitializer<T>(C: ComponentType<T>) {
       const {
         insert,
         useInsert,
+        useWrap = useWrapDefault,
         wrap = defaultWrap,
         insertPosition = 'beforeEnd',
         onSuccess,
@@ -42,15 +45,16 @@ export function withInitializer<T>(C: ComponentType<T>) {
 
       // 插入 schema 的能力
       const insertCallback = useInsert ? useInsert() : insert;
+      const wrapCallback = useWrap(wrap);
       const insertSchema = useCallback(
         (schema) => {
           if (insertCallback) {
-            insertCallback(wrap(schema, { isInSubTable }));
+            insertCallback(wrapCallback(schema, { isInSubTable }));
           } else {
-            insertAdjacent(insertPosition, wrap(schema, { isInSubTable }), { onSuccess });
+            insertAdjacent(insertPosition, wrapCallback(schema, { isInSubTable }), { onSuccess });
           }
         },
-        [insertCallback, wrap, insertAdjacent, insertPosition, onSuccess],
+        [insertCallback, wrapCallback, insertAdjacent, insertPosition, onSuccess],
       );
 
       const { wrapSSR, hashId, componentCls } = useSchemaInitializerStyles();
@@ -87,53 +91,55 @@ export function withInitializer<T>(C: ComponentType<T>) {
       }
 
       return (
-        <SchemaInitializerContext.Provider
-          value={{
-            visible,
-            setVisible,
-            insert: insertSchema,
-            options: props,
-          }}
-        >
-          {popover === false ? (
-            React.createElement(C, cProps)
-          ) : (
-            <Popover
-              placement={'bottomLeft'}
-              {...popoverProps}
-              arrow={false}
-              overlayClassName={overlayClassName}
-              open={visible}
-              onOpenChange={setVisible}
-              content={wrapSSR(
-                <div
-                  className={`${componentCls} ${hashId}`}
-                  style={{
-                    maxHeight: dropdownMaxHeight,
-                    overflowY: 'auto',
-                  }}
-                >
-                  <ConfigProvider
-                    theme={{
-                      components: {
-                        Menu: {
-                          itemHeight: token.marginXL,
-                          borderRadius: token.borderRadiusSM,
-                          itemBorderRadius: token.borderRadiusSM,
-                          subMenuItemBorderRadius: token.borderRadiusSM,
-                        },
-                      },
+        <ErrorBoundary FallbackComponent={ErrorFallback.Modal} onError={(err) => console.error(err)}>
+          <SchemaInitializerContext.Provider
+            value={{
+              visible,
+              setVisible,
+              insert: insertSchema,
+              options: props,
+            }}
+          >
+            {popover === false ? (
+              React.createElement(C, cProps)
+            ) : (
+              <Popover
+                placement={'bottomLeft'}
+                {...popoverProps}
+                arrow={false}
+                overlayClassName={overlayClassName}
+                  open={visible}
+                onOpenChange={setVisible}
+                content={wrapSSR(
+                  <div
+                    className={`${componentCls} ${hashId}`}
+                    style={{
+                      maxHeight: dropdownMaxHeight,
+                      overflowY: 'auto',
                     }}
                   >
-                    {children}
-                  </ConfigProvider>
-                </div>,
-              )}
-            >
-              {React.createElement(C, cProps)}
-            </Popover>
-          )}
-        </SchemaInitializerContext.Provider>
+                    <ConfigProvider
+                      theme={{
+                        components: {
+                          Menu: {
+                            itemHeight: token.marginXL,
+                            borderRadius: token.borderRadiusSM,
+                            itemBorderRadius: token.borderRadiusSM,
+                            subMenuItemBorderRadius: token.borderRadiusSM,
+                          },
+                        },
+                      }}
+                    >
+                      {children}
+                    </ConfigProvider>
+                  </div>,
+                )}
+              >
+                {React.createElement(C, cProps)}
+              </Popover>
+            )}
+          </SchemaInitializerContext.Provider>
+        </ErrorBoundary>
       );
     },
     { displayName: `WithInitializer(${C.displayName || C.name})` },

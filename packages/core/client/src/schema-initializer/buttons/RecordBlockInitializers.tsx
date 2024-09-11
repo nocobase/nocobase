@@ -10,9 +10,9 @@
 import { Schema } from '@formily/react';
 import { useCallback, useMemo } from 'react';
 import {
+  useActionAvailable,
   useCollection,
   useCollectionManager_deprecated,
-  useCollection_deprecated,
   useCreateAssociationDetailsBlock,
   useCreateAssociationDetailsWithoutPagination,
   useCreateAssociationFormBlock,
@@ -45,9 +45,9 @@ export const canMakeAssociationBlock = (field) => {
 };
 
 function useRecordBlocks() {
-  const collection = useCollection_deprecated();
+  const collection = useCollection();
   const { getChildrenCollections } = useCollectionManager_deprecated();
-  const collectionsWithView = getChildrenCollections(collection.name, true, collection.dataSource).filter(
+  const collectionsWithView = getChildrenCollections(collection?.name, true, collection?.dataSource).filter(
     (v) => v?.filterTargetKey,
   );
 
@@ -56,10 +56,10 @@ function useRecordBlocks() {
       name: 'details',
       title: '{{t("Details")}}',
       Component: 'DetailsBlockInitializer',
-      collectionName: collection.name,
-      dataSource: collection.dataSource,
+      collectionName: collection?.name,
+      dataSource: collection?.dataSource,
       useComponentProps() {
-        const currentCollection = useCollection_deprecated();
+        const currentCollection = useCollection();
         const { createSingleDetailsSchema, templateWrap } = useCreateSingleDetailsSchema();
         const { createAssociationDetailsBlock } = useCreateAssociationDetailsBlock();
         const {
@@ -100,7 +100,7 @@ function useRecordBlocks() {
           },
           onlyCurrentDataSource: true,
           hideSearch: true,
-          componentType: 'ReadPrettyFormItem',
+          componentType: `ReadPrettyFormItem`,
           createBlockSchema,
           templateWrap: useCallback(
             (templateSchema, { item }) => {
@@ -122,10 +122,10 @@ function useRecordBlocks() {
       name: 'editForm',
       title: '{{t("Form (Edit)")}}',
       Component: 'FormBlockInitializer',
-      collectionName: collection.name,
-      dataSource: collection.dataSource,
+      collectionName: collection?.name,
+      dataSource: collection?.dataSource,
       useComponentProps() {
-        const currentCollection = useCollection_deprecated();
+        const currentCollection = useCollection();
         const { createEditFormBlock, templateWrap: templateWrapEdit } = useCreateEditFormBlock();
         const collectionsNeedToDisplay = [currentCollection, ...collectionsWithView];
 
@@ -139,22 +139,20 @@ function useRecordBlocks() {
           onlyCurrentDataSource: true,
           hideSearch: true,
           hideOtherRecordsInPopup: true,
-          componentType: 'FormItem',
+          componentType: `FormItem`,
           createBlockSchema: createEditFormBlock,
           templateWrap: templateWrapEdit,
           showAssociationFields: true,
         };
       },
-      useVisible() {
-        return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
-      },
+      useVisible: () => useActionAvailable('update'),
     },
     {
       name: 'createForm',
       title: '{{t("Form (Add new)")}}',
       Component: 'FormBlockInitializer',
-      collectionName: collection.name,
-      dataSource: collection.dataSource,
+      collectionName: collection?.name,
+      dataSource: collection?.dataSource,
       useComponentProps() {
         const { createAssociationFormBlock, templateWrap } = useCreateAssociationFormBlock();
         const { createFormBlock, templateWrap: templateWrapCollection } = useCreateFormBlock();
@@ -167,7 +165,7 @@ function useRecordBlocks() {
           },
           onlyCurrentDataSource: true,
           hideSearch: true,
-          componentType: 'FormItem',
+          componentType: `FormItem`,
           createBlockSchema: ({ item, fromOthersInPopup }) => {
             if (fromOthersInPopup) {
               return createFormBlock({ item, fromOthersInPopup });
@@ -178,7 +176,7 @@ function useRecordBlocks() {
             if (fromOthersInPopup) {
               return templateWrapCollection(templateSchema, { item, fromOthersInPopup });
             }
-            templateWrap(templateSchema, { item });
+            return templateWrap(templateSchema, { item });
           },
           showAssociationFields: true,
         };

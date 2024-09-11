@@ -64,8 +64,6 @@ export const UPLOAD_PLACEHOLDER = [
     ext: /\.(zip|rar|arj|z|gz|iso|jar|ace|tar|uue|dmg|pkg|lzh|cab)$/i,
     icon: '//img.alicdn.com/tfs/TB10jmfr29TBuNjy0FcXXbeiFXa-200-200.png',
   },
-  {
-    ext: /\.[^.]+$/i,
-    icon: '//img.alicdn.com/tfs/TB10.R4r3mTBuNjy1XbXXaMrVXa-200-200.png',
-  },
 ];
+
+export const UNKNOWN_FILE_ICON = '//img.alicdn.com/tfs/TB10.R4r3mTBuNjy1XbXXaMrVXa-200-200.png';

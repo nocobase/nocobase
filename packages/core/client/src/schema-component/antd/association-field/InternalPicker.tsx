@@ -8,7 +8,7 @@
  */
 
 import { observer, RecursionField, useField, useFieldSchema } from '@formily/react';
-import { Input, Select, Space } from 'antd';
+import { Select, Space } from 'antd';
 import { differenceBy, unionBy } from 'lodash';
 import React, { useContext, useMemo, useState } from 'react';
 import {
@@ -23,8 +23,8 @@ import {
   CollectionProvider_deprecated,
   RecordProvider,
   useCollectionRecordData,
-  useFormBlockContext,
-} from '../../../';
+} from '../../..';
+import { useFormBlockContext } from '../../../block-provider/FormBlockProvider';
 import {
   TableSelectorParamsProvider,
   useTableSelectorProps as useTsp,
@@ -53,7 +53,7 @@ export const useTableSelectorProps = () => {
       type: multiple ? 'checkbox' : 'radio',
       selectedRowKeys: rcSelectRows
         ?.filter((item) => options.every((row) => row[rowKey] !== item[rowKey]))
-        .map((item) => item[rowKey]),
+        .map((item) => item[rowKey]?.toString()),
     },
     onRowSelectionChange(selectedRowKeys, selectedRows) {
       if (multiple) {
@@ -105,7 +105,7 @@ export const InternalPicker = observer(
     const pickerProps = {
       size: 'small',
       fieldNames,
-      multiple: multiple !== false && ['o2m', 'm2m'].includes(collectionField?.interface),
+      multiple: multiple !== false && ['o2m', 'm2m', 'mbm'].includes(collectionField?.interface),
       association: {
         target: collectionField?.target,
       },
@@ -142,7 +142,7 @@ export const InternalPicker = observer(
           setVisible(false);
         },
         style: {
-          display: multiple !== false && ['o2m', 'm2m'].includes(collectionField?.interface) ? 'block' : 'none',
+          display: multiple !== false && ['o2m', 'm2m', 'mbm'].includes(collectionField?.interface) ? 'block' : 'none',
         },
       };
     };

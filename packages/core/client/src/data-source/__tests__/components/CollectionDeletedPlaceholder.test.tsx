@@ -13,7 +13,7 @@ import { render, screen, userEvent, waitFor } from '@nocobase/test/client';
 import { CollectionDeletedPlaceholder, SchemaComponent, SchemaComponentProvider } from '@nocobase/client';
 import { App } from 'antd';
 
-function renderApp(name?: any, designable?: boolean) {
+function renderAppOptions(name?: any, designable?: boolean) {
   const schema = {
     name: 'root',
     type: 'void',
@@ -37,7 +37,7 @@ function renderApp(name?: any, designable?: boolean) {
 
 describe('CollectionDeletedPlaceholder', () => {
   test('name is undefined, render `Result` component', async () => {
-    renderApp(undefined, true);
+    renderAppOptions(undefined, true);
 
     expect(screen.getByText('Delete')).toBeInTheDocument();
     expect(screen.getByText('Collection name is required')).toBeInTheDocument();
@@ -55,7 +55,7 @@ describe('CollectionDeletedPlaceholder', () => {
   });
 
   test('designable: true, render `Result` component', () => {
-    renderApp('test', true);
+    renderAppOptions('test', true);
     expect(screen.getByText('Delete')).toBeInTheDocument();
     expect(
       screen.getByText('The collection "test" may have been deleted. Please remove this block.'),
@@ -63,7 +63,7 @@ describe('CollectionDeletedPlaceholder', () => {
   });
 
   test('designable: false, render nothing', () => {
-    renderApp('test', false);
+    renderAppOptions('test', false);
 
     expect(screen.queryByText('Delete')).not.toBeInTheDocument();
   });

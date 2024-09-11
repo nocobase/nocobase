@@ -71,24 +71,27 @@ export const moment2str = (value?: Dayjs | null, options: Moment2strOptions = {}
   if (typeof gmt === 'boolean') {
     return gmt ? toGmtByPicker(value, picker) : toLocalByPicker(value, picker);
   }
-  return toGmtByPicker(value, picker);
+  return toLocalByPicker(value, picker);
 };
 
 export const mapDatePicker = function () {
   return (props: any) => {
     const format = getDefaultFormat(props) as any;
     const onChange = props.onChange;
-
     return {
       ...props,
       format: format,
       value: str2moment(props.value, props),
-      onChange: (value: Dayjs | null) => {
+      onChange: (value: Dayjs | null, dateString) => {
         if (onChange) {
           if (!props.showTime && value) {
             value = value.startOf('day');
           }
-          onChange(moment2str(value, props));
+          if (props.dateOnly) {
+            onChange(dateString !== '' ? dateString : undefined);
+          } else {
+            onChange(moment2str(value, props));
+          }
         }
       },
     };
@@ -145,7 +148,48 @@ const getEnd = (offset: any, unit: any) => {
     .endOf(unit);
 };
 
-export const getDateRanges = () => {
+export const getDateRanges = (props?: {
+  /** 日期是否是 UTC 格式 */
+  utc?: boolean;
+  /** 如果为 true 则返回的值是一个字符串 */
+  shouldBeString?: boolean;
+}) => {
+  if (props?.shouldBeString) {
+    const toString = (date) => {
+      if (Array.isArray(date)) {
+        return date.map((d) => moment2str(d, { utc: props?.utc }));
+      }
+      return moment2str(date, { utc: props?.utc });
+    };
+    return {
+      now: () => toString(dayjs()),
+      today: () => toString([getStart(0, 'day'), getEnd(0, 'day')]),
+      yesterday: () => toString([getStart(-1, 'day'), getEnd(-1, 'day')]),
+      tomorrow: () => toString([getStart(1, 'day'), getEnd(1, 'day')]),
+      thisWeek: () => toString([getStart(0, 'isoWeek'), getEnd(0, 'isoWeek')]),
+      lastWeek: () => toString([getStart(-1, 'isoWeek'), getEnd(-1, 'isoWeek')]),
+      nextWeek: () => toString([getStart(1, 'isoWeek'), getEnd(1, 'isoWeek')]),
+      thisIsoWeek: () => toString([getStart(0, 'isoWeek'), getEnd(0, 'isoWeek')]),
+      lastIsoWeek: () => toString([getStart(-1, 'isoWeek'), getEnd(-1, 'isoWeek')]),
+      nextIsoWeek: () => toString([getStart(1, 'isoWeek'), getEnd(1, 'isoWeek')]),
+      thisMonth: () => toString([getStart(0, 'month'), getEnd(0, 'month')]),
+      lastMonth: () => toString([getStart(-1, 'month'), getEnd(-1, 'month')]),
+      nextMonth: () => toString([getStart(1, 'month'), getEnd(1, 'month')]),
+      thisQuarter: () => toString([getStart(0, 'quarter'), getEnd(0, 'quarter')]),
+      lastQuarter: () => toString([getStart(-1, 'quarter'), getEnd(-1, 'quarter')]),
+      nextQuarter: () => toString([getStart(1, 'quarter'), getEnd(1, 'quarter')]),
+      thisYear: () => toString([getStart(0, 'year'), getEnd(0, 'year')]),
+      lastYear: () => toString([getStart(-1, 'year'), getEnd(-1, 'year')]),
+      nextYear: () => toString([getStart(1, 'year'), getEnd(1, 'year')]),
+      last7Days: () => toString([getStart(-6, 'days'), getEnd(0, 'days')]),
+      next7Days: () => toString([getStart(1, 'day'), getEnd(7, 'days')]),
+      last30Days: () => toString([getStart(-29, 'days'), getEnd(0, 'days')]),
+      next30Days: () => toString([getStart(1, 'day'), getEnd(30, 'days')]),
+      last90Days: () => toString([getStart(-89, 'days'), getEnd(0, 'days')]),
+      next90Days: () => toString([getStart(1, 'day'), getEnd(90, 'days')]),
+    };
+  }
+
   return {
     now: () => dayjs().toISOString(),
     today: () => [getStart(0, 'day'), getEnd(0, 'day')],

@@ -26,7 +26,7 @@ export class MarkdownFieldInterface extends CollectionFieldInterface {
       'x-component': 'Markdown',
     },
   };
-  availableTypes = ['text', 'json'];
+  availableTypes = ['text', 'json', 'string'];
   hasDefaultValue = true;
   properties = {
     ...defaultProps,
@@ -79,6 +79,6 @@ export class MarkdownFieldInterface extends CollectionFieldInterface {
     };
   }
   filterable = {
-    operators: operators.string,
+    operators: operators.bigField,
   };
 }

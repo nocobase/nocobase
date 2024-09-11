@@ -7,31 +7,34 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { useField, useFieldSchema } from '@formily/react';
-import {
-  GeneralSchemaDesigner,
-  SchemaSettingsBlockTitleItem,
-  SchemaSettingsDivider,
-  SchemaSettingsItem,
-  SchemaSettingsRemove,
-  gridRowColWrap,
-  useAPIClient,
-  useCollection_deprecated,
-  useDataSource,
-  useDesignable,
-} from '@nocobase/client';
+import { useAPIClient } from '@nocobase/client';
 import { Empty, Result, Spin, Typography } from 'antd';
-import React, { useContext, useEffect, useRef } from 'react';
+import React, { useContext } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
-import { ChartConfigContext } from '../configure';
 import { useData, useFieldTransformer, useFieldsWithAssociation } from '../hooks';
 import { useChartsTranslation } from '../locale';
-import { createRendererSchema, getField } from '../utils';
+import { getField } from '../utils';
 import { ChartRendererContext } from './ChartRendererProvider';
 import { useChart } from '../chart/group';
-import { ChartDataContext } from '../block/ChartDataProvider';
 import { Schema } from '@formily/react';
+import { ChartRendererDesigner } from './ChartRendererDesigner';
 const { Paragraph, Text } = Typography;
+
+const ErrorFallback = ({ error }) => {
+  const { t } = useChartsTranslation();
+
+  return (
+    <div style={{ backgroundColor: 'white' }}>
+      <Result status="error" title={t('Render Failed')} subTitle={t('Please check the configuration.')}>
+        <Paragraph copyable>
+          <Text type="danger" style={{ whiteSpace: 'pre-line', textAlign: 'center' }}>
+            {error.message}
+          </Text>
+        </Paragraph>
+      </Result>
+    </div>
+  );
+};
 
 export const ChartRenderer: React.FC & {
   Designer: React.FC;
@@ -86,64 +89,4 @@ export const ChartRenderer: React.FC & {
   );
 };
 
-ChartRenderer.Designer = function Designer() {
-  const { t } = useChartsTranslation();
-  const { setVisible, setCurrent } = useContext(ChartConfigContext);
-  const { removeChart } = useContext(ChartDataContext);
-  const { service } = useContext(ChartRendererContext);
-  const field = useField();
-  const schema = useFieldSchema();
-  const { insertAdjacent } = useDesignable();
-  const dataSource = useDataSource();
-  const { name, title } = useCollection_deprecated();
-  return (
-    <GeneralSchemaDesigner disableInitializer title={title || name}>
-      <SchemaSettingsItem
-        title="Configure"
-        key="configure"
-        onClick={async () => {
-          setCurrent({ schema, field, dataSource: dataSource.key, collection: name, service, data: service.data });
-          setVisible(true);
-        }}
-      >
-        {t('Configure')}
-      </SchemaSettingsItem>
-      <SchemaSettingsItem
-        title="Duplicate"
-        key="duplicate"
-        onClick={() => insertAdjacent('afterEnd', gridRowColWrap(createRendererSchema(schema?.['x-decorator-props'])))}
-      >
-        {t('Duplicate')}
-      </SchemaSettingsItem>
-      {/* <SchemaSettingsBlockTitleItem /> */}
-      <SchemaSettingsDivider />
-      <SchemaSettingsRemove
-        // removeParentsIfNoChildren
-        breakRemoveOn={{
-          'x-component': 'ChartV2Block',
-        }}
-        confirm={{
-          onOk: () => {
-            removeChart(schema['x-uid']);
-          },
-        }}
-      />
-    </GeneralSchemaDesigner>
-  );
-};
-
-const ErrorFallback = ({ error }) => {
-  const { t } = useChartsTranslation();
-
-  return (
-    <div style={{ backgroundColor: 'white' }}>
-      <Result status="error" title={t('Render Failed')} subTitle={t('Please check the configuration.')}>
-        <Paragraph copyable>
-          <Text type="danger" style={{ whiteSpace: 'pre-line', textAlign: 'center' }}>
-            {error.message}
-          </Text>
-        </Paragraph>
-      </Result>
-    </div>
-  );
-};
+ChartRenderer.Designer = ChartRendererDesigner;

@@ -36,7 +36,10 @@ export class ModelHook {
   }
 
   findModelName(hookArgs) {
-    for (const arg of hookArgs) {
+    for (let arg of hookArgs) {
+      if (Array.isArray(arg)) {
+        arg = arg[0];
+      }
       if (arg?._previousDataValues) {
         return (<Model>arg).constructor.name;
       }
@@ -44,13 +47,10 @@ export class ModelHook {
         if (arg['model']) {
           return arg['model'].name;
         }
-        const plural = arg?.name?.plural;
-        if (this.database.sequelize.isDefined(plural)) {
-          return plural;
-        }
-        const singular = arg?.name?.singular;
-        if (this.database.sequelize.isDefined(singular)) {
-          return singular;
+
+        const modelName = arg['modelName'];
+        if (this.database.sequelize.isDefined(modelName)) {
+          return modelName;
         }
       }
     }

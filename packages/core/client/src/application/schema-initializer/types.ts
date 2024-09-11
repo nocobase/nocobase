@@ -21,7 +21,7 @@ import type {
 
 export type InsertType = (s: ISchema) => void;
 
-type SchemaInitializerItemBuiltInType<T = {}> = T & {
+type SchemaInitializerItemBuiltInType<T = {}> = Partial<T> & {
   name: string;
   sort?: number;
   componentProps?: Omit<T, 'children'>;
@@ -32,7 +32,7 @@ type SchemaInitializerItemBuiltInType<T = {}> = T & {
 
 export interface SchemaInitializerItemComponentType<T = {}> {
   name: string;
-  Component: ComponentType<T> | string;
+  Component?: ComponentType<T> | string;
   sort?: number;
   componentProps?: Omit<T, 'children'>;
   useComponentProps?: () => Omit<T, 'children'>;
@@ -110,6 +110,7 @@ export interface SchemaInitializerOptions<P1 = ButtonProps, P2 = {}> {
   insertPosition?: 'beforeBegin' | 'afterBegin' | 'beforeEnd' | 'afterEnd';
   designable?: boolean;
   wrap?: (s: ISchema, options?: any) => ISchema;
+  useWrap?: () => ((s: ISchema, options?: any) => ISchema);
   onSuccess?: (data: any) => void;
   insert?: InsertType;
   useInsert?: () => InsertType;

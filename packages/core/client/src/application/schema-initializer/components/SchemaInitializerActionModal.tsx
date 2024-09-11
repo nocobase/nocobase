@@ -10,34 +10,31 @@
 import { useForm } from '@formily/react';
 import React, { FC, useCallback, useMemo } from 'react';
 import { useActionContext, SchemaComponent } from '../../../schema-component';
-import { useSchemaInitializerItem } from '../context';
+import { useSchemaInitializer, useSchemaInitializerItem } from '../context';
 import { SchemaInitializerItem } from './SchemaInitializerItem';
+import { uid } from '@formily/shared';
 
 export interface SchemaInitializerActionModalProps {
   title: string;
+  icon?: string | React.ReactNode;
   schema: any;
   onCancel?: () => void;
-  onSubmit?: (values: any) => void;
+  onSubmit?: (values: any) => Promise<any> | void;
   buttonText?: any;
   component?: any;
   isItem?: boolean;
+  width?: string;
+  btnStyles?: React.CSSProperties;
 }
 
-const SchemaInitializerActionModalItemComponent = React.forwardRef((props: any, ref) => {
-  const { onClick, title, ...others } = props;
-  return (
-    <SchemaInitializerItem
-      ref={ref}
-      {...others}
-      onClick={(e) => {
-        onClick?.(e.event);
-      }}
-    ></SchemaInitializerItem>
-  );
+const SchemaInitializerActionModalItemComponent = React.forwardRef((props: any, ref: any) => {
+  const { onClick, ...others } = props;
+  return <SchemaInitializerItem ref={ref} {...others} onClick={(e) => onClick?.(e.event, false)} />;
 });
 
 export const SchemaInitializerActionModal: FC<SchemaInitializerActionModalProps> = (props) => {
-  const { title, schema, buttonText, isItem, component, onCancel, onSubmit } = props;
+  const { title, icon, width, schema, buttonText, btnStyles, isItem, component, onCancel, onSubmit } = props;
+  const { setVisible: initializerSetVisible } = useSchemaInitializer();
   const useCancelAction = useCallback(() => {
     // eslint-disable-next-line react-hooks/rules-of-hooks
     const form = useForm();
@@ -60,33 +57,49 @@ export const SchemaInitializerActionModal: FC<SchemaInitializerActionModalProps>
     return {
       async run() {
         await form.validate();
-        await onSubmit?.(form.values);
-        ctx.setVisible(false);
-        void form.reset();
+        try {
+          await onSubmit?.(form.values);
+          ctx.setVisible(false);
+          void form.reset();
+        } catch (err) {
+          console.error(err);
+        }
       },
     };
   }, [onSubmit]);
+
+  const ItemComponent = useMemo(
+    () =>
+      React.forwardRef(({ onClick }: any, ref) => {
+        return <SchemaInitializerActionModalItemComponent onClick={onClick} ref={ref} title={buttonText} icon={icon} />;
+      }),
+    [buttonText, icon],
+  );
+
+  const schemaId = useMemo(() => uid(), []);
+
   const defaultSchema = useMemo(() => {
     return {
       type: 'void',
       properties: {
-        action1: {
+        [schemaId]: {
           type: 'void',
           'x-component': 'Action',
           'x-component-props': component
             ? {
                 component,
+                icon,
               }
             : isItem
               ? {
-                  title: buttonText,
-                  component: SchemaInitializerActionModalItemComponent,
+                  component: ItemComponent,
                 }
               : {
-                  icon: 'PlusOutlined',
+                  icon: icon || 'PlusOutlined',
                   style: {
                     borderColor: 'var(--colorSettings)',
                     color: 'var(--colorSettings)',
+                    ...(btnStyles || {}),
                   },
                   title: buttonText,
                   type: 'dashed',
@@ -96,9 +109,13 @@ export const SchemaInitializerActionModal: FC<SchemaInitializerActionModalProps>
               'x-decorator': 'Form',
               'x-component': 'Action.Modal',
               'x-component-props': {
+                width: width,
                 style: {
-                  maxWidth: '520px',
+                  maxWidth: width ? width : '520px',
                   width: '100%',
+                },
+                afterOpenChange: () => {
+                  initializerSetVisible(false);
                 },
               },
               type: 'void',
@@ -132,7 +149,7 @@ export const SchemaInitializerActionModal: FC<SchemaInitializerActionModalProps>
         },
       },
     };
-  }, [buttonText, component, schema, title, useCancelAction, useSubmitAction]);
+  }, [buttonText, component, schemaId, schema, title, useCancelAction, useSubmitAction]);
 
   return <SchemaComponent schema={defaultSchema as any} />;
 };

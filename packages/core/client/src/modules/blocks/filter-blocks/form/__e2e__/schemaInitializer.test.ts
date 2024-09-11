@@ -8,7 +8,7 @@
  */
 
 import { Page, createBlockInPage, expect, oneEmptyFilterFormBlock, test } from '@nocobase/test/e2e';
-import { oneFilterFormWithInherit } from './templatesOfBug';
+import { displayManyTOManyAssociationFields, oneFilterFormWithInherit } from './templates';
 
 const deleteButton = async (page: Page, name: string) => {
   await page.getByLabel(`action-Action-${name}-`).hover();
@@ -80,6 +80,33 @@ test.describe('configure fields', () => {
     await page.getByRole('menuitem', { name: 'Add text' }).click();
 
     await expect(page.getByLabel('block-item-Markdown.Void-general-filter-form')).toBeVisible();
+  });
+
+  test('display manyToMany association fields', async ({ page, mockPage, mockRecord }) => {
+    const nocoPage = await mockPage(displayManyTOManyAssociationFields).waitForInit();
+    const record = await mockRecord('users', 2);
+    await nocoPage.goto();
+
+    // display the `users.roles` field
+    await page.getByLabel('schema-initializer-Grid-filterForm:configureFields-users').hover();
+    await page.getByRole('menuitem', { name: 'Roles right' }).hover();
+    await page.getByRole('menuitem', { name: 'Role name' }).click();
+
+    // before filter
+    await expect(page.getByRole('button', { name: record.roles.map((item) => item.name).join(',') })).toBeVisible();
+
+    // input a some value to filter
+    await page.getByLabel('block-item-CollectionField-').getByRole('textbox').fill('root');
+    await page.getByLabel('action-Action-Filter-submit-').click({
+      position: {
+        x: 10,
+        y: 10,
+      },
+    });
+
+    // expect: should only display the record with the `root` role
+    await expect(page.getByRole('button', { name: 'root' })).toBeVisible();
+    await expect(page.getByRole('button', { name: record.roles.map((item) => item.name).join(',') })).not.toBeVisible();
   });
 
   test.pgOnly('display inherit fields', async ({ page, mockPage }) => {

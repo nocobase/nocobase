@@ -103,11 +103,11 @@ export default class SqliteQueryInterface extends QueryInterface {
     return Promise.resolve(undefined);
   }
 
-  async getAutoIncrementInfo(options: { tableInfo: TableInfo; fieldName: string }): Promise<{
+  async getAutoIncrementInfo(options: { tableInfo: TableInfo; fieldName: string; transaction: Transaction }): Promise<{
     seqName?: string;
     currentVal: number;
   }> {
-    const { tableInfo } = options;
+    const { tableInfo, transaction } = options;
 
     const tableName = tableInfo.tableName;
 
@@ -115,7 +115,7 @@ export default class SqliteQueryInterface extends QueryInterface {
                  FROM sqlite_sequence
                  WHERE name = '${tableName}';`;
 
-    const results = await this.db.sequelize.query(sql, { type: 'SELECT' });
+    const results = await this.db.sequelize.query(sql, { type: 'SELECT', transaction });
 
     const row = results[0];
 

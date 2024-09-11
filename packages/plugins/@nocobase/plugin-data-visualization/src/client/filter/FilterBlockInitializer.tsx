@@ -51,7 +51,6 @@ const createFilterSchema = () => {
               layout: 'one-column',
               style: {
                 float: 'right',
-                marginTop: 8,
               },
             },
             properties: {},

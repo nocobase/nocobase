@@ -8,15 +8,21 @@
  */
 
 import { useField, useFieldSchema, useForm } from '@formily/react';
-import { useAPIClient, useActionContext, useCompile, useDataSourceKey, useRecord } from '@nocobase/client';
+import {
+  useAPIClient,
+  useActionContext,
+  useCompile,
+  useDataSourceKey,
+  useNavigateNoUpdate,
+  useRecord,
+} from '@nocobase/client';
 import { isURL } from '@nocobase/utils/client';
 import { App } from 'antd';
 import { saveAs } from 'file-saver';
-import { useNavigate } from 'react-router-dom';
 
 export const useCustomizeRequestActionProps = () => {
   const apiClient = useAPIClient();
-  const navigate = useNavigate();
+  const navigate = useNavigateNoUpdate();
   const actionSchema = useFieldSchema();
   const compile = useCompile();
   const form = useForm();
@@ -59,7 +65,7 @@ export const useCustomizeRequestActionProps = () => {
         if (res.headers['content-disposition']) {
           const regex = /attachment;\s*filename="([^"]+)"/;
           const match = res.headers['content-disposition'].match(regex);
-          if (match[1]) {
+          if (match?.[1]) {
             saveAs(res.data, match[1]);
           }
         }

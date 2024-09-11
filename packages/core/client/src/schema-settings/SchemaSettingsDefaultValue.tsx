@@ -22,7 +22,8 @@ import {
   useDesignable,
   useRecord,
 } from '..';
-import { useFormBlockContext, useTableBlockContext } from '../block-provider';
+import { useTableBlockContext } from '../block-provider';
+import { useFormBlockContext } from '../block-provider/FormBlockProvider';
 import { useCollectionFilterOptionsV2 } from '../collection-manager/action-hooks';
 import { FlagProvider, useFlag } from '../flag-provider';
 import { useLocalVariables, useVariables } from '../variables';

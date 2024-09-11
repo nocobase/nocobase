@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { InstallOptions, Plugin } from '@nocobase/server';
+import { Plugin } from '@nocobase/server';
 import { namespace } from '..';
 import { downloadXlsxTemplate, importXlsx } from './actions';
 import { enUS, zhCN } from './locale';
@@ -17,15 +17,36 @@ export class PluginActionImportServer extends Plugin {
   beforeLoad() {
     this.app.i18n.addResources('zh-CN', namespace, zhCN);
     this.app.i18n.addResources('en-US', namespace, enUS);
+
+    this.app.on('afterInstall', async () => {
+      if (!this.app.db.getRepository('roles')) {
+        return;
+      }
+      const roleNames = ['admin', 'member'];
+      const roles = await this.app.db.getRepository('roles').find({
+        filter: {
+          name: roleNames,
+        },
+      });
+
+      for (const role of roles) {
+        await this.app.db.getRepository('roles').update({
+          filter: {
+            name: role.name,
+          },
+          values: {
+            strategy: {
+              ...role.strategy,
+              actions: [...role.strategy.actions, 'importXlsx'],
+            },
+          },
+        });
+      }
+    });
   }
 
   async load() {
     this.app.dataSourceManager.afterAddDataSource((dataSource) => {
-      // @ts-ignore
-      if (!dataSource.collectionManager?.db) {
-        return;
-      }
-
       dataSource.resourceManager.use(importMiddleware);
       dataSource.resourceManager.registerActionHandler('downloadXlsxTemplate', downloadXlsxTemplate);
       dataSource.resourceManager.registerActionHandler('importXlsx', importXlsx);
@@ -39,10 +60,6 @@ export class PluginActionImportServer extends Plugin {
 
       dataSource.acl.allow('*', 'downloadXlsxTemplate', 'loggedIn');
     });
-  }
-
-  async install(options: InstallOptions) {
-    // TODO
   }
 }
 

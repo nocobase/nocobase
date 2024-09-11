@@ -58,7 +58,7 @@ export const ImportModal = (props: any) => {
           <Space direction="vertical" align="center">
             <ExclamationCircleFilled style={{ fontSize: 72, color: '#1890ff' }} />
             <p>
-              {t('Import done, total success have {{successCount}} , total failure have {{failureCount}}', {
+              {t('{{successCount}} records have been successfully imported', {
                 ...(meta ?? {}),
               })}
             </p>

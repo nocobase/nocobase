@@ -13,6 +13,7 @@ export default defineCollection({
   dumpRules: {
     group: 'user',
   },
+  asStrategyResource: true,
   shared: true,
   name: 'attachments',
   createdBy: true,

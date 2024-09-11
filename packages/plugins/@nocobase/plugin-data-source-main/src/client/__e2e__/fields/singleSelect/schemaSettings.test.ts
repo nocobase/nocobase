@@ -66,8 +66,8 @@ test.describe('form item & create form', () => {
             })
             .hover();
         })(page, 'singleSelect'),
-      supportedVariables: ['Constant', 'Current user', 'Current role', 'Date variables', 'Current form'],
-      unsupportedVariables: ['Current popup record'],
+      supportedVariables: ['Constant', 'Current user', 'Current role', 'API token', 'Date variables', 'Current form'],
+      unsupportedVariables: ['Current popup record', 'Parent popup record'],
       inputConstantValue: async () => {
         await page.getByLabel('block-item-VariableInput-').click();
         await page.getByRole('option', { name: 'Option1' }).click();

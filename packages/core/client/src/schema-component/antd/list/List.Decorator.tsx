@@ -32,7 +32,10 @@ const InternalListBlockProvider = (props) => {
 
   useEffect(() => {
     if (!service?.loading) {
-      form.setValuesIn(field.address.concat('list').toString(), service?.data?.data);
+      form.query(/\.list$/).forEach((field) => {
+        // @ts-ignore
+        field.setValue?.(service?.data?.data);
+      });
     }
   }, [field.address, form, service?.data?.data, service?.loading]);
 
@@ -65,7 +68,7 @@ const InternalListBlockProvider = (props) => {
 
 export const ListBlockProvider = withDynamicSchemaProps((props) => {
   const { params } = props;
-  const { filter: parsedFilter } = useParsedFilter({
+  const { filter: parsedFilter, parseVariableLoading } = useParsedFilter({
     filterOption: params?.filter,
   });
   const paramsWithFilter = useMemo(() => {
@@ -77,7 +80,7 @@ export const ListBlockProvider = withDynamicSchemaProps((props) => {
 
   // parse filter 的过程是异步的，且一开始 parsedFilter 是一个空对象，所以当 parsedFilter 为空 params.filter 不为空时，
   // 说明 filter 还未解析完成，此时不应该渲染，防止重复请求多次
-  if (_.isEmpty(parsedFilter) && !_.isEmpty(params?.filter)) {
+  if ((_.isEmpty(parsedFilter) && !_.isEmpty(params?.filter)) || parseVariableLoading) {
     return null;
   }
 

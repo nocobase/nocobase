@@ -55,7 +55,7 @@ const useParseDataScopeFilter = ({ exclude = defaultExclude }: Props = {}) => {
           if (exclude.includes(getVariableName(value))) {
             return value;
           }
-          const result = variables?.parseVariable(value, localVariables);
+          const result = variables?.parseVariable(value, localVariables).then(({ value }) => value);
           return result;
         },
       });
@@ -63,7 +63,7 @@ const useParseDataScopeFilter = ({ exclude = defaultExclude }: Props = {}) => {
         Object.keys(flat).map(async (key) => {
           flat[key] = await flat[key];
           if (flat[key] === undefined) {
-            flat[key] = null;
+            delete flat[key];
           }
           return flat[key];
         }),

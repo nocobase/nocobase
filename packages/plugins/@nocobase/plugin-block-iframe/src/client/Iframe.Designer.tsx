@@ -16,6 +16,9 @@ import {
   SchemaSettingsRemove,
   useAPIClient,
   useDesignable,
+  useFormBlockContext,
+  useRecord,
+  useVariableOptions,
 } from '@nocobase/client';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
@@ -26,7 +29,7 @@ export const IframeDesigner = () => {
   const { t } = useTranslation();
   const { dn } = useDesignable();
   const api = useAPIClient();
-  const { mode, url, htmlId, height = '60vh' } = fieldSchema['x-component-props'] || {};
+  const { mode, url, htmlId, height = '60vh', engine } = fieldSchema['x-component-props'] || {};
 
   const saveHtml = async (html: string) => {
     const options = {
@@ -43,11 +46,13 @@ export const IframeDesigner = () => {
     }
   };
 
-  const submitHandler = async ({ mode, url, html, height }) => {
+  const submitHandler = async ({ mode, url, html, height, engine }) => {
     const componentProps = fieldSchema['x-component-props'] || {};
     componentProps['mode'] = mode;
     componentProps['height'] = height;
     componentProps['url'] = url;
+    componentProps['engine'] = engine || 'string';
+
     if (mode === 'html') {
       const data = await saveHtml(html);
       componentProps['htmlId'] = data.id;
@@ -62,7 +67,15 @@ export const IframeDesigner = () => {
       },
     });
   };
-
+  const { form } = useFormBlockContext();
+  const record = useRecord();
+  const scope = useVariableOptions({
+    collectionField: { uiSchema: fieldSchema },
+    form,
+    record,
+    uiSchema: fieldSchema,
+    noDisabled: true,
+  });
   return (
     <GeneralSchemaDesigner>
       <SchemaSettingsModalItem
@@ -93,14 +106,17 @@ export const IframeDesigner = () => {
                 default: 'url',
                 enum: [
                   { value: 'url', label: t('URL') },
-                  { value: 'html', label: t('html') },
+                  { value: 'html', label: t('HTML') },
                 ],
               },
               url: {
                 title: t('URL'),
                 type: 'string',
                 'x-decorator': 'FormItem',
-                'x-component': 'Input',
+                'x-component': 'Variable.TextArea',
+                'x-component-props': {
+                  scope,
+                },
                 required: true,
                 'x-reactions': {
                   dependencies: ['mode'],
@@ -111,11 +127,32 @@ export const IframeDesigner = () => {
                   },
                 },
               },
+              engine: {
+                title: '{{t("Template engine")}}',
+                'x-component': 'Radio.Group',
+                'x-decorator': 'FormItem',
+                enum: [
+                  { value: 'string', label: t('String template') },
+                  { value: 'handlebars', label: t('Handlebars') },
+                ],
+                'x-reactions': {
+                  dependencies: ['mode'],
+                  fulfill: {
+                    state: {
+                      hidden: '{{$deps[0] === "url"}}',
+                    },
+                  },
+                },
+              },
               html: {
                 title: t('html'),
                 type: 'string',
                 'x-decorator': 'FormItem',
-                'x-component': 'Input.TextArea',
+                'x-component': 'Variable.RawTextArea',
+                'x-component-props': {
+                  scope,
+                  style: { minHeight: '200px' },
+                },
                 required: true,
                 'x-reactions': {
                   dependencies: ['mode'],

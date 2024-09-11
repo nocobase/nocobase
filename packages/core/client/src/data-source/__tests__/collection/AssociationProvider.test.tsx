@@ -21,7 +21,7 @@ import {
 } from '@nocobase/client';
 import collections from '../collections.json';
 
-function renderApp(Demo: ComponentType, props: any = {}) {
+function renderAppOptions(Demo: ComponentType, props: any = {}) {
   const app = new Application({
     dataSourceManager: {
       collections: collections as any,
@@ -69,7 +69,7 @@ describe('AssociationProvider', () => {
       );
     };
 
-    renderApp(Demo, { name: 'users.roles' });
+    renderAppOptions(Demo, { name: 'users.roles' });
 
     expect(screen.getByTestId('collection')).toHaveTextContent('roles');
     expect(screen.getByTestId('parent-collection')).toHaveTextContent('users');
@@ -90,7 +90,7 @@ describe('AssociationProvider', () => {
       );
     };
 
-    renderApp(Demo, { name: 'users.roles', dataSource: 'a' });
+    renderAppOptions(Demo, { name: 'users.roles', dataSource: 'a' });
 
     expect(screen.getByTestId('collection')).toHaveTextContent('roles');
     expect(screen.getByTestId('parent-collection')).toHaveTextContent('users');
@@ -101,7 +101,7 @@ describe('AssociationProvider', () => {
     const Demo = () => {
       return <div>Demo</div>;
     };
-    renderApp(Demo, { name: 'users.not-exists' });
+    renderAppOptions(Demo, { name: 'users.not-exists' });
 
     expect(screen.getByText('Delete')).toBeInTheDocument();
     expect(

@@ -22,7 +22,7 @@ import { render, screen } from '@nocobase/test/client';
 import React from 'react';
 import collections from '../collections.json';
 
-function renderApp(fieldName: string, components = {}) {
+function renderAppOptions(fieldName: string, components = {}) {
   const noUiSchema = {
     key: 'no-ui-schema',
     name: 'no-ui-schema',
@@ -99,7 +99,7 @@ function renderApp(fieldName: string, components = {}) {
 
 describe('CollectionField', () => {
   it('works', () => {
-    renderApp('nickname');
+    renderAppOptions('nickname');
     expect(screen.getByText('Nickname')).toBeInTheDocument();
     expect(screen.getByRole('textbox')).toHaveClass('ant-input');
   });
@@ -109,18 +109,18 @@ describe('CollectionField', () => {
       const field = useCollectionField();
       return <div className={'input-test-1'}>{field?.name}</div>;
     };
-    renderApp('nickname', { Input });
+    renderAppOptions('nickname', { Input });
     expect(document.querySelector('.input-test-1')).toHaveTextContent('nickname');
   });
 
   it('useComponentProps', () => {
-    renderApp('dynamic-props');
+    renderAppOptions('dynamic-props');
     expect(document.querySelector('.ant-input')).toHaveAttribute('placeholder', 'placeholder');
     expect(screen.queryByText('addonBefore')).toBeInTheDocument();
   });
 
   it('no schema', () => {
-    renderApp('no-ui-schema');
+    renderAppOptions('no-ui-schema');
     expect(document.querySelector('.ant-formily-item-control-content-component')).toHaveTextContent('');
   });
 });

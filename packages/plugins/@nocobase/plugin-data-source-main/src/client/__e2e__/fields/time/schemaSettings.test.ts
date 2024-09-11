@@ -61,8 +61,8 @@ test.describe('form item & create form', () => {
           .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.time`)
           .hover();
       },
-      supportedVariables: ['Constant', 'Current user', 'Current role', 'Date variables', 'Current form'],
-      unsupportedVariables: ['Current popup record'],
+      supportedVariables: ['Constant', 'Current user', 'Current role', 'API token', 'Date variables', 'Current form'],
+      unsupportedVariables: ['Current popup record', 'Parent popup record'],
       inputConstantValue: async () => {
         await page.getByLabel('block-item-VariableInput-').getByPlaceholder('Select time').click();
         await page.getByText('Now').click();

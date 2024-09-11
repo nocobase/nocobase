@@ -22,7 +22,6 @@ export const SchemaInitializerButton: FC<SchemaInitializerButtonProps> = React.m
   const { style, options, ...others } = props;
   const compile = useCompile();
   const { getAriaLabel } = useGetAriaLabelOfSchemaInitializer();
-
   return (
     <Button
       data-testid={options['data-testid']}
@@ -32,23 +31,26 @@ export const SchemaInitializerButton: FC<SchemaInitializerButtonProps> = React.m
       style={{
         borderColor: 'var(--colorSettings)',
         color: 'var(--colorSettings)',
+        flex: 'none',
         ...style,
       }}
       icon={typeof options.icon === 'string' ? <Icon type={options.icon as string} /> : options.icon}
       {...others}
     >
-      <span
-        style={{
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-          whiteSpace: 'nowrap',
-          display: 'inline-block',
-          width: options.icon ? 'calc(100% - 14px)' : '100%',
-          verticalAlign: 'bottom',
-        }}
-      >
-        {compile(options.title)}
-      </span>
+      {options.title && (
+        <span
+          style={{
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+            display: 'inline-block',
+            width: options.icon ? 'calc(100% - 14px)' : '100%',
+            verticalAlign: 'bottom',
+          }}
+        >
+          {compile(options.title)}
+        </span>
+      )}
     </Button>
   );
 });

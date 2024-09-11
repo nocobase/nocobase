@@ -10,19 +10,30 @@
 import { observer, RecursionField, useField, useFieldSchema } from '@formily/react';
 import { Drawer } from 'antd';
 import classNames from 'classnames';
-import React from 'react';
-import { OpenSize } from './types';
+import React, { useMemo } from 'react';
+import { ErrorBoundary, FallbackProps } from 'react-error-boundary';
+import { ErrorFallback } from '../error-fallback';
+import { useCurrentPopupContext } from '../page/PagePopups';
 import { useStyles } from './Action.Drawer.style';
 import { useActionContext } from './hooks';
 import { useSetAriaLabelForDrawer } from './hooks/useSetAriaLabelForDrawer';
-import { ComposedActionDrawer } from './types';
+import { ActionDrawerProps, ComposedActionDrawer, OpenSize } from './types';
+
+const DrawerErrorFallback: React.FC<FallbackProps> = (props) => {
+  const { visible, setVisible } = useActionContext();
+  return (
+    <Drawer open={visible} onClose={() => setVisible(false, true)} width="50%">
+      <ErrorFallback {...props} />
+    </Drawer>
+  );
+};
 
 const openSizeWidthMap = new Map<OpenSize, string>([
   ['small', '30%'],
   ['middle', '50%'],
   ['large', '70%'],
 ]);
-export const ActionDrawer: ComposedActionDrawer = observer(
+export const InternalActionDrawer: React.FC<ActionDrawerProps> = observer(
   (props) => {
     const { footerNodeName = 'Action.Drawer.Footer', ...others } = props;
     const { visible, setVisible, openSize = 'middle', drawerProps, modalProps } = useActionContext();
@@ -35,6 +46,14 @@ export const ActionDrawer: ComposedActionDrawer = observer(
       }
       return buf;
     });
+    const { hidden } = useCurrentPopupContext();
+    const rootStyle: React.CSSProperties = useMemo(() => {
+      return {
+        ...drawerProps?.style,
+        ...others?.style,
+        display: hidden ? 'none' : 'block',
+      };
+    }, [hidden, drawerProps?.style, others?.style]);
 
     if (process.env.__E2E__) {
       useSetAriaLabelForDrawer(visible);
@@ -46,10 +65,7 @@ export const ActionDrawer: ComposedActionDrawer = observer(
         title={field.title}
         {...others}
         {...drawerProps}
-        rootStyle={{
-          ...drawerProps?.style,
-          ...others?.style,
-        }}
+        rootStyle={rootStyle}
         destroyOnClose
         open={visible}
         onClose={() => setVisible(false, true)}
@@ -81,6 +97,12 @@ export const ActionDrawer: ComposedActionDrawer = observer(
     );
   },
   { displayName: 'ActionDrawer' },
+);
+
+export const ActionDrawer: ComposedActionDrawer = (props) => (
+  <ErrorBoundary FallbackComponent={DrawerErrorFallback} onError={(err) => console.log(err)}>
+    <InternalActionDrawer {...props} />
+  </ErrorBoundary>
 );
 
 ActionDrawer.Footer = observer(

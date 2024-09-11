@@ -12,10 +12,11 @@ import React from 'react';
 import { MapBlockOptions } from './block';
 import { mapActionInitializers, mapActionInitializers_deprecated } from './block/MapActionInitializers';
 import { mapBlockSettings } from './block/MapBlock.Settings';
+import { useMapBlockProps } from './block/MapBlockProvider';
 import { Configuration, Map } from './components';
 import { fields } from './fields';
+import { fieldSettingsComponentMap } from './fields/fieldSettingsComponentMap';
 import { NAMESPACE, generateNTemplate } from './locale';
-import { useMapBlockProps } from './block/MapBlockProvider';
 const MapProvider = React.memo((props) => {
   return (
     <SchemaComponentOptions components={{ Map }}>
@@ -39,13 +40,17 @@ export class PluginMapClient extends Plugin {
     this.app.schemaInitializerManager.add(mapActionInitializers_deprecated);
     this.app.schemaInitializerManager.add(mapActionInitializers);
     this.schemaSettingsManager.add(mapBlockSettings);
+    this.schemaSettingsManager.add(fieldSettingsComponentMap);
 
     const blockInitializers = this.app.schemaInitializerManager.get('page:addBlock');
     blockInitializers?.add('dataBlocks.map', {
       title: generateNTemplate('Map'),
       Component: 'MapBlockInitializer',
     });
-
+    this.app.schemaInitializerManager.addItem('mobile:addBlock', 'dataBlocks.map', {
+      title: generateNTemplate('Map'),
+      Component: 'MapBlockInitializer',
+    });
     this.app.pluginSettingsManager.add(NAMESPACE, {
       title: `{{t("Map Manager", { ns: "${NAMESPACE}" })}}`,
       icon: 'EnvironmentOutlined',

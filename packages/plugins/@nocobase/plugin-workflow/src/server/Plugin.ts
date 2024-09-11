@@ -42,6 +42,7 @@ type Pending = [ExecutionModel, JobModel?];
 type EventOptions = {
   eventKey?: string;
   context?: any;
+  deferred?: boolean;
   [key: string]: any;
 } & Transactionable;
 
@@ -109,6 +110,31 @@ export default class PluginWorkflowServer extends Plugin {
     }
   };
 
+  async onSync(message) {
+    if (message.type === 'statusChange') {
+      const workflowId = Number.parseInt(message.workflowId, 10);
+      const enabled = Number.parseInt(message.enabled, 10);
+      if (enabled) {
+        let workflow = this.enabledCache.get(workflowId);
+        if (workflow) {
+          await workflow.reload();
+        } else {
+          workflow = await this.db.getRepository('workflows').findOne({
+            filterByTk: workflowId,
+          });
+        }
+        if (workflow) {
+          this.toggle(workflow, true, true);
+        }
+      } else {
+        const workflow = this.enabledCache.get(workflowId);
+        if (workflow) {
+          this.toggle(workflow, false, true);
+        }
+      }
+    }
+  }
+
   /**
    * @experimental
    */
@@ -121,9 +147,8 @@ export default class PluginWorkflowServer extends Plugin {
     }
 
     const logger = this.createLogger({
-      dirname: path.join('workflows', date),
-      filename: `${workflowId}.log`,
-      transports: [...(process.env.NODE_ENV !== 'production' ? ['console'] : ['file'])],
+      dirname: path.join('workflows', String(workflowId)),
+      filename: '%DATE%.log',
     } as LoggerOptions);
 
     this.loggerCache.set(key, logger);
@@ -223,6 +248,7 @@ export default class PluginWorkflowServer extends Plugin {
         'executions:list',
         'executions:get',
         'executions:cancel',
+        'executions:destroy',
         'flow_nodes:update',
         'flow_nodes:destroy',
       ],
@@ -233,9 +259,7 @@ export default class PluginWorkflowServer extends Plugin {
       actions: ['workflows:list'],
     });
 
-    this.app.acl.allow('workflows', ['trigger'], 'loggedIn');
-
-    await this.importCollections(path.resolve(__dirname, 'collections'));
+    this.app.acl.allow('*', ['trigger'], 'loggedIn');
 
     this.db.addMigrations({
       namespace: this.name,
@@ -246,14 +270,22 @@ export default class PluginWorkflowServer extends Plugin {
     });
 
     db.on('workflows.beforeSave', this.onBeforeSave);
-    db.on('workflows.afterSave', (model: WorkflowModel) => this.toggle(model));
-    db.on('workflows.afterDestroy', (model: WorkflowModel) => this.toggle(model, false));
+    db.on('workflows.afterCreate', (model: WorkflowModel) => {
+      if (model.enabled) {
+        this.toggle(model);
+      }
+    });
+    db.on('workflows.afterUpdate', (model: WorkflowModel) => this.toggle(model));
+    db.on('workflows.beforeDestroy', (model: WorkflowModel) => this.toggle(model, false));
 
     // [Life Cycle]:
     //   * load all workflows in db
     //   * add all hooks for enabled workflows
     //   * add hooks for create/update[enabled]/delete workflow to add/remove specific hooks
-    this.app.on('beforeStart', async () => {
+    this.app.on('afterStart', async () => {
+      this.app.setMaintainingMessage('check for not started executions');
+      this.ready = true;
+
       const collection = db.getCollection('workflows');
       const workflows = await collection.repository.find({
         filter: { enabled: true },
@@ -266,24 +298,15 @@ export default class PluginWorkflowServer extends Plugin {
       this.checker = setInterval(() => {
         this.dispatch();
       }, 300_000);
-    });
 
-    this.app.on('afterStart', () => {
-      this.app.setMaintainingMessage('check for not started executions');
-      this.ready = true;
       // check for not started executions
       this.dispatch();
     });
 
     this.app.on('beforeStop', async () => {
-      const repository = db.getRepository('workflows');
-      const workflows = await repository.find({
-        filter: { enabled: true },
-      });
-
-      workflows.forEach((workflow: WorkflowModel) => {
+      for (const workflow of this.enabledCache.values()) {
         this.toggle(workflow, false);
-      });
+      }
 
       this.ready = false;
       if (this.events.length) {
@@ -299,14 +322,15 @@ export default class PluginWorkflowServer extends Plugin {
     });
   }
 
-  private toggle(workflow: WorkflowModel, enable?: boolean) {
+  private toggle(workflow: WorkflowModel, enable?: boolean, silent = false) {
     const type = workflow.get('type');
     const trigger = this.triggers.get(type);
     if (!trigger) {
       this.getLogger(workflow.id).error(`trigger type ${workflow.type} of workflow ${workflow.id} is not implemented`);
       return;
     }
-    if (enable ?? workflow.get('enabled')) {
+    const next = enable ?? workflow.get('enabled');
+    if (next) {
       // NOTE: remove previous listener if config updated
       const prev = workflow.previous();
       if (prev.config) {
@@ -317,6 +341,13 @@ export default class PluginWorkflowServer extends Plugin {
     } else {
       trigger.off(workflow);
       this.enabledCache.delete(workflow.id);
+    }
+    if (!silent) {
+      this.sync({
+        type: 'statusChange',
+        workflowId: `${workflow.id}`,
+        enabled: `${Number(next)}`,
+      });
     }
   }
 
@@ -359,7 +390,7 @@ export default class PluginWorkflowServer extends Plugin {
   private async triggerSync(
     workflow: WorkflowModel,
     context: object,
-    options: EventOptions = {},
+    { deferred, ...options }: EventOptions = {},
   ): Promise<Processor | null> {
     let execution;
     try {
@@ -388,6 +419,18 @@ export default class PluginWorkflowServer extends Plugin {
     this.dispatch();
   }
 
+  /**
+   * Start a deferred execution
+   * @experimental
+   */
+  public start(execution: ExecutionModel) {
+    if (execution.status !== EXECUTION_STATUS.STARTED) {
+      return;
+    }
+    this.pending.push([execution]);
+    this.dispatch();
+  }
+
   public createProcessor(execution: ExecutionModel, options = {}): Processor {
     return new Processor(execution, { ...options, plugin: this });
   }
@@ -397,7 +440,7 @@ export default class PluginWorkflowServer extends Plugin {
     context,
     options: EventOptions,
   ): Promise<ExecutionModel | null> {
-    const { transaction = await this.db.sequelize.transaction() } = options;
+    const { transaction = await this.db.sequelize.transaction(), deferred } = options;
     const trigger = this.triggers.get(workflow.type);
     const valid = await trigger.validateEvent(workflow, context, { ...options, transaction });
     if (!valid) {
@@ -414,7 +457,7 @@ export default class PluginWorkflowServer extends Plugin {
           context,
           key: workflow.key,
           eventKey: options.eventKey ?? randomUUID(),
-          status: EXECUTION_STATUS.QUEUEING,
+          status: deferred ? EXECUTION_STATUS.STARTED : EXECUTION_STATUS.QUEUEING,
         },
         { transaction },
       );
@@ -472,7 +515,7 @@ export default class PluginWorkflowServer extends Plugin {
     try {
       const execution = await this.createExecution(...event);
       // NOTE: cache first execution for most cases
-      if (execution && !this.executing && !this.pending.length) {
+      if (execution?.status === EXECUTION_STATUS.QUEUEING && !this.executing && !this.pending.length) {
         this.pending.push([execution]);
       }
     } catch (err) {

@@ -25,13 +25,28 @@ import { updateModelByValues } from '../update-associations';
 import { UpdateGuard } from '../update-guard';
 import { RelationRepository, transaction } from './relation-repository';
 
-export type FindAndCountOptions = CommonFindOptions;
+type FindAndCountOptions = CommonFindOptions;
 
 export interface AssociatedOptions extends Transactionable {
   tk?: TK;
 }
 
 export abstract class MultipleRelationRepository extends RelationRepository {
+  async targetRepositoryFilterOptionsBySourceValue(): Promise<any> {
+    let filterForeignKeyValue = this.sourceKeyValue;
+
+    if (this.isMultiTargetKey()) {
+      const sourceModel = await this.getSourceModel();
+
+      // @ts-ignore
+      filterForeignKeyValue = sourceModel.get(this.association.sourceKey);
+    }
+
+    return {
+      [this.association.foreignKey]: filterForeignKeyValue,
+    };
+  }
+
   async find(options?: FindOptions): Promise<any> {
     const targetRepository = this.targetCollection.repository;
 
@@ -49,9 +64,7 @@ export abstract class MultipleRelationRepository extends RelationRepository {
     const appendFilter = {
       isPivotFilter: true,
       association: pivotAssoc,
-      where: {
-        [association.foreignKey]: this.sourceKeyValue,
-      },
+      where: await this.targetRepositoryFilterOptionsBySourceValue(),
     };
 
     return targetRepository.find({

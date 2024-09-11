@@ -8,17 +8,18 @@
  */
 
 import { Context, Next } from '@nocobase/actions';
-import { Field, FilterParser, snakeCase } from '@nocobase/database';
+import { BelongsToArrayAssociation, Field, FilterParser } from '@nocobase/database';
 import { formatter } from './formatter';
 import compose from 'koa-compose';
-import { parseFilter, getDateVars } from '@nocobase/utils';
 import { Cache } from '@nocobase/cache';
+import { middlewares } from '@nocobase/server';
 
 type MeasureProps = {
   field: string | string[];
   type?: string;
   aggregation?: string;
   alias?: string;
+  distinct?: boolean;
 };
 
 type DimensionProps = {
@@ -55,6 +56,8 @@ type QueryParams = Partial<{
   refresh: boolean;
 }>;
 
+const AllowedAggFuncs = ['sum', 'count', 'avg', 'min', 'max'];
+
 const getDB = (ctx: Context, dataSource: string) => {
   const ds = ctx.app.dataSourceManager.dataSources.get(dataSource);
   return ds?.collectionManager.db;
@@ -76,6 +79,7 @@ export const postProcess = async (ctx: Context, next: Next) => {
         case 'integer':
         case 'float':
         case 'double':
+        case 'decimal':
           record[key] = Number(value);
           break;
       }
@@ -115,12 +119,15 @@ export const parseBuilder = async (ctx: Context, next: Next) => {
   let hasAgg = false;
 
   measures.forEach((measure: MeasureProps & { field: string }) => {
-    const { field, aggregation, alias } = measure;
+    const { field, aggregation, alias, distinct } = measure;
     const attribute = [];
     const col = sequelize.col(field);
     if (aggregation) {
+      if (!AllowedAggFuncs.includes(aggregation)) {
+        throw new Error(`Invalid aggregation function: ${aggregation}`);
+      }
       hasAgg = true;
-      attribute.push(sequelize.fn(aggregation, col));
+      attribute.push(sequelize.fn(aggregation, distinct ? sequelize.fn('DISTINCT', col) : col));
     } else {
       attribute.push(col);
     }
@@ -185,6 +192,7 @@ export const parseFieldAndAssociations = async (ctx: Context, next: Next) => {
   const db = getDB(ctx, dataSource) || ctx.db;
   const collection = db.getCollection(collectionName);
   const fields = collection.fields;
+  const associations = collection.model.associations;
   const models: {
     [target: string]: {
       type: string;
@@ -229,11 +237,25 @@ export const parseFieldAndAssociations = async (ctx: Context, next: Next) => {
   const parsedMeasures = measures?.map(parseField) || [];
   const parsedDimensions = dimensions?.map(parseField) || [];
   const parsedOrders = orders?.map(parseField) || [];
-  const include = Object.entries(models).map(([target, { type }]) => ({
-    association: target,
-    attributes: [],
-    ...(type === 'belongsToMany' ? { through: { attributes: [] } } : {}),
-  }));
+  const include = Object.entries(models).map(([target, { type }]) => {
+    let options = {
+      association: target,
+      attributes: [],
+    };
+    if (type === 'belongsToMany') {
+      options['through'] = { attributes: [] };
+    }
+    if (type === 'belongsToArray') {
+      const association = associations[target] as BelongsToArrayAssociation;
+      if (association) {
+        options = {
+          ...options,
+          ...association.generateInclude(),
+        };
+      }
+    }
+    return options;
+  });
 
   const filterParser = new FilterParser(filter, {
     collection,
@@ -259,52 +281,11 @@ export const parseFieldAndAssociations = async (ctx: Context, next: Next) => {
 
 export const parseVariables = async (ctx: Context, next: Next) => {
   const { filter } = ctx.action.params.values;
-  if (!filter) {
-    return next();
-  }
-  const isNumeric = (str: any) => {
-    if (typeof str === 'number') return true;
-    if (typeof str != 'string') return false;
-    return !isNaN(str as any) && !isNaN(parseFloat(str));
-  };
-  const getUser = () => {
-    return async ({ fields }) => {
-      const userFields = fields.filter((f) => f && ctx.db.getFieldByPath('users.' + f));
-      ctx.logger?.info('parse filter variables', { userFields, method: 'parseVariables' });
-      if (!ctx.state.currentUser) {
-        return;
-      }
-      if (!userFields.length) {
-        return;
-      }
-      const user = await ctx.db.getRepository('users').findOne({
-        filterByTk: ctx.state.currentUser.id,
-        fields: userFields,
-      });
-      ctx.logger?.info('parse filter variables', {
-        $user: user?.toJSON(),
-        method: 'parseVariables',
-      });
-      return user;
-    };
-  };
-  ctx.action.params.values.filter = await parseFilter(filter, {
-    timezone: ctx.get('x-timezone'),
-    now: new Date().toISOString(),
-    getField: (path: string) => {
-      const fieldPath = path
-        .split('.')
-        .filter((p) => !p.startsWith('$') && !isNumeric(p))
-        .join('.');
-      const { resourceName } = ctx.action;
-      return ctx.db.getFieldByPath(`${resourceName}.${fieldPath}`);
-    },
-    vars: {
-      $nDate: getDateVars(),
-      $user: getUser(),
-    },
+  ctx.action.params.filter = filter;
+  await middlewares.parseVariables(ctx, async () => {
+    ctx.action.params.values.filter = ctx.action.params.filter;
+    await next();
   });
-  await next();
 };
 
 export const cacheMiddleware = async (ctx: Context, next: Next) => {
@@ -326,9 +307,10 @@ export const cacheMiddleware = async (ctx: Context, next: Next) => {
 };
 
 export const checkPermission = (ctx: Context, next: Next) => {
-  const { collection } = ctx.action.params.values as QueryParams;
+  const { collection, dataSource } = ctx.action.params.values as QueryParams;
   const roleName = ctx.state.currentRole || 'anonymous';
-  const can = ctx.app.acl.can({ role: roleName, resource: collection, action: 'list' });
+  const acl = ctx.app.dataSourceManager.get(dataSource)?.acl || ctx.app.acl;
+  const can = acl.can({ role: roleName, resource: collection, action: 'list' });
   if (!can && roleName !== 'root') {
     ctx.throw(403, 'No permissions');
   }

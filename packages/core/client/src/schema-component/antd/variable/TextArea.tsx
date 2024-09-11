@@ -13,6 +13,7 @@ import { Space } from 'antd';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { renderToString } from 'react-dom/server';
 import sanitizeHTML from 'sanitize-html';
+import useInputStyle from 'antd/es/input/style';
 
 import { error } from '@nocobase/utils/client';
 
@@ -209,7 +210,7 @@ function getCurrentRange(element: HTMLElement): RangeIndexes {
 
 export function TextArea(props) {
   const { wrapSSR, hashId, componentCls } = useStyles();
-  const { value = '', scope, onChange, multiline = true, changeOnSelect } = props;
+  const { value = '', scope, onChange, multiline = true, changeOnSelect, style } = props;
   const inputRef = useRef<HTMLDivElement>(null);
   const [options, setOptions] = useState([]);
   const form = useForm();
@@ -219,6 +220,7 @@ export function TextArea(props) {
   const [html, setHtml] = useState(() => renderHTML(value ?? '', keyLabelMap));
   // NOTE: e.g. [startElementIndex, startOffset, endElementIndex, endOffset]
   const [range, setRange] = useState<[number, number, number, number]>([-1, 0, -1, 0]);
+  useInputStyle('ant-input');
 
   useEffect(() => {
     preloadOptions(scope, value)
@@ -378,7 +380,6 @@ export function TextArea(props) {
   );
 
   const disabled = props.disabled || form.disabled;
-
   return wrapSSR(
     <Space.Compact
       className={cx(
@@ -414,6 +415,7 @@ export function TextArea(props) {
         onCompositionStart={onCompositionStart}
         onCompositionEnd={onCompositionEnd}
         placeholder={props.placeholder}
+        style={style}
         className={cx(
           hashId,
           'ant-input',
@@ -441,13 +443,7 @@ export function TextArea(props) {
         dangerouslySetInnerHTML={{ __html: html }}
       />
       {!disabled ? (
-        <VariableSelect
-          className=""
-          options={options}
-          setOptions={setOptions}
-          onInsert={onInsert}
-          changeOnSelect={changeOnSelect}
-        />
+        <VariableSelect options={options} setOptions={setOptions} onInsert={onInsert} changeOnSelect={changeOnSelect} />
       ) : null}
     </Space.Compact>,
   );
@@ -475,7 +471,7 @@ async function preloadOptions(scope, value: string) {
           prevOption = options.find((item) => item.value === key);
         } else {
           if (prevOption.loadChildren && !prevOption.children?.length) {
-            await prevOption.loadChildren(prevOption);
+            await prevOption.loadChildren(prevOption, key, keys);
           }
           prevOption = prevOption.children.find((item) => item.value === key);
         }
@@ -490,6 +486,7 @@ async function preloadOptions(scope, value: string) {
 TextArea.ReadPretty = function ReadPretty(props): JSX.Element {
   const { value } = props;
   const scope = typeof props.scope === 'function' ? props.scope() : props.scope;
+  const { wrapSSR, hashId, componentCls } = useStyles();
 
   const [options, setOptions] = useState([]);
   const keyLabelMap = useMemo(() => createOptionsValueLabelMap(options), [options]);
@@ -503,21 +500,25 @@ TextArea.ReadPretty = function ReadPretty(props): JSX.Element {
   }, [scope, value]);
   const html = renderHTML(value ?? '', keyLabelMap);
 
-  const content = (
+  const content = wrapSSR(
     <span
       dangerouslySetInnerHTML={{ __html: html }}
-      className={css`
-        overflow: auto;
+      className={cx(
+        componentCls,
+        hashId,
+        css`
+          overflow: auto;
 
-        .ant-tag {
-          display: inline;
-          line-height: 19px;
-          margin: 0 0.25em;
-          padding: 2px 7px;
-          border-radius: 10px;
-        }
-      `}
-    />
+          .ant-tag {
+            display: inline;
+            line-height: 19px;
+            margin: 0 0.25em;
+            padding: 2px 7px;
+            border-radius: 10px;
+          }
+        `,
+      )}
+    />,
   );
 
   return (

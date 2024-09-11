@@ -8,14 +8,32 @@
  */
 
 import { Collection } from './collection';
-import { CollectionOptions, ICollection, ICollectionManager, IRepository, MergeOptions } from './types';
+import {
+  CollectionOptions,
+  ICollection,
+  ICollectionManager,
+  IFieldInterface,
+  IRepository,
+  MergeOptions,
+} from './types';
+import { DataSource } from './data-source';
+import { Repository } from './repository';
 
 export class CollectionManager implements ICollectionManager {
+  public dataSource: DataSource;
   protected collections = new Map<string, ICollection>();
   protected repositories = new Map<string, IRepository>();
   protected models = new Map<string, any>();
 
-  constructor(options = {}) {}
+  constructor(options: any = {}) {
+    if (options.dataSource) {
+      this.dataSource = options.dataSource;
+    }
+
+    this.registerRepositories({
+      Repository: Repository,
+    });
+  }
 
   /* istanbul ignore next -- @preserve */
   getRegisteredFieldType(type) {}
@@ -38,8 +56,17 @@ export class CollectionManager implements ICollectionManager {
   /* istanbul ignore next -- @preserve */
   registerFieldTypes() {}
 
-  /* istanbul ignore next -- @preserve */
-  registerFieldInterfaces() {}
+  registerFieldInterfaces(interfaces: Record<string, new (options: any) => IFieldInterface>) {
+    Object.keys(interfaces).forEach((key) => {
+      this.registerFieldInterface(key, interfaces[key]);
+    });
+  }
+
+  registerFieldInterface(name: string, fieldInterface: new (options: any) => IFieldInterface): void {}
+
+  getFieldInterface(name: string): { new (options: any): IFieldInterface | undefined } {
+    return;
+  }
 
   /* istanbul ignore next -- @preserve */
   registerCollectionTemplates() {}
@@ -87,7 +114,12 @@ export class CollectionManager implements ICollectionManager {
 
   async sync() {}
 
-  protected newCollection(options) {
+  removeCollection(name: string): void {
+    this.collections.delete(name);
+  }
+
+  protected newCollection(options): ICollection {
+    // @ts-ignore
     return new Collection(options, this);
   }
 }

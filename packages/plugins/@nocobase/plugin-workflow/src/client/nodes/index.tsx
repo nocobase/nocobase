@@ -9,9 +9,10 @@
 
 import { CloseOutlined, DeleteOutlined } from '@ant-design/icons';
 import { createForm } from '@formily/core';
+import { toJS } from '@formily/reactive';
 import { ISchema, useForm } from '@formily/react';
-import { App, Button, Dropdown, Input, Tag, Tooltip, message } from 'antd';
-import { cloneDeep } from 'lodash';
+import { Alert, App, Button, Dropdown, Input, Tag, Tooltip, message } from 'antd';
+import { cloneDeep, get } from 'lodash';
 import React, { useCallback, useContext, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -53,15 +54,30 @@ export abstract class Instruction {
   type: string;
   group: string;
   description?: string;
+  /**
+   * @experimental
+   */
   options?: { label: string; value: any; key: string }[];
   fieldset: { [key: string]: ISchema };
+  /**
+   * @experimental
+   */
   view?: ISchema;
   scope?: { [key: string]: any };
   components?: { [key: string]: any };
   Component?(props): JSX.Element;
+  /**
+   * @experimental
+   */
+  createDefaultConfig?(): Record<string, any> {
+    return {};
+  }
   useVariables?(node, options?: UseVariableOptions): VariableOption;
   useScopeVariables?(node, options?): VariableOption[];
   useInitializers?(node): SchemaInitializerItemType | null;
+  /**
+   * @experimental
+   */
   isAvailable?(ctx: NodeAvailableContext): boolean;
   end?: boolean | ((node) => boolean);
 }
@@ -86,6 +102,7 @@ function useUpdateAction() {
           config: form.values,
         },
       });
+      form.setInitialValues(toJS(form.values));
       ctx.setFormValueChanged(false);
       ctx.setVisible(false);
       refresh();
@@ -97,6 +114,11 @@ export const NodeContext = React.createContext<any>({});
 
 export function useNodeContext() {
   return useContext(NodeContext);
+}
+
+export function useNodeSavedConfig(keys = []) {
+  const node = useNodeContext();
+  return keys.some((key) => get(node.config, key) != null);
 }
 
 /**
@@ -138,7 +160,7 @@ export function Node({ data }) {
   const { styles } = useStyles();
   const { getAriaLabel } = useGetAriaLabelOfAddButton(data);
   const workflowPlugin = usePlugin(WorkflowPlugin);
-  const { Component = NodeDefaultView, end } = workflowPlugin.instructions.get(data.type);
+  const { Component = NodeDefaultView, end } = workflowPlugin.instructions.get(data.type) ?? {};
   return (
     <NodeContext.Provider value={data}>
       <div className={cx(styles.nodeBlockClass)}>
@@ -239,37 +261,41 @@ export function JobButton() {
     setViewJob(job);
   }
 
-  return jobs.length > 1 ? (
-    <Dropdown
-      menu={{
-        items: jobs.map((job) => {
-          return {
-            key: job.id,
-            label: (
-              <>
-                <StatusButton statusMap={JobStatusOptionsMap} status={job.status} />
-                <time>{str2moment(job.updatedAt).format('YYYY-MM-DD HH:mm:ss')}</time>
-              </>
-            ),
-          };
-        }),
-        onClick: onOpenJob,
-        className: styles.dropdownClass,
-      }}
-    >
-      <StatusButton
-        statusMap={JobStatusOptionsMap}
-        status={jobs[jobs.length - 1].status}
-        className={styles.nodeJobButtonClass}
-      />
-    </Dropdown>
-  ) : (
-    <StatusButton
-      statusMap={JobStatusOptionsMap}
-      status={jobs[0].status}
-      onClick={() => setViewJob(jobs[0])}
-      className={styles.nodeJobButtonClass}
-    />
+  return (
+    <Tooltip title={lang('View result')}>
+      {jobs.length > 1 ? (
+        <Dropdown
+          menu={{
+            items: jobs.map((job) => {
+              return {
+                key: job.id,
+                label: (
+                  <>
+                    <StatusButton statusMap={JobStatusOptionsMap} status={job.status} />
+                    <time>{str2moment(job.updatedAt).format('YYYY-MM-DD HH:mm:ss')}</time>
+                  </>
+                ),
+              };
+            }),
+            onClick: onOpenJob,
+            className: styles.dropdownClass,
+          }}
+        >
+          <StatusButton
+            statusMap={JobStatusOptionsMap}
+            status={jobs[jobs.length - 1].status}
+            className={styles.nodeJobButtonClass}
+          />
+        </Dropdown>
+      ) : (
+        <StatusButton
+          statusMap={JobStatusOptionsMap}
+          status={jobs[0].status}
+          onClick={() => setViewJob(jobs[0])}
+          className={styles.nodeJobButtonClass}
+        />
+      )}
+    </Tooltip>
   );
 }
 
@@ -286,9 +312,8 @@ export function NodeDefaultView(props) {
   const workflowPlugin = usePlugin(WorkflowPlugin);
   const instruction = workflowPlugin.instructions.get(data.type);
   const detailText = workflow.executed ? '{{t("View")}}' : '{{t("Configure")}}';
-  const typeTitle = compile(instruction.title);
 
-  const [editingTitle, setEditingTitle] = useState<string>(data.title ?? typeTitle);
+  const [editingTitle, setEditingTitle] = useState<string>(data.title);
   const [editingConfig, setEditingConfig] = useState(false);
   const [formValueChanged, setFormValueChanged] = useState(false);
 
@@ -312,7 +337,7 @@ export function NodeDefaultView(props) {
 
   const onChangeTitle = useCallback(
     async function (next) {
-      const title = next || typeTitle;
+      const title = next || compile(instruction?.title);
       setEditingTitle(title);
       if (title === data.title) {
         return;
@@ -325,7 +350,7 @@ export function NodeDefaultView(props) {
       });
       refresh();
     },
-    [data],
+    [data, instruction],
   );
 
   const onOpenDrawer = useCallback(function (ev) {
@@ -342,6 +367,35 @@ export function NodeDefaultView(props) {
       }
     }
   }, []);
+
+  if (!instruction) {
+    return (
+      <div className={cx(styles.nodeClass, `workflow-node-type-${data.type}`)}>
+        <Tooltip
+          title={lang(
+            'Node with unknown type will cause error. Please delete it or check plugin which provide this type.',
+          )}
+        >
+          <div
+            role="button"
+            aria-label={`_untyped-${editingTitle}`}
+            className={cx(styles.nodeCardClass, 'invalid')}
+            onClick={onOpenDrawer}
+          >
+            <div className={cx(styles.nodeMetaClass, 'workflow-node-meta')}>
+              <Tag color="error">{lang('Unknown node')}</Tag>
+              <span className="workflow-node-id">{data.id}</span>
+            </div>
+            <Input.TextArea value={editingTitle} disabled autoSize />
+            <RemoveButton />
+            <JobButton />
+          </div>
+        </Tooltip>
+      </div>
+    );
+  }
+
+  const typeTitle = compile(instruction.title);
 
   return (
     <div className={cx(styles.nodeClass, `workflow-node-type-${data.type}`)}>
@@ -378,6 +432,7 @@ export function NodeDefaultView(props) {
               scope={{
                 ...instruction.scope,
                 useFormProviderProps,
+                useUpdateAction,
               }}
               components={instruction.components}
               schema={{
@@ -477,7 +532,7 @@ export function NodeDefaultView(props) {
                                 'x-component': 'Action',
                                 'x-component-props': {
                                   type: 'primary',
-                                  useAction: useUpdateAction,
+                                  useAction: '{{ useUpdateAction }}',
                                 },
                               },
                             },

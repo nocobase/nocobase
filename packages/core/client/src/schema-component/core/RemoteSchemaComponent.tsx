@@ -10,11 +10,11 @@
 import { createForm } from '@formily/core';
 import { Schema } from '@formily/react';
 import { Spin } from 'antd';
-import React, { useMemo } from 'react';
-import { useRequest } from '../../api-client';
-import { useSchemaComponentContext } from '../hooks';
+import React, { memo, useMemo } from 'react';
+import { useComponent, useSchemaComponentContext } from '../hooks';
 import { FormProvider } from './FormProvider';
 import { SchemaComponent } from './SchemaComponent';
+import { useRequestSchema } from './useRequestSchema';
 
 export interface RemoteSchemaComponentProps {
   scope?: any;
@@ -26,6 +26,12 @@ export interface RemoteSchemaComponentProps {
   hidden?: any;
   onlyRenderProperties?: boolean;
   noForm?: boolean;
+  /**
+   * @default true
+   */
+  memoized?: boolean;
+  NotFoundPage?: React.ComponentType | string;
+  onPageNotFind?: () => void;
 }
 
 const defaultTransform = (s: Schema) => s;
@@ -37,39 +43,51 @@ const RequestSchemaComponent: React.FC<RemoteSchemaComponentProps> = (props) => 
     hidden,
     scope,
     uid,
+    memoized = true,
     components,
     onSuccess,
+    NotFoundPage,
     schemaTransform = defaultTransform,
+    onPageNotFind,
   } = props;
   const { reset } = useSchemaComponentContext();
+  const type = onlyRenderProperties ? 'getProperties' : 'getJsonSchema';
   const conf = {
-    url: `/uiSchemas:${onlyRenderProperties ? 'getProperties' : 'getJsonSchema'}/${uid}`,
+    url: `/uiSchemas:${type}/${uid}`,
   };
   const form = useMemo(() => createForm(), [uid]);
-  const { data, loading } = useRequest<{
-    data: any;
-  }>(conf, {
-    refreshDeps: [uid],
-    onSuccess(data) {
+  const { schema, loading } = useRequestSchema({
+    uid,
+    type,
+    onSuccess: (data) => {
       onSuccess && onSuccess(data);
       reset && reset();
     },
   });
-  if (loading) {
-    return <Spin />;
+  const NotFoundComponent = useComponent(NotFoundPage);
+  if (loading || hidden) {
+    return (
+      <div style={{ textAlign: 'center', marginTop: 20 }}>
+        <Spin />
+      </div>
+    );
   }
-  if (hidden) {
-    return <Spin />;
+
+  if (!schema || Object.keys(schema).length === 0) {
+    onPageNotFind && onPageNotFind();
+    return NotFoundComponent ? <NotFoundComponent /> : null;
   }
+
   return noForm ? (
-    <SchemaComponent memoized components={components} scope={scope} schema={schemaTransform(data?.data || {})} />
+    <SchemaComponent components={components} scope={scope} schema={schemaTransform(schema || {})} />
   ) : (
     <FormProvider form={form}>
-      <SchemaComponent memoized components={components} scope={scope} schema={schemaTransform(data?.data || {})} />
+      <SchemaComponent components={components} scope={scope} schema={schemaTransform(schema || {})} />
     </FormProvider>
   );
 };
 
-export const RemoteSchemaComponent: React.FC<RemoteSchemaComponentProps> = (props) => {
+export const RemoteSchemaComponent: React.FC<RemoteSchemaComponentProps> = memo((props) => {
   return props.uid ? <RequestSchemaComponent {...props} /> : null;
-};
+});
+RemoteSchemaComponent.displayName = 'RemoteSchemaComponent';

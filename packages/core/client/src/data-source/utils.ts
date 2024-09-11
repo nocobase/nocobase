@@ -18,7 +18,7 @@ const HEADERS_DATA_SOURCE_KEY = 'x-data-source';
 // export function getCollectionFieldsOptions(){}
 
 export const isTitleField = (dm: DataSourceManager, field: CollectionFieldOptions) => {
-  return !field.isForeignKey && dm.collectionFieldInterfaceManager.getFieldInterface(field.interface)?.titleUsable;
+  return dm.collectionFieldInterfaceManager.getFieldInterface(field.interface)?.titleUsable;
 };
 
 export const useDataSourceHeaders = (dataSource?: string) => {

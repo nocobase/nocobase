@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import lodash, { isPlainObject } from 'lodash';
+import lodash from 'lodash';
 import { Model as SequelizeModel, ModelStatic } from 'sequelize';
 import { Collection } from './collection';
 import { Database } from './database';
@@ -47,7 +47,22 @@ export class Model<TModelAttributes extends {} = any, TCreationAttributes extend
 
   static async sync(options) {
     const runner = new SyncRunner(this);
-    return runner.runSync(options);
+    return await runner.runSync(options);
+  }
+
+  static callSetters(values, options) {
+    // map values
+    const result = {};
+    for (const key of Object.keys(values)) {
+      const field = this.collection.getField(key);
+      if (field && field.setter) {
+        result[key] = field.setter.call(field, values[key], options, values, key);
+      } else {
+        result[key] = values[key];
+      }
+    }
+
+    return result;
   }
 
   // TODO
@@ -91,6 +106,7 @@ export class Model<TModelAttributes extends {} = any, TCreationAttributes extend
           return data;
         },
         this.hiddenObjKey,
+        this.handleBigInt,
       ];
       return handles.reduce((carry, fn) => fn.apply(this, [carry, options]), obj);
     };
@@ -126,6 +142,13 @@ export class Model<TModelAttributes extends {} = any, TCreationAttributes extend
 
           if (['HasMany', 'BelongsToMany'].includes(association.associationType)) {
             result[key] = handleArray(data[key], opts).map((item) => traverseJSON(item, opts));
+          } else if (association.associationType === 'BelongsToArray') {
+            const value = data[key];
+            if (!value || value.some((v) => typeof v !== 'object')) {
+              result[key] = value;
+            } else {
+              result[key] = handleArray(data[key], opts).map((item) => traverseJSON(item, opts));
+            }
           } else {
             result[key] = data[key] ? traverseJSON(data[key], opts) : null;
           }
@@ -146,6 +169,24 @@ export class Model<TModelAttributes extends {} = any, TCreationAttributes extend
       .map((field) => field.options.name);
 
     return lodash.omit(obj, hiddenFields);
+  }
+
+  private handleBigInt(obj, options) {
+    if (!options.db.inDialect('mariadb')) {
+      return obj;
+    }
+
+    const bigIntKeys = Object.keys(options.model.rawAttributes).filter((key) => {
+      return options.model.rawAttributes[key].type.constructor.name === 'BIGINT';
+    });
+
+    for (const key of bigIntKeys) {
+      if (obj[key] !== null && obj[key] !== undefined && typeof obj[key] !== 'string' && typeof obj[key] !== 'number') {
+        obj[key] = obj[key].toString();
+      }
+    }
+
+    return obj;
   }
 
   private sortAssociations(data, { field }: JSONTransformerOptions): any {

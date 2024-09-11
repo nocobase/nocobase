@@ -8,6 +8,7 @@
  */
 
 import { Server } from 'http';
+import type { AddressInfo } from 'net';
 import jwt from 'jsonwebtoken';
 import Koa from 'koa';
 import bodyParser from 'koa-bodyparser';
@@ -140,6 +141,26 @@ describe('workflow > instructions > request', () => {
   afterEach(async () => {
     await api.close();
     await app.destroy();
+  });
+
+  describe('params processing', () => {
+    it('trim should not crash', async () => {
+      await workflow.createNode({
+        type: 'request',
+        config: {
+          url: api.URL_DATA,
+          method: 'GET',
+          params: [{ name: 'id', value: '{{$context.data.id}}' }],
+        } as RequestConfig,
+      });
+
+      await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
+
+      const [execution] = await workflow.getExecutions();
+      expect(execution.status).toBe(EXECUTION_STATUS.RESOLVED);
+    });
   });
 
   describe('request static app routes', () => {
@@ -506,14 +527,14 @@ describe('workflow > instructions > request', () => {
         },
       );
 
-      const server = app.listen(12346, () => {});
+      const server = app.listen(0, () => {});
 
       await sleep(1000);
 
       const n1 = await workflow.createNode({
         type: 'request',
         config: {
-          url: `http://localhost:12346/api/categories`,
+          url: `http://localhost:${(server.address() as AddressInfo).port}/api/categories`,
           method: 'POST',
           headers: [{ name: 'Authorization', value: `Bearer ${token}` }],
         } as RequestConfig,

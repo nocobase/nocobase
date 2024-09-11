@@ -67,7 +67,7 @@ describe('role', () => {
     expect(ctx.state.currentRole).toBe('root');
   });
 
-  it('should throw 401', async () => {
+  it('should use default role when the role does not belong to the user', async () => {
     ctx.state.currentUser = await db.getRepository('users').findOne({
       appends: ['roles'],
     });
@@ -79,11 +79,7 @@ describe('role', () => {
     const throwFn = vi.fn();
     ctx.throw = throwFn;
     await setCurrentRole(ctx, () => {});
-    expect(throwFn).lastCalledWith(401, {
-      code: 'ROLE_NOT_FOUND_ERR',
-      message: 'The user role does not exist. Please try signing in again',
-    });
-    expect(ctx.state.currentRole).not.toBeDefined();
+    expect(ctx.state.currentRole).toBe('root');
   });
 
   it('should set role with anonymous', async () => {

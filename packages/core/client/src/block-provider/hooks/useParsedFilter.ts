@@ -25,46 +25,60 @@ import { isVariable } from '../../variables/utils/isVariable';
 export function useParsedFilter({ filterOption }: { filterOption: any }) {
   const { parseFilter, findVariable } = useParseDataScopeFilter();
   const [filter, setFilter] = useState({});
+  const [parseVariableLoading, setParseVariableLoading] = useState(!!filterOption);
 
   useEffect(() => {
     if (!filterOption) return;
 
     const _run = async () => {
+      setParseVariableLoading(true);
       const result = await parseFilter(filterOption);
+      setParseVariableLoading(false);
       setFilter(result);
     };
     _run();
     const run = _.debounce(_run, DEBOUNCE_WAIT);
 
-    reaction(() => {
-      // 这一步主要是为了使 reaction 能够收集到依赖
-      const flat = flatten(filterOption, {
-        breakOn({ key }) {
-          return key.startsWith('$') && key !== '$and' && key !== '$or';
-        },
-        transformValue(value) {
-          if (!isVariable(value)) {
-            return value;
-          }
-          const variableName = getVariableName(value);
-          const variable = findVariable(variableName);
+    reaction(
+      () => {
+        // 这一步主要是为了使 reaction 能够收集到依赖
+        const flat = flatten(filterOption, {
+          breakOn({ key }) {
+            return key.startsWith('$') && key !== '$and' && key !== '$or';
+          },
+          transformValue(value) {
+            if (!isVariable(value)) {
+              return value;
+            }
+            const variableName = getVariableName(value);
+            const variable = findVariable(variableName);
 
-          if (process.env.NODE_ENV !== 'production' && !variable) {
-            throw new Error(`useParsedFilter: can not find variable ${variableName}`);
-          }
+            if (process.env.NODE_ENV !== 'production' && !variable) {
+              throw new Error(`useParsedFilter: can not find variable ${variableName}`);
+            }
 
-          const result = getValuesByPath(
-            {
-              [variableName]: variable?.ctx || {},
-            },
-            getPath(value),
-          );
-          return result;
-        },
-      });
-      return flat;
-    }, run);
-  }, [JSON.stringify(filterOption)]);
+            const result = getValuesByPath(
+              {
+                [variableName]: variable?.ctx || {},
+              },
+              getPath(value),
+            );
+            return result;
+          },
+        });
+        return flat;
+      },
+      run,
+      {
+        equals: _.isEqual,
+      },
+    );
+  }, [JSON.stringify(filterOption), parseFilter, findVariable]);
 
-  return { filter };
+  return {
+    /** 数据范围的筛选参数 */
+    filter,
+    /** 表示是否正在解析筛选参数中的变量 */
+    parseVariableLoading,
+  };
 }

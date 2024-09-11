@@ -7,12 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { renderReadPrettyApp, renderApp, screen, userEvent, waitFor } from '@nocobase/test/client';
+import { renderReadPrettyApp, renderAppOptions, screen, userEvent, waitFor } from '@nocobase/test/client';
 import { FormItem, CollectionSelect } from '@nocobase/client';
 
 describe('CollectionSelect', () => {
   it('should works', async () => {
-    const { container } = await renderApp({
+    const { container } = await renderAppOptions({
       schema: {
         type: 'object',
         properties: {
@@ -54,7 +54,7 @@ describe('CollectionSelect', () => {
             role="button"
           >
             <div
-              class="css-1nrq807 ant-formily-item ant-formily-item-layout-horizontal ant-formily-item-feedback-layout-loose ant-formily-item-label-align-right ant-formily-item-control-align-left css-dev-only-do-not-override-wwtqkl"
+              class="css-1yh5po ant-formily-item ant-formily-item-layout-horizontal ant-formily-item-feedback-layout-loose ant-formily-item-label-align-right ant-formily-item-control-align-left css-dev-only-do-not-override-wwtqkl"
             >
               <div
                 class="ant-formily-item-label"
@@ -191,7 +191,7 @@ describe('CollectionSelect', () => {
             role="button"
           >
             <div
-              class="css-1nrq807 ant-formily-item ant-formily-item-layout-horizontal ant-formily-item-feedback-layout-loose ant-formily-item-label-align-right ant-formily-item-control-align-left css-dev-only-do-not-override-wwtqkl"
+              class="css-1yh5po ant-formily-item ant-formily-item-layout-horizontal ant-formily-item-feedback-layout-loose ant-formily-item-label-align-right ant-formily-item-control-align-left css-dev-only-do-not-override-wwtqkl"
             >
               <div
                 class="ant-formily-item-label"

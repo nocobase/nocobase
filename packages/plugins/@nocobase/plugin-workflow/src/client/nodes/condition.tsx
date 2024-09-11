@@ -170,7 +170,13 @@ function Calculation({ calculator, operands = [], onChange }) {
         flex-wrap: wrap;
       `}
     >
-      <Variable.Input value={operands[0]} onChange={leftOperandOnChange} scope={leftOptions} useTypedConstant />
+      <Variable.Input
+        changeOnSelect
+        value={operands[0]}
+        onChange={leftOperandOnChange}
+        scope={leftOptions}
+        useTypedConstant
+      />
       <Select
         // @ts-ignore
         role="button"
@@ -193,7 +199,13 @@ function Calculation({ calculator, operands = [], onChange }) {
             </Select.OptGroup>
           ))}
       </Select>
-      <Variable.Input value={operands[1]} onChange={rightOperandOnChange} scope={rightOptions} useTypedConstant />
+      <Variable.Input
+        changeOnSelect
+        value={operands[1]}
+        onChange={rightOperandOnChange}
+        scope={rightOptions}
+        useTypedConstant
+      />
     </fieldset>
   );
 }
@@ -391,10 +403,13 @@ export default class extends Instruction {
       title: `{{t("Condition expression", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
       'x-component': 'WorkflowVariableTextArea',
+      'x-component-props': {
+        changeOnSelect: true,
+      },
       ['x-validator'](value, rules, { form }) {
         const { values } = form;
         const { evaluate } = evaluators.get(values.engine);
-        const exp = value.trim().replace(/{{([^{}]+)}}/g, ' 1 ');
+        const exp = value.trim().replace(/{{([^{}]+)}}/g, ' "1" ');
         try {
           evaluate(exp);
           return '';

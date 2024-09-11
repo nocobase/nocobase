@@ -7,8 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { evaluate } from '../../utils';
 import evaluators from '..';
+import { evaluate } from '../../utils';
 
 describe('evaluate', () => {
   describe('pre-process', () => {

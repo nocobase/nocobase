@@ -9,6 +9,7 @@
 
 import { ComponentType } from 'react';
 import {
+  SchemaSettingsActionModalItemProps,
   SchemaSettingsCascaderItemProps,
   SchemaSettingsItemProps,
   SchemaSettingsModalItemProps,
@@ -77,7 +78,7 @@ export type SchemaSettingItemModalType = SchemaSettingsItemCommon<SchemaSettings
   type: 'modal';
 };
 
-export type SchemaSettingItemActionModalType = SchemaSettingsItemCommon<SchemaSettingsSelectItemProps> & {
+export type SchemaSettingItemActionModalType = SchemaSettingsItemCommon<SchemaSettingsActionModalItemProps> & {
   type: 'actionModal';
 };
 

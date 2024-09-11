@@ -15,32 +15,20 @@ import { namespace, presetAuthType, presetAuthenticator } from '../preset';
 import authActions from './actions/auth';
 import authenticatorsActions from './actions/authenticators';
 import { BasicAuth } from './basic-auth';
-import { enUS, zhCN } from './locale';
 import { AuthModel } from './model/authenticator';
 import { Storer } from './storer';
 import { TokenBlacklistService } from './token-blacklist';
+import { tval } from '@nocobase/utils';
 
 export class PluginAuthServer extends Plugin {
   cache: Cache;
 
   afterAdd() {}
   async beforeLoad() {
-    this.app.i18n.addResources('zh-CN', namespace, zhCN);
-    this.app.i18n.addResources('en-US', namespace, enUS);
-
     this.app.db.registerModels({ AuthModel });
   }
 
   async load() {
-    // Set up database
-    await this.importCollections(resolve(__dirname, 'collections'));
-    this.db.addMigrations({
-      namespace: 'auth',
-      directory: resolve(__dirname, 'migrations'),
-      context: {
-        plugin: this,
-      },
-    });
     this.cache = await this.app.cacheManager.createCache({
       name: 'auth',
       prefix: 'auth',
@@ -61,7 +49,7 @@ export class PluginAuthServer extends Plugin {
 
     this.app.authManager.registerTypes(presetAuthType, {
       auth: BasicAuth,
-      title: 'Password',
+      title: tval('Password', { ns: namespace }),
     });
     // Register actions
     Object.entries(authActions).forEach(
@@ -87,6 +75,9 @@ export class PluginAuthServer extends Plugin {
     this.app.db.on('users.afterDestroy', async (user: Model) => {
       const cache = this.app.cache as Cache;
       await cache.del(`auth:${user.id}`);
+    });
+    this.app.on('cache:del:auth', async ({ userId }) => {
+      await this.cache.del(`auth:${userId}`);
     });
   }
 

@@ -77,22 +77,26 @@ const InternalDetailsBlockProvider = (props) => {
 const useCompatDetailsBlockParams = (props) => {
   const fieldSchema = useFieldSchema();
 
-  let params;
+  let params,
+    parseVariableLoading = false;
   // 1. 新版本的 schema 存在 x-use-decorator-props 属性
   if (fieldSchema['x-use-decorator-props']) {
     params = props?.params;
+    parseVariableLoading = props?.parseVariableLoading;
   } else {
     // 2. 旧版本的 schema 不存在 x-use-decorator-props 属性
     // 因为 schema 中是否存在 x-use-decorator-props 是固定不变的，所以这里可以使用 hooks
     // eslint-disable-next-line react-hooks/rules-of-hooks
-    params = useDetailsWithPaginationBlockParams(props);
+    const parsedParams = useDetailsWithPaginationBlockParams(props);
+    params = parsedParams.params;
+    parseVariableLoading = parsedParams.parseVariableLoading;
   }
 
-  return params;
+  return { params, parseVariableLoading };
 };
 
 export const DetailsBlockProvider = withDynamicSchemaProps((props) => {
-  const params = useCompatDetailsBlockParams(props);
+  const { params, parseVariableLoading } = useCompatDetailsBlockParams(props);
   const record = useCollectionRecordData();
   const { association, dataSource } = props;
   const { getCollection } = useCollectionManager_deprecated(dataSource);
@@ -104,7 +108,7 @@ export const DetailsBlockProvider = withDynamicSchemaProps((props) => {
     detailFlag = __collection === collection;
   }
 
-  if (!detailFlag) {
+  if (!detailFlag || parseVariableLoading) {
     return null;
   }
 
@@ -137,7 +141,8 @@ export const useDetailsBlockProps = () => {
       ctx.form
         .reset()
         .then(() => {
-          ctx.form.setValues(data || {});
+          ctx.form.setInitialValues(data || {});
+          // Using `ctx.form.setValues(data || {});` here may cause an internal infinite loop in Formily
         })
         .catch(console.error);
     }

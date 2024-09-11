@@ -66,6 +66,7 @@ describe('collections repository', () => {
       },
       context: {},
     });
+
     expect(field1.toJSON()).toMatchObject({
       type: 'belongsToMany',
       collectionName: 'foos',
@@ -81,6 +82,7 @@ describe('collections repository', () => {
       },
       context: {},
     });
+
     expect(field2.toJSON()).toMatchObject({
       type: 'belongsTo',
       collectionName: 'foos',

@@ -7,19 +7,22 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import React from 'react';
 import { ISchema } from '@formily/json-schema';
 import { useField, useFieldSchema } from '@formily/react';
 import { useTranslation } from 'react-i18next';
-import { useApp } from '../../../../application';
+import { useApp, useSchemaToolbar } from '../../../../application';
 import { SchemaSettings } from '../../../../application/schema-settings/SchemaSettings';
 import { useCollectionManager_deprecated } from '../../../../collection-manager';
+import { useFieldComponentName } from '../../../../common/useFieldComponentName';
+import { useCollection } from '../../../../data-source';
 import { useDesignable } from '../../../../schema-component';
 import { useAssociationFieldContext } from '../../../../schema-component/antd/association-field/hooks';
 import { useColumnSchema } from '../../../../schema-component/antd/table-v2/Table.Column.Decorator';
 import { SchemaSettingsDefaultValue } from '../../../../schema-settings/SchemaSettingsDefaultValue';
-import { useFieldComponentName } from './utils';
 import { isPatternDisabled } from '../../../../schema-settings/isPatternDisabled';
-import { useCollection } from '../../../../data-source';
+import { fieldComponentSettingsItem } from '../../../../data-source/commonsSettingsItem';
+import { SchemaSettingsLinkageRules } from '../../../../schema-settings';
 
 export const tableColumnSettings = new SchemaSettings({
   name: 'fieldSettings:TableColumn',
@@ -44,7 +47,6 @@ export const tableColumnSettings = new SchemaSettings({
             const { t } = useTranslation();
             const columnSchema = useFieldSchema();
             const { dn } = useDesignable();
-
             return {
               title: t('Custom column title'),
               schema: {
@@ -76,6 +78,30 @@ export const tableColumnSettings = new SchemaSettings({
                 }
                 dn.refresh();
               },
+            };
+          },
+        },
+        {
+          name: 'style',
+          Component: (props) => {
+            const localProps = { ...props, category: 'style' };
+            return <SchemaSettingsLinkageRules {...localProps} />;
+          },
+          useVisible() {
+            const { fieldSchema } = useColumnSchema();
+            const field: any = useField();
+            const path = field.path?.splice(field.path?.length - 1, 1);
+            if (fieldSchema) {
+              const isReadPretty = field.form.query(`${path.concat(`*.` + fieldSchema.name)}`).get('readPretty');
+              return isReadPretty;
+            } else return false;
+          },
+          useComponentProps() {
+            const { name } = useCollection();
+            const { linkageRulesProps } = useSchemaToolbar();
+            return {
+              ...linkageRulesProps,
+              collectionName: name,
             };
           },
         },
@@ -164,7 +190,12 @@ export const tableColumnSettings = new SchemaSettings({
           name: 'setDefaultValue',
           useVisible() {
             const { fieldSchema } = useColumnSchema();
-            return !fieldSchema['x-read-pretty'];
+
+            if (!fieldSchema) {
+              return false;
+            }
+
+            return !fieldSchema?.['x-read-pretty'];
           },
           Component: SchemaSettingsDefaultValue as any,
           useComponentProps() {
@@ -180,6 +211,11 @@ export const tableColumnSettings = new SchemaSettings({
           useVisible() {
             const { uiSchema, fieldSchema } = useColumnSchema();
             const field: any = useField();
+
+            if (!fieldSchema) {
+              return false;
+            }
+
             const isSubTableColumn = ['QuickEdit', 'FormItem'].includes(fieldSchema['x-decorator']);
             return isSubTableColumn && !field.readPretty && !uiSchema?.['x-read-pretty'];
           },
@@ -192,8 +228,12 @@ export const tableColumnSettings = new SchemaSettings({
             return {
               key: 'required',
               title: t('Required'),
-              checked: fieldSchema.required as boolean,
+              checked: fieldSchema?.required as boolean,
               onChange: (required) => {
+                if (!fieldSchema) {
+                  return console.error('fieldSchema is required');
+                }
+
                 const schema = {
                   ['x-uid']: fieldSchema['x-uid'],
                 };
@@ -217,6 +257,11 @@ export const tableColumnSettings = new SchemaSettings({
           useVisible() {
             const { fieldSchema, collectionField } = useColumnSchema();
             const field: any = useField();
+
+            if (!fieldSchema) {
+              return false;
+            }
+
             const isSubTableColumn = ['QuickEdit', 'FormItem'].includes(fieldSchema['x-decorator']);
             return (
               isSubTableColumn &&
@@ -231,6 +276,11 @@ export const tableColumnSettings = new SchemaSettings({
             const { t } = useTranslation();
             const { dn } = useDesignable();
             let readOnlyMode = 'editable';
+
+            if (!fieldSchema) {
+              return console.error('fieldSchema is required') as any;
+            }
+
             if (fieldSchema['x-disabled'] === true) {
               readOnlyMode = 'readonly';
             }
@@ -329,6 +379,7 @@ export const tableColumnSettings = new SchemaSettings({
             };
           },
         },
+        fieldComponentSettingsItem,
       ],
     },
     {
@@ -371,7 +422,7 @@ export const tableColumnSettings = new SchemaSettings({
         const { t } = useTranslation();
 
         return {
-          removeParentsIfNoChildren: true,
+          removeParentsIfNoChildren: false,
           confirm: {
             title: t('Delete field'),
           },

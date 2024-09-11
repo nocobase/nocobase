@@ -8,26 +8,40 @@
  */
 
 import { css } from '@emotion/css';
-import { observer, RecursionField, useField, useFieldSchema } from '@formily/react';
+import { observer, RecursionField, useField, useFieldSchema, useForm } from '@formily/react';
 import { Modal, ModalProps } from 'antd';
 import classNames from 'classnames';
-import React from 'react';
+import React, { useMemo } from 'react';
+import { ErrorBoundary, FallbackProps } from 'react-error-boundary';
 import { useToken } from '../../../style';
-import { useSetAriaLabelForModal } from './hooks/useSetAriaLabelForModal';
-import { ComposedActionDrawer, OpenSize } from './types';
+import { ErrorFallback } from '../error-fallback';
+import { useCurrentPopupContext } from '../page/PagePopups';
 import { useActionContext } from './hooks';
+import { useSetAriaLabelForModal } from './hooks/useSetAriaLabelForModal';
+import { ActionDrawerProps, ComposedActionDrawer, OpenSize } from './types';
+
+const ModalErrorFallback: React.FC<FallbackProps> = (props) => {
+  const { visible, setVisible } = useActionContext();
+  return (
+    <Modal open={visible} onCancel={() => setVisible(false, true)} width="60%">
+      <ErrorFallback {...props} />
+    </Modal>
+  );
+};
 
 const openSizeWidthMap = new Map<OpenSize, string>([
   ['small', '40%'],
   ['middle', '60%'],
   ['large', '80%'],
 ]);
-export const ActionModal: ComposedActionDrawer<ModalProps> = observer(
+
+export const InternalActionModal: React.FC<ActionDrawerProps<ModalProps>> = observer(
   (props) => {
     const { footerNodeName = 'Action.Modal.Footer', width, ...others } = props;
     const { visible, setVisible, openSize = 'middle', modalProps } = useActionContext();
     const actualWidth = width ?? openSizeWidthMap.get(openSize);
     const schema = useFieldSchema();
+    const form = useForm();
     const field = useField();
     const { token } = useToken();
     const footerSchema = schema.reduceProperties((buf, s) => {
@@ -36,6 +50,18 @@ export const ActionModal: ComposedActionDrawer<ModalProps> = observer(
       }
       return buf;
     });
+    const { hidden } = useCurrentPopupContext();
+    const styles: any = useMemo(() => {
+      return {
+        mask: {
+          display: hidden ? 'none' : 'block',
+        },
+        content: {
+          display: hidden ? 'none' : 'block',
+        },
+      };
+    }, [hidden]);
+
     const showFooter = !!footerSchema;
     if (process.env.__E2E__) {
       useSetAriaLabelForModal(visible);
@@ -47,13 +73,17 @@ export const ActionModal: ComposedActionDrawer<ModalProps> = observer(
         title={field.title}
         {...(others as ModalProps)}
         {...modalProps}
+        styles={styles}
         style={{
           ...modalProps?.style,
           ...others?.style,
         }}
         destroyOnClose
         open={visible}
-        onCancel={() => setVisible(false, true)}
+        onCancel={() => {
+          setVisible(false, true);
+          form.reset();
+        }}
         className={classNames(
           others.className,
           modalProps?.className,
@@ -66,6 +96,7 @@ export const ActionModal: ComposedActionDrawer<ModalProps> = observer(
               .ant-modal-content {
                 background: var(--nb-box-bg);
                 border: 1px solid rgba(255, 255, 255, 0.1);
+                padding-bottom: 0;
               }
 
               // 这里的样式是为了保证页面 tabs 标签下面的分割线和页面内容对齐（页面内边距可以通过主题编辑器调节）
@@ -74,11 +105,6 @@ export const ActionModal: ComposedActionDrawer<ModalProps> = observer(
                 padding-right: ${token.paddingLG - token.paddingPageHorizontal}px;
                 margin-left: ${token.paddingPageHorizontal - token.paddingLG}px;
                 margin-right: ${token.paddingPageHorizontal - token.paddingLG}px;
-              }
-
-              .ant-tabs-content-holder {
-                padding: ${token.paddingPopupVertical}px ${token.paddingPopupHorizontal}px;
-                margin: -${token.size}px -${token.paddingLG}px -${token.paddingLG}px;
               }
 
               .ant-modal-footer {
@@ -114,6 +140,12 @@ export const ActionModal: ComposedActionDrawer<ModalProps> = observer(
     );
   },
   { displayName: 'ActionModal' },
+);
+
+export const ActionModal: ComposedActionDrawer<ModalProps> = (props) => (
+  <ErrorBoundary FallbackComponent={ModalErrorFallback} onError={(err) => console.log(err)}>
+    <InternalActionModal {...props} />
+  </ErrorBoundary>
 );
 
 ActionModal.Footer = observer(

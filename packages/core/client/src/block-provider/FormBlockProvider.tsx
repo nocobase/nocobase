@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { createForm } from '@formily/core';
+import { createForm, Form } from '@formily/core';
 import { Schema, useField } from '@formily/react';
 import { Spin } from 'antd';
 import React, { createContext, useContext, useEffect, useMemo, useRef } from 'react';
@@ -21,7 +21,6 @@ import { withDynamicSchemaProps } from '../hoc/withDynamicSchemaProps';
 import { useTreeParentRecord } from '../modules/blocks/data-blocks/table/TreeRecordProvider';
 import { RecordProvider } from '../record-provider';
 import { useActionContext } from '../schema-component';
-import { Templates as DataTemplateSelect } from '../schema-component/antd/form-v2/Templates';
 import { BlockProvider, useBlockRequestContext } from './BlockProvider';
 import { TemplateBlockProvider } from './TemplateBlockProvider';
 import { FormActiveFieldsProvider } from './hooks/useFormActiveFields';
@@ -88,16 +87,14 @@ const InternalFormBlockProvider = (props) => {
     updateAssociationValues,
   ]);
 
-  if (service.loading && Object.keys(form?.initialValues)?.length === 0 && action) {
+  if (service.loading && Object.keys(form?.initialValues || {})?.length === 0 && action) {
     return <Spin />;
   }
 
   return (
     <FormBlockContext.Provider value={formBlockValue}>
       <RecordProvider isNew={record?.isNew} parent={record?.parentRecord?.data} record={record?.data}>
-        <div ref={formBlockRef}>
-          <RenderChildrenWithDataTemplates form={form}>{props.children}</RenderChildrenWithDataTemplates>
-        </div>
+        <div ref={formBlockRef}>{props.children}</div>
       </RecordProvider>
     </FormBlockContext.Provider>
   );
@@ -157,10 +154,9 @@ export const useFormBlockContext = () => {
 export const useFormBlockProps = () => {
   const ctx = useFormBlockContext();
   const treeParentRecord = useTreeParentRecord();
-  const { fieldSchema } = useActionContext();
-  const addChild = fieldSchema?.['x-component-props']?.addChild;
+
   useEffect(() => {
-    if (addChild) {
+    if (treeParentRecord) {
       ctx.form?.query('parent').take((field) => {
         field.disabled = true;
         field.value = treeParentRecord;
@@ -169,22 +165,17 @@ export const useFormBlockProps = () => {
   });
 
   useEffect(() => {
-    if (!ctx?.service?.loading) {
-      ctx.form?.setInitialValues(ctx.service?.data?.data);
+    const form: Form = ctx.form;
+
+    if (!form || ctx.service?.loading) {
+      return;
     }
-  }, [ctx?.service?.loading]);
+
+    form.setInitialValues(ctx.service?.data?.data);
+  }, [ctx.form, ctx.service?.data?.data, ctx.service?.loading]);
   return {
     form: ctx.form,
   };
-};
-
-const RenderChildrenWithDataTemplates = ({ form, children }) => {
-  return (
-    <>
-      <DataTemplateSelect style={{ marginBottom: 18 }} form={form} />
-      {children}
-    </>
-  );
 };
 
 /**

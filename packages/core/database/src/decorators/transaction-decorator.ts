@@ -27,6 +27,17 @@ export function transactionWrapperBuilder(transactionGenerator) {
           newTransaction = true;
         }
 
+        transaction.afterCommit(() => {
+          if (transaction.eventCleanupBinded) {
+            return;
+          }
+
+          transaction.eventCleanupBinded = true;
+          if (this.database) {
+            this.database.removeAllListeners(`transactionRollback:${transaction.id}`);
+          }
+        });
+
         // 需要将 newTransaction 注入到被装饰函数参数内
         if (newTransaction) {
           try {
@@ -54,6 +65,11 @@ export function transactionWrapperBuilder(transactionGenerator) {
           } catch (err) {
             console.error(err);
             await transaction.rollback();
+
+            if (this.database) {
+              await this.database.emitAsync(`transactionRollback:${transaction.id}`);
+              await this.database.removeAllListeners(`transactionRollback:${transaction.id}`);
+            }
             throw err;
           }
         } else {

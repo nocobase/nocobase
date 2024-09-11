@@ -8,11 +8,11 @@
  */
 
 import { css } from '@emotion/css';
+import { PoweredBy, ReadPretty, useAPIClient, useRequest, useSystemSettings } from '@nocobase/client';
+import { Spin } from 'antd';
 import React, { FC } from 'react';
 import { Outlet } from 'react-router-dom';
-import { useSystemSettings, PoweredBy, useRequest, useAPIClient } from '@nocobase/client';
 import { AuthenticatorsContext } from '../authenticator';
-import { Spin } from 'antd';
 
 export const AuthenticatorsContextProvider: FC<{ children: React.ReactNode }> = ({ children }) => {
   const api = useAPIClient();
@@ -30,7 +30,11 @@ export const AuthenticatorsContextProvider: FC<{ children: React.ReactNode }> = 
   );
 
   if (loading) {
-    return <Spin />;
+    return (
+      <div style={{ textAlign: 'center', marginTop: 20 }}>
+        <Spin />
+      </div>
+    );
   }
 
   if (error) {
@@ -51,7 +55,9 @@ export function AuthLayout() {
         paddingTop: '20vh',
       }}
     >
-      <h1>{data?.data?.title}</h1>
+      <h1 style={{ textAlign: 'center' }}>
+        <ReadPretty.TextArea value={data?.data?.title} />
+      </h1>
       <AuthenticatorsContextProvider>
         <Outlet />
       </AuthenticatorsContextProvider>

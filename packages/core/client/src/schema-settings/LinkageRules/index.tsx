@@ -10,9 +10,10 @@
 import { css } from '@emotion/css';
 import { observer, useFieldSchema } from '@formily/react';
 import React, { useMemo } from 'react';
-import { FormBlockContext } from '../../block-provider';
+import { FormBlockContext } from '../../block-provider/FormBlockProvider';
 import { useCollectionManager_deprecated } from '../../collection-manager';
 import { useCollectionParentRecordData } from '../../data-source/collection-record/CollectionRecordProvider';
+import { CollectionProvider } from '../../data-source/collection/CollectionProvider';
 import { withDynamicSchemaProps } from '../../hoc/withDynamicSchemaProps';
 import { RecordProvider } from '../../record-provider';
 import { SchemaComponent, useProps } from '../../schema-component';
@@ -23,7 +24,7 @@ import { LinkageRuleActionGroup } from './LinkageRuleActionGroup';
 import { EnableLinkage } from './components/EnableLinkage';
 import { ArrayCollapse } from './components/LinkageHeader';
 
-interface Props {
+export interface Props {
   dynamicComponent: any;
 }
 
@@ -178,7 +179,9 @@ export const FormLinkageRules = withDynamicSchemaProps(
       <FormBlockContext.Provider value={{ form, type: formBlockType, collectionName }}>
         <RecordProvider record={record} parent={parentRecordData}>
           <FilterContext.Provider value={value}>
-            <SchemaComponent components={components} schema={schema} />
+            <CollectionProvider name={collectionName}>
+              <SchemaComponent components={components} schema={schema} />
+            </CollectionProvider>
           </FilterContext.Provider>
         </RecordProvider>
       </FormBlockContext.Provider>

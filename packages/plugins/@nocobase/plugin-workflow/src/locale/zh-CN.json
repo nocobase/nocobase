@@ -23,6 +23,8 @@
     "工作流中的节点将在同一个事务中运行。任何失败都会导致数据回滚，同时也会回滚相应的执行历史。",
   "Auto delete history when execution is on end status": "执行结束后自动删除对应状态的历史记录",
   "Trigger": "触发器",
+  "Unknown trigger": "未知触发器",
+  "Workflow with unknown type will cause error. Please delete it or check plugin which provide this type.": "未知类型的工作流会导致错误，请删除或检查提供该类型的插件。",
   "Trigger variables": "触发器变量",
   "Trigger data": "触发数据",
   "Trigger time": "触发时间",
@@ -102,6 +104,7 @@
   "System variables": "系统变量",
   "System time": "系统时间",
   "Date variables": "日期变量",
+  "Date range": "日期范围",
 
   "Executed at": "执行于",
   "Queueing": "队列中",
@@ -114,6 +117,7 @@
   "Canceled": "已取消",
   "Rejected": "已拒绝",
   "Retry needed": "需重试",
+  "View result": "查看结果",
 
   "Triggered but still waiting in queue to execute.": "已触发但仍在队列中等待执行。",
   "Started and executing, maybe waiting for an async callback (manual, delay etc.).":
@@ -137,6 +141,8 @@
   "Manual": "人工处理",
   "Extended types": "扩展类型",
   "Node type": "节点类型",
+  "Unknown node": "未知节点",
+  "Node with unknown type will cause error. Please delete it or check plugin which provide this type.": "未知类型的节点会导致错误，请删除或检查提供该类型的插件。",
   "Calculation": "运算",
   "Calculation engine": "运算引擎",
   "Basic": "基础",

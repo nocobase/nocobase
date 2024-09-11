@@ -6,4 +6,10 @@
 
 其基于 [react-error-boundary](https://github.com/bvaughn/react-error-boundary) 库。
 
-<code src="./demos/new-demos/basic.tsx"></code>
+## Basic
+
+<code src="./demos/basic.tsx"></code>
+
+## Modal
+
+<code src="./demos/modal.tsx"></code>

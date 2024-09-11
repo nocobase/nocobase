@@ -74,8 +74,8 @@
   "Set the data scope": "Veri kapsamını ayarla",
   "Data loading mode": "Veri yükleme modu",
   "Set data loading mode": "Veri yükleme modunu ayarla",
-  "Automatically load data": "Veriyi otomatik yükle",
-  "Load data after filtering": "Filtrelemeden sonra veriyi yükle",
+  "Load all data when filter is empty": "Filtre boş olduğunda tüm verileri yükle",
+  "Do not load data when filter is empty": "Filtre boş olduğunda veri yükleme",
   "Data blocks": "Veri Blokları",
   "Filter blocks": "Filtre blokları",
   "Table": "Tablo",
@@ -455,6 +455,7 @@
   "Current collection": "Seçili koleksiyon",
   "Other collections": "Diğer koleksiyonlar",
   "Current popup record": "Açılır pencere kaydı",
+  "Parent popup record": "Üst açılır pencere kaydı",
   "Associated records": "İlişkili kayıtlar",
   "Parent record": "Üst kayıt",
   "Popup close method": "Açılır pencere kapatma metodu",
@@ -570,5 +571,11 @@
   "Home page": "Anasayfa",
   "Handbook": "Kullanıcı kılavuzu",
   "License": "Lisans",
-  "This variable has been deprecated and can be replaced with \"Current form\"": "Değişken kullanımdan kaldırıldı; \"Geçerli form\" yerine kullanılabilir"
+  "This variable has been deprecated and can be replaced with \"Current form\"": "Değişken kullanımdan kaldırıldı; \"Geçerli form\" yerine kullanılabilir",
+  "The value of this variable is derived from the query string of the page URL. This variable can only be used normally when the page has a query string.": "Bu değişkenin değeri sayfa URL'sinin sorgu dizgisinden türetilir. Bu değişken, sayfanın bir sorgu dizgisi olduğunda yalnızca normal olarak kullanılabilir.",
+  "URL search params": "URL arama parametreleri",
+  "Expand All": "Tümünü genişlet",
+  "Clear default value": "Varsayılan değeri temizle",
+  "Open in new window": "Yeni pencerede aç",
+  "Sorry, the page you visited does not exist.": "Üzgünüz, ziyaret ettiğiniz sayfa mevcut değil."
 }

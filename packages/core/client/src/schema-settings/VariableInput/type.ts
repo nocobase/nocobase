@@ -19,8 +19,14 @@ export interface Option extends DefaultOptionType {
   // 标记是否为叶子节点，设置了 `loadData` 时有效
   // 设为 `false` 时会强制标记为父节点，即使当前节点没有 children，也会显示展开图标
   isLeaf?: boolean;
-  /** 当开启异步加载时有效，用于加载当前 node 的 children */
-  loadChildren?(option: Option): Promise<void>;
+  /**
+   * 当开启异步加载时有效，用于加载当前 node 的 children
+   * @param option 需要加载 children 的选项
+   * @param activeKey 当前选项所对应的 key
+   * @param variablePath 变量路径数组，如 ['$user', 'nickname']
+   * @returns
+   */
+  loadChildren?: (option: Option, activeKey?: string, variablePath?: string[]) => Promise<void>;
   /** 变量中的字段 */
   field?: FieldOption;
   depth?: number;

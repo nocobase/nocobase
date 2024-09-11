@@ -9,19 +9,21 @@
 
 import { css } from '@emotion/css';
 import { FormLayout } from '@formily/antd-v5';
+import { createForm } from '@formily/core';
 import { observer, RecursionField, useFieldSchema } from '@formily/react';
 import {
-  ActionContextProvider,
-  DeclareVariable,
   DndContext,
-  RecordProvider,
+  FormProvider,
+  PopupContextProvider,
   useCollection,
-  useCollectionParentRecordData,
+  useCollectionRecordData,
+  usePopupUtils,
+  VariablePopupRecordProvider,
 } from '@nocobase/client';
+import { Schema } from '@nocobase/utils';
 import { Card } from 'antd';
-import React, { useCallback, useContext, useMemo, useState } from 'react';
+import React, { useCallback, useContext, useMemo } from 'react';
 import { KanbanCardContext } from './context';
-import { useKanbanTranslation } from './locale';
 
 const cardCss = css`
   .ant-card-body {
@@ -61,10 +63,10 @@ const cardCss = css`
     wordbreak: break-all;
     wordwrap: break-word;
   }
-  .ant-formily-item-label {
-    color: #8c8c8c;
-    fontweight: normal;
-  }
+  // .ant-formily-item-label {
+  //   color: #8c8c8c;
+  //   fontweight: normal;
+  // }
 `;
 
 const MemorizedRecursionField = React.memo(RecursionField);
@@ -72,23 +74,27 @@ MemorizedRecursionField.displayName = 'MemorizedRecursionField';
 
 export const KanbanCard: any = observer(
   () => {
-    const { t } = useKanbanTranslation();
     const collection = useCollection();
-    const { setDisableCardDrag, cardViewerSchema, card, cardField, columnIndex, cardIndex } =
-      useContext(KanbanCardContext);
-    const parentRecordData = useCollectionParentRecordData();
+    const { setDisableCardDrag } = useContext(KanbanCardContext) || {};
     const fieldSchema = useFieldSchema();
-    const [visible, setVisible] = useState(false);
-    const handleCardClick = useCallback((e: React.MouseEvent) => {
-      const targetElement = e.target as Element; // 将事件目标转换为Element类型
-      const currentTargetElement = e.currentTarget as Element;
-      if (currentTargetElement.contains(targetElement)) {
-        setVisible(true);
-        e.stopPropagation();
-      } else {
-        e.stopPropagation();
-      }
-    }, []);
+    const { openPopup, getPopupSchemaFromSchema } = usePopupUtils();
+    const recordData = useCollectionRecordData();
+    const popupSchema = getPopupSchemaFromSchema(fieldSchema) || getPopupSchemaFromParent(fieldSchema);
+    const handleCardClick = useCallback(
+      (e: React.MouseEvent) => {
+        const targetElement = e.target as Element; // 将事件目标转换为Element类型
+        const currentTargetElement = e.currentTarget as Element;
+        if (currentTargetElement.contains(targetElement)) {
+          openPopup({
+            popupUidUsedInURL: popupSchema?.['x-uid'],
+          });
+          e.stopPropagation();
+        } else {
+          e.stopPropagation();
+        }
+      },
+      [openPopup, popupSchema],
+    );
     const cardStyle = useMemo(() => {
       return {
         cursor: 'pointer',
@@ -96,56 +102,70 @@ export const KanbanCard: any = observer(
       };
     }, []);
 
+    const form = useMemo(() => {
+      return createForm({
+        values: recordData,
+      });
+    }, [recordData]);
+
     const onDragStart = useCallback(() => {
-      setDisableCardDrag(true);
-    }, []);
+      setDisableCardDrag?.(true);
+    }, [setDisableCardDrag]);
     const onDragEnd = useCallback(() => {
-      setDisableCardDrag(false);
-    }, []);
+      setDisableCardDrag?.(false);
+    }, [setDisableCardDrag]);
 
-    const actionContextValue = useMemo(() => {
+    // if not wrapped, only Tab component's content will be rendered, Drawer component's content will not be rendered
+    const wrappedPopupSchema = useMemo(() => {
       return {
-        openMode: fieldSchema['x-component-props']?.['openMode'] || 'drawer',
-        openSize: fieldSchema['x-component-props']?.['openSize'],
-        visible,
-        setVisible,
+        type: 'void',
+        properties: {
+          drawer: popupSchema,
+        },
       };
-    }, [fieldSchema, visible]);
-
-    const basePath = useMemo(
-      () => cardField.address.concat(`${columnIndex}.cards.${cardIndex}`),
-      [cardField, columnIndex, cardIndex],
-    );
-    const cardViewerBasePath = useMemo(
-      () => cardField.address.concat(`${columnIndex}.cardViewer.${cardIndex}`),
-      [cardField, columnIndex, cardIndex],
-    );
+    }, [popupSchema]);
 
     return (
       <>
         <Card onClick={handleCardClick} bordered={false} hoverable style={cardStyle} className={cardCss}>
           <DndContext onDragStart={onDragStart} onDragEnd={onDragEnd}>
             <FormLayout layout={'vertical'}>
-              <MemorizedRecursionField basePath={basePath} schema={fieldSchema} onlyRenderProperties />
+              <FormProvider form={form}>
+                <MemorizedRecursionField schema={fieldSchema} onlyRenderProperties />
+              </FormProvider>
             </FormLayout>
           </DndContext>
         </Card>
-        {cardViewerSchema && (
-          <ActionContextProvider value={actionContextValue}>
-            <RecordProvider record={card} parent={parentRecordData}>
-              <DeclareVariable
-                name="$nPopupRecord"
-                title={t('Current popup record')}
-                value={card}
-                collection={collection}
-              >
-                <MemorizedRecursionField basePath={cardViewerBasePath} schema={cardViewerSchema} onlyRenderProperties />
-              </DeclareVariable>
-            </RecordProvider>
-          </ActionContextProvider>
-        )}
+        <PopupContextProvider>
+          <VariablePopupRecordProvider recordData={recordData} collection={collection}>
+            <MemorizedRecursionField schema={wrappedPopupSchema} />
+          </VariablePopupRecordProvider>
+        </PopupContextProvider>
       </>
     );
   },
   { displayName: 'KanbanCard' },
 );
+
+function getPopupSchemaFromParent(fieldSchema: Schema) {
+  if (fieldSchema.parent?.properties?.cardViewer?.properties?.drawer) {
+    return fieldSchema.parent.properties.cardViewer.properties.drawer;
+  }
+
+  const cardSchema = findSchemaByUid(fieldSchema['x-uid'], fieldSchema.root);
+  return cardSchema.parent.properties.cardViewer.properties.drawer;
+}
+
+function findSchemaByUid(uid: string, rootSchema: Schema, resultRef: { value: Schema } = { value: null }) {
+  resultRef = resultRef || {
+    value: null,
+  };
+  rootSchema.mapProperties((schema) => {
+    if (schema['x-uid'] === uid) {
+      resultRef.value = schema;
+    } else {
+      findSchemaByUid(uid, schema, resultRef);
+    }
+  });
+  return resultRef.value;
+}

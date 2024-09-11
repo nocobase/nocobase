@@ -131,7 +131,7 @@ test.describe('form item & view form', () => {
       try {
         await testSmall(26);
       } catch (err) {
-        await testSmall(24);
+        await testSmall(28);
       }
     }
   });

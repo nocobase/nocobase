@@ -7,27 +7,23 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ArrayItems } from '@formily/antd-v5';
-import { ISchema } from '@formily/json-schema';
 import { useField, useFieldSchema } from '@formily/react';
-import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient } from '../../../../api-client';
 import { SchemaSettings } from '../../../../application/schema-settings/SchemaSettings';
-import { useFormBlockContext, useTableBlockContext } from '../../../../block-provider';
-import {
-  useCollectionManager_deprecated,
-  useCollection_deprecated,
-  useSortFields,
-} from '../../../../collection-manager';
+import { createSwitchSettingsItem } from '../../../../application/schema-settings/utils/createSwitchSettingsItem';
+import { useTableBlockContext } from '../../../../block-provider';
+import { useCollectionManager_deprecated, useCollection_deprecated } from '../../../../collection-manager';
 import { FilterBlockType } from '../../../../filter-provider/utils';
-import { removeNullCondition, useDesignable } from '../../../../schema-component';
-import { FixedBlockDesignerItem } from '../../../../schema-component/antd/page/FixedBlockDesignerItem';
+import { useDesignable } from '../../../../schema-component';
+import { SchemaSettingsBlockHeightItem } from '../../../../schema-settings/SchemaSettingsBlockHeightItem';
 import { SchemaSettingsBlockTitleItem } from '../../../../schema-settings/SchemaSettingsBlockTitleItem';
 import { SchemaSettingsConnectDataBlocks } from '../../../../schema-settings/SchemaSettingsConnectDataBlocks';
-import { SchemaSettingsDataScope } from '../../../../schema-settings/SchemaSettingsDataScope';
 import { SchemaSettingsSortField } from '../../../../schema-settings/SchemaSettingsSortField';
 import { SchemaSettingsTemplate } from '../../../../schema-settings/SchemaSettingsTemplate';
+import { setDefaultSortingRulesSchemaSettingsItem } from '../../../../schema-settings/setDefaultSortingRulesSchemaSettingsItem';
+import { setTheDataScopeSchemaSettingsItem } from '../../../../schema-settings/setTheDataScopeSchemaSettingsItem';
+import { useBlockTemplateContext } from '../../../../schema-templates/BlockTemplateProvider';
 import { setDataLoadingModeSettingsItem } from '../details-multi/setDataLoadingModeSettingsItem';
 
 export const tableBlockSettings = new SchemaSettings({
@@ -36,6 +32,10 @@ export const tableBlockSettings = new SchemaSettings({
     {
       name: 'editBlockTitle',
       Component: SchemaSettingsBlockTitleItem,
+    },
+    {
+      name: 'setTheBlockHeight',
+      Component: SchemaSettingsBlockHeightItem,
     },
     {
       name: 'treeTable',
@@ -61,6 +61,11 @@ export const tableBlockSettings = new SchemaSettings({
           onChange: (flag) => {
             field.decoratorProps.treeTable = flag;
             fieldSchema['x-decorator-props'].treeTable = flag;
+
+            if (flag === false) {
+              fieldSchema['x-decorator-props'].expandFlag = false;
+            }
+
             const params = {
               ...service.params?.[0],
               tree: flag ? true : null,
@@ -83,6 +88,16 @@ export const tableBlockSettings = new SchemaSettings({
         return collection?.tree && collectionField?.collectionName === collectionField?.target;
       },
     },
+    createSwitchSettingsItem({
+      name: 'expandFlag',
+      title: (t) => t('Expand All'),
+      defaultValue: false,
+      schemaKey: 'x-decorator-props.expandFlag',
+      useVisible() {
+        const field = useField();
+        return field.decoratorProps.treeTable;
+      },
+    }),
     {
       name: 'enableDragAndDropSorting',
       type: 'switch',
@@ -132,169 +147,8 @@ export const tableBlockSettings = new SchemaSettings({
         return field.decoratorProps.dragSort;
       },
     },
-    {
-      name: 'FixBlock',
-      Component: FixedBlockDesignerItem,
-    },
-    {
-      name: 'SetTheDataScope',
-      Component: SchemaSettingsDataScope,
-      useComponentProps: () => {
-        const { name } = useCollection_deprecated();
-        const field = useField();
-        const fieldSchema = useFieldSchema();
-        const { form } = useFormBlockContext();
-        const { service } = useTableBlockContext();
-        const { dn } = useDesignable();
-        const onDataScopeSubmit = useCallback(
-          ({ filter }) => {
-            filter = removeNullCondition(filter);
-            const params = field.decoratorProps.params || {};
-            params.filter = filter;
-            field.decoratorProps.params = params;
-            fieldSchema['x-decorator-props']['params'] = params;
-
-            dn.emit('patch', {
-              schema: {
-                ['x-uid']: fieldSchema['x-uid'],
-                'x-decorator-props': fieldSchema['x-decorator-props'],
-              },
-            });
-            service.params[0].page = 1;
-          },
-          [dn, field.decoratorProps, fieldSchema, service],
-        );
-
-        return {
-          collectionName: name,
-          defaultFilter: fieldSchema?.['x-decorator-props']?.params?.filter || {},
-          form: form,
-          onSubmit: onDataScopeSubmit,
-        };
-      },
-    },
-    {
-      name: 'SetDefaultSortingRules',
-      type: 'modal',
-      useComponentProps() {
-        const { name } = useCollection_deprecated();
-        const field = useField();
-        const fieldSchema = useFieldSchema();
-        const sortFields = useSortFields(name);
-        const { service } = useTableBlockContext();
-        const { t } = useTranslation();
-        const { dn } = useDesignable();
-        const defaultSort = fieldSchema?.['x-decorator-props']?.params?.sort || [];
-        const sort = defaultSort?.map((item: string) => {
-          return item?.startsWith('-')
-            ? {
-                field: item.substring(1),
-                direction: 'desc',
-              }
-            : {
-                field: item,
-                direction: 'asc',
-              };
-        });
-
-        return {
-          title: t('Set default sorting rules'),
-          components: { ArrayItems },
-          schema: {
-            type: 'object',
-            title: t('Set default sorting rules'),
-            properties: {
-              sort: {
-                type: 'array',
-                default: sort,
-                'x-component': 'ArrayItems',
-                'x-decorator': 'FormItem',
-                items: {
-                  type: 'object',
-                  properties: {
-                    space: {
-                      type: 'void',
-                      'x-component': 'Space',
-                      properties: {
-                        sort: {
-                          type: 'void',
-                          'x-decorator': 'FormItem',
-                          'x-component': 'ArrayItems.SortHandle',
-                        },
-                        field: {
-                          type: 'string',
-                          enum: sortFields,
-                          required: true,
-                          'x-decorator': 'FormItem',
-                          'x-component': 'Select',
-                          'x-component-props': {
-                            style: {
-                              width: 260,
-                            },
-                          },
-                        },
-                        direction: {
-                          type: 'string',
-                          'x-decorator': 'FormItem',
-                          'x-component': 'Radio.Group',
-                          'x-component-props': {
-                            optionType: 'button',
-                          },
-                          enum: [
-                            {
-                              label: t('ASC'),
-                              value: 'asc',
-                            },
-                            {
-                              label: t('DESC'),
-                              value: 'desc',
-                            },
-                          ],
-                        },
-                        remove: {
-                          type: 'void',
-                          'x-decorator': 'FormItem',
-                          'x-component': 'ArrayItems.Remove',
-                        },
-                      },
-                    },
-                  },
-                },
-                properties: {
-                  add: {
-                    type: 'void',
-                    title: t('Add sort field'),
-                    'x-component': 'ArrayItems.Addition',
-                  },
-                },
-              },
-            },
-          } as ISchema,
-          onSubmit: ({ sort }) => {
-            const sortArr = sort.map((item) => {
-              return item.direction === 'desc' ? `-${item.field}` : item.field;
-            });
-            const params = field.decoratorProps.params || {};
-            params.sort = sortArr;
-            field.decoratorProps.params = params;
-            fieldSchema['x-decorator-props']['params'] = params;
-            dn.emit('patch', {
-              schema: {
-                ['x-uid']: fieldSchema['x-uid'],
-                'x-decorator-props': fieldSchema['x-decorator-props'],
-              },
-            });
-            service.run({ ...service.params?.[0], sort: sortArr });
-          },
-        };
-      },
-      useVisible() {
-        const field = useField();
-        const { dragSort } = field.decoratorProps;
-
-        return !dragSort;
-      },
-    },
+    setTheDataScopeSchemaSettingsItem,
+    setDefaultSortingRulesSchemaSettingsItem,
     setDataLoadingModeSettingsItem,
     {
       name: 'RecordsPerPage',
@@ -310,6 +164,7 @@ export const tableBlockSettings = new SchemaSettings({
           title: t('Records per page'),
           value: field.decoratorProps?.params?.pageSize || 20,
           options: [
+            { label: '5', value: 5 },
             { label: '10', value: 10 },
             { label: '20', value: 20 },
             { label: '50', value: 50 },
@@ -358,10 +213,11 @@ export const tableBlockSettings = new SchemaSettings({
       useComponentProps() {
         const { name } = useCollection_deprecated();
         const fieldSchema = useFieldSchema();
+        const { componentNamePrefix } = useBlockTemplateContext();
         const defaultResource =
           fieldSchema?.['x-decorator-props']?.resource || fieldSchema?.['x-decorator-props']?.association;
         return {
-          componentName: 'Table',
+          componentName: `${componentNamePrefix}Table`,
           collectionName: name,
           resourceName: defaultResource,
         };

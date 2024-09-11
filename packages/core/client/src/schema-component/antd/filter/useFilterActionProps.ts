@@ -10,12 +10,12 @@
 import { Field } from '@formily/core';
 import { useField, useFieldSchema } from '@formily/react';
 import flat from 'flat';
+import _ from 'lodash';
 import { useTranslation } from 'react-i18next';
 import { useBlockRequestContext } from '../../../block-provider';
-import { useCollection_deprecated, useCollectionManager_deprecated } from '../../../collection-manager';
+import { useCollectionManager_deprecated, useCollection_deprecated } from '../../../collection-manager';
 import { mergeFilter } from '../../../filter-provider/utils';
 import { useDataLoadingMode } from '../../../modules/blocks/data-blocks/details-multi/setDataLoadingModeSettingsItem';
-import _ from 'lodash';
 
 export const useGetFilterOptions = () => {
   const { getCollectionFields } = useCollectionManager_deprecated();
@@ -157,8 +157,8 @@ const isEmpty = (obj) => {
   );
 };
 
-export const removeNullCondition = (filter) => {
-  const items = flat(filter || {});
+export const removeNullCondition = (filter, customFlat = flat) => {
+  const items = customFlat(filter || {});
   const values = {};
   for (const key in items) {
     const value = items[key];
@@ -166,7 +166,7 @@ export const removeNullCondition = (filter) => {
       values[key] = value;
     }
   }
-  return flat.unflatten(values);
+  return customFlat.unflatten(values);
 };
 
 export const useFilterActionProps = () => {

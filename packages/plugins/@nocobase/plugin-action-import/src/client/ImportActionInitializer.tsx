@@ -11,8 +11,8 @@ import type { ISchema } from '@formily/react';
 import { Schema } from '@formily/react';
 import { merge } from '@formily/shared';
 import {
-  SchemaInitializerItem,
   css,
+  SchemaInitializerItem,
   useCollection_deprecated,
   useSchemaInitializer,
   useSchemaInitializerItem,
@@ -43,7 +43,12 @@ const initImportSettings = (fields) => {
 
 export const ImportWarning = () => {
   const { t } = useImportTranslation();
-  return <Alert type="warning" style={{ marginBottom: '10px' }} message={t('Import warning')} />;
+  return <Alert type="warning" style={{ marginBottom: '10px' }} message={t('Import warnings', { limit: 2000 })} />;
+};
+
+export const DownloadTips = () => {
+  const { t } = useImportTranslation();
+  return <Alert type="info" style={{ marginBottom: '10px', whiteSpace: 'pre-line' }} message={t('Download tips')} />;
 };
 
 export const ImportActionInitializer = () => {
@@ -69,10 +74,13 @@ export const ImportActionInitializer = () => {
       modal: {
         type: 'void',
         title: `{{ t("Import Data", {ns: "${NAMESPACE}" }) }}`,
-        'x-component': 'Action.Container',
+        'x-component': 'Action.Modal',
         'x-decorator': 'Form',
         'x-component-props': {
-          width: '50%',
+          width: '100%',
+          style: {
+            maxWidth: '750px',
+          },
           className: css`
             .ant-formily-item-label {
               height: var(--controlHeightLG);
@@ -96,18 +104,7 @@ export const ImportActionInitializer = () => {
                 properties: {
                   tip: {
                     type: 'void',
-                    'x-component': 'Markdown.Void',
-                    'x-editable': false,
-                    'x-component-props': {
-                      style: {
-                        padding: `var(--paddingContentVerticalSM)`,
-                        backgroundColor: `var(--colorInfoBg)`,
-                        border: `1px solid var(--colorInfoBorder)`,
-                        color: `var(--colorText)`,
-                        marginBottom: `var(--marginSM)`,
-                      },
-                      content: `{{ t("Download tip", {ns: "${NAMESPACE}" }) }}`,
-                    },
+                    'x-component': 'DownloadTips',
                   },
                   downloadAction: {
                     type: 'void',
@@ -139,7 +136,7 @@ export const ImportActionInitializer = () => {
             },
           },
           footer: {
-            'x-component': 'Action.Container.Footer',
+            'x-component': 'Action.Modal.Footer',
             'x-component-props': {},
             properties: {
               actions: {

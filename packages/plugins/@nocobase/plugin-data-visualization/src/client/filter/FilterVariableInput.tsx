@@ -12,31 +12,25 @@ import {
   VariableInput,
   VariableScopeProvider,
   getShouldChange,
-  useCurrentUserVariable,
-  useDatetimeVariable,
+  CollectionProvider,
 } from '@nocobase/client';
 import { useMemoizedFn } from 'ahooks';
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect } from 'react';
+import { useGeneralVariableOptions } from '../hooks';
 
 export const ChartFilterVariableInput: React.FC<any> = (props) => {
   const { value, onChange, fieldSchema } = props;
-  const { currentUserSettings } = useCurrentUserVariable({
-    collectionField: { uiSchema: fieldSchema },
-    uiSchema: fieldSchema,
-  });
-  const { datetimeSettings } = useDatetimeVariable({
-    operator: fieldSchema['x-component-props']?.['filter-operator'],
-    schema: fieldSchema,
-    noDisabled: true,
-  });
-  const options = useMemo(
-    () => [currentUserSettings, datetimeSettings].filter(Boolean),
-    [datetimeSettings, currentUserSettings],
-  );
+  const collectionField = fieldSchema?.['x-collection-field'] || '';
+  const [collection] = collectionField.split('.');
+  const options = useGeneralVariableOptions(fieldSchema, fieldSchema['x-component-props']?.['filter-operator']);
   const schema = {
     ...fieldSchema,
     'x-component': fieldSchema['x-component'] || 'Input',
-    'x-decorator': '',
+    'x-decorator': 'CollectionProvider',
+    'x-decorator-props': {
+      name: collection,
+      allowNull: !collection,
+    },
     title: '',
     name: 'value',
     default: '',
@@ -53,7 +47,7 @@ export const ChartFilterVariableInput: React.FC<any> = (props) => {
     <VariableScopeProvider scope={options}>
       <VariableInput
         {...componentProps}
-        renderSchemaComponent={() => <SchemaComponent schema={schema} />}
+        renderSchemaComponent={() => <SchemaComponent schema={schema} components={{ CollectionProvider }} />}
         fieldNames={{}}
         value={value?.value}
         scope={options}

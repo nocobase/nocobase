@@ -8,9 +8,17 @@
  */
 
 import { observer, useField } from '@formily/react';
-import { useRequest } from '@nocobase/client';
+import {
+  getRenderContent,
+  useBlockHeight,
+  useCompile,
+  useLocalVariables,
+  useParseURLAndParams,
+  useRequest,
+  useVariables,
+} from '@nocobase/client';
 import { Card, Spin } from 'antd';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import RIframe from 'react-iframe';
 import type { IIframe } from 'react-iframe/types';
@@ -25,10 +33,14 @@ function isNumeric(str: string | undefined) {
 }
 
 export const Iframe: any = observer(
-  (props: IIframe & { html?: string; htmlId?: number; mode: string }) => {
-    const { url, htmlId, mode = 'url', height, html, ...others } = props;
+  (props: IIframe & { html?: string; htmlId?: number; mode: string; params?: any; engine?: string }) => {
+    const { url, htmlId, mode = 'url', height, html, params, engine, ...others } = props;
     const field = useField();
     const { t } = useTranslation();
+    const targetHeight = useBlockHeight() || height;
+    const variables = useVariables();
+    const localVariables = useLocalVariables();
+    const compile = useCompile();
     const { loading, data: htmlContent } = useRequest<string>(
       {
         url: `iframeHtml:getHtml/${htmlId}`,
@@ -38,24 +50,57 @@ export const Iframe: any = observer(
         ready: mode === 'html' && !!htmlId,
       },
     );
-    const src = React.useMemo(() => {
-      if (mode === 'html') {
-        const encodedHtml = encodeURIComponent(htmlContent);
-        const dataUrl = 'data:text/html;charset=utf-8,' + encodedHtml;
-        return dataUrl;
-      }
-      return url;
-    }, [htmlContent, mode, url]);
+    const { parseURLAndParams } = useParseURLAndParams();
+    const [src, setSrc] = useState(null);
+    useEffect(() => {
+      const generateSrc = async () => {
+        if (mode === 'html') {
+          const targetHtmlContent = await getRenderContent(
+            engine,
+            htmlContent,
+            compile(variables),
+            compile(localVariables),
+            (data) => {
+              return data;
+            },
+          );
 
+          // fix https://nocobase.height.app/T-4940/description
+          if (targetHtmlContent === undefined) {
+            return;
+          }
+
+          const encodedHtml = encodeURIComponent(targetHtmlContent);
+          const dataUrl = 'data:text/html;charset=utf-8,' + encodedHtml;
+
+          setSrc(dataUrl);
+        } else {
+          try {
+            const targetUrl = await parseURLAndParams(url, params || []);
+            setSrc(targetUrl);
+          } catch (error) {
+            console.error('Error fetching target URL:', error);
+            // Handle error or set a fallback URL
+            setSrc('fallback-url');
+          }
+        }
+      };
+
+      generateSrc();
+    }, [htmlContent, mode, url, variables, localVariables, params]);
     if ((mode === 'url' && !url) || (mode === 'html' && !htmlId)) {
-      return <Card style={{ marginBottom: 24 }}>{t('Please fill in the iframe URL')}</Card>;
+      return (
+        <Card style={{ marginBottom: 24, height: isNumeric(targetHeight) ? `${targetHeight}px` : targetHeight }}>
+          {t('Please fill in the iframe URL')}
+        </Card>
+      );
     }
 
-    if (loading) {
+    if (loading && !src) {
       return (
         <div
           style={{
-            height: isNumeric(height) ? `${height}px` : height,
+            height: isNumeric(targetHeight) ? `${targetHeight}px` : targetHeight || '60vh',
             marginBottom: '24px',
             border: 0,
           }}
@@ -72,7 +117,7 @@ export const Iframe: any = observer(
         display="block"
         position="relative"
         styles={{
-          height: isNumeric(height) ? `${height}px` : height,
+          height: isNumeric(targetHeight) ? `${targetHeight}px` : targetHeight || '60vh',
           marginBottom: '24px',
           border: 0,
         }}

@@ -12,6 +12,7 @@ import { resolve } from 'path';
 import { getAntdLocale } from './antd';
 import { getCronLocale } from './cron';
 import { getCronstrueLocale } from './cronstrue';
+import * as process from 'node:process';
 
 async function getLang(ctx) {
   const SystemSetting = ctx.db.getRepository('systemSettings');
@@ -81,7 +82,8 @@ export class PluginClientServer extends Plugin {
           if (enabledLanguages.includes(currentUser?.appLang)) {
             lang = currentUser?.appLang;
           }
-          ctx.body = {
+
+          const info: any = {
             database: {
               dialect,
             },
@@ -90,6 +92,11 @@ export class PluginClientServer extends Plugin {
             name: ctx.app.name,
             theme: currentUser?.systemSettings?.theme || systemSetting?.options?.theme || 'default',
           };
+
+          if (process.env['EXPORT_LIMIT']) {
+            info.exportLimit = parseInt(process.env['EXPORT_LIMIT']);
+          }
+          ctx.body = info;
           await next();
         },
         async getLang(ctx, next) {

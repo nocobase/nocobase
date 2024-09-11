@@ -7,9 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Form as FormV2 } from './Form';
 import { DetailsDesigner, FormDesigner, ReadPrettyFormDesigner } from './Form.Designer';
 import { FilterDesigner } from './Form.FilterDesigner';
+import { FormWithDataTemplates as FormV2 } from './FormWithDataTemplates';
 import { Templates } from './Templates';
 export * from './Form.Settings';
 

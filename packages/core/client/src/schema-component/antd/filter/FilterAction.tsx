@@ -19,6 +19,7 @@ import { FormProvider, SchemaComponent } from '../../core';
 import { useDesignable } from '../../hooks';
 import { useProps } from '../../hooks/useProps';
 import { Action, ActionProps } from '../action';
+import { DatePickerProvider } from '../date-picker/DatePicker';
 import { StablePopover } from '../popover';
 
 export const FilterActionContext = createContext<any>(null);
@@ -29,6 +30,17 @@ export type FilterActionProps<T = {}> = ActionProps & {
   form?: Form;
   onSubmit?: (values: T) => void;
   onReset?: (values: T) => void;
+  /**
+   * @default Popover
+   * 在移动端中，会使用移动端的 Popup 组件
+   */
+  Container?: (props: {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    trigger: 'click' | 'hover';
+    content: React.ReactElement;
+    children: React.ReactElement;
+  }) => React.ReactElement;
 };
 
 export const FilterAction = withDynamicSchemaProps(
@@ -41,7 +53,7 @@ export const FilterAction = withDynamicSchemaProps(
     const form = useMemo<Form>(() => props.form || createForm(), []);
 
     // 新版 UISchema（1.0 之后）中已经废弃了 useProps，这里之所以继续保留是为了兼容旧版的 UISchema
-    const { options, onSubmit, onReset, ...others } = useProps(props);
+    const { options, onSubmit, onReset, Container = StablePopover, ...others } = useProps(props);
 
     const onOpenChange = useCallback((visible: boolean): void => {
       setVisible(visible);
@@ -49,7 +61,7 @@ export const FilterAction = withDynamicSchemaProps(
 
     return (
       <FilterActionContext.Provider value={{ field, fieldSchema, designable, dn }}>
-        <StablePopover
+        <Container
           destroyTooltipOnHide
           placement={'bottomLeft'}
           open={visible}
@@ -58,20 +70,22 @@ export const FilterAction = withDynamicSchemaProps(
           content={
             <form>
               <FormProvider form={form}>
-                <SchemaComponent
-                  schema={{
-                    type: 'object',
-                    properties: {
-                      filter: {
-                        type: 'string',
-                        enum: options || field.dataSource,
-                        default: fieldSchema.default,
-                        'x-component': 'Filter',
-                        'x-component-props': {},
+                <DatePickerProvider value={{ utc: false }}>
+                  <SchemaComponent
+                    schema={{
+                      type: 'object',
+                      properties: {
+                        filter: {
+                          type: 'string',
+                          enum: options || field.dataSource,
+                          default: fieldSchema.default,
+                          'x-component': 'Filter',
+                          'x-component-props': {},
+                        },
                       },
-                    },
-                  }}
-                />
+                    }}
+                  />
+                </DatePickerProvider>
                 <div
                   className={css`
                     display: flex;
@@ -109,8 +123,8 @@ export const FilterAction = withDynamicSchemaProps(
             </form>
           }
         >
-          <Action {...others} title={field.title} />
-        </StablePopover>
+          <Action onClick={() => setVisible(!visible)} {...others} title={field.title} />
+        </Container>
       </FilterActionContext.Provider>
     );
   }),

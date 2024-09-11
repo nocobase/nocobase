@@ -23,7 +23,6 @@ import { BuiltInGroup } from './collection-group-manager';
 import { Database } from './database';
 import { BelongsToField, Field, FieldOptions, HasManyField } from './fields';
 import { Model } from './model';
-import { AdjacencyListRepository } from './repositories/tree-repository/adjacency-list-repository';
 import { Repository } from './repository';
 import { checkIdentifier, md5, snakeCase } from './utils';
 import safeJsonStringify from 'safe-json-stringify';
@@ -48,6 +47,8 @@ function EnsureAtomicity(target: any, propertyKey: string, descriptor: PropertyD
     const model = this.model;
     const beforeAssociationKeys = Object.keys(model.associations);
     const beforeRawAttributes = Object.keys(model.rawAttributes);
+    const fieldName = args[0];
+    const beforeField = this.getField(fieldName);
 
     try {
       return originalMethod.apply(this, args);
@@ -64,6 +65,12 @@ function EnsureAtomicity(target: any, propertyKey: string, descriptor: PropertyD
       for (const key of createdRawAttributes) {
         delete this.model.rawAttributes[key];
       }
+
+      // remove field created in this method
+      if (!beforeField) {
+        this.removeField(fieldName);
+      }
+
       throw error;
     }
   };
@@ -91,7 +98,7 @@ export interface CollectionOptions extends Omit<ModelOptions, 'name' | 'hooks'> 
   viewName?: string;
   writableView?: boolean;
 
-  filterTargetKey?: string;
+  filterTargetKey?: string | string[];
   fields?: FieldOptions[];
   model?: string | ModelStatic<Model>;
   repository?: string | RepositoryType;
@@ -107,6 +114,8 @@ export interface CollectionOptions extends Omit<ModelOptions, 'name' | 'hooks'> 
   tree?: string;
   template?: string;
 
+  simplePaginate?: boolean;
+
   /**
    * where is the collection from
    *
@@ -116,7 +125,7 @@ export interface CollectionOptions extends Omit<ModelOptions, 'name' | 'hooks'> 
    * - 'user' - collection is from user
    */
   origin?: string;
-
+  asStrategyResource?: boolean;
   [key: string]: any;
 }
 
@@ -160,14 +169,21 @@ export class Collection<
     this.setSortable(options.sortable);
   }
 
-  get filterTargetKey() {
+  get filterTargetKey(): string | string[] {
     const targetKey = this.options?.filterTargetKey;
+
+    if (Array.isArray(targetKey)) {
+      return targetKey;
+    }
+
     if (targetKey && this.model.getAttributes()[targetKey]) {
       return targetKey;
     }
+
     if (this.model.primaryKeyAttributes.length > 1) {
       return null;
     }
+
     return this.model.primaryKeyAttribute;
   }
 
@@ -243,6 +259,8 @@ export class Collection<
     this.model = class extends M {};
     this.model.init(null, this.sequelizeModelOptions());
 
+    this.model.options.modelName = this.options.name;
+
     if (!autoGenId) {
       this.model.removeAttribute('id');
     }
@@ -258,11 +276,6 @@ export class Collection<
     if (typeof repository === 'string') {
       repo = this.context.database.repositories.get(repository) || Repository;
     }
-
-    if (this.options.tree == 'adjacency-list' || this.options.tree == 'adjacencyList') {
-      repo = AdjacencyListRepository;
-    }
-
     this.repository = new repo(this);
   }
 
@@ -664,6 +677,7 @@ export class Collection<
       if (lodash.isEqual(item.fields, indexName)) {
         return;
       }
+
       const name: string = item.fields.join(',');
       if (name.startsWith(`${indexName.join(',')},`)) {
         return;
@@ -701,6 +715,7 @@ export class Collection<
     this.model._indexes = indexes.filter((item) => {
       return !lodash.isEqual(item.fields, fields);
     });
+
     this.refreshIndexes();
   }
 
@@ -715,14 +730,10 @@ export class Collection<
     this.model._indexes = lodash.uniqBy(
       indexes
         .filter((item) => {
-          return item.fields.every((field) =>
-            Object.values(this.model.rawAttributes).find((fieldVal) => fieldVal.field === field),
-          );
+          return item.fields.every((field) => this.model.rawAttributes[field]);
         })
         .map((item) => {
-          if (this.options.underscored) {
-            item.fields = item.fields.map((field) => snakeCase(field));
-          }
+          item.fields = item.fields.map((field) => this.model.rawAttributes[field].field);
           return item;
         }),
       'name',
@@ -829,6 +840,14 @@ export class Collection<
 
   public isView() {
     return false;
+  }
+
+  unavailableActions() {
+    if (this.options.template === 'file') {
+      return ['create', 'update', 'destroy'];
+    }
+
+    return [];
   }
 
   protected sequelizeModelOptions() {

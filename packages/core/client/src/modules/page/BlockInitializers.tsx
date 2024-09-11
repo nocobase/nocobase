@@ -6,7 +6,6 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
-
 import { CompatibleSchemaInitializer } from '../../application/schema-initializer/CompatibleSchemaInitializer';
 import { gridRowColWrap } from '../../schema-initializer/utils';
 
@@ -29,6 +28,19 @@ const commonOptions = {
           name: 'form',
           title: '{{t("Form")}}',
           Component: 'FormBlockInitializer',
+          useComponentProps: () => {
+            const filterCollections = ({ collection }) => {
+              const { unavailableActions, availableActions } = collection?.options || {};
+              if (availableActions) {
+                return availableActions.includes?.('create');
+              }
+              if (unavailableActions) {
+                return !unavailableActions?.includes?.('create');
+              }
+              return true;
+            };
+            return { filterCollections };
+          },
         },
         {
           name: 'details',

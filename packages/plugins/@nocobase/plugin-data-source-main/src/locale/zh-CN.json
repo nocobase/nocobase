@@ -1,0 +1,4 @@
+{
+  "field-name-exists": "字段标识 \"{{name}}\" 已存在",
+  "field-is-depended-on-by-other": "无法删除 \"{{fieldCollectionName}}\" 中的 \"{{fieldName}}\" 字段，它被 \"{{dependedFieldCollectionName}}\" 中的 \"{{dependedFieldName}}\" 字段用作 \"{{dependedFieldAs}}\""
+}

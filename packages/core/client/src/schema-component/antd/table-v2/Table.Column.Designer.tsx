@@ -8,10 +8,10 @@
  */
 
 import { ISchema, useField, useFieldSchema } from '@formily/react';
-import { set } from 'lodash';
+import _, { set } from 'lodash';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { useFormBlockContext } from '../../../block-provider';
+import { useFormBlockContext } from '../../../block-provider/FormBlockProvider';
 import { useCollectionManager_deprecated } from '../../../collection-manager';
 import {
   GeneralSchemaDesigner,
@@ -21,16 +21,18 @@ import {
   SchemaSettingsSelectItem,
   SchemaSettingsSwitchItem,
 } from '../../../schema-settings';
+import { SchemaSettingsDataScope } from '../../../schema-settings/SchemaSettingsDataScope';
+import { SchemaSettingsDateFormat } from '../../../schema-settings/SchemaSettingsDateFormat';
+import { SchemaSettingsDefaultValue } from '../../../schema-settings/SchemaSettingsDefaultValue';
+import { SchemaSettingsSortingRule } from '../../../schema-settings/SchemaSettingsSortingRule';
 import { useIsAllowToSetDefaultValue } from '../../../schema-settings/hooks/useIsAllowToSetDefaultValue';
+import { isPatternDisabled } from '../../../schema-settings/isPatternDisabled';
 import { useCompile, useDesignable, useFieldModeOptions } from '../../hooks';
 import { useAssociationFieldContext } from '../association-field/hooks';
 import { removeNullCondition } from '../filter';
-import { SchemaSettingsDefaultValue } from '../../../schema-settings/SchemaSettingsDefaultValue';
-import { SchemaSettingsDataScope } from '../../../schema-settings/SchemaSettingsDataScope';
-import { isPatternDisabled } from '../../../schema-settings/isPatternDisabled';
-import { SchemaSettingsDateFormat } from '../../../schema-settings/SchemaSettingsDateFormat';
-import { SchemaSettingsSortingRule } from '../../../schema-settings/SchemaSettingsSortingRule';
-import _ from 'lodash';
+import { SchemaSettingsLinkageRules } from '../../../schema-settings';
+import { useCollection } from '../../../data-source';
+import { useSchemaToolbar } from '../../../application';
 
 export const useLabelFields = (collectionName?: any) => {
   // 需要在组件顶层调用
@@ -41,7 +43,7 @@ export const useLabelFields = (collectionName?: any) => {
   }
   const targetFields = getCollectionFields(collectionName);
   return targetFields
-    ?.filter?.((field) => field?.interface && !field?.target && field.type !== 'boolean' && !field.isForeignKey)
+    ?.filter?.((field) => field?.interface && !field?.target && field.type !== 'boolean')
     ?.map?.((field) => {
       return {
         value: field.name,
@@ -99,6 +101,12 @@ export const TableColumnDesigner = (props) => {
     readOnlyMode = 'read-pretty';
   }
   const isSelectFieldMode = isAssociationField && fieldMode === 'Select';
+
+  const StyleSetting = () => {
+    const { name } = useCollection();
+    const { linkageRulesProps } = useSchemaToolbar();
+    return <SchemaSettingsLinkageRules category={'style'} {...{ ...linkageRulesProps, collectionName: name }} />;
+  };
   return (
     <GeneralSchemaDesigner disableInitializer>
       <SchemaSettingsModalItem
@@ -187,6 +195,7 @@ export const TableColumnDesigner = (props) => {
           dn.refresh();
         }}
       />
+      <StyleSetting />
       {interfaceCfg && interfaceCfg.sortable === true && !currentMode && (
         <SchemaSettingsSwitchItem
           title={t('Sortable')}

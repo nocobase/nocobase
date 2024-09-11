@@ -17,7 +17,7 @@ import { BlockItemCard } from '../block-item/BlockItemCard';
 import { BlockItemError } from '../block-item/BlockItemError';
 import useStyles from './style';
 
-interface CardItemProps extends CardProps {
+export interface CardItemProps extends CardProps {
   name?: string;
   children?: React.ReactNode;
   /**
@@ -26,10 +26,12 @@ interface CardItemProps extends CardProps {
    * @see https://github.com/thebuilder/react-intersection-observer
    */
   lazyRender?: IntersectionOptions & { element?: React.JSX.Element };
+  heightMode?: string;
+  height?: number;
 }
 
 export const CardItem: FC<CardItemProps> = (props) => {
-  const { children, name, lazyRender = {}, ...restProps } = props;
+  const { children, name, lazyRender = {}, heightMode, ...restProps } = props;
   const template = useSchemaTemplate();
   const fieldSchema = useFieldSchema();
   const templateKey = fieldSchema?.['x-template-key'];

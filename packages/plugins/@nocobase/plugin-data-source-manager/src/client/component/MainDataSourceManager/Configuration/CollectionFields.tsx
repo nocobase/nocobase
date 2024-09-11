@@ -10,9 +10,6 @@
 import { css } from '@emotion/css';
 import { createForm, Field } from '@formily/core';
 import { FieldContext, FormContext, useField } from '@formily/react';
-import { Space, Switch, Table, TableColumnProps, Tag, Tooltip, message } from 'antd';
-import React, { createContext, useContext, useMemo, useState } from 'react';
-import { useTranslation } from 'react-i18next';
 import {
   Action,
   AddCollectionField,
@@ -26,6 +23,7 @@ import {
   SchemaComponent,
   SyncFieldsAction,
   SyncSQLFieldsAction,
+  useAPIClient,
   useAttach,
   useBulkDestroyActionAndRefreshCM,
   useCollectionManager_deprecated,
@@ -36,9 +34,12 @@ import {
   useResourceActionContext,
   useResourceContext,
   ViewCollectionField,
-  useAPIClient,
 } from '@nocobase/client';
+import { message, Space, Switch, Table, TableColumnProps, Tag, Tooltip } from 'antd';
+import React, { createContext, useContext, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 
+import { FilterTargetKeyAlert } from '../../CollectionsManager/FilterTargetKeyAlert';
 import { collection } from './schemas/collectionFields';
 const resourceActionProps = {
   association: {
@@ -59,7 +60,7 @@ const resourceActionProps = {
   },
 };
 
-const CollectionListContext = createContext(null);
+export const CollectionListContext = createContext(null);
 
 const CollectionFieldsProvider = (props) => {
   return (
@@ -80,13 +81,13 @@ const tableContainer = css`
   }
   td,
   th {
-    flex: 2;
+    flex: 2.3;
     width: 0;
     &:nth-child(5) {
       flex: 1.2;
     }
     &:last-child {
-      flex: 1.8;
+      flex: 1.5;
     }
   }
   .ant-table-selection-column,
@@ -439,6 +440,7 @@ const CollectionFieldsInternal = () => {
   return (
     <FormContext.Provider value={form}>
       <FieldContext.Provider value={f}>
+        <FilterTargetKeyAlert collectionName={name} />
         <Space
           align={'end'}
           className={css`

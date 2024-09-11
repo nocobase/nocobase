@@ -13,11 +13,11 @@ import _ from 'lodash';
 import { useCallback, useEffect, useMemo } from 'react';
 import {
   CollectionFieldOptions_deprecated,
-  useCollection_deprecated,
   useCollectionManager_deprecated,
+  useCollection_deprecated,
 } from '../../../../collection-manager';
-import { isSubMode } from '../../association-field/util';
 import { markRecordAsNew } from '../../../../data-source/collection-record/isNewRecord';
+import { isSubMode } from '../../association-field/util';
 
 /**
  * #### 处理 `子表单` 和 `子表格` 中的特殊情况
@@ -92,6 +92,11 @@ export function isSpecialCaseField({
   fieldSchema: Schema;
   getCollectionField: (name: string) => CollectionFieldOptions_deprecated;
 }) {
+  // 排除掉“当前对象”这个变量
+  if (fieldSchema.default.includes('$iteration')) {
+    return false;
+  }
+
   if (collectionField && ['hasOne', 'belongsTo'].includes(collectionField.type) && fieldSchema) {
     const parentFieldSchema = getParentFieldSchema(fieldSchema);
     if (parentFieldSchema && parentFieldSchema['x-collection-field']) {

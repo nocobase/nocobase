@@ -52,9 +52,11 @@ export default class PostgresQueryInterface extends QueryInterface {
   async getAutoIncrementInfo(options: {
     tableInfo: TableInfo;
     fieldName: string;
+    transaction: Transaction;
   }): Promise<{ seqName?: string; currentVal: number }> {
     const fieldName = options.fieldName || 'id';
     const tableInfo = options.tableInfo;
+    const transaction = options.transaction;
 
     const sequenceNameResult = await this.db.sequelize.query(
       `SELECT column_default
@@ -62,6 +64,9 @@ export default class PostgresQueryInterface extends QueryInterface {
            WHERE table_name = '${tableInfo.tableName}'
              and table_schema = '${tableInfo.schema || 'public'}'
              and "column_name" = '${fieldName}';`,
+      {
+        transaction,
+      },
     );
 
     const columnDefault = sequenceNameResult[0][0]['column_default'];
@@ -74,6 +79,9 @@ export default class PostgresQueryInterface extends QueryInterface {
     const sequenceCurrentValResult = await this.db.sequelize.query(
       `select last_value
            from ${sequenceName}`,
+      {
+        transaction,
+      },
     );
 
     const sequenceCurrentVal = parseInt(sequenceCurrentValResult[0][0]['last_value']);

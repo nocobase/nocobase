@@ -11,8 +11,8 @@ import fs from 'fs/promises';
 import mkdirp from 'mkdirp';
 import multer from 'multer';
 import path from 'path';
-import { AttachmentModel } from '.';
-import { STORAGE_TYPE_LOCAL } from '../constants';
+import { AttachmentModel, StorageType } from '.';
+import { FILE_SIZE_LIMIT_DEFAULT, STORAGE_TYPE_LOCAL } from '../../constants';
 import { getFilename } from '../utils';
 
 function getDocumentRoot(storage): string {
@@ -21,7 +21,7 @@ function getDocumentRoot(storage): string {
   return path.resolve(path.isAbsolute(documentRoot) ? documentRoot : path.join(process.cwd(), documentRoot));
 }
 
-export default {
+export default class extends StorageType {
   make(storage) {
     return multer.diskStorage({
       destination: function (req, file, cb) {
@@ -30,7 +30,7 @@ export default {
       },
       filename: getFilename,
     });
-  },
+  }
   defaults() {
     return {
       title: 'Local storage',
@@ -40,8 +40,11 @@ export default {
       options: {
         documentRoot: 'storage/uploads',
       },
+      rules: {
+        size: FILE_SIZE_LIMIT_DEFAULT,
+      },
     };
-  },
+  }
   async delete(storage, records: AttachmentModel[]): Promise<[number, AttachmentModel[]]> {
     const documentRoot = getDocumentRoot(storage);
     let count = 0;
@@ -66,5 +69,5 @@ export default {
     );
 
     return [count, undeleted];
-  },
-};
+  }
+}

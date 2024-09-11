@@ -53,16 +53,7 @@ export const FixedBlockWrapper: React.FC = (props) => {
    * isPopup means that the FixedBlock is in the popup mode
    */
   if (!fixedBlock && fixedBlockUID) return <>{props.children}</>;
-  return (
-    <div
-      className="nb-fixed-block"
-      style={{
-        height: fixedBlockUID ? `calc(100vh - ${height})` : undefined,
-      }}
-    >
-      {props.children}
-    </div>
-  );
+  return <div className="nb-fixed-block">{props.children}</div>;
 };
 
 export interface FixedBlockProps {
@@ -73,11 +64,11 @@ const fixedBlockCss = css`
   overflow: hidden;
   position: relative;
   .noco-card-item {
-    height: 100%;
+    height: auto;
     .ant-card {
       display: flex;
       flex-direction: column;
-      height: 100%;
+      height: auto;
       .ant-card-body {
         height: 1px;
         flex: 1;
@@ -99,14 +90,7 @@ export const FixedBlock: React.FC<FixedBlockProps> = (props) => {
   };
   return (
     <FixedBlockContext.Provider value={{ inFixedBlock: true, height, setFixedBlock, fixedBlockUID, fixedBlockUIDRef }}>
-      <div
-        className={fixedBlockUID ? fixedBlockCss : ''}
-        style={{
-          height: fixedBlockUID ? `calc(100vh - ${height})` : undefined,
-        }}
-      >
-        {props.children}
-      </div>
+      <div className={fixedBlockUID ? fixedBlockCss : ''}>{props.children}</div>
     </FixedBlockContext.Provider>
   );
 };

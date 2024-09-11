@@ -30,6 +30,7 @@ export function useFieldComponentName(): string {
     fieldSchema?.['x-component-props']?.['mode'] ||
     field?.componentProps?.['mode'] ||
     (isFileField ? 'FileManager' : '') ||
+    fieldSchema?.['x-component-props']?.['component'] ||
     collectionField?.uiSchema?.['x-component'];
   return map[fieldComponentName] || fieldComponentName;
 }

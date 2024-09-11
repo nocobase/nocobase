@@ -16,12 +16,14 @@ import { deleteActionSettings } from '../modules/actions/delete/deleteActionSett
 import { disassociateActionSettings } from '../modules/actions/disassociate/disassociateActionSettings';
 import { expendableActionSettings } from '../modules/actions/expand-collapse/expendableActionSettings';
 import { filterActionSettings } from '../modules/actions/filter/filterActionSettings';
+import { customizeLinkActionSettings } from '../modules/actions/link/customizeLinkActionSettings';
 import { refreshActionSettings } from '../modules/actions/refresh/refreshActionSettings';
 import { customizeSaveRecordActionSettings } from '../modules/actions/save-record/customizeSaveRecordActionSettings';
 import { createSubmitActionSettings } from '../modules/actions/submit/createSubmitActionSettings';
 import { submitActionSettings, updateSubmitActionSettings } from '../modules/actions/submit/updateSubmitActionSettings';
 import { customizeUpdateRecordActionSettings } from '../modules/actions/update-record/customizeUpdateRecordActionSettings';
 import { customizePopupActionSettings } from '../modules/actions/view-edit-popup/customizePopupActionSettings';
+
 import { editActionSettings } from '../modules/actions/view-edit-popup/editActionSettings';
 import { viewActionSettings } from '../modules/actions/view-edit-popup/viewActionSettings';
 import {
@@ -50,6 +52,8 @@ import { datePickerComponentFieldSettings } from '../modules/fields/component/Da
 import { fileManagerComponentFieldSettings } from '../modules/fields/component/FileManager/fileManagerComponentFieldSettings';
 import { previewComponentFieldSettings } from '../modules/fields/component/FileManager/previewComponentFieldSettings';
 import { uploadAttachmentComponentFieldSettings } from '../modules/fields/component/FileManager/uploadAttachmentComponentFieldSettings';
+import { inputPreviewComponentFieldSettings } from '../modules/fields/component/Input.Preview/settings';
+// import { inputURLComponentFieldSettings } from '../modules/fields/component/Input.URL/settings';
 import { inputNumberComponentFieldSettings } from '../modules/fields/component/InputNumber/inputNumberComponentFieldSettings';
 import { subformComponentFieldSettings } from '../modules/fields/component/Nester/subformComponentFieldSettings';
 import { recordPickerComponentFieldSettings } from '../modules/fields/component/Picker/recordPickerComponentFieldSettings';
@@ -88,6 +92,7 @@ export class SchemaSettingsPlugin extends Plugin {
     this.schemaSettingsManager.add(bulkDeleteActionSettings);
     this.schemaSettingsManager.add(customizeAddRecordActionSettings);
     this.schemaSettingsManager.add(customizePopupActionSettings);
+    this.schemaSettingsManager.add(customizeLinkActionSettings);
     this.schemaSettingsManager.add(customizeUpdateRecordActionSettings);
     this.schemaSettingsManager.add(createSubmitActionSettings);
     this.schemaSettingsManager.add(updateSubmitActionSettings);
@@ -114,6 +119,8 @@ export class SchemaSettingsPlugin extends Plugin {
     this.schemaSettingsManager.add(fileManagerComponentFieldSettings);
     this.schemaSettingsManager.add(tagComponentFieldSettings);
     this.schemaSettingsManager.add(cascadeSelectComponentFieldSettings);
+    this.schemaSettingsManager.add(inputPreviewComponentFieldSettings);
+    // this.schemaSettingsManager.add(inputURLComponentFieldSettings);
     this.schemaSettingsManager.add(uploadAttachmentComponentFieldSettings);
     this.schemaSettingsManager.add(previewComponentFieldSettings);
   }

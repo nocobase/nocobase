@@ -22,7 +22,7 @@ test.describe('save as template', () => {
     await page.getByRole('button', { name: 'OK', exact: true }).click();
 
     // 2. 删除模板
-    await clearBlockTemplates();
+    await clearBlockTemplates({ immediate: true });
 
     // 3. 再次回到页面，应该显示“模板已删除字样”
     await page.reload();

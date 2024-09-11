@@ -8,11 +8,11 @@
  */
 
 import { ColorPicker } from '@nocobase/client';
-import { renderApp, screen, renderReadPrettyApp, userEvent, waitFor } from '@nocobase/test/client';
+import { renderAppOptions, screen, renderReadPrettyApp, userEvent, waitFor } from '@nocobase/test/client';
 
 describe('ColorPicker', () => {
   test('basic', async () => {
-    const { container } = await renderApp({
+    const { container } = await renderAppOptions({
       Component: ColorPicker,
       value: 'rgb(139, 187, 17)',
     });
@@ -53,7 +53,7 @@ describe('ColorPicker', () => {
   });
 
   test('change', async () => {
-    const { container } = await renderApp({
+    const { container } = await renderAppOptions({
       Component: ColorPicker,
       value: 'rgb(139, 187, 17)',
     });

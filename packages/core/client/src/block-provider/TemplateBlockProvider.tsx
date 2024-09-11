@@ -11,7 +11,7 @@ import React, { createContext, useContext, useState } from 'react';
 
 const TemplateBlockContext = createContext<{
   // 模板是否已经请求结束
-  templateFinshed?: boolean;
+  templateFinished?: boolean;
   onTemplateSuccess?: Function;
 }>({});
 TemplateBlockContext.displayName = 'TemplateBlockContext';
@@ -24,9 +24,9 @@ export const useTemplateBlockContext = () => {
 };
 
 const TemplateBlockProvider = (props) => {
-  const [templateFinshed, setTemplateFinshed] = useState(false);
+  const [templateFinished, setTemplateFinished] = useState(false);
   return (
-    <TemplateBlockContext.Provider value={{ templateFinshed, onTemplateSuccess: () => setTemplateFinshed(true) }}>
+    <TemplateBlockContext.Provider value={{ templateFinished, onTemplateSuccess: () => setTemplateFinished(true) }}>
       {props.children}
     </TemplateBlockContext.Provider>
   );

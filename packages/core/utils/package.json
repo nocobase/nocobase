@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/utils",
-  "version": "1.0.0-alpha.15",
+  "version": "1.4.0-alpha",
   "main": "lib/index.js",
   "types": "./lib/index.d.ts",
   "license": "AGPL-3.0",
@@ -8,7 +8,6 @@
     "@hapi/topo": "^6.0.0",
     "@rc-component/mini-decimal": "^1.1.0",
     "dayjs": "^1.11.9",
-    "dedupe": "^3.0.2",
     "deepmerge": "^4.2.2",
     "flat-to-nested": "^1.1.1",
     "graphlib": "^2.1.8",

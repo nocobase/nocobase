@@ -8,7 +8,7 @@
  */
 
 import { BlockSchemaComponentPlugin } from '@nocobase/client';
-import { screen, renderApp, sleep, userEvent, waitFor } from '@nocobase/test/client';
+import { renderAppOptions, screen, sleep, userEvent, waitFor } from '@nocobase/test/client';
 
 describe('QuickEdit', () => {
   function getRenderOptions(readPretty = false) {
@@ -119,7 +119,7 @@ describe('QuickEdit', () => {
   }
 
   it('basic', async () => {
-    await renderApp(getRenderOptions());
+    await renderAppOptions(getRenderOptions());
 
     await waitFor(() => {
       expect(document.querySelector('.ant-table-footer button')).toBeInTheDocument();
@@ -143,7 +143,7 @@ describe('QuickEdit', () => {
   });
 
   it('read pretty', async () => {
-    await renderApp(getRenderOptions(true));
+    await renderAppOptions(getRenderOptions(true));
 
     await waitFor(() => {
       expect(document.querySelector('.ant-table-footer button')).toBeInTheDocument();

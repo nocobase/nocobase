@@ -9,6 +9,7 @@ services:
       - nocobase
     environment:
       - APP_KEY=your-secret-key # Replace it with your own app key
+      - ENCRYPTION_FIELD_KEY=your-secret-key # Replace it with your own app key
       - DB_DIALECT=postgres
       - DB_HOST=postgres
       - DB_DATABASE=nocobase

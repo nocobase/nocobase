@@ -16,6 +16,7 @@ import {
   SchemaSettingsTemplate,
   removeNullCondition,
   setDataLoadingModeSettingsItem,
+  useBlockTemplateContext,
   useCollection,
   useCollection_deprecated,
   useCompile,
@@ -245,8 +246,9 @@ export const oldGanttSettings = new SchemaSettings({
       Component: SchemaSettingsTemplate,
       useComponentProps() {
         const { name } = useCollection_deprecated();
+        const { componentNamePrefix } = useBlockTemplateContext();
         return {
-          componentName: 'Gantt',
+          componentName: `${componentNamePrefix}Gantt`,
           collectionName: name,
         };
       },
@@ -364,7 +366,7 @@ export const ganttSettings = new SchemaSettings({
         return {
           title: t('Start date field'),
           value: fieldNames.start,
-          options: useOptions('date'),
+          options: useOptions(['date', 'datetime', 'dateOnly', 'datetimeNoTz']),
           onChange: (start) => {
             const fieldNames = field.decoratorProps.fieldNames || {};
             fieldNames['start'] = start;
@@ -396,7 +398,7 @@ export const ganttSettings = new SchemaSettings({
         return {
           title: t('End date field'),
           value: fieldNames.end,
-          options: useOptions('date'),
+          options: useOptions(['date', 'datetime', 'dateOnly', 'datetimeNoTz']),
           onChange: (end) => {
             const fieldNames = field.decoratorProps.fieldNames || {};
             fieldNames['end'] = end;
@@ -485,8 +487,9 @@ export const ganttSettings = new SchemaSettings({
       Component: SchemaSettingsTemplate,
       useComponentProps() {
         const { name } = useCollection();
+        const { componentNamePrefix } = useBlockTemplateContext();
         return {
-          componentName: 'Gantt',
+          componentName: `${componentNamePrefix}Gantt`,
           collectionName: name,
         };
       },

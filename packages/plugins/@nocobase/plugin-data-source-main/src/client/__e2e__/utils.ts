@@ -127,7 +127,11 @@ export async function testDefaultValue({
     await page.getByLabel('variable-button').click();
     await testSupportedAndUnsupportedVariables(page, supportedVariables, unsupportedVariables);
     for (const value of variableValue) {
-      await page.getByRole('menuitemcheckbox', { name: value }).click();
+      if (value === 'ID') {
+        await page.getByRole('menuitemcheckbox', { name: value, exact: true }).click();
+      } else {
+        await page.getByRole('menuitemcheckbox', { name: value }).click();
+      }
     }
     await page.getByRole('button', { name: 'OK', exact: true }).click();
 
@@ -426,8 +430,11 @@ export type FieldInterface =
   | 'Markdown'
   | 'Rich Text'
   | 'Attachment'
-  | 'Datetime'
+  | 'Datetime(with time zone)'
+  | 'Datetime(without time zone)'
+  | 'Date'
   | 'Time'
+  | 'Unix Timestamp'
   | 'One to one (belongs to)'
   | 'One to one (has one)'
   | 'One to many'

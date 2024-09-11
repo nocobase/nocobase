@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { mockApp } from '@nocobase/client/demo-utils';
 import { SchemaComponent, Plugin, ISchema } from '@nocobase/client';
@@ -24,8 +23,6 @@ const schema: ISchema = {
           mimetype: 'image/jpeg',
           path: '',
           meta: {},
-          status: 'uploading',
-          percent: 60,
           url: 'https://zos.alipayobjects.com/rmsportal/jkjgkEfvpUPVyRjUImniVslZfWPnJuuZ.png',
           created_at: '2021-08-13T15:00:17.423Z',
           updated_at: '2021-08-13T15:00:17.423Z',
@@ -64,14 +61,14 @@ const schema: ISchema = {
       },
     },
   },
-}
+};
 const Demo = () => {
   return <SchemaComponent schema={schema} />;
 };
 
 class DemoPlugin extends Plugin {
   async load() {
-    this.app.router.add('root', { path: '/', Component: Demo })
+    this.app.router.add('root', { path: '/', Component: Demo });
   }
 }
 

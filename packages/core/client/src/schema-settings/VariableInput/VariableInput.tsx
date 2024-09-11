@@ -67,6 +67,10 @@ type Props = {
    * @returns
    */
   returnScope?: (scope: Option[]) => any[];
+  /**
+   * 不需要禁用选项，一般会在表达式中使用
+   */
+  noDisabled?: boolean;
 };
 
 /**
@@ -91,6 +95,7 @@ export const VariableInput = (props: Props) => {
     record,
     returnScope = _.identity,
     targetFieldSchema,
+    noDisabled,
   } = props;
   const { name: blockCollectionName } = useBlockCollection();
   const scope = useVariableScope();
@@ -103,6 +108,7 @@ export const VariableInput = (props: Props) => {
     operator,
     uiSchema,
     targetFieldSchema,
+    noDisabled,
   });
   const contextVariable = useContextAssociationFields({ schema, maxDepth: 2, contextCollectionName, collectionField });
   const { compatOldVariables } = useCompatOldVariables({
@@ -191,12 +197,12 @@ export const getShouldChange = ({
     if (['o2o', 'o2m', 'oho'].includes(collectionFieldOfVariable?.interface)) {
       return false;
     }
-    if (!collectionField.target && collectionFieldOfVariable?.target) {
-      return false;
-    }
-    if (collectionField.target && !collectionFieldOfVariable?.target) {
-      return false;
-    }
+    // if (!collectionField.target && collectionFieldOfVariable?.target) {
+    //   return false;
+    // }
+    // if (collectionField.target && !collectionFieldOfVariable?.target) {
+    //   return false;
+    // }
     if (
       collectionField.target &&
       collectionFieldOfVariable?.target &&

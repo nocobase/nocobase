@@ -100,7 +100,7 @@ export class FileCollectionTemplate extends CollectionTemplate {
       },
       // 文件的可访问地址
       {
-        interface: 'input',
+        interface: 'url',
         type: 'string',
         name: 'url',
         deletable: false,

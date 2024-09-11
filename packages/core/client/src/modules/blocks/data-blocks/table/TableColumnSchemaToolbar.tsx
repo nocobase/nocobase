@@ -7,9 +7,20 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import _ from 'lodash';
 import React from 'react';
+import { GridRowContext } from '../../../../schema-component/antd/grid/Grid';
 import { SchemaToolbar } from '../../../../schema-settings';
 
 export const TableColumnSchemaToolbar = (props) => {
-  return <SchemaToolbar initializer={false} showBorder={false} showBackground {...props} />;
+  return (
+    <GridRowContext.Provider value={null}>
+      <SchemaToolbar
+        initializer={props.initializer || false}
+        showBorder={false}
+        showBackground
+        {..._.omit(props, 'initializer')}
+      />
+    </GridRowContext.Provider>
+  );
 };

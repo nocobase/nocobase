@@ -7,9 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React from 'react';
+import React, { useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
+import { uniqBy } from 'lodash';
 
-import { Variable, parseCollectionName, useCompile, usePlugin } from '@nocobase/client';
+import { Variable, parseCollectionName, useApp, useCompile, usePlugin } from '@nocobase/client';
 
 import { useFlowContext } from './FlowContext';
 import { NAMESPACE, lang } from './locale';
@@ -51,6 +53,114 @@ export type UseVariableOptions = {
 };
 
 export const defaultFieldNames = { label: 'label', value: 'value', children: 'children' } as const;
+
+const getDateOptions = (t) => [
+  {
+    key: 'yesterday',
+    value: 'yesterday',
+    label: t('Yesterday'),
+  },
+  {
+    key: 'today',
+    value: 'today',
+    label: t('Today'),
+  },
+  {
+    key: 'tomorrow',
+    value: 'tomorrow',
+    label: t('Tomorrow'),
+  },
+  {
+    key: 'lastWeek',
+    value: 'lastWeek',
+    label: t('Last week'),
+  },
+  {
+    key: 'thisWeek',
+    value: 'thisWeek',
+    label: t('This week'),
+  },
+  {
+    key: 'nextWeek',
+    value: 'nextWeek',
+    label: t('Next week'),
+  },
+  {
+    key: 'lastMonth',
+    value: 'lastMonth',
+    label: t('Last month'),
+  },
+  {
+    key: 'thisMonth',
+    value: 'thisMonth',
+    label: t('This month'),
+  },
+  {
+    key: 'nextMonth',
+    value: 'nextMonth',
+    label: t('Next month'),
+  },
+  {
+    key: 'lastQuarter',
+    value: 'lastQuarter',
+    label: t('Last quarter'),
+  },
+  {
+    key: 'thisQuarter',
+    value: 'thisQuarter',
+    label: t('This quarter'),
+  },
+  {
+    key: 'nextQuarter',
+    value: 'nextQuarter',
+    label: t('Next quarter'),
+  },
+  {
+    key: 'lastYear',
+    value: 'lastYear',
+    label: t('Last year'),
+  },
+  {
+    key: 'thisYear',
+    value: 'thisYear',
+    label: t('This year'),
+  },
+  {
+    key: 'nextYear',
+    value: 'nextYear',
+    label: t('Next year'),
+  },
+  {
+    key: 'last7Days',
+    value: 'last7Days',
+    label: t('Last 7 days'),
+  },
+  {
+    key: 'next7Days',
+    value: 'next7Days',
+    label: t('Next 7 days'),
+  },
+  {
+    key: 'last30Days',
+    value: 'last30Days',
+    label: t('Last 30 days'),
+  },
+  {
+    key: 'next30Days',
+    value: 'next30Days',
+    label: t('Next 30 days'),
+  },
+  {
+    key: 'last90Days',
+    value: 'last90Days',
+    label: t('Last 90 days'),
+  },
+  {
+    key: 'next90Days',
+    value: 'next90Days',
+    label: t('Next 90 days'),
+  },
+];
 
 export const nodesOptions = {
   label: `{{t("Node result", { ns: "${NAMESPACE}" })}}`,
@@ -112,6 +222,7 @@ export const systemOptions = {
   label: `{{t("System variables", { ns: "${NAMESPACE}" })}}`,
   value: '$system',
   useOptions({ types, fieldNames = defaultFieldNames }: UseVariableOptions) {
+    const { t } = useTranslation();
     return [
       ...(!types || types.includes('date')
         ? [
@@ -119,6 +230,12 @@ export const systemOptions = {
               key: 'now',
               [fieldNames.label]: lang('System time'),
               [fieldNames.value]: 'now',
+            },
+            {
+              key: 'dateRange',
+              [fieldNames.label]: lang('Date range'),
+              [fieldNames.value]: 'dateRange',
+              children: getDateOptions(t),
             },
           ]
         : []),
@@ -177,7 +294,7 @@ function matchFieldType(field, type: VariableDataType): boolean {
 }
 
 function isAssociationField(field): boolean {
-  return ['belongsTo', 'hasOne', 'hasMany', 'belongsToMany'].includes(field.type);
+  return ['belongsTo', 'hasOne', 'hasMany', 'belongsToMany', 'belongsToArray'].includes(field.type);
 }
 
 function getNextAppends(field, appends: string[] | null): string[] | null {
@@ -259,30 +376,40 @@ export function useWorkflowVariableOptions(options: UseVariableOptions = {}) {
 }
 
 function getNormalizedFields(collectionName, { compile, getCollectionFields }) {
+  // NOTE: for compatibility with legacy version
   const [dataSourceName, collection] = parseCollectionName(collectionName);
+  // NOTE: `dataSourceName` will be ignored in new version
   const fields = getCollectionFields(collection, dataSourceName);
-  const foreignKeyFields: any[] = [];
+  const fkFields: any[] = [];
   const result: any[] = [];
   fields.forEach((field) => {
-    if (field.isForeignKey) {
-      foreignKeyFields.push(field);
+    if (field.isForeignKey && !field.primaryKey) {
+      fkFields.push(field);
     } else {
+      const fkField = fields.find((f) => f.name === field.foreignKey);
+      if (fkField) {
+        fkFields.push(fkField);
+      }
       result.push(field);
     }
   });
+  const foreignKeyFields = uniqBy(fkFields, 'name');
+  // NOTE: for all foreignKey fields
   for (let i = result.length - 1; i >= 0; i--) {
     const field = result[i];
     if (field.type === 'belongsTo') {
-      const foreignKeyField = foreignKeyFields.find((f) => f.name === field.foreignKey);
-      if (foreignKeyField) {
+      const foreignKeyFieldIndex = foreignKeyFields.findIndex((f) => f.name === field.foreignKey);
+      if (foreignKeyFieldIndex > -1) {
+        const foreignKeyField = foreignKeyFields[foreignKeyFieldIndex];
         result.splice(i, 0, {
           ...field,
           ...foreignKeyField,
           uiSchema: {
             ...field.uiSchema,
-            title: field.uiSchema?.title ? `${compile(field.uiSchema?.title)} ID` : foreignKeyField.name,
+            title: foreignKeyField.uiSchema?.title ? compile(foreignKeyField.uiSchema?.title) : foreignKeyField.name,
           },
         });
+        foreignKeyFields.splice(foreignKeyFieldIndex, 1);
       } else {
         result.splice(i, 0, {
           ...field,
@@ -297,21 +424,12 @@ function getNormalizedFields(collectionName, { compile, getCollectionFields }) {
         });
       }
     } else if (field.type === 'context' && field.collectionName === 'users') {
-      const belongsToField =
-        result.find((f) => f.type === 'belongsTo' && f.target === 'users' && f.foreignKey === field.name) ?? {};
-      result.splice(i, 0, {
-        ...field,
-        type: field.dataType,
-        interface: belongsToField.interface,
-        uiSchema: {
-          ...belongsToField.uiSchema,
-          title: belongsToField.uiSchema?.title ? `${compile(belongsToField.uiSchema?.title)} ID` : field.name,
-        },
-      });
+      result.splice(i, 1);
     }
   }
+  result.push(...foreignKeyFields);
 
-  return result.filter((field) => field.interface && !field.hidden);
+  return uniqBy(result, 'name').filter((field) => field.interface && !field.hidden);
 }
 
 function loadChildren(option) {
@@ -379,6 +497,13 @@ export function getCollectionFieldOptions(options): VariableOption[] {
   });
 
   return result;
+}
+
+export function useGetCollectionFields(dataSourceName?) {
+  const app = useApp();
+  const { collectionManager } = app.dataSourceManager.getDataSource(dataSourceName);
+
+  return useCallback((collectionName) => collectionManager.getCollectionFields(collectionName), [collectionManager]);
 }
 
 export function WorkflowVariableInput({ variableOptions, ...props }): JSX.Element {

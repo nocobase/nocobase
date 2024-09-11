@@ -20,12 +20,12 @@ import { SchemaComponent } from '../schema-component/core/SchemaComponent';
 import { useCompile } from '../schema-component/hooks/useCompile';
 import { createDesignable } from '../schema-component/hooks/useDesignable';
 import { useSchemaTemplateManager } from '../schema-templates';
-import { useBlockTemplateContext } from '../schema-templates/BlockTemplate';
+import { useBlockTemplateContext } from '../schema-templates/BlockTemplateProvider';
 import { SchemaSettingsItem, useSchemaSettings } from './SchemaSettings';
 
 export function SchemaSettingsTemplate(props) {
-  const { componentName, collectionName, resourceName, needRender } = props;
-  const { t } = useTranslation();
+  const { componentName, collectionName, resourceName, needRender, useTranslationHooks = useTranslation } = props;
+  const { t } = useTranslationHooks();
   const { getCollection } = useCollectionManager_deprecated();
   const { dn, setVisible, template, fieldSchema } = useSchemaSettings();
   const compile = useCompile();

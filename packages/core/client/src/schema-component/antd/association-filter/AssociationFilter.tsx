@@ -27,14 +27,13 @@ import {
   filterCollapseItemInitializer_deprecated,
 } from '../../../modules/blocks/filter-blocks/collapse/filterCollapseItemInitializer';
 import { associationFilterInitializer } from './AssociationFilter.Initializer';
-
+import { useAssociationFilterHeight } from './hook';
 export const AssociationFilter = (props) => {
   const { token } = useToken();
   const Designer = useDesigner();
   const filedSchema = useFieldSchema();
-
+  const height = useAssociationFilterHeight();
   const { render } = useSchemaInitializerRender(filedSchema['x-initializer'], filedSchema['x-initializer-props']);
-
   return (
     <DndContext>
       <SortableItem
@@ -42,7 +41,7 @@ export const AssociationFilter = (props) => {
           'nb-block-item',
           props.className,
           css`
-            height: 100%;
+            height: ${height ? height + 'px' : '100%'};
             overflow-y: auto;
             position: relative;
             border-radius: ${token.borderRadiusLG}px;

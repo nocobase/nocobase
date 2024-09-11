@@ -11,16 +11,16 @@ import { Field } from '@formily/core';
 import { useField, useFieldSchema } from '@formily/react';
 import { useTranslation } from 'react-i18next';
 import { SchemaSettings } from '../../../../application/schema-settings/SchemaSettings';
+import { useFormBlockType } from '../../../../block-provider/FormBlockProvider';
 import { useFieldComponentName } from '../../../../common/useFieldComponentName';
+import { useCollectionField } from '../../../../data-source';
 import { useDesignable, useFieldModeOptions, useIsAddNewForm } from '../../../../schema-component';
 import { isSubMode } from '../../../../schema-component/antd/association-field/util';
 import {
   useIsFieldReadPretty,
   useIsFormReadPretty,
 } from '../../../../schema-component/antd/form-item/FormItem.Settings';
-import { useCollectionField } from '../../../../data-source';
-import { useFormBlockType } from '../../../../block-provider';
-import { setDefaultSortingRules } from '../SubTable/subTablePopoverComponentFieldSettings';
+import { linkageRules, setDefaultSortingRules } from '../SubTable/subTablePopoverComponentFieldSettings';
 
 const allowMultiple: any = {
   name: 'allowMultiple',
@@ -142,5 +142,6 @@ export const subformComponentFieldSettings = new SchemaSettings({
       },
     },
     setDefaultSortingRules,
+    linkageRules,
   ],
 });

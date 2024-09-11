@@ -7,12 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { renderApp } from '@nocobase/test/client';
+import { renderAppOptions } from '@nocobase/test/client';
 import { Pagination } from '@nocobase/client';
 
 describe('Pagination', () => {
   it('renders without errors', async () => {
-    const { container } = await renderApp({
+    const { container } = await renderAppOptions({
       Component: Pagination,
       props: {
         total: 20,
@@ -122,7 +122,7 @@ describe('Pagination', () => {
   });
 
   it('hides when hidden prop is true', async () => {
-    const { container } = await renderApp({
+    const { container } = await renderAppOptions({
       Component: Pagination,
       props: {
         hidden: true,

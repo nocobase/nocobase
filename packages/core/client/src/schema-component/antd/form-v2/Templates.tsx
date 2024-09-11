@@ -14,8 +14,7 @@ import _ from 'lodash';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient } from '../../../api-client';
-import { findFormBlock } from '../../../block-provider';
-import { useFormBlockContext } from '../../../block-provider/FormBlockProvider';
+import { findFormBlock, useFormBlockContext } from '../../../block-provider/FormBlockProvider';
 import { useCollectionManager_deprecated } from '../../../collection-manager';
 import { compatibleDataId } from '../../../schema-settings/DataTemplates/FormDataTemplates';
 import { useToken } from '../__builtins__';
@@ -44,7 +43,7 @@ export interface ITemplate {
   display: boolean;
 }
 
-const useDataTemplates = () => {
+export const useFormDataTemplates = () => {
   const fieldSchema = useFieldSchema();
   const { t } = useTranslation();
   const { duplicateData } = useFormBlockContext();
@@ -93,9 +92,9 @@ const useDataTemplates = () => {
   };
 };
 
-export const Templates = ({ style = {}, form }) => {
+export const Templates = ({ style = {}, form }: { style?: React.CSSProperties; form?: any }) => {
   const { token } = useToken();
-  const { templates, display, enabled, defaultTemplate } = useDataTemplates();
+  const { templates, display, enabled, defaultTemplate } = useFormDataTemplates();
   const { getCollectionJoinField } = useCollectionManager_deprecated();
   const templateOptions = compatibleDataId(templates);
   const [targetTemplate, setTargetTemplate] = useState(defaultTemplate?.key || 'none');
@@ -103,7 +102,7 @@ export const Templates = ({ style = {}, form }) => {
   const api = useAPIClient();
   const { t } = useTranslation();
   useEffect(() => {
-    if (enabled && defaultTemplate) {
+    if (enabled && defaultTemplate && form) {
       form.__template = true;
       if (defaultTemplate.key === 'duplicate') {
         handleTemplateDataChange(defaultTemplate.dataId, defaultTemplate);
@@ -116,7 +115,13 @@ export const Templates = ({ style = {}, form }) => {
     }
   }, [templateOptions]);
   const wrapperStyle = useMemo(() => {
-    return { display: 'flex', alignItems: 'center', backgroundColor: token.colorFillAlter, padding: '1em', ...style };
+    return {
+      display: 'flex',
+      alignItems: 'center',
+      backgroundColor: token.colorFillAlter,
+      padding: token.padding,
+      ...style,
+    };
   }, [style, token.colorFillAlter]);
 
   const labelStyle = useMemo<{

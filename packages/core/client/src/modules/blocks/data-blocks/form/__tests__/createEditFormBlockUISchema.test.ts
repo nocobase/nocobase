@@ -36,9 +36,6 @@ describe('createEditFormBlockUISchema', () => {
                 "x-component": "ActionBar",
                 "x-component-props": {
                   "layout": "one-column",
-                  "style": {
-                    "marginTop": 24,
-                  },
                 },
                 "x-initializer": "editForm:configureActions",
               },
@@ -92,9 +89,6 @@ describe('createEditFormBlockUISchema', () => {
                 "x-component": "ActionBar",
                 "x-component-props": {
                   "layout": "one-column",
-                  "style": {
-                    "marginTop": 24,
-                  },
                 },
                 "x-initializer": "editForm:configureActions",
               },

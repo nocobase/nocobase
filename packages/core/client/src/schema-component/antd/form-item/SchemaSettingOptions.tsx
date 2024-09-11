@@ -13,9 +13,10 @@ import { ISchema, useField, useFieldSchema } from '@formily/react';
 import _ from 'lodash';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { useFormBlockContext } from '../../../block-provider';
 import { useOperators } from '../../../block-provider/CollectOperators';
+import { useFormBlockContext } from '../../../block-provider/FormBlockProvider';
 import { useCollectionManager_deprecated, useCollection_deprecated } from '../../../collection-manager';
+import { useCollectOperator } from '../../../modules/blocks/filter-blocks/form/hooks/useCollectOperator';
 import { SchemaSettingsModalItem, SchemaSettingsSelectItem, SchemaSettingsSwitchItem } from '../../../schema-settings';
 import { isPatternDisabled } from '../../../schema-settings/isPatternDisabled';
 import { useCompile, useDesignable, useFieldModeOptions } from '../../hooks';
@@ -187,6 +188,7 @@ export const EditValidationRules = () => {
   const collectionField = getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field']);
   const interfaceConfig = getInterface(collectionField?.interface);
   const validateSchema = interfaceConfig?.['validateSchema']?.(fieldSchema);
+  const customPredicate = (value) => value !== null && value !== undefined && !Number.isNaN(value);
 
   return form && !form?.readPretty && validateSchema ? (
     <SchemaSettingsModalItem
@@ -279,7 +281,7 @@ export const EditValidationRules = () => {
       onSubmit={(v) => {
         const rules = [];
         for (const rule of v.rules) {
-          rules.push(_.pickBy(rule, _.identity));
+          rules.push(_.pickBy(rule, customPredicate));
         }
         const schema = {
           ['x-uid']: fieldSchema['x-uid'],
@@ -301,6 +303,7 @@ export const EditValidationRules = () => {
         }
         const concatValidator = _.concat([], collectionField?.uiSchema?.['x-validator'] || [], rules);
         field.validator = concatValidator;
+        field.required = fieldSchema.required as any;
         fieldSchema['x-validator'] = rules;
         schema['x-validator'] = rules;
         dn.emit('patch', {
@@ -472,6 +475,9 @@ export const EditPattern = () => {
  * 该方法确保 operator 一定有值（需要在 FormItem 中调用）
  */
 export const useEnsureOperatorsValid = () => {
+  // TODO: 等给 Schema 中都加上 'x-use-decorator-props': 'useFormItemProps' 后，可以删除这个方法
+  useCollectOperator();
+
   const fieldSchema = useFieldSchema();
   const operatorList = useOperatorList();
   const { getOperators, collectOperator } = useOperators();

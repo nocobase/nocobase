@@ -13,22 +13,23 @@ import { useParsedFilter } from '../../../../../block-provider/hooks/useParsedFi
 import { useParentRecordCommon } from '../../../useParentRecordCommon';
 
 export const useTableBlockDecoratorProps = (props) => {
-  const params = useTableBlockParams(props);
+  const { params, parseVariableLoading } = useTableBlockParams(props);
   const parentRecord = useParentRecordCommon(props.association);
 
   return {
     params,
     parentRecord,
+    parseVariableLoading,
   };
 };
 
 export function useTableBlockParams(props) {
   const fieldSchema = useFieldSchema();
-  const { filter: parsedFilter } = useParsedFilter({
+  const { filter: parsedFilter, parseVariableLoading } = useParsedFilter({
     filterOption: props.params?.filter,
   });
 
-  return useMemo(() => {
+  const params = useMemo(() => {
     const params = props.params || {};
 
     // 1. sort
@@ -45,4 +46,6 @@ export function useTableBlockParams(props) {
 
     return paramsWithFilter;
   }, [fieldSchema, parsedFilter, props.dragSort, props.params]);
+
+  return { params, parseVariableLoading };
 }

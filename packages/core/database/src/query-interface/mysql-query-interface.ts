@@ -91,33 +91,34 @@ export default class MysqlQueryInterface extends QueryInterface {
   async showTableDefinition(tableInfo: TableInfo): Promise<any> {
     const { tableName } = tableInfo;
 
-    const sql = `SHOW CREATE TABLE ${tableName}`;
+    const sql = `SHOW CREATE TABLE ${this.db.utils.quoteTable(tableName)}`;
 
     const results = await this.db.sequelize.query(sql, { type: 'SELECT' });
 
     return results[0]['Create Table'];
   }
 
-  async getAutoIncrementInfo(options: { tableInfo: TableInfo; fieldName: string }): Promise<{
+  async getAutoIncrementInfo(options: { tableInfo: TableInfo; fieldName: string; transaction: Transaction }): Promise<{
     seqName?: string;
     currentVal: number;
   }> {
-    const { tableInfo, fieldName } = options;
+    const { tableInfo, fieldName, transaction } = options;
 
     const sql = `SELECT AUTO_INCREMENT as currentVal
                  FROM information_schema.tables
                  WHERE table_schema = DATABASE()
                    AND table_name = '${tableInfo.tableName}';`;
 
-    const results = await this.db.sequelize.query(sql, { type: 'SELECT' });
+    const results = await this.db.sequelize.query(sql, { type: 'SELECT', transaction });
 
     let currentVal = results[0]['currentVal'] as number;
 
     if (currentVal === null) {
       // use max value of field instead
-      const maxSql = `SELECT MAX(${fieldName}) as currentVal
-                      FROM ${tableInfo.tableName};`;
-      const maxResults = await this.db.sequelize.query(maxSql, { type: 'SELECT' });
+      const maxSql = `SELECT MAX(\`${fieldName}\`) as currentVal
+                      FROM \`${tableInfo.tableName}\`;`;
+
+      const maxResults = await this.db.sequelize.query(maxSql, { type: 'SELECT', transaction });
       currentVal = maxResults[0]['currentVal'] as number;
     }
 
@@ -135,7 +136,9 @@ export default class MysqlQueryInterface extends QueryInterface {
   }): Promise<void> {
     const { tableInfo, columnName, seqName, currentVal, transaction } = options;
 
-    const sql = `ALTER TABLE ${this.quoteIdentifier(tableInfo.tableName)} AUTO_INCREMENT = ${currentVal};`;
-    await this.db.sequelize.query(sql, { transaction });
+    if (currentVal) {
+      const sql = `ALTER TABLE ${this.quoteIdentifier(tableInfo.tableName)} AUTO_INCREMENT = ${currentVal};`;
+      await this.db.sequelize.query(sql, { transaction });
+    }
   }
 }

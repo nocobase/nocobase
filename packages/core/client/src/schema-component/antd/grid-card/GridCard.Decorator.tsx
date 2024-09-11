@@ -32,7 +32,8 @@ const InternalGridCardBlockProvider = (props) => {
 
   useEffect(() => {
     if (!service?.loading) {
-      form.setValuesIn(field.address.concat('list').toString(), service?.data?.data);
+      // @ts-ignore
+      form.fields[field.address.concat('list').toString()]?.setValue(service?.data?.data);
     }
   }, [field.address, form, service?.data?.data, service?.loading]);
 
@@ -62,7 +63,7 @@ const useCompatGridCardBlockParams = (props) => {
 
   // 因为 x-use-decorator-props 的值是固定的，所以可以在条件中使用 hooks
   if (schema['x-use-decorator-props']) {
-    return props.params;
+    return { params: props.params, parseVariableLoading: props.parseVariableLoading };
   } else {
     // eslint-disable-next-line react-hooks/rules-of-hooks
     return useGridCardBlockParams(props);
@@ -70,7 +71,11 @@ const useCompatGridCardBlockParams = (props) => {
 };
 
 export const GridCardBlockProvider = withDynamicSchemaProps((props) => {
-  const params = useCompatGridCardBlockParams(props);
+  const { params, parseVariableLoading } = useCompatGridCardBlockParams(props);
+
+  if (parseVariableLoading) {
+    return null;
+  }
 
   return (
     <BlockProvider name="grid-card" {...props} params={params}>

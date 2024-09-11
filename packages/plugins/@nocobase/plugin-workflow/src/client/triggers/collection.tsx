@@ -7,17 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import {
-  SchemaInitializerItemType,
-  useCollectionDataSource,
-  useCollectionManager_deprecated,
-  useCompile,
-} from '@nocobase/client';
+import { SchemaInitializerItemType, parseCollectionName, useCollectionDataSource, useCompile } from '@nocobase/client';
 import { CollectionBlockInitializer } from '../components/CollectionBlockInitializer';
 import { FieldsSelect } from '../components/FieldsSelect';
 import { NAMESPACE, lang } from '../locale';
 import { appends, collection, filter } from '../schemas/collection';
-import { getCollectionFieldOptions } from '../variable';
+import { getCollectionFieldOptions, useGetCollectionFields } from '../variable';
 import { useWorkflowAnyExecuted } from '../hooks';
 import { Trigger } from '.';
 
@@ -34,6 +29,36 @@ const collectionModeOptions = [
   { label: `{{t("After record added or updated", { ns: "${NAMESPACE}" })}}`, value: COLLECTION_TRIGGER_MODE.SAVED },
   { label: `{{t("After record deleted", { ns: "${NAMESPACE}" })}}`, value: COLLECTION_TRIGGER_MODE.DELETED },
 ];
+
+function useVariables(config, options) {
+  const [dataSourceName, collection] = parseCollectionName(config.collection);
+  const compile = useCompile();
+  const getCollectionFields = useGetCollectionFields(dataSourceName);
+
+  const rootFields = [
+    {
+      collectionName: collection,
+      name: 'data',
+      type: 'hasOne',
+      target: collection,
+      uiSchema: {
+        title: lang('Trigger data'),
+      },
+    },
+  ];
+  // const depth = config.appends?.length
+  //   ? config.appends.reduce((max, item) => Math.max(max, item.split('.').length), 1) + 1
+  //   : 1;
+  const result = getCollectionFieldOptions({
+    // depth,
+    appends: ['data', ...(config.appends?.map((item) => `data.${item}`) || [])],
+    ...options,
+    fields: rootFields,
+    compile,
+    getCollectionFields,
+  });
+  return result;
+}
 
 export default class extends Trigger {
   title = `{{t("Collection event", { ns: "${NAMESPACE}" })}}`;
@@ -135,10 +160,10 @@ export default class extends Trigger {
       'x-component-props': {},
       'x-reactions': [
         {
-          dependencies: ['collection'],
+          dependencies: ['collection', 'mode'],
           fulfill: {
             state: {
-              visible: '{{!!$deps[0]}}',
+              visible: `{{!!$deps[0] && !($deps[1] & ${COLLECTION_TRIGGER_MODE.DELETED})}}`,
             },
           },
         },
@@ -166,35 +191,7 @@ export default class extends Trigger {
   components = {
     FieldsSelect,
   };
-  useVariables(config, options) {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    const compile = useCompile();
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    const { getCollectionFields } = useCollectionManager_deprecated();
-    const rootFields = [
-      {
-        collectionName: config.collection,
-        name: 'data',
-        type: 'hasOne',
-        target: config.collection,
-        uiSchema: {
-          title: lang('Trigger data'),
-        },
-      },
-    ];
-    // const depth = config.appends?.length
-    //   ? config.appends.reduce((max, item) => Math.max(max, item.split('.').length), 1) + 1
-    //   : 1;
-    const result = getCollectionFieldOptions({
-      // depth,
-      appends: ['data', ...(config.appends?.map((item) => `data.${item}`) || [])],
-      ...options,
-      fields: rootFields,
-      compile,
-      getCollectionFields,
-    });
-    return result;
-  }
+  useVariables = useVariables;
   useInitializers(config): SchemaInitializerItemType | null {
     if (!config.collection) {
       return null;

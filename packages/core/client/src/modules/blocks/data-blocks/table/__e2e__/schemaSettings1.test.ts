@@ -31,7 +31,6 @@ test.describe('table block schema settings', () => {
       supportedOptions: [
         'Edit block title',
         'Enable drag and drop sorting',
-        'Fix block',
         'Set the data scope',
         'Records per page',
         'Connect data blocks',
@@ -39,32 +38,6 @@ test.describe('table block schema settings', () => {
         'Delete',
       ],
     });
-  });
-
-  test('fix block', async ({ page, mockPage }) => {
-    await mockPage(oneTableBlockWithAddNewAndViewAndEditAndBasicFields).goto();
-
-    const tableSize = await page.getByLabel('block-item-CardItem-general-table').boundingBox();
-
-    await showSettingsMenu(page);
-    await page.getByRole('menuitem', { name: 'Fix block' }).click();
-    await expect(page.getByRole('menuitem', { name: 'Fix block' }).getByRole('switch')).toBeChecked();
-
-    // 等待页面重新渲染
-    await page.waitForTimeout(1000);
-    const fixedTableSize = await page.getByLabel('block-item-CardItem-general-table').boundingBox();
-    expect(fixedTableSize.height).toBeGreaterThan(570);
-    expect(fixedTableSize.height).toBeLessThan(575);
-
-    // 取消固定
-    await page.getByRole('menuitem', { name: 'Fix block' }).click();
-    await expect(page.getByRole('menuitem', { name: 'Fix block' }).getByRole('switch')).not.toBeChecked();
-
-    // 等待页面重新渲染
-    await page.waitForTimeout(100);
-    const unfixedTableSize = await page.getByLabel('block-item-CardItem-general-table').boundingBox();
-
-    expect(unfixedTableSize.height).toBe(tableSize.height);
   });
 
   test('records per page', async ({ page, mockPage, mockRecords }) => {
@@ -192,7 +165,7 @@ test.describe('table block schema settings', () => {
       await page.getByTestId('select-filter-field').click();
       await page.getByRole('menuitemcheckbox', { name: 'singleLineText' }).click();
       await page.getByLabel('variable-button').click();
-      await expectSupportedVariables(page, ['Constant', 'Current user', 'Current role', 'Date variables']);
+      await expectSupportedVariables(page, ['Constant', 'Current user', 'Current role', 'API token', 'Date variables']);
       await page.getByRole('menuitemcheckbox', { name: 'Current user' }).click();
       await page.getByRole('menuitemcheckbox', { name: 'Nickname' }).click();
       await page.getByRole('button', { name: 'OK', exact: true }).click();
@@ -400,7 +373,12 @@ test.describe('table block schema settings', () => {
         .dragTo(page.getByLabel('block-item-CardItem-roles-table'));
 
       // 3. 创建的详情区块应该立即出现在 Connect data blocks 的下拉菜单中
-      await page.getByLabel('block-item-CardItem-roles-table').hover();
+      await page.getByLabel('block-item-CardItem-roles-table').hover({
+        position: {
+          x: 10,
+          y: 10,
+        },
+      });
       await page.getByLabel('designer-schema-settings-CardItem-blockSettings:table-roles').hover();
       await page.getByRole('menuitem', { name: 'Connect data blocks right' }).hover();
       await page.getByRole('menuitem', { name: 'Roles #' }).click();

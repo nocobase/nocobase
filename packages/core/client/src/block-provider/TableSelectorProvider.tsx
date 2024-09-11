@@ -61,10 +61,10 @@ export const TableSelectorParamsProvider = ({ params, children }: { params: Para
 };
 
 const InternalTableSelectorProvider = (props) => {
-  const { params, rowKey, extraFilter } = props;
+  const { params, rowKey, extraFilter, expandFlag: propsExpandFlag = false } = props;
   const field = useField();
   const { resource, service } = useBlockRequestContext();
-  const [expandFlag, setExpandFlag] = useState(false);
+  const [expandFlag, setExpandFlag] = useState(propsExpandFlag);
   const parentRecordData = useCollectionParentRecordData();
   // if (service.loading) {
   //   return <Spin />;
@@ -257,11 +257,11 @@ export const TableSelectorProvider = withDynamicSchemaProps((props: TableSelecto
     console.error(err);
   }
 
-  const { filter: parsedFilter } = useParsedFilter({
+  const { filter: parsedFilter, parseVariableLoading } = useParsedFilter({
     filterOption: params?.filter,
   });
 
-  if (!_.isEmpty(params?.filter) && _.isEmpty(parsedFilter)) {
+  if ((!_.isEmpty(params?.filter) && _.isEmpty(parsedFilter)) || parseVariableLoading) {
     return null;
   }
 
@@ -319,9 +319,10 @@ export const useTableSelectorProps = () => {
     dragSort: false,
     rowKey: ctx.rowKey || 'id',
     pagination: fieldSchema?.['x-component-props']?.pagination === false ? false : field.componentProps.pagination,
-    onRowSelectionChange(selectedRowKeys, selectedRows) {
+    onRowSelectionChange(selectedRowKeys, selectedRowData) {
       ctx.field.data = ctx?.field?.data || {};
       ctx.field.data.selectedRowKeys = selectedRowKeys;
+      ctx.field.data.selectedRowData = selectedRowData;
     },
     async onRowDragEnd({ from, to }) {
       await ctx.resource.move({

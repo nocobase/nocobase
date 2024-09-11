@@ -1,29 +1,22 @@
-
-
 import { ISchema, useForm } from '@formily/react';
+import { notification } from 'antd';
+import { default as React } from 'react';
+import { Action, FormItem, FormV2, Input, Password } from '../../..';
+import { Application } from '../../../../application/Application';
+import { Plugin } from '../../../../application/Plugin';
+import { useFilterByTk } from '../../../../block-provider/BlockProvider';
+import { BlockSchemaComponentProvider } from '../../../../block-provider/BlockSchemaComponentProvider';
+import { FormBlockProvider, useFormBlockContext } from '../../../../block-provider/FormBlockProvider';
+import { CollectionPlugin } from '../../../../collection-manager/collectionPlugin';
+import { CollectionField } from '../../../../data-source/collection-field/CollectionField';
+import { LocalDataSource } from '../../../../data-source/data-source/DataSource';
 import {
-  Action,
-  Application,
-  BlockSchemaComponentProvider,
-  CollectionField,
-  CollectionPlugin,
-  CurrentUserProvider,
   DEFAULT_DATA_SOURCE_KEY,
   DEFAULT_DATA_SOURCE_TITLE,
-  FormBlockProvider,
-  FormItem,
-  FormV2,
-  Input,
-  LocalDataSource,
-  Password,
-  Plugin,
-  SchemaComponent,
-  useFormBlockContext,
-} from '@nocobase/client';
-import { notification } from 'antd';
-import React from 'react';
-import { useFilterByTk } from '../../../../block-provider/BlockProvider';
+} from '../../../../data-source/data-source/DataSourceManager';
 import { mockAPIClient } from '../../../../testUtils';
+import { CurrentUserProvider } from '../../../../user/CurrentUserProvider';
+import { SchemaComponent } from '../../../core/SchemaComponent';
 import collections from './collections';
 
 const { apiClient, mockRequest } = mockAPIClient();
@@ -71,6 +64,7 @@ const schema: ISchema = {
         collection: 'users',
         resource: 'users',
         action: 'get',
+        filterByTk: 1,
       },
       properties: {
         form: {

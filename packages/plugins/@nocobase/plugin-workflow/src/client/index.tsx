@@ -8,8 +8,10 @@
  */
 
 import React from 'react';
+import { useFieldSchema } from '@formily/react';
+import { isValid } from '@formily/shared';
 
-import { Plugin } from '@nocobase/client';
+import { Plugin, useCompile, WorkflowConfig } from '@nocobase/client';
 import { Registry } from '@nocobase/utils/client';
 
 import { ExecutionPage } from './ExecutionPage';
@@ -33,17 +35,18 @@ import { customizeSubmitToWorkflowActionSettings } from './settings/customizeSub
 export default class PluginWorkflowClient extends Plugin {
   triggers = new Registry<Trigger>();
   instructions = new Registry<Instruction>();
-  getTriggersOptions = () => {
+  useTriggersOptions = () => {
+    const compile = useCompile();
     return Array.from(this.triggers.getEntities()).map(([value, { title, ...options }]) => ({
       value,
-      label: title,
+      label: compile(title),
       color: 'gold',
       options,
     }));
   };
 
   isWorkflowSync(workflow) {
-    return this.triggers.get(workflow.type).sync ?? workflow.sync;
+    return this.triggers.get(workflow.type)?.sync ?? workflow.sync;
   }
 
   registerTrigger(type: string, trigger: Trigger | { new (): Trigger }) {
@@ -90,6 +93,14 @@ export default class PluginWorkflowClient extends Plugin {
     });
 
     this.app.schemaSettingsManager.add(customizeSubmitToWorkflowActionSettings);
+
+    this.app.schemaSettingsManager.addItem('actionSettings:delete', 'workflowConfig', {
+      Component: WorkflowConfig,
+      useVisible() {
+        const fieldSchema = useFieldSchema();
+        return isValid(fieldSchema?.['x-action-settings']?.triggerWorkflows);
+      },
+    });
 
     this.registerTrigger('collection', CollectionTrigger);
     this.registerTrigger('schedule', ScheduleTrigger);

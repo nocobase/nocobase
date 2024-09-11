@@ -10,7 +10,7 @@
 import { uid } from '@formily/shared';
 import { Page, createBlockInPage, expect, oneEmptyForm, test } from '@nocobase/test/e2e';
 import { oneEmptyTableWithUsers } from '../../../details-multi/__e2e__/templatesOfBug';
-import { T3106, T3469, oneFormWithInheritFields } from './templatesOfBug';
+import { T3106, T3469, T4350, oneFormWithInheritFields } from './templatesOfBug';
 
 const deleteButton = async (page: Page, name: string) => {
   await page.getByRole('button', { name }).hover();
@@ -68,7 +68,7 @@ test.describe('configure fields', () => {
 
     await page.mouse.move(300, 0);
     await expect(page.getByLabel('block-item-CollectionField-general-form-general.id-ID')).toBeVisible();
-    await expect(page.getByLabel('block-item-CollectionField-general-form-general.manyToOne.nickname')).toBeVisible();
+    await expect(page.getByLabel('block-item-CollectionField-general-form-users.nickname-Nickname')).toBeVisible();
 
     // delete fields
     await page.getByLabel('schema-initializer-Grid-form:configureFields-general').hover();
@@ -147,6 +147,33 @@ test.describe('configure actions', () => {
     await expect(
       page.getByLabel('block-item-CollectionField-users-form-users.nickname-Nickname').getByRole('textbox'),
     ).toHaveValue('test name');
+  });
+
+  // https://nocobase.height.app/T-4350/description
+  test('subTable: should clear subTable after submit', async ({ page, mockPage }) => {
+    await mockPage(T4350).goto();
+
+    // 1. 填入 Nickname
+    await page
+      .getByLabel('block-item-CollectionField-users-form-users.nickname-Nickname')
+      .getByRole('textbox')
+      .fill('123456');
+
+    // 2. 添加一行子表格数据，其中显示刚填入的值
+    await page.getByRole('button', { name: 'Add new' }).click();
+    await expect(
+      page.getByLabel('block-item-CollectionField-roles-form-roles.name-Role UID').getByRole('textbox'),
+    ).toHaveValue('123456');
+    await expect(
+      page.getByLabel('block-item-CollectionField-roles-form-roles.title-Role name').getByRole('textbox'),
+    ).toHaveValue('123456');
+
+    // 3. 点击提交按钮，子表格数据应该被清空
+    await page.getByLabel('action-Action-Submit-submit-').click();
+    await page.waitForTimeout(500);
+    await expect(
+      page.getByLabel('block-item-CollectionField-roles-form-roles.title-Role name').getByRole('textbox'),
+    ).toBeHidden();
   });
 
   // https://nocobase.height.app/T-3469

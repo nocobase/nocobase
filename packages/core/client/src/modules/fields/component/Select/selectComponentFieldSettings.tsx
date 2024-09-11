@@ -13,7 +13,7 @@ import _ from 'lodash';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { SchemaSettings } from '../../../../application/schema-settings/SchemaSettings';
-import { useFormBlockContext } from '../../../../block-provider';
+import { useFormBlockContext } from '../../../../block-provider/FormBlockProvider';
 import { useCollectionManager_deprecated, useCollection_deprecated } from '../../../../collection-manager';
 import { useFieldComponentName } from '../../../../common/useFieldComponentName';
 import { useCollectionField } from '../../../../data-source';
@@ -33,6 +33,7 @@ import { SchemaSettingsDataScope } from '../../../../schema-settings/SchemaSetti
 import { SchemaSettingsSortingRule } from '../../../../schema-settings/SchemaSettingsSortingRule';
 import { useIsShowMultipleSwitch } from '../../../../schema-settings/hooks/useIsShowMultipleSwitch';
 import { useLocalVariables, useVariables } from '../../../../variables';
+import { useOpenModeContext } from '../../../popup/OpenModeProvider';
 
 const enableLink = {
   name: 'enableLink',
@@ -162,6 +163,7 @@ const quickCreate: any = {
   name: 'quickCreate',
   type: 'select',
   useComponentProps() {
+    const { defaultOpenMode } = useOpenModeContext();
     const { t } = useTranslation();
     const field = useField<Field>();
     const fieldSchema = useFieldSchema();
@@ -184,7 +186,7 @@ const quickCreate: any = {
           }, null);
 
           if (!hasAddNew) {
-            const addNewActionschema = {
+            const addNewActionSchema = {
               'x-action': 'create',
               'x-acl-action': 'create',
               title: "{{t('Add new')}}",
@@ -194,12 +196,12 @@ const quickCreate: any = {
               'x-component': 'Action',
               'x-decorator': 'ACLActionProvider',
               'x-component-props': {
-                openMode: 'drawer',
+                openMode: defaultOpenMode,
                 type: 'default',
                 component: 'CreateRecordAction',
               },
             };
-            insertAdjacent('afterBegin', addNewActionschema);
+            insertAdjacent('afterBegin', addNewActionSchema);
           }
         }
         const schema = {
@@ -362,9 +364,10 @@ export const selectComponentFieldSettings = new SchemaSettings({
     {
       ...allowMultiple,
       useVisible() {
+        const isFieldReadPretty = useIsFieldReadPretty();
         const isAssociationField = useIsAssociationField();
         const IsShowMultipleSwitch = useIsShowMultipleSwitch();
-        return isAssociationField && IsShowMultipleSwitch();
+        return !isFieldReadPretty && isAssociationField && IsShowMultipleSwitch();
       },
     },
     {

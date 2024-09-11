@@ -88,8 +88,12 @@ describe('createGanttBlockSchema', () => {
                     "x-action-column": "actions",
                     "x-component": "TableV2.Column",
                     "x-decorator": "TableV2.Column.ActionBar",
-                    "x-designer": "TableV2.ActionColumnDesigner",
                     "x-initializer": "table:configureItemActions",
+                    "x-settings": "fieldSettings:TableColumn",
+                    "x-toolbar": "TableColumnSchemaToolbar",
+                    "x-toolbar-props": {
+                      "initializer": "table:configureItemActions",
+                    },
                   },
                 },
                 "type": "array",

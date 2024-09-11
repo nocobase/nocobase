@@ -12,7 +12,7 @@ import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CompatibleSchemaInitializer } from '../../../../application/schema-initializer/CompatibleSchemaInitializer';
 import { SchemaInitializerChildren } from '../../../../application/schema-initializer/components/SchemaInitializerChildren';
-import { useCompile } from '../../../../schema-component';
+import { useCompile } from '../../../../schema-component/hooks/useCompile';
 import {
   useAssociatedTableColumnInitializerFields,
   useInheritsTableColumnInitializerFields,
@@ -32,7 +32,7 @@ const ParentCollectionFields = () => {
         type: 'itemGroup',
         divider: true,
         title: t(`Parent collection fields`) + '(' + compile(`${Object.keys(inherit)[0]}`) + ')',
-        children: Object.values(inherit)[0].filter((v: any) => !v?.field?.isForeignKey),
+        children: Object.values(inherit)[0],
       });
   });
   return <SchemaInitializerChildren>{res}</SchemaInitializerChildren>;

@@ -165,6 +165,24 @@ describe('example', () => {
     await app.destroy();
   });
 
+  it('should call beforeAddDataSource hook', async () => {
+    const hook = vi.fn();
+
+    const app = await createMockServer({
+      acl: false,
+      resourcer: {
+        prefix: '/api/',
+      },
+      name: 'update-filter',
+    });
+
+    app.dataSourceManager.beforeAddDataSource(hook);
+    // it should be called on main datasource
+    expect(hook).toBeCalledTimes(1);
+
+    await app.destroy();
+  });
+
   it('should register every datasource instance', async () => {
     const hook = vi.fn();
 

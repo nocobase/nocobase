@@ -15,18 +15,18 @@ import {
   IField,
   RecordProvider,
   SchemaComponent,
-  tval,
   useAPIClient,
   useActionContext,
+  useCancelAction,
   useCollectionManager_deprecated,
   useCompile,
+  useDataSourceManager,
   useRecord,
   useRequest,
   useResourceActionContext,
   useResourceContext,
-  useCancelAction,
-  useDataSourceManager,
 } from '@nocobase/client';
+import { tval } from '@nocobase/utils/client';
 import cloneDeep from 'lodash/cloneDeep';
 import omit from 'lodash/omit';
 import React, { useEffect, useState } from 'react';
@@ -69,16 +69,18 @@ const getSchema = (schema: IField, record: any, compile, getContainer): ISchema 
         properties: {
           ...omit(properties, 'category', 'inherits', 'moreOptions'),
           filterTargetKey: {
-            title: `{{ t("Filter target key",{ ns: "${NAMESPACE}" }) }}`,
+            title: `{{ t("Record unique key") }}`,
             type: 'single',
             description: tval(
-              'Filter data based on the specific field, with the requirement that the field value must be unique.',
+              'If a collection lacks a primary key, you must configure a unique record key to locate row records within a block, failure to configure this will prevent the creation of data blocks for the collection.',
               { ns: NAMESPACE },
             ),
             'x-decorator': 'FormItem',
             'x-component': 'Select',
+            'x-component-props': {
+              multiple: true,
+            },
             enum: '{{filterTargetKeyOptions}}',
-            'x-visible': '{{!!isView}}',
           },
           footer: {
             type: 'void',

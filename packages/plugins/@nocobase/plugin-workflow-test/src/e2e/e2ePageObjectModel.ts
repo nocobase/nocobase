@@ -12,6 +12,8 @@ export class CreateWorkFlow {
   readonly page: Page;
   name: Locator;
   triggerType: Locator;
+  synchronouslyRadio: Locator;
+  asynchronouslyRadio: Locator;
   description: Locator;
   autoDeleteHistory: Locator;
   submitButton: Locator;
@@ -20,6 +22,8 @@ export class CreateWorkFlow {
     this.page = page;
     this.name = page.getByLabel('block-item-CollectionField-workflows-Name').getByRole('textbox');
     this.triggerType = page.getByTestId('select-single');
+    this.synchronouslyRadio = page.getByLabel('Synchronously', { exact: true });
+    this.asynchronouslyRadio = page.getByLabel('Asynchronously', { exact: true });
     this.description = page.getByTestId('description-item').getByRole('textbox');
     this.autoDeleteHistory = page.getByTestId('select-multiple');
     this.submitButton = page.getByLabel('action-Action-Submit-workflows');
@@ -97,14 +101,16 @@ export class ApprovalTriggerNode {
   configureFieldsButton: Locator;
   configureActionsButton: Locator;
   saveDraftSwitch: Locator;
+  withdrawSwitch: Locator;
+  preloadAssociationsDropDown: Locator;
   submitButton: Locator;
   cancelButton: Locator;
   addNodeButton: Locator;
   constructor(page: Page, triggerName: string, collectionName: string) {
     this.page = page;
-    this.node = page.getByText('TriggeraConfigure');
-    this.nodeTitle = page.locator('textarea').filter({ hasText: triggerName });
-    this.nodeConfigure = page.getByRole('button', { name: 'Configure' });
+    this.node = page.getByLabel(`Trigger-${triggerName}`);
+    this.nodeTitle = page.getByLabel(`Trigger-${triggerName}`).getByRole('textbox');
+    this.nodeConfigure = page.getByLabel(`Trigger-${triggerName}`).getByRole('button', { name: 'Configure' });
     this.collectionDropDown = page
       .getByLabel('block-item-DataSourceCollectionCascader-workflows-Collection')
       .locator('.ant-select-selection-search-input');
@@ -121,6 +127,8 @@ export class ApprovalTriggerNode {
       `schema-initializer-ActionBar-ApprovalApplyAddActionButton-${collectionName}`,
     );
     this.saveDraftSwitch = page.getByRole('menuitem', { name: 'Save draft' }).getByRole('switch');
+    this.withdrawSwitch = page.getByRole('menuitem', { name: 'Withdraw' }).getByRole('switch');
+    this.preloadAssociationsDropDown = page.getByTestId('select-field-Preload associations');
     this.submitButton = page.getByLabel('action-Action-Submit-workflows');
     this.cancelButton = page.getByLabel('action-Action-Cancel-workflows');
     this.addNodeButton = this.addNodeButton = page.getByLabel('add-button', { exact: true });
@@ -133,10 +141,13 @@ export class ApprovalPassthroughModeNode {
   nodeTitle: Locator;
   nodeConfigure: Locator;
   addAssigneesButton: Locator;
+  addSelectAssigneesMenu: Locator;
+  addQueryAssigneesMenu: Locator;
   assigneesDropDown: Locator;
   OrRadio: Locator;
   AndRadio: Locator;
   votingRadio: Locator;
+  votingThresholdEditBox: Locator;
   parallellyRadio: Locator;
   sequentiallyRadio: Locator;
   goToconfigureButton: Locator;
@@ -161,17 +172,22 @@ export class ApprovalPassthroughModeNode {
       .getByLabel(`Approval-${nodeName}`, { exact: true })
       .getByRole('button', { name: 'Configure' });
     this.addAssigneesButton = page.getByRole('button', { name: 'plus Add assignee' });
+    this.addSelectAssigneesMenu = page.getByRole('button', { name: 'Select assignees' });
+    this.addQueryAssigneesMenu = page.getByRole('button', { name: 'Query assignees' });
     this.assigneesDropDown = page.getByTestId('select-single');
     this.OrRadio = page.getByLabel('Or', { exact: true });
     this.AndRadio = page.getByLabel('And', { exact: true });
     this.votingRadio = page.getByLabel('Voting', { exact: true });
+    this.votingThresholdEditBox = page
+      .getByLabel('block-item-NegotiationConfig-workflows-Negotiation mode')
+      .getByRole('spinbutton');
     this.parallellyRadio = page.getByLabel('Parallelly', { exact: true });
     this.sequentiallyRadio = page.getByLabel('Sequentially', { exact: true });
     this.goToconfigureButton = page.getByRole('button', { name: 'Go to configure' });
     this.addBlockButton = page.getByLabel('schema-initializer-Grid-ApprovalProcessAddBlockButton-workflows');
     this.addDetailsMenu = page.getByRole('menuitem', { name: 'Details' });
     this.detailsConfigureFieldsButton = page.getByLabel(
-      `schema-initializer-Grid-ReadPrettyFormItemInitializers-${collectionName}`,
+      `schema-initializer-Grid-details:configureFields-${collectionName}`,
     );
     this.addActionsMenu = page.getByRole('menuitem', { name: 'Actions' }).getByRole('switch');
     this.actionsConfigureFieldsButton = page.getByLabel('schema-initializer-Grid-FormItemInitializers-approvalRecords');
@@ -185,6 +201,83 @@ export class ApprovalPassthroughModeNode {
     this.submitButton = page.getByLabel('action-Action-Submit-workflows');
     this.cancelButton = page.getByLabel('action-Action-Cancel-workflows');
     this.addNodeButton = page.getByLabel(`add-button-calculation-${nodeName}`, { exact: true });
+  }
+}
+
+export class ApprovalBranchModeNode {
+  readonly page: Page;
+  node: Locator;
+  nodeTitle: Locator;
+  nodeConfigure: Locator;
+  addAssigneesButton: Locator;
+  addSelectAssigneesMenu: Locator;
+  addQueryAssigneesMenu: Locator;
+  assigneesDropDown: Locator;
+  OrRadio: Locator;
+  AndRadio: Locator;
+  votingRadio: Locator;
+  votingThresholdEditBox: Locator;
+  parallellyRadio: Locator;
+  sequentiallyRadio: Locator;
+  goToconfigureButton: Locator;
+  addBlockButton: Locator;
+  addDetailsMenu: Locator;
+  detailsConfigureFieldsButton: Locator;
+  addActionsMenu: Locator;
+  actionsConfigureFieldsButton: Locator;
+  actionsConfigureActionsButton: Locator;
+  addApproveButton: Locator;
+  addRejectButton: Locator;
+  addReturnButton: Locator;
+  addNodeResult: Locator;
+  submitButton: Locator;
+  cancelButton: Locator;
+  addNodeButton: Locator;
+  addReturnBranchNodeButton: Locator;
+  addRejectBranchNodeButton: Locator;
+  addApproveBranchNodeButton: Locator;
+  endOnRejectCheckbox: Locator;
+  constructor(page: Page, nodeName: string, collectionName: string) {
+    this.page = page;
+    this.node = page.getByLabel(`Approval-${nodeName}`, { exact: true });
+    this.nodeTitle = page.getByLabel(`Approval-${nodeName}`, { exact: true }).getByRole('textbox');
+    this.nodeConfigure = page
+      .getByLabel(`Approval-${nodeName}`, { exact: true })
+      .getByRole('button', { name: 'Configure' });
+    this.addAssigneesButton = page.getByRole('button', { name: 'plus Add assignee' });
+    this.addSelectAssigneesMenu = page.getByRole('button', { name: 'Select assignees' });
+    this.addQueryAssigneesMenu = page.getByRole('button', { name: 'Query assignees' });
+    this.assigneesDropDown = page.getByTestId('select-single');
+    this.OrRadio = page.getByLabel('Or', { exact: true });
+    this.AndRadio = page.getByLabel('And', { exact: true });
+    this.votingRadio = page.getByLabel('Voting', { exact: true });
+    this.votingThresholdEditBox = page
+      .getByLabel('block-item-NegotiationConfig-workflows-Negotiation mode')
+      .getByRole('spinbutton');
+    this.parallellyRadio = page.getByLabel('Parallelly', { exact: true });
+    this.sequentiallyRadio = page.getByLabel('Sequentially', { exact: true });
+    this.goToconfigureButton = page.getByRole('button', { name: 'Go to configure' });
+    this.addBlockButton = page.getByLabel('schema-initializer-Grid-ApprovalProcessAddBlockButton-workflows');
+    this.addDetailsMenu = page.getByRole('menuitem', { name: 'Details' });
+    this.detailsConfigureFieldsButton = page.getByLabel(
+      `schema-initializer-Grid-details:configureFields-${collectionName}`,
+    );
+    this.addActionsMenu = page.getByRole('menuitem', { name: 'Actions' }).getByRole('switch');
+    this.actionsConfigureFieldsButton = page.getByLabel('schema-initializer-Grid-FormItemInitializers-approvalRecords');
+    this.actionsConfigureActionsButton = page.getByLabel(
+      'schema-initializer-ActionBar-ApprovalProcessAddActionButton-approvalRecords',
+    );
+    this.addApproveButton = page.getByRole('menuitem', { name: 'Approve' }).getByRole('switch');
+    this.addRejectButton = page.getByRole('menuitem', { name: 'Reject' }).getByRole('switch');
+    this.addReturnButton = page.getByRole('menuitem', { name: 'Return' }).getByRole('switch');
+    this.addNodeResult = page.getByRole('menuitem', { name: 'Node result right' });
+    this.submitButton = page.getByLabel('action-Action-Submit-workflows');
+    this.cancelButton = page.getByLabel('action-Action-Cancel-workflows');
+    this.addNodeButton = page.getByLabel(`add-button-calculation-${nodeName}`, { exact: true });
+    this.addReturnBranchNodeButton = page.getByLabel(`add-button-approval-${nodeName}-1`);
+    this.addApproveBranchNodeButton = page.getByLabel(`add-button-approval-${nodeName}-2`);
+    this.addRejectBranchNodeButton = page.getByLabel(`add-button-approval-${nodeName}--1`);
+    this.endOnRejectCheckbox = page.getByLabel('End the workflow after');
   }
 }
 
@@ -276,6 +369,30 @@ export class FormEventTriggerNode {
   }
 }
 
+export class CustomActionEventTriggerNode {
+  readonly page: Page;
+  node: Locator;
+  nodeTitle: Locator;
+  nodeConfigure: Locator;
+  collectionDropDown: Locator;
+  relationalDataDropdown: Locator;
+  submitButton: Locator;
+  cancelButton: Locator;
+  addNodeButton: Locator;
+  constructor(page: Page, triggerName: string, collectionName: string) {
+    this.page = page;
+    this.node = page.getByLabel(`Trigger-${triggerName}`);
+    this.nodeTitle = page.getByLabel(`Trigger-${triggerName}`).getByRole('textbox');
+    this.nodeConfigure = page.getByLabel(`Trigger-${triggerName}`).getByRole('button', { name: 'Configure' });
+    this.collectionDropDown = page
+      .getByLabel('block-item-DataSourceCollectionCascader-workflows-Collection')
+      .locator('.ant-select-selection-search-input');
+    this.relationalDataDropdown = page.getByTestId('select-field-Preload associations');
+    this.submitButton = page.getByLabel('action-Action-Submit-workflows');
+    this.cancelButton = page.getByLabel('action-Action-Cancel-workflows');
+    this.addNodeButton = page.getByLabel('add-button', { exact: true });
+  }
+}
 export class CalculationNode {
   readonly page: Page;
   node: Locator;
@@ -364,7 +481,7 @@ export class CreateRecordNode {
     this.collectionDropDown = page
       .getByLabel('block-item-DataSourceCollectionCascader-workflows-Collection')
       .locator('.ant-select-selection-search-input');
-    this.addFieldsButton = page.getByRole('button', { name: 'plus Add field' });
+    this.addFieldsButton = page.getByLabel('schema-initializer-Grid-assignFieldValuesForm:configureFields');
     this.submitButton = page.getByLabel('action-Action-Submit-workflows');
     this.cancelButton = page.getByLabel('action-Action-Cancel-workflows');
     this.addNodeButton = page.getByLabel(`add-button-create-${nodeName}`, { exact: true });
@@ -394,12 +511,12 @@ export class UpdateRecordNode {
       .getByLabel('block-item-DataSourceCollectionCascader-workflows-Collection')
       .locator('.ant-select-selection-search-input');
     this.batchUpdateModeRadio = page
-      .getByLabel('block-item-IndividualHooksRadioWithTooltip-workflows-Update mode')
+      .getByLabel('block-item-RadioWithTooltip-workflows-Update mode')
       .getByLabel('Update in a batch');
     this.articleByArticleUpdateModeRadio = page
-      .getByLabel('block-item-IndividualHooksRadioWithTooltip-workflows-Update mode')
+      .getByLabel('block-item-RadioWithTooltip-workflows-Update mode')
       .getByLabel('Update one by one');
-    this.addFieldsButton = page.getByRole('button', { name: 'plus Add field' });
+    this.addFieldsButton = page.getByLabel('schema-initializer-Grid-assignFieldValuesForm:configureFields');
     this.submitButton = page.getByLabel('action-Action-Submit-workflows');
     this.cancelButton = page.getByLabel('action-Action-Cancel-workflows');
     this.addNodeButton = page.getByLabel(`add-button-update-${nodeName}`, { exact: true });
@@ -656,4 +773,6 @@ export default module.exports = {
   ConditionBranchNode,
   SQLNode,
   ParallelBranchNode,
+  ApprovalBranchModeNode,
+  CustomActionEventTriggerNode,
 };

@@ -10,7 +10,7 @@
 import { DeleteOutlined, MenuOutlined } from '@ant-design/icons';
 import { TinyColor } from '@ctrl/tinycolor';
 import { SortableContext, SortableContextProps, useSortable } from '@dnd-kit/sortable';
-import { css } from '@emotion/css';
+import { css, cx } from '@emotion/css';
 import { ArrayField } from '@formily/core';
 import { spliceArrayState } from '@formily/core/esm/shared/internals';
 import { RecursionField, Schema, observer, useField, useFieldSchema } from '@formily/react';
@@ -37,11 +37,11 @@ import {
 import { useACLFieldWhitelist } from '../../../acl/ACLProvider';
 import { isNewRecord } from '../../../data-source/collection-record/isNewRecord';
 import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
+import { useSatisfiedActionValues } from '../../../schema-settings/LinkageRules/useActionValues';
 import { useToken } from '../__builtins__';
 import { SubFormProvider } from '../association-field/hooks';
 import { ColumnFieldProvider } from './components/ColumnFieldProvider';
 import { extractIndex, isCollectionFieldComponent, isColumnComponent } from './utils';
-
 const MemoizedAntdTable = React.memo(AntdTable);
 
 const useArrayField = (props) => {
@@ -96,7 +96,7 @@ const useTableColumns = (props: { showDel?: boolean; isSubTable?: boolean }) => 
     return buf;
   }, []);
 
-  // const hasChangedColumns = useColumnsDeepMemoized(columnsSchema);
+  const hasChangedColumns = useColumnsDeepMemoized(columnsSchema);
 
   const schemaToolbarBigger = useMemo(() => {
     return css`
@@ -132,7 +132,7 @@ const useTableColumns = (props: { showDel?: boolean; isSubTable?: boolean }) => 
             const index = field.value?.indexOf(record);
             const basePath = field.address.concat(record.__index || index);
             return (
-              <SubFormProvider value={{ value: record, collection }}>
+              <SubFormProvider value={{ value: record, collection, fieldSchema: schema.parent }}>
                 <RecordIndexProvider index={record.__index || index}>
                   <RecordProvider isNew={isNewRecord(record)} record={record} parent={parentRecordData}>
                     <ColumnFieldProvider schema={s} basePath={basePath}>
@@ -145,12 +145,15 @@ const useTableColumns = (props: { showDel?: boolean; isSubTable?: boolean }) => 
               </SubFormProvider>
             );
           },
+          onCell: (record) => {
+            return { record, schema: s };
+          },
         } as TableColumnProps<any>;
-
-        // 这里不能把 columnsSchema 作为依赖，因为其每次都会变化，这里使用 hasChangedColumns 作为依赖
-        // eslint-disable-next-line react-hooks/exhaustive-deps
       }),
-    [columnsSchema, field.value, field.address, collection, parentRecordData, schemaToolbarBigger],
+
+    // 这里不能把 columnsSchema 作为依赖，因为其每次都会变化，这里使用 hasChangedColumns 作为依赖
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [hasChangedColumns, field.value, field.address, collection, parentRecordData, schemaToolbarBigger],
   );
 
   const tableColumns = useMemo(() => {
@@ -163,7 +166,9 @@ const useTableColumns = (props: { showDel?: boolean; isSubTable?: boolean }) => 
         title: render(),
         dataIndex: 'TABLE_COLUMN_INITIALIZER',
         key: 'TABLE_COLUMN_INITIALIZER',
-        render: designable ? () => <div style={{ minWidth: 180 }} /> : null,
+        render: designable
+          ? () => <div style={{ width: '100%', minWidth: '180px' }} className="nb-column-initializer" />
+          : null,
         fixed: designable ? 'right' : 'none',
       },
     ];
@@ -241,10 +246,10 @@ const SortableRow = (props) => {
 
 const SortHandle = (props) => {
   const { id, ...otherProps } = props;
-  const { listeners } = useSortable({
+  const { listeners, setNodeRef } = useSortable({
     id,
   });
-  return <MenuOutlined {...otherProps} {...listeners} style={{ cursor: 'grab' }} />;
+  return <MenuOutlined ref={setNodeRef} {...otherProps} {...listeners} style={{ cursor: 'grab' }} />;
 };
 
 const TableIndex = (props) => {
@@ -256,23 +261,67 @@ const TableIndex = (props) => {
   );
 };
 
+const pageSizeOptions = [5, 10, 20, 50, 100, 200];
+
 const usePaginationProps = (pagination1, pagination2) => {
   const { t } = useTranslation();
+  const field: any = useField();
+  const { token } = useToken();
   const pagination = useMemo(
     () => ({ ...pagination1, ...pagination2 }),
     [JSON.stringify({ ...pagination1, ...pagination2 })],
   );
-
-  const showTotal = useCallback((total) => t('Total {{count}} items', { count: total }), [t]);
-
-  const result = useMemo(
-    () => ({
-      showTotal,
-      showSizeChanger: true,
-      ...pagination,
-    }),
-    [pagination, t, showTotal],
+  const { total: totalCount, current, pageSize } = pagination || {};
+  const showTotal = useCallback(
+    (total) => {
+      return t('Total {{count}} items', { count: total });
+    },
+    [t, totalCount],
   );
+  const result = useMemo(() => {
+    if (totalCount) {
+      return {
+        pageSizeOptions,
+        showTotal,
+        showSizeChanger: true,
+        ...pagination,
+      };
+    } else {
+      return {
+        pageSizeOptions,
+        showTotal: false,
+        simple: true,
+        showTitle: false,
+        showSizeChanger: true,
+        hideOnSinglePage: false,
+        ...pagination,
+        total: field.value?.length < pageSize ? pageSize * current : pageSize * current + 1,
+        className: css`
+          .ant-pagination-simple-pager {
+            display: none !important;
+          }
+        `,
+        itemRender: (_, type, originalElement) => {
+          if (type === 'prev') {
+            return (
+              <div
+                style={{ display: 'flex' }}
+                className={css`
+                  .ant-pagination-item-link {
+                    min-width: ${token.controlHeight}px;
+                  }
+                `}
+              >
+                {originalElement} <div style={{ marginLeft: '7px' }}>{current}</div>
+              </div>
+            );
+          } else {
+            return originalElement;
+          }
+        },
+      };
+    }
+  }, [pagination, t, showTotal]);
 
   if (pagination2 === false) {
     return false;
@@ -305,10 +354,13 @@ const cellClass = css`
   }
 `;
 
+const floatLeftClass = css`
+  float: left;
+`;
+
 const rowSelectCheckboxWrapperClass = css`
   position: relative;
   display: flex;
-  float: left;
   align-items: center;
   justify-content: space-evenly;
   padding-right: 8px;
@@ -455,7 +507,7 @@ export const Table: any = withDynamicSchemaProps(
       if (!_.isEqual(newExpandesKeys, expandedKeys)) {
         setExpandesKeys(newExpandesKeys);
       }
-    }, [expandFlag]);
+    }, [expandFlag, allIncludesChildren]);
 
     /**
      * 为没有设置 key 属性的表格行生成一个唯一的 key
@@ -469,6 +521,9 @@ export const Table: any = withDynamicSchemaProps(
      * @returns
      */
     const defaultRowKey = useCallback((record: any) => {
+      if (rowKey) {
+        return getRowKey(record);
+      }
       if (record.key) {
         return record.key;
       }
@@ -484,21 +539,29 @@ export const Table: any = withDynamicSchemaProps(
 
     const getRowKey = useCallback(
       (record: any) => {
-        if (typeof rowKey === 'string') {
-          return record[rowKey]?.toString();
+        if (Array.isArray(rowKey)) {
+          // 使用多个字段值组合生成唯一键
+          return rowKey
+            .map((keyField) => {
+              return record[keyField]?.toString() || '';
+            })
+            .join('-');
+        } else if (typeof rowKey === 'string') {
+          return record[rowKey];
         } else {
+          // 如果 rowKey 是函数或未提供，使用 defaultRowKey
           return (rowKey ?? defaultRowKey)(record)?.toString();
         }
       },
-      [rowKey, defaultRowKey],
+      [JSON.stringify(rowKey), defaultRowKey],
     );
 
-    const dataSourceKeys = field?.value?.map(getRowKey);
+    const dataSourceKeys = field?.value?.map?.(getRowKey);
     const memoizedDataSourceKeys = useMemo(() => dataSourceKeys, [JSON.stringify(dataSourceKeys)]);
-    const dataSource = useMemo(
-      () => [...(field?.value || [])].filter(Boolean),
-      [field?.value, field?.value?.length, memoizedDataSourceKeys],
-    );
+    const dataSource = useMemo(() => {
+      const value = Array.isArray(field?.value) ? field.value : [];
+      return value.filter(Boolean);
+    }, [field?.value, field?.value?.length, memoizedDataSourceKeys]);
 
     const bodyWrapperComponent = useMemo(() => {
       return (props) => {
@@ -526,21 +589,24 @@ export const Table: any = withDynamicSchemaProps(
     const BodyCellComponent = useCallback(
       (props) => {
         const isIndex = props.className?.includes('selection-column');
-
+        const { record, schema } = props;
         const { ref, inView } = useInView({
           threshold: 0,
           triggerOnce: true,
           initialInView: isIndex || !!process.env.__E2E__ || dataSource.length <= 10,
           skip: isIndex || !!process.env.__E2E__,
         });
+        const { valueMap } = useSatisfiedActionValues({ formValues: record, category: 'style', schema });
+        const style = useMemo(() => Object.assign({ ...props.style }, valueMap), [props.style, valueMap]);
 
         return (
-          <td {...props} ref={ref} className={classNames(props.className, cellClass)}>
-            {inView || isIndex ? props.children : <Skeleton.Button style={{ height: '100%' }} />}
+          <td {...props} ref={ref} className={classNames(props.className, cellClass)} style={style}>
+            {/* 子表格中不能使用懒渲染。详见：https://nocobase.height.app/T-4889/description */}
+            {others.isSubTable || inView || isIndex ? props.children : <Skeleton.Button style={{ height: '100%' }} />}
           </td>
         );
       },
-      [dataSource.length],
+      [dataSource.length, others.isSubTable],
     );
 
     const components = useMemo(() => {
@@ -568,6 +634,7 @@ export const Table: any = withDynamicSchemaProps(
               onChange(selectedRowKeys: any[], selectedRows: any[]) {
                 field.data = field.data || {};
                 field.data.selectedRowKeys = selectedRowKeys;
+                field.data.selectedRowData = selectedRows;
                 setSelectedRowKeys(selectedRowKeys);
                 onRowSelectionChange?.(selectedRowKeys, selectedRows);
               },
@@ -580,8 +647,9 @@ export const Table: any = withDynamicSchemaProps(
                 if (!dragSort && !showIndex) {
                   return originNode;
                 }
-                const current = props?.pagination?.current;
-                const pageSize = props?.pagination?.pageSize || 20;
+                const current = paginationProps?.current;
+
+                const pageSize = paginationProps?.pageSize || 20;
                 if (current) {
                   index = index + (current - 1) * pageSize + 1;
                 } else {
@@ -594,7 +662,7 @@ export const Table: any = withDynamicSchemaProps(
                   <div
                     role="button"
                     aria-label={`table-index-${index}`}
-                    className={classNames(checked ? 'checked' : null, rowSelectCheckboxWrapperClass, {
+                    className={classNames(checked ? 'checked' : floatLeftClass, rowSelectCheckboxWrapperClass, {
                       [rowSelectCheckboxWrapperClassHover]: isRowSelect,
                     })}
                   >
@@ -630,6 +698,7 @@ export const Table: any = withDynamicSchemaProps(
         getRowKey,
         isRowSelect,
         memoizedRowSelection,
+        paginationProps,
       ],
     );
 
@@ -647,27 +716,23 @@ export const Table: any = withDynamicSchemaProps(
       },
       [field, dragSort, getRowKey],
     );
-    const fieldSchema = useFieldSchema();
-    const fixedBlock = fieldSchema?.parent?.['x-decorator-props']?.fixedBlock;
 
-    const { height: tableHeight, tableSizeRefCallback } = useTableSize(fixedBlock);
+    const { height: tableHeight, tableSizeRefCallback } = useTableSize();
     const maxContent = useMemo(() => {
       return {
         x: 'max-content',
       };
     }, []);
     const scroll = useMemo(() => {
-      return fixedBlock
-        ? {
-            x: 'max-content',
-            y: tableHeight,
-          }
-        : maxContent;
-    }, [fixedBlock, tableHeight, maxContent]);
+      return {
+        x: 'max-content',
+        y: tableHeight,
+      };
+    }, [tableHeight, maxContent]);
 
     const rowClassName = useCallback(
       (record) => (selectedRow.includes(record[rowKey]) ? highlightRow : ''),
-      [selectedRow, highlightRow, rowKey],
+      [selectedRow, highlightRow, JSON.stringify(rowKey)],
     );
 
     const onExpandValue = useCallback(
@@ -687,33 +752,39 @@ export const Table: any = withDynamicSchemaProps(
         expandedRowKeys: expandedKeys,
       };
     }, [expandedKeys, onExpandValue]);
-
     return (
       <div
-        className={css`
-          height: 100%;
-          overflow: hidden;
-          .ant-table-wrapper {
+        className={cx(
+          css`
             height: 100%;
-            .ant-spin-nested-loading {
+            overflow: hidden;
+            .ant-table-wrapper {
               height: 100%;
-              .ant-spin-container {
+              .ant-spin-nested-loading {
                 height: 100%;
-                display: flex;
-                flex-direction: column;
+                .ant-spin-container {
+                  height: 100%;
+                  display: flex;
+                  flex-direction: column;
+                  .ant-table-body {
+                    min-height: ${tableHeight}px;
+                  }
+                }
               }
             }
-          }
-          .ant-table {
-            overflow-x: auto;
-            overflow-y: hidden;
-          }
-        `}
+            .ant-table {
+              overflow-x: auto;
+              overflow-y: hidden;
+            }
+          `,
+          'nb-table-container',
+        )}
       >
         <SortableWrapper>
           <MemoizedAntdTable
             ref={tableSizeRefCallback}
-            rowKey={rowKey ?? defaultRowKey}
+            rowKey={defaultRowKey}
+            // rowKey={(record) => record.id}
             dataSource={dataSource}
             tableLayout="auto"
             {...others}

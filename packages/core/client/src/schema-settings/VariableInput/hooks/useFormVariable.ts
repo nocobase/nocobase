@@ -10,13 +10,10 @@
 import { Form } from '@formily/core';
 import { Schema } from '@formily/json-schema';
 import { useTranslation } from 'react-i18next';
-import { useBlockContext, useDetailsBlockContext, useFormBlockContext } from '../../../block-provider';
-import {
-  CollectionFieldOptions_deprecated,
-  useResourceActionContext,
-  useResourceContext,
-} from '../../../collection-manager';
+import { useFormBlockContext } from '../../../block-provider/FormBlockProvider';
+import { CollectionFieldOptions_deprecated } from '../../../collection-manager';
 import { useDataBlockRequest } from '../../../data-source';
+import { useFlag } from '../../../flag-provider/hooks/useFlag';
 import { useBaseVariable } from './useBaseVariable';
 
 interface Props {
@@ -89,6 +86,7 @@ export const useCurrentFormVariable = ({
   const { t } = useTranslation();
   const { form, collectionName } = useFormBlockContext();
   const formData = useCurrentFormData();
+  const { isVariableParsedInOtherContext } = useFlag();
   const currentFormSettings = useBaseVariable({
     collectionField,
     uiSchema: schema,
@@ -121,6 +119,6 @@ export const useCurrentFormVariable = ({
         ? formInstance?.values
         : formData || formInstance?.values,
     /** 用来判断是否可以显示`当前表单`变量 */
-    shouldDisplayCurrentForm: formInstance && !formInstance.readPretty,
+    shouldDisplayCurrentForm: formInstance && !formInstance.readPretty && !isVariableParsedInOtherContext,
   };
 };

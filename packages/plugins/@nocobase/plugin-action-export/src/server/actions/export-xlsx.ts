@@ -9,46 +9,66 @@
 
 import { Context, Next } from '@nocobase/actions';
 import { Repository } from '@nocobase/database';
-import xlsx from 'node-xlsx';
-import render from '../renders';
-import { columns2Appends } from '../utils';
 
-export async function exportXlsx(ctx: Context, next: Next) {
+import XlsxExporter from '../xlsx-exporter';
+import XLSX from 'xlsx';
+import { Mutex } from 'async-mutex';
+import { DataSource } from '@nocobase/data-source-manager';
+
+const mutex = new Mutex();
+
+async function exportXlsxAction(ctx: Context, next: Next) {
   const { title, filter, sort, fields, except } = ctx.action.params;
   let columns = ctx.action.params.values?.columns || ctx.action.params?.columns;
+
   if (typeof columns === 'string') {
     columns = JSON.parse(columns);
   }
+
   const repository = ctx.getCurrentRepository() as Repository;
+  const dataSource = ctx.dataSource as DataSource;
+
   const collection = repository.collection;
-  columns = columns?.filter((col) => collection.hasField(col.dataIndex[0]) && col?.dataIndex?.length > 0);
-  const appends = columns2Appends(columns, ctx);
-  const data = await repository.find({
-    filter,
-    fields,
-    appends,
-    except,
-    sort,
-    limit: 200,
-    context: ctx,
-  });
-  const collectionFields = columns.map((col) => collection.fields.get(col.dataIndex[0]));
-  const { rows, ranges } = await render({ columns, fields: collectionFields, data }, ctx);
-  ctx.body = xlsx.build([
-    {
-      name: 'Sheet 1',
-      data: rows,
-      options: {
-        '!merges': ranges,
-      },
+
+  const xlsxExporter = new XlsxExporter({
+    collectionManager: dataSource.collectionManager,
+    collection,
+    repository,
+    columns,
+    findOptions: {
+      filter,
+      fields,
+      except,
+      sort,
     },
-  ]);
+  });
+
+  const wb = await xlsxExporter.run();
+
+  ctx.body = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
 
   ctx.set({
     'Content-Type': 'application/octet-stream',
-    // to avoid "invalid character" error in header (RFC)
     'Content-Disposition': `attachment; filename=${encodeURI(title)}.xlsx`,
   });
+}
+
+export async function exportXlsx(ctx: Context, next: Next) {
+  if (mutex.isLocked()) {
+    throw new Error(
+      ctx.t(`another export action is running, please try again later.`, {
+        ns: 'action-export',
+      }),
+    );
+  }
+
+  const release = await mutex.acquire();
+
+  try {
+    await exportXlsxAction(ctx, next);
+  } finally {
+    release();
+  }
 
   await next();
 }

@@ -76,6 +76,12 @@ describe('moment2str', () => {
     expect(str).toBe(dayjs('2023-06-21 10:10:00').toISOString());
   });
 
+  test('gmt not configured', () => {
+    const d = dayjs('2024-06-30');
+    const str = moment2str(d);
+    expect(str).toBe(dayjs('2024-06-30 00:00:00').toISOString());
+  });
+
   test('with time', () => {
     const m = dayjs('2023-06-21 10:10:00');
     const str = moment2str(m, { showTime: true });
@@ -96,7 +102,7 @@ describe('moment2str', () => {
 
   test('picker is year', () => {
     const m = dayjs('2023-06-21 10:10:00');
-    const str = moment2str(m, { picker: 'year' });
+    const str = moment2str(m, { picker: 'year', gmt: true });
     expect(str).toBe('2023-01-01T00:00:00.000Z');
   });
 
@@ -126,7 +132,7 @@ describe('moment2str', () => {
 
   test('picker is month', () => {
     const m = dayjs('2023-06-21 10:10:00');
-    const str = moment2str(m, { picker: 'month' });
+    const str = moment2str(m, { picker: 'month', gmt: true });
     expect(str).toBe('2023-06-01T00:00:00.000Z');
   });
 

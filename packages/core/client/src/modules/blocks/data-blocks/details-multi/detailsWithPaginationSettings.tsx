@@ -12,20 +12,26 @@ import { ISchema, useField, useFieldSchema } from '@formily/react';
 import { useTranslation } from 'react-i18next';
 import { SchemaSettings } from '../../../../application/schema-settings/SchemaSettings';
 import { SchemaSettingsItemType } from '../../../../application/schema-settings/types';
-import { useFormBlockContext } from '../../../../block-provider';
 import { useDetailsBlockContext } from '../../../../block-provider/DetailsBlockProvider';
+import { useFormBlockContext } from '../../../../block-provider/FormBlockProvider';
 import { useCollection_deprecated, useSortFields } from '../../../../collection-manager';
 import { removeNullCondition, useDesignable } from '../../../../schema-component';
 import { SchemaSettingsLinkageRules } from '../../../../schema-settings';
+import { SchemaSettingsBlockHeightItem } from '../../../../schema-settings/SchemaSettingsBlockHeightItem';
 import { SchemaSettingsBlockTitleItem } from '../../../../schema-settings/SchemaSettingsBlockTitleItem';
 import { SchemaSettingsDataScope } from '../../../../schema-settings/SchemaSettingsDataScope';
 import { SchemaSettingsTemplate } from '../../../../schema-settings/SchemaSettingsTemplate';
+import { useBlockTemplateContext } from '../../../../schema-templates/BlockTemplateProvider';
 import { setDataLoadingModeSettingsItem } from './setDataLoadingModeSettingsItem';
 
 const commonItems: SchemaSettingsItemType[] = [
   {
     name: 'title',
     Component: SchemaSettingsBlockTitleItem,
+  },
+  {
+    name: 'setTheBlockHeight',
+    Component: SchemaSettingsBlockHeightItem,
   },
   {
     name: 'linkageRules',
@@ -196,10 +202,11 @@ const commonItems: SchemaSettingsItemType[] = [
     useComponentProps() {
       const { name } = useCollection_deprecated();
       const fieldSchema = useFieldSchema();
+      const { componentNamePrefix } = useBlockTemplateContext();
       const defaultResource =
         fieldSchema?.['x-decorator-props']?.resource || fieldSchema?.['x-decorator-props']?.association;
       return {
-        componentName: 'Details',
+        componentName: `${componentNamePrefix}Details`,
         collectionName: name,
         resourceName: defaultResource,
       };

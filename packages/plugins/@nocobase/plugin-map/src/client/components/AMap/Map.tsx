@@ -11,16 +11,15 @@ import AMapLoader from '@amap/amap-jsapi-loader';
 import '@amap/amap-jsapi-types';
 import { SyncOutlined } from '@ant-design/icons';
 import { useFieldSchema } from '@formily/react';
-import { css, useApp, useCollection_deprecated } from '@nocobase/client';
+import { css, useApp, useCollection_deprecated, useNavigateNoUpdate } from '@nocobase/client';
 import { useMemoizedFn } from 'ahooks';
 import { Alert, App, Button, Spin } from 'antd';
 import React, { useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useMapConfiguration } from '../../hooks';
 import { useMapTranslation } from '../../locale';
 import { MapEditorType } from '../../types';
+import { useMapHeight } from '../hook';
 import { Search } from './Search';
-
 export interface AMapComponentProps {
   value?: any;
   onChange?: (value: number[]) => void;
@@ -109,10 +108,10 @@ export const AMapComponent = React.forwardRef<AMapForwardedRefProps, AMapCompone
 
   const overlay = useRef<AMap.Polygon>();
   const editor = useRef(null);
-  const navigate = useNavigate();
+  const navigate = useNavigateNoUpdate();
   const id = useRef(`nocobase-map-${type || ''}-${Date.now().toString(32)}`);
   const { modal } = App.useApp();
-
+  const height = useMapHeight();
   const [commonOptions] = useState<AMap.PolylineOptions & AMap.PolygonOptions>({
     strokeWeight: 5,
     strokeColor: '#4e9bff',
@@ -120,6 +119,12 @@ export const AMapComponent = React.forwardRef<AMapForwardedRefProps, AMapCompone
     strokeOpacity: 1,
     ...overlayCommonOptions,
   });
+
+  useEffect(() => {
+    if (map.current) {
+      map.current.setZoom(zoom);
+    }
+  }, [zoom]);
 
   const toRemoveOverlay = useMemoizedFn(() => {
     if (overlay.current) {
@@ -365,6 +370,8 @@ export const AMapComponent = React.forwardRef<AMapForwardedRefProps, AMapCompone
       map.current = null;
       mouseTool.current = null;
       editor.current = null;
+      // @ts-ignore
+      AMapLoader.reset();
     };
   }, [accessKey, type, securityJsCode]);
 
@@ -402,7 +409,7 @@ export const AMapComponent = React.forwardRef<AMapForwardedRefProps, AMapCompone
     <div
       className={css`
         position: relative;
-        height: 500px;
+        height: ${height || 500}px !important;
       `}
       id={id.current}
       style={props?.style}

@@ -8,24 +8,14 @@
  */
 
 import { NAMESPACE } from '../../locale';
+import common from './common';
 
 export default {
   title: `{{t("Local storage", { ns: "${NAMESPACE}" })}}`,
   name: 'local',
   properties: {
-    title: {
-      'x-component': 'CollectionField',
-      'x-decorator': 'FormItem',
-    },
-    name: {
-      'x-component': 'CollectionField',
-      'x-decorator': 'FormItem',
-      'x-disabled': '{{ !createOnly }}',
-      required: true,
-      default: '{{ useNewId("s_") }}',
-      description:
-        '{{t("Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.")}}',
-    },
+    title: common.title,
+    name: common.name,
     baseUrl: {
       'x-component': 'CollectionField',
       'x-decorator': 'FormItem',
@@ -53,15 +43,8 @@ export default {
         addonBefore: 'storage/uploads/',
       },
     },
-    default: {
-      'x-component': 'CollectionField',
-      'x-decorator': 'FormItem',
-      'x-content': `{{t("Default storage", { ns: "${NAMESPACE}" })}}`,
-    },
-    paranoid: {
-      'x-component': 'CollectionField',
-      'x-decorator': 'FormItem',
-      'x-content': `{{t("Keep file in storage when destroy record", { ns: "${NAMESPACE}" })}}`,
-    },
+    rules: common.rules,
+    default: common.default,
+    paranoid: common.paranoid,
   },
 };

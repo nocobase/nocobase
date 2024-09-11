@@ -12,6 +12,7 @@ import path from 'path';
 import { getConfiguration, setConfiguration } from './actions';
 import { CircleField, LineStringField, PointField, PolygonField } from './fields';
 import { CircleValueParser, LineStringValueParser, PointValueParser, PolygonValueParser } from './value-parsers';
+import { CircleInterface, LineStringInterface, PointInterface, PolygonInterface } from './interfaces';
 
 export class PluginMapServer extends Plugin {
   afterAdd() {}
@@ -30,6 +31,11 @@ export class PluginMapServer extends Plugin {
       lineString: LineStringValueParser,
       circle: CircleValueParser,
     });
+
+    this.db.interfaceManager.registerInterfaceType('point', PointInterface);
+    this.db.interfaceManager.registerInterfaceType('polygon', PolygonInterface);
+    this.db.interfaceManager.registerInterfaceType('lineString', LineStringInterface);
+    this.db.interfaceManager.registerInterfaceType('circle', CircleInterface);
   }
 
   async load() {

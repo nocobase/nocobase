@@ -44,7 +44,7 @@ const useCompatCalendarBlockParams = (props) => {
 
   // 因为 x-use-decorator-props 的值是固定不变的，所以可以在条件中使用 hooks
   if (fieldSchema['x-use-decorator-props']) {
-    return props.params;
+    return { params: props.params, parseVariableLoading: props.parseVariableLoading };
   } else {
     // eslint-disable-next-line react-hooks/rules-of-hooks
     return useCalendarBlockParams(props);
@@ -53,7 +53,12 @@ const useCompatCalendarBlockParams = (props) => {
 
 export const CalendarBlockProvider = withDynamicSchemaProps(
   (props) => {
-    const params = useCompatCalendarBlockParams(props);
+    const { params, parseVariableLoading } = useCompatCalendarBlockParams(props);
+
+    if (parseVariableLoading) {
+      return null;
+    }
+
     return (
       <BlockProvider name="calendar" {...props} params={params}>
         <InternalCalendarBlockProvider {...props} />

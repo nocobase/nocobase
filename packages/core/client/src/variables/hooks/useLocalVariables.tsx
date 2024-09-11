@@ -14,6 +14,7 @@ import { useBlockCollection } from '../../schema-settings/VariableInput/hooks/us
 import { useDatetimeVariable } from '../../schema-settings/VariableInput/hooks/useDateVariable';
 import { useCurrentFormVariable } from '../../schema-settings/VariableInput/hooks/useFormVariable';
 import { useCurrentObjectVariable } from '../../schema-settings/VariableInput/hooks/useIterationVariable';
+import { useParentPopupVariable } from '../../schema-settings/VariableInput/hooks/useParentPopupVariable';
 import { useCurrentParentRecordVariable } from '../../schema-settings/VariableInput/hooks/useParentRecordVariable';
 import { usePopupVariable } from '../../schema-settings/VariableInput/hooks/usePopupVariable';
 import { useCurrentRecordVariable } from '../../schema-settings/VariableInput/hooks/useRecordVariable';
@@ -36,7 +37,14 @@ const useLocalVariables = (props?: Props) => {
     popupRecordCtx,
     collectionName: collectionNameOfPopupRecord,
     dataSource: popupDataSource,
+    defaultValue: defaultValueOfPopupRecord,
   } = usePopupVariable();
+  const {
+    parentPopupRecordCtx,
+    collectionName: collectionNameOfParentPopupRecord,
+    dataSource: parentPopupDataSource,
+    defaultValue: defaultValueOfParentPopupRecord,
+  } = useParentPopupVariable();
   const { datetimeCtx } = useDatetimeVariable();
   const { currentFormCtx } = useCurrentFormVariable({ form: props?.currentForm });
   const { name: currentCollectionName } = useCollection_deprecated();
@@ -92,6 +100,14 @@ const useLocalVariables = (props?: Props) => {
           ctx: popupRecordCtx,
           collectionName: collectionNameOfPopupRecord,
           dataSource: popupDataSource,
+          defaultValue: defaultValueOfPopupRecord,
+        },
+        {
+          name: '$nParentPopupRecord',
+          ctx: parentPopupRecordCtx,
+          collectionName: collectionNameOfParentPopupRecord,
+          dataSource: parentPopupDataSource,
+          defaultValue: defaultValueOfParentPopupRecord,
         },
         {
           name: '$nForm',
@@ -126,12 +142,15 @@ const useLocalVariables = (props?: Props) => {
     collectionNameOfParentRecord,
     currentParentRecordDataSource,
     popupRecordCtx,
+    parentPopupRecordCtx,
     collectionNameOfPopupRecord,
     popupDataSource,
     datetimeCtx,
     shouldDisplayCurrentObject,
     currentObjectCtx,
     currentCollectionName,
+    defaultValueOfPopupRecord,
+    defaultValueOfParentPopupRecord,
   ]); // 尽量保持返回的值不变，这样可以减少接口的请求次数，因为关系字段会缓存到变量的 ctx 中
 };
 

@@ -15,23 +15,39 @@ export class DatetimeFieldInterface extends CollectionFieldInterface {
   type = 'object';
   group = 'datetime';
   order = 1;
-  title = '{{t("Datetime")}}';
+  title = '{{t("Datetime(with time zone)")}}';
   sortable = true;
   default = {
     type: 'date',
+    defaultToCurrentTime: false,
+    onUpdateToCurrentTime: false,
+    timezone: true,
     uiSchema: {
       type: 'string',
       'x-component': 'DatePicker',
       'x-component-props': {
         showTime: false,
+        utc: true,
       },
     },
   };
-  availableTypes = ['date', 'dateOnly'];
+  availableTypes = ['date', 'string', 'datetime', 'datetimeTz'];
   hasDefaultValue = true;
   properties = {
     ...defaultProps,
     ...dateTimeProps,
+    defaultToCurrentTime: {
+      type: 'boolean',
+      'x-decorator': 'FormItem',
+      'x-component': 'Checkbox',
+      'x-content': '{{t("Default value to current time")}}',
+    },
+    onUpdateToCurrentTime: {
+      type: 'boolean',
+      'x-decorator': 'FormItem',
+      'x-component': 'Checkbox',
+      'x-content': '{{t("Automatically update timestamp on update")}}',
+    },
     'uiSchema.x-component-props.gmt': {
       type: 'boolean',
       title: '{{t("GMT")}}',

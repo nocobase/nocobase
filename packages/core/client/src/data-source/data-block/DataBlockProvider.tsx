@@ -11,6 +11,7 @@ import React, { FC, ReactNode, createContext, useContext, useMemo } from 'react'
 
 import { ACLCollectionProvider } from '../../acl/ACLProvider';
 import { UseRequestOptions, UseRequestService } from '../../api-client';
+import { DataBlockCollector, FilterParam } from '../../filter-provider/FilterProvider';
 import { withDynamicSchemaProps } from '../../hoc/withDynamicSchemaProps';
 import { Designable, useDesignable } from '../../schema-component';
 import {
@@ -33,6 +34,7 @@ export interface AllDataBlockProps {
   action?: 'list' | 'get';
   params?: {
     filterByTk?: string | number;
+    filter?: FilterParam;
     [index: string]: any;
   };
   parentRecord?: CollectionRecord;
@@ -119,6 +121,27 @@ export interface DataBlockContextValue<T extends {} = {}> {
 export const DataBlockContext = createContext<DataBlockContextValue<any>>({} as any);
 DataBlockContext.displayName = 'DataBlockContext';
 
+const DataBlockResourceContext = createContext<{ rerenderDataBlock: () => void }>(null);
+const RerenderDataBlockProvider: FC = ({ children }) => {
+  const [hidden, setHidden] = React.useState(false);
+  const value = useMemo(() => {
+    return {
+      rerenderDataBlock: () => {
+        setHidden(true);
+        setTimeout(() => {
+          setHidden(false);
+        });
+      },
+    };
+  }, []);
+
+  if (hidden) {
+    return null;
+  }
+
+  return <DataBlockResourceContext.Provider value={value}>{children}</DataBlockResourceContext.Provider>;
+};
+
 /**
  * @internal
  */
@@ -149,15 +172,13 @@ export const AssociationOrCollectionProvider = (props: {
   );
 };
 
-export const DataBlockProvider: FC<DataBlockProviderProps & { children?: ReactNode }> = withDynamicSchemaProps(
+export const DataBlockProvider: FC<Partial<AllDataBlockProps>> = withDynamicSchemaProps(
   (props) => {
     const { collection, association, dataSource, children, hidden, ...resets } = props as Partial<AllDataBlockProps>;
     const { dn } = useDesignable();
-
     if (hidden) {
       return null;
     }
-
     return (
       <DataBlockContext.Provider
         value={{
@@ -169,7 +190,11 @@ export const DataBlockProvider: FC<DataBlockProviderProps & { children?: ReactNo
           <AssociationOrCollectionProvider collection={collection} association={association}>
             <ACLCollectionProvider>
               <DataBlockResourceProvider>
-                <BlockRequestProvider>{children}</BlockRequestProvider>
+                <BlockRequestProvider>
+                  <DataBlockCollector params={props.params}>
+                    <RerenderDataBlockProvider>{children}</RerenderDataBlockProvider>
+                  </DataBlockCollector>
+                </BlockRequestProvider>
               </DataBlockResourceProvider>
             </ACLCollectionProvider>
           </AssociationOrCollectionProvider>
@@ -192,4 +217,12 @@ export const useDataBlock = <T extends {}>() => {
 export const useDataBlockProps = <T extends {}>(): DataBlockContextValue<T>['props'] => {
   const context = useDataBlock<T>();
   return context.props;
+};
+
+export const useRerenderDataBlock = () => {
+  const context = useContext(DataBlockResourceContext);
+  if (!context) {
+    throw new Error('useRerenderDataBlock() must be used within a DataBlockProvider');
+  }
+  return context;
 };

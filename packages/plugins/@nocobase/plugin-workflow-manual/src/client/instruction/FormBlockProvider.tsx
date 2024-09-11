@@ -21,25 +21,23 @@ import {
   useAPIClient,
   useAssociationNames,
   useBlockRequestContext,
+  useCollectionRecordData,
   useDataSourceHeaders,
-  useDesignable,
-  useRecord,
 } from '@nocobase/client';
+import { theme } from 'antd';
 import React, { useMemo, useRef } from 'react';
 
 export function FormBlockProvider(props) {
-  const userJob = useRecord();
+  const userJob = useCollectionRecordData();
   const fieldSchema = useFieldSchema();
   const field = useField();
   const formBlockRef = useRef(null);
   const dataSource = props.dataSource || DEFAULT_DATA_SOURCE_KEY;
-
+  const { token } = theme.useToken();
   const { getAssociationAppends } = useAssociationNames(dataSource);
   const { appends, updateAssociationValues } = getAssociationAppends();
   const [formKey] = Object.keys(fieldSchema.toJSON().properties ?? {});
   const values = userJob?.result?.[formKey];
-
-  const { findComponent } = useDesignable();
 
   const form = useMemo(
     () =>
@@ -80,7 +78,7 @@ export function FormBlockProvider(props) {
     };
   }, [field, form, params, service, updateAssociationValues]);
 
-  return !userJob.status || values ? (
+  return !userJob?.status || values ? (
     <CollectionManagerProvider dataSource={dataSource}>
       <CollectionProvider_deprecated collection={props.collection}>
         <RecordProvider record={values} parent={null}>
@@ -89,7 +87,7 @@ export function FormBlockProvider(props) {
               value={{ block: 'form', props, field, service, resource, __parent }}
             >
               <FormBlockContext.Provider value={formBlockValue}>
-                <FormV2.Templates style={{ marginBottom: 18 }} form={form} />
+                <FormV2.Templates style={{ marginBottom: token.margin }} form={form} />
                 <div ref={formBlockRef}>{props.children}</div>
               </FormBlockContext.Provider>
             </BlockRequestContext_deprecated.Provider>
