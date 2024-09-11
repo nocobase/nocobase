@@ -38,7 +38,7 @@ export function evaluate(this: Evaluator, options: EvaluatorOptions = {}, expres
   const exp = expression.trim().replace(/{{\s*([\w$.-]+)\s*}}/g, (_, v) => {
     appendArrayColumn(context, v);
 
-    let item = get(context, v) ?? null;
+    let item = get(context, v) ?? `{{${v}}}`;
 
     if (typeof item === 'function') {
       item = item();
