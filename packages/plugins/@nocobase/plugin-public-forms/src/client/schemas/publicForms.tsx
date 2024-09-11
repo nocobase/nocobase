@@ -39,6 +39,19 @@ export const publicFormsSchema: ISchema = {
       },
       properties: {
         createActionSchema,
+        destroy: {
+          title: '{{ t("Delete") }}',
+          'x-action': 'destroy',
+          'x-component': 'Action',
+          'x-use-component-props': 'useBulkDestroyActionProps',
+          'x-component-props': {
+            icon: 'DeleteOutlined',
+            confirm: {
+              title: "{{t('Delete record')}}",
+              content: "{{t('Are you sure you want to delete it?')}}",
+            },
+          },
+        },
       },
     },
     table: {
