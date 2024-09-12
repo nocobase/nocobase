@@ -22,6 +22,8 @@ import {
   useRequest,
   ACLCustomContext,
 } from '@nocobase/client';
+import { css } from '@emotion/css';
+import { isDesktop } from 'react-device-detect';
 import { useField } from '@formily/react';
 import { Input, Modal, Spin } from 'antd';
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
@@ -73,37 +75,33 @@ function PublicAPIClientProvider({ children }) {
 }
 
 export const PublicFormMessageContext = createContext<any>({});
+export const PageBackgroundColor = '#f5f5f5';
 
-const PublicFormMessageProvider = (props) => {
+const PublicFormMessageProvider = ({ children }) => {
   const [showMessage, setShowMessage] = useState(false);
   const field = useField();
+
+  const toggleFieldVisibility = (fieldName, visible) => {
+    field.form.query(fieldName).take((f) => {
+      if (f) {
+        f.visible = visible;
+        f.hidden = !visible;
+      }
+    });
+  };
+
   useEffect(() => {
-    if (showMessage) {
-      field.form.query('success').take((f) => {
-        f.visible = true;
-        f.hidden = false;
-      });
-      field.form.query('form').take((f) => {
-        f.visible = false;
-        f.hidden = true;
-      });
-    } else {
-      field.form.query('success').take((f) => {
-        f.visible = false;
-        f.hidden = true;
-      });
-      field.form.query('form').take((f) => {
-        f.visible = true;
-        f.hidden = false;
-      });
-    }
+    toggleFieldVisibility('success', showMessage);
+    toggleFieldVisibility('form', !showMessage);
   }, [showMessage]);
+
   return (
     <PublicFormMessageContext.Provider value={{ showMessage, setShowMessage }}>
-      {props.children}
+      {children}
     </PublicFormMessageContext.Provider>
   );
 };
+
 function InternalPublicForm() {
   const params = useParams();
   const apiClient = useAPIClient();
@@ -125,7 +123,26 @@ function InternalPublicForm() {
   );
   const [pwd, setPwd] = useState('');
   const ctx = useContext(SchemaComponentContext);
+  // 设置的移动端 meta
+  React.useEffect(() => {
+    if (!isDesktop) {
+      let viewportMeta = document.querySelector('meta[name="viewport"]');
+      if (!viewportMeta) {
+        viewportMeta = document.createElement('meta');
+        viewportMeta.setAttribute('name', 'viewport');
+        document.head.appendChild(viewportMeta);
+      }
+      viewportMeta.setAttribute('content', 'width=device-width,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no');
 
+      document.body.style.backgroundColor = PageBackgroundColor;
+      document.body.style.overflow = 'hidden';
+
+      // 触发视图重绘
+      const fakeBody = document.createElement('div');
+      document.body.appendChild(fakeBody);
+      document.body.removeChild(fakeBody);
+    }
+  }, []);
   if (error) {
     if (error?.['response']?.status === 401) {
       return (
@@ -170,7 +187,15 @@ function InternalPublicForm() {
             background: '#f5f5f5',
           }}
         >
-          <div style={{ maxWidth: 800, margin: '0 auto', paddingTop: '10vh' }}>
+          <div
+            style={{ maxWidth: 800, margin: '0 auto' }}
+            className={css`
+              @media (min-width: 1025px) {
+                padding-top: 10vh;
+              }
+              padding-top: 0px;
+            `}
+          >
             <PublicPublicFormProvider dataSource={data?.data?.dataSource}>
               <SchemaComponentContext.Provider value={{ ...ctx, designable: false }}>
                 <SchemaComponent
