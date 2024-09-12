@@ -5,6 +5,129 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.3.21-beta](https://github.com/nocobase/nocobase/compare/v1.3.20-beta...v1.3.21-beta) - 2024-09-10
+
+### 🐛 Bug Fixes
+
+- **[client]** Fix error when using linkage rules (NocoBase installed via create-nocobase-app) ([#5249](https://github.com/nocobase/nocobase/pull/5249)) by @zhangzhonghe
+
+## [v1.3.20-beta](https://github.com/nocobase/nocobase/compare/v1.3.19-beta...v1.3.20-beta) - 2024-09-10
+
+### 🚀 Improvements
+
+- **[client]** Support for displaying deeper level association fields in data blocks ([#5243](https://github.com/nocobase/nocobase/pull/5243)) by @zhangzhonghe
+
+### 🐛 Bug Fixes
+
+- **[client]**
+  - Menu modifications do not take effect in real-time ([#5207](https://github.com/nocobase/nocobase/pull/5207)) by @katherinehhh
+
+  - Support association field preloading in Handlebars templates ([#5236](https://github.com/nocobase/nocobase/pull/5236)) by @katherinehhh
+
+- **[Data visualization]** Fix incorrect data source context when multiple data sources exist ([#5237](https://github.com/nocobase/nocobase/pull/5237)) by @2013xile
+
+## [v1.3.19-beta](https://github.com/nocobase/nocobase/compare/v1.3.18-beta...v1.3.19-beta) - 2024-09-08
+
+### 🐛 Bug Fixes
+
+- **[client]** Fix URL anomalies caused by using popups together with Link buttons ([#5219](https://github.com/nocobase/nocobase/pull/5219)) by @zhangzhonghe
+
+## [v1.3.18-beta](https://github.com/nocobase/nocobase/compare/v1.3.17-beta...v1.3.18-beta) - 2024-09-08
+
+### 🐛 Bug Fixes
+
+- **[Collection field: Many to many (array)]** Fix the error when deleting a collection contains m2m array fields ([#5231](https://github.com/nocobase/nocobase/pull/5231)) by @2013xile
+
+## [v1.3.17-beta](https://github.com/nocobase/nocobase/compare/v1.3.16-beta...v1.3.17-beta) - 2024-09-07
+
+### 🎉 New Features
+
+- **[client]** Supports configuration of linkage rules in sub-forms and sub-forms. ([#5159](https://github.com/nocobase/nocobase/pull/5159)) by @zhangzhonghe
+
+### 🚀 Improvements
+
+- **[client]**
+  - default time for display is 00:00:00 ([#5226](https://github.com/nocobase/nocobase/pull/5226)) by @chenos
+
+  - plugins can also be enabled when the plugin dependency version is inconsistent ([#5225](https://github.com/nocobase/nocobase/pull/5225)) by @chenos
+
+- **[server]** provide more user-friendly application-level error messages ([#5220](https://github.com/nocobase/nocobase/pull/5220)) by @chenos
+
+### 🐛 Bug Fixes
+
+- **[client]** Fix the "Maximum call stack size exceeded" error that occurs in the details block ([#5228](https://github.com/nocobase/nocobase/pull/5228)) by @zhangzhonghe
+
+- **[Collection field: Many to many (array)]** Fix the error where setting a field of `uid` type as target key for a many to many (array) field ([#5229](https://github.com/nocobase/nocobase/pull/5229)) by @2013xile
+
+- **[UI schema storage]** Fix the issue that member roles clicking the button reported no permission ([#5206](https://github.com/nocobase/nocobase/pull/5206)) by @zhangzhonghe
+
+- **[Workflow]** Fix trigger type column showing wrong text after new workflow created ([#5222](https://github.com/nocobase/nocobase/pull/5222)) by @mytharcher
+
+- **[Users]** Remove phone format validation when editing user phones in user management ([#5221](https://github.com/nocobase/nocobase/pull/5221)) by @2013xile
+
+## [v1.3.16-beta](https://github.com/nocobase/nocobase/compare/v1.3.15-beta...v1.3.16-beta) - 2024-09-06
+
+### 🚀 Improvements
+
+- **[client]**
+  - Placeholder added when the user has UI configuration permissions but no view permissions for the collection ([#5208](https://github.com/nocobase/nocobase/pull/5208)) by @katherinehhh
+
+  - Display system title when logo is missing. ([#5175](https://github.com/nocobase/nocobase/pull/5175)) by @maoyutofu
+
+- **[Authentication]** support line break in system title ([#5211](https://github.com/nocobase/nocobase/pull/5211)) by @chenos
+
+- **[Workflow: SQL node]** Change result data structure of SQL node to only contains data. ([#5189](https://github.com/nocobase/nocobase/pull/5189)) by @mytharcher
+Reference: [SQL Operation](https://docs.nocobase.com/handbook/workflow/nodes/sql)
+- **[Access control]** Make the `Permissions` Tab pannel of the `Users & Permissions` configuration page expandable. ([#5216](https://github.com/nocobase/nocobase/pull/5216)) by @zhangzhonghe
+Reference: [Development Guide](https://docs.nocobase.com/handbook/acl#development-guide)
+- **[Action: Batch edit]** batch updated and batch edit, change 'All' to 'Entire collection" ([#5200](https://github.com/nocobase/nocobase/pull/5200)) by @katherinehhh
+
+### 🐛 Bug Fixes
+
+- **[client]**
+  - component display error when switching assignment types in linkage rules ([#5180](https://github.com/nocobase/nocobase/pull/5180)) by @katherinehhh
+
+  - Fix an issue where using variables in data scope reported an error. ([#5195](https://github.com/nocobase/nocobase/pull/5195)) by @zhangzhonghe
+
+  - issue with  custom request refreshDataBlockRequest ([#5188](https://github.com/nocobase/nocobase/pull/5188)) by @katherinehhh
+
+- **[Data visualization]** Fixed the issue of getting wrong value when aggregating select fields ([#5214](https://github.com/nocobase/nocobase/pull/5214)) by @2013xile
+
+- **[Data source manager]** Fixed incorrect `rowKey` of the datasource table in `Users & Permissions` page ([#5215](https://github.com/nocobase/nocobase/pull/5215)) by @gchust
+
+- **[Workflow: HTTP request node]** Fix error when using non-string variable in request parameters. ([#5204](https://github.com/nocobase/nocobase/pull/5204)) by @mytharcher
+
+- **[Collection field: Formula]** fix formula field serve test ([#5197](https://github.com/nocobase/nocobase/pull/5197)) by @katherinehhh
+
+- **[App backup & restore (deprecated)]** fix test case errors ([#5201](https://github.com/nocobase/nocobase/pull/5201)) by @chenos
+
+- **[Data source: REST API]**
+  - collection name should be disabled in rest-api collection by @katherinehhh
+
+  - Rest api locale improve by @katherinehhh
+
+## [v1.3.15-beta](https://github.com/nocobase/nocobase/compare/v1.3.14-beta...v1.3.15-beta) - 2024-09-04
+
+### 🐛 Bug Fixes
+
+- **[Workflow]** Fix missed fields in workflow variables. ([#5187](https://github.com/nocobase/nocobase/pull/5187)) by @mytharcher
+
+- **[Collection field: Markdown(Vditor)]** issue with markdown(Vditor) ([#5176](https://github.com/nocobase/nocobase/pull/5176)) by @katherinehhh
+
+## [v1.3.14-beta](https://github.com/nocobase/nocobase/compare/v1.3.13-beta...v1.3.14-beta) - 2024-09-03
+
+### 🎉 New Features
+
+- **[client]** Add support for many-to-many association fields. ([#5178](https://github.com/nocobase/nocobase/pull/5178)) by @zhangzhonghe
+
+### 🚀 Improvements
+
+- **[Action: Custom request]** remove linkageRule for custom request in create form ([#5179](https://github.com/nocobase/nocobase/pull/5179)) by @katherinehhh
+
+### 🐛 Bug Fixes
+
+- **[Collection field: Formula]** formula field adaptation time field ([#5168](https://github.com/nocobase/nocobase/pull/5168)) by @katherinehhh
+
 ## [v1.3.13-beta](https://github.com/nocobase/nocobase/compare/v1.3.12-beta...v1.3.13-beta) - 2024-09-03
 
 ### 🐛 Bug Fixes

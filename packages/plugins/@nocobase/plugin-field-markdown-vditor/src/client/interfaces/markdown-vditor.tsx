@@ -45,6 +45,7 @@ export class MarkdownVditorFieldInterface extends CollectionFieldInterface {
       'x-component': 'MarkdownVditor',
     },
   };
+  availableTypes = ['text', 'json', 'string'];
   properties = {
     ...defaultProps,
     'uiSchema.x-component-props.fileCollection': {

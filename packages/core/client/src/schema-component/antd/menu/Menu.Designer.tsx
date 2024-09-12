@@ -272,7 +272,7 @@ export const MenuDesigner = () => {
       title: field.title,
       icon: field.componentProps.icon,
     };
-  }, [field]);
+  }, [field.title, field.componentProps.icon]);
   if (fieldSchema['x-component'] === 'Menu.URL') {
     schema.properties['href'] = urlSchema;
     schema.properties['params'] = paramsSchema;
@@ -364,7 +364,6 @@ export const MenuDesigner = () => {
       title: t('Delete menu item'),
     };
   }, [t]);
-
   return (
     <GeneralSchemaDesigner>
       <SchemaSettingsModalItem

@@ -7,11 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { css } from '@emotion/css';
 import { ISchema, Schema, useField, useForm } from '@formily/react';
+import { Select } from 'antd';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { Select } from 'antd';
 import { useCollectionManager_deprecated, useDesignable } from '..';
 import { SchemaSettingsModalItem } from './SchemaSettings';
 
@@ -41,7 +40,7 @@ export const SchemaSettingsNumberFormat = function NumberFormatConfig(props: { f
   const collectionField = getCollectionJoinField(fieldSchema?.['x-collection-field']) || {};
   const { formatStyle, unitConversion, unitConversionType, separator, step, addonBefore, addonAfter } =
     fieldSchema['x-component-props'] || {};
-  const { step: prescition } = collectionField?.uiSchema['x-component-props'] || {};
+  const { step: prescition } = collectionField?.uiSchema?.['x-component-props'] || {};
 
   return (
     <SchemaSettingsModalItem
