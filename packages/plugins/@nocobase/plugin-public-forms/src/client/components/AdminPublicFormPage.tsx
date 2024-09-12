@@ -18,6 +18,7 @@ import {
   SchemaComponent,
   useGlobalTheme,
   FormItem,
+  CardItem,
 } from '@nocobase/client';
 import { Breadcrumb, Button, Dropdown, Space, Spin, Switch, Input, message, Checkbox, Popover, QRCode } from 'antd';
 import React, { useState } from 'react';
@@ -185,25 +186,11 @@ export function AdminPublicFormPage() {
         </Space>
       </div>
       <div style={{ maxWidth: 800, margin: '100px auto' }}>
-        {/* <Modal
-          centered
-          title={t('Password')}
-          open={openPassword}
-          onCancel={() => setOpenPassword(false)}
-          onOk={() => {
-            setOpenPassword(false);
-            handleEditPublicForm({ password: pwd === '' ? null : pwd });
-          }}
-        >
-          <Input.Password
-            defaultValue={password}
-            visibilityToggle={true}
-            onChange={(e) => {
-              setPwd(e.target.value);
-            }}
-          />
-        </Modal> */}
-        <RemoteSchemaComponent uid={params.name} scope={{ useCreateActionProps: usePublicSubmitActionProps }} />
+        <RemoteSchemaComponent
+          uid={params.name}
+          scope={{ useCreateActionProps: usePublicSubmitActionProps }}
+          components={{ PublicFormMessageProvider: (props) => props.children }}
+        />
         <PoweredBy />
       </div>
     </div>

@@ -24,6 +24,7 @@ const initialSchema = (values, formSchema) => {
   return {
     type: 'void',
     name: uid(),
+    'x-decorator': 'PublicFormMessageProvider',
     properties: {
       form: formSchema,
       success: {

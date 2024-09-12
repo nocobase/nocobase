@@ -6,26 +6,42 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
-
-import { useForm } from '@formily/react';
-import { useDataBlockResource } from '@nocobase/client';
+import { useContext } from 'react';
+import { useForm, useFieldSchema, useField } from '@formily/react';
+import { useDataBlockResource, useCollectValuesToSubmit, useFormBlockContext } from '@nocobase/client';
 import { App as AntdApp } from 'antd';
+import { PublicFormMessageContext } from '../components/PublicFormPage';
 
-// TODO：这里暂时只实现了基本流程，更多参考内核 @nocobase/client 的 useCreateActionProps
 export const usePublicSubmitActionProps = () => {
-  const { message } = AntdApp.useApp();
   const form = useForm();
   const resource = useDataBlockResource();
+  const actionField = useField();
+  const collectValues = useCollectValuesToSubmit();
+  const actionSchema = useFieldSchema();
+  const { updateAssociationValues } = useFormBlockContext();
+  const { setShowMessage } = useContext(PublicFormMessageContext);
   return {
     type: 'primary',
     async onClick() {
+      const { skipValidator, triggerWorkflows } = actionSchema?.['x-action-settings'] ?? {};
+      if (!skipValidator) {
+        await form.submit();
+      }
+      const values = await collectValues();
+      actionField.data = actionField.data || {};
+      actionField.data.loading = true;
+
       await form.submit();
-      const values = form.values;
       await resource.publicSubmit({
         values,
+        triggerWorkflows: triggerWorkflows?.length
+          ? triggerWorkflows.map((row) => [row.workflowKey, row.context].filter(Boolean).join('!')).join(',')
+          : undefined,
+        updateAssociationValues,
       });
       await form.reset();
-      message.success('Saved successfully!');
+      actionField.data.loading = false;
+      setShowMessage(true);
     },
   };
 };

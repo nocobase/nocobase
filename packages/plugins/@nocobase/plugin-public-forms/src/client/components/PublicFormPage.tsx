@@ -22,8 +22,9 @@ import {
   useRequest,
   ACLCustomContext,
 } from '@nocobase/client';
+import { useField } from '@formily/react';
 import { Input, Modal, Spin } from 'antd';
-import React, { useContext, useMemo, useState } from 'react';
+import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router';
 import { usePublicSubmitActionProps } from '../hooks';
 import { UnEnabledFormPlaceholder } from './UnEnabledFormPlaceholder';
@@ -71,6 +72,38 @@ function PublicAPIClientProvider({ children }) {
   return <APIClientProvider apiClient={apiClient}>{children}</APIClientProvider>;
 }
 
+export const PublicFormMessageContext = createContext<any>({});
+
+const PublicFormMessageProvider = (props) => {
+  const [showMessage, setShowMessage] = useState(false);
+  const field = useField();
+  useEffect(() => {
+    if (showMessage) {
+      field.form.query('success').take((f) => {
+        f.visible = true;
+        f.hidden = false;
+      });
+      field.form.query('form').take((f) => {
+        f.visible = false;
+        f.hidden = true;
+      });
+    } else {
+      field.form.query('success').take((f) => {
+        f.visible = false;
+        f.hidden = true;
+      });
+      field.form.query('form').take((f) => {
+        f.visible = true;
+        f.hidden = false;
+      });
+    }
+  }, [showMessage]);
+  return (
+    <PublicFormMessageContext.Provider value={{ showMessage, setShowMessage }}>
+      {props.children}
+    </PublicFormMessageContext.Provider>
+  );
+};
 function InternalPublicForm() {
   const params = useParams();
   const apiClient = useAPIClient();
@@ -92,6 +125,7 @@ function InternalPublicForm() {
   );
   const [pwd, setPwd] = useState('');
   const ctx = useContext(SchemaComponentContext);
+
   if (error) {
     if (error?.['response']?.status === 401) {
       return (
@@ -141,7 +175,10 @@ function InternalPublicForm() {
               <SchemaComponentContext.Provider value={{ ...ctx, designable: false }}>
                 <SchemaComponent
                   schema={data?.data?.schema}
-                  scope={{ useCreateActionProps: usePublicSubmitActionProps }}
+                  scope={{
+                    useCreateActionProps: usePublicSubmitActionProps,
+                  }}
+                  components={{ PublicFormMessageProvider: PublicFormMessageProvider }}
                 />
               </SchemaComponentContext.Provider>
             </PublicPublicFormProvider>
