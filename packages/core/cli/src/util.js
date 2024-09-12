@@ -163,6 +163,10 @@ exports.promptForTs = () => {
   console.log(chalk.green('WAIT: ') + 'TypeScript compiling...');
 };
 
+exports.downloadPro = async () => {
+  await run('yarn', ['nocobase', 'pkg', 'download-pro']);
+};
+
 exports.updateJsonFile = async (target, fn) => {
   const content = await readFile(target, 'utf-8');
   const json = JSON.parse(content);

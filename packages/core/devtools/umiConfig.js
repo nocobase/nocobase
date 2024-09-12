@@ -176,7 +176,7 @@ export default function devDynamicImport(packageName: string): Promise<any> {
     if (fs.existsSync(this.outputPath)) {
       fs.rmSync(this.outputPath, { recursive: true, force: true });
     }
-    fs.mkdirSync(this.outputPath);
+    fs.mkdirSync(this.outputPath, { recursive: true, force: true });
     const validPluginPaths = this.pluginsPath.filter((pluginsPath) => fs.existsSync(pluginsPath));
     if (!validPluginPaths.length || process.env.NODE_ENV === 'production') {
       fs.writeFileSync(this.indexPath, this.emptyIndexContent);

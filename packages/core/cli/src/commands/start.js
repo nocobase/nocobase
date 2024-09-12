@@ -8,7 +8,7 @@
  */
 
 const { Command } = require('commander');
-const { isDev, run, postCheck, runInstall, promptForTs } = require('../util');
+const { isDev, run, postCheck, downloadPro, promptForTs } = require('../util');
 const { existsSync, rmSync } = require('fs');
 const { resolve } = require('path');
 const chalk = require('chalk');
@@ -39,7 +39,7 @@ module.exports = (cli) => {
     .allowUnknownOption()
     .action(async (opts) => {
       if (opts.quickstart) {
-        await run('yarn', ['nocobase', 'pkg', 'download-pro']);
+        await downloadPro();
       }
       if (opts.port) {
         process.env.APP_PORT = opts.port;

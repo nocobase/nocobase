@@ -8,7 +8,7 @@
  */
 
 const { Command } = require('commander');
-const { run, isDev, isProd, promptForTs } = require('../util');
+const { run, isDev, isProd, promptForTs, downloadPro } = require('../util');
 
 /**
  *
@@ -23,7 +23,7 @@ module.exports = (cli) => {
     .action(async (options) => {
       const cmd = process.argv.slice(2)?.[0];
       if (cmd === 'install') {
-        await run('yarn', ['nocobase', 'pkg', 'download-pro']);
+        await downloadPro();
       }
       if (isDev()) {
         promptForTs();
