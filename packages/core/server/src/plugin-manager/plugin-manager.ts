@@ -709,47 +709,12 @@ export class PluginManager {
       );
       await execa('yarn', ['nocobase', 'postinstall']);
     };
-    if (options?.force) {
-      await this.repository.destroy({
-        filter: {
-          name: pluginNames,
-        },
-      });
-      this.app.log.warn(`force remove plugins ${pluginNames.join(',')}`);
-    } else {
-      await this.app.load();
-      for (const pluginName of pluginNames) {
-        const plugin = this.get(pluginName);
-        if (!plugin) {
-          continue;
-        }
-        if (plugin.enabled) {
-          throw new Error(`plugin is enabled [${pluginName}]`);
-        }
-        await plugin.beforeRemove();
-      }
-      await this.repository.destroy({
-        filter: {
-          name: pluginNames,
-        },
-      });
-      const plugins: Plugin[] = [];
-      for (const pluginName of pluginNames) {
-        const plugin = this.get(pluginName);
-        if (!plugin) {
-          continue;
-        }
-        plugins.push(plugin);
-        this.del(pluginName);
-        await plugin.afterRemove();
-      }
-      if (await this.app.isStarted()) {
-        await this.app.tryReloadOrRestart();
-      }
-    }
-    if (options?.removeDir) {
-      await removeDir();
-    }
+    await this.repository.destroy({
+      filter: {
+        name: pluginNames,
+      },
+    });
+    // await removeDir();
     await execa('yarn', ['nocobase', 'refresh'], {
       env: process.env,
     });

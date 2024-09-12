@@ -9,7 +9,7 @@
 
 import { Plugin, PluginManager } from '@nocobase/server';
 import _ from 'lodash';
-import { findBuiltInPlugins, findLocalPlugins } from './findPackageNames';
+import { findBuiltInPlugins, findLocalPlugins, trim } from './findPackageNames';
 
 export class PresetNocoBase extends Plugin {
   splitNames(name: string) {
@@ -36,10 +36,14 @@ export class PresetNocoBase extends Plugin {
   }
 
   async getAllPluginNamesAndDB() {
-    const items = await this.pm.repository.find();
+    const items = await this.pm.repository.find({
+      filter: {
+        enabled: true,
+      },
+    });
     const plugins1 = await findBuiltInPlugins();
     const plugins2 = await findLocalPlugins();
-    return _.uniq([...plugins1, ...plugins2, ...items.map((item) => item.name)]);
+    return trim(_.uniq([...plugins1, ...plugins2, ...items.map((item) => item.name)]));
   }
 
   async getAllPlugins(locale = 'en-US') {

@@ -17,7 +17,7 @@ function splitNames(name: string) {
   return (name || '').split(',').filter(Boolean);
 }
 
-async function trim(packageNames: string[]) {
+export async function trim(packageNames: string[]) {
   const nameOrPkgs = _.uniq(packageNames).filter(Boolean);
   const names = [];
   for (const nameOrPkg of nameOrPkgs) {
@@ -66,7 +66,6 @@ export async function findPackageNames() {
     ];
     const nocobasePlugins = await findNocobasePlugins();
     const { APPEND_PRESET_BUILT_IN_PLUGINS = '', APPEND_PRESET_LOCAL_PLUGINS = '' } = process.env;
-    console.log(_.difference(packageNames, excludes));
     return trim(
       _.difference(packageNames, excludes)
         .filter(Boolean)
