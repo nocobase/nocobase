@@ -169,16 +169,15 @@ Handlebars.registerHelper('dateFormat', function dateFormat(date, format) {
 export async function getRenderContent(templateEngine, content, variables, localVariables, defaultParse) {
   if (content && templateEngine === 'handlebars') {
     try {
-      const { evaluate } = evaluators.get('string');
-      const { exp, scope: expScope } = await replaceVariables(content, {
-        variables,
-        localVariables,
-      });
-      const result = evaluate(exp, { now: () => new Date().toString(), ...expScope });
-      const renderedContent = Handlebars.compile(result);
+      const renderedContent = Handlebars.compile(content);
       // 处理渲染后的内容
       const data = getVariablesData(localVariables);
-      const html = renderedContent({ ...variables.ctxRef.current, ...data, ...expScope });
+      const { $nDate } = variables.ctxRef.current;
+      const variableDate = {};
+      Object.keys($nDate).map((v) => {
+        variableDate[v] = $nDate[v]();
+      });
+      const html = renderedContent({ ...variables.ctxRef.current, ...data, $nDate: variableDate });
       return await defaultParse(html);
     } catch (error) {
       console.log(error);
