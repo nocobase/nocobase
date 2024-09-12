@@ -27,6 +27,7 @@ export const publicFormsSchema: ISchema = {
     },
     showIndex: true,
     dragSort: false,
+    rowKey: 'key',
   },
   properties: {
     actions: {
