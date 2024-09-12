@@ -87,8 +87,8 @@ export const formatFn = (sequelize: Sequelize, dialect: string, field: Col | Lit
   }
 };
 
-const toTimeStampFn = (sequelize: Sequelize, dialect: string, field: string, options: any) => {
-  const accuracy = options.uiSchema?.['x-component-props']?.accuracy || options.accuracy || 'second';
+const toTimeStampFn = (sequelize: Sequelize, dialect: string, field: string, options?: any) => {
+  const accuracy = options?.uiSchema?.['x-component-props']?.accuracy || options?.accuracy || 'second';
   const col = sequelize.getQueryInterface().quoteIdentifiers(field);
   switch (dialect) {
     case 'sqlite':

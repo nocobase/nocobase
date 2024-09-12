@@ -249,7 +249,7 @@ describe('api', () => {
     await repo.create({
       values: {
         id: 5,
-        unixTs: 1672531200000,
+        unixTs: '2023-01-01 12:34:56',
       },
     });
     const ctx = {
@@ -284,11 +284,11 @@ describe('api', () => {
     expect(ctx.action.params.values.data).toMatchObject([{ unixTs: '2023-01-01' }]);
   });
 
-  test.only('unixTsMs format', async () => {
+  test('unixTsMs format', async () => {
     await repo.create({
       values: {
         id: 6,
-        unixTsMs: 1672531200000,
+        unixTsMs: '2023-01-01 12:34:56',
       },
     });
     const ctx = {
