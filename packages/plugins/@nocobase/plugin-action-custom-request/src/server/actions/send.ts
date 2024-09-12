@@ -143,6 +143,7 @@ export async function send(this: CustomRequestPlugin, ctx: Context, next: Next) 
     },
     currentUser,
     currentTime: new Date().toISOString(),
+    $nToken: ctx.getBearerToken(),
   };
 
   const getParsedValue = (value) => {
