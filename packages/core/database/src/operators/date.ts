@@ -9,80 +9,126 @@
 
 import { parseDate } from '@nocobase/utils';
 import { Op } from 'sequelize';
+import moment from 'moment';
 
 function isDate(input) {
   return input instanceof Date || Object.prototype.toString.call(input) === '[object Date]';
 }
 
-const toDate = (date) => {
-  if (isDate(date)) {
-    return date;
+const toDate = (date, options: any = {}) => {
+  const { ctx } = options;
+  const val = isDate(date) ? date : new Date(date);
+  const field = ctx.db.getFieldByPath(ctx.fieldPath);
+
+  if (!field) {
+    return val;
   }
-  return new Date(date);
+
+  if (field.constructor.name === 'UnixTimestampField') {
+    return field.dateToValue(val);
+  }
+
+  if (field.constructor.name === 'DatetimeNoTzField') {
+    return moment(val).utcOffset('+00:00').format('YYYY-MM-DD HH:mm:ss');
+  }
+
+  if (field.constructor.name === 'DateOnlyField') {
+    return moment(val).format('YYYY-MM-DD HH:mm:ss');
+  }
+
+  return val;
 };
+
+function parseDateTimezone(ctx) {
+  const field = ctx.db.getFieldByPath(ctx.fieldPath);
+
+  if (!field) {
+    return ctx.db.options.timezone;
+  }
+
+  if (field.constructor.name === 'DatetimeNoTzField') {
+    return '+00:00';
+  }
+
+  if (field.constructor.name === 'DateOnlyField') {
+    return '+00:00';
+  }
+
+  return ctx.db.options.timezone;
+}
+
+function isDatetimeString(str) {
+  return /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(str);
+}
 
 export default {
   $dateOn(value, ctx) {
     const r = parseDate(value, {
-      timezone: ctx.db.options.timezone,
+      timezone: parseDateTimezone(ctx),
     });
+
     if (typeof r === 'string') {
       return {
-        [Op.eq]: toDate(r),
+        [Op.eq]: toDate(r, { ctx }),
       };
     }
+
     if (Array.isArray(r)) {
       return {
-        [Op.and]: [{ [Op.gte]: toDate(r[0]) }, { [Op.lt]: toDate(r[1]) }],
+        [Op.and]: [{ [Op.gte]: toDate(r[0], { ctx }) }, { [Op.lt]: toDate(r[1], { ctx }) }],
       };
     }
+
     throw new Error(`Invalid Date ${JSON.stringify(value)}`);
   },
 
   $dateNotOn(value, ctx) {
     const r = parseDate(value, {
-      timezone: ctx.db.options.timezone,
+      timezone: parseDateTimezone(ctx),
     });
     if (typeof r === 'string') {
       return {
-        [Op.ne]: toDate(r),
+        [Op.ne]: toDate(r, { ctx }),
       };
     }
     if (Array.isArray(r)) {
       return {
-        [Op.or]: [{ [Op.lt]: toDate(r[0]) }, { [Op.gte]: toDate(r[1]) }],
+        [Op.or]: [{ [Op.lt]: toDate(r[0], { ctx }) }, { [Op.gte]: toDate(r[1], { ctx }) }],
       };
     }
+
     throw new Error(`Invalid Date ${JSON.stringify(value)}`);
   },
 
   $dateBefore(value, ctx) {
     const r = parseDate(value, {
-      timezone: ctx.db.options.timezone,
+      timezone: parseDateTimezone(ctx),
     });
+
     if (typeof r === 'string') {
       return {
-        [Op.lt]: toDate(r),
+        [Op.lt]: toDate(r, { ctx }),
       };
     } else if (Array.isArray(r)) {
       return {
-        [Op.lt]: toDate(r[0]),
+        [Op.lt]: toDate(r[0], { ctx }),
       };
     }
+
     throw new Error(`Invalid Date ${JSON.stringify(value)}`);
   },
 
   $dateNotBefore(value, ctx) {
     const r = parseDate(value, {
-      timezone: ctx.db.options.timezone,
+      timezone: parseDateTimezone(ctx),
     });
     if (typeof r === 'string') {
       return {
-        [Op.gte]: toDate(r),
+        [Op.gte]: toDate(r, { ctx }),
       };
     } else if (Array.isArray(r)) {
       return {
-        [Op.gte]: toDate(r[0]),
+        [Op.gte]: toDate(r[0], { ctx }),
       };
     }
     throw new Error(`Invalid Date ${JSON.stringify(value)}`);
@@ -90,15 +136,15 @@ export default {
 
   $dateAfter(value, ctx) {
     const r = parseDate(value, {
-      timezone: ctx.db.options.timezone,
+      timezone: parseDateTimezone(ctx),
     });
     if (typeof r === 'string') {
       return {
-        [Op.gt]: toDate(r),
+        [Op.gt]: toDate(r, { ctx }),
       };
     } else if (Array.isArray(r)) {
       return {
-        [Op.gte]: toDate(r[1]),
+        [Op.gte]: toDate(r[1], { ctx }),
       };
     }
     throw new Error(`Invalid Date ${JSON.stringify(value)}`);
@@ -106,15 +152,15 @@ export default {
 
   $dateNotAfter(value, ctx) {
     const r = parseDate(value, {
-      timezone: ctx.db.options.timezone,
+      timezone: parseDateTimezone(ctx),
     });
     if (typeof r === 'string') {
       return {
-        [Op.lte]: toDate(r),
+        [Op.lte]: toDate(r, { ctx }),
       };
     } else if (Array.isArray(r)) {
       return {
-        [Op.lt]: toDate(r[1]),
+        [Op.lt]: toDate(r[1], { ctx }),
       };
     }
     throw new Error(`Invalid Date ${JSON.stringify(value)}`);
@@ -122,11 +168,11 @@ export default {
 
   $dateBetween(value, ctx) {
     const r = parseDate(value, {
-      timezone: ctx.db.options.timezone,
+      timezone: parseDateTimezone(ctx),
     });
     if (r) {
       return {
-        [Op.and]: [{ [Op.gte]: toDate(r[0]) }, { [Op.lt]: toDate(r[1]) }],
+        [Op.and]: [{ [Op.gte]: toDate(r[0], { ctx }) }, { [Op.lt]: toDate(r[1], { ctx }) }],
       };
     }
     throw new Error(`Invalid Date ${JSON.stringify(value)}`);

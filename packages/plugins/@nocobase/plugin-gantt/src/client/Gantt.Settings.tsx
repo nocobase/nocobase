@@ -366,7 +366,7 @@ export const ganttSettings = new SchemaSettings({
         return {
           title: t('Start date field'),
           value: fieldNames.start,
-          options: useOptions('date'),
+          options: useOptions(['date', 'datetime', 'dateOnly', 'datetimeNoTz']),
           onChange: (start) => {
             const fieldNames = field.decoratorProps.fieldNames || {};
             fieldNames['start'] = start;
@@ -398,7 +398,7 @@ export const ganttSettings = new SchemaSettings({
         return {
           title: t('End date field'),
           value: fieldNames.end,
-          options: useOptions('date'),
+          options: useOptions(['date', 'datetime', 'dateOnly', 'datetimeNoTz']),
           onChange: (end) => {
             const fieldNames = field.decoratorProps.fieldNames || {};
             fieldNames['end'] = end;

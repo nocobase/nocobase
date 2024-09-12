@@ -27,6 +27,7 @@ import {
   SchemaSettingsDataScope,
   removeNullCondition,
   useFormBlockContext,
+  useLocalVariables,
 } from '@nocobase/client';
 import { useChartsTranslation } from '../locale';
 import { Schema, useField, useFieldSchema } from '@formily/react';
@@ -222,6 +223,7 @@ const EditDefaultValue = () => {
   const { t } = useChartsTranslation();
   const { dn } = useDesignable();
   const variables = useContext(VariablesContext);
+  const localVariables = useLocalVariables();
   const field = useField<Field>();
   const fieldSchema = useFieldSchema();
   const { getTranslatedTitle } = useChartFilter();
@@ -257,7 +259,7 @@ const EditDefaultValue = () => {
           },
         });
         dn.refresh();
-        setDefaultValue(field, variables);
+        setDefaultValue(field, variables, localVariables);
       }}
     />
   );
