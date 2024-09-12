@@ -1,4 +1,4 @@
-import { getUmiConfig } from '@nocobase/devtools/umiConfig';
+import { generatePlugins, getUmiConfig } from '@nocobase/devtools/umiConfig';
 import path from 'path';
 import { defineConfig } from 'umi';
 
@@ -8,9 +8,10 @@ process.env.MFSU_AD = 'none';
 process.env.DID_YOU_KNOW = 'none';
 
 const pluginPrefix = (process.env.PLUGIN_PACKAGE_PREFIX || '').split(',').filter((item) => !item.includes('preset')); // 因为现在 preset 是直接引入的，所以不能忽略，如果以后 preset 也是动态插件的形式引入，那么这里可以去掉
-
 const isDevCmd = !!process.env.IS_DEV_CMD;
 const appPublicPath = isDevCmd ? '/' : '{{env.APP_PUBLIC_PATH}}';
+
+generatePlugins();
 
 export default defineConfig({
   title: 'Loading...',
