@@ -264,10 +264,14 @@ export const Calendar: any = withDynamicSchemaProps(
       };
 
       const eventPropGetter = (event) => {
-        const fontColor = new TinyColor(event.color).isLight() ? '#282c34' : '#f5f5f5';
-        const textShadow = new TinyColor(event.color).isLight() ? '#f5f5f5' : '#282c34';
-        const backgroundColor = getColor(event.color) ? getColor(event.color) : '';
-        return { style: { color: fontColor, backgroundColor, fontWeight: '600', textShadow: `0 0 2px ${textShadow}` } };
+        if (event.color) {
+          const fontColor = new TinyColor(event.color).isLight() ? '#282c34' : '#f5f5f5';
+          const textShadow = new TinyColor(event.color).isLight() ? '#f5f5f5' : '#282c34';
+          const backgroundColor = getColor(event.color) ? getColor(event.color) : '';
+          return {
+            style: { color: fontColor, backgroundColor, fontWeight: '600', textShadow: `0 0 2px ${textShadow}` },
+          };
+        }
       };
       const isColor = (str) => {
         const colorRegex = /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/;
