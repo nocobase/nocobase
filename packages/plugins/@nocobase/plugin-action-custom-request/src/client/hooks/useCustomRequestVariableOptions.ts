@@ -43,6 +43,11 @@ export const useCustomRequestVariableOptions = () => {
         title: t('Current time', { ns: 'client' }),
         children: null,
       },
+      {
+        name: '$nToken',
+        title: 'API token',
+        children: null,
+      },
     ];
   }, [fields, userFields]);
 };
