@@ -22,7 +22,7 @@ describe('formatter', () => {
       col: (field: string) => field,
       getDialect: () => 'sqlite',
     } as any;
-    const result = formatter(sequelize, 'datetime', field, format) as any;
+    const result = formatter({ sequelize, type: 'datetime', field, format }) as any;
     expect(result.format).toEqual('%Y-%m-%d %H:%M:%S');
   });
 
@@ -36,7 +36,7 @@ describe('formatter', () => {
       col: (field: string) => field,
       getDialect: () => 'mysql',
     } as any;
-    const result = formatter(sequelize, 'datetime', field, format) as any;
+    const result = formatter({ sequelize, type: 'datetime', field, format }) as any;
     expect(result.format).toEqual('%Y-%m-%d %H:%i:%S');
   });
 
@@ -50,7 +50,7 @@ describe('formatter', () => {
       col: (field: string) => field,
       getDialect: () => 'postgres',
     } as any;
-    const result = formatter(sequelize, 'datetime', field, format) as any;
+    const result = formatter({ sequelize, type: 'datetime', field, format }) as any;
     expect(result.format).toEqual('YYYY-MM-DD HH24:MI:SS');
   });
 });

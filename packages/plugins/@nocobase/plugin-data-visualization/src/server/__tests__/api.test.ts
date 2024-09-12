@@ -47,6 +47,23 @@ describe('api', () => {
           type: 'date',
           name: 'createdAt',
         },
+        {
+          type: 'dateOnly',
+          name: 'dateOnly',
+        },
+        {
+          type: 'unixTimestamp',
+          name: 'unixTs',
+        },
+        {
+          type: 'unixTimestamp',
+          name: 'unixTsMs',
+          uiSchema: {
+            'x-component-props': {
+              accuracy: 'millisecond',
+            },
+          },
+        },
       ],
     });
     await db.sync();
@@ -187,5 +204,122 @@ describe('api', () => {
     await compose([parseFieldAndAssociations, parseBuilder, queryData])(ctx, async () => {});
     expect(ctx.action.params.values.data).toBeDefined();
     expect(ctx.action.params.values.data).toMatchObject([{ createdAt: '2024-05-15' }]);
+  });
+
+  test('dateOnly format', async () => {
+    await repo.create({
+      values: {
+        id: 4,
+        dateOnly: '2024-05-14',
+      },
+    });
+    const ctx = {
+      app,
+      db,
+      timezone: '+08:25',
+      action: {
+        params: {
+          values: {
+            collection: 'chart_test',
+            measures: [
+              {
+                field: ['id'],
+                aggregation: 'count',
+              },
+            ],
+            dimensions: [
+              {
+                field: ['dateOnly'],
+                format: 'YYYY-MM-DD',
+              },
+            ],
+            filter: {
+              id: 4,
+            },
+          },
+        },
+      },
+    } as any;
+    await compose([parseFieldAndAssociations, parseBuilder, queryData])(ctx, async () => {});
+    expect(ctx.action.params.values.data).toBeDefined();
+    expect(ctx.action.params.values.data).toMatchObject([{ dateOnly: '2024-05-14' }]);
+  });
+
+  test('unixTs format', async () => {
+    await repo.create({
+      values: {
+        id: 5,
+        unixTs: 1672531200000,
+      },
+    });
+    const ctx = {
+      app,
+      db,
+      timezone: '+08:25',
+      action: {
+        params: {
+          values: {
+            collection: 'chart_test',
+            measures: [
+              {
+                field: ['id'],
+                aggregation: 'count',
+              },
+            ],
+            dimensions: [
+              {
+                field: ['unixTs'],
+                format: 'YYYY-MM-DD',
+              },
+            ],
+            filter: {
+              id: 5,
+            },
+          },
+        },
+      },
+    } as any;
+    await compose([parseFieldAndAssociations, parseBuilder, queryData])(ctx, async () => {});
+    expect(ctx.action.params.values.data).toBeDefined();
+    expect(ctx.action.params.values.data).toMatchObject([{ unixTs: '2023-01-01' }]);
+  });
+
+  test.only('unixTsMs format', async () => {
+    await repo.create({
+      values: {
+        id: 6,
+        unixTsMs: 1672531200000,
+      },
+    });
+    const ctx = {
+      app,
+      db,
+      timezone: '+08:25',
+      action: {
+        params: {
+          values: {
+            collection: 'chart_test',
+            measures: [
+              {
+                field: ['id'],
+                aggregation: 'count',
+              },
+            ],
+            dimensions: [
+              {
+                field: ['unixTsMs'],
+                format: 'YYYY-MM-DD',
+              },
+            ],
+            filter: {
+              id: 6,
+            },
+          },
+        },
+      },
+    } as any;
+    await compose([parseFieldAndAssociations, parseBuilder, queryData])(ctx, async () => {});
+    expect(ctx.action.params.values.data).toBeDefined();
+    expect(ctx.action.params.values.data).toMatchObject([{ unixTsMs: '2023-01-01' }]);
   });
 });

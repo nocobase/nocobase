@@ -27,6 +27,7 @@ type DimensionProps = {
   type?: string;
   alias?: string;
   format?: string;
+  options?: any;
 };
 
 type OrderProps = {
@@ -139,11 +140,11 @@ export const parseBuilder = async (ctx: Context, next: Next) => {
   });
 
   dimensions.forEach((dimension: DimensionProps & { field: string }) => {
-    const { field, format, alias, type } = dimension;
+    const { field, format, alias, type, options } = dimension;
     const attribute = [];
     const col = sequelize.col(field);
     if (format) {
-      attribute.push(formatter(sequelize, type, field, format, ctx.timezone));
+      attribute.push(formatter({ sequelize, type, field, format, timezone: ctx.timezone, options }));
     } else {
       attribute.push(col);
     }
@@ -211,11 +212,13 @@ export const parseFieldAndAssociations = async (ctx: Context, next: Next) => {
     const rawAttributes = collection.model.getAttributes();
     let field = rawAttributes[name]?.field || name;
     let fieldType = fields.get(name)?.type;
+    let fieldOptions = fields.get(name)?.options;
     if (target) {
       const targetField = fields.get(target) as Field;
       const targetCollection = db.getCollection(targetField.target);
       const targetFields = targetCollection.fields;
       fieldType = targetFields.get(name)?.type;
+      fieldOptions = targetFields.get(name)?.options;
       field = `${target}.${field}`;
       name = `${target}.${name}`;
       const targetType = fields.get(target)?.type;
@@ -230,6 +233,7 @@ export const parseFieldAndAssociations = async (ctx: Context, next: Next) => {
       field,
       name,
       type: fieldType,
+      options: fieldOptions,
       alias: selected.alias || name,
     };
   };

@@ -8,6 +8,10 @@
  */
 import { Sequelize } from 'sequelize';
 
+type Col = ReturnType<typeof Sequelize.col>;
+type Literal = ReturnType<typeof Sequelize.literal>;
+type Fn = ReturnType<typeof Sequelize.fn>;
+
 const getOffsetMinutesFromTimezone = (timezone: string) => {
   const sign = timezone.charAt(0);
   timezone = timezone.slice(1);
@@ -21,7 +25,7 @@ const getOffsetMinutesFromTimezone = (timezone: string) => {
 export const dateFormatFn = (
   sequelize: Sequelize,
   dialect: string,
-  field: string,
+  field: Col | Literal | Fn | string,
   format: string,
   timezone?: string,
 ) => {
@@ -35,9 +39,9 @@ export const dateFormatFn = (
         .replace(/mm/g, '%M')
         .replace(/ss/g, '%S');
       if (timezone) {
-        return sequelize.fn('strftime', format, sequelize.col(field), getOffsetMinutesFromTimezone(timezone));
+        return sequelize.fn('strftime', format, field, getOffsetMinutesFromTimezone(timezone));
       }
-      return sequelize.fn('strftime', format, sequelize.col(field));
+      return sequelize.fn('strftime', format, field);
     case 'mysql':
     case 'mariadb':
       format = format
@@ -50,45 +54,87 @@ export const dateFormatFn = (
       if (timezone) {
         return sequelize.fn(
           'date_format',
-          sequelize.fn('convert_tz', sequelize.col(field), process.env.DB_TIMEZONE || '+00:00', timezone),
+          sequelize.fn('convert_tz', field, process.env.TZ || '+00:00', timezone),
           format,
         );
       }
-      return sequelize.fn('date_format', sequelize.col(field), format);
+      return sequelize.fn('date_format', field, format);
     case 'postgres':
       format = format.replace(/hh/g, 'HH24').replace(/mm/g, 'MI').replace(/ss/g, 'SS');
       if (timezone) {
+        if (typeof field === 'string') {
+          field = sequelize.getQueryInterface().quoteIdentifiers(field);
+        }
         const fieldWithTZ = sequelize.literal(
-          `(${sequelize
-            .getQueryInterface()
-            .quoteIdentifiers(field)} AT TIME ZONE CURRENT_SETTING('TIMEZONE') AT TIME ZONE '${timezone}')`,
+          `(${field} AT TIME ZONE CURRENT_SETTING('TIMEZONE') AT TIME ZONE '${timezone}')`,
         );
         return sequelize.fn('to_char', fieldWithTZ, format);
       }
-      return sequelize.fn('to_char', sequelize.col(field), format);
-    default:
-      return sequelize.col(field);
-  }
-};
-
-/* istanbul ignore next -- @preserve */
-export const formatFn = (sequelize: Sequelize, dialect: string, field: string, format: string) => {
-  switch (dialect) {
-    case 'sqlite':
-    case 'postgres':
-      return sequelize.fn('format', format, sequelize.col(field));
+      return sequelize.fn('to_char', field, format);
     default:
       return field;
   }
 };
 
-export const formatter = (sequelize: Sequelize, type: string, field: string, format: string, timezone?: string) => {
+/* istanbul ignore next -- @preserve */
+export const formatFn = (sequelize: Sequelize, dialect: string, field: Col | Literal, format: string) => {
+  switch (dialect) {
+    case 'sqlite':
+    case 'postgres':
+      return sequelize.fn('format', format, field);
+    default:
+      return field;
+  }
+};
+
+const toTimeStampFn = (sequelize: Sequelize, dialect: string, field: string, options: any) => {
+  const accuracy = options.uiSchema?.['x-component-props']?.accuracy || options.accuracy || 'second';
+  const col = sequelize.getQueryInterface().quoteIdentifiers(field);
+  switch (dialect) {
+    case 'sqlite':
+      if (accuracy === 'millisecond') {
+        return sequelize.literal(`DATETIME(ROUND(${col} / 1000), 'unixepoch')`);
+      }
+      return sequelize.literal(`DATETIME(${col}, 'unixepoch')`);
+    case 'mysql':
+    case 'mariadb':
+      if (accuracy === 'millisecond') {
+        return sequelize.fn('from_unixtime', sequelize.literal(`ROUND(${col} / 1000)`));
+      }
+      return sequelize.fn('from_unixtime', sequelize.col(field));
+    case 'postgres':
+      if (accuracy === 'millisecond') {
+        return sequelize.fn('to_timestamp', sequelize.literal(`ROUND(${col} / 1000)`));
+      }
+      return sequelize.fn('to_timestamp', sequelize.col(field));
+    default:
+      return sequelize.col(field);
+  }
+};
+
+export const formatter = (options: {
+  sequelize: Sequelize;
+  type: string;
+  field: string;
+  format: string;
+  options?: any;
+  timezone?: string;
+}) => {
+  const { sequelize, type, field: fieldName, format, timezone, options: fieldOptions } = options;
+  const field = sequelize.col(fieldName);
   const dialect = sequelize.getDialect();
+  const f = toTimeStampFn(sequelize, dialect, fieldName, fieldOptions);
   switch (type) {
     case 'date':
     case 'datetime':
-    case 'time':
+    case 'datetimeTz':
       return dateFormatFn(sequelize, dialect, field, format, timezone);
+    case 'datetimeNoTz':
+    case 'dateOnly':
+    case 'time':
+      return dateFormatFn(sequelize, dialect, field, format);
+    case 'unixTimestamp':
+      return dateFormatFn(sequelize, dialect, f, format, timezone);
     default:
       return formatFn(sequelize, dialect, field, format);
   }
