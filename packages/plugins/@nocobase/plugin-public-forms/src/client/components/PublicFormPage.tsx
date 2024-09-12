@@ -20,6 +20,7 @@ import {
   useAPIClient,
   useApp,
   useRequest,
+  ACLCustomContext,
 } from '@nocobase/client';
 import { Input, Modal, Spin } from 'antd';
 import React, { useContext, useMemo, useState } from 'react';
@@ -127,26 +128,28 @@ function InternalPublicForm() {
     return <UnEnabledFormPlaceholder />;
   }
   return (
-    <PublicAPIClientProvider>
-      <div
-        style={{
-          height: '100vh',
-          background: '#f5f5f5',
-        }}
-      >
-        <div style={{ maxWidth: 800, margin: '0 auto', paddingTop: '10vh' }}>
-          <PublicPublicFormProvider dataSource={data?.data?.dataSource}>
-            <SchemaComponentContext.Provider value={{ ...ctx, designable: false }}>
-              <SchemaComponent
-                schema={data?.data?.schema}
-                scope={{ useCreateActionProps: usePublicSubmitActionProps }}
-              />
-            </SchemaComponentContext.Provider>
-          </PublicPublicFormProvider>
-          <PoweredBy />
+    <ACLCustomContext.Provider value={{ allowAll: true }}>
+      <PublicAPIClientProvider>
+        <div
+          style={{
+            height: '100vh',
+            background: '#f5f5f5',
+          }}
+        >
+          <div style={{ maxWidth: 800, margin: '0 auto', paddingTop: '10vh' }}>
+            <PublicPublicFormProvider dataSource={data?.data?.dataSource}>
+              <SchemaComponentContext.Provider value={{ ...ctx, designable: false }}>
+                <SchemaComponent
+                  schema={data?.data?.schema}
+                  scope={{ useCreateActionProps: usePublicSubmitActionProps }}
+                />
+              </SchemaComponentContext.Provider>
+            </PublicPublicFormProvider>
+            <PoweredBy />
+          </div>
         </div>
-      </div>
-    </PublicAPIClientProvider>
+      </PublicAPIClientProvider>
+    </ACLCustomContext.Provider>
   );
 }
 
