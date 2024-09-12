@@ -9,10 +9,11 @@
 
 import { observer, RecursionField, useField, useFieldSchema } from '@formily/react';
 import { toArr } from '@formily/shared';
+import _ from 'lodash';
 import React, { FC, Fragment, useRef, useState } from 'react';
 import { useDesignable } from '../../';
 import { WithoutTableFieldResource } from '../../../block-provider';
-import { useCollectionManager, useCollectionRecordData } from '../../../data-source';
+import { CollectionRecordProvider, useCollectionManager, useCollectionRecordData } from '../../../data-source';
 import { useOpenModeContext } from '../../../modules/popup/OpenModeProvider';
 import { VariablePopupRecordProvider } from '../../../modules/variable/variablesProvider/VariablePopupRecordProvider';
 import { useCompile } from '../../hooks';
@@ -133,6 +134,25 @@ interface ReadPrettyInternalViewerProps {
   };
 }
 
+/**
+ * the sourceData is used to get the sourceId
+ * @param recordData
+ * @param fieldSchema
+ * @returns
+ */
+const getSourceData = (recordData, fieldSchema) => {
+  const sourceRecordKey = (fieldSchema.name as string)
+    .split('.')
+    .filter((o, i, arr) => i < arr.length - 1)
+    .join('.');
+
+  if (!sourceRecordKey) {
+    return recordData;
+  }
+
+  return _.get(recordData, sourceRecordKey);
+};
+
 export const ReadPrettyInternalViewer: React.FC = observer(
   (props: ReadPrettyInternalViewerProps) => {
     const { value, ButtonList = ButtonLinkList } = props;
@@ -146,10 +166,13 @@ export const ReadPrettyInternalViewer: React.FC = observer(
     const { visibleWithURL, setVisibleWithURL } = usePopupUtils();
     const [btnHover, setBtnHover] = useState(!!visibleWithURL);
     const { defaultOpenMode } = useOpenModeContext();
+    const recordData = useCollectionRecordData();
 
     const btnElement = (
       <EllipsisWithTooltip ellipsis={true} ref={ellipsisWithTooltipRef}>
-        <ButtonList setBtnHover={setBtnHover} value={value} fieldNames={props.fieldNames} />
+        <CollectionRecordProvider isNew={false} record={getSourceData(recordData, fieldSchema)}>
+          <ButtonList setBtnHover={setBtnHover} value={value} fieldNames={props.fieldNames} />
+        </CollectionRecordProvider>
       </EllipsisWithTooltip>
     );
 

@@ -28,6 +28,7 @@ import {
   useCollectionRecord,
   useDataSourceHeaders,
   useFormActiveFields,
+  useParsedFilter,
   useRouterBasename,
   useTableBlockContext,
 } from '../..';
@@ -41,7 +42,7 @@ import { useTreeParentRecord } from '../../modules/blocks/data-blocks/table/Tree
 import { useRecord } from '../../record-provider';
 import { removeNullCondition, useActionContext, useCompile } from '../../schema-component';
 import { isSubMode } from '../../schema-component/antd/association-field/util';
-import { replaceVariables } from '../../schema-component/antd/form-v2/utils';
+import { replaceVariables } from '../../schema-settings/LinkageRules/bindLinkageRulesToFiled';
 import { useCurrentUserContext } from '../../user';
 import { useLocalVariables, useVariables } from '../../variables';
 import { VariableOption, VariablesContextType } from '../../variables/types';
@@ -853,7 +854,7 @@ export const useUpdateActionProps = () => {
   const form = useForm();
   const filterByTk = useFilterByTk();
   const { field, resource, __parent } = useBlockRequestContext();
-  const { setVisible, setSubmitted, setFormValueChanged } = useActionContext();
+  const { setVisible, setFormValueChanged } = useActionContext();
   const actionSchema = useFieldSchema();
   const navigate = useNavigateNoUpdate();
   const { fields, getField, name } = useCollection_deprecated();
@@ -867,7 +868,7 @@ export const useUpdateActionProps = () => {
   const { getActiveFieldsName } = useFormActiveFields() || {};
 
   return {
-    async onClick() {
+    async onClick(e?, callBack?) {
       const {
         assignedValues: originalAssignedValues = {},
         onSuccess,
@@ -930,8 +931,10 @@ export const useUpdateActionProps = () => {
         });
         actionField.data.loading = false;
         // __parent?.service?.refresh?.();
+        if (callBack) {
+          callBack?.();
+        }
         setVisible?.(false);
-        setSubmitted?.(true);
         setFormValueChanged?.(false);
         if (!onSuccess?.successMessage) {
           return;
@@ -1245,6 +1248,7 @@ export const useAssociationFilterBlockProps = () => {
   const { props: blockProps } = useBlockRequestContext();
   const headers = useDataSourceHeaders(blockProps?.dataSource);
   const cm = useCollectionManager_deprecated();
+  const { filter, parseVariableLoading } = useParsedFilter({ filterOption: field.componentProps?.params?.filter });
 
   let list, handleSearchInput, params, run, data, valueKey, labelKey, filterKey;
 
@@ -1264,6 +1268,7 @@ export const useAssociationFilterBlockProps = () => {
         pageSize: 200,
         page: 1,
         ...field.componentProps?.params,
+        filter,
       },
     },
     {
@@ -1275,12 +1280,20 @@ export const useAssociationFilterBlockProps = () => {
 
   useEffect(() => {
     // 由于选项字段不需要触发当前请求，所以请求单独在关系字段的时候触发
-    if (!isOptionalField(collectionField)) {
+    if (!isOptionalField(collectionField) && parseVariableLoading === false) {
       run();
     }
 
     // do not format the dependencies
-  }, [collectionField, labelKey, run, valueKey, field.componentProps?.params, field.componentProps?.params?.sort]);
+  }, [
+    collectionField,
+    labelKey,
+    run,
+    valueKey,
+    field.componentProps?.params,
+    field.componentProps?.params?.sort,
+    parseVariableLoading,
+  ]);
 
   if (!collectionField) {
     return {};

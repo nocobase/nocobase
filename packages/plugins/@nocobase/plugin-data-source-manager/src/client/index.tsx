@@ -8,6 +8,7 @@
  */
 
 import { Plugin } from '@nocobase/client';
+import PluginACLClient from '@nocobase/plugin-acl/client';
 import React from 'react';
 import { DatabaseConnectionProvider } from './DatabaseConnectionProvider';
 import { ThirdDataSource } from './ThridDataSource';
@@ -21,10 +22,17 @@ import { NAMESPACE } from './locale';
 export class PluginDataSourceManagerClient extends Plugin {
   types = new Map();
   async load() {
-    // 注册组件
-    this.app.addComponents({
-      DataSourcePermissionManager,
-    });
+    // register a configuration item in the Users & Permissions management page
+    this.app.pm.get(PluginACLClient).settingsUI.addPermissionsTab(({ t, TabLayout, role }) => ({
+      key: 'dataSource',
+      label: t('Data sources'),
+      children: (
+        <TabLayout>
+          <DataSourcePermissionManager role={role} />
+        </TabLayout>
+      ),
+    }));
+
     this.app.use(DatabaseConnectionProvider);
     this.app.pluginSettingsManager.add(NAMESPACE, {
       title: `{{t("Data sources", { ns: "${NAMESPACE}" })}}`,

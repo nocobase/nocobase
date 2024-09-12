@@ -1007,7 +1007,7 @@ export const SchemaSettingsDefaultSortingRules = function DefaultSortingRules(pr
 };
 
 export const SchemaSettingsLinkageRules = function LinkageRules(props) {
-  const { collectionName, readPretty } = props;
+  const { collectionName, readPretty, Component, afterSubmit } = props;
   const fieldSchema = useFieldSchema();
   const { form } = useFormBlockContext();
   const { dn } = useDesignable();
@@ -1040,7 +1040,7 @@ export const SchemaSettingsLinkageRules = function LinkageRules(props) {
       title,
       properties: {
         fieldReaction: {
-          'x-component': FormLinkageRules,
+          'x-component': Component || FormLinkageRules,
           'x-use-component-props': () => {
             return {
               options,
@@ -1059,7 +1059,7 @@ export const SchemaSettingsLinkageRules = function LinkageRules(props) {
         },
       },
     }),
-    [collectionName, fieldSchema, form, gridSchema, localVariables, record, t, variables, getRules],
+    [collectionName, fieldSchema, form, gridSchema, localVariables, record, t, variables, getRules, Component],
   );
   const components = useMemo(() => ({ ArrayCollapse, FormLayout }), []);
   const onSubmit = useCallback(
@@ -1079,8 +1079,9 @@ export const SchemaSettingsLinkageRules = function LinkageRules(props) {
         schema,
       });
       dn.refresh();
+      afterSubmit?.();
     },
-    [dn, getTemplateById, gridSchema, dataKey],
+    [dn, getTemplateById, gridSchema, dataKey, afterSubmit],
   );
 
   return (

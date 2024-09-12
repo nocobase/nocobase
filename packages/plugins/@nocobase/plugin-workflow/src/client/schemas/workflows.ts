@@ -40,8 +40,8 @@ const collection = {
         type: 'string',
         'x-decorator': 'FormItem',
         'x-component': 'Select',
+        enum: '{{useTriggersOptions()}}',
         'x-component-props': {
-          options: `{{getTriggersOptions()}}`,
           optionRender: TriggerOptionRender,
           popupMatchSelectWidth: true,
           listHeight: 300,

@@ -11,7 +11,7 @@ import React from 'react';
 import { useFieldSchema } from '@formily/react';
 import { isValid } from '@formily/shared';
 
-import { Plugin, WorkflowConfig } from '@nocobase/client';
+import { Plugin, useCompile, WorkflowConfig } from '@nocobase/client';
 import { Registry } from '@nocobase/utils/client';
 
 import { ExecutionPage } from './ExecutionPage';
@@ -35,10 +35,11 @@ import { customizeSubmitToWorkflowActionSettings } from './settings/customizeSub
 export default class PluginWorkflowClient extends Plugin {
   triggers = new Registry<Trigger>();
   instructions = new Registry<Instruction>();
-  getTriggersOptions = () => {
+  useTriggersOptions = () => {
+    const compile = useCompile();
     return Array.from(this.triggers.getEntities()).map(([value, { title, ...options }]) => ({
       value,
-      label: title,
+      label: compile(title),
       color: 'gold',
       options,
     }));
