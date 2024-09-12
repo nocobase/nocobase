@@ -35,12 +35,12 @@ export const CustomRequestInitializer: React.FC<any> = (props) => {
   const customRequestsResource = useCustomRequestsResource();
   const itemConfig = useSchemaInitializerItem();
   const { insert } = useSchemaInitializer();
+  const schema = getNewSchema();
 
   return (
     <SchemaInitializerItem
       {...itemConfig}
       onClick={async () => {
-        const schema = getNewSchema();
         const s = merge(schema || {}, itemConfig.schema || {});
         itemConfig?.schemaInitialize?.(s);
         insert(s);
