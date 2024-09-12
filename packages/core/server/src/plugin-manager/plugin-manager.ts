@@ -533,10 +533,7 @@ export class PluginManager {
             name: pluginName,
           },
         });
-        console.log('instanceinstance', instance);
         if (instance) {
-          console.log('instance.enabled', instance.enabled);
-          console.log('instance.installed', instance.installed);
           plugin.enabled = instance.enabled;
           plugin.installed = instance.installed;
         }
