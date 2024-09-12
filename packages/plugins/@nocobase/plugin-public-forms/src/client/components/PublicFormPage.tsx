@@ -184,7 +184,7 @@ function InternalPublicForm() {
         <div
           style={{
             height: '100vh',
-            background: '#f5f5f5',
+            background: PageBackgroundColor,
           }}
         >
           <div
