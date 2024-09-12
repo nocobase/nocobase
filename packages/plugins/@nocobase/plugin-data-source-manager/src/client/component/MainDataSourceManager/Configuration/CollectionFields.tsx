@@ -179,7 +179,7 @@ const CurrentFields = (props) => {
 
         return (
           <RecordProvider record={record} parent={parentRecordData}>
-            <Space>
+            <Space size="middle">
               <EditCollectionField role="button" aria-label={`edit-button-${record.name}`} type="primary" />
               <Action.Link {...deleteProps} />
             </Space>
