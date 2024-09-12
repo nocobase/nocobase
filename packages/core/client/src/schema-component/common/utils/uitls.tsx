@@ -8,6 +8,7 @@
  */
 
 import Handlebars from 'handlebars';
+import helpers from '@budibase/handlebars-helpers';
 import _, { every, findIndex, some } from 'lodash';
 import { evaluators } from '@nocobase/evaluators/client';
 import { replaceVariableValue } from '../../../block-provider/hooks';
@@ -160,6 +161,12 @@ const getVariablesData = (localVariables) => {
   });
   return data;
 };
+const allHelpers = helpers();
+
+//遍历所有 helper 并手动注册到 Handlebars
+Object.keys(allHelpers).forEach(function (helperName) {
+  Handlebars.registerHelper(helperName, allHelpers[helperName]);
+});
 
 export async function getRenderContent(templateEngine, content, variables, localVariables, defaultParse) {
   if (content && templateEngine === 'handlebars') {
