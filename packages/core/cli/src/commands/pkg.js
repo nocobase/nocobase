@@ -81,7 +81,7 @@ class Package {
     return [version, this.data.versions[version].dist.tarball];
   }
 
-  async isCorePackage() {
+  async isDevPackage() {
     let file = path.resolve(process.cwd(), 'packages/plugins', this.packageName, 'package.json');
     if (await fs.exists(file)) {
       return true;
@@ -94,8 +94,8 @@ class Package {
   }
 
   async download(options = {}) {
-    if (await this.isCorePackage()) {
-      console.log(chalk.yellowBright(`Skipped: ${this.packageName} is core package`));
+    if (await this.isDevPackage()) {
+      console.log(chalk.yellowBright(`Skipped: ${this.packageName} is dev package`));
       return;
     }
     await this.getInfo();
@@ -173,12 +173,17 @@ class PackageManager {
     return res.data.data;
   }
 
+  async getPackages() {
+    const pkgs = await this.getProPackages();
+    return pkgs;
+  }
+
   async download(options = {}) {
     const { version } = options;
     if (!this.token) {
       return;
     }
-    const pkgs = await this.getProPackages();
+    const pkgs = await this.getPackages();
     for (const pkg of pkgs) {
       await this.getPackage(pkg).download({ version });
     }

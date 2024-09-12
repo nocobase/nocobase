@@ -53,7 +53,9 @@ export class PresetNocoBase extends Plugin {
 
   async getPluginInfo(name, locale = 'en-US') {
     const repository = this.app.db.getRepository<any>('applicationPlugins');
-    const packageJson = await this.getPackageJson(name);
+    // const packageJson = await this.getPackageJson(name);
+    const { packageName } = await PluginManager.parseName(name);
+    const packageJson = require(`${packageName}/package.json`);
     const deps = await PluginManager.checkAndGetCompatible(packageJson.name);
     const instance = await repository.findOne({
       filter: {
