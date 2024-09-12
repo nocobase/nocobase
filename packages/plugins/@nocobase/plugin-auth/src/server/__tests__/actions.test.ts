@@ -102,6 +102,7 @@ describe('actions', () => {
     });
 
     afterEach(async () => {
+      await app.db.clean({ drop: true });
       await app.destroy();
     });
 
@@ -272,6 +273,29 @@ describe('actions', () => {
       });
       expect(res.statusCode).toEqual(400);
       expect(res.error.text).toBe('Please enter a password');
+    });
+
+    it('should sign user out when changing password', async () => {
+      const userRepo = db.getRepository('users');
+      const user = await userRepo.create({
+        values: {
+          username: 'test',
+          password: '12345',
+        },
+      });
+      const userAgent = await agent.login(user);
+      const res = await userAgent.post('/auth:check').set({ 'X-Authenticator': 'basic' }).send();
+      expect(res.statusCode).toEqual(200);
+      expect(res.body.data.id).toBeDefined();
+      const res2 = await userAgent.post('/auth:changePassword').set({ 'X-Authenticator': 'basic' }).send({
+        oldPassword: '12345',
+        newPassword: '123456',
+        confirmPassword: '123456',
+      });
+      expect(res2.statusCode).toEqual(200);
+      const res3 = await userAgent.post('/auth:check').set({ 'X-Authenticator': 'basic' }).send();
+      expect(res3.statusCode).toEqual(200);
+      expect(res3.body.data.id).toBeUndefined();
     });
   });
 });

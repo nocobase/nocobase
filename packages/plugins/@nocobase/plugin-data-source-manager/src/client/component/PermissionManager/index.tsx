@@ -9,20 +9,20 @@
 
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
+import {
+  MenuConfigure,
+  ResourceActionProvider,
+  SchemaComponent,
+  SettingCenterProvider,
+  SettingsCenterConfigure,
+} from '@nocobase/client';
 import { Card } from 'antd';
 import React, { createContext } from 'react';
-import {
-  SchemaComponent,
-  MenuConfigure,
-  SettingsCenterConfigure,
-  SettingCenterProvider,
-  ResourceActionProvider,
-} from '@nocobase/client';
 import { DataSourceTable } from './DataSourceTable';
-import { RoleConfigure } from './RoleConfigure';
-import { StrategyActions } from './StrategyActions';
-import { RolesResourcesActions } from './RolesResourcesActions';
 import { RoleRecordProvider } from './PermisionProvider';
+import { RoleConfigure } from './RoleConfigure';
+import { RolesResourcesActions } from './RolesResourcesActions';
+import { StrategyActions } from './StrategyActions';
 
 const schema2: ISchema = {
   type: 'object',
@@ -36,7 +36,7 @@ const schema2: ISchema = {
 export const CurrentRolesContext = createContext<any>({} as any);
 CurrentRolesContext.displayName = 'CurrentRolesContext';
 
-export const DataSourcePermissionManager = ({ role }: any) => {
+export const DataSourcePermissionManager = ({ role }) => {
   return (
     <Card data-testid="acl-pane-card" bordered={false}>
       <CurrentRolesContext.Provider value={role}>

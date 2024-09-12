@@ -107,7 +107,7 @@ export function Result(props) {
       let v;
       try {
         v = evaluate(expression, scope);
-        v = toDbType(v, dataType);
+        v = v && toDbType(v, dataType);
       } catch (error) {
         v = null;
       }

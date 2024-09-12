@@ -14,8 +14,8 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCollection_deprecated, useCollectionManager_deprecated } from '../collection-manager';
 import { useDesignable } from '../schema-component';
-import { getTempFieldState } from '../schema-component/antd/form-v2/utils';
 import { SchemaSettingsModalItem, SchemaSettingsSwitchItem } from '../schema-settings';
+import { getTempFieldState } from '../schema-settings/LinkageRules/bindLinkageRulesToFiled';
 
 export const GeneralSchemaItems: React.FC<{
   required?: boolean;

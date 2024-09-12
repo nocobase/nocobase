@@ -332,6 +332,28 @@ export class UiSchemaRepository extends Repository {
   }
 
   @transaction()
+  async initializeActionContext(newSchema: any, options: any = {}) {
+    if (!newSchema['x-uid'] || !newSchema['x-action-context']) {
+      return;
+    }
+
+    const { transaction } = options;
+
+    const nodeModel = await this.findOne({
+      filter: {
+        'x-uid': newSchema['x-uid'],
+      },
+      transaction,
+    });
+
+    if (!lodash.isEmpty(nodeModel?.get('schema')['x-action-context'])) {
+      return;
+    }
+
+    return this.patch(lodash.pick(newSchema, ['x-uid', 'x-action-context']), options);
+  }
+
+  @transaction()
   async batchPatch(schemas: any[], options?) {
     const { transaction } = options;
     for (const schema of schemas) {

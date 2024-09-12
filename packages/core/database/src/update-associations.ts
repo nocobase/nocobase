@@ -21,6 +21,7 @@ import {
 import Database from './database';
 import { Model } from './model';
 import { UpdateGuard } from './update-guard';
+import { TargetKey } from './repository';
 
 function isUndefinedOrNull(value: any) {
   return typeof value === 'undefined' || value === null;
@@ -58,7 +59,7 @@ type UpdateValue = { [key: string]: any };
 
 interface UpdateOptions extends Transactionable {
   filter?: any;
-  filterByTk?: number | string;
+  filterByTk?: TargetKey;
   // 字段白名单
   whitelist?: string[];
   // 字段黑名单
@@ -454,6 +455,7 @@ export async function updateMultipleAssociation(
         const attributes = {
           [targetKey]: item[targetKey],
         };
+
         const instance = association.target.build(attributes, { isNewRecord: false });
         setItems.push(instance);
       }

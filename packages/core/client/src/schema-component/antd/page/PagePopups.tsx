@@ -141,14 +141,23 @@ const PagePopupsItemProvider: FC<{
   const storedContext = { ...getStoredPopupContext(params.popupuid) };
 
   if (!context) {
-    context = storedContext;
+    context = _.omitBy(
+      {
+        dataSource: storedContext.dataSource,
+        collection: storedContext.collection,
+        association: storedContext.association,
+      },
+      _.isNil,
+    ) as PopupContext;
   }
 
   if (_.isEmpty(context)) {
     return (
-      <PopupVisibleProvider visible={visible} setVisible={setVisible}>
-        <div style={{ display: 'none' }}>{children}</div>
-      </PopupVisibleProvider>
+      <PopupParamsProvider params={params} context={context} currentLevel={currentLevel}>
+        <PopupVisibleProvider visible={visible} setVisible={setVisible}>
+          <div style={{ display: 'none' }}>{children}</div>
+        </PopupVisibleProvider>
+      </PopupParamsProvider>
     );
   }
 
@@ -160,7 +169,7 @@ const PagePopupsItemProvider: FC<{
           collection={params.collection || context.collection}
           association={context.association}
           sourceId={params.sourceid}
-          filterByTk={params.filterbytk}
+          filterByTk={parseQueryString(params.filterbytk)}
           // @ts-ignore
           record={storedContext.record}
           parentRecord={storedContext.parentRecord}
@@ -275,7 +284,9 @@ export const PagePopups = (props: { paramsList?: PopupParams[] }) => {
           isSubPage: isSubPageSchema(schema),
         };
       });
+
       const rootSchema = clonedSchemas[0];
+
       for (let i = 1; i < clonedSchemas.length; i++) {
         insertChildToParentSchema({
           childSchema: clonedSchemas[i],
@@ -289,6 +300,7 @@ export const PagePopups = (props: { paramsList?: PopupParams[] }) => {
           },
         });
       }
+
       setRootSchema(rootSchema);
     };
     run();
@@ -452,4 +464,26 @@ function findSchemaByUid(uid: string, rootSchema: Schema, resultRef: { value: Sc
     }
   });
   return resultRef.value;
+}
+
+function parseQueryString(queryString) {
+  // 如果没有 '&'，直接返回原始字符串
+  if (!queryString?.includes?.('=')) {
+    return queryString;
+  }
+
+  // 解码查询字符串
+  const decodedString = decodeURIComponent(queryString);
+
+  // 将解码后的字符串按 '&' 分隔成键值对
+  const pairs = decodedString.split('&');
+
+  // 将键值对转换为对象
+  const params = pairs.reduce((acc, pair) => {
+    const [key, value] = pair.split('=');
+    acc[key] = value;
+    return acc;
+  }, {});
+
+  return params;
 }

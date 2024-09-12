@@ -51,6 +51,8 @@ const InternalList = (props) => {
     [fieldSchema.properties, schemaMap],
   );
 
+  const pageSizeOptions = [5, 10, 20, 50, 100, 200];
+
   const onPaginationChange: PaginationProps['onChange'] = useCallback(
     (page, pageSize) => {
       run({
@@ -97,6 +99,8 @@ const InternalList = (props) => {
                     total: meta?.count || 0,
                     pageSize: meta?.pageSize || 10,
                     current: meta?.page || 1,
+                    showSizeChanger: true,
+                    pageSizeOptions,
                   }
             }
             loading={service?.loading}

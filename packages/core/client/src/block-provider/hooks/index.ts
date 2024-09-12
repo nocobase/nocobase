@@ -28,6 +28,7 @@ import {
   useCollectionRecord,
   useDataSourceHeaders,
   useFormActiveFields,
+  useParsedFilter,
   useRouterBasename,
   useTableBlockContext,
 } from '../..';
@@ -41,7 +42,7 @@ import { useTreeParentRecord } from '../../modules/blocks/data-blocks/table/Tree
 import { useRecord } from '../../record-provider';
 import { removeNullCondition, useActionContext, useCompile } from '../../schema-component';
 import { isSubMode } from '../../schema-component/antd/association-field/util';
-import { replaceVariables } from '../../schema-component/antd/form-v2/utils';
+import { replaceVariables } from '../../schema-settings/LinkageRules/bindLinkageRulesToFiled';
 import { useCurrentUserContext } from '../../user';
 import { useLocalVariables, useVariables } from '../../variables';
 import { VariableOption, VariablesContextType } from '../../variables/types';
@@ -1079,13 +1080,25 @@ export const useBulkDestroyActionProps = () => {
   const { field } = useBlockRequestContext();
   const { resource, service } = useBlockRequestContext();
   const { setSubmitted } = useActionContext();
+  const collection = useCollection_deprecated();
+  const { filterTargetKey } = collection;
   return {
     async onClick(e?, callBack?) {
+      let filterByTk = field.data?.selectedRowKeys;
+      if (Array.isArray(filterTargetKey)) {
+        filterByTk = field.data.selectedRowData.map((v) => {
+          const obj = {};
+          filterTargetKey.map((j) => {
+            obj[j] = v[j];
+          });
+          return obj;
+        });
+      }
       if (!field?.data?.selectedRowKeys?.length) {
         return;
       }
       await resource.destroy({
-        filterByTk: field.data?.selectedRowKeys,
+        filterByTk,
       });
       field.data.selectedRowKeys = [];
       const currentPage = service.params[0]?.page;
@@ -1097,7 +1110,7 @@ export const useBulkDestroyActionProps = () => {
         callBack?.();
       }
       setSubmitted?.(true);
-      // service?.refresh?.();
+      service?.refresh?.();
     },
   };
 };
@@ -1247,6 +1260,7 @@ export const useAssociationFilterBlockProps = () => {
   const { props: blockProps } = useBlockRequestContext();
   const headers = useDataSourceHeaders(blockProps?.dataSource);
   const cm = useCollectionManager_deprecated();
+  const { filter, parseVariableLoading } = useParsedFilter({ filterOption: field.componentProps?.params?.filter });
 
   let list, handleSearchInput, params, run, data, valueKey, labelKey, filterKey;
 
@@ -1266,6 +1280,7 @@ export const useAssociationFilterBlockProps = () => {
         pageSize: 200,
         page: 1,
         ...field.componentProps?.params,
+        filter,
       },
     },
     {
@@ -1277,12 +1292,20 @@ export const useAssociationFilterBlockProps = () => {
 
   useEffect(() => {
     // 由于选项字段不需要触发当前请求，所以请求单独在关系字段的时候触发
-    if (!isOptionalField(collectionField)) {
+    if (!isOptionalField(collectionField) && parseVariableLoading === false) {
       run();
     }
 
     // do not format the dependencies
-  }, [collectionField, labelKey, run, valueKey, field.componentProps?.params, field.componentProps?.params?.sort]);
+  }, [
+    collectionField,
+    labelKey,
+    run,
+    valueKey,
+    field.componentProps?.params,
+    field.componentProps?.params?.sort,
+    parseVariableLoading,
+  ]);
 
   if (!collectionField) {
     return {};
