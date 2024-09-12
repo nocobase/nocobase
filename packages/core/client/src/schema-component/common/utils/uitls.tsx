@@ -8,6 +8,7 @@
  */
 
 import Handlebars from 'handlebars';
+import dayjs from 'dayjs';
 import _, { every, findIndex, some } from 'lodash';
 import { evaluators } from '@nocobase/evaluators/client';
 import { replaceVariableValue } from '../../../block-provider/hooks';
@@ -160,6 +161,10 @@ const getVariablesData = (localVariables) => {
   });
   return data;
 };
+
+Handlebars.registerHelper('dateFormat', function dateFormat(date, format) {
+  return dayjs(date).format(format);
+});
 
 export async function getRenderContent(templateEngine, content, variables, localVariables, defaultParse) {
   if (content && templateEngine === 'handlebars') {
