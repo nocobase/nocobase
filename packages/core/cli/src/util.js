@@ -164,7 +164,7 @@ exports.promptForTs = () => {
 };
 
 exports.downloadPro = async () => {
-  await run('yarn', ['nocobase', 'pkg', 'download-pro']);
+  await exports.run('yarn', ['nocobase', 'pkg', 'download-pro']);
 };
 
 exports.updateJsonFile = async (target, fn) => {
