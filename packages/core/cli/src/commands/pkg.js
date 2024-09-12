@@ -54,15 +54,31 @@ class Package {
   }
 
   getTarball(version = 'latest') {
+    if (this.data.versions[version]) {
+      return [version, this.data.versions[version].dist.tarball];
+    }
+
+    if (version.includes('beta')) {
+      version = version.split('beta')[0] + 'beta';
+    } else if (version.includes('alpha')) {
+      const prefix = (version = version.split('alpha')[0]);
+      version = Object.keys(this.data.versions)
+        .filter((ver) => ver.startsWith(`${prefix}alpha`))
+        .sort()
+        .pop();
+    }
+
     if (version === 'latest') {
       version = this.data['dist-tags']['latest'];
     } else if (version === 'next') {
       version = this.data['dist-tags']['next'];
     }
-    if (!version || !this.data.versions[version]) {
-      version = this.data['dist-tags']['latest'];
+
+    if (!this.data.versions[version]) {
+      console.log(chalk.redBright(`Download failed: ${this.packageName}@${version} package does not exist`));
     }
-    return this.data.versions[version].dist.tarball;
+
+    return [version, this.data.versions[version].dist.tarball];
   }
 
   async isCorePackage() {
@@ -82,14 +98,13 @@ class Package {
       console.log(chalk.yellowBright(`Skipped: ${this.packageName} is core package`));
       return;
     }
-    const { version } = options;
     await this.getInfo();
     if (!this.data) {
       console.log(chalk.redBright(`Download failed: ${this.packageName} package does not exist`));
       return;
     }
     try {
-      const url = this.getTarball(version);
+      const [version, url] = this.getTarball(options.version);
       const response = await axios({
         url,
         responseType: 'stream',
@@ -106,7 +121,7 @@ class Package {
           .on('finish', resolve)
           .on('error', reject);
       });
-      console.log(chalk.greenBright(`Download success: ${this.packageName}`));
+      console.log(chalk.greenBright(`Download success: ${this.packageName}@${version}`));
     } catch (error) {
       console.log(chalk.redBright(`Download failed: ${this.packageName}`));
     }
@@ -187,7 +202,9 @@ module.exports = (cli) => {
       const credentials = { username: NOCOBASE_PKG_USERNAME, password: NOCOBASE_PKG_PASSWORD };
       const pm = new PackageManager({ baseURL: NOCOBASE_PKG_URL });
       await pm.login(credentials);
-      await pm.download({ version: 'latest' });
+      const file = path.resolve(__dirname, '../../package.json');
+      const json = await fs.readJson(file);
+      await pm.download({ version: json.version });
       await createStoragePluginsSymlink();
     });
   pkg.command('export-all').action(async () => {
