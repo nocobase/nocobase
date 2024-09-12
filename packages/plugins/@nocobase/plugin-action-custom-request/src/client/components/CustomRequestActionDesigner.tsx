@@ -70,7 +70,7 @@ export function CustomRequestSettingsItem() {
             },
           });
           refresh();
-          return message.success(t('Saved successfully'));
+          message.success(t('Saved successfully'));
         }}
       />
     </>
