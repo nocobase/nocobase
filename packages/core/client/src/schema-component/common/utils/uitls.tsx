@@ -8,15 +8,13 @@
  */
 
 import Handlebars from 'handlebars';
-import dayjs from 'dayjs';
+import { dayjs } from '@nocobase/utils/client';
 import _, { every, findIndex, some } from 'lodash';
-import { evaluators } from '@nocobase/evaluators/client';
 import { replaceVariableValue } from '../../../block-provider/hooks';
 import { VariableOption, VariablesContextType } from '../../../variables/types';
 import { isVariable } from '../../../variables/utils/isVariable';
 import { transformVariableValue } from '../../../variables/utils/transformVariableValue';
 import { getJsonLogic } from '../../common/utils/logic';
-import { replaceVariables } from '../../../schema-settings/LinkageRules/bindLinkageRulesToFiled';
 
 type VariablesCtx = {
   /** 当前登录的用户 */
