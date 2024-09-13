@@ -112,10 +112,13 @@ export const calendarBlockSettings = new SchemaSettings({
         const field = useField();
         const { dn } = useDesignable();
         const flieidList = getCollectionFieldsOptions(name, 'string');
-        const filteredItems = flieidList.filter((item) => item.interface === 'radioGroup');
+        const filteredItems = [
+          { label: t('default color'), value: '' },
+          ...flieidList.filter((item) => item.interface === 'radioGroup' || item.interface === 'select'),
+        ];
         return {
           title: t('Background color field'),
-          value: fieldNames.color,
+          value: fieldNames.color || '',
           options: filteredItems,
           onChange: (color) => {
             const fieldNames = field.decoratorProps.fieldNames || {};
