@@ -9,6 +9,7 @@
 
 import { Plugin } from '@nocobase/client';
 import PluginACLClient from '@nocobase/plugin-acl/client';
+import { uid } from '@nocobase/utils/client';
 import React from 'react';
 import { DatabaseConnectionProvider } from './DatabaseConnectionProvider';
 import { ThirdDataSource } from './ThridDataSource';
@@ -21,7 +22,29 @@ import { NAMESPACE } from './locale';
 
 export class PluginDataSourceManagerClient extends Plugin {
   types = new Map();
+
+  extendedTabs = {};
+
+  getExtendedTabs() {
+    return this.extendedTabs;
+  }
+
+  registerPermissionTab(schema) {
+    this.extendedTabs[uid()] = schema;
+  }
+
   async load() {
+    this.registerPermissionTab({
+      type: 'void',
+      title: '{{t("Custom permissions")}}',
+      'x-component': 'Tabs.TabPane',
+      'x-component-props': {},
+      properties: {
+        custom: {
+          'x-content': 'Hello',
+        },
+      },
+    });
     // register a configuration item in the Users & Permissions management page
     this.app.pm.get(PluginACLClient).settingsUI.addPermissionsTab(({ t, TabLayout, role }) => ({
       key: 'dataSource',
