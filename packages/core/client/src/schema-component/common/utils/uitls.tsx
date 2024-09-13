@@ -17,7 +17,7 @@ import { isVariable } from '../../../variables/utils/isVariable';
 import { transformVariableValue } from '../../../variables/utils/transformVariableValue';
 import { getJsonLogic } from '../../common/utils/logic';
 import { replaceVariables } from '../../../schema-settings/LinkageRules/bindLinkageRulesToFiled';
-
+import url from 'url';
 type VariablesCtx = {
   /** 当前登录的用户 */
   $user?: Record<string, any>;
@@ -167,6 +167,18 @@ const allHelpers = helpers();
 Object.keys(allHelpers).forEach(function (helperName) {
   Handlebars.registerHelper(helperName, allHelpers[helperName]);
 });
+// 自定义 helper 来处理对象
+Handlebars.registerHelper('json', function (context) {
+  return JSON.stringify(context);
+});
+//重写urlParse
+Handlebars.registerHelper('urlParse', function (str) {
+  try {
+    return JSON.stringify(url.parse(str));
+  } catch (error) {
+    return `Invalid URL: ${str}`;
+  }
+});
 
 export async function getRenderContent(templateEngine, content, variables, localVariables, defaultParse) {
   if (content && templateEngine === 'handlebars') {
@@ -175,6 +187,7 @@ export async function getRenderContent(templateEngine, content, variables, local
       // 处理渲染后的内容
       const data = getVariablesData(localVariables);
       const html = renderedContent({ ...variables.ctxRef.current, ...data });
+      console.log(html);
       return await defaultParse(html);
     } catch (error) {
       console.log(error);
