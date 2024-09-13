@@ -42,6 +42,7 @@ export class PluginMobileServer extends Plugin {
     this.registerActionHandlers();
     this.bindNewMenuToRoles();
     this.setACL();
+    // this.interceptUnauthorizedSchemaRequests();
   }
 
   setACL() {
@@ -56,6 +57,7 @@ export class PluginMobileServer extends Plugin {
     });
 
     this.app.acl.allow('mobileRoutes', 'listAccessible', 'loggedIn');
+    this.app.acl.allow('uiSchemas', 'getMobileJsonSchema', 'loggedIn');
     this.app.acl.registerSnippet({
       name: `pm.${this.name}.roles`,
       actions: ['roles.mobileMenuUiSchemas:*'],
@@ -90,6 +92,34 @@ export class PluginMobileServer extends Plugin {
       },
     });
   }
+
+  // interceptUnauthorizedSchemaRequests() {
+  //   // Mobile needs to use uiSchemas:getMobileJsonSchema to get the schema, and will intercept schemas without access permission
+  //   this.app.resourceManager.getResource('uiSchemas')?.addAction('getMobileJsonSchema', async (ctx, next) => {
+  //     const allMobileRoutes = await ctx.db.getRepository('mobileRoutes').find({
+  //       sort: 'sort',
+  //     });
+  //     const role = await ctx.db.getRepository('roles').findOne({
+  //       filterByTk: ctx.state.currentRole,
+  //       appends: ['mobileMenuUiSchemas'],
+  //     });
+  //     const uiSchemas = ctx.db.getRepository('uiSchemas');
+
+  //     const accessibleSchemaUidList = role.get('mobileMenuUiSchemas').map((item) => item.schemaUid);
+  //     const allSchemaUidList = allMobileRoutes.map((item) => item.schemaUid);
+
+  //     if (
+  //       accessibleSchemaUidList.includes(ctx.action.params.filterByTk) ||
+  //       !allSchemaUidList.includes(ctx.action.params.filterByTk)
+  //     ) {
+  //       ctx.body = await uiSchemas.getJsonSchema(ctx.action.params.filterByTk);
+  //       return await next();
+  //     }
+
+  //     ctx.body = {};
+  //     await next();
+  //   });
+  // }
 
   registerActionHandlers() {
     this.app.resourceManager.registerActionHandler('mobileRoutes:listAccessible', async (ctx, next) => {

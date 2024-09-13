@@ -82,7 +82,6 @@ export const MobileTabBar: FC<MobileTabBarProps> & {
         </DndContext>
         <MobileTabBarInitializer />
       </div>
-
       <SafeArea position="bottom" />
     </div>
   );
