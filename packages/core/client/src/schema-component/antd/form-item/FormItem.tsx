@@ -10,7 +10,7 @@
 import { css, cx } from '@emotion/css';
 import { IFormItemProps, FormItem as Item } from '@formily/antd-v5';
 import { Field } from '@formily/core';
-import { observer, useField, useFieldSchema, useForm } from '@formily/react';
+import { observer, useField, useFieldSchema } from '@formily/react';
 import React, { useEffect, useMemo } from 'react';
 import { ACLCollectionFieldProvider } from '../../../acl/ACLProvider';
 import { useApp } from '../../../application';
@@ -52,7 +52,6 @@ export const FormItem: any = withDynamicSchemaProps(
     const field = useField<Field>();
     const schema = useFieldSchema();
     const { addActiveFieldName } = useFormActiveFields() || {};
-    const form = useForm();
     const { wrapperStyle } = useDataFormItemProps();
     const variables = useVariables();
     const contextVariable = useContextVariable();
