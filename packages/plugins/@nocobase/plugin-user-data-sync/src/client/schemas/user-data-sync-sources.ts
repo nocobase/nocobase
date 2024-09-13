@@ -271,12 +271,7 @@ export const tasksTableBlockSchema: ISchema = {
                   properties: {
                     message: {
                       type: 'string',
-                      'x-component': 'CollectionField',
-                      'x-component-props': {
-                        ellipsis: true,
-                        value: '{{ t($record.message) }}',
-                      },
-                      'x-pattern': 'readPretty',
+                      'x-component': 'Message',
                     },
                   },
                 },

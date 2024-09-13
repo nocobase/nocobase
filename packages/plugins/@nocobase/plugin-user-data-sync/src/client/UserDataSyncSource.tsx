@@ -36,6 +36,7 @@ import { NAMESPACE, useUserDataSyncSourceTranslation } from './locale';
 import { Schema, useForm } from '@formily/react';
 import { taskCollection } from './schemas/user-data-sync-sources';
 import { createForm } from '@formily/core';
+import { ReadPretty } from '@nocobase/client';
 
 const useEditFormProps = () => {
   const recordData = useCollectionRecordData();
@@ -218,6 +219,12 @@ const AddNew = () => {
   );
 };
 
+const Message = () => {
+  const { t } = useUserDataSyncSourceTranslation();
+  const record = useCollectionRecordData();
+  return <ReadPretty.Input value={t(record['message'])} ellipsis={true} />;
+};
+
 const Tasks = () => {
   const { t } = useUserDataSyncSourceTranslation();
   const [visible, setVisible] = useState(false);
@@ -232,7 +239,11 @@ const Tasks = () => {
         {t('Tasks')}
       </Button>
       <ExtendCollectionsProvider collections={[taskCollection]}>
-        <SchemaComponent scope={{ useRetryActionProps, useTasksTableBlockProps }} schema={tasksTableBlockSchema} />
+        <SchemaComponent
+          scope={{ useRetryActionProps, useTasksTableBlockProps, t }}
+          components={{ Message }}
+          schema={tasksTableBlockSchema}
+        />
       </ExtendCollectionsProvider>
     </ActionContextProvider>
   );
