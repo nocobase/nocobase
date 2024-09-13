@@ -9,7 +9,7 @@
 
 import Topo from '@hapi/topo';
 import { CleanOptions, Collection, SyncOptions } from '@nocobase/database';
-import { importModule, isURL, uid } from '@nocobase/utils';
+import { importModule, isURL } from '@nocobase/utils';
 import execa from 'execa';
 import fg from 'fast-glob';
 import fs from 'fs-extra';
@@ -723,9 +723,9 @@ export class PluginManager {
    */
   async addViaCLI(urlOrName: string | string[], options?: PluginData, emitStartedEvent = true) {
     const writeFile = async () => {
-      const file = resolve(process.cwd(), 'storage/.upgrading');
-      this.app.log.debug('pending upgrade');
-      await fs.writeFile(file, uid());
+      // const file = resolve(process.cwd(), 'storage/.upgrading');
+      // this.app.log.debug('pending upgrade');
+      // await fs.writeFile(file, uid());
     };
     if (Array.isArray(urlOrName)) {
       for (const packageName of urlOrName) {
