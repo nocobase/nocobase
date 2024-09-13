@@ -171,6 +171,7 @@ Object.keys(allHelpers).forEach(function (helperName) {
 Handlebars.registerHelper('json', function (context) {
   return JSON.stringify(context);
 });
+
 //重写urlParse
 Handlebars.registerHelper('urlParse', function (str) {
   try {
