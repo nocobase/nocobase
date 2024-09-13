@@ -19,6 +19,7 @@ export const formSchemaCallback = (options) => ({
   'x-decorator-props': {
     collection: options.collection,
     dataSource: options.dataSource,
+    type: 'publicForm',
   },
   'x-use-decorator-props': 'useCreateFormBlockDecoratorProps',
   properties: {

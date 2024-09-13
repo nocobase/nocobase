@@ -29,6 +29,7 @@ import {
 import { useCollectionState } from '../../../schema-settings/DataTemplates/hooks/useCollectionState';
 import { SchemaSettingsModalItem } from '../../../schema-settings/SchemaSettings';
 import { useParentPopupRecord } from '../../variable/variablesProvider/VariablePopupRecordProvider';
+import { useDataBlockProps } from '../../../data-source';
 
 const Tree = connect(
   AntdTree,
@@ -164,6 +165,10 @@ export const createSubmitActionSettings = new SchemaSettings({
     {
       name: 'saveMode',
       Component: SaveMode,
+      useVisible() {
+        const { type } = useDataBlockProps();
+        return type !== 'publicForm';
+      },
     },
     {
       name: 'assignFieldValues',
