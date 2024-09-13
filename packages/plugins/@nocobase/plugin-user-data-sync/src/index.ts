@@ -9,3 +9,4 @@
 
 export * from './server';
 export { default, UserDataResource, FormatUser, SyncAccept, OriginRecord } from './server';
+export { ExternalAPIError, ErrorCodes } from './error';
