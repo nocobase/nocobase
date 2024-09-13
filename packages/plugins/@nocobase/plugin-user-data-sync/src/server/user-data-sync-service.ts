@@ -12,7 +12,7 @@ import { SyncSourceManager } from './sync-source-manager';
 import { Context } from '@nocobase/actions';
 import { SyncSource } from './sync-source';
 import { Logger } from '@nocobase/logger';
-import { ExternalAPIError } from '../error';
+import { ExternalAPIError } from './error';
 
 export class UserDataSyncService {
   resourceManager: UserDataResourceManager;

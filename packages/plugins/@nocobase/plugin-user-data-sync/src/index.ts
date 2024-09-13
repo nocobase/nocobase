@@ -8,5 +8,12 @@
  */
 
 export * from './server';
-export { default, UserDataResource, FormatUser, SyncAccept, OriginRecord } from './server';
-export { ExternalAPIError, ErrorCodes } from './error';
+export {
+  default,
+  UserDataResource,
+  FormatUser,
+  SyncAccept,
+  OriginRecord,
+  ExternalAPIError,
+  ErrorCodes,
+} from './server';
