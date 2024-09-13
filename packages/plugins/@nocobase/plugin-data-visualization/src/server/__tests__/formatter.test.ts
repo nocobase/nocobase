@@ -75,11 +75,6 @@ describe('formatter', () => {
         params: {
           values: {
             collection: 'chart_test',
-            measures: [
-              {
-                field: ['date'],
-              },
-            ],
             dimensions: [
               {
                 field: ['date'],
@@ -120,11 +115,6 @@ describe('formatter', () => {
         params: {
           values: {
             collection: 'chart_test',
-            measures: [
-              {
-                field: ['dateOnly'],
-              },
-            ],
             dimensions: [
               {
                 field: ['dateOnly'],
@@ -165,11 +155,6 @@ describe('formatter', () => {
         params: {
           values: {
             collection: 'chart_test',
-            measures: [
-              {
-                field: ['datetimeNoTz'],
-              },
-            ],
             dimensions: [
               {
                 field: ['datetimeNoTz'],
@@ -218,11 +203,6 @@ describe('formatter', () => {
         params: {
           values: {
             collection: 'chart_test',
-            measures: [
-              {
-                field: ['unixTs'],
-              },
-            ],
             dimensions: [
               {
                 field: ['unixTs'],
@@ -270,11 +250,6 @@ describe('formatter', () => {
         params: {
           values: {
             collection: 'chart_test',
-            measures: [
-              {
-                field: ['unixTsMs'],
-              },
-            ],
             dimensions: [
               {
                 field: ['unixTsMs'],
