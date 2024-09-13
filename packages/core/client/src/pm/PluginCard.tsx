@@ -7,13 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { App, Card, Divider, Popconfirm, Space, Switch, Typography } from 'antd';
-import classnames from 'classnames';
+import { App, Card, Divider, Space, Switch, Typography } from 'antd';
 import React, { FC, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 
-import { DeleteOutlined, ReadOutlined, ReloadOutlined, SettingOutlined } from '@ant-design/icons';
+import { ReadOutlined, ReloadOutlined, SettingOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { useAPIClient } from '../api-client';
 import { useApp } from '../application';
@@ -109,44 +108,15 @@ function PluginInfo(props: IPluginInfo) {
                 <ReloadOutlined /> {t('Update')}
               </a>
             )}
-            {enabled ? (
-              app.pluginSettingsManager.has(name) && (
-                <a
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    navigate(app.pluginSettingsManager.getRoutePath(name));
-                  }}
-                >
-                  <SettingOutlined /> {t('Settings')}
-                </a>
-              )
-            ) : (
-              <Popconfirm
-                key={'delete'}
-                disabled={builtIn}
-                title={t('Are you sure to delete this plugin?')}
-                onConfirm={async (e) => {
+            {enabled && app.pluginSettingsManager.has(name) && (
+              <a
+                onClick={(e) => {
                   e.stopPropagation();
-                  api.request({
-                    url: `pm:remove`,
-                    params: {
-                      filterByTk: name,
-                    },
-                  });
+                  navigate(app.pluginSettingsManager.getRoutePath(name));
                 }}
-                onCancel={(e) => e.stopPropagation()}
-                okText={t('Yes')}
-                cancelText={t('No')}
               >
-                <a
-                  onClick={(e) => {
-                    e.stopPropagation();
-                  }}
-                  className={classnames({ [styles.cardActionDisabled]: builtIn })}
-                >
-                  <DeleteOutlined /> {t('Remove')}
-                </a>
-              </Popconfirm>
+                <SettingOutlined /> {t('Settings')}
+              </a>
             )}
           </Space>,
           <Switch
