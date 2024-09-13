@@ -100,13 +100,13 @@ export class PluginMobileServer extends Plugin {
         ...ctx.query,
       });
 
-      if (ctx.header['x-role'] === 'root') {
+      if (ctx.state.currentRole === 'root') {
         ctx.body = items;
         return await next();
       }
 
       const role = await rolesRepository.findOne({
-        filterByTk: ctx.header['x-role'],
+        filterByTk: ctx.state.currentRole,
         appends: ['mobileMenuUiSchemas'],
       });
 
