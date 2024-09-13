@@ -8,15 +8,14 @@
  */
 
 import Handlebars from 'handlebars';
+import { dayjs } from '@nocobase/utils/client';
 import helpers from '@budibase/handlebars-helpers';
 import _, { every, findIndex, some } from 'lodash';
-import { evaluators } from '@nocobase/evaluators/client';
 import { replaceVariableValue } from '../../../block-provider/hooks';
 import { VariableOption, VariablesContextType } from '../../../variables/types';
 import { isVariable } from '../../../variables/utils/isVariable';
 import { transformVariableValue } from '../../../variables/utils/transformVariableValue';
 import { getJsonLogic } from '../../common/utils/logic';
-import { replaceVariables } from '../../../schema-settings/LinkageRules/bindLinkageRulesToFiled';
 import url from 'url';
 type VariablesCtx = {
   /** 当前登录的用户 */
@@ -179,6 +178,13 @@ Handlebars.registerHelper('urlParse', function (str) {
   } catch (error) {
     return `Invalid URL: ${str}`;
   }
+});
+
+Handlebars.registerHelper('dateFormat', (date, format, tz) => {
+  if (typeof tz === 'string') {
+    return dayjs(date).tz(tz).format(format);
+  }
+  return dayjs(date).format(format);
 });
 
 export async function getRenderContent(templateEngine, content, variables, localVariables, defaultParse) {
