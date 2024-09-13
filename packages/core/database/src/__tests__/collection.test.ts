@@ -131,6 +131,10 @@ describe('collection', () => {
     await db.sync();
 
     const viewName = `test_view`;
+    const dropViewSQL = `DROP VIEW IF EXISTS ${viewName}`;
+
+    await db.sequelize.query(dropViewSQL);
+
     const viewSQL = `create view ${viewName} as select * from ${testCollection.getTableNameWithSchemaAsString()}`;
     await db.sequelize.query(viewSQL);
 

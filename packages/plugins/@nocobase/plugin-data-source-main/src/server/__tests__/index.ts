@@ -15,5 +15,6 @@ export async function createApp(options: any = {}) {
     ...options,
     plugins: ['error-handler', 'data-source-main', 'ui-schema-storage'],
   });
+
   return app;
 }

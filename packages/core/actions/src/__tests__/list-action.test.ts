@@ -14,6 +14,7 @@ describe('list action', () => {
   let app: MockServer;
   beforeEach(async () => {
     app = actionMockServer();
+    await app.db.clean({ drop: true });
     registerActions(app);
 
     const Post = app.collection({

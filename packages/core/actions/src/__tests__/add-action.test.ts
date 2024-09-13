@@ -19,6 +19,7 @@ describe('add action', () => {
 
   beforeEach(async () => {
     app = mockServer();
+    await app.db.clean({ drop: true });
     registerActions(app);
 
     PostTag = app.collection({

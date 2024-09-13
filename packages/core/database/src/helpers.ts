@@ -12,6 +12,7 @@
 import { Database, IDatabaseOptions } from './database';
 import fs from 'fs';
 import semver from 'semver';
+import process from 'node:process';
 
 function getEnvValue(key, defaultValue?) {
   return process.env[key] || defaultValue;
@@ -131,13 +132,19 @@ const dialectVersionAccessors = {
       const m = /([\d+.]+)/.exec(v);
       return semver.minVersion(m[0]).version;
     },
+
     version: '>=10',
   },
 };
 
 export async function checkDatabaseVersion(db: Database) {
+  if (process.env['SKIP_DB_VERSION_CHECK']) {
+    return true;
+  }
+
   const dialect = db.sequelize.getDialect();
   const accessor = dialectVersionAccessors[dialect];
+
   if (!accessor) {
     throw new Error(`unsupported dialect ${dialect}`);
   }
@@ -149,6 +156,7 @@ export async function checkDatabaseVersion(db: Database) {
   // @ts-ignore
   const version = accessor.get(result?.[0]?.version);
   const versionResult = semver.satisfies(version, accessor.version);
+
   if (!versionResult) {
     throw new Error(`to use ${dialect}, please ensure the version is ${accessor.version}`);
   }

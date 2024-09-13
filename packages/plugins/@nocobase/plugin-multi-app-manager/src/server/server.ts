@@ -85,7 +85,6 @@ const defaultDbCreator = async (app: Application) => {
       port,
       user: username,
       password,
-      database: 'postgres',
     });
 
     await client.connect();

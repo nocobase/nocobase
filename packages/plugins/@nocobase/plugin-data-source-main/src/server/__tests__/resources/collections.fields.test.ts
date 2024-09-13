@@ -35,6 +35,7 @@ describe('collections.fields', () => {
             },
           ],
         },
+        context: {},
       });
 
     const collection = app.db.getCollection('test1');
