@@ -33,6 +33,7 @@ export type FormatDepartment = {
 export type FormatUserDepartment = {
   uid: string;
   isOwner?: boolean;
+  isMain?: boolean;
 };
 
 export type UserDataRecord = FormatUser | FormatDepartment;

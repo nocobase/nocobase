@@ -8,5 +8,6 @@
  */
 
 export { SyncSource } from './sync-source';
+export { ExternalAPIError, ErrorCodes } from './error';
 export * from './user-data-resource-manager';
 export { default } from './plugin';
