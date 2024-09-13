@@ -25,7 +25,11 @@ export default (app: Application) => {
       const file = resolve(process.cwd(), 'storage/.upgrading');
       const upgrading = await fs.exists(file);
       if (upgrading) {
-        await app.upgrade();
+        if (!process.env.VITEST) {
+          if (await app.isInstalled()) {
+            await app.upgrade();
+          }
+        }
         try {
           await fs.rm(file, { recursive: true, force: true });
         } catch (error) {

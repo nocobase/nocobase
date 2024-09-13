@@ -723,15 +723,18 @@ export class PluginManager {
    */
   async addViaCLI(urlOrName: string | string[], options?: PluginData, emitStartedEvent = true) {
     const writeFile = async () => {
-      // const file = resolve(process.cwd(), 'storage/.upgrading');
-      // this.app.log.debug('pending upgrade');
-      // await fs.writeFile(file, uid());
+      if (process.env.VITEST) {
+        return;
+      }
+      const file = resolve(process.cwd(), 'storage/.upgrading');
+      this.app.log.debug('pending upgrade');
+      await fs.writeFile(file, 'upgrading');
     };
+    await writeFile();
     if (Array.isArray(urlOrName)) {
       for (const packageName of urlOrName) {
         await this.addViaCLI(packageName, _.omit(options, 'name'), false);
       }
-      await writeFile();
       return;
     }
     if (isURL(urlOrName)) {
@@ -760,10 +763,6 @@ export class PluginManager {
         },
         emitStartedEvent,
       );
-    }
-    if (emitStartedEvent) {
-      await writeFile();
-      // await execa('yarn', ['nocobase', 'postinstall']);
     }
   }
 
