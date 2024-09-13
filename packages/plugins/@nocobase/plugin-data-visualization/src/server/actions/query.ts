@@ -9,10 +9,10 @@
 
 import { Context, Next } from '@nocobase/actions';
 import { BelongsToArrayAssociation, Field, FilterParser } from '@nocobase/database';
-import { formatter } from './formatter';
 import compose from 'koa-compose';
 import { Cache } from '@nocobase/cache';
 import { middlewares } from '@nocobase/server';
+import { createFormatter } from '../formatter';
 
 type MeasureProps = {
   field: string | string[];
@@ -144,7 +144,8 @@ export const parseBuilder = async (ctx: Context, next: Next) => {
     const attribute = [];
     const col = sequelize.col(field);
     if (format) {
-      attribute.push(formatter({ sequelize, type, field, format, timezone: ctx.timezone, options }));
+      const formatter = createFormatter(sequelize);
+      attribute.push(formatter.format({ type, field, format, timezone: ctx.timezone, options }));
     } else {
       attribute.push(col);
     }

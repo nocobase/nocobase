@@ -7,53 +7,286 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { formatter } from '../actions/formatter';
-const sequelize = {
-  fn: (fn: string, field: string, format: string) => ({
-    fn,
-    format,
-    field,
-  }),
-  col: (field: string) => field,
-  literal: (field: string) => field,
-  getDialect: () => 'postgres',
-  getQueryInterface: () => ({
-    quoteIdentifiers: (field: string) => field,
-  }),
-} as any;
+import { Database } from '@nocobase/database';
+import { MockServer, createMockServer } from '@nocobase/test';
+import compose from 'koa-compose';
+import { parseBuilder, parseFieldAndAssociations, queryData } from '../actions/query';
 
 describe('formatter', () => {
-  const field = 'field';
-  const format = 'YYYY-MM-DD hh:mm:ss';
-  it('should return correct format for sqlite', () => {
-    const result = formatter({
-      sequelize: {
-        ...sequelize,
-        getDialect: () => 'sqlite',
-        fn: (fn: string, format: string, field: string) => ({ fn, format, field }),
-      },
-      type: 'datetime',
-      field,
-      format,
-    }) as any;
-    expect(result.format).toEqual('%Y-%m-%d %H:%M:%S');
+  let app: MockServer;
+  let db: Database;
+
+  beforeAll(async () => {
+    app = await createMockServer({
+      acl: true,
+      plugins: ['users', 'auth', 'data-visualization'],
+    });
+    db = app.db;
   });
 
-  it('should return correct format for mysql', () => {
-    const result = formatter({
-      sequelize: {
-        ...sequelize,
-        getDialect: () => 'mysql',
-      },
-      type: 'datetime',
-      field,
-      format,
-    }) as any;
-    expect(result.format).toEqual('%Y-%m-%d %H:%i:%S');
+  afterAll(async () => {
+    await app.destroy();
   });
 
-  it('should return correct format for postgres', () => {
-    const result = formatter({ sequelize, type: 'datetime', field, format }) as any;
-    expect(result.format).toEqual('YYYY-MM-DD HH24:MI:SS');
+  afterEach(async () => {
+    await app.db.clean({ drop: true });
+  });
+
+  test('datetime format with timezone', async () => {
+    db.collection({
+      name: 'chart_test',
+      fields: [
+        {
+          type: 'date',
+          name: 'date',
+        },
+      ],
+    });
+    await db.sync();
+    const repo = db.getRepository('chart_test');
+    const dialect = db.sequelize.getDialect();
+    if (dialect === 'sqlite') {
+      await repo.create({
+        values: {
+          date: '2024-05-14 19:32:30.175 +00:00',
+        },
+      });
+    } else if (dialect === 'postgres') {
+      await repo.create({
+        values: {
+          date: '2024-05-14 19:32:30.175+00',
+        },
+      });
+    } else if (dialect === 'mysql' || dialect === 'mariadb') {
+      await repo.create({
+        values: {
+          date: '2024-05-14T19:32:30Z',
+        },
+      });
+    } else {
+      expect(true).toBe(true);
+      return;
+    }
+    const ctx = {
+      app,
+      db,
+      timezone: '+05:30',
+      action: {
+        params: {
+          values: {
+            collection: 'chart_test',
+            measures: [
+              {
+                field: ['date'],
+              },
+            ],
+            dimensions: [
+              {
+                field: ['date'],
+                format: 'YYYY-MM-DD hh:mm:ss',
+              },
+            ],
+          },
+        },
+      },
+    } as any;
+    await compose([parseFieldAndAssociations, parseBuilder, queryData])(ctx, async () => {});
+    expect(ctx.action.params.values.data).toBeDefined();
+    expect(ctx.action.params.values.data).toMatchObject([{ date: '2024-05-15 01:02:30' }]);
+  });
+
+  test('dateOnly format', async () => {
+    db.collection({
+      name: 'chart_test',
+      fields: [
+        {
+          type: 'dateOnly',
+          name: 'dateOnly',
+        },
+      ],
+    });
+    await db.sync();
+    const repo = db.getRepository('chart_test');
+    await repo.create({
+      values: {
+        dateOnly: '2024-05-14',
+      },
+    });
+    const ctx = {
+      app,
+      db,
+      timezone: '+05:30',
+      action: {
+        params: {
+          values: {
+            collection: 'chart_test',
+            measures: [
+              {
+                field: ['dateOnly'],
+              },
+            ],
+            dimensions: [
+              {
+                field: ['dateOnly'],
+                format: 'YYYY-MM-DD',
+              },
+            ],
+          },
+        },
+      },
+    } as any;
+    await compose([parseFieldAndAssociations, parseBuilder, queryData])(ctx, async () => {});
+    expect(ctx.action.params.values.data).toBeDefined();
+    expect(ctx.action.params.values.data).toMatchObject([{ dateOnly: '2024-05-14' }]);
+  });
+
+  test('datetimeNoTz format', async () => {
+    db.collection({
+      name: 'chart_test',
+      fields: [
+        {
+          type: 'datetimeNoTz',
+          name: 'datetimeNoTz',
+        },
+      ],
+    });
+    await db.sync();
+    const repo = db.getRepository('chart_test');
+    await repo.create({
+      values: {
+        datetimeNoTz: '2024-05-14 19:32:30',
+      },
+    });
+    const ctx = {
+      app,
+      db,
+      timezone: '+05:30',
+      action: {
+        params: {
+          values: {
+            collection: 'chart_test',
+            measures: [
+              {
+                field: ['datetimeNoTz'],
+              },
+            ],
+            dimensions: [
+              {
+                field: ['datetimeNoTz'],
+                format: 'YYYY-MM-DD hh:mm:ss',
+              },
+            ],
+          },
+        },
+      },
+    } as any;
+    await compose([parseFieldAndAssociations, parseBuilder, queryData])(ctx, async () => {});
+    expect(ctx.action.params.values.data).toBeDefined();
+    expect(ctx.action.params.values.data).toMatchObject([{ datetimeNoTz: '2024-05-14 19:32:30' }]);
+  });
+
+  test('unixTs format', async () => {
+    db.collection({
+      name: 'chart_test',
+      fields: [
+        {
+          type: 'unixTimestamp',
+          name: 'unixTs',
+          options: {
+            uiSchema: {
+              'x-component-props': {
+                accuracy: 'second',
+              },
+            },
+          },
+        },
+      ],
+    });
+    await db.sync();
+    const repo = db.getRepository('chart_test');
+    await repo.create({
+      values: {
+        id: 5,
+        unixTs: '2023-01-01T04:34:56Z',
+      },
+    });
+    const ctx = {
+      app,
+      db,
+      timezone: '+05:30',
+      action: {
+        params: {
+          values: {
+            collection: 'chart_test',
+            measures: [
+              {
+                field: ['unixTs'],
+              },
+            ],
+            dimensions: [
+              {
+                field: ['unixTs'],
+                format: 'YYYY-MM-DD hh:mm:ss',
+              },
+            ],
+          },
+        },
+      },
+    } as any;
+    await compose([parseFieldAndAssociations, parseBuilder, queryData])(ctx, async () => {});
+    expect(ctx.action.params.values.data).toBeDefined();
+    expect(ctx.action.params.values.data).toMatchObject([{ unixTs: '2023-01-01 10:04:56' }]);
+  });
+
+  test('unixTsMs format', async () => {
+    db.collection({
+      name: 'chart_test',
+      fields: [
+        {
+          type: 'unixTimestamp',
+          name: 'unixTsMs',
+          options: {
+            uiSchema: {
+              'x-component-props': {
+                accuracy: 'millisecond',
+              },
+            },
+          },
+        },
+      ],
+    });
+    await db.sync();
+    const repo = db.getRepository('chart_test');
+    await repo.create({
+      values: {
+        unixTsMs: '2023-01-01T04:34:56Z',
+      },
+    });
+    const ctx = {
+      app,
+      db,
+      timezone: '+05:30',
+      action: {
+        params: {
+          values: {
+            collection: 'chart_test',
+            measures: [
+              {
+                field: ['unixTsMs'],
+              },
+            ],
+            dimensions: [
+              {
+                field: ['unixTsMs'],
+                format: 'YYYY-MM-DD hh:mm:ss',
+              },
+            ],
+          },
+        },
+      },
+    } as any;
+    await compose([parseFieldAndAssociations, parseBuilder, queryData])(ctx, async () => {});
+    expect(ctx.action.params.values.data).toBeDefined();
+    expect(ctx.action.params.values.data).toMatchObject([{ unixTsMs: '2023-01-01 10:04:56' }]);
   });
 });
