@@ -162,7 +162,10 @@ const getVariablesData = (localVariables) => {
   return data;
 };
 
-Handlebars.registerHelper('dateFormat', function dateFormat(date, format) {
+Handlebars.registerHelper('dateFormat', (date, format, tz) => {
+  if (typeof tz === 'string') {
+    return dayjs(date).tz(tz).format(format);
+  }
   return dayjs(date).format(format);
 });
 
