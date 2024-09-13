@@ -31,12 +31,11 @@ module.exports = (cli) => {
     .option('--inspect [port]')
     .allowUnknownOption()
     .action(async (opts) => {
-      generatePlugins();
       const watcher = chokidar.watch('./storage/plugins/**/*', {
         cwd: process.cwd(),
         ignored: /(^|[\/\\])\../, // 忽略隐藏文件
         persistent: true,
-        depth: 2, // 只监听第一层目录
+        depth: 1, // 只监听第一层目录
       });
 
       watcher

@@ -9,11 +9,10 @@
 
 import Topo from '@hapi/topo';
 import { CleanOptions, Collection, SyncOptions } from '@nocobase/database';
-import { importModule, isURL } from '@nocobase/utils';
-import { fsExists } from '@nocobase/utils/plugin-symlink';
+import { importModule, isURL, uid } from '@nocobase/utils';
 import execa from 'execa';
 import fg from 'fast-glob';
-import fs from 'fs';
+import fs from 'fs-extra';
 import _ from 'lodash';
 import net from 'net';
 import { basename, join, resolve, sep } from 'path';
@@ -32,7 +31,6 @@ import {
   getNpmInfo,
   getPluginBasePath,
   getPluginInfoByNpm,
-  removeTmpDir,
   updatePluginByCompressedFileUrl,
 } from './utils';
 
@@ -124,7 +122,7 @@ export class PluginManager {
   static async packageExists(nameOrPkg: string) {
     const { packageName } = await this.parseName(nameOrPkg);
     const file = resolve(process.env.NODE_MODULES_PATH, packageName, 'package.json');
-    return fsExists(file);
+    return fs.exists(file);
   }
 
   /**
@@ -132,8 +130,8 @@ export class PluginManager {
    */
   static async getPackageJson(nameOrPkg: string) {
     const { packageName } = await this.parseName(nameOrPkg);
-    const file = await fs.promises.realpath(resolve(process.env.NODE_MODULES_PATH, packageName, 'package.json'));
-    const data = await fs.promises.readFile(file, { encoding: 'utf-8' });
+    const file = await fs.realpath(resolve(process.env.NODE_MODULES_PATH, packageName, 'package.json'));
+    const data = await fs.readFile(file, { encoding: 'utf-8' });
     return JSON.parse(data);
   }
 
@@ -144,7 +142,7 @@ export class PluginManager {
     const prefixes = this.getPluginPkgPrefix();
     for (const prefix of prefixes) {
       const pkg = resolve(process.env.NODE_MODULES_PATH, `${prefix}${name}`, 'package.json');
-      const exists = await fsExists(pkg);
+      const exists = await fs.exists(pkg);
       if (exists) {
         return `${prefix}${name}`;
       }
@@ -234,7 +232,7 @@ export class PluginManager {
       return this.parsedNames[nameOrPkg];
     }
     const exists = async (name: string, isPreset = false) => {
-      return fsExists(
+      return fs.exists(
         resolve(process.env.NODE_MODULES_PATH, `@nocobase/${isPreset ? 'preset' : 'plugin'}-${name}`, 'package.json'),
       );
     };
@@ -293,7 +291,7 @@ export class PluginManager {
     const createPlugin = async (name) => {
       const pluginDir = resolve(process.cwd(), 'packages/plugins', name);
       if (options?.forceRecreate) {
-        await fs.promises.rm(pluginDir, { recursive: true, force: true });
+        await fs.rm(pluginDir, { recursive: true, force: true });
       }
       const { PluginGenerator } = require('@nocobase/cli/src/plugin-generator');
       const generator = new PluginGenerator({
@@ -699,9 +697,9 @@ export class PluginManager {
         records.map(async (plugin) => {
           const dir = resolve(process.env.NODE_MODULES_PATH, plugin.packageName);
           try {
-            const realDir = await fs.promises.realpath(dir);
+            const realDir = await fs.realpath(dir);
             this.app.log.debug(`rm -rf ${realDir}`);
-            return fs.promises.rm(realDir, { force: true, recursive: true });
+            return fs.rm(realDir, { force: true, recursive: true });
           } catch (error) {
             return false;
           }
@@ -724,12 +722,16 @@ export class PluginManager {
    * @internal
    */
   async addViaCLI(urlOrName: string | string[], options?: PluginData, emitStartedEvent = true) {
+    const writeFile = async () => {
+      const file = resolve(process.cwd(), 'storage/.upgrading');
+      this.app.log.debug('pending upgrade');
+      await fs.writeFile(file, uid());
+    };
     if (Array.isArray(urlOrName)) {
       for (const packageName of urlOrName) {
         await this.addViaCLI(packageName, _.omit(options, 'name'), false);
       }
-      // await execa('yarn', ['nocobase', 'postinstall']);
-      // await tsxRerunning();
+      await writeFile();
       return;
     }
     if (isURL(urlOrName)) {
@@ -740,7 +742,7 @@ export class PluginManager {
         },
         emitStartedEvent,
       );
-    } else if (await fsExists(urlOrName)) {
+    } else if (await fs.exists(urlOrName)) {
       await this.addByCompressedFileUrl(
         {
           ...(options as any),
@@ -760,6 +762,7 @@ export class PluginManager {
       );
     }
     if (emitStartedEvent) {
+      await writeFile();
       // await execa('yarn', ['nocobase', 'postinstall']);
     }
   }
@@ -795,19 +798,7 @@ export class PluginManager {
 
     const { packageName, tempFile, tempPackageContentDir } = await downloadAndUnzipToTempDir(file, authToken);
 
-    const { name } = await PluginManager.parseName(packageName);
-
-    if (this.has(name)) {
-      await removeTmpDir(tempFile, tempPackageContentDir);
-      if (throwError) {
-        throw new Error(`plugin name [${name}] already exists`);
-      } else {
-        this.app.log.warn(`plugin name [${name}] already exists`);
-        return;
-      }
-    }
     await copyTempPackageToStorageAndLinkToNodeModules(tempFile, tempPackageContentDir, packageName);
-    // return this.add(name, { packageName }, true);
   }
 
   /**
@@ -830,19 +821,7 @@ export class PluginManager {
       authToken,
     );
 
-    const { name } = await PluginManager.parseName(packageName);
-
-    if (this.has(name)) {
-      await removeTmpDir(tempFile, tempPackageContentDir);
-      if (throwError) {
-        throw new Error(`plugin name [${name}] already exists`);
-      } else {
-        this.app.log.warn(`plugin name [${name}] already exists`);
-        return;
-      }
-    }
     await copyTempPackageToStorageAndLinkToNodeModules(tempFile, tempPackageContentDir, packageName);
-    // return this.add(name, { packageName }, true);
   }
 
   async update(nameOrPkg: string | string[], options: PluginData, emitStartedEvent = true) {
@@ -857,7 +836,7 @@ export class PluginManager {
         return;
       }
       const file = resolve(process.cwd(), 'storage/app-upgrading');
-      await fs.promises.writeFile(file, '', 'utf-8');
+      await fs.writeFile(file, '', 'utf-8');
       // await this.app.upgrade();
       await tsxRerunning();
       await execa('yarn', ['nocobase', 'pm2-restart'], {
@@ -873,7 +852,7 @@ export class PluginManager {
     const opts = { ...options };
     if (isURL(nameOrPkg)) {
       opts.compressedFileUrl = nameOrPkg;
-    } else if (await fsExists(nameOrPkg)) {
+    } else if (await fs.exists(nameOrPkg)) {
       opts.compressedFileUrl = nameOrPkg;
     }
     if (opts.compressedFileUrl) {
