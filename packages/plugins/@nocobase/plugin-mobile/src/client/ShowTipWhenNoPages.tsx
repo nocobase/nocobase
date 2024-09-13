@@ -11,6 +11,7 @@ import { useDesignable } from '@nocobase/client';
 import { ErrorBlock } from 'antd-mobile';
 import _ from 'lodash';
 import React, { FC } from 'react';
+import { isMobile } from 'react-device-detect';
 import { usePluginTranslation } from './locale';
 import { useMobileRoutes } from './mobile-providers/context';
 
@@ -19,7 +20,7 @@ export const ShowTipWhenNoPages: FC = ({ children }) => {
   const { routeList } = useMobileRoutes();
   const { t } = usePluginTranslation();
 
-  if (!designable && _.isEmpty(routeList)) {
+  if ((!designable || isMobile) && _.isEmpty(routeList)) {
     return (
       <ErrorBlock
         status="empty"
