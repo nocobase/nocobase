@@ -13,6 +13,7 @@ import { publicFormsCollection } from '../collections';
 import { ConfigureLink } from '../components/ConfigureLink';
 import { createActionSchema } from './createActionSchema';
 import { editActionSchema } from './editActionSchema';
+import { NAMESPACE } from '../locale';
 
 export const publicFormsSchema: ISchema = {
   type: 'void',
@@ -68,7 +69,7 @@ export const publicFormsSchema: ISchema = {
       properties: {
         title: {
           type: 'void',
-          title: 'Title',
+          title: '{{ t("Title") }}',
           'x-component': 'TableV2.Column',
           properties: {
             title: {
@@ -80,7 +81,7 @@ export const publicFormsSchema: ISchema = {
         },
         collection: {
           type: 'void',
-          title: 'Collection',
+          title: '{{ t("Collection") }}',
           'x-component': 'TableV2.Column',
           properties: {
             collection: {
@@ -92,7 +93,7 @@ export const publicFormsSchema: ISchema = {
         },
         description: {
           type: 'void',
-          title: 'Description',
+          title: '{{ t("Description") }}',
           'x-component': 'TableV2.Column',
           properties: {
             description: {
@@ -104,7 +105,7 @@ export const publicFormsSchema: ISchema = {
         },
         column5: {
           type: 'void',
-          title: 'Type',
+          title: `{{t("Type", { ns: "${NAMESPACE}" })}}`,
           'x-component': 'TableV2.Column',
           properties: {
             type: {
@@ -117,7 +118,7 @@ export const publicFormsSchema: ISchema = {
         },
         column3: {
           type: 'void',
-          title: 'Enabled',
+          title: '{{ t("Enabled") }}',
           'x-component': 'TableV2.Column',
           properties: {
             enabled: {
@@ -129,7 +130,7 @@ export const publicFormsSchema: ISchema = {
         },
         actions: {
           type: 'void',
-          title: 'Actions',
+          title: '{{ t("Actions") }}',
           'x-component': 'TableV2.Column',
           properties: {
             actions: {

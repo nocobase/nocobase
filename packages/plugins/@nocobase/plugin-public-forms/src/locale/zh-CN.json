@@ -1,3 +1,10 @@
 {
-  "Enable form": "启用表单"
+  "Enable form": "启用表单",
+  "Public forms": "公开表单",
+  "Add New": "添加",
+  "Type": "类型",
+  "Open form": "查看公开表单",
+  "Set password": "设置密码",
+  "Copy link": "复制链接",
+  "QR code": "二维码"
 }

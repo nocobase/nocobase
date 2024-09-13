@@ -13,6 +13,7 @@ import { AdminPublicFormPage } from './components/AdminPublicFormPage';
 import { PublicFormPage } from './components/PublicFormPage';
 import { formSchemaCallback } from './schemas/formSchemaCallback';
 import { publicFormBlockSettings } from './settings';
+import { NAMESPACE } from './locale';
 export class PluginPublicFormsClient extends Plugin {
   protected formTypes = new Map();
 
@@ -48,7 +49,8 @@ export class PluginPublicFormsClient extends Plugin {
       Component: PublicFormPage,
     });
     this.app.pluginSettingsManager.add('public-forms', {
-      title: 'Public forms',
+      title: `{{t("Public forms", { ns: "${NAMESPACE}" })}}`,
+
       icon: 'TableOutlined',
       Component: AdminPublicFormList,
     });

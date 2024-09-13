@@ -18,7 +18,6 @@ import {
   SchemaComponent,
   useGlobalTheme,
   FormItem,
-  CardItem,
 } from '@nocobase/client';
 import { Breadcrumb, Button, Dropdown, Space, Spin, Switch, Input, message, Checkbox, Popover, QRCode } from 'antd';
 import React, { useState } from 'react';
@@ -26,12 +25,13 @@ import { useParams } from 'react-router';
 import { Link } from 'react-router-dom';
 import { FormLayout } from '@formily/antd-v5';
 import { usePublicSubmitActionProps } from '../hooks';
-import { useT } from '../locale';
+import { usePublicFormTranslation, NAMESPACE } from '../locale';
 
 const PublicFormQRCode = () => {
   const params = useParams();
   const [open, setOpen] = useState(false);
   const baseURL = window.location.origin;
+  const { t } = usePublicFormTranslation();
   const link = `${baseURL}/public-forms/${params.name}`;
   const handleQRCodeOpen = (newOpen: boolean) => {
     setOpen(newOpen);
@@ -43,13 +43,13 @@ const PublicFormQRCode = () => {
       onOpenChange={handleQRCodeOpen}
       content={open ? <QRCode value={link} bordered={false} /> : ' '}
     >
-      QR code
+      {t('QR code', { ns: NAMESPACE })}
     </Popover>
   );
 };
 export function AdminPublicFormPage() {
   const params = useParams();
-  const t = useT();
+  const { t } = usePublicFormTranslation();
   const { theme } = useGlobalTheme();
   const apiClient = useAPIClient();
   const { data, loading, refresh } = useRequest<any>({
@@ -133,7 +133,7 @@ export function AdminPublicFormPage() {
         <Breadcrumb
           items={[
             {
-              title: <Link to={`/admin/settings/public-forms`}>{t('Public forms')}</Link>,
+              title: <Link to={`/admin/settings/public-forms`}>{t('Public forms', { ns: NAMESPACE })}</Link>,
             },
             {
               title: 'Test',
@@ -143,7 +143,7 @@ export function AdminPublicFormPage() {
         <Space>
           <Link target={'_blank'} to={`/public-forms/${params.name}`}>
             <Button disabled={!enabled} icon={<EyeOutlined />}>
-              {t('Open form')}
+              {t('Open form', { ns: NAMESPACE })}
             </Button>
           </Link>
           <Dropdown
@@ -153,7 +153,7 @@ export function AdminPublicFormPage() {
                   key: 'enabled',
                   label: (
                     <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <span>{t('Enable form')}</span>{' '}
+                      <span>{t('Enable form', { ns: NAMESPACE })}</span>
                       <Switch
                         size={'small'}
                         checked={enabled}

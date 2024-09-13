@@ -8,8 +8,11 @@
  */
 
 import { useApp } from '@nocobase/client';
+import { useTranslation } from 'react-i18next';
 // @ts-ignore
 import pkg from './../../package.json';
+
+export const NAMESPACE = 'public-forms';
 
 export function useT() {
   const app = useApp();
@@ -18,4 +21,10 @@ export function useT() {
 
 export function tStr(key: string) {
   return `{{t(${JSON.stringify(key)}, { ns: ['${pkg.name}', 'client'], nsMode: 'fallback' })}}`;
+}
+
+export function usePublicFormTranslation() {
+  return useTranslation([NAMESPACE, 'client'], {
+    nsMode: 'fallback',
+  });
 }

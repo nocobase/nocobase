@@ -6,11 +6,12 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
+import { NAMESPACE } from '../locale';
 
 export const createActionSchema = {
   type: 'void',
   'x-component': 'Action',
-  title: "{{t('Add New')}}",
+  title: `{{t("Add New", { ns: "${NAMESPACE}" })}}`,
   'x-align': 'right',
   'x-component-props': {
     type: 'primary',
