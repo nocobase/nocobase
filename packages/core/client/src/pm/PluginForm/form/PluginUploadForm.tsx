@@ -40,12 +40,29 @@ export const PluginUploadForm: FC<IPluginUploadFormProps> = ({ onClose, pluginDa
         if (pluginData?.packageName) {
           formData.append('packageName', pluginData.packageName);
         }
-        api.request({
+        await api.request({
           url: `pm:${isUpgrade ? 'update' : 'add'}`,
           method: 'post',
           data: formData,
         });
         onClose(true);
+        function __health_check() {
+          api
+            .silent()
+            .request({
+              url: `__health_check`,
+              method: 'get',
+            })
+            .then((response) => {
+              if (response.status === 200) {
+                window.location.reload();
+              }
+            })
+            .catch((error) => {
+              // console.error('Health check failed:', error);
+            });
+        }
+        setInterval(__health_check, 1000);
       },
     };
   };
