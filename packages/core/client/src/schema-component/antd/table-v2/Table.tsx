@@ -345,7 +345,7 @@ const cellClass = css`
   max-width: 300px;
   white-space: nowrap;
   .nb-read-pretty-input-number {
-    text-align: right;
+    text-align: left;
   }
   .ant-color-picker-trigger {
     position: absolute;
