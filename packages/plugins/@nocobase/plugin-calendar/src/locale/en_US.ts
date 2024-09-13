@@ -51,5 +51,6 @@ export default {
   "Monthly": "Monthly",
   "Yearly": "Yearly",
   "Repeats": "Repeats",
-  "Background color field": "Background color field"
+  "Background color field": "Background color field",
+  "default color": "default color",
 };
