@@ -129,19 +129,17 @@ const dialectVersionAccessors = {
   postgres: {
     sql: 'select version() as version',
     get: (v: string) => {
+      if (v.includes('KingbaseES')) {
+        return true;
+      }
       const m = /([\d+.]+)/.exec(v);
       return semver.minVersion(m[0]).version;
     },
-
     version: '>=10',
   },
 };
 
 export async function checkDatabaseVersion(db: Database) {
-  if (process.env['SKIP_DB_VERSION_CHECK']) {
-    return true;
-  }
-
   const dialect = db.sequelize.getDialect();
   const accessor = dialectVersionAccessors[dialect];
 
@@ -155,6 +153,11 @@ export async function checkDatabaseVersion(db: Database) {
 
   // @ts-ignore
   const version = accessor.get(result?.[0]?.version);
+
+  if (version === true) {
+    return true;
+  }
+
   const versionResult = semver.satisfies(version, accessor.version);
 
   if (!versionResult) {
