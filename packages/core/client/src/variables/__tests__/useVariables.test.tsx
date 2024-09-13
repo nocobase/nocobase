@@ -292,6 +292,28 @@ describe('useVariables', () => {
     });
   });
 
+  it('$date', async () => {
+    const { result } = renderHook(() => useVariables(), {
+      wrapper: Providers,
+    });
+
+    await waitFor(async () => {
+      expect(await result.current.parseVariable('{{ $date.today }}').then(({ value }) => value)).toHaveLength(2);
+      expect(
+        Array.isArray(
+          await result.current
+            .parseVariable('{{ $date.today }}', [], { fieldOperator: '$dateOn' })
+            .then(({ value }) => value),
+        ),
+      ).toBe(false);
+      expect(
+        await result.current
+          .parseVariable('{{ $date.today }}', [], { fieldOperator: '$dateBetween' })
+          .then(({ value }) => value),
+      ).toHaveLength(2);
+    });
+  });
+
   it('parsing variables with lazy loading of data', async () => {
     const { result } = renderHook(() => useVariables(), {
       wrapper: Providers,
