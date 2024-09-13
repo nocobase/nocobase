@@ -21,7 +21,6 @@ export const UnixTimestamp = connect(
     const { value, onChange } = props;
     return (
       <DatePicker
-        picker={'date'}
         {...props}
         value={value}
         onChange={(v: any) => {
