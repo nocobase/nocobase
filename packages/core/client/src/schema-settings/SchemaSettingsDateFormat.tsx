@@ -31,6 +31,8 @@ export const SchemaSettingsDateFormat = function DateFormatConfig(props: { field
     fieldSchema?.['x-component-props']?.timeFormat ||
     collectionField?.uiSchema?.['x-component-props']?.timeFormat ||
     'HH:mm:ss';
+  const pickerDefaultValue =
+    fieldSchema?.['x-component-props']?.picker || collectionField?.uiSchema?.['x-component-props']?.picker || 'date';
   return (
     <SchemaSettingsModalItem
       title={t('Date display format')}
@@ -38,6 +40,35 @@ export const SchemaSettingsDateFormat = function DateFormatConfig(props: { field
         {
           type: 'object',
           properties: {
+            picker: {
+              type: 'string',
+              title: '{{t("Picker")}}',
+              'x-decorator': 'FormItem',
+              'x-component': 'Radio.Group',
+              default: pickerDefaultValue,
+              enum: [
+                {
+                  label: '{{t("Date")}}',
+                  value: 'date',
+                },
+                {
+                  label: '{{t("Week")}}',
+                  value: 'week',
+                },
+                {
+                  label: '{{t("Month")}}',
+                  value: 'month',
+                },
+                {
+                  label: '{{t("Quarter")}}',
+                  value: 'quarter',
+                },
+                {
+                  label: '{{t("Year")}}',
+                  value: 'year',
+                },
+              ],
+            },
             dateFormat: {
               type: 'string',
               title: '{{t("Date format")}}',
@@ -81,6 +112,20 @@ export const SchemaSettingsDateFormat = function DateFormatConfig(props: { field
                   value: 'custom',
                 },
               ],
+              'x-reactions': {
+                dependencies: ['picker'],
+                when: '{{$deps[0]==="date"}}',
+                fulfill: {
+                  state: {
+                    hidden: false,
+                  },
+                },
+                otherwise: {
+                  state: {
+                    hidden: true,
+                  },
+                },
+              },
             },
             showTime: {
               default:
@@ -96,6 +141,21 @@ export const SchemaSettingsDateFormat = function DateFormatConfig(props: { field
                 f.display = field.value ? 'visible' : 'none';
               });
             }}}`,
+                {
+                  dependencies: ['picker'],
+                  when: '{{$deps[0]!=="date"}}',
+                  fulfill: {
+                    state: {
+                      hidden: true,
+                      value: false,
+                    },
+                  },
+                  otherwise: {
+                    state: {
+                      hidden: collectionField?.type === 'dateOnly',
+                    },
+                  },
+                },
               ],
             },
             timeFormat: {
@@ -143,7 +203,6 @@ export const SchemaSettingsDateFormat = function DateFormatConfig(props: { field
         const schema = {
           ['x-uid']: fieldSchema['x-uid'],
         };
-        console.log(field.componentProps);
         schema['x-component-props'] = field.componentProps || {};
         fieldSchema['x-component-props'] = {
           ...(field.componentProps || {}),

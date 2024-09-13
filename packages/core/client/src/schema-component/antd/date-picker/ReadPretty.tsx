@@ -33,17 +33,39 @@ export interface ReadPrettyDatePickerProps extends Str2momentOptions, GetDefault
   prefixCls?: string;
   showTime?: boolean;
 }
+const getFormat = (picker) => {
+  switch (picker) {
+    case 'week':
+      return 'YYYY-wo'; // Week format
+    case 'month':
+      return 'YYYY-MM'; // Month format
+    case 'quarter':
+      return 'YYYY [Q]Q'; // Quarter format
+    case 'year':
+      return 'YYYY'; // Year format
+    default:
+      return 'YYYY-MM-DD'; // Date format
+  }
+};
 
-ReadPretty.DatePicker = function DatePicker(props) {
+ReadPretty.DatePicker = function DatePicker(props: any) {
+  const { value, picker = 'date' } = props;
   const prefixCls = usePrefixCls('description-date-picker', props);
-
-  if (!props.value) {
+  if (!value) {
     return <div></div>;
   }
-
+  if (picker !== 'date') {
+    return (
+      <div className={cls(prefixCls, props.className)}>
+        {dayjs(value as any)
+          .utc()
+          .format(getFormat(picker))}
+      </div>
+    );
+  }
   const getLabels = () => {
     const format = getDefaultFormat(props) as string;
-    const m = str2moment(props.value, props);
+    const m = str2moment(value, props);
     const labels = dayjs.isDayjs(m) ? m.format(format) : '';
     return isArr(labels) ? labels.join('~') : labels;
   };

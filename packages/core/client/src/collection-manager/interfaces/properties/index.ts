@@ -225,6 +225,35 @@ export const reverseFieldProperties: Record<string, ISchema> = {
 };
 
 export const dateTimeProps: { [key: string]: ISchema } = {
+  'uiSchema.x-component-props.picker': {
+    type: 'string',
+    title: '{{t("Picker")}}',
+    'x-decorator': 'FormItem',
+    'x-component': 'Radio.Group',
+    default: 'date',
+    enum: [
+      {
+        label: '{{t("Date")}}',
+        value: 'date',
+      },
+      {
+        label: '{{t("Week")}}',
+        value: 'week',
+      },
+      {
+        label: '{{t("Month")}}',
+        value: 'month',
+      },
+      {
+        label: '{{t("Quarter")}}',
+        value: 'quarter',
+      },
+      {
+        label: '{{t("Quarter")}}',
+        value: 'Year',
+      },
+    ],
+  },
   'uiSchema.x-component-props.dateFormat': {
     type: 'string',
     title: '{{t("Date format")}}',
@@ -245,6 +274,20 @@ export const dateTimeProps: { [key: string]: ISchema } = {
         value: 'DD/MM/YYYY',
       },
     ],
+    'x-reactions': {
+      dependencies: ['uiSchema.x-component-props.picker'],
+      when: '{{$deps[0]==="date"}}',
+      fulfill: {
+        state: {
+          hidden: false,
+        },
+      },
+      otherwise: {
+        state: {
+          hidden: true,
+        },
+      },
+    },
   },
   'uiSchema.x-component-props.showTime': {
     type: 'boolean',
@@ -258,6 +301,20 @@ export const dateTimeProps: { [key: string]: ISchema } = {
            f.value='HH:mm:ss'
          });
        }}}`,
+      {
+        dependencies: ['uiSchema.x-component-props.picker'],
+        when: '{{$deps[0]==="date"}}',
+        fulfill: {
+          state: {
+            hidden: false,
+          },
+        },
+        otherwise: {
+          state: {
+            hidden: true,
+          },
+        },
+      },
     ],
   },
   'uiSchema.x-component-props.timeFormat': {

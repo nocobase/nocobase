@@ -11,9 +11,9 @@ import { getDefaultFormat, str2moment, toGmt, toLocal } from '@nocobase/utils/cl
 import type { Dayjs } from 'dayjs';
 import dayjs from 'dayjs';
 
-const toStringByPicker = (value, picker, timezone: 'gmt' | 'local') => {
+const toStringByPicker = (value, picker = 'date', timezone: 'gmt' | 'local') => {
   if (!dayjs.isDayjs(value)) return value;
-  if (timezone === 'local') {
+  if (timezone === 'local' && picker === 'date') {
     const offset = new Date().getTimezoneOffset();
     return dayjs(toStringByPicker(value, picker, 'gmt'))
       .add(offset, 'minutes')
@@ -76,7 +76,7 @@ export const moment2str = (value?: Dayjs | null, options: Moment2strOptions = {}
 
 export const mapDatePicker = function () {
   return (props: any) => {
-    const format = getDefaultFormat(props) as any;
+    const format = getDefaultFormat(props);
     const onChange = props.onChange;
     return {
       ...props,
@@ -87,7 +87,7 @@ export const mapDatePicker = function () {
           if (!props.showTime && value) {
             value = value.startOf('day');
           }
-          if (props.dateOnly) {
+          if (props.dateOnly && props.picker === 'date') {
             onChange(dateString !== '' ? dateString : undefined);
           } else {
             onChange(moment2str(value, props));
