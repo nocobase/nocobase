@@ -8,11 +8,8 @@
  */
 
 import { CheckOutlined, EnvironmentOutlined, ExpandOutlined } from '@ant-design/icons';
-import { RecursionField, Schema, useFieldSchema } from '@formily/react';
 import {
-  ActionContextProvider,
   RecordProvider,
-  VariablePopupRecordProvider,
   css,
   getLabelFormatValue,
   useCollection,
@@ -21,14 +18,16 @@ import {
   useCollection_deprecated,
   useCompile,
   useFilterAPI,
+  usePopupUtils,
   useProps,
 } from '@nocobase/client';
 import { useMemoizedFn } from 'ahooks';
 import { Button, Space } from 'antd';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { defaultImage, selectedImage } from '../../constants';
 import { useMapTranslation } from '../../locale';
 import { getSource } from '../../utils';
+import { MapBlockDrawer } from '../MapBlockDrawer';
 import { GoogleMapForwardedRefProps, GoogleMapsComponent, OverlayOptions } from './Map';
 import { getIcon } from './utils';
 
@@ -69,8 +68,10 @@ export const GoogleMapsBlock = (props) => {
   const overlaysRef = useRef<google.maps.MVCObject[]>([]);
   selectingModeRef.current = selectingMode;
   const { fields } = useCollection();
+  const parentRecordData = useCollectionParentRecordData();
   const labelUiSchema = fields.find((v) => v.name === fieldNames?.marker)?.uiSchema;
   const { getCollectionJoinField } = useCollectionManager_deprecated();
+  const { openPopup } = usePopupUtils();
 
   const setOverlayOptions = (overlay: google.maps.MVCObject, state?: boolean) => {
     const selected = typeof state !== 'undefined' ? !state : overlay.get(OVERLAY_SELECtED);
@@ -234,6 +235,9 @@ export const GoogleMapsBlock = (props) => {
 
         if (data) {
           setRecord(data);
+          openPopup({
+            recordData: data,
+          });
         }
       };
       o.addListener('click', onClick);
@@ -291,7 +295,7 @@ export const GoogleMapsBlock = (props) => {
       });
       events.forEach((e) => e());
     };
-  }, [dataSource, isMapInitialization, markerName, collectionField.type, isConnected]);
+  }, [dataSource, isMapInitialization, markerName, collectionField.type, isConnected, openPopup]);
 
   useEffect(() => {
     setTimeout(() => {
@@ -354,7 +358,9 @@ export const GoogleMapsBlock = (props) => {
               ) : null}
             </Space>
           </div>
-          <MapBlockDrawer record={record} setVisible={setRecord} />
+          <RecordProvider record={record} parent={parentRecordData}>
+            <MapBlockDrawer />
+          </RecordProvider>
         </>
       )}
       <GoogleMapsComponent
@@ -370,36 +376,6 @@ export const GoogleMapsBlock = (props) => {
         }}
       ></GoogleMapsComponent>
     </div>
-  );
-};
-
-const MapBlockDrawer = (props) => {
-  const { setVisible, record } = props;
-  const { t } = useMapTranslation();
-  const collection = useCollection();
-  const parentRecordData = useCollectionParentRecordData();
-  const fieldSchema = useFieldSchema();
-  const schema: Schema = useMemo(
-    () =>
-      fieldSchema.reduceProperties((buf, current) => {
-        if (current.name === 'drawer') {
-          return current;
-        }
-        return buf;
-      }, null),
-    [fieldSchema],
-  );
-
-  return (
-    schema && (
-      <ActionContextProvider value={{ visible: !!record, setVisible }}>
-        <RecordProvider record={record} parent={parentRecordData}>
-          <VariablePopupRecordProvider recordData={record} collection={collection}>
-            <RecursionField schema={schema} name={schema.name} />
-          </VariablePopupRecordProvider>
-        </RecordProvider>
-      </ActionContextProvider>
-    )
   );
 };
 

@@ -18,6 +18,7 @@ import {
   SchemaSettingsSwitchItem,
   SchemaSettingsTemplate,
   removeNullCondition,
+  useBlockTemplateContext,
   useCollection,
   useCollectionManager_deprecated,
   useDesignable,
@@ -283,10 +284,11 @@ export const calendarBlockSettings = new SchemaSettings({
       useComponentProps() {
         const { name } = useCollection();
         const fieldSchema = useFieldSchema();
+        const { componentNamePrefix } = useBlockTemplateContext();
         const defaultResource =
           fieldSchema?.['x-decorator-props']?.resource || fieldSchema?.['x-decorator-props']?.association;
         return {
-          componentName: 'Calendar',
+          componentName: `${componentNamePrefix}Calendar`,
           collectionName: name,
           resourceName: defaultResource,
         };

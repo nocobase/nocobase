@@ -99,6 +99,8 @@ const InternalAssociationSelect = connect(
   mapReadPretty(ReadPretty),
 );
 
+InternalAssociationSelect.displayName = 'InternalAssociationSelect';
+
 interface AssociationSelectInterface {
   (props: any): React.ReactElement;
   Designer: React.FC;

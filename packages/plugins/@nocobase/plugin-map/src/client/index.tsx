@@ -47,7 +47,10 @@ export class PluginMapClient extends Plugin {
       title: generateNTemplate('Map'),
       Component: 'MapBlockInitializer',
     });
-
+    this.app.schemaInitializerManager.addItem('mobile:addBlock', 'dataBlocks.map', {
+      title: generateNTemplate('Map'),
+      Component: 'MapBlockInitializer',
+    });
     this.app.pluginSettingsManager.add(NAMESPACE, {
       title: `{{t("Map Manager", { ns: "${NAMESPACE}" })}}`,
       icon: 'EnvironmentOutlined',

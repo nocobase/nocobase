@@ -77,10 +77,45 @@ export interface GridCardProps {
   pagination?: PaginationProps;
 }
 
+const usePaginationProps = () => {
+  const field = useField<ArrayField>();
+  const { service, columnCount: _columnCount = defaultColumnCount } = useGridCardBlockContext();
+  const meta = service?.data?.meta;
+  const { count, pageSize, page } = meta || {};
+
+  if (count) {
+    return {
+      total: count || 0,
+      pageSize: pageSize || 10,
+      current: page || 1,
+      pageSizeOptions,
+      showSizeChanger: true,
+    };
+  } else {
+    return {
+      showTotal: false,
+      pageSizeOptions,
+      simple: { readOnly: true },
+      pageSize: pageSize || 10,
+      showTitle: false,
+      showSizeChanger: true,
+      hideOnSinglePage: false,
+      total: field.value?.length < pageSize ? pageSize * page : pageSize * page + 1,
+      className: css`
+        .ant-pagination-simple-pager {
+          display: none !important;
+        }
+        li {
+          line-height: 32px !important;
+        }
+      `,
+    };
+  }
+};
+
 const InternalGridCard = (props: GridCardProps) => {
   // 新版 UISchema（1.0 之后）中已经废弃了 useProps，这里之所以继续保留是为了兼容旧版的 UISchema
   const { columnCount: columnCountProp, pagination } = useProps(props);
-
   const { service, columnCount: _columnCount = defaultColumnCount } = useGridCardBlockContext();
   const columnCount = columnCountProp || _columnCount;
   const { run, params } = service;
@@ -120,7 +155,11 @@ const InternalGridCard = (props: GridCardProps) => {
     },
     [run, params],
   );
-
+  const gridCardProps = {
+    ...usePaginationProps(),
+    ...pagination,
+    onChange: onPaginationChange,
+  };
   return (
     <SchemaComponentOptions
       scope={{
@@ -149,12 +188,7 @@ const InternalGridCard = (props: GridCardProps) => {
             !meta || meta.count <= meta.pageSize
               ? false
               : {
-                  ...pagination,
-                  onChange: onPaginationChange,
-                  total: meta?.count || 0,
-                  pageSize: meta?.pageSize || 10,
-                  current: meta?.page || 1,
-                  pageSizeOptions,
+                  ...gridCardProps,
                 }
           }
           dataSource={field.value}

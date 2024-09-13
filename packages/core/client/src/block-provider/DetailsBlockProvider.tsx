@@ -141,7 +141,8 @@ export const useDetailsBlockProps = () => {
       ctx.form
         .reset()
         .then(() => {
-          ctx.form.setValues(data || {});
+          ctx.form.setInitialValues(data || {});
+          // Using `ctx.form.setValues(data || {});` here may cause an internal infinite loop in Formily
         })
         .catch(console.error);
     }

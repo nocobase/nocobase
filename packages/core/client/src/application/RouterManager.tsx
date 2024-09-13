@@ -20,6 +20,7 @@ import {
   useRoutes,
 } from 'react-router-dom';
 import { Application } from './Application';
+import { CustomRouterContextProvider } from './CustomRouterContextProvider';
 import { BlankComponent, RouterContextCleaner } from './components';
 
 export interface BrowserRouterOptions extends Omit<BrowserRouterProps, 'children'> {
@@ -143,10 +144,12 @@ export class RouterManager {
       return (
         <RouterContextCleaner>
           <ReactRouter {...opts}>
-            <BaseLayout>
-              <RenderRoutes />
-              {children}
-            </BaseLayout>
+            <CustomRouterContextProvider>
+              <BaseLayout>
+                <RenderRoutes />
+                {children}
+              </BaseLayout>
+            </CustomRouterContextProvider>
           </ReactRouter>
         </RouterContextCleaner>
       );

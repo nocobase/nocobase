@@ -34,12 +34,14 @@ import { compose, normalizeContainer } from './utils';
 import { defineGlobalDeps } from './utils/globalDeps';
 import { getRequireJs } from './utils/requirejs';
 
+import { CollectionFieldInterfaceComponentOption } from '../data-source/collection-field-interface/CollectionFieldInterface';
 import { CollectionField } from '../data-source/collection-field/CollectionField';
 import { DataSourceApplicationProvider } from '../data-source/components/DataSourceApplicationProvider';
 import { DataBlockProvider } from '../data-source/data-block/DataBlockProvider';
 import { DataSourceManager, type DataSourceManagerOptions } from '../data-source/data-source/DataSourceManager';
-import { CollectionFieldInterfaceComponentOption } from '../data-source/collection-field-interface/CollectionFieldInterface';
 
+import type { CollectionFieldInterfaceFactory } from '../data-source';
+import { OpenModeProvider } from '../modules/popup/OpenModeProvider';
 import { AppSchemaComponentProvider } from './AppSchemaComponentProvider';
 import type { Plugin } from './Plugin';
 import type { RequireJS } from './utils/requirejs';
@@ -159,6 +161,7 @@ export class Application {
     });
     this.use(AntdAppProvider);
     this.use(DataSourceApplicationProvider, { dataSourceManager: this.dataSourceManager });
+    this.use(OpenModeProvider);
   }
 
   private addReactRouterComponents() {
@@ -279,10 +282,21 @@ export class Application {
         });
       }
       loadFailed = true;
-      const others = error?.response?.data?.error || error?.response?.data?.errors?.[0] || { message: error?.message };
+      const toError = (error) => {
+        if (typeof error?.response?.data === 'string') {
+          return { message: error?.response?.data };
+        }
+        if (error?.response?.data?.error) {
+          return error?.response?.data?.error;
+        }
+        if (error?.response?.data?.errors?.[0]) {
+          return error?.response?.data?.errors?.[0];
+        }
+        return { message: error?.message };
+      };
       this.error = {
         code: 'LOAD_ERROR',
-        ...others,
+        ...toError(error),
       };
       console.error(error, this.error);
     }
@@ -353,6 +367,10 @@ export class Application {
     const root = createRoot(container);
     root.render(<App />);
     return root;
+  }
+
+  addFieldInterfaces(fieldInterfaceClasses: CollectionFieldInterfaceFactory[] = []) {
+    return this.dataSourceManager.collectionFieldInterfaceManager.addFieldInterfaces(fieldInterfaceClasses);
   }
 
   addFieldInterfaceComponentOption(fieldName: string, componentOption: CollectionFieldInterfaceComponentOption) {

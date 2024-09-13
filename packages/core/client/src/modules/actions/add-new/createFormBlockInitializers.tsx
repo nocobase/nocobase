@@ -44,7 +44,7 @@ const commonOptions = {
               showAssociationFields: true,
               onlyCurrentDataSource: true,
               hideSearch: true,
-              componentType: 'FormItem',
+              componentType: `FormItem`,
               currentText: t('Current collection'),
               otherText: t('Other collections'),
             },

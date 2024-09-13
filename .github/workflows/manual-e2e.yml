@@ -1,6 +1,6 @@
 name: manual-e2e
 
-on: 
+on:
   workflow_dispatch:
     inputs:
       branch:
@@ -83,4 +83,5 @@ jobs:
           DB_PASSWORD: password
           DB_DATABASE: nocobase
           APPEND_PRESET_LOCAL_PLUGINS: ${{ steps.vars.outputs.var2 }}
+          ENCRYPTION_FIELD_KEY: 1%&glK;<UA}aIxJVc53-4G(rTi0vg@J]
     timeout-minutes: 120

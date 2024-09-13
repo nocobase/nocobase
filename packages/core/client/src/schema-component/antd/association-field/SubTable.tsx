@@ -44,9 +44,6 @@ const subTableContainer = css`
   .ant-formily-item-error-help {
     display: none;
   }
-  .ant-description-textarea {
-    line-height: 34px;
-  }
   .ant-table-cell .ant-formily-item-error-help {
     display: block;
     position: absolute;
@@ -154,6 +151,7 @@ export const SubTable: any = observer(
         onClick() {
           selectedRows.map((v) => field.value.push(v));
           field.onInput(field.value);
+          field.initialValue = field.value;
           setSelectedRows([]);
           setVisible(false);
         },
@@ -171,7 +169,7 @@ export const SubTable: any = observer(
           <CollectionRecordProvider record={null} parentRecord={recordV2}>
             <FormActiveFieldsProvider name="nester">
               {/* 在这里加，是为了让 “当前对象” 的配置显示正确 */}
-              <SubFormProvider value={{ value: null, collection }}>
+              <SubFormProvider value={{ value: null, collection, fieldSchema: fieldSchema.parent }}>
                 <Table
                   className={tableClassName}
                   bordered

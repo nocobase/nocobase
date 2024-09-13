@@ -51,6 +51,12 @@ export default class extends Instruction {
         `,
       },
     },
+    withMeta: {
+      type: 'boolean',
+      'x-decorator': 'FormItem',
+      'x-component': 'Checkbox',
+      'x-content': `{{t("Include meta information of this query in result", { ns: "${NAMESPACE}" })}}`,
+    },
   };
   scope = {
     sqlDescription() {

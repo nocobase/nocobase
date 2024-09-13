@@ -10,13 +10,10 @@
 import { useSchemaToolbar } from '../../../application';
 import { SchemaSettings } from '../../../application/schema-settings/SchemaSettings';
 import { useCollection_deprecated } from '../../../collection-manager';
-import {
-  ButtonEditor,
-  RemoveButton,
-  RefreshDataBlockRequest,
-} from '../../../schema-component/antd/action/Action.Designer';
+import { ButtonEditor, RemoveButton } from '../../../schema-component/antd/action/Action.Designer';
 import { SchemaSettingOpenModeSchemaItems } from '../../../schema-items';
 import { SchemaSettingsLinkageRules } from '../../../schema-settings';
+import { useOpenModeContext } from '../../popup/OpenModeProvider';
 
 export const customizePopupActionSettings = new SchemaSettings({
   name: 'actionSettings:popup',
@@ -44,9 +41,12 @@ export const customizePopupActionSettings = new SchemaSettings({
     {
       name: 'openMode',
       Component: SchemaSettingOpenModeSchemaItems,
-      componentProps: {
-        openMode: true,
-        openSize: true,
+      useComponentProps() {
+        const { hideOpenMode } = useOpenModeContext();
+        return {
+          openMode: !hideOpenMode,
+          openSize: !hideOpenMode,
+        };
       },
     },
     {

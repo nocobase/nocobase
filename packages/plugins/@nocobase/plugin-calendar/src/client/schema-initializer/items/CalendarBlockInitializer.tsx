@@ -45,7 +45,7 @@ export const CalendarBlockInitializer = ({
   return (
     <DataBlockInitializer
       {...itemConfig}
-      componentType={'Calendar'}
+      componentType={`Calendar`}
       icon={<FormOutlined />}
       onCreateBlockSchema={async (options) => {
         if (createBlockSchema) {

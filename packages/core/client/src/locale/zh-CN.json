@@ -447,6 +447,7 @@
   "Option value": "选项值",
   "Option label": "选项标签",
   "Color": "颜色",
+  "Background Color": "背景颜色",
   "Add option": "添加选项",
   "Related collection": "关系表",
   "Allow linking to multiple records": "允许关联多条记录",
@@ -927,7 +928,7 @@
   "Unix Timestamp": "Unix 时间戳",
   "Field value do not meet the requirements": "字符不符合要求",
   "Field value size is": "字符长度要求",
-  "Style": "风格",
+  "Style": "样式",
   "Unit conversion": "单位换算",
   "Separator": "分隔符",
   "Prefix": "前缀",
@@ -964,5 +965,14 @@
   "Expand All": "展开全部",
   "Search": "搜索",
   "Clear default value": "清除默认值",
-  "Open in new window": "新窗口打开"
+  "Open in new window": "新窗口打开",
+  "is none of": "不包含任何一个",
+  "is any of": "包含任何一个",
+  "Use simple pagination mode": "使用简单分页模式",
+  "Sorry, the page you visited does not exist.": "抱歉，你访问的页面不存在。",
+  "Set Template Engine": "设置模板引擎",
+  "Skip getting the total number of table records during paging to speed up loading. It is recommended to enable this option for data tables with a large amount of data": "在分页时跳过获取表记录总数，以加快加载速度，建议对有大量数据的数据表开启此选项",
+  "The current user only has the UI configuration permission, but don't have view permission for collection \"{{name}}\"": "当前用户只有 UI 配置权限，但没有数据表 \"{{name}}\" 查看权限。",
+  "Plugin dependency version mismatch": "插件依赖版本不一致",
+  "The current dependency version of the plugin does not match the version of the application and may not work properly. Are you sure you want to continue enabling the plugin?": "当前插件的依赖版本与应用的版本不一致，可能无法正常工作。您确定要继续激活插件吗？"
 }

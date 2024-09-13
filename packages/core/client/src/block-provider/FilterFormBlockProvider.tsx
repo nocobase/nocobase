@@ -10,7 +10,7 @@
 import { useFieldSchema } from '@formily/react';
 import React from 'react';
 import { withDynamicSchemaProps } from '../hoc/withDynamicSchemaProps';
-import { DatePickerProvider } from '../schema-component';
+import { DatePickerProvider, ActionBarProvider } from '../schema-component';
 import { DefaultValueProvider } from '../schema-settings';
 import { CollectOperators } from './CollectOperators';
 import { FormBlockProvider } from './FormBlockProvider';
@@ -23,9 +23,19 @@ export const FilterFormBlockProvider = withDynamicSchemaProps((props) => {
   return (
     <CollectOperators defaultOperators={deprecatedOperators}>
       <DatePickerProvider value={{ utc: false }}>
-        <DefaultValueProvider isAllowToSetDefaultValue={() => false}>
-          <FormBlockProvider name="filter-form" {...props}></FormBlockProvider>
-        </DefaultValueProvider>
+        <ActionBarProvider
+          forceProps={{
+            style: {
+              overflowX: 'auto',
+              maxWidth: '100%',
+              float: 'right',
+            },
+          }}
+        >
+          <DefaultValueProvider isAllowToSetDefaultValue={() => false}>
+            <FormBlockProvider name="filter-form" {...props}></FormBlockProvider>
+          </DefaultValueProvider>
+        </ActionBarProvider>
       </DatePickerProvider>
     </CollectOperators>
   );

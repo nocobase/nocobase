@@ -196,6 +196,32 @@ describe('transformToFilter', () => {
     expect(filter).toEqual(expectedFilter);
   });
 
+  it('should keep 0 value', () => {
+    const valuesWithZero = {
+      field1: 0,
+      field2: 'value2',
+    };
+
+    const expectedFilter = {
+      $and: [
+        {
+          field1: {
+            $eq: 0,
+          },
+        },
+        {
+          field2: {
+            $ne: 'value2',
+          },
+        },
+      ],
+    };
+
+    const filter = transformToFilter(valuesWithZero, operators, getCollectionJoinField, collectionName);
+
+    expect(filter).toEqual(expectedFilter);
+  });
+
   it('should handle null values', () => {
     const valuesWithNull = {
       field1: null,

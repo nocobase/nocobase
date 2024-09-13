@@ -215,6 +215,7 @@ export const querySchema: ISchema = {
           'x-component-props': {
             onChange: '{{ onCollectionChange }}',
             placeholder: '{{t("Collection")}}',
+            showSearch: true,
           },
         },
       },
@@ -288,6 +289,12 @@ export const querySchema: ISchema = {
                               minWidth: '100px',
                             },
                           },
+                        },
+                        distinct: {
+                          type: 'boolean',
+                          'x-decorator': 'FormItem',
+                          'x-component': 'Checkbox',
+                          'x-content': '{{t("Distinct")}}',
                         },
                       },
                       {

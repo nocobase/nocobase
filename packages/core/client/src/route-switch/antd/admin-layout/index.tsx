@@ -11,8 +11,8 @@ import { css } from '@emotion/css';
 import { useSessionStorageState } from 'ahooks';
 import { App, ConfigProvider, Divider, Layout } from 'antd';
 import { createGlobalStyle } from 'antd-style';
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { Link, Outlet, useLocation, useMatch, useNavigate, useParams } from 'react-router-dom';
+import React, { FC, createContext, memo, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { Link, Outlet, useMatch, useParams } from 'react-router-dom';
 import {
   ACLRolesCheckProvider,
   CurrentAppInfoProvider,
@@ -33,6 +33,7 @@ import {
   useSystemSettings,
   useToken,
 } from '../../../';
+import { useLocationNoUpdate, useNavigateNoUpdate } from '../../../application/CustomRouterContextProvider';
 import { Plugin } from '../../../application/Plugin';
 import { useAppSpin } from '../../../application/hooks/useAppSpin';
 import { useMenuTranslation } from '../../../schema-component/antd/menu/locale';
@@ -76,13 +77,13 @@ const useMenuProps = () => {
 
 const MenuEditor = (props) => {
   const { notification } = App.useApp();
-  const [hasNotice, setHasNotice] = useSessionStorageState('plugin-notice', { defaultValue: false });
+  const [, setHasNotice] = useSessionStorageState('plugin-notice', { defaultValue: false });
   const { t } = useMenuTranslation();
   const { setTitle: _setTitle } = useDocumentTitle();
   const setTitle = useCallback((title) => _setTitle(t(title)), []);
-  const navigate = useNavigate();
+  const navigate = useNavigateNoUpdate();
   const params = useParams<any>();
-  const location = useLocation();
+  const location = useLocationNoUpdate();
   const isMatchAdmin = useMatch('/admin');
   const isMatchAdminName = useMatch('/admin/:name');
   const defaultSelectedUid = params.name;
@@ -91,12 +92,12 @@ const MenuEditor = (props) => {
   const ctx = useACLRoleContext();
   const [current, setCurrent] = useState(null);
 
-  const onSelect = ({ item }) => {
+  const onSelect = useCallback(({ item }: { item; key; keyPath; domEvent }) => {
     const schema = item.props.schema;
     setTitle(schema.title);
     setCurrent(schema);
     navigate(`/admin/${schema['x-uid']}`);
-  };
+  }, []);
   const { render } = useAppSpin();
   const adminSchemaUid = useAdminSchemaUid();
   const { data, loading } = useRequest<{
@@ -154,7 +155,7 @@ const MenuEditor = (props) => {
         sideMenuRef.current.style.display = 'block';
       }
     }
-  }, [data?.data, params.name, sideMenuRef]);
+  }, [data?.data, params.name, sideMenuRef, location?.pathname]);
 
   const schema = useMemo(() => {
     const s = filterByACL(data?.data, ctx);
@@ -211,16 +212,16 @@ const MenuEditor = (props) => {
     },
   );
 
+  const scope = useMemo(() => {
+    return { useMenuProps, onSelect, sideMenuRef, defaultSelectedUid };
+  }, []);
+
   if (loading) {
     return render();
   }
   return (
     <SchemaIdContext.Provider value={defaultSelectedUid}>
-      <SchemaComponent
-        distributed
-        scope={{ useMenuProps, onSelect, sideMenuRef, defaultSelectedUid }}
-        schema={schema}
-      />
+      <SchemaComponent distributed scope={scope} schema={schema} />
     </SchemaIdContext.Provider>
   );
 };
@@ -291,36 +292,63 @@ const SetThemeOfHeaderSubmenu = ({ children }) => {
   );
 };
 
+const sideClass = css`
+  height: 100%;
+  /* position: fixed; */
+  position: relative;
+  left: 0;
+  top: 0;
+  background: rgba(0, 0, 0, 0);
+  z-index: 100;
+  .ant-layout-sider-children {
+    top: var(--nb-header-height);
+    position: fixed;
+    width: 200px;
+    height: calc(100vh - var(--nb-header-height));
+  }
+`;
+
+const InternalAdminSideBar: FC<{ pageUid: string; sideMenuRef: any }> = memo((props) => {
+  if (!props.pageUid) return null;
+  return <Layout.Sider className={sideClass} theme={'light'} ref={props.sideMenuRef}></Layout.Sider>;
+});
+InternalAdminSideBar.displayName = 'InternalAdminSideBar';
+
 const AdminSideBar = ({ sideMenuRef }) => {
   const params = useParams<any>();
-  if (!params.name) return null;
-  return (
-    <Layout.Sider
-      className={css`
-        height: 100%;
-        /* position: fixed; */
-        position: relative;
-        left: 0;
-        top: 0;
-        background: rgba(0, 0, 0, 0);
-        z-index: 100;
-        .ant-layout-sider-children {
-          top: var(--nb-header-height);
-          position: fixed;
-          width: 200px;
-          height: calc(100vh - var(--nb-header-height));
-        }
-      `}
-      theme={'light'}
-      ref={sideMenuRef}
-    ></Layout.Sider>
-  );
+  return <InternalAdminSideBar pageUid={params.name} sideMenuRef={sideMenuRef} />;
 };
 
 export const AdminDynamicPage = () => {
-  const params = useParams<{ name?: string }>();
-  return <RouteSchemaComponent schema={params.name} />;
+  return <RouteSchemaComponent />;
 };
+
+const layoutContentClass = css`
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow-y: auto;
+  height: 100vh;
+  > div {
+    position: relative;
+  }
+  .ant-layout-footer {
+    position: absolute;
+    bottom: 0;
+    text-align: center;
+    width: 100%;
+    z-index: 0;
+    padding: 0px 50px;
+  }
+`;
+
+const layoutContentHeaderClass = css`
+  flex-shrink: 0;
+  height: var(--nb-header-height);
+  line-height: var(--nb-header-height);
+  background: transparent;
+  pointer-events: none;
+`;
 
 export const InternalAdminLayout = () => {
   const result = useSystemSettings();
@@ -401,15 +429,33 @@ export const InternalAdminLayout = () => {
                 align-items: center;
               `}
             >
-              <img
-                className={css`
-                  padding: 0 16px;
-                  object-fit: contain;
-                  width: 100%;
-                  height: 100%;
-                `}
-                src={result?.data?.data?.logo?.url}
-              />
+              {result?.data?.data?.logo?.url ? (
+                <img
+                  className={css`
+                    padding: 0 16px;
+                    object-fit: contain;
+                    width: 100%;
+                    height: 100%;
+                  `}
+                  src={result?.data?.data?.logo?.url}
+                />
+              ) : (
+                <span
+                  style={{ fontSize: token.fontSizeHeading3 }}
+                  className={css`
+                    padding: 0 16px;
+                    width: 100%;
+                    height: 100%;
+                    font-weight: 500;
+                    text-align: center;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    white-space: nowrap;
+                  `}
+                >
+                  {result?.data?.data?.title}
+                </span>
+              )}
             </div>
             <div
               className={css`
@@ -446,36 +492,9 @@ export const InternalAdminLayout = () => {
         </div>
       </Layout.Header>
       <AdminSideBar sideMenuRef={sideMenuRef} />
-      <Layout.Content
-        className={css`
-          display: flex;
-          flex-direction: column;
-          position: relative;
-          overflow-y: auto;
-          height: 100vh;
-          max-height: 100vh;
-          > div {
-            position: relative;
-          }
-          .ant-layout-footer {
-            position: absolute;
-            bottom: 0;
-            text-align: center;
-            width: 100%;
-            z-index: 0;
-            padding: 0px 50px;
-          }
-        `}
-      >
-        <header
-          className={css`
-            flex-shrink: 0;
-            height: var(--nb-header-height);
-            line-height: var(--nb-header-height);
-            background: transparent;
-            pointer-events: none;
-          `}
-        ></header>
+      {/* Use the "nb-subpages-slot-without-header-and-side" class name to locate the position of the subpages */}
+      <Layout.Content className={`${layoutContentClass} nb-subpages-slot-without-header-and-side`}>
+        <header className={layoutContentHeaderClass}></header>
         <Outlet />
         {/* {service.contentLoading ? render() : <Outlet />} */}
       </Layout.Content>

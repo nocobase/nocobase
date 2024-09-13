@@ -8,7 +8,7 @@
  */
 
 import { expect, test } from '@nocobase/test/e2e';
-import { oneEmptyTableWithUsers, openInNewWidow } from './templates';
+import { PopupAndSubPageWithParams, oneEmptyTableWithUsers, openInNewWidow } from './templates';
 
 test.describe('Link', () => {
   test('basic', async ({ page, mockPage, mockRecords }) => {
@@ -113,5 +113,31 @@ test.describe('Link', () => {
 
     const newPage = page.context().pages()[1];
     expect(newPage.url().endsWith(otherPageUrl)).toBe(true);
+  });
+
+  test('popup and sub page with search params', async ({ page, mockPage, mockRecords }) => {
+    const nocoPage = mockPage(PopupAndSubPageWithParams);
+    const url = await nocoPage.getUrl();
+    await page.goto(url + '?name=abc');
+
+    // open popup with drawer mode
+    await page.getByLabel('action-Action.Link-View-view-').click();
+    await expect(page.getByLabel('block-item-CollectionField-').getByRole('textbox')).toHaveValue('abc');
+
+    await page.reload();
+    await expect(page.getByLabel('block-item-CollectionField-').getByRole('textbox')).toHaveValue('abc');
+
+    await page.goBack();
+    await page.getByLabel('action-Action.Link-View-view-').hover();
+    await page.getByLabel('designer-schema-settings-Action.Link-actionSettings:view-users').hover();
+    await page.getByRole('menuitem', { name: 'Open mode Drawer' }).click();
+    await page.getByRole('option', { name: 'Page' }).click();
+
+    // open sub page with page mode
+    await page.getByLabel('action-Action.Link-View-view-').click();
+    await expect(page.getByLabel('block-item-CollectionField-').getByRole('textbox')).toHaveValue('abc');
+
+    await page.reload();
+    await expect(page.getByLabel('block-item-CollectionField-').getByRole('textbox')).toHaveValue('abc');
   });
 });

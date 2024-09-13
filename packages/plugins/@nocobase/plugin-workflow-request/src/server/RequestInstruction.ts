@@ -8,6 +8,7 @@
  */
 
 import axios, { AxiosRequestConfig } from 'axios';
+import { trim } from 'lodash';
 
 import { Processor, Instruction, JOB_STATUS, FlowNodeModel } from '@nocobase/plugin-workflow';
 
@@ -38,14 +39,14 @@ async function request(config) {
   // default headers
   const { url, method = 'POST', contentType = 'application/json', data, timeout = 5000 } = config;
   const headers = (config.headers ?? []).reduce((result, header) => {
-    const name = header.name?.trim();
+    const name = trim(header.name);
     if (name.toLowerCase() === 'content-type') {
       return result;
     }
-    return Object.assign(result, { [name]: header.value?.trim() });
+    return Object.assign(result, { [name]: trim(header.value) });
   }, {});
   const params = (config.params ?? []).reduce(
-    (result, param) => Object.assign(result, { [param.name]: param.value?.trim() }),
+    (result, param) => Object.assign(result, { [param.name]: trim(param.value) }),
     {},
   );
 
@@ -53,7 +54,7 @@ async function request(config) {
   headers['Content-Type'] = contentType;
 
   return axios.request({
-    url: url?.trim(),
+    url: trim(url),
     method,
     headers,
     params,

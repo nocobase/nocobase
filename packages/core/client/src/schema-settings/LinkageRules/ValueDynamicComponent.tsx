@@ -8,7 +8,8 @@
  */
 
 import { Input, Select } from 'antd';
-import React, { useCallback, useMemo, useState } from 'react';
+import { css } from '@emotion/css';
+import React, { useCallback, useMemo, useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useFormBlockContext } from '../../block-provider/FormBlockProvider';
 import { useRecord } from '../../record-provider';
@@ -19,15 +20,17 @@ import { DynamicComponent } from './DynamicComponent';
 
 const { Option } = Select;
 
+export type InputModeType = 'constant' | 'express' | 'empty';
 interface ValueDynamicComponentProps {
   fieldValue: any;
   schema: any;
   setValue: (value: any) => void;
   collectionName: string;
+  inputModes?: Array<InputModeType>;
 }
 
 export const ValueDynamicComponent = (props: ValueDynamicComponentProps) => {
-  const { fieldValue, schema, setValue, collectionName } = props;
+  const { fieldValue, schema, setValue, collectionName, inputModes } = props;
   const [mode, setMode] = useState(fieldValue?.mode || 'constant');
   const { t } = useTranslation();
   const { form } = useFormBlockContext();
@@ -45,8 +48,13 @@ export const ValueDynamicComponent = (props: ValueDynamicComponentProps) => {
     blockCollectionName: collectionName,
   });
   const constantStyle = useMemo(() => {
-    return { minWidth: 150, maxWidth: 430, marginLeft: 5 };
+    return { minWidth: 150, maxWidth: 430 };
   }, []);
+
+  useEffect(() => {
+    setMode(fieldValue?.mode || 'constant');
+  }, [fieldValue?.mode]);
+
   const handleChangeOfConstant = useCallback(
     (value) => {
       setValue({
@@ -71,7 +79,7 @@ export const ValueDynamicComponent = (props: ValueDynamicComponentProps) => {
     [collectionName, mode, setValue],
   );
   const textAreaStyle = useMemo(() => {
-    return { minWidth: 460 };
+    return { minWidth: 460, borderRadius: 0 };
   }, []);
   const compatScope = useMemo(() => {
     return compatOldVariables(scope, {
@@ -81,7 +89,16 @@ export const ValueDynamicComponent = (props: ValueDynamicComponentProps) => {
   const modeMap = {
     // 常量
     constant: (
-      <div role="button" aria-label="dynamic-component-linkage-rules" style={constantStyle}>
+      <div
+        role="button"
+        aria-label="dynamic-component-linkage-rules"
+        style={constantStyle}
+        className={css`
+          .ant-input-affix-wrapper {
+            border-radius: 0px;
+          }
+        `}
+      >
         {React.createElement(DynamicComponent, {
           value: fieldValue?.value,
           schema,
@@ -111,6 +128,22 @@ export const ValueDynamicComponent = (props: ValueDynamicComponentProps) => {
     ),
   };
 
+  const isModeContained = (mode: InputModeType) => {
+    if (!inputModes) return true;
+    else {
+      return inputModes.indexOf(mode) > -1;
+    }
+  };
+
+  type Options = Array<{ value: InputModeType; label: string }>;
+
+  const options: Options = (
+    [
+      { value: 'constant', label: t('Constant value') },
+      { value: 'express', label: t('Expression') },
+      { value: 'empty', label: t('Empty') },
+    ] as const
+  ).filter((option) => isModeContained(option.value));
   return (
     <Input.Group compact>
       <Select
@@ -122,13 +155,15 @@ export const ValueDynamicComponent = (props: ValueDynamicComponentProps) => {
         onChange={(value) => {
           setMode(value);
           setValue({
-            mode: value,
+            mode: fieldValue?.mode,
           });
         }}
       >
-        <Option value="constant">{t('Constant value')}</Option>
-        <Option value="express">{t('Expression')}</Option>
-        <Option value="empty">{t('Empty')}</Option>
+        {options.map((option) => (
+          <Option value={option.value} key={option.value}>
+            {option.label}
+          </Option>
+        ))}
       </Select>
       {modeMap[mode]}
     </Input.Group>

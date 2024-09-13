@@ -10,6 +10,7 @@
 import { CloseOutlined, PlusOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { ArrayField } from '@formily/core';
+import { spliceArrayState } from '@formily/core/esm/shared/internals';
 import { RecursionField, observer, useFieldSchema } from '@formily/react';
 import { action } from '@formily/reactive';
 import { each } from '@formily/shared';
@@ -43,7 +44,7 @@ export const Nester = (props) => {
       </FlagProvider>
     );
   }
-  if (['hasMany', 'belongsToMany'].includes(options.type)) {
+  if (['hasMany', 'belongsToMany', 'belongsToArray'].includes(options.type)) {
     return (
       <FlagProvider isInSubForm>
         <ToManyNester {...props} />
@@ -57,6 +58,7 @@ const ToOneNester = (props) => {
   const { field } = useAssociationFieldContext<ArrayField>();
   const recordV2 = useCollectionRecord();
   const collection = useCollection();
+  const fieldSchema = useFieldSchema();
 
   const isAllowToSetDefaultValue = useCallback(
     ({ form, fieldSchema, collectionField, getInterface, formBlockType }: IsAllowToSetDefaultValueParams) => {
@@ -93,7 +95,7 @@ const ToOneNester = (props) => {
 
   return (
     <FormActiveFieldsProvider name="nester">
-      <SubFormProvider value={{ value: field.value, collection }}>
+      <SubFormProvider value={{ value: field.value, collection, fieldSchema: fieldSchema.parent }}>
         <RecordProvider isNew={recordV2?.isNew} record={field.value} parent={recordV2?.data}>
           <DefaultValueProvider isAllowToSetDefaultValue={isAllowToSetDefaultValue}>
             <Card bordered={true}>{props.children}</Card>
@@ -186,6 +188,10 @@ const ToManyNester = observer(
                       style={{ zIndex: 1000, color: '#a8a3a3' }}
                       onClick={() => {
                         action(() => {
+                          spliceArrayState(field as any, {
+                            startIndex: index,
+                            deleteCount: 1,
+                          });
                           field.value.splice(index, 1);
                           return field.onInput(field.value);
                         });
@@ -195,7 +201,7 @@ const ToManyNester = observer(
                 )}
               </div>
               <FormActiveFieldsProvider name="nester">
-                <SubFormProvider value={{ value, collection }}>
+                <SubFormProvider value={{ value, collection, fieldSchema: fieldSchema.parent }}>
                   <RecordProvider isNew={isNewRecord(value)} record={value} parent={recordData}>
                     <RecordIndexProvider index={index}>
                       <DefaultValueProvider isAllowToSetDefaultValue={isAllowToSetDefaultValue}>

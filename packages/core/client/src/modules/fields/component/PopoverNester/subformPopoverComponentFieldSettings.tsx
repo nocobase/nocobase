@@ -12,12 +12,13 @@ import { useField, useFieldSchema } from '@formily/react';
 import { useTranslation } from 'react-i18next';
 import { SchemaSettings } from '../../../../application/schema-settings/SchemaSettings';
 import { useFieldComponentName } from '../../../../common/useFieldComponentName';
+import { useCollectionField } from '../../../../data-source';
 import { useDesignable, useFieldModeOptions, useIsAddNewForm } from '../../../../schema-component';
 import { isSubMode } from '../../../../schema-component/antd/association-field/util';
 import { useIsFieldReadPretty } from '../../../../schema-component/antd/form-item/FormItem.Settings';
-import { useCollectionField } from '../../../../data-source';
 import { useColumnSchema } from '../../../../schema-component/antd/table-v2/Table.Column.Decorator';
 import { titleField } from '../Picker/recordPickerComponentFieldSettings';
+import { linkageRules } from '../SubTable/subTablePopoverComponentFieldSettings';
 
 const allowMultiple: any = {
   name: 'allowMultiple',
@@ -103,5 +104,5 @@ const fieldComponent: any = {
 
 export const subformPopoverComponentFieldSettings = new SchemaSettings({
   name: 'fieldSettings:component:PopoverNester',
-  items: [fieldComponent, allowMultiple, titleField],
+  items: [fieldComponent, allowMultiple, titleField, linkageRules],
 });

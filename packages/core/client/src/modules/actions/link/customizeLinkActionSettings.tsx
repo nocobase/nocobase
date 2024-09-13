@@ -9,7 +9,7 @@
 import { ArrayItems } from '@formily/antd-v5';
 import { useField, useFieldSchema } from '@formily/react';
 import _ from 'lodash';
-import React from 'react';
+import React, { FC } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCollectionRecord, useDesignable } from '../../../';
 import { useSchemaToolbar } from '../../../application';
@@ -19,16 +19,17 @@ import { ButtonEditor, RemoveButton } from '../../../schema-component/antd/actio
 import { SchemaSettingsLinkageRules, SchemaSettingsModalItem } from '../../../schema-settings';
 import { useURLAndHTMLSchema } from './useURLAndHTMLSchema';
 
-export function SchemaSettingsActionLinkItem() {
+export const SchemaSettingsActionLinkItem: FC = () => {
   const field = useField();
   const fieldSchema = useFieldSchema();
   const { dn } = useDesignable();
   const { t } = useTranslation();
   const { urlSchema, paramsSchema, openInNewWindowSchema } = useURLAndHTMLSchema();
+  const componentProps = fieldSchema['x-component-props'] || {};
   const initialValues = {
-    url: field.componentProps.url,
-    params: field.componentProps.params || [{}],
-    openInNewWindow: field.componentProps.openInNewWindow,
+    url: componentProps.url,
+    params: componentProps.params || [{}],
+    openInNewWindow: componentProps.openInNewWindow,
   };
 
   return (
@@ -48,7 +49,6 @@ export function SchemaSettingsActionLinkItem() {
         },
       }}
       onSubmit={({ url, params, openInNewWindow }) => {
-        const componentProps = fieldSchema['x-component-props'] || {};
         componentProps.url = url;
         componentProps.params = params;
         componentProps.openInNewWindow = openInNewWindow;
@@ -70,7 +70,7 @@ export function SchemaSettingsActionLinkItem() {
       initialValues={initialValues}
     />
   );
-}
+};
 
 export const customizeLinkActionSettings = new SchemaSettings({
   name: 'actionSettings:link',

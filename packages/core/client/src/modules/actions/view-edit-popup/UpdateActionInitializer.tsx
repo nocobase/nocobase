@@ -8,9 +8,14 @@
  */
 
 import React from 'react';
+import { usePopupUtils } from '../../../schema-component/antd/page/pagePopupUtils';
+import { CONTEXT_SCHEMA_KEY } from '../../../schema-component/antd/page/usePopupContextInActionOrAssociationField';
 import { ActionInitializerItem } from '../../../schema-initializer/items/ActionInitializerItem';
+import { useOpenModeContext } from '../../popup/OpenModeProvider';
 
 export const UpdateActionInitializer = (props) => {
+  const { defaultOpenMode } = useOpenModeContext();
+  const { getPopupContext } = usePopupUtils();
   const schema = {
     type: 'void',
     title: '{{ t("Edit") }}',
@@ -19,7 +24,7 @@ export const UpdateActionInitializer = (props) => {
     'x-settings': 'actionSettings:edit',
     'x-component': 'Action',
     'x-component-props': {
-      openMode: 'drawer',
+      openMode: defaultOpenMode,
       icon: 'EditOutlined',
     },
     properties: {
@@ -57,6 +62,7 @@ export const UpdateActionInitializer = (props) => {
         },
       },
     },
+    [CONTEXT_SCHEMA_KEY]: getPopupContext(),
   };
   return <ActionInitializerItem {...props} schema={schema} />;
 };

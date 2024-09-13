@@ -38,12 +38,22 @@ jobs:
           path: packages/pro-plugins
           fetch-depth: 0
           ssh-key: ${{ secrets.SUBMODULE_SSH_KEY }}
-      - name: git checkout ${{ github.event.pull_request.base.ref }}
-        run: cd packages/pro-plugins && git checkout ${{ github.event.pull_request.base.ref }}
-        continue-on-error: true
-      - name: git checkout ${{ github.head_ref || github.ref_name }}
-        run: cd packages/pro-plugins && git checkout${{ github.head_ref || github.ref_name }}
-        continue-on-error: true
+      - run: |
+          cd packages/pro-plugins &&
+          if git show-ref --quiet refs/remotes/origin/${{ github.head_ref || github.ref_name }}; then
+            git checkout ${{ github.head_ref || github.ref_name }}
+          else
+            if git show-ref --quiet refs/remotes/origin/${{ github.event.pull_request.base.ref }}; then
+              git checkout ${{ github.event.pull_request.base.ref }}
+            else
+              git checkout main
+            fi
+          fi
+        continue-on-error: true # 外部开发者提交 PR 的时候因为没有权限这里会报错，为了能够继续执行后续步骤，所以这里设置为 continue-on-error: true
+      - name: Git logs
+        run: |
+          cd packages/pro-plugins && git log --color --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit -n 10
+        continue-on-error: true # 外部开发者提交 PR 的时候因为没有权限这里会报错，为了能够继续执行后续步骤，所以这里设置为 continue-on-error: true
       - name: Use Node.js
         uses: actions/setup-node@v4
         with:
@@ -94,12 +104,22 @@ jobs:
           path: packages/pro-plugins
           fetch-depth: 0
           ssh-key: ${{ secrets.SUBMODULE_SSH_KEY }}
-      - name: git checkout ${{ github.event.pull_request.base.ref }}
-        run: cd packages/pro-plugins && git checkout ${{ github.event.pull_request.base.ref }}
-        continue-on-error: true
-      - name: git checkout ${{ github.head_ref || github.ref_name }}
-        run: cd packages/pro-plugins && git checkout ${{ github.head_ref || github.ref_name }}
-        continue-on-error: true
+      - run: |
+          cd packages/pro-plugins &&
+          if git show-ref --quiet refs/remotes/origin/${{ github.head_ref || github.ref_name }}; then
+            git checkout ${{ github.head_ref || github.ref_name }}
+          else
+            if git show-ref --quiet refs/remotes/origin/${{ github.event.pull_request.base.ref }}; then
+              git checkout ${{ github.event.pull_request.base.ref }}
+            else
+              git checkout main
+            fi
+          fi
+        continue-on-error: true # 外部开发者提交 PR 的时候因为没有权限这里会报错，为了能够继续执行后续步骤，所以这里设置为 continue-on-error: true
+      - name: Git logs
+        run: |
+          cd packages/pro-plugins && git log --color --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit -n 10
+        continue-on-error: true # 外部开发者提交 PR 的时候因为没有权限这里会报错，为了能够继续执行后续步骤，所以这里设置为 continue-on-error: true
       - name: Set variables
         continue-on-error: true # 外部开发者提交 PR 的时候因为没有权限这里会报错，为了能够继续执行后续步骤，所以这里设置为 continue-on-error: true
         run: |
@@ -140,6 +160,7 @@ jobs:
           DB_PASSWORD: password
           DB_DATABASE: nocobase
           APPEND_PRESET_LOCAL_PLUGINS: ${{ steps.vars.outputs.var2 }}
+          ENCRYPTION_FIELD_KEY: 1%&glK;<UA}aIxJVc53-4G(rTi0vg@J]
 
       - name: Upload e2e-report
         if: ${{ !cancelled() }}
@@ -181,12 +202,22 @@ jobs:
           path: packages/pro-plugins
           fetch-depth: 0
           ssh-key: ${{ secrets.SUBMODULE_SSH_KEY }}
-      - name: git checkout ${{ github.event.pull_request.base.ref }}
-        run: cd packages/pro-plugins && git checkout ${{ github.event.pull_request.base.ref }}
-        continue-on-error: true
-      - name: git checkout ${{ github.head_ref || github.ref_name }}
-        run: cd packages/pro-plugins && git checkout ${{ github.head_ref || github.ref_name }}
-        continue-on-error: true
+      - run: |
+          cd packages/pro-plugins &&
+          if git show-ref --quiet refs/remotes/origin/${{ github.head_ref || github.ref_name }}; then
+            git checkout ${{ github.head_ref || github.ref_name }}
+          else
+            if git show-ref --quiet refs/remotes/origin/${{ github.event.pull_request.base.ref }}; then
+              git checkout ${{ github.event.pull_request.base.ref }}
+            else
+              git checkout main
+            fi
+          fi
+        continue-on-error: true # 外部开发者提交 PR 的时候因为没有权限这里会报错，为了能够继续执行后续步骤，所以这里设置为 continue-on-error: true
+      - name: Git logs
+        run: |
+          cd packages/pro-plugins && git log --color --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit -n 10
+        continue-on-error: true # 外部开发者提交 PR 的时候因为没有权限这里会报错，为了能够继续执行后续步骤，所以这里设置为 continue-on-error: true
       - name: Set variables
         continue-on-error: true # 外部开发者提交 PR 的时候因为没有权限这里会报错，为了能够继续执行后续步骤，所以这里设置为 continue-on-error: true
         run: |
@@ -227,6 +258,7 @@ jobs:
           DB_PASSWORD: password
           DB_DATABASE: nocobase
           APPEND_PRESET_LOCAL_PLUGINS: ${{ steps.vars.outputs.var2 }}
+          ENCRYPTION_FIELD_KEY: 1%&glK;<UA}aIxJVc53-4G(rTi0vg@J]
 
       - name: Upload e2e-report
         if: ${{ !cancelled() }}
@@ -268,12 +300,22 @@ jobs:
           path: packages/pro-plugins
           fetch-depth: 0
           ssh-key: ${{ secrets.SUBMODULE_SSH_KEY }}
-      - name: git checkout ${{ github.event.pull_request.base.ref }}
-        run: cd packages/pro-plugins && git checkout ${{ github.event.pull_request.base.ref }}
-        continue-on-error: true
-      - name: git checkout ${{ github.head_ref || github.ref_name }}
-        run: cd packages/pro-plugins && git checkout ${{ github.head_ref || github.ref_name }}
-        continue-on-error: true
+      - run: |
+          cd packages/pro-plugins &&
+          if git show-ref --quiet refs/remotes/origin/${{ github.head_ref || github.ref_name }}; then
+            git checkout ${{ github.head_ref || github.ref_name }}
+          else
+            if git show-ref --quiet refs/remotes/origin/${{ github.event.pull_request.base.ref }}; then
+              git checkout ${{ github.event.pull_request.base.ref }}
+            else
+              git checkout main
+            fi
+          fi
+        continue-on-error: true # 外部开发者提交 PR 的时候因为没有权限这里会报错，为了能够继续执行后续步骤，所以这里设置为 continue-on-error: true
+      - name: Git logs
+        run: |
+          cd packages/pro-plugins && git log --color --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit -n 10
+        continue-on-error: true # 外部开发者提交 PR 的时候因为没有权限这里会报错，为了能够继续执行后续步骤，所以这里设置为 continue-on-error: true
       - name: Set variables
         continue-on-error: true # 外部开发者提交 PR 的时候因为没有权限这里会报错，为了能够继续执行后续步骤，所以这里设置为 continue-on-error: true
         run: |
@@ -314,6 +356,7 @@ jobs:
           DB_PASSWORD: password
           DB_DATABASE: nocobase
           APPEND_PRESET_LOCAL_PLUGINS: ${{ steps.vars.outputs.var2 }}
+          ENCRYPTION_FIELD_KEY: 1%&glK;<UA}aIxJVc53-4G(rTi0vg@J]
 
       - name: Upload e2e-report
         if: ${{ !cancelled() }}
@@ -355,12 +398,22 @@ jobs:
           path: packages/pro-plugins
           fetch-depth: 0
           ssh-key: ${{ secrets.SUBMODULE_SSH_KEY }}
-      - name: git checkout ${{ github.event.pull_request.base.ref }}
-        run: cd packages/pro-plugins && git checkout ${{ github.event.pull_request.base.ref }}
-        continue-on-error: true
-      - name: git checkout ${{ github.head_ref || github.ref_name }}
-        run: cd packages/pro-plugins && git checkout ${{ github.head_ref || github.ref_name }}
-        continue-on-error: true
+      - run: |
+          cd packages/pro-plugins &&
+          if git show-ref --quiet refs/remotes/origin/${{ github.head_ref || github.ref_name }}; then
+            git checkout ${{ github.head_ref || github.ref_name }}
+          else
+            if git show-ref --quiet refs/remotes/origin/${{ github.event.pull_request.base.ref }}; then
+              git checkout ${{ github.event.pull_request.base.ref }}
+            else
+              git checkout main
+            fi
+          fi
+        continue-on-error: true # 外部开发者提交 PR 的时候因为没有权限这里会报错，为了能够继续执行后续步骤，所以这里设置为 continue-on-error: true
+      - name: Git logs
+        run: |
+          cd packages/pro-plugins && git log --color --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit -n 10
+        continue-on-error: true # 外部开发者提交 PR 的时候因为没有权限这里会报错，为了能够继续执行后续步骤，所以这里设置为 continue-on-error: true
       - name: Set variables
         continue-on-error: true # 外部开发者提交 PR 的时候因为没有权限这里会报错，为了能够继续执行后续步骤，所以这里设置为 continue-on-error: true
         run: |
@@ -401,6 +454,7 @@ jobs:
           DB_PASSWORD: password
           DB_DATABASE: nocobase
           APPEND_PRESET_LOCAL_PLUGINS: ${{ steps.vars.outputs.var2 }}
+          ENCRYPTION_FIELD_KEY: 1%&glK;<UA}aIxJVc53-4G(rTi0vg@J]
 
       - name: Upload e2e-report
         if: ${{ !cancelled() }}
@@ -419,6 +473,8 @@ jobs:
       - plugin-workflow
       - plugin-workflow-approval
       - plugin-data-source-main
+    permissions:
+      pull-requests: write
     if: ${{ !cancelled() && github.event.pull_request.number }}
     steps:
       - uses: actions/checkout@v4

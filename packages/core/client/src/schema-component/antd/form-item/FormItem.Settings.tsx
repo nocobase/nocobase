@@ -23,9 +23,11 @@ import {
 } from '../../../collection-manager';
 import { useCollectionManager } from '../../../data-source';
 import { useFlag } from '../../../flag-provider';
+import { useOpenModeContext } from '../../../modules/popup/OpenModeProvider';
 import { useRecord } from '../../../record-provider';
 import { useColumnSchema } from '../../../schema-component/antd/table-v2/Table.Column.Decorator';
 import { generalSettingsItems } from '../../../schema-items/GeneralSettings';
+import { getTempFieldState } from '../../../schema-settings/LinkageRules/bindLinkageRulesToFiled';
 import { ActionType } from '../../../schema-settings/LinkageRules/type';
 import { SchemaSettingsDataScope } from '../../../schema-settings/SchemaSettingsDataScope';
 import { SchemaSettingsDateFormat } from '../../../schema-settings/SchemaSettingsDateFormat';
@@ -40,7 +42,6 @@ import { useCompile, useDesignable, useFieldModeOptions } from '../../hooks';
 import { isSubMode } from '../association-field/util';
 import { removeNullCondition } from '../filter';
 import { DynamicComponentProps } from '../filter/DynamicComponent';
-import { getTempFieldState } from '../form-v2/utils';
 import { useColorFields } from '../table-v2/Table.Column.Designer';
 
 export const allowAddNew: SchemaSettingsItemType = {
@@ -54,6 +55,7 @@ export const allowAddNew: SchemaSettingsItemType = {
     return !flag?.isInSubTable && !readPretty && isAssociationField && ['Picker'].includes(fieldMode);
   },
   useComponentProps() {
+    const { defaultOpenMode } = useOpenModeContext();
     const { t } = useTranslation();
     const field = useField<Field>();
     const fieldSchema = useFieldSchema();
@@ -83,7 +85,7 @@ export const allowAddNew: SchemaSettingsItemType = {
             'x-component': 'Action',
             'x-decorator': 'ACLActionProvider',
             'x-component-props': {
-              openMode: 'drawer',
+              openMode: defaultOpenMode,
               type: 'default',
               component: 'CreateRecordAction',
             },
@@ -540,6 +542,7 @@ export const formItemSettings = new SchemaSettings({
         return !readPretty && isAssociationField && ['Select'].includes(fieldMode);
       },
       useComponentProps() {
+        const { defaultOpenMode } = useOpenModeContext();
         const { t } = useTranslation();
         const field = useField<Field>();
         const fieldSchema = useFieldSchema();
@@ -572,7 +575,7 @@ export const formItemSettings = new SchemaSettings({
                   'x-component': 'Action',
                   'x-decorator': 'ACLActionProvider',
                   'x-component-props': {
-                    openMode: 'drawer',
+                    openMode: defaultOpenMode,
                     type: 'default',
                     component: 'CreateRecordAction',
                   },
@@ -982,7 +985,7 @@ function useFormItemCollectionField() {
 
 export function useIsAssociationField() {
   const collectionField = useFormItemCollectionField();
-  const isAssociationField = ['obo', 'oho', 'o2o', 'o2m', 'm2m', 'm2o', 'updatedBy', 'createdBy'].includes(
+  const isAssociationField = ['obo', 'oho', 'o2o', 'o2m', 'm2m', 'm2o', 'updatedBy', 'createdBy', 'mbm'].includes(
     collectionField?.interface,
   );
   return isAssociationField;

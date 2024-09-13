@@ -14,22 +14,28 @@ import React, { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { withDynamicSchemaProps } from '../../hoc/withDynamicSchemaProps';
 import { useProps } from '../../schema-component/hooks/useProps';
-import { FormButtonLinkageRuleAction, FormFieldLinkageRuleAction } from './LinkageRuleAction';
+import {
+  FormButtonLinkageRuleAction,
+  FormFieldLinkageRuleAction,
+  FormStyleLinkageRuleAction,
+} from './LinkageRuleAction';
 import { RemoveActionContext } from './context';
 export const LinkageRuleActions = observer(
   (props: any): any => {
-    const { type, linkageOptions } = props;
+    const { linkageOptions, category, elementType } = props;
     const field = useField<ArrayFieldModel>();
+    const type = category === 'default' ? elementType : category;
+    const componentMap: {
+      [key in LinkageRuleActionGroupProps['type']]: any;
+    } = {
+      button: FormButtonLinkageRuleAction,
+      field: FormFieldLinkageRuleAction,
+      style: FormStyleLinkageRuleAction,
+    };
     return field?.value?.map((item, index) => {
       return (
         <RemoveActionContext.Provider key={index} value={() => field.remove(index)}>
-          <ObjectField
-            name={index}
-            component={[
-              type === 'button' ? FormButtonLinkageRuleAction : FormFieldLinkageRuleAction,
-              { ...props, options: linkageOptions },
-            ]}
-          />
+          <ObjectField name={index} component={[componentMap[type], { ...props, options: linkageOptions }]} />
         </RemoveActionContext.Provider>
       );
     });
@@ -37,8 +43,8 @@ export const LinkageRuleActions = observer(
   { displayName: 'LinkageRuleActions' },
 );
 
-interface LinkageRuleActionGroupProps {
-  type: 'button' | 'field';
+export interface LinkageRuleActionGroupProps {
+  type: 'button' | 'field' | 'style';
   linkageOptions: any;
   collectionName: string;
 }
@@ -50,12 +56,11 @@ export const LinkageRuleActionGroup = withDynamicSchemaProps(
     const logic = 'actions';
 
     // 新版 UISchema（1.0 之后）中已经废弃了 useProps，这里之所以继续保留是为了兼容旧版的 UISchema
-    const { type, linkageOptions, collectionName } = useProps(props);
-
+    const { category, elementType, linkageOptions, collectionName } = useProps(props);
     const style = useMemo(() => ({ marginLeft: 10 }), []);
     const components = useMemo(
-      () => [LinkageRuleActions, { type, linkageOptions, collectionName }],
-      [collectionName, linkageOptions, type],
+      () => [LinkageRuleActions, { category, elementType, linkageOptions, collectionName }],
+      [collectionName, linkageOptions, category, elementType],
     );
     const spaceStyle = useMemo(() => ({ marginTop: 8, marginBottom: 8 }), []);
     const onClick = useCallback(() => {
@@ -63,6 +68,7 @@ export const LinkageRuleActionGroup = withDynamicSchemaProps(
       const items = f.value || [];
       items.push({});
       f.value = items;
+      f.initialValue = items;
     }, [field]);
 
     return (

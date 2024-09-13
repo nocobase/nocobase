@@ -784,5 +784,6 @@
   "URL search params": "Paramètres de recherche d'URL",
   "Expand All": "Tout déplier",
   "Clear default value": "Effacer la valeur par défaut",
-  "Open in new window": "Ouvrir dans une nouvelle fenêtre"
+  "Open in new window": "Ouvrir dans une nouvelle fenêtre",
+  "Sorry, the page you visited does not exist.": "Désolé, la page que vous avez visitée n'existe pas."
 }

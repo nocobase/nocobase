@@ -68,7 +68,7 @@ test.describe('configure fields', () => {
 
     await page.mouse.move(300, 0);
     await expect(page.getByLabel('block-item-CollectionField-general-form-general.id-ID')).toBeVisible();
-    await expect(page.getByLabel('block-item-CollectionField-general-form-general.manyToOne.nickname')).toBeVisible();
+    await expect(page.getByLabel('block-item-CollectionField-general-form-users.nickname-Nickname')).toBeVisible();
 
     // delete fields
     await page.getByLabel('schema-initializer-Grid-form:configureFields-general').hover();

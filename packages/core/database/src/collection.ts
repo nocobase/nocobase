@@ -23,7 +23,6 @@ import { BuiltInGroup } from './collection-group-manager';
 import { Database } from './database';
 import { BelongsToField, Field, FieldOptions, HasManyField } from './fields';
 import { Model } from './model';
-import { AdjacencyListRepository } from './repositories/tree-repository/adjacency-list-repository';
 import { Repository } from './repository';
 import { checkIdentifier, md5, snakeCase } from './utils';
 import safeJsonStringify from 'safe-json-stringify';
@@ -114,6 +113,8 @@ export interface CollectionOptions extends Omit<ModelOptions, 'name' | 'hooks'> 
   magicAttribute?: string;
   tree?: string;
   template?: string;
+
+  simplePaginate?: boolean;
 
   /**
    * where is the collection from
@@ -268,11 +269,6 @@ export class Collection<
     if (typeof repository === 'string') {
       repo = this.context.database.repositories.get(repository) || Repository;
     }
-
-    if (this.options.tree == 'adjacency-list' || this.options.tree == 'adjacencyList') {
-      repo = AdjacencyListRepository;
-    }
-
     this.repository = new repo(this);
   }
 
@@ -837,6 +833,14 @@ export class Collection<
 
   public isView() {
     return false;
+  }
+
+  unavailableActions() {
+    if (this.options.template === 'file') {
+      return ['create', 'update', 'destroy'];
+    }
+
+    return [];
   }
 
   protected sequelizeModelOptions() {
