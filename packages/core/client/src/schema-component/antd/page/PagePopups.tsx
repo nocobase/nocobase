@@ -169,7 +169,7 @@ const PagePopupsItemProvider: FC<{
           collection={params.collection || context.collection}
           association={context.association}
           sourceId={params.sourceid}
-          filterByTk={params.filterbytk}
+          filterByTk={parseQueryString(params.filterbytk)}
           // @ts-ignore
           record={storedContext.record}
           parentRecord={storedContext.parentRecord}
@@ -464,4 +464,26 @@ function findSchemaByUid(uid: string, rootSchema: Schema, resultRef: { value: Sc
     }
   });
   return resultRef.value;
+}
+
+function parseQueryString(queryString) {
+  // 如果没有 '&'，直接返回原始字符串
+  if (!queryString?.includes?.('=')) {
+    return queryString;
+  }
+
+  // 解码查询字符串
+  const decodedString = decodeURIComponent(queryString);
+
+  // 将解码后的字符串按 '&' 分隔成键值对
+  const pairs = decodedString.split('&');
+
+  // 将键值对转换为对象
+  const params = pairs.reduce((acc, pair) => {
+    const [key, value] = pair.split('=');
+    acc[key] = value;
+    return acc;
+  }, {});
+
+  return params;
 }

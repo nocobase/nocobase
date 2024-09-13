@@ -12,6 +12,9 @@ on:
         required: true
       pr_number:
         description: 'Please enter the pr number of pro plugin repository'
+        required: true
+      nocobase_pr_number:
+        description: 'Please enter the pr number of nocobase/nocobase repository'
         required: false
 jobs:
   build-and-push:
@@ -34,6 +37,12 @@ jobs:
         with:
           ref: ${{ github.head_ref || github.ref_name }}
           fetch-depth: 0
+      - name: Checkout nocobase/nocobase pr
+        shell: bash
+        run: |
+          gh pr checkout ${{ inputs.nocobase_pr_number }}
+        env:
+          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
       - name: Checkout plugin
         uses: actions/checkout@v3
         with:

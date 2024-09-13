@@ -16,6 +16,10 @@ export interface PopupContext {
   dataSource?: string;
   collection?: string;
   association?: string;
+  /**
+   * if true, the context will never be updated
+   */
+  doNotUpdateContext?: boolean;
 }
 
 export const CONTEXT_SCHEMA_KEY = 'x-action-context';
@@ -29,20 +33,21 @@ export const usePopupContextInActionOrAssociationField = () => {
   const { dn } = useDesignable();
 
   const updatePopupContext = useCallback(
-    (context: PopupContext, customSchema?: ISchema) => {
-      customSchema = customSchema || fieldSchema;
-      context = _.omitBy(context, _.isNil) as PopupContext;
+    (newContext: PopupContext, customSchema?: ISchema) => {
+      const schema = customSchema || fieldSchema;
+      const oldContext = getPopupContextFromActionOrAssociationFieldSchema(schema);
+      newContext = _.omitBy(newContext, _.isNil) as PopupContext;
 
-      if (_.isEqual(context, getPopupContextFromActionOrAssociationFieldSchema(customSchema))) {
+      if (_.isEqual(newContext, oldContext) || oldContext?.doNotUpdateContext) {
         return;
       }
 
-      customSchema[CONTEXT_SCHEMA_KEY] = context;
+      schema[CONTEXT_SCHEMA_KEY] = newContext;
 
       return dn.emit('initializeActionContext', {
         schema: {
-          'x-uid': customSchema['x-uid'],
-          [CONTEXT_SCHEMA_KEY]: context,
+          'x-uid': schema['x-uid'],
+          [CONTEXT_SCHEMA_KEY]: newContext,
         },
       });
     },

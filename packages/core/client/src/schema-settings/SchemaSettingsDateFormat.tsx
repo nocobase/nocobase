@@ -89,6 +89,7 @@ export const SchemaSettingsDateFormat = function DateFormatConfig(props: { field
               'x-decorator': 'FormItem',
               'x-component': 'Checkbox',
               'x-content': '{{t("Show time")}}',
+              'x-hidden': collectionField?.type === 'dateOnly',
               'x-reactions': [
                 `{{(field) => {
               field.query('.timeFormat').take(f => {
@@ -142,9 +143,10 @@ export const SchemaSettingsDateFormat = function DateFormatConfig(props: { field
         const schema = {
           ['x-uid']: fieldSchema['x-uid'],
         };
-        schema['x-component-props'] = fieldSchema['x-component-props'] || {};
+        console.log(field.componentProps);
+        schema['x-component-props'] = field.componentProps || {};
         fieldSchema['x-component-props'] = {
-          ...(fieldSchema['x-component-props'] || {}),
+          ...(field.componentProps || {}),
           ...data,
         };
         schema['x-component-props'] = fieldSchema['x-component-props'];

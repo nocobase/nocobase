@@ -5,6 +5,41 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.3.22-beta](https://github.com/nocobase/nocobase/compare/v1.3.21-beta...v1.3.22-beta) - 2024-09-12
+
+### 🎉 New Features
+
+- **[Action: Custom request]** Support for API token variables in the "Custom Request Button" configuration ([#5263](https://github.com/nocobase/nocobase/pull/5263)) by @zhangzhonghe
+Reference: [Custom request](https://docs.nocobase.com/handbook/action-custom-request)
+### 🚀 Improvements
+
+- **[Collection field: Markdown(Vditor)]** Support Vidtor when selecting fields in the UI for external data sources ([#5246](https://github.com/nocobase/nocobase/pull/5246)) by @katherinehhh
+
+### 🐛 Bug Fixes
+
+- **[Calendar]** issue where the calendar block cannot display correctly when the end date crosses months ([#5239](https://github.com/nocobase/nocobase/pull/5239)) by @katherinehhh
+
+## [v1.3.21-beta](https://github.com/nocobase/nocobase/compare/v1.3.20-beta...v1.3.21-beta) - 2024-09-10
+
+### 🐛 Bug Fixes
+
+- **[client]** Fix error when using linkage rules (NocoBase installed via create-nocobase-app) ([#5249](https://github.com/nocobase/nocobase/pull/5249)) by @zhangzhonghe
+
+## [v1.3.20-beta](https://github.com/nocobase/nocobase/compare/v1.3.19-beta...v1.3.20-beta) - 2024-09-10
+
+### 🚀 Improvements
+
+- **[client]** Support for displaying deeper level association fields in data blocks ([#5243](https://github.com/nocobase/nocobase/pull/5243)) by @zhangzhonghe
+
+### 🐛 Bug Fixes
+
+- **[client]**
+  - Menu modifications do not take effect in real-time ([#5207](https://github.com/nocobase/nocobase/pull/5207)) by @katherinehhh
+
+  - Support association field preloading in Handlebars templates ([#5236](https://github.com/nocobase/nocobase/pull/5236)) by @katherinehhh
+
+- **[Data visualization]** Fix incorrect data source context when multiple data sources exist ([#5237](https://github.com/nocobase/nocobase/pull/5237)) by @2013xile
+
 ## [v1.3.19-beta](https://github.com/nocobase/nocobase/compare/v1.3.18-beta...v1.3.19-beta) - 2024-09-08
 
 ### 🐛 Bug Fixes

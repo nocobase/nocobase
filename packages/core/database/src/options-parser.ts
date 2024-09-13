@@ -76,17 +76,42 @@ export class OptionsParser {
     return this.isAssociation(path.split('.')[0]);
   }
 
+  filterByTkToWhereOption() {
+    const filterByTkOption = this.options?.filterByTk;
+
+    if (!filterByTkOption) {
+      return {};
+    }
+
+    // multi filter target key
+    if (lodash.isPlainObject(this.options.filterByTk)) {
+      const where = {};
+      for (const [key, value] of Object.entries(filterByTkOption)) {
+        where[key] = value;
+      }
+
+      return where;
+    }
+
+    // single filter target key
+    const filterTargetKey = this.context.targetKey || this.collection.filterTargetKey;
+
+    if (Array.isArray(filterTargetKey)) {
+      throw new Error('multi filter target key value must be object');
+    }
+
+    return {
+      [filterTargetKey]: filterByTkOption,
+    };
+  }
+
   toSequelizeParams() {
     const queryParams = this.filterParser.toSequelizeParams();
 
     if (this.options?.filterByTk) {
+      const filterByTkWhere = this.filterByTkToWhereOption();
       queryParams.where = {
-        [Op.and]: [
-          queryParams.where,
-          {
-            [this.context.targetKey || this.collection.filterTargetKey]: this.options.filterByTk,
-          },
-        ],
+        [Op.and]: [queryParams.where, filterByTkWhere],
       };
     }
 
@@ -115,7 +140,7 @@ export class OptionsParser {
 
     let defaultSortField = this.model.primaryKeyAttribute;
 
-    if (!defaultSortField && this.collection.filterTargetKey) {
+    if (!defaultSortField && this.collection.filterTargetKey && !Array.isArray(this.collection.filterTargetKey)) {
       defaultSortField = this.collection.filterTargetKey;
     }
 

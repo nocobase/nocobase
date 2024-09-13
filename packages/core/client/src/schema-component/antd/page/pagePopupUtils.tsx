@@ -190,7 +190,7 @@ export const usePopupUtils = (
     [association, cm, collection, dataSourceKey, parentRecord?.data, association],
   );
 
-  const getPopupContext = useCallback(() => {
+  const getNewPopupContext = useCallback(() => {
     const context = {
       dataSource: dataSourceKey,
       collection: association ? undefined : collection?.name,
@@ -247,7 +247,7 @@ export const usePopupUtils = (
         sourceId,
       });
 
-      updatePopupContext(getPopupContext(), customActionSchema);
+      updatePopupContext(getNewPopupContext(), customActionSchema);
 
       navigate(withSearchParams(`${url}${pathname}`));
     },
@@ -265,7 +265,7 @@ export const usePopupUtils = (
       location,
       isPopupVisibleControlledByURL,
       getSourceId,
-      getPopupContext,
+      getNewPopupContext,
     ],
   );
 
@@ -344,7 +344,7 @@ export const usePopupUtils = (
      * @deprecated
      * TODO: remove this
      */
-    getPopupContext,
+    getPopupContext: getNewPopupContext,
   };
 };
 

@@ -92,7 +92,9 @@ const InternalRemoteSelect = connect(
       (options) => {
         try {
           return options
-            .filter((v) => ['number', 'string'].includes(typeof v[fieldNames.value]))
+            .filter((v) => {
+              return ['number', 'string'].includes(typeof v[fieldNames.value]) || !v[fieldNames.value];
+            })
             .map((option) => {
               let label = compile(option[fieldNames.label]);
 

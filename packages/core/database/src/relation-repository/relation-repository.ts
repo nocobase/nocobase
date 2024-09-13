@@ -16,7 +16,7 @@ import { RelationField } from '../fields/relation-field';
 import FilterParser from '../filter-parser';
 import { Model } from '../model';
 import { OptionsParser } from '../options-parser';
-import { CreateOptions, Filter, FindOptions } from '../repository';
+import { CreateOptions, Filter, FindOptions, TargetKey } from '../repository';
 import { updateAssociations } from '../update-associations';
 import { UpdateGuard } from '../update-guard';
 
@@ -31,17 +31,19 @@ export abstract class RelationRepository {
   targetCollection: Collection;
   associationName: string;
   associationField: RelationField;
-  sourceKeyValue: string | number;
+  sourceKeyValue: TargetKey;
   sourceInstance: Model;
   db: Database;
   database: Database;
 
-  constructor(sourceCollection: Collection, association: string, sourceKeyValue: string | number) {
+  constructor(sourceCollection: Collection, association: string, sourceKeyValue: TargetKey) {
     this.db = sourceCollection.context.database;
     this.database = this.db;
 
     this.sourceCollection = sourceCollection;
-    this.sourceKeyValue = sourceKeyValue;
+
+    this.setSourceKeyValue(sourceKeyValue);
+
     this.associationName = association;
     this.association = this.sourceCollection.model.associations[association];
 
@@ -49,6 +51,24 @@ export abstract class RelationRepository {
 
     this.targetModel = this.association.target;
     this.targetCollection = this.sourceCollection.context.database.modelCollection.get(this.targetModel);
+  }
+
+  decodeMultiTargetKey(str: string) {
+    try {
+      const decoded = decodeURIComponent(str);
+      return JSON.parse(decoded);
+    } catch (e) {
+      return false;
+    }
+  }
+
+  setSourceKeyValue(sourceKeyValue: TargetKey) {
+    this.sourceKeyValue =
+      typeof sourceKeyValue === 'string' ? this.decodeMultiTargetKey(sourceKeyValue) || sourceKeyValue : sourceKeyValue;
+  }
+
+  isMultiTargetKey(value?: any) {
+    return lodash.isPlainObject(value || this.sourceKeyValue);
   }
 
   get collection() {
@@ -145,12 +165,20 @@ export abstract class RelationRepository {
 
   async getSourceModel(transaction?: Transaction) {
     if (!this.sourceInstance) {
-      this.sourceInstance = await this.sourceCollection.model.findOne({
-        where: {
-          [this.associationField.sourceKey]: this.sourceKeyValue,
-        },
-        transaction,
-      });
+      this.sourceInstance = this.isMultiTargetKey()
+        ? await this.sourceCollection.repository.findOne({
+            filter: {
+              // @ts-ignore
+              ...this.sourceKeyValue,
+            },
+            transaction,
+          })
+        : await this.sourceCollection.model.findOne({
+            where: {
+              [this.associationField.sourceKey]: this.sourceKeyValue,
+            },
+            transaction,
+          });
     }
 
     return this.sourceInstance;

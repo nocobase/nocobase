@@ -9,11 +9,13 @@
 
 import Handlebars from 'handlebars';
 import _, { every, findIndex, some } from 'lodash';
+import { evaluators } from '@nocobase/evaluators/client';
 import { replaceVariableValue } from '../../../block-provider/hooks';
 import { VariableOption, VariablesContextType } from '../../../variables/types';
 import { isVariable } from '../../../variables/utils/isVariable';
 import { transformVariableValue } from '../../../variables/utils/transformVariableValue';
 import { getJsonLogic } from '../../common/utils/logic';
+import { replaceVariables } from '../../../schema-settings/LinkageRules/bindLinkageRulesToFiled';
 
 type VariablesCtx = {
   /** 当前登录的用户 */
@@ -162,15 +164,16 @@ const getVariablesData = (localVariables) => {
 export async function getRenderContent(templateEngine, content, variables, localVariables, defaultParse) {
   if (content && templateEngine === 'handlebars') {
     try {
-      try {
-        await replaceVariableValue(content, variables, localVariables);
-      } catch (error) {
-        return null;
-      }
-      const renderedContent = Handlebars.compile(content);
+      const { evaluate } = evaluators.get('string');
+      const { exp, scope: expScope } = await replaceVariables(content, {
+        variables,
+        localVariables,
+      });
+      const result = evaluate(exp, { now: () => new Date().toString(), ...expScope });
+      const renderedContent = Handlebars.compile(result);
       // 处理渲染后的内容
       const data = getVariablesData(localVariables);
-      const html = renderedContent({ ...variables.ctxRef.current, ...data });
+      const html = renderedContent({ ...variables.ctxRef.current, ...data, ...expScope });
       return await defaultParse(html);
     } catch (error) {
       console.log(error);
