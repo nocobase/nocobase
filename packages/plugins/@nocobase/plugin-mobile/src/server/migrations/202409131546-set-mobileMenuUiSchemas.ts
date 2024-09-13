@@ -22,7 +22,7 @@ export default class extends Migration {
 
     for (const role of roles) {
       await this.db.getRepository<any>('roles.mobileMenuUiSchemas', role.get('name')).add({
-        values: mobileRoutes.map((item) => item.get('id')),
+        tk: mobileRoutes.map((item) => item.get('id')),
       });
     }
   }
