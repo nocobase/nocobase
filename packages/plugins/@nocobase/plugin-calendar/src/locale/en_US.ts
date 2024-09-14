@@ -52,5 +52,5 @@ export default {
   "Yearly": "Yearly",
   "Repeats": "Repeats",
   "Background color field": "Background color field",
-  "default color": "default color",
+  "Not selected": "Not selected",
 };
