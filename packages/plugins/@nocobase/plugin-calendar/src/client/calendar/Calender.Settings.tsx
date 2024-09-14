@@ -111,17 +111,17 @@ export const calendarBlockSettings = new SchemaSettings({
         const { name } = useCollection();
         const field = useField();
         const { dn } = useDesignable();
-        const flieidList = getCollectionFieldsOptions(name, 'string');
+        const fliedList = getCollectionFieldsOptions(name, 'string');
         const filteredItems = [
           { label: t('default color'), value: '' },
-          ...flieidList.filter((item) => item.interface === 'radioGroup' || item.interface === 'select'),
+          ...fliedList.filter((item) => item.interface === 'radioGroup' || item.interface === 'select'),
         ];
         return {
           title: t('Background color field'),
           value: fieldNames.color || '',
           options: filteredItems,
           onChange: (color) => {
-            const fieldNames = field.decoratorProps.fieldNames || {};
+            const fieldNames = fieldSchema['x-decorator-props']?.fieldNames || {};
             fieldNames['color'] = color;
             field.decoratorProps.fieldNames = fieldNames;
             fieldSchema['x-decorator-props']['fieldNames'] = fieldNames;
@@ -129,7 +129,7 @@ export const calendarBlockSettings = new SchemaSettings({
             dn.emit('patch', {
               schema: {
                 ['x-uid']: fieldSchema['x-uid'],
-                'x-decorator-props': field.decoratorProps,
+                'x-decorator-props': fieldSchema['x-decorator-props'],
               },
             });
             dn.refresh();
