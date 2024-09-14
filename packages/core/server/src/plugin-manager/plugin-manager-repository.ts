@@ -81,11 +81,19 @@ export class PluginManagerRepository extends Repository {
   }
 
   async updateVersions() {
-    const items = await this.find();
+    const items = await this.find({
+      filter: {
+        enabled: true,
+      },
+    });
     for (const item of items) {
-      const json = await PluginManager.getPackageJson(item.packageName);
-      item.set('version', json.version);
-      await item.save();
+      try {
+        const json = await PluginManager.getPackageJson(item.packageName);
+        item.set('version', json.version);
+        await item.save();
+      } catch (error) {
+        this.pm.app.log.error(error);
+      }
     }
   }
 
