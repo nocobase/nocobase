@@ -71,7 +71,6 @@
   },
   "deprecated": [
     "@nocobase/plugin-audit-logs",
-    "@nocobase/plugin-backup-restore",
     "@nocobase/plugin-charts",
     "@nocobase/plugin-mobile-client",
     "@nocobase/plugin-snapshot-field"
@@ -86,7 +85,6 @@
     "@nocobase/plugin-action-import",
     "@nocobase/plugin-action-print",
     "@nocobase/plugin-auth",
-    "@nocobase/plugin-backup-restore",
     "@nocobase/plugin-block-iframe",
     "@nocobase/plugin-block-workbench",
     "@nocobase/plugin-calendar",
