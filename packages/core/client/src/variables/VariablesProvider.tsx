@@ -94,7 +94,7 @@ const VariablesProvider = ({ children }) => {
       const { fieldPath: fieldPathOfVariable } = getFieldPath(variablePath, _variableToCollectionName);
       const collectionNameOfVariable =
         list.length === 1
-          ? variableOption.collectionName
+          ? variableOption?.collectionName
           : getCollectionJoinField(fieldPathOfVariable, dataSource)?.target;
 
       if (!(variableName in current)) {
@@ -104,7 +104,7 @@ const VariablesProvider = ({ children }) => {
       for (let index = 0; index < list.length; index++) {
         if (current == null) {
           return {
-            value: current === undefined ? variableOption.defaultValue : current,
+            value: current === undefined ? variableOption?.defaultValue : current,
             dataSource,
             collectionName: collectionNameOfVariable,
           };
