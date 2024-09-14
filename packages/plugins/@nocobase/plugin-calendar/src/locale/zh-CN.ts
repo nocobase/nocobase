@@ -53,5 +53,5 @@ export default {
   Yearly: '每年',
   Repeats: '重复',
   'Background color field': '背景颜色字段',
-  "default color": "默认颜色",
+  'Not selected': '未选择',
 };
