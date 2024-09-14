@@ -36,6 +36,7 @@ import useStyle from './style';
 import type { ToolbarProps } from './types';
 import { formatDate } from './utils';
 import { TinyColor } from '@ctrl/tinycolor';
+import { theme } from 'antd';
 
 const Weeks = ['month', 'week', 'day'] as View[];
 const localizer = dayjsLocalizer(dayjs);
@@ -198,6 +199,10 @@ export const Calendar: any = withDynamicSchemaProps(
       const parentRecordData = useCollectionParentRecordData();
       const fieldSchema = useFieldSchema();
 
+      const { useToken } = theme;
+      const { token } = useToken();
+      // console.log('token', token);
+
       const components = useMemo(() => {
         return {
           toolbar: (props) => <Toolbar {...props} showLunar={showLunar}></Toolbar>,
@@ -236,11 +241,12 @@ export const Calendar: any = withDynamicSchemaProps(
       };
       const eventPropGetter = (event) => {
         if (event.color) {
-          const fontColor = new TinyColor(event.color).isLight() ? '#282c34' : '#f5f5f5';
-          const textShadow = new TinyColor(event.color).isLight() ? '#f5f5f5' : '#282c34';
-          const backgroundColor = getColor(event.color) ? getColor(event.color) : '';
+          // const fontColor = new TinyColor(getColor(event.color)).isLight() ? '#282c34' : '#f5f5f5';
+          // const backgroundColor = getColor(getColor(event.color)) ? getColor(getColor(event.color)) : '';
+          const fontColor = token[`${getColor(event.color)}7`];
+          const backgroundColor = token[`${getColor(event.color)}1`];
           return {
-            style: { color: fontColor, backgroundColor, fontWeight: '600', textShadow: `0 0 2px ${textShadow}` },
+            style: { color: fontColor, backgroundColor, fontWeight: '600' },
           };
         }
       };
