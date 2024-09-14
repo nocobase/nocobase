@@ -8,7 +8,7 @@
  */
 
 const { Command } = require('commander');
-const { run, isDev, isPackageValid, generatePlaywrightPath } = require('../util');
+const { run, isDev, isPackageValid, generatePlaywrightPath, generatePlugins } = require('../util');
 const { dirname, resolve } = require('path');
 const { existsSync, mkdirSync, readFileSync, appendFileSync } = require('fs');
 const { readFile, writeFile } = require('fs').promises;
@@ -41,7 +41,7 @@ module.exports = (cli) => {
     .option('--skip-umi')
     .action(async (options) => {
       writeToExclude();
-
+      generatePlugins();
       generatePlaywrightPath(true);
       await createStoragePluginsSymlink();
       if (!isDev()) {

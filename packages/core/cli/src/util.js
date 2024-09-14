@@ -163,6 +163,10 @@ exports.promptForTs = () => {
   console.log(chalk.green('WAIT: ') + 'TypeScript compiling...');
 };
 
+exports.downloadPro = async () => {
+  await exports.run('yarn', ['nocobase', 'pkg', 'download-pro']);
+};
+
 exports.updateJsonFile = async (target, fn) => {
   const content = await readFile(target, 'utf-8');
   const json = JSON.parse(content);
@@ -414,5 +418,15 @@ exports.initEnv = function initEnv() {
     throw new Error(
       `process.env.DB_TIMEZONE="${process.env.DB_TIMEZONE}" and process.env.TZ="${process.env.TZ}" are different`,
     );
+  }
+};
+
+exports.generatePlugins = function () {
+  try {
+    require.resolve('@nocobase/devtools/umiConfig');
+    const { generatePlugins } = require('@nocobase/devtools/umiConfig');
+    generatePlugins();
+  } catch (error) {
+    return;
   }
 };

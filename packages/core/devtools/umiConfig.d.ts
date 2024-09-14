@@ -24,3 +24,5 @@ export declare class IndexGenerator {
   constructor(outputPath: string, pluginsPath: string[]): void;
   generate(): void;
 };
+
+export declare function generatePlugins(): {}

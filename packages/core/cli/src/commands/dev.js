@@ -9,8 +9,12 @@
 
 const chalk = require('chalk');
 const { Command } = require('commander');
-const { runAppCommand, runInstall, run, postCheck, nodeCheck, promptForTs } = require('../util');
+const { generatePlugins, run, postCheck, nodeCheck, promptForTs } = require('../util');
 const { getPortPromise } = require('portfinder');
+const chokidar = require('chokidar');
+const { uid } = require('@formily/shared');
+const path = require('path');
+const fs = require('fs');
 
 /**
  *
@@ -27,6 +31,25 @@ module.exports = (cli) => {
     .option('--inspect [port]')
     .allowUnknownOption()
     .action(async (opts) => {
+      const watcher = chokidar.watch('./storage/plugins/**/*', {
+        cwd: process.cwd(),
+        ignored: /(^|[\/\\])\../, // 忽略隐藏文件
+        persistent: true,
+        depth: 1, // 只监听第一层目录
+      });
+
+      watcher
+        .on('addDir', async (pathname) => {
+          generatePlugins();
+          const file = path.resolve(process.cwd(), 'storage/app.watch.ts');
+          await fs.promises.writeFile(file, `export const watchId = '${uid()}';`, 'utf-8');
+        })
+        .on('unlinkDir', async (pathname) => {
+          generatePlugins();
+          const file = path.resolve(process.cwd(), 'storage/app.watch.ts');
+          await fs.promises.writeFile(file, `export const watchId = '${uid()}';`, 'utf-8');
+        });
+
       promptForTs();
       const { SERVER_TSCONFIG_PATH } = process.env;
       process.env.IS_DEV_CMD = true;
