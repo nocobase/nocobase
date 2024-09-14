@@ -7,13 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { App, Card, Divider, Space, Switch, Typography } from 'antd';
+import { DeleteOutlined, LoadingOutlined, ReadOutlined, ReloadOutlined, SettingOutlined } from '@ant-design/icons';
+import { css } from '@emotion/css';
+import { App, Card, Divider, Modal, Popconfirm, Result, Space, Switch, Typography } from 'antd';
+import classnames from 'classnames';
 import React, { FC, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-
-import { ReadOutlined, ReloadOutlined, SettingOutlined } from '@ant-design/icons';
-import { css } from '@emotion/css';
 import { useAPIClient } from '../api-client';
 import { useApp } from '../application';
 import { PluginDetail } from './PluginDetail';
@@ -28,8 +28,19 @@ interface IPluginInfo extends IPluginCard {
 function PluginInfo(props: IPluginInfo) {
   const { data, onClick } = props;
   const app = useApp();
-  const { name, displayName, isCompatible, packageName, updatable, builtIn, enabled, description, error, homepage } =
-    data;
+  const {
+    name,
+    displayName,
+    isCompatible,
+    packageName,
+    updatable,
+    builtIn,
+    enabled,
+    removable,
+    description,
+    error,
+    homepage,
+  } = data;
   const { styles, theme } = useStyles();
   const navigate = useNavigate();
   const { t } = useTranslation();
@@ -118,6 +129,63 @@ function PluginInfo(props: IPluginInfo) {
                 <SettingOutlined /> {t('Settings')}
               </a>
             )}
+            {removable && (
+              <Popconfirm
+                key={'delete'}
+                disabled={builtIn}
+                title={t('Are you sure to delete this plugin?')}
+                onConfirm={async (e) => {
+                  e.stopPropagation();
+                  await api.request({
+                    url: `pm:remove`,
+                    params: {
+                      filterByTk: name,
+                    },
+                  });
+                  Modal.info({
+                    icon: null,
+                    width: 520,
+                    content: (
+                      <Result
+                        icon={<LoadingOutlined />}
+                        title={t('Plugin removing')}
+                        subTitle={t('Plugin is removing, please wait...')}
+                      />
+                    ),
+                    footer: null,
+                  });
+                  function __health_check() {
+                    api
+                      .silent()
+                      .request({
+                        url: `__health_check`,
+                        method: 'get',
+                      })
+                      .then((response) => {
+                        if (response?.data === 'ok') {
+                          window.location.reload();
+                        }
+                      })
+                      .catch((error) => {
+                        // console.error('Health check failed:', error);
+                      });
+                  }
+                  setInterval(__health_check, 1000);
+                }}
+                onCancel={(e) => e.stopPropagation()}
+                okText={t('Yes')}
+                cancelText={t('No')}
+              >
+                <a
+                  onClick={(e) => {
+                    e.stopPropagation();
+                  }}
+                  className={classnames({ [styles.cardActionDisabled]: builtIn })}
+                >
+                  <DeleteOutlined /> {t('Remove')}
+                </a>
+              </Popconfirm>
+            )}
           </Space>,
           <Switch
             aria-label="enable"
@@ -185,34 +253,6 @@ function PluginInfo(props: IPluginInfo) {
             )
           }
         />
-        {/* {!isCompatible && !error && (
-          <Button style={{ padding: 0 }} type="link">
-            <Typography.Text type="danger">{t('Dependencies check failed')}</Typography.Text>
-          </Button>
-        )} */}
-        {/*
-          <Col span={8}>
-            <Space direction="vertical" align="end" style={{ display: 'flex', marginTop: -10 }}>
-              {type && (
-                <Button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setShowUploadForm(true);
-                  }}
-                  ghost
-                  type="primary"
-                >
-                  {t('Update plugin')}
-                </Button>
-              )}
-
-              {!error && (
-                <Button style={{ padding: 0 }} type="link">
-                  {t('More details')}
-                </Button>
-              )}
-            </Space>
-          </Col> */}
       </Card>
     </>
   );

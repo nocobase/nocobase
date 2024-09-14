@@ -76,6 +76,7 @@ export class PresetNocoBase extends Plugin {
       keywords: packageJson.keywords,
       author: packageJson.author,
       packageJson,
+      removable: !instance?.enabled && !this.app.db.hasCollection('applications'),
       displayName: packageJson?.[`displayName.${locale}`] || packageJson?.displayName || name,
       description: packageJson?.[`description.${locale}`] || packageJson.description,
       ...deps,

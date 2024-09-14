@@ -7,10 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { LoadingOutlined } from '@ant-design/icons';
 import { ISchema } from '@formily/json-schema';
 import { useForm } from '@formily/react';
 import { uid } from '@formily/shared';
-import { App } from 'antd';
+import { App, Modal, Result } from 'antd';
 import type { RcFile } from 'antd/es/upload';
 import React, { FC, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -18,6 +19,8 @@ import { useTranslation } from 'react-i18next';
 import { useAPIClient } from '../../../api-client';
 import { SchemaComponent } from '../../../schema-component';
 import { IPluginData } from '../../types';
+
+const { confirm } = Modal;
 
 interface IPluginUploadFormProps {
   onClose: (refresh?: boolean) => void;
@@ -45,6 +48,18 @@ export const PluginUploadForm: FC<IPluginUploadFormProps> = ({ onClose, pluginDa
           method: 'post',
           data: formData,
         });
+        Modal.info({
+          icon: null,
+          width: 520,
+          content: (
+            <Result
+              icon={<LoadingOutlined />}
+              title={t('Plugin uploading')}
+              subTitle={t('Plugin is uploading, please wait...')}
+            />
+          ),
+          footer: null,
+        });
         onClose(true);
         function __health_check() {
           api
@@ -54,7 +69,7 @@ export const PluginUploadForm: FC<IPluginUploadFormProps> = ({ onClose, pluginDa
               method: 'get',
             })
             .then((response) => {
-              if (response.status === 200) {
+              if (response?.data === 'ok') {
                 window.location.reload();
               }
             })
