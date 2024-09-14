@@ -10,7 +10,7 @@
 import { observer } from '@formily/react';
 import { Modal, Radio, Space, Typography } from 'antd';
 import dayjs from 'dayjs';
-import React, { useContext, useState } from 'react';
+import React, { useContext, useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { DeleteEventContext } from './Calendar';
 import { formatDate } from './utils';
@@ -20,10 +20,10 @@ const { Text } = Typography;
 
 export const DeleteEvent = observer(
   () => {
-    const { visible, setVisible } = useActionContext();
+    const { visible, setVisible, setSubmitted } = useActionContext();
     const { exclude = [], cron, ...record } = useRecord();
     const { close } = useContext(DeleteEventContext);
-    const startDate = formatDate(dayjs(record.__parent?.__event.start));
+    const startDate = useMemo(() => formatDate(dayjs(record?.data?.__event.start)), [record?.data?.__event.start]);
     const filterByTk = useFilterByTk();
     const { resource, service, __parent } = useBlockRequestContext();
     const [value, onChange] = useState(startDate);
@@ -46,6 +46,7 @@ export const DeleteEvent = observer(
       __parent?.service?.refresh?.();
       service?.refresh?.();
       setVisible?.(false, true);
+      setSubmitted?.(true);
       close();
     };
 

@@ -107,7 +107,6 @@ const useEvents = (dataSource: any, fieldNames: any, date: Date, view: (typeof W
             return eventStart.isSame(d);
           }
         });
-        console.log(99);
         if (res) return out;
         const title = getLabelFormatValue(labelUiSchema, get(item, fieldNames.title), true);
         const event = {
@@ -216,7 +215,6 @@ export const Calendar: any = withDynamicSchemaProps(
         noEventsInRange: i18nt('None'),
         showMore: (count) => i18nt('{{count}} more items', { count }),
       };
-      console.log(events, dataSource, fieldNames, date, view);
       return wrapSSR(
         <div className={`${hashId} ${containerClassName}`} style={{ height: height || 700 }}>
           <PopupContextProvider visible={visible} setVisible={setVisible}>
