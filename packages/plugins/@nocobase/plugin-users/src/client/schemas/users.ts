@@ -132,26 +132,28 @@ export const usersSchema: ISchema = {
   properties: {
     block1: {
       type: 'void',
-      'x-decorator': 'ResourceActionProvider',
+      'x-component': 'CardItem',
+      'x-component-props': {
+        heightMode: 'fullHeight',
+      },
+      'x-decorator': 'TableBlockProvider',
       'x-decorator-props': {
-        collection: userCollection,
-        resourceName: 'users',
-        request: {
-          resource: 'users',
-          action: 'list',
-          params: {
-            pageSize: 50,
-            appends: [],
-          },
+        dataSource: 'main',
+        rowKey: 'id',
+        collection: 'users',
+        action: 'list',
+        params: {
+          pageSize: 20,
         },
       },
+      'x-use-decorator-props': 'useTableBlockDecoratorProps',
       properties: {
         actions: {
           type: 'void',
           'x-component': 'ActionBar',
           'x-component-props': {
             style: {
-              marginBottom: 16,
+              marginBottom: 'var(--nb-spacing)',
             },
           },
           properties: {
@@ -166,18 +168,28 @@ export const usersSchema: ISchema = {
               },
               'x-align': 'left',
             },
+            refresh: {
+              type: 'void',
+              title: '{{ t("Refresh") }}',
+              'x-action': 'refresh',
+              'x-component': 'Action',
+              'x-component-props': {
+                icon: 'ReloadOutlined',
+              },
+              'x-use-component-props': 'useRefreshActionProps',
+            },
             delete: {
               type: 'void',
               title: '{{ t("Delete") }}',
               'x-component': 'Action',
               'x-component-props': {
-                useAction: '{{ cm.useBulkDestroyAction }}',
                 confirm: {
                   title: "{{t('Delete users')}}",
                   content: "{{t('Are you sure you want to delete it?')}}",
                 },
                 icon: 'DeleteOutlined',
               },
+              'x-use-component-props': 'useBulkDestroyActionProps',
             },
             create: {
               type: 'void',
@@ -191,7 +203,7 @@ export const usersSchema: ISchema = {
                 drawer: {
                   type: 'void',
                   'x-component': 'Action.Drawer',
-                  'x-decorator': 'Form',
+                  'x-decorator': 'FormV2',
                   title: '{{t("Add user")}}',
                   properties: {
                     nickname: {
@@ -232,17 +244,15 @@ export const usersSchema: ISchema = {
                         cancel: {
                           title: '{{t("Cancel")}}',
                           'x-component': 'Action',
-                          'x-component-props': {
-                            useAction: '{{ cm.useCancelAction }}',
-                          },
+                          'x-use-component-props': 'useCancelActionProps',
                         },
                         submit: {
                           title: '{{t("Submit")}}',
                           'x-component': 'Action',
                           'x-component-props': {
                             type: 'primary',
-                            useAction: '{{ cm.useCreateAction }}',
                           },
+                          'x-use-component-props': 'useSubmitActionProps',
                         },
                       },
                     },
@@ -253,21 +263,21 @@ export const usersSchema: ISchema = {
           },
         },
         table: {
-          type: 'void',
+          type: 'array',
           'x-uid': 'input',
-          'x-component': 'Table.Void',
+          'x-component': 'TableV2',
           'x-component-props': {
             rowKey: 'id',
             rowSelection: {
               type: 'checkbox',
             },
-            useDataSource: '{{ cm.useDataSourceFromRAC }}',
           },
+          'x-use-component-props': 'useTableBlockProps',
           properties: {
             column1: {
               type: 'void',
-              'x-decorator': 'Table.Column.Decorator',
-              'x-component': 'Table.Column',
+              'x-decorator': 'TableV2.Column.Decorator',
+              'x-component': 'TableV2.Column',
               properties: {
                 nickname: {
                   type: 'number',
@@ -278,8 +288,8 @@ export const usersSchema: ISchema = {
             },
             column2: {
               type: 'void',
-              'x-decorator': 'Table.Column.Decorator',
-              'x-component': 'Table.Column',
+              'x-decorator': 'TableV2.Column.Decorator',
+              'x-component': 'TableV2.Column',
               properties: {
                 username: {
                   type: 'string',
@@ -290,8 +300,8 @@ export const usersSchema: ISchema = {
             },
             column3: {
               type: 'void',
-              'x-decorator': 'Table.Column.Decorator',
-              'x-component': 'Table.Column',
+              'x-decorator': 'TableV2.Column.Decorator',
+              'x-component': 'TableV2.Column',
               properties: {
                 email: {
                   type: 'string',
@@ -302,20 +312,28 @@ export const usersSchema: ISchema = {
             },
             column4: {
               type: 'void',
-              'x-decorator': 'Table.Column.Decorator',
-              'x-component': 'Table.Column',
+              'x-decorator': 'TableV2.Column.Decorator',
+              'x-component': 'TableV2.Column',
               title: '{{t("Roles")}}',
               properties: {
                 roles: {
                   type: 'array',
-                  'x-component': 'UserRolesField',
+                  'x-component': 'CollectionField',
+                  'x-component-props': {
+                    mode: 'Tag',
+                    enableLink: false,
+                    ellipsis: true,
+                  },
+                  'x-read-pretty': true,
+                  'x-collection-field': 'users.roles',
                 },
               },
             },
             column5: {
               type: 'void',
               title: '{{t("Actions")}}',
-              'x-component': 'Table.Column',
+              'x-component': 'TableV2.Column',
+              'x-decorator': 'TableV2.Column.ActionBar',
               properties: {
                 actions: {
                   type: 'void',
@@ -337,23 +355,8 @@ export const usersSchema: ISchema = {
                         drawer: {
                           type: 'void',
                           'x-component': 'Action.Drawer',
-                          'x-decorator': 'Form',
-                          'x-decorator-props': {
-                            useValues: (options) => {
-                              const record = useRecord();
-                              const result = useRequest(() => Promise.resolve({ data: record }), {
-                                ...options,
-                                manual: true,
-                              });
-                              const ctx = useActionContext();
-                              useEffect(() => {
-                                if (ctx.visible) {
-                                  result.run();
-                                }
-                              }, [ctx.visible]);
-                              return result;
-                            },
-                          },
+                          'x-decorator': 'FormV2',
+                          'x-use-decorator-props': 'useEditFormProps',
                           title: '{{t("Edit profile")}}',
                           properties: {
                             nickname: {
@@ -389,17 +392,15 @@ export const usersSchema: ISchema = {
                                 cancel: {
                                   title: '{{t("Cancel")}}',
                                   'x-component': 'Action',
-                                  'x-component-props': {
-                                    useAction: '{{ cm.useCancelAction }}',
-                                  },
+                                  'x-use-component-props': 'useCancelActionProps',
                                 },
                                 submit: {
                                   title: '{{t("Submit")}}',
                                   'x-component': 'Action',
                                   'x-component-props': {
                                     type: 'primary',
-                                    useAction: '{{ cm.useUpdateAction }}',
                                   },
+                                  'x-use-component-props': 'useSubmitActionProps',
                                 },
                               },
                             },
@@ -420,7 +421,8 @@ export const usersSchema: ISchema = {
                         drawer: {
                           type: 'void',
                           'x-component': 'Action.Drawer',
-                          'x-decorator': 'Form',
+                          'x-decorator': 'FormV2',
+                          'x-use-decorator-props': 'useEditFormProps',
                           title: '{{t("Change password")}}',
                           properties: {
                             password: {
@@ -438,17 +440,15 @@ export const usersSchema: ISchema = {
                                 cancel: {
                                   title: '{{t("Cancel")}}',
                                   'x-component': 'Action',
-                                  'x-component-props': {
-                                    useAction: '{{ cm.useCancelAction }}',
-                                  },
+                                  'x-use-component-props': 'useCancelActionProps',
                                 },
                                 submit: {
                                   title: '{{t("Submit")}}',
                                   'x-component': 'Action',
                                   'x-component-props': {
                                     type: 'primary',
-                                    useAction: '{{ cm.useUpdateAction }}',
                                   },
+                                  'x-use-component-props': 'useSubmitActionProps',
                                 },
                               },
                             },
@@ -468,8 +468,8 @@ export const usersSchema: ISchema = {
                           title: "{{t('Delete')}}",
                           content: "{{t('Are you sure you want to delete it?')}}",
                         },
-                        useAction: '{{cm.useDestroyAction}}',
                       },
+                      'x-use-component-props': 'useDestroyActionProps',
                     },
                   },
                 },
