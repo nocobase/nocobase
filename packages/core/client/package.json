@@ -43,7 +43,7 @@
     "i18next-http-backend": "^2.1.1",
     "json5": "^2.2.3",
     "lodash": "4.17.21",
-    "lru-cache": "6.0.0",
+    "lru-cache": "11.0.1",
     "markdown-it": "14.1.0",
     "markdown-it-highlightjs": "3.3.1",
     "mathjs": "^10.6.0",

@@ -23,7 +23,7 @@
     "cron-parser": "4.4.0",
     "dayjs": "^1.11.8",
     "lodash": "4.17.21",
-    "lru-cache": "8.0.5",
+    "lru-cache": "11.0.1",
     "react": "18.x",
     "react-i18next": "^11.15.1",
     "react-js-cron": "^3.1.0",
