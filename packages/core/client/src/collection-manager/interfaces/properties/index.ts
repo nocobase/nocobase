@@ -354,6 +354,14 @@ export const dateTimeProps: { [key: string]: ISchema } = {
         value: 'HH:mm:ss',
       },
     ],
+    'x-reactions': {
+      dependencies: ['uiSchema.x-component-props.showTime'],
+      fulfill: {
+        state: {
+          hidden: `{{ !$deps[0] }}`,
+        },
+      },
+    },
   },
 };
 
