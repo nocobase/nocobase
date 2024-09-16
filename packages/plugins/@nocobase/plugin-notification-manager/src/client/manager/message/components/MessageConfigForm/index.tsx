@@ -60,7 +60,7 @@ export const MessageConfigForm = observer<{ variableOptions: any }>(
     const ReceiverInputComponent = receiverType === 'user' ? 'UsersSelect' : 'VariableInput';
     const ReceiverAddition = receiverType === 'user' ? UsersAddition : ArrayItems.Addition;
     const createMessageFormSchema = {
-      type: 'object',
+      type: 'void',
       properties: {
         channelId: {
           type: 'string',
@@ -84,99 +84,11 @@ export const MessageConfigForm = observer<{ variableOptions: any }>(
             },
           },
         },
-        receiverType: {
-          type: 'string',
-          title: '{{t("Receiver type")}}',
-          required: true,
-          default: 'manual',
-          'x-decorator': 'FormItem',
-          'x-component': 'Radio.Group',
-          enum: [
-            { label: '{{t("Manual input")}}', value: 'manual' },
-            { label: '{{t("Select user")}}', value: 'user' },
-          ],
-        },
-        receivers: {
-          type: 'array',
-          name: 'receivers',
-          required: true,
-          title: '{{t("Receivers")}}',
-          'x-decorator': 'FormItem',
-          'x-component': 'ArrayItems',
+        message: {
+          type: 'void',
+          'x-component': 'ContentConfigForm',
           'x-component-props': {
-            className: css`
-              &[disabled] {
-                > .ant-formily-array-base-addition {
-                  display: none;
-                }
-                > .ant-formily-array-items-item .ant-space-item:not(:nth-child(2)) {
-                  display: none;
-                }
-              }
-            `,
-          },
-          default: [],
-          items: {
-            type: 'void',
-            'x-component': 'Space',
-            'x-component-props': {
-              className: css`
-                width: 100%;
-                &.ant-space.ant-space-horizontal {
-                  flex-wrap: nowrap;
-                }
-                > .ant-space-item:nth-child(1) {
-                  flex-grow: 1;
-                }
-              `,
-            },
-            properties: {
-              input: {
-                type: 'string',
-                'x-decorator': 'FormItem',
-                default: ' ',
-                'x-component': ReceiverInputComponent,
-                'x-component-props': { scope: variableOptions, useTypedConstant: ['string'] },
-              },
-              remove: {
-                type: 'void',
-                'x-decorator': 'FormItem',
-                'x-component': 'ArrayItems.Remove',
-              },
-            },
-          },
-          properties: {
-            add: {
-              type: 'void',
-              title: '{{t("Add new receiver")}}',
-              'x-component': 'ReceiverAddition',
-            },
-          },
-        },
-        content: {
-          type: 'object',
-          properties: {
-            body: {
-              type: 'string',
-              title: '{{t("Content")}}',
-              required: true,
-              'x-decorator': 'FormItem',
-              'x-component': 'Variable.RawTextArea',
-              'x-component-props': {
-                scope: variableOptions,
-                placeholder: 'Hi,',
-                autoSize: {
-                  minRows: 10,
-                },
-              },
-            },
-            config: {
-              type: 'object',
-              'x-component': 'ContentConfigForm',
-              'x-component-props': {
-                variableOptions,
-              },
-            },
+            variableOptions,
           },
         },
       },

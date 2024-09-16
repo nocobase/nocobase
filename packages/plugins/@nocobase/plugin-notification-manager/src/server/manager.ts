@@ -9,16 +9,16 @@
 
 import { Registry } from '@nocobase/utils';
 import PluginNotificationManagerServer from './plugin';
-import type { NotificationServer } from './types';
-import { SendOptions, IChannel, WriteLogOptions } from './types';
+import type { NotificationServerBase } from './types';
+import { SendOptions, WriteLogOptions } from './types';
 import { COLLECTION_NAME } from '../constant';
 interface NotificatonType {
-  server: NotificationServer;
+  server: NotificationServerBase;
 }
 
 export default class NotificationManager {
   plugin: PluginNotificationManagerServer;
-  notificationTypes = new Registry<{ server: NotificationServer }>();
+  notificationTypes = new Registry<{ server: NotificationServerBase }>();
 
   constructor({ plugin }: { plugin: PluginNotificationManagerServer }) {
     this.plugin = plugin;

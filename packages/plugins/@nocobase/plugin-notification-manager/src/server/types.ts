@@ -7,6 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 import PluginNotificationManagerServer from './plugin';
+export interface Channel {
+  id: string;
+  options: Record<string, any>;
+  notificationType: string;
+}
+
 export type WriteLogOptions = {
   receiver: string;
   status: 'success' | 'fail';
@@ -17,17 +23,18 @@ export type WriteLogOptions = {
   channelTitle: string;
 };
 
-export type SendFnType = (args: {
-  message: SendOptions;
-  channel: IChannel;
+export type SendFnType<Message> = (args: {
+  message: Message;
+  channel: Channel;
 }) => Promise<{ receivers: string[]; content: any; status: 'success' | 'fail'; reason?: string }>;
-export abstract class NotificationServerBase {
+
+export abstract class NotificationServerBase<Message = any> {
   public pluginCtx: PluginNotificationManagerServer;
 
   setPluginCtx({ pluginCtx }: { pluginCtx: PluginNotificationManagerServer }) {
     this.pluginCtx = pluginCtx;
   }
-  abstract send: SendFnType;
+  abstract send(params: { channel: Channel; message: Message }): Promise<any>;
 }
 
 export interface SendOptions {
@@ -40,11 +47,3 @@ export interface SendOptions {
   receivers: string[];
   triggerFrom: string;
 }
-
-export interface IChannel {
-  id: string;
-  options: Record<string, any>;
-  notificationType: string;
-}
-
-export type NotificationServer = NotificationServerBase;

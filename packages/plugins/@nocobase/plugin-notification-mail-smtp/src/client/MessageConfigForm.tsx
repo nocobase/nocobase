@@ -23,17 +23,49 @@ export const ContentConfigForm = ({ variableOptions }) => {
     <SchemaComponent
       scope={{ t }}
       schema={{
-        type: 'object',
-
+        type: 'void',
         properties: {
-          subject: {
-            type: 'string',
+          to: {
+            type: 'array',
             required: true,
-            title: `{{t("Subject")}}`,
+            title: `{{t("To")}}`,
             'x-decorator': 'FormItem',
-            'x-component': 'Variable.TextArea',
-            'x-component-props': {
-              scope: variableOptions,
+            'x-component': 'ArrayItems',
+            items: {
+              type: 'void',
+              'x-component': 'Space',
+              'x-component-props': {
+                className: emailsClass,
+              },
+              properties: {
+                sort: {
+                  type: 'void',
+                  'x-decorator': 'FormItem',
+                  'x-component': 'ArrayItems.SortHandle',
+                },
+                input: {
+                  type: 'string',
+                  'x-decorator': 'FormItem',
+                  'x-component': 'Variable.Input',
+                  'x-component-props': {
+                    scope: variableOptions,
+                    useTypedConstant: ['string'],
+                    placeholder: `{{t("Email address")}}`,
+                  },
+                },
+                remove: {
+                  type: 'void',
+                  'x-decorator': 'FormItem',
+                  'x-component': 'ArrayItems.Remove',
+                },
+              },
+            },
+            properties: {
+              add: {
+                type: 'void',
+                title: `{{t("Add email address")}}`,
+                'x-component': 'ArrayItems.Addition',
+              },
             },
           },
           cc: {
@@ -117,6 +149,30 @@ export const ContentConfigForm = ({ variableOptions }) => {
                 type: 'void',
                 title: `{{t("Add email address")}}`,
                 'x-component': 'ArrayItems.Addition',
+              },
+            },
+          },
+          subject: {
+            type: 'string',
+            required: true,
+            title: `{{t("Subject")}}`,
+            'x-decorator': 'FormItem',
+            'x-component': 'Variable.TextArea',
+            'x-component-props': {
+              scope: variableOptions,
+            },
+          },
+          content: {
+            type: 'string',
+            required: true,
+            title: '{{t("Content")}}',
+            'x-decorator': 'FormItem',
+            'x-component': 'Variable.RawTextArea',
+            'x-component-props': {
+              scope: variableOptions,
+              placeholder: 'Hi,',
+              autoSize: {
+                minRows: 10,
               },
             },
           },
