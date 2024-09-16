@@ -77,7 +77,6 @@ export const moment2str = (value?: Dayjs | null, options: Moment2strOptions = {}
 export const mapDatePicker = function () {
   return (props: any) => {
     const format = getDefaultFormat(props);
-    console.log(str2moment(props.value, props));
     const onChange = props.onChange;
     return {
       ...props,
@@ -91,7 +90,6 @@ export const mapDatePicker = function () {
           if (props.dateOnly && props.picker === 'date') {
             onChange(dateString !== '' ? dateString : undefined);
           } else {
-            console.log(moment2str(value, props));
             onChange(moment2str(value, props));
           }
         }

@@ -10,6 +10,8 @@
 import { Field } from '@formily/core';
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
+import { css } from '@emotion/css';
+import { DateFormatCom } from '../../../schema-settings/DateFormat/ExpiresRadio';
 export * as operators from './operators';
 
 export const type: ISchema = {
@@ -249,42 +251,60 @@ export const dateTimeProps: { [key: string]: ISchema } = {
         value: 'quarter',
       },
       {
-        label: '{{t("Quarter")}}',
-        value: 'Year',
+        label: '{{t("Year")}}',
+        value: 'year',
       },
     ],
   },
+
   'uiSchema.x-component-props.dateFormat': {
     type: 'string',
     title: '{{t("Date format")}}',
-    'x-component': 'Radio.Group',
     'x-decorator': 'FormItem',
+    'x-component': 'ExpiresRadio',
+    'x-decorator-props': {},
+    'x-component-props': {
+      className: css`
+        .ant-radio-wrapper {
+          display: flex;
+          margin: 5px 0px;
+        }
+      `,
+      defaultValue: 'dddd',
+      formats: ['MMMM Do YYYY', 'YYYY-MM-DD', 'MM/DD/YY', 'YYYY/MM/DD', 'DD/MM/YYYY'],
+    },
     default: 'YYYY-MM-DD',
     enum: [
       {
-        label: '{{t("Year/Month/Day")}}',
-        value: 'YYYY/MM/DD',
+        label: DateFormatCom({ format: 'MMMM Do YYYY' }),
+        value: 'MMMM Do YYYY',
       },
       {
-        label: '{{t("Year-Month-Day")}}',
+        label: DateFormatCom({ format: 'YYYY-MM-DD' }),
         value: 'YYYY-MM-DD',
       },
       {
-        label: '{{t("Day/Month/Year")}}',
+        label: DateFormatCom({ format: 'MM/DD/YY' }),
+        value: 'MM/DD/YY',
+      },
+      {
+        label: DateFormatCom({ format: 'YYYY/MM/DD' }),
+        value: 'YYYY/MM/DD',
+      },
+      {
+        label: DateFormatCom({ format: 'DD/MM/YYYY' }),
         value: 'DD/MM/YYYY',
+      },
+      {
+        label: 'custom',
+        value: 'custom',
       },
     ],
     'x-reactions': {
       dependencies: ['uiSchema.x-component-props.picker'],
-      when: '{{$deps[0]==="date"}}',
       fulfill: {
         state: {
-          hidden: false,
-        },
-      },
-      otherwise: {
-        state: {
-          hidden: true,
+          value: `{{ getPickerFormat($deps[0])}}`,
         },
       },
     },
@@ -312,6 +332,7 @@ export const dateTimeProps: { [key: string]: ISchema } = {
         otherwise: {
           state: {
             hidden: true,
+            value: false,
           },
         },
       },

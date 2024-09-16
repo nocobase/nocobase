@@ -13,7 +13,7 @@ import dayjs from 'dayjs';
 import { connect, mapProps } from '@formily/react';
 import { useBoolean } from 'ahooks';
 import { Input, Radio, Space } from 'antd';
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useToken } from '../../';
 
 const date = dayjs();
@@ -53,9 +53,11 @@ const DateTimeFormatPreview = ({ content }) => {
 };
 
 const InternalExpiresRadio = (props) => {
-  const { onChange, defaultValue, formats, timeFormat } = props;
+  const { onChange, defaultValue, formats } = props;
   const [isCustom, { setFalse, setTrue }] = useBoolean(props.value && !formats.includes(props.value));
-  const targetValue = props.value && !formats.includes(props.value) ? props.value : defaultValue;
+  const [targetValue, setTargetValue] = useState(
+    props.value && !formats.includes(props.value) ? props.value : defaultValue,
+  );
   const [customFormatPreview, setCustomFormatPreview] = useState(targetValue ? date.format(targetValue) : null);
   const onSelectChange = (v) => {
     if (v.target.value === 'custom') {
@@ -66,6 +68,18 @@ const InternalExpiresRadio = (props) => {
       onChange(v.target.value);
     }
   };
+  useEffect(() => {
+    if (!formats.includes(props.value)) {
+      setTrue();
+    } else {
+      setFalse();
+    }
+    setTargetValue(props.value && !formats.includes(props.value) ? props.value : defaultValue);
+  }, [props.value]);
+
+  useEffect(() => {
+    setCustomFormatPreview(targetValue ? date.format(targetValue) : null);
+  }, [targetValue]);
   return (
     <Space className={spaceCSS}>
       <Radio.Group value={isCustom ? 'custom' : props.value} onChange={onSelectChange}>
@@ -76,7 +90,7 @@ const InternalExpiresRadio = (props) => {
                 <Radio value={v.value} key={v.value}>
                   <Input
                     style={{ width: '150px' }}
-                    defaultValue={targetValue}
+                    value={targetValue}
                     onChange={(e) => {
                       if (e.target.value) {
                         setCustomFormatPreview(date.format(e.target.value));
@@ -86,6 +100,7 @@ const InternalExpiresRadio = (props) => {
                       if (isCustom) {
                         onChange(e.target.value);
                       }
+                      setTargetValue(e.target.value);
                     }}
                   />
                   <DateTimeFormatPreview content={customFormatPreview} />

@@ -11,6 +11,7 @@ import { css } from '@emotion/css';
 import { ISchema, Schema, useField } from '@formily/react';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { getPickerFormat } from '@nocobase/utils/client';
 import { useCollectionManager_deprecated, useDesignable } from '..';
 import { DateFormatCom, ExpiresRadio } from './DateFormat/ExpiresRadio';
 import { SchemaSettingsModalItem } from './SchemaSettings';
@@ -36,6 +37,7 @@ export const SchemaSettingsDateFormat = function DateFormatConfig(props: { field
   return (
     <SchemaSettingsModalItem
       title={t('Date display format')}
+      scope={{ getPickerFormat }}
       schema={
         {
           type: 'object',
@@ -114,15 +116,9 @@ export const SchemaSettingsDateFormat = function DateFormatConfig(props: { field
               ],
               'x-reactions': {
                 dependencies: ['picker'],
-                when: '{{$deps[0]==="date"}}',
                 fulfill: {
                   state: {
-                    hidden: false,
-                  },
-                },
-                otherwise: {
-                  state: {
-                    hidden: true,
+                    value: `{{ getPickerFormat($deps[0])}}`,
                   },
                 },
               },

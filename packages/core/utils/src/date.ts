@@ -198,3 +198,18 @@ function absFloor(number) {
     return Math.floor(number);
   }
 }
+
+export const getPickerFormat = (picker) => {
+  switch (picker) {
+    case 'week':
+      return 'YYYY-wo';
+    case 'month':
+      return 'YYYY-MM';
+    case 'quarter':
+      return 'YYYY [Q]Q';
+    case 'year':
+      return 'YYYY';
+    default:
+      return 'YYYY-MM-DD';
+  }
+};
