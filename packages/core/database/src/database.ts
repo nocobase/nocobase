@@ -81,7 +81,7 @@ import {
   UpdateWithAssociationsListener,
   ValidateListener,
 } from './types';
-import { patchSequelizeQueryInterface, snakeCase } from './utils';
+import { patchSequelizeQueryGenerator, patchSequelizeQueryInterface, snakeCase } from './utils';
 import { BaseValueParser, registerFieldValueParsers } from './value-parsers';
 import { ViewCollection } from './view-collection';
 
@@ -327,6 +327,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
 
     this.initListener();
     patchSequelizeQueryInterface(this);
+    patchSequelizeQueryGenerator(this);
 
     this.registerCollectionType();
   }

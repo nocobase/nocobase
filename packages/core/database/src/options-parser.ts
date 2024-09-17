@@ -205,16 +205,8 @@ export class OptionsParser {
       exclude: [],
     }; // out put all fields by default
 
-    if (this.collection.isParent()) {
-      OptionsParser.appendInheritInspectAttribute(attributes.include, this.collection);
-    }
-
     if (this.options?.fields) {
       attributes = [];
-
-      if (this.collection.isParent()) {
-        OptionsParser.appendInheritInspectAttribute(attributes, this.collection);
-      }
 
       // 将fields拆分为 attributes 和 appends
       for (const field of this.options.fields) {
@@ -242,9 +234,22 @@ export class OptionsParser {
     }
 
     return {
-      attributes,
+      attributes: this.handleRawAttributes(attributes),
       ...this.parseExcept(except, this.parseAppends(appends, filterParams)),
     };
+  }
+
+  protected handleRawAttributes(attributes) {
+    if (this.collection.isParent()) {
+      OptionsParser.appendInheritInspectAttribute(
+        attributes.include ? attributes.include : attributes,
+        this.collection,
+      );
+    }
+
+    this.collection.emit('beforeParseAttributes', attributes);
+
+    return attributes;
   }
 
   protected parseExcept(except: Except, filterParams: any) {
