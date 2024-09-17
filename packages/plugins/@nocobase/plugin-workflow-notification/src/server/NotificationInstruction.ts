@@ -49,7 +49,7 @@ export default class extends Instruction {
 
     // eslint-disable-next-line promise/catch-or-return
     notificationServer.notificationManager
-      .send({ ...options, triggerFrom: 'workflow' })
+      .send({ channelId: options.channelId, message: options, triggerFrom: 'workflow' })
       .then((result) => {
         if (result.status === 'success') {
           processor.logger.info(`notification (#${node.id}) sent successfully.`);

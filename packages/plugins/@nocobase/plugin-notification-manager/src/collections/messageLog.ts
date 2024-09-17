@@ -79,14 +79,9 @@ const collectionOption: CollectionOptions = {
       },
     },
     {
-      name: 'receiver',
-      type: 'string',
-      interface: 'input',
-      uiSchema: {
-        type: 'string',
-        'x-component': 'Input',
-        title: '{{t("Receiver")}}',
-      },
+      name: 'message',
+      type: 'json',
+      interface: 'json',
     },
     {
       name: 'reason',

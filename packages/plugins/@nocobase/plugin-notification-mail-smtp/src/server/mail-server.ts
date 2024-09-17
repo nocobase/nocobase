@@ -35,13 +35,12 @@ export class MailServer extends NotificationServerBase {
         pass: password,
       },
     });
-    const receivers = message.to;
-    const { subject, cc, bcc } = message;
-    const sendMail = async ({ receivers, cc, bcc }) => {
+    const { subject, cc, bcc, to } = message;
+    const sendMail = async ({ to, cc, bcc }) => {
       try {
         const res = await transpoter.sendMail({
-          from: from,
-          to: receivers,
+          from,
+          to,
           subject,
           cc,
           bcc,
@@ -54,7 +53,7 @@ export class MailServer extends NotificationServerBase {
     };
 
     const result = await sendMail({
-      receivers: receivers.map((item) => item?.trim()).filter(Boolean),
+      to: to.map((item) => item?.trim()).filter(Boolean),
       cc: cc
         ? cc
             .flat()

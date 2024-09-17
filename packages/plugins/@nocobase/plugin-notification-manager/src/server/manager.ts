@@ -57,22 +57,26 @@ export default class NotificationManager {
     return [...assignees];
   }
 
-  async send(options: SendOptions) {
-    this.plugin.logger.info('receive sending message request', options);
+  async send(params: SendOptions) {
+    this.plugin.logger.info('receive sending message request', params);
     const channelsRepo = this.plugin.app.db.getRepository(COLLECTION_NAME.channels);
-    const channel = await channelsRepo.findOne({ filterByTk: options.channelId });
-    const notificationServer = this.notificationTypes.get(channel.notificationType).server;
-    const result = await notificationServer.send({ message: options, channel });
-
-    this.createSendingRecord({
-      receiver: result.receivers.join(','),
-      status: result.status,
-      content: result.content,
-      triggerFrom: options.triggerFrom,
-      channelId: options.channelId,
-      reason: result.reason,
-      channelTitle: channel.title,
-    });
-    return result;
+    const logData: any = {
+      triggerFrom: params.triggerFrom,
+      channelId: params.channelId,
+      message: params.message,
+    };
+    const channel = await channelsRepo.findOne({ filterByTk: params.channelId });
+    if (channel) {
+      const notificationServer = this.notificationTypes.get(channel.notificationType).server;
+      const result = await notificationServer.send({ message: params.message, channel });
+      logData.status = result.status;
+      logData.reason = result.reason;
+      logData.channelTitle = channel.title;
+    } else {
+      logData.status = 'fail';
+      logData.reason = 'channel not found';
+    }
+    this.createSendingRecord(logData);
+    return logData;
   }
 }

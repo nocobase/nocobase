@@ -14,9 +14,8 @@ export interface Channel {
 }
 
 export type WriteLogOptions = {
-  receiver: string;
   status: 'success' | 'fail';
-  content: Record<string, any>;
+  message: Record<string, any>;
   triggerFrom: string;
   reason?: string;
   channelId: string;
@@ -34,16 +33,14 @@ export abstract class NotificationServerBase<Message = any> {
   setPluginCtx({ pluginCtx }: { pluginCtx: PluginNotificationManagerServer }) {
     this.pluginCtx = pluginCtx;
   }
-  abstract send(params: { channel: Channel; message: Message }): Promise<any>;
+  abstract send(params: {
+    channel: Channel;
+    message: Message;
+  }): Promise<{ message: Message; status: 'success' | 'fail'; reason?: string }>;
 }
 
 export interface SendOptions {
   channelId: string;
-  content: {
-    body: string;
-    type: 'html' | 'string';
-    config: Record<string, any>;
-  };
-  receivers: string[];
+  message: Record<string, any>;
   triggerFrom: string;
 }

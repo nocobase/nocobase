@@ -109,10 +109,10 @@ export const messageLogsManagerSchema: ISchema = {
         //     },
         //   },
         // },
-        channelTitle: {
+        channelId: {
           type: 'void',
           'x-component': 'TableV2.Column',
-          title: '{{t("Channel title")}}',
+          title: '{{t("Channel id")}}',
           properties: {
             channelTitle: {
               type: 'string',
@@ -124,13 +124,12 @@ export const messageLogsManagerSchema: ISchema = {
             },
           },
         },
-        receiver: {
+        channelTitle: {
           type: 'void',
-          'x-decorator': 'TableV2.Column.Decorator',
           'x-component': 'TableV2.Column',
-          title: '{{t("Receiver")}}',
+          title: '{{t("Channel title")}}',
           properties: {
-            receiver: {
+            channelTitle: {
               type: 'string',
               'x-component': 'CollectionField',
               'x-read-pretty': true,
