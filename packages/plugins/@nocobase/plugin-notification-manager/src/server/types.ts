@@ -26,7 +26,7 @@ export type WriteLogOptions = {
 export type SendFnType<Message> = (args: {
   message: Message;
   channel: Channel;
-}) => Promise<{ receivers: string[]; content: any; status: 'success' | 'fail'; reason?: string }>;
+}) => Promise<{ message: Message; status: 'success' | 'fail'; reason?: string }>;
 
 export abstract class NotificationServerBase<Message = any> {
   public pluginCtx: PluginNotificationManagerServer;

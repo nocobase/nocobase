@@ -6,7 +6,17 @@
     "jsx": "react",
     "target": "esnext",
     "module": "esnext",
-    // "allowJs": true,
+    "allowJs": true,
+    "noUnusedLocals": false,
+    "preserveConstEnums": true,
+    "skipLibCheck": true,
+    "skipDefaultLibCheck": true,
+    "sourceMap": true,
+    "inlineSources": true,
+    "resolveJsonModule": true,
+    "declaration": true,
+    "experimentalDecorators": true,
+    "downlevelIteration": true,
     "baseUrl": "."
   },
   "ts-node": {

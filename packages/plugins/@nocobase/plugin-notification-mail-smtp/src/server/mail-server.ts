@@ -7,25 +7,17 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import nodemailer, { Transporter } from 'nodemailer';
+import * as nodemailer from 'nodemailer';
+import { Transporter } from 'nodemailer';
 import { SendFnType, NotificationServerBase } from '@nocobase/plugin-notification-manager';
 interface Message {
-  receivers: string[];
+  to: string[];
   cc?: string[];
   bcc?: string[];
   subject: string;
   content: string;
 }
 
-const a: Message = {
-  receivers: ['a', 'b', 'c'],
-  subject: 'subject',
-  content: 'content',
-  cc: undefined,
-  bcc: undefined,
-};
-
-console.log(a.cc[2]);
 export class MailServer extends NotificationServerBase {
   transpoter: Transporter;
   constructor() {
@@ -43,7 +35,7 @@ export class MailServer extends NotificationServerBase {
         pass: password,
       },
     });
-    const receivers = message.receivers;
+    const receivers = message.to;
     const { subject, cc, bcc } = message;
     const sendMail = async ({ receivers, cc, bcc }) => {
       try {
@@ -55,9 +47,9 @@ export class MailServer extends NotificationServerBase {
           bcc,
           text: message.content,
         });
-        return { receivers, status: 'success' } as const;
+        return { message, status: 'success' } as const;
       } catch (error) {
-        throw { receivers, status: 'fail', reason: error.message };
+        throw { message, status: 'fail', reason: error.message };
       }
     };
 
