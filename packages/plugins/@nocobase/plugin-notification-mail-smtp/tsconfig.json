@@ -1,6 +1,7 @@
 {
   "extends": ["../../../../tsconfig.json"],
   "compilerOptions": {
-    "strictNullChecks": true
+    "strictNullChecks": true,
+    "allowJs": false
   }
 }
