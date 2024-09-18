@@ -86,14 +86,15 @@ const useEvents = (dataSource: any, fieldNames: any, date: Date, view: (typeof W
        * 假设 10.1 号是星期六，我们需要将日程的开始时间调整为这一周的星期一，也就是 9.25 号
        * 而结束时间需要调整为 10.31 号这一周的星期日，也就是 10.5 号
        */
-      if (view === 'month') {
+      // week have same problem as month
+      if (view === 'month' || view === 'week') {
         startDate = startDate.startOf('week');
         endDate = endDate.endOf('week');
       }
 
       const push = (eventStart: Dayjs = start.clone()) => {
         // 必须在这个月的开始时间和结束时间，且在日程的开始时间之后
-        if (eventStart.isBefore(start)) {
+        if (eventStart.isBefore(start) || !eventStart.isBetween(startDate, endDate)) {
           return;
         }
 
@@ -107,7 +108,7 @@ const useEvents = (dataSource: any, fieldNames: any, date: Date, view: (typeof W
             return eventStart.isSame(d);
           }
         });
-        console.log(99);
+
         if (res) return out;
         const title = getLabelFormatValue(labelUiSchema, get(item, fieldNames.title), true);
         const event = {
@@ -216,7 +217,6 @@ export const Calendar: any = withDynamicSchemaProps(
         noEventsInRange: i18nt('None'),
         showMore: (count) => i18nt('{{count}} more items', { count }),
       };
-      console.log(events, dataSource, fieldNames, date, view);
       return wrapSSR(
         <div className={`${hashId} ${containerClassName}`} style={{ height: height || 700 }}>
           <PopupContextProvider visible={visible} setVisible={setVisible}>
