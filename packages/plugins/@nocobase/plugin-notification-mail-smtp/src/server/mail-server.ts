@@ -26,47 +26,38 @@ export class MailServer extends NotificationServerBase {
   send: SendFnType<Message> = async function (args) {
     const { message, channel } = args;
     const { host, port, secure, account, password, from } = channel.options;
-    const transpoter: Transporter = nodemailer.createTransport({
-      host,
-      port,
-      secure,
-      auth: {
-        user: account,
-        pass: password,
-      },
-    });
-    const { subject, cc, bcc, to } = message;
-    const sendMail = async ({ to, cc, bcc }) => {
-      try {
-        const res = await transpoter.sendMail({
-          from,
-          to,
-          subject,
-          cc,
-          bcc,
-          text: message.content,
-        });
-        return { message, status: 'success' } as const;
-      } catch (error) {
-        throw { message, status: 'fail', reason: error.message };
-      }
-    };
-
-    const result = await sendMail({
-      to: to.map((item) => item?.trim()).filter(Boolean),
-      cc: cc
-        ? cc
-            .flat()
-            .map((item) => item?.trim())
-            .filter(Boolean)
-        : null,
-      bcc: bcc
-        ? bcc
-            .flat()
-            .map((item) => item?.trim())
-            .filter(Boolean)
-        : null,
-    });
-    return { ...result, content: message.content };
+    try {
+      const transpoter: Transporter = nodemailer.createTransport({
+        host,
+        port,
+        secure,
+        auth: {
+          user: account,
+          pass: password,
+        },
+      });
+      const { subject, cc, bcc, to } = message;
+      const result = await transpoter.sendMail({
+        to: to.map((item) => item?.trim()).filter(Boolean),
+        cc: cc
+          ? cc
+              .flat()
+              .map((item) => item?.trim())
+              .filter(Boolean)
+          : undefined,
+        bcc: bcc
+          ? bcc
+              .flat()
+              .map((item) => item?.trim())
+              .filter(Boolean)
+          : undefined,
+        text: message.content,
+        subject,
+        from,
+      });
+      return { status: 'success', message };
+    } catch (error) {
+      throw { status: 'fail', reason: error.message, message };
+    }
   };
 }

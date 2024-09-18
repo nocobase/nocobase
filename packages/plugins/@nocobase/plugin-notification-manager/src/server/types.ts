@@ -18,7 +18,7 @@ export type WriteLogOptions = {
   message: Record<string, any>;
   triggerFrom: string;
   reason?: string;
-  channelId: string;
+  channelName: string;
   channelTitle: string;
 };
 
@@ -40,7 +40,7 @@ export abstract class NotificationServerBase<Message = any> {
 }
 
 export interface SendOptions {
-  channelId: string;
+  channelName: string;
   message: Record<string, any>;
   triggerFrom: string;
 }

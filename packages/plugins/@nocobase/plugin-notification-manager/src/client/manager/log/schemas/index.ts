@@ -11,6 +11,50 @@ import { ISchema } from '@formily/react';
 import collection from '../../../../collections/messageLog';
 import { COLLECTION_NAME } from '../../../../constant';
 
+export const detailFromProperties = {
+  id: {
+    'x-component': 'CollectionField',
+    'x-decorator': 'FormItem',
+    'x-disabled': true,
+    'x-read-pretty': true,
+  },
+  channelName: {
+    'x-component': 'CollectionField',
+    'x-decorator': 'FormItem',
+    'x-read-pretty': true,
+  },
+  channelTitle: {
+    'x-component': 'CollectionField',
+    'x-decorator': 'FormItem',
+    'x-read-pretty': true,
+  },
+  triggerFrom: {
+    'x-component': 'CollectionField',
+    'x-decorator': 'FormItem',
+    'x-read-pretty': true,
+  },
+  status: {
+    'x-component': 'CollectionField',
+    'x-decorator': 'FormItem',
+    'x-read-pretty': true,
+  },
+  message: {
+    'x-component': 'CollectionField',
+    'x-decorator': 'FormItem',
+    'x-read-pretty': true,
+  },
+  reason: {
+    'x-component': 'CollectionField',
+    'x-decorator': 'FormItem',
+    'x-read-pretty': true,
+  },
+  createdAt: {
+    'x-component': 'CollectionField',
+    'x-decorator': 'FormItem',
+    'x-read-pretty': true,
+  },
+};
+
 export const messageLogsManagerSchema: ISchema = {
   type: 'void',
   'x-uid': 't8tkmt2b9dd',
@@ -20,7 +64,6 @@ export const messageLogsManagerSchema: ISchema = {
     collection: collection.name,
     action: 'list',
     params: {
-      appends: 'channel',
       sort: ['-createdAt'],
     },
     showIndex: true,
@@ -66,21 +109,12 @@ export const messageLogsManagerSchema: ISchema = {
         rowKey: 'id',
       },
       properties: {
-        id: {
-          type: 'void',
-          'x-component': 'TableV2.Column',
-          title: '{{t("ID")}}',
-          properties: {
-            id: {
-              type: 'string',
-              'x-component': 'CollectionField',
-              'x-pattern': 'readPretty',
-            },
-          },
-        },
         triggerFrom: {
           type: 'void',
           'x-component': 'TableV2.Column',
+          'x-component-props': {
+            width: 100,
+          },
           title: '{{t("Trigger from")}}',
           properties: {
             triggerFrom: {
@@ -93,28 +127,15 @@ export const messageLogsManagerSchema: ISchema = {
             },
           },
         },
-        // channel: {
-        //   type: 'void',
-        //   'x-decorator': 'TableV2.Column.Decorator',
-        //   'x-component': 'TableV2.Column',
-        //   title: '{{t("Channel title")}}',
-        //   properties: {
-        //     'channel.title': {
-        //       type: 'string',
-        //       'x-component': 'CollectionField',
-        //       'x-read-pretty': true,
-        //       'x-component-props': {
-        //         ellipsis: true,
-        //       },
-        //     },
-        //   },
-        // },
-        channelId: {
+        channelName: {
           type: 'void',
           'x-component': 'TableV2.Column',
-          title: '{{t("Channel id")}}',
+          'x-component-props': {
+            width: 100,
+          },
+          title: '{{t("Channel name")}}',
           properties: {
-            channelTitle: {
+            channelName: {
               type: 'string',
               'x-component': 'CollectionField',
               'x-read-pretty': true,
@@ -127,7 +148,7 @@ export const messageLogsManagerSchema: ISchema = {
         channelTitle: {
           type: 'void',
           'x-component': 'TableV2.Column',
-          title: '{{t("Channel title")}}',
+          title: '{{t("Channel display name")}}',
           properties: {
             channelTitle: {
               type: 'string',
@@ -142,9 +163,42 @@ export const messageLogsManagerSchema: ISchema = {
         status: {
           type: 'void',
           'x-component': 'TableV2.Column',
+          'x-component-props': {
+            width: 100,
+          },
           title: '{{t("Status")}}',
           properties: {
             status: {
+              type: 'string',
+              'x-component': 'CollectionField',
+              'x-pattern': 'readPretty',
+            },
+          },
+        },
+        reason: {
+          type: 'void',
+          'x-component': 'TableV2.Column',
+          'x-component-props': {
+            width: 200,
+          },
+          title: '{{t("Failed reason")}}',
+          properties: {
+            reason: {
+              type: 'string',
+              'x-component': 'CollectionField',
+              'x-read-pretty': true,
+              'x-component-props': {
+                ellipsis: true,
+              },
+            },
+          },
+        },
+        id: {
+          type: 'void',
+          'x-component': 'TableV2.Column',
+          title: '{{t("ID")}}',
+          properties: {
+            id: {
               type: 'string',
               'x-component': 'CollectionField',
               'x-pattern': 'readPretty',
@@ -166,6 +220,59 @@ export const messageLogsManagerSchema: ISchema = {
                 timeFormat: 'HH:mm:ss',
               },
             },
+          },
+        },
+        actions: {
+          type: 'void',
+          title: '{{t("Actions")}}',
+          'x-component': 'TableV2.Column',
+          properties: {
+            view: {
+              type: 'void',
+              title: '{{t("Detail")}}',
+              'x-component': 'Action.Link',
+              'x-component-props': {
+                openMode: 'drawer',
+                icon: 'EditOutlined',
+              },
+              properties: {
+                drawer: {
+                  type: 'void',
+                  title: '{{t("Detail")}}',
+                  'x-component': 'Action.Drawer',
+                  properties: {
+                    detail: {
+                      type: 'void',
+                      'x-component': 'FormV2',
+                      'x-use-component-props': 'useEditFormProps',
+                      properties: {
+                        ...detailFromProperties,
+                        footer: {
+                          type: 'void',
+                          'x-component': 'Action.Drawer.Footer',
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+            // view: {
+            //   'x-component': 'Action.Link',
+            //   'x-component-props': {
+            //     openMode: 'drawer',
+            //     icon: 'EditOutlined',
+            //   },
+            //   properties: {
+            //     title: '{{t("View")}}',
+            //     'x-action': 'view',
+            //     'x-component': 'Action',
+            //     'x-use-component-props': 'useViewActionProps',
+            //     'x-component-props': {
+            //       type: 'link',
+            //     },
+            //   },
+            // },
           },
         },
       },

@@ -62,21 +62,28 @@ export default class NotificationManager {
     const channelsRepo = this.plugin.app.db.getRepository(COLLECTION_NAME.channels);
     const logData: any = {
       triggerFrom: params.triggerFrom,
-      channelId: params.channelId,
+      channelName: params.channelName,
       message: params.message,
     };
-    const channel = await channelsRepo.findOne({ filterByTk: params.channelId });
-    if (channel) {
-      const notificationServer = this.notificationTypes.get(channel.notificationType).server;
-      const result = await notificationServer.send({ message: params.message, channel });
-      logData.status = result.status;
-      logData.reason = result.reason;
-      logData.channelTitle = channel.title;
-    } else {
+    try {
+      const channel = await channelsRepo.findOne({ filterByTk: params.channelName });
+      if (channel) {
+        const notificationServer = this.notificationTypes.get(channel.notificationType).server;
+        logData.channelTitle = channel.title;
+        const result = await notificationServer.send({ message: params.message, channel });
+        logData.status = result.status;
+        logData.reason = result.reason;
+      } else {
+        logData.status = 'fail';
+        logData.reason = 'channel not found';
+      }
+      this.createSendingRecord(logData);
+      return logData;
+    } catch (error) {
       logData.status = 'fail';
-      logData.reason = 'channel not found';
+      logData.reason = error.reason;
+      this.createSendingRecord(logData);
+      return logData;
     }
-    this.createSendingRecord(logData);
-    return logData;
   }
 }

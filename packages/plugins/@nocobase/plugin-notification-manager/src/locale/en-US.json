@@ -5,6 +5,7 @@
   "Channel": "Channel",
   "Channel title": "Channel title",
   "Channel name": "Channel name",
+  "Channel display name": "Channel display name",
   "Content": "Content",
   "Receivers":"Receivers",
   "Receiver": "Receiver",
@@ -30,5 +31,6 @@
   "No channel enabled yet": "No channel enabled yet",
   "Success": "Success",
   "Fail": "Fail",
-  "Reason": "Reason"
+  "Reason": "Reason",
+  "Failed reason": "Failed reason"
 }

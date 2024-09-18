@@ -15,6 +15,7 @@ import { ExtendCollectionsProvider } from '@nocobase/client';
 import { useNotificationTranslation } from '../../../locale';
 import messageLogCollection from '../../../../collections/messageLog';
 import channelCollection from '../../../../collections/channel';
+import { useEditFormProps } from '../../channel/hooks';
 
 export const LogManager = () => {
   const { t } = useNotificationTranslation();
@@ -23,7 +24,7 @@ export const LogManager = () => {
     <ExtendCollectionsProvider collections={[messageLogCollection, channelCollection]}>
       <SchemaComponentContext.Provider value={{ ...scCtx, designable: false }}>
         <Card bordered={false}>
-          <SchemaComponent schema={messageLogsManagerSchema} scope={{ t }} />
+          <SchemaComponent schema={messageLogsManagerSchema} scope={{ t, useEditFormProps }} />
         </Card>
       </SchemaComponentContext.Provider>
     </ExtendCollectionsProvider>

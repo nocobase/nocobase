@@ -9,12 +9,8 @@
 
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
-import { useActionContext, useRequest } from '@nocobase/client';
-import { useContext } from 'react';
-import collection from '../../../../collections/channel';
 import { COLLECTION_NAME } from '../../../../constant';
 import { formProperties, updateFormProperties } from './form';
-import { NotificationTypeNameContext } from '../context';
 
 export const createFormSchema: ISchema = {
   type: 'object',
@@ -72,14 +68,6 @@ export const channelsSchema: ISchema = {
         },
       },
       properties: {
-        create: {
-          type: 'void',
-          title: '{{t("Add new")}}',
-          'x-component': 'AddNew',
-          'x-component-props': {
-            type: 'primary',
-          },
-        },
         refresh: {
           title: "{{t('Refresh')}}",
           'x-action': 'refresh',
@@ -87,6 +75,14 @@ export const channelsSchema: ISchema = {
           'x-use-component-props': 'useRefreshActionProps',
           'x-component-props': {
             icon: 'ReloadOutlined',
+          },
+        },
+        create: {
+          type: 'void',
+          title: '{{t("Add new")}}',
+          'x-component': 'AddNew',
+          'x-component-props': {
+            type: 'primary',
           },
         },
         filter: {
@@ -113,7 +109,7 @@ export const channelsSchema: ISchema = {
         name: {
           type: 'void',
           'x-component': 'TableV2.Column',
-          title: '{{t("ID")}}',
+          title: '{{t("Channel name")}}',
           properties: {
             name: {
               type: 'string',
@@ -128,7 +124,7 @@ export const channelsSchema: ISchema = {
         title: {
           type: 'void',
           'x-component': 'TableV2.Column',
-          title: '{{t("Title")}}',
+          title: '{{t("Channel display name")}}',
           properties: {
             title: {
               type: 'string',
@@ -183,7 +179,7 @@ export const channelsSchema: ISchema = {
               properties: {
                 drawer: {
                   type: 'void',
-                  title: 'Edit',
+                  title: '{{t("Edit")}}',
                   'x-component': 'Action.Drawer',
                   properties: {
                     form: {

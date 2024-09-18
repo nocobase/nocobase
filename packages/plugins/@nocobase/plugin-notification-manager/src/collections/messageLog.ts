@@ -28,20 +28,13 @@ const collectionOption: CollectionOptions = {
       },
     },
     {
-      name: 'channel',
-      target: COLLECTION_NAME.channels,
-      targetKey: 'name',
-      foreignKey: 'channelId',
-      interface: 'm2o',
-      type: 'belongsTo',
-      onDelete: 'NO ACTION',
+      name: 'channelName',
+      type: 'string',
+      interface: 'input',
       uiSchema: {
         type: 'string',
-        title: '{{t("Channel")}}',
-        'x-component': 'AssociationField',
-        'x-component-props': {
-          multiple: false,
-        },
+        title: '{{t("Channel name")}}',
+        'x-component': 'Input',
       },
     },
     {
@@ -51,7 +44,7 @@ const collectionOption: CollectionOptions = {
       uiSchema: {
         type: 'string',
         'x-component': 'Input',
-        title: '{{t("Channel title")}}',
+        title: '{{t("Channel display name")}}',
       },
     },
     {
@@ -82,6 +75,12 @@ const collectionOption: CollectionOptions = {
       name: 'message',
       type: 'json',
       interface: 'json',
+      uiSchema: {
+        'x-component': 'Input.JSON',
+        title: '{{t("Message")}}',
+        'x-component-props': { autoSize: { minRows: 5 } },
+        autoSize: { minRows: 5 },
+      },
     },
     {
       name: 'reason',
@@ -90,7 +89,7 @@ const collectionOption: CollectionOptions = {
       uiSchema: {
         type: 'string',
         'x-component': 'Input',
-        title: '{{t("Reason")}}',
+        title: '{{t("Failed reason")}}',
       },
     },
     {

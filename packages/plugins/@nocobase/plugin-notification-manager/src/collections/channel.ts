@@ -37,7 +37,7 @@ const collection: CollectionOptions = {
       uiSchema: {
         type: 'string',
         'x-component': 'Input',
-        title: '{{t("Title")}}',
+        title: '{{t("Channel display name")}}',
         required: true,
       },
     },
@@ -57,7 +57,8 @@ const collection: CollectionOptions = {
       uiSchema: {
         type: 'string',
         title: '{{t("Notification type")}}',
-        'x-component': 'Input',
+        'x-component': 'Select',
+        enum: '{{notificationTypeOptions}}',
         required: true,
       },
     },

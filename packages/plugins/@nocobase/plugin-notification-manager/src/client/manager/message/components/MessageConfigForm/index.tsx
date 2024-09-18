@@ -23,13 +23,13 @@ export const MessageConfigForm = observer<{ variableOptions: any }>(
   ({ variableOptions }) => {
     const field = useField();
     const form = useForm();
-    const { channelId, receiverType } = field.form.values;
+    const { channelName, receiverType } = field.form.values;
     const [providerName, setProviderName] = useState(null);
     const { t } = useNotificationTranslation();
     const api = useAPIClient();
     useEffect(() => {
       const onChannelChange = async () => {
-        if (!channelId) {
+        if (!channelName) {
           setProviderName(null);
           return;
         }
@@ -37,13 +37,13 @@ export const MessageConfigForm = observer<{ variableOptions: any }>(
           url: `/${COLLECTION_NAME.channels}:get`,
           method: 'get',
           params: {
-            filterByTk: channelId,
+            filterByTk: channelName,
           },
         });
         setProviderName(data.data.notificationType);
       };
       onChannelChange();
-    }, [channelId, api]);
+    }, [channelName, api]);
 
     useFormEffects(() => {
       onFieldValueChange('receiverType', (value) => {
@@ -62,7 +62,7 @@ export const MessageConfigForm = observer<{ variableOptions: any }>(
     const createMessageFormSchema = {
       type: 'void',
       properties: {
-        channelId: {
+        channelName: {
           type: 'string',
           title: '{{t("Channel")}}',
           required: true,
