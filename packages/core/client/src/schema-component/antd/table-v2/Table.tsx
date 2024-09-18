@@ -145,8 +145,8 @@ const useTableColumns = (props: { showDel?: boolean; isSubTable?: boolean }) => 
               </SubFormProvider>
             );
           },
-          onCell: (record, index) => {
-            return { record, schema: s, index };
+          onCell: (record, rowIndex) => {
+            return { record, schema: s, rowIndex };
           },
         } as TableColumnProps<any>;
       }),
@@ -578,7 +578,7 @@ export const Table: any = withDynamicSchemaProps(
     const BodyCellComponent = useCallback(
       (props) => {
         const isIndex = props.className?.includes('selection-column');
-        const { record, schema, index } = props;
+        const { record, schema, rowIndex } = props;
         const { ref, inView } = useInView({
           threshold: 0,
           triggerOnce: true,
@@ -588,7 +588,8 @@ export const Table: any = withDynamicSchemaProps(
         const { valueMap } = useSatisfiedActionValues({ formValues: record, category: 'style', schema });
         const style = useMemo(() => Object.assign({ ...props.style }, valueMap), [props.style, valueMap]);
 
-        if (index < 20) {
+        // fix the problem of blank rows at the beginning of a table block
+        if (rowIndex < 20) {
           return (
             <td {...props} className={classNames(props.className, cellClass)} style={style}>
               {props.children}
