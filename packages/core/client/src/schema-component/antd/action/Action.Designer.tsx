@@ -283,7 +283,8 @@ export function AfterSuccess() {
             redirecting: {
               title: t('Then'),
               enum: [
-                { label: t('Stay on current page'), value: false },
+                { label: t('Stay on the current popup or page'), value: false },
+                { label: t('Return to the previous popup or page'), value: 'previous' },
                 { label: t('Redirect to'), value: true },
               ],
               'x-decorator': 'FormItem',
@@ -293,7 +294,7 @@ export function AfterSuccess() {
                 target: 'redirectTo',
                 fulfill: {
                   state: {
-                    visible: '{{!!$self.value}}',
+                    visible: '{{$self.value===true}}',
                   },
                 },
               },

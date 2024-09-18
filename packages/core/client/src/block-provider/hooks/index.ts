@@ -209,7 +209,7 @@ export const useCreateActionProps = () => {
   const record = useCollectionRecord();
   const form = useForm();
   const { field, resource } = useBlockRequestContext();
-  const { setVisible, setSubmitted, setFormValueChanged } = useActionContext();
+  const { setVisible, setSubmitted, setFormValueChanged, visible } = useActionContext();
   const navigate = useNavigateNoUpdate();
   const actionSchema = useFieldSchema();
   const actionField = useField();
@@ -224,7 +224,7 @@ export const useCreateActionProps = () => {
   return {
     async onClick() {
       const { onSuccess, skipValidator, triggerWorkflows } = actionSchema?.['x-action-settings'] ?? {};
-
+      const { manualClose, redirecting, redirectTo, successMessage } = onSuccess || {};
       if (!skipValidator) {
         await form.submit();
       }
@@ -242,39 +242,44 @@ export const useCreateActionProps = () => {
             : undefined,
           updateAssociationValues,
         });
-        setVisible?.(false);
         setSubmitted?.(true);
         setFormValueChanged?.(false);
         actionField.data.loading = false;
         actionField.data.data = data;
         // __parent?.service?.refresh?.();
-        if (!onSuccess?.successMessage) {
+        if (successMessage) {
           message.success(t('Saved successfully'));
           await resetFormCorrectly(form);
           return;
         }
-        if (onSuccess?.manualClose) {
+        if (manualClose) {
           modal.success({
-            title: compile(onSuccess?.successMessage),
+            title: compile(successMessage),
             onOk: async () => {
               await resetFormCorrectly(form);
-              if (onSuccess?.redirecting && onSuccess?.redirectTo) {
-                if (isURL(onSuccess.redirectTo)) {
-                  window.location.href = onSuccess.redirectTo;
+              if (redirecting === 'previous') {
+                visible ? setVisible?.(false) : navigate(-1);
+              }
+              if (redirecting && redirectTo) {
+                if (isURL(redirectTo)) {
+                  window.location.href = redirectTo;
                 } else {
-                  navigate(onSuccess.redirectTo);
+                  navigate(redirectTo);
                 }
               }
             },
           });
         } else {
-          message.success(compile(onSuccess?.successMessage));
+          message.success(compile(successMessage));
           await resetFormCorrectly(form);
-          if (onSuccess?.redirecting && onSuccess?.redirectTo) {
-            if (isURL(onSuccess.redirectTo)) {
-              window.location.href = onSuccess.redirectTo;
+          if (redirecting === 'previous') {
+            visible ? setVisible?.(false) : navigate(-1);
+          }
+          if (redirecting && redirectTo) {
+            if (isURL(redirectTo)) {
+              window.location.href = redirectTo;
             } else {
-              navigate(onSuccess.redirectTo);
+              navigate(redirectTo);
             }
           }
         }
@@ -561,6 +566,7 @@ export const useCustomizeUpdateActionProps = () => {
   const variables = useVariables();
   const localVariables = useLocalVariables({ currentForm: form });
   const { name, getField } = useCollection_deprecated();
+  const { setVisible, visible } = useActionContext();
 
   return {
     async onClick(e?, callBack?) {
@@ -570,6 +576,7 @@ export const useCustomizeUpdateActionProps = () => {
         skipValidator,
         triggerWorkflows,
       } = actionSchema?.['x-action-settings'] ?? {};
+      const { manualClose, redirecting, redirectTo, successMessage } = onSuccess || {};
 
       const assignedValues = {};
       const waitList = Object.keys(originalAssignedValues).map(async (key) => {
@@ -611,29 +618,35 @@ export const useCustomizeUpdateActionProps = () => {
       if (!(resource instanceof TableFieldResource)) {
         __parent?.service?.refresh?.();
       }
-      if (!onSuccess?.successMessage) {
+      if (!successMessage) {
         return;
       }
-      if (onSuccess?.manualClose) {
+      if (manualClose) {
         modal.success({
-          title: compile(onSuccess?.successMessage),
+          title: compile(successMessage),
           onOk: async () => {
-            if (onSuccess?.redirecting && onSuccess?.redirectTo) {
-              if (isURL(onSuccess.redirectTo)) {
-                window.location.href = onSuccess.redirectTo;
+            if (redirecting === 'previous') {
+              visible ? setVisible?.(false) : navigate(-1);
+            }
+            if (redirecting && redirectTo) {
+              if (isURL(redirectTo)) {
+                window.location.href = redirectTo;
               } else {
-                navigate(onSuccess.redirectTo);
+                navigate(redirectTo);
               }
             }
           },
         });
       } else {
-        message.success(compile(onSuccess?.successMessage));
-        if (onSuccess?.redirecting && onSuccess?.redirectTo) {
-          if (isURL(onSuccess.redirectTo)) {
-            window.location.href = onSuccess.redirectTo;
+        message.success(compile(successMessage));
+        if (redirecting === 'previous') {
+          visible ? setVisible?.(false) : navigate(-1);
+        }
+        if (redirecting && redirectTo) {
+          if (isURL(redirectTo)) {
+            window.location.href = redirectTo;
           } else {
-            navigate(onSuccess.redirectTo);
+            navigate(redirectTo);
           }
         }
       }

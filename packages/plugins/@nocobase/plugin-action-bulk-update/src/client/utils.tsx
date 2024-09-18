@@ -19,6 +19,7 @@ import {
   useNavigateNoUpdate,
   useTableBlockContext,
   useVariables,
+  useActionContext,
 } from '@nocobase/client';
 import { isURL } from '@nocobase/utils/client';
 import { App, message } from 'antd';
@@ -31,7 +32,7 @@ export const useCustomizeBulkUpdateActionProps = () => {
   const actionSchema = useFieldSchema();
   const tableBlockContext = useTableBlockContext();
   const { rowKey } = tableBlockContext;
-
+  const { setVisible, visible } = useActionContext();
   const navigate = useNavigateNoUpdate();
   const compile = useCompile();
   const { t } = useBulkUpdateTranslation();
@@ -47,6 +48,7 @@ export const useCustomizeBulkUpdateActionProps = () => {
         onSuccess,
         updateMode,
       } = actionSchema?.['x-action-settings'] ?? {};
+      const { manualClose, redirecting, redirectTo, successMessage } = onSuccess || {};
       actionField.data = field.data || {};
       actionField.data.loading = true;
       const selectedRecordKeys =
@@ -112,29 +114,35 @@ export const useCustomizeBulkUpdateActionProps = () => {
           if (!(resource instanceof TableFieldResource)) {
             __parent?.service?.refresh?.();
           }
-          if (!onSuccess?.successMessage) {
+          if (!successMessage) {
             return;
           }
-          if (onSuccess?.manualClose) {
+          if (manualClose) {
             modal.success({
-              title: compile(onSuccess?.successMessage),
+              title: compile(successMessage),
               onOk: async () => {
-                if (onSuccess?.redirecting && onSuccess?.redirectTo) {
-                  if (isURL(onSuccess.redirectTo)) {
-                    window.location.href = onSuccess.redirectTo;
+                if (redirecting === 'previous') {
+                  visible ? setVisible?.(false) : navigate(-1);
+                }
+                if (redirecting && redirectTo) {
+                  if (isURL(redirectTo)) {
+                    window.location.href = redirectTo;
                   } else {
-                    navigate(onSuccess.redirectTo);
+                    navigate(redirectTo);
                   }
                 }
               },
             });
           } else {
-            message.success(compile(onSuccess?.successMessage));
-            if (onSuccess?.redirecting && onSuccess?.redirectTo) {
-              if (isURL(onSuccess.redirectTo)) {
-                window.location.href = onSuccess.redirectTo;
+            message.success(compile(successMessage));
+            if (redirecting === 'previous') {
+              visible ? setVisible?.(false) : navigate(-1);
+            }
+            if (redirecting && redirectTo) {
+              if (isURL(redirectTo)) {
+                window.location.href = redirectTo;
               } else {
-                navigate(onSuccess.redirectTo);
+                navigate(redirectTo);
               }
             }
           }

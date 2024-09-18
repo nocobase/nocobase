@@ -28,7 +28,7 @@ export function useTriggerWorkflowsActionProps() {
   const api = useAPIClient();
   const form = useForm();
   const { field, __parent } = useBlockRequestContext();
-  const { setVisible } = useActionContext();
+  const { setVisible, visible } = useActionContext();
   const navigate = useNavigate();
   const actionSchema = useFieldSchema();
   const actionField = useField();
@@ -41,6 +41,8 @@ export function useTriggerWorkflowsActionProps() {
   return {
     async onClick() {
       const { onSuccess, skipValidator, triggerWorkflows } = actionSchema?.['x-action-settings'] ?? {};
+      const { manualClose, redirecting, redirectTo, successMessage } = onSuccess || {};
+
       if (!skipValidator) {
         await form.submit();
       }
@@ -60,25 +62,38 @@ export function useTriggerWorkflowsActionProps() {
         actionField.data.data = data;
         __parent?.service?.refresh?.();
         setVisible?.(false);
-        if (!onSuccess?.successMessage) {
+        if (!successMessage) {
           return;
         }
-        if (onSuccess?.manualClose) {
+        if (manualClose) {
           modal.success({
-            title: compile(onSuccess?.successMessage),
+            title: compile(successMessage),
             onOk: async () => {
               await form.reset();
-              if (onSuccess?.redirecting && onSuccess?.redirectTo) {
-                if (isURL(onSuccess.redirectTo)) {
-                  window.location.href = onSuccess.redirectTo;
+              if (redirecting === 'previous') {
+                visible ? setVisible?.(false) : navigate(-1);
+              }
+              if (redirecting && redirectTo) {
+                if (isURL(redirectTo)) {
+                  window.location.href = redirectTo;
                 } else {
-                  navigate(onSuccess.redirectTo);
+                  navigate(redirectTo);
                 }
               }
             },
           });
         } else {
-          message.success(compile(onSuccess?.successMessage));
+          message.success(compile(successMessage));
+          if (redirecting === 'previous') {
+            visible ? setVisible?.(false) : navigate(-1);
+          }
+          if (redirecting && redirectTo) {
+            if (isURL(redirectTo)) {
+              window.location.href = redirectTo;
+            } else {
+              navigate(redirectTo);
+            }
+          }
         }
       } catch (error) {
         actionField.data.loading = false;

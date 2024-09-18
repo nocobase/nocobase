@@ -30,12 +30,13 @@ export const useCustomizeRequestActionProps = () => {
   const record = useRecord();
   const fieldSchema = useFieldSchema();
   const actionField = useField();
-  const { setVisible } = useActionContext();
+  const { setVisible, visible } = useActionContext();
   const { modal, message } = App.useApp();
   const dataSourceKey = useDataSourceKey();
   return {
     async onClick(e?, callBack?) {
       const { skipValidator, onSuccess } = actionSchema?.['x-action-settings'] ?? {};
+      const { manualClose, redirecting, redirectTo, successMessage } = onSuccess || {};
       const xAction = actionSchema?.['x-action'];
       if (skipValidator !== true && xAction === 'customize:form:request') {
         await form.submit();
@@ -70,36 +71,42 @@ export const useCustomizeRequestActionProps = () => {
           }
         }
         actionField.data.loading = false;
-        // service?.refresh?.();
         if (callBack) {
           callBack?.();
         }
-        if (xAction === 'customize:form:request') {
-          setVisible?.(false);
-        }
-        if (!onSuccess?.successMessage) {
+        if (!successMessage) {
           return;
         }
-        if (onSuccess?.manualClose) {
+        if (manualClose) {
           modal.success({
-            title: compile(onSuccess?.successMessage),
+            title: compile(successMessage),
             onOk: async () => {
-              if (onSuccess?.redirecting && onSuccess?.redirectTo) {
-                if (isURL(onSuccess.redirectTo)) {
-                  window.location.href = onSuccess.redirectTo;
+              if (redirecting === 'previous') {
+                if (xAction === 'customize:form:request') {
+                  visible ? setVisible?.(false) : navigate(-1);
+                }
+              }
+              if (redirecting && redirectTo) {
+                if (isURL(redirectTo)) {
+                  window.location.href = redirectTo;
                 } else {
-                  navigate(onSuccess.redirectTo);
+                  navigate(redirectTo);
                 }
               }
             },
           });
         } else {
-          message.success(compile(onSuccess?.successMessage));
-          if (onSuccess?.redirecting && onSuccess?.redirectTo) {
-            if (isURL(onSuccess.redirectTo)) {
-              window.location.href = onSuccess.redirectTo;
+          message.success(compile(successMessage));
+          if (redirecting === 'previous') {
+            if (xAction === 'customize:form:request') {
+              visible ? setVisible?.(false) : navigate(-1);
+            }
+          }
+          if (redirecting && redirectTo) {
+            if (isURL(redirectTo)) {
+              window.location.href = redirectTo;
             } else {
-              navigate(onSuccess.redirectTo);
+              navigate(redirectTo);
             }
           }
         }
