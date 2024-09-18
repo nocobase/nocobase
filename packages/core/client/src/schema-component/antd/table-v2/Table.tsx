@@ -145,8 +145,8 @@ const useTableColumns = (props: { showDel?: boolean; isSubTable?: boolean }) => 
               </SubFormProvider>
             );
           },
-          onCell: (record) => {
-            return { record, schema: s };
+          onCell: (record, rowIndex) => {
+            return { record, schema: s, 'row-index': rowIndex };
           },
         } as TableColumnProps<any>;
       }),
@@ -582,7 +582,7 @@ export const Table: any = withDynamicSchemaProps(
         const { ref, inView } = useInView({
           threshold: 0,
           triggerOnce: true,
-          initialInView: isIndex || !!process.env.__E2E__ || dataSource.length <= 10,
+          initialInView: isIndex || !!process.env.__E2E__ || props['row-index'] <= 10,
           skip: isIndex || !!process.env.__E2E__,
         });
         const { valueMap } = useSatisfiedActionValues({ formValues: record, category: 'style', schema });
