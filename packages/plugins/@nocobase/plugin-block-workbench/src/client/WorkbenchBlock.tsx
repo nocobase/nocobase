@@ -39,7 +39,7 @@ const InternalIcons = () => {
     <div style={{ marginBottom: designable ? '1rem' : 0 }}>
       <DndContext>
         {layout === WorkbenchLayout.Grid ? (
-          <Space wrap>
+          <Space wrap size={13}>
             {fieldSchema.mapProperties((s, key) => (
               <RecursionField name={key} schema={s} key={key} />
             ))}
