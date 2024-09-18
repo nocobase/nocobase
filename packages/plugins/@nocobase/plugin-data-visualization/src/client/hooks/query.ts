@@ -134,6 +134,9 @@ export const useFormatters = (fields: FieldOption[]) => (field: any) => {
   const fieldInterface = getField(fields, selectedField)?.interface;
   switch (fieldInterface) {
     case 'datetime':
+    case 'datetimeTz':
+    case 'unixTimestamp':
+    case 'datetimeNoTz':
     case 'createdAt':
     case 'updatedAt':
       options = formatters.datetime;

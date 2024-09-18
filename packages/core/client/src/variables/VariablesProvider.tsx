@@ -78,6 +78,10 @@ const VariablesProvider = ({ children }) => {
         appends?: string[];
         /** do not request when the association field is empty */
         doNotRequest?: boolean;
+        /**
+         * The operator related to the current field, provided when parsing the default value of the field
+         */
+        fieldOperator?: string | void;
       },
     ) => {
       const list = variablePath.split('.');
@@ -90,7 +94,7 @@ const VariablesProvider = ({ children }) => {
       const { fieldPath: fieldPathOfVariable } = getFieldPath(variablePath, _variableToCollectionName);
       const collectionNameOfVariable =
         list.length === 1
-          ? variableOption.collectionName
+          ? variableOption?.collectionName
           : getCollectionJoinField(fieldPathOfVariable, dataSource)?.target;
 
       if (!(variableName in current)) {
@@ -100,7 +104,7 @@ const VariablesProvider = ({ children }) => {
       for (let index = 0; index < list.length; index++) {
         if (current == null) {
           return {
-            value: current === undefined ? variableOption.defaultValue : current,
+            value: current === undefined ? variableOption?.defaultValue : current,
             dataSource,
             collectionName: collectionNameOfVariable,
           };
@@ -181,7 +185,7 @@ const VariablesProvider = ({ children }) => {
         }
       }
 
-      const _value = compile(_.isFunction(current) ? current() : current);
+      const _value = compile(_.isFunction(current) ? current({ fieldOperator: options?.fieldOperator }) : current);
       return {
         value: _value === undefined ? variableOption.defaultValue : _value,
         dataSource,
@@ -251,6 +255,10 @@ const VariablesProvider = ({ children }) => {
         appends?: string[];
         /** do not request when the association field is empty */
         doNotRequest?: boolean;
+        /**
+         * The operator related to the current field, provided when parsing the default value of the field
+         */
+        fieldOperator?: string | void;
       },
     ) => {
       if (!isVariable(str)) {

@@ -726,9 +726,9 @@ export const Table: any = withDynamicSchemaProps(
     const scroll = useMemo(() => {
       return {
         x: 'max-content',
-        y: tableHeight,
+        y: dataSource.length > 0 ? tableHeight : undefined,
       };
-    }, [tableHeight, maxContent]);
+    }, [tableHeight, maxContent, dataSource]);
 
     const rowClassName = useCallback(
       (record) => (selectedRow.includes(record[rowKey]) ? highlightRow : ''),
@@ -766,6 +766,9 @@ export const Table: any = withDynamicSchemaProps(
                   height: 100%;
                   display: flex;
                   flex-direction: column;
+                  .ant-table-expanded-row-fixed {
+                    min-height: ${tableHeight}px;
+                  }
                   .ant-table-body {
                     min-height: ${tableHeight}px;
                   }

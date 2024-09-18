@@ -271,8 +271,7 @@ export const tasksTableBlockSchema: ISchema = {
                   properties: {
                     message: {
                       type: 'string',
-                      'x-component': 'CollectionField',
-                      'x-pattern': 'readPretty',
+                      'x-component': 'Message',
                     },
                   },
                 },

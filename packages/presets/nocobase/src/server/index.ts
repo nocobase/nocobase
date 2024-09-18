@@ -9,91 +9,78 @@
 
 import { Plugin, PluginManager } from '@nocobase/server';
 import _ from 'lodash';
+import { findBuiltInPlugins, findLocalPlugins, trim } from './findPackageNames';
 
 export class PresetNocoBase extends Plugin {
-  builtInPlugins = [
-    'data-source-manager',
-    'error-handler',
-    'data-source-main',
-    'ui-schema-storage',
-    // 'ui-routes-storage',
-    'file-manager',
-    'system-settings',
-    'field-sequence',
-    'verification',
-    'users',
-    'user-data-sync',
-    'acl',
-    'field-china-region',
-    'workflow',
-    'workflow-action-trigger',
-    'workflow-aggregate',
-    'workflow-delay',
-    'workflow-dynamic-calculation',
-    'workflow-loop',
-    'workflow-manual',
-    'workflow-parallel',
-    'workflow-request',
-    'workflow-sql',
-    'workflow-notification',
-    'client',
-    'action-import',
-    'action-export',
-    'block-iframe',
-    'block-workbench',
-    'field-formula',
-    'data-visualization',
-    'auth',
-    'logger',
-    'action-custom-request',
-    'calendar',
-    'action-bulk-update',
-    'action-bulk-edit',
-    'gantt',
-    'kanban',
-    'action-duplicate',
-    'action-print',
-    'collection-sql',
-    'collection-tree',
-    'notification-manager',
-  ];
-
-  localPlugins = [
-    'multi-app-manager>=0.7.0-alpha.1',
-    // 'audit-logs>=0.7.1-alpha.4',
-    'map>=0.8.1-alpha.3',
-    // 'snapshot-field>=0.8.1-alpha.3',
-    'graph-collection-manager>=0.9.0-alpha.1',
-    // 'multi-app-share-collection>=0.9.2-alpha.1',
-    'mobile',
-    // 'mobile-client>=0.10.0-alpha.2',
-    'api-keys>=0.10.1-alpha.1',
-    'localization>=0.11.1-alpha.1',
-    'theme-editor>=0.11.1-alpha.1',
-    'api-doc>=0.13.0-alpha.1',
-    'auth-sms>=0.10.0-alpha.2',
-    'field-markdown-vditor>=0.21.0-alpha.16',
-    'workflow-mailer',
-    'field-m2m-array',
-    'notification-mail-smtp',
-    'backup-restore',
-  ];
-
   splitNames(name: string) {
     return (name || '').split(',').filter(Boolean);
   }
 
-  getBuiltInPlugins() {
-    const { APPEND_PRESET_BUILT_IN_PLUGINS } = process.env;
-    return _.uniq(this.splitNames(APPEND_PRESET_BUILT_IN_PLUGINS).concat(this.builtInPlugins));
+  async getBuiltInPlugins() {
+    return await findBuiltInPlugins();
   }
 
-  getLocalPlugins() {
-    const { APPEND_PRESET_LOCAL_PLUGINS } = process.env;
-    const plugins = this.splitNames(APPEND_PRESET_LOCAL_PLUGINS)
-      .concat(this.localPlugins)
-      .map((name) => name.split('>='));
-    return plugins;
+  async getLocalPlugins() {
+    return [];
+    return (await findLocalPlugins()).map((name) => name.split('>='));
+  }
+
+  async findLocalPlugins() {
+    return await findLocalPlugins();
+  }
+
+  async getAllPluginNames() {
+    const plugins1 = await findBuiltInPlugins();
+    const plugins2 = await findLocalPlugins();
+    return [...plugins1, ...plugins2];
+  }
+
+  async getAllPluginNamesAndDB() {
+    const items = await this.pm.repository.find({
+      filter: {
+        enabled: true,
+      },
+    });
+    const plugins1 = await findBuiltInPlugins();
+    const plugins2 = await findLocalPlugins();
+    return trim(_.uniq([...plugins1, ...plugins2, ...items.map((item) => item.name)]));
+  }
+
+  async getAllPlugins(locale = 'en-US') {
+    const plugins = await this.getAllPluginNamesAndDB();
+    const packageJsons = [];
+    for (const name of plugins) {
+      packageJsons.push(await this.getPluginInfo(name, locale));
+    }
+    return packageJsons;
+  }
+
+  async getPluginInfo(name, locale = 'en-US') {
+    const repository = this.app.db.getRepository<any>('applicationPlugins');
+    // const packageJson = await this.getPackageJson(name);
+    const { packageName } = await PluginManager.parseName(name);
+    const packageJson = require(`${packageName}/package.json`);
+    const deps = await PluginManager.checkAndGetCompatible(packageJson.name);
+    const instance = await repository.findOne({
+      filter: {
+        packageName: packageJson.name,
+      },
+    });
+    return {
+      packageName: packageJson.name,
+      name: name,
+      version: packageJson.version,
+      enabled: !!instance?.enabled,
+      installed: !!instance?.installed,
+      builtIn: !!instance?.builtIn,
+      keywords: packageJson.keywords,
+      author: packageJson.author,
+      packageJson,
+      removable: !instance?.enabled && !this.app.db.hasCollection('applications'),
+      displayName: packageJson?.[`displayName.${locale}`] || packageJson?.displayName || name,
+      description: packageJson?.[`description.${locale}`] || packageJson.description,
+      ...deps,
+    };
   }
 
   async getPackageJson(name) {
@@ -103,9 +90,11 @@ export class PresetNocoBase extends Plugin {
   }
 
   async allPlugins() {
+    const builtInPlugins = await this.getBuiltInPlugins();
+    const localPlugins = await this.getLocalPlugins();
     return (
       await Promise.all(
-        this.getBuiltInPlugins().map(async (pkgOrName) => {
+        builtInPlugins.map(async (pkgOrName) => {
           const { name } = await PluginManager.parseName(pkgOrName);
           const packageJson = await this.getPackageJson(pkgOrName);
           return {
@@ -119,7 +108,7 @@ export class PresetNocoBase extends Plugin {
       )
     ).concat(
       await Promise.all(
-        this.getLocalPlugins().map(async (plugin) => {
+        localPlugins.map(async (plugin) => {
           const { name } = await PluginManager.parseName(plugin[0]);
           const packageJson = await this.getPackageJson(plugin[0]);
           return { name, packageName: packageJson.name, version: packageJson.version };
@@ -131,8 +120,10 @@ export class PresetNocoBase extends Plugin {
   async getPluginToBeUpgraded() {
     const repository = this.app.db.getRepository<any>('applicationPlugins');
     const items = (await repository.find()).map((item) => item.name);
+    const builtInPlugins = await this.getBuiltInPlugins();
+    const localPlugins = await this.getLocalPlugins();
     const plugins = await Promise.all(
-      this.getBuiltInPlugins().map(async (pkgOrName) => {
+      builtInPlugins.map(async (pkgOrName) => {
         const { name } = await PluginManager.parseName(pkgOrName);
         const packageJson = await this.getPackageJson(pkgOrName);
         return {
@@ -144,7 +135,7 @@ export class PresetNocoBase extends Plugin {
         } as any;
       }),
     );
-    for (const plugin of this.getLocalPlugins()) {
+    for (const plugin of localPlugins) {
       if (plugin[1]) {
         // 不在插件列表，并且插件最低版本小于当前应用版本，跳过不处理
         if (!items.includes(plugin[0]) && (await this.app.version.satisfies(`>${plugin[1]}`))) {

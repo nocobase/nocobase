@@ -72,7 +72,7 @@ class PluginGenerator extends Generator {
     });
     this.log('');
     genTsConfigPaths();
-    execa.sync('yarn', ['postinstall', '--skip-umi'], { shell: true, stdio: 'inherit' });
+    execa.sync('yarn', ['postinstall'], { shell: true, stdio: 'inherit' });
     this.log(`The plugin folder is in ${chalk.green(`packages/plugins/${name}`)}`);
   }
 }

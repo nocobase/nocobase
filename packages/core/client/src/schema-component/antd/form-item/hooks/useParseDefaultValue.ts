@@ -14,6 +14,7 @@ import { getValuesByPath } from '@nocobase/utils/client';
 import _ from 'lodash';
 import { useCallback, useEffect } from 'react';
 import { useRecordIndex } from '../../../../../src/record-provider';
+import { useOperators } from '../../../../block-provider/CollectOperators';
 import { useFormBlockContext } from '../../../../block-provider/FormBlockProvider';
 import { useCollection_deprecated } from '../../../../collection-manager';
 import { useCollectionRecord } from '../../../../data-source/collection-record/CollectionRecordProvider';
@@ -41,6 +42,7 @@ const useParseDefaultValue = () => {
   const { isSpecialCase, setDefaultValue } = useSpecialCase();
   const index = useRecordIndex();
   const { type, form } = useFormBlockContext();
+  const { getOperator } = useOperators();
 
   /**
    * name: 如 $user
@@ -58,7 +60,7 @@ const useParseDefaultValue = () => {
 
   useEffect(() => {
     // fix https://github.com/nocobase/nocobase/issues/4868
-    // fix http://localhost:12000/admin/ugmnj2ycfgg/popups/1qlw5c38t3b/puid/dz42x7ffr7i/filterbytk/182
+    // fix https://tasks.aliyun.nocobase.com/admin/ugmnj2ycfgg/popups/1qlw5c38t3b/puid/dz42x7ffr7i/filterbytk/182
     // to clear the default value of the field
     if (type === 'update' && fieldSchema.default && field.form === form) {
       field.setValue?.(record?.data?.[fieldSchema.name]);
@@ -98,6 +100,9 @@ const useParseDefaultValue = () => {
         const { value: parsedValue, collectionName: collectionNameOfVariable } = await variables.parseVariable(
           fieldSchema.default,
           localVariables,
+          {
+            fieldOperator: getOperator(fieldSchema.name),
+          },
         );
 
         // fix https://tasks.aliyun.nocobase.com/admin/ugmnj2ycfgg/popups/1qlw5c38t3b/puid/dz42x7ffr7i/filterbytk/199
@@ -174,7 +179,7 @@ const useParseDefaultValue = () => {
       // 解决子表格（或子表单）中新增一行数据时，默认值不生效的问题
       field.setValue(fieldSchema.default);
     }
-  }, [fieldSchema.default, localVariables, type]);
+  }, [fieldSchema.default, localVariables, type, getOperator]);
 };
 
 export default useParseDefaultValue;
