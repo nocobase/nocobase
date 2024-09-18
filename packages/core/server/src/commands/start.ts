@@ -9,8 +9,7 @@
 
 /* istanbul ignore file -- @preserve */
 
-import { fsExists } from '@nocobase/utils';
-import fs from 'fs';
+import fs from 'fs-extra';
 import { resolve } from 'path';
 import Application from '../application';
 import { ApplicationNotInstall } from '../errors/application-not-install';
@@ -23,12 +22,16 @@ export default (app: Application) => {
     .option('--quickstart')
     .action(async (...cliArgs) => {
       const [options] = cliArgs;
-      const file = resolve(process.cwd(), 'storage/app-upgrading');
-      const upgrading = await fsExists(file);
+      const file = resolve(process.cwd(), 'storage/.upgrading');
+      const upgrading = await fs.exists(file);
       if (upgrading) {
-        await app.upgrade();
+        if (!process.env.VITEST) {
+          if (await app.isInstalled()) {
+            await app.upgrade();
+          }
+        }
         try {
-          await fs.promises.rm(file);
+          await fs.rm(file, { recursive: true, force: true });
         } catch (error) {
           // skip
         }

@@ -7,7 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export { SyncSource } from './sync-source';
-export { ExternalAPIError, ErrorCodes } from './error';
-export * from './user-data-resource-manager';
-export { default } from './plugin';
+import mathjs from '../mathjs';
+
+describe('evaluators > mathjs', () => {
+  it('matrix type should be to array', () => {
+    expect(mathjs('range(1, 3, 1)')).toEqual([1, 2, 3]);
+  });
+});

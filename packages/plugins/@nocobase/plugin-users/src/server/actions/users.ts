@@ -48,7 +48,7 @@ export const listExcludeRole = async (ctx: Context, next: Next) => {
   const [rows, count] = await repo.findAndCount({
     context: ctx,
     offset: (page - 1) * pageSize,
-    limit: pageSize,
+    limit: +pageSize,
     filter,
   });
   ctx.body = {

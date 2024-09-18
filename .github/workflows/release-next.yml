@@ -119,7 +119,7 @@ jobs:
         run: |
           git reset --hard
           npm config set //pkg.nocobase.com/:_authToken=${{ env.PKG_NOCOBASE_TOKEN }}
-          # yarn release:force --no-verify-access --no-git-reset --registry https://pkg.nocobase.com --dist-tag=next
+          yarn release:force --no-verify-access --no-git-reset --registry https://pkg.nocobase.com --dist-tag=next
       - name: publish pkg-src.nocobase.com
         run: |
           git reset --hard
