@@ -7,25 +7,36 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { useForm } from '@formily/react';
+import { useFieldSchema, useForm } from '@formily/react';
 import React, { useMemo } from 'react';
 import { SchemaComponent, useActionContext, useDesignable, useRecord } from '../..';
 import { SchemaInitializer } from '../../application/schema-initializer/SchemaInitializer';
 import { useGetAriaLabelOfSchemaInitializer } from '../hooks/useGetAriaLabelOfSchemaInitializer';
+import { useOpenModeContext } from '../../modules/popup/OpenModeProvider';
+import { useCollection } from '../../data-source';
 
 const TabPaneInitializers = (props?: any) => {
   const { designable, insertBeforeEnd } = useDesignable();
   const { isCreate, isBulkEdit, options } = props;
   const { gridInitializer } = options;
   const { getAriaLabel } = useGetAriaLabelOfSchemaInitializer();
+  const { isMobile } = useOpenModeContext() || {};
   const record = useRecord();
+  const collection = useCollection();
 
   const useSubmitAction = () => {
     const form = useForm();
     const ctx = useActionContext();
     let initializer = gridInitializer;
+    if (!collection) {
+      initializer = 'page:addBlock';
+      if (isMobile) {
+        initializer = 'mobile:addBlock';
+      }
+    }
     if (!initializer) {
       initializer = 'popup:common:addBlock';
+
       if (isCreate || !record) {
         initializer = 'popup:addNew:addBlock';
       } else if (isBulkEdit) {
