@@ -19,7 +19,7 @@ import {
 } from '@nocobase/client';
 import { css, cx } from '@emotion/css';
 import { Space, List, Avatar } from 'antd';
-import React, { createContext } from 'react';
+import React, { createContext, useState, useEffect } from 'react';
 import { WorkbenchLayout } from './workbenchBlockSettings';
 
 const ConfigureActionsButton = observer(
@@ -35,11 +35,41 @@ const InternalIcons = () => {
   const fieldSchema = useFieldSchema();
   const { designable } = useDesignable();
   const { layout = WorkbenchLayout.Grid } = fieldSchema.parent['x-component-props'] || {};
+  const [gap, setGap] = useState(8); // 初始 gap 值
+
+  useEffect(() => {
+    const calculateGap = () => {
+      const container = document.getElementsByClassName('mobile-page-content')[0] as any;
+      if (container) {
+        const containerWidth = container.offsetWidth - 48;
+        const itemWidth = 100; // 每个 item 的宽度
+        const itemsPerRow = Math.floor(containerWidth / itemWidth); // 每行能容纳的 item 数
+        // 计算实际需要的 gap 值
+        const totalItemWidth = itemsPerRow * itemWidth;
+        const totalAvailableWidth = containerWidth;
+        const totalGapsWidth = totalAvailableWidth - totalItemWidth;
+
+        if (totalGapsWidth > 0) {
+          setGap(totalGapsWidth / (itemsPerRow - 1));
+        } else {
+          setGap(0); // 如果没有足够的空间，则设置 gap 为 0
+        }
+      }
+    };
+
+    window.addEventListener('resize', calculateGap);
+    calculateGap(); // 初始化时计算 gap
+
+    return () => {
+      window.removeEventListener('resize', calculateGap);
+    };
+  }, [Object.keys(fieldSchema?.properties || {}).length]);
+  console.log(gap);
   return (
     <div style={{ marginBottom: designable ? '1rem' : 0 }}>
       <DndContext>
         {layout === WorkbenchLayout.Grid ? (
-          <Space wrap size={13}>
+          <Space wrap size={gap}>
             {fieldSchema.mapProperties((s, key) => (
               <RecursionField name={key} schema={s} key={key} />
             ))}
