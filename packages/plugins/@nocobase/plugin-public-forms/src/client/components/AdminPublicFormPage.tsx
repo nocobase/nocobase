@@ -18,8 +18,9 @@ import {
   SchemaComponent,
   useGlobalTheme,
   FormItem,
+  Checkbox,
 } from '@nocobase/client';
-import { Breadcrumb, Button, Dropdown, Space, Spin, Switch, Input, message, Checkbox, Popover, QRCode } from 'antd';
+import { Breadcrumb, Button, Dropdown, Space, Spin, Switch, Input, message, Popover, QRCode } from 'antd';
 import React, { useState } from 'react';
 import { useParams } from 'react-router';
 import { Link } from 'react-router-dom';
@@ -68,6 +69,7 @@ export function AdminPublicFormPage() {
   };
 
   const handleSetPassword = async () => {
+    console.log(others);
     const values = await FormDialog(
       t('Password') as any,
       () => {
