@@ -36,6 +36,7 @@ import { NAMESPACE, useUserDataSyncSourceTranslation } from './locale';
 import { Schema, useForm } from '@formily/react';
 import { taskCollection } from './schemas/user-data-sync-sources';
 import { createForm } from '@formily/core';
+import { ReadPretty } from '@nocobase/client';
 
 const useEditFormProps = () => {
   const recordData = useCollectionRecordData();
@@ -54,12 +55,10 @@ const useEditFormProps = () => {
 
 const useSubmitActionProps = () => {
   const { setVisible } = useActionContext();
-  const { message } = AntdApp.useApp();
   const form = useForm();
   const resource = useDataBlockResource();
   const { runAsync } = useDataBlockRequest();
   const collection = useCollection();
-
   return {
     type: 'primary',
     async onClick() {
@@ -74,29 +73,27 @@ const useSubmitActionProps = () => {
         await resource.create({ values });
       }
       await runAsync();
-      message.success('Saved successfully');
       setVisible(false);
     },
   };
 };
 
 function useDeleteActionProps(): ActionProps {
-  const { message } = AntdApp.useApp();
   const record = useCollectionRecordData();
   const resource = useDataBlockResource();
   const collection = useCollection();
   const { runAsync } = useDataBlockRequest();
+  const { t } = useUserDataSyncSourceTranslation();
   return {
     confirm: {
-      title: 'Delete',
-      content: 'Are you sure you want to delete it?',
+      title: t('Delete', { ns: NAMESPACE }),
+      content: t('Are you sure you want to delete it?', { ns: NAMESPACE }),
     },
     async onClick() {
       await resource.destroy({
         filterByTk: record[collection.filterTargetKey],
       });
       await runAsync();
-      message.success('Deleted!');
     },
   };
 }
@@ -106,11 +103,16 @@ function useSyncActionProps(): ActionProps {
   const record = useCollectionRecordData();
   const api = useAPIClient();
   const { runAsync } = useDataBlockRequest();
+  const { t } = useUserDataSyncSourceTranslation();
   return {
     async onClick() {
       await api.resource('userData').pull({ name: record['name'] });
       await runAsync();
-      message.success('Synced!');
+      message.success(
+        t("The synchronization has started. You can click on 'Tasks' to view the synchronization status.", {
+          ns: NAMESPACE,
+        }),
+      );
     },
   };
 }
@@ -148,15 +150,14 @@ const useTasksTableBlockProps = () => {
 function useRetryActionProps(): ActionProps {
   const { message } = AntdApp.useApp();
   const record = useCollectionRecordData();
-  const resource = useDataBlockResource();
   const collection = useCollection();
   const api = useAPIClient();
   const { runAsync } = useDataBlockRequest();
+  const { t } = useUserDataSyncSourceTranslation();
   return {
     async onClick() {
       await api.resource('userData').retry({ id: record[collection.filterTargetKey], sourceId: record['sourceId'] });
       await runAsync();
-      message.success('Successfully');
     },
   };
 }
@@ -218,6 +219,12 @@ const AddNew = () => {
   );
 };
 
+const Message = () => {
+  const { t } = useUserDataSyncSourceTranslation();
+  const record = useCollectionRecordData();
+  return <ReadPretty.Input value={t(record['message'])} ellipsis={true} />;
+};
+
 const Tasks = () => {
   const { t } = useUserDataSyncSourceTranslation();
   const [visible, setVisible] = useState(false);
@@ -232,7 +239,11 @@ const Tasks = () => {
         {t('Tasks')}
       </Button>
       <ExtendCollectionsProvider collections={[taskCollection]}>
-        <SchemaComponent scope={{ useRetryActionProps, useTasksTableBlockProps }} schema={tasksTableBlockSchema} />
+        <SchemaComponent
+          scope={{ useRetryActionProps, useTasksTableBlockProps, t }}
+          components={{ Message }}
+          schema={tasksTableBlockSchema}
+        />
       </ExtendCollectionsProvider>
     </ActionContextProvider>
   );

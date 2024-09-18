@@ -7,10 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { MockServer, mockServer } from '@nocobase/test';
+import { vi } from 'vitest';
 import Plugin from '../plugin';
 import { PluginManager } from '../plugin-manager';
-import { vi } from 'vitest';
-import { MockServer, mockServer } from '@nocobase/test';
 
 describe('pm', () => {
   let app: MockServer;
@@ -216,7 +216,40 @@ describe('pm', () => {
     PluginManager.resolvePlugin = resolvePlugin;
   });
 
-  test('enable12', async () => {
+  test('afterAdd + beforeLoad + load', async () => {
+    const resolvePlugin = PluginManager.resolvePlugin;
+    PluginManager.resolvePlugin = async (pluginName) => {
+      return Plugin1;
+    };
+
+    const loadFn = vi.fn();
+
+    class Plugin1 extends Plugin {
+      async afterAdd() {
+        loadFn();
+      }
+      async beforeLoad() {
+        loadFn();
+      }
+      async load() {
+        loadFn();
+      }
+    }
+    app = mockServer();
+    await app.cleanDb();
+    await app.load();
+    await app.install();
+    await app.pm.enable('Plugin1');
+    expect(loadFn).toBeCalledTimes(6);
+    await app.pm.enable('Plugin1');
+    expect(loadFn).toBeCalledTimes(6);
+    await app.pm.disable('Plugin1');
+    await app.pm.enable('Plugin1');
+    expect(loadFn).toBeCalledTimes(12);
+    PluginManager.resolvePlugin = resolvePlugin;
+  });
+
+  test('beforeEnable + install + afterEnable', async () => {
     const resolvePlugin = PluginManager.resolvePlugin;
     PluginManager.resolvePlugin = async (pluginName) => {
       return Plugin1;
@@ -239,26 +272,72 @@ describe('pm', () => {
     await app.cleanDb();
     await app.load();
     await app.install();
-    await app.pm.repository.create({
-      values: {
-        name: 'Plugin1',
-      },
-    });
-    await app.reload();
     await app.pm.enable('Plugin1');
+    expect(loadFn).toBeCalledTimes(3);
     expect(app.pm.get('Plugin1').enabled).toBeTruthy();
     expect(app.pm.get('Plugin1').installed).toBeTruthy();
-    expect(loadFn).toBeCalled();
-    expect(loadFn).toBeCalledTimes(3);
     await app.pm.enable('Plugin1');
     expect(loadFn).toBeCalledTimes(3);
+    expect(app.pm.get('Plugin1').enabled).toBeTruthy();
+    expect(app.pm.get('Plugin1').installed).toBeTruthy();
     await app.pm.disable('Plugin1');
     await app.pm.enable('Plugin1');
     expect(loadFn).toBeCalledTimes(5);
     PluginManager.resolvePlugin = resolvePlugin;
   });
-  test('enable11', async () => {
+
+  test('afterAdd + beforeLoad + load', async () => {
+    const resolvePlugin = PluginManager.resolvePlugin;
+
+    class Plugin1 extends Plugin {
+      async afterAdd() {
+        loadFn();
+      }
+      async beforeLoad() {
+        loadFn();
+      }
+      async load() {
+        loadFn();
+      }
+    }
+
+    class Plugin2 extends Plugin {
+      async afterAdd() {
+        loadFn();
+      }
+      async beforeLoad() {
+        loadFn();
+      }
+      async load() {
+        loadFn();
+      }
+    }
+    PluginManager.resolvePlugin = async (pluginName: string) => {
+      return {
+        Plugin1,
+        Plugin2,
+      }[pluginName];
+    };
+
     const loadFn = vi.fn();
+
+    app = mockServer();
+    await app.cleanDb();
+    await app.load();
+    await app.install();
+    await app.pm.enable(['Plugin1', 'Plugin2']);
+    expect(loadFn).toBeCalledTimes(12);
+    await app.pm.enable('Plugin1');
+    expect(loadFn).toBeCalledTimes(12);
+    await app.pm.disable('Plugin1');
+    await app.pm.enable('Plugin1');
+    expect(loadFn).toBeCalledTimes(24);
+    PluginManager.resolvePlugin = resolvePlugin;
+  });
+
+  test('beforeEnable + install + afterEnable', async () => {
+    const resolvePlugin = PluginManager.resolvePlugin;
+
     class Plugin1 extends Plugin {
       async beforeEnable() {
         loadFn();
@@ -270,6 +349,7 @@ describe('pm', () => {
         loadFn();
       }
     }
+
     class Plugin2 extends Plugin {
       async beforeEnable() {
         loadFn();
@@ -281,39 +361,33 @@ describe('pm', () => {
         loadFn();
       }
     }
-    const resolvePlugin = PluginManager.resolvePlugin;
     PluginManager.resolvePlugin = async (pluginName: string) => {
       return {
         Plugin1,
         Plugin2,
       }[pluginName];
     };
+
+    const loadFn = vi.fn();
+
     app = mockServer();
     await app.cleanDb();
     await app.load();
     await app.install();
-    await app.pm.repository.create({
-      values: [
-        {
-          name: 'Plugin1',
-        },
-        {
-          name: 'Plugin2',
-        },
-      ],
-    });
-    await app.reload();
     await app.pm.enable(['Plugin1', 'Plugin2']);
+    expect(loadFn).toBeCalledTimes(6);
     expect(app.pm.get('Plugin1').enabled).toBeTruthy();
     expect(app.pm.get('Plugin1').installed).toBeTruthy();
-    expect(app.pm.get('Plugin2').enabled).toBeTruthy();
-    expect(app.pm.get('Plugin2').installed).toBeTruthy();
-    expect(loadFn).toBeCalled();
-    expect(loadFn).toBeCalledTimes(6);
     await app.pm.enable(['Plugin1', 'Plugin2']);
     expect(loadFn).toBeCalledTimes(6);
+    expect(app.pm.get('Plugin1').enabled).toBeTruthy();
+    expect(app.pm.get('Plugin1').installed).toBeTruthy();
+    await app.pm.disable(['Plugin1', 'Plugin2']);
+    await app.pm.enable(['Plugin1', 'Plugin2']);
+    expect(loadFn).toBeCalledTimes(10);
     PluginManager.resolvePlugin = resolvePlugin;
   });
+
   test('disable', async () => {
     const resolvePlugin = PluginManager.resolvePlugin;
     PluginManager.resolvePlugin = async (pluginName) => {
@@ -338,10 +412,9 @@ describe('pm', () => {
       },
     });
     await app.reload();
-    expect(app.pm.get('Plugin1').enabled).toBeFalsy();
-    expect(app.pm.get('Plugin1').installed).toBeFalsy();
-    await app.pm.disable('Plugin1');
+    expect(app.pm.get('Plugin1')).toBeUndefined();
     expect(loadFn).not.toBeCalled();
+    await expect(() => app.pm.disable('Plugin1')).rejects.toThrow('Plugin1 plugin does not exist');
     PluginManager.resolvePlugin = resolvePlugin;
   });
   test('disable', async () => {
@@ -375,8 +448,13 @@ describe('pm', () => {
     await app.pm.disable('Plugin1');
     expect(loadFn).toBeCalled();
     expect(loadFn).toBeCalledTimes(2);
-    expect(app.pm.get('Plugin1').enabled).toBeFalsy();
-    expect(app.pm.get('Plugin1').installed).toBeTruthy();
+    const instance = await app.pm.repository.findOne({
+      filter: {
+        name: 'Plugin1',
+      },
+    });
+    expect(instance.enabled).toBeFalsy();
+    expect(instance.installed).toBeTruthy();
     PluginManager.resolvePlugin = resolvePlugin;
   });
   test('install', async () => {
@@ -464,22 +542,22 @@ describe('pm', () => {
     await app.cleanDb();
     await app.load();
     await app.install();
-    const plugin = await app.pm.repository.create({
+    await app.pm.repository.create({
       values: {
         name: 'Plugin1',
       },
     });
     await app.reload();
-    expect(app.pm.get('Plugin1')['prop']).toBeUndefined();
+    expect(app.pm.has('Plugin1')).toBeFalsy();
     expect(result).toEqual([]);
     await app.pm.enable('Plugin1');
     expect(app.pm.get('Plugin1')['prop']).toBe('a');
     // console.log(hooks.join('/'));
-    expect(result).toEqual([false, true, true]);
+    expect(result).toEqual([true, true, true]);
     await app.pm.disable('Plugin1');
     // console.log(hooks.join('/'));
-    expect(app.pm.get('Plugin1')['prop']).toBeUndefined();
-    expect(result).toEqual([false, true, true, true, false]);
+    expect(app.pm.has('Plugin1')).toBeFalsy();
+    expect(result).toEqual([true, true, true, true, true]);
     // console.log(hooks.join('/'));
     PluginManager.resolvePlugin = resolvePlugin;
   });
