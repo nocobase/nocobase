@@ -31,6 +31,22 @@ export const editActionSchema = {
               'x-decorator': 'FormItem',
               'x-component': 'CollectionField',
             },
+            collection: {
+              type: 'string',
+              'x-decorator': 'FormItem',
+              'x-component': 'CollectionField',
+              'x-component-props': {
+                disabled: true,
+              },
+            },
+            type: {
+              type: 'string',
+              'x-decorator': 'FormItem',
+              title: 'Type',
+              'x-component': 'Radio.Group',
+              default: 'form',
+              enum: '{{ formTypes }}',
+            },
             description: {
               type: 'string',
               'x-decorator': 'FormItem',
@@ -40,6 +56,7 @@ export const editActionSchema = {
               type: 'string',
               'x-decorator': 'FormItem',
               'x-component': 'CollectionField',
+              default: false,
             },
             password: {
               type: 'string',
@@ -58,6 +75,7 @@ export const editActionSchema = {
               type: 'string',
               'x-decorator': 'FormItem',
               'x-component': 'CollectionField',
+              default: true,
             },
             footer: {
               type: 'void',
