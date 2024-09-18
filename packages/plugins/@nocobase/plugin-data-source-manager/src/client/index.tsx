@@ -34,17 +34,6 @@ export class PluginDataSourceManagerClient extends Plugin {
   }
 
   async load() {
-    this.registerPermissionTab({
-      type: 'void',
-      title: '{{t("Custom permissions")}}',
-      'x-component': 'Tabs.TabPane',
-      'x-component-props': {},
-      properties: {
-        custom: {
-          'x-content': 'Hello',
-        },
-      },
-    });
     // register a configuration item in the Users & Permissions management page
     this.app.pm.get(PluginACLClient).settingsUI.addPermissionsTab(({ t, TabLayout, role }) => ({
       key: 'dataSource',
