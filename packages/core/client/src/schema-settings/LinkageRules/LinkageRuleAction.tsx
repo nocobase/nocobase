@@ -185,9 +185,45 @@ export const FormButtonLinkageRuleAction = observer(
   { displayName: 'FormButtonLinkageRuleAction' },
 );
 
+const colorSchema = {
+  type: 'string',
+  'x-decorator': 'FormItem',
+  'x-component': 'ColorPicker',
+  'x-component-props': {
+    defaultValue: '',
+  },
+};
+const textAlignSchema = {
+  type: 'string',
+  'x-decorator': 'FormItem',
+  'x-component': 'Select',
+  'x-component-props': {
+    defaultValue: '',
+  },
+  enum: [
+    {
+      label: 'left',
+      value: 'left',
+    },
+    {
+      label: 'right',
+      value: 'right',
+    },
+    {
+      label: 'center',
+      value: 'center',
+    },
+  ],
+};
+
+const schemas = new Map();
+schemas.set(ActionType.Color, colorSchema);
+schemas.set(ActionType.BackgroundColor, colorSchema);
+schemas.set(ActionType.TextAlign, textAlignSchema);
+
 export const FormStyleLinkageRuleAction = observer(
   (props: any) => {
-    const { value, options, collectionName } = props;
+    const { options, collectionName } = props;
     const { t } = useTranslation();
     const compile = useCompile();
     const remove = useContext(RemoveActionContext);
@@ -201,40 +237,6 @@ export const FormStyleLinkageRuleAction = observer(
         ]),
       [compile, t],
     );
-    const colorSchema = {
-      type: 'string',
-      'x-decorator': 'FormItem',
-      'x-component': 'ColorPicker',
-      'x-component-props': {
-        defaultValue: '',
-      },
-    };
-    const textAlignSchema = {
-      type: 'string',
-      'x-decorator': 'FormItem',
-      'x-component': 'Select',
-      'x-component-props': {
-        defaultValue: '',
-      },
-      enum: [
-        {
-          label: 'left',
-          value: 'left',
-        },
-        {
-          label: 'right',
-          value: 'right',
-        },
-        {
-          label: 'center',
-          value: 'center',
-        },
-      ],
-    };
-    const schemas = new Map();
-    schemas.set(ActionType.Color, colorSchema);
-    schemas.set(ActionType.BackgroundColor, colorSchema);
-    schemas.set(ActionType.TextAlign, textAlignSchema);
 
     const onChange = useCallback(
       (value) => {
