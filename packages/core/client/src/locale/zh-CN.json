@@ -994,5 +994,7 @@
   "Perform the Submit": "执行提交",
   "Are you sure you want to perform the Submit action?": "你确定执行提交操作吗？",
   "Perform the Trigger workflow": "执行触发工作流",
-  "Are you sure you want to perform the Trigger workflow action?": "你确定执行触发工作流吗？"
+  "Are you sure you want to perform the Trigger workflow action?": "你确定执行触发工作流吗？",
+  "Picker": "选择器",
+  "Quarter":"季度"
 }
