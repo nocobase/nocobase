@@ -13,11 +13,17 @@ import { useTranslation } from 'react-i18next';
 export const useGanttTranslation = () => {
   return useTranslation('gantt');
 };
-export const useOptions = (type = 'string') => {
+export const useOptions = (type: string | string[] = 'string') => {
   const compile = useCompile();
   const { fields } = useCollection_deprecated();
   const options = fields
-    ?.filter((field) => field.type === type)
+    ?.filter((field) => {
+      if (typeof type === 'string') {
+        return field.type === type;
+      } else {
+        return type.includes(field.type);
+      }
+    })
     ?.map((field) => {
       return {
         value: field.name,

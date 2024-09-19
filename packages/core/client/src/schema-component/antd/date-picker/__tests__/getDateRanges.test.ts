@@ -140,6 +140,245 @@ describe('getDateRanges', () => {
   });
 });
 
+describe('getDateRanges: fieldOperator is $dateBetween', () => {
+  const dateRanges = getDateRanges();
+
+  it('today', () => {
+    const [start, end] = dateRanges.today({ fieldOperator: '$dateBetween' });
+    expect(start.toISOString()).toBe(dayjs().startOf('day').toISOString());
+    expect(end.toISOString()).toBe(dayjs().endOf('day').toISOString());
+  });
+
+  test('yesterday', () => {
+    const [start, end] = dateRanges.yesterday({ fieldOperator: '$dateBetween' });
+    expect(dayjs(start).isSame(dayjs().subtract(1, 'day'), 'day')).toBe(true);
+    expect(dayjs(end).isSame(dayjs().subtract(1, 'day'), 'day')).toBe(true);
+  });
+
+  test('tomorrow', () => {
+    const [start, end] = dateRanges.tomorrow({ fieldOperator: '$dateBetween' });
+    expect(dayjs(start).isSame(dayjs().add(1, 'day'), 'day')).toBe(true);
+    expect(dayjs(end).isSame(dayjs().add(1, 'day'), 'day')).toBe(true);
+  });
+
+  it('lastWeek', () => {
+    const [start, end] = dateRanges.lastWeek({ fieldOperator: '$dateBetween' });
+    expect(start.toISOString()).toBe(dayjs().add(-1, 'week').startOf('isoWeek').toISOString());
+    expect(end.toISOString()).toBe(dayjs().add(-1, 'week').endOf('isoWeek').toISOString());
+  });
+
+  it('thisWeek', () => {
+    const [start, end] = dateRanges.thisWeek({ fieldOperator: '$dateBetween' });
+    expect(start.toISOString()).toBe(dayjs().startOf('isoWeek').toISOString());
+    expect(end.toISOString()).toBe(dayjs().endOf('isoWeek').toISOString());
+  });
+
+  it('nextWeek', () => {
+    const [start, end] = dateRanges.nextWeek({ fieldOperator: '$dateBetween' });
+    expect(start.toISOString()).toBe(dayjs().add(1, 'week').startOf('isoWeek').toISOString());
+    expect(end.toISOString()).toBe(dayjs().add(1, 'week').endOf('isoWeek').toISOString());
+  });
+
+  it('lastMonth', () => {
+    const [start, end] = dateRanges.lastMonth({ fieldOperator: '$dateBetween' });
+    expect(start.toISOString()).toBe(dayjs().add(-1, 'month').startOf('month').toISOString());
+    expect(end.toISOString()).toBe(dayjs().add(-1, 'month').endOf('month').toISOString());
+  });
+
+  it('thisMonth', () => {
+    const [start, end] = dateRanges.thisMonth({ fieldOperator: '$dateBetween' });
+    expect(start.toISOString()).toBe(dayjs().startOf('month').toISOString());
+    expect(end.toISOString()).toBe(dayjs().endOf('month').toISOString());
+  });
+
+  it('nextMonth', () => {
+    const [start, end] = dateRanges.nextMonth({ fieldOperator: '$dateBetween' });
+    expect(start.toISOString()).toBe(dayjs().add(1, 'month').startOf('month').toISOString());
+    expect(end.toISOString()).toBe(dayjs().add(1, 'month').endOf('month').toISOString());
+  });
+
+  it('lastQuarter', () => {
+    const [start, end] = dateRanges.lastQuarter({ fieldOperator: '$dateBetween' });
+    expect(start.toISOString()).toBe(dayjs().add(-1, 'quarter').startOf('quarter').toISOString());
+    expect(end.toISOString()).toBe(dayjs().add(-1, 'quarter').endOf('quarter').toISOString());
+  });
+
+  it('thisQuarter', () => {
+    const [start, end] = dateRanges.thisQuarter({ fieldOperator: '$dateBetween' });
+    expect(start.toISOString()).toBe(dayjs().startOf('quarter').toISOString());
+    expect(end.toISOString()).toBe(dayjs().endOf('quarter').toISOString());
+  });
+
+  it('nextQuarter', () => {
+    const [start, end] = dateRanges.nextQuarter({ fieldOperator: '$dateBetween' });
+    expect(start.toISOString()).toBe(dayjs().add(1, 'quarter').startOf('quarter').toISOString());
+    expect(end.toISOString()).toBe(dayjs().add(1, 'quarter').endOf('quarter').toISOString());
+  });
+
+  it('lastYear', () => {
+    const [start, end] = dateRanges.lastYear({ fieldOperator: '$dateBetween' });
+    expect(start.toISOString()).toBe(dayjs().add(-1, 'year').startOf('year').toISOString());
+    expect(end.toISOString()).toBe(dayjs().add(-1, 'year').endOf('year').toISOString());
+  });
+
+  it('thisYear', () => {
+    const [start, end] = dateRanges.thisYear({ fieldOperator: '$dateBetween' });
+    expect(start.toISOString()).toBe(dayjs().startOf('year').toISOString());
+    expect(end.toISOString()).toBe(dayjs().endOf('year').toISOString());
+  });
+
+  it('nextYear', () => {
+    const [start, end] = dateRanges.nextYear({ fieldOperator: '$dateBetween' });
+    expect(start.toISOString()).toBe(dayjs().add(1, 'year').startOf('year').toISOString());
+    expect(end.toISOString()).toBe(dayjs().add(1, 'year').endOf('year').toISOString());
+  });
+
+  it('last7Days', () => {
+    const [start, end] = dateRanges.last7Days({ fieldOperator: '$dateBetween' });
+    expect(start.toISOString()).toBe(dayjs().add(-6, 'days').startOf('days').toISOString());
+    expect(end.toISOString()).toBe(dayjs().endOf('days').toISOString());
+  });
+
+  it('next7Days', () => {
+    const [start, end] = dateRanges.next7Days({ fieldOperator: '$dateBetween' });
+    expect(start.toISOString()).toBe(dayjs().add(1, 'day').startOf('day').toISOString());
+    expect(end.toISOString()).toBe(dayjs().add(7, 'days').endOf('days').toISOString());
+  });
+
+  it('last30Days', () => {
+    const [start, end] = dateRanges.last30Days({ fieldOperator: '$dateBetween' });
+    expect(start.toISOString()).toBe(dayjs().add(-29, 'days').startOf('days').toISOString());
+    expect(end.toISOString()).toBe(dayjs().endOf('days').toISOString());
+  });
+
+  it('next30Days', () => {
+    const [start, end] = dateRanges.next30Days({ fieldOperator: '$dateBetween' });
+    expect(start.toISOString()).toBe(dayjs().add(1, 'day').startOf('day').toISOString());
+    expect(end.toISOString()).toBe(dayjs().add(30, 'days').endOf('days').toISOString());
+  });
+
+  it('last90Days', () => {
+    const [start, end] = dateRanges.last90Days({ fieldOperator: '$dateBetween' });
+    expect(start.toISOString()).toBe(dayjs().add(-89, 'days').startOf('days').toISOString());
+    expect(end.toISOString()).toBe(dayjs().endOf('days').toISOString());
+  });
+
+  it('next90Days', () => {
+    const [start, end] = dateRanges.next90Days({ fieldOperator: '$dateBetween' });
+    expect(start.toISOString()).toBe(dayjs().add(1, 'day').startOf('day').toISOString());
+    expect(end.toISOString()).toBe(dayjs().add(90, 'days').endOf('days').toISOString());
+  });
+});
+
+describe('getDateRanges: fieldOperator is not $dateBetween', () => {
+  const dateRanges = getDateRanges();
+
+  it('today', () => {
+    const start = dateRanges.today({ fieldOperator: '$dateOn' });
+    expect(start.toISOString()).toBe(dayjs().startOf('day').toISOString());
+  });
+
+  test('yesterday', () => {
+    const start = dateRanges.yesterday({ fieldOperator: '$dateOn' });
+    expect(dayjs(start).isSame(dayjs().subtract(1, 'day'), 'day')).toBe(true);
+  });
+
+  test('tomorrow', () => {
+    const start = dateRanges.tomorrow({ fieldOperator: '$dateOn' });
+    expect(dayjs(start).isSame(dayjs().add(1, 'day'), 'day')).toBe(true);
+  });
+
+  it('lastWeek', () => {
+    const start = dateRanges.lastWeek({ fieldOperator: '$dateOn' });
+    expect(start.toISOString()).toBe(dayjs().add(-1, 'week').startOf('isoWeek').toISOString());
+  });
+
+  it('thisWeek', () => {
+    const start = dateRanges.thisWeek({ fieldOperator: '$dateOn' });
+    expect(start.toISOString()).toBe(dayjs().startOf('isoWeek').toISOString());
+  });
+
+  it('nextWeek', () => {
+    const start = dateRanges.nextWeek({ fieldOperator: '$dateOn' });
+    expect(start.toISOString()).toBe(dayjs().add(1, 'week').startOf('isoWeek').toISOString());
+  });
+
+  it('lastMonth', () => {
+    const start = dateRanges.lastMonth({ fieldOperator: '$dateOn' });
+    expect(start.toISOString()).toBe(dayjs().add(-1, 'month').startOf('month').toISOString());
+  });
+
+  it('thisMonth', () => {
+    const start = dateRanges.thisMonth({ fieldOperator: '$dateOn' });
+    expect(start.toISOString()).toBe(dayjs().startOf('month').toISOString());
+  });
+
+  it('nextMonth', () => {
+    const start = dateRanges.nextMonth({ fieldOperator: '$dateOn' });
+    expect(start.toISOString()).toBe(dayjs().add(1, 'month').startOf('month').toISOString());
+  });
+
+  it('lastQuarter', () => {
+    const start = dateRanges.lastQuarter({ fieldOperator: '$dateOn' });
+    expect(start.toISOString()).toBe(dayjs().add(-1, 'quarter').startOf('quarter').toISOString());
+  });
+
+  it('thisQuarter', () => {
+    const start = dateRanges.thisQuarter({ fieldOperator: '$dateOn' });
+    expect(start.toISOString()).toBe(dayjs().startOf('quarter').toISOString());
+  });
+
+  it('nextQuarter', () => {
+    const start = dateRanges.nextQuarter({ fieldOperator: '$dateOn' });
+    expect(start.toISOString()).toBe(dayjs().add(1, 'quarter').startOf('quarter').toISOString());
+  });
+
+  it('lastYear', () => {
+    const start = dateRanges.lastYear({ fieldOperator: '$dateOn' });
+    expect(start.toISOString()).toBe(dayjs().add(-1, 'year').startOf('year').toISOString());
+  });
+
+  it('thisYear', () => {
+    const start = dateRanges.thisYear({ fieldOperator: '$dateOn' });
+    expect(start.toISOString()).toBe(dayjs().startOf('year').toISOString());
+  });
+
+  it('nextYear', () => {
+    const start = dateRanges.nextYear({ fieldOperator: '$dateOn' });
+    expect(start.toISOString()).toBe(dayjs().add(1, 'year').startOf('year').toISOString());
+  });
+
+  it('last7Days', () => {
+    const start = dateRanges.last7Days({ fieldOperator: '$dateOn' });
+    expect(start.toISOString()).toBe(dayjs().add(-6, 'days').startOf('days').toISOString());
+  });
+
+  it('next7Days', () => {
+    const start = dateRanges.next7Days({ fieldOperator: '$dateOn' });
+    expect(start.toISOString()).toBe(dayjs().add(1, 'day').startOf('day').toISOString());
+  });
+
+  it('last30Days', () => {
+    const start = dateRanges.last30Days({ fieldOperator: '$dateOn' });
+    expect(start.toISOString()).toBe(dayjs().add(-29, 'days').startOf('days').toISOString());
+  });
+
+  it('next30Days', () => {
+    const start = dateRanges.next30Days({ fieldOperator: '$dateOn' });
+    expect(start.toISOString()).toBe(dayjs().add(1, 'day').startOf('day').toISOString());
+  });
+
+  it('last90Days', () => {
+    const start = dateRanges.last90Days({ fieldOperator: '$dateOn' });
+    expect(start.toISOString()).toBe(dayjs().add(-89, 'days').startOf('days').toISOString());
+  });
+
+  it('next90Days', () => {
+    const start = dateRanges.next90Days({ fieldOperator: '$dateOn' });
+    expect(start.toISOString()).toBe(dayjs().add(1, 'day').startOf('day').toISOString());
+  });
+});
+
 describe('getDateRanges: shouldBeString is true and utc is false', () => {
   const dateRanges = getDateRanges({ shouldBeString: true, utc: false });
 

@@ -255,12 +255,12 @@ describe.runIf(isPg())('collection sync', () => {
       });
     };
 
-    expect((await getSubAppMapRecord(sub1)).get('enabled')).toBeFalsy();
+    expect(await getSubAppMapRecord(sub1)).toBeNull();
     await mainApp.pm.enable(['map']);
 
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
-    expect((await getSubAppMapRecord(sub1)).get('enabled')).toBeTruthy();
+    expect((await getSubAppMapRecord(sub1)).enabled).toBeTruthy();
     // create new app sub2
     await mainApp.db.getRepository('applications').create({
       values: {

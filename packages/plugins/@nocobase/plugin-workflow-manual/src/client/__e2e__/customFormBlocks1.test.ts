@@ -565,7 +565,7 @@ test.describe('field data entry', () => {
     await page
       .locator(`button[aria-label^="schema-initializer-Grid-workflowManual:customForm:configureFields-${randomValue}"]`)
       .hover();
-    await page.getByRole('menuitem', { name: 'Datetime', exact: true }).click();
+    await page.getByRole('menuitem', { name: 'Datetime(with time zone)' }).click();
     await page
       .getByLabel(`block-item-Input-${randomValue}-Field display name`)
       .getByRole('textbox')

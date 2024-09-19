@@ -7,14 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { SchemaSettings } from '@nocobase/client';
+import { DateField } from './date-field';
+import { BaseColumnFieldOptions } from './field';
 
-export const workbenchBlockSettings = new SchemaSettings({
-  name: 'blockSettings:workbench',
-  items: [
-    {
-      type: 'remove',
-      name: 'remove',
-    },
-  ],
-});
+export class DatetimeField extends DateField {}
+
+export interface DatetimeFieldOptions extends BaseColumnFieldOptions {
+  type: 'datetime';
+}

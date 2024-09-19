@@ -8,13 +8,15 @@
  */
 
 import Handlebars from 'handlebars';
+import { dayjs } from '@nocobase/utils/client';
+import helpers from '@budibase/handlebars-helpers';
 import _, { every, findIndex, some } from 'lodash';
 import { replaceVariableValue } from '../../../block-provider/hooks';
 import { VariableOption, VariablesContextType } from '../../../variables/types';
 import { isVariable } from '../../../variables/utils/isVariable';
 import { transformVariableValue } from '../../../variables/utils/transformVariableValue';
 import { getJsonLogic } from '../../common/utils/logic';
-
+import url from 'url';
 type VariablesCtx = {
   /** 当前登录的用户 */
   $user?: Record<string, any>;
@@ -158,19 +160,45 @@ const getVariablesData = (localVariables) => {
   });
   return data;
 };
+const allHelpers = helpers();
+
+//遍历所有 helper 并手动注册到 Handlebars
+Object.keys(allHelpers).forEach(function (helperName) {
+  Handlebars.registerHelper(helperName, allHelpers[helperName]);
+});
+// 自定义 helper 来处理对象
+Handlebars.registerHelper('json', function (context) {
+  return JSON.stringify(context);
+});
+
+//重写urlParse
+Handlebars.registerHelper('urlParse', function (str) {
+  try {
+    return JSON.stringify(url.parse(str));
+  } catch (error) {
+    return `Invalid URL: ${str}`;
+  }
+});
+
+Handlebars.registerHelper('dateFormat', (date, format, tz) => {
+  if (typeof tz === 'string') {
+    return dayjs(date).tz(tz).format(format);
+  }
+  return dayjs(date).format(format);
+});
 
 export async function getRenderContent(templateEngine, content, variables, localVariables, defaultParse) {
   if (content && templateEngine === 'handlebars') {
     try {
-      try {
-        await replaceVariableValue(content, variables, localVariables);
-      } catch (error) {
-        return null;
-      }
       const renderedContent = Handlebars.compile(content);
       // 处理渲染后的内容
       const data = getVariablesData(localVariables);
-      const html = renderedContent({ ...variables.ctxRef.current, ...data });
+      const { $nDate } = variables.ctxRef.current;
+      const variableDate = {};
+      Object.keys($nDate).map((v) => {
+        variableDate[v] = $nDate[v]();
+      });
+      const html = renderedContent({ ...variables.ctxRef.current, ...data, $nDate: variableDate });
       return await defaultParse(html);
     } catch (error) {
       console.log(error);
