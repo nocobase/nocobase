@@ -11,5 +11,5 @@ export enum COLLECTION_NAME {
   templates = 'templates',
   channels = 'notificationChannels',
   messages = 'messages',
-  logs = 'notificationLogs',
+  logs = 'notificationSendLogs',
 }
