@@ -37,8 +37,8 @@ function Button() {
   const { layout } = useContext(WorkbenchBlockContext);
   const { styles, cx } = useStyles();
   return layout === WorkbenchLayout.Grid ? (
-    <div title={fieldSchema.title} style={{ width: '90px', overflow: 'hidden' }}>
-      <Avatar style={{ backgroundColor }} size={64} icon={<Icon type={icon} />} />
+    <div title={fieldSchema.title} style={{ width: '70px', overflow: 'hidden' }}>
+      <Avatar style={{ backgroundColor }} size={54} icon={<Icon type={icon} />} />
       <div className={cx(styles.title)}>{fieldSchema.title}</div>
     </div>
   ) : (
