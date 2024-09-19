@@ -163,11 +163,9 @@ test.describe('edit form block schema settings', () => {
     await page.getByLabel('action-Action.Link-Edit record-update-general-table-').click();
     await page.getByRole('spinbutton').fill('');
     await page.getByRole('spinbutton').fill('10');
-    await expect(
-      page
-        .getByLabel('block-item-CollectionField-general-form-general.formula-formula')
-        .locator('.nb-read-pretty-input-number'),
-    ).toHaveText('11');
+    await expect(page.getByLabel('block-item-CollectionField-general-form-general.formula-formula')).toHaveText(
+      'formula:11',
+    );
     await page.getByLabel('drawer-Action.Container-general-Edit record-mask').click();
     await expect(page.getByText('Unsaved changes')).toBeVisible();
   });
