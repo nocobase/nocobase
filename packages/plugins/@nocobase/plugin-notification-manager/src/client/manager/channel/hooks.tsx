@@ -15,13 +15,16 @@ import {
   useCollectionRecordData,
   useDataBlockRequest,
   useDataBlockResource,
+  usePlugin,
 } from '@nocobase/client';
 import { uid } from '@formily/shared';
 import { App as AntdApp } from 'antd';
 import { createForm } from '@formily/core';
-import { useForm } from '@formily/react';
+import { useForm, Schema } from '@formily/react';
 import { NotificationTypeNameContext } from './context';
+import { PluginNotificationManagerClient } from '../..';
 import { useNotificationTranslation } from '../../locale';
+import { ChannelType } from './types';
 
 export const useCreateActionProps = () => {
   const { setVisible } = useActionContext();
@@ -145,4 +148,23 @@ export const useNotificationVariableOptions = () => {
 
 export const NotificationVariableProvider = ({ value, children }) => {
   return <NotificationVariableContext.Provider value={value}>{children}</NotificationVariableContext.Provider>;
+};
+
+export const useNotificationTypes = () => {
+  const { t } = useNotificationTranslation();
+  const plugin = usePlugin(PluginNotificationManagerClient);
+  const notificationTypes: Array<ChannelType> = [];
+  for (const [key, val] of plugin.manager.channelTypes.getEntities()) {
+    const title = Schema.compile(val.title, { t }) as string;
+    const type = {
+      ...val,
+      name: val.name,
+      key: val.name,
+      value: val.name,
+      title,
+      label: title,
+    };
+    notificationTypes.push(type);
+  }
+  return notificationTypes;
 };

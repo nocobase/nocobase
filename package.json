@@ -87,7 +87,7 @@
     "vitest": "^1.5.0"
   },
   "volta": {
-    "node": "18.20.4",
+    "node": "20.14.0",
     "yarn": "1.22.19"
   },
   "dependencies": {}

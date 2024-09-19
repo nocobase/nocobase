@@ -106,12 +106,12 @@ export const channelsSchema: ISchema = {
         rowKey: 'name',
       },
       properties: {
-        name: {
+        title: {
           type: 'void',
           'x-component': 'TableV2.Column',
-          title: '{{t("Channel name")}}',
+          title: '{{t("Channel display name")}}',
           properties: {
-            name: {
+            title: {
               type: 'string',
               'x-component': 'CollectionField',
               'x-read-pretty': true,
@@ -121,12 +121,12 @@ export const channelsSchema: ISchema = {
             },
           },
         },
-        title: {
+        name: {
           type: 'void',
           'x-component': 'TableV2.Column',
-          title: '{{t("Channel display name")}}',
+          title: '{{t("Channel name")}}',
           properties: {
-            title: {
+            name: {
               type: 'string',
               'x-component': 'CollectionField',
               'x-read-pretty': true,
@@ -188,16 +188,21 @@ export const channelsSchema: ISchema = {
                       'x-use-component-props': 'useEditFormProps',
                       properties: {
                         ...updateFormProperties,
-                        footer: {
-                          type: 'void',
-                          'x-component': 'Action.Drawer.Footer',
-                          properties: {
-                            submit: {
-                              title: 'Submit',
-                              'x-component': 'Action',
-                              'x-use-component-props': 'useEditActionProps',
-                            },
-                          },
+                      },
+                    },
+                    footer: {
+                      type: 'void',
+                      'x-component': 'Action.Drawer.Footer',
+                      properties: {
+                        cancel: {
+                          title: '{{t("Cancel")}}',
+                          'x-component': 'Action',
+                          'x-use-component-props': 'useCloseActionProps',
+                        },
+                        submit: {
+                          title: 'Submit',
+                          'x-component': 'Action',
+                          'x-use-component-props': 'useEditActionProps',
                         },
                       },
                     },

@@ -32,5 +32,6 @@
   "Success": "Success",
   "Fail": "Fail",
   "Reason": "Reason",
-  "Failed reason": "Failed reason"
+  "Failed reason": "Failed reason",
+  "Log detail": "Log detail"
 }

@@ -106,7 +106,6 @@
     "@nocobase/plugin-kanban",
     "@nocobase/plugin-logger",
     "@nocobase/plugin-notification-manager",
-    "@nocobase/plugin-notification-mail-smtp",
     "@nocobase/plugin-system-settings",
     "@nocobase/plugin-ui-schema-storage",
     "@nocobase/plugin-user-data-sync",

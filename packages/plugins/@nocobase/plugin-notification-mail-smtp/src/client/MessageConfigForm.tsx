@@ -162,10 +162,21 @@ export const ContentConfigForm = ({ variableOptions }) => {
               scope: variableOptions,
             },
           },
-          content: {
+          contentType: {
+            type: 'string',
+            title: `{{t("Content type")}}`,
+            'x-decorator': 'FormItem',
+            'x-component': 'Radio.Group',
+            enum: [
+              { label: 'HTML', value: 'html' },
+              { label: `{{t("Plain text")}}`, value: 'text' },
+            ],
+            default: 'html',
+          },
+          html: {
             type: 'string',
             required: true,
-            title: '{{t("Content")}}',
+            title: `{{t("Content")}}`,
             'x-decorator': 'FormItem',
             'x-component': 'Variable.RawTextArea',
             'x-component-props': {
@@ -175,6 +186,40 @@ export const ContentConfigForm = ({ variableOptions }) => {
                 minRows: 10,
               },
             },
+            'x-reactions': [
+              {
+                dependencies: ['contentType'],
+                fulfill: {
+                  state: {
+                    visible: '{{$deps[0] === "html"}}',
+                  },
+                },
+              },
+            ],
+          },
+          text: {
+            type: 'string',
+            required: true,
+            title: `{{t("Content")}}`,
+            'x-decorator': 'FormItem',
+            'x-component': 'Variable.RawTextArea',
+            'x-component-props': {
+              scope: variableOptions,
+              placeholder: 'Hi,',
+              autoSize: {
+                minRows: 10,
+              },
+            },
+            'x-reactions': [
+              {
+                dependencies: ['contentType'],
+                fulfill: {
+                  state: {
+                    visible: '{{$deps[0] === "text"}}',
+                  },
+                },
+              },
+            ],
           },
         },
       }}

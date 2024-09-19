@@ -28,6 +28,11 @@ export const detailFromProperties = {
     'x-decorator': 'FormItem',
     'x-read-pretty': true,
   },
+  notificationType: {
+    'x-component': 'CollectionField',
+    'x-decorator': 'FormItem',
+    'x-read-pretty': true,
+  },
   triggerFrom: {
     'x-component': 'CollectionField',
     'x-decorator': 'FormItem',
@@ -109,6 +114,26 @@ export const messageLogsManagerSchema: ISchema = {
         rowKey: 'id',
       },
       properties: {
+        createdAt: {
+          type: 'void',
+          'x-component': 'TableV2.Column',
+          'x-component-props': {
+            width: 100,
+          },
+          title: '{{t("Created at")}}',
+          properties: {
+            createdAt: {
+              type: 'string',
+              'x-component': 'CollectionField',
+              'x-pattern': 'readPretty',
+              'x-component-props': {
+                dateFormat: 'YYYY-MM-DD',
+                showTime: true,
+                timeFormat: 'HH:mm:ss',
+              },
+            },
+          },
+        },
         triggerFrom: {
           type: 'void',
           'x-component': 'TableV2.Column',
@@ -127,27 +152,30 @@ export const messageLogsManagerSchema: ISchema = {
             },
           },
         },
-        channelName: {
+        // channelName: {
+        //   type: 'void',
+        //   'x-component': 'TableV2.Column',
+        //   'x-component-props': {
+        //     width: 100,
+        //   },
+        //   title: '{{t("Channel name")}}',
+        //   properties: {
+        //     channelName: {
+        //       type: 'string',
+        //       'x-component': 'CollectionField',
+        //       'x-read-pretty': true,
+        //       'x-component-props': {
+        //         ellipsis: true,
+        //       },
+        //     },
+        //   },
+        // },
+        channelTitle: {
           type: 'void',
           'x-component': 'TableV2.Column',
           'x-component-props': {
             width: 100,
           },
-          title: '{{t("Channel name")}}',
-          properties: {
-            channelName: {
-              type: 'string',
-              'x-component': 'CollectionField',
-              'x-read-pretty': true,
-              'x-component-props': {
-                ellipsis: true,
-              },
-            },
-          },
-        },
-        channelTitle: {
-          type: 'void',
-          'x-component': 'TableV2.Column',
           title: '{{t("Channel display name")}}',
           properties: {
             channelTitle: {
@@ -157,6 +185,18 @@ export const messageLogsManagerSchema: ISchema = {
               'x-component-props': {
                 ellipsis: true,
               },
+            },
+          },
+        },
+        notificationType: {
+          title: '{{t("Notification type")}}',
+          type: 'void',
+          'x-component': 'TableV2.Column',
+          properties: {
+            notificationType: {
+              type: 'string',
+              'x-component': 'CollectionField',
+              'x-read-pretty': true,
             },
           },
         },
@@ -193,35 +233,6 @@ export const messageLogsManagerSchema: ISchema = {
             },
           },
         },
-        id: {
-          type: 'void',
-          'x-component': 'TableV2.Column',
-          title: '{{t("ID")}}',
-          properties: {
-            id: {
-              type: 'string',
-              'x-component': 'CollectionField',
-              'x-pattern': 'readPretty',
-            },
-          },
-        },
-        createdAt: {
-          type: 'void',
-          'x-component': 'TableV2.Column',
-          title: '{{t("Created at")}}',
-          properties: {
-            createdAt: {
-              type: 'string',
-              'x-component': 'CollectionField',
-              'x-pattern': 'readPretty',
-              'x-component-props': {
-                dateFormat: 'YYYY-MM-DD',
-                showTime: true,
-                timeFormat: 'HH:mm:ss',
-              },
-            },
-          },
-        },
         actions: {
           type: 'void',
           title: '{{t("Actions")}}',
@@ -229,7 +240,7 @@ export const messageLogsManagerSchema: ISchema = {
           properties: {
             view: {
               type: 'void',
-              title: '{{t("Detail")}}',
+              title: '{{t("View")}}',
               'x-component': 'Action.Link',
               'x-component-props': {
                 openMode: 'drawer',
@@ -238,7 +249,7 @@ export const messageLogsManagerSchema: ISchema = {
               properties: {
                 drawer: {
                   type: 'void',
-                  title: '{{t("Detail")}}',
+                  title: '{{t("Log detail")}}',
                   'x-component': 'Action.Drawer',
                   properties: {
                     detail: {
@@ -257,22 +268,6 @@ export const messageLogsManagerSchema: ISchema = {
                 },
               },
             },
-            // view: {
-            //   'x-component': 'Action.Link',
-            //   'x-component-props': {
-            //     openMode: 'drawer',
-            //     icon: 'EditOutlined',
-            //   },
-            //   properties: {
-            //     title: '{{t("View")}}',
-            //     'x-action': 'view',
-            //     'x-component': 'Action',
-            //     'x-use-component-props': 'useViewActionProps',
-            //     'x-component-props': {
-            //       type: 'link',
-            //     },
-            //   },
-            // },
           },
         },
       },

@@ -58,6 +58,18 @@ const collectionOption: CollectionOptions = {
       },
     },
     {
+      name: 'notificationType',
+      type: 'string',
+      interface: 'input',
+      uiSchema: {
+        type: 'string',
+        title: '{{t("Notification type")}}',
+        'x-component': 'Select',
+        enum: '{{notificationTypeOptions}}',
+        required: true,
+      },
+    },
+    {
       name: 'status',
       type: 'string',
       interface: 'select',
@@ -65,8 +77,8 @@ const collectionOption: CollectionOptions = {
         type: 'string',
         'x-component': 'Select',
         enum: [
-          { label: '{{t("Success")}}', value: 'success' },
-          { label: '{{t("Fail")}}', value: 'fail' },
+          { label: '{{t("Success")}}', value: 'success', color: 'green' },
+          { label: '{{t("Failure")}}', value: 'failure', color: 'red' },
         ],
         title: '{{t("Status")}}',
       },

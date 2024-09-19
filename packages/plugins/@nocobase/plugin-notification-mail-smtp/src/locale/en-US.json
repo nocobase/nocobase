@@ -15,5 +15,7 @@
   "Configure": "Configure",
   "The email address that will be used as the sender": "The email address that will be used as the sender",
   "SMTP mail": "SMTP mail",
-  "SMTP server host": "SMTP server host"
+  "SMTP server host": "SMTP server host",
+  "Content type": "Content type",
+  "Plain text": "Plain text"
 }

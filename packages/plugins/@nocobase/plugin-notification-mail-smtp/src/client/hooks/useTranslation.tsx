@@ -11,5 +11,7 @@ import { NAMESPACE } from '../../constant';
 import { useTranslation } from 'react-i18next';
 
 export function useNotifyMailTranslation() {
-  return useTranslation(NAMESPACE);
+  return useTranslation([NAMESPACE, 'client'], {
+    nsMode: 'fallback',
+  });
 }

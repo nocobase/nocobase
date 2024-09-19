@@ -70,17 +70,18 @@ export default class NotificationManager {
       if (channel) {
         const notificationServer = this.notificationTypes.get(channel.notificationType).server;
         logData.channelTitle = channel.title;
+        logData.notificationType = channel.notificationType;
         const result = await notificationServer.send({ message: params.message, channel });
         logData.status = result.status;
         logData.reason = result.reason;
       } else {
-        logData.status = 'fail';
+        logData.status = 'failure';
         logData.reason = 'channel not found';
       }
       this.createSendingRecord(logData);
       return logData;
     } catch (error) {
-      logData.status = 'fail';
+      logData.status = 'failure';
       logData.reason = error.reason;
       this.createSendingRecord(logData);
       return logData;

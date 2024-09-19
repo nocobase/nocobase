@@ -10,6 +10,8 @@
 import {
   ActionContextProvider,
   SchemaComponent,
+  SchemaComponentContext,
+  useSchemaComponentContext,
   useAPIClient,
   useActionContext,
   useAsyncData,
@@ -23,9 +25,6 @@ import { Button, Dropdown } from 'antd';
 import { PlusOutlined, DownOutlined } from '@ant-design/icons';
 import { NotificationTypesContext, useChannelTypes, useNotificationTypeNameProvider } from '../context';
 import { useNotificationTranslation } from '../../../locale';
-import { Schema } from '@formily/react';
-import { PluginNotificationManagerClient } from '../../..';
-import { ChannelType } from '../types';
 import { ConfigForm } from './ConfigForm';
 import channelCollection from '../../../../collections/channel';
 import messageLogCollection from '../../../../collections/messageLog';
@@ -36,6 +35,7 @@ import {
   useEditFormProps,
   useCreateFormProps,
   useDeleteActionProps,
+  useNotificationTypes,
 } from '../hooks';
 const useCloseAction = () => {
   const { setVisible } = useActionContext();
@@ -124,42 +124,30 @@ const useCanNotDelete = () => {
 
 export const ChannelManager = () => {
   const { t } = useNotificationTranslation();
-  const api = useAPIClient();
-  const plugin = usePlugin(PluginNotificationManagerClient);
-  const notificationTypes: Array<ChannelType> = [];
-  for (const [key, val] of plugin.manager.channelTypes.getEntities()) {
-    const type = {
-      ...val,
-      title: Schema.compile(val.title, { t }) as string,
-    };
-    notificationTypes.push(type);
-  }
-
-  const notificationTypeOptions = notificationTypes.map((item) => ({
-    key: item.name,
-    label: item.title,
-    value: item.name,
-  }));
+  const notificationTypes = useNotificationTypes();
+  const scCtx = useSchemaComponentContext();
 
   return (
     <ExtendCollectionsProvider collections={[channelCollection, messageLogCollection]}>
-      <NotificationTypesContext.Provider value={{ channelTypes: notificationTypes }}>
-        <SchemaComponent
-          schema={channelsSchema}
-          components={{ AddNew, ConfigForm }}
-          scope={{
-            useCanNotDelete,
-            t,
-            notificationTypeOptions,
-            useCreateActionProps,
-            useEditActionProps,
-            useCloseActionProps,
-            useEditFormProps,
-            useCreateFormProps,
-            useDeleteActionProps,
-          }}
-        />
-      </NotificationTypesContext.Provider>
+      <SchemaComponentContext.Provider value={{ ...scCtx, designable: false }}>
+        <NotificationTypesContext.Provider value={{ channelTypes: notificationTypes }}>
+          <SchemaComponent
+            schema={channelsSchema}
+            components={{ AddNew, ConfigForm }}
+            scope={{
+              useCanNotDelete,
+              t,
+              notificationTypeOptions: notificationTypes,
+              useCreateActionProps,
+              useEditActionProps,
+              useCloseActionProps,
+              useEditFormProps,
+              useCreateFormProps,
+              useDeleteActionProps,
+            }}
+          />
+        </NotificationTypesContext.Provider>
+      </SchemaComponentContext.Provider>
     </ExtendCollectionsProvider>
   );
 };

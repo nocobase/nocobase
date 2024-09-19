@@ -15,16 +15,20 @@ import { ExtendCollectionsProvider } from '@nocobase/client';
 import { useNotificationTranslation } from '../../../locale';
 import messageLogCollection from '../../../../collections/messageLog';
 import channelCollection from '../../../../collections/channel';
-import { useEditFormProps } from '../../channel/hooks';
+import { useEditFormProps, useNotificationTypes } from '../../channel/hooks';
 
 export const LogManager = () => {
   const { t } = useNotificationTranslation();
   const scCtx = useSchemaComponentContext();
+  const notificationTypes = useNotificationTypes();
   return (
     <ExtendCollectionsProvider collections={[messageLogCollection, channelCollection]}>
       <SchemaComponentContext.Provider value={{ ...scCtx, designable: false }}>
         <Card bordered={false}>
-          <SchemaComponent schema={messageLogsManagerSchema} scope={{ t, useEditFormProps }} />
+          <SchemaComponent
+            schema={messageLogsManagerSchema}
+            scope={{ t, useEditFormProps, notificationTypeOptions: notificationTypes }}
+          />
         </Card>
       </SchemaComponentContext.Provider>
     </ExtendCollectionsProvider>

@@ -15,5 +15,7 @@
   "Configure": "编辑",
   "The email address that will be used as the sender": "发件人邮件地址",
   "SMTP mail": "SMTP 邮件",
-  "SMTP server host": "SMTP 服务器主机"
+  "SMTP server host": "SMTP 服务器主机",
+  "Content type": "内容格式",
+  "Plain text": "纯文本"
 }

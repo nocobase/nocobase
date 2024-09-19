@@ -14,7 +14,7 @@ export interface Channel {
 }
 
 export type WriteLogOptions = {
-  status: 'success' | 'fail';
+  status: 'success' | 'failure';
   message: Record<string, any>;
   triggerFrom: string;
   reason?: string;
