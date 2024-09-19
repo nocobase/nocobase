@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import actions from '@nocobase/actions';
+import { Model } from '@nocobase/database';
 import { Plugin } from '@nocobase/server';
 import _ from 'lodash';
 
@@ -66,28 +66,20 @@ export class PluginMobileServer extends Plugin {
    * used to implement: roles with permission (allowNewMobileMenu is true) can directly access the newly created menu
    */
   bindNewMenuToRoles() {
-    this.app.resourceManager.define({
-      name: 'mobileRoutes',
-      actions: {
-        async create(ctx, next) {
-          const addNewMenuRoles = await ctx.db.getRepository('roles').find({
-            filter: {
-              allowNewMobileMenu: true,
-            },
-          });
-
-          return actions.create(ctx as any, async () => {
-            for (const role of addNewMenuRoles) {
-              await ctx.db.getRepository('roles.mobileRoutes', role.get('name')).add({
-                // the newly created instance is saved in ctx.body
-                tk: ctx.body.get('id'),
-              });
-            }
-
-            await next();
-          });
+    this.app.db.on('mobileRoutes:afterCreate', async (instance: Model, { transaction }) => {
+      const addNewMenuRoles = await this.app.db.getRepository('roles').find({
+        filter: {
+          allowNewMobileMenu: true,
         },
-      },
+        transaction,
+      });
+
+      for (const role of addNewMenuRoles) {
+        await this.app.db.getRepository('roles.mobileRoutes', role.get('name')).add({
+          tk: instance.get('id'),
+          transaction,
+        });
+      }
     });
   }
 
