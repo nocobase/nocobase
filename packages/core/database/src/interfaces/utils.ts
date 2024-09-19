@@ -30,6 +30,7 @@ const interfaces = {
   multipleSelect: MultipleSelectInterface,
   checkboxes: MultipleSelectInterface,
   checkboxGroup: MultipleSelectInterface,
+  checkbox: BooleanInterface,
   select: SelectInterface,
   radio: SelectInterface,
   radioGroup: SelectInterface,
