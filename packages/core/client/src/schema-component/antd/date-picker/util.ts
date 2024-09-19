@@ -7,9 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { getDefaultFormat, str2moment, toGmt, toLocal } from '@nocobase/utils/client';
+import { getDefaultFormat, str2moment, toGmt, toLocal, getPickerFormat } from '@nocobase/utils/client';
 import type { Dayjs } from 'dayjs';
 import dayjs from 'dayjs';
+import { useBlockContext } from '../../../block-provider';
 
 const toStringByPicker = (value, picker = 'date', timezone: 'gmt' | 'local') => {
   if (!dayjs.isDayjs(value)) return value;
@@ -74,23 +75,41 @@ export const moment2str = (value?: Dayjs | null, options: Moment2strOptions = {}
   return toLocalByPicker(value, picker);
 };
 
+const handleChangeOnFilter = (value, picker, showTime) => {
+  const format = showTime ? 'YYYY-MM-DD HH:mm:ss' : getPickerFormat(picker);
+  return value.format(format);
+};
+
+const handleChangeOnForm = (value, dateOnly, utc, picker, showTime) => {
+  const format = showTime ? 'YYYY-MM-DD HH:mm:ss' : 'YYYY-MM-DD';
+
+  if (dateOnly) {
+    return dayjs(value).startOf(picker).format('YYYY-MM-DD');
+  }
+  if (utc) {
+    return dayjs(value).startOf(picker).toISOString();
+  }
+  return dayjs(value).startOf(picker).format(format);
+};
+
 export const mapDatePicker = function () {
   return (props: any) => {
+    const { dateOnly, showTime, picker, utc, value } = props;
     const format = getDefaultFormat(props);
     const onChange = props.onChange;
+    const { name: blockType } = useBlockContext() || {};
+    //是否是筛选的场景下
+    const isUnderFilter = blockType !== 'form';
     return {
       ...props,
       format: format,
       value: str2moment(props.value, props),
       onChange: (value: Dayjs | null, dateString) => {
         if (onChange) {
-          if (!props.showTime && value) {
-            value = value.startOf('day');
-          }
-          if (props.dateOnly && props.picker === 'date') {
-            onChange(dateString !== '' ? dateString : undefined);
+          if (isUnderFilter) {
+            onChange(handleChangeOnFilter(value, picker, showTime));
           } else {
-            onChange(moment2str(value, props));
+            onChange(handleChangeOnForm(value, dateOnly, utc, picker, showTime));
           }
         }
       },
