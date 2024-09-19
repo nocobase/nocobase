@@ -40,7 +40,7 @@ export const MessageConfigForm = observer<{ variableOptions: any }>(
             filterByTk: channelName,
           },
         });
-        setProviderName(data.data.notificationType);
+        setProviderName(data?.data?.notificationType);
       };
       onChannelChange();
     }, [channelName, api]);
