@@ -57,7 +57,7 @@ export class PluginMobileServer extends Plugin {
 
     this.app.acl.allow('mobileRoutes', 'listAccessible', 'loggedIn');
     this.app.acl.registerSnippet({
-      name: `pm.${this.name}.roles`,
+      name: `pm.mobile`,
       actions: ['roles.mobileRoutes:*'],
     });
   }
