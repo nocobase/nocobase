@@ -21,7 +21,7 @@ export default class extends Migration {
     const roles = await this.db.getRepository('roles').find();
 
     for (const role of roles) {
-      await this.db.getRepository<any>('roles.mobileMenuUiSchemas', role.get('name')).add({
+      await this.db.getRepository<any>('roles.mobileRoutes', role.get('name')).add({
         tk: mobileRoutes.map((item) => item.get('id')),
       });
     }

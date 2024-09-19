@@ -14,7 +14,7 @@ export default extendCollection({
   fields: [
     {
       type: 'belongsToMany',
-      name: 'mobileMenuUiSchemas',
+      name: 'mobileRoutes',
       target: 'mobileRoutes',
     },
     {

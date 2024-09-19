@@ -100,7 +100,7 @@ export const MenuPermissions: React.FC<{
   const [IDList, setIDList] = useState([]);
   const { loading, refresh } = useRequest(
     {
-      resource: 'roles.mobileMenuUiSchemas',
+      resource: 'roles.mobileRoutes',
       resourceOf: role.name,
       action: 'list',
       params: {
@@ -115,7 +115,7 @@ export const MenuPermissions: React.FC<{
       },
     },
   );
-  const resource = api.resource('roles.mobileMenuUiSchemas', role.name);
+  const resource = api.resource('roles.mobileRoutes', role.name);
   const allChecked = allIDList.length === IDList.length;
 
   const handleChange = async (checked, menuItem) => {
