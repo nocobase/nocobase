@@ -32,7 +32,7 @@
   "Select user": "选择用户",
   "No channel enabled yet": "暂无启用的渠道",
   "Success": "成功",
-  "Fail": "失败",
+  "Failure": "失败",
   "Reason": "原因",
   "Failed reason": "失败原因",
   "Log detail": "日志详情",
