@@ -70,7 +70,7 @@ export const useSubmitActionProps = () => {
       } else {
         const key = uid();
         const uiSchemaCallback = plugin.getFormSchemaByType(values.type);
-        const keys = values.collection.split('.');
+        const keys = values.collection.split(':');
         const collection = keys.pop();
         const dataSource = keys.pop() || 'main';
         const schema = initialSchema(
