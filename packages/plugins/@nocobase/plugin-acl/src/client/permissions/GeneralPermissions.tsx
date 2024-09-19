@@ -7,19 +7,19 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { onFormValuesChange, createForm, Form, onFieldChange } from '@formily/core';
+import { createForm, Form, onFormValuesChange } from '@formily/core';
 import { connect } from '@formily/react';
-import { SchemaComponent, useAPIClient, useRequest } from '@nocobase/client';
+import { uid } from '@formily/shared';
+import { SchemaComponent, useAPIClient } from '@nocobase/client';
+import { useMemoizedFn } from 'ahooks';
 import { Checkbox, message } from 'antd';
 import uniq from 'lodash/uniq';
 import React, { useContext, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { uid } from '@formily/shared';
-import { useMemoizedFn } from 'ahooks';
-import { RolesManagerContext } from '../RolesManagerProvider';
-import { StrategyActions } from './StrategyActions';
 import { useACLTranslation } from '../locale';
+import { RolesManagerContext } from '../RolesManagerProvider';
 import { PluginPermissions } from './PluginPermissions';
+import { StrategyActions } from './StrategyActions';
 
 const SnippetCheckboxGroup = connect((props) => {
   const { t } = useTranslation();
@@ -65,9 +65,7 @@ const SnippetCheckboxGroup = connect((props) => {
   );
 });
 
-export const GeneralPermissions: React.FC<{
-  active: boolean;
-}> = ({ active }) => {
+export const GeneralPermissions: React.FC = () => {
   const { role, setRole } = useContext(RolesManagerContext);
   const { t } = useACLTranslation();
   const api = useAPIClient();

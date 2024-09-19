@@ -952,6 +952,96 @@ describe('ui_schema repository', () => {
     });
   });
 
+  describe('initializeActionContext', function () {
+    let rootNode;
+    let rootUid: string;
+    let oldTree;
+
+    beforeEach(async () => {
+      const root = {
+        type: 'object',
+        title: 'title',
+        name: 'root',
+        properties: {
+          a1: {
+            type: 'string',
+            title: 'A1',
+            'x-component': 'Input',
+          },
+          b1: {
+            type: 'string',
+            title: 'B1',
+            properties: {
+              c1: {
+                type: 'string',
+                title: 'C1',
+              },
+              d1: {
+                type: 'string',
+                title: 'D1',
+              },
+            },
+          },
+        },
+      };
+
+      await repository.insert(root);
+
+      rootNode = await repository.findOne({
+        filter: {
+          name: 'root',
+        },
+      });
+
+      rootUid = rootNode.get('x-uid') as string;
+
+      oldTree = await repository.getJsonSchema(rootUid);
+    });
+
+    it('should update root ui schema and only have x-action-context to be updated', async () => {
+      await repository.initializeActionContext({
+        'x-uid': rootUid,
+        title: 'test-title',
+        ['x-action-context']: {
+          field1: 'field1',
+          field2: 'field2',
+        },
+        properties: {
+          a1: {
+            type: 'string',
+            title: 'new a1 title',
+            'x-component': 'Input',
+          },
+        },
+      });
+
+      const newTree = await repository.getJsonSchema(rootUid);
+      expect(newTree).toEqual({
+        ...oldTree,
+        ['x-action-context']: {
+          field1: 'field1',
+          field2: 'field2',
+        },
+      });
+
+      // will not updated when x-action-context existed
+      await repository.initializeActionContext({
+        'x-uid': rootUid,
+        ['x-action-context']: {
+          field3: 'field3',
+          field4: 'field4',
+        },
+      });
+      expect(newTree).toEqual({
+        ...oldTree,
+        ['x-action-context']: {
+          field1: 'field1',
+          field2: 'field2',
+        },
+      });
+    });
+  });
+
   it('should insertInner with removeParent', async () => {
     const schema = {
       'x-uid': 'A',
