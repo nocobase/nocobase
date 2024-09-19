@@ -100,6 +100,45 @@ export const calendarBlockSettings = new SchemaSettings({
       },
     },
     {
+      name: 'colorField',
+      Component: SchemaSettingsSelectItem,
+      useComponentProps() {
+        const { t } = useTranslation();
+        const fieldSchema = useFieldSchema();
+        const fieldNames = fieldSchema?.['x-decorator-props']?.['fieldNames'] || {};
+        const { service } = useCalendarBlockContext();
+        const { getCollectionFieldsOptions } = useCollectionManager_deprecated();
+        const { name } = useCollection();
+        const field = useField();
+        const { dn } = useDesignable();
+        const fliedList = getCollectionFieldsOptions(name, 'string');
+        const filteredItems = [
+          { label: t('Not selected'), value: '' },
+          ...fliedList.filter((item) => item.interface === 'radioGroup' || item.interface === 'select'),
+        ];
+
+        return {
+          title: t('Background color field'),
+          value: fieldNames.colorFieldName || '',
+          options: filteredItems,
+          onChange: (colorFieldName: string) => {
+            const fieldNames = fieldSchema['x-decorator-props']?.fieldNames || {};
+            fieldNames.colorFieldName = colorFieldName;
+            field.decoratorProps.fieldNames = fieldNames;
+            fieldSchema['x-decorator-props'].fieldNames = fieldNames;
+            service.refresh();
+            dn.emit('patch', {
+              schema: {
+                ['x-uid']: fieldSchema['x-uid'],
+                'x-decorator-props': fieldSchema['x-decorator-props'],
+              },
+            });
+            dn.refresh();
+          },
+        };
+      },
+    },
+    {
       name: 'showLunar',
       Component: ShowLunarDesignerItem,
     },
@@ -153,7 +192,7 @@ export const calendarBlockSettings = new SchemaSettings({
         return {
           title: t('End date field'),
           value: fieldNames.end,
-          options: getCollectionFieldsOptions(name, ['date', 'datetime', 'dateOnly', 'datetimeNoTz'], {
+          options: getCollectionFieldsOptions(name, 'date', {
             association: ['o2o', 'obo', 'oho', 'm2o'],
           }),
           onChange: (end) => {
