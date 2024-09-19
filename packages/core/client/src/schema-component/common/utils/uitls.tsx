@@ -195,7 +195,7 @@ export async function getRenderContent(templateEngine, content, variables, local
       const data = getVariablesData(localVariables);
       const { $nDate } = variables?.ctxRef?.current || {};
       const variableDate = {};
-      Object.keys($nDate).map((v) => {
+      Object.keys($nDate || {}).map((v) => {
         variableDate[v] = $nDate[v]();
       });
       const html = renderedContent({ ...variables.ctxRef.current, ...data, $nDate: variableDate });
