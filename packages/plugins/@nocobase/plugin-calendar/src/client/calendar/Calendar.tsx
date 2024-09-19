@@ -68,6 +68,7 @@ const getColorString = (
 
 export const DeleteEventContext = React.createContext({
   close: () => {},
+  allowDeleteEvent: false,
 });
 
 function Toolbar(props: ToolbarProps) {
