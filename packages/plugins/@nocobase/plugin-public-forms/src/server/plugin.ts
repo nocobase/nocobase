@@ -63,7 +63,7 @@ export class PluginPublicFormsServer extends Plugin {
         }
       }
     }
-    const keys = instance.collection.split('.');
+    const keys = instance.collection.split(':');
     const collectionName = keys.pop();
     const dataSourceKey = keys.pop() || 'main';
     const schema = await uiSchema.getJsonSchema(filterByTk);
