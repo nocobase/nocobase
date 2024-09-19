@@ -53,10 +53,10 @@ export const SchemaSettingsDateFormat = function DateFormatConfig(props: { field
                   label: '{{t("Date")}}',
                   value: 'date',
                 },
-                {
-                  label: '{{t("Week")}}',
-                  value: 'week',
-                },
+                // {
+                //   label: '{{t("Week")}}',
+                //   value: 'week',
+                // },
                 {
                   label: '{{t("Month")}}',
                   value: 'month',

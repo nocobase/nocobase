@@ -238,10 +238,10 @@ export const dateTimeProps: { [key: string]: ISchema } = {
         label: '{{t("Date")}}',
         value: 'date',
       },
-      {
-        label: '{{t("Week")}}',
-        value: 'week',
-      },
+      // {
+      //   label: '{{t("Week")}}',
+      //   value: 'week',
+      // },
       {
         label: '{{t("Month")}}',
         value: 'month',
