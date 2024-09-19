@@ -35,5 +35,6 @@
   "Fail": "失败",
   "Reason": "原因",
   "Failed reason": "失败原因",
-  "Log detail": "日志详情"
+  "Log detail": "日志详情",
+  "Message": "消息内容"
 }
