@@ -173,23 +173,30 @@ const DataSourceCollectionCascaderReadPretty = observer((props: any) => {
       };
     });
   }, [dataSources, dataSourceFilter, collectionFilter]);
+  const getDisplayValue = (value: string[], options: any[]): string[] => {
+    const displayValues: string[] = [];
+
+    let currentOptions = options;
+
+    value.forEach((val) => {
+      const option = currentOptions.find((item) => item.value === val);
+      if (option) {
+        displayValues.push(option.label as string); // 假设label为string类型
+        if (option.children) {
+          currentOptions = option.children;
+        } else {
+          currentOptions = [];
+        }
+      }
+    });
+
+    return displayValues;
+  };
+  const displayValues = getDisplayValue(path, options);
   return (
-    <Cascader
-      className={css`
-        .ant-select-selector {
-          background: none !important;
-          border: none !important;
-          color: rgba(0, 0, 0, 0.88) !important;
-        }
-        & .ant-select-arrow {
-          display: none;
-        }
-      `}
-      options={options}
-      value={path}
-      disabled
-      displayRender={(label) => label.join(' / ')}
-    />
+    <div>
+      <Tag>{displayValues.join(' / ')}</Tag>
+    </div>
   );
 });
 
