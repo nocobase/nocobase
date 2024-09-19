@@ -1,0 +1,8 @@
+{
+  "Used for sorting kanban cards, only sorting fields corresponding to grouping fields can be selected": "かんばんカードの並べ替えに使用され、グループ化フィールドに対応する並べ替えフィールドのみ選択できます",
+  "Global sorting": "全体並べ替え",
+  "Create sort field": "並べ替えフィールドを作成する",
+  "Convert the following integer fields to sorting fields": "以下の整数フィールドを並べ替えフィールドに変換します",
+  "Sorting field": "並べ替えフィールド",
+  "Grouped sorting based on": "グループ化に基づく並べ替え"
+}
