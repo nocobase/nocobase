@@ -16,6 +16,7 @@ export default extendCollection({
       type: 'belongsToMany',
       name: 'mobileRoutes',
       target: 'mobileRoutes',
+      onDelete: 'CASCADE',
     },
     {
       type: 'boolean',
