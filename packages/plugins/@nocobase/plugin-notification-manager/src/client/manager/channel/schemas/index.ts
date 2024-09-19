@@ -214,7 +214,13 @@ export const channelsSchema: ISchema = {
               type: 'void',
               title: '{{t("Delete")}}',
               'x-component': 'Action.Link',
-              'x-use-component-props': 'useDeleteActionProps',
+              'x-use-component-props': 'useDestroyActionProps',
+              'x-component-props': {
+                confirm: {
+                  title: "{{t('Delete record')}}",
+                  content: "{{t('Are you sure you want to delete it?')}}",
+                },
+              },
             },
           },
         },
