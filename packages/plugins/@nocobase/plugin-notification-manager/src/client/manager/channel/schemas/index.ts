@@ -167,6 +167,7 @@ export const channelsSchema: ISchema = {
           type: 'void',
           title: '{{t("Actions")}}',
           'x-component': 'TableV2.Column',
+          'x-decorator': 'TableV2.Column.ActionBar',
           properties: {
             edit: {
               type: 'void',
@@ -176,20 +177,16 @@ export const channelsSchema: ISchema = {
                 openMode: 'drawer',
                 icon: 'EditOutlined',
               },
+              'x-decorator': 'Space',
               properties: {
                 drawer: {
                   type: 'void',
                   title: '{{t("Edit")}}',
                   'x-component': 'Action.Drawer',
+                  'x-decorator': 'FormV2',
+                  'x-use-decorator-props': 'useEditFormProps',
                   properties: {
-                    form: {
-                      type: 'void',
-                      'x-component': 'FormV2',
-                      'x-use-component-props': 'useEditFormProps',
-                      properties: {
-                        ...updateFormProperties,
-                      },
-                    },
+                    ...updateFormProperties,
                     footer: {
                       type: 'void',
                       'x-component': 'Action.Drawer.Footer',
@@ -213,6 +210,7 @@ export const channelsSchema: ISchema = {
             delete: {
               type: 'void',
               title: '{{t("Delete")}}',
+              'x-decorator': 'Space',
               'x-component': 'Action.Link',
               'x-use-component-props': 'useDestroyActionProps',
               'x-component-props': {
