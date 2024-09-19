@@ -19,10 +19,11 @@ export default class extends Migration {
       sort: 'sort',
     });
     const roles = await this.db.getRepository('roles').find();
+    const mobileRoutesId = mobileRoutes.map((item) => item.get('id'));
 
     for (const role of roles) {
       await this.db.getRepository<any>('roles.mobileRoutes', role.get('name')).add({
-        tk: mobileRoutes.map((item) => item.get('id')),
+        tk: mobileRoutesId,
       });
     }
   }
