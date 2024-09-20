@@ -156,7 +156,9 @@ export const tableColumnSettings = new SchemaSettings({
             const { currentMode } = useAssociationFieldContext();
 
             return (
-              interfaceCfg?.sortable === true && !currentMode && collection?.name === collectionField?.collectionName
+              interfaceCfg?.sortable === true &&
+              !currentMode &&
+              (collection?.name === collectionField?.collectionName || !collectionField?.collectionName)
             );
           },
           useComponentProps() {
