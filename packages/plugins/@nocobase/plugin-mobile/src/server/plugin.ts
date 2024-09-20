@@ -45,6 +45,8 @@ export class PluginMobileServer extends Plugin {
         },
         transaction,
       });
+
+      // @ts-ignore
       await this.app.db.getRepository('mobileRoutes.roles', instance.id).add({
         tk: addNewMenuRoles.map((role) => role.name),
         transaction,
