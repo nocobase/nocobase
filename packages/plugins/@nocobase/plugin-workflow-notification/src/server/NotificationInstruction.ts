@@ -7,20 +7,21 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import NotificationsServerPlugin, { SendFnType, NotificationServerBase } from '@nocobase/plugin-notification-manager';
+import NotificationsServerPlugin from '@nocobase/plugin-notification-manager';
 
 import { Processor, Instruction, JOB_STATUS, FlowNodeModel } from '@nocobase/plugin-workflow';
 
 export default class extends Instruction {
   async run(node: FlowNodeModel, prevJob, processor: Processor) {
     const options = processor.getParsedValue(node.config, node.id);
+    const sendParams = { channelName: options.channelName, message: options, triggerFrom: 'workflow' };
     const notificationServer = this.workflow.pm.get(NotificationsServerPlugin) as NotificationsServerPlugin;
 
     const { workflow } = processor.execution;
     const sync = this.workflow.isWorkflowSync(workflow);
     if (sync) {
       try {
-        const result = await notificationServer.notificationManager.send({ ...options, triggerFrom: 'workflow' });
+        const result = await notificationServer.notificationManager.send(sendParams);
         if (result.status === 'success') {
           return {
             status: JOB_STATUS.RESOLVED,
@@ -49,7 +50,7 @@ export default class extends Instruction {
 
     // eslint-disable-next-line promise/catch-or-return
     notificationServer.notificationManager
-      .send({ channelName: options.channelName, message: options, triggerFrom: 'workflow' })
+      .send(sendParams)
       .then((result) => {
         if (result.status === 'success') {
           processor.logger.info(`notification (#${node.id}) sent successfully.`);
