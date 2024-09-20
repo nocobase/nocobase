@@ -19,7 +19,6 @@ import {
 import { App as AntdApp } from 'antd';
 import { createForm } from '@formily/core';
 import { useForm } from '@formily/react';
-import { useNotificationTranslation } from '../locale';
 
 export { ChannelTypeMapContext, useChannelTypeMap } from './channel';
 
@@ -76,28 +75,6 @@ export const useCloseActionProps = () => {
     },
   };
 };
-
-export function useDeleteActionProps(): ActionProps {
-  const { t } = useNotificationTranslation();
-  const { message } = AntdApp.useApp();
-  const record = useCollectionRecordData();
-  const resource = useDataBlockResource();
-  const { runAsync } = useDataBlockRequest();
-  const collection = useCollection();
-  return {
-    confirm: {
-      title: t('Delete'),
-      content: t('Are you sure you want to delete it?'),
-    },
-    async onClick() {
-      await resource.destroy({
-        filterByTk: record[collection.filterTargetKey],
-      });
-      await runAsync();
-      message.success(t('Deleted successfully!'));
-    },
-  };
-}
 
 export const NotificationVariableContext = createContext([]);
 

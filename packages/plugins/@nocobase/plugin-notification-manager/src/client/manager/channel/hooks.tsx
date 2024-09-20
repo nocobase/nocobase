@@ -32,7 +32,7 @@ export const useCreateActionProps = () => {
   const { message } = AntdApp.useApp();
   const form = useForm();
   const resource = useDataBlockResource();
-  const { service, block, __parent } = useBlockRequestContext();
+  const { service } = useBlockRequestContext();
   const collection = useCollection();
   return {
     type: 'primary',
@@ -59,25 +59,33 @@ export const useCreateActionProps = () => {
 };
 
 export const useEditActionProps = () => {
-  const { setVisible } = useActionContext();
+  const { setVisible, setSubmitted } = useActionContext();
   const { message } = AntdApp.useApp();
   const form = useForm();
   const resource = useDataBlockResource();
-  const { runAsync } = useDataBlockRequest();
+  const { service } = useBlockRequestContext();
   const collection = useCollection();
   return {
     type: 'primary',
-    async onClick() {
+    async onClick(e?, callBack?) {
       await form.submit();
       const values = form.values;
       await resource.update({
         values,
         filterByTk: values[collection.filterTargetKey],
       });
-
-      await runAsync();
-      message.success('Saved successfully!');
-      setVisible(false);
+      const { count = 0, page = 0, pageSize = 0 } = service?.data?.meta || {};
+      if (count % pageSize === 1 && page !== 1) {
+        service.run({
+          ...service?.params?.[0],
+          page: page - 1,
+        });
+      }
+      if (callBack) {
+        callBack?.();
+      }
+      setSubmitted?.(true);
+      setVisible?.(false);
     },
   };
 };

@@ -34,7 +34,6 @@ import {
   useCloseActionProps,
   useEditFormProps,
   useCreateFormProps,
-  useDeleteActionProps,
   useNotificationTypes,
 } from '../hooks';
 const useCloseAction = () => {
@@ -143,7 +142,6 @@ export const ChannelManager = () => {
               useCloseActionProps,
               useEditFormProps,
               useCreateFormProps,
-              useDeleteActionProps,
             }}
           />
         </NotificationTypesContext.Provider>
