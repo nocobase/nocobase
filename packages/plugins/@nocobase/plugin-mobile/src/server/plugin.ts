@@ -9,33 +9,6 @@
 
 import { Model } from '@nocobase/database';
 import { Plugin } from '@nocobase/server';
-import _ from 'lodash';
-
-const filterMobileRoutes = (items: any[], callback: (node: { id: number }) => boolean) => {
-  // the children after filtering need to be converted to ordinary objects to take effect.
-  // Otherwise, the front-end receives unfiltered children.
-  const keepKeys = [
-    'children',
-    'createdAt',
-    'icon',
-    'id',
-    'options',
-    'parentId',
-    'schemaUid',
-    'sort',
-    'title',
-    'type',
-    'updatedAt',
-    'updatedById',
-  ];
-
-  for (const item of items) {
-    if (Array.isArray(item.children)) {
-      item.children = item.children.filter(callback).map((node) => _.pick(node, keepKeys));
-    }
-  }
-  return items.filter(callback).map((node) => _.pick(node, keepKeys));
-};
 
 export class PluginMobileServer extends Plugin {
   async load() {
@@ -46,12 +19,12 @@ export class PluginMobileServer extends Plugin {
 
   setACL() {
     this.app.acl.registerSnippet({
-      name: `ui.${this.name}`,
+      name: `ui.mobile`,
       actions: ['mobileRoutes:create', 'mobileRoutes:update', 'mobileRoutes:destroy'],
     });
 
     this.app.acl.registerSnippet({
-      name: `pm.${this.name}`,
+      name: `pm.mobile`,
       actions: ['mobileRoutes:list'],
     });
 
@@ -66,7 +39,7 @@ export class PluginMobileServer extends Plugin {
    * used to implement: roles with permission (allowNewMobileMenu is true) can directly access the newly created menu
    */
   bindNewMenuToRoles() {
-    this.app.db.on('mobileRoutes:afterCreate', async (instance: Model, { transaction }) => {
+    this.app.db.on('mobileRoutes.afterCreate', async (instance: Model, { transaction }) => {
       const addNewMenuRoles = await this.app.db.getRepository('roles').find({
         filter: {
           allowNewMobileMenu: true,
@@ -87,13 +60,12 @@ export class PluginMobileServer extends Plugin {
     this.app.resourceManager.registerActionHandler('mobileRoutes:listAccessible', async (ctx, next) => {
       const mobileRoutesRepository = ctx.db.getRepository('mobileRoutes');
       const rolesRepository = ctx.db.getRepository('roles');
-      const items = await mobileRoutesRepository.find({
-        appends: ['children'],
-        ...ctx.query,
-      });
 
       if (ctx.state.currentRole === 'root') {
-        ctx.body = items;
+        ctx.body = await mobileRoutesRepository.find({
+          tree: true,
+          ...ctx.query,
+        });
         return await next();
       }
 
@@ -102,10 +74,15 @@ export class PluginMobileServer extends Plugin {
         appends: ['mobileRoutes'],
       });
 
-      const mobileRoutes = role.get('mobileRoutes').map((item) => item.id);
-      const result = filterMobileRoutes(items, (item) => mobileRoutes.includes(item.id));
+      const mobileRoutesId = role.get('mobileRoutes').map((item) => item.id);
 
-      ctx.body = result;
+      ctx.body = await mobileRoutesRepository.find({
+        tree: true,
+        ...ctx.query,
+        filter: {
+          id: mobileRoutesId,
+        },
+      });
 
       await next();
     });
