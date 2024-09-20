@@ -121,6 +121,15 @@ export abstract class CollectionFieldInterface {
             },
           },
           {
+            // 当 picker 改变时，清空 defaultValue
+            dependencies: ['uiSchema.x-component-props.picker'],
+            fulfill: {
+              state: {
+                value: null,
+              },
+            },
+          },
+          {
             dependencies: ['primaryKey', 'unique', 'autoIncrement', 'defaultToCurrentTime'],
             when: '{{$deps[0]||$deps[1]||$deps[2]||$deps[3]}}',
             fulfill: {
