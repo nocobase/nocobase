@@ -192,7 +192,7 @@ export const calendarBlockSettings = new SchemaSettings({
         return {
           title: t('End date field'),
           value: fieldNames.end,
-          options: getCollectionFieldsOptions(name, 'date', {
+          options: getCollectionFieldsOptions(name, ['date', 'datetime', 'dateOnly', 'datetimeNoTz'], {
             association: ['o2o', 'obo', 'oho', 'm2o'],
           }),
           onChange: (end) => {
