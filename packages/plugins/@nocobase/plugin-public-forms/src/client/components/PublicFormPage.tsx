@@ -183,7 +183,7 @@ function InternalPublicForm() {
       <PublicAPIClientProvider>
         <div
           style={{
-            height: '100vh',
+            minHeight: '100vh',
             background: PageBackgroundColor,
           }}
         >
