@@ -118,7 +118,6 @@ export class PluginPublicFormsServer extends Plugin {
     if (token) {
       try {
         const tokenData = await jwt.decode(token);
-        // TODO：decode token
         ctx.PublicForm = {
           collectionName: tokenData.collectionName,
           formKey: tokenData.formKey,
@@ -142,7 +141,9 @@ export class PluginPublicFormsServer extends Plugin {
     if (ctx.PublicForm && ['create', 'list'].includes(actionName)) {
       if (actionName === 'create') {
         ctx.permission = {
-          skip: ctx.PublicForm['collectionName'] === resourceName,
+          skip:
+            ctx.PublicForm['collectionName'] === resourceName ||
+            ctx.PublicForm['targetCollections'].includes(resourceName),
         };
       } else {
         ctx.permission = {
