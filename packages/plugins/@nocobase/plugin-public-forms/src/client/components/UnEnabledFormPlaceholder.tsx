@@ -10,14 +10,14 @@
 import React from 'react';
 import { BlockItemCard } from '@nocobase/client';
 import { Result } from 'antd';
-import { useT } from '../locale';
+import { usePublicFormTranslation, NAMESPACE } from '../locale';
 
 export const UnEnabledFormPlaceholder = () => {
-  const t = useT();
+  const { t } = usePublicFormTranslation();
 
   return (
     <BlockItemCard style={{ boxShadow: 'unset' }}>
-      <Result status="403" subTitle={t(`The form is not enabled and cannot be accessed`)} />
+      <Result status="403" subTitle={t(`The form is not enabled and cannot be accessed`, { ns: NAMESPACE })} />
     </BlockItemCard>
   );
 };

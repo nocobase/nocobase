@@ -185,6 +185,8 @@ function InternalPublicForm() {
           style={{
             minHeight: '100vh',
             background: PageBackgroundColor,
+            height: '100%',
+            overflow: 'auto',
           }}
         >
           <div
