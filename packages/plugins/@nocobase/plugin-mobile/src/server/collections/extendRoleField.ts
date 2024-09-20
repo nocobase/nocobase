@@ -16,12 +16,12 @@ export default extendCollection({
       type: 'belongsToMany',
       name: 'mobileRoutes',
       target: 'mobileRoutes',
+      through: 'rolesMobileRoutes',
       onDelete: 'CASCADE',
     },
     {
       type: 'boolean',
       name: 'allowNewMobileMenu',
-      defaultValue: true,
     },
   ],
 });

@@ -102,6 +102,7 @@
     "@nocobase/plugin-gantt",
     "@nocobase/plugin-kanban",
     "@nocobase/plugin-logger",
+    "@nocobase/plugin-mobile",
     "@nocobase/plugin-system-settings",
     "@nocobase/plugin-ui-schema-storage",
     "@nocobase/plugin-user-data-sync",

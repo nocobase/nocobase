@@ -25,20 +25,19 @@ export class PluginMobileServer extends Plugin {
 
     this.app.acl.registerSnippet({
       name: `pm.mobile`,
-      actions: ['mobileRoutes:list'],
+      actions: ['mobileRoutes:list', 'roles.mobileRoutes:*'],
     });
 
     this.app.acl.allow('mobileRoutes', 'listAccessible', 'loggedIn');
-    this.app.acl.registerSnippet({
-      name: `pm.mobile`,
-      actions: ['roles.mobileRoutes:*'],
-    });
   }
 
   /**
    * used to implement: roles with permission (allowNewMobileMenu is true) can directly access the newly created menu
    */
   bindNewMenuToRoles() {
+    this.app.db.on('roles.beforeCreate', async (instance: Model) => {
+      instance.set('allowNewMobileMenu', ['admin', 'member'].includes(instance.name));
+    });
     this.app.db.on('mobileRoutes.afterCreate', async (instance: Model, { transaction }) => {
       const addNewMenuRoles = await this.app.db.getRepository('roles').find({
         filter: {
@@ -46,13 +45,10 @@ export class PluginMobileServer extends Plugin {
         },
         transaction,
       });
-
-      for (const role of addNewMenuRoles) {
-        await this.app.db.getRepository('roles.mobileRoutes', role.get('name')).add({
-          tk: instance.get('id'),
-          transaction,
-        });
-      }
+      await this.app.db.getRepository('mobileRoutes.roles', instance.id).add({
+        tk: addNewMenuRoles.map((role) => role.name),
+        transaction,
+      });
     });
   }
 
