@@ -35,7 +35,6 @@ export abstract class RelationRepository {
   sourceInstance: Model;
   db: Database;
   database: Database;
-  add: any;
 
   constructor(sourceCollection: Collection, association: string, sourceKeyValue: TargetKey) {
     this.db = sourceCollection.context.database;
