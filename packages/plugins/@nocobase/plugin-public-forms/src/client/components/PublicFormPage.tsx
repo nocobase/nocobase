@@ -209,7 +209,9 @@ function InternalPublicForm() {
                 />
               </SchemaComponentContext.Provider>
             </PublicPublicFormProvider>
-            <PoweredBy />
+            <div style={{ marginBottom: '20px' }}>
+              <PoweredBy />
+            </div>
           </div>
         </div>
       </PublicAPIClientProvider>
