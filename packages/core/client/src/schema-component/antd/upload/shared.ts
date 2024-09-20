@@ -153,7 +153,7 @@ export function useDefaultUploadProps(props) {
 
 export function useUploadProps<T extends IUploadProps = UploadProps>(props: T) {
   const scope = useExpressionScope();
-  const useProps = scope['useUploadProps'] || useDefaultUploadProps;
+  const useProps = scope['useGlobalUploadProps'] || useDefaultUploadProps;
   return useProps(props);
 }
 
