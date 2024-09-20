@@ -11,6 +11,7 @@ import { Context, Next } from '@nocobase/actions';
 import { koaMulter as multer } from '@nocobase/utils';
 import Path from 'path';
 
+import _ from 'lodash';
 import Plugin from '..';
 import {
   FILE_FIELD_NAME,
@@ -35,9 +36,9 @@ function getFileFilter(storage) {
 
 export function getFileData(ctx: Context) {
   const { [FILE_FIELD_NAME]: file, storage } = ctx;
-  const { values } = ctx.action.params;
+  const values = ctx.action?.params?.values;
   if (!file) {
-    if (values) {
+    if (_.isPlainObject(values)) {
       return values;
     }
     return ctx.throw(400, 'file validation failed');

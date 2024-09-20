@@ -21,6 +21,7 @@
     "antd": "5.x",
     "cos-nodejs-sdk-v5": "^2.11.14",
     "koa-static": "^5.0.0",
+    "lodash": "4.x",
     "mime-match": "^1.0.2",
     "mkdirp": "~0.5.4",
     "multer": "^1.4.2",
