@@ -247,9 +247,10 @@ export const useCreateActionProps = () => {
         actionField.data.loading = false;
         actionField.data.data = data;
         // __parent?.service?.refresh?.();
-        if (successMessage) {
+        if (!successMessage) {
           message.success(t('Saved successfully'));
           await resetFormCorrectly(form);
+          setVisible?.(false);
           return;
         }
         if (manualClose) {
