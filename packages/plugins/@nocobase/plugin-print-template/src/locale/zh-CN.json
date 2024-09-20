@@ -1,0 +1,21 @@
+{
+  "template name": "模板名称",
+  "template remark": "模板标记",
+  "template type": "模板类型",
+  "support table": "支持数据表",
+  "template file": "模板文件",
+  "actions": "操作",
+  "edit action": "编辑",
+  "add action": "添加模板",
+  "submit": "提交",
+  "delete action": "删除",
+  "template type inconsistent":"模板类型与模板文件类型不一致!",
+  "save success": "保存成功",
+  "confirm delete title": "删除",
+  "confirm delete content": "确认删除？",
+  "delete success": "删除成功",
+  "template print setting menu": "模板打印",
+  "template print action":"模板打印",
+  "template print modal title":"模板打印",
+  "select template":"选择模板"
+}
