@@ -99,7 +99,7 @@ export const mapDatePicker = function () {
     const onChange = props.onChange;
     const { name: blockType } = useBlockContext() || {};
     //是否是筛选的场景下
-    const isUnderFilter = blockType !== 'form';
+    const isUnderFilter = blockType && blockType !== 'form';
     return {
       ...props,
       format: format,
