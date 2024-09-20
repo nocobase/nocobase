@@ -25,6 +25,7 @@ export class PluginPublicFormsServer extends Plugin {
             ...v.options,
           };
         }),
+        template: collection.options.template,
       },
     ];
     return collections.concat(
@@ -37,6 +38,7 @@ export class PluginPublicFormsServer extends Plugin {
               ...v.options,
             };
           }),
+          template: targetCollection.options.template,
         };
       }),
     );
