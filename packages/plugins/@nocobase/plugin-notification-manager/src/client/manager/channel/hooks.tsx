@@ -14,6 +14,7 @@ import {
   useCollection,
   useCollectionRecordData,
   useDataBlockRequest,
+  useBlockRequestContext,
   useDataBlockResource,
   usePlugin,
 } from '@nocobase/client';
@@ -27,24 +28,32 @@ import { useNotificationTranslation } from '../../locale';
 import { ChannelType } from './types';
 
 export const useCreateActionProps = () => {
-  const { setVisible } = useActionContext();
+  const { setVisible, setSubmitted } = useActionContext();
   const { message } = AntdApp.useApp();
   const form = useForm();
   const resource = useDataBlockResource();
-  const { runAsync } = useDataBlockRequest();
+  const { service, block, __parent } = useBlockRequestContext();
   const collection = useCollection();
   return {
     type: 'primary',
-    async onClick() {
+    async onClick(e?, callBack?) {
       await form.submit();
       const values = form.values;
       await resource.create({
         values,
       });
-
-      await runAsync();
-      message.success('Saved successfully!');
-      setVisible(false);
+      const { count = 0, page = 0, pageSize = 0 } = service?.data?.meta || {};
+      if (count % pageSize === 1 && page !== 1) {
+        service.run({
+          ...service?.params?.[0],
+          page: page - 1,
+        });
+      }
+      if (callBack) {
+        callBack?.();
+      }
+      setSubmitted?.(true);
+      setVisible?.(false);
     },
   };
 };

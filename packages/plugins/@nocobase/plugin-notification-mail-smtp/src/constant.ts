@@ -7,5 +7,5 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export const channelType = 'mail';
+export const channelType = 'smtp-mail';
 export const NAMESPACE = '@nocobase/plugin-notification-mail-smtp';
