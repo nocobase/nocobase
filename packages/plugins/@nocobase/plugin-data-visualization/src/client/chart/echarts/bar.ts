@@ -27,6 +27,7 @@ export class Bar extends EChart {
         title: 'yField',
       },
       'seriesField',
+      'size',
     ];
   }
 

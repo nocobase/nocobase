@@ -9,7 +9,7 @@
 
 import { useAPIClient } from '@nocobase/client';
 import { Empty, Result, Spin, Typography } from 'antd';
-import React, { useContext } from 'react';
+import React, { useContext, useEffect } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { useData, useFieldTransformer, useFieldsWithAssociation } from '../hooks';
 import { useChartsTranslation } from '../locale';
@@ -18,6 +18,7 @@ import { ChartRendererContext } from './ChartRendererProvider';
 import { useChart } from '../chart/group';
 import { Schema } from '@formily/react';
 import { ChartRendererDesigner } from './ChartRendererDesigner';
+import { uid } from '@formily/shared';
 const { Paragraph, Text } = Typography;
 
 const ErrorFallback = ({ error }) => {
@@ -50,6 +51,11 @@ export const ChartRenderer: React.FC & {
   const chart = useChart(config?.chartType);
   const locale = api.auth.getLocale();
   const transformers = useFieldTransformer(transform, locale);
+  // error key is used for resetting error boundary when config changes
+  const [errorKey, setErrorKey] = React.useState(uid());
+  useEffect(() => {
+    setErrorKey(uid());
+  }, [config]);
 
   if (!chart) {
     return <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('Please configure chart')} />;
@@ -78,6 +84,7 @@ export const ChartRenderer: React.FC & {
   return (
     <Spin spinning={service.loading}>
       <ErrorBoundary
+        key={errorKey}
         onError={(error) => {
           console.error(error);
         }}

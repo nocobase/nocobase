@@ -31,7 +31,7 @@ export class EChart extends Chart {
       name,
       title,
       Component: C,
-      config: ['xField', 'yField', 'seriesField', ...(config || [])],
+      config: ['xField', 'yField', 'seriesField', 'size', ...(config || [])],
     });
     this.series = series;
   }
@@ -48,8 +48,7 @@ export class EChart extends Chart {
   };
 
   getProps({ data, general, advanced, fieldProps }: RenderProps): EChartsReactProps['option'] {
-    console.log(fieldProps);
-    const { xField, yField, seriesField, ...others } = general;
+    const { xField, yField, seriesField, size, ...others } = general;
     const xLabel = fieldProps[xField]?.label;
     const yLabel = fieldProps[yField]?.label;
     let seriesName = [yLabel];
@@ -96,6 +95,7 @@ export class EChart extends Chart {
           name: yLabel,
         },
         animation: false,
+        size,
       },
       advanced,
     );

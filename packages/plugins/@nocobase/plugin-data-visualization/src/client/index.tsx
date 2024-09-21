@@ -38,7 +38,9 @@ class PluginDataVisualiztionClient extends Plugin {
   public charts: ChartGroup = new ChartGroup();
 
   async load() {
-    this.charts.setGroup('Built-in', [...echarts, ...antd]);
+    this.charts.addGroup('echarts', { title: 'ECharts', charts: echarts });
+    this.charts.addGroup('antd', { title: 'Ant Design', charts: antd });
+    this.charts.addGroup('ant-design-charts', { title: 'Ant Design Charts', charts: g2plot });
 
     this.app.addComponents({
       ChartV2BlockInitializer,

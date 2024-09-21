@@ -7,9 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useEffect } from 'react';
+import React, { useContext, useEffect, useRef } from 'react';
 import ReactECharts, { EChartsReactProps } from 'echarts-for-react';
-import { ECharts } from 'echarts';
+import { ECharts, registerTheme } from 'echarts';
+import walden from './themes/walden';
+import { ChartRendererContext } from '../../renderer';
+import { useSetChartSize } from '../../hooks/chart';
+
+registerTheme('walden', walden);
 
 interface EChartsInstance {
   getEchartsInstance: () => ECharts | undefined;
@@ -17,13 +22,21 @@ interface EChartsInstance {
 
 export const EChart = (props: EChartsReactProps['option']) => {
   let instance: EChartsInstance;
+  const { size = {}, ...option } = props;
+  let { height: fixedHeight } = props;
+  if (!fixedHeight && size.type === 'fixed') {
+    fixedHeight = size.fixed;
+  }
+  const { chartRef, chartHeight } = useSetChartSize(size, fixedHeight);
 
-  useEffect(() => {
-    if (!instance) {
-      return;
-    }
-    instance.getEchartsInstance().resize();
-  }, [instance]);
-
-  return <ReactECharts option={props} ref={(e) => (instance = e)} />;
+  return (
+    <div ref={chartRef} style={chartHeight ? { height: `${chartHeight}px` } : {}}>
+      <ReactECharts
+        option={option}
+        theme={'walden'}
+        style={{ height: `${chartHeight}px` }}
+        ref={(e) => (instance = e)}
+      />
+    </div>
+  );
 };

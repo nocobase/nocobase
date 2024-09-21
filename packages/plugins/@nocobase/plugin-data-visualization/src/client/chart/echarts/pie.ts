@@ -31,6 +31,7 @@ export class Pie extends EChart {
         title: 'colorField',
         required: true,
       },
+      'size',
     ];
   }
 

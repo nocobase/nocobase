@@ -12,28 +12,36 @@ import { ChartType } from './chart';
 import DataVisualizationPlugin from '..';
 import { lang } from '../locale';
 
+interface Group {
+  title: string;
+  charts: ChartType[];
+}
+
 export class ChartGroup {
   /**
    * @internal
    */
-  charts: Map<string, ChartType[]> = new Map();
+  charts: Map<string, Group> = new Map();
 
-  setGroup(name: string, charts: ChartType[]) {
-    this.charts.set(name, charts);
-  }
-
-  addGroup(name: string, charts: ChartType[]) {
+  addGroup(name: string, group: Group) {
     if (this.charts.has(name)) {
       throw new Error(`[data-visualization] Chart group "${name}" already exists`);
     }
-    this.setGroup(name, charts);
+    this.charts.set(name, group);
   }
 
-  add(group: string, chart: ChartType) {
-    if (!this.charts.has(group)) {
-      this.setGroup(group, []);
+  add(name: string, charts: ChartType | ChartType[]) {
+    if (!this.charts.has(name)) {
+      return;
     }
-    this.charts.get(group)?.push(chart);
+    if (!Array.isArray(charts)) {
+      charts = [charts];
+    }
+    const group = this.charts.get(name);
+    this.charts.set(name, {
+      ...group,
+      charts: [...group.charts, ...charts],
+    });
   }
 
   /**
@@ -48,23 +56,17 @@ export class ChartGroup {
     }[];
   }[] {
     const result = [];
-    this.charts.forEach((charts, group) => {
+    this.charts.forEach(({ title, charts }, group) => {
       const children = charts.map((chart) => ({
         key: `${group}.${chart.name}`,
         label: lang(chart.title),
         value: `${group}.${chart.name}`,
       }));
       result.push({
-        label: lang(group),
+        label: lang(title),
         children,
       });
     });
-    // Put group named "Built-in" at the first
-    const index = result.findIndex((item) => item.label === lang('Built-in'));
-    if (index > -1) {
-      const [item] = result.splice(index, 1);
-      result.unshift(item);
-    }
     return result;
   }
 
@@ -75,7 +77,7 @@ export class ChartGroup {
     [key: string]: ChartType;
   } {
     const result = {};
-    this.charts.forEach((charts, group) => {
+    this.charts.forEach(({ charts }, group) => {
       charts.forEach((chart) => {
         result[`${group}.${chart.name}`] = chart;
       });

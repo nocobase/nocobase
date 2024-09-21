@@ -22,7 +22,7 @@ import {
 } from '@nocobase/client';
 import { Alert, App, Button, Card, Col, Modal, Row, Space, Table, Tabs, Typography, theme } from 'antd';
 import { cloneDeep, isEqual } from 'lodash';
-import React, { useContext, useEffect, useMemo, useRef } from 'react';
+import React, { memo, useContext, useEffect, useMemo, useRef } from 'react';
 import {
   useChartFields,
   useCollectionOptions,
@@ -142,7 +142,7 @@ export const ChartConfigure: React.FC<{
     [field, visible, dataSource, collection],
   );
 
-  const RunButton: React.FC = () => (
+  const RunButton: React.FC = memo(() => (
     <Button
       type="link"
       loading={service?.loading}
@@ -165,7 +165,7 @@ export const ChartConfigure: React.FC<{
     >
       {t('Run query')}
     </Button>
-  );
+  ));
 
   const queryRef = useRef(null);
   const configRef = useRef(null);
