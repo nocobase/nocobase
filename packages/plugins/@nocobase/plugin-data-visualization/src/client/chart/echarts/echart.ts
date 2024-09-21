@@ -94,6 +94,9 @@ export class EChart extends Chart {
         yAxis: {
           name: yLabel,
         },
+        grid: {
+          containLabel: true,
+        },
         animation: false,
         size,
       },

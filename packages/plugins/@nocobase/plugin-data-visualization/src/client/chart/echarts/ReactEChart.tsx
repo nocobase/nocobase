@@ -34,7 +34,7 @@ export const EChart = (props: EChartsReactProps['option']) => {
       <ReactECharts
         option={option}
         theme={'walden'}
-        style={{ height: `${chartHeight}px` }}
+        style={chartHeight ? { height: `${chartHeight}px` } : {}}
         ref={(e) => (instance = e)}
       />
     </div>
