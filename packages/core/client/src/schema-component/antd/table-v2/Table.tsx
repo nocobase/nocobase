@@ -145,8 +145,8 @@ const useTableColumns = (props: { showDel?: boolean; isSubTable?: boolean }) => 
               </SubFormProvider>
             );
           },
-          onCell: (record) => {
-            return { record, schema: s };
+          onCell: (record, rowIndex) => {
+            return { record, schema: s, rowIndex };
           },
         } as TableColumnProps<any>;
       }),
@@ -344,9 +344,6 @@ const headerClass = css`
 const cellClass = css`
   max-width: 300px;
   white-space: nowrap;
-  .nb-read-pretty-input-number {
-    text-align: right;
-  }
   .ant-color-picker-trigger {
     position: absolute;
     top: 50%;
@@ -589,15 +586,24 @@ export const Table: any = withDynamicSchemaProps(
     const BodyCellComponent = useCallback(
       (props) => {
         const isIndex = props.className?.includes('selection-column');
-        const { record, schema } = props;
+        const { record, schema, rowIndex } = props;
         const { ref, inView } = useInView({
           threshold: 0,
           triggerOnce: true,
-          initialInView: isIndex || !!process.env.__E2E__ || dataSource.length <= 10,
+          initialInView: isIndex || !!process.env.__E2E__,
           skip: isIndex || !!process.env.__E2E__,
         });
         const { valueMap } = useSatisfiedActionValues({ formValues: record, category: 'style', schema });
         const style = useMemo(() => Object.assign({ ...props.style }, valueMap), [props.style, valueMap]);
+
+        // fix the problem of blank rows at the beginning of a table block
+        if (rowIndex < 20) {
+          return (
+            <td {...props} className={classNames(props.className, cellClass)} style={style}>
+              {props.children}
+            </td>
+          );
+        }
 
         return (
           <td {...props} ref={ref} className={classNames(props.className, cellClass)} style={style}>
@@ -606,7 +612,7 @@ export const Table: any = withDynamicSchemaProps(
           </td>
         );
       },
-      [dataSource.length, others.isSubTable],
+      [others.isSubTable],
     );
 
     const components = useMemo(() => {
@@ -726,9 +732,9 @@ export const Table: any = withDynamicSchemaProps(
     const scroll = useMemo(() => {
       return {
         x: 'max-content',
-        y: tableHeight,
+        y: dataSource.length > 0 ? tableHeight : undefined,
       };
-    }, [tableHeight, maxContent]);
+    }, [tableHeight, maxContent, dataSource]);
 
     const rowClassName = useCallback(
       (record) => (selectedRow.includes(record[rowKey]) ? highlightRow : ''),
@@ -766,6 +772,9 @@ export const Table: any = withDynamicSchemaProps(
                   height: 100%;
                   display: flex;
                   flex-direction: column;
+                  .ant-table-expanded-row-fixed {
+                    min-height: ${tableHeight}px;
+                  }
                   .ant-table-body {
                     min-height: ${tableHeight}px;
                   }

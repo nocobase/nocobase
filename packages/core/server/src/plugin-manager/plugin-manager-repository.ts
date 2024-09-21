@@ -24,6 +24,8 @@ export class PluginManagerRepository extends Repository {
     this.pm = pm;
   }
 
+  async createByName(nameOrPkgs) {}
+
   async has(nameOrPkg: string) {
     const { name } = await PluginManager.parseName(nameOrPkg);
     const instance = await this.findOne({
@@ -79,11 +81,19 @@ export class PluginManagerRepository extends Repository {
   }
 
   async updateVersions() {
-    const items = await this.find();
+    const items = await this.find({
+      filter: {
+        enabled: true,
+      },
+    });
     for (const item of items) {
-      const json = await PluginManager.getPackageJson(item.packageName);
-      item.set('version', json.version);
-      await item.save();
+      try {
+        const json = await PluginManager.getPackageJson(item.packageName);
+        item.set('version', json.version);
+        await item.save();
+      } catch (error) {
+        this.pm.app.log.error(error);
+      }
     }
   }
 
@@ -117,6 +127,9 @@ export class PluginManagerRepository extends Repository {
     }
     return await this.find({
       sort: 'id',
+      filter: {
+        enabled: true,
+      },
     });
   }
 

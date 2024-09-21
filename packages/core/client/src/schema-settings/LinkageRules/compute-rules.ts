@@ -7,9 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { conditionAnalyses } from '../../schema-component/common/utils/uitls';
 import { ActionType } from './type';
 import { InputModeType } from './ValueDynamicComponent';
-import { conditionAnalyses } from '../../schema-component/common/utils/uitls';
 const getActionValue = (operator, value) => {
   const getValueByMode = (value) => {
     const mode = value?.mode as InputModeType;
@@ -18,11 +18,10 @@ const getActionValue = (operator, value) => {
     } else return null;
   };
   switch (true) {
-    case [ActionType.Color, ActionType.BackgroundColor].includes(operator):
+    case [ActionType.Color, ActionType.BackgroundColor, ActionType.TextAlign].includes(operator):
       return getValueByMode(value);
     default:
       return null;
-      break;
   }
 };
 

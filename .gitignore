@@ -32,6 +32,7 @@ storage/plugins
 storage/tar
 storage/tmp
 storage/app.watch.ts
+storage/.upgrading
 storage/logs-e2e
 storage/uploads-e2e
 storage/.pm2-*

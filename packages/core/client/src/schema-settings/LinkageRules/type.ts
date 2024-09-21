@@ -21,6 +21,7 @@ export enum ActionType {
   Active = 'enabled',
   Color = 'color',
   BackgroundColor = 'backgroundColor',
+  TextAlign = 'textAlign',
 }
 
 export enum LinkageRuleCategory {
