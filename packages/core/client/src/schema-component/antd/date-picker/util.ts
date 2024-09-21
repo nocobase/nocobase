@@ -97,7 +97,7 @@ export const mapDatePicker = function () {
     const { dateOnly, showTime, picker, utc, value } = props;
     const format = getDefaultFormat(props);
     const onChange = props.onChange;
-    const { name: blockType } = useBlockContext() || {};
+    const { name: blockType } = useBlockContext?.() || {};
     //是否是筛选的场景下
     const isUnderFilter = blockType && blockType !== 'form';
     return {
