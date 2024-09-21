@@ -11,7 +11,7 @@ import { CloseOutlined, SearchOutlined } from '@ant-design/icons';
 import { useFieldSchema } from '@formily/react';
 import { Col, Collapse, Input, Row, Tree } from 'antd';
 import cls from 'classnames';
-import React, { ChangeEvent, MouseEvent, useMemo, useState } from 'react';
+import React, { ChangeEvent, MouseEvent, useEffect, useMemo, useState } from 'react';
 import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
 import { SortableItem } from '../../common';
 import { useCompile, useDesigner, useProps } from '../../hooks';
@@ -36,6 +36,8 @@ export const AssociationFilterItem = withDynamicSchemaProps(
     const {
       list,
       onSelected,
+      // Used when setting default values
+      onChange,
       handleSearchInput: _handleSearchInput,
       params,
       run,
@@ -48,7 +50,7 @@ export const AssociationFilterItem = withDynamicSchemaProps(
 
     const defaultActiveKeyCollapse = useMemo<React.Key[]>(
       () => (defaultCollapse && collectionField?.name ? [collectionField.name] : []),
-      [collectionField.name, defaultCollapse],
+      [collectionField?.name, defaultCollapse],
     );
     const valueKey = _valueKey || collectionField?.targetKey || 'id';
     const labelKey = _labelKey || fieldSchema['x-component-props']?.fieldNames?.label || valueKey;
@@ -59,10 +61,17 @@ export const AssociationFilterItem = withDynamicSchemaProps(
     };
 
     const [expandedKeys, setExpandedKeys] = useState<React.Key[]>([]);
-    const [selectedKeys, setSelectedKeys] = useState<React.Key[]>([]);
+    const [selectedKeys, setSelectedKeys] = useState<React.Key[]>(fieldSchema.default || []);
     const [autoExpandParent, setAutoExpandParent] = useState<boolean>(true);
 
     const labelUiSchema = useLabelUiSchema(collectionField, fieldNames?.title || 'label');
+
+    useEffect(() => {
+      // by default, if the default is not empty, we will auto run the filter one time
+      if (fieldSchema.default) {
+        onSelected(fieldSchema.default);
+      }
+    }, [fieldSchema.default, onSelected]);
 
     if (!collectionField) {
       return null;
@@ -76,6 +85,7 @@ export const AssociationFilterItem = withDynamicSchemaProps(
     const onSelect = (selectedKeysValue: React.Key[]) => {
       setSelectedKeys(selectedKeysValue);
       onSelected(selectedKeysValue);
+      onChange?.(selectedKeysValue);
     };
 
     const handleSearchToggle = (e: MouseEvent) => {

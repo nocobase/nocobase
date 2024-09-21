@@ -38,7 +38,10 @@ import { VariableInput, getShouldChange } from './VariableInput/VariableInput';
 import { Option } from './VariableInput/type';
 import { formatVariableScop } from './VariableInput/utils/formatVariableScop';
 
-export const SchemaSettingsDefaultValue = function DefaultValueConfigure(props: { fieldSchema?: Schema }) {
+export const SchemaSettingsDefaultValue = function DefaultValueConfigure(props: {
+  fieldSchema?: Schema;
+  hideVariableButton?: boolean;
+}) {
   const currentSchema = useFieldSchema();
   const fieldSchema = props?.fieldSchema ?? currentSchema;
   const field: Field = useField();
@@ -98,10 +101,10 @@ export const SchemaSettingsDefaultValue = function DefaultValueConfigure(props: 
     return {
       ArrayCollapse,
       FormLayout,
-      VariableInput: (props) => {
+      VariableInput: (inputProps) => {
         return (
           <FlagProvider isInSubForm={isInSubForm} isInSubTable={isInSubTable} isInSetDefaultValueDialog>
-            <VariableInput {...props} />
+            <VariableInput {...inputProps} hideVariableButton={props?.hideVariableButton} />
           </FlagProvider>
         );
       },
@@ -133,35 +136,34 @@ export const SchemaSettingsDefaultValue = function DefaultValueConfigure(props: 
               getAllCollectionsInheritChain,
             }),
             renderSchemaComponent: function Com(props) {
-              const s = _.cloneDeep(fieldSchemaWithoutRequired) || ({} as Schema);
-              s.title = '';
-              s.name = 'default';
-              s['x-read-pretty'] = false;
-              s['x-disabled'] = false;
+              const clonedSchema = _.cloneDeep(fieldSchemaWithoutRequired) || ({} as Schema);
+              clonedSchema['x-read-pretty'] = false;
+              clonedSchema['x-disabled'] = false;
+              _.set(clonedSchema, 'x-decorator-props.showTitle', false);
 
-              const defaultValue = getFieldDefaultValue(s, collectionField);
+              const defaultValue = getFieldDefaultValue(clonedSchema, collectionField);
 
-              if (collectionField.target && s['x-component-props']) {
-                s['x-component-props'].mode = 'Select';
+              if (collectionField.target && clonedSchema['x-component-props']) {
+                clonedSchema['x-component-props'].mode = 'Select';
               }
 
               if (collectionField?.uiSchema.type) {
-                s.type = collectionField.uiSchema.type;
+                clonedSchema.type = collectionField.uiSchema.type;
               }
 
               if (collectionField?.uiSchema['x-component'] === 'Checkbox') {
-                _.set(s, 'x-component-props.defaultChecked', defaultValue);
+                _.set(clonedSchema, 'x-component-props.defaultChecked', defaultValue);
 
                 // 在这里如果不设置 type 为 void，会导致设置的默认值不生效
                 // 但是我不知道为什么必须要设置为 void ？
-                s.type = 'void';
+                clonedSchema.type = 'void';
               }
 
               const schema = {
-                ...(s || {}),
+                ...(clonedSchema || {}),
                 'x-decorator': 'FormItem',
                 'x-component-props': {
-                  ...s['x-component-props'],
+                  ...clonedSchema['x-component-props'],
                   collectionName: collectionField?.collectionName,
                   targetField,
                   onChange: props.onChange,

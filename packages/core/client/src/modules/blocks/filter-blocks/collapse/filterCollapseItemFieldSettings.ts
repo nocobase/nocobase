@@ -15,9 +15,8 @@ import { useFormBlockContext } from '../../../../block-provider/FormBlockProvide
 import { useCollectionManager_deprecated, useCollection_deprecated } from '../../../../collection-manager';
 import { useCollection } from '../../../../data-source';
 import { useCollectionManager } from '../../../../data-source/collection/CollectionManagerProvider';
-import { fieldComponentSettingsItem } from '../../../../data-source/commonsSettingsItem';
 import { useCompile, useDesignable } from '../../../../schema-component';
-import { SchemaSettingsDefaultSortingRules } from '../../../../schema-settings';
+import { SchemaSettingsDefaultSortingRules, SchemaSettingsDefaultValue } from '../../../../schema-settings';
 import { SchemaSettingsDataScope } from '../../../../schema-settings/SchemaSettingsDataScope';
 
 export const filterCollapseItemFieldSettings = new SchemaSettings({
@@ -217,7 +216,13 @@ export const filterCollapseItemFieldSettings = new SchemaSettings({
               return !!collectionField?.target;
             },
           },
-          fieldComponentSettingsItem,
+          {
+            name: 'setDefaultValue',
+            Component: SchemaSettingsDefaultValue,
+            componentProps: {
+              hideVariableButton: true,
+            },
+          },
         ];
       },
     },

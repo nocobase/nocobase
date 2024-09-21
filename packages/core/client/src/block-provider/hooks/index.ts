@@ -1307,6 +1307,46 @@ export const useAssociationFilterBlockProps = () => {
     parseVariableLoading,
   ]);
 
+  const onSelected = useCallback(
+    (value) => {
+      const { targets, uid } = findFilterTargets(fieldSchema);
+
+      getDataBlocks().forEach((block) => {
+        const target = targets.find((target) => target.uid === block.uid);
+        if (!target) return;
+
+        const key = `${uid}${fieldSchema.name}`;
+        const param = block.service.params?.[0] || {};
+
+        // 保留原有的 filter
+        const storedFilter = block.service.params?.[1]?.filters || {};
+
+        if (value.length) {
+          storedFilter[key] = {
+            [filterKey]: value,
+          };
+        } else {
+          if (block.dataLoadingMode === 'manual') {
+            return block.clearData();
+          }
+          delete storedFilter[key];
+        }
+
+        const mergedFilter = mergeFilter([...Object.values(storedFilter), block.defaultFilter]);
+
+        return block.doFilter(
+          {
+            ...param,
+            page: 1,
+            filter: mergedFilter,
+          },
+          { filters: storedFilter },
+        );
+      });
+    },
+    [fieldSchema, filterKey, getDataBlocks],
+  );
+
   if (!collectionField) {
     return {};
   }
@@ -1347,41 +1387,6 @@ export const useAssociationFilterBlockProps = () => {
       });
     };
   }
-
-  const onSelected = (value) => {
-    const { targets, uid } = findFilterTargets(fieldSchema);
-
-    getDataBlocks().forEach((block) => {
-      const target = targets.find((target) => target.uid === block.uid);
-      if (!target) return;
-
-      const key = `${uid}${fieldSchema.name}`;
-      const param = block.service.params?.[0] || {};
-      // 保留原有的 filter
-      const storedFilter = block.service.params?.[1]?.filters || {};
-      if (value.length) {
-        storedFilter[key] = {
-          [filterKey]: value,
-        };
-      } else {
-        if (block.dataLoadingMode === 'manual') {
-          return block.clearData();
-        }
-        delete storedFilter[key];
-      }
-
-      const mergedFilter = mergeFilter([...Object.values(storedFilter), block.defaultFilter]);
-
-      return block.doFilter(
-        {
-          ...param,
-          page: 1,
-          filter: mergedFilter,
-        },
-        { filters: storedFilter },
-      );
-    });
-  };
 
   return {
     /** 渲染 Collapse 的列表数据 */

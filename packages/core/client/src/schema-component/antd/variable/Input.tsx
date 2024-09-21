@@ -166,6 +166,7 @@ export type VariableInputProps = {
   style?: React.CSSProperties;
   className?: string;
   parseOptions?: ParseOptions;
+  hideVariableButton?: boolean;
 };
 
 export function Input(props: VariableInputProps) {
@@ -180,9 +181,10 @@ export function Input(props: VariableInputProps) {
     changeOnSelect,
     fieldNames,
     parseOptions,
+    hideVariableButton,
   } = props;
   const scope = typeof props.scope === 'function' ? props.scope() : props.scope;
-  const { wrapSSR, hashId, componentCls, rootPrefixCls } = useStyles();
+  const { wrapSSR, hashId, componentCls, rootPrefixCls } = useStyles({ hideVariableButton });
 
   // 添加 antd input 样式，防止样式缺失
   useAntdInputStyle(`${rootPrefixCls}-input`);
@@ -425,24 +427,26 @@ export function Input(props: VariableInputProps) {
           ) : null}
         </div>
       )}
-      <Cascader
-        options={options}
-        value={variable ?? cValue}
-        onChange={onSwitch}
-        loadData={loadData as any}
-        changeOnSelect={changeOnSelect}
-        fieldNames={fieldNames}
-        disabled={disabled}
-      >
-        {button ?? (
-          <XButton
-            className={css(`
+      {hideVariableButton ? null : (
+        <Cascader
+          options={options}
+          value={variable ?? cValue}
+          onChange={onSwitch}
+          loadData={loadData as any}
+          changeOnSelect={changeOnSelect}
+          fieldNames={fieldNames}
+          disabled={disabled}
+        >
+          {button ?? (
+            <XButton
+              className={css(`
               margin-left: -1px;
             `)}
-            type={variable ? 'primary' : 'default'}
-          />
-        )}
-      </Cascader>
+              type={variable ? 'primary' : 'default'}
+            />
+          )}
+        </Cascader>
+      )}
     </Space.Compact>,
   );
 }
