@@ -16,13 +16,13 @@ export class Pie extends G2PlotChart {
     super({ name: 'pie', title: 'Pie Chart', Component: G2Pie });
     this.config = [
       {
-        property: 'field',
+        settingType: 'field',
         name: 'angleField',
         title: 'angleField',
         required: true,
       },
       {
-        property: 'field',
+        settingType: 'field',
         name: 'colorField',
         title: 'colorField',
         required: true,

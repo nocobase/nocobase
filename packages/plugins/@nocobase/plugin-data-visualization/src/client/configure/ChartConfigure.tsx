@@ -434,10 +434,11 @@ ChartConfigure.Config = function Config() {
       {(form) => {
         const chartType = form.values.config?.chartType;
         const chart = charts[chartType];
+        const enableAdvancedConfig = chart?.enableAdvancedConfig;
         const schema = chart?.schema || {};
         return (
           <SchemaComponent
-            schema={getConfigSchema(schema)}
+            schema={getConfigSchema(schema, enableAdvancedConfig)}
             scope={{ t, chartTypes, useChartFields: getChartFields, getReference, formCollapse }}
             components={{ FormItem, ArrayItems, Space, AutoComplete, FormCollapse }}
           />

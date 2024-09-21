@@ -15,18 +15,17 @@ export type FieldConfigProps = Partial<{
   title: string;
   required: boolean;
   defaultValue: any;
+  options: { label: string; value: any }[];
 }>;
 
 export type AnySchemaProperties = SchemaProperties<any, any, any, any, any, any, any, any>;
-export type ConfigProps = FieldConfigProps | AnySchemaProperties | (() => AnySchemaProperties);
+export type GeneralConfig =
+  | (FieldConfigProps & { settingType?: string })
+  | ((props?: FieldConfigProps) => AnySchemaProperties);
 
-export type Config =
-  | (ConfigProps & {
-      property?: string;
-    })
-  | string;
+export type Config = string | GeneralConfig | AnySchemaProperties;
 
-const selectField = ({ name, title, required, defaultValue }: FieldConfigProps) => {
+const field = ({ name, title, required, defaultValue }: FieldConfigProps) => {
   return {
     [name || 'field']: {
       title: lang(title || 'Field'),
@@ -40,7 +39,24 @@ const selectField = ({ name, title, required, defaultValue }: FieldConfigProps) 
   };
 };
 
-const booleanField = ({ name, title, defaultValue = false }: FieldConfigProps) => {
+const select = ({ name, title, required, defaultValue, options }: FieldConfigProps) => {
+  return {
+    [name || 'field']: {
+      title: lang(title || 'Field'),
+      type: 'string',
+      'x-decorator': 'FormItem',
+      'x-component': 'Select',
+      required,
+      default: defaultValue,
+      enum: options.map((option) => ({
+        label: lang(option.label),
+        value: option.value,
+      })),
+    },
+  };
+};
+
+const boolean = ({ name, title, defaultValue = false }: FieldConfigProps) => {
   return {
     [name || 'field']: {
       'x-content': lang(title || 'Field'),
@@ -53,12 +69,64 @@ const booleanField = ({ name, title, defaultValue = false }: FieldConfigProps) =
 };
 
 export default {
-  field: selectField,
-  booleanField,
-  xField: (props: FieldConfigProps) => selectField({ name: 'xField', title: 'xField', required: true, ...props }),
-  yField: (props: FieldConfigProps) => selectField({ name: 'yField', title: 'yField', required: true, ...props }),
-  seriesField: (props: FieldConfigProps) => selectField({ name: 'seriesField', title: 'seriesField', ...props }),
-  colorField: (props: FieldConfigProps) => selectField({ name: 'colorField', title: 'colorField', ...props }),
+  field,
+  boolean,
+  select,
+  xField: {
+    settingType: 'field',
+    name: 'xField',
+    title: 'xField',
+    required: true,
+  },
+  yField: {
+    settingType: 'field',
+    name: 'yField',
+    title: 'yField',
+    required: true,
+  },
+  seriesField: {
+    settingType: 'field',
+    name: 'seriesField',
+    title: 'seriesField',
+  },
+  colorField: {
+    settingType: 'field',
+    name: 'colorField',
+    title: 'colorField',
+    required: true,
+  },
+  isStack: {
+    settingType: 'boolean',
+    name: 'isStack',
+    title: 'isStack',
+  },
+  smooth: {
+    settingType: 'boolean',
+    name: 'smooth',
+    title: 'smooth',
+  },
+  isPercent: {
+    settingType: 'boolean',
+    name: 'isPercent',
+    title: 'isPercent',
+  },
+  isGroup: {
+    settingType: 'boolean',
+    name: 'isGroup',
+    title: 'isGroup',
+  },
+  showLegend: {
+    settingType: 'boolean',
+    name: 'showLegend',
+    title: 'Show legend',
+    defaultValue: true,
+  },
+  showLabel: {
+    settingType: 'boolean',
+    name: 'showLabel',
+    title: 'Show label',
+    defaultValue: true,
+  },
   size: () => ({
     size: {
       title: lang('Size'),

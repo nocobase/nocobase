@@ -12,8 +12,10 @@ import { EChartsReactProps } from 'echarts-for-react';
 import deepmerge from 'deepmerge';
 import './transform';
 import { Chart, ChartProps, ChartType, RenderProps } from '../chart';
+import { registerTheme } from 'echarts';
 
 export class EChart extends Chart {
+  static themes: string[] = ['default', 'light', 'dark'];
   series: any;
 
   constructor({
@@ -31,9 +33,23 @@ export class EChart extends Chart {
       name,
       title,
       Component: C,
-      config: ['xField', 'yField', 'seriesField', 'size', ...(config || [])],
+      config: ['xField', 'yField', 'seriesField', 'size', 'theme', 'showLegend', 'showLabel', ...(config || [])],
     });
     this.series = series;
+    this.addConfigs({
+      theme: {
+        settingType: 'select',
+        name: 'lightTheme',
+        title: 'Light theme',
+        defaultValue: 'default',
+        options: EChart.themes.map((theme) => ({ label: theme, value: theme })),
+      },
+    });
+  }
+
+  static registerTheme(name: string, theme: any) {
+    registerTheme(name, theme);
+    this.themes.push(name);
   }
 
   init: ChartType['init'] = (fields, { measures, dimensions }) => {
@@ -48,7 +64,8 @@ export class EChart extends Chart {
   };
 
   getProps({ data, general, advanced, fieldProps }: RenderProps): EChartsReactProps['option'] {
-    const { xField, yField, seriesField, size, ...others } = general;
+    const { xField, yField, seriesField, size, showLegend, isStack, smooth, showLabel, lightTheme, ...others } =
+      general;
     const xLabel = fieldProps[xField]?.label;
     const yLabel = fieldProps[yField]?.label;
     let seriesName = [yLabel];
@@ -58,10 +75,14 @@ export class EChart extends Chart {
     return deepmerge(
       {
         legend: {
+          show: showLegend,
           data: seriesName,
         },
         tooltip: {
           data: seriesName,
+        },
+        label: {
+          show: showLabel,
         },
         dataset: [
           {
@@ -84,6 +105,8 @@ export class EChart extends Chart {
         series: seriesName.map((name) => ({
           name,
           datasetIndex: 1,
+          smooth,
+          ...(isStack ? { stack: 'stack' } : {}),
           ...this.series,
           ...others,
         })),
@@ -99,6 +122,7 @@ export class EChart extends Chart {
         },
         animation: false,
         size,
+        lightTheme,
       },
       advanced,
     );

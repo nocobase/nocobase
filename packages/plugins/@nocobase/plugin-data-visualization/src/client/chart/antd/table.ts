@@ -13,7 +13,7 @@ import { Table as AntdTable } from 'antd';
 
 export class Table extends AntdChart {
   constructor() {
-    super({ name: 'table', title: 'Table', Component: AntdTable });
+    super({ name: 'table', title: 'Table', enableAdvancedConfig: true, Component: AntdTable });
   }
 
   getProps({ data, fieldProps, general, advanced }: RenderProps) {

@@ -7,14 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useContext, useEffect, useRef } from 'react';
+import React from 'react';
 import ReactECharts, { EChartsReactProps } from 'echarts-for-react';
-import { ECharts, registerTheme } from 'echarts';
-import walden from './themes/walden';
-import { ChartRendererContext } from '../../renderer';
+import { ECharts } from 'echarts';
 import { useSetChartSize } from '../../hooks/chart';
-
-registerTheme('walden', walden);
 
 interface EChartsInstance {
   getEchartsInstance: () => ECharts | undefined;
@@ -22,7 +18,7 @@ interface EChartsInstance {
 
 export const EChart = (props: EChartsReactProps['option']) => {
   let instance: EChartsInstance;
-  const { size = {}, ...option } = props;
+  const { size = {}, lightTheme, ...option } = props;
   let { height: fixedHeight } = props;
   if (!fixedHeight && size.type === 'fixed') {
     fixedHeight = size.fixed;
@@ -33,7 +29,7 @@ export const EChart = (props: EChartsReactProps['option']) => {
     <div ref={chartRef} style={chartHeight ? { height: `${chartHeight}px` } : {}}>
       <ReactECharts
         option={option}
-        theme={'walden'}
+        theme={lightTheme}
         style={chartHeight ? { height: `${chartHeight}px` } : {}}
         ref={(e) => (instance = e)}
       />

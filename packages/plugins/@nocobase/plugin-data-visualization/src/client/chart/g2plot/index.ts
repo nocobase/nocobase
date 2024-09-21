@@ -26,7 +26,9 @@ export default [
     config: [
       'smooth',
       {
-        property: 'isStack',
+        settingType: 'boolean',
+        name: 'isStack',
+        title: 'isStack',
         defaultValue: true,
       },
       'isPercent',

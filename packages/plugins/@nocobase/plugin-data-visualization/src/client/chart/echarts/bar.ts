@@ -19,15 +19,22 @@ export class Bar extends EChart {
     });
     this.config = [
       {
-        property: 'yField',
+        settingType: 'field',
+        name: 'yField',
         title: 'xField',
+        required: true,
       },
       {
-        property: 'xField',
+        settingType: 'field',
+        name: 'xField',
         title: 'yField',
+        required: true,
       },
       'seriesField',
       'size',
+      'theme',
+      'showLabel',
+      'isStack',
     ];
   }
 
