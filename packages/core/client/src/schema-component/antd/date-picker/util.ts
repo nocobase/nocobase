@@ -80,13 +80,16 @@ const handleChangeOnFilter = (value, picker, showTime) => {
   return value.format(format);
 };
 
-const handleChangeOnForm = (value, dateOnly, utc, picker, showTime) => {
+const handleChangeOnForm = (value, dateOnly, utc, picker, showTime, gmt) => {
   const format = showTime ? 'YYYY-MM-DD HH:mm:ss' : 'YYYY-MM-DD';
 
   if (dateOnly) {
     return dayjs(value).startOf(picker).format('YYYY-MM-DD');
   }
   if (utc) {
+    if (gmt) {
+      return toGmt(value);
+    }
     return dayjs(value).startOf(picker).toISOString();
   }
   return dayjs(value).startOf(picker).format(format);
@@ -94,7 +97,7 @@ const handleChangeOnForm = (value, dateOnly, utc, picker, showTime) => {
 
 export const mapDatePicker = function () {
   return (props: any) => {
-    const { dateOnly, showTime, picker, utc, value } = props;
+    const { dateOnly, showTime, picker, utc, gmt } = props;
     const format = getDefaultFormat(props);
     const onChange = props.onChange;
     const { name: blockType } = useBlockContext?.() || {};
@@ -109,7 +112,7 @@ export const mapDatePicker = function () {
           if (isUnderFilter) {
             onChange(handleChangeOnFilter(value, picker, showTime));
           } else {
-            onChange(handleChangeOnForm(value, dateOnly, utc, picker, showTime));
+            onChange(handleChangeOnForm(value, dateOnly, utc, picker, showTime, gmt));
           }
         }
       },
