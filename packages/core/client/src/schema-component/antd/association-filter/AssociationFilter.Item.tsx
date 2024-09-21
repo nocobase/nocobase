@@ -70,6 +70,7 @@ export const AssociationFilterItem = withDynamicSchemaProps(
       // by default, if the default is not empty, we will auto run the filter one time
       if (fieldSchema.default) {
         onSelected(fieldSchema.default);
+        setSelectedKeys(fieldSchema.default);
       }
     }, [fieldSchema.default, onSelected]);
 

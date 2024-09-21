@@ -136,7 +136,7 @@ export const SchemaSettingsDefaultValue = function DefaultValueConfigure(props: 
               getAllCollectionsInheritChain,
             }),
             renderSchemaComponent: function Com(props) {
-              const clonedSchema = _.cloneDeep(fieldSchemaWithoutRequired) || ({} as Schema);
+              const clonedSchema = useMemo(() => _.cloneDeep(fieldSchemaWithoutRequired) || ({} as Schema), []);
               clonedSchema['x-read-pretty'] = false;
               clonedSchema['x-disabled'] = false;
               _.set(clonedSchema, 'x-decorator-props.showTitle', false);
@@ -159,23 +159,29 @@ export const SchemaSettingsDefaultValue = function DefaultValueConfigure(props: 
                 clonedSchema.type = 'void';
               }
 
-              const schema = {
-                ...(clonedSchema || {}),
-                'x-decorator': 'FormItem',
-                'x-component-props': {
-                  ...clonedSchema['x-component-props'],
-                  collectionName: collectionField?.collectionName,
-                  targetField,
-                  onChange: props.onChange,
-                  defaultValue: isVariable(defaultValue) ? '' : defaultValue,
-                  style: {
-                    width: '100%',
-                    verticalAlign: 'top',
-                    minWidth: '200px',
-                  },
-                },
-                default: isVariable(defaultValue) ? '' : defaultValue,
-              } as ISchema;
+              const schema = useMemo(
+                () =>
+                  ({
+                    ...(clonedSchema || {}),
+                    'x-decorator': 'FormItem',
+                    'x-component-props': {
+                      ...clonedSchema['x-component-props'],
+                      collectionName: collectionField?.collectionName,
+                      targetField,
+                      defaultValue: isVariable(defaultValue) ? '' : defaultValue,
+                      style: {
+                        width: '100%',
+                        verticalAlign: 'top',
+                        minWidth: '200px',
+                      },
+                    },
+                    default: isVariable(defaultValue) ? '' : defaultValue,
+                  }) as ISchema,
+                [clonedSchema, defaultValue],
+              );
+
+              // the props.onChange's value is dynamic, so we can't use useMemo to wrap it
+              _.set(schema, 'x-component-props.onChange', props.onChange);
 
               return (
                 <FormProvider>
