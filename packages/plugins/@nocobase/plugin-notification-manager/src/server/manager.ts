@@ -26,7 +26,6 @@ export default class NotificationManager {
 
   registerTypes(type: string, config: NotificatonType) {
     const server = config.server;
-    config.server.setPluginCtx({ pluginCtx: this.plugin });
     this.notificationTypes.register(type, { server });
   }
   createSendingRecord = async (options: WriteLogOptions) => {

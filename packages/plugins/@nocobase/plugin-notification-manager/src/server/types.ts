@@ -28,11 +28,6 @@ export type SendFnType<Message> = (args: {
 }) => Promise<{ message: Message; status: 'success' | 'fail'; reason?: string }>;
 
 export abstract class NotificationServerBase<Message = any> {
-  public pluginCtx: PluginNotificationManagerServer;
-
-  setPluginCtx({ pluginCtx }: { pluginCtx: PluginNotificationManagerServer }) {
-    this.pluginCtx = pluginCtx;
-  }
   abstract send(params: {
     channel: Channel;
     message: Message;
