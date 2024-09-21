@@ -14,7 +14,7 @@ import { useBlockContext } from '../../../block-provider';
 
 const toStringByPicker = (value, picker = 'date', timezone: 'gmt' | 'local') => {
   if (!dayjs.isDayjs(value)) return value;
-  if (timezone === 'local' && picker === 'date') {
+  if (timezone === 'local') {
     const offset = new Date().getTimezoneOffset();
     return dayjs(toStringByPicker(value, picker, 'gmt'))
       .add(offset, 'minutes')
