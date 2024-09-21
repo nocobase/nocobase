@@ -248,19 +248,29 @@ export class PluginMobileClient extends Plugin {
   }
 
   addPermissionsSettingsUI() {
-    this.app.pm.get(PluginACLClient)?.settingsUI.addPermissionsTab(({ t, TabLayout, activeKey }) => ({
-      key: 'mobile-menu',
-      label: t('Mobile menu', {
-        ns: pkg.name,
-      }),
-      children: (
-        <TabLayout>
-          <MobileAllRoutesProvider active={activeKey === 'mobile-menu'}>
-            <MenuPermissions active={activeKey === 'mobile-menu'} />
-          </MobileAllRoutesProvider>
-        </TabLayout>
-      ),
-    }));
+    this.app.pm.get(PluginACLClient)?.settingsUI.addPermissionsTab(({ t, TabLayout, activeKey, currentUserRole }) => {
+      if (
+        currentUserRole &&
+        ((!currentUserRole.snippets.includes('pm.mobile') && !currentUserRole.snippets.includes('pm.*')) ||
+          currentUserRole.snippets.includes('!pm.mobile'))
+      ) {
+        return null;
+      }
+
+      return {
+        key: 'mobile-menu',
+        label: t('Mobile menu', {
+          ns: pkg.name,
+        }),
+        children: (
+          <TabLayout>
+            <MobileAllRoutesProvider active={activeKey === 'mobile-menu'}>
+              <MenuPermissions active={activeKey === 'mobile-menu'} />
+            </MobileAllRoutesProvider>
+          </TabLayout>
+        ),
+      };
+    });
   }
 }
 

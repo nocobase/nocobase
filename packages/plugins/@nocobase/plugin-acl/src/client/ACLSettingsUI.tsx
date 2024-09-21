@@ -23,7 +23,11 @@ interface PermissionsTabsProps {
   /**
    * the currently selected role
    */
-  role: Role;
+  activeRole: null | Role;
+  /**
+   * the current user's role
+   */
+  currentUserRole: null | Role;
   /**
    * translation function
    */
