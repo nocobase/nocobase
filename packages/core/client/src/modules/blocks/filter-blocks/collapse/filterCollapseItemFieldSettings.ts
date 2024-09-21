@@ -222,7 +222,7 @@ export const filterCollapseItemFieldSettings = new SchemaSettings({
             componentProps: {
               hideVariableButton: true,
             },
-          },
+          } as any,
         ];
       },
     },
