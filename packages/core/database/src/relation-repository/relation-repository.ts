@@ -115,7 +115,7 @@ export abstract class RelationRepository {
 
   convertTk(options: any) {
     let tk = options;
-    if (typeof options === 'object' && options['tk']) {
+    if (typeof options === 'object' && 'tk' in options) {
       tk = options['tk'];
     }
     return tk;
@@ -126,7 +126,12 @@ export abstract class RelationRepository {
     if (typeof tk === 'string') {
       tk = tk.split(',');
     }
-    return lodash.castArray(tk);
+
+    if (tk) {
+      return lodash.castArray(tk);
+    }
+
+    return [];
   }
 
   targetKey() {
