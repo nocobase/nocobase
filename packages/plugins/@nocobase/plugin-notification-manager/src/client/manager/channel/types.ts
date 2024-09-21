@@ -16,6 +16,11 @@ export type ChannelType = {
     ChannelConfigForm: ComponentType;
     ContentConfigForm?: ComponentType<{ variableOptions: any }>;
   };
+  meta?: {
+    createable?: boolean;
+    eidtable?: boolean;
+    deletable?: boolean;
+  };
 };
 
 export type NotificationType = 'mail' | 'SMS' | 'in-app';

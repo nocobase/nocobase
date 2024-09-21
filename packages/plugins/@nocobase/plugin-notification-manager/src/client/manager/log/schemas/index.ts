@@ -52,11 +52,26 @@ export const detailFromProperties = {
     'x-component': 'CollectionField',
     'x-decorator': 'FormItem',
     'x-read-pretty': true,
+    'x-reactions': [
+      {
+        dependencies: ['status'],
+        fulfill: {
+          state: {
+            visible: '{{$deps[0] === "failed"}}',
+          },
+        },
+      },
+    ],
   },
   createdAt: {
     'x-component': 'CollectionField',
     'x-decorator': 'FormItem',
     'x-read-pretty': true,
+    'x-component-props': {
+      dateFormat: 'YYYY-MM-DD',
+      showTime: true,
+      timeFormat: 'HH:mm:ss',
+    },
   },
 };
 

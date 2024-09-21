@@ -108,7 +108,6 @@ export const useEditFormProps = () => {
 export const useCreateFormProps = () => {
   const ctx = useActionContext();
   const { name } = useContext(NotificationTypeNameContext);
-  const recordData = useCollectionRecordData();
   const form = useMemo(
     () =>
       createForm({
@@ -184,4 +183,19 @@ export const useNotificationTypes = () => {
     notificationTypes.push(type);
   }
   return notificationTypes;
+};
+
+export const useIsEditable = () => {
+  const recordData = useCollectionRecordData();
+  const form = useMemo(
+    () =>
+      createForm({
+        initialValues: recordData,
+      }),
+    [],
+  );
+
+  return {
+    form,
+  };
 };
