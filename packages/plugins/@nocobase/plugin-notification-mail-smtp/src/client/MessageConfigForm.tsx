@@ -17,7 +17,7 @@ const emailsClass = css`
     flex-grow: 1;
   }
 `;
-export const ContentConfigForm = ({ variableOptions }) => {
+export const MessageConfigForm = ({ variableOptions }) => {
   const { t } = useNotifyMailTranslation();
   return (
     <SchemaComponent

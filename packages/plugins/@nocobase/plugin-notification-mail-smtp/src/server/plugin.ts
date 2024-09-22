@@ -8,7 +8,7 @@
  */
 
 import { Plugin } from '@nocobase/server';
-import NotificationsServerPlugin, { SendFnType, NotificationServerBase } from '@nocobase/plugin-notification-manager';
+import PluginNotificationManagerServer from '@nocobase/plugin-notification-manager';
 import { channelType } from '../constant';
 import { MailServer } from './mail-server';
 
@@ -18,8 +18,8 @@ export class PluginNotificationsMailServer extends Plugin {
   async beforeLoad() {}
 
   async load() {
-    const notificationServer = this.pm.get(NotificationsServerPlugin) as NotificationsServerPlugin;
-    notificationServer.notificationManager.registerTypes(channelType, {
+    const notificationServer = this.pm.get(PluginNotificationManagerServer) as PluginNotificationManagerServer;
+    notificationServer.manager.registerTypes(channelType, {
       server: new MailServer(),
     });
   }

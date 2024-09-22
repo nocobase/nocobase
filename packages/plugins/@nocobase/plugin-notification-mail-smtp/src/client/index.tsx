@@ -8,26 +8,26 @@
  */
 
 import { Plugin } from '@nocobase/client';
-import NotificationManager from '@nocobase/plugin-notification-manager/client';
+import PluginNotificationManagerClient from '@nocobase/plugin-notification-manager/client';
 import { channelType, NAMESPACE } from '../constant';
 import { tval } from '@nocobase/utils/client';
 import { ChannelConfigForm } from './ConfigForm';
-import { ContentConfigForm } from './MessageConfigForm';
-export class PluginNotificationsMailClient extends Plugin {
+import { MessageConfigForm } from './MessageConfigForm';
+export class PluginNotificationMailClient extends Plugin {
   async afterAdd() {}
 
   async beforeLoad() {}
   async load() {
-    const notification = this.pm.get(NotificationManager);
+    const notification = this.pm.get(PluginNotificationManagerClient);
     notification.manager.registerChannelType({
       title: tval('SMTP mail', { ns: NAMESPACE }),
       name: channelType,
       components: {
         ChannelConfigForm: ChannelConfigForm,
-        ContentConfigForm: ContentConfigForm,
+        MessageConfigForm: MessageConfigForm,
       },
     });
   }
 }
 
-export default PluginNotificationsMailClient;
+export default PluginNotificationMailClient;

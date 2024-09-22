@@ -55,7 +55,7 @@ export const MessageConfigForm = observer<{ variableOptions: any }>(
     //   field.form.values.receivers = [];
     // }, [field.form.values, receiverType]);
     const providerMap = useChannelTypeMap();
-    const { ContentConfigForm = () => null } = (providerMap[providerName] ?? {}).components || {};
+    const { MessageConfigForm = () => null } = (providerName ? providerMap[providerName] : {}).components || {};
 
     const ReceiverInputComponent = receiverType === 'user' ? 'UsersSelect' : 'VariableInput';
     const ReceiverAddition = receiverType === 'user' ? UsersAddition : ArrayItems.Addition;
@@ -86,7 +86,7 @@ export const MessageConfigForm = observer<{ variableOptions: any }>(
         },
         message: {
           type: 'void',
-          'x-component': 'ContentConfigForm',
+          'x-component': 'MessageConfigForm',
           'x-component-props': {
             variableOptions,
           },
@@ -96,7 +96,7 @@ export const MessageConfigForm = observer<{ variableOptions: any }>(
     return (
       <SchemaComponent
         schema={createMessageFormSchema}
-        components={{ ContentConfigForm, ReceiverAddition, UsersSelect, ArrayItems, VariableInput: Variable.Input }}
+        components={{ MessageConfigForm, ReceiverAddition, UsersSelect, ArrayItems, VariableInput: Variable.Input }}
         scope={{ t }}
       />
     );

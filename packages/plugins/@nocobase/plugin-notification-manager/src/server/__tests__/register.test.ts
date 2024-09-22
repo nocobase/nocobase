@@ -8,7 +8,6 @@
  */
 
 import { createMockServer } from '@nocobase/test';
-import PluginNotificationManagerServer from '../plugin';
 import NotificationManager from '../manager';
 import channelCollection from '../../collections/channel';
 import { COLLECTION_NAME } from '../../constant';

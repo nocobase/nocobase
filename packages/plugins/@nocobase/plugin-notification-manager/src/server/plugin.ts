@@ -12,7 +12,7 @@ import type { Logger } from '@nocobase/logger';
 import { SendOptions } from './types';
 import NotificationManager from './manager';
 export class PluginNotificationManagerServer extends Plugin {
-  notificationManager: NotificationManager;
+  manager: NotificationManager;
   logger: Logger;
 
   async afterAdd() {
@@ -21,13 +21,13 @@ export class PluginNotificationManagerServer extends Plugin {
       filename: '%DATE%.log',
       transports: ['dailyRotateFile'],
     });
-    this.notificationManager = new NotificationManager({ plugin: this });
+    this.manager = new NotificationManager({ plugin: this });
   }
 
   async beforeLoad() {
     this.app.resourceManager.registerActionHandler('messages:send', async (ctx, next) => {
       const sendOptions = ctx.action?.params?.values as SendOptions;
-      this.notificationManager.send(sendOptions);
+      this.manager.send(sendOptions);
       next();
     });
     this.app.acl.registerSnippet({

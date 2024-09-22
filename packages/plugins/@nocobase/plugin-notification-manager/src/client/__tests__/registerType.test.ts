@@ -16,13 +16,13 @@ describe('registerType', () => {
 
   it('should register a new type', () => {
     const ChannelConfigForm = () => null;
-    const ContentConfigForm = () => null;
+    const MessageConfigForm = () => null;
     const newChannelType = {
       name: 'newType',
       title: 'New Type',
       components: {
         ChannelConfigForm,
-        ContentConfigForm,
+        MessageConfigForm,
       },
     };
 
