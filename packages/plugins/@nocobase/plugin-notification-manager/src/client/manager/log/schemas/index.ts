@@ -57,7 +57,7 @@ export const detailFromProperties = {
         dependencies: ['status'],
         fulfill: {
           state: {
-            visible: '{{$deps[0] === "failed"}}',
+            visible: '{{$deps[0] === "failure"}}',
           },
         },
       },
