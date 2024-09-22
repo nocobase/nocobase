@@ -11,6 +11,7 @@ import React from 'react';
 import ReactECharts, { EChartsReactProps } from 'echarts-for-react';
 import { ECharts } from 'echarts';
 import { useSetChartSize } from '../../hooks/chart';
+import { useGlobalTheme } from '@nocobase/client';
 
 interface EChartsInstance {
   getEchartsInstance: () => ECharts | undefined;
@@ -18,18 +19,20 @@ interface EChartsInstance {
 
 export const EChart = (props: EChartsReactProps['option']) => {
   let instance: EChartsInstance;
-  const { size = {}, lightTheme, ...option } = props;
+  const { size = {}, lightTheme = 'default', darkTheme = 'dark', ...option } = props;
   let { height: fixedHeight } = props;
   if (!fixedHeight && size.type === 'fixed') {
     fixedHeight = size.fixed;
   }
   const { chartRef, chartHeight } = useSetChartSize(size, fixedHeight);
+  const { isDarkTheme } = useGlobalTheme();
+  console.log('isDarkTheme', isDarkTheme);
 
   return (
     <div ref={chartRef} style={chartHeight ? { height: `${chartHeight}px` } : {}}>
       <ReactECharts
         option={option}
-        theme={lightTheme}
+        theme={isDarkTheme ? darkTheme : lightTheme}
         style={chartHeight ? { height: `${chartHeight}px` } : {}}
         ref={(e) => (instance = e)}
       />

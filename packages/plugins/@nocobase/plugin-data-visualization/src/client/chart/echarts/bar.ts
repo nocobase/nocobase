@@ -32,7 +32,9 @@ export class Bar extends EChart {
       },
       'seriesField',
       'size',
-      'theme',
+      'lightTheme',
+      'darkTheme',
+      'showLegend',
       'showLabel',
       'isStack',
     ];

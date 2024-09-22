@@ -33,7 +33,8 @@ export class Pie extends EChart {
         required: true,
       },
       'size',
-      'theme',
+      'lightTheme',
+      'darkTheme',
       'showLegend',
       {
         settingType: 'select',
@@ -100,6 +101,7 @@ export class Pie extends EChart {
       angleField,
       size,
       lightTheme,
+      darkTheme,
       showLegend,
       labelType,
       labelPosition,
@@ -169,6 +171,7 @@ export class Pie extends EChart {
         animation: false,
         size,
         lightTheme,
+        darkTheme,
       },
       advanced,
     );

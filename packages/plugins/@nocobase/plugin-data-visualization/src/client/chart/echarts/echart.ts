@@ -15,7 +15,8 @@ import { Chart, ChartProps, ChartType, RenderProps } from '../chart';
 import { registerTheme } from 'echarts';
 
 export class EChart extends Chart {
-  static themes: string[] = ['default', 'light', 'dark'];
+  static lightThemes: string[] = ['default', 'light'];
+  static darkThemes: string[] = ['dark'];
   series: any;
 
   constructor({
@@ -33,23 +34,40 @@ export class EChart extends Chart {
       name,
       title,
       Component: C,
-      config: ['xField', 'yField', 'seriesField', 'size', 'theme', 'showLegend', 'showLabel', ...(config || [])],
+      config: [
+        'xField',
+        'yField',
+        'seriesField',
+        'size',
+        'lightTheme',
+        'darkTheme',
+        'showLegend',
+        'showLabel',
+        ...(config || []),
+      ],
     });
     this.series = series;
     this.addConfigs({
-      theme: {
+      lightTheme: {
         settingType: 'select',
         name: 'lightTheme',
-        title: 'Light theme',
+        title: 'Light mode theme',
         defaultValue: 'default',
-        options: EChart.themes.map((theme) => ({ label: theme, value: theme })),
+        options: EChart.lightThemes.map((theme) => ({ label: theme, value: theme })),
+      },
+      darkTheme: {
+        settingType: 'select',
+        name: 'darkTheme',
+        title: 'Dark mode theme',
+        defaultValue: 'dark',
+        options: EChart.darkThemes.map((theme) => ({ label: theme, value: theme })),
       },
     });
   }
 
-  static registerTheme(name: string, theme: any) {
+  static registerTheme(name: string, theme: any, mode = 'light') {
     registerTheme(name, theme);
-    this.themes.push(name);
+    this[`${mode}Themes`].push(name);
   }
 
   init: ChartType['init'] = (fields, { measures, dimensions }) => {
@@ -64,8 +82,19 @@ export class EChart extends Chart {
   };
 
   getProps({ data, general, advanced, fieldProps }: RenderProps): EChartsReactProps['option'] {
-    const { xField, yField, seriesField, size, showLegend, isStack, smooth, showLabel, lightTheme, ...others } =
-      general;
+    const {
+      xField,
+      yField,
+      seriesField,
+      size,
+      showLegend,
+      isStack,
+      smooth,
+      showLabel,
+      lightTheme,
+      darkTheme,
+      ...others
+    } = general;
     const xLabel = fieldProps[xField]?.label;
     const yLabel = fieldProps[yField]?.label;
     let seriesName = [yLabel];
@@ -123,6 +152,7 @@ export class EChart extends Chart {
         animation: false,
         size,
         lightTheme,
+        darkTheme,
       },
       advanced,
     );

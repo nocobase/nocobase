@@ -41,3 +41,4 @@ export default [
     series: { type: 'scatter', areaStyle: {} },
   }),
 ];
+export { EChart };
