@@ -25,7 +25,20 @@ export default [
     name: 'column',
     title: 'Column Chart',
     series: { type: 'bar' },
-    config: ['isStack'],
+    config: [
+      {
+        settingType: 'select',
+        name: 'labelPosition',
+        title: 'Label position',
+        defaultValue: 'top',
+        options: [
+          { label: 'Top', value: 'top' },
+          { label: 'Inside', value: 'inside' },
+          { label: 'Inside top', value: 'insideTop' },
+        ],
+      },
+      'isStack',
+    ],
   }),
   new EChart({
     name: 'area',

@@ -133,7 +133,7 @@ export class Pie extends EChart {
         formatter = `{@${angleField}} {d}%`;
         break;
       case 7:
-        formatter = `{b} {@${angleField}} {d}%`;
+        formatter = `{b}\n{@${angleField}} {d}%`;
         break;
     }
     return deepmerge(

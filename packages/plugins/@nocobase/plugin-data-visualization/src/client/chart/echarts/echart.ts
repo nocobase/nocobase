@@ -42,7 +42,7 @@ export class EChart extends Chart {
         'lightTheme',
         'darkTheme',
         'showLegend',
-        'showLabel',
+        'labelType',
         ...(config || []),
       ],
     });
@@ -61,6 +61,18 @@ export class EChart extends Chart {
         title: 'Dark mode theme',
         defaultValue: 'dark',
         options: EChart.darkThemes.map((theme) => ({ label: theme, value: theme })),
+      },
+      labelType: {
+        settingType: 'select',
+        name: 'labelType',
+        title: 'Label type',
+        defaultValue: 1,
+        options: [
+          { label: 'Value', value: 1 },
+          { label: 'Category name', value: 2 },
+          { label: 'Category name + Value', value: 3 },
+          { label: 'Hidden', value: 0 },
+        ],
       },
     });
   }
@@ -81,6 +93,26 @@ export class EChart extends Chart {
     };
   };
 
+  getLabelOptions(labelType: string, series: string) {
+    let formatter: string;
+    let showLabel = true;
+    switch (Number(labelType)) {
+      case 0:
+        showLabel = false;
+        break;
+      case 1:
+        formatter = `{@${series}}`;
+        break;
+      case 2:
+        formatter = '{b}';
+        break;
+      case 3:
+        formatter = `{b} {@${series}}`;
+        break;
+    }
+    return { formatter, show: showLabel };
+  }
+
   getProps({ data, general, advanced, fieldProps }: RenderProps): EChartsReactProps['option'] {
     const {
       xField,
@@ -90,7 +122,8 @@ export class EChart extends Chart {
       showLegend,
       isStack,
       smooth,
-      showLabel,
+      labelType,
+      labelPosition = 'top',
       lightTheme,
       darkTheme,
       ...others
@@ -109,9 +142,6 @@ export class EChart extends Chart {
         },
         tooltip: {
           data: seriesName,
-        },
-        label: {
-          show: showLabel,
         },
         dataset: [
           {
@@ -135,6 +165,10 @@ export class EChart extends Chart {
           name,
           datasetIndex: 1,
           smooth,
+          label: {
+            ...this.getLabelOptions(labelType, seriesField ? name : yField),
+            position: labelPosition,
+          },
           ...(isStack ? { stack: 'stack' } : {}),
           ...this.series,
           ...others,
@@ -148,6 +182,8 @@ export class EChart extends Chart {
         },
         grid: {
           containLabel: true,
+          left: 0,
+          bottom: 0,
         },
         animation: false,
         size,

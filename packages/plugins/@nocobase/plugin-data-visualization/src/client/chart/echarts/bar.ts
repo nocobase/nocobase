@@ -35,7 +35,18 @@ export class Bar extends EChart {
       'lightTheme',
       'darkTheme',
       'showLegend',
-      'showLabel',
+      'labelType',
+      {
+        settingType: 'select',
+        name: 'labelPosition',
+        title: 'Label position',
+        defaultValue: 'right',
+        options: [
+          { label: 'Right', value: 'right' },
+          { label: 'Inside', value: 'inside' },
+          { label: 'Inside right', value: 'insideRight' },
+        ],
+      },
       'isStack',
     ];
   }
