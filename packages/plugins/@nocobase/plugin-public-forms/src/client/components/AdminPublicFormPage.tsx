@@ -69,7 +69,6 @@ export function AdminPublicFormPage() {
   };
 
   const handleSetPassword = async () => {
-    console.log(others);
     const values = await FormDialog(
       t('Password') as any,
       () => {
