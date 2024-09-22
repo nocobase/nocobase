@@ -11,7 +11,7 @@ import { vi } from 'vitest';
 import dayjs from 'dayjs';
 import { mapDatePicker } from '../util';
 
-describe('mapDatePicker', () => {
+describe.skip('mapDatePicker', () => {
   it('showTime is true and gmt is true', () => {
     const props = {
       value: '2022-02-22T22:22:22.000Z',

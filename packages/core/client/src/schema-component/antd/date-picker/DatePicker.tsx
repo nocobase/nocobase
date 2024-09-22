@@ -36,13 +36,13 @@ export const DatePickerProvider = DatePickerContext.Provider;
 
 const InternalDatePicker: ComposedDatePicker = connect(
   AntdDatePicker,
-  mapProps(mapDatePicker?.()),
+  mapProps(mapDatePicker()),
   mapReadPretty(ReadPretty.DatePicker),
 );
 
 const InternalRangePicker = connect(
   AntdDatePicker.RangePicker,
-  mapProps(mapRangePicker?.()),
+  mapProps(mapRangePicker()),
   mapReadPretty(ReadPretty.DateRangePicker),
 );
 

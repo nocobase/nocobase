@@ -10,7 +10,8 @@
 import { getDefaultFormat, str2moment, toGmt, toLocal, getPickerFormat } from '@nocobase/utils/client';
 import type { Dayjs } from 'dayjs';
 import dayjs from 'dayjs';
-import { useBlockContext } from '../../../block-provider';
+import { useContext } from 'react';
+import { BlockContext } from '../../../block-provider';
 
 const toStringByPicker = (value, picker = 'date', timezone: 'gmt' | 'local') => {
   if (!dayjs.isDayjs(value)) return value;
@@ -100,7 +101,7 @@ export const mapDatePicker = function () {
     const { dateOnly, showTime, picker, utc, gmt } = props;
     const format = getDefaultFormat(props);
     const onChange = props.onChange;
-    const { name: blockType } = useBlockContext?.() || {};
+    const { name: blockType } = useContext(BlockContext);
     //是否是筛选的场景下
     const isUnderFilter = blockType && blockType !== 'form';
     return {
