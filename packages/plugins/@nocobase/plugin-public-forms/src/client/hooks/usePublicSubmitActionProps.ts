@@ -30,18 +30,21 @@ export const usePublicSubmitActionProps = () => {
       const values = await collectValues();
       actionField.data = actionField.data || {};
       actionField.data.loading = true;
-
-      await form.submit();
-      await resource.publicSubmit({
-        values,
-        triggerWorkflows: triggerWorkflows?.length
-          ? triggerWorkflows.map((row) => [row.workflowKey, row.context].filter(Boolean).join('!')).join(',')
-          : undefined,
-        updateAssociationValues,
-      });
-      await form.reset();
-      actionField.data.loading = false;
-      setShowMessage(true);
+      try {
+        await form.submit();
+        await resource.publicSubmit({
+          values,
+          triggerWorkflows: triggerWorkflows?.length
+            ? triggerWorkflows.map((row) => [row.workflowKey, row.context].filter(Boolean).join('!')).join(',')
+            : undefined,
+          updateAssociationValues,
+        });
+        await form.reset();
+        actionField.data.loading = false;
+        setShowMessage(true);
+      } catch (error) {
+        actionField.data.loading = false;
+      }
     },
   };
 };

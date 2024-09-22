@@ -21,6 +21,7 @@ import {
   useApp,
   useRequest,
   ACLCustomContext,
+  VariablesProvider,
 } from '@nocobase/client';
 import { css } from '@emotion/css';
 import { isDesktop } from 'react-device-detect';
@@ -199,15 +200,17 @@ function InternalPublicForm() {
             `}
           >
             <PublicPublicFormProvider dataSource={data?.data?.dataSource}>
-              <SchemaComponentContext.Provider value={{ ...ctx, designable: false }}>
-                <SchemaComponent
-                  schema={data?.data?.schema}
-                  scope={{
-                    useCreateActionProps: usePublicSubmitActionProps,
-                  }}
-                  components={{ PublicFormMessageProvider: PublicFormMessageProvider }}
-                />
-              </SchemaComponentContext.Provider>
+              <VariablesProvider>
+                <SchemaComponentContext.Provider value={{ ...ctx, designable: false }}>
+                  <SchemaComponent
+                    schema={data?.data?.schema}
+                    scope={{
+                      useCreateActionProps: usePublicSubmitActionProps,
+                    }}
+                    components={{ PublicFormMessageProvider: PublicFormMessageProvider }}
+                  />
+                </SchemaComponentContext.Provider>
+              </VariablesProvider>
             </PublicPublicFormProvider>
             <div style={{ marginBottom: '20px' }}>
               <PoweredBy />
