@@ -5,6 +5,35 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.3.23-beta](https://github.com/nocobase/nocobase/compare/v1.3.22-beta...v1.3.23-beta) - 2024-09-19
+
+### 🚀 Improvements
+
+- **[Users]** Optimize performance for rendering the user management table ([#5276](https://github.com/nocobase/nocobase/pull/5276)) by @2013xile
+
+- **[Departments]** Optimize performance for rendering the user table in department management by @2013xile
+
+### 🐛 Bug Fixes
+
+- **[client]**
+  - Fix incorrect `rowKey` of the `General action permissions table` in Users & Permissions page ([#5287](https://github.com/nocobase/nocobase/pull/5287)) by @gchust
+
+  - Fix the issue where setting a date variable for the date field in the filter form results in incorrect filter results ([#5257](https://github.com/nocobase/nocobase/pull/5257)) by @zhangzhonghe
+
+  - column width issue with scroll.y when table has no data ([#5256](https://github.com/nocobase/nocobase/pull/5256)) by @katherinehhh
+
+  - Fix the problem of blank rows at the beginning of a table block ([#5284](https://github.com/nocobase/nocobase/pull/5284)) by @zhangzhonghe
+
+- **[create-nocobase-app]** Fix the issue where the popup for configuring Sequence rules lacked a submit button when adding a new Sequence field ([#5281](https://github.com/nocobase/nocobase/pull/5281)) by @zhangzhonghe
+
+- **[database]** import with checkbox field ([#4992](https://github.com/nocobase/nocobase/pull/4992)) by @chareice
+
+- **[evaluators]** Fix error caused by `Matrix` type from mathjs ([#5270](https://github.com/nocobase/nocobase/pull/5270)) by @mytharcher
+
+- **[Calendar]** Cannot select the option to delete the schedule popup ([#5274](https://github.com/nocobase/nocobase/pull/5274)) by @katherinehhh
+
+- **[Action: Export records]** Fix missing request context when generating data sheet in export action ([#5286](https://github.com/nocobase/nocobase/pull/5286)) by @gchust
+
 ## [v1.3.22-beta](https://github.com/nocobase/nocobase/compare/v1.3.21-beta...v1.3.22-beta) - 2024-09-12
 
 ### 🎉 New Features

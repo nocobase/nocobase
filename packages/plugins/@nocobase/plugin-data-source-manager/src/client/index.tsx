@@ -35,12 +35,12 @@ export class PluginDataSourceManagerClient extends Plugin {
 
   async load() {
     // register a configuration item in the Users & Permissions management page
-    this.app.pm.get(PluginACLClient).settingsUI.addPermissionsTab(({ t, TabLayout, role }) => ({
+    this.app.pm.get(PluginACLClient).settingsUI.addPermissionsTab(({ t, TabLayout, activeRole }) => ({
       key: 'dataSource',
       label: t('Data sources'),
       children: (
         <TabLayout>
-          <DataSourcePermissionManager role={role} />
+          <DataSourcePermissionManager role={activeRole} />
         </TabLayout>
       ),
     }));

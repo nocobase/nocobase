@@ -406,7 +406,7 @@ describe('FieldSettingsFormItem', () => {
       ]);
     });
 
-    test('Set default value', async () => {
+    test.skip('Set default value', async () => {
       await renderSettings(commonFieldOptions());
       const newValue = 'new test';
 
@@ -432,7 +432,7 @@ describe('FieldSettingsFormItem', () => {
       ]);
     });
 
-    test('Pattern', async () => {
+    test.skip('Pattern', async () => {
       await renderSettings(associationFieldOptions());
 
       await checkSettings([
@@ -464,7 +464,7 @@ describe('FieldSettingsFormItem', () => {
       ]);
     });
 
-    test('EditValidationRules', async () => {
+    test.skip('EditValidationRules', async () => {
       await renderSingleSettings(commonFieldOptions(true));
       await checkSettings([
         {
