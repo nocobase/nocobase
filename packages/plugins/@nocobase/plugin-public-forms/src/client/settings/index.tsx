@@ -22,10 +22,10 @@ export const publicFormBlockSettings = new SchemaSettings({
       name: 'title',
       Component: SchemaSettingsBlockTitleItem,
     },
-    {
-      name: 'setTheBlockHeight',
-      Component: SchemaSettingsBlockHeightItem,
-    },
+    // {
+    //   name: 'setTheBlockHeight',
+    //   Component: SchemaSettingsBlockHeightItem,
+    // },
     {
       name: 'linkageRules',
       Component: SchemaSettingsLinkageRules,
