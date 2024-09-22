@@ -159,10 +159,9 @@ export function AdminPublicFormPage() {
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'space-between',
-                        marginRight: '10px',
                       }}
                     >
-                      <span>{t('Enable form', { ns: NAMESPACE })}</span>
+                      <span style={{ marginRight: '10px' }}>{t('Enable form', { ns: NAMESPACE })}</span>
                       <Switch
                         size={'small'}
                         checked={enabled}
