@@ -154,7 +154,14 @@ export function AdminPublicFormPage() {
                 {
                   key: 'enabled',
                   label: (
-                    <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <span
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        marginRight: '10px',
+                      }}
+                    >
                       <span>{t('Enable form', { ns: NAMESPACE })}</span>
                       <Switch
                         size={'small'}
