@@ -42,6 +42,7 @@ const initialSchema = (values, formSchema) => {
         'x-decorator-props': {
           name: 'markdown',
           engine: 'handlebars',
+          title: '{{ t("After successful submission",{ns:"public-forms"})}}',
         },
       },
     },

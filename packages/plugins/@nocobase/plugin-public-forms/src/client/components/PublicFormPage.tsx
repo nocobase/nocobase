@@ -87,6 +87,7 @@ const PublicFormMessageProvider = ({ children }) => {
       if (f) {
         f.visible = visible;
         f.hidden = !visible;
+        f.decoratorProps.title = null;
       }
     });
   };

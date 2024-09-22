@@ -8,5 +8,6 @@
   "Copy link": "复制链接",
   "QR code": "二维码",
   "The form is not enabled and cannot be accessed": "该表单未启用,无法访问",
-  "Link copied successfully": "复制地址成功"
+  "Link copied successfully": "复制地址成功",
+  "After successful submission": "提交成功后"
 }

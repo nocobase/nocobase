@@ -9,7 +9,6 @@
 import { useContext } from 'react';
 import { useForm, useFieldSchema, useField } from '@formily/react';
 import { useDataBlockResource, useCollectValuesToSubmit, useFormBlockContext } from '@nocobase/client';
-import { App as AntdApp } from 'antd';
 import { PublicFormMessageContext } from '../components/PublicFormPage';
 
 export const usePublicSubmitActionProps = () => {
