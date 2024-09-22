@@ -1318,8 +1318,12 @@ export const useAssociationFilterBlockProps = () => {
         const key = `${uid}${fieldSchema.name}`;
         const param = block.service.params?.[0] || {};
 
+        if (!block.service.params?.[1]?.filters) {
+          _.set(block.service.params, '[1].filters', {});
+        }
+
         // 保留原有的 filter
-        const storedFilter = block.service.params?.[1]?.filters || {};
+        const storedFilter = block.service.params[1].filters;
 
         if (value.length) {
           storedFilter[key] = {
