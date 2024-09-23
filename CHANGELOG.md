@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.3.24-beta](https://github.com/nocobase/nocobase/compare/v1.3.23-beta...v1.3.24-beta) - 2024-09-23
+
+### 🐛 Bug Fixes
+
+- **[client]**
+  - markdown report error with using `#each` in handlebars ([#5305](https://github.com/nocobase/nocobase/pull/5305)) by @katherinehhh
+
+  - Fix issue where the collection from external  data source does not support sorting on table columns ([#5293](https://github.com/nocobase/nocobase/pull/5293)) by @katherinehhh
+
+- **[Data visualization]** Fix style issues of chart blocks when using dark mode themes ([#5302](https://github.com/nocobase/nocobase/pull/5302)) by @2013xile
+
 ## [v1.3.23-beta](https://github.com/nocobase/nocobase/compare/v1.3.22-beta...v1.3.23-beta) - 2024-09-19
 
 ### 🚀 Improvements
