@@ -31,7 +31,7 @@
     "@nocobase/sdk": "1.4.0-alpha",
     "@nocobase/utils": "1.4.0-alpha",
     "ahooks": "^3.7.2",
-    "antd": "^5.12.8",
+    "antd": "5.12.8",
     "antd-style": "3.4.5",
     "axios": "^0.26.1",
     "bignumber.js": "^9.1.2",
