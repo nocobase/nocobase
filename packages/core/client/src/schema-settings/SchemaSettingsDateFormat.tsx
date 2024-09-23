@@ -119,6 +119,7 @@ export const SchemaSettingsDateFormat = function DateFormatConfig(props: { field
                 fulfill: {
                   state: {
                     value: `{{ getPickerFormat($deps[0])}}`,
+                    componentProps: { picker: `{{$deps[0]}}` },
                   },
                 },
               },

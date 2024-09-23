@@ -9,11 +9,10 @@
 
 import { css } from '@emotion/css';
 import dayjs from 'dayjs';
-
 import { connect, mapProps } from '@formily/react';
 import { useBoolean } from 'ahooks';
 import { Input, Radio, Space } from 'antd';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useToken } from '../../';
 
 const date = dayjs();
@@ -53,7 +52,7 @@ const DateTimeFormatPreview = ({ content }) => {
 };
 
 const InternalExpiresRadio = (props) => {
-  const { onChange, defaultValue, formats } = props;
+  const { onChange, defaultValue, formats, picker } = props;
   const [isCustom, { setFalse, setTrue }] = useBoolean(props.value && !formats.includes(props.value));
   const [targetValue, setTargetValue] = useState(
     props.value && !formats.includes(props.value) ? props.value : defaultValue,
@@ -80,6 +79,7 @@ const InternalExpiresRadio = (props) => {
   useEffect(() => {
     setCustomFormatPreview(targetValue ? date.format(targetValue) : null);
   }, [targetValue]);
+
   return (
     <Space className={spaceCSS}>
       <Radio.Group value={isCustom ? 'custom' : props.value} onChange={onSelectChange}>
@@ -107,13 +107,15 @@ const InternalExpiresRadio = (props) => {
                 </Radio>
               );
             }
-            return (
-              <Radio value={v.value} key={v.value} aria-label={v.value}>
-                <span role="button" aria-label={v.value}>
-                  {v.label}
-                </span>
-              </Radio>
-            );
+            if (!picker || picker === 'date') {
+              return (
+                <Radio value={v.value} key={v.value} aria-label={v.value}>
+                  <span role="button" aria-label={v.value}>
+                    {v.label}
+                  </span>
+                </Radio>
+              );
+            }
           })}
         </Space>
       </Radio.Group>

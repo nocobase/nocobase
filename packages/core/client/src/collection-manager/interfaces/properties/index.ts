@@ -305,6 +305,7 @@ export const dateTimeProps: { [key: string]: ISchema } = {
       fulfill: {
         state: {
           value: `{{ getPickerFormat($deps[0])}}`,
+          componentProps: { picker: `{{$deps[0]}}` },
         },
       },
     },
