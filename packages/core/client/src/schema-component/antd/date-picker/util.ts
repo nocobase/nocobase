@@ -99,7 +99,7 @@ const handleChangeOnForm = (value, dateOnly, utc, picker, showTime, gmt) => {
 
 export const mapDatePicker = function () {
   return (props: any) => {
-    const { dateOnly, showTime, picker, utc, gmt, underFilter } = props;
+    const { dateOnly, showTime, picker = 'date', utc, gmt, underFilter } = props;
     const format = getDefaultFormat(props);
     const onChange = props.onChange;
     //是否是筛选的场景下
