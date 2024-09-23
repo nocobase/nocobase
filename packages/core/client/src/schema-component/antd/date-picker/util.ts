@@ -125,18 +125,26 @@ export const mapRangePicker = function () {
   return (props: any) => {
     const format = getDefaultFormat(props) as any;
     const onChange = props.onChange;
-
+    const { dateOnly, showTime, picker = 'date', utc, gmt, underFilter } = props;
     return {
       ...props,
       format: format,
       value: str2moment(props.value, props),
       onChange: (value: Dayjs[]) => {
         if (onChange) {
-          onChange(
-            value
-              ? [moment2str(getRangeStart(value[0], props), props), moment2str(getRangeEnd(value[1], props), props)]
-              : [],
-          );
+          if (underFilter) {
+            onChange(
+              value
+                ? [handleChangeOnFilter(value[0], picker, showTime), handleChangeOnFilter(value[1], picker, showTime)]
+                : [],
+            );
+          } else {
+            onChange(
+              value
+                ? [moment2str(getRangeStart(value[0], props), props), moment2str(getRangeEnd(value[1], props), props)]
+                : [],
+            );
+          }
         }
       },
     } as any;
