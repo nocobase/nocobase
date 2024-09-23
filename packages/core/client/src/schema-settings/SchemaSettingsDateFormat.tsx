@@ -13,7 +13,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { getPickerFormat } from '@nocobase/utils/client';
 import { useCollectionManager_deprecated, useDesignable } from '..';
-import { DateFormatCom, ExpiresRadio } from './DateFormat/ExpiresRadio';
+import { DateFormatCom, ExpiresRadio } from '../schema-component';
 import { SchemaSettingsModalItem } from './SchemaSettings';
 
 export const SchemaSettingsDateFormat = function DateFormatConfig(props: { fieldSchema: Schema }) {
