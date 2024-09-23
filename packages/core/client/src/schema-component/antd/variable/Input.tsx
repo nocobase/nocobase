@@ -194,7 +194,9 @@ export function Input(props: VariableInputProps) {
   const form = useForm();
   const [options, setOptions] = React.useState<DefaultOptionType[]>([]);
   const [variableText, setVariableText] = React.useState([]);
-  const [isFieldValue, setIsFieldValue] = React.useState(children && value != null ? true : false);
+  const [isFieldValue, setIsFieldValue] = React.useState(
+    hideVariableButton || (children && value != null ? true : false),
+  );
 
   const parsed = useMemo(() => parseValue(value, parseOptions), [parseOptions, value]);
   const isConstant = typeof parsed === 'string';
@@ -237,6 +239,10 @@ export function Input(props: VariableInputProps) {
     }
   } else {
     cValue = children ? ['$'] : [' ', type];
+  }
+
+  if (hideVariableButton) {
+    cValue = ['$'];
   }
 
   useEffect(() => {
