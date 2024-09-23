@@ -10,6 +10,7 @@
 import merge from 'deepmerge';
 import { EventEmitter } from 'events';
 import { default as _, default as lodash } from 'lodash';
+import safeJsonStringify from 'safe-json-stringify';
 import {
   ModelOptions,
   ModelStatic,
@@ -25,7 +26,6 @@ import { BelongsToField, Field, FieldOptions, HasManyField } from './fields';
 import { Model } from './model';
 import { Repository } from './repository';
 import { checkIdentifier, md5, snakeCase } from './utils';
-import safeJsonStringify from 'safe-json-stringify';
 
 export type RepositoryType = typeof Repository;
 
@@ -799,6 +799,14 @@ export class Collection<
     }
 
     return `${schema}.${tableName}`;
+  }
+
+  public getRealTableName() {
+    return this.tableNameAsString();
+  }
+
+  public getRealFieldName(name: string) {
+    return this.model.getAttributes()[name].field;
   }
 
   public getTableNameWithSchemaAsString() {
