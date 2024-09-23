@@ -12,6 +12,8 @@
   "homepage.zh-CN": "https://docs-cn.nocobase.com/public-form",
   "peerDependencies": {
     "@nocobase/client": "1.x",
+    "@nocobase/plugin-client": "1.x",
+    "@nocobase/plugin-ui-schema-storage": "1.x",
     "@nocobase/server": "1.x",
     "@nocobase/test": "1.x"
   }
