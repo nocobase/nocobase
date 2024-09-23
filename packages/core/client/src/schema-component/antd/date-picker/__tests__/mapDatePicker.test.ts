@@ -169,7 +169,7 @@ describe('mapDatePicker', () => {
     expect(props.onChange).toHaveBeenCalledWith('2022-01-01');
   });
 
-  it.skip('should call onChange with correct value when picker is week and gmt is true', () => {
+  it('should call onChange with correct value when picker is week and gmt is true', () => {
     const props = {
       picker: 'week',
       gmt: true,
@@ -178,10 +178,10 @@ describe('mapDatePicker', () => {
     const result = mapDatePicker()(props);
     const m = dayjs.utc('2022-02-21T00:00:00.000Z');
     result.onChange(m);
-    expect(props.onChange).toHaveBeenCalledWith(m.startOf('week').add(1, 'day').toISOString());
+    expect(props.onChange).toHaveBeenCalledWith('2022-02-20');
   });
 
-  it.skip('should call onChange with correct value when picker is week and gmt is false', () => {
+  it('should call onChange with correct value when picker is week and gmt is false', () => {
     const props = {
       picker: 'week',
       gmt: false,
@@ -190,7 +190,7 @@ describe('mapDatePicker', () => {
     const result = mapDatePicker()(props);
     const m = dayjs('2022-02-21 00:00:00');
     result.onChange(m);
-    expect(props.onChange).toHaveBeenCalledWith(m.startOf('week').add(1, 'day').toISOString());
+    expect(props.onChange).toHaveBeenCalledWith('2022-02-20');
   });
 
   it('should call onChange with correct value when utc is false', () => {
