@@ -102,15 +102,13 @@ export const mapDatePicker = function () {
     const { dateOnly, showTime, picker = 'date', utc, gmt, underFilter } = props;
     const format = getDefaultFormat(props);
     const onChange = props.onChange;
-    //是否是筛选的场景下
-    const isUnderFilter = underFilter;
     return {
       ...props,
       format: format,
       value: str2moment(props.value, props),
       onChange: (value: Dayjs | null, dateString) => {
         if (onChange) {
-          if (isUnderFilter) {
+          if (underFilter) {
             onChange(handleChangeOnFilter(value, picker, showTime));
           } else {
             onChange(handleChangeOnForm(value, dateOnly, utc, picker, showTime, gmt));
