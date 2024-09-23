@@ -25,6 +25,8 @@ import {
   chartFilterItemInitializers_deprecated,
 } from './filter';
 import { lang } from './locale';
+import { useChartBlockCardProps } from './block/ChartBlock';
+import { ChartCardItem } from './block/CardItem';
 
 class PluginDataVisualiztionClient extends Plugin {
   public charts: ChartGroup = new ChartGroup();
@@ -36,6 +38,11 @@ class PluginDataVisualiztionClient extends Plugin {
       ChartV2BlockInitializer,
       ChartV2BlockDesigner,
       ChartV2Block,
+      ChartCardItem,
+    });
+
+    this.app.addScopes({
+      useChartBlockCardProps,
     });
 
     this.app.schemaInitializerManager.add(chartInitializers_deprecated);
