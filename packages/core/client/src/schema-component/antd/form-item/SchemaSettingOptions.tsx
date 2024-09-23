@@ -512,7 +512,7 @@ export const EditOperator = () => {
         _.set(fieldSchema, 'x-filter-operator', v);
 
         const operator = operatorList.find((item) => item.value === v);
-        let componentProps = {};
+        let componentProps = { ...fieldSchema['x-component-props'] };
 
         // 根据操作符的配置，设置组件的属性
         if (operator?.schema?.['x-component']) {
@@ -520,6 +520,7 @@ export const EditOperator = () => {
           _.set(field, 'componentProps.component', operator.schema?.['x-component']);
           field.reset();
           componentProps = {
+            ...fieldSchema['x-component-props'],
             component: operator.schema['x-component'],
             ...operator.schema?.['x-component-props'],
           };
@@ -528,6 +529,7 @@ export const EditOperator = () => {
           _.set(field, 'componentProps.component', null);
           field.reset();
           componentProps = {
+            ...fieldSchema['x-component-props'],
             component: null,
             ...operator.schema?.['x-component-props'],
           };
