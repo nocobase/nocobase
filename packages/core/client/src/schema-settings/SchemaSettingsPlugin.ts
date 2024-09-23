@@ -56,7 +56,7 @@ import { inputJSONSettings } from '../modules/fields/component/Input.JSON/inputJ
 import { inputPreviewComponentFieldSettings } from '../modules/fields/component/Input.Preview/settings';
 import { inputTextAreaSettings } from '../modules/fields/component/Input.TextArea/inputTextAreaSettings';
 import { inputURLSettings } from '../modules/fields/component/Input.URL/inputURLSettings';
-import { inputSettings } from '../modules/fields/component/Input/inputSettings';
+import { inputComponentSettings } from '../modules/fields/component/Input/inputComponentSettings';
 import { markdownSettings } from '../modules/fields/component/Markdown/markdownSettings';
 import { markdownVditorSettings } from '../modules/fields/component/MarkdownVditor/markdownVditorSettings';
 import { richTextSettings } from '../modules/fields/component/RichText/richTextSettings';
@@ -122,7 +122,7 @@ export class SchemaSettingsPlugin extends Plugin {
     this.schemaSettingsManager.add(datePickerComponentFieldSettings);
     this.schemaSettingsManager.add(unixTimestampComponentFieldSettings);
     this.schemaSettingsManager.add(inputNumberComponentFieldSettings);
-    this.schemaSettingsManager.add(inputSettings);
+    this.schemaSettingsManager.add(inputComponentSettings);
     this.schemaSettingsManager.add(inputURLSettings);
     this.schemaSettingsManager.add(inputTextAreaSettings);
     this.schemaSettingsManager.add(inputJSONSettings);

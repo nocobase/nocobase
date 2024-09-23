@@ -53,7 +53,7 @@ export const ellipsisSettingsItem: SchemaSettingsItemType = {
   },
 };
 
-export const inputSettings = new SchemaSettings({
+export const inputComponentSettings = new SchemaSettings({
   name: 'fieldSettings:component:Input',
   items: [ellipsisSettingsItem],
 });

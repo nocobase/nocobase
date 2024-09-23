@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 import { SchemaSettings } from '../../../../application/schema-settings/SchemaSettings';
-import { ellipsisSettingsItem } from '../Input/inputSettings';
+import { ellipsisSettingsItem } from '../Input/inputComponentSettings';
 
 export const inputJSONSettings = new SchemaSettings({
   name: 'fieldSettings:component:Input.JSON',
