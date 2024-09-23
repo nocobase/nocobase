@@ -15,6 +15,7 @@ import { lang } from '../locale';
 interface Group {
   title: string;
   charts: ChartType[];
+  sort?: number;
 }
 
 export class ChartGroup {
@@ -56,17 +57,19 @@ export class ChartGroup {
     }[];
   }[] {
     const result = [];
-    this.charts.forEach(({ title, charts }, group) => {
-      const children = charts.map((chart) => ({
-        key: `${group}.${chart.name}`,
-        label: lang(chart.title),
-        value: `${group}.${chart.name}`,
-      }));
-      result.push({
-        label: lang(title),
-        children,
+    Array.from(this.charts.entries())
+      .sort(([, a], [, b]) => a.sort || 0 - b.sort || 0)
+      .forEach(([group, { title, charts }]) => {
+        const children = charts.map((chart) => ({
+          key: `${group}.${chart.name}`,
+          label: lang(chart.title),
+          value: `${group}.${chart.name}`,
+        }));
+        result.push({
+          label: lang(title),
+          children,
+        });
       });
-    });
     return result;
   }
 

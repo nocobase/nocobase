@@ -18,7 +18,6 @@ import {
 } from './block';
 import antd from './chart/antd';
 import g2plot from './chart/g2plot';
-import echarts from './chart/echarts';
 import { ChartGroup } from './chart/group';
 import {
   chartFilterActionInitializers,
@@ -40,7 +39,6 @@ class PluginDataVisualiztionClient extends Plugin {
   public charts: ChartGroup = new ChartGroup();
 
   async load() {
-    this.charts.addGroup('echarts', { title: 'ECharts', charts: echarts });
     this.charts.addGroup('antd', { title: 'Ant Design', charts: antd });
     this.charts.addGroup('ant-design-charts', { title: 'Ant Design Charts', charts: g2plot });
 
@@ -86,8 +84,8 @@ class PluginDataVisualiztionClient extends Plugin {
 
 export default PluginDataVisualiztionClient;
 export { Chart } from './chart/chart';
-export { EChart } from './chart/echarts';
 export type { ChartProps, ChartType, RenderProps } from './chart/chart';
 export { ChartConfigContext } from './configure';
+export { useSetChartSize } from './hooks';
 export type { FieldOption } from './hooks';
 export type { QueryProps } from './renderer';

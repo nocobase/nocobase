@@ -9,8 +9,6 @@
 
 import React from 'react';
 import { useSetChartSize } from '../../hooks/chart';
-import React, { useContext, useEffect, useRef } from 'react';
-import { ChartRendererContext } from '../../renderer';
 import { useGlobalTheme } from '@nocobase/client';
 
 export const getAntChart = (Component: React.FC<any>) => (props: any) => {
