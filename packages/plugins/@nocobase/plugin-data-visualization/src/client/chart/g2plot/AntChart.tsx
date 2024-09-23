@@ -9,8 +9,12 @@
 
 import React from 'react';
 import { useSetChartSize } from '../../hooks/chart';
+import React, { useContext, useEffect, useRef } from 'react';
+import { ChartRendererContext } from '../../renderer';
+import { useGlobalTheme } from '@nocobase/client';
 
 export const getAntChart = (Component: React.FC<any>) => (props: any) => {
+  const { isDarkTheme } = useGlobalTheme();
   const { size = {} } = props;
   let { height: fixedHeight } = props;
   if (!fixedHeight && size.type === 'fixed') {
@@ -20,7 +24,11 @@ export const getAntChart = (Component: React.FC<any>) => (props: any) => {
 
   return (
     <div ref={chartRef} style={chartHeight ? { height: `${chartHeight}px` } : {}}>
-      <Component {...props} {...(chartHeight ? { height: chartHeight } : {})} />
+      <Component
+        theme={isDarkTheme ? 'classicDark' : 'classic'}
+        {...props}
+        {...(chartHeight ? { height: chartHeight } : {})}
+      />
     </div>
   );
 };

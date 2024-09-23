@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { useAPIClient, usePlugin, useRequest } from '@nocobase/client';
+import { useACLRoleContext, useAPIClient, usePlugin, useRequest } from '@nocobase/client';
 import { Tabs } from 'antd';
 import React, { useContext, useEffect, useMemo } from 'react';
 import PluginACLClient from '..';
@@ -24,10 +24,13 @@ export const Permissions: React.FC<{ active: boolean }> = ({ active }) => {
   const [activeKey, setActiveKey] = React.useState('general');
   const { role, setRole } = useContext(RolesManagerContext);
   const pluginACLClient = usePlugin(PluginACLClient);
-
+  const currentUserRole = useACLRoleContext();
   const items = useMemo(
-    () => pluginACLClient.settingsUI.getPermissionsTabs({ t, activeKey, TabLayout, role }),
-    [activeKey, pluginACLClient.settingsUI, role, t],
+    () =>
+      pluginACLClient.settingsUI
+        .getPermissionsTabs({ t, activeKey, TabLayout, activeRole: role, currentUserRole })
+        .filter(Boolean),
+    [activeKey, pluginACLClient.settingsUI, role, t, currentUserRole],
   );
 
   const api = useAPIClient();

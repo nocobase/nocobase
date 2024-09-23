@@ -33,6 +33,8 @@ import { useChartRefreshActionProps } from './initializers/RefreshAction';
 import { chartBlockActionsInitializer } from './initializers/chartBlockActions';
 import { useChartBlockRefreshActionProps } from './initializers/BlockRefreshAction';
 import { chartBlockActionRefreshSettings } from './settings/chartBlockActionRefresh';
+import { useChartBlockCardProps } from './block/ChartBlock';
+import { ChartCardItem } from './block/CardItem';
 
 class PluginDataVisualiztionClient extends Plugin {
   public charts: ChartGroup = new ChartGroup();
@@ -46,12 +48,15 @@ class PluginDataVisualiztionClient extends Plugin {
       ChartV2BlockInitializer,
       ChartV2BlockDesigner,
       ChartV2Block,
+      ChartCardItem,
       ChartBlockProvider,
     });
     this.app.addScopes({
+      useChartBlockCardProps,
       useChartRefreshActionProps,
       useChartBlockRefreshActionProps,
     });
+
     this.app.schemaInitializerManager.add(chartInitializers_deprecated);
     this.app.schemaInitializerManager.add(chartInitializers);
     this.app.schemaInitializerManager.add(chartFilterItemInitializers_deprecated);

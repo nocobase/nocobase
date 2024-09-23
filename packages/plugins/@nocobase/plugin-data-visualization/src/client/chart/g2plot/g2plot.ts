@@ -81,7 +81,6 @@ export class G2PlotChart extends Chart {
         },
       },
       data,
-      theme: 'classic',
       animate: {
         enter: {
           type: false,
