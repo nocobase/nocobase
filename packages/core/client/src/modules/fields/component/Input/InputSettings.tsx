@@ -8,6 +8,7 @@
  */
 
 import { useField, useFieldSchema } from '@formily/react';
+import { useTranslation } from 'react-i18next';
 import { SchemaSettings } from '../../../../application/schema-settings/SchemaSettings';
 import { SchemaSettingsItemType } from '../../../../application/schema-settings/types';
 import { useColumnSchema } from '../../../../schema-component/antd/table-v2/Table.Column.Decorator';
@@ -21,11 +22,12 @@ export const ellipsisSettingsItem: SchemaSettingsItemType = {
     const fieldSchema = useFieldSchema();
     const field = useField();
     const { dn } = useDesignable();
+    const { t } = useTranslation();
 
     const schema = tableFieldSchema || fieldSchema;
 
     return {
-      title: 'Ellipsis',
+      title: t('Ellipsis'),
       checked: !!schema['x-component-props']?.ellipsis,
       hidden: !schema['x-read-pretty'],
       onChange: async (checked) => {

@@ -579,5 +579,6 @@
   "Expand All": "Развернуть все",
   "Clear default value": "Очистить значение по умолчанию",
   "Open in new window": "Открыть в новом окне",
-  "Sorry, the page you visited does not exist.": "Извините, посещенной вами страницы не существует."
+  "Sorry, the page you visited does not exist.": "Извините, посещенной вами страницы не существует.",
+  "Ellipsis": "Многоточие"
 }

@@ -765,5 +765,6 @@
   "Expand All": "Expandir todo",
   "Clear default value": "Borrar valor por defecto",
   "Open in new window": "Abrir en una nueva ventana",
-  "Sorry, the page you visited does not exist.": "Lo siento, la página que visitaste no existe."
+  "Sorry, the page you visited does not exist.": "Lo siento, la página que visitaste no existe.",
+  "Ellipsis": "Elipsis"
 }
