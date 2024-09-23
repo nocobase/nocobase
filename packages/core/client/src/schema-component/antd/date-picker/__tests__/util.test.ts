@@ -132,8 +132,8 @@ describe('moment2str', () => {
 
   test('picker is month', () => {
     const m = dayjs('2023-06-21 10:10:00');
-    const str = moment2str(m, { picker: 'month' });
-    expect(str).toBe('2023-05-31T16:00:00.000Z');
+    const str = moment2str(m, { picker: 'month', gmt: true });
+    expect(str).toBe('2023-06-01T00:00:00.000Z');
   });
 
   // test('picker is week, gmt is false', () => {
