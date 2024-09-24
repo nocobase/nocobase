@@ -43,6 +43,7 @@ test.describe('ellipsis', () => {
     await expect(page.getByRole('menuitem', { name: 'Ellipsis' }).getByRole('switch')).toBeChecked({ checked: false });
     await page.getByRole('menuitem', { name: 'Ellipsis' }).getByRole('switch').check();
     await expect(page.getByRole('menuitem', { name: 'Ellipsis' }).getByRole('switch')).toBeChecked({ checked: true });
+    await page.mouse.move(300, 0);
 
     await page.getByRole('button', { name: 'inputURL', exact: true }).hover();
     await page
@@ -52,6 +53,7 @@ test.describe('ellipsis', () => {
     await expect(page.getByRole('menuitem', { name: 'Ellipsis' }).getByRole('switch')).toBeChecked({ checked: true });
     await page.getByRole('menuitem', { name: 'Ellipsis' }).getByRole('switch').uncheck();
     await expect(page.getByRole('menuitem', { name: 'Ellipsis' }).getByRole('switch')).toBeChecked({ checked: false });
+    await page.mouse.move(300, 0);
 
     await page.getByRole('button', { name: 'inputTextArea', exact: true }).hover();
     await page
@@ -61,6 +63,7 @@ test.describe('ellipsis', () => {
     await expect(page.getByRole('menuitem', { name: 'Ellipsis' }).getByRole('switch')).toBeChecked({ checked: true });
     await page.getByRole('menuitem', { name: 'Ellipsis' }).getByRole('switch').uncheck();
     await expect(page.getByRole('menuitem', { name: 'Ellipsis' }).getByRole('switch')).toBeChecked({ checked: false });
+    await page.mouse.move(300, 0);
 
     await page.getByRole('button', { name: 'inputJSON', exact: true }).hover();
     await page
@@ -70,7 +73,7 @@ test.describe('ellipsis', () => {
     await expect(page.getByRole('menuitem', { name: 'Ellipsis' }).getByRole('switch')).toBeChecked({ checked: true });
     await page.getByRole('menuitem', { name: 'Ellipsis' }).getByRole('switch').uncheck();
     await expect(page.getByRole('menuitem', { name: 'Ellipsis' }).getByRole('switch')).toBeChecked({ checked: false });
-
+    await page.mouse.move(300, 0);
     await page.getByRole('button', { name: 'richText', exact: true }).hover();
     await page
       .getByRole('button', { name: 'designer-schema-settings-TableV2.Column-fieldSettings:TableColumn-testEllipsis' })
@@ -79,6 +82,7 @@ test.describe('ellipsis', () => {
     await expect(page.getByRole('menuitem', { name: 'Ellipsis' }).getByRole('switch')).toBeChecked({ checked: true });
     await page.getByRole('menuitem', { name: 'Ellipsis' }).getByRole('switch').uncheck();
     await expect(page.getByRole('menuitem', { name: 'Ellipsis' }).getByRole('switch')).toBeChecked({ checked: false });
+    await page.mouse.move(300, 0);
 
     await page.getByRole('button', { name: 'markdown', exact: true }).hover();
     await page
@@ -88,6 +92,7 @@ test.describe('ellipsis', () => {
     await expect(page.getByRole('menuitem', { name: 'Ellipsis' }).getByRole('switch')).toBeChecked({ checked: true });
     await page.getByRole('menuitem', { name: 'Ellipsis' }).getByRole('switch').uncheck();
     await expect(page.getByRole('menuitem', { name: 'Ellipsis' }).getByRole('switch')).toBeChecked({ checked: false });
+    await page.mouse.move(300, 0);
 
     // 2. Details -------------------------------------------------------------------------------------------------------
     await page.getByLabel('block-item-CollectionField-testEllipsis-details-testEllipsis.input-input').hover();
@@ -98,6 +103,7 @@ test.describe('ellipsis', () => {
     await expect(page.getByRole('menuitem', { name: 'Ellipsis' }).getByRole('switch')).toBeChecked({ checked: true });
     await page.getByRole('menuitem', { name: 'Ellipsis' }).getByRole('switch').uncheck();
     await expect(page.getByRole('menuitem', { name: 'Ellipsis' }).getByRole('switch')).toBeChecked({ checked: false });
+    await page.mouse.move(300, 0);
 
     await page.getByLabel('block-item-CollectionField-testEllipsis-details-testEllipsis.inputURL-inputURL').hover();
     await page
@@ -107,6 +113,7 @@ test.describe('ellipsis', () => {
     await expect(page.getByRole('menuitem', { name: 'Ellipsis' }).getByRole('switch')).toBeChecked({ checked: true });
     await page.getByRole('menuitem', { name: 'Ellipsis' }).getByRole('switch').uncheck();
     await expect(page.getByRole('menuitem', { name: 'Ellipsis' }).getByRole('switch')).toBeChecked({ checked: false });
+    await page.mouse.move(300, 0);
 
     await page.getByLabel('block-item-CollectionField-testEllipsis-details-testEllipsis.inputTextArea-').hover();
     await page
@@ -116,6 +123,7 @@ test.describe('ellipsis', () => {
     await expect(page.getByRole('menuitem', { name: 'Ellipsis' }).getByRole('switch')).toBeChecked({ checked: true });
     await page.getByRole('menuitem', { name: 'Ellipsis' }).getByRole('switch').uncheck();
     await expect(page.getByRole('menuitem', { name: 'Ellipsis' }).getByRole('switch')).toBeChecked({ checked: false });
+    await page.mouse.move(300, 0);
 
     await page.getByLabel('block-item-CollectionField-testEllipsis-details-testEllipsis.inputJSON-inputJSON').hover();
     await page
@@ -125,6 +133,7 @@ test.describe('ellipsis', () => {
     await expect(page.getByRole('menuitem', { name: 'Ellipsis' }).getByRole('switch')).toBeChecked({ checked: true });
     await page.getByRole('menuitem', { name: 'Ellipsis' }).getByRole('switch').uncheck();
     await expect(page.getByRole('menuitem', { name: 'Ellipsis' }).getByRole('switch')).toBeChecked({ checked: false });
+    await page.mouse.move(300, 0);
 
     await page.getByLabel('block-item-CollectionField-testEllipsis-details-testEllipsis.richText-richText').hover();
     await page
@@ -137,6 +146,7 @@ test.describe('ellipsis', () => {
     await expect(page.getByRole('menuitem', { name: 'Ellipsis' }).getByRole('switch')).toBeChecked({ checked: true });
     await page.getByRole('menuitem', { name: 'Ellipsis' }).getByRole('switch').uncheck();
     await expect(page.getByRole('menuitem', { name: 'Ellipsis' }).getByRole('switch')).toBeChecked({ checked: false });
+    await page.mouse.move(300, 0);
 
     await page.getByLabel('block-item-CollectionField-testEllipsis-details-testEllipsis.markdown-markdown').hover();
     await page
@@ -146,6 +156,7 @@ test.describe('ellipsis', () => {
     await expect(page.getByRole('menuitem', { name: 'Ellipsis' }).getByRole('switch')).toBeChecked({ checked: true });
     await page.getByRole('menuitem', { name: 'Ellipsis' }).getByRole('switch').uncheck();
     await expect(page.getByRole('menuitem', { name: 'Ellipsis' }).getByRole('switch')).toBeChecked({ checked: false });
+    await page.mouse.move(300, 0);
 
     // 3. List -------------------------------------------------------------------------------------------------------
     await page
@@ -159,6 +170,7 @@ test.describe('ellipsis', () => {
     await expect(page.getByRole('menuitem', { name: 'Ellipsis' }).getByRole('switch')).toBeChecked({ checked: true });
     await page.getByRole('menuitem', { name: 'Ellipsis' }).getByRole('switch').uncheck();
     await expect(page.getByRole('menuitem', { name: 'Ellipsis' }).getByRole('switch')).toBeChecked({ checked: false });
+    await page.mouse.move(300, 0);
 
     await page
       .getByLabel('block-item-CardItem-testEllipsis-list')
@@ -171,6 +183,7 @@ test.describe('ellipsis', () => {
     await expect(page.getByRole('menuitem', { name: 'Ellipsis' }).getByRole('switch')).toBeChecked({ checked: true });
     await page.getByRole('menuitem', { name: 'Ellipsis' }).getByRole('switch').uncheck();
     await expect(page.getByRole('menuitem', { name: 'Ellipsis' }).getByRole('switch')).toBeChecked({ checked: false });
+    await page.mouse.move(300, 0);
 
     await page
       .getByLabel('block-item-CardItem-testEllipsis-list')
@@ -183,6 +196,7 @@ test.describe('ellipsis', () => {
     await expect(page.getByRole('menuitem', { name: 'Ellipsis' }).getByRole('switch')).toBeChecked({ checked: true });
     await page.getByRole('menuitem', { name: 'Ellipsis' }).getByRole('switch').uncheck();
     await expect(page.getByRole('menuitem', { name: 'Ellipsis' }).getByRole('switch')).toBeChecked({ checked: false });
+    await page.mouse.move(300, 0);
 
     await page
       .getByLabel('block-item-CardItem-testEllipsis-list')
@@ -195,6 +209,7 @@ test.describe('ellipsis', () => {
     await expect(page.getByRole('menuitem', { name: 'Ellipsis' }).getByRole('switch')).toBeChecked({ checked: true });
     await page.getByRole('menuitem', { name: 'Ellipsis' }).getByRole('switch').uncheck();
     await expect(page.getByRole('menuitem', { name: 'Ellipsis' }).getByRole('switch')).toBeChecked({ checked: false });
+    await page.mouse.move(300, 0);
 
     await page
       .getByLabel('block-item-CardItem-testEllipsis-list')
@@ -210,6 +225,7 @@ test.describe('ellipsis', () => {
     await expect(page.getByRole('menuitem', { name: 'Ellipsis' }).getByRole('switch')).toBeChecked({ checked: true });
     await page.getByRole('menuitem', { name: 'Ellipsis' }).getByRole('switch').uncheck();
     await expect(page.getByRole('menuitem', { name: 'Ellipsis' }).getByRole('switch')).toBeChecked({ checked: false });
+    await page.mouse.move(300, 0);
 
     await page
       .getByLabel('block-item-CardItem-testEllipsis-list')
@@ -222,6 +238,7 @@ test.describe('ellipsis', () => {
     await expect(page.getByRole('menuitem', { name: 'Ellipsis' }).getByRole('switch')).toBeChecked({ checked: true });
     await page.getByRole('menuitem', { name: 'Ellipsis' }).getByRole('switch').uncheck();
     await expect(page.getByRole('menuitem', { name: 'Ellipsis' }).getByRole('switch')).toBeChecked({ checked: false });
+    await page.mouse.move(300, 0);
 
     // 4. GridCard -------------------------------------------------------------------------------------------------------
     await page.getByLabel('block-item-CollectionField-testEllipsis-grid-card-testEllipsis.input-input').hover();
@@ -232,6 +249,7 @@ test.describe('ellipsis', () => {
     await expect(page.getByRole('menuitem', { name: 'Ellipsis' }).getByRole('switch')).toBeChecked({ checked: true });
     await page.getByRole('menuitem', { name: 'Ellipsis' }).getByRole('switch').uncheck();
     await expect(page.getByRole('menuitem', { name: 'Ellipsis' }).getByRole('switch')).toBeChecked({ checked: false });
+    await page.mouse.move(300, 0);
 
     await page.getByLabel('block-item-CollectionField-testEllipsis-grid-card-testEllipsis.inputURL-inputURL').hover();
     await page
@@ -241,6 +259,7 @@ test.describe('ellipsis', () => {
     await expect(page.getByRole('menuitem', { name: 'Ellipsis' }).getByRole('switch')).toBeChecked({ checked: true });
     await page.getByRole('menuitem', { name: 'Ellipsis' }).getByRole('switch').uncheck();
     await expect(page.getByRole('menuitem', { name: 'Ellipsis' }).getByRole('switch')).toBeChecked({ checked: false });
+    await page.mouse.move(300, 0);
 
     await page.getByLabel('block-item-CollectionField-testEllipsis-grid-card-testEllipsis.inputURL-inputURL').hover();
     await page
@@ -253,6 +272,7 @@ test.describe('ellipsis', () => {
     await expect(page.getByRole('menuitem', { name: 'Ellipsis' }).getByRole('switch')).toBeChecked({ checked: true });
     await page.getByRole('menuitem', { name: 'Ellipsis' }).getByRole('switch').uncheck();
     await expect(page.getByRole('menuitem', { name: 'Ellipsis' }).getByRole('switch')).toBeChecked({ checked: false });
+    await page.mouse.move(300, 0);
 
     await page.getByLabel('block-item-CollectionField-testEllipsis-grid-card-testEllipsis.inputTextArea-').hover();
     await page
@@ -262,6 +282,7 @@ test.describe('ellipsis', () => {
     await expect(page.getByRole('menuitem', { name: 'Ellipsis' }).getByRole('switch')).toBeChecked({ checked: true });
     await page.getByRole('menuitem', { name: 'Ellipsis' }).getByRole('switch').uncheck();
     await expect(page.getByRole('menuitem', { name: 'Ellipsis' }).getByRole('switch')).toBeChecked({ checked: false });
+    await page.mouse.move(300, 0);
 
     await page.getByLabel('block-item-CollectionField-testEllipsis-grid-card-testEllipsis.inputJSON-').hover();
     await page
@@ -271,6 +292,7 @@ test.describe('ellipsis', () => {
     await expect(page.getByRole('menuitem', { name: 'Ellipsis' }).getByRole('switch')).toBeChecked({ checked: true });
     await page.getByRole('menuitem', { name: 'Ellipsis' }).getByRole('switch').uncheck();
     await expect(page.getByRole('menuitem', { name: 'Ellipsis' }).getByRole('switch')).toBeChecked({ checked: false });
+    await page.mouse.move(300, 0);
 
     await page.getByLabel('block-item-CollectionField-testEllipsis-grid-card-testEllipsis.richText-richText').hover();
     await page
@@ -280,6 +302,7 @@ test.describe('ellipsis', () => {
     await expect(page.getByRole('menuitem', { name: 'Ellipsis' }).getByRole('switch')).toBeChecked({ checked: true });
     await page.getByRole('menuitem', { name: 'Ellipsis' }).getByRole('switch').uncheck();
     await expect(page.getByRole('menuitem', { name: 'Ellipsis' }).getByRole('switch')).toBeChecked({ checked: false });
+    await page.mouse.move(300, 0);
 
     await page.getByLabel('block-item-CollectionField-testEllipsis-grid-card-testEllipsis.markdown-markdown').hover();
     await page
@@ -289,6 +312,7 @@ test.describe('ellipsis', () => {
     await expect(page.getByRole('menuitem', { name: 'Ellipsis' }).getByRole('switch')).toBeChecked({ checked: true });
     await page.getByRole('menuitem', { name: 'Ellipsis' }).getByRole('switch').uncheck();
     await expect(page.getByRole('menuitem', { name: 'Ellipsis' }).getByRole('switch')).toBeChecked({ checked: false });
+    await page.mouse.move(300, 0);
 
     // 5. Kanban -------------------------------------------------------------------------------------------------------
     await page.getByLabel('block-item-CollectionField-testEllipsis-kanban-testEllipsis.input-input').hover();
@@ -302,6 +326,7 @@ test.describe('ellipsis', () => {
     await expect(page.getByRole('menuitem', { name: 'Ellipsis' }).getByRole('switch')).toBeChecked({ checked: true });
     await page.getByRole('menuitem', { name: 'Ellipsis' }).getByRole('switch').uncheck();
     await expect(page.getByRole('menuitem', { name: 'Ellipsis' }).getByRole('switch')).toBeChecked({ checked: false });
+    await page.mouse.move(300, 0);
 
     await page.getByLabel('block-item-CollectionField-testEllipsis-kanban-testEllipsis.inputURL-inputURL').hover();
     await page
@@ -317,6 +342,7 @@ test.describe('ellipsis', () => {
     await expect(page.getByRole('menuitem', { name: 'Ellipsis' }).getByRole('switch')).toBeChecked({ checked: true });
     await page.getByRole('menuitem', { name: 'Ellipsis' }).getByRole('switch').uncheck();
     await expect(page.getByRole('menuitem', { name: 'Ellipsis' }).getByRole('switch')).toBeChecked({ checked: false });
+    await page.mouse.move(300, 0);
 
     await page.getByLabel('block-item-CollectionField-testEllipsis-kanban-testEllipsis.inputTextArea-').hover();
     await page
@@ -332,6 +358,7 @@ test.describe('ellipsis', () => {
     await expect(page.getByRole('menuitem', { name: 'Ellipsis' }).getByRole('switch')).toBeChecked({ checked: true });
     await page.getByRole('menuitem', { name: 'Ellipsis' }).getByRole('switch').uncheck();
     await expect(page.getByRole('menuitem', { name: 'Ellipsis' }).getByRole('switch')).toBeChecked({ checked: false });
+    await page.mouse.move(300, 0);
 
     await page.getByLabel('block-item-CollectionField-testEllipsis-kanban-testEllipsis.inputJSON-').hover();
     await page
@@ -347,6 +374,7 @@ test.describe('ellipsis', () => {
     await expect(page.getByRole('menuitem', { name: 'Ellipsis' }).getByRole('switch')).toBeChecked({ checked: true });
     await page.getByRole('menuitem', { name: 'Ellipsis' }).getByRole('switch').uncheck();
     await expect(page.getByRole('menuitem', { name: 'Ellipsis' }).getByRole('switch')).toBeChecked({ checked: false });
+    await page.mouse.move(300, 0);
 
     await page.getByLabel('block-item-CollectionField-testEllipsis-kanban-testEllipsis.richText-richText').hover();
     await page
@@ -362,6 +390,7 @@ test.describe('ellipsis', () => {
     await expect(page.getByRole('menuitem', { name: 'Ellipsis' }).getByRole('switch')).toBeChecked({ checked: true });
     await page.getByRole('menuitem', { name: 'Ellipsis' }).getByRole('switch').uncheck();
     await expect(page.getByRole('menuitem', { name: 'Ellipsis' }).getByRole('switch')).toBeChecked({ checked: false });
+    await page.mouse.move(300, 0);
 
     await page.getByLabel('block-item-CollectionField-testEllipsis-kanban-testEllipsis.markdown-markdown').hover();
     await page
