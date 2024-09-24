@@ -369,7 +369,7 @@ export function Uploader({ rules, ...props }: UploadProps) {
       if (multiple) {
         const uploadedList = info.fileList.filter((file) => file.status === 'done');
         if (uploadedList.length) {
-          const valueList = [...(value ?? []), ...uploadedList.map(toValueItem)];
+          const valueList = [...(value ?? []), ...uploadedList.map((v) => toValueItem(v.response?.data))];
           onChange?.(valueList);
         }
         setPendingList(info.fileList.filter((file) => file.status !== 'done').map(normalizeFile));
@@ -377,7 +377,7 @@ export function Uploader({ rules, ...props }: UploadProps) {
         // NOTE: 用 fileList 里的才有附加的验证状态信息，file 没有（不清楚为何）
         const file = info.fileList.find((f) => f.uid === info.file.uid);
         if (file.status === 'done') {
-          onChange?.(toValueItem(file));
+          onChange?.(toValueItem(file.response?.data));
           setPendingList([]);
         } else {
           setPendingList([normalizeFile(file)]);

@@ -151,8 +151,8 @@ export function useUploadProps<T extends IUploadProps = UploadProps>(props: T) {
   };
 }
 
-export function toValueItem(file) {
-  return file.response?.data;
+export function toValueItem(data) {
+  return data;
 }
 
 export const toItem = (file) => {
