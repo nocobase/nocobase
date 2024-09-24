@@ -74,16 +74,16 @@ export const createActionSchema = {
               'x-component': 'CollectionField',
               default: true,
             },
-            footer: {
-              type: 'void',
-              'x-component': 'Action.Drawer.Footer',
-              properties: {
-                submit: {
-                  title: 'Submit',
-                  'x-component': 'Action',
-                  'x-use-component-props': 'useSubmitActionProps',
-                },
-              },
+          },
+        },
+        footer: {
+          type: 'void',
+          'x-component': 'Action.Drawer.Footer',
+          properties: {
+            submit: {
+              title: 'Submit',
+              'x-component': 'Action',
+              'x-use-component-props': 'useSubmitActionProps',
             },
           },
         },
