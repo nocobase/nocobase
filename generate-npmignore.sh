@@ -6,6 +6,8 @@ if [ "$1" == "ignore-src" ]; then
     CONTENT="/node_modules"
 else
     CONTENT="/node_modules
+/docker
+/docs
 /src"
 fi
 
