@@ -152,7 +152,7 @@ class XlsxExporter {
     if (dataIndex.length > 1) {
       let targetCollection: ICollection;
 
-      for (let i = 0; i < dataIndex.length - 1; i++) {
+      for (let i = 0; i < dataIndex.length; i++) {
         const isLast = i === dataIndex.length - 1;
 
         if (isLast) {
@@ -185,42 +185,32 @@ class XlsxExporter {
     return value;
   }
 
+  private getFieldRenderer(field?: IField, ctx?): (value) => any {
+    const InterfaceClass = this.options.collectionManager.getFieldInterface(field?.options?.interface);
+    if (!InterfaceClass) {
+      return this.renderRawValue;
+    }
+    const fieldInternface = new InterfaceClass(field?.options);
+    return (value) => fieldInternface.toString(value, ctx);
+  }
+
   private renderCellValue(rowData: IModel, column: ExportColumn, ctx?) {
     const { dataIndex } = column;
     rowData = rowData.toJSON();
     const value = rowData[dataIndex[0]];
+    const field = this.findFieldByDataIndex(dataIndex);
+    const render = this.getFieldRenderer(field, ctx);
 
     if (dataIndex.length > 1) {
       const deepValue = deepGet(rowData, dataIndex);
 
       if (Array.isArray(deepValue)) {
-        return deepValue.join(',');
+        return deepValue.map(render).join(',');
       }
 
-      return deepValue;
+      return render(deepValue);
     }
-
-    const field = this.findFieldByDataIndex(dataIndex);
-
-    if (!field) {
-      return this.renderRawValue(value);
-    }
-
-    const fieldOptions = field.options;
-    const interfaceName = fieldOptions['interface'];
-
-    if (!interfaceName) {
-      return this.renderRawValue(value);
-    }
-
-    const InterfaceClass = this.options.collectionManager.getFieldInterface(interfaceName);
-
-    if (!InterfaceClass) {
-      return this.renderRawValue(value);
-    }
-
-    const interfaceInstance = new InterfaceClass(fieldOptions);
-    return interfaceInstance.toString(value, ctx);
+    return render(value);
   }
 }
 
