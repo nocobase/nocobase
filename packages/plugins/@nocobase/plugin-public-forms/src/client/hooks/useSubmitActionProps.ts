@@ -90,6 +90,7 @@ export const useSubmitActionProps = () => {
         });
         await api.resource('uiSchemas').insert({ values: schema });
       }
+      form.reset();
       await runAsync();
       message.success('Saved successfully!');
       setVisible(false);
