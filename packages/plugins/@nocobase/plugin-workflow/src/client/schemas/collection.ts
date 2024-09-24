@@ -163,7 +163,6 @@ export const pagination = {
               'x-component': 'InputNumber',
               'x-component-props': {
                 min: 1,
-                max: 100,
               },
               default: 20,
             },

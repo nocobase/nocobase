@@ -448,6 +448,7 @@
   "Option label": "选项标签",
   "Color": "颜色",
   "Background Color": "背景颜色",
+  "Text Align": "文本对齐",
   "Add option": "添加选项",
   "Related collection": "关系表",
   "Allow linking to multiple records": "允许关联多条记录",
@@ -995,6 +996,7 @@
   "Are you sure you want to perform the Submit action?": "你确定执行提交操作吗？",
   "Perform the Trigger workflow": "执行触发工作流",
   "Are you sure you want to perform the Trigger workflow action?": "你确定执行触发工作流吗？",
+  "Ellipsis": "省略号",
   "Stay on the current popup or page":"停留在当前弹窗或页面",
   "Return to the previous popup or page":"返回上一层弹窗或页面"
 }
