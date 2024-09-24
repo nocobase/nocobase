@@ -187,8 +187,8 @@ export const collectionTableSchema: ISchema = {
           return {
             async move(from, to) {
               await api.resource('collections').move({
-                sourceId: from.key,
-                targetId: to.key,
+                sourceId: from.name,
+                targetId: to.name,
               });
               message.success(t('Saved successfully'), 0.2);
             },
