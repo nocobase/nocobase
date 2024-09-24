@@ -324,15 +324,17 @@ export function AttachmentList(props) {
   return (
     <>
       {fileList.map((file, index) => (
-        <AttachmentListItem
-          key={file.id}
-          file={file}
-          index={index}
-          disabled={disabled}
-          onPreview={onPreview}
-          onDelete={onDelete}
-          readPretty={readPretty}
-        />
+        <div key={index}>
+          <AttachmentListItem
+            key={file.id}
+            file={file}
+            index={index}
+            disabled={disabled}
+            onPreview={onPreview}
+            onDelete={onDelete}
+            readPretty={readPretty}
+          />
+        </div>
       ))}
       <Previewer index={preview} onSwitchIndex={setPreview} list={fileList} />
     </>
