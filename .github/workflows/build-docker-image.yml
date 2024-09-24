@@ -96,10 +96,6 @@ jobs:
           push: true
           tags: ${{ steps.set-tags.outputs.tags }}
 
-      # Build branches docker image from docker/branches directory
-      # the subdir should be named as branch name, it can be the name of the branch docker image
-      # should use next or main as build ARGS
-      # eg: ${{ steps.set-tags.outputs.tags }}-with-${subdir}
       - name: Build branches docker image
         if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/next'
         run: |
