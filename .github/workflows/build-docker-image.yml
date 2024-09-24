@@ -100,9 +100,8 @@ jobs:
         #if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/next'
         run: |
           branch_or_pr_name=${GITHUB_REF##*/}
-
-          if [ ! -z "${{ github.event.pull_request.title }}" ]; then
-            branch_or_pr_name="${{ github.event.pull_request.title }}"
+          if [ "${{ github.event_name }}" == "pull_request" ]; then
+            branch_or_pr_name="PR-${{ github.event.pull_request.number }}"
           fi
 
           for subdir in docker/branches/*; do
