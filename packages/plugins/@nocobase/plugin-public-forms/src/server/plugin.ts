@@ -103,7 +103,6 @@ export class PluginPublicFormsServer extends Plugin {
     await next();
   };
 
-  // TODO
   parseToken = async (ctx, next) => {
     if (!ctx.action) {
       return next();
@@ -123,6 +122,16 @@ export class PluginPublicFormsServer extends Plugin {
           formKey: tokenData.formKey,
           targetCollections: tokenData.targetCollections,
         };
+
+        const publicForms = this.db.getRepository('publicForms');
+        const instance = await publicForms.findOne({
+          filter: {
+            key: tokenData.formKey,
+          },
+        });
+        if (!instance.get('enabled')) {
+          throw new Error('The form is not enabled');
+        }
         // 将 publicSubmit 转为 create（用于触发工作流的 Action 事件）
         const actionName = ctx.action.actionName;
         if (actionName === 'publicSubmit') {
@@ -135,7 +144,6 @@ export class PluginPublicFormsServer extends Plugin {
     await next();
   };
 
-  // TODO：用于处理哪些可选项的接口可以访问
   parseACL = async (ctx, next) => {
     const { resourceName, actionName } = ctx.action;
     if (ctx.PublicForm && ['create', 'list'].includes(actionName)) {
