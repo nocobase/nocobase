@@ -16,6 +16,7 @@ import {
   useDataBlockRequest,
   useDataBlockResource,
   usePlugin,
+  useBlockRequestContext,
 } from '@nocobase/client';
 import { App as AntdApp } from 'antd';
 import PluginPublicFormsClient from '..';
@@ -54,10 +55,11 @@ export const useSubmitActionProps = () => {
   const { message } = AntdApp.useApp();
   const form = useForm();
   const resource = useDataBlockResource();
-  const { runAsync } = useDataBlockRequest();
   const collection = useCollection();
   const api = useAPIClient();
   const plugin = usePlugin(PluginPublicFormsClient);
+  const { service } = useBlockRequestContext();
+
   return {
     type: 'primary',
     async onClick() {
@@ -91,7 +93,7 @@ export const useSubmitActionProps = () => {
         await api.resource('uiSchemas').insert({ values: schema });
       }
       form.reset();
-      await runAsync();
+      await service.refresh();
       message.success('Saved successfully!');
       setVisible(false);
     },

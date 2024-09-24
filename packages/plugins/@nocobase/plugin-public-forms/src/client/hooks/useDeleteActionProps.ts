@@ -11,7 +11,7 @@ import {
   ActionProps,
   useCollection,
   useCollectionRecordData,
-  useDataBlockRequest,
+  useBlockRequestContext,
   useDataBlockResource,
 } from '@nocobase/client';
 import { App as AntdApp } from 'antd';
@@ -20,7 +20,7 @@ export function useDeleteActionProps(): ActionProps {
   const { message } = AntdApp.useApp();
   const record = useCollectionRecordData();
   const resource = useDataBlockResource();
-  const { runAsync } = useDataBlockRequest();
+  const { service } = useBlockRequestContext();
   const collection = useCollection();
   return {
     confirm: {
@@ -34,7 +34,7 @@ export function useDeleteActionProps(): ActionProps {
       await resource.destroy({
         filterByTk: record[collection.filterTargetKey],
       });
-      await runAsync();
+      await service.refresh();
       message.success('Deleted!');
     },
   };
