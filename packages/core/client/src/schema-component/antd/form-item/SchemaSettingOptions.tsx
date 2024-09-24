@@ -513,12 +513,12 @@ export const EditOperator = () => {
 
         const operator = operatorList.find((item) => item.value === v);
         let componentProps = { ...fieldSchema['x-component-props'] };
+        field.value = undefined; //切换操作符清空字段值
 
         // 根据操作符的配置，设置组件的属性
         if (operator?.schema?.['x-component']) {
           _.set(fieldSchema, 'x-component-props.component', operator.schema?.['x-component']);
           _.set(field, 'componentProps.component', operator.schema?.['x-component']);
-          field.reset();
           componentProps = {
             ...fieldSchema['x-component-props'],
             component: operator.schema['x-component'],
@@ -527,7 +527,6 @@ export const EditOperator = () => {
         } else if (fieldSchema['x-component-props']?.component) {
           _.set(fieldSchema, 'x-component-props.component', null);
           _.set(field, 'componentProps.component', null);
-          field.reset();
           componentProps = {
             ...fieldSchema['x-component-props'],
             component: null,
