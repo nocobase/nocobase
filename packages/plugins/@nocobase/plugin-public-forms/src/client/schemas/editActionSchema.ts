@@ -20,11 +20,11 @@ export const editActionSchema = {
       type: 'void',
       title: 'Edit',
       'x-component': 'Action.Drawer',
+      'x-decorator': 'FormV2',
+      'x-use-decorator-props': 'useEditFormProps',
       properties: {
         form: {
           type: 'void',
-          'x-component': 'FormV2',
-          'x-use-component-props': 'useEditFormProps',
           properties: {
             title: {
               type: 'string',
@@ -77,16 +77,16 @@ export const editActionSchema = {
               'x-component': 'CollectionField',
               default: true,
             },
-            footer: {
-              type: 'void',
-              'x-component': 'Action.Drawer.Footer',
-              properties: {
-                submit: {
-                  title: 'Submit',
-                  'x-component': 'Action',
-                  'x-use-component-props': 'useSubmitActionProps',
-                },
-              },
+          },
+        },
+        footer: {
+          type: 'void',
+          'x-component': 'Action.Drawer.Footer',
+          properties: {
+            submit: {
+              title: 'Submit',
+              'x-component': 'Action',
+              'x-use-component-props': 'useSubmitActionProps',
             },
           },
         },

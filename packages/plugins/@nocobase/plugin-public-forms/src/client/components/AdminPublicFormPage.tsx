@@ -56,7 +56,7 @@ export function AdminPublicFormPage() {
   const { data, loading, refresh } = useRequest<any>({
     url: `publicForms:get/${params.name}`,
   });
-  const { enabled, ...others } = data?.data || {};
+  const { enabled, title, ...others } = data?.data || {};
   if (loading) {
     return <Spin />;
   }
@@ -119,6 +119,7 @@ export function AdminPublicFormPage() {
     navigator.clipboard.writeText(link);
     message.success(t('Link copied successfully'));
   };
+
   return (
     <div>
       <div
@@ -137,7 +138,7 @@ export function AdminPublicFormPage() {
               title: <Link to={`/admin/settings/public-forms`}>{t('Public forms', { ns: NAMESPACE })}</Link>,
             },
             {
-              title: 'Test',
+              title: title,
             },
           ]}
         />

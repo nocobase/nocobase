@@ -21,10 +21,10 @@ export const createActionSchema = {
       type: 'void',
       'x-component': 'Action.Drawer',
       title: "{{t('Add New')}}",
+      'x-decorator': 'Form',
       properties: {
         form: {
           type: 'void',
-          'x-component': 'FormV2',
           properties: {
             title: {
               type: 'string',
@@ -74,16 +74,16 @@ export const createActionSchema = {
               'x-component': 'CollectionField',
               default: true,
             },
-            footer: {
-              type: 'void',
-              'x-component': 'Action.Drawer.Footer',
-              properties: {
-                submit: {
-                  title: 'Submit',
-                  'x-component': 'Action',
-                  'x-use-component-props': 'useSubmitActionProps',
-                },
-              },
+          },
+        },
+        footer: {
+          type: 'void',
+          'x-component': 'Action.Drawer.Footer',
+          properties: {
+            submit: {
+              title: 'Submit',
+              'x-component': 'Action',
+              'x-use-component-props': 'useSubmitActionProps',
             },
           },
         },
