@@ -162,6 +162,11 @@ export const toItem = (file) => {
       ...file.response.data,
     };
   }
+  if (typeof file === 'string') {
+    return {
+      imageUrl: file,
+    };
+  }
   return {
     ...file,
     id: file.id || file.uid,

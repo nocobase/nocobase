@@ -27,7 +27,7 @@ import {
   isPdf,
   normalizeFile,
   toFileList,
-  toValueItem,
+  toValueItem as toValueItemDefault,
   useBeforeUpload,
   useUploadProps,
 } from './shared';
@@ -340,7 +340,7 @@ export function AttachmentList(props) {
 }
 
 export function Uploader({ rules, ...props }: UploadProps) {
-  const { disabled, multiple, value, onChange } = props;
+  const { disabled, multiple, value, onChange, toValueItem = toValueItemDefault } = props;
   const [pendingList, setPendingList] = useState<any[]>([]);
   const { t } = useTranslation();
   const { componentCls: prefixCls } = useStyles();
@@ -397,7 +397,6 @@ export function Uploader({ rules, ...props }: UploadProps) {
   const sizeHint = useSizeHint(size);
   const selectable =
     !disabled && (multiple || ((!value || (Array.isArray(value) && !value.length)) && !pendingList.length));
-
   return (
     <>
       {pendingList.map((file, index) => (

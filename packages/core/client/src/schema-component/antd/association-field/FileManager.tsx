@@ -82,14 +82,13 @@ const useTableSelectorProps = () => {
 };
 
 function FileSelector(props) {
-  const { disabled, multiple, value, onChange, action, onSelect, quickUpload, selectFile } = props;
+  const { disabled, multiple, value, onChange, action, onSelect, quickUpload, selectFile, ...other } = props;
   const { wrapSSR, hashId, componentCls: prefixCls } = useStyles();
   const { useFileCollectionStorageRules } = useExpressionScope();
   const { t } = useTranslation();
   const rules = useFileCollectionStorageRules();
   // 兼容旧版本
   const showSelectButton = selectFile === undefined && quickUpload === undefined;
-
   return wrapSSR(
     <div className={cls(`${prefixCls}-wrapper`, `${prefixCls}-picture-card-wrapper`, 'nb-upload', hashId)}>
       <div className={cls(`${prefixCls}-list`, `${prefixCls}-list-picture-card`)}>
@@ -122,6 +121,7 @@ function FileSelector(props) {
             onChange={onChange}
             action={action}
             rules={rules}
+            {...other}
           />
         ) : null}
         {selectFile && (multiple || !value) ? (
@@ -174,11 +174,14 @@ const InternalFileManager = (props) => {
   useEffect(() => {
     if (value && Object.keys(value).length > 0) {
       const opts = (Array.isArray(value) ? value : value ? [value] : []).filter(Boolean).map((option) => {
-        const label = option[fieldNames.label];
-        return {
-          ...option,
-          [fieldNames.label]: getLabelFormatValue(compile(labelUiSchema), compile(label)),
-        };
+        if (typeof option === 'object') {
+          const label = option[fieldNames.label];
+          return {
+            ...option,
+            [fieldNames.label]: getLabelFormatValue(compile(labelUiSchema), compile(label)),
+          };
+        }
+        return option;
       });
       setOptions(opts);
     } else {
@@ -216,6 +219,7 @@ const InternalFileManager = (props) => {
   return (
     <div style={{ width: '100%', overflow: 'auto' }}>
       <FileSelector
+        {...others}
         value={multiple ? options : options?.[0]}
         multiple={multiple}
         quickUpload={fieldSchema['x-component-props']?.quickUpload !== false}
