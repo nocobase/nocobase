@@ -96,7 +96,7 @@ class XlsxExporter {
         for (let r = 1; r <= cellRange.e.r; r++) {
           const cell = worksheet[XLSX.utils.encode_cell({ c: colIndex, r })];
           // if cell and cell.v is a number, set cell.t to 'n'
-          if (cell && typeof cell.v === 'number') {
+          if (cell && isNumeric(cell.v)) {
             cell.t = 'n';
           }
         }
@@ -212,6 +212,10 @@ class XlsxExporter {
     }
     return render(value);
   }
+}
+
+function isNumeric(n) {
+  return !isNaN(parseFloat(n)) && isFinite(n);
 }
 
 export default XlsxExporter;

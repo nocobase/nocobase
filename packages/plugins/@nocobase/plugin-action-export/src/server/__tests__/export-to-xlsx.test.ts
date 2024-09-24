@@ -38,6 +38,7 @@ describe('export to xlsx with preset', () => {
         { type: 'string', name: 'title' },
         { type: 'integer', name: 'integer' },
         { type: 'float', name: 'float' },
+        { type: 'decimal', name: 'decimal' },
       ],
     });
 
@@ -49,11 +50,13 @@ describe('export to xlsx with preset', () => {
           title: 'p1',
           integer: 123,
           float: 123.456,
+          decimal: 234.567,
         },
         {
           title: 'p2',
           integer: 456,
           float: 456.789,
+          decimal: 345.678,
         },
       ],
     });
@@ -71,6 +74,10 @@ describe('export to xlsx with preset', () => {
         {
           dataIndex: ['float'],
           defaultTitle: 'float',
+        },
+        {
+          dataIndex: ['decimal'],
+          defaultTitle: 'decimal',
         },
       ],
     });
@@ -97,6 +104,10 @@ describe('export to xlsx with preset', () => {
       const cellC2 = firstSheet['C2'];
       expect(cellC2.t).toBe('n');
       expect(cellC2.v).toBe(123.456);
+
+      const cellD2 = firstSheet['D2'];
+      expect(cellD2.t).toBe('n');
+      expect(cellD2.v).toBe(234.567);
     } finally {
       fs.unlinkSync(xlsxFilePath);
     }
