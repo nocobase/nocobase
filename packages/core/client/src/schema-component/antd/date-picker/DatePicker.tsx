@@ -16,7 +16,7 @@ import { css } from '@emotion/css';
 import { getPickerFormat } from '@nocobase/utils/client';
 import { useTranslation } from 'react-i18next';
 import { ReadPretty, ReadPrettyComposed } from './ReadPretty';
-import { getDateRanges, mapDatePicker, mapRangePicker } from './util';
+import { getDateRanges, mapDatePicker, mapRangePicker, inferPickerType } from './util';
 import { useCompile } from '../../';
 
 interface IDatePickerProps {
@@ -166,19 +166,5 @@ DatePicker.FilterWithPicker = function FilterWithPicker(props: any) {
     </Space.Compact>
   );
 };
-
-function inferPickerType(dateString: string): 'year' | 'month' | 'quarter' | 'date' {
-  if (/^\d{4}$/.test(dateString)) {
-    return 'year';
-  } else if (/^\d{4}-\d{2}$/.test(dateString)) {
-    return 'month';
-  } else if (/^\d{4}Q[1-4]$/.test(dateString)) {
-    return 'quarter';
-  } else if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
-    return 'date';
-  } else {
-    return 'date';
-  }
-}
 
 export default DatePicker;
