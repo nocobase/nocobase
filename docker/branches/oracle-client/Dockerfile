@@ -1,4 +1,5 @@
-FROM nocobase/nocobase:next
+ARG BASE_ON
+FROM nocobase/nocobase:${BASE_ON}
 
 RUN apt-get update \
     && apt-get install -y wget unzip libaio1 \

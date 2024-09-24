@@ -99,11 +99,17 @@ jobs:
       - name: Build branches docker image
         #if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/next'
         run: |
+          branch_or_pr_name=${GITHUB_REF##*/}
+
+          if [ ! -z "${{ github.event.pull_request.title }}" ]; then
+            branch_or_pr_name="${{ github.event.pull_request.title }}"
+          fi
+
           for subdir in docker/branches/*; do
             if [ -d "$subdir" ]; then
               subdir_name=$(basename "$subdir")
-              echo "Building $subdir"
-              docker build -t ${{ steps.set-tags.outputs.tags }}-with-${subdir_name} -f $subdir/Dockerfile .
+              echo "Building $subdir_name with branch or PR name: $branch_or_pr_name"
+              docker build --build-arg BASE_ON="$branch_or_pr_name" -t ${{ steps.set-tags.outputs.tags }}-with-${subdir_name} -f $subdir/Dockerfile .
               docker push ${{ steps.set-tags.outputs.tags }}-with-${subdir_name}
             fi
           done
