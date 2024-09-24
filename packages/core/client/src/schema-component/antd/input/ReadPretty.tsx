@@ -46,7 +46,10 @@ ReadPretty.Input = (props: InputReadPrettyProps) => {
   // eslint-disable-next-line react-hooks/rules-of-hooks
   const compile = useCompile();
   return (
-    <div className={cls(prefixCls, props.className)} style={{ ...props.style, overflowWrap: 'break-word' }}>
+    <div
+      className={cls(prefixCls, props.className)}
+      style={{ ...props.style, overflowWrap: 'break-word', whiteSpace: 'normal' }}
+    >
       {props.addonBefore}
       {props.prefix}
       <EllipsisWithTooltip ellipsis={props.ellipsis}>
@@ -181,7 +184,7 @@ ReadPretty.URL = (props: URLReadPrettyProps) => {
     </Typography.Link>
   );
   return (
-    <div className={cls(prefixCls, props.className)} style={props.style}>
+    <div className={cls(prefixCls, props.className)} style={{ whiteSpace: 'normal', ...props.style }}>
       {props.addonBefore}
       {props.prefix}
       {content}

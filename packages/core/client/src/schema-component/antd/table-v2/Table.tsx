@@ -343,6 +343,7 @@ const headerClass = css`
 
 const cellClass = css`
   max-width: 300px;
+  white-space: nowrap;
   .ant-color-picker-trigger {
     position: absolute;
     top: 50%;
