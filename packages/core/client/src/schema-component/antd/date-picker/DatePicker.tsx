@@ -7,14 +7,17 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { connect, mapProps, mapReadPretty } from '@formily/react';
-import { DatePicker as AntdDatePicker, DatePickerProps as AntdDatePickerProps } from 'antd';
+import { connect, mapProps, mapReadPretty, useField, useFieldSchema } from '@formily/react';
+import { DatePicker as AntdDatePicker, DatePickerProps as AntdDatePickerProps, Space, Select } from 'antd';
 import { RangePickerProps } from 'antd/es/date-picker';
 import dayjs from 'dayjs';
-import React from 'react';
+import React, { useState } from 'react';
+import { css } from '@emotion/css';
+import { getPickerFormat } from '@nocobase/utils/client';
 import { useTranslation } from 'react-i18next';
 import { ReadPretty, ReadPrettyComposed } from './ReadPretty';
 import { getDateRanges, mapDatePicker, mapRangePicker } from './util';
+import { useCompile } from '../../';
 
 interface IDatePickerProps {
   utc?: boolean;
@@ -23,6 +26,7 @@ interface IDatePickerProps {
 type ComposedDatePicker = React.FC<AntdDatePickerProps> & {
   ReadPretty?: ReadPrettyComposed['DatePicker'];
   RangePicker?: ComposedRangePicker;
+  FilterWithPicker?: any;
 };
 
 type ComposedRangePicker = React.FC<RangePickerProps> & {
@@ -91,6 +95,72 @@ DatePicker.RangePicker = function RangePicker(props: any) {
     showTime: props.showTime ? { defaultValue: [dayjs('00:00:00', 'HH:mm:ss'), dayjs('00:00:00', 'HH:mm:ss')] } : false,
   };
   return <InternalRangePicker {...newProps} />;
+};
+
+DatePicker.FilterWithPicker = function FilterWithPicker(props: any) {
+  const { picker } = props;
+  const { utc = true } = useDatePickerContext();
+  const value = Array.isArray(props.value) ? props.value[0] : props.value;
+  const compile = useCompile();
+  const fieldSchema = useFieldSchema();
+  const newProps = {
+    utc,
+    ...props,
+    underFilter: true,
+    showTime: props.showTime ? { defaultValue: dayjs('00:00:00', 'HH:mm:ss') } : false,
+  };
+  const field: any = useField();
+  const [stateProps, setStateProps] = useState(newProps);
+  return (
+    <Space.Compact>
+      <Select
+        // @ts-ignore
+        role="button"
+        data-testid="select-picker"
+        className={css`
+          min-width: 110px;
+        `}
+        popupMatchSelectWidth={false}
+        defaultValue={picker}
+        options={compile([
+          {
+            label: '{{t("Date")}}',
+            value: 'date',
+          },
+
+          {
+            label: '{{t("Month")}}',
+            value: 'month',
+          },
+          {
+            label: '{{t("Quarter")}}',
+            value: 'quarter',
+          },
+          {
+            label: '{{t("Year")}}',
+            value: 'year',
+          },
+        ])}
+        onChange={(value) => {
+          const format = getPickerFormat(value);
+          field.setComponentProps({
+            picker: value,
+            format,
+          });
+          newProps.picker = value;
+          newProps.format = format;
+          setStateProps(newProps);
+          fieldSchema['x-component-props'] = {
+            ...props,
+            picker: value,
+            format,
+          };
+          field.value = null;
+        }}
+      />
+      <InternalDatePicker {...stateProps} value={value} />
+    </Space.Compact>
+  );
 };
 
 export default DatePicker;

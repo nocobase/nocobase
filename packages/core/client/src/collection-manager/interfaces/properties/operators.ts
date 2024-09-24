@@ -60,12 +60,25 @@ export const object = [
 ];
 
 export const datetime = [
-  { label: "{{ t('is') }}", value: '$dateOn', selected: true },
-  { label: "{{ t('is not') }}", value: '$dateNotOn' },
-  { label: "{{ t('is before') }}", value: '$dateBefore' },
-  { label: "{{ t('is after') }}", value: '$dateAfter' },
-  { label: "{{ t('is on or after') }}", value: '$dateNotBefore' },
-  { label: "{{ t('is on or before') }}", value: '$dateNotAfter' },
+  {
+    label: "{{ t('is') }}",
+    value: '$dateOn',
+    selected: true,
+    schema: { 'x-component': 'DatePicker.FilterWithPicker' },
+  },
+  { label: "{{ t('is not') }}", value: '$dateNotOn', schema: { 'x-component': 'DatePicker.FilterWithPicker' } },
+  { label: "{{ t('is before') }}", value: '$dateBefore', schema: { 'x-component': 'DatePicker.FilterWithPicker' } },
+  { label: "{{ t('is after') }}", value: '$dateAfter', schema: { 'x-component': 'DatePicker.FilterWithPicker' } },
+  {
+    label: "{{ t('is on or after') }}",
+    value: '$dateNotBefore',
+    schema: { 'x-component': 'DatePicker.FilterWithPicker' },
+  },
+  {
+    label: "{{ t('is on or before') }}",
+    value: '$dateNotAfter',
+    schema: { 'x-component': 'DatePicker.FilterWithPicker' },
+  },
   { label: "{{ t('is between') }}", value: '$dateBetween', schema: { 'x-component': 'DatePicker.RangePicker' } },
   { label: "{{ t('is empty') }}", value: '$empty', noValue: true },
   { label: "{{ t('is not empty') }}", value: '$notEmpty', noValue: true },
