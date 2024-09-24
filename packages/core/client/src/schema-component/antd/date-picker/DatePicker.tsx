@@ -98,19 +98,23 @@ DatePicker.RangePicker = function RangePicker(props: any) {
 };
 
 DatePicker.FilterWithPicker = function FilterWithPicker(props: any) {
-  const { picker } = props;
+  const { picker, format } = props;
   const { utc = true } = useDatePickerContext();
   const value = Array.isArray(props.value) ? props.value[0] : props.value;
   const compile = useCompile();
   const fieldSchema = useFieldSchema();
+  const targetPicker = value ? inferPickerType(value) : picker;
+  const targetFormat = getPickerFormat(targetPicker) || format;
   const newProps = {
     utc,
     ...props,
     underFilter: true,
     showTime: props.showTime ? { defaultValue: dayjs('00:00:00', 'HH:mm:ss') } : false,
+    format: targetFormat,
   };
   const field: any = useField();
   const [stateProps, setStateProps] = useState(newProps);
+
   return (
     <Space.Compact>
       <Select
@@ -121,7 +125,7 @@ DatePicker.FilterWithPicker = function FilterWithPicker(props: any) {
           min-width: 110px;
         `}
         popupMatchSelectWidth={false}
-        defaultValue={picker}
+        defaultValue={targetPicker}
         options={compile([
           {
             label: '{{t("Date")}}',
@@ -162,5 +166,19 @@ DatePicker.FilterWithPicker = function FilterWithPicker(props: any) {
     </Space.Compact>
   );
 };
+
+function inferPickerType(dateString: string): 'year' | 'month' | 'quarter' | 'date' {
+  if (/^\d{4}$/.test(dateString)) {
+    return 'year';
+  } else if (/^\d{4}-\d{2}$/.test(dateString)) {
+    return 'month';
+  } else if (/^\d{4}Q[1-4]$/.test(dateString)) {
+    return 'quarter';
+  } else if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+    return 'date';
+  } else {
+    return 'date';
+  }
+}
 
 export default DatePicker;
