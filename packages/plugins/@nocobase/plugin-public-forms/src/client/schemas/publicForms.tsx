@@ -55,6 +55,15 @@ export const publicFormsSchema: ISchema = {
           },
           'x-align': 'left',
         },
+        refresh: {
+          type: 'void',
+          title: '{{ t("Refresh") }}',
+          'x-component': 'Action',
+          'x-use-component-props': 'useRefreshActionProps',
+          'x-component-props': {
+            icon: 'ReloadOutlined',
+          },
+        },
         createActionSchema,
         destroy: {
           title: '{{ t("Delete") }}',
