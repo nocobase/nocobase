@@ -704,5 +704,6 @@
   "Expand All": "すべて展開",
   "Clear default value": "デフォルト値をクリア",
   "Open in new window": "新しいウィンドウで開く",
-  "Sorry, the page you visited does not exist.": "申し訳ありませんが、お探しのページは存在しません。"
+  "Sorry, the page you visited does not exist.": "申し訳ありませんが、お探しのページは存在しません。",
+  "Ellipsis": "省略記号"
 }

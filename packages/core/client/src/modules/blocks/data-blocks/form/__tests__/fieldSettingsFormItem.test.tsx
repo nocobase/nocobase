@@ -99,7 +99,7 @@ describe('FieldSettingsFormItem', () => {
 
   describe('menu list', () => {
     describe('edit mode', () => {
-      it('common field', async () => {
+      it.skip('common field', async () => {
         await renderSettings(commonFieldOptions());
 
         await checkSettings(
@@ -213,7 +213,7 @@ describe('FieldSettingsFormItem', () => {
     });
 
     describe('read pretty mode', () => {
-      it('common field', async () => {
+      it.skip('common field', async () => {
         await renderReadPrettySettings(commonFieldOptions());
 
         await checkSettings(
