@@ -786,5 +786,5 @@
   "Clear default value": "Очистити значення за замовчуванням",
   "Open in new window": "Відкрити в новому вікні",
   "Sorry, the page you visited does not exist.": "Вибачте, сторінка, яку ви відвідали, не існує.",
-  "Ellipsis": "Три крапки"
+  "Ellipsis overflow content": "Вміст з багатокрапкою при переповненні"
 }

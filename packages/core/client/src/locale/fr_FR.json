@@ -786,5 +786,5 @@
   "Clear default value": "Effacer la valeur par défaut",
   "Open in new window": "Ouvrir dans une nouvelle fenêtre",
   "Sorry, the page you visited does not exist.": "Désolé, la page que vous avez visitée n'existe pas.",
-  "Ellipsis": "Points de suspension"
+  "Ellipsis overflow content": "Contenu de débordement avec ellipse"
 }
