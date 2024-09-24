@@ -14,7 +14,7 @@ import { InternalPicker } from './InternalPicker';
 import { Nester } from './Nester';
 import { ReadPretty } from './ReadPretty';
 import { SubTable } from './SubTable';
-
+import { FileSelector } from './FileManager';
 export { AssociationFieldModeProvider } from './AssociationFieldModeProvider';
 export const AssociationField: any = connect(Editable, mapReadPretty(ReadPretty));
 
@@ -25,3 +25,4 @@ AssociationField.Selector = Action.Container;
 AssociationField.Viewer = Action.Container;
 AssociationField.InternalSelect = InternalPicker;
 AssociationField.ReadPretty = ReadPretty;
+AssociationField.FileSelector = FileSelector;

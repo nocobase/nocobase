@@ -174,14 +174,11 @@ const InternalFileManager = (props) => {
   useEffect(() => {
     if (value && Object.keys(value).length > 0) {
       const opts = (Array.isArray(value) ? value : value ? [value] : []).filter(Boolean).map((option) => {
-        if (typeof option === 'object') {
-          const label = option[fieldNames.label];
-          return {
-            ...option,
-            [fieldNames.label]: getLabelFormatValue(compile(labelUiSchema), compile(label)),
-          };
-        }
-        return option;
+        const label = option[fieldNames.label];
+        return {
+          ...option,
+          [fieldNames.label]: getLabelFormatValue(compile(labelUiSchema), compile(label)),
+        };
       });
       setOptions(opts);
     } else {
@@ -272,4 +269,4 @@ const FileManageReadPretty = connect((props) => {
   );
 });
 
-export { FileManageReadPretty, InternalFileManager };
+export { FileManageReadPretty, InternalFileManager, FileSelector };
