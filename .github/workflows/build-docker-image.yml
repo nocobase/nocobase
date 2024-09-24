@@ -101,9 +101,10 @@ jobs:
         run: |
           for subdir in docker/branches/*; do
             if [ -d "$subdir" ]; then
+              subdir_name=$(basename "$subdir")
               echo "Building $subdir"
-              docker build -t ${{ steps.set-tags.outputs.tags }}-with-${subdir} -f $subdir/Dockerfile .
-              docker push ${{ steps.set-tags.outputs.tags }}-with-${subdir}
+              docker build -t ${{ steps.set-tags.outputs.tags }}-with-${subdir_name} -f $subdir/Dockerfile .
+              docker push ${{ steps.set-tags.outputs.tags }}-with-${subdir_name}
             fi
           done
 
