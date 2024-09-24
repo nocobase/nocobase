@@ -335,6 +335,7 @@ const usePaginationProps = (pagination1, pagination2) => {
 
 const headerClass = css`
   max-width: 300px;
+  white-space: nowrap;
   &:hover .general-schema-designer {
     display: block;
   }
