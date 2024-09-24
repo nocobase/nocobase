@@ -97,7 +97,7 @@ jobs:
           tags: ${{ steps.set-tags.outputs.tags }}
 
       - name: Build branches docker image
-        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/next'
+        #if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/next'
         run: |
           for subdir in docker/branches/*; do
             if [ -d "$subdir" ]; then
