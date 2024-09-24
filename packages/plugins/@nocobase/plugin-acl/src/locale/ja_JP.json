@@ -1,0 +1,11 @@
+{
+  "The current user has no roles. Please try another account.": "現在のユーザーには役割がありません。他のアカウントをお試しください。",
+  "The user role does not exist. Please try signing in again": "ユーザーの役割が存在しません。もう一度サインインしてください。",
+  "New role": "新しい役割",
+  "Permissions": "権限",
+  "Roles & Permissions": "ロールと権限",
+  "General": "一般",
+  "Menu": "メニュー",
+  "Plugin settings": "プラグインの設定",
+  "Data sources": "データソース"
+}
