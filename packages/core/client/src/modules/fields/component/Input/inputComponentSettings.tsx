@@ -20,16 +20,17 @@ export const ellipsisSettingsItem: SchemaSettingsItemType = {
   useComponentProps() {
     const { fieldSchema: tableFieldSchema, filedInstanceList } = useColumnSchema();
     const fieldSchema = useFieldSchema();
-    const field = useField();
+    const formField = useField();
     const { dn } = useDesignable();
     const { t } = useTranslation();
 
     const schema = tableFieldSchema || fieldSchema;
+    const hidden = tableFieldSchema ? !filedInstanceList[0].readPretty : !formField.readPretty;
 
     return {
       title: t('Ellipsis'),
       checked: !!schema['x-component-props']?.ellipsis,
-      hidden: !schema['x-read-pretty'],
+      hidden,
       onChange: async (checked) => {
         await dn.emit('patch', {
           schema: {
@@ -46,7 +47,7 @@ export const ellipsisSettingsItem: SchemaSettingsItemType = {
             fieldInstance.componentProps.ellipsis = checked;
           });
         } else {
-          field.componentProps.ellipsis = checked;
+          formField.componentProps.ellipsis = checked;
         }
       },
     };
