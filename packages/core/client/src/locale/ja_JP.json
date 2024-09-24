@@ -705,5 +705,5 @@
   "Clear default value": "デフォルト値をクリア",
   "Open in new window": "新しいウィンドウで開く",
   "Sorry, the page you visited does not exist.": "申し訳ありませんが、お探しのページは存在しません。",
-  "Ellipsis": "省略記号"
+  "Ellipsis overflow content": "省略記号で内容を省略"
 }

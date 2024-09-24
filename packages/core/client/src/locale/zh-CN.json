@@ -996,5 +996,5 @@
   "Are you sure you want to perform the Submit action?": "你确定执行提交操作吗？",
   "Perform the Trigger workflow": "执行触发工作流",
   "Are you sure you want to perform the Trigger workflow action?": "你确定执行触发工作流吗？",
-  "Ellipsis": "省略号"
+  "Ellipsis overflow content": "省略超出长度的内容"
 }

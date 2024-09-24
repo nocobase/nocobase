@@ -28,7 +28,7 @@ export const ellipsisSettingsItem: SchemaSettingsItemType = {
     const hidden = tableFieldSchema ? !filedInstanceList[0].readPretty : !formField.readPretty;
 
     return {
-      title: t('Ellipsis'),
+      title: t('Ellipsis overflow content'),
       checked: !!schema['x-component-props']?.ellipsis,
       hidden,
       onChange: async (checked) => {
