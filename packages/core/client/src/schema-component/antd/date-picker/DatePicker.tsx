@@ -111,10 +111,10 @@ DatePicker.FilterWithPicker = function FilterWithPicker(props: any) {
     underFilter: true,
     showTime: props.showTime ? { defaultValue: dayjs('00:00:00', 'HH:mm:ss') } : false,
     format: targetFormat,
+    picker: targetPicker,
   };
   const field: any = useField();
   const [stateProps, setStateProps] = useState(newProps);
-
   return (
     <Space.Compact>
       <Select
