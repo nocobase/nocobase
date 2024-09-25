@@ -23,7 +23,7 @@ export interface AuditLog {
   ua: string;
   status: number;
   createdAt: string;
-  metadata: string;
+  metadata: Record<string, any>;
 }
 
 export interface AuditLogger {
@@ -160,14 +160,24 @@ export class AuditManager {
     const act: Map<string, Action> = this.resources.get(action);
     if (!act) return null;
 
-    return act.get(resource) || act.get('*');
+    if (act.has('*')) {
+      return act.get('*');
+    }
+
+    return act.get(resource);
   }
 
   async getDefaultMetaData(ctx: any) {
-    if (ctx.response.status !== 200) {
+    if (ctx.response.status == 200) {
       return {
-        request: ctx.request,
-        response: ctx.response,
+        request: {
+          params: ctx.request.params,
+          query: ctx.request.query,
+          body: ctx.request.body,
+        },
+        response: {
+          body: ctx.body
+        },
       };
     } else {
       return null;
@@ -231,7 +241,7 @@ export class AuditManager {
       metadata = { ...metadata, ...extra };
     }
     if (metadata && Object.keys(metadata).length !== 0) {
-      auditLog.metadata = JSON.stringify(metadata);
+      auditLog.metadata = metadata;
     }
 
     this.logger.log(auditLog);
@@ -240,7 +250,6 @@ export class AuditManager {
   // 中间件
   middleware() {
     return async (ctx: any, next: any) => {
-      // console.log('middleware', ctx)
       let metadata = {};
       let status = 0;
       try {
