@@ -26,6 +26,10 @@ import React, { useCallback, useContext, useMemo } from 'react';
 import { KanbanCardContext } from './context';
 
 const cardCss = css`
+  text-wrap: wrap;
+  word-break: break-all;
+  word-wrap: break-word;
+
   .ant-card-body {
     padding: 16px;
   }
@@ -35,16 +39,6 @@ const cardCss = css`
     &:last-child {
       margin-top: 0;
     }
-  }
-  .ant-description-input {
-    text-overflow: ellipsis;
-    width: 100%;
-    overflow: hidden;
-  }
-  .ant-description-textarea {
-    text-overflow: ellipsis;
-    width: 100%;
-    overflow: hidden;
   }
   .ant-formily-item {
     margin-bottom: 12px;

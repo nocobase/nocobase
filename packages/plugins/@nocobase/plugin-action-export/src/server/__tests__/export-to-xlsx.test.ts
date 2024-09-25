@@ -1045,4 +1045,149 @@ describe('export to xlsx', () => {
       fs.unlinkSync(xlsxFilePath);
     }
   });
+
+  it('should export with different ui schema in associations', async () => {
+    const User = app.db.collection({
+      name: 'users',
+      fields: [
+        { type: 'string', name: 'name' },
+        { type: 'integer', name: 'age' },
+        {
+          type: 'hasMany',
+          name: 'posts',
+          target: 'posts',
+        },
+        {
+          type: 'belongsToMany',
+          name: 'groups',
+          target: 'groups',
+          through: 'usersGroups',
+        },
+        {
+          name: 'createdAt',
+          type: 'date',
+          interface: 'createdAt',
+          field: 'createdAt',
+          uiSchema: {
+            type: 'datetime',
+            title: '{{t("Created at")}}',
+            'x-component': 'DatePicker',
+            'x-component-props': {},
+            'x-read-pretty': true,
+          },
+        },
+      ],
+    });
+
+    const Post = app.db.collection({
+      name: 'posts',
+      fields: [
+        { type: 'string', name: 'title' },
+        { type: 'belongsTo', name: 'user', target: 'users' },
+      ],
+    });
+
+    const Group = app.db.collection({
+      name: 'groups',
+      fields: [
+        { type: 'string', name: 'name' },
+        {
+          type: 'integer',
+          name: 'testInterface',
+          interface: 'testInterface',
+          title: 'Associations interface 测试',
+          uiSchema: { test: 'testValue' },
+        },
+      ],
+    });
+
+    class TestInterface extends BaseInterface {
+      toString(value, ctx) {
+        return `${this.options.uiSchema.test}.${value}`;
+      }
+    }
+
+    app.db.interfaceManager.registerInterfaceType('testInterface', TestInterface);
+
+    await app.db.sync();
+
+    const [group1, group2, group3] = await Group.repository.create({
+      values: [
+        { name: 'group1', testInterface: 1 },
+        { name: 'group2', testInterface: 2 },
+        { name: 'group3', testInterface: 3 },
+      ],
+    });
+
+    const values = Array.from({ length: 22 }).map((_, index) => {
+      return {
+        name: `user${index}`,
+        age: index % 100,
+        groups: [
+          {
+            id: group1.get('id'),
+          },
+          {
+            id: group2.get('id'),
+          },
+          {
+            id: group3.get('id'),
+          },
+        ],
+        posts: Array.from({ length: 3 }).map((_, postIndex) => {
+          return {
+            title: `post${postIndex}`,
+          };
+        }),
+      };
+    });
+
+    await User.repository.create({
+      values,
+    });
+
+    const exporter = new XlsxExporter({
+      collectionManager: app.mainDataSource.collectionManager,
+      collection: User,
+      chunkSize: 10,
+      columns: [
+        { dataIndex: ['name'], defaultTitle: 'Name' },
+        {
+          dataIndex: ['groups', 'testInterface'],
+          defaultTitle: 'Test Field',
+        },
+      ],
+    });
+
+    const wb = await exporter.run();
+
+    const xlsxFilePath = path.resolve(__dirname, `t_${uid()}.xlsx`);
+    try {
+      await new Promise((resolve, reject) => {
+        XLSX.writeFileAsync(
+          xlsxFilePath,
+          wb,
+          {
+            type: 'array',
+          },
+          () => {
+            resolve(123);
+          },
+        );
+      });
+
+      // read xlsx file
+      const workbook = XLSX.readFile(xlsxFilePath);
+      const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+      const sheetData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+
+      const header = sheetData[0];
+      expect(header).toEqual(['Name', 'Associations interface 测试']);
+
+      const firstUser = sheetData[1];
+      expect(firstUser).toEqual(['user0', 'testValue.1,testValue.2,testValue.3']);
+    } finally {
+      fs.unlinkSync(xlsxFilePath);
+    }
+  });
 });
