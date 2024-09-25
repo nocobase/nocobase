@@ -101,7 +101,6 @@ export const datetime = [
     label: "{{ t('is between') }}",
     value: '$dateBetween',
     schema: { 'x-component': 'DatePicker.RangePicker' },
-    onlyFilterAction: true,
   },
   { label: "{{ t('is empty') }}", value: '$empty', noValue: true },
   { label: "{{ t('is not empty') }}", value: '$notEmpty', noValue: true },
