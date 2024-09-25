@@ -11,7 +11,7 @@ import { Field } from '@formily/core';
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import { css } from '@emotion/css';
-import { DateFormatCom } from '../../../schema-settings/DateFormat/ExpiresRadio';
+import { DateFormatCom } from '../../../schema-component/antd/expiresRadio';
 export * as operators from './operators';
 
 export const type: ISchema = {

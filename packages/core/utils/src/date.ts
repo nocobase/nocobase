@@ -71,8 +71,6 @@ export const toLocal = (value: dayjs.Dayjs) => {
 const convertQuarterToFirstDay = (quarterStr) => {
   const year = parseInt(quarterStr.slice(0, 4)); // 提取年份
   const quarter = parseInt(quarterStr.slice(-1)); // 提取季度数字
-
-  // 使用 dayjs 设置年份和季度，并获取该季度的第一天
   return dayjs().quarter(quarter).year(year);
 };
 
@@ -95,9 +93,7 @@ const toMoment = (val: any, options?: Str2momentOptions) => {
     }
     return dayjs(val).utcOffset(offsetFromString(offset));
   } else {
-    if (picker === 'quarter') {
-      return convertQuarterToFirstDay(val);
-    }
+    return convertQuarterToFirstDay(val);
   }
 };
 

@@ -99,18 +99,16 @@ const handleChangeOnForm = (value, dateOnly, utc, picker, showTime, gmt) => {
 
 export const mapDatePicker = function () {
   return (props: any) => {
-    const { dateOnly, showTime, picker, utc, gmt, underFilter } = props;
+    const { dateOnly, showTime, picker = 'date', utc, gmt, underFilter } = props;
     const format = getDefaultFormat(props);
     const onChange = props.onChange;
-    //是否是筛选的场景下
-    const isUnderFilter = underFilter;
     return {
       ...props,
       format: format,
       value: str2moment(props.value, props),
       onChange: (value: Dayjs | null, dateString) => {
         if (onChange) {
-          if (isUnderFilter) {
+          if (underFilter) {
             onChange(handleChangeOnFilter(value, picker, showTime));
           } else {
             onChange(handleChangeOnForm(value, dateOnly, utc, picker, showTime, gmt));
@@ -125,18 +123,26 @@ export const mapRangePicker = function () {
   return (props: any) => {
     const format = getDefaultFormat(props) as any;
     const onChange = props.onChange;
-
+    const { dateOnly, showTime, picker = 'date', utc, gmt, underFilter } = props;
     return {
       ...props,
       format: format,
       value: str2moment(props.value, props),
       onChange: (value: Dayjs[]) => {
         if (onChange) {
-          onChange(
-            value
-              ? [moment2str(getRangeStart(value[0], props), props), moment2str(getRangeEnd(value[1], props), props)]
-              : [],
-          );
+          if (underFilter) {
+            onChange(
+              value
+                ? [handleChangeOnFilter(value[0], picker, showTime), handleChangeOnFilter(value[1], picker, showTime)]
+                : [],
+            );
+          } else {
+            onChange(
+              value
+                ? [moment2str(getRangeStart(value[0], props), props), moment2str(getRangeEnd(value[1], props), props)]
+                : [],
+            );
+          }
         }
       },
     } as any;
@@ -248,4 +254,18 @@ function withParams(value: any[], params: { fieldOperator?: string }) {
   }
 
   return value;
+}
+
+export function inferPickerType(dateString: string): 'year' | 'month' | 'quarter' | 'date' {
+  if (/^\d{4}$/.test(dateString)) {
+    return 'year';
+  } else if (/^\d{4}-\d{2}$/.test(dateString)) {
+    return 'month';
+  } else if (/^\d{4}Q[1-4]$/.test(dateString)) {
+    return 'quarter';
+  } else if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+    return 'date';
+  } else {
+    return 'date';
+  }
 }

@@ -13,12 +13,12 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { getPickerFormat } from '@nocobase/utils/client';
 import { useCollectionManager_deprecated, useDesignable } from '..';
-import { DateFormatCom, ExpiresRadio } from './DateFormat/ExpiresRadio';
+import { DateFormatCom, ExpiresRadio } from '../schema-component';
 import { SchemaSettingsModalItem } from './SchemaSettings';
 
 export const SchemaSettingsDateFormat = function DateFormatConfig(props: { fieldSchema: Schema }) {
   const { fieldSchema } = props;
-  const field = useField();
+  const field: any = useField();
   const { dn } = useDesignable();
   const { t } = useTranslation();
   const { getCollectionJoinField } = useCollectionManager_deprecated();
@@ -48,6 +48,7 @@ export const SchemaSettingsDateFormat = function DateFormatConfig(props: { field
               'x-decorator': 'FormItem',
               'x-component': 'Radio.Group',
               default: pickerDefaultValue,
+              description: '{{ t("Switching the picker, the value and default value will be cleared") }}',
               enum: [
                 {
                   label: '{{t("Date")}}',
@@ -197,9 +198,15 @@ export const SchemaSettingsDateFormat = function DateFormatConfig(props: { field
         } as ISchema
       }
       onSubmit={(data) => {
-        const schema = {
+        const schema: any = {
           ['x-uid']: fieldSchema['x-uid'],
         };
+        if (field.componentProps.picker !== data.picker) {
+          field.value = undefined;
+          field.initialValue = undefined;
+          fieldSchema.default = undefined;
+          schema.default = null;
+        }
         schema['x-component-props'] = field.componentProps || {};
         fieldSchema['x-component-props'] = {
           ...(field.componentProps || {}),
@@ -213,6 +220,10 @@ export const SchemaSettingsDateFormat = function DateFormatConfig(props: { field
         const modifiedString = parts.join('.');
         field.query(`${modifiedString}.*[0:].${fieldSchema.name}`).forEach((f) => {
           if (f.props.name === fieldSchema.name) {
+            if (f.componentProps.picker !== data.picker) {
+              f.value = undefined;
+              f.initialValue = undefined;
+            }
             f.setComponentProps({ ...data });
           }
         });

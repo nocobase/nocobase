@@ -13,7 +13,7 @@ import { connect, mapProps } from '@formily/react';
 import { useBoolean } from 'ahooks';
 import { Input, Radio, Space } from 'antd';
 import React, { useEffect, useState } from 'react';
-import { useToken } from '../../';
+import { useToken } from '../../../';
 
 const date = dayjs();
 
@@ -23,7 +23,7 @@ const spaceCSS = css`
     flex: 1;
   }
 `;
-export const DateFormatCom = (props?) => {
+const DateFormatCom = (props?) => {
   const date = dayjs();
   return (
     <div style={{ display: 'inline-flex' }}>
@@ -130,4 +130,4 @@ const ExpiresRadio = connect(
   }),
 );
 
-export { ExpiresRadio };
+export { ExpiresRadio, DateFormatCom };

@@ -62,7 +62,7 @@ describe('mapDatePicker', () => {
     };
     const result = mapDatePicker()(props);
     result.onChange(dayjs.utc('2022-02-22 22:22:22'));
-    expect(props.onChange).toHaveBeenCalledWith('2022-02-22 22:22:22');
+    expect(props.onChange).toHaveBeenCalledWith('2022-02-22 00:00:00');
   });
 
   it('should call onChange with correct value when showTime is true and gmt is false', () => {
@@ -74,7 +74,7 @@ describe('mapDatePicker', () => {
     const result = mapDatePicker()(props);
     const m = dayjs('2022-02-22 22:22:22');
     result.onChange(m);
-    expect(props.onChange).toHaveBeenCalledWith('2022-02-22 22:22:22');
+    expect(props.onChange).toHaveBeenCalledWith('2022-02-22 00:00:00');
   });
 
   it('should call onChange with correct value when showTime is false and gmt is true', () => {
@@ -202,7 +202,7 @@ describe('mapDatePicker', () => {
     };
     const result = mapDatePicker()(props);
     result.onChange(dayjs('2022-02-22 22:22:22'));
-    expect(props.onChange).toHaveBeenCalledWith('2022-02-22 22:22:22');
+    expect(props.onChange).toHaveBeenCalledWith('2022-02-22 00:00:00');
   });
 
   it('should call onChange with correct value when picker is year and utc is false', () => {

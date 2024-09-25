@@ -28,7 +28,6 @@ import {
   CollectionCategoriesContext,
   FieldSummary,
   TemplateSummary,
-  ExpiresRadio,
 } from '@nocobase/client';
 import { getPickerFormat } from '@nocobase/utils/client';
 import { CollectionFields } from './CollectionFields';
@@ -221,7 +220,6 @@ export const ConfigurationTable = () => {
           FieldSummary,
           TemplateSummay: TemplateSummary,
           CollectionFields,
-          ExpiresRadio,
         }}
         scope={{
           loadFilterTargetKeys,
