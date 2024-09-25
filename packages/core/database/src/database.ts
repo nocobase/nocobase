@@ -460,6 +460,10 @@ export class Database extends EventEmitter implements AsyncEmitter {
       }
 
       if (options.underscored) {
+        if (lodash.get(options, 'sortable.scopeKey')) {
+          options.sortable.scopeKey = snakeCase(options.sortable.scopeKey);
+        }
+
         if (lodash.get(options, 'indexes')) {
           // change index fields to snake case
           options.indexes = options.indexes.map((index) => {
