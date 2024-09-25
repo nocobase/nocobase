@@ -38,7 +38,7 @@ describe('export to xlsx with preset', () => {
         { type: 'string', name: 'title' },
         { type: 'integer', name: 'integer' },
         { type: 'float', name: 'float' },
-        { type: 'decimal', name: 'decimal' },
+        { type: 'decimal', name: 'decimal', scale: 3, precision: 12 },
       ],
     });
 
