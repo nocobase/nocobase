@@ -1,5 +1,5 @@
 ARG BASE_ON
-FROM nocobase/nocobase:${BASE_ON}
+FROM ${BASE_ON}
 
 RUN apt-get update \
     && apt-get install -y wget unzip libaio1 \
@@ -9,4 +9,6 @@ RUN apt-get update \
     && ln -s /opt/instantclient_12_2/libclntshcore.so.12.1 /opt/instantclient_12_2/libclntshcore.so \
     && ln -s /opt/instantclient_12_2/libocci.so.12.1 /opt/instantclient_12_2/libocci.so \
     && echo /opt/instantclient_12_2 > /etc/ld.so.conf.d/oracle-instantclient.conf \
-    && ldconfig
+    && ldconfig \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* /opt/instantclient-basic-linux.x64-12.2.0.1.0.zip
