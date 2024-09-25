@@ -15,55 +15,71 @@ export type FieldConfigProps = Partial<{
   title: string;
   required: boolean;
   defaultValue: any;
+  description: string;
   options: { label: string; value: any }[];
 }>;
 
 export type AnySchemaProperties = SchemaProperties<any, any, any, any, any, any, any, any>;
 export type GeneralConfig =
   | (FieldConfigProps & { settingType?: string })
-  | ((props?: FieldConfigProps) => AnySchemaProperties);
+  | ((props?: FieldConfigProps) => AnySchemaProperties)
+  | AnySchemaProperties;
 
-export type Config = string | GeneralConfig | AnySchemaProperties;
+export type Config = string | GeneralConfig;
 
-const field = ({ name, title, required, defaultValue }: FieldConfigProps) => {
+const field = ({ name, title, required, defaultValue, description }: FieldConfigProps) => {
   return {
-    [name || 'field']: {
-      title: lang(title || 'Field'),
+    [name]: {
+      title: lang(title),
       type: 'string',
       'x-decorator': 'FormItem',
       'x-component': 'Select',
       'x-reactions': '{{ useChartFields }}',
       required,
+      description,
       default: defaultValue,
     },
   };
 };
 
-const select = ({ name, title, required, defaultValue, options }: FieldConfigProps) => {
+const select = ({ name, title, required, defaultValue, options, description }: FieldConfigProps) => {
   return {
-    [name || 'field']: {
-      title: lang(title || 'Field'),
+    [name]: {
+      title: lang(title),
       type: 'string',
       'x-decorator': 'FormItem',
       'x-component': 'Select',
       required,
       default: defaultValue,
-      enum: options.map((option) => ({
-        label: lang(option.label),
-        value: option.value,
-      })),
+      description,
+      enum: options,
     },
   };
 };
 
-const boolean = ({ name, title, defaultValue = false }: FieldConfigProps) => {
+const boolean = ({ name, title, defaultValue = false, description }: FieldConfigProps) => {
   return {
-    [name || 'field']: {
-      'x-content': lang(title || 'Field'),
+    [name]: {
+      'x-content': lang(title),
       type: 'boolean',
       'x-decorator': 'FormItem',
       'x-component': 'Checkbox',
       default: defaultValue,
+      description,
+    },
+  };
+};
+
+const radio = ({ name, title, defaultValue, options, description }: FieldConfigProps) => {
+  return {
+    [name]: {
+      'x-content': lang(title),
+      type: 'string',
+      'x-decorator': 'FormItem',
+      'x-component': 'Radio.Group',
+      default: defaultValue,
+      description,
+      enum: options,
     },
   };
 };
@@ -72,6 +88,7 @@ export default {
   field,
   boolean,
   select,
+  radio,
   xField: {
     settingType: 'field',
     name: 'xField',
