@@ -9,7 +9,7 @@
 
 import { Mutex } from 'async-mutex';
 import { isNumber } from 'lodash';
-import { DataTypes } from 'sequelize';
+import { DataTypes, Sequelize } from 'sequelize';
 import { BaseColumnFieldOptions, Field } from './field';
 
 const sortFieldMutex = new Mutex();
@@ -173,10 +173,10 @@ export class SortField extends Field {
     const scopeKey = this.options.scopeKey;
 
     if (scopeKey) {
-      const groups = await this.collection.repository.find({
-        attributes: [scopeKey],
-        group: [scopeKey],
-        raw: true,
+      const scopeKeyColumn = this.collection.model.rawAttributes[scopeKey].field;
+
+      const groups = await this.collection.model.findAll({
+        attributes: [[Sequelize.fn('DISTINCT', Sequelize.col(scopeKeyColumn)), 'scopeKey']],
         transaction,
       });
 
