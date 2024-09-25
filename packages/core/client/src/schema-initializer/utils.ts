@@ -462,7 +462,6 @@ export const useFilterFormItemInitializerFields = (options?: any) => {
         'x-use-decorator-props': 'useFormItemProps',
         'x-collection-field': `${name}.${field.name}`,
         'x-component-props': {
-          component: interfaceConfig?.filterable?.operators?.[0]?.schema?.['x-component'],
           utc: false,
           underFilter: true,
         },
