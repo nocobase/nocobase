@@ -11,12 +11,13 @@ import { connect, mapProps, mapReadPretty, useField, useFieldSchema } from '@for
 import { DatePicker as AntdDatePicker, DatePickerProps as AntdDatePickerProps, Space, Select } from 'antd';
 import { RangePickerProps } from 'antd/es/date-picker';
 import dayjs from 'dayjs';
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import { css } from '@emotion/css';
 import { getPickerFormat } from '@nocobase/utils/client';
 import { useTranslation } from 'react-i18next';
 import { ReadPretty, ReadPrettyComposed } from './ReadPretty';
 import { getDateRanges, mapDatePicker, mapRangePicker, inferPickerType } from './util';
+import { FilterContext } from '../../antd/filter';
 import { useCompile } from '../../';
 
 interface IDatePickerProps {
@@ -64,9 +65,14 @@ export const DatePicker: ComposedDatePicker = (props: any) => {
 DatePicker.ReadPretty = ReadPretty.DatePicker;
 
 DatePicker.RangePicker = function RangePicker(props: any) {
+  const { value, picker = 'date' } = props;
   const { t } = useTranslation();
+  const fieldSchema = useFieldSchema();
+  const field: any = useField();
   const { utc = true } = useDatePickerContext();
   const rangesValue = getDateRanges();
+  const compile = useCompile();
+  const ctx: any = useContext(FilterContext); // 在筛选按钮中使用
   const presets = [
     { label: t('Today'), value: rangesValue.today },
     { label: t('Last week'), value: rangesValue.lastWeek },
@@ -94,6 +100,60 @@ DatePicker.RangePicker = function RangePicker(props: any) {
     ...props,
     showTime: props.showTime ? { defaultValue: [dayjs('00:00:00', 'HH:mm:ss'), dayjs('00:00:00', 'HH:mm:ss')] } : false,
   };
+  const targetPicker = value ? inferPickerType(value) : picker;
+  const [stateProps, setStateProps] = useState(newProps);
+  if (ctx) {
+    return (
+      <Space.Compact>
+        <Select
+          // @ts-ignore
+          role="button"
+          data-testid="select-picker"
+          className={css`
+            min-width: 110px;
+          `}
+          popupMatchSelectWidth={false}
+          defaultValue={targetPicker}
+          options={compile([
+            {
+              label: '{{t("Date")}}',
+              value: 'date',
+            },
+
+            {
+              label: '{{t("Month")}}',
+              value: 'month',
+            },
+            {
+              label: '{{t("Quarter")}}',
+              value: 'quarter',
+            },
+            {
+              label: '{{t("Year")}}',
+              value: 'year',
+            },
+          ])}
+          onChange={(value) => {
+            const format = getPickerFormat(value);
+            field.setComponentProps({
+              picker: value,
+              format,
+            });
+            newProps.picker = value;
+            newProps.format = format;
+            setStateProps(newProps);
+            fieldSchema['x-component-props'] = {
+              ...props,
+              picker: value,
+              format,
+            };
+            field.value = undefined;
+          }}
+        />
+        <InternalRangePicker {...stateProps} value={value} />
+      </Space.Compact>
+    );
+  }
   return <InternalRangePicker {...newProps} />;
 };
 

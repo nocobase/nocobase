@@ -65,7 +65,7 @@ export const datetime = [
     value: '$dateOn',
     selected: true,
     schema: { 'x-component': 'DatePicker.FilterWithPicker' },
-    onlyFilterAction: true,
+    onlyFilterAction: true, //schema 仅在Filter.Action生效，筛选表单中不生效
   },
   {
     label: "{{ t('is not') }}",
