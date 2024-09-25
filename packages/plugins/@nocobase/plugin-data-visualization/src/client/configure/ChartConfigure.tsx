@@ -101,6 +101,7 @@ export const ChartConfigure: React.FC<{
     const selectedFields = getSelectedFields(fields, query);
     const { general, advanced } = chart.init(selectedFields, query);
     if (general || overwrite) {
+      form.setInitialValuesIn('config.general', {});
       form.values.config.general = general;
     }
     if (advanced || overwrite) {
