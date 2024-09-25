@@ -45,9 +45,8 @@ export default defineCollection({
       name: 'enabledPassword',
     },
     {
-      type: 'password',
+      type: 'string',
       name: 'password',
-      hidden: true,
     },
   ],
 });

@@ -7,7 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { PasswordField } from '@nocobase/database';
 import { UiSchemaRepository } from '@nocobase/plugin-ui-schema-storage';
 import { Plugin } from '@nocobase/server';
 import { parseAssociationNames } from './hook';
@@ -58,9 +57,7 @@ export class PluginPublicFormsServer extends Plugin {
     }
     if (!token) {
       if (instance.get('password') && instance.get('enabledPassword')) {
-        const Password = publicForms.collection.getField<PasswordField>('password');
-        const r = await Password.verify(password, instance.get('password'));
-        if (!r) {
+        if (instance.get('password') !== password) {
           throw new PasswordError('Please enter your password');
         }
       }
