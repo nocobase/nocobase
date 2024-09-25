@@ -64,10 +64,12 @@ export interface RealFieldOptions extends BaseColumnFieldOptions {
 
 export class DecimalField extends NumberField {
   get dataType() {
-    return DataTypes.DECIMAL;
+    return DataTypes.DECIMAL(this.options.precision, this.options.scale);
   }
 }
 
 export interface DecimalFieldOptions extends BaseColumnFieldOptions {
   type: 'decimal';
+  precision: number;
+  scale: number;
 }
