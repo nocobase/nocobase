@@ -34,6 +34,7 @@ export const SchemaSettingsDateFormat = function DateFormatConfig(props: { field
     'HH:mm:ss';
   const pickerDefaultValue =
     fieldSchema?.['x-component-props']?.picker || collectionField?.uiSchema?.['x-component-props']?.picker || 'date';
+  const isReadPretty = fieldSchema['x-read-pretty'] || field.readOnly || field.readPretty;
   return (
     <SchemaSettingsModalItem
       title={t('Date display format')}
@@ -48,7 +49,8 @@ export const SchemaSettingsDateFormat = function DateFormatConfig(props: { field
               'x-decorator': 'FormItem',
               'x-component': 'Radio.Group',
               default: pickerDefaultValue,
-              description: '{{ t("Switching the picker, the value and default value will be cleared") }}',
+              description:
+                !isReadPretty && '{{ t("Switching the picker, the value and default value will be cleared") }}',
               enum: [
                 {
                   label: '{{t("Date")}}',
@@ -201,7 +203,7 @@ export const SchemaSettingsDateFormat = function DateFormatConfig(props: { field
         const schema: any = {
           ['x-uid']: fieldSchema['x-uid'],
         };
-        if (field.componentProps.picker !== data.picker) {
+        if (field.componentProps.picker !== data.picker && !isReadPretty) {
           field.value = undefined;
           field.initialValue = undefined;
           fieldSchema.default = undefined;
@@ -220,7 +222,7 @@ export const SchemaSettingsDateFormat = function DateFormatConfig(props: { field
         const modifiedString = parts.join('.');
         field.query(`${modifiedString}.*[0:].${fieldSchema.name}`).forEach((f) => {
           if (f.props.name === fieldSchema.name) {
-            if (f.componentProps.picker !== data.picker) {
+            if (f.componentProps.picker !== data.picker && !isReadPretty) {
               f.value = undefined;
               f.initialValue = undefined;
             }
