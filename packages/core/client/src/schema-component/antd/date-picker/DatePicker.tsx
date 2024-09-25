@@ -12,7 +12,6 @@ import { DatePicker as AntdDatePicker, DatePickerProps as AntdDatePickerProps, S
 import { RangePickerProps } from 'antd/es/date-picker';
 import dayjs from 'dayjs';
 import React, { useState, useContext } from 'react';
-import { css } from '@emotion/css';
 import { getPickerFormat } from '@nocobase/utils/client';
 import { useTranslation } from 'react-i18next';
 import { ReadPretty, ReadPrettyComposed } from './ReadPretty';
@@ -114,9 +113,7 @@ DatePicker.RangePicker = function RangePicker(props: any) {
           // @ts-ignore
           role="button"
           data-testid="select-picker"
-          className={css`
-            min-width: 110px;
-          `}
+          style={{ width: '100px' }}
           popupMatchSelectWidth={false}
           defaultValue={targetPicker}
           options={compile([
@@ -186,9 +183,7 @@ DatePicker.FilterWithPicker = function FilterWithPicker(props: any) {
         // @ts-ignore
         role="button"
         data-testid="select-picker"
-        className={css`
-          min-width: 110px;
-        `}
+        style={{ width: '100px' }}
         popupMatchSelectWidth={false}
         defaultValue={targetPicker}
         options={compile([
