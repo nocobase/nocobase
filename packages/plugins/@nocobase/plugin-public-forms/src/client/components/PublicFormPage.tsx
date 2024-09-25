@@ -145,33 +145,30 @@ function InternalPublicForm() {
       document.body.removeChild(fakeBody);
     }
   }, []);
-  if (error) {
-    if (error?.['response']?.status === 401) {
-      return (
-        <div>
-          <Modal
-            centered
-            title="Password"
-            open={true}
-            cancelButtonProps={{
-              hidden: true,
+  if (error || data?.data?.passwordRequired) {
+    return (
+      <div>
+        <Modal
+          centered
+          title="Password"
+          open={true}
+          cancelButtonProps={{
+            hidden: true,
+          }}
+          onOk={() => {
+            run({
+              password: pwd,
+            });
+          }}
+        >
+          <Input.Password
+            onChange={(e) => {
+              setPwd(e.target.value);
             }}
-            onOk={() => {
-              run({
-                password: pwd,
-              });
-            }}
-          >
-            <Input.Password
-              onChange={(e) => {
-                setPwd(e.target.value);
-              }}
-            />
-          </Modal>
-        </div>
-      );
-    }
-    return <div>Error</div>;
+          />
+        </Modal>
+      </div>
+    );
   }
 
   if (loading) {

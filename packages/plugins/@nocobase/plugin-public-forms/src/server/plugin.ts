@@ -42,7 +42,7 @@ export class PluginPublicFormsServer extends Plugin {
       }),
     );
   }
-  // TODO
+
   async getMetaByTk(filterByTk: string, options: { password?: string; token?: string }) {
     const { token, password } = options;
     const publicForms = this.db.getRepository('publicForms');
@@ -57,6 +57,11 @@ export class PluginPublicFormsServer extends Plugin {
     }
     if (!token) {
       if (instance.get('password') && instance.get('enabledPassword')) {
+        if (password === undefined) {
+          return {
+            passwordRequired: true,
+          };
+        }
         if (instance.get('password') !== password) {
           throw new PasswordError('Please enter your password');
         }
