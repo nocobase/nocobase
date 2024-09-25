@@ -111,7 +111,7 @@ function renderHTML(exp: string, keyLabelMap) {
   });
 }
 
-function createOptionsValueLabelMap(options: any[], fieldNames: { value: string; label: string }) {
+function createOptionsValueLabelMap(options: any[], fieldNames = { value: 'value', label: 'label' }) {
   const map = new Map<string, string[]>();
   for (const option of options) {
     map.set(option[fieldNames.value], [option[fieldNames.label]]);
