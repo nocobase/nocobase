@@ -171,7 +171,6 @@ export class SortField extends Field {
     };
 
     const scopeKey = this.options.scopeKey;
-
     if (scopeKey) {
       const groups = await this.collection.repository.find({
         attributes: [scopeKey],
