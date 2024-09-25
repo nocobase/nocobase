@@ -77,6 +77,9 @@ const commonOptions = {
       name: 'customRequest',
       title: '{{t("Custom request")}}',
       Component: 'CustomRequestInitializer',
+      schema: {
+        'x-action': 'customize:table:request:global',
+      },
     },
   ],
 };
