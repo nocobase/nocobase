@@ -98,7 +98,7 @@ DatePicker.RangePicker = function RangePicker(props: any) {
 };
 
 DatePicker.FilterWithPicker = function FilterWithPicker(props: any) {
-  const { picker, format } = props;
+  const { picker = 'date', format } = props;
   const { utc = true } = useDatePickerContext();
   const value = Array.isArray(props.value) ? props.value[0] : props.value;
   const compile = useCompile();
