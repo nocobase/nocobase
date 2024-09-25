@@ -185,14 +185,15 @@ export class AuditManager {
   }
 
   formatAuditData(ctx: any) {
-    const { filterByTk } = ctx.action.params;
+    const { filterByTk, filterKeys } = ctx.action.params;
     const { resourceName } = ctx.action;
 
     let association = '';
     let collection = '';
     if (resourceName) {
       const resourceArray = resourceName.split('.');
-      if (resourceArray.length > 0) {
+      console.log('resourceArray', resourceArray)
+      if (resourceArray.length > 1) {
         association = resourceArray[1];
         collection = resourceArray[1];
       } else {
@@ -202,12 +203,12 @@ export class AuditManager {
 
     const auditLog: AuditLog = {
       uuid: ctx.reqId,
-      dataSource: ctx.action.sourceId,
+      dataSource: ctx.request.header['x-data-source'] || 'main',
       resource: resourceName,
       association: association,
       collection: collection,
       action: ctx.action.name,
-      resourceUk: filterByTk,
+      resourceUk: filterByTk ? filterByTk : filterKeys.join(','),
       userId: ctx.state?.currentUser?.id,
       roleName: ctx.state?.currentRole,
       ip: ctx.request.ip,
@@ -226,6 +227,7 @@ export class AuditManager {
     // 2. 判断操作是否需要审计
     const action: Action = this.getAction(actionName, resourceName);
     if (!action) {
+      ctx.logger.info('current action is not audit', actionName);
       return;
     }
     // 3. 从上下文获取各种信息，可以抽一个方法
