@@ -19,6 +19,7 @@ import {
   useGlobalTheme,
   FormItem,
   Checkbox,
+  VariablesProvider,
 } from '@nocobase/client';
 import { Breadcrumb, Button, Dropdown, Space, Spin, Switch, Input, message, Popover, QRCode } from 'antd';
 import React, { useState } from 'react';
@@ -194,11 +195,17 @@ export function AdminPublicFormPage() {
         </Space>
       </div>
       <div style={{ maxWidth: 800, margin: '100px auto' }}>
-        <RemoteSchemaComponent
-          uid={params.name}
-          scope={{ useCreateActionProps: usePublicSubmitActionProps }}
-          components={{ PublicFormMessageProvider: (props) => props.children }}
-        />
+        <VariablesProvider
+          filterVariables={(v) => {
+            return !['$user', '$nRole', '$nToken', '$nURLSearchParams'].includes(v.key);
+          }}
+        >
+          <RemoteSchemaComponent
+            uid={params.name}
+            scope={{ useCreateActionProps: usePublicSubmitActionProps }}
+            components={{ PublicFormMessageProvider: (props) => props.children }}
+          />
+        </VariablesProvider>
         <PoweredBy />
       </div>
     </div>
