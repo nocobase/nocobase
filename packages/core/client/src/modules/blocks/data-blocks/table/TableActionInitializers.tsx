@@ -90,6 +90,11 @@ const commonOptions = {
         return collection.tree && treeTable;
       },
     },
+    {
+      name: 'customRequest',
+      title: '{{t("Custom request")}}',
+      Component: 'CustomRequestInitializer',
+    },
   ],
 };
 

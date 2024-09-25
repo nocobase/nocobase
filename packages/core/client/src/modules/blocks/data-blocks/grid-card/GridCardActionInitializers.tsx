@@ -8,7 +8,6 @@
  */
 
 import { CompatibleSchemaInitializer } from '../../../../application/schema-initializer/CompatibleSchemaInitializer';
-import { useCollection } from '../../../../data-source';
 import { useActionAvailable } from '../../useActionAvailable';
 const commonOptions = {
   title: "{{t('Configure actions')}}",
@@ -72,6 +71,11 @@ const commonOptions = {
           skipScopeCheck: true,
         },
       },
+    },
+    {
+      name: 'customRequest',
+      title: '{{t("Custom request")}}',
+      Component: 'CustomRequestInitializer',
     },
   ],
 };
