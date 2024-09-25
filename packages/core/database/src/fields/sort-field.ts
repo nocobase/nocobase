@@ -176,7 +176,8 @@ export class SortField extends Field {
       const scopeKeyColumn = this.collection.model.rawAttributes[scopeKey].field;
 
       const groups = await this.collection.model.findAll({
-        attributes: [[Sequelize.fn('DISTINCT', Sequelize.col(scopeKeyColumn)), 'scopeKey']],
+        attributes: [[Sequelize.fn('DISTINCT', Sequelize.col(scopeKeyColumn)), scopeKey]],
+        raw: true,
         transaction,
       });
 

@@ -37,7 +37,7 @@ describe('sort field', () => {
         },
         {
           type: 'string',
-          name: 'scopeKey',
+          name: 'someField',
         },
       ],
     });
@@ -48,16 +48,16 @@ describe('sort field', () => {
       values: [
         {
           name: 't1',
-          scopeKey: 'a',
+          someField: 'a',
         },
         {
           name: 't2',
-          scopeKey: 'b',
+          someField: 'b',
         },
       ],
     });
 
-    Test.setField('scopeKeySort', { type: 'sort', scopeKey: 'scopeKey' });
+    Test.setField('scopeKeySort', { type: 'sort', scopeKey: 'someField' });
     await db.sync();
   });
 
