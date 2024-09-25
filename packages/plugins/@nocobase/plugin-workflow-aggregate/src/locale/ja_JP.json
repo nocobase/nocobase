@@ -1,0 +1,11 @@
+{
+  "Aggregate": "集計",
+  "Counting, summing, finding maximum, minimum, and average values for multiple records of a collection or associated data of a record.": "コレクションの複数のレコードまたはレコードの関連データの集計、合計、最大値、最小値、平均値を求めます。",
+  "Aggregator function": "集計関数",
+  "Target type": "ターゲットタイプ",
+  "Data of collection": "コレクションデータ",
+  "Data of associated collection": "関連コレクションデータ",
+  "Field to aggregate": "集計フィールド",
+  "Distinct": "重複排除",
+  "Query result": "クエリ結果"
+}

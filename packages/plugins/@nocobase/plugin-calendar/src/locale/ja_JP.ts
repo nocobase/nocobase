@@ -7,6 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 export default {
   "Configure calendar": "カレンダーの設定",
   "Title field": "タイトルフィールド",
@@ -37,5 +46,20 @@ export default {
   "Custom request": "カスタムリクエスト",
   "Edit": "編集",
   "Delete": "削除",
-  "Print": "Print"
-}
+  "Print": "Print",
+  "Custom title": "カスタムタイトル",
+  "Show lunar": "旧暦を表示",
+  "nan": "なし",
+  "Delete events": "日程を削除",
+  "This event": "この日程",
+  "This and following events": "この日程と後続の日程",
+  "All events": "すべての日程",
+  "Delete this event?": "この日程を削除しますか？",
+  "Delete Event": "日程を削除",
+  "Daily": "毎日",
+  "Weekly": "毎週",
+  "Monthly": "毎月",
+  "Yearly": "毎年",
+  "Repeats": "繰り返し",
+  "Update record": "レコードを更新する",
+};
