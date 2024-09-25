@@ -65,7 +65,7 @@ export const DatePicker: ComposedDatePicker = (props: any) => {
 DatePicker.ReadPretty = ReadPretty.DatePicker;
 
 DatePicker.RangePicker = function RangePicker(props: any) {
-  const { value, picker = 'date' } = props;
+  const { value, picker = 'date', format } = props;
   const { t } = useTranslation();
   const fieldSchema = useFieldSchema();
   const field: any = useField();
@@ -94,14 +94,19 @@ DatePicker.RangePicker = function RangePicker(props: any) {
     { label: t('Last 90 days'), value: rangesValue.last90Days },
     { label: t('Next 90 days'), value: rangesValue.next90Days },
   ];
+
+  const targetPicker = value ? inferPickerType(value?.[0]) : picker;
+  const targetFormat = getPickerFormat(targetPicker) || format;
   const newProps: any = {
     utc,
     presets,
     ...props,
+    format: targetFormat,
+    picker: targetPicker,
     showTime: props.showTime ? { defaultValue: [dayjs('00:00:00', 'HH:mm:ss'), dayjs('00:00:00', 'HH:mm:ss')] } : false,
   };
-  const targetPicker = value ? inferPickerType(value) : picker;
   const [stateProps, setStateProps] = useState(newProps);
+
   if (ctx) {
     return (
       <Space.Compact>
