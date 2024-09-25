@@ -84,7 +84,9 @@ const handleChangeOnFilter = (value, picker, showTime) => {
 
 const handleChangeOnForm = (value, dateOnly, utc, picker, showTime, gmt) => {
   const format = showTime ? 'YYYY-MM-DD HH:mm:ss' : 'YYYY-MM-DD';
-
+  if (!value) {
+    return value;
+  }
   if (dateOnly) {
     return dayjs(value).startOf(picker).format('YYYY-MM-DD');
   }
