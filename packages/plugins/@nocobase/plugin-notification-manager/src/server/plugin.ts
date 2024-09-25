@@ -9,11 +9,18 @@
 
 import { Plugin } from '@nocobase/server';
 import type { Logger } from '@nocobase/logger';
-import { SendOptions } from './types';
+import { SendOptions, RegisterServerTypeFnParams } from './types';
 import NotificationManager from './manager';
 export class PluginNotificationManagerServer extends Plugin {
-  manager: NotificationManager;
+  private manager: NotificationManager;
   logger: Logger;
+
+  registerChannelType(params: RegisterServerTypeFnParams) {
+    this.manager.registerType(params);
+  }
+  async send(options: SendOptions) {
+    return await this.manager.send(options);
+  }
 
   async afterAdd() {
     this.logger = this.createLogger({

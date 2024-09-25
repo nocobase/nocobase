@@ -10,24 +10,31 @@
 import { Registry } from '@nocobase/utils';
 import PluginNotificationManagerServer from './plugin';
 import type { NotificationServerBase } from './types';
-import { SendOptions, WriteLogOptions } from './types';
+import { SendOptions, WriteLogOptions, RegisterServerTypeFnParams } from './types';
 import { COLLECTION_NAME } from '../constant';
 interface NotificatonType {
   server: NotificationServerBase;
 }
 
-export default class NotificationManager {
-  plugin: PluginNotificationManagerServer;
-  notificationTypes = new Registry<{ server: NotificationServerBase }>();
+export default class NotificationManager implements NotificationManager {
+  private plugin: PluginNotificationManagerServer;
+  private notificationTypes = new Registry<{ server: NotificationServerBase }>();
 
   constructor({ plugin }: { plugin: PluginNotificationManagerServer }) {
     this.plugin = plugin;
   }
-
+  /**
+    @deprecated
+  */
   registerTypes(type: string, config: NotificatonType) {
     const server = config.server;
     this.notificationTypes.register(type, { server });
   }
+
+  registerType({ name, server }: RegisterServerTypeFnParams) {
+    this.notificationTypes.register(name, { server });
+  }
+
   createSendingRecord = async (options: WriteLogOptions) => {
     const logsRepo = this.plugin.app.db.getRepository(COLLECTION_NAME.logs);
     return logsRepo.create({ values: options });

@@ -8,6 +8,7 @@
  */
 
 import { ComponentType } from 'react';
+import { Registry } from '@nocobase/utils/client';
 
 export type ChannelType = {
   title: string;
@@ -23,4 +24,5 @@ export type ChannelType = {
   };
 };
 
+export type ChannelTypes = Registry<ChannelType>;
 export type NotificationType = 'mail' | 'SMS' | 'in-app';

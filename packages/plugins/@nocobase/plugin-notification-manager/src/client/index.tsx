@@ -12,15 +12,22 @@ import { ChannelManager } from './manager/channel/components';
 import { LogManager } from './manager/log/components/Manager';
 import { lang as t } from './locale';
 import NotificationManager from './notification-manager';
+import { ChannelType, ChannelTypes } from './manager/channel/types';
 
 const NAMESPACE = 'notification-manager';
 export class PluginNotificationManagerClient extends Plugin {
-  manager: NotificationManager;
+  private manager: NotificationManager;
+  channelTypes: ChannelTypes;
+
+  registerChannelType(params: ChannelType) {
+    this.manager.registerChannelType(params);
+  }
 
   async afterAdd() {}
 
   async beforeLoad() {
     this.manager = new NotificationManager();
+    this.channelTypes = this.manager.channelTypes;
   }
 
   // You can get and modify the app instance here

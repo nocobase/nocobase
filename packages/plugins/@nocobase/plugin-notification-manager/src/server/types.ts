@@ -39,3 +39,5 @@ export interface SendOptions {
   message: Record<string, any>;
   triggerFrom: string;
 }
+
+export type RegisterServerTypeFnParams = { name: string; server: NotificationServerBase };
