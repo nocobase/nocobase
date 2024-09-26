@@ -8,7 +8,7 @@
  */
 
 import { ArrayTable } from '@formily/antd-v5';
-import { Field, onFieldValueChange } from '@formily/core';
+import { onFieldValueChange } from '@formily/core';
 import { ISchema, useField, useFieldSchema, useForm, useFormEffects } from '@formily/react';
 import { isValid, uid } from '@formily/shared';
 import { Alert, Flex, ModalProps, Tag } from 'antd';
