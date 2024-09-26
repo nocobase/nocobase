@@ -12,38 +12,44 @@ import { uid } from '@formily/shared';
 import {
   useActionContext,
   useAPIClient,
+  useBlockRequestContext,
   useCollection,
-  useDataBlockRequest,
   useDataBlockResource,
   usePlugin,
-  useBlockRequestContext,
 } from '@nocobase/client';
 import { App as AntdApp } from 'antd';
 import PluginPublicFormsClient from '..';
 
-const initialSchema = (values, formSchema) => {
+const initialSchema = (values, formSchema, t) => {
   return {
     type: 'void',
     name: uid(),
     'x-decorator': 'PublicFormMessageProvider',
     properties: {
       form: formSchema,
+      promptMessage: {
+        type: 'void',
+        'x-component': 'h3',
+        'x-component-props': {
+          style: { margin: '10px 0px 10px' },
+          children: '{{ t("Prompt After successful submission",{ns:"public-forms"})}}',
+        },
+      },
       success: {
         type: 'void',
         'x-editable': false,
         'x-toolbar-props': {
           draggable: false,
         },
-        'x-settings': 'blockSettings:markdown',
+        'x-settings': 'blockSettings:publicMarkdown',
         'x-component': 'Markdown.Void',
         'x-decorator': 'CardItem',
         'x-component-props': {
-          content: 'Submitted Successfully',
+          content: t('# Submitted successfully!\nThis is a demo text, **supports Markdown syntax**.'),
         },
         'x-decorator-props': {
           name: 'markdown',
           engine: 'handlebars',
-          title: '{{ t("After successful submission",{ns:"public-forms"})}}',
         },
       },
     },
@@ -82,6 +88,7 @@ export const useSubmitActionProps = () => {
             collection,
             dataSource,
           }),
+          plugin.t.bind(plugin),
         );
         schema['x-uid'] = key;
         await resource.create({

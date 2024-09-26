@@ -41,10 +41,6 @@ export default defineCollection({
       name: 'enabled',
     },
     {
-      type: 'boolean',
-      name: 'enabledPassword',
-    },
-    {
       type: 'string',
       name: 'password',
     },

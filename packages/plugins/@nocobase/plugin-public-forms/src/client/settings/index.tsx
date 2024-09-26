@@ -13,7 +13,10 @@ import {
   SchemaSettingsBlockTitleItem,
   SchemaSettingsLinkageRules,
   useCollection,
+  SchemaSettingsRenderEngine,
 } from '@nocobase/client';
+import { useField } from '@formily/react';
+import { useTranslation } from 'react-i18next';
 
 export const publicFormBlockSettings = new SchemaSettings({
   name: 'blockSettings:publicForm',
@@ -35,6 +38,31 @@ export const publicFormBlockSettings = new SchemaSettings({
           collectionName: name,
         };
       },
+    },
+  ],
+});
+
+export const publicMarkdownBlockSettings = new SchemaSettings({
+  name: 'blockSettings:publicMarkdown',
+  items: [
+    {
+      name: 'EditMarkdown',
+      type: 'item',
+      useComponentProps() {
+        const field = useField();
+        const { t } = useTranslation();
+
+        return {
+          title: t('Edit markdown'),
+          onClick: () => {
+            field.editable = true;
+          },
+        };
+      },
+    },
+    {
+      name: 'setBlockTemplate',
+      Component: SchemaSettingsRenderEngine,
     },
   ],
 });
