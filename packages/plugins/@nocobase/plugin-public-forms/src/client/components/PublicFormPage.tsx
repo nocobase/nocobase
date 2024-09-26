@@ -87,7 +87,6 @@ const PublicFormMessageProvider = ({ children }) => {
       if (f) {
         f.visible = visible;
         f.hidden = !visible;
-        f.decoratorProps.title = null;
       }
     });
   };
@@ -95,6 +94,14 @@ const PublicFormMessageProvider = ({ children }) => {
   useEffect(() => {
     toggleFieldVisibility('success', showMessage);
     toggleFieldVisibility('form', !showMessage);
+    if (!showMessage) {
+      field.form.query('promptMessage').take((f) => {
+        if (f) {
+          f.visible = false;
+          f.hidden = true;
+        }
+      });
+    }
   }, [showMessage]);
 
   return (

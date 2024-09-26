@@ -57,7 +57,6 @@ export const parseAssociationNames = (dataSourceKey: string, collectionName: str
       return initialValue;
     };
 
-    // 定义自定义的 reducer 函数，模仿你的原始逻辑
     const customReducer = (pre, s, key) => {
       const prefix = pre || str;
       const collection = dataSource.collectionManager.getCollection(

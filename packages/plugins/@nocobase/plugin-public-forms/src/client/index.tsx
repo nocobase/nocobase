@@ -12,7 +12,7 @@ import { AdminPublicFormList } from './components/AdminPublicFormList';
 import { AdminPublicFormPage } from './components/AdminPublicFormPage';
 import { PublicFormPage } from './components/PublicFormPage';
 import { formSchemaCallback } from './schemas/formSchemaCallback';
-import { publicFormBlockSettings } from './settings';
+import { publicFormBlockSettings, publicMarkdownBlockSettings } from './settings';
 import { NAMESPACE } from './locale';
 export class PluginPublicFormsClient extends Plugin {
   protected formTypes = new Map();
@@ -40,6 +40,8 @@ export class PluginPublicFormsClient extends Plugin {
 
   async load() {
     this.app.schemaSettingsManager.add(publicFormBlockSettings);
+    this.app.schemaSettingsManager.add(publicMarkdownBlockSettings);
+
     this.registerFormType('form', {
       label: 'Form',
       uiSchema: formSchemaCallback,

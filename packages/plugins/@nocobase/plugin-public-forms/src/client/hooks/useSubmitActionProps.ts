@@ -28,22 +28,29 @@ const initialSchema = (values, formSchema) => {
     'x-decorator': 'PublicFormMessageProvider',
     properties: {
       form: formSchema,
+      promptMessage: {
+        type: 'void',
+        'x-component': 'h3',
+        'x-component-props': {
+          style: { margin: '10px 0px 10px' },
+          children: '{{ t("Prompt After successful submission",{ns:"public-forms"})}}',
+        },
+      },
       success: {
         type: 'void',
         'x-editable': false,
         'x-toolbar-props': {
           draggable: false,
         },
-        'x-settings': 'blockSettings:markdown',
+        'x-settings': 'blockSettings:publicMarkdown',
         'x-component': 'Markdown.Void',
         'x-decorator': 'CardItem',
         'x-component-props': {
-          content: 'Submitted Successfully',
+          content: 'This is a demo text, **supports Markdown syntax**.\n  <h2>Submitted Successfully </h2>',
         },
         'x-decorator-props': {
           name: 'markdown',
           engine: 'handlebars',
-          title: '{{ t("After successful submission",{ns:"public-forms"})}}',
         },
       },
     },

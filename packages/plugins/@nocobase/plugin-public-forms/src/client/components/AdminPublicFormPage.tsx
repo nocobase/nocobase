@@ -79,25 +79,10 @@ export function AdminPublicFormPage() {
               <SchemaComponent
                 schema={{
                   properties: {
-                    enabledPassword: {
-                      type: 'boolean',
-                      'x-decorator': 'FormItem',
-                      'x-component': 'Checkbox',
-                      title: t('Enabled password'),
-                    },
                     password: {
                       type: 'string',
                       'x-decorator': 'FormItem',
                       'x-component': 'Input.Password',
-                      title: t('Password'),
-                      'x-reactions': {
-                        dependencies: ['enabledPassword'],
-                        fulfill: {
-                          state: {
-                            required: '{{$deps[0]}}',
-                          },
-                        },
-                      },
                     },
                   },
                 }}
@@ -110,8 +95,8 @@ export function AdminPublicFormPage() {
     ).open({
       initialValues: { ...others },
     });
-    const { enabledPassword, password } = values;
-    await handleEditPublicForm({ enabledPassword, password });
+    const { password } = values;
+    await handleEditPublicForm({ password });
   };
 
   const handleCopyLink = () => {

@@ -56,7 +56,7 @@ export class PluginPublicFormsServer extends Plugin {
       return null;
     }
     if (!token) {
-      if (instance.get('password') && instance.get('enabledPassword')) {
+      if (instance.get('password')) {
         if (password === undefined) {
           return {
             passwordRequired: true,
@@ -80,11 +80,16 @@ export class PluginPublicFormsServer extends Plugin {
         displayName: dataSourceKey,
         collections,
       },
-      token: this.app.authManager.jwt.sign({
-        collectionName,
-        formKey: filterByTk,
-        targetCollections: appends,
-      }),
+      token: this.app.authManager.jwt.sign(
+        {
+          collectionName,
+          formKey: filterByTk,
+          targetCollections: appends,
+        },
+        {
+          expiresIn: '1h',
+        },
+      ),
       schema,
     };
   }
@@ -131,6 +136,9 @@ export class PluginPublicFormsServer extends Plugin {
             key: tokenData.formKey,
           },
         });
+        if (!instance) {
+          throw new Error('The form is not found');
+        }
         if (!instance.get('enabled')) {
           throw new Error('The form is not enabled');
         }
@@ -147,21 +155,19 @@ export class PluginPublicFormsServer extends Plugin {
   };
 
   parseACL = async (ctx, next) => {
-    const { resourceName, actionName } = ctx.action;
-    if (ctx.PublicForm && ['create', 'list'].includes(actionName)) {
-      if (actionName === 'create') {
-        ctx.permission = {
-          skip:
-            ctx.PublicForm['collectionName'] === resourceName ||
-            ctx.PublicForm['targetCollections'].includes(resourceName),
-        };
-      } else {
-        ctx.permission = {
-          skip: ctx.PublicForm['targetCollections'].includes(resourceName),
-        };
-      }
+    if (!ctx.PublicForm) {
+      return next();
     }
-
+    const { resourceName, actionName } = ctx.action;
+    if (actionName === 'create' && ctx.PublicForm['collectionName'] === resourceName) {
+      ctx.permission = {
+        skip: true,
+      };
+    } else if (actionName === 'list' && ctx.PublicForm['targetCollections'].includes(resourceName)) {
+      ctx.permission = {
+        skip: true,
+      };
+    }
     await next();
   };
 

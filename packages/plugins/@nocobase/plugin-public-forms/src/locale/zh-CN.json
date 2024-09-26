@@ -10,5 +10,6 @@
   "The form is not enabled and cannot be accessed": "该表单未启用,无法访问",
   "Link copied successfully": "复制地址成功",
   "After successful submission": "提交成功后",
-  "Enable password": "启用密码"
+  "Enable password": "启用密码",
+  "Prompt After successful submission": "提交成功后的信息提示"
 }
