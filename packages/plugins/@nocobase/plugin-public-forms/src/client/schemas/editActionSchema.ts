@@ -42,7 +42,7 @@ export const editActionSchema = {
             type: {
               type: 'string',
               'x-decorator': 'FormItem',
-              title: 'Type',
+              title: `{{t("Type",{ns:"public-forms"})}}`,
               'x-component': 'Radio.Group',
               default: 'form',
               enum: '{{ formTypes }}',

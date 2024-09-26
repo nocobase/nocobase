@@ -40,8 +40,8 @@ export const createActionSchema = {
             type: {
               type: 'string',
               'x-decorator': 'FormItem',
-              title: 'Type',
-              'x-component': 'Radio.Group',
+              title: `{{t("Type",{ns:"public-forms"})}}`,
+              'x-component': 'CollectionField',
               default: 'form',
               enum: '{{ formTypes }}',
             },

@@ -39,8 +39,9 @@ export const publicFormsCollection = {
       interface: 'radioGroup',
       uiSchema: {
         type: 'string',
-        title: `{{t('Type',{ns:${NAMESPACE}})}}`,
+        title: `{{t("Type",{ns:"public-forms"})}}`,
         'x-component': 'Radio.Group',
+        enum: '{{ formTypes }}',
       },
     },
     {
