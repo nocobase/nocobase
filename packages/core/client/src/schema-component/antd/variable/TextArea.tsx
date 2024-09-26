@@ -208,21 +208,18 @@ function getCurrentRange(element: HTMLElement): RangeIndexes {
   return result;
 }
 
+const defaultFieldNames = { value: 'value', label: 'label' };
+
 export function TextArea(props) {
   const { wrapSSR, hashId, componentCls } = useStyles();
-  const {
-    value = '',
-    scope,
-    onChange,
-    multiline = true,
-    changeOnSelect,
-    style,
-    fieldNames = { value: 'value', label: 'label' },
-  } = props;
+  const { value = '', scope, onChange, multiline = true, changeOnSelect, style, fieldNames } = props;
   const inputRef = useRef<HTMLDivElement>(null);
   const [options, setOptions] = useState([]);
   const form = useForm();
-  const keyLabelMap = useMemo(() => createOptionsValueLabelMap(options, fieldNames), [options, fieldNames]);
+  const keyLabelMap = useMemo(
+    () => createOptionsValueLabelMap(options, fieldNames || defaultFieldNames),
+    [fieldNames, options],
+  );
   const [ime, setIME] = useState<boolean>(false);
   const [changed, setChanged] = useState(false);
   const [html, setHtml] = useState(() => renderHTML(value ?? '', keyLabelMap));
@@ -456,7 +453,7 @@ export function TextArea(props) {
           setOptions={setOptions}
           onInsert={onInsert}
           changeOnSelect={changeOnSelect}
-          fieldNames={fieldNames}
+          fieldNames={fieldNames || defaultFieldNames}
         />
       ) : null}
     </Space.Compact>,
