@@ -34,7 +34,6 @@ import {
 import { SequelizeStorage, Umzug } from 'umzug';
 import { Collection, CollectionOptions, RepositoryType } from './collection';
 import { CollectionFactory } from './collection-factory';
-import { CollectionGroupManager } from './collection-group-manager';
 import { ImporterReader, ImportFileExtension } from './collection-importer';
 import DatabaseUtils from './database-utils';
 import ReferencesMap from './features/references-map';
@@ -847,7 +846,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
    * @internal
    */
   async checkVersion() {
-    return await checkDatabaseVersion(this);
+    return process.env.DB_SKIP_VERSION_CHECK === 'on' || (await checkDatabaseVersion(this));
   }
 
   /**
