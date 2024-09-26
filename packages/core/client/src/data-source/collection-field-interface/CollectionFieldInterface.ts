@@ -125,7 +125,7 @@ export abstract class CollectionFieldInterface {
             dependencies: ['uiSchema.x-component-props.picker'],
             fulfill: {
               state: {
-                value: undefined,
+                value: null,
               },
             },
           },
