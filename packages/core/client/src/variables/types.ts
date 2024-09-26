@@ -34,7 +34,7 @@ export interface VariablesContextType {
    * @returns 变量解析后的值
    *
    * ```ts
-   * const value = await parseVariable('{{ $user.name }}');
+   * const { value } = await parseVariable('{{ $user.name }}');
    * console.log(value); // test
    * ```
    */
@@ -46,8 +46,19 @@ export interface VariablesContextType {
       appends?: string[];
       /** do not request when the association field is empty */
       doNotRequest?: boolean;
+      /**
+       * The operator related to the current field, provided when parsing the default value of the field
+       */
+      fieldOperator?: string | void;
     },
-  ) => Promise<any>;
+  ) => Promise<{
+    value: any;
+    /**
+     * 当前变量所对应的数据表的名称，如果为空，则表示当前变量是一个普通类型的变量（字符串、数字等）
+     */
+    collectionName?: string;
+    dataSource?: string;
+  }>;
   /**
    * 注册变量
    * @param variableOption 新变量的配置

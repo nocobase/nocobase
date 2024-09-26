@@ -118,19 +118,28 @@ const ConstantTypes = {
   },
 };
 
-function getTypedConstantOption(type: string, types: true | string[], fieldNames) {
+type UseTypeConstantType = true | (string | [string, Record<string, any>])[];
+
+function getTypedConstantOption(type: string, types: UseTypeConstantType, fieldNames) {
   const allTypes = Object.values(ConstantTypes).filter((item) => item.value !== 'null');
   const children = (
-    types ? allTypes.filter((item) => (Array.isArray(types) && types.includes(item.value)) || types === true) : allTypes
+    types
+      ? allTypes.filter(
+          (item) =>
+            (Array.isArray(types) &&
+              types.filter((t) => (Array.isArray(t) ? t[0] === item.value : t === item.value)).length) ||
+            types === true,
+        )
+      : allTypes
   ).map((item) =>
-    Object.keys(item).reduce(
+    Object.keys(fieldNames).reduce(
       (result, key) =>
-        fieldNames[key] in item
+        key in item
           ? Object.assign(result, {
               [fieldNames[key]]: item[key],
             })
           : result,
-      item,
+      { ...item },
     ),
   );
   return {
@@ -150,13 +159,14 @@ export type VariableInputProps = {
   onChange: (value: string, optionPath?: any[]) => void;
   children?: any;
   button?: React.ReactElement;
-  useTypedConstant?: true | string[];
+  useTypedConstant?: UseTypeConstantType;
   changeOnSelect?: CascaderProps['changeOnSelect'];
   fieldNames?: CascaderProps['fieldNames'];
   disabled?: boolean;
   style?: React.CSSProperties;
   className?: string;
   parseOptions?: ParseOptions;
+  hideVariableButton?: boolean;
 };
 
 export function Input(props: VariableInputProps) {
@@ -171,9 +181,10 @@ export function Input(props: VariableInputProps) {
     changeOnSelect,
     fieldNames,
     parseOptions,
+    hideVariableButton,
   } = props;
   const scope = typeof props.scope === 'function' ? props.scope() : props.scope;
-  const { wrapSSR, hashId, componentCls, rootPrefixCls } = useStyles();
+  const { wrapSSR, hashId, componentCls, rootPrefixCls } = useStyles({ hideVariableButton });
 
   // 添加 antd input 样式，防止样式缺失
   useAntdInputStyle(`${rootPrefixCls}-input`);
@@ -183,7 +194,9 @@ export function Input(props: VariableInputProps) {
   const form = useForm();
   const [options, setOptions] = React.useState<DefaultOptionType[]>([]);
   const [variableText, setVariableText] = React.useState([]);
-  const [isFieldValue, setIsFieldValue] = React.useState(children && value != null ? true : false);
+  const [isFieldValue, setIsFieldValue] = React.useState(
+    hideVariableButton || (children && value != null ? true : false),
+  );
 
   const parsed = useMemo(() => parseValue(value, parseOptions), [parseOptions, value]);
   const isConstant = typeof parsed === 'string';
@@ -214,6 +227,9 @@ export function Input(props: VariableInputProps) {
   }, [type, useTypedConstant]);
 
   const ConstantComponent = constantOption && !children ? constantOption.component : NullComponent;
+  const constantComponentProps = Array.isArray(useTypedConstant)
+    ? (useTypedConstant.find((item) => Array.isArray(item) && item[0] === type)?.[1] as Record<string, any>) ?? {}
+    : {};
   let cValue;
   if (value == null) {
     if (children && isFieldValue) {
@@ -223,6 +239,10 @@ export function Input(props: VariableInputProps) {
     }
   } else {
     cValue = children ? ['$'] : [' ', type];
+  }
+
+  if (hideVariableButton) {
+    cValue = ['$'];
   }
 
   useEffect(() => {
@@ -403,28 +423,36 @@ export function Input(props: VariableInputProps) {
           {children && isFieldValue ? (
             children
           ) : ConstantComponent ? (
-            <ConstantComponent role="button" aria-label="variable-constant" value={value} onChange={onChange} />
+            <ConstantComponent
+              role="button"
+              aria-label="variable-constant"
+              {...constantComponentProps}
+              value={value}
+              onChange={onChange}
+            />
           ) : null}
         </div>
       )}
-      <Cascader
-        options={options}
-        value={variable ?? cValue}
-        onChange={onSwitch}
-        loadData={loadData as any}
-        changeOnSelect={changeOnSelect}
-        fieldNames={fieldNames}
-        disabled={disabled}
-      >
-        {button ?? (
-          <XButton
-            className={css(`
+      {hideVariableButton ? null : (
+        <Cascader
+          options={options}
+          value={variable ?? cValue}
+          onChange={onSwitch}
+          loadData={loadData as any}
+          changeOnSelect={changeOnSelect}
+          fieldNames={fieldNames}
+          disabled={disabled}
+        >
+          {button ?? (
+            <XButton
+              className={css(`
               margin-left: -1px;
             `)}
-            type={variable ? 'primary' : 'default'}
-          />
-        )}
-      </Cascader>
+              type={variable ? 'primary' : 'default'}
+            />
+          )}
+        </Cascader>
+      )}
     </Space.Compact>,
   );
 }

@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-mobile",
-  "version": "1.3.0-alpha",
+  "version": "1.4.0-alpha",
   "main": "dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/mobile",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/mobile",
@@ -12,7 +12,8 @@
   "peerDependencies": {
     "@nocobase/client": "1.x",
     "@nocobase/server": "1.x",
-    "@nocobase/test": "1.x"
+    "@nocobase/test": "1.x",
+    "@nocobase/plugin-acl": "1.x"
   },
   "devDependencies": {
     "@ant-design/icons": "5.x",
@@ -23,6 +24,12 @@
     "@types/react-dom": "17.x",
     "antd-mobile": "^5.36.1",
     "re-resizable": "6.6.0",
-    "react-device-detect": "2.2.3"
+    "react-device-detect": "2.2.3",
+    "@emotion/css": "11.x",
+    "ahooks": "3.x",
+    "lodash": "4.x",
+    "@formily/core": "2.x",
+    "antd": "5.x",
+    "react-i18next": "11.x"
   }
 }

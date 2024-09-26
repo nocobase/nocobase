@@ -61,6 +61,7 @@ export class DualAxes extends G2PlotChart {
           },
         },
       },
+      'size',
     ];
   }
 

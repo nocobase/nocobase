@@ -48,10 +48,6 @@ export interface PopupContextStorage extends PopupContext {
   /** used to refresh data for block */
   service?: any;
   sourceId?: string;
-  /**
-   * if true, will not back to the previous path when closing the popup
-   */
-  notBackToPreviousPath?: boolean;
 }
 
 const popupsContextStorage: Record<string, PopupContextStorage> = {};
@@ -127,7 +123,16 @@ export const getPopupPathFromParams = (params: PopupParams) => {
  * Note: use this hook in a plugin is not recommended
  * @returns
  */
-export const usePopupUtils = () => {
+export const usePopupUtils = (
+  options: {
+    /**
+     * when the popup does not support opening via URL, you can control the display status of the popup through this method
+     * @param visible
+     * @returns
+     */
+    setVisible?: (visible: boolean) => void;
+  } = {},
+) => {
   const navigate = useNavigateNoUpdate();
   const location = useLocationNoUpdate();
   const fieldSchema = useFieldSchema();
@@ -141,14 +146,16 @@ export const usePopupUtils = () => {
   const { params: popupParams } = useCurrentPopupContext();
   const service = useDataBlockRequest();
   const { isPopupVisibleControlledByURL } = usePopupSettings();
-  const { setVisible: setVisibleFromAction } = useContext(ActionContext);
+  const { setVisible: _setVisibleFromAction } = useContext(ActionContext);
   const { updatePopupContext } = usePopupContextInActionOrAssociationField();
+  const currentPopupContext = useCurrentPopupContext();
   const getSourceId = useCallback(
     (_parentRecordData?: Record<string, any>) =>
       (_parentRecordData || parentRecord?.data)?.[cm.getSourceKeyByAssociation(association)],
     [parentRecord, association],
   );
-  const currentPopupUidWithoutOpened = fieldSchema?.['x-uid'];
+
+  const setVisibleFromAction = options.setVisible || _setVisibleFromAction;
 
   const getNewPathname = useCallback(
     ({
@@ -183,10 +190,10 @@ export const usePopupUtils = () => {
     [association, cm, collection, dataSourceKey, parentRecord?.data, association],
   );
 
-  const getPopupContext = useCallback(() => {
+  const getNewPopupContext = useCallback(() => {
     const context = {
       dataSource: dataSourceKey,
-      collection: association ? undefined : collection.name,
+      collection: association ? undefined : collection?.name,
       association,
     };
 
@@ -199,6 +206,7 @@ export const usePopupUtils = () => {
       parentRecordData,
       collectionNameUsedInURL,
       popupUidUsedInURL,
+      customActionSchema,
     }: {
       recordData?: Record<string, any>;
       parentRecordData?: Record<string, any>;
@@ -206,11 +214,13 @@ export const usePopupUtils = () => {
       collectionNameUsedInURL?: string;
       /** if this value exists, it will be saved in the URL */
       popupUidUsedInURL?: string;
+      customActionSchema?: ISchema;
     } = {}) => {
       if (!isPopupVisibleControlledByURL()) {
         return setVisibleFromAction?.(true);
       }
 
+      const currentPopupUidWithoutOpened = customActionSchema?.['x-uid'] || fieldSchema?.['x-uid'];
       const sourceId = getSourceId(parentRecordData);
 
       recordData = recordData || record?.data;
@@ -227,17 +237,17 @@ export const usePopupUtils = () => {
       }
 
       storePopupContext(currentPopupUidWithoutOpened, {
-        schema: fieldSchema,
+        schema: customActionSchema || fieldSchema,
         record: new CollectionRecord({ isNew: false, data: recordData }),
         parentRecord: parentRecordData ? new CollectionRecord({ isNew: false, data: parentRecordData }) : parentRecord,
         service,
         dataSource: dataSourceKey,
-        collection: collection.name,
+        collection: collection?.name,
         association,
         sourceId,
       });
 
-      updatePopupContext(getPopupContext());
+      updatePopupContext(getNewPopupContext(), customActionSchema);
 
       navigate(withSearchParams(`${url}${pathname}`));
     },
@@ -255,8 +265,7 @@ export const usePopupUtils = () => {
       location,
       isPopupVisibleControlledByURL,
       getSourceId,
-      getPopupContext,
-      currentPopupUidWithoutOpened,
+      getNewPopupContext,
     ],
   );
 
@@ -266,14 +275,7 @@ export const usePopupUtils = () => {
         return setVisibleFromAction?.(false);
       }
 
-      // 1. If there is a value in the cache, it means that the current popup was opened by manual click, so we can simply return to the previous record;
-      // 2. If there is no value in the cache, it means that the current popup was opened by clicking the URL elsewhere, and since there is no history,
-      //    we need to construct the URL of the previous record to return to;
-      if (getStoredPopupContext(currentPopupUid) && !getStoredPopupContext(currentPopupUid).notBackToPreviousPath) {
-        navigate(-1);
-      } else {
-        navigate(withSearchParams(removeLastPopupPath(location.pathname)));
-      }
+      navigate(withSearchParams(removeLastPopupPath(location.pathname)), { replace: true });
     },
     [isPopupVisibleControlledByURL, setVisibleFromAction, navigate, location?.pathname],
   );
@@ -317,6 +319,7 @@ export const usePopupUtils = () => {
     closePopup,
     savePopupSchemaToSchema,
     getPopupSchemaFromSchema,
+    context: currentPopupContext,
     /**
      * @deprecated
      * TODO: remove this
@@ -341,7 +344,7 @@ export const usePopupUtils = () => {
      * @deprecated
      * TODO: remove this
      */
-    getPopupContext,
+    getPopupContext: getNewPopupContext,
   };
 };
 

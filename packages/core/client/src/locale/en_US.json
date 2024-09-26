@@ -427,6 +427,7 @@
   "Option label": "Option label",
   "Color": "Color",
   "Background Color": "Background Color",
+  "Text Align": "Text Align",
   "Add option": "Add option",
   "Related collection": "Related collection",
   "Allow linking to multiple records": "Allow linking to multiple records",
@@ -838,5 +839,10 @@
   "Open in new window": "Open in new window",
   "Sorry, the page you visited does not exist.": "Sorry, the page you visited does not exist.",
   "is none of": "is none of",
-  "is any of": "is any of"
+  "is any of": "is any of",
+  "Plugin dependency version mismatch": "Plugin dependency version mismatch",
+  "The current dependency version of the plugin does not match the version of the application and may not work properly. Are you sure you want to continue enabling the plugin?": "The current dependency version of the plugin does not match the version of the application and may not work properly. Are you sure you want to continue enabling the plugin?",
+  "Skip getting the total number of table records during paging to speed up loading. It is recommended to enable this option for data tables with a large amount of data": "Skip getting the total number of table records during paging to speed up loading. It is recommended to enable this option for data tables with a large amount of data",
+  "Enable secondary confirmation": "Enable secondary confirmation",
+  "Ellipsis overflow content": "Ellipsis overflow content"
 }

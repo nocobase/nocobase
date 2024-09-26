@@ -166,11 +166,6 @@ export const TableBlockProvider = withDynamicSchemaProps((props) => {
       params['tree'] = true;
     }
   }
-  if (pagingMode === 'simplePaginate') {
-    params['simplePaginate'] = true;
-  } else {
-    delete params?.['simplePaginate'];
-  }
   const form = useMemo(() => createForm(), [treeTable]);
 
   // 在解析变量的时候不渲染，避免因为重复请求数据导致的资源浪费

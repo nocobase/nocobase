@@ -13,7 +13,12 @@ import { ChartType } from '../chart';
 
 export class Bar extends G2PlotChart {
   constructor() {
-    super({ name: 'bar', title: 'Bar Chart', Component: G2PlotBar, config: ['isGroup', 'isStack', 'isPercent'] });
+    super({
+      name: 'bar',
+      title: 'Bar Chart',
+      Component: G2PlotBar,
+      config: ['isGroup', 'isStack', 'isPercent', 'size'],
+    });
   }
 
   init: ChartType['init'] = (fields, { measures, dimensions }) => {

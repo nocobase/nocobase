@@ -102,7 +102,7 @@ describe('moment2str', () => {
 
   test('picker is year', () => {
     const m = dayjs('2023-06-21 10:10:00');
-    const str = moment2str(m, { picker: 'year' });
+    const str = moment2str(m, { picker: 'year', gmt: true });
     expect(str).toBe('2023-01-01T00:00:00.000Z');
   });
 
@@ -132,7 +132,7 @@ describe('moment2str', () => {
 
   test('picker is month', () => {
     const m = dayjs('2023-06-21 10:10:00');
-    const str = moment2str(m, { picker: 'month' });
+    const str = moment2str(m, { picker: 'month', gmt: true });
     expect(str).toBe('2023-06-01T00:00:00.000Z');
   });
 

@@ -70,21 +70,9 @@ const commonOptions = {
       name: 'otherBlocks',
       children: [
         {
-          title: '{{t("Add text")}}',
-          Component: 'BlockItemInitializer',
-          name: 'addText',
-          schema: {
-            type: 'void',
-            'x-editable': false,
-            'x-decorator': 'BlockItem',
-            // 'x-designer': 'Markdown.Void.Designer',
-            'x-toolbar': 'BlockSchemaToolbar',
-            'x-settings': 'blockSettings:markdown',
-            'x-component': 'Markdown.Void',
-            'x-component-props': {
-              content: '{{t("This is a demo text, **supports Markdown syntax**.")}}',
-            },
-          },
+          name: 'markdown',
+          title: '{{t("Markdown")}}',
+          Component: 'MarkdownBlockInitializer',
         },
       ],
     },

@@ -8,9 +8,9 @@
  */
 
 const postgres = {
-  'character varying': ['string', 'uuid', 'nanoid', 'encryption'],
-  varchar: ['string', 'uuid', 'nanoid', 'encryption'],
-  char: ['string', 'uuid', 'nanoid', 'encryption'],
+  'character varying': ['string', 'uuid', 'nanoid', 'encryption', 'datetimeNoTz'],
+  varchar: ['string', 'uuid', 'nanoid', 'encryption', 'datetimeNoTz'],
+  char: ['string', 'uuid', 'nanoid', 'encryption', 'datetimeNoTz'],
 
   character: 'string',
   text: 'text',
@@ -18,18 +18,18 @@ const postgres = {
   name: 'string',
 
   smallint: ['integer', 'sort'],
-  integer: ['integer', 'sort'],
-  bigint: ['bigInt', 'sort'],
+  integer: ['integer', 'unixTimestamp', 'sort'],
+  bigint: ['bigInt', 'unixTimestamp', 'sort'],
   decimal: 'decimal',
   numeric: 'float',
   real: 'float',
   'double precision': 'float',
 
-  'timestamp without time zone': 'date',
-  'timestamp with time zone': 'date',
+  'timestamp without time zone': 'datetimeNoTz',
+  'timestamp with time zone': 'datetimeTz',
   'time without time zone': 'time',
 
-  date: 'date',
+  date: 'dateOnly',
   boolean: 'boolean',
 
   json: ['json', 'array'],
@@ -55,24 +55,24 @@ const mysql = {
 
   char: ['string', 'uuid', 'nanoid', 'encryption'],
   varchar: ['string', 'uuid', 'nanoid', 'encryption'],
-  date: 'date',
+  date: 'dateOnly',
   time: 'time',
   tinytext: 'text',
   text: 'text',
   mediumtext: 'text',
   longtext: 'text',
-  int: ['integer', 'sort'],
-  'int unsigned': ['integer', 'sort'],
-  integer: ['integer', 'sort'],
-  bigint: ['bigInt', 'sort'],
-  'bigint unsigned': ['bigInt', 'sort'],
+  int: ['integer', 'unixTimestamp', 'sort'],
+  'int unsigned': ['integer', 'unixTimestamp', 'sort'],
+  integer: ['integer', 'unixTimestamp', 'sort'],
+  bigint: ['bigInt', 'unixTimestamp', 'sort'],
+  'bigint unsigned': ['bigInt', 'unixTimestamp', 'sort'],
   float: 'float',
   double: 'float',
   boolean: 'boolean',
   decimal: 'decimal',
-
-  datetime: 'date',
-  timestamp: 'date',
+  year: ['string', 'integer'],
+  datetime: ['datetimeNoTz', 'datetimeTz'],
+  timestamp: 'datetimeTz',
   json: ['json', 'array'],
   enum: 'string',
 };
@@ -84,7 +84,7 @@ const sqlite = {
   integer: 'integer',
   real: 'real',
 
-  datetime: 'date',
+  datetime: 'datetimeTz',
   date: 'date',
   time: 'time',
 

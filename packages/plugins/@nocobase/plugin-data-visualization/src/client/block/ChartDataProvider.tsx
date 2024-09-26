@@ -34,6 +34,7 @@ export const ChartDataProvider: React.FC = (props) => {
   const removeChart = useMemoizedFn((uid: string) => {
     setCharts((charts) => ({ ...charts, [uid]: undefined }));
   });
+
   return (
     <ChartDataContext.Provider value={{ charts, addChart, removeChart }}>{props.children}</ChartDataContext.Provider>
   );

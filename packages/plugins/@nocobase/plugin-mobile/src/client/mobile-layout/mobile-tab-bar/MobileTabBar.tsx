@@ -10,12 +10,11 @@
 import { SafeArea } from 'antd-mobile';
 import 'antd-mobile/es/components/tab-bar/tab-bar.css';
 import React, { FC, useCallback } from 'react';
-import { Navigate } from 'react-router-dom';
 
 import { useMobileRoutes } from '../../mobile-providers';
 import { useStyles } from './styles';
 
-import { css, cx, DndContext, DndContextProps, SchemaComponent, useApp, useDesignable } from '@nocobase/client';
+import { css, cx, DndContext, DndContextProps, SchemaComponent, useDesignable } from '@nocobase/client';
 import { isInnerLink } from '../../utils';
 import { MobileTabBarInitializer } from './initializer';
 import { getMobileTabBarItemSchema, MobileTabBarItem } from './MobileTabBar.Item';
@@ -33,8 +32,6 @@ export const MobileTabBar: FC<MobileTabBarProps> & {
   Page: typeof MobileTabBarPage;
   Link: typeof MobileTabBarLink;
 } = ({ enableTabBar = true }) => {
-  const app = useApp();
-  const hasAuth = app.pluginSettingsManager.hasAuth('mobile');
   const { styles } = useStyles();
   const { designable } = useDesignable();
   const { routeList, activeTabBarItem, resource, refresh } = useMobileRoutes();
@@ -56,10 +53,6 @@ export const MobileTabBar: FC<MobileTabBarProps> & {
     [resource, refresh],
   );
 
-  if (!hasAuth) {
-    return <Navigate to={app.getRouteUrl('/admin')} />;
-  }
-
   if (!enableTabBar) {
     return null;
   }
@@ -76,9 +69,9 @@ export const MobileTabBar: FC<MobileTabBarProps> & {
               styles.mobileTabBarList,
               css({
                 maxWidth: designable ? 'calc(100% - 58px)' : '100%',
-                '.nb-block-item': {
-                  maxWidth: `${100 / routeList.length}%`,
-                },
+                // '.nb-block-item': {
+                //   maxWidth: `${100 / routeList.length}%`,
+                // },
               }),
             )}
           >
@@ -89,7 +82,6 @@ export const MobileTabBar: FC<MobileTabBarProps> & {
         </DndContext>
         <MobileTabBarInitializer />
       </div>
-
       <SafeArea position="bottom" />
     </div>
   );

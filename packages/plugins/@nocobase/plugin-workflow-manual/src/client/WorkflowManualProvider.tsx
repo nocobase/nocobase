@@ -33,7 +33,6 @@ function cacheSchema(collectionNameList: string[]) {
     storePopupContext(workflowTodoViewActionSchema['x-uid'], {
       schema: workflowTodoViewActionSchema,
       ...workflowTodoViewActionSchema['x-action-context'],
-      notBackToPreviousPath: true,
     });
   });
 }
@@ -41,5 +40,5 @@ function cacheSchema(collectionNameList: string[]) {
 cacheSchema(Object.values(collections).map((collection) => collection.name));
 
 function isMobile() {
-  return window.location.pathname.startsWith('/m');
+  return window.location.pathname.startsWith('/m/');
 }

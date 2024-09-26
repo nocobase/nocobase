@@ -245,3 +245,247 @@ export const oneTableWithCalendarCollection: PageConfig = {
     'x-index': 1,
   },
 };
+export const backgroundColorFieldBasic = {
+  collections: [
+    {
+      name: 'calendar',
+      fields: [
+        {
+          name: 'singleText',
+          interface: 'input',
+        },
+        {
+          interface: 'select',
+          uiSchema: {
+            title: 'Single select',
+            type: 'string',
+            'x-component': 'Select',
+            enum: [
+              {
+                value: 'b1s9wbnb1of',
+                label: 'red',
+                color: 'red',
+              },
+              {
+                value: 'zkkpor6acnk',
+                label: 'green',
+                color: 'green',
+              },
+              {
+                value: '5nj53k4nxjg',
+                label: 'blue',
+                color: 'blue',
+              },
+            ],
+          },
+        },
+        {
+          interface: 'radioGroup',
+          uiSchema: {
+            enum: [
+              {
+                value: 'l28f7llee0h',
+                label: 'gold',
+                color: 'gold',
+              },
+              {
+                value: 'w80pdvckqga',
+                label: 'lime',
+                color: 'lime',
+              },
+              {
+                value: 'bq4i930gql2',
+                label: 'cyan',
+                color: 'cyan',
+              },
+            ],
+            type: 'string',
+            'x-component': 'Radio.Group',
+            title: 'Radio group',
+          },
+        },
+      ],
+    },
+  ],
+  pageSchema: {
+    _isJSONSchemaObject: true,
+    version: '2.0',
+    type: 'void',
+    'x-component': 'Page',
+    properties: {
+      hsu2v4rjr50: {
+        _isJSONSchemaObject: true,
+        version: '2.0',
+        type: 'void',
+        'x-component': 'Grid',
+        'x-initializer': 'page:addBlock',
+        properties: {
+          '7394n0636cb': {
+            _isJSONSchemaObject: true,
+            version: '2.0',
+            type: 'void',
+            'x-component': 'Grid.Row',
+            'x-app-version': '1.3.22-beta',
+            properties: {
+              oz0q63vbxy2: {
+                _isJSONSchemaObject: true,
+                version: '2.0',
+                type: 'void',
+                'x-component': 'Grid.Col',
+                'x-app-version': '1.3.22-beta',
+                properties: {
+                  pktfhea4eub: {
+                    _isJSONSchemaObject: true,
+                    version: '2.0',
+                    type: 'void',
+                    'x-acl-action': 'calendar:list',
+                    'x-decorator': 'CalendarBlockProvider',
+                    'x-use-decorator-props': 'useCalendarBlockDecoratorProps',
+                    'x-decorator-props': {
+                      collection: 'calendar',
+                      dataSource: 'main',
+                      action: 'list',
+                      fieldNames: {
+                        id: 'id',
+                        start: 'createdAt',
+                        title: 'singleText',
+                        end: ['updatedAt'],
+                      },
+                      params: {
+                        paginate: false,
+                      },
+                    },
+                    'x-toolbar': 'BlockSchemaToolbar',
+                    'x-settings': 'blockSettings:calendar',
+                    'x-component': 'CardItem',
+                    'x-app-version': '1.3.22-beta',
+                    properties: {
+                      '3byzt7u4wnz': {
+                        _isJSONSchemaObject: true,
+                        version: '2.0',
+                        type: 'void',
+                        'x-component': 'CalendarV2',
+                        'x-use-component-props': 'useCalendarBlockProps',
+                        'x-app-version': '1.3.22-beta',
+                        properties: {
+                          toolBar: {
+                            _isJSONSchemaObject: true,
+                            version: '2.0',
+                            type: 'void',
+                            'x-component': 'CalendarV2.ActionBar',
+                            'x-component-props': {
+                              style: {
+                                marginBottom: 24,
+                              },
+                            },
+                            'x-initializer': 'calendar:configureActions',
+                            'x-app-version': '1.3.22-beta',
+                            'x-uid': 'v8411egfjtm',
+                            'x-async': false,
+                            'x-index': 1,
+                          },
+                          event: {
+                            _isJSONSchemaObject: true,
+                            version: '2.0',
+                            type: 'void',
+                            'x-component': 'CalendarV2.Event',
+                            'x-app-version': '1.3.22-beta',
+                            properties: {
+                              drawer: {
+                                _isJSONSchemaObject: true,
+                                version: '2.0',
+                                type: 'void',
+                                'x-component': 'Action.Container',
+                                'x-component-props': {
+                                  className: 'nb-action-popup',
+                                },
+                                title: "{{t('View record', { ns: 'calendar' })}}",
+                                'x-app-version': '1.3.22-beta',
+                                properties: {
+                                  tabs: {
+                                    _isJSONSchemaObject: true,
+                                    version: '2.0',
+                                    type: 'void',
+                                    'x-component': 'Tabs',
+                                    'x-component-props': {},
+                                    'x-initializer': 'popup:addTab',
+                                    'x-initializer-props': {
+                                      gridInitializer: 'popup:common:addBlock',
+                                    },
+                                    'x-app-version': '1.3.22-beta',
+                                    properties: {
+                                      tab1: {
+                                        _isJSONSchemaObject: true,
+                                        version: '2.0',
+                                        type: 'void',
+                                        title: "{{t('Details', { ns: 'calendar' })}}",
+                                        'x-component': 'Tabs.TabPane',
+                                        'x-designer': 'Tabs.Designer',
+                                        'x-component-props': {},
+                                        'x-app-version': '1.3.22-beta',
+                                        properties: {
+                                          grid: {
+                                            _isJSONSchemaObject: true,
+                                            version: '2.0',
+                                            type: 'void',
+                                            'x-component': 'Grid',
+                                            'x-initializer-props': {
+                                              actionInitializers: 'details:configureActions',
+                                            },
+                                            'x-initializer': 'popup:common:addBlock',
+                                            'x-app-version': '1.3.22-beta',
+                                            'x-uid': 'f58sh31pm0e',
+                                            'x-async': false,
+                                            'x-index': 1,
+                                          },
+                                        },
+                                        'x-uid': 'akuiknd4af2',
+                                        'x-async': false,
+                                        'x-index': 1,
+                                      },
+                                    },
+                                    'x-uid': 'k7r14sqqjfx',
+                                    'x-async': false,
+                                    'x-index': 1,
+                                  },
+                                },
+                                'x-uid': 'rhqf8zhc1vc',
+                                'x-async': false,
+                                'x-index': 1,
+                              },
+                            },
+                            'x-uid': 'nvx5lwhpcl6',
+                            'x-async': false,
+                            'x-index': 2,
+                          },
+                        },
+                        'x-uid': '7km5lr1a7uc',
+                        'x-async': false,
+                        'x-index': 1,
+                      },
+                    },
+                    'x-uid': '5grvnpumvhd',
+                    'x-async': false,
+                    'x-index': 1,
+                  },
+                },
+                'x-uid': '723oca1vx1l',
+                'x-async': false,
+                'x-index': 1,
+              },
+            },
+            'x-uid': 'mogc1df80uh',
+            'x-async': false,
+            'x-index': 1,
+          },
+        },
+        'x-uid': 'lzuv4wavilz',
+        'x-async': false,
+        'x-index': 1,
+      },
+    },
+    'x-uid': 'wg0v4pihpus',
+    'x-async': true,
+    'x-index': 1,
+  },
+};

@@ -54,12 +54,11 @@ describe('usePopupContextInActionOrAssociationField', () => {
       dataSource: 'dataSource',
       collection: 'collection',
       association: 'association',
-      sourceId: 'sourceId',
     };
 
     result.current.updatePopupContext(context);
 
-    expect(dnMock.emit).toHaveBeenCalledWith('patch', {
+    expect(dnMock.emit).toHaveBeenCalledWith('initializeActionContext', {
       schema: {
         'x-uid': fieldSchemaMock['x-uid'],
         'x-action-context': context,
@@ -84,9 +83,8 @@ describe('usePopupContextInActionOrAssociationField', () => {
     result.current.updatePopupContext({
       ...context,
       collection: undefined,
-      sourceId: null,
     });
-    expect(dnMock.emit).toHaveBeenCalledWith('patch', {
+    expect(dnMock.emit).toHaveBeenCalledWith('initializeActionContext', {
       schema: {
         'x-uid': fieldSchemaMock['x-uid'],
         'x-action-context': {

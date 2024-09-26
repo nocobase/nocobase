@@ -1,13 +1,13 @@
-import React from 'react';
+import { BlockItem, Grid, Plugin, SchemaComponent } from '@nocobase/client';
 import { mockApp } from '@nocobase/client/demo-utils';
-import { SchemaComponent, Plugin, Grid, BlockItem } from '@nocobase/client';
 import PluginMobileClient, { MobileProviders, getMobilePageSchema } from '@nocobase/plugin-mobile/client';
+import React from 'react';
 
 import { schemaViewer } from './fixtures/schemaViewer';
 
 const Demo = () => {
   return (
-    <MobileProviders skipLogin={true}>
+    <MobileProviders>
       <SchemaComponent schema={schemaViewer(getMobilePageSchema('page1', 'tab1').schema)} />
     </MobileProviders>
   );
@@ -45,7 +45,7 @@ const app = mockApp({
   },
   designable: true,
   apis: {
-    'mobileRoutes:list': {
+    'mobileRoutes:listAccessible': {
       data: [
         {
           id: 1,

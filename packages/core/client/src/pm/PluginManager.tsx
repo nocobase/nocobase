@@ -197,7 +197,7 @@ const LocalPlugins = () => {
           <div>
             <Space>
               <Button onClick={() => setShowAddForm(true)} type="primary">
-                {t('Add new')}
+                {t('Add & Update')}
               </Button>
             </Space>
           </div>

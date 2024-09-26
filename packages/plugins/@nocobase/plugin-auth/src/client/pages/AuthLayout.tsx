@@ -8,11 +8,11 @@
  */
 
 import { css } from '@emotion/css';
+import { PoweredBy, ReadPretty, SwitchLanguage, useAPIClient, useRequest, useSystemSettings } from '@nocobase/client';
+import { Spin } from 'antd';
 import React, { FC } from 'react';
 import { Outlet } from 'react-router-dom';
-import { useSystemSettings, PoweredBy, useRequest, useAPIClient } from '@nocobase/client';
 import { AuthenticatorsContext } from '../authenticator';
-import { Spin } from 'antd';
 
 export const AuthenticatorsContextProvider: FC<{ children: React.ReactNode }> = ({ children }) => {
   const api = useAPIClient();
@@ -46,7 +46,6 @@ export const AuthenticatorsContextProvider: FC<{ children: React.ReactNode }> = 
 
 export function AuthLayout() {
   const { data } = useSystemSettings();
-
   return (
     <div
       style={{
@@ -55,7 +54,12 @@ export function AuthLayout() {
         paddingTop: '20vh',
       }}
     >
-      <h1>{data?.data?.title}</h1>
+      <div style={{ position: 'fixed', top: '2em', right: '2em' }}>
+        <SwitchLanguage />
+      </div>
+      <h1 style={{ textAlign: 'center' }}>
+        <ReadPretty.TextArea value={data?.data?.title} />
+      </h1>
       <AuthenticatorsContextProvider>
         <Outlet />
       </AuthenticatorsContextProvider>

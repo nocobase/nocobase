@@ -8,31 +8,33 @@
  */
 
 import { CollectionFieldInterface } from '../../data-source/collection-field-interface/CollectionFieldInterface';
-import { dateTimeProps, defaultProps, operators } from './properties';
-
+import { defaultProps, operators } from './properties';
 export class UnixTimestampFieldInterface extends CollectionFieldInterface {
   name = 'unixTimestamp';
   type = 'object';
   group = 'datetime';
-  order = 1;
+  order = 4;
   title = '{{t("Unix Timestamp")}}';
   sortable = true;
   default = {
-    type: 'bigInt',
+    type: 'unixTimestamp',
+    accuracy: 'second',
+    timezone: true,
+    defaultToCurrentTime: false,
+    onUpdateToCurrentTime: false,
     uiSchema: {
       type: 'number',
       'x-component': 'UnixTimestamp',
       'x-component-props': {
-        accuracy: 'second',
         showTime: true,
       },
     },
   };
-  availableTypes = ['integer', 'bigInt'];
-  hasDefaultValue = true;
+  availableTypes = ['unixTimestamp'];
+  hasDefaultValue = false;
   properties = {
     ...defaultProps,
-    'uiSchema.x-component-props.accuracy': {
+    accuracy: {
       type: 'string',
       title: '{{t("Accuracy")}}',
       'x-component': 'Radio.Group',
@@ -43,9 +45,21 @@ export class UnixTimestampFieldInterface extends CollectionFieldInterface {
         { value: 'second', label: '{{t("Second")}}' },
       ],
     },
+    defaultToCurrentTime: {
+      type: 'boolean',
+      'x-decorator': 'FormItem',
+      'x-component': 'Checkbox',
+      'x-content': '{{t("Default value to current time")}}',
+    },
+    onUpdateToCurrentTime: {
+      type: 'boolean',
+      'x-decorator': 'FormItem',
+      'x-component': 'Checkbox',
+      'x-content': '{{t("Automatically update timestamp on update")}}',
+    },
   };
   filterable = {
-    operators: operators.number,
+    operators: operators.datetime,
   };
   titleUsable = true;
 }

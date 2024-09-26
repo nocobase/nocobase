@@ -319,9 +319,10 @@ export const useTableSelectorProps = () => {
     dragSort: false,
     rowKey: ctx.rowKey || 'id',
     pagination: fieldSchema?.['x-component-props']?.pagination === false ? false : field.componentProps.pagination,
-    onRowSelectionChange(selectedRowKeys, selectedRows) {
+    onRowSelectionChange(selectedRowKeys, selectedRowData) {
       ctx.field.data = ctx?.field?.data || {};
       ctx.field.data.selectedRowKeys = selectedRowKeys;
+      ctx.field.data.selectedRowData = selectedRowData;
     },
     async onRowDragEnd({ from, to }) {
       await ctx.resource.move({

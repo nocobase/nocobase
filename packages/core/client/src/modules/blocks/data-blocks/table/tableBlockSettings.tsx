@@ -25,7 +25,6 @@ import { setDefaultSortingRulesSchemaSettingsItem } from '../../../../schema-set
 import { setTheDataScopeSchemaSettingsItem } from '../../../../schema-settings/setTheDataScopeSchemaSettingsItem';
 import { useBlockTemplateContext } from '../../../../schema-templates/BlockTemplateProvider';
 import { setDataLoadingModeSettingsItem } from '../details-multi/setDataLoadingModeSettingsItem';
-import { SchemaSettingsPagingMode } from '../../../../schema-settings/SchemaSettingsPagingMode';
 
 export const tableBlockSettings = new SchemaSettings({
   name: 'blockSettings:table',
@@ -165,6 +164,7 @@ export const tableBlockSettings = new SchemaSettings({
           title: t('Records per page'),
           value: field.decoratorProps?.params?.pageSize || 20,
           options: [
+            { label: '5', value: 5 },
             { label: '10', value: 10 },
             { label: '20', value: 20 },
             { label: '50', value: 50 },
@@ -186,10 +186,6 @@ export const tableBlockSettings = new SchemaSettings({
           },
         };
       },
-    },
-    {
-      name: 'pagingMode',
-      Component: SchemaSettingsPagingMode,
     },
     {
       name: 'ConnectDataBlocks',
