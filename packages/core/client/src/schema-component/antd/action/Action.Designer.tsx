@@ -258,7 +258,13 @@ export function AfterSuccess() {
   return (
     <SchemaSettingsModalItem
       title={t('After successful submission')}
-      initialValues={fieldSchema?.['x-action-settings']?.['onSuccess']}
+      initialValues={
+        fieldSchema?.['x-action-settings']?.['onSuccess'] || {
+          manualClose: false,
+          redirecting: false,
+          successMessage: '{{t("Saved successfully")}}',
+        }
+      }
       schema={
         {
           type: 'object',
