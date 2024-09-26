@@ -207,7 +207,7 @@ export const SchemaSettingsDateFormat = function DateFormatConfig(props: { field
           field.value = undefined;
           field.initialValue = undefined;
           fieldSchema.default = undefined;
-          schema.default = null;
+          schema.default = undefined;
         }
         schema['x-component-props'] = field.componentProps || {};
         fieldSchema['x-component-props'] = {
