@@ -7,7 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ExtendCollectionsProvider, SchemaComponent, usePlugin } from '@nocobase/client';
+import {
+  ExtendCollectionsProvider,
+  SchemaComponent,
+  usePlugin,
+  SchemaComponentContext,
+  useSchemaComponentContext,
+} from '@nocobase/client';
 import React, { useMemo } from 'react';
 import PluginPublicFormsClient from '..';
 import { publicFormsCollection } from '../collections';
@@ -16,13 +22,16 @@ import { publicFormsSchema } from '../schemas';
 
 export const AdminPublicFormList = () => {
   const plugin = usePlugin(PluginPublicFormsClient);
+  const scCtx = useSchemaComponentContext();
   const formTypes = useMemo(() => plugin.getFormTypeOptions(), [plugin]);
   return (
     <ExtendCollectionsProvider collections={[publicFormsCollection]}>
-      <SchemaComponent
-        schema={publicFormsSchema}
-        scope={{ formTypes, useSubmitActionProps, useEditFormProps, useDeleteActionProps }}
-      />
+      <SchemaComponentContext.Provider value={{ ...scCtx, designable: false }}>
+        <SchemaComponent
+          schema={publicFormsSchema}
+          scope={{ formTypes, useSubmitActionProps, useEditFormProps, useDeleteActionProps }}
+        />
+      </SchemaComponentContext.Provider>
     </ExtendCollectionsProvider>
   );
 };
