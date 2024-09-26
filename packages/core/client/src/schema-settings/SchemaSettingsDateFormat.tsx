@@ -203,7 +203,7 @@ export const SchemaSettingsDateFormat = function DateFormatConfig(props: { field
         const schema: any = {
           ['x-uid']: fieldSchema['x-uid'],
         };
-        if ((field.componentProps.picker || 'date') !== data.picker && !isReadPretty) {
+        if ((field.componentProps.picker || 'date') !== data.picker && !isReadPretty && field.value) {
           field.value = undefined;
           field.initialValue = undefined;
           fieldSchema.default = undefined;
