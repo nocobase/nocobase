@@ -92,7 +92,7 @@ test('Collection event Add Data Trigger, determines that the trigger node single
   await page
     .getByLabel('block-item-WorkflowVariableTextArea-workflows-Condition expression')
     .getByLabel('textbox')
-    .pressSequentially(`=='${conditionalRightConstant}'`);
+    .pressSequentially(`=='${conditionalRightConstant}'`, { delay: 50 });
   await expect(conditionNode.conditionExpressionEditBox).toHaveText(
     `Trigger variables / Trigger data / ${triggerNodeFieldDisplayName}=='${conditionalRightConstant}'`,
   );
@@ -216,7 +216,7 @@ test('Collection event Add Data Trigger, determines that the trigger node single
   await page
     .getByLabel('block-item-WorkflowVariableTextArea-workflows-Condition expression')
     .getByLabel('textbox')
-    .pressSequentially(`=='${conditionalRightConstant}'`);
+    .pressSequentially(`=='${conditionalRightConstant}'`, { delay: 50 });
   await expect(conditionNode.conditionExpressionEditBox).toHaveText(
     `Trigger variables / Trigger data / ${triggerNodeFieldDisplayName}=='${conditionalRightConstant}'`,
   );
@@ -343,7 +343,7 @@ test('Collection event Add Data Trigger, determines that the trigger node single
   await page
     .getByLabel('block-item-WorkflowVariableTextArea-workflows-Condition expression')
     .getByLabel('textbox')
-    .pressSequentially(`!='${conditionalRightConstant}'`);
+    .pressSequentially(`!='${conditionalRightConstant}'`, { delay: 50 });
   await expect(conditionNode.conditionExpressionEditBox).toHaveText(
     `Trigger variables / Trigger data / ${triggerNodeFieldDisplayName}!='${conditionalRightConstant}'`,
   );
@@ -467,7 +467,7 @@ test('Collection event Add Data Trigger, determines that the trigger node single
   await page
     .getByLabel('block-item-WorkflowVariableTextArea-workflows-Condition expression')
     .getByLabel('textbox')
-    .pressSequentially(`!='${conditionalRightConstant}'`);
+    .pressSequentially(`!='${conditionalRightConstant}'`, { delay: 50 });
   await expect(conditionNode.conditionExpressionEditBox).toHaveText(
     `Trigger variables / Trigger data / ${triggerNodeFieldDisplayName}!='${conditionalRightConstant}'`,
   );
@@ -614,7 +614,7 @@ test('Collection event add data trigger, determine the trigger node integer vari
   await page
     .getByLabel('block-item-WorkflowVariableTextArea-workflows-Condition expression')
     .getByLabel('textbox')
-    .pressSequentially('==');
+    .pressSequentially('==', { delay: 50 });
   await page.getByLabel('variable-button').click();
   await page.getByRole('menuitemcheckbox', { name: 'Node result' }).click();
   await page.getByRole('menuitemcheckbox', { name: preQueryRecordNodeTitle }).click();
@@ -772,7 +772,7 @@ test('Collection event add data trigger, determine trigger node integer variable
   await page
     .getByLabel('block-item-WorkflowVariableTextArea-workflows-Condition expression')
     .getByLabel('textbox')
-    .pressSequentially('==');
+    .pressSequentially('==', { delay: 50 });
   await page.getByLabel('variable-button').click();
   await page.getByRole('menuitemcheckbox', { name: 'Node result' }).click();
   await page.getByRole('menuitemcheckbox', { name: preQueryRecordNodeTitle }).click();
@@ -920,7 +920,7 @@ test('Collection event add data trigger, determine trigger node integer variable
   await page
     .getByLabel('block-item-WorkflowVariableTextArea-workflows-Condition expression')
     .getByLabel('textbox')
-    .pressSequentially('!=');
+    .pressSequentially('!=', { delay: 50 });
   await page.getByLabel('variable-button').click();
   await page.getByRole('menuitemcheckbox', { name: 'Node result' }).click();
   await page.getByRole('menuitemcheckbox', { name: preQueryRecordNodeTitle }).click();
@@ -1072,7 +1072,7 @@ test('Collection event add data trigger, determine the trigger node integer vari
   await page
     .getByLabel('block-item-WorkflowVariableTextArea-workflows-Condition expression')
     .getByLabel('textbox')
-    .pressSequentially(`!='${conditionalRightConstant}'`);
+    .pressSequentially(`!='${conditionalRightConstant}'`, { delay: 50 });
   await expect(conditionNode.conditionExpressionEditBox).toHaveText(
     `Trigger variables / Trigger data / ${triggerNodeFieldDisplayName}!='${conditionalRightConstant}'`,
   );

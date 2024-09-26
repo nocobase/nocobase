@@ -85,7 +85,7 @@ test('Collection event add data trigger, Math engine, determine trigger node int
   await page
     .getByLabel('block-item-WorkflowVariableTextArea-workflows-Condition expression')
     .getByLabel('textbox')
-    .pressSequentially(`==${conditionalRightConstant}`);
+    .pressSequentially(`==${conditionalRightConstant}`, { delay: 50 });
   await expect(conditionNode.conditionExpressionEditBox).toHaveText(
     `Trigger variables / Trigger data / ${triggerNodeFieldDisplayName}==${conditionalRightConstant}`,
   );
@@ -176,7 +176,7 @@ test('Collection event Add Data Trigger, Math engine, determines that the trigge
   await page
     .getByLabel('block-item-WorkflowVariableTextArea-workflows-Condition expression')
     .getByLabel('textbox')
-    .pressSequentially(`==${conditionalRightConstant}`);
+    .pressSequentially(`==${conditionalRightConstant}`, { delay: 50 });
   await expect(conditionNode.conditionExpressionEditBox).toHaveText(
     `Trigger variables / Trigger data / ${triggerNodeFieldDisplayName}==${conditionalRightConstant}`,
   );
@@ -266,7 +266,7 @@ test('Collection event Add Data Trigger, Math engine, determines that the trigge
   await page
     .getByLabel('block-item-WorkflowVariableTextArea-workflows-Condition expression')
     .getByLabel('textbox')
-    .pressSequentially(`!=${conditionalRightConstant}`);
+    .pressSequentially(`!=${conditionalRightConstant}`, { delay: 50 });
   await expect(conditionNode.conditionExpressionEditBox).toHaveText(
     `Trigger variables / Trigger data / ${triggerNodeFieldDisplayName}!=${conditionalRightConstant}`,
   );
@@ -356,7 +356,7 @@ test('Collection event add data trigger, Math engine, determines that the trigge
   await page
     .getByLabel('block-item-WorkflowVariableTextArea-workflows-Condition expression')
     .getByLabel('textbox')
-    .pressSequentially(`!=${conditionalRightConstant}`);
+    .pressSequentially(`!=${conditionalRightConstant}`, { delay: 50 });
   await expect(conditionNode.conditionExpressionEditBox).toHaveText(
     `Trigger variables / Trigger data / ${triggerNodeFieldDisplayName}!=${conditionalRightConstant}`,
   );

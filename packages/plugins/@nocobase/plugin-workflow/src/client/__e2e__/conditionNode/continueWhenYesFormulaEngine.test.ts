@@ -87,7 +87,7 @@ test('Collection event Add Data Trigger, Formula engine, determines that the tri
   await page
     .getByLabel('block-item-WorkflowVariableTextArea-workflows-Condition expression')
     .getByLabel('textbox')
-    .pressSequentially(`=='${conditionalRightConstant}'`);
+    .pressSequentially(`=='${conditionalRightConstant}'`, { delay: 50 });
   await expect(conditionNode.conditionExpressionEditBox).toHaveText(
     `Trigger variables / Trigger data / ${triggerNodeFieldDisplayName}=='${conditionalRightConstant}'`,
   );
@@ -180,7 +180,7 @@ test('Collection event Add Data Trigger, Formula engine, determines that the tri
   await page
     .getByLabel('block-item-WorkflowVariableTextArea-workflows-Condition expression')
     .getByLabel('textbox')
-    .pressSequentially(`=='${conditionalRightConstant}'`);
+    .pressSequentially(`=='${conditionalRightConstant}'`, { delay: 50 });
   await expect(conditionNode.conditionExpressionEditBox).toHaveText(
     `Trigger variables / Trigger data / ${triggerNodeFieldDisplayName}=='${conditionalRightConstant}'`,
   );
@@ -268,7 +268,7 @@ test('Collection event Add Data Trigger, Formula engine, determines that the tri
   await page
     .getByLabel('block-item-WorkflowVariableTextArea-workflows-Condition expression')
     .getByLabel('textbox')
-    .pressSequentially(`!='${conditionalRightConstant}'`);
+    .pressSequentially(`!='${conditionalRightConstant}'`, { delay: 50 });
   await expect(conditionNode.conditionExpressionEditBox).toHaveText(
     `Trigger variables / Trigger data / ${triggerNodeFieldDisplayName}!='${conditionalRightConstant}'`,
   );
@@ -357,7 +357,7 @@ test('Collection event Add Data Trigger, Formula engine, determines that the tri
   await page
     .getByLabel('block-item-WorkflowVariableTextArea-workflows-Condition expression')
     .getByLabel('textbox')
-    .pressSequentially(`!='${conditionalRightConstant}'`);
+    .pressSequentially(`!='${conditionalRightConstant}'`, { delay: 50 });
   await expect(conditionNode.conditionExpressionEditBox).toHaveText(
     `Trigger variables / Trigger data / ${triggerNodeFieldDisplayName}!='${conditionalRightConstant}'`,
   );
@@ -472,7 +472,7 @@ test('Collection event add data trigger, Formula engine, determine the trigger n
   await page
     .getByLabel('block-item-WorkflowVariableTextArea-workflows-Condition expression')
     .getByLabel('textbox')
-    .pressSequentially(`==`);
+    .pressSequentially(`==`, { delay: 50 });
   await page.getByLabel('variable-button').click();
   await page.getByRole('menuitemcheckbox', { name: 'Node result' }).click();
   await page.getByRole('menuitemcheckbox', { name: preQueryRecordNodeTitle }).click();
@@ -590,7 +590,7 @@ test('Collection event add data trigger, Formula engine, determine trigger node 
   await page
     .getByLabel('block-item-WorkflowVariableTextArea-workflows-Condition expression')
     .getByLabel('textbox')
-    .pressSequentially(`==`);
+    .pressSequentially(`==`, { delay: 50 });
   await page.getByLabel('variable-button').click();
   await page.getByRole('menuitemcheckbox', { name: 'Node result' }).click();
   await page.getByRole('menuitemcheckbox', { name: preQueryRecordNodeTitle }).click();
@@ -706,7 +706,7 @@ test('Collection event add data trigger, Formula engine, determine trigger node 
   await page
     .getByLabel('block-item-WorkflowVariableTextArea-workflows-Condition expression')
     .getByLabel('textbox')
-    .pressSequentially(`!=`);
+    .pressSequentially(`!=`, { delay: 50 });
   await page.getByLabel('variable-button').click();
   await page.getByRole('menuitemcheckbox', { name: 'Node result' }).click();
   await page.getByRole('menuitemcheckbox', { name: preQueryRecordNodeTitle }).click();
@@ -824,7 +824,7 @@ test('Collection event add data trigger, Formula engine, determine the trigger n
   await page
     .getByLabel('block-item-WorkflowVariableTextArea-workflows-Condition expression')
     .getByLabel('textbox')
-    .pressSequentially(`!=`);
+    .pressSequentially(`!=`, { delay: 50 });
   await page.getByLabel('variable-button').click();
   await page.getByRole('menuitemcheckbox', { name: 'Node result' }).click();
   await page.getByRole('menuitemcheckbox', { name: preQueryRecordNodeTitle }).click();
