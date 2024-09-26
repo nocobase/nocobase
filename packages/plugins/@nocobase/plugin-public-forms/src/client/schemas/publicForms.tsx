@@ -64,7 +64,6 @@ export const publicFormsSchema: ISchema = {
             icon: 'ReloadOutlined',
           },
         },
-        createActionSchema,
         destroy: {
           title: '{{ t("Delete") }}',
           'x-action': 'destroy',
@@ -78,6 +77,7 @@ export const publicFormsSchema: ISchema = {
             },
           },
         },
+        createActionSchema,
       },
     },
     table: {
@@ -95,6 +95,9 @@ export const publicFormsSchema: ISchema = {
           type: 'void',
           title: '{{ t("Title") }}',
           'x-component': 'TableV2.Column',
+          'x-component-props': {
+            width: 110,
+          },
           properties: {
             title: {
               type: 'string',
@@ -107,20 +110,11 @@ export const publicFormsSchema: ISchema = {
           type: 'void',
           title: '{{ t("Collection") }}',
           'x-component': 'TableV2.Column',
+          'x-component-props': {
+            width: 110,
+          },
           properties: {
             collection: {
-              type: 'string',
-              'x-component': 'CollectionField',
-              'x-pattern': 'readPretty',
-            },
-          },
-        },
-        description: {
-          type: 'void',
-          title: '{{ t("Description") }}',
-          'x-component': 'TableV2.Column',
-          properties: {
-            description: {
               type: 'string',
               'x-component': 'CollectionField',
               'x-pattern': 'readPretty',
@@ -131,6 +125,9 @@ export const publicFormsSchema: ISchema = {
           type: 'void',
           title: `{{t("Type", { ns: "${NAMESPACE}" })}}`,
           'x-component': 'TableV2.Column',
+          'x-component-props': {
+            width: 100,
+          },
           properties: {
             type: {
               type: 'string',
@@ -144,8 +141,23 @@ export const publicFormsSchema: ISchema = {
           type: 'void',
           title: '{{ t("Enabled") }}',
           'x-component': 'TableV2.Column',
+          'x-component-props': {
+            width: 80,
+          },
           properties: {
             enabled: {
+              type: 'string',
+              'x-component': 'CollectionField',
+              'x-pattern': 'readPretty',
+            },
+          },
+        },
+        description: {
+          type: 'void',
+          title: '{{ t("Description") }}',
+          'x-component': 'TableV2.Column',
+          properties: {
+            description: {
               type: 'string',
               'x-component': 'CollectionField',
               'x-pattern': 'readPretty',
@@ -168,6 +180,9 @@ export const publicFormsSchema: ISchema = {
           type: 'void',
           'x-component': 'TableV2.Column',
           title: '{{t("Created by")}}',
+          'x-component-props': {
+            width: 110,
+          },
           properties: {
             createdBy: {
               type: 'object',
@@ -192,6 +207,9 @@ export const publicFormsSchema: ISchema = {
           type: 'void',
           'x-component': 'TableV2.Column',
           title: '{{t("Last updated by")}}',
+          'x-component-props': {
+            width: 110,
+          },
           properties: {
             updatedBy: {
               type: 'date',
