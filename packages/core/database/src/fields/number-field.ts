@@ -66,6 +66,19 @@ export class DecimalField extends NumberField {
   get dataType() {
     return DataTypes.DECIMAL(this.options.precision, this.options.scale);
   }
+
+  static optionsFromRawType(rawType: string) {
+    // infer precision and scale from rawType
+    // eg: DECIMAL(10, 2)
+    const matches = rawType.match(/DECIMAL\((\d+),\s*(\d+)\)/);
+
+    if (matches) {
+      return {
+        precision: parseInt(matches[1]),
+        scale: parseInt(matches[2]),
+      };
+    }
+  }
 }
 
 export interface DecimalFieldOptions extends BaseColumnFieldOptions {
