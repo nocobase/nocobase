@@ -46,7 +46,7 @@ const initialSchema = (values, formSchema) => {
         'x-component': 'Markdown.Void',
         'x-decorator': 'CardItem',
         'x-component-props': {
-          content: 'This is a demo text, **supports Markdown syntax**.\n  <h2>Submitted Successfully </h2>',
+          content: '# Submitted successfully\n\nThis is a demo text, **supports Markdown syntax**.',
         },
         'x-decorator-props': {
           name: 'markdown',
