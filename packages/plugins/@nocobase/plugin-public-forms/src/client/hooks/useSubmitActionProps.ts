@@ -12,16 +12,15 @@ import { uid } from '@formily/shared';
 import {
   useActionContext,
   useAPIClient,
+  useBlockRequestContext,
   useCollection,
-  useDataBlockRequest,
   useDataBlockResource,
   usePlugin,
-  useBlockRequestContext,
 } from '@nocobase/client';
 import { App as AntdApp } from 'antd';
 import PluginPublicFormsClient from '..';
 
-const initialSchema = (values, formSchema) => {
+const initialSchema = (values, formSchema, t) => {
   return {
     type: 'void',
     name: uid(),
@@ -46,7 +45,7 @@ const initialSchema = (values, formSchema) => {
         'x-component': 'Markdown.Void',
         'x-decorator': 'CardItem',
         'x-component-props': {
-          content: 'This is a demo text, **supports Markdown syntax**.\n  <h2>Submitted Successfully </h2>',
+          content: t('# Submitted successfully!\nThis is a demo text, **supports Markdown syntax**.'),
         },
         'x-decorator-props': {
           name: 'markdown',
@@ -89,6 +88,7 @@ export const useSubmitActionProps = () => {
             collection,
             dataSource,
           }),
+          plugin.t.bind(plugin),
         );
         schema['x-uid'] = key;
         await resource.create({
