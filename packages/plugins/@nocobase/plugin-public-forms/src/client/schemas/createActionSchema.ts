@@ -15,6 +15,7 @@ export const createActionSchema = {
   'x-align': 'right',
   'x-component-props': {
     type: 'primary',
+    icon: 'PlusOutlined',
   },
   properties: {
     drawer: {
