@@ -160,10 +160,6 @@ export class PluginPublicFormsServer extends Plugin {
           skip: ctx.PublicForm['targetCollections'].includes(resourceName),
         };
       }
-    } else {
-      ctx.permission = {
-        skip: true,
-      };
     }
 
     await next();
