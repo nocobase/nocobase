@@ -6,6 +6,7 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
+import { NAMESPACE } from '../locale';
 
 export const publicFormsCollection = {
   name: 'publicForms',
@@ -38,7 +39,7 @@ export const publicFormsCollection = {
       interface: 'radioGroup',
       uiSchema: {
         type: 'string',
-        title: "{{t('Type')}}",
+        title: `{{t('Type',{ns:${NAMESPACE}})}}`,
         'x-component': 'Radio.Group',
       },
     },
@@ -59,7 +60,7 @@ export const publicFormsCollection = {
       interface: 'checkbox',
       uiSchema: {
         type: 'string',
-        title: "{{t('Enable password')}}",
+        title: `{{t("Enable password",{ns:"${NAMESPACE}"})}}`,
         'x-component': 'Checkbox',
         default: true,
       },
@@ -83,7 +84,7 @@ export const publicFormsCollection = {
       interface: 'checkbox',
       uiSchema: {
         type: 'string',
-        title: "{{t('Enable form')}}",
+        title: `{{t("Enable form",{ns:"${NAMESPACE}"})}}`,
         'x-component': 'Checkbox',
         default: true,
       },

@@ -9,5 +9,6 @@
   "QR code": "二维码",
   "The form is not enabled and cannot be accessed": "该表单未启用,无法访问",
   "Link copied successfully": "复制地址成功",
-  "After successful submission": "提交成功后"
+  "After successful submission": "提交成功后",
+  "Enable password": "启用密码"
 }
