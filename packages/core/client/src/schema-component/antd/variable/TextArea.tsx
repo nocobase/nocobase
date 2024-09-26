@@ -10,10 +10,10 @@
 import { css, cx } from '@emotion/css';
 import { useForm } from '@formily/react';
 import { Space } from 'antd';
+import useInputStyle from 'antd/es/input/style';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { renderToString } from 'react-dom/server';
 import sanitizeHTML from 'sanitize-html';
-import useInputStyle from 'antd/es/input/style';
 
 import { error } from '@nocobase/utils/client';
 
@@ -111,13 +111,13 @@ function renderHTML(exp: string, keyLabelMap) {
   });
 }
 
-function createOptionsValueLabelMap(options: any[]) {
+function createOptionsValueLabelMap(options: any[], fieldNames = { value: 'value', label: 'label' }) {
   const map = new Map<string, string[]>();
   for (const option of options) {
-    map.set(option.value, [option.label]);
+    map.set(option[fieldNames.value], [option[fieldNames.label]]);
     if (option.children) {
-      for (const [value, labels] of createOptionsValueLabelMap(option.children)) {
-        map.set(`${option.value}.${value}`, [option.label, ...labels]);
+      for (const [value, labels] of createOptionsValueLabelMap(option.children, fieldNames)) {
+        map.set(`${option[fieldNames.value]}.${value}`, [option[fieldNames.label], ...labels]);
       }
     }
   }
@@ -149,20 +149,20 @@ function getSingleEndRange(nodes: ChildNode[], index: number, offset: number): [
   if (index === -1) {
     let realIndex = offset;
     let collapseFlag = false;
-    if (realIndex && nodes[realIndex - 1].nodeName === '#text' && nodes[realIndex]?.nodeName === '#text') {
+    if (realIndex && nodes[realIndex - 1]?.nodeName === '#text' && nodes[realIndex]?.nodeName === '#text') {
       // set a flag for collapse
       collapseFlag = true;
     }
     let textOffset = 0;
     for (let i = offset - 1; i >= 0; i--) {
       if (collapseFlag) {
-        if (nodes[i].nodeName === '#text') {
+        if (nodes[i]?.nodeName === '#text') {
           textOffset += nodes[i].textContent!.length;
         } else {
           collapseFlag = false;
         }
       }
-      if (nodes[i].nodeName === '#text' && nodes[i + 1]?.nodeName === '#text') {
+      if (nodes[i]?.nodeName === '#text' && nodes[i + 1]?.nodeName === '#text') {
         realIndex -= 1;
       }
     }
@@ -173,8 +173,8 @@ function getSingleEndRange(nodes: ChildNode[], index: number, offset: number): [
     let textOffset = 0;
     for (let i = 0; i < index + 1; i++) {
       // console.log(i, realIndex, textOffset);
-      if (nodes[i].nodeName === '#text') {
-        if (i !== index && nodes[i + 1] && nodes[i + 1].nodeName !== '#text') {
+      if (nodes[i]?.nodeName === '#text') {
+        if (i !== index && nodes[i + 1] && nodes[i + 1]?.nodeName !== '#text') {
           realIndex += 1;
         }
         textOffset += i === index ? offset : nodes[i].textContent!.length;
@@ -208,13 +208,18 @@ function getCurrentRange(element: HTMLElement): RangeIndexes {
   return result;
 }
 
+const defaultFieldNames = { value: 'value', label: 'label' };
+
 export function TextArea(props) {
   const { wrapSSR, hashId, componentCls } = useStyles();
-  const { value = '', scope, onChange, multiline = true, changeOnSelect, style } = props;
+  const { value = '', scope, onChange, multiline = true, changeOnSelect, style, fieldNames } = props;
   const inputRef = useRef<HTMLDivElement>(null);
   const [options, setOptions] = useState([]);
   const form = useForm();
-  const keyLabelMap = useMemo(() => createOptionsValueLabelMap(options), [options]);
+  const keyLabelMap = useMemo(
+    () => createOptionsValueLabelMap(options, fieldNames || defaultFieldNames),
+    [fieldNames, options],
+  );
   const [ime, setIME] = useState<boolean>(false);
   const [changed, setChanged] = useState(false);
   const [html, setHtml] = useState(() => renderHTML(value ?? '', keyLabelMap));
@@ -443,7 +448,13 @@ export function TextArea(props) {
         dangerouslySetInnerHTML={{ __html: html }}
       />
       {!disabled ? (
-        <VariableSelect options={options} setOptions={setOptions} onInsert={onInsert} changeOnSelect={changeOnSelect} />
+        <VariableSelect
+          options={options}
+          setOptions={setOptions}
+          onInsert={onInsert}
+          changeOnSelect={changeOnSelect}
+          fieldNames={fieldNames || defaultFieldNames}
+        />
       ) : null}
     </Space.Compact>,
   );

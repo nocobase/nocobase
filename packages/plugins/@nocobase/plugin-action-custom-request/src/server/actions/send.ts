@@ -55,6 +55,14 @@ const getCurrentUserAppends = (str: string, user) => {
     .filter(Boolean);
 };
 
+export const getParsedValue = (value, variables) => {
+  const template = parse(value);
+  template.parameters.forEach(({ key }) => {
+    appendArrayColumn(variables, key);
+  });
+  return template(variables);
+};
+
 export async function send(this: CustomRequestPlugin, ctx: Context, next: Next) {
   const resourceName = ctx.action.resourceName;
   const { filterByTk, values = {} } = ctx.action.params;
@@ -146,25 +154,17 @@ export async function send(this: CustomRequestPlugin, ctx: Context, next: Next) 
     $nToken: ctx.getBearerToken(),
   };
 
-  const getParsedValue = (value) => {
-    const template = parse(value);
-    template.parameters.forEach(({ key }) => {
-      appendArrayColumn(variables, key);
-    });
-    return template(variables);
-  };
-
   const axiosRequestConfig = {
     baseURL: ctx.origin,
     ...options,
-    url: getParsedValue(url),
+    url: getParsedValue(url, variables),
     headers: {
       Authorization: 'Bearer ' + ctx.getBearerToken(),
       ...getHeaders(ctx.headers),
-      ...omitNullAndUndefined(getParsedValue(arrayToObject(headers))),
+      ...omitNullAndUndefined(getParsedValue(arrayToObject(headers), variables)),
     },
-    params: getParsedValue(arrayToObject(params)),
-    data: getParsedValue(data),
+    params: getParsedValue(arrayToObject(params), variables),
+    data: getParsedValue(data, variables),
   };
 
   console.log(axiosRequestConfig);
