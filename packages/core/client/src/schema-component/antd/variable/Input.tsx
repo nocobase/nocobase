@@ -59,7 +59,9 @@ const ConstantTypes = {
     component: function StringComponent({ onChange, value, ...otherProps }) {
       return <AntInput value={value} onChange={(ev) => onChange(ev.target.value)} {...otherProps} />;
     },
-    default: '',
+    default() {
+      return '';
+    },
   },
   number: {
     label: '{{t("Number")}}',
@@ -67,7 +69,9 @@ const ConstantTypes = {
     component: function NumberComponent({ onChange, value, ...otherProps }) {
       return <InputNumber value={value} onChange={onChange} {...otherProps} />;
     },
-    default: 0,
+    default() {
+      return 0;
+    },
   },
   boolean: {
     label: `{{t("Boolean")}}`,
@@ -104,17 +108,19 @@ const ConstantTypes = {
         />
       );
     },
-    default: (() => {
+    default() {
       const now = new Date();
       return new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
-    })(),
+    },
   },
   // NOTE: keep null option here for compatibility
   null: {
     label: '{{t("Null")}}',
     value: 'null',
     component: NullComponent,
-    default: null,
+    default() {
+      return null;
+    },
   },
 };
 
@@ -160,6 +166,7 @@ export type VariableInputProps = {
   children?: any;
   button?: React.ReactElement;
   useTypedConstant?: UseTypeConstantType;
+  nullable?: boolean;
   changeOnSelect?: CascaderProps['changeOnSelect'];
   fieldNames?: CascaderProps['fieldNames'];
   disabled?: boolean;
@@ -176,6 +183,7 @@ export function Input(props: VariableInputProps) {
     children,
     button,
     useTypedConstant,
+    nullable = true,
     style,
     className,
     changeOnSelect,
@@ -202,6 +210,7 @@ export function Input(props: VariableInputProps) {
   const isConstant = typeof parsed === 'string';
   const type = isConstant ? parsed : '';
   const variable = isConstant ? null : parsed;
+  // const [prevType, setPrevType] = React.useState<string>(type);
   const names = Object.assign(
     {
       label: 'label',
@@ -220,22 +229,31 @@ export function Input(props: VariableInputProps) {
         [names.label]: t('Constant'),
       };
     }
+
     if (useTypedConstant) {
       return getTypedConstantOption(type, useTypedConstant, names);
     }
     return null;
   }, [type, useTypedConstant]);
 
-  const ConstantComponent = constantOption && !children ? constantOption.component : NullComponent;
+  const ConstantComponent = constantOption?.component ?? NullComponent;
   const constantComponentProps = Array.isArray(useTypedConstant)
     ? (useTypedConstant.find((item) => Array.isArray(item) && item[0] === type)?.[1] as Record<string, any>) ?? {}
     : {};
   let cValue;
   if (value == null) {
-    if (children && isFieldValue) {
-      cValue = ['$'];
+    if (nullable) {
+      if (children && isFieldValue) {
+        cValue = ['$'];
+      } else {
+        cValue = [''];
+      }
     } else {
-      cValue = [''];
+      if (children) {
+        cValue = ['$'];
+      } else {
+        cValue = [' ', type];
+      }
     }
   } else {
     cValue = children ? ['$'] : [' ', type];
@@ -248,12 +266,16 @@ export function Input(props: VariableInputProps) {
   useEffect(() => {
     const { component, ...cOption } = constantOption ?? {};
     const options = [
-      {
-        value: '',
-        label: t('Null'),
-        [names.value]: '',
-        [names.label]: t('Null'),
-      },
+      ...(nullable
+        ? [
+            {
+              value: '',
+              label: t('Null'),
+              [names.value]: '',
+              [names.label]: t('Null'),
+            },
+          ]
+        : []),
       ...(constantOption ? [compile(cOption)] : []),
       ...(scope ? [...scope] : []),
     ].filter((item) => {
@@ -261,7 +283,7 @@ export function Input(props: VariableInputProps) {
     });
 
     setOptions(options);
-  }, [scope, variable, constantOption]);
+  }, [scope, variable, constantOption, nullable]);
 
   const loadData = async (selectedOptions: DefaultOptionType[]) => {
     const option = selectedOptions[selectedOptions.length - 1];
@@ -298,7 +320,8 @@ export function Input(props: VariableInputProps) {
       if (next[0] === ' ') {
         if (next[1]) {
           if (next[1] !== type) {
-            onChange(ConstantTypes[next[1]]?.default ?? null, optionPath);
+            // setPrevType(next[1]);
+            onChange(ConstantTypes[next[1]]?.default?.() ?? null, optionPath);
           }
         } else {
           if (variable) {
@@ -311,6 +334,15 @@ export function Input(props: VariableInputProps) {
     },
     [type, variable, onChange],
   );
+
+  const onClearVariable = useCallback(() => {
+    setIsFieldValue(Boolean(children));
+    if (constantOption?.children?.length) {
+      const v = constantOption.children[0].default();
+      return onChange(v);
+    }
+    onChange(null);
+  }, [constantOption]);
 
   useEffect(() => {
     const run = async () => {
@@ -409,10 +441,7 @@ export function Input(props: VariableInputProps) {
               className={cx('clear-button')}
               // eslint-disable-next-line react/no-unknown-property
               unselectable="on"
-              onClick={() => {
-                setIsFieldValue(Boolean(children));
-                onChange(null);
-              }}
+              onClick={onClearVariable}
             >
               <CloseCircleFilled />
             </span>
