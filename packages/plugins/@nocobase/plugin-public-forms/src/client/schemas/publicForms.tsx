@@ -96,7 +96,7 @@ export const publicFormsSchema: ISchema = {
           title: '{{ t("Title") }}',
           'x-component': 'TableV2.Column',
           'x-component-props': {
-            width: 110,
+            width: 170,
           },
           properties: {
             title: {
@@ -111,7 +111,7 @@ export const publicFormsSchema: ISchema = {
           title: '{{ t("Collection") }}',
           'x-component': 'TableV2.Column',
           'x-component-props': {
-            width: 110,
+            width: 160,
           },
           properties: {
             collection: {
@@ -164,60 +164,60 @@ export const publicFormsSchema: ISchema = {
             },
           },
         },
-        column4: {
-          type: 'void',
-          'x-component': 'TableV2.Column',
-          title: "{{t('Created at')}}",
-          properties: {
-            createdAt: {
-              type: 'date',
-              'x-component': 'CollectionField',
-              'x-pattern': 'readPretty',
-            },
-          },
-        },
-        column5: {
-          type: 'void',
-          'x-component': 'TableV2.Column',
-          title: '{{t("Created by")}}',
-          'x-component-props': {
-            width: 110,
-          },
-          properties: {
-            createdBy: {
-              type: 'object',
-              'x-component': 'CollectionField',
-              'x-pattern': 'readPretty',
-            },
-          },
-        },
-        column6: {
-          type: 'void',
-          'x-component': 'TableV2.Column',
-          title: "{{t('Updated at')}}",
-          properties: {
-            updatedAt: {
-              type: 'string',
-              'x-component': 'CollectionField',
-              'x-pattern': 'readPretty',
-            },
-          },
-        },
-        column7: {
-          type: 'void',
-          'x-component': 'TableV2.Column',
-          title: '{{t("Last updated by")}}',
-          'x-component-props': {
-            width: 110,
-          },
-          properties: {
-            updatedBy: {
-              type: 'date',
-              'x-component': 'CollectionField',
-              'x-pattern': 'readPretty',
-            },
-          },
-        },
+        // column4: {
+        //   type: 'void',
+        //   'x-component': 'TableV2.Column',
+        //   title: "{{t('Created at')}}",
+        //   properties: {
+        //     createdAt: {
+        //       type: 'date',
+        //       'x-component': 'CollectionField',
+        //       'x-pattern': 'readPretty',
+        //     },
+        //   },
+        // },
+        // column5: {
+        //   type: 'void',
+        //   'x-component': 'TableV2.Column',
+        //   title: '{{t("Created by")}}',
+        //   'x-component-props': {
+        //     width: 110,
+        //   },
+        //   properties: {
+        //     createdBy: {
+        //       type: 'object',
+        //       'x-component': 'CollectionField',
+        //       'x-pattern': 'readPretty',
+        //     },
+        //   },
+        // },
+        // column6: {
+        //   type: 'void',
+        //   'x-component': 'TableV2.Column',
+        //   title: "{{t('Updated at')}}",
+        //   properties: {
+        //     updatedAt: {
+        //       type: 'string',
+        //       'x-component': 'CollectionField',
+        //       'x-pattern': 'readPretty',
+        //     },
+        //   },
+        // },
+        // column7: {
+        //   type: 'void',
+        //   'x-component': 'TableV2.Column',
+        //   title: '{{t("Last updated by")}}',
+        //   'x-component-props': {
+        //     width: 110,
+        //   },
+        //   properties: {
+        //     updatedBy: {
+        //       type: 'date',
+        //       'x-component': 'CollectionField',
+        //       'x-pattern': 'readPretty',
+        //     },
+        //   },
+        // },
         actions: {
           type: 'void',
           title: '{{ t("Actions") }}',
