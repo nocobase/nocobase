@@ -8,6 +8,7 @@
  */
 
 import { CompatibleSchemaInitializer } from '../../../../application/schema-initializer/CompatibleSchemaInitializer';
+import { useDataBlockProps } from '../../../../data-source';
 
 const commonOptions = {
   title: '{{t("Configure actions")}}',
@@ -25,6 +26,10 @@ const commonOptions = {
       name: 'customRequest',
       title: '{{t("Custom request")}}',
       Component: 'CustomRequestInitializer',
+      useVisible() {
+        const { type } = useDataBlockProps();
+        return type !== 'publicForm';
+      },
     },
   ],
 };

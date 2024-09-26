@@ -7,6 +7,4 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from './BlockItem';
-export * from './TestDesigner';
-export * from './BlockItemCard';
+export { default } from './plugin';

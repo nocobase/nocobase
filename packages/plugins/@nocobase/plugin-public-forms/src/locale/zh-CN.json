@@ -1,0 +1,14 @@
+{
+  "Enable form": "启用表单",
+  "Public forms": "公开表单",
+  "Add New": "添加",
+  "Type": "类型",
+  "Open form": "查看公开表单",
+  "Set password": "设置密码",
+  "Copy link": "复制链接",
+  "QR code": "二维码",
+  "The form is not enabled and cannot be accessed": "该表单未启用,无法访问",
+  "Link copied successfully": "复制地址成功",
+  "After successful submission": "提交成功后",
+  "Enable password": "启用密码"
+}
