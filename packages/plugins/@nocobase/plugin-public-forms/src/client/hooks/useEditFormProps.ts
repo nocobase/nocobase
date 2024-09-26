@@ -18,7 +18,7 @@ export const useEditFormProps = () => {
       createForm({
         initialValues: recordData,
       }),
-    [],
+    [recordData],
   );
 
   return {
