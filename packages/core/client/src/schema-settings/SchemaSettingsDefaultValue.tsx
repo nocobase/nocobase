@@ -38,6 +38,11 @@ import { VariableInput, getShouldChange } from './VariableInput/VariableInput';
 import { Option } from './VariableInput/type';
 import { formatVariableScop } from './VariableInput/utils/formatVariableScop';
 
+const getActionContext = (context: { fieldSchema?: Schema }) => {
+  const actionCtx = (context.fieldSchema?.['x-action-context'] || {}) as { collection?: string; dataSource?: string };
+  return actionCtx;
+};
+
 export const SchemaSettingsDefaultValue = function DefaultValueConfigure(props: { fieldSchema?: Schema }) {
   const currentSchema = useFieldSchema();
   const fieldSchema = props?.fieldSchema ?? currentSchema;
@@ -45,6 +50,8 @@ export const SchemaSettingsDefaultValue = function DefaultValueConfigure(props: 
   const { dn } = useDesignable();
   const { t } = useTranslation();
   const actionCtx = useActionContext();
+  const actionCollection = getActionContext(actionCtx).collection;
+
   let targetField;
 
   const { getField } = useCollection_deprecated();
@@ -74,9 +81,8 @@ export const SchemaSettingsDefaultValue = function DefaultValueConfigure(props: 
   const parentCollectionField = parentFieldSchema && getCollectionJoinField(parentFieldSchema?.['x-collection-field']);
   const tableCtx = useTableBlockContext();
   const isAllowContextVariable =
-    actionCtx?.fieldSchema?.['x-action'] === 'customize:create' &&
-    (collectionField?.interface === 'm2m' ||
-      (parentCollectionField?.type === 'hasMany' && collectionField?.interface === 'm2o'));
+    collectionField?.interface === 'm2m' ||
+    (parentCollectionField?.type === 'hasMany' && collectionField?.interface === 'm2o');
 
   const returnScope = useCallback(
     (scope: Option[]) => {
@@ -119,7 +125,7 @@ export const SchemaSettingsDefaultValue = function DefaultValueConfigure(props: 
           'x-component-props': {
             ...(fieldSchema?.['x-component-props'] || {}),
             collectionField,
-            contextCollectionName: isAllowContextVariable && tableCtx.collection,
+            contextCollectionName: isAllowContextVariable ? actionCollection : '',
             schema: collectionField?.uiSchema,
             targetFieldSchema: fieldSchema,
             className: defaultInputStyle,
