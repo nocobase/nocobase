@@ -14,10 +14,12 @@ import React, { useMemo } from 'react';
 import { ErrorBoundary, FallbackProps } from 'react-error-boundary';
 import { ErrorFallback } from '../error-fallback';
 import { useCurrentPopupContext } from '../page/PagePopups';
+import { TabsContextProvider, useTabsContext } from '../tabs/context';
 import { useStyles } from './Action.Drawer.style';
 import { useActionContext } from './hooks';
 import { useSetAriaLabelForDrawer } from './hooks/useSetAriaLabelForDrawer';
 import { ActionDrawerProps, ComposedActionDrawer, OpenSize } from './types';
+import { antdDrawerZIndex } from './utils';
 
 const DrawerErrorFallback: React.FC<FallbackProps> = (props) => {
   const { visible, setVisible } = useActionContext();
@@ -40,6 +42,7 @@ export const InternalActionDrawer: React.FC<ActionDrawerProps> = observer(
     const schema = useFieldSchema();
     const field = useField();
     const { componentCls, hashId } = useStyles();
+    const tabContext = useTabsContext();
     const footerSchema = schema.reduceProperties((buf, s) => {
       if (s['x-component'] === footerNodeName) {
         return s;
@@ -60,40 +63,43 @@ export const InternalActionDrawer: React.FC<ActionDrawerProps> = observer(
     }
 
     return (
-      <Drawer
-        width={openSizeWidthMap.get(openSize)}
-        title={field.title}
-        {...others}
-        {...drawerProps}
-        rootStyle={rootStyle}
-        destroyOnClose
-        open={visible}
-        onClose={() => setVisible(false, true)}
-        rootClassName={classNames(componentCls, hashId, drawerProps?.className, others.className, 'reset')}
-        footer={
-          footerSchema && (
-            <div className={'footer'}>
-              <RecursionField
-                basePath={field.address}
-                schema={schema}
-                onlyRenderProperties
-                filterProperties={(s) => {
-                  return s['x-component'] === footerNodeName;
-                }}
-              />
-            </div>
-          )
-        }
-      >
-        <RecursionField
-          basePath={field.address}
-          schema={schema}
-          onlyRenderProperties
-          filterProperties={(s) => {
-            return s['x-component'] !== footerNodeName;
-          }}
-        />
-      </Drawer>
+      <TabsContextProvider {...tabContext} tabBarExtraContent={null}>
+        <Drawer
+          zIndex={antdDrawerZIndex + props.level}
+          width={openSizeWidthMap.get(openSize)}
+          title={field.title}
+          {...others}
+          {...drawerProps}
+          rootStyle={rootStyle}
+          destroyOnClose
+          open={visible}
+          onClose={() => setVisible(false, true)}
+          rootClassName={classNames(componentCls, hashId, drawerProps?.className, others.className, 'reset')}
+          footer={
+            footerSchema && (
+              <div className={'footer'}>
+                <RecursionField
+                  basePath={field.address}
+                  schema={schema}
+                  onlyRenderProperties
+                  filterProperties={(s) => {
+                    return s['x-component'] === footerNodeName;
+                  }}
+                />
+              </div>
+            )
+          }
+        >
+          <RecursionField
+            basePath={field.address}
+            schema={schema}
+            onlyRenderProperties
+            filterProperties={(s) => {
+              return s['x-component'] !== footerNodeName;
+            }}
+          />
+        </Drawer>
+      </TabsContextProvider>
     );
   },
   { displayName: 'ActionDrawer' },
