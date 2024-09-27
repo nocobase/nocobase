@@ -239,30 +239,36 @@ function CalculationGroup({ value, onChange }) {
   const { t } = useTranslation();
   const { type = 'and', calculations = [] } = value;
 
-  function onAddSingle() {
+  const onAddSingle = useCallback(() => {
     onChange({
       ...value,
       calculations: [...calculations, { not: false, calculator: 'equal' }],
     });
-  }
+  }, [value, calculations, onChange]);
 
-  function onAddGroup() {
+  const onAddGroup = useCallback(() => {
     onChange({
       ...value,
       calculations: [...calculations, { not: false, group: { type: 'and', calculations: [] } }],
     });
-  }
+  }, [value, calculations, onChange]);
 
-  function onRemove(i: number) {
-    calculations.splice(i, 1);
-    onChange({ ...value, calculations: [...calculations] });
-  }
+  const onRemove = useCallback(
+    (i: number) => {
+      calculations.splice(i, 1);
+      onChange({ ...value, calculations: [...calculations] });
+    },
+    [value, calculations, onChange],
+  );
 
-  function onItemChange(i: number, v) {
-    calculations.splice(i, 1, v);
+  const onItemChange = useCallback(
+    (i: number, v) => {
+      calculations.splice(i, 1, v);
 
-    onChange({ ...value, calculations: [...calculations] });
-  }
+      onChange({ ...value, calculations: [...calculations] });
+    },
+    [value, calculations, onChange],
+  );
 
   return (
     <div

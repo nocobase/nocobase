@@ -144,10 +144,6 @@ const schemaSettingsItems: SchemaSettingsItemType[] = [
   {
     name: 'afterSuccess',
     Component: AfterSuccess,
-    useVisible() {
-      const fieldSchema = useFieldSchema();
-      return isValid(fieldSchema?.['x-action-settings']?.onSuccess);
-    },
   },
   {
     name: 'refreshDataBlockRequest',

@@ -13,6 +13,6 @@ export * from './FixedBlockDesignerItem';
 export * from './Page';
 export * from './Page.Settings';
 export { PagePopups } from './PagePopups';
-export { storePopupContext, getStoredPopupContext, withSearchParams, getPopupPathFromParams } from './pagePopupUtils';
+export { getPopupPathFromParams, getStoredPopupContext, storePopupContext, withSearchParams } from './pagePopupUtils';
 export * from './PageTab.Settings';
-export { PopupSettingsProvider } from './PopupSettingsProvider';
+export { PopupSettingsProvider, usePopupSettings } from './PopupSettingsProvider';

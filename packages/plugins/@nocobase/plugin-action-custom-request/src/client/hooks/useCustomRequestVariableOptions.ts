@@ -28,6 +28,7 @@ export const useCustomRequestVariableOptions = () => {
   const [fields, userFields] = useMemo(() => {
     return [compile(fieldsOptions), compile(userFieldOptions)];
   }, [fieldsOptions, userFieldOptions]);
+
   return useMemo(() => {
     return [
       recordData && {
