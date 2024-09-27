@@ -185,7 +185,6 @@ export class AuditManager {
   }
 
   formatAuditData(ctx: any) {
-    const { filterByTk, filterKeys } = ctx.action.params;
     const { resourceName } = ctx.action;
 
     let association = '';
@@ -200,6 +199,7 @@ export class AuditManager {
         collection = resourceName;
       }
     }
+    const resourceUk: string = this.formatResourceUk(ctx);
 
     const auditLog: AuditLog = {
       uuid: ctx.reqId,
@@ -208,7 +208,7 @@ export class AuditManager {
       association: association,
       collection: collection,
       action: ctx.action.name,
-      resourceUk: filterByTk ? filterByTk : filterKeys.join(','),
+      resourceUk: resourceUk,
       userId: ctx.state?.currentUser?.id,
       roleName: ctx.state?.currentRole,
       ip: ctx.request.ip,
@@ -220,6 +220,21 @@ export class AuditManager {
     return auditLog;
   }
 
+  formatResourceUk(ctx: any) {
+     const { filterByTk, filterKeys } = ctx.action.params;
+     let resourceUk = '';
+
+     if (filterByTk) {
+       resourceUk = filterByTk;
+     }
+
+     if (filterKeys && filterKeys.length > 0) {
+       resourceUk = filterKeys.join(',');
+     }
+
+     return resourceUk;
+  }
+
   async output(ctx: any, status: number, metadata?: Record<string, any>) {
     // 操作后，记录审计日志
     // 1. 从ctx.action 获取 resourceName, actionName,
@@ -227,7 +242,6 @@ export class AuditManager {
     // 2. 判断操作是否需要审计
     const action: Action = this.getAction(actionName, resourceName);
     if (!action) {
-      ctx.logger.info('current action is not audit', actionName);
       return;
     }
     // 3. 从上下文获取各种信息，可以抽一个方法
