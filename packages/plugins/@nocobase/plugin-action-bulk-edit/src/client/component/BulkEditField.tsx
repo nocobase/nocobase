@@ -99,7 +99,6 @@ export const BulkEditField = (props: any) => {
   const [value, setValue] = useState(null);
   const { getField } = useCollection_deprecated();
   const collectionField = getField(fieldSchema.name) || {};
-  console.log(field.value);
   useEffect(() => {
     field.value = toFormFieldValue({ [type]: value });
     if (field.required) {
@@ -113,7 +112,7 @@ export const BulkEditField = (props: any) => {
   }, [field, type, value]);
 
   useEffect(() => {
-    if (!field.value) {
+    if (field.value === null) {
       setValue(undefined);
     }
   }, [field.value]);
