@@ -221,18 +221,18 @@ export class AuditManager {
   }
 
   formatResourceUk(ctx: any) {
-     const { filterByTk, filterKeys } = ctx.action.params;
-     let resourceUk = '';
+    const { filterByTk, filterKeys } = ctx.action.params;
+    let resourceUk = '';
 
-     if (filterByTk) {
-       resourceUk = filterByTk;
-     }
+    if (filterByTk) {
+      resourceUk = filterByTk;
+    }
 
-     if (filterKeys && filterKeys.length > 0) {
-       resourceUk = filterKeys.join(',');
-     }
+    if (filterKeys && filterKeys.length > 0) {
+      resourceUk = filterKeys.join(',');
+    }
 
-     return resourceUk;
+    return resourceUk;
   }
 
   async output(ctx: any, status: number, metadata?: Record<string, any>) {
