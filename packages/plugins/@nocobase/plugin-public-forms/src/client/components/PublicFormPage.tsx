@@ -30,7 +30,7 @@ import { Input, Modal, Spin } from 'antd';
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router';
 import { usePublicSubmitActionProps } from '../hooks';
-import { UnEnabledFormPlaceholder } from './UnEnabledFormPlaceholder';
+import { UnEnabledFormPlaceholder, UnFoundFormPlaceholder } from './UnEnabledFormPlaceholder';
 class PublicDataSource extends DataSource {
   async getDataSource() {
     return {};
@@ -133,7 +133,7 @@ function InternalPublicForm() {
   const [pwd, setPwd] = useState('');
   const ctx = useContext(SchemaComponentContext);
   // 设置的移动端 meta
-  React.useEffect(() => {
+  useEffect(() => {
     if (!isDesktop) {
       let viewportMeta = document.querySelector('meta[name="viewport"]');
       if (!viewportMeta) {
@@ -152,7 +152,8 @@ function InternalPublicForm() {
       document.body.removeChild(fakeBody);
     }
   }, []);
-  if (error || data?.data?.passwordRequired) {
+
+  if (error?.['response']?.status === 401 || data?.data?.passwordRequired) {
     return (
       <div>
         <Modal
@@ -176,6 +177,10 @@ function InternalPublicForm() {
         </Modal>
       </div>
     );
+  }
+
+  if (error?.['response']?.status === 500) {
+    return <UnFoundFormPlaceholder />;
   }
 
   if (loading) {

@@ -52,6 +52,9 @@ export class PluginPublicFormsServer extends Plugin {
         key: filterByTk,
       },
     });
+    if (!instance) {
+      throw new Error('The form is not found');
+    }
     if (!instance.get('enabled')) {
       return null;
     }
