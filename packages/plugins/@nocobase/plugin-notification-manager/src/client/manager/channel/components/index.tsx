@@ -81,7 +81,7 @@ const AddNew = () => {
           },
         ]
       : channelTypes.map((item) => ({
-          key: item.name,
+          key: item.key,
           label: item.title,
           onClick: () => {
             setVisible(true);
