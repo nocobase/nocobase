@@ -21,3 +21,13 @@ export const UnEnabledFormPlaceholder = () => {
     </BlockItemCard>
   );
 };
+
+export const UnFoundFormPlaceholder = () => {
+  const { t } = usePublicFormTranslation();
+
+  return (
+    <BlockItemCard style={{ boxShadow: 'unset' }}>
+      <Result status="404" subTitle={t(`The form is not found`, { ns: NAMESPACE })} />
+    </BlockItemCard>
+  );
+};
