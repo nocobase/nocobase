@@ -250,6 +250,13 @@ export const useCreateActionProps = () => {
         if (!successMessage) {
           message.success(t('Saved successfully'));
           await resetFormCorrectly(form);
+          if (onSuccess?.redirecting && onSuccess?.redirectTo) {
+            if (isURL(onSuccess.redirectTo)) {
+              window.location.href = onSuccess.redirectTo;
+            } else {
+              navigate(onSuccess.redirectTo);
+            }
+          }
           setVisible?.(false);
           return;
         }

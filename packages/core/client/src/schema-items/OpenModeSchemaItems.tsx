@@ -113,7 +113,6 @@ export const SchemaSettingOpenModeSchemaItems: React.FC<Options> = (props) => {
   const field = useField();
   const { t } = useTranslation();
   const { dn } = useDesignable();
-  const { isPopupVisibleControlledByURL } = usePopupSettings();
   const openModeValue = fieldSchema?.['x-component-props']?.['openMode'] || 'drawer';
 
   const _modeOptions = useMemo(() => {
@@ -121,17 +120,10 @@ export const SchemaSettingOpenModeSchemaItems: React.FC<Options> = (props) => {
       return modeOptions;
     }
 
-    if (isPopupVisibleControlledByURL()) {
-      return [
-        { label: t('Drawer'), value: 'drawer' },
-        { label: t('Dialog'), value: 'modal' },
-        { label: t('Page'), value: 'page' },
-      ];
-    }
-
     return [
       { label: t('Drawer'), value: 'drawer' },
       { label: t('Dialog'), value: 'modal' },
+      { label: t('Page'), value: 'page' },
     ];
   }, [modeOptions, t]);
 

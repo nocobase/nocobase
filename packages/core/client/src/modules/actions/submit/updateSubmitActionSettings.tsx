@@ -71,10 +71,6 @@ export const updateSubmitActionSettings = new SchemaSettings({
     {
       name: 'afterSuccessfulSubmission',
       Component: AfterSuccess,
-      useVisible() {
-        const fieldSchema = useFieldSchema();
-        return isValid(fieldSchema?.['x-action-settings']?.onSuccess);
-      },
     },
     {
       name: 'refreshDataBlockRequest',

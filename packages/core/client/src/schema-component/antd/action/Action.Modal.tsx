@@ -16,9 +16,11 @@ import { ErrorBoundary, FallbackProps } from 'react-error-boundary';
 import { useToken } from '../../../style';
 import { ErrorFallback } from '../error-fallback';
 import { useCurrentPopupContext } from '../page/PagePopups';
+import { TabsContextProvider, useTabsContext } from '../tabs/context';
 import { useActionContext } from './hooks';
 import { useSetAriaLabelForModal } from './hooks/useSetAriaLabelForModal';
 import { ActionDrawerProps, ComposedActionDrawer, OpenSize } from './types';
+import { antdDrawerZIndex } from './utils';
 
 const ModalErrorFallback: React.FC<FallbackProps> = (props) => {
   const { visible, setVisible } = useActionContext();
@@ -44,6 +46,7 @@ export const InternalActionModal: React.FC<ActionDrawerProps<ModalProps>> = obse
     const form = useForm();
     const field = useField();
     const { token } = useToken();
+    const tabContext = useTabsContext();
     const footerSchema = schema.reduceProperties((buf, s) => {
       if (s['x-component'] === footerNodeName) {
         return s;
@@ -68,75 +71,78 @@ export const InternalActionModal: React.FC<ActionDrawerProps<ModalProps>> = obse
     }
 
     return (
-      <Modal
-        width={actualWidth}
-        title={field.title}
-        {...(others as ModalProps)}
-        {...modalProps}
-        styles={styles}
-        style={{
-          ...modalProps?.style,
-          ...others?.style,
-        }}
-        destroyOnClose
-        open={visible}
-        onCancel={() => {
-          setVisible(false, true);
-          form.reset();
-        }}
-        className={classNames(
-          others.className,
-          modalProps?.className,
-          css`
-            &.nb-action-popup {
-              .ant-modal-header {
-                display: none;
-              }
-
-              .ant-modal-content {
-                background: var(--nb-box-bg);
-                border: 1px solid rgba(255, 255, 255, 0.1);
-                padding-bottom: 0;
-              }
-
-              // 这里的样式是为了保证页面 tabs 标签下面的分割线和页面内容对齐（页面内边距可以通过主题编辑器调节）
-              .ant-tabs-nav {
-                padding-left: ${token.paddingLG - token.paddingPageHorizontal}px;
-                padding-right: ${token.paddingLG - token.paddingPageHorizontal}px;
-                margin-left: ${token.paddingPageHorizontal - token.paddingLG}px;
-                margin-right: ${token.paddingPageHorizontal - token.paddingLG}px;
-              }
-
-              .ant-modal-footer {
-                display: ${showFooter ? 'block' : 'none'};
-              }
-            }
-          `,
-        )}
-        footer={
-          showFooter ? (
-            <RecursionField
-              basePath={field.address}
-              schema={schema}
-              onlyRenderProperties
-              filterProperties={(s) => {
-                return s['x-component'] === footerNodeName;
-              }}
-            />
-          ) : (
-            false
-          )
-        }
-      >
-        <RecursionField
-          basePath={field.address}
-          schema={schema}
-          onlyRenderProperties
-          filterProperties={(s) => {
-            return s['x-component'] !== footerNodeName;
+      <TabsContextProvider {...tabContext} tabBarExtraContent={null}>
+        <Modal
+          zIndex={antdDrawerZIndex + props.level}
+          width={actualWidth}
+          title={field.title}
+          {...(others as ModalProps)}
+          {...modalProps}
+          styles={styles}
+          style={{
+            ...modalProps?.style,
+            ...others?.style,
           }}
-        />
-      </Modal>
+          destroyOnClose
+          open={visible}
+          onCancel={() => {
+            setVisible(false, true);
+            form.reset();
+          }}
+          className={classNames(
+            others.className,
+            modalProps?.className,
+            css`
+              &.nb-action-popup {
+                .ant-modal-header {
+                  display: none;
+                }
+
+                .ant-modal-content {
+                  background: var(--nb-box-bg);
+                  border: 1px solid rgba(255, 255, 255, 0.1);
+                  padding-bottom: 0;
+                }
+
+                // 这里的样式是为了保证页面 tabs 标签下面的分割线和页面内容对齐（页面内边距可以通过主题编辑器调节）
+                .ant-tabs-nav {
+                  padding-left: ${token.paddingLG - token.paddingPageHorizontal}px;
+                  padding-right: ${token.paddingLG - token.paddingPageHorizontal}px;
+                  margin-left: ${token.paddingPageHorizontal - token.paddingLG}px;
+                  margin-right: ${token.paddingPageHorizontal - token.paddingLG}px;
+                }
+
+                .ant-modal-footer {
+                  display: ${showFooter ? 'block' : 'none'};
+                }
+              }
+            `,
+          )}
+          footer={
+            showFooter ? (
+              <RecursionField
+                basePath={field.address}
+                schema={schema}
+                onlyRenderProperties
+                filterProperties={(s) => {
+                  return s['x-component'] === footerNodeName;
+                }}
+              />
+            ) : (
+              false
+            )
+          }
+        >
+          <RecursionField
+            basePath={field.address}
+            schema={schema}
+            onlyRenderProperties
+            filterProperties={(s) => {
+              return s['x-component'] !== footerNodeName;
+            }}
+          />
+        </Modal>
+      </TabsContextProvider>
     );
   },
   { displayName: 'ActionModal' },

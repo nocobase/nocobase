@@ -25,7 +25,11 @@ export const ellipsisSettingsItem: SchemaSettingsItemType = {
     const { t } = useTranslation();
 
     const schema = tableFieldSchema || fieldSchema;
-    const hidden = tableFieldSchema ? !filedInstanceList[0].readPretty : !formField.readPretty;
+    const hidden = tableFieldSchema
+      ? filedInstanceList[0]
+        ? !filedInstanceList[0].readPretty
+        : !tableFieldSchema['x-read-pretty']
+      : !formField.readPretty;
 
     return {
       title: t('Ellipsis overflow content'),
