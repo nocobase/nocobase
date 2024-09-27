@@ -27,7 +27,7 @@ export const UnFoundFormPlaceholder = () => {
 
   return (
     <BlockItemCard style={{ boxShadow: 'unset' }}>
-      <Result status="404" subTitle={t(`The form is not found`, { ns: NAMESPACE })} />
+      <Result status="404" />
     </BlockItemCard>
   );
 };
