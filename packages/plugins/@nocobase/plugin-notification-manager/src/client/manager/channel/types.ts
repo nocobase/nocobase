@@ -12,7 +12,7 @@ import { Registry } from '@nocobase/utils/client';
 
 export type ChannelType = {
   title: string;
-  name: string;
+  key: string;
   components: {
     ChannelConfigForm: ComponentType;
     MessageConfigForm?: ComponentType<{ variableOptions: any }>;

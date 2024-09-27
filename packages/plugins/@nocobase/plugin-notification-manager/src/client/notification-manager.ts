@@ -13,6 +13,6 @@ import { ChannelType } from './manager/channel/types';
 export default class NotificationManager {
   channelTypes = new Registry<ChannelType>();
   registerChannelType(options: ChannelType) {
-    this.channelTypes.register(options.name, options);
+    this.channelTypes.register(options.key, options);
   }
 }

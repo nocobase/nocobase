@@ -31,8 +31,8 @@ export default class NotificationManager implements NotificationManager {
     this.notificationTypes.register(type, { server });
   }
 
-  registerType({ name, server }: RegisterServerTypeFnParams) {
-    this.notificationTypes.register(name, { server });
+  registerType({ key, server }: RegisterServerTypeFnParams) {
+    this.notificationTypes.register(key, { server });
   }
 
   createSendingRecord = async (options: WriteLogOptions) => {

@@ -38,8 +38,12 @@ export class PluginNotificationManagerServer extends Plugin {
       next();
     });
     this.app.acl.registerSnippet({
-      name: 'pm.notification',
-      actions: ['messages:*'],
+      name: 'pm.notification.channels',
+      actions: ['notificationChannels:*'],
+    });
+    this.app.acl.registerSnippet({
+      name: 'pm.notification.logs',
+      actions: ['notificationSendLogs:*'],
     });
   }
 

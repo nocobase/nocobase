@@ -23,12 +23,12 @@ export const useChannelTypeMap = () => {
   const { t } = useNotificationTranslation();
   const plugin = usePlugin(PluginNotificationManagerClient);
   const notificationTypeMap: Record<string, ChannelType> = {};
-  for (const [key, val] of plugin.manager.channelTypes.getEntities()) {
+  for (const [key, val] of plugin.channelTypes.getEntities()) {
     const type = {
       ...val,
       title: Schema.compile(val.title, { t }) as string,
     };
-    notificationTypeMap[val.name] = type;
+    notificationTypeMap[val.key] = type;
   }
   return notificationTypeMap;
 };

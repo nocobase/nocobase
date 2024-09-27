@@ -40,4 +40,4 @@ export interface SendOptions {
   triggerFrom: string;
 }
 
-export type RegisterServerTypeFnParams = { name: string; server: NotificationServerBase };
+export type RegisterServerTypeFnParams = { key: string; server: NotificationServerBase };

@@ -33,7 +33,7 @@ export class PluginNotificationManagerClient extends Plugin {
   // You can get and modify the app instance here
   async load() {
     this.app.pluginSettingsManager.add(NAMESPACE, {
-      title: t('Notification'),
+      title: t('Notification manager'),
       icon: 'NotificationOutlined',
       aclSnippet: 'pm.notification',
     });
