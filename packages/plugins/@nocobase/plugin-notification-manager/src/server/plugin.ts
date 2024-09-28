@@ -45,6 +45,7 @@ export class PluginNotificationManagerServer extends Plugin {
       name: 'pm.notification.logs',
       actions: ['notificationSendLogs:*'],
     });
+    this.app.acl.allow('notificationChannels', ['get', 'list'], 'loggedIn');
   }
 
   async load() {}
