@@ -7,35 +7,33 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { DownOutlined, PlusOutlined } from '@ant-design/icons';
 import {
   ActionContextProvider,
+  ExtendCollectionsProvider,
   SchemaComponent,
   SchemaComponentContext,
-  useSchemaComponentContext,
   useAPIClient,
   useActionContext,
   useAsyncData,
-  usePlugin,
-  ExtendCollectionsProvider,
+  useSchemaComponentContext,
 } from '@nocobase/client';
-import { Empty } from 'antd';
+import { Button, Dropdown, Empty } from 'antd';
 import React, { useState } from 'react';
-import { channelsSchema, createFormSchema } from '../schemas';
-import { Button, Dropdown } from 'antd';
-import { PlusOutlined, DownOutlined } from '@ant-design/icons';
-import { NotificationTypesContext, useChannelTypes, useNotificationTypeNameProvider } from '../context';
-import { useNotificationTranslation } from '../../../locale';
-import { ConfigForm } from './ConfigForm';
 import channelCollection from '../../../../collections/channel';
 import messageLogCollection from '../../../../collections/messageLog';
+import { useNotificationTranslation } from '../../../locale';
+import { NotificationTypesContext, useChannelTypes, useNotificationTypeNameProvider } from '../context';
 import {
-  useCreateActionProps,
-  useEditActionProps,
   useCloseActionProps,
-  useEditFormProps,
+  useCreateActionProps,
   useCreateFormProps,
+  useEditActionProps,
+  useEditFormProps,
   useNotificationTypes,
 } from '../hooks';
+import { channelsSchema, createFormSchema } from '../schemas';
+import { ConfigForm } from './ConfigForm';
 const useCloseAction = () => {
   const { setVisible } = useActionContext();
   return {
@@ -81,11 +79,11 @@ const AddNew = () => {
           },
         ]
       : channelTypes.map((item) => ({
-          key: item.key,
+          key: item.type,
           label: item.title,
           onClick: () => {
             setVisible(true);
-            setName(item.name);
+            setName(item.type);
           },
         }));
 

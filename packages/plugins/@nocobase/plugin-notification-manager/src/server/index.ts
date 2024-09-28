@@ -7,5 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+export { BaseNotificationChannel } from './base-notification-channel';
 export { default } from './plugin';
+
 export * from './types';

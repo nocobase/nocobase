@@ -6,9 +6,20 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
-import PluginNotificationManagerServer from './plugin';
-export interface Channel {
-  id: string;
+
+import { Application } from '@nocobase/server';
+import { BaseNotificationChannel } from './base-notification-channel';
+
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+export interface ChannelOptions {
+  name: string;
   options: Record<string, any>;
   notificationType: string;
 }
@@ -24,15 +35,8 @@ export type WriteLogOptions = {
 
 export type SendFnType<Message> = (args: {
   message: Message;
-  channel: Channel;
+  channel: ChannelOptions;
 }) => Promise<{ message: Message; status: 'success' | 'fail'; reason?: string }>;
-
-export abstract class NotificationServerBase<Message = any> {
-  abstract send(params: {
-    channel: Channel;
-    message: Message;
-  }): Promise<{ message: Message; status: 'success' | 'fail'; reason?: string }>;
-}
 
 export interface SendOptions {
   channelName: string;
@@ -40,4 +44,5 @@ export interface SendOptions {
   triggerFrom: string;
 }
 
-export type RegisterServerTypeFnParams = { key: string; server: NotificationServerBase };
+export type NotificationChannelConstructor = new (app: Application) => BaseNotificationChannel;
+export type RegisterServerTypeFnParams = { type: string; Channel: NotificationChannelConstructor };

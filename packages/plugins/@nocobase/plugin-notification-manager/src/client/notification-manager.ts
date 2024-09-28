@@ -8,11 +8,11 @@
  */
 
 import { Registry } from '@nocobase/utils/client';
-import { ChannelType } from './manager/channel/types';
+import { RegisterChannelOptions } from './manager/channel/types';
 
 export default class NotificationManager {
-  channelTypes = new Registry<ChannelType>();
-  registerChannelType(options: ChannelType) {
-    this.channelTypes.register(options.key, options);
+  channelTypes = new Registry<RegisterChannelOptions>();
+  registerChannelType(options: RegisterChannelOptions) {
+    this.channelTypes.register(options.type, options);
   }
 }

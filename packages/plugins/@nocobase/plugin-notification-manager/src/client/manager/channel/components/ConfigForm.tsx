@@ -7,10 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useContext } from 'react';
 import { observer, useForm } from '@formily/react';
-import { NotificationTypesContext } from '../context';
 import { useCollectionRecord } from '@nocobase/client';
+import React, { useContext } from 'react';
+import { NotificationTypesContext } from '../context';
 
 export const ConfigForm = observer(
   () => {
@@ -18,7 +18,7 @@ export const ConfigForm = observer(
     const record = useCollectionRecord<Record<string, any>>();
     const notificationType = form.values.notificationType || record?.data?.notificationType;
     const { channelTypes } = useContext(NotificationTypesContext);
-    const channel = channelTypes.find((channelType) => channelType.key === notificationType);
+    const channel = channelTypes.find((channelType) => channelType.type === notificationType);
     return channel.components?.ChannelConfigForm ? <channel.components.ChannelConfigForm /> : null;
   },
   { displayName: 'ConfigForm' },

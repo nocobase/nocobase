@@ -18,7 +18,7 @@ describe('registerType', () => {
     const ChannelConfigForm = () => null;
     const MessageConfigForm = () => null;
     const newChannelType = {
-      name: 'newType',
+      type: 'newType',
       title: 'New Type',
       components: {
         ChannelConfigForm,

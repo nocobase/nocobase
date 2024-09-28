@@ -7,9 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { BaseNotificationChannel } from '@nocobase/plugin-notification-manager';
 import * as nodemailer from 'nodemailer';
 import { Transporter } from 'nodemailer';
-import { SendFnType, NotificationServerBase } from '@nocobase/plugin-notification-manager';
 type Message = {
   to: string[];
   cc?: string[];
@@ -26,12 +26,9 @@ type Message = {
     }
 );
 
-export class MailServer extends NotificationServerBase {
+export class MailNotificationChannel extends BaseNotificationChannel {
   transpoter: Transporter;
-  constructor() {
-    super();
-  }
-  send: SendFnType<Message> = async function (args) {
+  async send(args): Promise<any> {
     const { message, channel } = args;
     const { host, port, secure, account, password, from } = channel.options;
     try {
@@ -69,5 +66,5 @@ export class MailServer extends NotificationServerBase {
     } catch (error) {
       throw { status: 'failure', reason: error.message, message };
     }
-  };
+  }
 }

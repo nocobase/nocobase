@@ -7,10 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Plugin } from '@nocobase/server';
 import PluginNotificationManagerServer from '@nocobase/plugin-notification-manager';
+import { Plugin } from '@nocobase/server';
 import { channelType } from '../constant';
-import { MailServer } from './mail-server';
+import { MailNotificationChannel } from './mail-server';
 
 export class PluginNotificationsMailServer extends Plugin {
   async afterAdd() {}
@@ -19,7 +19,7 @@ export class PluginNotificationsMailServer extends Plugin {
 
   async load() {
     const notificationServer = this.pm.get(PluginNotificationManagerServer) as PluginNotificationManagerServer;
-    notificationServer.registerChannelType({ key: channelType, server: new MailServer() });
+    notificationServer.registerChannelType({ type: channelType, Channel: MailNotificationChannel });
   }
 
   async install() {}

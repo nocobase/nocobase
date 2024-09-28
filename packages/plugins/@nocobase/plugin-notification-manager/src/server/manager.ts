@@ -8,31 +8,20 @@
  */
 
 import { Registry } from '@nocobase/utils';
-import PluginNotificationManagerServer from './plugin';
-import type { NotificationServerBase } from './types';
-import { SendOptions, WriteLogOptions, RegisterServerTypeFnParams } from './types';
 import { COLLECTION_NAME } from '../constant';
-interface NotificatonType {
-  server: NotificationServerBase;
-}
+import PluginNotificationManagerServer from './plugin';
+import type { NotificationChannelConstructor, RegisterServerTypeFnParams, SendOptions, WriteLogOptions } from './types';
 
-export default class NotificationManager implements NotificationManager {
+export class NotificationManager implements NotificationManager {
   private plugin: PluginNotificationManagerServer;
-  private notificationTypes = new Registry<{ server: NotificationServerBase }>();
+  private notificationTypes = new Registry<{ Channel: NotificationChannelConstructor }>();
 
   constructor({ plugin }: { plugin: PluginNotificationManagerServer }) {
     this.plugin = plugin;
   }
-  /**
-    @deprecated
-  */
-  registerTypes(type: string, config: NotificatonType) {
-    const server = config.server;
-    this.notificationTypes.register(type, { server });
-  }
 
-  registerType({ key, server }: RegisterServerTypeFnParams) {
-    this.notificationTypes.register(key, { server });
+  registerType({ type, Channel }: RegisterServerTypeFnParams) {
+    this.notificationTypes.register(type, { Channel });
   }
 
   createSendingRecord = async (options: WriteLogOptions) => {
@@ -74,10 +63,11 @@ export default class NotificationManager implements NotificationManager {
     try {
       const channel = await channelsRepo.findOne({ filterByTk: params.channelName });
       if (channel) {
-        const notificationServer = this.notificationTypes.get(channel.notificationType).server;
+        const Channel = this.notificationTypes.get(channel.notificationType).Channel;
+        const instance = new Channel(this.plugin.app);
         logData.channelTitle = channel.title;
         logData.notificationType = channel.notificationType;
-        const result = await notificationServer.send({ message: params.message, channel });
+        const result = await instance.send({ message: params.message, channel });
         logData.status = result.status;
         logData.reason = result.reason;
       } else {
@@ -94,3 +84,5 @@ export default class NotificationManager implements NotificationManager {
     }
   }
 }
+
+export default NotificationManager;
