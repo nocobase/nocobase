@@ -29,6 +29,6 @@
     "@nocobase/plugin-workflow": ">=0.17.0-alpha.3"
   },
   "keywords": [
-    "System management"
+    "Notification"
   ]
 }
