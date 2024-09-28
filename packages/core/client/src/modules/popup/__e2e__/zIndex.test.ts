@@ -8,10 +8,9 @@
  */
 
 import { expect, test } from '@nocobase/test/e2e';
-import { T2797, T2838 } from './templatesOfBug';
+import { T2797, T2838, zIndexOfSubpage } from './templatesOfBug';
 
 test.describe('z-index of dialog', () => {
-  // https://nocobase.height.app/T-2797
   test('edit block title', async ({ page, mockPage }) => {
     await mockPage(T2797).goto();
 
@@ -26,7 +25,6 @@ test.describe('z-index of dialog', () => {
     await expect(page.getByLabel('block-item-Input-users-Block')).not.toBeVisible();
   });
 
-  // https://nocobase.height.app/T-2838
   test('multilevel modal', async ({ page, mockPage, mockRecord }) => {
     const nocoPage = await mockPage(T2838).waitForInit();
     await mockRecord('general');
@@ -38,5 +36,19 @@ test.describe('z-index of dialog', () => {
     await expect(page.getByLabel('block-item-CollectionField-')).toBeVisible();
     await page.getByLabel('action-Action-Submit-submit-').click();
     await expect(page.getByLabel('block-item-CollectionField-')).not.toBeVisible();
+  });
+
+  test('z-index of subpage', async ({ page, mockPage }) => {
+    await mockPage(zIndexOfSubpage).goto();
+
+    // 1. Open the "Assign field values" popup in the subpage, it should be displayed on the top layer
+    await page.getByText('open subpage level1').click();
+    await page.getByLabel('action-Action-Submit-submit-').hover();
+    await page.getByLabel('designer-schema-settings-Action-actionSettings:updateSubmit-users').hover();
+    await page.getByRole('menuitem', { name: 'Assign field values' }).click();
+    await expect(page.getByRole('dialog').getByText('Assign field values')).toBeVisible();
+    // If the click is ineffective, it means the popup is not displayed on the top layer
+    await page.getByRole('button', { name: 'Cancel' }).click({ timeout: 1000 });
+    await expect(page.getByRole('dialog').getByText('Assign field values')).not.toBeVisible();
   });
 });
