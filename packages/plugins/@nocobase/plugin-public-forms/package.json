@@ -1,0 +1,20 @@
+{
+  "name": "@nocobase/plugin-public-forms",
+  "version": "1.4.0-alpha",
+  "main": "dist/server/index.js",
+  "dependencies": {},
+  "displayName": "Public forms",
+  "displayName.zh-CN": "公开表单",
+  "description": "Share public forms externally to collect information from anonymous users",
+  "description.zh-CN": "对外分享公开表单，向匿名用户收集信息。",
+  "license": "AGPL-3.0",
+  "homepage": "https://docs.nocobase.com/handbook/public-form",
+  "homepage.zh-CN": "https://docs-cn.nocobase.com/public-form",
+  "peerDependencies": {
+    "@nocobase/client": "1.x",
+    "@nocobase/plugin-client": "1.x",
+    "@nocobase/plugin-ui-schema-storage": "1.x",
+    "@nocobase/server": "1.x",
+    "@nocobase/test": "1.x"
+  }
+}

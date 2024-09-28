@@ -157,18 +157,18 @@ export const collection = [
     label: '{{t("is")}}',
     value: '$eq',
     selected: true,
-    schema: { 'x-component': 'CollectionSelect' },
+    schema: { 'x-component': 'DataSourceCollectionCascader' },
   },
   {
     label: '{{t("is not")}}',
     value: '$ne',
-    schema: { 'x-component': 'CollectionSelect' },
+    schema: { 'x-component': 'DataSourceCollectionCascader' },
   },
   {
     label: '{{t("is any of")}}',
     value: '$in',
     schema: {
-      'x-component': 'CollectionSelect',
+      'x-component': 'DataSourceCollectionCascader',
       'x-component-props': { mode: 'tags' },
     },
   },
@@ -176,7 +176,7 @@ export const collection = [
     label: '{{t("is none of")}}',
     value: '$notIn',
     schema: {
-      'x-component': 'CollectionSelect',
+      'x-component': 'DataSourceCollectionCascader',
       'x-component-props': { mode: 'tags' },
     },
   },

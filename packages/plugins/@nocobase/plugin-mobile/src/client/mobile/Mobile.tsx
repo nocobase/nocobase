@@ -102,7 +102,7 @@ export const Mobile = () => {
                   <ResetSchemaOptionsProvider>
                     <AssociationFieldModeProvider modeToComponent={modeToComponent}>
                       {/* the z-index of all popups and subpages will be based on this value */}
-                      <BasicZIndexProvider basicZIndex={1000}>
+                      <BasicZIndexProvider basicZIndex={800}>
                         <MobileRouter />
                       </BasicZIndexProvider>
                     </AssociationFieldModeProvider>

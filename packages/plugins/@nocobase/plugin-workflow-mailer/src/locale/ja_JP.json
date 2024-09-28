@@ -1,0 +1,19 @@
+{
+  "Mailer": "メール送信",
+  "Send email. You can use the variables in the upstream nodes as receivers, subject and content of the email.": "メールを送信します。上流ノードの変数を受信者、件名、内容として使用可能です。",
+  "SMTP host": "SMTPホスト",
+  "Port": "ポート",
+  "Secure": "セキュア",
+  "User": "ユーザー",
+  "Password": "パスワード",
+  "From": "送信元",
+  "To": "宛先",
+  "CC": "CC",
+  "BCC": "BCC",
+  "Add email address": "メールアドレスを追加",
+  "Subject": "件名",
+  "Content": "内容",
+  "Content type": "内容の形式",
+  "Plain text": "プレーンテキスト",
+  "Ignore failed sending and continue workflow": "送信失敗を無視してワークフローを継続"
+}

@@ -844,5 +844,6 @@
   "The current dependency version of the plugin does not match the version of the application and may not work properly. Are you sure you want to continue enabling the plugin?": "The current dependency version of the plugin does not match the version of the application and may not work properly. Are you sure you want to continue enabling the plugin?",
   "Skip getting the total number of table records during paging to speed up loading. It is recommended to enable this option for data tables with a large amount of data": "Skip getting the total number of table records during paging to speed up loading. It is recommended to enable this option for data tables with a large amount of data",
   "Enable secondary confirmation": "Enable secondary confirmation",
-  "Notification": "Notification"
+  "Notification": "Notification",
+  "Ellipsis overflow content": "Ellipsis overflow content"
 }

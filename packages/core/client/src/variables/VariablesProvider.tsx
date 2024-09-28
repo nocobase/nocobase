@@ -49,7 +49,7 @@ const getFieldPath = (variablePath: string, variablesStore: Record<string, Varia
   };
 };
 
-const VariablesProvider = ({ children }) => {
+const VariablesProvider = ({ children, filterVariables }: any) => {
   const ctxRef = useRef<Record<string, any>>({});
   const api = useAPIClient();
   const { getCollectionJoinField, getCollection } = useCollectionManager_deprecated();
@@ -329,6 +329,7 @@ const VariablesProvider = ({ children }) => {
         getVariable,
         getCollectionField,
         removeVariable,
+        filterVariables,
       }) as VariablesContextType,
     [getCollectionField, getVariable, parseVariable, registerVariable, removeVariable, setCtx],
   );

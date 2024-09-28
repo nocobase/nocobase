@@ -193,12 +193,12 @@ export async function getRenderContent(templateEngine, content, variables, local
       const renderedContent = Handlebars.compile(content);
       // 处理渲染后的内容
       const data = getVariablesData(localVariables);
-      const { $nDate } = variables.ctxRef.current;
+      const { $nDate } = variables?.ctxRef?.current || {};
       const variableDate = {};
-      Object.keys($nDate).map((v) => {
+      Object.keys($nDate || {}).map((v) => {
         variableDate[v] = $nDate[v]();
       });
-      const html = renderedContent({ ...variables.ctxRef.current, ...data, $nDate: variableDate });
+      const html = renderedContent({ ...variables?.ctxRef?.current, ...data, $nDate: variableDate });
       return await defaultParse(html);
     } catch (error) {
       console.log(error);

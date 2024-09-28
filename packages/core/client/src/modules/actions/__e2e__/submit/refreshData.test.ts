@@ -8,7 +8,7 @@
  */
 
 import { expect, test } from '@nocobase/test/e2e';
-import { submitInReferenceTemplateBlock } from './templates';
+import { shouldRefreshDataWhenSubpageIsClosedByPageMenu, submitInReferenceTemplateBlock } from './templates';
 
 test.describe('Submit: should refresh data after submit', () => {
   test('submit in reference template block', async ({ page, mockPage, clearBlockTemplates, mockRecord }) => {
@@ -82,5 +82,29 @@ test.describe('Submit: should refresh data after submit', () => {
     await expect(
       page.getByLabel('block-item-CardItem-collection-table').getByRole('button', { name: 'abc456' }),
     ).toBeVisible();
+  });
+
+  test('should refresh data when subpage is closed by page menu', async ({ page, mockPage, mockRecord }) => {
+    const nocoPage = await mockPage(shouldRefreshDataWhenSubpageIsClosedByPageMenu).waitForInit();
+    await mockRecord('testRefresh', { name: 'abcdefg' });
+    await nocoPage.goto();
+    const pageUid = await nocoPage.getUid();
+
+    // 1. Initially, there should be a row with "abcdefg" on the page
+    await expect(page.getByRole('button', { name: 'abcdefg', exact: true })).toBeVisible();
+
+    // 2. Click the "Edit" button to open the subpage
+    await page.getByLabel('action-Action.Link-Edit-').click();
+
+    // 3. On the subpage, open a popup, fill out the form, and submit
+    await page.getByLabel('Edit', { exact: true }).getByLabel('action-Action.Link-Edit-').click();
+    await page.getByLabel('block-item-CollectionField-').getByRole('textbox').fill('1234567890');
+    await page.getByLabel('action-Action-Submit-submit-').click();
+
+    // 4. Close the subpage by clicking on the menu at the top of the page
+    await page.getByLabel(pageUid).click();
+
+    // 5. The data in the block on the page should be up-to-date
+    await page.getByRole('button', { name: '1234567890', exact: true }).click();
   });
 });
