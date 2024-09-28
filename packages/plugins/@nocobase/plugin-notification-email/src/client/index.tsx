@@ -20,7 +20,7 @@ export class PluginNotificationMailClient extends Plugin {
   async load() {
     const notification = this.pm.get(PluginNotificationManagerClient);
     notification.registerChannelType({
-      title: tval('SMTP mail', { ns: NAMESPACE }),
+      title: tval('Email', { ns: NAMESPACE }),
       type: channelType,
       components: {
         ChannelConfigForm: ChannelConfigForm,

@@ -1,5 +1,5 @@
 {
-  "Mail": "Mail",
+  "Email": "Email",
   "From": "From",
   "To": "To",
   "CC": "CC",
@@ -17,5 +17,6 @@
   "SMTP mail": "SMTP mail",
   "SMTP server host": "SMTP server host",
   "Content type": "Content type",
-  "Plain text": "Plain text"
+  "Plain text": "Plain text",
+  "Transport": "Transport"
 }

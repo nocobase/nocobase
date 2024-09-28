@@ -7,8 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React from 'react';
 import { SchemaComponent } from '@nocobase/client';
+import React from 'react';
 import { useNotifyMailTranslation } from './hooks/useTranslation';
 export const ChannelConfigForm = () => {
   const { t } = useNotifyMailTranslation();
@@ -18,6 +18,15 @@ export const ChannelConfigForm = () => {
       schema={{
         type: 'object',
         properties: {
+          transport: {
+            'x-decorator': 'FormItem',
+            type: 'string',
+            title: '{{t("Transport")}}',
+            'x-component': 'Select',
+            enum: [{ value: 'smtp', label: 'SMTP' }],
+            default: 'smtp',
+            required: true,
+          },
           server: {
             type: 'void',
             'x-component': 'Grid',

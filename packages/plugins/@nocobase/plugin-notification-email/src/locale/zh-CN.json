@@ -1,5 +1,5 @@
 {
-  "Mail": "邮件",
+  "Email": "邮件",
   "From": "发件人",
   "To": "收件人",
   "CC": "抄送",
@@ -17,5 +17,6 @@
   "SMTP mail": "SMTP 邮件",
   "SMTP server host": "SMTP 服务器主机",
   "Content type": "内容格式",
-  "Plain text": "纯文本"
+  "Plain text": "纯文本",
+  "Transport": "传输方式"
 }
