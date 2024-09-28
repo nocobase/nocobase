@@ -19,7 +19,7 @@ export class PluginNotificationManagerClient extends Plugin {
   private manager: NotificationManager;
 
   get channelTypes() {
-    return this.channelTypes;
+    return this.manager.channelTypes;
   }
 
   registerChannelType(options: RegisterChannelOptions) {
