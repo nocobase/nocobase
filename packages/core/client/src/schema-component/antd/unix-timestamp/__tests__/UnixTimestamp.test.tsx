@@ -7,13 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { screen, renderAppOptions, userEvent, waitFor, renderReadPrettyApp } from '@nocobase/test/client';
 import { UnixTimestamp } from '@nocobase/client';
+import { renderAppOptions, renderReadPrettyApp, screen, userEvent, waitFor } from '@nocobase/test/client';
 
 describe('UnixTimestamp', () => {
   it('renders without errors', async () => {
     const { container } = await renderAppOptions({
-      Component: UnixTimestamp,
+      Component: UnixTimestamp as any,
       props: {
         accuracy: 'millisecond',
       },
@@ -71,7 +71,7 @@ describe('UnixTimestamp', () => {
 
   it('millisecond', async () => {
     await renderAppOptions({
-      Component: UnixTimestamp,
+      Component: UnixTimestamp as any,
       value: 1712819630000,
       props: {
         accuracy: 'millisecond',
@@ -84,7 +84,7 @@ describe('UnixTimestamp', () => {
 
   it('second', async () => {
     await renderAppOptions({
-      Component: UnixTimestamp,
+      Component: UnixTimestamp as any,
       value: 1712819630,
       props: {
         accuracy: 'second',
@@ -98,7 +98,7 @@ describe('UnixTimestamp', () => {
 
   it('string', async () => {
     await renderAppOptions({
-      Component: UnixTimestamp,
+      Component: UnixTimestamp as any,
       value: '2024-04-11',
       props: {
         accuracy: 'millisecond',
@@ -113,7 +113,7 @@ describe('UnixTimestamp', () => {
   it('change', async () => {
     const onChange = vitest.fn();
     await renderAppOptions({
-      Component: UnixTimestamp,
+      Component: UnixTimestamp as any,
       value: '2024-04-11',
       onChange,
       props: {
@@ -136,7 +136,7 @@ describe('UnixTimestamp', () => {
 
   it('read pretty', async () => {
     const { container } = await renderReadPrettyApp({
-      Component: UnixTimestamp,
+      Component: UnixTimestamp as any,
       value: '2024-04-11',
       props: {
         accuracy: 'millisecond',

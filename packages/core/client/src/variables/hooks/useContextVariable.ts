@@ -8,7 +8,7 @@
  */
 
 import { useMemo } from 'react';
-import { useTableBlockContext } from '../../block-provider';
+import { useTableBlockContext } from '../../block-provider/TableBlockProvider';
 import { useCurrentPopupContext } from '../../schema-component/antd/page/PagePopups';
 import { getStoredPopupContext } from '../../schema-component/antd/page/pagePopupUtils';
 import { usePopupSettings } from '../../schema-component/antd/page/PopupSettingsProvider';
