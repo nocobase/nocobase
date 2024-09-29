@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.3.26-beta](https://github.com/nocobase/nocobase/compare/v1.3.25-beta...v1.3.26-beta) - 2024-09-29
+
+### 🚀 Improvements
+
+- **[client]** Hide scrollbars on mobile ([#5339](https://github.com/nocobase/nocobase/pull/5339)) by @zhangzhonghe
+
+### 🐛 Bug Fixes
+
+- **[client]**
+  - Fix the issue of not being able to open sub-pages in embedded pages ([#5335](https://github.com/nocobase/nocobase/pull/5335)) by @zhangzhonghe
+
+  - Fix the issue of pop-up windows being obscured ([#5338](https://github.com/nocobase/nocobase/pull/5338)) by @zhangzhonghe
+
+  - Fix the issue of abnormal style when creating blocks with data templates in mobile subpages ([#5340](https://github.com/nocobase/nocobase/pull/5340)) by @zhangzhonghe
+
+  - Fix the issue of not refreshing the page block data when closing a subpage via the page menu ([#5331](https://github.com/nocobase/nocobase/pull/5331)) by @zhangzhonghe
+
+- **[Action: Export records]** fix export format for decimal type fields ([#5316](https://github.com/nocobase/nocobase/pull/5316)) by @chareice
+
+- **[Block: Kanban]** Fix the issue that the popup window could not be opened after clicking on the Kanban card in the embedded page ([#5326](https://github.com/nocobase/nocobase/pull/5326)) by @zhangzhonghe
+
 ## [v1.3.25-beta](https://github.com/nocobase/nocobase/compare/v1.3.24-beta...v1.3.25-beta) - 2024-09-25
 
 ### 🚀 Improvements
