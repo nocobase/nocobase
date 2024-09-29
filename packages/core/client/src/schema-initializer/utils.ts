@@ -751,14 +751,14 @@ export const useCustomFormItemInitializerFields = (options?: any) => {
     });
 };
 
-export const findSchema = (schema: Schema, key: string, action: string) => {
+export const findSchema = (schema: Schema, key: string, action: string, name?: string) => {
   if (!Schema.isSchemaInstance(schema)) return null;
   return schema.reduceProperties((buf, s) => {
-    if (s[key] === action) {
+    if (s[key] === action && (!name || s.name === name)) {
       return s;
     }
     if (s['x-component'] !== 'Action.Container' && !s['x-component'].includes('AssociationField')) {
-      const c = findSchema(s, key, action);
+      const c = findSchema(s, key, action, name);
       if (c) {
         return c;
       }
@@ -780,7 +780,7 @@ const recursiveParent = (schema: Schema) => {
   return recursiveParent(schema.parent);
 };
 
-export const useCurrentSchema = (action: string, key: string, find = findSchema, rm = removeSchema) => {
+export const useCurrentSchema = (action: string, key: string, find = findSchema, rm = removeSchema, name?: string) => {
   const { removeActiveFieldName } = useFormActiveFields() || {};
   const { form }: { form?: Form } = useFormBlockContext();
   let fieldSchema = useFieldSchema();
@@ -791,7 +791,7 @@ export const useCurrentSchema = (action: string, key: string, find = findSchema,
     }
   }
   const { remove } = useDesignable();
-  const schema = find(fieldSchema, key, action);
+  const schema = find(fieldSchema, key, action, name);
   return {
     schema,
     exists: !!schema,
