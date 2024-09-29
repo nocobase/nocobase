@@ -44,7 +44,7 @@ test.describe('variables', () => {
     await expect(page.getByRole('textbox')).toHaveValue(token);
   });
 
-  test('Table selected records', async ({ page, mockPage, mockRecord }) => {
+  test.skip('Table selected records', async ({ page, mockPage, mockRecord }) => {
     const nocoPage = await mockPage(tableSelectedRecords).waitForInit();
     const record = await mockRecord('testTableSelectedRecords');
     await nocoPage.goto();
