@@ -12,7 +12,13 @@ import { createStyles } from '@nocobase/client';
 export const useStyles = createStyles(({ token, css }) => {
   return {
     nbMobile: css`
+      -webkit-overflow-scrolling: touch;
       display: initial;
+
+      & ::-webkit-scrollbar {
+        display: none;
+      }
+
       .ant-table-thead button[aria-label*='schema-initializer-TableV2-table:configureColumns'] > span:last-child {
         display: none !important;
       }
