@@ -7,8 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { screen, renderAppOptions, userEvent, waitFor, renderReadPrettyApp } from '@nocobase/test/client';
 import { UnixTimestamp } from '@nocobase/client';
+import { renderAppOptions, renderReadPrettyApp, screen } from '@nocobase/test/client';
 
 describe('UnixTimestamp', () => {
   it('renders without errors', async () => {
