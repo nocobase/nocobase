@@ -127,7 +127,7 @@ function useVariableHook(options: UseVariableOptions = {}) {
     return result;
   }
 
-  const scope = result.find((item) => item[fieldNames.value] === '$scope');
+  const scope = result.find((item) => item[fieldNames.value] === '$scopes');
   if (scope) {
     if (!scope[fieldNames.children]) {
       scope[fieldNames.children] = [];
