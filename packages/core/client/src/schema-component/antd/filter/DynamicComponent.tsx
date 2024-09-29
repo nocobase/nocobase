@@ -65,6 +65,7 @@ export const DynamicComponent = (props: Props) => {
                 ...props.style,
               },
               utc: false,
+              underFilter: true,
             }),
             name: 'value',
             'x-read-pretty': false,
