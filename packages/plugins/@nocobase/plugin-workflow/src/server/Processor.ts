@@ -259,10 +259,8 @@ export default class Processor {
   // TODO(optimize)
   /**
    * @experimental
-   * @param {JobModel | Record<string, any>} payload
-   * @returns {JobModel}
    */
-  async saveJob(payload) {
+  async saveJob(payload: JobModel | Record<string, any>): Promise<JobModel> {
     const { database } = <typeof ExecutionModel>this.execution.constructor;
     const { transaction } = this;
     const { model } = database.getCollection('jobs');
@@ -377,7 +375,7 @@ export default class Processor {
   /**
    * @experimental
    */
-  public getScope(sourceNodeId: number) {
+  public getScope(sourceNodeId: number, includeSelf = false) {
     const node = this.nodesMap.get(sourceNodeId);
     const systemFns = {};
     const scope = {
@@ -389,9 +387,9 @@ export default class Processor {
     }
 
     const $scopes = {};
-    for (let n = this.findBranchParentNode(node); n; n = this.findBranchParentNode(n)) {
+    for (let n = includeSelf ? node : this.findBranchParentNode(node); n; n = this.findBranchParentNode(n)) {
       const instruction = this.options.plugin.instructions.get(n.type);
-      if (typeof instruction.getScope === 'function') {
+      if (typeof instruction?.getScope === 'function') {
         $scopes[n.id] = $scopes[n.key] = instruction.getScope(n, this.jobsMapByNodeKey[n.key], this);
       }
     }
@@ -407,9 +405,9 @@ export default class Processor {
   /**
    * @experimental
    */
-  public getParsedValue(value, sourceNodeId: number, additionalScope?: object) {
+  public getParsedValue(value, sourceNodeId: number, includeSelf = false) {
     const template = parse(value);
-    const scope = Object.assign(this.getScope(sourceNodeId), additionalScope);
+    const scope = this.getScope(sourceNodeId, includeSelf);
     template.parameters.forEach(({ key }) => {
       appendArrayColumn(scope, key);
     });
