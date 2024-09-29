@@ -316,16 +316,16 @@ export default class extends Instruction {
         direction: 'vertical',
         options: [
           {
-            label: `{{t("Continue loop on next item", { ns: "${NAMESPACE}" })}}`,
-            value: 2,
+            label: `{{t("Exit workflow", { ns: "${NAMESPACE}" })}}`,
+            value: 0,
           },
           {
             label: `{{t("Exit loop and continue workflow", { ns: "${NAMESPACE}" })}}`,
             value: 1,
           },
           {
-            label: `{{t("Exit workflow", { ns: "${NAMESPACE}" })}}`,
-            value: 0,
+            label: `{{t("Continue loop on next item", { ns: "${NAMESPACE}" })}}`,
+            value: 2,
           },
         ],
       },
