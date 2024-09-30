@@ -59,6 +59,89 @@ export const getSupportFieldsByForeignKey = (filterBlockCollection: Collection, 
   });
 };
 
+export const getSupportAssociationFields = ({
+  targetBlock,
+  filterField,
+  getCollectionField,
+}: {
+  /** 与筛选区块存在于同一个页面的数据区块 */
+  targetBlock: DataBlock;
+  /** 筛选区块中用于连接的一个字段 */
+  filterField: any;
+  /** 获取 collection 中某个字段 */
+  getCollectionField: (name: string) => any;
+}) => {
+  return targetBlock.associatedFields?.filter((associationField) => {
+    const targetKeyField = getCollectionField(`${associationField.target}.${associationField.targetKey || 'id'}`);
+    return targetKeyField?.type === filterField.type && targetKeyField?.interface === filterField.interface;
+  });
+};
+
+export const getSupportForeignKeyFields = ({
+  targetBlock,
+  filterField,
+}: {
+  /** 与筛选区块存在于同一个页面的数据区块 */
+  targetBlock: DataBlock;
+  /** 筛选区块中用于连接的一个字段 */
+  filterField: any;
+}) => {
+  return targetBlock.foreignKeyFields?.filter((foreignKeyField) => {
+    return filterField.type === foreignKeyField.type && filterField.interface === foreignKeyField.interface;
+  });
+};
+
+export const getSupportPrimaryKeyFields = ({
+  targetBlock,
+  filterField,
+}: {
+  /** 与筛选区块存在于同一个页面的数据区块 */
+  targetBlock: DataBlock;
+  /** 筛选区块中用于连接的一个字段 */
+  filterField: any;
+}) => {
+  return targetBlock.primaryKeyFields?.filter((primaryKeyField) => {
+    return filterField.type === primaryKeyField.type && filterField.interface === primaryKeyField.interface;
+  });
+};
+
+export const getSupportSystemFields = ({
+  targetBlock,
+  filterField,
+  getCollectionField,
+}: {
+  /** 与筛选区块存在于同一个页面的数据区块 */
+  targetBlock: DataBlock;
+  /** 筛选区块中用于连接的一个字段 */
+  filterField: any;
+  /** 获取 collection 中某个字段 */
+  getCollectionField: (name: string) => any;
+}) => {
+  return targetBlock.systemFields?.filter((systemField) => {
+    // association field
+    if (systemField.target) {
+      const targetKeyField = getCollectionField(`${systemField.target}.${systemField.targetKey || 'id'}`);
+      return targetKeyField?.type === filterField.type && targetKeyField?.interface === filterField.interface;
+    }
+
+    return filterField.type === systemField.type && filterField.interface === systemField.interface;
+  });
+};
+
+export const getSupportGeneralFields = ({
+  targetBlock,
+  filterField,
+}: {
+  /** 与筛选区块存在于同一个页面的数据区块 */
+  targetBlock: DataBlock;
+  /** 筛选区块中用于连接的一个字段 */
+  filterField: any;
+}) => {
+  return targetBlock.generalFields?.filter((generalField) => {
+    return filterField.type === generalField.type && filterField.interface === generalField.interface;
+  });
+};
+
 /**
  * 根据筛选区块类型筛选出支持的数据区块（同表或具有关系字段的表）
  * @param filterBlockType

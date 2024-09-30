@@ -41,7 +41,7 @@ export interface ForeignKeyField {
   [key: string]: any;
 }
 
-interface PrimaryKeyField {
+export interface PrimaryKeyField {
   name: string;
   type: string;
   interface: string;
@@ -58,7 +58,7 @@ interface PrimaryKeyField {
   };
 }
 
-interface SystemField {
+export interface SystemField {
   name: string;
   type: string;
   interface: string;
@@ -81,7 +81,7 @@ interface SystemField {
   };
 }
 
-interface GeneralField {
+export interface GeneralField {
   name: string;
   type: string;
   interface: string;

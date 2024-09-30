@@ -14,11 +14,11 @@ import { SchemaSettings } from '../../../../application/schema-settings/SchemaSe
 import { createSwitchSettingsItem } from '../../../../application/schema-settings/utils/createSwitchSettingsItem';
 import { useTableBlockContext } from '../../../../block-provider';
 import { useCollectionManager_deprecated, useCollection_deprecated } from '../../../../collection-manager';
-import { FilterBlockType } from '../../../../filter-provider/utils';
+import { useCollection } from '../../../../data-source/collection/CollectionProvider';
 import { useDesignable } from '../../../../schema-component';
 import { SchemaSettingsBlockHeightItem } from '../../../../schema-settings/SchemaSettingsBlockHeightItem';
 import { SchemaSettingsBlockTitleItem } from '../../../../schema-settings/SchemaSettingsBlockTitleItem';
-import { SchemaSettingsConnectDataBlocks } from '../../../../schema-settings/SchemaSettingsConnectDataBlocks';
+import { SchemaSettingsConnectDataBlocksByFields } from '../../../../schema-settings/SchemaSettingsConnectDataBlocks';
 import { SchemaSettingsSortField } from '../../../../schema-settings/SchemaSettingsSortField';
 import { SchemaSettingsTemplate } from '../../../../schema-settings/SchemaSettingsTemplate';
 import { setDefaultSortingRulesSchemaSettingsItem } from '../../../../schema-settings/setDefaultSortingRulesSchemaSettingsItem';
@@ -189,11 +189,12 @@ export const tableBlockSettings = new SchemaSettings({
     },
     {
       name: 'ConnectDataBlocks',
-      Component: SchemaSettingsConnectDataBlocks,
+      Component: SchemaSettingsConnectDataBlocksByFields,
       useComponentProps() {
         const { t } = useTranslation();
+        const collection = useCollection();
         return {
-          type: FilterBlockType.TABLE,
+          filterFieldName: `${collection.name}.${collection.getPrimaryKey() || 'id'}`,
           emptyDescription: t('No blocks to connect'),
         };
       },

@@ -14,11 +14,17 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { findFilterTargets, updateFilterTargets } from '../block-provider/hooks';
 import { useCollectionManager_deprecated } from '../collection-manager/hooks/useCollectionManager_deprecated';
+import { useCollectionManager } from '../data-source/collection/CollectionManagerProvider';
 import { useCollection } from '../data-source/collection/CollectionProvider';
 import { useFilterBlock } from '../filter-provider/FilterProvider';
 import {
+  getSupportAssociationFields,
   getSupportFieldsByAssociation,
   getSupportFieldsByForeignKey,
+  getSupportForeignKeyFields,
+  getSupportGeneralFields,
+  getSupportPrimaryKeyFields,
+  getSupportSystemFields,
   isSameCollection,
   useSupportedBlocks,
 } from '../filter-provider/utils';
@@ -117,6 +123,153 @@ export function SchemaSettingsConnectDataBlocks(props) {
           ...getSupportFieldsByForeignKey(collection, block).map((field) => {
             return {
               label: `${compile(field.uiSchema.title) || field.name} [${t('Foreign key')}]`,
+              value: field.name,
+            };
+          }),
+          {
+            label: t('Unconnected'),
+            value: '',
+          },
+        ]}
+        onChange={(value) => {
+          if (value === '') {
+            targets = targets.filter((target) => target.uid !== block.uid);
+            block.clearFilter(uid);
+          } else {
+            targets = targets.filter((target) => target.uid !== block.uid);
+            targets.push({ uid: block.uid, field: value });
+          }
+          updateFilterTargets(fieldSchema, targets);
+          dn.emit('patch', {
+            schema: {
+              ['x-uid']: uid,
+              'x-filter-targets': targets,
+            },
+          });
+          dn.refresh();
+        }}
+        onMouseEnter={onHover}
+        onMouseLeave={onLeave}
+      />
+    );
+  });
+
+  return (
+    <SchemaSettingsSubMenu title={t('Connect data blocks')}>
+      {Content.length ? (
+        Content
+      ) : (
+        <SchemaSettingsItem title="empty">
+          <Empty
+            style={{ width: 160, padding: '0 1em' }}
+            description={emptyDescription}
+            image={Empty.PRESENTED_IMAGE_SIMPLE}
+          />
+        </SchemaSettingsItem>
+      )}
+    </SchemaSettingsSubMenu>
+  );
+}
+
+export function SchemaSettingsConnectDataBlocksByFields(props: {
+  emptyDescription: string;
+  filterFieldName: string;
+  children: React.ReactNode;
+}) {
+  const { emptyDescription, filterFieldName } = props;
+  const cm = useCollectionManager();
+  const fieldSchema = useFieldSchema();
+  const { dn } = useDesignable();
+  const { t } = useTranslation();
+  const { getDataBlocks } = useFilterBlock();
+  const dataBlocks = getDataBlocks();
+  // eslint-disable-next-line prefer-const
+  let { targets = [], uid } = findFilterTargets(fieldSchema);
+  const compile = useCompile();
+  const filterField = cm.getCollectionField(filterFieldName);
+
+  const Content = dataBlocks.map((block) => {
+    const title = `${compile(block.collection.title)} #${block.uid.slice(0, 4)}`;
+    const onHover = () => {
+      const dom = block.dom;
+      const designer = dom.querySelector('.general-schema-designer') as HTMLElement;
+      if (designer) {
+        designer.style.display = 'block';
+      }
+      dom.style.boxShadow = '0 0 10px rgba(0, 0, 0, 0.2)';
+      dom.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+      });
+    };
+    const onLeave = () => {
+      const dom = block.dom;
+      const designer = dom.querySelector('.general-schema-designer') as HTMLElement;
+      if (designer) {
+        designer.style.display = null;
+      }
+      dom.style.boxShadow = 'none';
+    };
+
+    const target = targets.find((target) => target.uid === block.uid);
+    // 与筛选区块的数据表具有关系的表
+    return (
+      <SchemaSettingsSelectItem
+        key={block.uid}
+        title={title}
+        value={target?.field || ''}
+        options={[
+          ...getSupportPrimaryKeyFields({
+            targetBlock: block,
+            filterField,
+          }).map((field) => {
+            return {
+              label: compile(field.uiSchema.title) || field.name,
+              value: field.name,
+            };
+          }),
+          ...getSupportForeignKeyFields({
+            targetBlock: block,
+            filterField,
+          }).map((field) => {
+            return {
+              label: `${compile(field.uiSchema.title) || field.name} [${t('Foreign key')}]`,
+              value: field.name,
+            };
+          }),
+          ...getSupportAssociationFields({
+            targetBlock: block,
+            filterField,
+            getCollectionField: cm.getCollectionField,
+          }).map((field) => {
+            return {
+              label: compile(field.uiSchema.title) || field.name,
+              value: `${field.name}.${getTargetKey(field)}`,
+            };
+          }),
+          ...getSupportGeneralFields({
+            targetBlock: block,
+            filterField,
+          }).map((field) => {
+            return {
+              label: compile(field.uiSchema.title) || field.name,
+              value: field.name,
+            };
+          }),
+          ...getSupportSystemFields({
+            targetBlock: block,
+            filterField,
+            getCollectionField: cm.getCollectionField,
+          }).map((field) => {
+            if (field.target) {
+              return {
+                label: compile(field.uiSchema.title) || field.name,
+                value: `${field.name}.${getTargetKey(field)}`,
+              };
+            }
+
+            return {
+              label: compile(field.uiSchema.title) || field.name,
               value: field.name,
             };
           }),
