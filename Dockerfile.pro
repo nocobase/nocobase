@@ -45,7 +45,7 @@ FROM node:20.13-bullseye-slim
 RUN apt-get update && apt-get install -y nginx
 RUN rm -rf /etc/nginx/sites-enabled/default
 
-# install postgresql-client
+# install postgresql-client and mysql-client
 RUN apt update && apt install -y wget postgresql-common gnupg \
   && /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y \
   && apt install -y postgresql-client-${PG_CLIENT_VERSION} \
