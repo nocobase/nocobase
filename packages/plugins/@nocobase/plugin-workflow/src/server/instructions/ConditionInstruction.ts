@@ -14,6 +14,12 @@ import { JOB_STATUS } from '../constants';
 import type { FlowNodeModel, JobModel } from '../types';
 import { logicCalculate } from '../logicCalculate';
 
+export const BRANCH_INDEX = {
+  DEFAULT: null,
+  ON_TRUE: 1,
+  ON_FALSE: 0,
+} as const;
+
 export class ConditionInstruction extends Instruction {
   async run(node: FlowNodeModel, prevJob, processor: Processor) {
     const { engine, calculation, expression, rejectOnFalse } = node.config || {};
