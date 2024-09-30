@@ -44,6 +44,13 @@ FROM node:20.13-bullseye-slim
 RUN apt-get update && apt-get install -y nginx
 RUN rm -rf /etc/nginx/sites-enabled/default
 
+COPY ./docker/nocobase/nocobase.conf /etc/nginx/sites-enabled/nocobase.conf
+COPY --from=builder /app/nocobase.tar.gz /app/nocobase.tar.gz
+
+WORKDIR /app/nocobase
+
+RUN mkdir -p /app/nocobase/storage/uploads/ && echo "$COMMIT_HASH" >> /app/nocobase/storage/uploads/COMMIT_HASH
+
 # install postgresql-client and mysql-client
 RUN apt update && apt install -y wget postgresql-common gnupg \
   && /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y \
@@ -52,13 +59,6 @@ RUN apt update && apt install -y wget postgresql-common gnupg \
   && dpkg -x mysql-community-client-core_8.1.0-1debian11_amd64.deb /tmp/mysql-client \
   && cp /tmp/mysql-client/usr/bin/mysqldump /usr/bin/ \
   && cp /tmp/mysql-client/usr/bin/mysql /usr/bin/
-
-COPY ./docker/nocobase/nocobase.conf /etc/nginx/sites-enabled/nocobase.conf
-COPY --from=builder /app/nocobase.tar.gz /app/nocobase.tar.gz
-
-WORKDIR /app/nocobase
-
-RUN mkdir -p /app/nocobase/storage/uploads/ && echo "$COMMIT_HASH" >> /app/nocobase/storage/uploads/COMMIT_HASH
 
 COPY ./docker/nocobase/docker-entrypoint.sh /app/
 
