@@ -257,7 +257,9 @@ export const useCreateActionProps = () => {
               navigate(onSuccess.redirectTo);
             }
           }
-          setVisible?.(false);
+          if (redirecting === 'previous') {
+            visible ? setVisible?.(false) : navigate(-1);
+          }
           return;
         }
         if (manualClose) {
@@ -875,7 +877,7 @@ export const useUpdateActionProps = () => {
   const form = useForm();
   const filterByTk = useFilterByTk();
   const { field, resource, __parent } = useBlockRequestContext();
-  const { setVisible, setFormValueChanged } = useActionContext();
+  const { setVisible, setFormValueChanged, visible } = useActionContext();
   const actionSchema = useFieldSchema();
   const navigate = useNavigateNoUpdate();
   const { fields, getField, name } = useCollection_deprecated();
@@ -897,7 +899,7 @@ export const useUpdateActionProps = () => {
         skipValidator,
         triggerWorkflows,
       } = actionSchema?.['x-action-settings'] ?? {};
-
+      const { manualClose, redirecting, redirectTo, successMessage } = onSuccess || {};
       const assignedValues = {};
       const waitList = Object.keys(originalAssignedValues).map(async (key) => {
         const value = originalAssignedValues[key];
@@ -955,32 +957,34 @@ export const useUpdateActionProps = () => {
         if (callBack) {
           callBack?.();
         }
-        setVisible?.(false);
+        if (redirecting === 'previous') {
+          visible ? setVisible?.(false) : navigate(-1);
+        }
         setFormValueChanged?.(false);
-        if (!onSuccess?.successMessage) {
+        if (!successMessage) {
           return;
         }
-        if (onSuccess?.manualClose) {
+        if (manualClose) {
           modal.success({
-            title: compile(onSuccess?.successMessage),
+            title: compile(successMessage),
             onOk: async () => {
               await form.reset();
-              if (onSuccess?.redirecting && onSuccess?.redirectTo) {
-                if (isURL(onSuccess.redirectTo)) {
-                  window.location.href = onSuccess.redirectTo;
+              if (redirecting && redirectTo) {
+                if (isURL(redirectTo)) {
+                  window.location.href = redirectTo;
                 } else {
-                  navigate(onSuccess.redirectTo);
+                  navigate(redirectTo);
                 }
               }
             },
           });
         } else {
-          message.success(compile(onSuccess?.successMessage));
-          if (onSuccess?.redirecting && onSuccess?.redirectTo) {
-            if (isURL(onSuccess.redirectTo)) {
-              window.location.href = onSuccess.redirectTo;
+          message.success(compile(successMessage));
+          if (redirecting && redirectTo) {
+            if (isURL(redirectTo)) {
+              window.location.href = redirectTo;
             } else {
-              navigate(onSuccess.redirectTo);
+              navigate(redirectTo);
             }
           }
         }
