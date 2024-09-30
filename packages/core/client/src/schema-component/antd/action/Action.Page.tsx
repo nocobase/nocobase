@@ -15,6 +15,7 @@ import { BackButtonUsedInSubPage } from '../page/BackButtonUsedInSubPage';
 import { TabsContextProvider, useTabsContext } from '../tabs/context';
 import { useActionPageStyle } from './Action.Page.style';
 import { usePopupOrSubpagesContainerDOM } from './hooks/usePopupSlotDOM';
+import { antdDrawerZIndex } from './utils';
 
 export function ActionPage({ level }) {
   const filedSchema = useFieldSchema();
@@ -25,8 +26,7 @@ export function ActionPage({ level }) {
 
   const style = useMemo(() => {
     return {
-      // 20 is the z-index value of the main page
-      zIndex: 20 + level,
+      zIndex: antdDrawerZIndex + level,
     };
   }, [level]);
 
@@ -44,11 +44,7 @@ export function ActionPage({ level }) {
 
   const container = getContainerDOM();
 
-  if (container) {
-    return createPortal(actionPageNode, container);
-  }
-
-  return actionPageNode;
+  return createPortal(actionPageNode, container || document.body);
 }
 
 ActionPage.Footer = observer(

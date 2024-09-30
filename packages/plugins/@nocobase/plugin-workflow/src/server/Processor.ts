@@ -206,6 +206,9 @@ export default class Processor {
   public async run(node, input?) {
     const { instructions } = this.options.plugin;
     const instruction = instructions.get(node.type);
+    if (!instruction) {
+      return Promise.reject(new Error(`instruction [${node.type}] not found for node (#${node.id})`));
+    }
     if (typeof instruction.run !== 'function') {
       return Promise.reject(new Error('`run` should be implemented for customized execution of the node'));
     }
@@ -232,6 +235,9 @@ export default class Processor {
   private async recall(node, job) {
     const { instructions } = this.options.plugin;
     const instruction = instructions.get(node.type);
+    if (!instruction) {
+      return Promise.reject(new Error(`instruction [${node.type}] not found for node (#${node.id})`));
+    }
     if (typeof instruction.resume !== 'function') {
       return Promise.reject(
         new Error(`"resume" method should be implemented for [${node.type}] instruction of node (#${node.id})`),
