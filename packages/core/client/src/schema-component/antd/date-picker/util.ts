@@ -7,11 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { getDefaultFormat, str2moment, toGmt, toLocal, getPickerFormat } from '@nocobase/utils/client';
+import { getDefaultFormat, str2moment, toGmt, toLocal } from '@nocobase/utils/client';
 import type { Dayjs } from 'dayjs';
 import dayjs from 'dayjs';
 
-const toStringByPicker = (value, picker = 'date', timezone: 'gmt' | 'local') => {
+const toStringByPicker = (value, picker, timezone: 'gmt' | 'local') => {
   if (!dayjs.isDayjs(value)) return value;
   if (timezone === 'local') {
     const offset = new Date().getTimezoneOffset();
@@ -57,7 +57,7 @@ export interface Moment2strOptions {
 }
 
 export const moment2str = (value?: Dayjs | null, options: Moment2strOptions = {}) => {
-  const { showTime, gmt, picker = 'date', utc = true } = options;
+  const { showTime, gmt, picker, utc = true } = options;
   if (!value) {
     return value;
   }
@@ -74,39 +74,9 @@ export const moment2str = (value?: Dayjs | null, options: Moment2strOptions = {}
   return toLocalByPicker(value, picker);
 };
 
-const handleChangeOnFilter = (value, picker, showTime) => {
-  const format = showTime ? 'YYYY-MM-DD HH:mm:ss' : getPickerFormat(picker);
-  if (value) {
-    return value.format(format);
-  }
-  return value;
-};
-
-const handleChangeOnForm = (value, dateOnly, utc, picker, showTime, gmt) => {
-  const format = showTime ? 'YYYY-MM-DD HH:mm:ss' : 'YYYY-MM-DD';
-  if (!value) {
-    return value;
-  }
-  if (dateOnly) {
-    return dayjs(value).startOf(picker).format('YYYY-MM-DD');
-  }
-  if (utc) {
-    if (gmt) {
-      return toGmt(value);
-    }
-    if (picker !== 'date') {
-      return dayjs(value).startOf(picker).toISOString();
-    }
-    const formattedDate = dayjs(value).format(format);
-    return dayjs(formattedDate).toISOString();
-  }
-  return dayjs(value).startOf(picker).format(format);
-};
-
 export const mapDatePicker = function () {
   return (props: any) => {
-    const { dateOnly, showTime, picker = 'date', utc, gmt, underFilter } = props;
-    const format = getDefaultFormat(props);
+    const format = getDefaultFormat(props) as any;
     const onChange = props.onChange;
     return {
       ...props,
@@ -114,10 +84,13 @@ export const mapDatePicker = function () {
       value: str2moment(props.value, props),
       onChange: (value: Dayjs | null, dateString) => {
         if (onChange) {
-          if (underFilter) {
-            onChange(handleChangeOnFilter(value, picker, showTime));
+          if (!props.showTime && value) {
+            value = value.startOf('day');
+          }
+          if (props.dateOnly) {
+            onChange(dateString !== '' ? dateString : undefined);
           } else {
-            onChange(handleChangeOnForm(value, dateOnly, utc, picker, showTime, gmt));
+            onChange(moment2str(value, props));
           }
         }
       },
@@ -129,26 +102,18 @@ export const mapRangePicker = function () {
   return (props: any) => {
     const format = getDefaultFormat(props) as any;
     const onChange = props.onChange;
-    const { dateOnly, showTime, picker = 'date', utc, gmt, underFilter } = props;
+
     return {
       ...props,
       format: format,
       value: str2moment(props.value, props),
       onChange: (value: Dayjs[]) => {
         if (onChange) {
-          if (underFilter) {
-            onChange(
-              value
-                ? [handleChangeOnFilter(value[0], picker, showTime), handleChangeOnFilter(value[1], picker, showTime)]
-                : [],
-            );
-          } else {
-            onChange(
-              value
-                ? [moment2str(getRangeStart(value[0], props), props), moment2str(getRangeEnd(value[1], props), props)]
-                : [],
-            );
-          }
+          onChange(
+            value
+              ? [moment2str(getRangeStart(value[0], props), props), moment2str(getRangeEnd(value[1], props), props)]
+              : [],
+          );
         }
       },
     } as any;
@@ -260,18 +225,4 @@ function withParams(value: any[], params: { fieldOperator?: string }) {
   }
 
   return value;
-}
-
-export function inferPickerType(dateString: string): 'year' | 'month' | 'quarter' | 'date' {
-  if (/^\d{4}$/.test(dateString)) {
-    return 'year';
-  } else if (/^\d{4}-\d{2}$/.test(dateString)) {
-    return 'month';
-  } else if (/^\d{4}Q[1-4]$/.test(dateString)) {
-    return 'quarter';
-  } else if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
-    return 'date';
-  } else {
-    return 'date';
-  }
 }

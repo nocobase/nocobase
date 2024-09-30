@@ -44,7 +44,7 @@ export const getDefaultFormat = (props: GetDefaultFormatProps) => {
   } else if (props['picker'] === 'year') {
     return 'YYYY';
   } else if (props['picker'] === 'week') {
-    return 'YYYY[W]W';
+    return 'YYYY-wo';
   }
   return props['showTime'] ? 'YYYY-MM-DD HH:mm:ss' : 'YYYY-MM-DD';
 };
@@ -68,33 +68,24 @@ export const toLocal = (value: dayjs.Dayjs) => {
   }
 };
 
-const convertQuarterToFirstDay = (quarterStr) => {
-  const year = parseInt(quarterStr.slice(0, 4)); // 提取年份
-  const quarter = parseInt(quarterStr.slice(-1)); // 提取季度数字
-  return dayjs().quarter(quarter).year(year);
-};
-
 const toMoment = (val: any, options?: Str2momentOptions) => {
   if (!val) {
     return;
   }
   const offset = options.utcOffset || -1 * new Date().getTimezoneOffset();
   const { gmt, picker, utc = true } = options;
-  if (dayjs(val).isValid()) {
-    if (!utc) {
-      return dayjs(val);
-    }
 
-    if (dayjs.isDayjs(val)) {
-      return val.utcOffset(offsetFromString(offset));
-    }
-    if (gmt) {
-      return dayjs(val).utcOffset(0);
-    }
-    return dayjs(val).utcOffset(offsetFromString(offset));
-  } else {
-    return convertQuarterToFirstDay(val);
+  if (!utc) {
+    return dayjs(val);
   }
+
+  if (dayjs.isDayjs(val)) {
+    return val.utcOffset(offsetFromString(offset));
+  }
+  if (gmt || picker) {
+    return dayjs(val).utcOffset(0);
+  }
+  return dayjs(val).utcOffset(offsetFromString(offset));
 };
 
 export const str2moment = (
@@ -207,18 +198,3 @@ function absFloor(number) {
     return Math.floor(number);
   }
 }
-
-export const getPickerFormat = (picker) => {
-  switch (picker) {
-    case 'week':
-      return 'YYYY[W]W';
-    case 'month':
-      return 'YYYY-MM';
-    case 'quarter':
-      return 'YYYY[Q]Q';
-    case 'year':
-      return 'YYYY';
-    default:
-      return 'YYYY-MM-DD';
-  }
-};

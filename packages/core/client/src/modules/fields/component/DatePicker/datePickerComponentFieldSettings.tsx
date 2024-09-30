@@ -29,21 +29,3 @@ export const datePickerComponentFieldSettings = new SchemaSettings({
     },
   ],
 });
-
-export const rangePickerPickerComponentFieldSettings = new SchemaSettings({
-  name: 'fieldSettings:component:DatePicker.RangePicker',
-  items: [
-    {
-      name: 'dateDisplayFormat',
-      Component: SchemaSettingsDateFormat as any,
-      useComponentProps() {
-        const schema = useFieldSchema();
-        const { fieldSchema: tableColumnSchema } = useColumnSchema();
-        const fieldSchema = tableColumnSchema || schema;
-        return {
-          fieldSchema,
-        };
-      },
-    },
-  ],
-});

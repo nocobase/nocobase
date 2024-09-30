@@ -29,7 +29,7 @@ describe('str2moment', () => {
     });
 
     test('picker is month', async () => {
-      const m = str2moment('2022-06-01T00:00:00.000Z', { picker: 'month', gmt: true });
+      const m = str2moment('2022-06-01T00:00:00.000Z', { picker: 'month' });
       expect(m.format('YYYY-MM-DD HH:mm:ss')).toBe('2022-06-01 00:00:00');
     });
   });
@@ -130,10 +130,10 @@ describe('moment2str', () => {
     expect(str).toBe('2023-06-01T00:00:00.000Z');
   });
 
-  test('picker is month gmt is false', () => {
+  test('picker is month', () => {
     const m = dayjs('2023-06-21 10:10:00');
-    const str = moment2str(m, { picker: 'month', gmt: false });
-    expect(str).toBe(dayjs('2023-06-01 00:00:00').toISOString());
+    const str = moment2str(m, { picker: 'month', gmt: true });
+    expect(str).toBe('2023-06-01T00:00:00.000Z');
   });
 
   test('picker is week, gmt is false', () => {

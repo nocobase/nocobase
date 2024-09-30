@@ -19,6 +19,7 @@ interface UnixTimestampProps {
 export const UnixTimestamp = connect(
   (props: UnixTimestampProps) => {
     const { value, onChange } = props;
+
     return (
       <DatePicker
         {...props}

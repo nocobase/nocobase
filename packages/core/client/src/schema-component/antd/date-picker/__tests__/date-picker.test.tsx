@@ -232,6 +232,9 @@ describe('RangePicker', () => {
       expect(
         screen.getByText(currentDateString.replace(/-/g, '/'), { selector: '.ant-description-date-picker' }),
       ).toBeInTheDocument();
+
+      // Value
+      expect(screen.getByText(`${currentDateString}T00:00:00.000Z`)).toBeInTheDocument();
     });
   });
 

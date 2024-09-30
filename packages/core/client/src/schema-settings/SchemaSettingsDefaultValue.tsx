@@ -110,11 +110,7 @@ export const SchemaSettingsDefaultValue = function DefaultValueConfigure(props: 
       VariableInput: (inputProps) => {
         return (
           <FlagProvider isInSubForm={isInSubForm} isInSubTable={isInSubTable} isInSetDefaultValueDialog>
-            <VariableInput
-              {...inputProps}
-              value={inputProps.value || undefined}
-              hideVariableButton={props?.hideVariableButton}
-            />
+            <VariableInput {...inputProps} hideVariableButton={props?.hideVariableButton} />
           </FlagProvider>
         );
       },

@@ -31,12 +31,26 @@ export class DateFieldInterface extends CollectionFieldInterface {
   hasDefaultValue = true;
   properties = {
     ...defaultProps,
-    ...dateTimeProps,
-    'uiSchema.x-component-props.showTime': {
-      type: 'boolean',
+    'uiSchema.x-component-props.dateFormat': {
+      type: 'string',
+      title: '{{t("Date format")}}',
+      'x-component': 'Radio.Group',
       'x-decorator': 'FormItem',
-      'x-component': 'Checkbox',
-      'x-visible': false,
+      default: 'YYYY-MM-DD',
+      enum: [
+        {
+          label: '{{t("Year/Month/Day")}}',
+          value: 'YYYY/MM/DD',
+        },
+        {
+          label: '{{t("Year-Month-Day")}}',
+          value: 'YYYY-MM-DD',
+        },
+        {
+          label: '{{t("Day/Month/Year")}}',
+          value: 'DD/MM/YYYY',
+        },
+      ],
     },
   };
   filterable = {
