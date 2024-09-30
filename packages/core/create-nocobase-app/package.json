@@ -4,7 +4,7 @@
   "main": "src/index.js",
   "license": "AGPL-3.0",
   "dependencies": {
-    "@umijs/utils": "3.5.20",
+    "@umijs/utils": "4.3.24",
     "axios": "^0.26.1",
     "chalk": "^4.1.1",
     "commander": "^9.2.0",
