@@ -11,6 +11,7 @@ import { Context, Next } from '@nocobase/actions';
 import { koaMulter as multer } from '@nocobase/utils';
 import Path from 'path';
 
+import _ from 'lodash';
 import Plugin from '..';
 import {
   FILE_FIELD_NAME,
@@ -35,10 +36,13 @@ function getFileFilter(storage) {
 
 export function getFileData(ctx: Context) {
   const { [FILE_FIELD_NAME]: file, storage } = ctx;
+  const values = ctx.action?.params?.values;
   if (!file) {
+    if (_.isPlainObject(values)) {
+      return values;
+    }
     return ctx.throw(400, 'file validation failed');
   }
-
   const storageConfig = ctx.app.pm.get(Plugin).storageTypes.get(storage.type);
   const { [storageConfig.filenameKey || 'filename']: name } = file;
   // make compatible filename across cloud service (with path)
@@ -58,8 +62,6 @@ export function getFileData(ctx: Context) {
     // 直接缓存起来
     url: `${baseUrl}/${pathname}`,
     mimetype: file.mimetype,
-    // @ts-ignore
-    meta: ctx.request.body,
     storageId: storage.id,
     ...(storageConfig.getFileData ? storageConfig.getFileData(file) : {}),
   };

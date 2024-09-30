@@ -7,11 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { useExpressionScope } from '@formily/react';
 import { isArr, isValid, toArr as toArray } from '@formily/shared';
 import { UploadFile } from 'antd/es/upload/interface';
-import { useTranslation } from 'react-i18next';
 import match from 'mime-match';
 import { useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAPIClient } from '../../../api-client';
 import { UNKNOWN_FILE_ICON, UPLOAD_PLACEHOLDER } from './placeholder';
 import type { IUploadProps, UploadProps } from './type';
@@ -111,9 +112,8 @@ export const normalizeFileList = (fileList: UploadFile[]) => {
   return [];
 };
 
-export function useUploadProps<T extends IUploadProps = UploadProps>(props: T) {
+export function useDefaultUploadProps(props) {
   const api = useAPIClient();
-
   return {
     ...props,
     // in customRequest method can't modify form's status(e.g: form.disabled=true )
@@ -149,6 +149,12 @@ export function useUploadProps<T extends IUploadProps = UploadProps>(props: T) {
       };
     },
   };
+}
+
+export function useUploadProps<T extends IUploadProps = UploadProps>(props: T) {
+  const scope = useExpressionScope();
+  const useProps = scope['useGlobalUploadProps'] || useDefaultUploadProps;
+  return useProps(props);
 }
 
 export function toValueItem(file) {
