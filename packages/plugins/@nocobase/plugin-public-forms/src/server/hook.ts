@@ -62,6 +62,9 @@ export const parseAssociationNames = (dataSourceKey: string, collectionName: str
       const collection = dataSource.collectionManager.getCollection(
         s?.['x-collection-field']?.split('.')?.[0] || collectionName,
       );
+      if (!collection) {
+        throw new Error('The collection is not found');
+      }
       const collectionField = s['x-collection-field'] && collection.getField(s['x-collection-field']?.split('.')[1]);
       const isAssociationField =
         collectionField &&

@@ -24,8 +24,6 @@ export const ActionContainer: ComposedActionDrawer = observer(
 
     const Component = getComponentByOpenMode(openMode);
 
-    console.log('currentLevel', currentLevel);
-
     return (
       <PopupLevelContext.Provider value={currentLevel}>
         <Component footerNodeName={'Action.Container.Footer'} level={currentLevel || 1} {...props} />

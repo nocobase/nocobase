@@ -66,7 +66,10 @@
     "@nocobase/plugin-workflow-parallel": "1.4.0-alpha",
     "@nocobase/plugin-workflow-request": "1.4.0-alpha",
     "@nocobase/plugin-workflow-sql": "1.4.0-alpha",
+    "@nocobase/plugin-workflow-notification": "1.4.0-alpha",
     "@nocobase/server": "1.4.0-alpha",
+    "@nocobase/plugin-notification-email": "1.4.0-alpha",
+    "@nocobase/plugin-notification-manager": "1.4.0-alpha",
     "cronstrue": "^2.11.0",
     "fs-extra": "^11.1.1"
   },
@@ -103,6 +106,7 @@
     "@nocobase/plugin-gantt",
     "@nocobase/plugin-kanban",
     "@nocobase/plugin-logger",
+    "@nocobase/plugin-notification-manager",
     "@nocobase/plugin-mobile",
     "@nocobase/plugin-system-settings",
     "@nocobase/plugin-ui-schema-storage",
@@ -118,7 +122,8 @@
     "@nocobase/plugin-workflow-manual",
     "@nocobase/plugin-workflow-parallel",
     "@nocobase/plugin-workflow-request",
-    "@nocobase/plugin-workflow-sql"
+    "@nocobase/plugin-workflow-sql",
+    "@nocobase/plugin-workflow-notification"
   ],
   "repository": {
     "type": "git",

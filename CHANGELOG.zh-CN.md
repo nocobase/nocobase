@@ -5,6 +5,35 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/),
 并且本项目遵循 [语义化版本](https://semver.org/spec/v2.0.0.html)。
 
+## [v1.3.27-beta](https://github.com/nocobase/nocobase/compare/v1.3.26-beta...v1.3.27-beta) - 2024-09-30
+
+### 🐛 修复
+
+- **[client]** 修复变量“表格中选中的记录” ([#5337](https://github.com/nocobase/nocobase/pull/5337)) by @zhangzhonghe
+
+- **[工作流：自定义操作事件]** 修复自定义操作事件在关系区块中不触发的问题 by @mytharcher
+
+## [v1.3.26-beta](https://github.com/nocobase/nocobase/compare/v1.3.25-beta...v1.3.26-beta) - 2024-09-29
+
+### 🚀 优化
+
+- **[client]** 隐藏移动端的滚动条 ([#5339](https://github.com/nocobase/nocobase/pull/5339)) by @zhangzhonghe
+
+### 🐛 修复
+
+- **[client]**
+  - 修复在嵌入页面中无法打开子页面的问题 ([#5335](https://github.com/nocobase/nocobase/pull/5335)) by @zhangzhonghe
+
+  - 修复弹窗被遮挡的问题 ([#5338](https://github.com/nocobase/nocobase/pull/5338)) by @zhangzhonghe
+
+  - 修复移动端子页面中，使用数据模板创建区块时，样式异常的问题 ([#5340](https://github.com/nocobase/nocobase/pull/5340)) by @zhangzhonghe
+
+  - 修复通过页面菜单关闭子页面时，不刷新页面区块数据的问题 ([#5331](https://github.com/nocobase/nocobase/pull/5331)) by @zhangzhonghe
+
+- **[操作：导出记录]** 修复 decimal 类型字段的导出格式 ([#5316](https://github.com/nocobase/nocobase/pull/5316)) by @chareice
+
+- **[区块：看板]** 修复在嵌入页面中，点击看板卡片后，无法打开弹窗的问题 ([#5326](https://github.com/nocobase/nocobase/pull/5326)) by @zhangzhonghe
+
 ## [v1.3.25-beta](https://github.com/nocobase/nocobase/compare/v1.3.24-beta...v1.3.25-beta) - 2024-09-25
 
 ### 🚀 优化

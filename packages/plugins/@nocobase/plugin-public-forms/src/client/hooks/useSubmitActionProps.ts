@@ -32,7 +32,7 @@ const initialSchema = (values, formSchema, t) => {
         'x-component': 'h3',
         'x-component-props': {
           style: { margin: '10px 0px 10px' },
-          children: '{{ t("Prompt After successful submission",{ns:"public-forms"})}}',
+          children: '{{ t("Prompt after successful submission",{ns:"public-forms"})}}',
         },
       },
       success: {

@@ -100,6 +100,7 @@ const LocalPlugins = () => {
     'Workflow',
     'Users & permissions',
     'Authentication',
+    'Notification',
     'System management',
     'Logging and monitoring',
     'Others',
