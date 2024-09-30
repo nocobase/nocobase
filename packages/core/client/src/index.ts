@@ -74,4 +74,9 @@ export { OpenModeProvider, useOpenModeContext } from './modules/popup/OpenModePr
 export { PopupContextProvider } from './modules/popup/PopupContextProvider';
 export { usePopupUtils } from './modules/popup/usePopupUtils';
 
+export { SwitchLanguage } from './i18n/SwitchLanguage';
 export { VariablePopupRecordProvider } from './modules/variable/variablesProvider/VariablePopupRecordProvider';
+
+export { useCurrentPopupRecord } from './modules/variable/variablesProvider/VariablePopupRecordProvider';
+
+export { languageCodes } from './locale';

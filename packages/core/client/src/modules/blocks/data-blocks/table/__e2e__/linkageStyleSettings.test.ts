@@ -57,4 +57,29 @@ test.describe('view', () => {
     const bgColor = await cell.evaluate((el) => getComputedStyle(el.parentElement).backgroundColor);
     expect(bgColor).toContain('163, 79, 204');
   });
+
+  test('text align', async ({ page, mockPage, mockRecord }) => {
+    const nocoPage = await mockPage(oneTableBlockWithIntegerAndIDColumn).waitForInit();
+    await mockRecord('general', { integer: '423' });
+    await nocoPage.goto();
+    await page.getByText('integer', { exact: true }).hover();
+
+    await page
+      .getByRole('button', {
+        name: 'designer-schema-settings-TableV2.Column-fieldSettings:TableColumn-general',
+      })
+      .click();
+    await page.getByRole('menuitem', { name: 'Style' }).click();
+    await page.getByRole('button', { name: 'plus Add linkage rule' }).click();
+    await page.getByText('Add property').click();
+    await page.getByTestId('select-linkage-properties').click();
+    await page.getByText('Text Align', { exact: true }).click();
+    await page.getByTestId('select-single').click();
+    await page.getByRole('option', { name: 'right' }).click();
+    await page.getByRole('button', { name: 'OK' }).click();
+
+    const cell = page.getByRole('button', { name: '423' });
+    const textAlign = await cell.evaluate((el) => getComputedStyle(el.parentElement).textAlign);
+    expect(textAlign).toContain('right');
+  });
 });

@@ -705,6 +705,7 @@
   "Clear default value": "デフォルト値をクリア",
   "Open in new window": "新しいウィンドウで開く",
   "Sorry, the page you visited does not exist.": "申し訳ありませんが、お探しのページは存在しません。",
+  "Ellipsis overflow content": "省略記号で内容を省略",
   "NaN": "なし",
   "Settings": "設定",
   "Collection selector": "コレクションセレクタ",
@@ -1003,8 +1004,5 @@
   "Use simple pagination mode": "シンプルなページネーションモードを使用",
   "Set Template Engine": "テンプレートエンジンを設定",
   "Skip getting the total number of table records during paging to speed up loading. It is recommended to enable this option for data tables with a large amount of data": "ページング時にテーブルレコードの総数取得をスキップして、読み込み速度を向上させます。データ量が多い場合にこのオプションの使用をお勧めします。",
-  "The current user only has the UI configuration permission, but don't have view permission for collection \"{{name}}\"": "現在のユーザーにはUI設定の権限しかなく、コレクション「{{name}}」を閲覧する権限はありません。",
-  "NaN": "なし",
-  "true": "真",
-  "false": "偽"
+  "The current user only has the UI configuration permission, but don't have view permission for collection \"{{name}}\"": "現在のユーザーにはUI設定の権限しかなく、コレクション「{{name}}」を閲覧する権限はありません。"
 }

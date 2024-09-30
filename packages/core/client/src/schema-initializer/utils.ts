@@ -462,7 +462,8 @@ export const useFilterFormItemInitializerFields = (options?: any) => {
         'x-use-decorator-props': 'useFormItemProps',
         'x-collection-field': `${name}.${field.name}`,
         'x-component-props': {
-          component: interfaceConfig?.filterable?.operators?.[0]?.schema?.['x-component'],
+          utc: false,
+          underFilter: true,
         },
       };
       if (isAssocField(field)) {
@@ -477,7 +478,7 @@ export const useFilterFormItemInitializerFields = (options?: any) => {
           'x-decorator': 'FormItem',
           'x-use-decorator-props': 'useFormItemProps',
           'x-collection-field': `${name}.${field.name}`,
-          'x-component-props': field.uiSchema?.['x-component-props'],
+          'x-component-props': { ...field.uiSchema?.['x-component-props'], utc: false, underFilter: true },
         };
       }
       const resultItem = {
@@ -571,6 +572,7 @@ const associationFieldToMenu = (
       interface: field.interface,
     },
     'x-component': 'CollectionField',
+    'x-component-props': { utc: false, underFilter: true },
     'x-read-pretty': false,
     'x-decorator': 'FormItem',
     'x-collection-field': `${collectionName}.${schemaName}`,
@@ -686,7 +688,7 @@ export const useFilterInheritsFormItemInitializerFields = (options?) => {
             'x-component': 'CollectionField',
             'x-decorator': 'FormItem',
             'x-collection-field': `${name}.${field.name}`,
-            'x-component-props': {},
+            'x-component-props': { utc: false, underFilter: true },
             'x-read-pretty': field?.uiSchema?.['x-read-pretty'],
           };
           return {

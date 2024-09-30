@@ -30,6 +30,11 @@ interface OpenModeProviderProps {
    * 隐藏 open mode 的配置选项
    */
   hideOpenMode?: boolean;
+  /**
+   * @default false
+   * 是否为Mobile路由下
+   */
+  isMobile?: boolean;
 }
 
 const defaultContext: OpenModeProviderProps = {
@@ -46,6 +51,7 @@ const OpenModeContext = React.createContext<{
   defaultOpenMode: OpenModeProviderProps['defaultOpenMode'];
   hideOpenMode: boolean;
   getComponentByOpenMode: (openMode: OpenMode) => any;
+  isMobile: boolean;
 }>(null);
 
 /**
@@ -66,7 +72,9 @@ export const OpenModeProvider: FC<OpenModeProviderProps> = (props) => {
     if (props.hideOpenMode !== undefined) {
       result.hideOpenMode = props.hideOpenMode;
     }
-
+    if (props.isMobile) {
+      result.isMobile = props.isMobile;
+    }
     return result;
   }, [props.defaultOpenMode, props.openModeToComponent, props.hideOpenMode]);
 
@@ -88,8 +96,9 @@ export const OpenModeProvider: FC<OpenModeProviderProps> = (props) => {
       defaultOpenMode: context.defaultOpenMode,
       hideOpenMode: context.hideOpenMode,
       getComponentByOpenMode,
+      isMobile: context.isMobile,
     };
-  }, [context.defaultOpenMode, context.hideOpenMode, getComponentByOpenMode]);
+  }, [context.defaultOpenMode, context.hideOpenMode, getComponentByOpenMode, context.isMobile]);
 
   return <OpenModeContext.Provider value={value}>{props.children}</OpenModeContext.Provider>;
 };

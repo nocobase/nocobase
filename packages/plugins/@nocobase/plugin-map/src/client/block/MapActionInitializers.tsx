@@ -45,6 +45,14 @@ const commonOptions = {
         'x-align': 'right',
       },
     },
+    {
+      name: 'customRequest',
+      title: '{{t("Custom request")}}',
+      Component: 'CustomRequestInitializer',
+      schema: {
+        'x-action': 'customize:table:request:global',
+      },
+    },
   ],
 };
 

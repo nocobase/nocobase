@@ -344,9 +344,6 @@ const headerClass = css`
 const cellClass = css`
   max-width: 300px;
   white-space: nowrap;
-  .nb-read-pretty-input-number {
-    text-align: right;
-  }
   .ant-color-picker-trigger {
     position: absolute;
     top: 50%;
@@ -521,6 +518,9 @@ export const Table: any = withDynamicSchemaProps(
      * @returns
      */
     const defaultRowKey = useCallback((record: any) => {
+      if (rowKey) {
+        return getRowKey(record);
+      }
       if (record.key) {
         return record.key;
       }
@@ -536,13 +536,21 @@ export const Table: any = withDynamicSchemaProps(
 
     const getRowKey = useCallback(
       (record: any) => {
-        if (typeof rowKey === 'string') {
-          return record[rowKey]?.toString();
+        if (Array.isArray(rowKey)) {
+          // 使用多个字段值组合生成唯一键
+          return rowKey
+            .map((keyField) => {
+              return record[keyField]?.toString() || '';
+            })
+            .join('-');
+        } else if (typeof rowKey === 'string') {
+          return record[rowKey];
         } else {
+          // 如果 rowKey 是函数或未提供，使用 defaultRowKey
           return (rowKey ?? defaultRowKey)(record)?.toString();
         }
       },
-      [rowKey, defaultRowKey],
+      [JSON.stringify(rowKey), defaultRowKey],
     );
 
     const dataSourceKeys = field?.value?.map?.(getRowKey);
@@ -632,6 +640,7 @@ export const Table: any = withDynamicSchemaProps(
               onChange(selectedRowKeys: any[], selectedRows: any[]) {
                 field.data = field.data || {};
                 field.data.selectedRowKeys = selectedRowKeys;
+                field.data.selectedRowData = selectedRows;
                 setSelectedRowKeys(selectedRowKeys);
                 onRowSelectionChange?.(selectedRowKeys, selectedRows);
               },
@@ -729,7 +738,7 @@ export const Table: any = withDynamicSchemaProps(
 
     const rowClassName = useCallback(
       (record) => (selectedRow.includes(record[rowKey]) ? highlightRow : ''),
-      [selectedRow, highlightRow, rowKey],
+      [selectedRow, highlightRow, JSON.stringify(rowKey)],
     );
 
     const onExpandValue = useCallback(
@@ -783,7 +792,8 @@ export const Table: any = withDynamicSchemaProps(
         <SortableWrapper>
           <MemoizedAntdTable
             ref={tableSizeRefCallback}
-            rowKey={rowKey ?? defaultRowKey}
+            rowKey={defaultRowKey}
+            // rowKey={(record) => record.id}
             dataSource={dataSource}
             tableLayout="auto"
             {...others}

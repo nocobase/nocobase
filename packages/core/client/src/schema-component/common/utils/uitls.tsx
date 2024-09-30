@@ -8,13 +8,17 @@
  */
 
 import Handlebars from 'handlebars';
+import { dayjs } from '@nocobase/utils/client';
+import helpers from '@budibase/handlebars-helpers';
 import _, { every, findIndex, some } from 'lodash';
+import { getPickerFormat } from '@nocobase/utils/client';
 import { replaceVariableValue } from '../../../block-provider/hooks';
 import { VariableOption, VariablesContextType } from '../../../variables/types';
 import { isVariable } from '../../../variables/utils/isVariable';
 import { transformVariableValue } from '../../../variables/utils/transformVariableValue';
 import { getJsonLogic } from '../../common/utils/logic';
-
+import { inferPickerType } from '../../antd/date-picker/util';
+import url from 'url';
 type VariablesCtx = {
   /** 当前登录的用户 */
   $user?: Record<string, any>;
@@ -122,11 +126,19 @@ export const conditionAnalyses = async ({
       const jsonLogic = getJsonLogic();
       const [value, targetValue] = await Promise.all(parsingResult);
       const targetCollectionField = await variables.getCollectionField(targetVariableName, localVariables);
+      let currentInputValue = transformVariableValue(targetValue, { targetCollectionField });
+      const comparisonValue = transformVariableValue(value, { targetCollectionField });
+      if (
+        ['datetime', 'date', 'datetimeNoTz', 'dateOnly', 'unixTimestamp'].includes(targetCollectionField.type) &&
+        currentInputValue
+      ) {
+        const picker = inferPickerType(comparisonValue);
+        const format = getPickerFormat(picker);
+        currentInputValue = dayjs(currentInputValue).format(format);
+      }
+
       return jsonLogic.apply({
-        [operator]: [
-          transformVariableValue(targetValue, { targetCollectionField }),
-          transformVariableValue(value, { targetCollectionField }),
-        ],
+        [operator]: [currentInputValue, comparisonValue],
       });
     } catch (error) {
       throw error;
@@ -158,6 +170,32 @@ const getVariablesData = (localVariables) => {
   });
   return data;
 };
+const allHelpers = helpers();
+
+//遍历所有 helper 并手动注册到 Handlebars
+Object.keys(allHelpers).forEach(function (helperName) {
+  Handlebars.registerHelper(helperName, allHelpers[helperName]);
+});
+// 自定义 helper 来处理对象
+Handlebars.registerHelper('json', function (context) {
+  return JSON.stringify(context);
+});
+
+//重写urlParse
+Handlebars.registerHelper('urlParse', function (str) {
+  try {
+    return JSON.stringify(url.parse(str));
+  } catch (error) {
+    return `Invalid URL: ${str}`;
+  }
+});
+
+Handlebars.registerHelper('dateFormat', (date, format, tz) => {
+  if (typeof tz === 'string') {
+    return dayjs(date).tz(tz).format(format);
+  }
+  return dayjs(date).format(format);
+});
 
 export async function getRenderContent(templateEngine, content, variables, localVariables, defaultParse) {
   if (content && templateEngine === 'handlebars') {
@@ -165,12 +203,12 @@ export async function getRenderContent(templateEngine, content, variables, local
       const renderedContent = Handlebars.compile(content);
       // 处理渲染后的内容
       const data = getVariablesData(localVariables);
-      const { $nDate } = variables.ctxRef.current;
+      const { $nDate } = variables?.ctxRef?.current || {};
       const variableDate = {};
-      Object.keys($nDate).map((v) => {
+      Object.keys($nDate || {}).map((v) => {
         variableDate[v] = $nDate[v]();
       });
-      const html = renderedContent({ ...variables.ctxRef.current, ...data, $nDate: variableDate });
+      const html = renderedContent({ ...variables?.ctxRef?.current, ...data, $nDate: variableDate });
       return await defaultParse(html);
     } catch (error) {
       console.log(error);

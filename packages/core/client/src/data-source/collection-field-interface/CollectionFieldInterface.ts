@@ -8,9 +8,10 @@
  */
 
 import type { ISchema } from '@formily/react';
+import { cloneDeep } from 'lodash';
 import type { CollectionFieldOptions } from '../collection';
 import { CollectionFieldInterfaceManager } from './CollectionFieldInterfaceManager';
-
+import { defaultProps } from '../../collection-manager/interfaces/properties';
 export type CollectionFieldInterfaceFactory = new (
   collectionFieldInterfaceManager: CollectionFieldInterfaceManager,
 ) => CollectionFieldInterface;
@@ -42,6 +43,7 @@ export abstract class CollectionFieldInterface {
   componentOptions?: CollectionFieldInterfaceComponentOption[];
   isAssociation?: boolean;
   operators?: any[];
+  properties?: any;
   /**
    * - 如果该值为空，则在 Filter 组件中该字段会被过滤掉
    * - 如果该值为空，则不会在变量列表中看到该字段
@@ -81,5 +83,77 @@ export abstract class CollectionFieldInterface {
       }
     }
     this.componentOptions.push(componentOption);
+  }
+  getConfigureFormProperties() {
+    const defaultValueProps = this.hasDefaultValue ? this.getDefaultValueProperty() : {};
+    return {
+      ...cloneDeep({ ...defaultProps, ...this?.properties }),
+      ...defaultValueProps,
+    };
+  }
+  getDefaultValueProperty() {
+    return {
+      defaultValue: {
+        ...cloneDeep(this?.default?.uiSchema),
+        ...this?.properties?.uiSchema,
+        required: false,
+        title: '{{ t("Default value") }}',
+        'x-decorator': 'FormItem',
+        'x-reactions': [
+          {
+            dependencies: [
+              'uiSchema.x-component-props.gmt',
+              'uiSchema.x-component-props.showTime',
+              'uiSchema.x-component-props.dateFormat',
+              'uiSchema.x-component-props.timeFormat',
+              'uiSchema.x-component-props.picker',
+            ],
+            fulfill: {
+              state: {
+                componentProps: {
+                  gmt: '{{$deps[0]}}',
+                  showTime: '{{$deps[1]}}',
+                  dateFormat: '{{$deps[2]}}',
+                  timeFormat: '{{$deps[3]}}',
+                  picker: '{{$deps[4]}}',
+                },
+              },
+            },
+          },
+          {
+            // 当 picker 改变时，清空 defaultValue
+            dependencies: ['uiSchema.x-component-props.picker'],
+            fulfill: {
+              state: {
+                value: null,
+              },
+            },
+          },
+          {
+            dependencies: ['primaryKey', 'unique', 'autoIncrement', 'defaultToCurrentTime'],
+            when: '{{$deps[0]||$deps[1]||$deps[2]||$deps[3]}}',
+            fulfill: {
+              state: {
+                hidden: true,
+                value: null,
+              },
+            },
+            otherwise: {
+              state: {
+                hidden: false,
+              },
+            },
+          },
+          {
+            dependencies: ['uiSchema.enum'],
+            fulfill: {
+              state: {
+                dataSource: '{{$deps[0]}}',
+              },
+            },
+          },
+        ],
+      },
+    };
   }
 }

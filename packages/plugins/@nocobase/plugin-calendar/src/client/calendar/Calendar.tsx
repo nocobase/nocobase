@@ -17,6 +17,7 @@ import {
   useCollectionParentRecordData,
   usePopupUtils,
   useProps,
+  useToken,
   withDynamicSchemaProps,
 } from '@nocobase/client';
 import { parseExpression } from 'cron-parser';
@@ -36,8 +37,34 @@ import useStyle from './style';
 import type { ToolbarProps } from './types';
 import { formatDate } from './utils';
 
+interface Event {
+  id: string;
+  colorFieldValue: string;
+  title: string;
+  start: Date;
+  end: Date;
+}
+
 const Weeks = ['month', 'week', 'day'] as View[];
 const localizer = dayjsLocalizer(dayjs);
+
+const getColorString = (
+  colorFieldValue: string,
+  enumList: {
+    color: string;
+    label: string;
+    value: string;
+    rawLabel: string;
+  }[],
+) => {
+  for (const item of enumList) {
+    if (item.value === colorFieldValue) {
+      return item.color;
+    }
+  }
+
+  return '';
+};
 
 export const DeleteEventContext = React.createContext({
   close: () => {},
@@ -63,13 +90,26 @@ function Toolbar(props: ToolbarProps) {
   );
 }
 
-const useEvents = (dataSource: any, fieldNames: any, date: Date, view: (typeof Weeks)[number]) => {
+const useEvents = (
+  dataSource: any,
+  fieldNames: {
+    colorFieldName: string;
+    start: string;
+    end: string;
+    id: string;
+    title: string;
+  },
+  date: Date,
+  view: (typeof Weeks)[number],
+) => {
   const { t } = useTranslation();
   const { fields } = useCollection();
   const labelUiSchema = fields.find((v) => v.name === fieldNames?.title)?.uiSchema;
+  const enumUiSchema = fields.find((v) => v.name === fieldNames?.colorFieldName);
   return useMemo(() => {
-    if (!Array.isArray(dataSource)) return [];
-    const events = [];
+    if (!Array.isArray(dataSource)) return { events: [], enumList: [] };
+    const enumList = enumUiSchema?.uiSchema?.enum || [];
+    const events: Event[] = [];
 
     dataSource.forEach((item) => {
       const { cron, exclude = [] } = item;
@@ -94,7 +134,7 @@ const useEvents = (dataSource: any, fieldNames: any, date: Date, view: (typeof W
 
       const push = (eventStart: Dayjs = start.clone()) => {
         // 必须在这个月的开始时间和结束时间，且在日程的开始时间之后
-        if (eventStart.isBefore(start)) {
+        if (eventStart.isBefore(start) || !eventStart.isBetween(startDate, endDate)) {
           return;
         }
 
@@ -108,10 +148,12 @@ const useEvents = (dataSource: any, fieldNames: any, date: Date, view: (typeof W
             return eventStart.isSame(d);
           }
         });
+
         if (res) return out;
         const title = getLabelFormatValue(labelUiSchema, get(item, fieldNames.title), true);
-        const event = {
+        const event: Event = {
           id: get(item, fieldNames.id || 'id'),
+          colorFieldValue: item[fieldNames.colorFieldName],
           title: title || t('Untitle'),
           start: eventStart.toDate(),
           end: eventStart.add(intervalTime, 'millisecond').toDate(),
@@ -119,7 +161,6 @@ const useEvents = (dataSource: any, fieldNames: any, date: Date, view: (typeof W
 
         events.push(event);
       };
-
       if (cron === 'every_week') {
         let nextStart = start
           .clone()
@@ -157,8 +198,20 @@ const useEvents = (dataSource: any, fieldNames: any, date: Date, view: (typeof W
         }
       }
     });
-    return events;
-  }, [dataSource, fieldNames.start, fieldNames.end, fieldNames.id, fieldNames.title, date, view, t]);
+    return { events, enumList };
+  }, [
+    labelUiSchema,
+    dataSource,
+    fieldNames.colorFieldName,
+    fieldNames.start,
+    fieldNames.end,
+    fieldNames.id,
+    fieldNames.title,
+    date,
+    view,
+    t,
+    enumUiSchema?.uiSchema?.enum,
+  ]);
 };
 
 export const Calendar: any = withDynamicSchemaProps(
@@ -174,11 +227,12 @@ export const Calendar: any = withDynamicSchemaProps(
       const height = useCalenderHeight();
       const [date, setDate] = useState<Date>(new Date());
       const [view, setView] = useState<View>('month');
-      const events = useEvents(dataSource, fieldNames, date, view);
+      const { events, enumList } = useEvents(dataSource, fieldNames, date, view);
       const [record, setRecord] = useState<any>({});
       const { wrapSSR, hashId, componentCls: containerClassName } = useStyle();
       const parentRecordData = useCollectionParentRecordData();
       const fieldSchema = useFieldSchema();
+      const { token } = useToken();
 
       const components = useMemo(() => {
         return {
@@ -216,6 +270,17 @@ export const Calendar: any = withDynamicSchemaProps(
         noEventsInRange: i18nt('None'),
         showMore: (count) => i18nt('{{count}} more items', { count }),
       };
+
+      const eventPropGetter = (event: Event) => {
+        if (event.colorFieldValue) {
+          const fontColor = token[`${getColorString(event.colorFieldValue, enumList)}7`];
+          const backgroundColor = token[`${getColorString(event.colorFieldValue, enumList)}1`];
+          return {
+            style: { color: fontColor, backgroundColor, border: 'none' },
+          };
+        }
+      };
+
       return wrapSSR(
         <div className={`${hashId} ${containerClassName}`} style={{ height: height || 700 }}>
           <PopupContextProvider visible={visible} setVisible={setVisible}>
@@ -227,6 +292,7 @@ export const Calendar: any = withDynamicSchemaProps(
               popup
               selectable
               events={events}
+              eventPropGetter={eventPropGetter}
               view={view}
               views={Weeks}
               date={date}

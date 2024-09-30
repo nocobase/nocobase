@@ -28,7 +28,7 @@ const app = mockApp({
   },
   plugins: [DemoPlugin],
   apis: {
-    'mobileRoutes:list': {
+    'mobileRoutes:listAccessible': {
       data: [
         {
           id: 10,

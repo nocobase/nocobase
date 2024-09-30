@@ -8,16 +8,14 @@
  */
 
 import { UnixTimestamp } from '@nocobase/client';
-import { renderAppOptions, renderReadPrettyApp, screen, userEvent, waitFor } from '@nocobase/test/client';
+import { renderAppOptions, renderReadPrettyApp, screen } from '@nocobase/test/client';
 
 describe('UnixTimestamp', () => {
   it('renders without errors', async () => {
     const { container } = await renderAppOptions({
       Component: UnixTimestamp as any,
-      props: {
-        accuracy: 'millisecond',
-      },
-      value: 0,
+      props: {},
+      value: null,
     });
     expect(container).toMatchInlineSnapshot(`
       <div>
@@ -69,78 +67,10 @@ describe('UnixTimestamp', () => {
     `);
   });
 
-  it('millisecond', async () => {
-    await renderAppOptions({
-      Component: UnixTimestamp as any,
-      value: 1712819630000,
-      props: {
-        accuracy: 'millisecond',
-      },
-    });
-    await waitFor(() => {
-      expect(screen.getByRole('textbox')).toHaveValue('2024-04-11');
-    });
-  });
-
-  it('second', async () => {
-    await renderAppOptions({
-      Component: UnixTimestamp as any,
-      value: 1712819630,
-      props: {
-        accuracy: 'second',
-      },
-    });
-
-    await waitFor(() => {
-      expect(screen.getByRole('textbox')).toHaveValue('2024-04-11');
-    });
-  });
-
-  it('string', async () => {
-    await renderAppOptions({
-      Component: UnixTimestamp as any,
-      value: '2024-04-11',
-      props: {
-        accuracy: 'millisecond',
-      },
-    });
-
-    await waitFor(() => {
-      expect(screen.getByRole('textbox')).toHaveValue('2024-04-11');
-    });
-  });
-
-  it('change', async () => {
-    const onChange = vitest.fn();
-    await renderAppOptions({
-      Component: UnixTimestamp as any,
-      value: '2024-04-11',
-      onChange,
-      props: {
-        accuracy: 'millisecond',
-      },
-    });
-    await userEvent.click(screen.getByRole('textbox'));
-
-    await waitFor(() => {
-      expect(screen.queryByRole('table')).toBeInTheDocument();
-    });
-
-    await userEvent.click(document.querySelector('td[title="2024-04-12"]'));
-
-    await waitFor(() => {
-      expect(screen.getByRole('textbox')).toHaveValue('2024-04-12');
-    });
-    expect(onChange).toBeCalledWith(1712880000000);
-  });
-
   it('read pretty', async () => {
     const { container } = await renderReadPrettyApp({
       Component: UnixTimestamp as any,
       value: '2024-04-11',
-      props: {
-        accuracy: 'millisecond',
-      },
     });
 
     expect(screen.getByText('2024-04-11')).toBeInTheDocument();

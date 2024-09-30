@@ -13,16 +13,14 @@ import {
   DEFAULT_DATA_SOURCE_KEY,
   MaybeCollectionProvider,
   useAPIClient,
-  useDataSourceManager,
-  useParsedFilter,
   useRequest,
 } from '@nocobase/client';
-import React, { createContext, useContext } from 'react';
+import React, { createContext, useContext, useEffect } from 'react';
 import { parseField, removeUnparsableFilter } from '../utils';
 import { ChartDataContext } from '../block/ChartDataProvider';
-import { ConfigProvider } from 'antd';
 import { useChartFilter } from '../hooks';
 import { ChartFilterContext } from '../filter/FilterProvider';
+import { GlobalAutoRefreshContext } from '../block/GlobalAutoRefreshProvider';
 
 export type MeasureProps = {
   field: string | string[];
@@ -66,26 +64,36 @@ export type ChartRendererProps = {
     chartType: string;
     general: any;
     advanced: any;
+    title?: string;
+    bordered?: boolean;
   };
   transform?: TransformProps[];
   mode?: 'builder' | 'sql';
+  disableAutoRefresh?: boolean;
 };
 
 export const ChartRendererContext = createContext<
   {
     service: any;
     data?: any[];
+    autoRefresh?: number | boolean;
+    setAutoRefresh?: (autoRefresh: number | boolean) => void;
+    showActionBar?: boolean;
   } & ChartRendererProps
 >({} as any);
 ChartRendererContext.displayName = 'ChartRendererContext';
 
 export const ChartRendererProvider: React.FC<ChartRendererProps> = (props) => {
-  const { query, config, collection, transform, dataSource = DEFAULT_DATA_SOURCE_KEY } = props;
+  const { query, config, collection, transform, dataSource = DEFAULT_DATA_SOURCE_KEY, disableAutoRefresh } = props;
   const { addChart } = useContext(ChartDataContext);
+  const { addChart: addGlobalAutoRefreshChart, removeChart: removeGlobalAutoRefreshChart } =
+    useContext(GlobalAutoRefreshContext);
   const { ready, form, enabled } = useContext(ChartFilterContext);
   const { getFilter, hasFilter, appendFilter, parseFilter } = useChartFilter();
   const schema = useFieldSchema();
   const api = useAPIClient();
+  const [autoRefresh, setAutoRefresh] = React.useState<number | boolean>(false);
+  const [showActionBar, setShowActionBar] = React.useState<boolean>(false);
   const service = useRequest(
     async (dataSource, collection, query, manual) => {
       if (!(collection && query?.measures?.length)) return;
@@ -133,6 +141,9 @@ export const ChartRendererProvider: React.FC<ChartRendererProps> = (props) => {
       } finally {
         if (!manual && schema?.['x-uid']) {
           addChart(schema?.['x-uid'], { dataSource, collection, service, query });
+          if (!autoRefresh) {
+            addGlobalAutoRefreshChart?.(schema?.['x-uid'], { service });
+          }
         }
       }
     },
@@ -144,11 +155,41 @@ export const ChartRendererProvider: React.FC<ChartRendererProps> = (props) => {
     },
   );
 
+  useEffect(() => {
+    if (disableAutoRefresh) {
+      return;
+    }
+    if (!autoRefresh) {
+      addGlobalAutoRefreshChart?.(schema?.['x-uid'], { service });
+      return;
+    }
+    removeGlobalAutoRefreshChart?.(schema?.['x-uid']);
+    const refresh = autoRefresh as number;
+    const timer = setInterval(service.refresh, refresh * 1000);
+    return () => {
+      clearInterval(timer);
+    };
+  }, [autoRefresh, disableAutoRefresh]);
+
   return (
     <CollectionManagerProvider dataSource={dataSource}>
       <MaybeCollectionProvider collection={collection}>
-        <ChartRendererContext.Provider value={{ dataSource, collection, config, transform, service, query }}>
-          {props.children}
+        <ChartRendererContext.Provider
+          value={{
+            dataSource,
+            collection,
+            config,
+            transform,
+            service,
+            query,
+            autoRefresh,
+            setAutoRefresh,
+            showActionBar,
+          }}
+        >
+          <div onMouseOver={() => setShowActionBar(true)} onMouseOut={() => setShowActionBar(false)}>
+            {props.children}
+          </div>
         </ChartRendererContext.Provider>
       </MaybeCollectionProvider>
     </CollectionManagerProvider>

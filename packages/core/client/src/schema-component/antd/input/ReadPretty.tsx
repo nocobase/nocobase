@@ -46,7 +46,10 @@ ReadPretty.Input = (props: InputReadPrettyProps) => {
   // eslint-disable-next-line react-hooks/rules-of-hooks
   const compile = useCompile();
   return (
-    <div className={cls(prefixCls, props.className)} style={{ ...props.style, overflowWrap: 'break-word' }}>
+    <div
+      className={cls(prefixCls, props.className)}
+      style={{ overflowWrap: 'break-word', whiteSpace: 'normal', ...props.style }}
+    >
       {props.addonBefore}
       {props.prefix}
       <EllipsisWithTooltip ellipsis={props.ellipsis}>
@@ -98,7 +101,10 @@ ReadPretty.TextArea = (props) => {
     value
   );
   return (
-    <div className={cls(prefixCls, props.className)} style={{ overflowWrap: 'break-word', ...props.style }}>
+    <div
+      className={cls(prefixCls, props.className)}
+      style={{ overflowWrap: 'break-word', whiteSpace: 'normal', ...props.style }}
+    >
       {props.addonBefore}
       {props.prefix}
       {content}
@@ -150,7 +156,10 @@ ReadPretty.Html = (props) => {
     </EllipsisWithTooltip>
   );
   return (
-    <div className={cls(prefixCls, props.className)} style={{ overflowWrap: 'break-word', ...props.style }}>
+    <div
+      className={cls(prefixCls, props.className)}
+      style={{ overflowWrap: 'break-word', whiteSpace: 'normal', ...props.style }}
+    >
       {props.addonBefore}
       {props.prefix}
       {content}
@@ -169,18 +178,19 @@ export interface URLReadPrettyProps {
   suffix?: React.ReactNode;
   addonAfter?: React.ReactNode;
   prefixCls?: string;
+  ellipsis?: boolean;
 }
 
-ReadPretty.URL = (props) => {
+ReadPretty.URL = (props: URLReadPrettyProps) => {
   // eslint-disable-next-line react-hooks/rules-of-hooks
   const prefixCls = usePrefixCls('description-url', props);
   const content = props.value && (
-    <Typography.Link ellipsis target={'_blank'} href={props.value as any}>
+    <Typography.Link ellipsis={props.ellipsis} target={'_blank'} href={props.value as any}>
       {props.value}
     </Typography.Link>
   );
   return (
-    <div className={cls(prefixCls, props.className)} style={props.style}>
+    <div className={cls(prefixCls, props.className)} style={{ whiteSpace: 'normal', ...props.style }}>
       {props.addonBefore}
       {props.prefix}
       {content}
@@ -223,12 +233,14 @@ export interface JSONTextAreaReadPrettyProps {
   style?: React.CSSProperties;
   space?: number;
   prefixCls?: string;
+  ellipsis?: boolean;
 }
 
-ReadPretty.JSON = (props) => {
+ReadPretty.JSON = (props: JSONTextAreaReadPrettyProps) => {
   // eslint-disable-next-line react-hooks/rules-of-hooks
   const prefixCls = usePrefixCls('json', props);
-  return (
+  const content = props.value != null ? JSON.stringify(props.value, null, props.space ?? 2) : '';
+  const JSONContent = (
     <pre
       className={cx(
         prefixCls,
@@ -241,7 +253,17 @@ ReadPretty.JSON = (props) => {
       )}
       style={props.style}
     >
-      {props.value != null ? JSON.stringify(props.value, null, props.space ?? 2) : ''}
+      {content}
     </pre>
   );
+
+  if (props.ellipsis) {
+    return (
+      <EllipsisWithTooltip ellipsis={props.ellipsis} popoverContent={JSONContent}>
+        <Typography.Text>{content}</Typography.Text>
+      </EllipsisWithTooltip>
+    );
+  }
+
+  return JSONContent;
 };

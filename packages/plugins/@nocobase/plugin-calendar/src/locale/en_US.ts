@@ -7,6 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 export default {
   "Configure calendar": "Configure calendar",
   "Title field": "Title field",
@@ -50,5 +59,7 @@ export default {
   "Weekly": "Weekly",
   "Monthly": "Monthly",
   "Yearly": "Yearly",
-  "Repeats": "Repeats"
+  "Repeats": "Repeats",
+  "Background color field": "Background color field",
+  "Not selected": "Not selected",
 };

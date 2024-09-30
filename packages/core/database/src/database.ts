@@ -54,7 +54,7 @@ import extendOperators from './operators';
 import QueryInterface from './query-interface/query-interface';
 import buildQueryInterface from './query-interface/query-interface-builder';
 import { RelationRepository } from './relation-repository/relation-repository';
-import { Repository } from './repository';
+import { Repository, TargetKey } from './repository';
 import {
   AfterDefineCollectionListener,
   BeforeDefineCollectionListener,
@@ -219,6 +219,9 @@ export class Database extends EventEmitter implements AsyncEmitter {
         opts.storage = resolve(process.cwd(), options.storage);
       }
     }
+
+    // @ts-ignore
+    opts.rawTimezone = opts.timezone;
 
     if (options.dialect === 'sqlite') {
       delete opts.timezone;
@@ -628,11 +631,11 @@ export class Database extends EventEmitter implements AsyncEmitter {
 
   getRepository<R extends Repository>(name: string): R;
 
-  getRepository<R extends RelationRepository>(name: string, relationId: string | number): R;
+  getRepository<R extends RelationRepository>(name: string, relationId: TargetKey): R;
 
-  getRepository<R extends ArrayFieldRepository>(name: string, relationId: string | number): R;
+  getRepository<R extends ArrayFieldRepository>(name: string, relationId: TargetKey): R;
 
-  getRepository<R extends RelationRepository>(name: string, relationId?: string | number): Repository | R {
+  getRepository<R extends RelationRepository>(name: string, relationId?: TargetKey): Repository | R {
     const [collection, relation] = name.split('.');
     if (relation) {
       return this.getRepository(collection)?.relation(relation)?.of(relationId) as R;

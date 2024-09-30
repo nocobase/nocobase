@@ -9,7 +9,7 @@
 
 import { T3879 } from './utils';
 
-import { test, expect } from '@nocobase/test/e2e';
+import { expect, test } from '@nocobase/test/e2e';
 
 // https://nocobase.height.app/T-3529
 test('formula field calculation', async ({ page, mockPage }) => {
@@ -29,5 +29,7 @@ test('formula field calculation', async ({ page, mockPage }) => {
     .getByLabel('block-item-CollectionField-general-form-general.number2-number2')
     .getByRole('spinbutton')
     .fill('3');
-  await expect(await page.locator('.nb-read-pretty-input-number').innerText()).toBe('6');
+  await expect(page.getByLabel('block-item-CollectionField-general-form-general.formula-formula')).toHaveText(
+    'formula:6',
+  );
 });

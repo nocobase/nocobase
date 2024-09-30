@@ -1,0 +1,22 @@
+{
+  "Email": "邮件",
+  "From": "发件人",
+  "To": "收件人",
+  "CC": "抄送",
+  "BCC": "密送",
+  "Add email address": "新增邮件地址",
+  "Subject": "主题",
+  "Content": "内容",
+  "Host": "主机",
+  "Port": "端口",
+  "Secure": "安全模式",
+  "Account": "账号",
+  "Password" : "密码",
+  "Configure": "编辑",
+  "The email address that will be used as the sender": "发件人邮件地址",
+  "SMTP mail": "SMTP 邮件",
+  "SMTP server host": "SMTP 服务器主机",
+  "Content type": "内容格式",
+  "Plain text": "纯文本",
+  "Transport": "传输方式"
+}
