@@ -375,7 +375,7 @@ export default class Processor {
   /**
    * @experimental
    */
-  public getScope(sourceNodeId: number, includeSelf = false) {
+  public getScope(sourceNodeId: number, includeSelfScope = false) {
     const node = this.nodesMap.get(sourceNodeId);
     const systemFns = {};
     const scope = {
@@ -387,7 +387,7 @@ export default class Processor {
     }
 
     const $scopes = {};
-    for (let n = includeSelf ? node : this.findBranchParentNode(node); n; n = this.findBranchParentNode(n)) {
+    for (let n = includeSelfScope ? node : this.findBranchParentNode(node); n; n = this.findBranchParentNode(n)) {
       const instruction = this.options.plugin.instructions.get(n.type);
       if (typeof instruction?.getScope === 'function') {
         $scopes[n.id] = $scopes[n.key] = instruction.getScope(n, this.jobsMapByNodeKey[n.key], this);
@@ -405,9 +405,9 @@ export default class Processor {
   /**
    * @experimental
    */
-  public getParsedValue(value, sourceNodeId: number, includeSelf = false) {
+  public getParsedValue(value, sourceNodeId: number, { additionalScope = {}, includeSelfScope = false } = {}) {
     const template = parse(value);
-    const scope = this.getScope(sourceNodeId, includeSelf);
+    const scope = Object.assign(this.getScope(sourceNodeId, includeSelfScope), additionalScope);
     template.parameters.forEach(({ key }) => {
       appendArrayColumn(scope, key);
     });

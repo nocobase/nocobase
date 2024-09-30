@@ -31,7 +31,7 @@ function calculateCondition(node: FlowNodeModel, processor: Processor) {
 
   return evaluator
     ? evaluator(expression, processor.getScope(node.id, true))
-    : logicCalculate(processor.getParsedValue(calculation, node.id, true));
+    : logicCalculate(processor.getParsedValue(calculation, node.id, { includeSelfScope: true }));
 }
 
 export default class extends Instruction {
