@@ -643,7 +643,7 @@
   "Current time": "Поточний час",
   "System variables": "Системні змінні",
   "Date variables": "Змінні дати",
-  "Popup close method": "Метод закриття спливаючого вікна",
+  "Popup message close method": "Метод закриття спливаючого вікна",
   "Automatic close": "Автоматичне закриття",
   "Manually close": "Закрити вручну",
   "After successful update": "Після успішного оновлення",

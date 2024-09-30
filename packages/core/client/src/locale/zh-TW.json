@@ -651,7 +651,7 @@
   "Parent record": "上級記錄",
   "Current time": "當前時間",
   "Now": "現在",
-  "Popup close method": "彈窗關閉方式",
+  "Popup message close method": "彈窗消息關閉方式",
   "Automatic close": "自動關閉",
   "Manually close": "手動關閉",
   "After successful update": "更新成功後",

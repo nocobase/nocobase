@@ -458,7 +458,7 @@
   "Parent popup record": "Üst açılır pencere kaydı",
   "Associated records": "İlişkili kayıtlar",
   "Parent record": "Üst kayıt",
-  "Popup close method": "Açılır pencere kapatma metodu",
+  "Popup message close method": "Açılır pencere kapatma metodu",
   "Automatic close": "Otomatik kapat",
   "Manually close": "Manuel kapat",
   "After successful update": "Başarılı güncellemeden sonra",

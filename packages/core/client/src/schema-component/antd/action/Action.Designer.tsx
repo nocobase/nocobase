@@ -277,7 +277,7 @@ export function AfterSuccess() {
               'x-component-props': {},
             },
             manualClose: {
-              title: t('Popup close method'),
+              title: t('Popup message close method'),
               enum: [
                 { label: t('Automatic close'), value: false },
                 { label: t('Manually close'), value: true },

@@ -626,7 +626,7 @@
   "Current time": "Hora actual",
   "System variables": "Variables del sistema",
   "Date variables": "Variables de fecha",
-  "Popup close method": "Método de cierre del popup",
+  "Popup message close method": "Método de cierre del popup",
   "Automatic close": "Cierre automático",
   "Manually close": "Cierre manual",
   "After successful update": "Tras actualización correcta",
