@@ -48,7 +48,10 @@ import { filterFormBlockSettings } from '../modules/blocks/filter-blocks/form/fi
 import { filterFormItemFieldSettings } from '../modules/blocks/filter-blocks/form/filterFormItemFieldSettings';
 import { markdownBlockSettings } from '../modules/blocks/other-blocks/markdown/markdownBlockSettings';
 import { cascadeSelectComponentFieldSettings } from '../modules/fields/component/CascadeSelect/cascadeSelectComponentFieldSettings';
-import { datePickerComponentFieldSettings } from '../modules/fields/component/DatePicker/datePickerComponentFieldSettings';
+import {
+  datePickerComponentFieldSettings,
+  rangePickerPickerComponentFieldSettings,
+} from '../modules/fields/component/DatePicker/datePickerComponentFieldSettings';
 import { fileManagerComponentFieldSettings } from '../modules/fields/component/FileManager/fileManagerComponentFieldSettings';
 import { previewComponentFieldSettings } from '../modules/fields/component/FileManager/previewComponentFieldSettings';
 import { uploadAttachmentComponentFieldSettings } from '../modules/fields/component/FileManager/uploadAttachmentComponentFieldSettings';
@@ -120,6 +123,7 @@ export class SchemaSettingsPlugin extends Plugin {
     this.schemaSettingsManager.add(subformPopoverComponentFieldSettings);
     this.schemaSettingsManager.add(subTablePopoverComponentFieldSettings);
     this.schemaSettingsManager.add(datePickerComponentFieldSettings);
+    this.schemaSettingsManager.add(rangePickerPickerComponentFieldSettings);
     this.schemaSettingsManager.add(unixTimestampComponentFieldSettings);
     this.schemaSettingsManager.add(inputNumberComponentFieldSettings);
     this.schemaSettingsManager.add(inputComponentSettings);
