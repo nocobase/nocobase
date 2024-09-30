@@ -4,7 +4,6 @@ ARG COMMIT_HASH
 ARG APPEND_PRESET_LOCAL_PLUGINS
 ARG BEFORE_PACK_NOCOBASE="ls -l"
 ARG PLUGINS_DIRS
-ARG PG_CLIENT_VERSION=16
 
 ENV PLUGINS_DIRS=${PLUGINS_DIRS}
 
@@ -48,7 +47,7 @@ RUN rm -rf /etc/nginx/sites-enabled/default
 # install postgresql-client and mysql-client
 RUN apt update && apt install -y wget postgresql-common gnupg \
   && /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y \
-  && apt install -y postgresql-client-${PG_CLIENT_VERSION} \
+  && apt install -y postgresql-client-16 \
   && wget https://downloads.mysql.com/archives/get/p/23/file/mysql-community-client-core_8.1.0-1debian11_amd64.deb \
   && dpkg -x mysql-community-client-core_8.1.0-1debian11_amd64.deb /tmp/mysql-client \
   && cp /tmp/mysql-client/usr/bin/mysqldump /usr/bin/ \
