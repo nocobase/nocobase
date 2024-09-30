@@ -12,7 +12,7 @@ import { ArrowUpOutlined } from '@ant-design/icons';
 import { Card } from 'antd';
 import { FormLayout } from '@formily/antd-v5';
 import { css, cx, useCompile } from '@nocobase/client';
-import evaluators from '@nocobase/evaluators/client';
+import { evaluators } from '@nocobase/evaluators/client';
 import {
   NodeDefaultView,
   Branch,
