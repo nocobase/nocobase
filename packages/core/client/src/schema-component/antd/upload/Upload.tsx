@@ -18,13 +18,14 @@ import filesize from 'filesize';
 import React, { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import LightBox from 'react-image-lightbox';
+import match from 'mime-match';
 import 'react-image-lightbox/style.css'; // This only needs to be imported once in your app
 import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
 import { useProps } from '../../hooks/useProps';
 import {
   FILE_SIZE_LIMIT_DEFAULT,
-  isImage,
-  isPdf,
+  attachmentFileTypes,
+  getThumbnailPlaceholderURL,
   normalizeFile,
   toFileList,
   toValueItem,
@@ -33,6 +34,118 @@ import {
 } from './shared';
 import { useStyles } from './style';
 import type { ComposedUpload, DraggerProps, DraggerV2Props, UploadProps } from './type';
+
+attachmentFileTypes.add({
+  matcher(file) {
+    return match(file.mimetype || file.type, 'image/*');
+  },
+  getThumbnailURL(file) {
+    return file.url ? `${file.url}${file.thumbnailRule || ''}` : URL.createObjectURL(file.originFileObj);
+  },
+  Previewer({ index, list, onSwitchIndex }) {
+    const onDownload = useCallback(
+      (e) => {
+        e.preventDefault();
+        const file = list[index];
+        saveAs(file.url, `${file.title}${file.extname}`);
+      },
+      [index, list],
+    );
+    return (
+      <LightBox
+        // discourageDownloads={true}
+        mainSrc={list[index]?.url}
+        nextSrc={list[(index + 1) % list.length]?.url}
+        prevSrc={list[(index + list.length - 1) % list.length]?.url}
+        onCloseRequest={() => onSwitchIndex(null)}
+        onMovePrevRequest={() => onSwitchIndex((index + list.length - 1) % list.length)}
+        onMoveNextRequest={() => onSwitchIndex((index + 1) % list.length)}
+        imageTitle={list[index]?.title}
+        toolbarButtons={[
+          <button
+            key={'preview-img'}
+            style={{ fontSize: 22, background: 'none', lineHeight: 1 }}
+            type="button"
+            aria-label="Download"
+            title="Download"
+            className="ril-zoom-in ril__toolbarItemChild ril__builtinButton"
+            onClick={onDownload}
+          >
+            <DownloadOutlined />
+          </button>,
+        ]}
+      />
+    );
+  },
+});
+
+attachmentFileTypes.add({
+  matcher(file) {
+    return match(file.mimetype || file.type, 'application/pdf');
+  },
+  Previewer({ index, list, onSwitchIndex }) {
+    const { t } = useTranslation();
+    const onDownload = useCallback(
+      (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const file = list[index];
+        saveAs(file.url, `${file.title}${file.extname}`);
+      },
+      [index, list],
+    );
+    const onClose = useCallback(() => {
+      onSwitchIndex(null);
+    }, [onSwitchIndex]);
+    return (
+      <Modal
+        open={index != null}
+        title={'PDF - ' + list[index].title}
+        onCancel={onClose}
+        footer={[
+          <Button
+            key="download"
+            style={{
+              textTransform: 'capitalize',
+            }}
+            onClick={onDownload}
+          >
+            {t('Download')}
+          </Button>,
+          <Button key="close" onClick={onClose} style={{ textTransform: 'capitalize' }}>
+            {t('Close')}
+          </Button>,
+        ]}
+        width={'85vw'}
+        centered={true}
+      >
+        <div
+          style={{
+            padding: '8px',
+            maxWidth: '100%',
+            maxHeight: 'calc(100vh - 256px)',
+            height: '90vh',
+            width: '100%',
+            background: 'white',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            overflowY: 'auto',
+          }}
+        >
+          <iframe
+            src={list[index].url}
+            style={{
+              width: '100%',
+              maxHeight: '90vh',
+              flex: '1 1 auto',
+            }}
+          />
+        </div>
+      </Modal>
+    );
+  },
+});
 
 function InternalUpload(props: UploadProps) {
   const { onChange, ...rest } = props;
@@ -85,6 +198,13 @@ function useSizeHint(size: number) {
   return s !== 0 ? t('File size should not exceed {{size}}.', { size: sizeString }) : '';
 }
 
+function DefaultThumbnailPreviewer({ file }) {
+  const { componentCls: prefixCls } = useStyles();
+  const { getThumbnailURL = getThumbnailPlaceholderURL } = attachmentFileTypes.getTypeByFile(file);
+  const imageUrl = getThumbnailURL(file);
+  return <img src={imageUrl} alt={file.title} className={`${prefixCls}-list-item-image`} />;
+}
+
 function AttachmentListItem(props) {
   const { file, disabled, onPreview, onDelete: propsOnDelete, readPretty } = props;
   const { componentCls: prefixCls } = useStyles();
@@ -104,15 +224,11 @@ function AttachmentListItem(props) {
     saveAs(file.url, `${file.title}${file.extname}`);
   }, [file]);
 
+  const { ThumbnailPreviewer = DefaultThumbnailPreviewer } = attachmentFileTypes.getTypeByFile(file);
+
   const item = [
     <span key="thumbnail" className={`${prefixCls}-list-item-thumbnail`}>
-      {file.imageUrl && (
-        <img
-          src={`${file.imageUrl}${file.thumbnailRule || ''}`}
-          alt={file.title}
-          className={`${prefixCls}-list-item-image`}
-        />
-      )}
+      <ThumbnailPreviewer file={file} />
     </span>,
     <span key="title" className={`${prefixCls}-list-item-name`} title={file.title}>
       {file.status === 'uploading' ? t('Uploading') : file.title}
@@ -166,118 +282,12 @@ function AttachmentListItem(props) {
   );
 }
 
-const PreviewerTypes = [
-  {
-    matcher: isImage,
-    Component({ index, list, onSwitchIndex }) {
-      const onDownload = useCallback(
-        (e) => {
-          e.preventDefault();
-          const file = list[index];
-          saveAs(file.url, `${file.title}${file.extname}`);
-        },
-        [index, list],
-      );
-      return (
-        <LightBox
-          // discourageDownloads={true}
-          mainSrc={list[index]?.imageUrl}
-          nextSrc={list[(index + 1) % list.length]?.imageUrl}
-          prevSrc={list[(index + list.length - 1) % list.length]?.imageUrl}
-          onCloseRequest={() => onSwitchIndex(null)}
-          onMovePrevRequest={() => onSwitchIndex((index + list.length - 1) % list.length)}
-          onMoveNextRequest={() => onSwitchIndex((index + 1) % list.length)}
-          imageTitle={list[index]?.title}
-          toolbarButtons={[
-            <button
-              key={'preview-img'}
-              style={{ fontSize: 22, background: 'none', lineHeight: 1 }}
-              type="button"
-              aria-label="Download"
-              title="Download"
-              className="ril-zoom-in ril__toolbarItemChild ril__builtinButton"
-              onClick={onDownload}
-            >
-              <DownloadOutlined />
-            </button>,
-          ]}
-        />
-      );
-    },
-  },
-  {
-    matcher: isPdf,
-    Component({ index, list, onSwitchIndex }) {
-      const { t } = useTranslation();
-      const onDownload = useCallback(
-        (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          const file = list[index];
-          saveAs(file.url, `${file.title}${file.extname}`);
-        },
-        [index, list],
-      );
-      const onClose = useCallback(() => {
-        onSwitchIndex(null);
-      }, [onSwitchIndex]);
-      return (
-        <Modal
-          open={index != null}
-          title={'PDF - ' + list[index].title}
-          onCancel={onClose}
-          footer={[
-            <Button
-              key="download"
-              style={{
-                textTransform: 'capitalize',
-              }}
-              onClick={onDownload}
-            >
-              {t('Download')}
-            </Button>,
-            <Button key="close" onClick={onClose} style={{ textTransform: 'capitalize' }}>
-              {t('Close')}
-            </Button>,
-          ]}
-          width={'85vw'}
-          centered={true}
-        >
-          <div
-            style={{
-              padding: '8px',
-              maxWidth: '100%',
-              maxHeight: 'calc(100vh - 256px)',
-              height: '90vh',
-              width: '100%',
-              background: 'white',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              overflowY: 'auto',
-            }}
-          >
-            <iframe
-              src={list[index].url}
-              style={{
-                width: '100%',
-                maxHeight: '90vh',
-                flex: '1 1 auto',
-              }}
-            />
-          </div>
-        </Modal>
-      );
-    },
-  },
-];
-
 function Previewer({ index, onSwitchIndex, list }) {
   if (index == null) {
     return null;
   }
   const file = list[index];
-  const { Component } = PreviewerTypes.find((type) => type.matcher(file)) ?? {};
+  const { Previewer: Component } = attachmentFileTypes.getTypeByFile(file);
   if (!Component) {
     return null;
   }
@@ -298,7 +308,7 @@ export function AttachmentList(props) {
   const onPreview = useCallback(
     (file) => {
       const index = fileList.findIndex((item) => item.id === file.id);
-      const previewType = PreviewerTypes.find((type) => type.matcher(file));
+      const previewType = attachmentFileTypes.getTypeByFile(file);
       if (previewType) {
         setPreview(index);
       } else {

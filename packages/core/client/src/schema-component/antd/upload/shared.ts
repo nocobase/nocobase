@@ -11,20 +11,31 @@ import { isArr, isValid, toArr as toArray } from '@formily/shared';
 import { UploadFile } from 'antd/es/upload/interface';
 import { useTranslation } from 'react-i18next';
 import match from 'mime-match';
-import { useCallback } from 'react';
+import React, { useCallback } from 'react';
 import { useAPIClient } from '../../../api-client';
 import { UNKNOWN_FILE_ICON, UPLOAD_PLACEHOLDER } from './placeholder';
 import type { IUploadProps, UploadProps } from './type';
 
 export const FILE_SIZE_LIMIT_DEFAULT = 1024 * 1024 * 20;
 
-export const isImage = (file) => {
-  return match(file.mimetype || file.type, 'image/*');
-};
+export interface AttachmentFileType {
+  matcher(file: any): boolean;
+  getThumbnailURL?(file: any): string;
+  ThumbnailPreviewer?: React.ComponentType<any>;
+  Previewer?: React.ComponentType<any>;
+}
 
-export const isPdf = (file) => {
-  return match(file.mimetype || file.type, 'application/pdf');
-};
+export class AttachmentFileTypes {
+  types: AttachmentFileType[] = [];
+  add(type: AttachmentFileType) {
+    this.types.push(type);
+  }
+  getTypeByFile(file): Omit<AttachmentFileType, 'matcher'> {
+    return this.types.find((type) => type.matcher(file)) ?? {};
+  }
+}
+
+export const attachmentFileTypes = new AttachmentFileTypes();
 
 const toArr = (value) => {
   if (!isValid(value)) {
@@ -48,25 +59,22 @@ export const testOpts = (ext: RegExp, options: { exclude?: string[]; include?: s
   return true;
 };
 
-export const getImageByUrl = (url: string, options: any = {}) => {
+export function getThumbnailPlaceholderURL(file, options: any = {}) {
   for (let i = 0; i < UPLOAD_PLACEHOLDER.length; i++) {
     // console.log(UPLOAD_PLACEHOLDER[i].ext, testOpts(UPLOAD_PLACEHOLDER[i].ext, options));
-    if (UPLOAD_PLACEHOLDER[i].ext.test(url)) {
+    if (UPLOAD_PLACEHOLDER[i].ext.test(file.name)) {
       if (testOpts(UPLOAD_PLACEHOLDER[i].ext, options)) {
         return UPLOAD_PLACEHOLDER[i].icon || UNKNOWN_FILE_ICON;
       } else {
-        return url;
+        return file.name;
       }
     }
   }
   return UNKNOWN_FILE_ICON;
-};
+}
 
 export const getURL = (target: any) => {
   return target?.['url'] || target?.['downloadURL'] || target?.['imgURL'] || target?.['name'];
-};
-export const getThumbURL = (target: any) => {
-  return target?.['thumbUrl'] || target?.['url'] || target?.['downloadURL'] || target?.['imgURL'] || target?.['name'];
 };
 
 export function getResponseMessage({ error, response }: UploadFile<any>) {
@@ -93,23 +101,13 @@ export function getResponseMessage({ error, response }: UploadFile<any>) {
 }
 
 export function normalizeFile(file: UploadFile & Record<string, any>) {
-  const imageUrl = isImage(file) ? URL.createObjectURL(file.originFileObj) : getImageByUrl(file.name);
   const response = getResponseMessage(file);
   return {
     ...file,
     title: file.name,
-    thumbUrl: imageUrl,
-    imageUrl,
     response,
   };
 }
-
-export const normalizeFileList = (fileList: UploadFile[]) => {
-  if (fileList && fileList.length) {
-    return fileList.map(normalizeFile);
-  }
-  return [];
-};
 
 export function useUploadProps<T extends IUploadProps = UploadProps>(props: T) {
   const api = useAPIClient();
@@ -166,11 +164,6 @@ export const toItem = (file) => {
     ...file,
     id: file.id || file.uid,
     title: file.title || file.name,
-    imageUrl: isImage(file)
-      ? file.url
-      : getImageByUrl(file.url, {
-          exclude: ['.png', '.jpg', '.jpeg', '.gif', '.svg', '.webp', '.bmp', '.ico'],
-        }),
   };
 };
 
