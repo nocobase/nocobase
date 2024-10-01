@@ -313,7 +313,7 @@ export function AttachmentList(props) {
         setPreview(index);
       } else {
         if (file.id) {
-          saveAs(file.url, `${file.title}${file.extname}`);
+          window.open(file.url);
         }
       }
     },
