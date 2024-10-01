@@ -45,7 +45,11 @@ export const useSpecialCase = () => {
       if (parentFieldSchema) {
         const parentField: any = form.query(parentFieldSchema.name).take();
         if (parentField) {
-          parentField.setInitialValue(transformValue(value, { field: parentField, subFieldSchema: fieldSchema }));
+          parentField.setInitialValue(
+            _.map(transformValue(value, { field: parentField, subFieldSchema: fieldSchema }), (item) =>
+              markRecordAsNew(item),
+            ),
+          );
         }
       }
     },
