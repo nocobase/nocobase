@@ -19,7 +19,7 @@ import type { IUploadProps, UploadProps } from './type';
 export const FILE_SIZE_LIMIT_DEFAULT = 1024 * 1024 * 20;
 
 export interface AttachmentFileType {
-  matcher(file: any): boolean;
+  match(file: any): boolean;
   getThumbnailURL?(file: any): string;
   ThumbnailPreviewer?: React.ComponentType<any>;
   Previewer?: React.ComponentType<any>;
@@ -30,8 +30,8 @@ export class AttachmentFileTypes {
   add(type: AttachmentFileType) {
     this.types.push(type);
   }
-  getTypeByFile(file): Omit<AttachmentFileType, 'matcher'> {
-    return this.types.find((type) => type.matcher(file)) ?? {};
+  getTypeByFile(file): Omit<AttachmentFileType, 'match'> {
+    return this.types.find((type) => type.match(file)) ?? {};
   }
 }
 

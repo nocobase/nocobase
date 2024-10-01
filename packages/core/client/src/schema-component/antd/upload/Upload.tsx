@@ -36,7 +36,7 @@ import { useStyles } from './style';
 import type { ComposedUpload, DraggerProps, DraggerV2Props, UploadProps } from './type';
 
 attachmentFileTypes.add({
-  matcher(file) {
+  match(file) {
     return match(file.mimetype || file.type, 'image/*');
   },
   getThumbnailURL(file) {
@@ -80,7 +80,7 @@ attachmentFileTypes.add({
 });
 
 attachmentFileTypes.add({
-  matcher(file) {
+  match(file) {
     return match(file.mimetype || file.type, 'application/pdf');
   },
   Previewer({ index, list, onSwitchIndex }) {
