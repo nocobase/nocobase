@@ -200,7 +200,7 @@ function useSizeHint(size: number) {
 
 function DefaultThumbnailPreviewer({ file }) {
   const { componentCls: prefixCls } = useStyles();
-  const { getThumbnailURL = getThumbnailPlaceholderURL } = attachmentFileTypes.getTypeByFile(file);
+  const { getThumbnailURL = getThumbnailPlaceholderURL } = attachmentFileTypes.getTypeByFile(file) ?? {};
   const imageUrl = getThumbnailURL(file);
   return <img src={imageUrl} alt={file.title} className={`${prefixCls}-list-item-image`} />;
 }
@@ -224,7 +224,7 @@ function AttachmentListItem(props) {
     saveAs(file.url, `${file.title}${file.extname}`);
   }, [file]);
 
-  const { ThumbnailPreviewer = DefaultThumbnailPreviewer } = attachmentFileTypes.getTypeByFile(file);
+  const { ThumbnailPreviewer = DefaultThumbnailPreviewer } = attachmentFileTypes.getTypeByFile(file) ?? {};
 
   const item = [
     <span key="thumbnail" className={`${prefixCls}-list-item-thumbnail`}>
@@ -287,7 +287,7 @@ function Previewer({ index, onSwitchIndex, list }) {
     return null;
   }
   const file = list[index];
-  const { Previewer: Component } = attachmentFileTypes.getTypeByFile(file);
+  const { Previewer: Component } = attachmentFileTypes.getTypeByFile(file) ?? {};
   if (!Component) {
     return null;
   }

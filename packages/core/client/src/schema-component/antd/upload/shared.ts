@@ -31,7 +31,7 @@ export class AttachmentFileTypes {
     this.types.push(type);
   }
   getTypeByFile(file): Omit<AttachmentFileType, 'match'> {
-    return this.types.find((type) => type.match(file)) ?? {};
+    return this.types.find((type) => type.match(file));
   }
 }
 
