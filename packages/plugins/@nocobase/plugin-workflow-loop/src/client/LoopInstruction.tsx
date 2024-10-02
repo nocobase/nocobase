@@ -11,7 +11,8 @@ import React from 'react';
 import { ArrowUpOutlined } from '@ant-design/icons';
 import { Card } from 'antd';
 import { FormLayout } from '@formily/antd-v5';
-import { css, cx, useCompile } from '@nocobase/client';
+import { useForm } from '@formily/react';
+import { css, cx, useCompile, Variable } from '@nocobase/client';
 import { evaluators } from '@nocobase/evaluators/client';
 import {
   NodeDefaultView,
@@ -20,13 +21,13 @@ import {
   useStyles,
   VariableOption,
   WorkflowVariableInput,
+  WorkflowVariableTextArea,
   defaultFieldNames,
   nodesOptions,
   scopeOptions,
   triggerOptions,
   Instruction,
   RadioWithTooltip,
-  WorkflowVariableTextArea,
   renderEngineReference,
   RadioWithTooltipOption,
   CalculationConfig,
@@ -71,11 +72,11 @@ function useScopeVariables(node, options) {
   const langLoopIndex = useLang('Loop index');
   const langLoopLength = useLang('Loop length');
   const { target } = node.config;
-  if (!target) {
+  if (target == null) {
     return null;
   }
 
-  const { fieldNames = defaultFieldNames } = options;
+  const { fieldNames = defaultFieldNames, scope } = options;
 
   // const { workflow } = useFlowContext();
   // const current = useNodeContext();
@@ -95,16 +96,18 @@ function useScopeVariables(node, options) {
       .split('.')
       .map((path) => path.trim());
 
-    const targetOptions = [scopeOptions, nodesOptions, triggerOptions].map((item: any) => {
-      const opts = item.useOptions({ ...options, current: node }).filter(Boolean);
-      return {
-        [fieldNames.label]: compile(item.label),
-        [fieldNames.value]: item.value,
-        key: item.value,
-        [fieldNames.children]: opts,
-        disabled: opts && !opts.length,
-      };
-    });
+    const targetOptions =
+      scope ??
+      [scopeOptions, nodesOptions, triggerOptions].map((item: any) => {
+        const opts = item.useOptions({ ...options, current: node }).filter(Boolean);
+        return {
+          [fieldNames.label]: compile(item.label),
+          [fieldNames.value]: item.value,
+          key: item.value,
+          [fieldNames.children]: opts,
+          disabled: opts && !opts.length,
+        };
+      });
 
     const found = findOption(targetOptions, paths);
 
@@ -119,9 +122,20 @@ function useScopeVariables(node, options) {
 }
 
 function useVariableHook(options: UseVariableOptions = {}) {
+  const { values } = useForm<any>();
   const node = useNodeContext();
+  const current = {
+    ...node,
+    config: {
+      ...node.config,
+      target: values.target,
+    },
+  };
   const result = useWorkflowVariableOptions(options);
-  const subOptions = useScopeVariables(node, options);
+  const subOptions = useScopeVariables(current, {
+    ...options,
+    scope: result.filter((item) => ['$scopes', '$jobsMapByNodeKey', '$context'].includes(item.key)),
+  });
   const { fieldNames = defaultFieldNames } = options;
   if (!subOptions) {
     return result;
@@ -142,7 +156,12 @@ function useVariableHook(options: UseVariableOptions = {}) {
     scope.disabled = false;
   }
 
-  return result;
+  return [...result];
+}
+
+function LoopVariableTextArea({ variableOptions, ...props }): JSX.Element {
+  const scope = useVariableHook(variableOptions);
+  return <Variable.TextArea scope={scope} {...props} />;
 }
 
 export default class extends Instruction {
@@ -159,7 +178,8 @@ export default class extends Instruction {
       'x-component': 'WorkflowVariableInput',
       'x-component-props': {
         changeOnSelect: true,
-        useTypedConstant: ['string', 'number', 'null'],
+        nullable: false,
+        useTypedConstant: ['string', 'number'],
         className: css`
           width: 100%;
 
@@ -173,6 +193,27 @@ export default class extends Instruction {
         `,
       },
       required: true,
+      default: 1,
+      'x-reactions': [
+        {
+          target: 'calculation',
+          effects: ['onFieldValueChange'],
+          fulfill: {
+            state: {
+              value: null,
+            },
+          },
+        },
+        {
+          target: 'expression',
+          effects: ['onFieldValueChange'],
+          fulfill: {
+            state: {
+              value: '',
+            },
+          },
+        },
+      ],
     },
     startIndex: {
       type: 'number',
@@ -201,6 +242,16 @@ export default class extends Instruction {
       title: `{{t("Loop condition on each item", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
       'x-component': 'CardWrapper',
+      'x-reactions': [
+        {
+          dependencies: ['target'],
+          fulfill: {
+            state: {
+              visible: '{{Boolean($deps[0])}}',
+            },
+          },
+        },
+      ],
       properties: {
         checkpoint: {
           type: 'number',
@@ -277,7 +328,7 @@ export default class extends Instruction {
           type: 'string',
           title: `{{t("Condition expression", { ns: "${NAMESPACE}" })}}`,
           'x-decorator': 'FormItem',
-          'x-component': 'WorkflowVariableTextArea',
+          'x-component': 'LoopVariableTextArea',
           'x-component-props': {
             changeOnSelect: true,
           },
@@ -289,7 +340,7 @@ export default class extends Instruction {
               evaluate(exp);
               return '';
             } catch (e) {
-              return useLang('Expression syntax error');
+              return `Expression syntax error: ${e.message}`;
             }
           },
           'x-reactions': {
@@ -303,13 +354,12 @@ export default class extends Instruction {
               },
             },
           },
-          required: true,
         },
       },
     },
     exit: {
       type: 'number',
-      title: `{{t("When nodes inside loop failed", { ns: "${NAMESPACE}" })}}`,
+      title: `{{t("When node inside loop failed", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
       'x-component': 'RadioWithTooltip',
       'x-component-props': {
@@ -339,6 +389,7 @@ export default class extends Instruction {
     CardWrapper,
     WorkflowVariableInput,
     WorkflowVariableTextArea,
+    LoopVariableTextArea,
     RadioWithTooltip,
     CalculationConfig,
   };

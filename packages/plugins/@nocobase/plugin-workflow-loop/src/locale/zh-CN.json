@@ -19,7 +19,7 @@
   "Exit loop": "退出循环",
   "Continue on next item": "继续下一项",
   "Condition": "条件",
-  "When nodes inside loop failed": "当循环内节点执行失败时",
+  "When node inside loop failed": "当循环内节点执行失败时",
   "Continue loop on next item": "继续循环下一项",
   "Exit loop and continue workflow": "退出循环并继续工作流",
   "Exit workflow": "退出工作流"
