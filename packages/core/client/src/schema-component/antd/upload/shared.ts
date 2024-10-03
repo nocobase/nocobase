@@ -18,11 +18,28 @@ import type { IUploadProps, UploadProps } from './type';
 
 export const FILE_SIZE_LIMIT_DEFAULT = 1024 * 1024 * 20;
 
+export interface FileModel {
+  id: number;
+  filename: string;
+  path: string;
+  title: string;
+  url: string;
+  extname: string;
+  size: number;
+  mimetype: string;
+}
+
+export interface PreviewerProps {
+  index: number;
+  list: FileModel[];
+  onSwitchIndex(index): void;
+}
+
 export interface AttachmentFileType {
   match(file: any): boolean;
   getThumbnailURL?(file: any): string;
-  ThumbnailPreviewer?: React.ComponentType<any>;
-  Previewer?: React.ComponentType<any>;
+  ThumbnailPreviewer?: React.ComponentType<{ file: FileModel }>;
+  Previewer?: React.ComponentType<PreviewerProps>;
 }
 
 export class AttachmentFileTypes {
