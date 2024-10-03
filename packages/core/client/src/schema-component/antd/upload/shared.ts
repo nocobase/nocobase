@@ -28,7 +28,8 @@ export interface AttachmentFileType {
 export class AttachmentFileTypes {
   types: AttachmentFileType[] = [];
   add(type: AttachmentFileType) {
-    this.types.push(type);
+    // NOTE: use unshift to make sure the custom type has higher priority
+    this.types.unshift(type);
   }
   getTypeByFile(file): Omit<AttachmentFileType, 'match'> {
     return this.types.find((type) => type.match(file));
