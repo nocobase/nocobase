@@ -10,7 +10,7 @@
 import { DeleteOutlined, DownloadOutlined, InboxOutlined, LoadingOutlined, PlusOutlined } from '@ant-design/icons';
 import { Field } from '@formily/core';
 import { connect, mapProps, mapReadPretty, useField } from '@formily/react';
-import { Upload as AntdUpload, Button, Modal, Progress, Space, Tooltip } from 'antd';
+import { Alert, Upload as AntdUpload, Button, Modal, Progress, Space, Tooltip } from 'antd';
 import useUploadStyle from 'antd/es/upload/style';
 import cls from 'classnames';
 import { saveAs } from 'file-saver';
@@ -79,73 +79,84 @@ attachmentFileTypes.add({
   },
 });
 
-attachmentFileTypes.add({
-  match(file) {
-    return match(file.mimetype || file.type, 'application/pdf');
-  },
-  Previewer({ index, list, onSwitchIndex }) {
-    const { t } = useTranslation();
-    const onDownload = useCallback(
-      (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        const file = list[index];
-        saveAs(file.url, `${file.title}${file.extname}`);
-      },
-      [index, list],
-    );
-    const onClose = useCallback(() => {
-      onSwitchIndex(null);
-    }, [onSwitchIndex]);
-    return (
-      <Modal
-        open={index != null}
-        title={'PDF - ' + list[index].title}
-        onCancel={onClose}
-        footer={[
-          <Button
-            key="download"
-            style={{
-              textTransform: 'capitalize',
-            }}
-            onClick={onDownload}
-          >
-            {t('Download')}
-          </Button>,
-          <Button key="close" onClick={onClose} style={{ textTransform: 'capitalize' }}>
-            {t('Close')}
-          </Button>,
-        ]}
-        width={'85vw'}
-        centered={true}
+const iframePreviewSupportedTypes = ['application/pdf', 'audio/*', 'image/*', 'video/*'];
+
+function IframePreviewer({ index, list, onSwitchIndex }) {
+  const { t } = useTranslation();
+  const file = list[index];
+  const onOpen = useCallback(
+    (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      window.open(file.url);
+    },
+    [file],
+  );
+  const onDownload = useCallback(
+    (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      saveAs(file.url, `${file.title}${file.extname}`);
+    },
+    [file],
+  );
+  const onClose = useCallback(() => {
+    onSwitchIndex(null);
+  }, [onSwitchIndex]);
+  return (
+    <Modal
+      open={index != null}
+      title={file.title}
+      onCancel={onClose}
+      footer={[
+        <Button key="open" onClick={onOpen}>
+          {t('Open in new window')}
+        </Button>,
+        <Button key="download" onClick={onDownload}>
+          {t('Download')}
+        </Button>,
+        <Button key="close" onClick={onClose}>
+          {t('Close')}
+        </Button>,
+      ]}
+      width={'85vw'}
+      centered={true}
+    >
+      <div
+        style={{
+          maxWidth: '100%',
+          maxHeight: 'calc(100vh - 256px)',
+          height: '90vh',
+          width: '100%',
+          background: 'white',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          alignItems: 'center',
+          overflowY: 'auto',
+        }}
       >
-        <div
-          style={{
-            padding: '8px',
-            maxWidth: '100%',
-            maxHeight: 'calc(100vh - 256px)',
-            height: '90vh',
-            width: '100%',
-            background: 'white',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            overflowY: 'auto',
-          }}
-        >
+        {iframePreviewSupportedTypes.some((type) => match(file.mimetype || file.extname, type)) ? (
           <iframe
-            src={list[index].url}
+            src={file.url}
             style={{
               width: '100%',
               maxHeight: '90vh',
               flex: '1 1 auto',
+              border: 'none',
             }}
           />
-        </div>
-      </Modal>
-    );
-  },
-});
+        ) : (
+          <Alert
+            type="warning"
+            description={t('File type is not supported for previewing, please download it to preview.')}
+            showIcon
+          />
+        )}
+      </div>
+    </Modal>
+  );
+}
 
 function InternalUpload(props: UploadProps) {
   const { onChange, ...rest } = props;
@@ -287,10 +298,7 @@ function Previewer({ index, onSwitchIndex, list }) {
     return null;
   }
   const file = list[index];
-  const { Previewer: Component } = attachmentFileTypes.getTypeByFile(file) ?? {};
-  if (!Component) {
-    return null;
-  }
+  const { Previewer: Component = IframePreviewer } = attachmentFileTypes.getTypeByFile(file) ?? {};
 
   return <Component index={index} list={list} onSwitchIndex={onSwitchIndex} />;
 }
@@ -308,14 +316,7 @@ export function AttachmentList(props) {
   const onPreview = useCallback(
     (file) => {
       const index = fileList.findIndex((item) => item.id === file.id);
-      const previewType = attachmentFileTypes.getTypeByFile(file);
-      if (previewType) {
-        setPreview(index);
-      } else {
-        if (file.id) {
-          window.open(file.url);
-        }
-      }
+      setPreview(index);
     },
     [fileList],
   );

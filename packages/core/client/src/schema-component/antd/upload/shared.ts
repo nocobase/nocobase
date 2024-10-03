@@ -35,6 +35,9 @@ export class AttachmentFileTypes {
   }
 }
 
+/**
+ * @experimental
+ */
 export const attachmentFileTypes = new AttachmentFileTypes();
 
 const toArr = (value) => {
@@ -47,7 +50,7 @@ const toArr = (value) => {
   return toArray(value);
 };
 
-export const testOpts = (ext: RegExp, options: { exclude?: string[]; include?: string[] }) => {
+const testOpts = (ext: RegExp, options: { exclude?: string[]; include?: string[] }) => {
   if (options && isArr(options.include)) {
     return options.include.some((url) => ext.test(url));
   }
@@ -62,7 +65,7 @@ export const testOpts = (ext: RegExp, options: { exclude?: string[]; include?: s
 export function getThumbnailPlaceholderURL(file, options: any = {}) {
   for (let i = 0; i < UPLOAD_PLACEHOLDER.length; i++) {
     // console.log(UPLOAD_PLACEHOLDER[i].ext, testOpts(UPLOAD_PLACEHOLDER[i].ext, options));
-    if (UPLOAD_PLACEHOLDER[i].ext.test(file.name)) {
+    if (UPLOAD_PLACEHOLDER[i].ext.test(file.extname || file.filename || file.url || file.name)) {
       if (testOpts(UPLOAD_PLACEHOLDER[i].ext, options)) {
         return UPLOAD_PLACEHOLDER[i].icon || UNKNOWN_FILE_ICON;
       } else {
@@ -72,10 +75,6 @@ export function getThumbnailPlaceholderURL(file, options: any = {}) {
   }
   return UNKNOWN_FILE_ICON;
 }
-
-export const getURL = (target: any) => {
-  return target?.['url'] || target?.['downloadURL'] || target?.['imgURL'] || target?.['name'];
-};
 
 export function getResponseMessage({ error, response }: UploadFile<any>) {
   if (error instanceof Error && 'isAxiosError' in error) {
@@ -169,12 +168,6 @@ export const toItem = (file) => {
 
 export const toFileList = (fileList: any) => {
   return toArr(fileList).filter(Boolean).map(toItem);
-};
-
-export const toValue = (fileList: any) => {
-  return toArr(fileList)
-    .filter((file) => !file.response || file.status === 'done')
-    .map((file) => file?.response?.data || file);
 };
 
 const Rules: Record<string, RuleFunction> = {
