@@ -291,22 +291,22 @@ export default class extends Instruction {
           },
           default: false,
         },
-        engine: {
-          type: 'string',
-          title: `{{t("Calculation engine", { ns: "${NAMESPACE}" })}}`,
-          'x-decorator': 'FormItem',
-          'x-component': 'RadioWithTooltip',
-          'x-component-props': {
-            options: [
-              ['basic', { label: `{{t("Basic", { ns: "${NAMESPACE}" })}}` }],
-              ...Array.from(evaluators.getEntities()).filter(([key]) => ['math.js', 'formula.js'].includes(key)),
-            ].reduce(
-              (result: RadioWithTooltipOption[], [value, options]: any) => result.concat({ value, ...options }),
-              [],
-            ),
-          },
-          default: 'basic',
-        },
+        // engine: {
+        //   type: 'string',
+        //   title: `{{t("Calculation engine", { ns: "${NAMESPACE}" })}}`,
+        //   'x-decorator': 'FormItem',
+        //   'x-component': 'RadioWithTooltip',
+        //   'x-component-props': {
+        //     options: [
+        //       ['basic', { label: `{{t("Basic", { ns: "${NAMESPACE}" })}}` }],
+        //       ...Array.from(evaluators.getEntities()).filter(([key]) => ['math.js', 'formula.js'].includes(key)),
+        //     ].reduce(
+        //       (result: RadioWithTooltipOption[], [value, options]: any) => result.concat({ value, ...options }),
+        //       [],
+        //     ),
+        //   },
+        //   default: 'basic',
+        // },
         calculation: {
           type: 'object',
           title: `{{t("Condition", { ns: "${NAMESPACE}" })}}`,
@@ -315,46 +315,46 @@ export default class extends Instruction {
           'x-component-props': {
             useVariableHook,
           },
-          'x-reactions': {
-            dependencies: ['engine'],
-            fulfill: {
-              state: {
-                visible: '{{$deps[0] === "basic"}}',
-              },
-            },
-          },
+          // 'x-reactions': {
+          //   dependencies: ['engine'],
+          //   fulfill: {
+          //     state: {
+          //       visible: '{{$deps[0] === "basic"}}',
+          //     },
+          //   },
+          // },
         },
-        expression: {
-          type: 'string',
-          title: `{{t("Condition expression", { ns: "${NAMESPACE}" })}}`,
-          'x-decorator': 'FormItem',
-          'x-component': 'LoopVariableTextArea',
-          'x-component-props': {
-            changeOnSelect: true,
-          },
-          ['x-validator'](value, rules, { form }) {
-            const { values } = form;
-            const { evaluate } = evaluators.get(values.engine);
-            const exp = value.trim().replace(/{{([^{}]+)}}/g, ' "1" ');
-            try {
-              evaluate(exp);
-              return '';
-            } catch (e) {
-              return `Expression syntax error: ${e.message}`;
-            }
-          },
-          'x-reactions': {
-            dependencies: ['engine'],
-            fulfill: {
-              state: {
-                visible: '{{$deps[0] !== "basic"}}',
-              },
-              schema: {
-                description: '{{renderEngineReference($deps[0])}}',
-              },
-            },
-          },
-        },
+        // expression: {
+        //   type: 'string',
+        //   title: `{{t("Condition expression", { ns: "${NAMESPACE}" })}}`,
+        //   'x-decorator': 'FormItem',
+        //   'x-component': 'LoopVariableTextArea',
+        //   'x-component-props': {
+        //     changeOnSelect: true,
+        //   },
+        //   ['x-validator'](value, rules, { form }) {
+        //     const { values } = form;
+        //     const { evaluate } = evaluators.get(values.engine);
+        //     const exp = value.trim().replace(/{{([^{}]+)}}/g, ' "1" ');
+        //     try {
+        //       evaluate(exp);
+        //       return '';
+        //     } catch (e) {
+        //       return `Expression syntax error: ${e.message}`;
+        //     }
+        //   },
+        //   'x-reactions': {
+        //     dependencies: ['engine'],
+        //     fulfill: {
+        //       state: {
+        //         visible: '{{$deps[0] !== "basic"}}',
+        //       },
+        //       schema: {
+        //         description: '{{renderEngineReference($deps[0])}}',
+        //       },
+        //     },
+        //   },
+        // },
       },
     },
     exit: {
