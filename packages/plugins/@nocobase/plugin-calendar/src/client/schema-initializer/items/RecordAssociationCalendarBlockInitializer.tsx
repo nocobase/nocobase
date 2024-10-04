@@ -95,6 +95,13 @@ export const RecordAssociationCalendarBlockInitializer = () => {
                             'x-component': 'Select',
                             'x-decorator': 'FormItem',
                           },
+                          repeatEnd: {
+                            //nint
+                            title: t('Repeat End date field'),
+                            enum: dateFields,
+                            'x-component': 'Select',
+                            'x-decorator': 'FormItem',
+                          },
                         },
                       }}
                     />
@@ -175,6 +182,13 @@ export function useCreateAssociationCalendarBlock() {
                     },
                     end: {
                       title: t('End date field'),
+                      enum: dateFields,
+                      'x-component': 'Select',
+                      'x-decorator': 'FormItem',
+                    },
+                    repeatEnd: {
+                      //nint
+                      title: t('Repeat End date field'),
                       enum: dateFields,
                       'x-component': 'Select',
                       'x-decorator': 'FormItem',

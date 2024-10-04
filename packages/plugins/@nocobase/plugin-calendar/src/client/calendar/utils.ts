@@ -19,6 +19,7 @@ export const toEvents = (data: any[], fieldNames: any) => {
       title: get(item, fieldNames.title) || i18nt('Untitle'),
       start: new Date(get(item, fieldNames.start)),
       end: new Date(get(item, fieldNames.end || fieldNames.start)),
+      repeatEnd: new Date(get(item, fieldNames.repeatEnd || fieldNames.start)), //nint
     };
   });
 };
