@@ -17,15 +17,16 @@ export type FieldConfigProps = Partial<{
   defaultValue: any;
   description: string;
   options: { label: string; value: any }[];
+  componentProps: Record<string, any>;
 }>;
 
 export type AnySchemaProperties = SchemaProperties<any, any, any, any, any, any, any, any>;
-export type GeneralConfig =
-  | (FieldConfigProps & { settingType?: string })
+export type ConfigType =
+  | (FieldConfigProps & { configType?: string })
   | ((props?: FieldConfigProps) => AnySchemaProperties)
   | AnySchemaProperties;
 
-export type Config = string | GeneralConfig;
+export type Config = string | ConfigType;
 
 const field = ({ name, title, required, defaultValue, description }: FieldConfigProps) => {
   return {
@@ -70,16 +71,35 @@ const boolean = ({ name, title, defaultValue = false, description }: FieldConfig
   };
 };
 
-const radio = ({ name, title, defaultValue, options, description }: FieldConfigProps) => {
+const radio = ({ name, title, defaultValue, options, description, componentProps }: FieldConfigProps) => {
   return {
     [name]: {
-      'x-content': lang(title),
+      title: lang(title),
       type: 'string',
       'x-decorator': 'FormItem',
       'x-component': 'Radio.Group',
+      'x-component-props': {
+        ...componentProps,
+      },
       default: defaultValue,
       description,
       enum: options,
+    },
+  };
+};
+
+const percent = ({ name, title, defaultValue, description }: FieldConfigProps) => {
+  return {
+    [name]: {
+      title,
+      type: 'number',
+      'x-decorator': 'FormItem',
+      'x-component': 'InputNumber',
+      default: defaultValue,
+      description,
+      'x-component-props': {
+        suffix: '%',
+      },
     },
   };
 };
@@ -89,57 +109,58 @@ export default {
   boolean,
   select,
   radio,
+  percent,
   xField: {
-    settingType: 'field',
+    configType: 'field',
     name: 'xField',
     title: 'xField',
     required: true,
   },
   yField: {
-    settingType: 'field',
+    configType: 'field',
     name: 'yField',
     title: 'yField',
     required: true,
   },
   seriesField: {
-    settingType: 'field',
+    configType: 'field',
     name: 'seriesField',
     title: 'seriesField',
   },
   colorField: {
-    settingType: 'field',
+    configType: 'field',
     name: 'colorField',
     title: 'colorField',
     required: true,
   },
   isStack: {
-    settingType: 'boolean',
+    configType: 'boolean',
     name: 'isStack',
     title: 'isStack',
   },
   smooth: {
-    settingType: 'boolean',
+    configType: 'boolean',
     name: 'smooth',
     title: 'smooth',
   },
   isPercent: {
-    settingType: 'boolean',
+    configType: 'boolean',
     name: 'isPercent',
     title: 'isPercent',
   },
   isGroup: {
-    settingType: 'boolean',
+    configType: 'boolean',
     name: 'isGroup',
     title: 'isGroup',
   },
   showLegend: {
-    settingType: 'boolean',
+    configType: 'boolean',
     name: 'showLegend',
     title: 'Show legend',
     defaultValue: true,
   },
   showLabel: {
-    settingType: 'boolean',
+    configType: 'boolean',
     name: 'showLabel',
     title: 'Show label',
     defaultValue: true,
