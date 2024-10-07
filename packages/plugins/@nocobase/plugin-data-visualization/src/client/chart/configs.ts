@@ -104,8 +104,23 @@ const percent = ({ name, title, defaultValue, description }: FieldConfigProps) =
   };
 };
 
+const input = ({ name, title, required, defaultValue, description }: FieldConfigProps) => {
+  return {
+    [name]: {
+      title: lang(title),
+      type: 'string',
+      'x-decorator': 'FormItem',
+      'x-component': 'Input',
+      required,
+      default: defaultValue,
+      description,
+    },
+  };
+};
+
 export default {
   field,
+  input,
   boolean,
   select,
   radio,
