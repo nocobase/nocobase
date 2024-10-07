@@ -11,12 +11,11 @@ import { connect, mapProps, mapReadPretty, useField, useFieldSchema } from '@for
 import { DatePicker as AntdDatePicker, DatePickerProps as AntdDatePickerProps, Space, Select } from 'antd';
 import { RangePickerProps } from 'antd/es/date-picker';
 import dayjs from 'dayjs';
-import React, { useState, useContext } from 'react';
+import React, { useState } from 'react';
 import { getPickerFormat } from '@nocobase/utils/client';
 import { useTranslation } from 'react-i18next';
 import { ReadPretty, ReadPrettyComposed } from './ReadPretty';
 import { getDateRanges, mapDatePicker, mapRangePicker, inferPickerType } from './util';
-import { FilterContext } from '../../antd/filter';
 import { useCompile } from '../../';
 
 interface IDatePickerProps {
@@ -71,7 +70,7 @@ DatePicker.RangePicker = function RangePicker(props: any) {
   const { utc = true } = useDatePickerContext();
   const rangesValue = getDateRanges();
   const compile = useCompile();
-  const ctx: any = useContext(FilterContext); // 在筛选按钮中使用
+  const isFilterAction: any = !fieldSchema['x-filter-operator']; // 在筛选按钮中使用
   const presets = [
     { label: t('Today'), value: rangesValue.today },
     { label: t('Last week'), value: rangesValue.lastWeek },
@@ -106,7 +105,7 @@ DatePicker.RangePicker = function RangePicker(props: any) {
   };
   const [stateProps, setStateProps] = useState(newProps);
 
-  if (ctx) {
+  if (isFilterAction) {
     return (
       <Space.Compact>
         <Select

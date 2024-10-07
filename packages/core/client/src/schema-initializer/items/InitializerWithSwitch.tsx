@@ -20,6 +20,7 @@ export const InitializerWithSwitch = (props) => {
     type,
     item.find,
     passInRemove ?? item.remove,
+    schema?.name || item?.schema?.name,
   );
   const { insert } = useSchemaInitializer();
   return (

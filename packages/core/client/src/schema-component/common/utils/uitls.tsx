@@ -7,18 +7,17 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import Handlebars from 'handlebars';
-import { dayjs } from '@nocobase/utils/client';
 import helpers from '@budibase/handlebars-helpers';
+import { dayjs, getPickerFormat } from '@nocobase/utils/client';
+import Handlebars from 'handlebars';
 import _, { every, findIndex, some } from 'lodash';
-import { getPickerFormat } from '@nocobase/utils/client';
+import url from 'url';
 import { replaceVariableValue } from '../../../block-provider/hooks';
 import { VariableOption, VariablesContextType } from '../../../variables/types';
 import { isVariable } from '../../../variables/utils/isVariable';
 import { transformVariableValue } from '../../../variables/utils/transformVariableValue';
-import { getJsonLogic } from '../../common/utils/logic';
 import { inferPickerType } from '../../antd/date-picker/util';
-import url from 'url';
+import { getJsonLogic } from '../../common/utils/logic';
 type VariablesCtx = {
   /** 当前登录的用户 */
   $user?: Record<string, any>;
@@ -129,6 +128,7 @@ export const conditionAnalyses = async ({
       let currentInputValue = transformVariableValue(targetValue, { targetCollectionField });
       const comparisonValue = transformVariableValue(value, { targetCollectionField });
       if (
+        targetCollectionField?.type &&
         ['datetime', 'date', 'datetimeNoTz', 'dateOnly', 'unixTimestamp'].includes(targetCollectionField.type) &&
         currentInputValue
       ) {
