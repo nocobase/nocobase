@@ -24,7 +24,6 @@ import {
   getSupportForeignKeyFields,
   getSupportGeneralFields,
   getSupportPrimaryKeyFields,
-  getSupportSystemFields,
   isSameCollection,
   useSupportedBlocks,
 } from '../filter-provider/utils';
@@ -188,118 +187,120 @@ export function SchemaSettingsConnectDataBlocksByFields(props: {
   const compile = useCompile();
   const filterField = cm.getCollectionField(filterFieldName);
 
-  const Content = dataBlocks.map((block) => {
-    const title = `${compile(block.collection.title)} #${block.uid.slice(0, 4)}`;
-    const onHover = () => {
-      const dom = block.dom;
-      const designer = dom.querySelector('.general-schema-designer') as HTMLElement;
-      if (designer) {
-        designer.style.display = 'block';
-      }
-      dom.style.boxShadow = '0 0 10px rgba(0, 0, 0, 0.2)';
-      dom.scrollIntoView({
-        behavior: 'smooth',
-        block: 'center',
-      });
-    };
-    const onLeave = () => {
-      const dom = block.dom;
-      const designer = dom.querySelector('.general-schema-designer') as HTMLElement;
-      if (designer) {
-        designer.style.display = null;
-      }
-      dom.style.boxShadow = 'none';
-    };
+  const Content = dataBlocks
+    .filter((block) => block.uid !== fieldSchema['x-uid'])
+    .map((block) => {
+      const title = `${compile(block.collection.title)} #${block.uid.slice(0, 4)}`;
+      const onHover = () => {
+        const dom = block.dom;
+        const designer = dom.querySelector('.general-schema-designer') as HTMLElement;
+        if (designer) {
+          designer.style.display = 'block';
+        }
+        dom.style.boxShadow = '0 0 10px rgba(0, 0, 0, 0.2)';
+        dom.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center',
+        });
+      };
+      const onLeave = () => {
+        const dom = block.dom;
+        const designer = dom.querySelector('.general-schema-designer') as HTMLElement;
+        if (designer) {
+          designer.style.display = null;
+        }
+        dom.style.boxShadow = 'none';
+      };
 
-    const target = targets.find((target) => target.uid === block.uid);
-    // 与筛选区块的数据表具有关系的表
-    return (
-      <SchemaSettingsSelectItem
-        key={block.uid}
-        title={title}
-        value={target?.field || ''}
-        options={[
-          ...getSupportPrimaryKeyFields({
-            targetBlock: block,
-            filterField,
-          }).map((field) => {
-            return {
-              label: compile(field.uiSchema.title) || field.name,
-              value: field.name,
-            };
-          }),
-          ...getSupportForeignKeyFields({
-            targetBlock: block,
-            filterField,
-          }).map((field) => {
-            return {
-              label: `${compile(field.uiSchema.title) || field.name} [${t('Foreign key')}]`,
-              value: field.name,
-            };
-          }),
-          ...getSupportAssociationFields({
-            targetBlock: block,
-            filterField,
-            getCollectionField: cm.getCollectionField.bind(cm),
-          }).map((field) => {
-            return {
-              label: compile(field.uiSchema.title) || field.name,
-              value: `${field.name}.${getTargetKey(field)}`,
-            };
-          }),
-          ...getSupportGeneralFields({
-            targetBlock: block,
-            filterField,
-          }).map((field) => {
-            return {
-              label: compile(field.uiSchema.title) || field.name,
-              value: field.name,
-            };
-          }),
-          ...getSupportSystemFields({
-            targetBlock: block,
-            filterField,
-            getCollectionField: cm.getCollectionField.bind(cm),
-          }).map((field) => {
-            if (field.target) {
+      const target = targets.find((target) => target.uid === block.uid);
+      // 与筛选区块的数据表具有关系的表
+      return (
+        <SchemaSettingsSelectItem
+          key={block.uid}
+          title={title}
+          value={target?.field || ''}
+          options={[
+            ...getSupportPrimaryKeyFields({
+              targetBlock: block,
+              filterField,
+            }).map((field) => {
+              return {
+                label: compile(field.uiSchema.title) || field.name,
+                value: field.name,
+              };
+            }),
+            ...getSupportForeignKeyFields({
+              targetBlock: block,
+              filterField,
+            }).map((field) => {
+              return {
+                label: `${compile(field.uiSchema.title) || field.name} [${t('Foreign key')}]`,
+                value: field.name,
+              };
+            }),
+            ...getSupportAssociationFields({
+              targetBlock: block,
+              filterField,
+              getCollectionField: cm.getCollectionField.bind(cm),
+            }).map((field) => {
               return {
                 label: compile(field.uiSchema.title) || field.name,
                 value: `${field.name}.${getTargetKey(field)}`,
               };
-            }
+            }),
+            ...getSupportGeneralFields({
+              targetBlock: block,
+              filterField,
+            }).map((field) => {
+              return {
+                label: compile(field.uiSchema.title) || field.name,
+                value: field.name,
+              };
+            }),
+            // ...getSupportSystemFields({
+            //   targetBlock: block,
+            //   filterField,
+            //   getCollectionField: cm.getCollectionField.bind(cm),
+            // }).map((field) => {
+            //   if (field.target) {
+            //     return {
+            //       label: compile(field.uiSchema.title) || field.name,
+            //       value: `${field.name}.${getTargetKey(field)}`,
+            //     };
+            //   }
 
-            return {
-              label: compile(field.uiSchema.title) || field.name,
-              value: field.name,
-            };
-          }),
-          {
-            label: t('Unconnected'),
-            value: '',
-          },
-        ]}
-        onChange={(value) => {
-          if (value === '') {
-            targets = targets.filter((target) => target.uid !== block.uid);
-            block.clearFilter(uid);
-          } else {
-            targets = targets.filter((target) => target.uid !== block.uid);
-            targets.push({ uid: block.uid, field: value });
-          }
-          updateFilterTargets(fieldSchema, targets);
-          dn.emit('patch', {
-            schema: {
-              ['x-uid']: uid,
-              'x-filter-targets': targets,
+            //   return {
+            //     label: compile(field.uiSchema.title) || field.name,
+            //     value: field.name,
+            //   };
+            // }),
+            {
+              label: t('Unconnected'),
+              value: '',
             },
-          });
-          dn.refresh();
-        }}
-        onMouseEnter={onHover}
-        onMouseLeave={onLeave}
-      />
-    );
-  });
+          ]}
+          onChange={(value) => {
+            if (value === '') {
+              targets = targets.filter((target) => target.uid !== block.uid);
+              block.clearFilter(uid);
+            } else {
+              targets = targets.filter((target) => target.uid !== block.uid);
+              targets.push({ uid: block.uid, field: value });
+            }
+            updateFilterTargets(fieldSchema, targets);
+            dn.emit('patch', {
+              schema: {
+                ['x-uid']: uid,
+                'x-filter-targets': targets,
+              },
+            });
+            dn.refresh();
+          }}
+          onMouseEnter={onHover}
+          onMouseLeave={onLeave}
+        />
+      );
+    });
 
   return (
     <SchemaSettingsSubMenu title={t('Connect data blocks')}>
