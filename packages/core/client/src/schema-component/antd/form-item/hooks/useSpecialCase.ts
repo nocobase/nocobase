@@ -45,7 +45,11 @@ export const useSpecialCase = () => {
       if (parentFieldSchema) {
         const parentField: any = form.query(parentFieldSchema.name).take();
         if (parentField) {
-          parentField.setInitialValue(transformValue(value, { field: parentField, subFieldSchema: fieldSchema }));
+          parentField.setInitialValue(
+            _.map(transformValue(value, { field: parentField, subFieldSchema: fieldSchema }), (item) =>
+              markRecordAsNew(item),
+            ),
+          );
         }
       }
     },
@@ -181,11 +185,14 @@ export function isFromDatabase(value: Record<string, any>) {
 export const useSubTableSpecialCase = ({ field }) => {
   useEffect(() => {
     if (_.isEmpty(field.value)) {
-      const value = field.value;
-      field.value = [markRecordAsNew({})];
+      const emptyValue = field.value;
+      const newValue = [markRecordAsNew({})];
+      field.value = newValue;
       // 因为默认值的解析是异步的，所以下面的代码会优先于默认值的设置，这样就防止了设置完默认值后又被清空的问题
       setTimeout(() => {
-        field.value = value;
+        if (JSON.stringify(field.value) === JSON.stringify(newValue)) {
+          field.value = emptyValue;
+        }
       });
     }
   }, []);
