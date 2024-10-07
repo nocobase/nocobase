@@ -21,7 +21,7 @@ export class Statistic extends AntdChart {
       Component: C,
       config: [
         {
-          settingType: 'field',
+          configType: 'field',
           name: 'field',
           title: 'Field',
           required: true,

@@ -26,7 +26,7 @@ export default [
     config: [
       'smooth',
       {
-        settingType: 'boolean',
+        configType: 'boolean',
         name: 'isStack',
         title: 'isStack',
         defaultValue: true,
