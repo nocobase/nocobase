@@ -10,11 +10,10 @@
 import { useField, useFieldSchema } from '@formily/react';
 import { uniqBy } from 'lodash';
 import React, { createContext, useCallback, useEffect, useRef } from 'react';
-import { CollectionFieldOptions_deprecated } from '../collection-manager';
+import { CollectionFieldOptions_deprecated, useCollectionManager_deprecated } from '../collection-manager';
 import { Collection } from '../data-source/collection/Collection';
 import { useCollection } from '../data-source/collection/CollectionProvider';
 import { useDataBlockRequest } from '../data-source/data-block/DataBlockRequestProvider';
-import { useDataSourceManager } from '../data-source/data-source/DataSourceManagerProvider';
 import { useDataLoadingMode } from '../modules/blocks/data-blocks/details-multi/setDataLoadingModeSettingsItem';
 import { removeNullCondition } from '../schema-component';
 import { isSystemField } from '../schema-settings';
@@ -168,7 +167,7 @@ export const DataBlockCollector = ({
   const associatedFields = useAssociatedFields();
   const container = useRef(null);
   const dataLoadingMode = useDataLoadingMode();
-  const dm = useDataSourceManager();
+  const { getInterface } = useCollectionManager_deprecated();
 
   const shouldApplyFilter =
     field &&
@@ -185,15 +184,10 @@ export const DataBlockCollector = ({
       associatedFields,
       foreignKeyFields: collection.getFields('isForeignKey') as ForeignKeyField[],
       primaryKeyFields: collection.getFields('primaryKey') as any,
-      systemFields: collection.getFields((field) =>
-        isSystemField(field, dm?.collectionFieldInterfaceManager?.getFieldInterface),
-      ) as any,
+      systemFields: collection.getFields((field) => isSystemField(field, getInterface)) as any,
       generalFields: collection.getFields(
         (field) =>
-          !isSystemField(field, dm?.collectionFieldInterfaceManager?.getFieldInterface) &&
-          !field.isForeignKey &&
-          !field.primaryKey &&
-          !isAssocField(field),
+          !isSystemField(field, getInterface) && !field.isForeignKey && !field.primaryKey && !isAssocField(field),
       ) as any,
       defaultFilter: params?.filter || {},
       service,
@@ -225,7 +219,6 @@ export const DataBlockCollector = ({
     associatedFields,
     collection,
     dataLoadingMode,
-    dm?.collectionFieldInterfaceManager?.getFieldInterface,
     field?.componentProps?.title,
     fieldSchema,
     params?.filter,

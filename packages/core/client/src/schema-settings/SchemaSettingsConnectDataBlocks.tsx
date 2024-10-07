@@ -240,7 +240,7 @@ export function SchemaSettingsConnectDataBlocksByFields(props: {
           ...getSupportAssociationFields({
             targetBlock: block,
             filterField,
-            getCollectionField: cm.getCollectionField,
+            getCollectionField: cm.getCollectionField.bind(cm),
           }).map((field) => {
             return {
               label: compile(field.uiSchema.title) || field.name,
@@ -259,7 +259,7 @@ export function SchemaSettingsConnectDataBlocksByFields(props: {
           ...getSupportSystemFields({
             targetBlock: block,
             filterField,
-            getCollectionField: cm.getCollectionField,
+            getCollectionField: cm.getCollectionField.bind(cm),
           }).map((field) => {
             if (field.target) {
               return {
