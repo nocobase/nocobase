@@ -5,3 +5,5 @@ app.watch.ts
 nocobase.conf
 app-upgrading
 /verdaccio/storage
+libs
+scripts

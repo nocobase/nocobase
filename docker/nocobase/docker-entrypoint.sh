@@ -18,6 +18,14 @@ ln -s /app/nocobase/storage/nocobase.conf /etc/nginx/sites-enabled/nocobase.conf
 nginx
 echo 'nginx started';
 
+# run scripts in storage/scripts
+if [ -d "/app/nocobase/storage/scripts" ]; then
+  for f in /app/nocobase/storage/scripts/*.sh; do
+    echo "Running $f"
+    sh "$f"
+  done
+fi
+
 cd /app/nocobase && yarn start --quickstart
 
 # Run command with node if the first argument contains a "-" or is not a system command. The last
