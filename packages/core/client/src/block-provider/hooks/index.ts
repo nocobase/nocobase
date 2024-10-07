@@ -224,7 +224,7 @@ export const useCreateActionProps = () => {
   return {
     async onClick() {
       const { onSuccess, skipValidator, triggerWorkflows } = actionSchema?.['x-action-settings'] ?? {};
-      const { manualClose, redirecting, redirectTo, successMessage } = onSuccess || {};
+      const { manualClose, redirecting = 'previous', redirectTo, successMessage } = onSuccess || {};
       if (!skipValidator) {
         await form.submit();
       }
@@ -889,6 +889,7 @@ export const useUpdateActionProps = () => {
   const variables = useVariables();
   const localVariables = useLocalVariables({ currentForm: form });
   const { getActiveFieldsName } = useFormActiveFields() || {};
+  const { t } = useTranslation();
 
   return {
     async onClick(e?, callBack?) {
@@ -899,7 +900,7 @@ export const useUpdateActionProps = () => {
         skipValidator,
         triggerWorkflows,
       } = actionSchema?.['x-action-settings'] ?? {};
-      const { manualClose, redirecting, redirectTo, successMessage } = onSuccess || {};
+      const { manualClose, redirecting = 'previous', redirectTo, successMessage } = onSuccess || {};
       const assignedValues = {};
       const waitList = Object.keys(originalAssignedValues).map(async (key) => {
         const value = originalAssignedValues[key];
@@ -957,13 +958,22 @@ export const useUpdateActionProps = () => {
         if (callBack) {
           callBack?.();
         }
-        if (redirecting === 'previous') {
-          visible ? setVisible?.(false) : navigate(-1);
-        }
-        setFormValueChanged?.(false);
         if (!successMessage) {
+          message.success(t('Saved successfully'));
+          await resetFormCorrectly(form);
+          if (onSuccess?.redirecting && onSuccess?.redirectTo) {
+            if (isURL(onSuccess.redirectTo)) {
+              window.location.href = onSuccess.redirectTo;
+            } else {
+              navigate(onSuccess.redirectTo);
+            }
+          }
+          if (redirecting === 'previous') {
+            visible ? setVisible?.(false) : navigate(-1);
+          }
           return;
         }
+        setFormValueChanged?.(false);
         if (manualClose) {
           modal.success({
             title: compile(successMessage),

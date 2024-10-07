@@ -251,7 +251,8 @@ export function SkipValidation() {
     />
   );
 }
-export function AfterSuccess() {
+export function AfterSuccess(props) {
+  const { redirecting } = props;
   const { dn } = useDesignable();
   const { t } = useTranslation();
   const fieldSchema = useFieldSchema();
@@ -261,7 +262,7 @@ export function AfterSuccess() {
       initialValues={
         fieldSchema?.['x-action-settings']?.['onSuccess'] || {
           manualClose: false,
-          redirecting: false,
+          redirecting: redirecting || false,
           successMessage: '{{t("Saved successfully")}}',
         }
       }

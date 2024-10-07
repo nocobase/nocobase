@@ -76,6 +76,11 @@ const schemaSettingsItems: SchemaSettingsItemType[] = [
   {
     name: 'afterSuccess',
     Component: AfterSuccess,
+    useComponentProps() {
+      return {
+        redirecting: 'previous',
+      };
+    },
   },
   {
     name: 'refreshDataBlockRequest',

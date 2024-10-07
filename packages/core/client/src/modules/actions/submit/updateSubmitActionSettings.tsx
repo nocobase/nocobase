@@ -71,6 +71,11 @@ export const updateSubmitActionSettings = new SchemaSettings({
     {
       name: 'afterSuccessfulSubmission',
       Component: AfterSuccess,
+      useComponentProps() {
+        return {
+          redirecting: 'previous',
+        };
+      },
     },
     {
       name: 'refreshDataBlockRequest',
