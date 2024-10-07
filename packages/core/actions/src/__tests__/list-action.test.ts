@@ -146,4 +146,52 @@ describe('list action', () => {
     expect(response.status).toEqual(200);
     expect(response.body.count).toEqual(0);
   });
+
+  it('should list with simple paginate', async () => {
+    const Item = app.collection({
+      name: 'items',
+      simplePaginate: true,
+      fields: [{ type: 'string', name: 'name' }],
+    });
+
+    await app.db.sync();
+
+    await Item.repository.create({
+      values: [
+        {
+          name: 'item1',
+        },
+        {
+          name: 'item2',
+        },
+        {
+          name: 'item3',
+        },
+      ],
+    });
+
+    const response = await app
+      .agent()
+      .resource('items')
+      .list({
+        fields: ['id'],
+        pageSize: 1,
+        page: 2,
+      });
+
+    const body = response.body;
+    expect(body.hasNext).toBeTruthy();
+
+    const lastPageResponse = await app
+      .agent()
+      .resource('items')
+      .list({
+        fields: ['id'],
+        pageSize: 1,
+        page: 3,
+      });
+
+    const lastPageBody = lastPageResponse.body;
+    expect(lastPageBody.hasNext).toBeFalsy();
+  });
 });
