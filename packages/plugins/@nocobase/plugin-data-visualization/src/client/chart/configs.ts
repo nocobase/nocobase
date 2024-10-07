@@ -168,18 +168,6 @@ export default {
     name: 'isGroup',
     title: 'isGroup',
   },
-  showLegend: {
-    configType: 'boolean',
-    name: 'showLegend',
-    title: 'Show legend',
-    defaultValue: true,
-  },
-  showLabel: {
-    configType: 'boolean',
-    name: 'showLabel',
-    title: 'Show label',
-    defaultValue: true,
-  },
   size: () => ({
     size: {
       title: lang('Size'),
