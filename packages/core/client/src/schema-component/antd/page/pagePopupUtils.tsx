@@ -275,16 +275,13 @@ export const usePopupUtils = (
     ],
   );
 
-  const closePopup = useCallback(
-    (currentPopupUid: string) => {
-      if (!isPopupVisibleControlledByURL()) {
-        return setVisibleFromAction?.(false);
-      }
+  const closePopup = useCallback(() => {
+    if (!isPopupVisibleControlledByURL()) {
+      return setVisibleFromAction?.(false);
+    }
 
-      navigate(withSearchParams(removeLastPopupPath(location.pathname)), { replace: true });
-    },
-    [isPopupVisibleControlledByURL, setVisibleFromAction, navigate, location?.pathname],
-  );
+    navigate(withSearchParams(removeLastPopupPath(location.pathname)), { replace: true });
+  }, [isPopupVisibleControlledByURL, setVisibleFromAction, navigate, location?.pathname]);
 
   const changeTab = useCallback(
     (key: string) => {
