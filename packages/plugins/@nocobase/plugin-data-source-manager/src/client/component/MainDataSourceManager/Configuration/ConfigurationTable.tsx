@@ -12,7 +12,6 @@ import { action } from '@formily/reactive';
 import { uid } from '@formily/shared';
 import React, { useContext, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-// import { CollectionFieldsTable } from '.';
 import {
   useAPIClient,
   useCurrentAppInfo,
@@ -29,9 +28,8 @@ import {
   CollectionCategoriesContext,
   FieldSummary,
   TemplateSummary,
-  useRequest,
-  useCollectionRecordData,
 } from '@nocobase/client';
+import { getPickerFormat } from '@nocobase/utils/client';
 import { CollectionFields } from './CollectionFields';
 import { collectionSchema } from './schemas/collections';
 
@@ -239,6 +237,7 @@ export const ConfigurationTable = () => {
           interfaces,
           enableInherits: database?.dialect === 'postgres',
           isPG: database?.dialect === 'postgres',
+          getPickerFormat,
         }}
       />
     </SchemaComponentContext.Provider>

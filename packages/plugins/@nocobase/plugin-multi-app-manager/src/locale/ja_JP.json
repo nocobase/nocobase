@@ -1,0 +1,14 @@
+{
+  "Multi-app manager": "マルチアプリ管理",
+  "Applications": "アプリケーション",
+  "App display name": "アプリ表示名",
+  "App ID": "アプリID",
+  "Pin to menu": "メニューに固定",
+  "Custom domain": "カスタムドメイン",
+  "Manage applications": "アプリケーションを管理",
+  "Standalone deployment": "スタンドアロンデプロイメント",
+  "Auto start": "自動起動",
+  "Start mode": "起動モード",
+  "Start on first visit": "初回訪問時に起動する",
+  "Start with main application": "メインアプリケーションと共に起動する"
+}

@@ -13,7 +13,7 @@ import common from './common';
 export default {
   title: `{{t("Local storage", { ns: "${NAMESPACE}" })}}`,
   name: 'local',
-  properties: {
+  fieldset: {
     title: common.title,
     name: common.name,
     baseUrl: {

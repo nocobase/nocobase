@@ -241,9 +241,13 @@ export const PagePopups = (props: { paramsList?: PopupParams[] }) => {
 
   useEffect(() => {
     const run = async () => {
-      const waitList = popupParams.map(
-        (params) => getStoredPopupContext(params.popupuid)?.schema || requestSchema(params.popupuid),
-      );
+      const waitList = popupParams.map((params) => {
+        return (
+          getStoredPopupContext(params.popupuid)?.schema ||
+          findSchemaByUid(params.popupuid, fieldSchema.root) ||
+          requestSchema(params.popupuid)
+        );
+      });
       const schemas = await Promise.all(waitList);
       const clonedSchemas = schemas.map((schema, index) => {
         if (_.isEmpty(schema)) {

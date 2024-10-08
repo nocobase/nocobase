@@ -136,6 +136,6 @@ export const useResourceContext = () => {
     resource,
     collection,
     association,
-    targetKey: association?.targetKey || collection?.targetKey || 'id',
+    targetKey: association?.targetKey || collection?.filterTargetKey || collection?.targetKey || 'id',
   };
 };
