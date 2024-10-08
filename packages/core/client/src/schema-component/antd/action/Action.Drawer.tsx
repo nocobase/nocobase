@@ -66,7 +66,6 @@ export const InternalActionDrawer: React.FC<ActionDrawerProps> = observer(
     return (
       <TabsContextProvider {...tabContext} tabBarExtraContent={null}>
         <Drawer
-          // @ts-ignore
           zIndex={antdZIndex + (props.level || 0)}
           width={openSizeWidthMap.get(openSize)}
           title={field.title}

@@ -74,7 +74,6 @@ export const InternalActionModal: React.FC<ActionDrawerProps<ModalProps>> = obse
     return (
       <TabsContextProvider {...tabContext} tabBarExtraContent={null}>
         <Modal
-          // @ts-ignore
           zIndex={antdZIndex + (props.level || 0)}
           width={actualWidth}
           title={field.title}
