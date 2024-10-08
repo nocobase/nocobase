@@ -174,7 +174,6 @@ function ReadPretty({ value, onChange, disabled, multiple, size }: UploadProps) 
   const useUploadStyleVal = (useUploadStyle as any).default ? (useUploadStyle as any).default : useUploadStyle;
   // 加载 antd 的样式
   useUploadStyleVal(prefixCls);
-
   return wrapSSR(
     <div
       className={cls(
@@ -212,6 +211,7 @@ function useSizeHint(size: number) {
 function DefaultThumbnailPreviewer({ file }) {
   const { componentCls: prefixCls } = useStyles();
   const { getThumbnailURL = getThumbnailPlaceholderURL } = attachmentFileTypes.getTypeByFile(file) ?? {};
+  console.log(getThumbnailURL);
   const imageUrl = getThumbnailURL(file);
   return <img src={imageUrl} alt={file.title} className={`${prefixCls}-list-item-image`} />;
 }
@@ -245,13 +245,14 @@ function AttachmentListItem(props) {
       {file.status === 'uploading' ? t('Uploading') : file.title}
     </span>,
   ];
-  const wrappedItem = file.id ? (
-    <a target="_blank" rel="noopener noreferrer" href={file.url} onClick={handleClick}>
-      {item}
-    </a>
-  ) : (
-    <span className={`${prefixCls}-span`}>{item}</span>
-  );
+  const wrappedItem =
+    file.id || file.url ? (
+      <a target="_blank" rel="noopener noreferrer" href={file.url} onClick={handleClick}>
+        {item}
+      </a>
+    ) : (
+      <span className={`${prefixCls}-span`}>{item}3</span>
+    );
 
   const content = (
     <div
@@ -332,7 +333,6 @@ export function AttachmentList(props) {
     },
     [multiple, onChange, value],
   );
-
   return (
     <>
       {fileList.map((file, index) => (
