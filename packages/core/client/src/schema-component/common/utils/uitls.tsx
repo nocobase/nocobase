@@ -7,16 +7,17 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import Handlebars from 'handlebars';
-import { dayjs } from '@nocobase/utils/client';
 import helpers from '@budibase/handlebars-helpers';
+import { dayjs, getPickerFormat } from '@nocobase/utils/client';
+import Handlebars from 'handlebars';
 import _, { every, findIndex, some } from 'lodash';
+import url from 'url';
 import { replaceVariableValue } from '../../../block-provider/hooks';
 import { VariableOption, VariablesContextType } from '../../../variables/types';
 import { isVariable } from '../../../variables/utils/isVariable';
 import { transformVariableValue } from '../../../variables/utils/transformVariableValue';
+import { inferPickerType } from '../../antd/date-picker/util';
 import { getJsonLogic } from '../../common/utils/logic';
-import url from 'url';
 type VariablesCtx = {
   /** 当前登录的用户 */
   $user?: Record<string, any>;
@@ -124,11 +125,20 @@ export const conditionAnalyses = async ({
       const jsonLogic = getJsonLogic();
       const [value, targetValue] = await Promise.all(parsingResult);
       const targetCollectionField = await variables.getCollectionField(targetVariableName, localVariables);
+      let currentInputValue = transformVariableValue(targetValue, { targetCollectionField });
+      const comparisonValue = transformVariableValue(value, { targetCollectionField });
+      if (
+        targetCollectionField?.type &&
+        ['datetime', 'date', 'datetimeNoTz', 'dateOnly', 'unixTimestamp'].includes(targetCollectionField.type) &&
+        currentInputValue
+      ) {
+        const picker = inferPickerType(comparisonValue);
+        const format = getPickerFormat(picker);
+        currentInputValue = dayjs(currentInputValue).format(format);
+      }
+
       return jsonLogic.apply({
-        [operator]: [
-          transformVariableValue(targetValue, { targetCollectionField }),
-          transformVariableValue(value, { targetCollectionField }),
-        ],
+        [operator]: [currentInputValue, comparisonValue],
       });
     } catch (error) {
       throw error;

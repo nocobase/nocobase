@@ -462,8 +462,8 @@ export const useFilterFormItemInitializerFields = (options?: any) => {
         'x-use-decorator-props': 'useFormItemProps',
         'x-collection-field': `${name}.${field.name}`,
         'x-component-props': {
-          component: interfaceConfig?.filterable?.operators?.[0]?.schema?.['x-component'],
           utc: false,
+          underFilter: true,
         },
       };
       if (isAssocField(field)) {
@@ -478,7 +478,7 @@ export const useFilterFormItemInitializerFields = (options?: any) => {
           'x-decorator': 'FormItem',
           'x-use-decorator-props': 'useFormItemProps',
           'x-collection-field': `${name}.${field.name}`,
-          'x-component-props': field.uiSchema?.['x-component-props'],
+          'x-component-props': { ...field.uiSchema?.['x-component-props'], utc: false, underFilter: true },
         };
       }
       const resultItem = {
@@ -572,7 +572,7 @@ const associationFieldToMenu = (
       interface: field.interface,
     },
     'x-component': 'CollectionField',
-    'x-component-props': { utc: false },
+    'x-component-props': { utc: false, underFilter: true },
     'x-read-pretty': false,
     'x-decorator': 'FormItem',
     'x-collection-field': `${collectionName}.${schemaName}`,
@@ -688,7 +688,7 @@ export const useFilterInheritsFormItemInitializerFields = (options?) => {
             'x-component': 'CollectionField',
             'x-decorator': 'FormItem',
             'x-collection-field': `${name}.${field.name}`,
-            'x-component-props': { utc: false },
+            'x-component-props': { utc: false, underFilter: true },
             'x-read-pretty': field?.uiSchema?.['x-read-pretty'],
           };
           return {
@@ -753,14 +753,14 @@ export const useCustomFormItemInitializerFields = (options?: any) => {
     });
 };
 
-export const findSchema = (schema: Schema, key: string, action: string) => {
+export const findSchema = (schema: Schema, key: string, action: string, name?: string) => {
   if (!Schema.isSchemaInstance(schema)) return null;
   return schema.reduceProperties((buf, s) => {
-    if (s[key] === action) {
+    if (s[key] === action && (!name || s.name === name)) {
       return s;
     }
     if (s['x-component'] !== 'Action.Container' && !s['x-component'].includes('AssociationField')) {
-      const c = findSchema(s, key, action);
+      const c = findSchema(s, key, action, name);
       if (c) {
         return c;
       }
@@ -782,7 +782,7 @@ const recursiveParent = (schema: Schema) => {
   return recursiveParent(schema.parent);
 };
 
-export const useCurrentSchema = (action: string, key: string, find = findSchema, rm = removeSchema) => {
+export const useCurrentSchema = (action: string, key: string, find = findSchema, rm = removeSchema, name?: string) => {
   const { removeActiveFieldName } = useFormActiveFields() || {};
   const { form }: { form?: Form } = useFormBlockContext();
   let fieldSchema = useFieldSchema();
@@ -793,7 +793,7 @@ export const useCurrentSchema = (action: string, key: string, find = findSchema,
     }
   }
   const { remove } = useDesignable();
-  const schema = find(fieldSchema, key, action);
+  const schema = find(fieldSchema, key, action, name);
   return {
     schema,
     exists: !!schema,
