@@ -251,6 +251,7 @@ export function SkipValidation() {
     />
   );
 }
+
 export function AfterSuccess() {
   const { dn } = useDesignable();
   const { t } = useTranslation();
@@ -259,10 +260,11 @@ export function AfterSuccess() {
     <SchemaSettingsModalItem
       title={t('After successful submission')}
       initialValues={
-        fieldSchema?.['x-action-settings']?.['onSuccess'] || {
+        { actionAfterSuccess: 'previous', ...fieldSchema?.['x-action-settings']?.['onSuccess'] } || {
           manualClose: false,
           redirecting: false,
           successMessage: '{{t("Saved successfully")}}',
+          actionAfterSuccess: 'previous',
         }
       }
       schema={
@@ -277,7 +279,7 @@ export function AfterSuccess() {
               'x-component-props': {},
             },
             manualClose: {
-              title: t('Popup close method'),
+              title: t('Message popup close method'),
               enum: [
                 { label: t('Automatic close'), value: false },
                 { label: t('Manually close'), value: true },
@@ -288,6 +290,7 @@ export function AfterSuccess() {
             },
             redirecting: {
               title: t('Then'),
+              'x-hidden': true,
               enum: [
                 { label: t('Stay on current page'), value: false },
                 { label: t('Redirect to'), value: true },
@@ -300,6 +303,25 @@ export function AfterSuccess() {
                 fulfill: {
                   state: {
                     visible: '{{!!$self.value}}',
+                  },
+                },
+              },
+            },
+            actionAfterSuccess: {
+              title: t('Action after successful submission'),
+              enum: [
+                { label: t('Stay on the current popup or page'), value: 'stay' },
+                { label: t('Return to the previous popup or page'), value: 'previous' },
+                { label: t('Redirect to'), value: 'redirect' },
+              ],
+              'x-decorator': 'FormItem',
+              'x-component': 'Radio.Group',
+              'x-component-props': {},
+              'x-reactions': {
+                target: 'redirectTo',
+                fulfill: {
+                  state: {
+                    visible: "{{$self.value==='redirect'}}",
                   },
                 },
               },
