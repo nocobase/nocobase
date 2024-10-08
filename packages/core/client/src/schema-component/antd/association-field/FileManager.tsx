@@ -121,6 +121,7 @@ function FileSelector(props) {
             onChange={onChange}
             action={action}
             rules={rules}
+            disabled={disabled}
             {...other}
           />
         ) : null}

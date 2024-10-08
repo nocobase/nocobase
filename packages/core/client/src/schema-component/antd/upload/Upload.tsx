@@ -212,7 +212,6 @@ function useSizeHint(size: number) {
 function DefaultThumbnailPreviewer({ file }) {
   const { componentCls: prefixCls } = useStyles();
   const { getThumbnailURL = getThumbnailPlaceholderURL } = attachmentFileTypes.getTypeByFile(file) ?? {};
-  console.log(getThumbnailURL);
   const imageUrl = getThumbnailURL(file);
   return <img src={imageUrl} alt={file.title} className={`${prefixCls}-list-item-image`} />;
 }
@@ -452,7 +451,6 @@ export function Uploader({ rules, ...props }: UploadProps) {
 
 function Attachment(props: UploadProps) {
   const { wrapSSR, hashId, componentCls: prefixCls } = useStyles();
-
   return wrapSSR(
     <div className={cls(`${prefixCls}-wrapper`, `${prefixCls}-picture-card-wrapper`, 'nb-upload', hashId)}>
       <div className={cls(`${prefixCls}-list`, `${prefixCls}-list-picture-card`)}>
