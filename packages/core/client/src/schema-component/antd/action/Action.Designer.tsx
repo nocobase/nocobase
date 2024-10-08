@@ -256,16 +256,22 @@ export function AfterSuccess() {
   const { dn } = useDesignable();
   const { t } = useTranslation();
   const fieldSchema = useFieldSchema();
+  const { onSuccess } = fieldSchema?.['x-action-settings'] || {};
   return (
     <SchemaSettingsModalItem
       title={t('After successful submission')}
       initialValues={
-        { actionAfterSuccess: 'previous', ...fieldSchema?.['x-action-settings']?.['onSuccess'] } || {
-          manualClose: false,
-          redirecting: false,
-          successMessage: '{{t("Saved successfully")}}',
-          actionAfterSuccess: 'previous',
-        }
+        onSuccess
+          ? {
+              actionAfterSuccess: onSuccess?.redirecting ? 'redirect' : 'previous',
+              ...onSuccess,
+            }
+          : {
+              manualClose: false,
+              redirecting: false,
+              successMessage: '{{t("Saved successfully")}}',
+              actionAfterSuccess: 'previous',
+            }
       }
       schema={
         {
