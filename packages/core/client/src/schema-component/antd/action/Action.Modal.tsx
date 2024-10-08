@@ -20,7 +20,7 @@ import { TabsContextProvider, useTabsContext } from '../tabs/context';
 import { useActionContext } from './hooks';
 import { useSetAriaLabelForModal } from './hooks/useSetAriaLabelForModal';
 import { ActionDrawerProps, ComposedActionDrawer, OpenSize } from './types';
-import { antdDrawerZIndex } from './utils';
+import { useAntdZIndex } from './utils';
 
 const ModalErrorFallback: React.FC<FallbackProps> = (props) => {
   const { visible, setVisible } = useActionContext();
@@ -47,6 +47,7 @@ export const InternalActionModal: React.FC<ActionDrawerProps<ModalProps>> = obse
     const field = useField();
     const { token } = useToken();
     const tabContext = useTabsContext();
+    const antdZIndex = useAntdZIndex();
     const footerSchema = schema.reduceProperties((buf, s) => {
       if (s['x-component'] === footerNodeName) {
         return s;
@@ -73,7 +74,7 @@ export const InternalActionModal: React.FC<ActionDrawerProps<ModalProps>> = obse
     return (
       <TabsContextProvider {...tabContext} tabBarExtraContent={null}>
         <Modal
-          zIndex={antdDrawerZIndex + props.level}
+          zIndex={antdZIndex + (props.level || 0)}
           width={actualWidth}
           title={field.title}
           {...(others as ModalProps)}

@@ -8,6 +8,7 @@
  */
 
 import { RecursionField, observer, useFieldSchema } from '@formily/react';
+import zIndexContext from 'antd/es/_util/zIndexContext';
 import React, { useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { useActionContext } from '.';
@@ -15,7 +16,7 @@ import { BackButtonUsedInSubPage } from '../page/BackButtonUsedInSubPage';
 import { TabsContextProvider, useTabsContext } from '../tabs/context';
 import { useActionPageStyle } from './Action.Page.style';
 import { usePopupOrSubpagesContainerDOM } from './hooks/usePopupSlotDOM';
-import { antdDrawerZIndex } from './utils';
+import { useAntdZIndex } from './utils';
 
 export function ActionPage({ level }) {
   const filedSchema = useFieldSchema();
@@ -23,12 +24,13 @@ export function ActionPage({ level }) {
   const { getContainerDOM } = usePopupOrSubpagesContainerDOM();
   const { styles } = useActionPageStyle();
   const tabContext = useTabsContext();
+  const antdZIndex = useAntdZIndex();
 
   const style = useMemo(() => {
     return {
-      zIndex: antdDrawerZIndex + level,
+      zIndex: antdZIndex + (level || 0),
     };
-  }, [level]);
+  }, [antdZIndex, level]);
 
   if (!ctx.visible) {
     return null;
@@ -37,7 +39,9 @@ export function ActionPage({ level }) {
   const actionPageNode = (
     <div className={styles.container} style={style}>
       <TabsContextProvider {...tabContext} tabBarExtraContent={<BackButtonUsedInSubPage />}>
-        <RecursionField schema={filedSchema} onlyRenderProperties />
+        <zIndexContext.Provider value={style.zIndex}>
+          <RecursionField schema={filedSchema} onlyRenderProperties />
+        </zIndexContext.Provider>
       </TabsContextProvider>
     </div>
   );

@@ -19,7 +19,7 @@ import { useStyles } from './Action.Drawer.style';
 import { useActionContext } from './hooks';
 import { useSetAriaLabelForDrawer } from './hooks/useSetAriaLabelForDrawer';
 import { ActionDrawerProps, ComposedActionDrawer, OpenSize } from './types';
-import { antdDrawerZIndex } from './utils';
+import { useAntdZIndex } from './utils';
 
 const DrawerErrorFallback: React.FC<FallbackProps> = (props) => {
   const { visible, setVisible } = useActionContext();
@@ -43,6 +43,7 @@ export const InternalActionDrawer: React.FC<ActionDrawerProps> = observer(
     const field = useField();
     const { componentCls, hashId } = useStyles();
     const tabContext = useTabsContext();
+    const antdZIndex = useAntdZIndex();
     const footerSchema = schema.reduceProperties((buf, s) => {
       if (s['x-component'] === footerNodeName) {
         return s;
@@ -65,7 +66,7 @@ export const InternalActionDrawer: React.FC<ActionDrawerProps> = observer(
     return (
       <TabsContextProvider {...tabContext} tabBarExtraContent={null}>
         <Drawer
-          zIndex={antdDrawerZIndex + props.level}
+          zIndex={antdZIndex + (props.level || 0)}
           width={openSizeWidthMap.get(openSize)}
           title={field.title}
           {...others}
