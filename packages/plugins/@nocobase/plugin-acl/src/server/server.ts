@@ -45,6 +45,26 @@ export class PluginACLServer extends Plugin {
     });
   }
 
+  async handleSyncMessage(message) {
+    const { type } = message;
+    if (type === 'syncRole') {
+      const { roleName } = message;
+      const role = await this.app.db.getRepository('roles').findOne({
+        filter: {
+          name: roleName,
+        },
+      });
+
+      await this.writeRoleToACL(role, {
+        withOutResources: true,
+      });
+
+      await this.app.emitAsync('acl:writeResources', {
+        roleName: role.get('name'),
+      });
+    }
+  }
+
   async writeRolesToACL(options) {
     const roles = (await this.app.db.getRepository('roles').find({
       appends: ['resources', 'resources.actions'],
@@ -213,6 +233,16 @@ export class PluginACLServer extends Plugin {
           transaction,
         });
       }
+
+      this.sendSyncMessage(
+        {
+          type: 'syncRole',
+          roleName: model.get('name'),
+        },
+        {
+          transaction: options.transaction,
+        },
+      );
     });
 
     this.app.db.on('roles.afterDestroy', (model) => {
