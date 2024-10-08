@@ -267,7 +267,7 @@ function AttachmentListItem(props) {
       <div className={`${prefixCls}-list-item-info`}>{wrappedItem}</div>
       <span className={`${prefixCls}-list-item-actions`}>
         <Space size={3}>
-          {!readPretty && file.id && (
+          {!readPretty && (file.id || file.url) && (
             <Button size={'small'} type={'text'} icon={<DownloadOutlined />} onClick={onDownload} />
           )}
           {!readPretty && !disabled && file.status !== 'uploading' && (
