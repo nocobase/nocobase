@@ -166,7 +166,7 @@ export const createSubmitActionSettings = new SchemaSettings({
       name: 'saveMode',
       Component: SaveMode,
       useVisible() {
-        const { type } = useDataBlockProps();
+        const { type } = useDataBlockProps() || ({} as any);
         return type !== 'publicForm';
       },
     },
