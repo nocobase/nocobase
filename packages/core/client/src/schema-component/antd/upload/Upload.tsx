@@ -86,7 +86,7 @@ function useSizeHint(size: number) {
 }
 
 function AttachmentListItem(props) {
-  const { file, disabled, onPreview, onDelete: propsOnDelete, readPretty } = props;
+  const { file, disabled, onPreview, onDelete: propsOnDelete, readPretty, key } = props;
   const { componentCls: prefixCls } = useStyles();
   const { t } = useTranslation();
   const handleClick = useCallback(
@@ -133,6 +133,7 @@ function AttachmentListItem(props) {
         `${prefixCls}-list-item-${file.status ?? 'done'}`,
         `${prefixCls}-list-item-list-type-picture-card`,
       )}
+      key={key}
     >
       <div className={`${prefixCls}-list-item-info`}>{wrappedItem}</div>
       <span className={`${prefixCls}-list-item-actions`}>
@@ -324,17 +325,15 @@ export function AttachmentList(props) {
   return (
     <>
       {fileList.map((file, index) => (
-        <div key={index}>
-          <AttachmentListItem
-            key={file.id}
-            file={file}
-            index={index}
-            disabled={disabled}
-            onPreview={onPreview}
-            onDelete={onDelete}
-            readPretty={readPretty}
-          />
-        </div>
+        <AttachmentListItem
+          key={file.id}
+          file={file}
+          index={index}
+          disabled={disabled}
+          onPreview={onPreview}
+          onDelete={onDelete}
+          readPretty={readPretty}
+        />
       ))}
       <Previewer index={preview} onSwitchIndex={setPreview} list={fileList} />
     </>
