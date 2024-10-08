@@ -22,7 +22,7 @@ import {
 } from '@nocobase/client';
 import { Alert, App, Button, Card, Col, Modal, Row, Space, Table, Tabs, Typography, theme } from 'antd';
 import { cloneDeep, isEqual } from 'lodash';
-import React, { useContext, useEffect, useMemo, useRef } from 'react';
+import React, { memo, useContext, useEffect, useMemo, useRef } from 'react';
 import {
   useChartFields,
   useCollectionOptions,
@@ -101,6 +101,7 @@ export const ChartConfigure: React.FC<{
     const selectedFields = getSelectedFields(fields, query);
     const { general, advanced } = chart.init(selectedFields, query);
     if (general || overwrite) {
+      form.setInitialValuesIn('config.general', {});
       form.values.config.general = general;
     }
     if (advanced || overwrite) {
@@ -142,7 +143,7 @@ export const ChartConfigure: React.FC<{
     [field, visible, dataSource, collection],
   );
 
-  const RunButton: React.FC = () => (
+  const RunButton: React.FC = memo(() => (
     <Button
       type="link"
       loading={service?.loading}
@@ -165,7 +166,7 @@ export const ChartConfigure: React.FC<{
     >
       {t('Run query')}
     </Button>
-  );
+  ));
 
   const queryRef = useRef(null);
   const configRef = useRef(null);
@@ -434,10 +435,11 @@ ChartConfigure.Config = function Config() {
       {(form) => {
         const chartType = form.values.config?.chartType;
         const chart = charts[chartType];
+        const enableAdvancedConfig = chart?.enableAdvancedConfig;
         const schema = chart?.schema || {};
         return (
           <SchemaComponent
-            schema={getConfigSchema(schema)}
+            schema={getConfigSchema(schema, enableAdvancedConfig)}
             scope={{ t, chartTypes, useChartFields: getChartFields, getReference, formCollapse }}
             components={{ FormItem, ArrayItems, Space, AutoComplete, FormCollapse }}
           />

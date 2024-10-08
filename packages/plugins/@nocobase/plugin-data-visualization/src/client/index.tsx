@@ -39,7 +39,8 @@ class PluginDataVisualiztionClient extends Plugin {
   public charts: ChartGroup = new ChartGroup();
 
   async load() {
-    this.charts.setGroup('Built-in', [...g2plot, ...antd]);
+    this.charts.addGroup('antd', { title: 'Ant Design', charts: antd });
+    this.charts.addGroup('ant-design-charts', { title: 'Ant Design Charts', charts: g2plot });
 
     this.app.addComponents({
       ChartV2BlockInitializer,
@@ -85,5 +86,6 @@ export default PluginDataVisualiztionClient;
 export { Chart } from './chart/chart';
 export type { ChartProps, ChartType, RenderProps } from './chart/chart';
 export { ChartConfigContext } from './configure';
+export { useSetChartSize } from './hooks';
 export type { FieldOption } from './hooks';
 export type { QueryProps } from './renderer';
