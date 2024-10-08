@@ -8,7 +8,6 @@
  */
 
 import { RecursionField, observer, useFieldSchema } from '@formily/react';
-import zIndexContext from 'antd/es/_util/zIndexContext';
 import React, { useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { useActionContext } from '.';
@@ -17,6 +16,9 @@ import { TabsContextProvider, useTabsContext } from '../tabs/context';
 import { useActionPageStyle } from './Action.Page.style';
 import { usePopupOrSubpagesContainerDOM } from './hooks/usePopupSlotDOM';
 import { useAntdZIndex } from './utils';
+
+// @ts-ignore
+import zIndexContext from 'antd/es/_util/zIndexContext';
 
 export function ActionPage({ level }) {
   const filedSchema = useFieldSchema();

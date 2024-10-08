@@ -8,12 +8,14 @@
  */
 
 import type { ISchema } from '@formily/react';
-import zIndexContext from 'antd/es/_util/zIndexContext';
 import { last } from 'lodash';
 import { useContext } from 'react';
 import { ActionType } from '../../../schema-settings/LinkageRules/type';
 import { VariableOption, VariablesContextType } from '../../../variables/types';
 import { conditionAnalyses } from '../../common/utils/uitls';
+
+// @ts-ignore
+import zIndexContext from 'antd/es/_util/zIndexContext';
 
 const validateJSON = {
   validator: `{{(value, rule)=> {
@@ -159,5 +161,5 @@ export const setInitialActionState = (field) => {
 
 export const useAntdZIndex = () => {
   const contextZIndex = useContext(zIndexContext);
-  return contextZIndex || 100;
+  return (contextZIndex || 100) as number;
 };
