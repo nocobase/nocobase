@@ -123,7 +123,7 @@ const PagePopupsItemProvider: FC<{
 
       if (process.env.__E2E__) {
         setTimeout(() => {
-          closePopup(params.popupuid);
+          closePopup();
           // Deleting here ensures that the next time the same popup is opened, it will generate another random key.
           deleteRandomNestedSchemaKey(params.popupuid);
         });
@@ -132,7 +132,7 @@ const PagePopupsItemProvider: FC<{
 
       // Leave some time to refresh the block data
       setTimeout(() => {
-        closePopup(params.popupuid);
+        closePopup();
         // Deleting here ensures that the next time the same popup is opened, it will generate another random key.
         deleteRandomNestedSchemaKey(params.popupuid);
       }, 300);
