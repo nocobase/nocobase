@@ -136,7 +136,8 @@ function IframePreviewer({ index, list, onSwitchIndex }) {
           overflowY: 'auto',
         }}
       >
-        {iframePreviewSupportedTypes.some((type) => match(file.mimetype || file.extname, type)) ? (
+        {iframePreviewSupportedTypes.some((type) => match(file.mimetype || file.extname, type)) ||
+        (!file.mimetype && file.url) ? (
           <iframe
             src={file.url}
             style={{
