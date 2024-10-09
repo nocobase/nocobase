@@ -7,13 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { useTranslation } from 'react-i18next';
 import { NAMESPACE } from '../../locale';
 import common from './common';
+import React from 'react';
 
 export default {
-  title: `{{t("Aliyun OSS", { ns: "${NAMESPACE}" })}}`,
-  name: 'ali-oss',
-  properties: {
+  title: `{{t("Tencent COS", { ns: "${NAMESPACE}" })}}`,
+  name: 'tx-cos',
+  fieldset: {
     title: common.title,
     name: common.name,
     baseUrl: common.baseUrl,
@@ -21,29 +23,28 @@ export default {
       type: 'object',
       'x-component': 'fieldset',
       properties: {
-        region: {
+        Region: {
           title: `{{t("Region", { ns: "${NAMESPACE}" })}}`,
           type: 'string',
           'x-decorator': 'FormItem',
           'x-component': 'Input',
-          description: `{{t('Aliyun OSS region part of the bucket. For example: "oss-cn-beijing".', { ns: "${NAMESPACE}" })}}`,
           required: true,
         },
-        accessKeyId: {
-          title: `{{t("AccessKey ID", { ns: "${NAMESPACE}" })}}`,
+        SecretId: {
+          title: `{{t("SecretId", { ns: "${NAMESPACE}" })}}`,
           type: 'string',
           'x-decorator': 'FormItem',
           'x-component': 'Input',
           required: true,
         },
-        accessKeySecret: {
-          title: `{{t("AccessKey Secret", { ns: "${NAMESPACE}" })}}`,
+        SecretKey: {
+          title: `{{t("SecretKey", { ns: "${NAMESPACE}" })}}`,
           type: 'string',
           'x-decorator': 'FormItem',
           'x-component': 'Password',
           required: true,
         },
-        bucket: {
+        Bucket: {
           title: `{{t("Bucket", { ns: "${NAMESPACE}" })}}`,
           type: 'string',
           'x-decorator': 'FormItem',
@@ -56,9 +57,9 @@ export default {
           'x-decorator': 'FormItem',
           'x-component': 'Input',
           'x-component-props': {
-            placeholder: '?x-oss-process=image/auto-orient,1/resize,m_fill,w_94,h_94/quality,q_90',
+            placeholder: '?imageMogr2/thumbnail/!50p',
           },
-          description: '{{ xStyleProcessDesc }}',
+          description: '{{ renderThumbnailRuleDesc("tx-cos") }}',
         },
       },
     },
@@ -67,4 +68,5 @@ export default {
     default: common.default,
     paranoid: common.paranoid,
   },
+  thumbnailRuleLink: 'https://cloud.tencent.com/document/product/436/42214',
 };

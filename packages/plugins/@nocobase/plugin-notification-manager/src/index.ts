@@ -7,5 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from './server';
 export { default } from './server';
+export { BaseNotificationChannel } from './server/base-notification-channel';
+
+export * from './server';

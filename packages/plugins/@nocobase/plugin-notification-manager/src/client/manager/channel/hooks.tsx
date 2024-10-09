@@ -7,26 +7,25 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { createContext, useContext, useMemo } from 'react';
+import { createForm } from '@formily/core';
+import { Schema, useForm } from '@formily/react';
+import { uid } from '@formily/shared';
 import {
   ActionProps,
   useActionContext,
+  useBlockRequestContext,
   useCollection,
   useCollectionRecordData,
   useDataBlockRequest,
-  useBlockRequestContext,
   useDataBlockResource,
   usePlugin,
-  useDestroyActionProps,
 } from '@nocobase/client';
-import { uid } from '@formily/shared';
 import { App as AntdApp } from 'antd';
-import { createForm } from '@formily/core';
-import { useForm, Schema } from '@formily/react';
-import { NotificationTypeNameContext } from './context';
+import React, { createContext, useContext, useMemo } from 'react';
 import { PluginNotificationManagerClient } from '../..';
 import { useNotificationTranslation } from '../../locale';
-import { ChannelType } from './types';
+import { NotificationTypeNameContext } from './context';
+import { RegisterChannelOptions } from './types';
 
 export const useCreateActionProps = () => {
   const { setVisible, setSubmitted } = useActionContext();
@@ -106,31 +105,6 @@ export const useEditFormProps = () => {
   };
 };
 
-export const useRecordEditActionProps = () => {
-  const channelTypes = useNotificationTypes();
-  const recordData = useCollectionRecordData();
-  const channelType = channelTypes.find((item) => item.name === recordData.notificationType);
-  const editable = channelType.meta.editable;
-  const style: React.CSSProperties = {};
-  if (!editable) {
-    style.display = 'none';
-  }
-  return { style };
-};
-
-export const useRecordDeleteActionProps = () => {
-  const channelTypes = useNotificationTypes();
-  const recordData = useCollectionRecordData();
-  const channelType = channelTypes.find((item) => item.name === recordData.notificationType);
-  const deletable = channelType.meta.deletable;
-  const style: React.CSSProperties = {};
-  const destroyProps = useDestroyActionProps();
-  if (!deletable) {
-    style.display = 'none';
-  }
-  return { ...destroyProps, style };
-};
-
 export const useCreateFormProps = () => {
   const ctx = useActionContext();
   const { name } = useContext(NotificationTypeNameContext);
@@ -195,14 +169,14 @@ export const NotificationVariableProvider = ({ value, children }) => {
 export const useNotificationTypes = () => {
   const { t } = useNotificationTranslation();
   const plugin = usePlugin(PluginNotificationManagerClient);
-  const notificationTypes: Array<ChannelType> = [];
+  const notificationTypes: Array<RegisterChannelOptions> = [];
   for (const [key, val] of plugin.channelTypes.getEntities()) {
     const title = Schema.compile(val.title, { t }) as string;
     const type = {
       ...val,
-      name: val.key,
-      key: val.key,
-      value: val.key,
+      name: val.type,
+      key: val.type,
+      value: val.type,
       title,
       label: title,
     };

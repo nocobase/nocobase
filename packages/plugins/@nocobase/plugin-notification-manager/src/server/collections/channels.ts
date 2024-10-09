@@ -8,6 +8,6 @@
  */
 
 import { defineCollection } from '@nocobase/database';
-import { COLLECTION_NAME } from '../../constant';
 import collectionOption from '../../collections/channel';
+
 export default defineCollection(collectionOption);

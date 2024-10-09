@@ -7,22 +7,22 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ComponentType } from 'react';
 import { Registry } from '@nocobase/utils/client';
+import { ComponentType } from 'react';
 
-export type ChannelType = {
+export type RegisterChannelOptions = {
   title: string;
-  key: string;
+  type: string;
   components: {
-    ChannelConfigForm?: ComponentType;
+    ChannelConfigForm: ComponentType;
     MessageConfigForm?: ComponentType<{ variableOptions: any }>;
   };
   meta?: {
-    createable?: boolean;
-    editable?: boolean;
+    creatable?: boolean;
+    eidtable?: boolean;
     deletable?: boolean;
   };
 };
 
-export type ChannelTypes = Registry<ChannelType>;
+export type ChannelTypes = Registry<RegisterChannelOptions>;
 export type NotificationType = 'mail' | 'SMS' | 'in-app';

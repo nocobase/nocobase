@@ -103,6 +103,13 @@ export const useACLContext = () => {
 export const ACLActionParamsContext = createContext<any>({});
 ACLActionParamsContext.displayName = 'ACLActionParamsContext';
 
+export const ACLCustomContext = createContext<any>({});
+ACLCustomContext.displayName = 'ACLCustomContext';
+
+const useACLCustomContext = () => {
+  return useContext(ACLCustomContext);
+};
+
 export const useACLRolesCheck = () => {
   const ctx = useContext(ACLContext);
   const dataSourceName = useDataSourceKey();
@@ -218,9 +225,10 @@ export function useUIConfigurationPermissions(): { allowConfigUI: boolean } {
 
 export const ACLCollectionProvider = (props) => {
   const { allowAll, parseAction } = useACLRoleContext();
+  const { allowAll: customAllowAll } = useACLCustomContext();
   const app = useApp();
   const schema = useFieldSchema();
-  if (allowAll || app.disableAcl) {
+  if (allowAll || app.disableAcl || customAllowAll) {
     return props.children;
   }
   let actionPath = schema?.['x-acl-action'] || props.actionPath;

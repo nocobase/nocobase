@@ -4,7 +4,6 @@ ARG COMMIT_HASH
 ARG APPEND_PRESET_LOCAL_PLUGINS
 ARG BEFORE_PACK_NOCOBASE="ls -l"
 ARG PLUGINS_DIRS
-ARG PG_CLIENT_VERSION="16.1"
 
 ENV PLUGINS_DIRS=${PLUGINS_DIRS}
 
@@ -41,30 +40,10 @@ RUN cd /app \
   && rm -rf nocobase.tar.gz \
   && tar -zcf ./nocobase.tar.gz -C /app/my-nocobase-app .
 
-# add database client
-FROM debian:11-slim AS dbclient-builder
-ENV DEBIAN_FRONTEND=noninteractive
-RUN apt-get update && \
-  apt-get install -y --no-install-recommends \
-  wget \
-  dpkg \
-  ca-certificates \
-  build-essential \
-  libreadline-dev \
-  zlib1g-dev \
-  libicu-dev
-
-RUN wget https://ftp.postgresql.org/pub/source/v16.0/postgresql-16.0.tar.gz && \
-  tar -xzf postgresql-16.0.tar.gz
-WORKDIR /postgresql-16.0
-RUN ./configure --without-readline --without-zlib --without-icu && \
-  make -C src/bin/pg_dump
-RUN wget https://repo.mysql.com/apt/debian/pool/mysql-8.0/m/mysql-community/mysql-community-client-core_8.0.37-1debian11_amd64.deb && \
-  dpkg-deb -x mysql-community-client-core_8.0.37-1debian11_amd64.deb /tmp/mysql-community-client
-
 FROM node:20.13-bullseye-slim
-RUN apt-get update && apt-get install -y nginx libpq5 libreadline8
+RUN apt-get update && apt-get install -y nginx
 RUN rm -rf /etc/nginx/sites-enabled/default
+
 COPY ./docker/nocobase/nocobase.conf /etc/nginx/sites-enabled/nocobase.conf
 COPY --from=builder /app/nocobase.tar.gz /app/nocobase.tar.gz
 
@@ -72,10 +51,14 @@ WORKDIR /app/nocobase
 
 RUN mkdir -p /app/nocobase/storage/uploads/ && echo "$COMMIT_HASH" >> /app/nocobase/storage/uploads/COMMIT_HASH
 
-COPY --from=dbclient-builder /postgresql-16.0/src/bin/pg_dump/pg_dump /usr/local/bin/
-COPY --from=dbclient-builder /postgresql-16.0/src/bin/pg_dump/pg_restore /usr/local/bin/
-COPY --from=dbclient-builder /tmp/mysql-community-client/usr/bin/mysql /usr/local/bin/
-COPY --from=dbclient-builder /tmp/mysql-community-client/usr/bin/mysqldump /usr/local/bin/
+# install postgresql-client and mysql-client
+RUN apt update && apt install -y wget postgresql-common gnupg \
+  && /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y \
+  && apt install -y postgresql-client-16 \
+  && wget https://downloads.mysql.com/archives/get/p/23/file/mysql-community-client-core_8.1.0-1debian11_amd64.deb \
+  && dpkg -x mysql-community-client-core_8.1.0-1debian11_amd64.deb /tmp/mysql-client \
+  && cp /tmp/mysql-client/usr/bin/mysqldump /usr/bin/ \
+  && cp /tmp/mysql-client/usr/bin/mysql /usr/bin/
 
 COPY ./docker/nocobase/docker-entrypoint.sh /app/
 

@@ -106,6 +106,7 @@ export abstract class CollectionFieldInterface {
               'uiSchema.x-component-props.showTime',
               'uiSchema.x-component-props.dateFormat',
               'uiSchema.x-component-props.timeFormat',
+              'uiSchema.x-component-props.picker',
             ],
             fulfill: {
               state: {
@@ -114,7 +115,17 @@ export abstract class CollectionFieldInterface {
                   showTime: '{{$deps[1]}}',
                   dateFormat: '{{$deps[2]}}',
                   timeFormat: '{{$deps[3]}}',
+                  picker: '{{$deps[4]}}',
                 },
+              },
+            },
+          },
+          {
+            // 当 picker 改变时，清空 defaultValue
+            dependencies: ['uiSchema.x-component-props.picker'],
+            fulfill: {
+              state: {
+                value: null,
               },
             },
           },

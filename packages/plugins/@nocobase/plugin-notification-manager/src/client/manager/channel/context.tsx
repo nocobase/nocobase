@@ -7,9 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { createContext, useContext } from 'react';
-import { useState } from 'react';
-import { ChannelType } from './types';
+import React, { createContext, useContext, useState } from 'react';
+import { RegisterChannelOptions } from './types';
 export const NotificationTypeNameContext = createContext<{
   name: string;
   setName: (name: string) => void;
@@ -17,7 +16,7 @@ export const NotificationTypeNameContext = createContext<{
 NotificationTypeNameContext.displayName = 'ChannelTypeContext';
 
 export const NotificationTypesContext = createContext<{
-  channelTypes: Array<ChannelType>;
+  channelTypes: Array<RegisterChannelOptions>;
 }>({ channelTypes: [] });
 NotificationTypesContext.displayName = 'ChannelTypesContext';
 

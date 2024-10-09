@@ -8,26 +8,28 @@
  */
 
 import { Plugin } from '@nocobase/client';
-import { ChannelManager } from './manager/channel/components';
-import { LogManager } from './manager/log/components/Manager';
 import { lang as t } from './locale';
+import { ChannelManager } from './manager/channel/components';
+import { RegisterChannelOptions } from './manager/channel/types';
+import { LogManager } from './manager/log/components/Manager';
 import NotificationManager from './notification-manager';
-import { ChannelType, ChannelTypes } from './manager/channel/types';
 
 const NAMESPACE = 'notification-manager';
 export class PluginNotificationManagerClient extends Plugin {
   private manager: NotificationManager;
-  channelTypes: ChannelTypes;
 
-  registerChannelType(params: ChannelType) {
-    this.manager.registerChannelType(params);
+  get channelTypes() {
+    return this.manager.channelTypes;
+  }
+
+  registerChannelType(options: RegisterChannelOptions) {
+    this.manager.registerChannelType(options);
   }
 
   async afterAdd() {}
 
   async beforeLoad() {
     this.manager = new NotificationManager();
-    this.channelTypes = this.manager.channelTypes;
   }
 
   // You can get and modify the app instance here
@@ -52,6 +54,6 @@ export class PluginNotificationManagerClient extends Plugin {
   }
 }
 
-export default PluginNotificationManagerClient;
+export { NotificationVariableContext, NotificationVariableProvider, useNotificationVariableOptions } from './hooks';
 export { MessageConfigForm } from './manager/message/components/MessageConfigForm';
-export { NotificationVariableContext, useNotificationVariableOptions, NotificationVariableProvider } from './hooks';
+export default PluginNotificationManagerClient;

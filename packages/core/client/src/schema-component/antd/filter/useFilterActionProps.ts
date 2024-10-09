@@ -21,9 +21,9 @@ export const useGetFilterOptions = () => {
   const { getCollectionFields } = useCollectionManager_deprecated();
   const getFilterFieldOptions = useGetFilterFieldOptions();
 
-  return (collectionName, dataSource?: string) => {
+  return (collectionName, dataSource?: string, usedInVariable?: boolean) => {
     const fields = getCollectionFields(collectionName, dataSource);
-    const options = getFilterFieldOptions(fields);
+    const options = getFilterFieldOptions(fields, usedInVariable);
     return options;
   };
 };
@@ -39,18 +39,20 @@ export const useGetFilterFieldOptions = () => {
   const fieldSchema = useFieldSchema();
   const nonfilterable = fieldSchema?.['x-component-props']?.nonfilterable || [];
   const { getCollectionFields, getInterface } = useCollectionManager_deprecated();
-  const field2option = (field, depth) => {
+  const field2option = (field, depth, usedInVariable?: boolean) => {
     if (nonfilterable.length && depth === 1 && nonfilterable.includes(field.name)) {
       return;
     }
     if (!field.interface) {
       return;
     }
+
     const fieldInterface = getInterface(field.interface);
-    if (!fieldInterface?.filterable) {
+    if (!fieldInterface?.filterable && !usedInVariable) {
       return;
     }
-    const { nested, children, operators } = fieldInterface.filterable;
+
+    const { nested, children, operators } = fieldInterface?.filterable || {};
     const option = {
       name: field.name,
       type: field.type,
@@ -80,17 +82,17 @@ export const useGetFilterFieldOptions = () => {
     }
     return option;
   };
-  const getOptions = (fields, depth) => {
+  const getOptions = (fields, depth, usedInVariable?: boolean) => {
     const options = [];
     fields.forEach((field) => {
-      const option = field2option(field, depth);
+      const option = field2option(field, depth, usedInVariable);
       if (option) {
         options.push(option);
       }
     });
     return options;
   };
-  return (fields) => getOptions(fields, 1);
+  return (fields, usedInVariable) => getOptions(fields, 1, usedInVariable);
 };
 
 export const useFilterFieldOptions = (fields) => {

@@ -60,13 +60,48 @@ export const object = [
 ];
 
 export const datetime = [
-  { label: "{{ t('is') }}", value: '$dateOn', selected: true },
-  { label: "{{ t('is not') }}", value: '$dateNotOn' },
-  { label: "{{ t('is before') }}", value: '$dateBefore' },
-  { label: "{{ t('is after') }}", value: '$dateAfter' },
-  { label: "{{ t('is on or after') }}", value: '$dateNotBefore' },
-  { label: "{{ t('is on or before') }}", value: '$dateNotAfter' },
-  { label: "{{ t('is between') }}", value: '$dateBetween', schema: { 'x-component': 'DatePicker.RangePicker' } },
+  {
+    label: "{{ t('is') }}",
+    value: '$dateOn',
+    selected: true,
+    schema: { 'x-component': 'DatePicker.FilterWithPicker' },
+    onlyFilterAction: true, //schema 仅在Filter.Action生效，筛选表单中不生效
+  },
+  {
+    label: "{{ t('is not') }}",
+    value: '$dateNotOn',
+    schema: { 'x-component': 'DatePicker.FilterWithPicker' },
+    onlyFilterAction: true,
+  },
+  {
+    label: "{{ t('is before') }}",
+    value: '$dateBefore',
+    schema: { 'x-component': 'DatePicker.FilterWithPicker' },
+    onlyFilterAction: true,
+  },
+  {
+    label: "{{ t('is after') }}",
+    value: '$dateAfter',
+    schema: { 'x-component': 'DatePicker.FilterWithPicker' },
+    onlyFilterAction: true,
+  },
+  {
+    label: "{{ t('is on or after') }}",
+    value: '$dateNotBefore',
+    schema: { 'x-component': 'DatePicker.FilterWithPicker' },
+    onlyFilterAction: true,
+  },
+  {
+    label: "{{ t('is on or before') }}",
+    value: '$dateNotAfter',
+    schema: { 'x-component': 'DatePicker.FilterWithPicker' },
+    onlyFilterAction: true,
+  },
+  {
+    label: "{{ t('is between') }}",
+    value: '$dateBetween',
+    schema: { 'x-component': 'DatePicker.RangePicker' },
+  },
   { label: "{{ t('is empty') }}", value: '$empty', noValue: true },
   { label: "{{ t('is not empty') }}", value: '$notEmpty', noValue: true },
 ];
@@ -157,18 +192,18 @@ export const collection = [
     label: '{{t("is")}}',
     value: '$eq',
     selected: true,
-    schema: { 'x-component': 'CollectionSelect' },
+    schema: { 'x-component': 'DataSourceCollectionCascader' },
   },
   {
     label: '{{t("is not")}}',
     value: '$ne',
-    schema: { 'x-component': 'CollectionSelect' },
+    schema: { 'x-component': 'DataSourceCollectionCascader' },
   },
   {
     label: '{{t("is any of")}}',
     value: '$in',
     schema: {
-      'x-component': 'CollectionSelect',
+      'x-component': 'DataSourceCollectionCascader',
       'x-component-props': { mode: 'tags' },
     },
   },
@@ -176,7 +211,7 @@ export const collection = [
     label: '{{t("is none of")}}',
     value: '$notIn',
     schema: {
-      'x-component': 'CollectionSelect',
+      'x-component': 'DataSourceCollectionCascader',
       'x-component-props': { mode: 'tags' },
     },
   },

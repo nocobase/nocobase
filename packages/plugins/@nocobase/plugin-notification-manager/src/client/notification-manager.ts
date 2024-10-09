@@ -8,15 +8,11 @@
  */
 
 import { Registry } from '@nocobase/utils/client';
-import { ChannelType } from './manager/channel/types';
-import { merge } from '@nocobase/utils/client';
+import { RegisterChannelOptions } from './manager/channel/types';
+
 export default class NotificationManager {
-  channelTypes = new Registry<ChannelType>();
-  registerChannelType(options: ChannelType) {
-    const mergedOptions = merge(
-      { meta: { createable: true, editable: true, deletable: true } },
-      options,
-    ) as ChannelType;
-    this.channelTypes.register(options.key, mergedOptions);
+  channelTypes = new Registry<RegisterChannelOptions>();
+  registerChannelType(options: RegisterChannelOptions) {
+    this.channelTypes.register(options.type, options);
   }
 }

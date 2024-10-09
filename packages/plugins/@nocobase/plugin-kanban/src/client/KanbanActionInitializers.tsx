@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { CompatibleSchemaInitializer, useCollection, useActionAvailable } from '@nocobase/client';
+import { CompatibleSchemaInitializer, useActionAvailable } from '@nocobase/client';
 
 const commonOptions = {
   title: "{{t('Configure actions')}}",
@@ -36,6 +36,14 @@ const commonOptions = {
         },
       },
       useVisible: () => useActionAvailable('create'),
+    },
+    {
+      name: 'customRequest',
+      title: '{{t("Custom request")}}',
+      Component: 'CustomRequestInitializer',
+      schema: {
+        'x-action': 'customize:table:request:global',
+      },
     },
   ],
 };

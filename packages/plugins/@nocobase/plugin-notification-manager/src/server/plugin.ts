@@ -7,10 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Plugin } from '@nocobase/server';
 import type { Logger } from '@nocobase/logger';
-import { SendOptions, RegisterServerTypeFnParams } from './types';
+import { Plugin } from '@nocobase/server';
 import NotificationManager from './manager';
+import { RegisterServerTypeFnParams, SendOptions } from './types';
 export class PluginNotificationManagerServer extends Plugin {
   private manager: NotificationManager;
   logger: Logger;

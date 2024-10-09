@@ -47,6 +47,7 @@
     "@nocobase/plugin-mock-collections": "1.4.0-alpha",
     "@nocobase/plugin-multi-app-manager": "1.4.0-alpha",
     "@nocobase/plugin-multi-app-share-collection": "1.4.0-alpha",
+    "@nocobase/plugin-public-forms": "1.4.0-alpha",
     "@nocobase/plugin-snapshot-field": "1.4.0-alpha",
     "@nocobase/plugin-system-settings": "1.4.0-alpha",
     "@nocobase/plugin-theme-editor": "1.4.0-alpha",
@@ -67,9 +68,9 @@
     "@nocobase/plugin-workflow-sql": "1.4.0-alpha",
     "@nocobase/plugin-workflow-notification": "1.4.0-alpha",
     "@nocobase/server": "1.4.0-alpha",
-    "@nocobase/plugin-notification-mail-smtp": "1.4.0-alpha",
     "@nocobase/plugin-notification-manager": "1.4.0-alpha",
     "@nocobase/plugin-notification-in-app": "1.4.0-alpha",
+    "@nocobase/plugin-notification-email": "1.4.0-alpha",
     "cronstrue": "^2.11.0",
     "fs-extra": "^11.1.1"
   },

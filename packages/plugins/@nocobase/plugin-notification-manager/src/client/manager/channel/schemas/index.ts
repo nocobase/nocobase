@@ -177,9 +177,7 @@ export const channelsSchema: ISchema = {
                 openMode: 'drawer',
                 icon: 'EditOutlined',
               },
-              'x-use-component-props': 'useRecordEditActionProps',
               'x-decorator': 'Space',
-
               properties: {
                 drawer: {
                   type: 'void',
@@ -214,7 +212,7 @@ export const channelsSchema: ISchema = {
               title: '{{t("Delete")}}',
               'x-decorator': 'Space',
               'x-component': 'Action.Link',
-              'x-use-component-props': 'useRecordDeleteActionProps',
+              'x-use-component-props': 'useDestroyActionProps',
               'x-component-props': {
                 confirm: {
                   title: "{{t('Delete record')}}",

@@ -45,7 +45,7 @@ const collection = {
         type: 'string',
         'x-component': 'Select',
         required: true,
-        enum: '{{ storageTypes }}',
+        enum: '{{ storageTypeOptions }}',
       } as ISchema,
     },
     {

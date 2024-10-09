@@ -7,11 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { uid } from '@formily/shared';
 import { createMockServer } from '@nocobase/test';
-import NotificationManager from '../manager';
 import channelCollection from '../../collections/channel';
 import { COLLECTION_NAME } from '../../constant';
-import { uid } from '@formily/shared';
+import NotificationManager from '../manager';
 
 describe('notification manager server', () => {
   let app;
@@ -58,8 +58,8 @@ describe('notification manager server', () => {
       },
     });
 
-    notificationManager.registerTypes(testChannelData.notificationType, {
-      server: new TestNotificationMailServer(),
+    notificationManager.registerType(testChannelData.notificationType, {
+      Channel: TestNotificationMailServer,
     });
 
     const { body } = await agent.resource(COLLECTION_NAME.channels).create({

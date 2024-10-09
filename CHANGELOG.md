@@ -5,6 +5,62 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.3.27-beta](https://github.com/nocobase/nocobase/compare/v1.3.26-beta...v1.3.27-beta) - 2024-09-30
+
+### 🐛 Bug Fixes
+
+- **[client]** Fix variable "Table selected records" ([#5337](https://github.com/nocobase/nocobase/pull/5337)) by @zhangzhonghe
+
+- **[Workflow: Custom action event]** fix custom action event not triggers in association block by @mytharcher
+
+## [v1.3.26-beta](https://github.com/nocobase/nocobase/compare/v1.3.25-beta...v1.3.26-beta) - 2024-09-29
+
+### 🚀 Improvements
+
+- **[client]** Hide scrollbars on mobile ([#5339](https://github.com/nocobase/nocobase/pull/5339)) by @zhangzhonghe
+
+### 🐛 Bug Fixes
+
+- **[client]**
+  - Fix the issue of not being able to open sub-pages in embedded pages ([#5335](https://github.com/nocobase/nocobase/pull/5335)) by @zhangzhonghe
+
+  - Fix the issue of pop-up windows being obscured ([#5338](https://github.com/nocobase/nocobase/pull/5338)) by @zhangzhonghe
+
+  - Fix the issue of abnormal style when creating blocks with data templates in mobile subpages ([#5340](https://github.com/nocobase/nocobase/pull/5340)) by @zhangzhonghe
+
+  - Fix the issue of not refreshing the page block data when closing a subpage via the page menu ([#5331](https://github.com/nocobase/nocobase/pull/5331)) by @zhangzhonghe
+
+- **[Action: Export records]** fix export format for decimal type fields ([#5316](https://github.com/nocobase/nocobase/pull/5316)) by @chareice
+
+- **[Block: Kanban]** Fix the issue that the popup window could not be opened after clicking on the Kanban card in the embedded page ([#5326](https://github.com/nocobase/nocobase/pull/5326)) by @zhangzhonghe
+
+## [v1.3.25-beta](https://github.com/nocobase/nocobase/compare/v1.3.24-beta...v1.3.25-beta) - 2024-09-25
+
+### 🚀 Improvements
+
+- **[client]** update and improve Japanese translations in ja_JP files ([#5292](https://github.com/nocobase/nocobase/pull/5292)) by @Albert-mah
+
+- **[Workflow]** add error handling for unregistered node type ([#5319](https://github.com/nocobase/nocobase/pull/5319)) by @mytharcher
+
+### 🐛 Bug Fixes
+
+- **[client]** Fix for not displaying full fields in variables ([#5310](https://github.com/nocobase/nocobase/pull/5310)) by @zhangzhonghe
+
+- **[Workflow]** fix non-existed field in collection trigger causes error ([#5318](https://github.com/nocobase/nocobase/pull/5318)) by @mytharcher
+
+- **[Action: Export records]** Fix fields from assicated tables are not processed by the field interface ([#5296](https://github.com/nocobase/nocobase/pull/5296)) by @gchust
+
+## [v1.3.24-beta](https://github.com/nocobase/nocobase/compare/v1.3.23-beta...v1.3.24-beta) - 2024-09-23
+
+### 🐛 Bug Fixes
+
+- **[client]**
+  - markdown report error with using `#each` in handlebars ([#5305](https://github.com/nocobase/nocobase/pull/5305)) by @katherinehhh
+
+  - Fix issue where the collection from external  data source does not support sorting on table columns ([#5293](https://github.com/nocobase/nocobase/pull/5293)) by @katherinehhh
+
+- **[Data visualization]** Fix style issues of chart blocks when using dark mode themes ([#5302](https://github.com/nocobase/nocobase/pull/5302)) by @2013xile
+
 ## [v1.3.23-beta](https://github.com/nocobase/nocobase/compare/v1.3.22-beta...v1.3.23-beta) - 2024-09-19
 
 ### 🚀 Improvements

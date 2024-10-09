@@ -18,6 +18,7 @@ import {
   FormBlockContext,
   FormV2,
   RecordProvider,
+  RerenderDataBlockProvider,
   useAPIClient,
   useAssociationNames,
   useBlockRequestContext,
@@ -82,16 +83,18 @@ export function FormBlockProvider(props) {
     <CollectionManagerProvider dataSource={dataSource}>
       <CollectionProvider_deprecated collection={props.collection}>
         <RecordProvider record={values} parent={null}>
-          <FormActiveFieldsProvider name="form">
-            <BlockRequestContext_deprecated.Provider
-              value={{ block: 'form', props, field, service, resource, __parent }}
-            >
-              <FormBlockContext.Provider value={formBlockValue}>
-                <FormV2.Templates style={{ marginBottom: token.margin }} form={form} />
-                <div ref={formBlockRef}>{props.children}</div>
-              </FormBlockContext.Provider>
-            </BlockRequestContext_deprecated.Provider>
-          </FormActiveFieldsProvider>
+          <RerenderDataBlockProvider>
+            <FormActiveFieldsProvider name="form">
+              <BlockRequestContext_deprecated.Provider
+                value={{ block: 'form', props, field, service, resource, __parent }}
+              >
+                <FormBlockContext.Provider value={formBlockValue}>
+                  <FormV2.Templates style={{ marginBottom: token.margin }} form={form} />
+                  <div ref={formBlockRef}>{props.children}</div>
+                </FormBlockContext.Provider>
+              </BlockRequestContext_deprecated.Provider>
+            </FormActiveFieldsProvider>
+          </RerenderDataBlockProvider>
         </RecordProvider>
       </CollectionProvider_deprecated>
     </CollectionManagerProvider>
