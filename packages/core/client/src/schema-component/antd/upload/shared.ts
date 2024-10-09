@@ -179,8 +179,14 @@ export const toItem = (file) => {
       url: file,
     };
   }
+  if (file?.response?.data) {
+    file = {
+      uid: file.uid,
+      ...file.response.data,
+    };
+  }
   return {
-    ...file?.response?.data,
+    ...file,
     id: file.id || file.uid,
     title: file.title || file.name,
   };

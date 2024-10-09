@@ -334,7 +334,7 @@ export function AttachmentList(props) {
     <>
       {fileList.map((file, index) => (
         <AttachmentListItem
-          key={file.url}
+          key={file.id || file.url}
           file={file}
           index={index}
           disabled={disabled}
