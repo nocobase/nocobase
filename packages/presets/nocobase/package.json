@@ -68,9 +68,9 @@
     "@nocobase/plugin-workflow-sql": "1.4.0-alpha",
     "@nocobase/plugin-workflow-notification": "1.4.0-alpha",
     "@nocobase/server": "1.4.0-alpha",
-    "@nocobase/plugin-notification-manager": "1.4.0-alpha",
     "@nocobase/plugin-notification-in-app": "1.4.0-alpha",
     "@nocobase/plugin-notification-email": "1.4.0-alpha",
+    "@nocobase/plugin-notification-manager": "1.4.0-alpha",
     "cronstrue": "^2.11.0",
     "fs-extra": "^11.1.1"
   },
