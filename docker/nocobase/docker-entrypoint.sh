@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-echo "COMMIT_HASH: $COMMIT_HASH"
+echo "COMMIT_HASH: $(cat /app/commit_hash.txt)"
 
 if [ ! -d "/app/nocobase" ]; then
   mkdir nocobase
