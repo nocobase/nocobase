@@ -92,7 +92,7 @@ jobs:
           file: Dockerfile
           build-args: |
             VERDACCIO_URL=http://localhost:4873/
-            COMMIT_HASH=${GITHUB_SHA}
+            COMMIT_HASH=${{ github.sha }}
           push: true
           tags: ${{ steps.set-tags.outputs.tags }}
 
