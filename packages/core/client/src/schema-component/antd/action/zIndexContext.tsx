@@ -7,8 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from './query';
-export * from './transformer';
-export * from './useVariableOptions';
-export * from './filter';
-export * from './chart';
+import React from 'react';
+
+export const zIndexContext = React.createContext(100);
+
+export const useZIndexContext = () => {
+  return React.useContext(zIndexContext);
+};

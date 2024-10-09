@@ -7,12 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React from 'react';
+import React, { memo } from 'react';
 import { FieldOption } from '../hooks';
 import { DimensionProps, MeasureProps, QueryProps } from '../renderer';
 import { parseField } from '../utils';
 import { ISchema } from '@formily/react';
-import configs, { AnySchemaProperties, Config, FieldConfigProps } from './configs';
+import configs, { AnySchemaProperties, Config, ConfigType } from './configs';
 import { Transformer } from '../transformers';
 
 export type RenderProps = {
@@ -31,6 +31,7 @@ export type RenderProps = {
 export interface ChartType {
   name: string;
   title: string;
+  enableAdvancedConfig?: boolean;
   Component: React.FC<any>;
   schema: ISchema;
   init?: (
@@ -53,6 +54,7 @@ export interface ChartType {
 export type ChartProps = {
   name: string;
   title: string;
+  enableAdvancedConfig?: boolean;
   Component: React.FC<any>;
   config?: Config[];
 };
@@ -60,24 +62,26 @@ export type ChartProps = {
 export class Chart implements ChartType {
   name: string;
   title: string;
+  enableAdvancedConfig = false;
   Component: React.FC<any>;
   config: Config[];
-  configs = new Map<string, Function>();
+  configTypes = new Map<string, ConfigType>();
 
-  constructor({ name, title, Component, config }: ChartProps) {
+  constructor({ name, title, enableAdvancedConfig, Component, config }: ChartProps) {
     this.name = name;
     this.title = title;
-    this.Component = Component;
+    this.Component = memo(Component, (prev, next) => JSON.stringify(prev) === JSON.stringify(next));
     this.config = config;
-    this.addConfigs(configs);
+    this.enableAdvancedConfig = enableAdvancedConfig || false;
+    this.addConfigTypes(configs);
   }
 
   /*
    * Generate config schema according to this.config
    * How to set up this.config:
    * 1. string - the config function name in config.ts
-   * 2. object - { property: string, ...props }
-   *    - property is the config function name in config.ts, and the other props are the arguments of the function
+   * 2. object - { configType: string, ...props }
+   *    - sttingType is the config function name in config.ts, and the other props are the arguments of the function
    * 3. object - use the object directly as the properties of the schema
    * 4. function - use the custom function to return the properties of the schema
    */
@@ -85,35 +89,35 @@ export class Chart implements ChartType {
     if (!this.config) {
       return {};
     }
-    const properties = this.config.reduce((properties, conf) => {
+    const properties = this.config.reduce((props, conf) => {
       let schema: AnySchemaProperties = {};
       if (typeof conf === 'string') {
-        const func = this.configs.get(conf);
-        schema = func?.() || {};
-      } else if (typeof conf === 'function') {
+        conf = this.configTypes.get(conf);
+      }
+      if (typeof conf === 'function') {
         schema = conf();
       } else {
-        if (conf.property) {
-          const func = this.configs.get(conf.property);
+        if (conf.configType) {
+          const func = this.configTypes.get(conf.configType as string) as Function;
           schema = func?.(conf) || {};
         } else {
           schema = conf as AnySchemaProperties;
         }
       }
       return {
-        ...properties,
+        ...props,
         ...schema,
       };
-    }, {} as AnySchemaProperties);
+    }, {} as any);
     return {
       type: 'object',
       properties,
     };
   }
 
-  addConfigs(configs: { [key: string]: (props: FieldConfigProps) => AnySchemaProperties }) {
+  addConfigTypes(configs: { [key: string]: ConfigType }) {
     Object.entries(configs).forEach(([key, func]) => {
-      this.configs.set(key, func);
+      this.configTypes.set(key, func);
     });
   }
 
