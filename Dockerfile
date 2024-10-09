@@ -38,7 +38,7 @@ RUN $BEFORE_PACK_NOCOBASE
 RUN cd /app \
   && rm -rf my-nocobase-app/packages/app/client/src/.umi \
   && rm -rf nocobase.tar.gz \
-  && tar -zcf ./nocobase.tar.gz -C /app/my-nocobase-app . \
+  && tar -zcf ./nocobase.tar.gz -C /app/my-nocobase-app .
 
 RUN echo "${COMMIT_HASH}" > /tmp/commit_hash.txt
 
