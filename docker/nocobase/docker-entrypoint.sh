@@ -1,6 +1,8 @@
 #!/bin/sh
 set -e
 
+echo "COMMIT_HASH: $COMMIT_HASH"
+
 if [ ! -d "/app/nocobase" ]; then
   mkdir nocobase
 fi

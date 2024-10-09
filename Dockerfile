@@ -6,7 +6,7 @@ ARG BEFORE_PACK_NOCOBASE="ls -l"
 ARG PLUGINS_DIRS
 
 ENV PLUGINS_DIRS=${PLUGINS_DIRS}
-
+ENV COMMIT_HASH=${COMMIT_HASH}
 
 RUN npx npm-cli-adduser --username test --password test -e test@nocobase.com -r $VERDACCIO_URL
 
@@ -48,8 +48,6 @@ COPY ./docker/nocobase/nocobase.conf /etc/nginx/sites-enabled/nocobase.conf
 COPY --from=builder /app/nocobase.tar.gz /app/nocobase.tar.gz
 
 WORKDIR /app/nocobase
-
-RUN mkdir -p /app/nocobase/storage/uploads/ && echo "$COMMIT_HASH" >> /app/nocobase/storage/uploads/COMMIT_HASH
 
 COPY ./docker/nocobase/docker-entrypoint.sh /app/
 
