@@ -38,7 +38,7 @@ import type { ComposedUpload, DraggerProps, DraggerV2Props, UploadProps } from '
 
 attachmentFileTypes.add({
   match(file) {
-    return match(file.mimetype || mime.getType(file.url), 'image/*');
+    return match(file.mimetype || mime.getType(file.url) || '', 'image/*');
   },
   getThumbnailURL(file) {
     return file.url ? `${file.url}${file.thumbnailRule || ''}` : URL.createObjectURL(file.originFileObj);
@@ -137,7 +137,7 @@ function IframePreviewer({ index, list, onSwitchIndex }) {
           overflowY: 'auto',
         }}
       >
-        {iframePreviewSupportedTypes.some((type) => match(file.mimetype || mime.getType(file.url), type)) ? (
+        {iframePreviewSupportedTypes.some((type) => match(file.mimetype || mime.getType(file.url) || '', type)) ? (
           <iframe
             src={file.url}
             style={{
