@@ -59,7 +59,7 @@ test.describe('z-index of dialog', () => {
     await page.getByRole('tab', { name: 'Data sources' }).click();
     await page.getByLabel('action-Action.Link-Configure-').click();
     await page.getByRole('tab', { name: 'Action permissions', exact: true }).click();
-    await page.getByLabel('action-Action.Link-Configure-dataSourcesCollections-users').click();
+    await page.getByLabel('action-Action.Link-Configure-dataSourcesCollections-users', { exact: true }).click();
     await page.getByLabel('Individual').check();
     await page
       .getByTestId('drawer-Action.Drawer-dataSourcesCollections-Configure permission')
