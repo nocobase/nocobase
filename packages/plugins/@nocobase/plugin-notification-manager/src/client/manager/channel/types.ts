@@ -12,14 +12,14 @@ import { Registry } from '@nocobase/utils/client';
 
 export type ChannelType = {
   title: string;
-  name: string;
+  key: string;
   components: {
-    ChannelConfigForm: ComponentType;
+    ChannelConfigForm?: ComponentType;
     MessageConfigForm?: ComponentType<{ variableOptions: any }>;
   };
   meta?: {
     createable?: boolean;
-    eidtable?: boolean;
+    editable?: boolean;
     deletable?: boolean;
   };
 };

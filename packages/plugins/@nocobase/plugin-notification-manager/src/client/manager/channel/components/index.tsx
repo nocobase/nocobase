@@ -35,6 +35,8 @@ import {
   useEditFormProps,
   useCreateFormProps,
   useNotificationTypes,
+  useRecordDeleteActionProps,
+  useRecordEditActionProps,
 } from '../hooks';
 const useCloseAction = () => {
   const { setVisible } = useActionContext();
@@ -50,7 +52,7 @@ const AddNew = () => {
   const [visible, setVisible] = useState(false);
   const { NotificationTypeNameProvider, name, setName } = useNotificationTypeNameProvider();
   const api = useAPIClient();
-  const channelTypes = useChannelTypes();
+  const channelTypes = useChannelTypes().filter((item) => !(item.meta?.createable === false));
   const items =
     channelTypes.length === 0
       ? [
@@ -81,7 +83,7 @@ const AddNew = () => {
           },
         ]
       : channelTypes.map((item) => ({
-          key: item.name,
+          key: item.key,
           label: item.title,
           onClick: () => {
             setVisible(true);
@@ -142,6 +144,8 @@ export const ChannelManager = () => {
               useCloseActionProps,
               useEditFormProps,
               useCreateFormProps,
+              useRecordDeleteActionProps,
+              useRecordEditActionProps,
             }}
           />
         </NotificationTypesContext.Provider>

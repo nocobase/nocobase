@@ -10,6 +10,7 @@
 import merge from 'deepmerge';
 import { EventEmitter } from 'events';
 import { default as _, default as lodash } from 'lodash';
+import safeJsonStringify from 'safe-json-stringify';
 import {
   ModelOptions,
   ModelStatic,
@@ -25,7 +26,6 @@ import { BelongsToField, Field, FieldOptions, HasManyField } from './fields';
 import { Model } from './model';
 import { Repository } from './repository';
 import { checkIdentifier, md5, snakeCase } from './utils';
-import safeJsonStringify from 'safe-json-stringify';
 
 export type RepositoryType = typeof Repository;
 
@@ -810,6 +810,16 @@ export class Collection<
     }
 
     return `${schema}.${tableName}`;
+  }
+
+  public getRealTableName(quoted = false) {
+    const realname = this.tableNameAsString();
+    return !quoted ? realname : this.db.sequelize.getQueryInterface().quoteIdentifiers(realname);
+  }
+
+  public getRealFieldName(name: string, quoted = false) {
+    const realname = this.model.getAttributes()[name].field;
+    return !quoted ? name : this.db.sequelize.getQueryInterface().quoteIdentifier(realname);
   }
 
   public getTableNameWithSchemaAsString() {

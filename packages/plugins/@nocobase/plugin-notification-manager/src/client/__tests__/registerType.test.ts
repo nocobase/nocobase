@@ -24,6 +24,11 @@ describe('registerType', () => {
         ChannelConfigForm,
         MessageConfigForm,
       },
+      meta: {
+        createable: false,
+        deletable: false,
+        editable: false,
+      },
     };
 
     plugin.registerChannelType(newChannelType);

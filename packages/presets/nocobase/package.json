@@ -69,6 +69,7 @@
     "@nocobase/server": "1.4.0-alpha",
     "@nocobase/plugin-notification-mail-smtp": "1.4.0-alpha",
     "@nocobase/plugin-notification-manager": "1.4.0-alpha",
+    "@nocobase/plugin-notification-in-app": "1.4.0-alpha",
     "cronstrue": "^2.11.0",
     "fs-extra": "^11.1.1"
   },
@@ -106,6 +107,7 @@
     "@nocobase/plugin-kanban",
     "@nocobase/plugin-logger",
     "@nocobase/plugin-notification-manager",
+    "@nocobase/plugin-notification-in-app",
     "@nocobase/plugin-mobile",
     "@nocobase/plugin-system-settings",
     "@nocobase/plugin-ui-schema-storage",

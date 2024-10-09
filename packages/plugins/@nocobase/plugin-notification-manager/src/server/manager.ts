@@ -31,8 +31,8 @@ export default class NotificationManager implements NotificationManager {
     this.notificationTypes.register(type, { server });
   }
 
-  registerType({ name, server }: RegisterServerTypeFnParams) {
-    this.notificationTypes.register(name, { server });
+  registerType({ key, server }: RegisterServerTypeFnParams) {
+    this.notificationTypes.register(key, { server });
   }
 
   createSendingRecord = async (options: WriteLogOptions) => {
@@ -88,7 +88,7 @@ export default class NotificationManager implements NotificationManager {
       return logData;
     } catch (error) {
       logData.status = 'failure';
-      logData.reason = error.reason;
+      logData.reason = error.reason ?? error.message;
       this.createSendingRecord(logData);
       return logData;
     }

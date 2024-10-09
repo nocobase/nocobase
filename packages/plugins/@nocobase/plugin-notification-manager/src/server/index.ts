@@ -9,3 +9,4 @@
 
 export { default } from './plugin';
 export * from './types';
+export { COLLECTION_NAME } from '../constant';

@@ -19,7 +19,7 @@ export class PluginNotificationsMailServer extends Plugin {
 
   async load() {
     const notificationServer = this.pm.get(PluginNotificationManagerServer) as PluginNotificationManagerServer;
-    notificationServer.registerChannelType({ name: channelType, server: new MailServer() });
+    notificationServer.registerChannelType({ key: channelType, server: new MailServer() });
   }
 
   async install() {}

@@ -17,6 +17,7 @@ import {
   useBlockRequestContext,
   useDataBlockResource,
   usePlugin,
+  useDestroyActionProps,
 } from '@nocobase/client';
 import { uid } from '@formily/shared';
 import { App as AntdApp } from 'antd';
@@ -105,6 +106,31 @@ export const useEditFormProps = () => {
   };
 };
 
+export const useRecordEditActionProps = () => {
+  const channelTypes = useNotificationTypes();
+  const recordData = useCollectionRecordData();
+  const channelType = channelTypes.find((item) => item.name === recordData.notificationType);
+  const editable = channelType.meta.editable;
+  const style: React.CSSProperties = {};
+  if (!editable) {
+    style.display = 'none';
+  }
+  return { style };
+};
+
+export const useRecordDeleteActionProps = () => {
+  const channelTypes = useNotificationTypes();
+  const recordData = useCollectionRecordData();
+  const channelType = channelTypes.find((item) => item.name === recordData.notificationType);
+  const deletable = channelType.meta.deletable;
+  const style: React.CSSProperties = {};
+  const destroyProps = useDestroyActionProps();
+  if (!deletable) {
+    style.display = 'none';
+  }
+  return { ...destroyProps, style };
+};
+
 export const useCreateFormProps = () => {
   const ctx = useActionContext();
   const { name } = useContext(NotificationTypeNameContext);
@@ -170,13 +196,13 @@ export const useNotificationTypes = () => {
   const { t } = useNotificationTranslation();
   const plugin = usePlugin(PluginNotificationManagerClient);
   const notificationTypes: Array<ChannelType> = [];
-  for (const [key, val] of plugin.manager.channelTypes.getEntities()) {
+  for (const [key, val] of plugin.channelTypes.getEntities()) {
     const title = Schema.compile(val.title, { t }) as string;
     const type = {
       ...val,
-      name: val.name,
-      key: val.name,
-      value: val.name,
+      name: val.key,
+      key: val.key,
+      value: val.key,
       title,
       label: title,
     };
