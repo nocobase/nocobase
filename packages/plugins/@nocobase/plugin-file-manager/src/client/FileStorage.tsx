@@ -38,7 +38,7 @@ export const CreateStorage = () => {
                   [uid()]: {
                     type: 'void',
                     'x-component': 'Action.Drawer',
-                    'x-decorator': 'FormV2',
+                    'x-decorator': 'Form',
                     'x-decorator-props': {
                       initialValue: {
                         type: storageType.name,
@@ -105,8 +105,8 @@ export const EditStorage = () => {
           onClick={() => {
             setVisible(true);
             const storageType = plugin.storageTypes.get(record.type);
-            if (storageType.properties['default']) {
-              storageType.properties['default']['x-reactions'] = (field) => {
+            if (storageType.fieldset['default']) {
+              storageType.fieldset['default']['x-reactions'] = (field) => {
                 if (field.initialValue) {
                   field.disabled = true;
                 } else {
@@ -120,7 +120,7 @@ export const EditStorage = () => {
                 [uid()]: {
                   type: 'void',
                   'x-component': 'Action.Drawer',
-                  'x-decorator': 'FormV2',
+                  'x-decorator': 'Form',
                   'x-decorator-props': {
                     initialValue: {
                       ...record,
