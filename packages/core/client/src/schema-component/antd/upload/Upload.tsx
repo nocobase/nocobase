@@ -18,6 +18,7 @@ import filesize from 'filesize';
 import React, { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import LightBox from 'react-image-lightbox';
+import mime from 'mime';
 import match from 'mime-match';
 import 'react-image-lightbox/style.css'; // This only needs to be imported once in your app
 import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
@@ -136,8 +137,7 @@ function IframePreviewer({ index, list, onSwitchIndex }) {
           overflowY: 'auto',
         }}
       >
-        {iframePreviewSupportedTypes.some((type) => match(file.mimetype || file.extname, type)) ||
-        (!file.mimetype && file.url) ? (
+        {iframePreviewSupportedTypes.some((type) => match(file.mimetype || mime.getType(file.url), type)) ? (
           <iframe
             src={file.url}
             style={{
@@ -217,7 +217,7 @@ function DefaultThumbnailPreviewer({ file }) {
 }
 
 function AttachmentListItem(props) {
-  const { file, disabled, onPreview, onDelete: propsOnDelete, readPretty, key } = props;
+  const { file, disabled, onPreview, onDelete: propsOnDelete, readPretty } = props;
   const { componentCls: prefixCls } = useStyles();
   const { t } = useTranslation();
   const handleClick = useCallback(
@@ -245,14 +245,13 @@ function AttachmentListItem(props) {
       {file.status === 'uploading' ? t('Uploading') : file.title}
     </span>,
   ];
-  const wrappedItem =
-    file.id || file.url ? (
-      <a target="_blank" rel="noopener noreferrer" href={file.url} onClick={handleClick}>
-        {item}
-      </a>
-    ) : (
-      <span className={`${prefixCls}-span`}>{item}3</span>
-    );
+  const wrappedItem = file.url ? (
+    <a target="_blank" rel="noopener noreferrer" href={file.url} onClick={handleClick}>
+      {item}
+    </a>
+  ) : (
+    <span className={`${prefixCls}-span`}>{item}3</span>
+  );
 
   const content = (
     <div
@@ -261,12 +260,11 @@ function AttachmentListItem(props) {
         `${prefixCls}-list-item-${file.status ?? 'done'}`,
         `${prefixCls}-list-item-list-type-picture-card`,
       )}
-      key={key}
     >
       <div className={`${prefixCls}-list-item-info`}>{wrappedItem}</div>
       <span className={`${prefixCls}-list-item-actions`}>
         <Space size={3}>
-          {!readPretty && (file.id || file.url) && (
+          {!readPretty && file.url && (
             <Button size={'small'} type={'text'} icon={<DownloadOutlined />} onClick={onDownload} />
           )}
           {!readPretty && !disabled && file.status !== 'uploading' && (
@@ -337,7 +335,7 @@ export function AttachmentList(props) {
     <>
       {fileList.map((file, index) => (
         <AttachmentListItem
-          key={file.id}
+          key={file.url}
           file={file}
           index={index}
           disabled={disabled}
