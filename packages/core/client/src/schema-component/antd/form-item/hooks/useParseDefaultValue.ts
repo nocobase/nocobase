@@ -110,7 +110,7 @@ const useParseDefaultValue = () => {
 
         // fix https://tasks.aliyun.nocobase.com/admin/ugmnj2ycfgg/popups/1qlw5c38t3b/puid/dz42x7ffr7i/filterbytk/199
         if (
-          collectionField.target &&
+          collectionField?.target &&
           collectionField.target !== collectionNameOfVariable &&
           !isInherit({
             collectionName: collectionField.target,

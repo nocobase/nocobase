@@ -107,7 +107,7 @@ export const useImportStartAction = () => {
   const { setVisible, fieldSchema } = useActionContext();
   const { setImportModalVisible, setImportStatus, setImportResult } = useImportContext();
   const { upload } = form.values;
-  const dataBlockProps = useDataBlockProps();
+  const dataBlockProps = useDataBlockProps() || ({} as any);
   const headers = useDataSourceHeaders(dataBlockProps.dataSource);
   useEffect(() => {
     form.reset();

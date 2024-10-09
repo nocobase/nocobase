@@ -13,16 +13,16 @@ import { ChartType, RenderProps } from '../chart';
 
 export class Pie extends G2PlotChart {
   constructor() {
-    super({ name: 'pie', title: 'Pie Chart', Component: G2Pie });
+    super({ name: 'pie', title: 'Pie', Component: G2Pie });
     this.config = [
       {
-        property: 'field',
+        configType: 'field',
         name: 'angleField',
         title: 'angleField',
         required: true,
       },
       {
-        property: 'field',
+        configType: 'field',
         name: 'colorField',
         title: 'colorField',
         required: true,

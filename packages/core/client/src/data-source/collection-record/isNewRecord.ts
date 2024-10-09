@@ -7,10 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { untracked } from '@formily/reactive';
 import { isObject } from 'lodash';
 
-// 使用 Symbol 作为 key，避免与其他属性冲突，同时也可以防止通过表单提交到后端
-const key = Symbol('isNewRecord');
+const key = '__isNewRecord__';
 
 /**
  * 判断一个记录对象是否是新记录，可通过 markRecordAsNew 标记
@@ -18,7 +18,7 @@ const key = Symbol('isNewRecord');
  * @returns
  */
 export const isNewRecord = (record: object) => {
-  return !!record?.[key];
+  return untracked(() => !!record?.[key]);
 };
 
 /**

@@ -27,7 +27,7 @@ const commonOptions = {
       title: '{{t("Custom request")}}',
       Component: 'CustomRequestInitializer',
       useVisible() {
-        const { type } = useDataBlockProps();
+        const { type } = useDataBlockProps() || ({} as any);
         return type !== 'publicForm';
       },
     },

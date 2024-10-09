@@ -42,6 +42,7 @@ import { useToken } from '../__builtins__';
 import { SubFormProvider } from '../association-field/hooks';
 import { ColumnFieldProvider } from './components/ColumnFieldProvider';
 import { extractIndex, isCollectionFieldComponent, isColumnComponent } from './utils';
+import { useDataBlockRequest } from '../../../';
 const MemoizedAntdTable = React.memo(AntdTable);
 
 const useArrayField = (props) => {
@@ -267,6 +268,9 @@ const usePaginationProps = (pagination1, pagination2) => {
   const { t } = useTranslation();
   const field: any = useField();
   const { token } = useToken();
+  const { data } = useDataBlockRequest() || ({} as any);
+  const { meta } = data || {};
+  const { hasNext } = meta || {};
   const pagination = useMemo(
     () => ({ ...pagination1, ...pagination2 }),
     [JSON.stringify({ ...pagination1, ...pagination2 })],
@@ -295,7 +299,7 @@ const usePaginationProps = (pagination1, pagination2) => {
         showSizeChanger: true,
         hideOnSinglePage: false,
         ...pagination,
-        total: field.value?.length < pageSize ? pageSize * current : pageSize * current + 1,
+        total: field.value?.length < pageSize || !hasNext ? pageSize * current : pageSize * current + 1,
         className: css`
           .ant-pagination-simple-pager {
             display: none !important;

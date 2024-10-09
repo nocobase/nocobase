@@ -359,7 +359,7 @@ export const selectComponentFieldSettings = new SchemaSettings({
         const isAssociationField = useIsAssociationField();
         const readPretty = useIsFieldReadPretty();
         const { fieldSchema } = useColumnSchema();
-        const { type } = useDataBlockProps();
+        const { type } = useDataBlockProps() || ({} as any);
         return isAssociationField && !fieldSchema && !readPretty && type !== 'publicForm';
       },
     },
