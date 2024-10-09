@@ -10,7 +10,6 @@
 import { observer } from '@formily/react';
 import {
   PopupContextProvider,
-  useActionContext,
   useCollection,
   useCollectionRecordData,
   VariablePopupRecordProvider,
@@ -19,12 +18,11 @@ import React from 'react';
 
 export const Event = observer(
   (props) => {
-    const { visible, setVisible } = useActionContext();
     const recordData = useCollectionRecordData();
     const collection = useCollection();
 
     return (
-      <PopupContextProvider visible={visible} setVisible={setVisible}>
+      <PopupContextProvider>
         <VariablePopupRecordProvider recordData={recordData} collection={collection}>
           {props.children}
         </VariablePopupRecordProvider>

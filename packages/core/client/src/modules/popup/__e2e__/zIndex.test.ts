@@ -51,4 +51,26 @@ test.describe('z-index of dialog', () => {
     await page.getByRole('button', { name: 'Cancel' }).click({ timeout: 1000 });
     await expect(page.getByRole('dialog').getByText('Assign field values')).not.toBeVisible();
   });
+
+  test('Users & Permissions', async ({ page }) => {
+    await page.goto('/admin/settings/users-permissions/roles');
+
+    // Data source
+    await page.getByRole('tab', { name: 'Data sources' }).click();
+    await page.getByLabel('action-Action.Link-Configure-').click();
+    await page.getByRole('tab', { name: 'Action permissions', exact: true }).click();
+    await page.getByLabel('action-Action.Link-Configure-dataSourcesCollections-users', { exact: true }).click();
+    await page.getByLabel('Individual').check();
+    await page
+      .getByTestId('drawer-Action.Drawer-dataSourcesCollections-Configure permission')
+      .getByRole('cell')
+      .locator('.ant-select-selector')
+      .first()
+      .click();
+    await page
+      .getByTestId('drawer-RecordPicker.Selector-dataSourcesCollections-Select record')
+      .getByLabel('action-Action-Add new-create-')
+      .click();
+    await expect(page.getByText('Add condition', { exact: true })).toBeVisible();
+  });
 });

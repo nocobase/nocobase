@@ -55,7 +55,11 @@ export default abstract class QueryInterface {
         removeSql = `DROP VIEW IF EXISTS ${view.name}`;
       }
 
-      await this.db.sequelize.query(removeSql, { transaction: options.transaction });
+      try {
+        await this.db.sequelize.query(removeSql, { transaction: options.transaction });
+      } catch (e) {
+        console.log(`can not drop view ${view.name}, ${e.message}`);
+      }
     }
 
     await this.db.sequelize.getQueryInterface().dropAllTables(options);
