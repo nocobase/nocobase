@@ -1,0 +1,12 @@
+{
+  "name": "@nocobase/plugin-notification-example",
+  "version": "1.4.0-alpha",
+  "main": "dist/server/index.js",
+  "dependencies": {},
+  "peerDependencies": {
+    "@nocobase/client": "1.x",
+    "@nocobase/server": "1.x",
+    "@nocobase/test": "1.x",
+    "react-i18next": "11.x"
+  }
+}
