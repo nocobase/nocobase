@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { untracked } from '@formily/reactive';
 import { isObject } from 'lodash';
 
 const key = '__isNewRecord__';
@@ -17,7 +18,7 @@ const key = '__isNewRecord__';
  * @returns
  */
 export const isNewRecord = (record: object) => {
-  return !!record?.[key];
+  return untracked(() => !!record?.[key]);
 };
 
 /**

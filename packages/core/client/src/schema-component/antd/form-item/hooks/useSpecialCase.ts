@@ -45,11 +45,16 @@ export const useSpecialCase = () => {
       if (parentFieldSchema) {
         const parentField: any = form.query(parentFieldSchema.name).take();
         if (parentField) {
-          parentField.setInitialValue(
-            _.map(transformValue(value, { field: parentField, subFieldSchema: fieldSchema }), (item) =>
-              markRecordAsNew(item),
-            ),
-          );
+          const newValue = _.isEmpty(value)
+            ? []
+            : _.map(transformValue(value, { field: parentField, subFieldSchema: fieldSchema }), (item) =>
+                markRecordAsNew(item),
+              );
+
+          // Use isSubset to determine if newValue is a subset of parentField.initialValue, preventing infinite loops
+          if (!isSubset(newValue, parentField.initialValue)) {
+            parentField.setInitialValue(newValue);
+          }
         }
       }
     },
@@ -197,3 +202,29 @@ export const useSubTableSpecialCase = ({ field }) => {
     }
   }, []);
 };
+
+/**
+ * Determines if one array is a subset of another array
+ * @param subset The potential subset
+ * @param superset The potential superset
+ * @returns Returns true if subset is a subset of superset, otherwise false
+ */
+export function isSubset(subset: any[], superset: any[]): boolean {
+  // If lengths are different, it's definitely not a subset
+  if (subset.length !== superset.length) {
+    return false;
+  }
+
+  // Compare each element
+  for (let i = 0; i < subset.length; i++) {
+    const subsetItem = subset[i];
+    const supersetItem = superset[i];
+    // Use _.omitBy to remove null values, then compare objects with _.isMatch
+    if (!_.isMatch(_.omitBy(supersetItem, _.isNil), _.omitBy(subsetItem, _.isNil))) {
+      return false;
+    }
+  }
+
+  // All elements match, it's a subset
+  return true;
+}
