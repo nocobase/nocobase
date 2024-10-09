@@ -30,7 +30,7 @@ jobs:
         with:
           app-id: ${{ vars.NOCOBASE_APP_ID }}
           private-key: ${{ secrets.NOCOBASE_APP_PRIVATE_KEY }}
-          repositories: nocobase,pro-plugins,${{ join(fromJSON(vars.NEXT_PRO_PLUGIN_REPOS), ',') }},${{ join(fromJSON(vars.CUSTOM_PRO_PLUGIN_REPOS), ',') }}
+          repositories: nocobase,pro-plugins,plugin-${{ inputs.pro_plugin }},${{ join(fromJSON(vars.NEXT_PRO_PLUGIN_REPOS), ',') }},${{ join(fromJSON(vars.CUSTOM_PRO_PLUGIN_REPOS), ',') }}
           skip-token-revoke: true
       - name: Checkout nocobase/nocobase
         uses: actions/checkout@v4
