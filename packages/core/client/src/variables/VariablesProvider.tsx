@@ -185,9 +185,7 @@ const VariablesProvider = ({ children }) => {
         }
       }
 
-      const _value = compile(
-        _.isFunction(current) ? current({ fieldOperator: options?.fieldOperator, isParsingVariable: true }) : current,
-      );
+      const _value = compile(_.isFunction(current) ? current({ fieldOperator: options?.fieldOperator }) : current);
       return {
         value: _value === undefined ? variableOption.defaultValue : _value,
         dataSource,

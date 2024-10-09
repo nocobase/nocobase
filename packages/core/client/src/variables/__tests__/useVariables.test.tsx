@@ -298,7 +298,7 @@ describe('useVariables', () => {
     });
 
     await waitFor(async () => {
-      expect(await result.current.parseVariable('{{ $date.today }}').then(({ value }) => typeof value)).toBe('string');
+      expect(await result.current.parseVariable('{{ $date.today }}').then(({ value }) => value)).toHaveLength(2);
       expect(
         Array.isArray(
           await result.current

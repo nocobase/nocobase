@@ -14,108 +14,129 @@ describe('getDateRanges', () => {
   const dateRanges = getDateRanges();
 
   it('today', () => {
-    const start = dateRanges.today();
+    const [start, end] = dateRanges.today();
     expect(start.toISOString()).toBe(dayjs().startOf('day').toISOString());
+    expect(end.toISOString()).toBe(dayjs().endOf('day').toISOString());
   });
 
   test('yesterday', () => {
-    const start = dateRanges.yesterday();
+    const [start, end] = dateRanges.yesterday();
     expect(dayjs(start).isSame(dayjs().subtract(1, 'day'), 'day')).toBe(true);
+    expect(dayjs(end).isSame(dayjs().subtract(1, 'day'), 'day')).toBe(true);
   });
 
   test('tomorrow', () => {
-    const start = dateRanges.tomorrow();
+    const [start, end] = dateRanges.tomorrow();
     expect(dayjs(start).isSame(dayjs().add(1, 'day'), 'day')).toBe(true);
+    expect(dayjs(end).isSame(dayjs().add(1, 'day'), 'day')).toBe(true);
   });
 
   it('lastWeek', () => {
-    const start = dateRanges.lastWeek();
+    const [start, end] = dateRanges.lastWeek();
     expect(start.toISOString()).toBe(dayjs().add(-1, 'week').startOf('isoWeek').toISOString());
+    expect(end.toISOString()).toBe(dayjs().add(-1, 'week').endOf('isoWeek').toISOString());
   });
 
   it('thisWeek', () => {
-    const start = dateRanges.thisWeek();
+    const [start, end] = dateRanges.thisWeek();
     expect(start.toISOString()).toBe(dayjs().startOf('isoWeek').toISOString());
+    expect(end.toISOString()).toBe(dayjs().endOf('isoWeek').toISOString());
   });
 
   it('nextWeek', () => {
-    const start = dateRanges.nextWeek();
+    const [start, end] = dateRanges.nextWeek();
     expect(start.toISOString()).toBe(dayjs().add(1, 'week').startOf('isoWeek').toISOString());
+    expect(end.toISOString()).toBe(dayjs().add(1, 'week').endOf('isoWeek').toISOString());
   });
 
   it('lastMonth', () => {
-    const start = dateRanges.lastMonth();
+    const [start, end] = dateRanges.lastMonth();
     expect(start.toISOString()).toBe(dayjs().add(-1, 'month').startOf('month').toISOString());
+    expect(end.toISOString()).toBe(dayjs().add(-1, 'month').endOf('month').toISOString());
   });
 
   it('thisMonth', () => {
-    const start = dateRanges.thisMonth();
+    const [start, end] = dateRanges.thisMonth();
     expect(start.toISOString()).toBe(dayjs().startOf('month').toISOString());
+    expect(end.toISOString()).toBe(dayjs().endOf('month').toISOString());
   });
 
   it('nextMonth', () => {
-    const start = dateRanges.nextMonth();
+    const [start, end] = dateRanges.nextMonth();
     expect(start.toISOString()).toBe(dayjs().add(1, 'month').startOf('month').toISOString());
+    expect(end.toISOString()).toBe(dayjs().add(1, 'month').endOf('month').toISOString());
   });
 
   it('lastQuarter', () => {
-    const start = dateRanges.lastQuarter();
+    const [start, end] = dateRanges.lastQuarter();
     expect(start.toISOString()).toBe(dayjs().add(-1, 'quarter').startOf('quarter').toISOString());
+    expect(end.toISOString()).toBe(dayjs().add(-1, 'quarter').endOf('quarter').toISOString());
   });
 
   it('thisQuarter', () => {
-    const start = dateRanges.thisQuarter();
+    const [start, end] = dateRanges.thisQuarter();
     expect(start.toISOString()).toBe(dayjs().startOf('quarter').toISOString());
+    expect(end.toISOString()).toBe(dayjs().endOf('quarter').toISOString());
   });
 
   it('nextQuarter', () => {
-    const start = dateRanges.nextQuarter();
+    const [start, end] = dateRanges.nextQuarter();
     expect(start.toISOString()).toBe(dayjs().add(1, 'quarter').startOf('quarter').toISOString());
+    expect(end.toISOString()).toBe(dayjs().add(1, 'quarter').endOf('quarter').toISOString());
   });
 
   it('lastYear', () => {
-    const start = dateRanges.lastYear();
+    const [start, end] = dateRanges.lastYear();
     expect(start.toISOString()).toBe(dayjs().add(-1, 'year').startOf('year').toISOString());
+    expect(end.toISOString()).toBe(dayjs().add(-1, 'year').endOf('year').toISOString());
   });
 
   it('thisYear', () => {
-    const start = dateRanges.thisYear();
+    const [start, end] = dateRanges.thisYear();
     expect(start.toISOString()).toBe(dayjs().startOf('year').toISOString());
+    expect(end.toISOString()).toBe(dayjs().endOf('year').toISOString());
   });
 
   it('nextYear', () => {
-    const start = dateRanges.nextYear();
+    const [start, end] = dateRanges.nextYear();
     expect(start.toISOString()).toBe(dayjs().add(1, 'year').startOf('year').toISOString());
+    expect(end.toISOString()).toBe(dayjs().add(1, 'year').endOf('year').toISOString());
   });
 
   it('last7Days', () => {
-    const start = dateRanges.last7Days();
+    const [start, end] = dateRanges.last7Days();
     expect(start.toISOString()).toBe(dayjs().add(-6, 'days').startOf('days').toISOString());
+    expect(end.toISOString()).toBe(dayjs().endOf('days').toISOString());
   });
 
   it('next7Days', () => {
-    const start = dateRanges.next7Days();
+    const [start, end] = dateRanges.next7Days();
     expect(start.toISOString()).toBe(dayjs().add(1, 'day').startOf('day').toISOString());
+    expect(end.toISOString()).toBe(dayjs().add(7, 'days').endOf('days').toISOString());
   });
 
   it('last30Days', () => {
-    const start = dateRanges.last30Days();
+    const [start, end] = dateRanges.last30Days();
     expect(start.toISOString()).toBe(dayjs().add(-29, 'days').startOf('days').toISOString());
+    expect(end.toISOString()).toBe(dayjs().endOf('days').toISOString());
   });
 
   it('next30Days', () => {
-    const start = dateRanges.next30Days();
+    const [start, end] = dateRanges.next30Days();
     expect(start.toISOString()).toBe(dayjs().add(1, 'day').startOf('day').toISOString());
+    expect(end.toISOString()).toBe(dayjs().add(30, 'days').endOf('days').toISOString());
   });
 
   it('last90Days', () => {
-    const start = dateRanges.last90Days();
+    const [start, end] = dateRanges.last90Days();
     expect(start.toISOString()).toBe(dayjs().add(-89, 'days').startOf('days').toISOString());
+    expect(end.toISOString()).toBe(dayjs().endOf('days').toISOString());
   });
 
   it('next90Days', () => {
-    const start = dateRanges.next90Days();
+    const [start, end] = dateRanges.next90Days();
     expect(start.toISOString()).toBe(dayjs().add(1, 'day').startOf('day').toISOString());
+    expect(end.toISOString()).toBe(dayjs().add(90, 'days').endOf('days').toISOString());
   });
 });
 
@@ -362,102 +383,122 @@ describe('getDateRanges: shouldBeString is true and utc is false', () => {
   const dateRanges = getDateRanges({ shouldBeString: true, utc: false });
 
   it('today', () => {
-    const start = dateRanges.today();
+    const [start, end] = dateRanges.today();
     expect(start).toBe(moment2str(dayjs().startOf('day'), { utc: false }));
+    expect(end).toBe(moment2str(dayjs().endOf('day'), { utc: false }));
   });
 
   test('yesterday', () => {
-    const start = dateRanges.yesterday();
+    const [start, end] = dateRanges.yesterday();
     expect(start).toBe(moment2str(dayjs().subtract(1, 'day').startOf('day'), { utc: false }));
+    expect(end).toBe(moment2str(dayjs().subtract(1, 'day').endOf('day'), { utc: false }));
   });
 
   test('tomorrow', () => {
-    const start = dateRanges.tomorrow();
+    const [start, end] = dateRanges.tomorrow();
     expect(start).toBe(moment2str(dayjs().add(1, 'day').startOf('day'), { utc: false }));
+    expect(end).toBe(moment2str(dayjs().add(1, 'day').endOf('day'), { utc: false }));
   });
 
   it('lastWeek', () => {
-    const start = dateRanges.lastWeek();
+    const [start, end] = dateRanges.lastWeek();
     expect(start).toBe(moment2str(dayjs().add(-1, 'week').startOf('isoWeek'), { utc: false }));
+    expect(end).toBe(moment2str(dayjs().add(-1, 'week').endOf('isoWeek'), { utc: false }));
   });
 
   it('thisWeek', () => {
-    const start = dateRanges.thisWeek();
+    const [start, end] = dateRanges.thisWeek();
     expect(start).toBe(moment2str(dayjs().startOf('isoWeek'), { utc: false }));
+    expect(end).toBe(moment2str(dayjs().endOf('isoWeek'), { utc: false }));
   });
 
   it('nextWeek', () => {
-    const start = dateRanges.nextWeek();
+    const [start, end] = dateRanges.nextWeek();
     expect(start).toBe(moment2str(dayjs().add(1, 'week').startOf('isoWeek'), { utc: false }));
+    expect(end).toBe(moment2str(dayjs().add(1, 'week').endOf('isoWeek'), { utc: false }));
   });
 
   it('lastMonth', () => {
-    const start = dateRanges.lastMonth();
+    const [start, end] = dateRanges.lastMonth();
     expect(start).toBe(moment2str(dayjs().add(-1, 'month').startOf('month'), { utc: false }));
+    expect(end).toBe(moment2str(dayjs().add(-1, 'month').endOf('month'), { utc: false }));
   });
 
   it('thisMonth', () => {
-    const start = dateRanges.thisMonth();
+    const [start, end] = dateRanges.thisMonth();
     expect(start).toBe(moment2str(dayjs().startOf('month'), { utc: false }));
+    expect(end).toBe(moment2str(dayjs().endOf('month'), { utc: false }));
   });
 
   it('nextMonth', () => {
-    const start = dateRanges.nextMonth();
+    const [start, end] = dateRanges.nextMonth();
     expect(start).toBe(moment2str(dayjs().add(1, 'month').startOf('month'), { utc: false }));
+    expect(end).toBe(moment2str(dayjs().add(1, 'month').endOf('month'), { utc: false }));
   });
 
   it('lastQuarter', () => {
-    const start = dateRanges.lastQuarter();
+    const [start, end] = dateRanges.lastQuarter();
     expect(start).toBe(moment2str(dayjs().add(-1, 'quarter').startOf('quarter'), { utc: false }));
+    expect(end).toBe(moment2str(dayjs().add(-1, 'quarter').endOf('quarter'), { utc: false }));
   });
 
   it('thisQuarter', () => {
-    const start = dateRanges.thisQuarter();
+    const [start, end] = dateRanges.thisQuarter();
     expect(start).toBe(moment2str(dayjs().startOf('quarter'), { utc: false }));
+    expect(end).toBe(moment2str(dayjs().endOf('quarter'), { utc: false }));
   });
 
   it('nextQuarter', () => {
-    const start = dateRanges.nextQuarter();
+    const [start, end] = dateRanges.nextQuarter();
     expect(start).toBe(moment2str(dayjs().add(1, 'quarter').startOf('quarter'), { utc: false }));
+    expect(end).toBe(moment2str(dayjs().add(1, 'quarter').endOf('quarter'), { utc: false }));
   });
 
   it('lastYear', () => {
-    const start = dateRanges.lastYear();
+    const [start, end] = dateRanges.lastYear();
     expect(start).toBe(moment2str(dayjs().add(-1, 'year').startOf('year'), { utc: false }));
+    expect(end).toBe(moment2str(dayjs().add(-1, 'year').endOf('year'), { utc: false }));
   });
 
   it('thisYear', () => {
-    const start = dateRanges.thisYear();
+    const [start, end] = dateRanges.thisYear();
     expect(start).toBe(moment2str(dayjs().startOf('year'), { utc: false }));
+    expect(end).toBe(moment2str(dayjs().endOf('year'), { utc: false }));
   });
 
   it('nextYear', () => {
-    const start = dateRanges.nextYear();
+    const [start, end] = dateRanges.nextYear();
     expect(start).toBe(moment2str(dayjs().add(1, 'year').startOf('year'), { utc: false }));
+    expect(end).toBe(moment2str(dayjs().add(1, 'year').endOf('year'), { utc: false }));
   });
 
   it('last7Days', () => {
-    const start = dateRanges.last7Days();
+    const [start, end] = dateRanges.last7Days();
     expect(start).toBe(moment2str(dayjs().add(-6, 'days').startOf('days'), { utc: false }));
+    expect(end).toBe(moment2str(dayjs().endOf('days'), { utc: false }));
   });
 
   it('next7Days', () => {
-    const start = dateRanges.next7Days();
+    const [start, end] = dateRanges.next7Days();
     expect(start).toBe(moment2str(dayjs().add(1, 'day').startOf('day'), { utc: false }));
+    expect(end).toBe(moment2str(dayjs().add(7, 'days').endOf('days'), { utc: false }));
   });
 
   it('last30Days', () => {
-    const start = dateRanges.last30Days();
+    const [start, end] = dateRanges.last30Days();
     expect(start).toBe(moment2str(dayjs().add(-29, 'days').startOf('days'), { utc: false }));
+    expect(end).toBe(moment2str(dayjs().endOf('days'), { utc: false }));
   });
 
   it('next30Days', () => {
-    const start = dateRanges.next30Days();
+    const [start, end] = dateRanges.next30Days();
     expect(start).toBe(moment2str(dayjs().add(1, 'day').startOf('day'), { utc: false }));
+    expect(end).toBe(moment2str(dayjs().add(30, 'days').endOf('days'), { utc: false }));
   });
 
   it('last90Days', () => {
-    const start = dateRanges.last90Days();
+    const [start, end] = dateRanges.last90Days();
     expect(start).toBe(moment2str(dayjs().add(-89, 'days').startOf('days'), { utc: false }));
+    expect(end).toBe(moment2str(dayjs().endOf('days'), { utc: false }));
   });
 });
