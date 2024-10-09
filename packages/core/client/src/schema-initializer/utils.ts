@@ -510,6 +510,7 @@ export const useAssociatedFormItemInitializerFields = (options?: any) => {
   const { t } = useTranslation();
   const { readPretty = form.readPretty, block = 'Form' } = options || {};
   const interfaces = block === 'Form' ? ['m2o'] : ['o2o', 'oho', 'obo', 'm2o'];
+
   const groups = fields
     ?.filter((field) => {
       return interfaces.includes(field.interface);
@@ -592,8 +593,9 @@ const associationFieldToMenu = (
 export const useFilterAssociatedFormItemInitializerFields = () => {
   const { name, fields } = useCollection_deprecated();
   const { getCollectionFields } = useCollectionManager_deprecated();
+  const interfaces = ['o2o', 'oho', 'obo', 'm2o', 'm2m'];
   return fields
-    ?.filter((field) => field.target && field.uiSchema)
+    ?.filter((field) => field.target && field.uiSchema && interfaces.includes(field.interface))
     .map((field) => associationFieldToMenu(field, field.name, name, getCollectionFields, []))
     .filter(Boolean);
 };
