@@ -20,7 +20,6 @@ import { CollectionFieldProvider } from '../../../data-source/collection-field/C
 import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
 import { useDataFormItemProps } from '../../../modules/blocks/data-blocks/form/hooks/useDataFormItemProps';
 import { GeneralSchemaDesigner } from '../../../schema-settings';
-import { useContextVariable, useVariables } from '../../../variables';
 import { BlockItem } from '../block-item';
 import { HTMLEncode } from '../input/shared';
 import { FilterFormDesigner } from './FormItem.FilterFormDesigner';
@@ -53,12 +52,7 @@ export const FormItem: any = withDynamicSchemaProps(
     const schema = useFieldSchema();
     const { addActiveFieldName } = useFormActiveFields() || {};
     const { wrapperStyle } = useDataFormItemProps();
-    const variables = useVariables();
-    const contextVariable = useContextVariable();
-    useEffect(() => {
-      variables?.registerVariable(contextVariable);
-    }, [contextVariable, variables]);
-    // 需要放在注冊完变量之后
+
     useParseDefaultValue();
     useLazyLoadDisplayAssociationFieldsOfForm();
     useLinkageRulesForSubTableOrSubForm();

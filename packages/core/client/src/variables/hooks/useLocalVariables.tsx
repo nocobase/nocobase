@@ -19,6 +19,7 @@ import { useCurrentParentRecordVariable } from '../../schema-settings/VariableIn
 import { usePopupVariable } from '../../schema-settings/VariableInput/hooks/usePopupVariable';
 import { useCurrentRecordVariable } from '../../schema-settings/VariableInput/hooks/useRecordVariable';
 import { VariableOption } from '../types';
+import useContextVariable from './useContextVariable';
 
 interface Props {
   collectionName?: string;
@@ -48,6 +49,7 @@ const useLocalVariables = (props?: Props) => {
   const { datetimeCtx } = useDatetimeVariable();
   const { currentFormCtx } = useCurrentFormVariable({ form: props?.currentForm });
   const { name: currentCollectionName } = useCollection_deprecated();
+  const contextVariable = useContextVariable();
   let { name } = useBlockCollection();
 
   if (props?.collectionName) {
@@ -126,6 +128,7 @@ const useLocalVariables = (props?: Props) => {
           name: '$date',
           ctx: datetimeCtx,
         },
+        contextVariable,
         shouldDisplayCurrentObject && {
           name: '$iteration',
           ctx: currentObjectCtx,
@@ -151,6 +154,7 @@ const useLocalVariables = (props?: Props) => {
     currentCollectionName,
     defaultValueOfPopupRecord,
     defaultValueOfParentPopupRecord,
+    contextVariable,
   ]); // 尽量保持返回的值不变，这样可以减少接口的请求次数，因为关系字段会缓存到变量的 ctx 中
 };
 
