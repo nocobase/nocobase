@@ -138,9 +138,11 @@ export const transformToFilter = (
       .map((key) => {
         let value = _.get(values, key);
         const collectionField = getCollectionJoinField(`${collectionName}.${key}`);
-        const interfaces = ['o2o', 'oho', 'obo', 'm2o', 'm2m'];
 
-        if (collectionField?.target && interfaces.includes(collectionField.interface)) {
+        if (
+          collectionField?.target &&
+          ['hasOne', 'hasMany', 'belongsTo', 'belongsToMany', 'belongsToArray'].includes(collectionField.type)
+        ) {
           value = getValuesByPath(value, collectionField.targetKey || 'id');
           key = `${key}.${collectionField.targetKey || 'id'}`;
         }
