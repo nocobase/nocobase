@@ -64,7 +64,7 @@ jobs:
         run: |
           for repo in ${{ join(fromJSON(steps.get-pro-plugins.outputs.proRepos), ' ') }}
           do
-          git clone -b ${{ steps.set_pro_pr_branch.outputs.pr_branch || 'main' }} https://x-access-token:${{ steps.app-token.outputs.token }}@github.com/nocobase/$repo.git packages/pro-plugins/@nocobase/$repo
+          git clone -b ${{ github.head_ref || github.ref_name }} https://x-access-token:${{ steps.app-token.outputs.token }}@github.com/nocobase/$repo.git packages/pro-plugins/@nocobase/$repo
           done
       - name: rm .git
         run: |
