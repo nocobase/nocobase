@@ -115,13 +115,13 @@ export function SchemaSettingsConnectDataBlocks(props) {
         options={[
           ...getSupportFieldsByAssociation(getAllCollectionsInheritChain(collection.name), block).map((field) => {
             return {
-              label: compile(field.uiSchema.title) || field.name,
+              label: compile(field.uiSchema?.title || field.name),
               value: `${field.name}.${getTargetKey(field)}`,
             };
           }),
           ...getSupportFieldsByForeignKey(collection, block).map((field) => {
             return {
-              label: `${compile(field.uiSchema.title) || field.name} [${t('Foreign key')}]`,
+              label: `${compile(field.uiSchema?.title || field.name)} [${t('Foreign key')}]`,
               value: field.name,
             };
           }),
@@ -225,7 +225,7 @@ export function SchemaSettingsConnectDataBlocksByFields(props: {
               filterField,
             }).map((field) => {
               return {
-                label: compile(field.uiSchema.title) || field.name,
+                label: compile(field.uiSchema?.title || field.name),
                 value: field.name,
               };
             }),
@@ -234,7 +234,7 @@ export function SchemaSettingsConnectDataBlocksByFields(props: {
               filterField,
             }).map((field) => {
               return {
-                label: `${compile(field.uiSchema.title) || field.name} [${t('Foreign key')}]`,
+                label: `${compile(field.uiSchema?.title || field.name)} [${t('Foreign key')}]`,
                 value: field.name,
               };
             }),
@@ -244,7 +244,7 @@ export function SchemaSettingsConnectDataBlocksByFields(props: {
               getCollectionField: cm.getCollectionField.bind(cm),
             }).map((field) => {
               return {
-                label: compile(field.uiSchema.title) || field.name,
+                label: compile(field.uiSchema?.title || field.name),
                 value: `${field.name}.${getTargetKey(field)}`,
               };
             }),
@@ -253,7 +253,7 @@ export function SchemaSettingsConnectDataBlocksByFields(props: {
               filterField,
             }).map((field) => {
               return {
-                label: compile(field.uiSchema.title) || field.name,
+                label: compile(field.uiSchema?.title || field.name),
                 value: field.name,
               };
             }),
