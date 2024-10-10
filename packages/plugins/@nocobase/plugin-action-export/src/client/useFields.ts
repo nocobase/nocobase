@@ -28,7 +28,7 @@ export const useFields = (collectionName: string) => {
       return option;
     }
 
-    if (field.target) {
+    if (field.target && ['hasOne', 'hasMany', 'belongsTo', 'belongsToMany', 'belongsToArray'].includes(field.type)) {
       const targetFields = getCollectionFields(field.target);
       const options = getOptions(targetFields, depth + 1).filter(Boolean);
       option['children'] = option['children'] || [];

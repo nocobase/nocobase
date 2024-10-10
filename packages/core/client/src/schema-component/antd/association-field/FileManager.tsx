@@ -82,14 +82,13 @@ const useTableSelectorProps = () => {
 };
 
 function FileSelector(props) {
-  const { disabled, multiple, value, onChange, action, onSelect, quickUpload, selectFile } = props;
+  const { disabled, multiple, value, onChange, action, onSelect, quickUpload, selectFile, ...other } = props;
   const { wrapSSR, hashId, componentCls: prefixCls } = useStyles();
   const { useFileCollectionStorageRules } = useExpressionScope();
   const { t } = useTranslation();
   const rules = useFileCollectionStorageRules();
   // 兼容旧版本
   const showSelectButton = selectFile === undefined && quickUpload === undefined;
-
   return wrapSSR(
     <div className={cls(`${prefixCls}-wrapper`, `${prefixCls}-picture-card-wrapper`, 'nb-upload', hashId)}>
       <div className={cls(`${prefixCls}-list`, `${prefixCls}-list-picture-card`)}>
@@ -122,6 +121,8 @@ function FileSelector(props) {
             onChange={onChange}
             action={action}
             rules={rules}
+            disabled={disabled}
+            {...other}
           />
         ) : null}
         {selectFile && (multiple || !value) ? (
@@ -216,6 +217,7 @@ const InternalFileManager = (props) => {
   return (
     <div style={{ width: '100%', overflow: 'auto' }}>
       <FileSelector
+        {...others}
         value={multiple ? options : options?.[0]}
         multiple={multiple}
         quickUpload={fieldSchema['x-component-props']?.quickUpload !== false}
@@ -268,4 +270,4 @@ const FileManageReadPretty = connect((props) => {
   );
 });
 
-export { FileManageReadPretty, InternalFileManager };
+export { FileManageReadPretty, InternalFileManager, FileSelector };

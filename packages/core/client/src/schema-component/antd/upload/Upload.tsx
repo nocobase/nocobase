@@ -18,7 +18,6 @@ import filesize from 'filesize';
 import React, { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import LightBox from 'react-image-lightbox';
-import match from 'mime-match';
 import 'react-image-lightbox/style.css'; // This only needs to be imported once in your app
 import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
 import { useProps } from '../../hooks/useProps';
@@ -26,9 +25,10 @@ import {
   FILE_SIZE_LIMIT_DEFAULT,
   attachmentFileTypes,
   getThumbnailPlaceholderURL,
+  matchMimetype,
   normalizeFile,
   toFileList,
-  toValueItem,
+  toValueItem as toValueItemDefault,
   useBeforeUpload,
   useUploadProps,
 } from './shared';
@@ -37,7 +37,7 @@ import type { ComposedUpload, DraggerProps, DraggerV2Props, UploadProps } from '
 
 attachmentFileTypes.add({
   match(file) {
-    return match(file.mimetype || file.type, 'image/*');
+    return matchMimetype(file, 'image/*');
   },
   getThumbnailURL(file) {
     return file.url ? `${file.url}${file.thumbnailRule || ''}` : URL.createObjectURL(file.originFileObj);
@@ -136,7 +136,7 @@ function IframePreviewer({ index, list, onSwitchIndex }) {
           overflowY: 'auto',
         }}
       >
-        {iframePreviewSupportedTypes.some((type) => match(file.mimetype || file.extname, type)) ? (
+        {iframePreviewSupportedTypes.some((type) => matchMimetype(file, type)) ? (
           <iframe
             src={file.url}
             style={{
@@ -174,7 +174,6 @@ function ReadPretty({ value, onChange, disabled, multiple, size }: UploadProps) 
   const useUploadStyleVal = (useUploadStyle as any).default ? (useUploadStyle as any).default : useUploadStyle;
   // 加载 antd 的样式
   useUploadStyleVal(prefixCls);
-
   return wrapSSR(
     <div
       className={cls(
@@ -245,12 +244,12 @@ function AttachmentListItem(props) {
       {file.status === 'uploading' ? t('Uploading') : file.title}
     </span>,
   ];
-  const wrappedItem = file.id ? (
+  const wrappedItem = file.url ? (
     <a target="_blank" rel="noopener noreferrer" href={file.url} onClick={handleClick}>
       {item}
     </a>
   ) : (
-    <span className={`${prefixCls}-span`}>{item}</span>
+    <span className={`${prefixCls}-span`}>{item}3</span>
   );
 
   const content = (
@@ -264,7 +263,7 @@ function AttachmentListItem(props) {
       <div className={`${prefixCls}-list-item-info`}>{wrappedItem}</div>
       <span className={`${prefixCls}-list-item-actions`}>
         <Space size={3}>
-          {!readPretty && file.id && (
+          {!readPretty && file.url && (
             <Button size={'small'} type={'text'} icon={<DownloadOutlined />} onClick={onDownload} />
           )}
           {!readPretty && !disabled && file.status !== 'uploading' && (
@@ -299,7 +298,6 @@ function Previewer({ index, onSwitchIndex, list }) {
   }
   const file = list[index];
   const { Previewer: Component = IframePreviewer } = attachmentFileTypes.getTypeByFile(file) ?? {};
-
   return <Component index={index} list={list} onSwitchIndex={onSwitchIndex} />;
 }
 
@@ -331,12 +329,11 @@ export function AttachmentList(props) {
     },
     [multiple, onChange, value],
   );
-
   return (
     <>
       {fileList.map((file, index) => (
         <AttachmentListItem
-          key={file.id}
+          key={file.id || file.url}
           file={file}
           index={index}
           disabled={disabled}
@@ -351,7 +348,7 @@ export function AttachmentList(props) {
 }
 
 export function Uploader({ rules, ...props }: UploadProps) {
-  const { disabled, multiple, value, onChange } = props;
+  const { disabled, multiple, value, onChange, toValueItem = toValueItemDefault } = props;
   const [pendingList, setPendingList] = useState<any[]>([]);
   const { t } = useTranslation();
   const { componentCls: prefixCls } = useStyles();
@@ -378,7 +375,7 @@ export function Uploader({ rules, ...props }: UploadProps) {
       if (multiple) {
         const uploadedList = info.fileList.filter((file) => file.status === 'done');
         if (uploadedList.length) {
-          const valueList = [...(value ?? []), ...uploadedList.map(toValueItem)];
+          const valueList = [...(value ?? []), ...uploadedList.map((v) => toValueItem(v.response?.data))];
           onChange?.(valueList);
         }
         setPendingList(info.fileList.filter((file) => file.status !== 'done').map(normalizeFile));
@@ -386,7 +383,7 @@ export function Uploader({ rules, ...props }: UploadProps) {
         // NOTE: 用 fileList 里的才有附加的验证状态信息，file 没有（不清楚为何）
         const file = info.fileList.find((f) => f.uid === info.file.uid);
         if (file.status === 'done') {
-          onChange?.(toValueItem(file));
+          onChange?.(toValueItem(file.response?.data));
           setPendingList([]);
         } else {
           setPendingList([normalizeFile(file)]);
@@ -408,7 +405,6 @@ export function Uploader({ rules, ...props }: UploadProps) {
   const sizeHint = useSizeHint(size);
   const selectable =
     !disabled && (multiple || ((!value || (Array.isArray(value) && !value.length)) && !pendingList.length));
-
   return (
     <>
       {pendingList.map((file, index) => (
@@ -451,7 +447,6 @@ export function Uploader({ rules, ...props }: UploadProps) {
 
 function Attachment(props: UploadProps) {
   const { wrapSSR, hashId, componentCls: prefixCls } = useStyles();
-
   return wrapSSR(
     <div className={cls(`${prefixCls}-wrapper`, `${prefixCls}-picture-card-wrapper`, 'nb-upload', hashId)}>
       <div className={cls(`${prefixCls}-list`, `${prefixCls}-list-picture-card`)}>

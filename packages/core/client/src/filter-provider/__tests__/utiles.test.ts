@@ -166,7 +166,7 @@ describe('transformToFilter', () => {
   const getCollectionJoinField = vi.fn((name: string) => {
     if (name === `${collectionName}.field1`) return {};
     if (name === `${collectionName}.field2`) return {};
-    if (name === `${collectionName}.field3`) return { target: 'targetCollection', targetKey: 'id' };
+    if (name === `${collectionName}.field3`) return { target: 'targetCollection', targetKey: 'id', type: 'belongsTo' };
     return {};
   });
 

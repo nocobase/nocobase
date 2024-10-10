@@ -19,6 +19,7 @@ export type UploadProps = Omit<AntdUploadProps, 'onChange'> & {
   value?: any;
   size?: string;
   rules?: PropsRules;
+  toValueItem?: function;
 };
 
 export type DraggerProps = Omit<AntdDraggerProps, 'onChange'> & {
