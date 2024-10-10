@@ -77,7 +77,7 @@ jobs:
       - name: Get tag
         id: get-tag
         run: |
-          if ["${{ inputs.pr_number }}" != ""]; then
+          if [ "${{ inputs.pr_number }}" != "" ]; then
             echo "tag=pr-${{ inputs.pr_number }}" >> "$GITHUB_OUTPUT"
           else
             echo "tag=${{ github.head_ref || github.ref_name }}" >> "$GITHUB_OUTPUT"
