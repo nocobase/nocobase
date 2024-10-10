@@ -235,7 +235,7 @@ export const PagePopups = (props: { paramsList?: PopupParams[] }) => {
       const waitList = popupParams.map((params) => {
         return (
           getStoredPopupContext(params.popupuid)?.schema ||
-          findSchemaByUid(params.popupuid, fieldSchema.root) ||
+          findSchemaByUid(params.popupuid, fieldSchema?.root) ||
           requestSchema(params.popupuid)
         );
       });
@@ -248,7 +248,7 @@ export const PagePopups = (props: { paramsList?: PopupParams[] }) => {
         const params = popupParams[index];
 
         if (params.puid) {
-          const popupSchema = findSchemaByUid(params.puid, fieldSchema.root);
+          const popupSchema = findSchemaByUid(params.puid, fieldSchema?.root);
           if (popupSchema) {
             savePopupSchemaToSchema(_.omit(popupSchema, 'parent'), schema);
           }
