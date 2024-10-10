@@ -73,7 +73,7 @@ export const getSupportAssociationFields = ({
 }) => {
   return targetBlock.associatedFields?.filter((associationField) => {
     const targetKeyField = getCollectionField(`${associationField.target}.${associationField.targetKey || 'id'}`);
-    return targetKeyField?.type === filterField.type && targetKeyField?.interface === filterField.interface;
+    return targetKeyField?.type === filterField.type;
   });
 };
 
@@ -87,7 +87,7 @@ export const getSupportForeignKeyFields = ({
   filterField: any;
 }) => {
   return targetBlock.foreignKeyFields?.filter((foreignKeyField) => {
-    return filterField.type === foreignKeyField.type && filterField.interface === foreignKeyField.interface;
+    return filterField.type === foreignKeyField.type;
   });
 };
 
@@ -101,7 +101,7 @@ export const getSupportPrimaryKeyFields = ({
   filterField: any;
 }) => {
   return targetBlock.primaryKeyFields?.filter((primaryKeyField) => {
-    return filterField.type === primaryKeyField.type && filterField.interface === primaryKeyField.interface;
+    return filterField.type === primaryKeyField.type;
   });
 };
 
@@ -121,10 +121,10 @@ export const getSupportSystemFields = ({
     // association field
     if (systemField.target) {
       const targetKeyField = getCollectionField(`${systemField.target}.${systemField.targetKey || 'id'}`);
-      return targetKeyField?.type === filterField.type && targetKeyField?.interface === filterField.interface;
+      return targetKeyField?.type === filterField.type;
     }
 
-    return filterField.type === systemField.type && filterField.interface === systemField.interface;
+    return filterField.type === systemField.type;
   });
 };
 
@@ -138,7 +138,7 @@ export const getSupportGeneralFields = ({
   filterField: any;
 }) => {
   return targetBlock.generalFields?.filter((generalField) => {
-    return filterField.type === generalField.type && filterField.interface === generalField.interface;
+    return filterField.type === generalField.type;
   });
 };
 

@@ -331,6 +331,7 @@ test.describe('table block schema settings', () => {
       await page.getByLabel('designer-schema-settings-CardItem-blockSettings:table-roles').hover();
       await page.getByRole('menuitem', { name: 'Connect data blocks right' }).hover();
       await page.getByRole('menuitem', { name: 'Roles #' }).click();
+      await page.getByRole('option', { name: 'Role UID' }).click();
 
       // 3. 点击 Table 行，筛选功能应该正常
       // 初次点击，变为选中状态
@@ -382,6 +383,7 @@ test.describe('table block schema settings', () => {
       await page.getByLabel('designer-schema-settings-CardItem-blockSettings:table-roles').hover();
       await page.getByRole('menuitem', { name: 'Connect data blocks right' }).hover();
       await page.getByRole('menuitem', { name: 'Roles #' }).click();
+      await page.getByRole('option', { name: 'Role UID' }).click();
 
       // 4. 点击 Table 行，筛选功能应该正常
       // 初次点击，变为选中状态
