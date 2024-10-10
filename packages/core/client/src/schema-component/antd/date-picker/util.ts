@@ -216,10 +216,10 @@ export const getDateRanges = (props?: {
   };
 };
 
-function withParams(value: any[], params: { fieldOperator?: string }) {
-  if (params?.fieldOperator && params.fieldOperator !== '$dateBetween') {
-    return value[0];
+function withParams(value: any[], params: { fieldOperator?: string; isParsingVariable?: boolean }) {
+  if (params?.fieldOperator === '$dateBetween' || !params?.isParsingVariable) {
+    return value;
   }
 
-  return value;
+  return value[0];
 }
