@@ -16,4 +16,5 @@ export * from './plugin-manager';
 export * from './gateway';
 export * from './app-supervisor';
 export * from './sync-manager';
+export * from './AuditManager';
 export const OFFICIAL_PLUGIN_PREFIX = '@nocobase/plugin-';
