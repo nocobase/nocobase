@@ -10,13 +10,14 @@
 import { useField, useFieldSchema } from '@formily/react';
 import { uniqBy } from 'lodash';
 import React, { createContext, useCallback, useEffect, useRef } from 'react';
-import { CollectionFieldOptions_deprecated } from '../collection-manager';
+import { CollectionFieldOptions_deprecated, useCollectionManager_deprecated } from '../collection-manager';
 import { Collection } from '../data-source/collection/Collection';
 import { useCollection } from '../data-source/collection/CollectionProvider';
 import { useDataBlockRequest } from '../data-source/data-block/DataBlockRequestProvider';
 import { useDataLoadingMode } from '../modules/blocks/data-blocks/details-multi/setDataLoadingModeSettingsItem';
 import { removeNullCondition } from '../schema-component';
-import { mergeFilter, useAssociatedFields } from './utils';
+import { isSystemField } from '../schema-settings';
+import { isAssocField, mergeFilter, useAssociatedFields } from './utils';
 
 enum FILTER_OPERATOR {
   AND = '$and',
@@ -39,6 +40,59 @@ export interface ForeignKeyField {
   [key: string]: any;
 }
 
+export interface PrimaryKeyField {
+  name: string;
+  type: string;
+  interface: string;
+  description: string | null;
+  collectionName: string;
+  autoIncrement: boolean;
+  primaryKey: boolean;
+  allowNull: boolean;
+  uiSchema: {
+    type: string;
+    title: string;
+    'x-component': string;
+    'x-read-pretty': boolean;
+  };
+}
+
+export interface SystemField {
+  name: string;
+  type: string;
+  interface: string;
+  description: string | null;
+  collectionName: string;
+  target: string;
+  foreignKey: string;
+  targetKey: string;
+  uiSchema: {
+    type: string;
+    title: string;
+    'x-component': string;
+    'x-component-props': {
+      fieldNames: {
+        value: string;
+        label: string;
+      };
+    };
+    'x-read-pretty': boolean;
+  };
+}
+
+export interface GeneralField {
+  name: string;
+  type: string;
+  interface: string;
+  description: string | null;
+  collectionName: string;
+  uiSchema: {
+    type: string;
+    title: string;
+    'x-component': string;
+  };
+}
+
 export interface DataBlock {
   /** 唯一标识符，schema 中的 x-uid 值 */
   uid: string;
@@ -56,6 +110,12 @@ export interface DataBlock {
   associatedFields?: CollectionFieldOptions_deprecated[];
   /** 数据区块表中所有的外键字段 */
   foreignKeyFields?: ForeignKeyField[];
+  /** 数据区块表中所有的主键字段 */
+  primaryKeyFields?: PrimaryKeyField[];
+  /** 数据区块表中所有的系统字段 */
+  systemFields?: SystemField[];
+  /** 数据区块表中所有的常规字段 */
+  generalFields?: GeneralField[];
   /** 数据区块已经存在的过滤条件（通过 `设置数据范围` 或者其它能设置筛选条件的功能） */
   defaultFilter?: FilterParam;
   /** 数据区块用于请求数据的接口 */
@@ -107,6 +167,7 @@ export const DataBlockCollector = ({
   const associatedFields = useAssociatedFields();
   const container = useRef(null);
   const dataLoadingMode = useDataLoadingMode();
+  const { getInterface } = useCollectionManager_deprecated();
 
   const shouldApplyFilter =
     field &&
@@ -122,6 +183,12 @@ export const DataBlockCollector = ({
       collection,
       associatedFields,
       foreignKeyFields: collection.getFields('isForeignKey') as ForeignKeyField[],
+      primaryKeyFields: collection.getFields('primaryKey') as any,
+      systemFields: collection.getFields((field) => isSystemField(field, getInterface)) as any,
+      generalFields: collection.getFields(
+        (field) =>
+          !isSystemField(field, getInterface) && !field.isForeignKey && !field.primaryKey && !isAssocField(field),
+      ) as any,
       defaultFilter: params?.filter || {},
       service,
       dom: container.current,

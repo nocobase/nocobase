@@ -9,12 +9,11 @@
 
 import { ISchema, useField, useFieldSchema } from '@formily/react';
 import {
-  FilterBlockType,
   SchemaSettings,
   SchemaSettingsBlockHeightItem,
   SchemaSettingsBlockTitleItem,
   SchemaSettingsCascaderItem,
-  SchemaSettingsConnectDataBlocks,
+  SchemaSettingsConnectDataBlocksByFields,
   SchemaSettingsDataScope,
   SchemaSettingsDefaultSortingRules,
   SchemaSettingsModalItem,
@@ -212,11 +211,12 @@ export const mapBlockSettings = new SchemaSettings({
     },
     {
       name: 'ConnectDataBlocks',
-      Component: SchemaSettingsConnectDataBlocks,
+      Component: SchemaSettingsConnectDataBlocksByFields,
       useComponentProps() {
         const { t } = useMapTranslation();
+        const collection = useCollection();
         return {
-          type: FilterBlockType.TABLE,
+          filterFieldName: `${collection.name}.${collection.getPrimaryKey() || 'id'}`,
           emptyDescription: t('No blocks to connect'),
         };
       },
