@@ -9,7 +9,7 @@
 
 import { genStyleHook } from './../__builtins__';
 
-export const useStyles = genStyleHook('nb-variable', (token) => {
+export const useStyles = genStyleHook('nb-variable', (token, props?: { hideVariableButton?: boolean }) => {
   const { componentCls, lineWidth, colorFillQuaternary } = token;
   const inputPaddingHorizontalBase = token.paddingSM - 1;
   const tagPaddingHorizontal = 8; // Fixed padding.
@@ -37,10 +37,12 @@ export const useStyles = genStyleHook('nb-variable', (token) => {
         marginBottom: 0,
       },
 
-      '.ant-input': {
-        borderTopRightRadius: 0,
-        borderBottomRightRadius: 0,
-      },
+      '.ant-input': props?.hideVariableButton
+        ? {}
+        : {
+            borderTopRightRadius: 0,
+            borderBottomRightRadius: 0,
+          },
 
       '.ant-tag': {
         display: 'inline-block',

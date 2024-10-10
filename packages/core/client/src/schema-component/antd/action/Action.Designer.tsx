@@ -8,7 +8,7 @@
  */
 
 import { ArrayTable } from '@formily/antd-v5';
-import { Field, onFieldValueChange } from '@formily/core';
+import { onFieldValueChange } from '@formily/core';
 import { ISchema, useField, useFieldSchema, useForm, useFormEffects } from '@formily/react';
 import { isValid, uid } from '@formily/shared';
 import { Alert, Flex, ModalProps, Tag } from 'antd';
@@ -258,7 +258,13 @@ export function AfterSuccess() {
   return (
     <SchemaSettingsModalItem
       title={t('After successful submission')}
-      initialValues={fieldSchema?.['x-action-settings']?.['onSuccess']}
+      initialValues={
+        fieldSchema?.['x-action-settings']?.['onSuccess'] || {
+          manualClose: false,
+          redirecting: false,
+          successMessage: '{{t("Saved successfully")}}',
+        }
+      }
       schema={
         {
           type: 'object',

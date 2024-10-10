@@ -92,6 +92,14 @@ const commonOptions = {
       },
       useVisible: () => useActionAvailable('create'),
     },
+    {
+      name: 'customRequest',
+      title: '{{t("Custom request")}}',
+      Component: 'CustomRequestInitializer',
+      schema: {
+        'x-action': 'customize:table:request:global',
+      },
+    },
   ],
 };
 

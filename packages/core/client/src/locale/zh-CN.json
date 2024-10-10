@@ -448,6 +448,7 @@
   "Option label": "选项标签",
   "Color": "颜色",
   "Background Color": "背景颜色",
+  "Text Align": "文本对齐",
   "Add option": "添加选项",
   "Related collection": "关系表",
   "Allow linking to multiple records": "允许关联多条记录",
@@ -799,6 +800,7 @@
   "Try again": "重试一下",
   "Download logs": "下载日志",
   "Download": "下载",
+  "File type is not supported for previewing, please download it to preview.": "不支持预览该文件类型，请下载后查看。",
   "Click or drag file to this area to upload": "点击或拖拽文件到此区域上传",
   "Support for a single or bulk upload.": "支持单个或批量上传",
   "File size should not exceed {{size}}.": "文件大小不能超过 {{size}}",
@@ -901,6 +903,7 @@
   "Collections": "数据表",
   "Collection fields": "数据表字段",
   "Authentication": "用户认证",
+  "Notification": "通知",
   "Logging and monitoring": "日志与监控",
   "Home page": "主页",
   "Handbook": "用户手册",
@@ -994,5 +997,9 @@
   "Perform the Submit": "执行提交",
   "Are you sure you want to perform the Submit action?": "你确定执行提交操作吗？",
   "Perform the Trigger workflow": "执行触发工作流",
-  "Are you sure you want to perform the Trigger workflow action?": "你确定执行触发工作流吗？"
+  "Are you sure you want to perform the Trigger workflow action?": "你确定执行触发工作流吗？",
+  "Ellipsis overflow content": "省略超出长度的内容",
+  "Picker": "选择器",
+  "Quarter":"季度",
+  "Switching the picker, the value and default value will be cleared":"切换选择器时，字段的值和默认值将会被清空"
 }

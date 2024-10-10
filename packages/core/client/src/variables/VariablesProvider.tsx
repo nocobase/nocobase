@@ -49,7 +49,7 @@ const getFieldPath = (variablePath: string, variablesStore: Record<string, Varia
   };
 };
 
-const VariablesProvider = ({ children }) => {
+const VariablesProvider = ({ children, filterVariables }: any) => {
   const ctxRef = useRef<Record<string, any>>({});
   const api = useAPIClient();
   const { getCollectionJoinField, getCollection } = useCollectionManager_deprecated();
@@ -185,7 +185,9 @@ const VariablesProvider = ({ children }) => {
         }
       }
 
-      const _value = compile(_.isFunction(current) ? current({ fieldOperator: options?.fieldOperator }) : current);
+      const _value = compile(
+        _.isFunction(current) ? current({ fieldOperator: options?.fieldOperator, isParsingVariable: true }) : current,
+      );
       return {
         value: _value === undefined ? variableOption.defaultValue : _value,
         dataSource,
@@ -329,6 +331,7 @@ const VariablesProvider = ({ children }) => {
         getVariable,
         getCollectionField,
         removeVariable,
+        filterVariables,
       }) as VariablesContextType,
     [getCollectionField, getVariable, parseVariable, registerVariable, removeVariable, setCtx],
   );

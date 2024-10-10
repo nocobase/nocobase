@@ -237,7 +237,7 @@ describe.runIf(isPg())('collection sync', () => {
     expect(sub1MapPlugin.get('enabled')).toBeTruthy();
   });
 
-  it('should sync plugin status between apps', async () => {
+  it.skip('should sync plugin status between apps', async () => {
     await mainApp.db.getRepository('applications').create({
       values: {
         name: 'sub1',

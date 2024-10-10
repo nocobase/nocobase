@@ -31,10 +31,10 @@ import {
   useCollection,
   useCollectionParentRecordData,
   useSchemaInitializerRender,
-  useTableBlockContext,
   useTableSelectorContext,
 } from '../../../';
 import { useACLFieldWhitelist } from '../../../acl/ACLProvider';
+import { useTableBlockContext } from '../../../block-provider/TableBlockProvider';
 import { isNewRecord } from '../../../data-source/collection-record/isNewRecord';
 import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
 import { useSatisfiedActionValues } from '../../../schema-settings/LinkageRules/useActionValues';
@@ -42,6 +42,7 @@ import { useToken } from '../__builtins__';
 import { SubFormProvider } from '../association-field/hooks';
 import { ColumnFieldProvider } from './components/ColumnFieldProvider';
 import { extractIndex, isCollectionFieldComponent, isColumnComponent } from './utils';
+import { useDataBlockRequest } from '../../../';
 const MemoizedAntdTable = React.memo(AntdTable);
 
 const useArrayField = (props) => {
@@ -145,8 +146,8 @@ const useTableColumns = (props: { showDel?: boolean; isSubTable?: boolean }) => 
               </SubFormProvider>
             );
           },
-          onCell: (record) => {
-            return { record, schema: s };
+          onCell: (record, rowIndex) => {
+            return { record, schema: s, rowIndex };
           },
         } as TableColumnProps<any>;
       }),
@@ -267,6 +268,9 @@ const usePaginationProps = (pagination1, pagination2) => {
   const { t } = useTranslation();
   const field: any = useField();
   const { token } = useToken();
+  const { data } = useDataBlockRequest() || ({} as any);
+  const { meta } = data || {};
+  const { hasNext } = meta || {};
   const pagination = useMemo(
     () => ({ ...pagination1, ...pagination2 }),
     [JSON.stringify({ ...pagination1, ...pagination2 })],
@@ -295,7 +299,7 @@ const usePaginationProps = (pagination1, pagination2) => {
         showSizeChanger: true,
         hideOnSinglePage: false,
         ...pagination,
-        total: field.value?.length < pageSize ? pageSize * current : pageSize * current + 1,
+        total: field.value?.length < pageSize || !hasNext ? pageSize * current : pageSize * current + 1,
         className: css`
           .ant-pagination-simple-pager {
             display: none !important;
@@ -344,9 +348,6 @@ const headerClass = css`
 const cellClass = css`
   max-width: 300px;
   white-space: nowrap;
-  .nb-read-pretty-input-number {
-    text-align: right;
-  }
   .ant-color-picker-trigger {
     position: absolute;
     top: 50%;
@@ -589,15 +590,24 @@ export const Table: any = withDynamicSchemaProps(
     const BodyCellComponent = useCallback(
       (props) => {
         const isIndex = props.className?.includes('selection-column');
-        const { record, schema } = props;
+        const { record, schema, rowIndex } = props;
         const { ref, inView } = useInView({
           threshold: 0,
           triggerOnce: true,
-          initialInView: isIndex || !!process.env.__E2E__ || dataSource.length <= 10,
+          initialInView: isIndex || !!process.env.__E2E__,
           skip: isIndex || !!process.env.__E2E__,
         });
         const { valueMap } = useSatisfiedActionValues({ formValues: record, category: 'style', schema });
         const style = useMemo(() => Object.assign({ ...props.style }, valueMap), [props.style, valueMap]);
+
+        // fix the problem of blank rows at the beginning of a table block
+        if (rowIndex < 20) {
+          return (
+            <td {...props} className={classNames(props.className, cellClass)} style={style}>
+              {props.children}
+            </td>
+          );
+        }
 
         return (
           <td {...props} ref={ref} className={classNames(props.className, cellClass)} style={style}>
@@ -606,7 +616,7 @@ export const Table: any = withDynamicSchemaProps(
           </td>
         );
       },
-      [dataSource.length, others.isSubTable],
+      [others.isSubTable],
     );
 
     const components = useMemo(() => {

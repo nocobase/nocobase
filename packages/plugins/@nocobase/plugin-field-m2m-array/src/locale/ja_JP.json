@@ -1,0 +1,4 @@
+{
+  "Many to many (array)": "多対多（配列）",
+  "Many to many (array) description": "2つのモデル間に多対多の関係を作成し、ターゲットモデルのユニークキーを配列に保存します。"
+}
