@@ -19,7 +19,12 @@ import {
   twoTableWithAssociationFields,
   twoTableWithSameCollection,
 } from '@nocobase/test/e2e';
-import { T4032, oneTableWithRoles, twoTableWithAuthorAndBooks } from './templatesOfBug';
+import {
+  T4032,
+  connectingTwoBlocksConnectedByARelationshipField,
+  oneTableWithRoles,
+  twoTableWithAuthorAndBooks,
+} from './templatesOfBug';
 
 test.describe('table block schema settings', () => {
   test('supported options', async ({ page, mockPage }) => {
@@ -231,7 +236,11 @@ test.describe('table block schema settings', () => {
   });
 
   test.describe('connect data blocks', () => {
-    test('connecting two blocks of the same collection', async ({ page, mockPage, mockRecords }) => {
+    test('old version blocks: connecting two blocks of the same collection', async ({
+      page,
+      mockPage,
+      mockRecords,
+    }) => {
       const nocoPage = await mockPage(twoTableWithSameCollection).waitForInit();
       const records = await mockUserRecordsWithoutDepartments(mockRecords, 3);
       await nocoPage.goto();
@@ -256,7 +265,62 @@ test.describe('table block schema settings', () => {
       await expect(page.getByLabel('block-item-CardItem-users-table').nth(1).getByText('Super Admin')).toBeVisible();
     });
 
-    test('connecting two blocks connected by a relationship field', async ({ page, mockPage, mockRecords }) => {
+    // 新版本的连接数据块，去除了开关的交互，统一通过选择字段来连接
+    test('new version blocks: connecting two blocks of the same collection', async ({
+      page,
+      mockPage,
+      mockRecords,
+    }) => {
+      await mockPage().goto();
+
+      // 先基于 user 表创建两个 Table
+      await page.getByLabel('schema-initializer-Grid-page:').hover();
+      await page.getByRole('menuitem', { name: 'table Table right' }).hover();
+      await page.getByRole('menuitem', { name: 'Users' }).click();
+      await page.getByLabel('schema-initializer-TableV2-').first().hover();
+      await page.getByRole('menuitem', { name: 'Nickname' }).click();
+      await page.getByLabel('schema-initializer-ActionBar-').first().hover();
+      await page.getByRole('menuitem', { name: 'Refresh' }).click();
+
+      await page.getByLabel('schema-initializer-Grid-page:').hover();
+      await page.getByRole('menuitem', { name: 'table Table right' }).hover();
+      await page.getByRole('menuitem', { name: 'Users' }).click();
+      await page.getByLabel('schema-initializer-TableV2-').nth(1).hover();
+      await page.getByRole('menuitem', { name: 'Nickname' }).click();
+      await page.getByLabel('schema-initializer-ActionBar-').nth(1).hover();
+      await page.getByRole('menuitem', { name: 'Refresh' }).click();
+
+      // 创建数据后，需要手动刷新下区块的数据
+      const records = await mockUserRecordsWithoutDepartments(mockRecords, 3);
+      await page.getByLabel('action-Action-Refresh-refresh').first().click();
+      await page.getByLabel('action-Action-Refresh-refresh').nth(1).click();
+
+      // 将左边的 Table 连接到右边的 Table
+      await page.getByLabel('block-item-CardItem-users-table').first().hover();
+      await page.getByRole('button', { name: 'designer-schema-settings-CardItem-blockSettings:table-users' }).hover();
+      await page.getByRole('menuitem', { name: 'Connect data blocks' }).hover();
+      await page.getByRole('menuitem', { name: 'Users' }).click();
+      await page.getByRole('option', { name: 'ID', exact: true }).click();
+
+      // 点击左边 Table 的某一行，右边 Table 的数据会被筛选为当前点中行的数据
+      await page.getByLabel('block-item-CardItem-users-table').nth(0).getByText('Super Admin').click();
+      await expect(
+        page.getByLabel('block-item-CardItem-users-table').nth(1).getByText(records[0].nickname),
+      ).toBeHidden();
+      await expect(
+        page.getByLabel('block-item-CardItem-users-table').nth(1).getByText(records[1].nickname),
+      ).toBeHidden();
+      await expect(
+        page.getByLabel('block-item-CardItem-users-table').nth(1).getByText(records[2].nickname),
+      ).toBeHidden();
+      await expect(page.getByLabel('block-item-CardItem-users-table').nth(1).getByText('Super Admin')).toBeVisible();
+    });
+
+    test('old version blocks: connecting two blocks connected by a relationship field', async ({
+      page,
+      mockPage,
+      mockRecords,
+    }) => {
       const nocoPage = await mockPage(twoTableWithAssociationFields).waitForInit();
       await mockUserRecordsWithoutDepartments(mockRecords, 3);
       await nocoPage.goto();
@@ -264,6 +328,41 @@ test.describe('table block schema settings', () => {
       // 将左边的 Table 连接到右边的 Table
       await page.getByLabel('block-item-CardItem-roles-table').hover();
       await page.getByRole('button', { name: 'designer-schema-settings-CardItem-TableBlockDesigner-roles' }).hover();
+      await page.getByRole('menuitem', { name: 'Connect data blocks' }).hover();
+      await page.getByRole('menuitem', { name: 'Users' }).click();
+      await page.getByRole('option', { name: 'Roles' }).click();
+
+      // 点击左边 Table 的某一行
+      await page.getByLabel('block-item-CardItem-roles-table').getByRole('cell', { name: 'Root', exact: true }).click();
+      await expect(
+        page.getByLabel('block-item-CardItem-users-table').getByRole('row').filter({ hasNotText: 'Root' }),
+      ).toHaveCount(1, {
+        timeout: 1000 * 10,
+      });
+      await expect(page.getByLabel('block-item-CardItem-users-table').getByRole('row', { name: 'Root' })).toBeVisible();
+
+      // 再次点击，会取消筛选效果
+      await page.getByLabel('block-item-CardItem-roles-table').getByRole('cell', { name: 'Root', exact: true }).click();
+      await expect(
+        page.getByLabel('block-item-CardItem-users-table').getByRole('row').filter({ hasNotText: 'Root' }),
+      ).toHaveCount(4, {
+        timeout: 1000 * 10,
+      });
+      await expect(page.getByLabel('block-item-CardItem-users-table').getByRole('row', { name: 'Root' })).toBeVisible();
+    });
+
+    test('new version blocks: connecting two blocks connected by a relationship field', async ({
+      page,
+      mockPage,
+      mockRecords,
+    }) => {
+      const nocoPage = await mockPage(connectingTwoBlocksConnectedByARelationshipField).waitForInit();
+      await mockUserRecordsWithoutDepartments(mockRecords, 3);
+      await nocoPage.goto();
+
+      // 将左边的 Table 连接到右边的 Table
+      await page.getByLabel('block-item-CardItem-roles-table').hover();
+      await page.getByRole('button', { name: 'designer-schema-settings-CardItem-blockSettings:table-roles' }).hover();
       await page.getByRole('menuitem', { name: 'Connect data blocks' }).hover();
       await page.getByRole('menuitem', { name: 'Users' }).click();
       await page.getByRole('option', { name: 'Roles' }).click();
