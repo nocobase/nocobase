@@ -15,7 +15,11 @@ import { Nester } from './Nester';
 import { ReadPretty } from './ReadPretty';
 import { SubTable } from './SubTable';
 
-export { AssociationFieldModeProvider } from './AssociationFieldModeProvider';
+export {
+  AssociationFieldMode,
+  AssociationFieldModeProvider,
+  useAssociationFieldModeContext,
+} from './AssociationFieldModeProvider';
 export const AssociationField: any = connect(Editable, mapReadPretty(ReadPretty));
 
 AssociationField.SubTable = SubTable;
