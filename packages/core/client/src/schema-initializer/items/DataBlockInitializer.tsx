@@ -23,7 +23,7 @@ import { useCompile } from '../../schema-component';
 import { useSchemaTemplateManager } from '../../schema-templates';
 import { useCollectionDataSourceItems } from '../utils';
 
-const MENU_ITEM_HEIGHT = 40;
+const MENU_ITEM_HEIGHT = 32;
 const STEP = 15;
 
 export const SearchCollections = ({ value: outValue, onChange }) => {
