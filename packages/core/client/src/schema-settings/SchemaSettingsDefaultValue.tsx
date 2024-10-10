@@ -153,7 +153,7 @@ export const SchemaSettingsDefaultValue = function DefaultValueConfigure(props: 
 
               const defaultValue = getFieldDefaultValue(clonedSchema, collectionField);
 
-              if (collectionField.target && clonedSchema['x-component-props']) {
+              if (collectionField?.target && clonedSchema['x-component-props']) {
                 clonedSchema['x-component-props'].mode = 'Select';
               }
 
