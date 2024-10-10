@@ -76,6 +76,13 @@ export class APIClient extends APIClientSDK {
     return this.services[uid];
   }
 
+  setPermanentCookie(name: string, value: string) {
+    const d = new Date();
+    d.setFullYear(d.getFullYear() + 100);
+    const expires = 'expires=' + d.toUTCString();
+    document.cookie = name + '=' + value + ';' + expires + ';path=/';
+  }
+
   interceptors() {
     this.axios.interceptors.request.use((config) => {
       config.headers['X-With-ACL-Meta'] = true;
@@ -83,6 +90,7 @@ export class APIClient extends APIClientSDK {
       if (appName) {
         config.headers['X-App'] = appName;
       }
+      this.setPermanentCookie('__appName', appName || 'main');
       return config;
     });
     super.interceptors();
