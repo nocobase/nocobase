@@ -18,8 +18,6 @@ import filesize from 'filesize';
 import React, { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import LightBox from 'react-image-lightbox';
-import mime from 'mime';
-import match from 'mime-match';
 import 'react-image-lightbox/style.css'; // This only needs to be imported once in your app
 import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
 import { useProps } from '../../hooks/useProps';
@@ -27,6 +25,7 @@ import {
   FILE_SIZE_LIMIT_DEFAULT,
   attachmentFileTypes,
   getThumbnailPlaceholderURL,
+  matchMimetype,
   normalizeFile,
   toFileList,
   toValueItem as toValueItemDefault,
@@ -38,7 +37,7 @@ import type { ComposedUpload, DraggerProps, DraggerV2Props, UploadProps } from '
 
 attachmentFileTypes.add({
   match(file) {
-    return match(file.mimetype || mime.getType(file.url) || '', 'image/*');
+    return matchMimetype(file, 'image/*');
   },
   getThumbnailURL(file) {
     return file.url ? `${file.url}${file.thumbnailRule || ''}` : URL.createObjectURL(file.originFileObj);
@@ -137,7 +136,7 @@ function IframePreviewer({ index, list, onSwitchIndex }) {
           overflowY: 'auto',
         }}
       >
-        {iframePreviewSupportedTypes.some((type) => match(file.mimetype || mime.getType(file.url) || '', type)) ? (
+        {iframePreviewSupportedTypes.some((type) => matchMimetype(file, type)) ? (
           <iframe
             src={file.url}
             style={{

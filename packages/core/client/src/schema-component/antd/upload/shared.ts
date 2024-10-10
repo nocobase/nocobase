@@ -10,6 +10,7 @@
 import { isArr, isValid, toArr as toArray } from '@formily/shared';
 import { UploadFile } from 'antd/es/upload/interface';
 import { useTranslation } from 'react-i18next';
+import mime from 'mime';
 import match from 'mime-match';
 import React, { useCallback } from 'react';
 import { useAPIClient } from '../../../api-client';
@@ -57,6 +58,17 @@ export class AttachmentFileTypes {
  * @experimental
  */
 export const attachmentFileTypes = new AttachmentFileTypes();
+
+export function matchMimetype(file: FileModel, type: string) {
+  if (file.mimetype) {
+    return match(file.mimetype, type);
+  }
+  if (file.url) {
+    const [fileUrl] = file.url.split('?');
+    return match(mime.getType(fileUrl) || '', type);
+  }
+  return false;
+}
 
 const toArr = (value) => {
   if (!isValid(value)) {
