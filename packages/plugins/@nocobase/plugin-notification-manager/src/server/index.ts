@@ -9,5 +9,6 @@
 
 export { BaseNotificationChannel } from './base-notification-channel';
 export { default } from './plugin';
+export { COLLECTION_NAME } from '../constant';
 
 export * from './types';

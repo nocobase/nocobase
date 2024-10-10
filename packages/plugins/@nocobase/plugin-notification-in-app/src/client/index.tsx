@@ -24,14 +24,15 @@ export class PluginNotificationInAppClient extends Plugin {
     this.app.use(MessageManagerProvider);
     const notification = this.pm.get(NotificationManager);
     notification.registerChannelType({
-      title: tval('In-site message', { ns: NAMESPACE }),
-      key: 'in-site-message',
+      title: tval('In-app message', { ns: NAMESPACE }),
+      type: 'in-app-message',
       components: {
+        ChannelConfigForm: () => null,
         MessageConfigForm: MessageConfigForm,
       },
       meta: {
         editable: false,
-        createable: false,
+        creatable: false,
         deletable: false,
       },
     });

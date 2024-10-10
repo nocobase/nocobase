@@ -44,7 +44,6 @@ describe('notification manager server', () => {
   test('create channel', async () => {
     class TestNotificationMailServer {
       async send({ message, channel }) {
-        console.log('senddddd', message, channel);
         expect(channel.options.test).toEqual(1);
       }
     }

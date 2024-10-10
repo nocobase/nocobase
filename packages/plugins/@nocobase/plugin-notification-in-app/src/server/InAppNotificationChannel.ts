@@ -7,34 +7,36 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { SendFnType, NotificationServerBase } from '@nocobase/plugin-notification-manager';
+import { Application } from '@nocobase/server';
+import { SendFnType, BaseNotificationChannel } from '@nocobase/plugin-notification-manager';
 import { InAppMessageFormValues } from '../types';
 import { PassThrough } from 'stream';
 import PluginNotificationInAppServer from './plugin';
 import { InAppMessagesDefinition as MessagesDefinition, ChannelsDefinition as ChannelsDefinition } from '../types';
 import { Op, Sequelize } from 'sequelize';
-import { randomUUID } from 'crypto';
-import { uid } from '@nocobase/utils';
 import { parseUserSelectionConf } from './parseUserSelectionConf';
 
 type UserID = string;
 type ClientID = string;
-export default class NotificationServer extends NotificationServerBase {
+export default class InAppNotificationChannel extends BaseNotificationChannel {
   userClientsMap: Record<UserID, Record<ClientID, PassThrough>>;
   plugin: PluginNotificationInAppServer;
 
-  constructor({ plugin }: { plugin: PluginNotificationInAppServer }) {
-    super();
+  constructor(protected app: Application) {
+    super(app);
     this.userClientsMap = {};
-    this.plugin = plugin;
+  }
+
+  async load() {
     this.onMessageCreatedOrUpdated();
+    this.defineActions();
   }
   onMessageCreatedOrUpdated = async () => {
-    this.plugin.db.on(`${MessagesDefinition.name}.afterUpdate`, async (model, options) => {
+    this.app.db.on(`${MessagesDefinition.name}.afterUpdate`, async (model, options) => {
       const userId = model.userId;
       this.sendDataToUser(userId, { type: 'message:updated', data: model.dataValues });
     });
-    this.plugin.db.on(`${MessagesDefinition.name}.afterCreate`, async (model, options) => {
+    this.app.db.on(`${MessagesDefinition.name}.afterCreate`, async (model, options) => {
       const userId = model.userId;
       this.sendDataToUser(userId, { type: 'message:created', data: model.dataValues });
     });
@@ -75,8 +77,8 @@ export default class NotificationServer extends NotificationServerBase {
     receiveTimestamp?: number;
     options?: Record<string, any>;
   }): Promise<any> => {
-    const chatsRepo = this.plugin.app.db.getRepository(ChannelsDefinition.name);
-    const messagesRepo = this.plugin.app.db.getRepository(MessagesDefinition.name);
+    const chatsRepo = this.app.db.getRepository(ChannelsDefinition.name);
+    const messagesRepo = this.app.db.getRepository(MessagesDefinition.name);
     let chat = await chatsRepo.findOne({ filter: { senderId, userId } });
     if (!chat) {
       chat = await chatsRepo.create({ values: { senderId, userId, title: senderName } });
@@ -100,7 +102,7 @@ export default class NotificationServer extends NotificationServerBase {
   send: SendFnType<InAppMessageFormValues> = async (params) => {
     const { message } = params;
     const { content, receivers: userSelectionConfig, title, senderId, senderName, options = {} } = message;
-    const userRepo = this.plugin.app.db.getRepository('users');
+    const userRepo = this.app.db.getRepository('users');
     const receivers = await parseUserSelectionConf(userSelectionConfig, userRepo);
 
     await Promise.all(
@@ -120,7 +122,7 @@ export default class NotificationServer extends NotificationServerBase {
   };
 
   defineActions() {
-    this.plugin.app.resourceManager.define({
+    this.app.resourceManager.define({
       name: 'myInAppMessages',
       actions: {
         sse: {
@@ -147,7 +149,7 @@ export default class NotificationServer extends NotificationServerBase {
         count: {
           handler: async (ctx) => {
             const userId = ctx.state.currentUser.id;
-            const messages = this.plugin.app.db.getRepository(MessagesDefinition.name);
+            const messages = this.app.db.getRepository(MessagesDefinition.name);
             const count = await messages.count({ filter: { userId, status: 'unread' } });
             ctx.body = { count };
           },
@@ -155,7 +157,7 @@ export default class NotificationServer extends NotificationServerBase {
         list: {
           handler: async (ctx) => {
             const userId = ctx.state.currentUser.id;
-            const messagesRepo = this.plugin.app.db.getRepository(MessagesDefinition.name);
+            const messagesRepo = this.app.db.getRepository(MessagesDefinition.name);
             const { filter = {} } = ctx.action?.params ?? {};
             const messageList = await messagesRepo.find({
               limit: 20,
@@ -173,7 +175,7 @@ export default class NotificationServer extends NotificationServerBase {
         update: {
           handler: async (ctx) => {
             const userId = ctx.state.currentUser.id;
-            const messages = this.plugin.app.db.getRepository(MessagesDefinition.name);
+            const messages = this.app.db.getRepository(MessagesDefinition.name);
             const count = await messages.count({ filter: { userId, status: 'unread' } });
             ctx.body = { count };
           },
@@ -181,16 +183,16 @@ export default class NotificationServer extends NotificationServerBase {
       },
     });
 
-    this.plugin.app.resourceManager.define({
+    this.app.resourceManager.define({
       name: 'myInAppChats',
       actions: {
         list: {
           handler: async (ctx) => {
             const { filter = {}, limit = 30 } = ctx.action?.params ?? {};
-            const messagesCollection = this.plugin.app.db.getCollection(MessagesDefinition.name);
+            const messagesCollection = this.app.db.getCollection(MessagesDefinition.name);
             const messagesTableName = messagesCollection.getRealTableName(true);
-            const channelsCollection = this.plugin.app.db.getCollection(ChannelsDefinition.name);
-            const channelsTableAliasName = this.plugin.app.db.sequelize
+            const channelsCollection = this.app.db.getCollection(ChannelsDefinition.name);
+            const channelsTableAliasName = this.app.db.sequelize
               .getQueryInterface()
               .quoteIdentifier(channelsCollection.name);
             const userId = ctx.state.currentUser.id;
@@ -201,7 +203,7 @@ export default class NotificationServer extends NotificationServerBase {
             }
             if (filter?.id) conditions.push({ id: filter.id });
 
-            const channelsRepo = this.plugin.app.db.getRepository(ChannelsDefinition.name);
+            const channelsRepo = this.app.db.getRepository(ChannelsDefinition.name);
             try {
               const messagesFieldName = {
                 channelId: messagesCollection.getRealFieldName(MessagesDefinition.fieldNameMap.chatId, true),
@@ -285,12 +287,12 @@ export default class NotificationServer extends NotificationServerBase {
       },
     });
 
-    // this.plugin.app.acl.registerSnippet({
+    // this.app.acl.registerSnippet({
     //   name: 'pm.notification',
     //   actions: ['myInAppMessages:*', 'myInAppChats:*', 'notificationInAppMessages:*'],
     // });
-    this.plugin.app.acl.allow('myInAppMessages', '*', 'loggedIn');
-    this.plugin.app.acl.allow('myInAppChats', '*', 'loggedIn');
-    this.plugin.app.acl.allow('notificationInAppMessages', '*', 'loggedIn');
+    this.app.acl.allow('myInAppMessages', '*', 'loggedIn');
+    this.app.acl.allow('myInAppChats', '*', 'loggedIn');
+    this.app.acl.allow('notificationInAppMessages', '*', 'loggedIn');
   }
 }

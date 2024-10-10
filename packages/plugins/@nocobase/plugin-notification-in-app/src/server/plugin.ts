@@ -11,7 +11,7 @@ import { Plugin } from '@nocobase/server';
 import { COLLECTION_NAME } from '@nocobase/plugin-notification-manager';
 import { inAppTypeName } from '../types';
 import NotificationsServerPlugin from '@nocobase/plugin-notification-manager';
-import NotificationInSiteServer from './NotificationServer';
+import InAppNotificationChannel from './InAppNotificationChannel';
 
 const NAMESPACE = 'notification-in-app';
 export class PluginNotificationInAppServer extends Plugin {
@@ -20,11 +20,10 @@ export class PluginNotificationInAppServer extends Plugin {
   async beforeLoad() {}
 
   async load() {
-    const inSiteServer = new NotificationInSiteServer({ plugin: this });
-    inSiteServer.defineActions();
-
     const notificationServer = this.pm.get(NotificationsServerPlugin) as NotificationsServerPlugin;
-    notificationServer.registerChannelType({ key: inAppTypeName, server: inSiteServer });
+    const instance = new InAppNotificationChannel(this.app);
+    instance.load();
+    notificationServer.registerChannelType({ type: inAppTypeName, Channel: InAppNotificationChannel });
   }
 
   async install() {

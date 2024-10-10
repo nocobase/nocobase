@@ -19,7 +19,7 @@ export type RegisterChannelOptions = {
   };
   meta?: {
     creatable?: boolean;
-    eidtable?: boolean;
+    editable?: boolean;
     deletable?: boolean;
   };
 };

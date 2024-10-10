@@ -66,4 +66,4 @@ export const ChannelsDefinition = {
   },
 } as const;
 
-export const inAppTypeName = 'in-site-message';
+export const inAppTypeName = 'in-app-message';
