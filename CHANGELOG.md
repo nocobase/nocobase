@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.3.29-beta](https://github.com/nocobase/nocobase/compare/v1.3.28-beta...v1.3.29-beta) - 2024-10-10
+
+### 🚀 Improvements
+
+- **[client]** Date variables are also not prohibited in create form ([#5376](https://github.com/nocobase/nocobase/pull/5376)) by @zhangzhonghe
+
+### 🐛 Bug Fixes
+
+- **[Workflow: SQL node]** fix error when no result when calling stored procedure in SQL instruction ([#5385](https://github.com/nocobase/nocobase/pull/5385)) by @mytharcher
+
+- **[Workflow]** fix date field based schedule trigger caused app crash, and also support other data source ([#5364](https://github.com/nocobase/nocobase/pull/5364)) by @mytharcher
+
 ## [v1.3.28-beta](https://github.com/nocobase/nocobase/compare/v1.3.27-beta...v1.3.28-beta) - 2024-10-09
 
 ### 🚀 Improvements
