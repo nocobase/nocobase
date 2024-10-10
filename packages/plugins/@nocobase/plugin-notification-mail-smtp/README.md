@@ -1,1 +1,0 @@
-# @nocobase/plugin-notification-mail
