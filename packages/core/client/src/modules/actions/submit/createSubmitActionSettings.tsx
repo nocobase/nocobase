@@ -181,6 +181,10 @@ export const createSubmitActionSettings = new SchemaSettings({
     {
       name: 'afterSuccessfulSubmission',
       Component: AfterSuccess,
+      useVisible() {
+        const { type } = useDataBlockProps() || ({} as any);
+        return type !== 'publicForm';
+      },
     },
     {
       name: 'refreshDataBlockRequest',
