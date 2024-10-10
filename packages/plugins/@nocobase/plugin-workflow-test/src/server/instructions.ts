@@ -19,6 +19,15 @@ export default {
     },
   },
 
+  echoVariable: {
+    run({ id, config = {} }: any, job, processor) {
+      return {
+        status: 1,
+        result: config.variable ? processor.getParsedValue(config.variable, id) : null,
+      };
+    },
+  },
+
   error: {
     run(node, input, processor) {
       throw new Error('definite error');

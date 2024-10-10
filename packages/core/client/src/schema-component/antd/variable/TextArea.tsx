@@ -41,7 +41,7 @@ function pasteHTML(
   if (indexes) {
     const children = Array.from(container.childNodes);
     if (indexes[0] === -1) {
-      if (indexes[1]) {
+      if (indexes[1] && children[indexes[1] - 1]) {
         range.setStartAfter(children[indexes[1] - 1]);
       } else {
         range.setStart(container, 0);
@@ -51,7 +51,7 @@ function pasteHTML(
     }
 
     if (indexes[2] === -1) {
-      if (indexes[3]) {
+      if (indexes[3] && children[indexes[3] - 1]) {
         range.setEndAfter(children[indexes[3] - 1]);
       } else {
         range.setEnd(container, 0);
