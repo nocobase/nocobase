@@ -18,15 +18,15 @@ export default defineConfig({
   devtool: process.env.NODE_ENV === 'development' ? 'source-map' : false,
   favicons: [`${appPublicPath}favicon/favicon.ico`],
   metas: [{ name: 'viewport', content: 'initial-scale=0.1' }],
-  links: [
-    { rel: 'stylesheet', href: `${appPublicPath}global.css` },
-  ],
+  links: [{ rel: 'stylesheet', href: `${appPublicPath}global.css` }],
   headScripts: [
     {
       src: `${appPublicPath}browser-checker.js`,
     },
     {
-      content: isDevCmd ? '' : `
+      content: isDevCmd
+        ? ''
+        : `
         window['__webpack_public_path__'] = '{{env.APP_PUBLIC_PATH}}';
         window['__nocobase_public_path__'] = '{{env.APP_PUBLIC_PATH}}';
         window['__nocobase_api_base_url__'] = '{{env.API_BASE_URL}}';
@@ -62,8 +62,11 @@ export default defineConfig({
     edge: 79,
     safari: 12,
   },
+  jsMinifierOptions: {
+    target: ['chrome80', 'es2020'],
+  },
   codeSplitting: {
-    jsStrategy: 'depPerChunk'
+    jsStrategy: 'depPerChunk',
   },
   chainWebpack(config, { env }) {
     if (env === 'production') {

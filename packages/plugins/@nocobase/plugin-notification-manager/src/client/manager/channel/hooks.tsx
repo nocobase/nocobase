@@ -17,6 +17,7 @@ import {
   useCollection,
   useCollectionRecordData,
   useDataBlockRequest,
+  useDestroyActionProps,
   useDataBlockResource,
   usePlugin,
 } from '@nocobase/client';
@@ -103,6 +104,30 @@ export const useEditFormProps = () => {
   return {
     form,
   };
+};
+export const useRecordEditActionProps = () => {
+  const channelTypes = useNotificationTypes();
+  const recordData = useCollectionRecordData();
+  const channelType = channelTypes.find((item) => item.type === recordData.notificationType);
+  const editable = channelType?.meta?.editable;
+  const style: React.CSSProperties = {};
+  if (!editable) {
+    style.display = 'none';
+  }
+  return { style };
+};
+
+export const useRecordDeleteActionProps = () => {
+  const channelTypes = useNotificationTypes();
+  const recordData = useCollectionRecordData();
+  const channelType = channelTypes.find((item) => item.type === recordData.notificationType);
+  const deletable = channelType?.meta?.deletable;
+  const style: React.CSSProperties = {};
+  const destroyProps = useDestroyActionProps();
+  if (!deletable) {
+    style.display = 'none';
+  }
+  return { ...destroyProps, style };
 };
 
 export const useCreateFormProps = () => {

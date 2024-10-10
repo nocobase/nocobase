@@ -53,6 +53,15 @@ function getUmiConfig() {
         target: PROXY_TARGET_URL,
         changeOrigin: true,
         pathRewrite: { [`^${API_BASE_PATH}`]: API_BASE_PATH },
+        onProxyRes(proxyRes, req, res) {
+          if (req.headers.accept === 'text/event-stream') {
+            res.writeHead(res.statusCode, {
+              'Content-Type': 'text/event-stream',
+              'Cache-Control': 'no-transform',
+              Connection: 'keep-alive',
+            });
+          }
+        },
       },
       // for local storage
       ...getLocalStorageProxy(),

@@ -1,0 +1,22 @@
+{
+  "name": "@nocobase/plugin-notification-in-app",
+  "version": "1.4.0-alpha",
+  "displayName": "Notification: In-app message",
+  "displayName.zh-CN": "通知：站内信",
+  "description": "Send in-app message in Notification Manager.",
+  "description.zh-CN": "在通知管理中发送站内信通知。",
+  "main": "dist/server/index.js",
+  "dependencies": {
+    "immer": "^10.1.1"
+  },
+  "peerDependencies": {
+    "@formily/reactive": "^2",
+    "@formily/reactive-react": "^2",
+    "@nocobase/client": "1.x",
+    "@nocobase/plugin-notification-manager": "1.x",
+    "@nocobase/server": "1.x",
+    "@nocobase/test": "1.x",
+    "react-router-dom": "^6.x"
+
+  }
+}
