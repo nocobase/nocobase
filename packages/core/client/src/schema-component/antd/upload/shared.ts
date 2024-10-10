@@ -174,15 +174,15 @@ export function toValueItem(data) {
 }
 
 export const toItem = (file) => {
+  if (typeof file === 'string') {
+    return {
+      url: file,
+    };
+  }
   if (file?.response?.data) {
     file = {
       uid: file.uid,
       ...file.response.data,
-    };
-  }
-  if (typeof file === 'string') {
-    return {
-      url: file,
     };
   }
   return {
