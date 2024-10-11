@@ -54,9 +54,7 @@ export const PinnedPluginList = () => {
     >
       {Object.keys(ctx.items)
         .sort((a, b) => ctx.items[a].order - ctx.items[b].order)
-        .filter((key) => {
-          return getSnippetsAllow(ctx.items[key].snippet);
-        })
+        .filter((key) => getSnippetsAllow(ctx.items[key].snippet))
         .map((key) => {
           const Action = get(components, ctx.items[key].component);
           return Action ? <Action key={key} /> : null;

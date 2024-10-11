@@ -11,6 +11,7 @@ import { observable, autorun } from '@formily/reactive';
 import { Channel } from '../../types';
 import { getAPIClient } from '../utils';
 import { merge } from '@nocobase/utils/client';
+import { userIdObs } from './user';
 
 export type ChannelStatus = 'all' | 'read' | 'unread';
 export const channelMapObs = observable<{ value: Record<string, Channel> }>({ value: {} });
@@ -19,6 +20,7 @@ export const channelCountObs = observable<{ value: number }>({ value: 0 });
 export const channelStatusFilterObs = observable<{ value: ChannelStatus }>({ value: 'all' });
 export const channelListObs = observable.computed(() => {
   const channels = Object.values(channelMapObs.value)
+    .filter((channel) => channel.userId == String(userIdObs.value ?? ''))
     .filter((channel) => {
       if (channelStatusFilterObs.value === 'read') return channel.unreadMsgCnt === 0;
       else if (channelStatusFilterObs.value === 'unread') return channel.unreadMsgCnt > 0;

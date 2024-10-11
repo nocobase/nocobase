@@ -20,7 +20,6 @@ type UserID = string;
 type ClientID = string;
 export default class InAppNotificationChannel extends BaseNotificationChannel {
   userClientsMap: Record<UserID, Record<ClientID, PassThrough>>;
-  plugin: PluginNotificationInAppServer;
 
   constructor(protected app: Application) {
     super(app);
@@ -161,7 +160,6 @@ export default class InAppNotificationChannel extends BaseNotificationChannel {
             const { filter = {} } = ctx.action?.params ?? {};
             const messageList = await messagesRepo.find({
               limit: 20,
-              logging: console.log,
               ...(ctx.action?.params ?? {}),
               filter: {
                 ...filter,
@@ -231,9 +229,6 @@ export default class InAppNotificationChannel extends BaseNotificationChannel {
             const channelsRepo = this.app.db.getRepository(ChannelsDefinition.name);
             try {
               const [channels, count] = await channelsRepo.findAndCount({
-                logging: (str) => {
-                  console.log(str);
-                },
                 limit,
                 attributes: {
                   include: [
@@ -287,17 +282,6 @@ export default class InAppNotificationChannel extends BaseNotificationChannel {
                   [Op.and]: conditions,
                 },
               });
-
-              // const countRes = channelsRepo.count({
-              //   logging: (str) => {
-              //     console.log(str);
-              //   },
-              //   where: {
-              //     [Op.and]: conditions,
-              //   },
-              // });
-
-              // const [channels, count] = await Promise.all([channelsRes, countRes]);
               ctx.body = { rows: channels, count };
             } catch (error) {
               console.error(error);
@@ -306,11 +290,6 @@ export default class InAppNotificationChannel extends BaseNotificationChannel {
         },
       },
     });
-
-    // this.app.acl.registerSnippet({
-    //   name: 'pm.notification',
-    //   actions: ['myInAppMessages:*', 'myInAppChats:*', 'notificationInAppMessages:*'],
-    // });
     this.app.acl.allow('myInAppMessages', '*', 'loggedIn');
     this.app.acl.allow('myInAppChats', '*', 'loggedIn');
     this.app.acl.allow('notificationInAppMessages', '*', 'loggedIn');

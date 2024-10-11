@@ -16,17 +16,23 @@
  * For more information, please rwefer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useEffect, useCallback, useContext } from 'react';
 import { Badge, Button, ConfigProvider, Drawer, Tooltip } from 'antd';
 import { CloseOutlined } from '@ant-design/icons';
 import { createStyles } from 'antd-style';
 import { Icon } from '@nocobase/client';
-import { useAPIClient } from '@nocobase/client';
 import { InboxContent } from './InboxContent';
 import { useLocalTranslation } from '../../locale';
 import { fetchChannels } from '../observables';
 import { observer } from '@formily/reactive-react';
-import { updateUnreadMsgsCount, unreadMsgsCountObs, createMsgSSEConnection, inboxVisible } from '../observables';
+import { useCurrentUserContext } from '@nocobase/client';
+import {
+  updateUnreadMsgsCount,
+  unreadMsgsCountObs,
+  createMsgSSEConnection,
+  inboxVisible,
+  userIdObs,
+} from '../observables';
 const useStyles = createStyles(({ token }) => {
   return {
     button: {
@@ -37,15 +43,18 @@ const useStyles = createStyles(({ token }) => {
 });
 
 const InnerInbox = (props) => {
-  const apiClient = useAPIClient();
   const { t } = useLocalTranslation();
-  const [visible, setVisible] = useState(false);
   const { styles } = useStyles();
+  const ctx = useCurrentUserContext();
+  const currUserId = ctx.data?.data?.id;
 
   useEffect(() => {
     updateUnreadMsgsCount();
   }, []);
 
+  useEffect(() => {
+    userIdObs.value = currUserId ?? null;
+  }, [currUserId]);
   const onIconClick = useCallback(() => {
     inboxVisible.value = true;
     fetchChannels({});
