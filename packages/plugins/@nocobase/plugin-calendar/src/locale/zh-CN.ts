@@ -52,4 +52,6 @@ export default {
   Monthly: '每月',
   Yearly: '每年',
   Repeats: '重复',
+  "Title":"标题",
+  "{{count}} more items":"{{count}} 更多事项"
 };
