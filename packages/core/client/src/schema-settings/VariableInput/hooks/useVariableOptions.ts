@@ -75,7 +75,7 @@ export const useVariableOptions = ({
     targetFieldSchema,
   });
   const { apiTokenSettings } = useAPITokenVariable({ noDisabled });
-  const { datetimeSettings } = useDatetimeVariable({ operator, schema: uiSchema, noDisabled, targetFieldSchema });
+  const { datetimeSettings } = useDatetimeVariable({ operator, schema: uiSchema, noDisabled: true, targetFieldSchema });
   const { currentFormSettings, shouldDisplayCurrentForm } = useCurrentFormVariable({
     schema: uiSchema,
     collectionField,

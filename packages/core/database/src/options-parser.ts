@@ -140,6 +140,10 @@ export class OptionsParser {
 
     let defaultSortField = this.model.primaryKeyAttribute;
 
+    if (Array.isArray(this.collection.filterTargetKey) && this.collection.filterTargetKey.length == 1) {
+      defaultSortField = this.collection.filterTargetKey[0];
+    }
+
     if (!defaultSortField && this.collection.filterTargetKey && !Array.isArray(this.collection.filterTargetKey)) {
       defaultSortField = this.collection.filterTargetKey;
     }

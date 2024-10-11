@@ -1026,6 +1026,7 @@ export const useCollectionDataSourceItems = ({
         onClick() {},
         componentProps: {
           ...dataBlockInitializerProps,
+          hideSearch: false,
           icon: null,
           title: otherText || t('Other records'),
           name: 'otherRecords',

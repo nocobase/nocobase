@@ -11,16 +11,17 @@ import {
   Action,
   AdminProvider,
   AntdAppProvider,
+  AssociationFieldMode,
   AssociationFieldModeProvider,
   BlockTemplateProvider,
   GlobalThemeProvider,
   OpenModeProvider,
+  useAssociationFieldModeContext,
   usePlugin,
 } from '@nocobase/client';
 import React from 'react';
 import { isDesktop } from 'react-device-detect';
 
-import _ from 'lodash';
 import { ActionDrawerUsedInMobile, useToAdaptActionDrawerToMobile } from '../adaptor-of-desktop/ActionDrawer';
 import { BasicZIndexProvider } from '../adaptor-of-desktop/BasicZIndexProvider';
 import { useToAdaptFilterActionToMobile } from '../adaptor-of-desktop/FilterAction';
@@ -67,9 +68,11 @@ export const Mobile = () => {
   const DesktopComponent = mobilePlugin.desktopMode === false ? React.Fragment : DesktopMode;
   const modeToComponent = React.useMemo(() => {
     return {
-      PopoverNester: _.memoize((OriginComponent) => (props) => (
-        <InternalPopoverNesterUsedInMobile {...props} OriginComponent={OriginComponent} />
-      )),
+      PopoverNester: (props) => {
+        const { getDefaultComponent } = useAssociationFieldModeContext();
+        const OriginComponent = getDefaultComponent(AssociationFieldMode.PopoverNester);
+        return <InternalPopoverNesterUsedInMobile {...props} OriginComponent={OriginComponent} />;
+      },
     };
   }, []);
 

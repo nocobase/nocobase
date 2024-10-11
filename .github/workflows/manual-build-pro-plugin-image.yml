@@ -12,7 +12,7 @@ on:
         required: true
       pr_number:
         description: 'Please enter the pr number of pro plugin repository'
-        required: true
+        required: false
       nocobase_pr_number:
         description: 'Please enter the pr number of nocobase/nocobase repository'
         required: false
@@ -38,7 +38,7 @@ jobs:
           ref: ${{ github.head_ref || github.ref_name }}
           fetch-depth: 0
       - name: Checkout nocobase/nocobase pr
-        continue-on-error: true
+        if: ${{ inputs.nocobase_pr_number != '' }}
         shell: bash
         run: |
           gh pr checkout ${{ inputs.nocobase_pr_number }}
@@ -47,11 +47,12 @@ jobs:
       - name: Checkout plugin
         uses: actions/checkout@v3
         with:
-          ref: main
+          ref: ${{ github.head_ref || github.ref_name }}
           token: ${{ steps.app-token.outputs.token }}
           repository: nocobase/plugin-${{ inputs.pro_plugin }}
           path: packages/pro-plugins/@nocobase/plugin-${{ inputs.pro_plugin }}
       - name: Checkout pr
+        if: ${{ inputs.pr_number != '' }}
         shell: bash
         run: |
           cd ./packages/pro-plugins/@nocobase/plugin-${{ inputs.pro_plugin }}
@@ -73,13 +74,21 @@ jobs:
           registry: ${{ secrets.ALI_DOCKER_REGISTRY }}
           username: ${{ secrets.ALI_DOCKER_USERNAME }}
           password: ${{ secrets.ALI_DOCKER_PASSWORD }}
+      - name: Get tag
+        id: get-tag
+        run: |
+          if [ "${{ inputs.pr_number }}" != "" ]; then
+            echo "tag=pr-${{ inputs.pr_number }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=${{ github.head_ref || github.ref_name }}" >> "$GITHUB_OUTPUT"
+          fi
       - name: Set tags
         id: set-tags
         run: |
-          echo "::set-output name=tags::${{ secrets.ALI_DOCKER_REGISTRY }}/nocobase/nocobase:pr-${{ inputs.pr_number }}-${{ inputs.pro_plugin }}"
+          echo "::set-output name=tags::${{ secrets.ALI_DOCKER_REGISTRY }}/nocobase/nocobase:${{ steps.get-tag.outputs.tag }}-${{ inputs.pro_plugin }}"
       - name: IMAGE_TAG
         env:
-          IMAGE_TAG: pr-${{ inputs.pr_number }}
+          IMAGE_TAG: ${{ steps.get-tag.outputs.tag }}
         run: |
           echo $IMAGE_TAG
       - name: Set variables
@@ -109,7 +118,7 @@ jobs:
           tags: ${{ steps.set-tags.outputs.tags }}
       - name: Deploy NocoBase
         env:
-          IMAGE_TAG: pr-${{ inputs.pr_number }}
+          IMAGE_TAG: ${{ steps.get-tag.outputs.tag }}
         run: |
           echo $IMAGE_TAG
           export APP_NAME=$(echo $IMAGE_TAG | cut -d ":" -f 2)-${{ inputs.pro_plugin }}
