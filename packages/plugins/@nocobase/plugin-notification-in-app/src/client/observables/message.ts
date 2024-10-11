@@ -10,7 +10,7 @@
 import { observable, autorun } from '@formily/reactive';
 import { Message } from '../../types';
 import { getAPIClient } from '../utils';
-import { channelMapObs, selectedChannelIdObs, fetchChannels } from './channel';
+import { channelMapObs, selectedChannelIdObs, fetchChannels, InappChannelStatusEnum } from './channel';
 import { InAppMessagesDefinition } from '../../types';
 
 export const messageMapObs = observable<{ value: Record<string, Message> }>({ value: {} });
@@ -55,7 +55,7 @@ export const updateMessage = async (params: { filterByTk: any; values: Record<an
   });
   const unupdatedMessage = messageMapObs.value[params.filterByTk];
   messageMapObs.value[params.filterByTk] = { ...unupdatedMessage, ...params.values };
-  fetchChannels({ filter: { id: unupdatedMessage.chatId } });
+  fetchChannels({ filter: { id: unupdatedMessage.chatId, status: InappChannelStatusEnum.all } });
   updateUnreadMsgsCount();
 };
 

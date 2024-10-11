@@ -7,13 +7,18 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { observable, autorun } from '@formily/reactive';
+import { observable, autorun, reaction } from '@formily/reactive';
 import { Channel } from '../../types';
 import { getAPIClient } from '../utils';
 import { merge } from '@nocobase/utils/client';
 import { userIdObs } from './user';
 
 export type ChannelStatus = 'all' | 'read' | 'unread';
+export enum InappChannelStatusEnum {
+  all = 'all',
+  read = 'read',
+  unread = 'unread',
+}
 export const channelMapObs = observable<{ value: Record<string, Channel> }>({ value: {} });
 export const isFetchingChannelsObs = observable<{ value: boolean }>({ value: false });
 export const channelCountObs = observable<{ value: number }>({ value: 0 });
@@ -42,7 +47,7 @@ export const fetchChannels = async (params: any) => {
   const res = await apiClient.request({
     url: 'myInAppChats:list',
     method: 'get',
-    params: merge(params ?? {}, { filter: { status: channelStatusFilterObs.value } }),
+    params: merge({ filter: { status: channelStatusFilterObs.value } }, params ?? {}),
   });
   const channels = res.data?.data;
   if (Array.isArray(channels)) {
@@ -58,5 +63,22 @@ export const fetchChannels = async (params: any) => {
 autorun(() => {
   if (!selectedChannelIdObs.value && channelListObs.value[0]?.id) {
     selectedChannelIdObs.value = channelListObs.value[0].id;
+  } else if (channelListObs.value.length === 0) {
+    selectedChannelIdObs.value = null;
+  } else if (
+    channelListObs.value.length > 0 &&
+    !channelListObs.value.find((channel) => channel.id === selectedChannelIdObs.value)
+  ) {
+    selectedChannelIdObs.value = null;
   }
 });
+
+reaction(
+  () => channelStatusFilterObs.value,
+  () => {
+    if (channelListObs.value[0]?.id) {
+      selectedChannelIdObs.value = channelListObs.value[0].id;
+    }
+  },
+  { fireImmediately: true },
+);
