@@ -45,7 +45,7 @@ export const fetchChannels = async (params: any) => {
   const apiClient = getAPIClient();
   isFetchingChannelsObs.value = true;
   const res = await apiClient.request({
-    url: 'myInAppChats:list',
+    url: 'myInAppChannels:list',
     method: 'get',
     params: merge({ filter: { status: channelStatusFilterObs.value } }, params ?? {}),
   });

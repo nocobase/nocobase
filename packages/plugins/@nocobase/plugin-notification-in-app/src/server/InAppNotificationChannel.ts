@@ -182,7 +182,7 @@ export default class InAppNotificationChannel extends BaseNotificationChannel {
     });
 
     this.app.resourceManager.define({
-      name: 'myInAppChats',
+      name: 'myInAppChannels',
       actions: {
         list: {
           handler: async (ctx) => {
@@ -291,7 +291,7 @@ export default class InAppNotificationChannel extends BaseNotificationChannel {
       },
     });
     this.app.acl.allow('myInAppMessages', '*', 'loggedIn');
-    this.app.acl.allow('myInAppChats', '*', 'loggedIn');
+    this.app.acl.allow('myInAppChannels', '*', 'loggedIn');
     this.app.acl.allow('notificationInAppMessages', '*', 'loggedIn');
   }
 }

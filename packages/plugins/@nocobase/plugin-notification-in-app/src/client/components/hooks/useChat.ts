@@ -48,7 +48,7 @@ const useChats = () => {
   const requestChats = useCallback(
     async ({ filter = {}, limit = 30 }: { filter?: Record<string, any>; limit?: number }) => {
       const res = await apiClient.request({
-        url: 'myInAppChats:list',
+        url: 'myInAppChannels:list',
         method: 'get',
         params: { filter, limit },
       });
@@ -85,7 +85,7 @@ const useChats = () => {
   const fetchChats = useCallback(
     async ({ filter = {}, limit = 30 }: { filter?: Record<string, any>; limit?: number }) => {
       const res = await apiClient.request({
-        url: 'myInAppChats:list',
+        url: 'myInAppChannels:list',
         method: 'get',
         params: { filter, limit },
       });
