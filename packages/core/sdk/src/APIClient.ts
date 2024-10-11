@@ -7,13 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import axios, {
-  AxiosInstance,
-  AxiosRequestConfig,
-  AxiosRequestHeaders,
-  AxiosResponse,
-  RawAxiosRequestHeaders,
-} from 'axios';
+import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse, RawAxiosRequestHeaders } from 'axios';
 import qs from 'qs';
 
 export interface ActionParams {
@@ -29,10 +23,6 @@ type ResourceActionOptions<P = any> = {
 };
 
 type ResourceAction = (params?: ActionParams) => Promise<any>;
-
-interface ResourceRequestHeaders extends AxiosRequestHeaders {
-  'x-data-source'?: string;
-}
 
 export type IResource = {
   [key: string]: ResourceAction;

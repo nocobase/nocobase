@@ -10,7 +10,13 @@
 import { observable, autorun } from '@formily/reactive';
 import { Message } from '../../types';
 import { getAPIClient } from '../utils';
-import { channelMapObs, selectedChannelIdObs, fetchChannels, InappChannelStatusEnum } from './channel';
+import {
+  channelMapObs,
+  selectedChannelIdObs,
+  fetchChannels,
+  InappChannelStatusEnum,
+  channelStatusFilterObs,
+} from './channel';
 import { InAppMessagesDefinition } from '../../types';
 
 export const messageMapObs = observable<{ value: Record<string, Message> }>({ value: {} });
@@ -19,9 +25,16 @@ export const messageListObs = observable.computed(() => {
   return Object.values(messageMapObs.value).sort((a, b) => (a.receiveTimestamp > b.receiveTimestamp ? -1 : 1));
 }) as { value: Message[] };
 
+const filterMessageByStatus = (message: Message) => {
+  if (channelStatusFilterObs.value === 'read') return message.status === 'read';
+  else if (channelStatusFilterObs.value === 'unread') return message.status === 'unread';
+  else return true;
+};
 export const selectedMessageListObs = observable.computed(() => {
   if (selectedChannelIdObs.value) {
-    const filteredMessages = messageListObs.value.filter((message) => message.chatId === selectedChannelIdObs.value);
+    const filteredMessages = messageListObs.value.filter(
+      (message) => message.chatId === selectedChannelIdObs.value && filterMessageByStatus(message),
+    );
     return filteredMessages;
   } else {
     return [];
@@ -81,7 +94,10 @@ export const showMsgLoadingMoreObs = observable.computed(() => {
   if (!selectedChannelId) return false;
   const selectedChannel = channelMapObs.value[selectedChannelId];
   const selectedMessageList = selectedMessageListObs.value;
-  const isMoreMessage = selectedChannel.totalMsgCnt > selectedMessageList.length;
+  const isMoreMessage =
+    channelStatusFilterObs.value === 'unread'
+      ? selectedChannel.unreadMsgCnt > selectedMessageList.length
+      : selectedChannel.totalMsgCnt > selectedMessageList.length;
   if (isMoreMessage && selectedMessageList.length > 0) {
     return true;
   }

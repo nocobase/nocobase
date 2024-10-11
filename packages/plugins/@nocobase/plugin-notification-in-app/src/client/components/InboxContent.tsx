@@ -156,7 +156,9 @@ const InnerInboxContent = () => {
                   {dayjs(message.receiveTimestamp).format('YYYY-MM-DD HH:mm:ss')}
                 </Descriptions.Item>
                 <Descriptions.Item label={t('Status')}>
-                  <Tag color={message.status === 'unread' ? '#f50' : '#87d068'}>{msgStatusDict[message.status]}</Tag>
+                  <Badge dot={message.status === 'unread'} offset={[-5, 0]}>
+                    <Tag color={message.status === 'unread' ? 'red' : 'green'}>{msgStatusDict[message.status]}</Tag>
+                  </Badge>
                 </Descriptions.Item>
               </Descriptions>
             </Card>
