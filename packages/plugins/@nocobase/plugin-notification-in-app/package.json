@@ -5,6 +5,9 @@
   "displayName.zh-CN": "通知：站内信",
   "description": "Send in-app message in Notification Manager.",
   "description.zh-CN": "在通知管理中发送站内信通知。",
+  "keywords": [
+    "Notification"
+  ],
   "main": "dist/server/index.js",
   "dependencies": {
     "immer": "^10.1.1"
