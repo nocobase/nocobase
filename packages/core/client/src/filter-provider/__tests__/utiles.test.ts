@@ -167,6 +167,8 @@ describe('transformToFilter', () => {
     if (name === `${collectionName}.field1`) return {};
     if (name === `${collectionName}.field2`) return {};
     if (name === `${collectionName}.field3`) return { target: 'targetCollection', targetKey: 'id', type: 'belongsTo' };
+    if (name === `${collectionName}.chinaRegion`)
+      return { target: 'chinaRegions', targetKey: 'code', interface: 'chinaRegion' };
     return {};
   });
 
@@ -239,6 +241,29 @@ describe('transformToFilter', () => {
     };
 
     const filter = transformToFilter(valuesWithNull, operators, getCollectionJoinField, collectionName);
+
+    expect(filter).toEqual(expectedFilter);
+  });
+
+  it('should handle chinaRegion', () => {
+    const values = {
+      chinaRegion: [
+        {
+          code: '1',
+        },
+        {
+          code: '2',
+        },
+        {
+          code: '3',
+        },
+      ],
+    };
+    const expectedFilter = {
+      $and: [{ 'chinaRegion.code': { $eq: '3' } }],
+    };
+
+    const filter = transformToFilter(values, operators, getCollectionJoinField, collectionName);
 
     expect(filter).toEqual(expectedFilter);
   });

@@ -145,6 +145,10 @@ export const transformToFilter = (
         ) {
           value = getValuesByPath(value, collectionField.targetKey || 'id');
           key = `${key}.${collectionField.targetKey || 'id'}`;
+
+          if (collectionField?.interface === 'chinaRegion') {
+            value = _.last(value);
+          }
         }
 
         if (!value && value !== 0 && value !== false) {
