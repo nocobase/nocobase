@@ -139,14 +139,14 @@ const InternalRemoteSelect = withDynamicSchemaProps(
 
                 if (mapOptions) {
                   return mapOptions({
-                    [fieldNames.label]: label || option || EMPTY,
-                    [fieldNames.value]: option[fieldNames.value] || option,
+                    [fieldNames.label]: label || EMPTY,
+                    [fieldNames.value]: option[fieldNames.value],
                   });
                 }
                 return {
                   ...option,
-                  [fieldNames.label]: label || option || EMPTY,
-                  [fieldNames.value]: option[fieldNames.value] || option,
+                  [fieldNames.label]: label || EMPTY,
+                  [fieldNames.value]: option[fieldNames.value],
                 };
               })
               .filter(Boolean);
