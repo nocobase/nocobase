@@ -16,6 +16,7 @@ import { useFields } from './useFields';
 const INCLUDE_FILE_TYPE = [
   'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
   'application/vnd.ms-excel',
+  'application/wps-office.xlsx',
 ];
 
 export const useShared = () => {
@@ -118,6 +119,7 @@ export const useShared = () => {
           message: t('File size cannot exceed 10M'),
         };
       }
+      console.log({ type: file.type });
       if (!INCLUDE_FILE_TYPE.includes(file.type)) {
         return {
           type: 'error',
