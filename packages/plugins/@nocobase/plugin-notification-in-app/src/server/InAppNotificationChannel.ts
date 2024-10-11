@@ -11,10 +11,10 @@ import { Application } from '@nocobase/server';
 import { SendFnType, BaseNotificationChannel } from '@nocobase/plugin-notification-manager';
 import { InAppMessageFormValues } from '../types';
 import { PassThrough } from 'stream';
-import PluginNotificationInAppServer from './plugin';
 import { InAppMessagesDefinition as MessagesDefinition, ChannelsDefinition as ChannelsDefinition } from '../types';
-import { Op, Sequelize } from 'sequelize';
 import { parseUserSelectionConf } from './parseUserSelectionConf';
+import defineMyInAppMessages from './defineMyInAppMessages';
+import defineMyInAppChannels from './defineMyInAppChannels';
 
 type UserID = string;
 type ClientID = string;
@@ -121,175 +121,8 @@ export default class InAppNotificationChannel extends BaseNotificationChannel {
   };
 
   defineActions() {
-    this.app.resourceManager.define({
-      name: 'myInAppMessages',
-      actions: {
-        sse: {
-          handler: async (ctx, next) => {
-            const userId = ctx.state.currentUser.id;
-            const clientId = ctx.action?.params?.id;
-            if (!clientId) return;
-            ctx.request.socket.setTimeout(0);
-            ctx.req.socket.setNoDelay(true);
-            ctx.req.socket.setKeepAlive(true);
-            ctx.set({
-              'Content-Type': 'text/event-stream',
-              'Cache-Control': 'no-cache',
-              Connection: 'keep-alive',
-            });
-
-            ctx.status = 200;
-            const stream = new PassThrough();
-            ctx.body = stream;
-            this.addClient(userId, clientId, stream);
-            await next();
-          },
-        },
-        count: {
-          handler: async (ctx) => {
-            const userId = ctx.state.currentUser.id;
-            const messages = this.app.db.getRepository(MessagesDefinition.name);
-            const count = await messages.count({ filter: { userId, status: 'unread' } });
-            ctx.body = { count };
-          },
-        },
-        list: {
-          handler: async (ctx) => {
-            const userId = ctx.state.currentUser.id;
-            const messagesRepo = this.app.db.getRepository(MessagesDefinition.name);
-            const { filter = {} } = ctx.action?.params ?? {};
-            const messageList = await messagesRepo.find({
-              limit: 20,
-              ...(ctx.action?.params ?? {}),
-              filter: {
-                ...filter,
-                userId,
-              },
-              sort: '-receiveTimestamp',
-            });
-            ctx.body = { messages: messageList };
-          },
-        },
-        update: {
-          handler: async (ctx) => {
-            const userId = ctx.state.currentUser.id;
-            const messages = this.app.db.getRepository(MessagesDefinition.name);
-            const count = await messages.count({ filter: { userId, status: 'unread' } });
-            ctx.body = { count };
-          },
-        },
-      },
-    });
-
-    this.app.resourceManager.define({
-      name: 'myInAppChannels',
-      actions: {
-        list: {
-          handler: async (ctx) => {
-            const { filter = {}, limit = 30 } = ctx.action?.params ?? {};
-            const messagesCollection = this.app.db.getCollection(MessagesDefinition.name);
-            const messagesTableName = messagesCollection.getRealTableName(true);
-            const channelsCollection = this.app.db.getCollection(ChannelsDefinition.name);
-            const channelsTableAliasName = this.app.db.sequelize
-              .getQueryInterface()
-              .quoteIdentifier(channelsCollection.name);
-            const messagesFieldName = {
-              channelId: messagesCollection.getRealFieldName(MessagesDefinition.fieldNameMap.chatId, true),
-              status: messagesCollection.getRealFieldName(MessagesDefinition.fieldNameMap.status, true),
-              receiveTimestamp: messagesCollection.getRealFieldName(
-                MessagesDefinition.fieldNameMap.receiveTimestamp,
-                true,
-              ),
-              title: messagesCollection.getRealFieldName(MessagesDefinition.fieldNameMap.title, true),
-            };
-            const userId = ctx.state.currentUser.id;
-            const conditions: any[] = [];
-            if (userId) conditions.push({ userId });
-            if (filter?.latestMsgReceiveTimestamp?.$lt) {
-              conditions.push(Sequelize.literal(`latestMsgReceiveTimestamp < ${filter.latestMsgReceiveTimestamp.$lt}`));
-            }
-            if (filter?.id) conditions.push({ id: filter.id });
-
-            const filterChannelsByStatusSQL = ({ unreadCntOpt }) => {
-              return Sequelize.literal(`(
-                SELECT COUNT(*)
-                FROM ${messagesTableName} AS messages
-                WHERE
-                    messages.${messagesFieldName.channelId} = ${channelsTableAliasName}.id
-                    AND
-                    messages.${messagesFieldName.status} = 'unread'
-            ) ${unreadCntOpt} 0`);
-            };
-            if (filter?.status === 'read') {
-              conditions.push(filterChannelsByStatusSQL({ unreadCntOpt: '=' }));
-            } else if (filter?.status === 'unread') {
-              conditions.push(filterChannelsByStatusSQL({ unreadCntOpt: '>' }));
-            }
-
-            const channelsRepo = this.app.db.getRepository(ChannelsDefinition.name);
-            try {
-              const [channels, count] = await channelsRepo.findAndCount({
-                limit,
-                attributes: {
-                  include: [
-                    [
-                      Sequelize.literal(`(
-                                  SELECT COUNT(*)
-                                  FROM ${messagesTableName} AS messages
-                                  WHERE
-                                      messages.${messagesFieldName.channelId} = ${channelsTableAliasName}.id
-                              )`),
-                      'totalMsgCnt',
-                    ],
-                    [
-                      Sequelize.literal(`(
-                                  SELECT COUNT(*)
-                                  FROM ${messagesTableName} AS messages
-                                  WHERE
-                                      messages.${messagesFieldName.channelId} = ${channelsTableAliasName}.id
-                                      AND
-                                      messages.${messagesFieldName.status} = 'unread'
-                              )`),
-                      'unreadMsgCnt',
-                    ],
-                    [
-                      Sequelize.literal(`(
-                                  SELECT messages.${messagesFieldName.receiveTimestamp}
-                                  FROM ${messagesTableName} AS messages
-                                  WHERE
-                                      messages.${messagesFieldName.channelId} = ${channelsTableAliasName}.id
-                                  ORDER BY messages.${messagesFieldName.receiveTimestamp} DESC
-                                  LIMIT 1
-                              )`),
-                      'latestMsgReceiveTimestamp',
-                    ],
-                    [
-                      Sequelize.literal(`(
-                        SELECT messages.${messagesFieldName.title}
-                                FROM ${messagesTableName} AS messages
-                                WHERE
-                                    messages.${messagesFieldName.channelId} = ${channelsTableAliasName}.id
-                                ORDER BY messages.${messagesFieldName.receiveTimestamp} DESC
-                                LIMIT 1
-                    )`),
-                      'latestMsgTitle',
-                    ],
-                  ],
-                },
-                sort: '-latestMsgReceiveTimestamp',
-                //@ts-ignore
-                where: {
-                  [Op.and]: conditions,
-                },
-              });
-              ctx.body = { rows: channels, count };
-            } catch (error) {
-              console.error(error);
-            }
-          },
-        },
-      },
-    });
+    defineMyInAppMessages({ app: this.app });
+    defineMyInAppChannels({ app: this.app });
     this.app.acl.allow('myInAppMessages', '*', 'loggedIn');
     this.app.acl.allow('myInAppChannels', '*', 'loggedIn');
     this.app.acl.allow('notificationInAppMessages', '*', 'loggedIn');
