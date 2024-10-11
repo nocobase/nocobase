@@ -119,7 +119,6 @@ export const useShared = () => {
           message: t('File size cannot exceed 10M'),
         };
       }
-      console.log({ type: file.type });
       if (!INCLUDE_FILE_TYPE.includes(file.type)) {
         return {
           type: 'error',
