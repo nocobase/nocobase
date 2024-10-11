@@ -17,7 +17,8 @@
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Badge, Button, ConfigProvider, notification, Drawer } from 'antd';
+import { Badge, Button, ConfigProvider, Drawer, Tooltip } from 'antd';
+import { CloseOutlined } from '@ant-design/icons';
 import { createStyles } from 'antd-style';
 import { Icon } from '@nocobase/client';
 import { useAPIClient } from '@nocobase/client';
@@ -53,19 +54,26 @@ const InnerInbox = (props) => {
   useEffect(() => {
     createMsgSSEConnection();
   }, []);
-  const DrawerTitle = <div style={{ padding: '0 15px' }}>{t('Inbox')}</div>;
+  const DrawerTitle = <div style={{ padding: '0' }}>{t('Inbox')}</div>;
+  const CloseIcon = (
+    <div style={{ marginLeft: '15px' }}>
+      <CloseOutlined />
+    </div>
+  );
   return (
     <ConfigProvider
       theme={{
         components: { Drawer: { paddingLG: 0 } },
       }}
     >
-      <Button className={styles.button} title={'Apps'} icon={<Icon type={'MailOutlined'} />} onClick={onIconClick} />
+      <Tooltip title={t('Inapp Message')}>
+        <Button className={styles.button} title={'Apps'} icon={<Icon type={'MailOutlined'} />} onClick={onIconClick} />
+      </Tooltip>
       {unreadMsgsCountObs.value && <Badge count={unreadMsgsCountObs.value} size="small" offset={[-18, -16]}></Badge>}
       <Drawer
         title={DrawerTitle}
         open={inboxVisible.value}
-        closeIcon={false}
+        closeIcon={CloseIcon}
         width={850}
         onClose={() => {
           inboxVisible.value = false;

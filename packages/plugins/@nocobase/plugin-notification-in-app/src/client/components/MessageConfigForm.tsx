@@ -12,6 +12,7 @@ import { SchemaComponent, css } from '@nocobase/client';
 import { useLocalTranslation } from '../../locale';
 import { UsersSelect } from './UsersSelect';
 import { UsersAddition } from './UsersAddition';
+import { tval } from '@nocobase/utils/client';
 
 const emailsClass = css`
   width: 100%;
@@ -78,7 +79,7 @@ export const MessageConfigForm = ({ variableOptions }) => {
           senderName: {
             type: 'string',
             required: true,
-            title: `{{t("Channel name")}}`,
+            title: `{{t("Message group name")}}`,
             'x-decorator': 'FormItem',
             'x-component': 'Variable.TextArea',
             'x-component-props': {
@@ -89,7 +90,7 @@ export const MessageConfigForm = ({ variableOptions }) => {
           title: {
             type: 'string',
             required: true,
-            title: `{{t("Title")}}`,
+            title: `{{t("Message title")}}`,
             'x-decorator': 'FormItem',
             'x-component': 'Variable.TextArea',
             'x-component-props': {
@@ -100,7 +101,7 @@ export const MessageConfigForm = ({ variableOptions }) => {
           content: {
             type: 'string',
             required: true,
-            title: `{{t("Content")}}`,
+            title: `{{t("Message content")}}`,
             'x-decorator': 'FormItem',
             'x-component': 'Variable.RawTextArea',
             'x-component-props': {
@@ -117,13 +118,16 @@ export const MessageConfigForm = ({ variableOptions }) => {
               url: {
                 type: 'string',
                 required: true,
-                title: `{{t("Redirect URL")}}`,
+                title: `{{t("Detail URL")}}`,
                 'x-decorator': 'FormItem',
                 'x-component': 'Variable.TextArea',
                 'x-component-props': {
                   scope: variableOptions,
                   useTypedConstant: ['string'],
                 },
+                description: tval(
+                  "Support two types of links in nocobase: internal links and external links. If using an internal link, the link starts with '/', for example, '/admin/page'. If using an external link, the link starts with 'http', for example, 'https://example.com'.",
+                ),
               },
             },
           },

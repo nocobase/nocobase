@@ -195,6 +195,15 @@ export default class InAppNotificationChannel extends BaseNotificationChannel {
             const channelsTableAliasName = this.app.db.sequelize
               .getQueryInterface()
               .quoteIdentifier(channelsCollection.name);
+            const messagesFieldName = {
+              channelId: messagesCollection.getRealFieldName(MessagesDefinition.fieldNameMap.chatId, true),
+              status: messagesCollection.getRealFieldName(MessagesDefinition.fieldNameMap.status, true),
+              receiveTimestamp: messagesCollection.getRealFieldName(
+                MessagesDefinition.fieldNameMap.receiveTimestamp,
+                true,
+              ),
+              title: messagesCollection.getRealFieldName(MessagesDefinition.fieldNameMap.title, true),
+            };
             const userId = ctx.state.currentUser.id;
             const conditions: any[] = [];
             if (userId) conditions.push({ userId });
@@ -203,21 +212,29 @@ export default class InAppNotificationChannel extends BaseNotificationChannel {
             }
             if (filter?.id) conditions.push({ id: filter.id });
 
+            const filterChannelsByStatusSQL = ({ unreadCntOpt }) => {
+              return Sequelize.literal(`(
+                SELECT COUNT(*)
+                FROM ${messagesTableName} AS messages
+                WHERE
+                    messages.${messagesFieldName.channelId} = ${channelsTableAliasName}.id
+                    AND
+                    messages.${messagesFieldName.status} = 'unread'
+            ) ${unreadCntOpt} 0`);
+            };
+            if (filter?.status === 'read') {
+              conditions.push(filterChannelsByStatusSQL({ unreadCntOpt: '=' }));
+            } else if (filter?.status === 'unread') {
+              conditions.push(filterChannelsByStatusSQL({ unreadCntOpt: '>' }));
+            }
+
             const channelsRepo = this.app.db.getRepository(ChannelsDefinition.name);
             try {
-              const messagesFieldName = {
-                channelId: messagesCollection.getRealFieldName(MessagesDefinition.fieldNameMap.chatId, true),
-                status: messagesCollection.getRealFieldName(MessagesDefinition.fieldNameMap.status, true),
-                receiveTimestamp: messagesCollection.getRealFieldName(
-                  MessagesDefinition.fieldNameMap.receiveTimestamp,
-                  true,
-                ),
-                title: messagesCollection.getRealFieldName(MessagesDefinition.fieldNameMap.title, true),
-              };
-              const channelsRes = channelsRepo.find({
-                logging: console.log,
+              const [channels, count] = await channelsRepo.findAndCount({
+                logging: (str) => {
+                  console.log(str);
+                },
                 limit,
-                filter,
                 attributes: {
                   include: [
                     [
@@ -265,19 +282,22 @@ export default class InAppNotificationChannel extends BaseNotificationChannel {
                   ],
                 },
                 sort: '-latestMsgReceiveTimestamp',
+                //@ts-ignore
                 where: {
                   [Op.and]: conditions,
                 },
               });
 
-              const countRes = channelsRepo.count({
-                logging: console.log,
-                filter: {
-                  userId,
-                },
-              });
+              // const countRes = channelsRepo.count({
+              //   logging: (str) => {
+              //     console.log(str);
+              //   },
+              //   where: {
+              //     [Op.and]: conditions,
+              //   },
+              // });
 
-              const [channels, count] = await Promise.all([channelsRes, countRes]);
+              // const [channels, count] = await Promise.all([channelsRes, countRes]);
               ctx.body = { rows: channels, count };
             } catch (error) {
               console.error(error);

@@ -10,14 +10,21 @@
 import { observable, autorun } from '@formily/reactive';
 import { Channel } from '../../types';
 import { getAPIClient } from '../utils';
+import { merge } from '@nocobase/utils/client';
 
+export type ChannelStatus = 'all' | 'read' | 'unread';
 export const channelMapObs = observable<{ value: Record<string, Channel> }>({ value: {} });
 export const isFetchingChannelsObs = observable<{ value: boolean }>({ value: false });
 export const channelCountObs = observable<{ value: number }>({ value: 0 });
+export const channelStatusFilterObs = observable<{ value: ChannelStatus }>({ value: 'all' });
 export const channelListObs = observable.computed(() => {
-  const channels = Object.values(channelMapObs.value).sort((a, b) =>
-    a.latestMsgReceiveTimestamp > b.latestMsgReceiveTimestamp ? -1 : 1,
-  );
+  const channels = Object.values(channelMapObs.value)
+    .filter((channel) => {
+      if (channelStatusFilterObs.value === 'read') return channel.unreadMsgCnt === 0;
+      else if (channelStatusFilterObs.value === 'unread') return channel.unreadMsgCnt > 0;
+      else return true;
+    })
+    .sort((a, b) => (a.latestMsgReceiveTimestamp > b.latestMsgReceiveTimestamp ? -1 : 1));
   return channels;
 }) as { value: Channel[] };
 
@@ -33,7 +40,7 @@ export const fetchChannels = async (params: any) => {
   const res = await apiClient.request({
     url: 'myInAppChats:list',
     method: 'get',
-    params,
+    params: merge(params ?? {}, { filter: { status: channelStatusFilterObs.value } }),
   });
   const channels = res.data?.data;
   if (Array.isArray(channels)) {
@@ -42,7 +49,7 @@ export const fetchChannels = async (params: any) => {
     });
   }
   const count = res.data?.meta?.count;
-  if (count) channelCountObs.value = count;
+  if (count >= 0) channelCountObs.value = count;
   isFetchingChannelsObs.value = false;
 };
 

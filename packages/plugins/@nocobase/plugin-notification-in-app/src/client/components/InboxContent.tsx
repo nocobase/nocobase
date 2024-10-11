@@ -9,9 +9,22 @@
 
 import React, { useCallback } from 'react';
 import { observer } from '@formily/reactive-react';
-import { Layout, List, Card, Descriptions, Typography, Badge, Button, Flex, Spin, Tag } from 'antd';
+import {
+  Layout,
+  List,
+  Card,
+  Descriptions,
+  Typography,
+  Badge,
+  Button,
+  Flex,
+  Spin,
+  Tag,
+  Tabs,
+  ConfigProvider,
+} from 'antd';
 import { css } from '@emotion/css';
-import { dayjs } from '@nocobase/utils/client';
+import { dayjs, tval } from '@nocobase/utils/client';
 import { useNavigate } from 'react-router-dom';
 import { useLocalTranslation } from '../../locale';
 
@@ -28,6 +41,8 @@ import {
   showMsgLoadingMoreObs,
   updateMessage,
   inboxVisible,
+  channelStatusFilterObs,
+  ChannelStatus,
 } from '../observables';
 
 const InnerInboxContent = () => {
@@ -156,9 +171,41 @@ const InnerInboxContent = () => {
     );
   });
 
+  const FilterTab = () => {
+    interface TabItem {
+      label: string;
+      key: ChannelStatus;
+    }
+    const items: Array<TabItem> = [
+      { label: t('All'), key: 'all' },
+      { label: t('Unread'), key: 'unread' },
+      { label: t('Read'), key: 'read' },
+    ];
+    return (
+      <ConfigProvider
+        theme={{
+          components: { Tabs: { horizontalItemMargin: '20px' } },
+        }}
+      >
+        <Tabs
+          activeKey={channelStatusFilterObs.value}
+          items={items}
+          onChange={(key: ChannelStatus) => {
+            channelStatusFilterObs.value = key;
+            fetchChannels({});
+          }}
+        />
+      </ConfigProvider>
+    );
+  };
+
   return (
     <Layout style={{ height: '100%' }}>
-      <Layout.Sider width={300} style={{ height: '100%', overflowY: 'auto', background: '#fff' }}>
+      <Layout.Sider
+        width={300}
+        style={{ height: '100%', overflowY: 'auto', background: '#fff', padding: '0 15px', border: 'none' }}
+      >
+        <FilterTab />
         <List
           itemLayout="horizontal"
           dataSource={channels}
@@ -173,10 +220,13 @@ const InnerInboxContent = () => {
                 }
               `}
               style={{
-                padding: '10px 15px',
+                padding: '10px 10px',
                 ...(selectedChannelId === item.id ? { backgroundColor: 'rgb(230, 244, 255)' } : {}),
                 height: '70px',
                 cursor: 'pointer',
+                marginTop: '10px',
+                border: 'none',
+                borderRadius: '10px',
                 display: 'flex',
                 flexDirection: 'column',
                 justifyContent: 'space-between',

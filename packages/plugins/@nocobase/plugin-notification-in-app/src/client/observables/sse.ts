@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { observable, autorun } from '@formily/reactive';
+import { observable, autorun, reaction } from '@formily/reactive';
 import { notification } from 'antd';
 import { SSEData } from '../../types';
 import { messageMapObs, updateUnreadMsgsCount } from './message';
@@ -17,27 +17,30 @@ import { getAPIClient } from '../utils';
 
 export const liveSSEObs = observable<{ value: SSEData | null }>({ value: null });
 
-autorun(() => {
-  if (!liveSSEObs.value) return;
-  const sseData = liveSSEObs.value;
-  if (['message:created', 'message:updated'].includes(sseData.type)) {
-    const { data } = sseData;
-    messageMapObs.value[data.id] = data;
-    if (sseData.type === 'message:created') {
-      notification.info({
-        message: data.title,
-        description: data.content,
-        onClick: () => {
-          inboxVisible.value = true;
-          selectedChannelIdObs.value = data.chatId;
-          notification.destroy();
-        },
-      });
+reaction(
+  () => liveSSEObs.value,
+  (sseData) => {
+    if (!sseData) return;
+
+    if (['message:created', 'message:updated'].includes(sseData.type)) {
+      const { data } = sseData;
+      messageMapObs.value[data.id] = data;
+      if (sseData.type === 'message:created') {
+        notification.info({
+          message: data.title,
+          description: data.content,
+          onClick: () => {
+            inboxVisible.value = true;
+            selectedChannelIdObs.value = data.chatId;
+            notification.destroy();
+          },
+        });
+      }
+      fetchChannels({ filter: { id: data.chatId } });
+      updateUnreadMsgsCount();
     }
-    fetchChannels({ filter: { id: data.chatId } });
-    updateUnreadMsgsCount();
-  }
-});
+  },
+);
 
 export const createMsgSSEConnection = async () => {
   const apiClient = getAPIClient();

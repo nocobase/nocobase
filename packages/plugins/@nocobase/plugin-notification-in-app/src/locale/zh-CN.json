@@ -7,8 +7,13 @@
   "Status": "状态",
   "Read": "已读",
   "Unread": "未读",
+  "All": "全部",
   "In-app message": "站内信",
   "Receivers": "接收人",
-  "Channel name": "频道名称"
-
+  "Message group name": "消息分组名称",
+  "Message title": "消息标题",
+  "Message content": "消息内容",
+  "Inapp Message": "站内信",
+  "Detail URL": "详情链接",
+  "Support two types of links in nocobase: internal links and external links. If using an internal link, the link starts with '/', for example, '/admin/page'. If using an external link, the link starts with 'http', for example, 'https://example.com'.": "nocobase支持两种链接类型：内部链接和外部链接。如果使用内部链接，链接以'/'开头，例如，'/admin/page'。如果使用外部链接，链接以'http'开头，例如，'https://example.com'。"
 }

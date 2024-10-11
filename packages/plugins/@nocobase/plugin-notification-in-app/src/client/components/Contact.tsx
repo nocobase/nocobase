@@ -8,7 +8,7 @@
  */
 
 import React from 'react';
-import { Avatar, List } from 'antd';
+import { Avatar, List, Radio } from 'antd';
 import { css } from '@emotion/css';
 const messageData = [
   { id: 'workflow1', unreadCnt: 20 },
@@ -18,8 +18,14 @@ const messageData = [
 
 const Contacts = () => {
   const message = messageData.map((item) => ({ ...item, title: 'workflow' }));
+  const options = [
+    { label: 'All', value: 'all' },
+    { label: 'Read', value: 'read' },
+    { label: 'Unread', value: 'unread' },
+  ];
   return (
     <div>
+      <Radio.Group options={options} defaultValue="all" optionType="button" buttonStyle="solid" />
       <List
         itemLayout="horizontal"
         dataSource={message}
