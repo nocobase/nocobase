@@ -168,7 +168,7 @@ describe('transformToFilter', () => {
     if (name === `${collectionName}.field2`) return {};
     if (name === `${collectionName}.field3`) return { target: 'targetCollection', targetKey: 'id', type: 'belongsTo' };
     if (name === `${collectionName}.chinaRegion`)
-      return { target: 'chinaRegions', targetKey: 'code', interface: 'chinaRegion' };
+      return { target: 'chinaRegions', targetKey: 'code', interface: 'chinaRegion', type: 'belongsToMany' };
     return {};
   });
 
