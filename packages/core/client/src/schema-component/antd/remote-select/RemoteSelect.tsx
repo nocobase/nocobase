@@ -45,6 +45,7 @@ export type RemoteSelectProps<P = any> = SelectProps<P, any> & {
   dataSource?: string;
   CustomDropdownRender?: (v: any) => any;
   optionFilter?: (option: any) => boolean;
+  toOptionsItem?: (data) => any;
 };
 
 const InternalRemoteSelect = withDynamicSchemaProps(
@@ -63,6 +64,7 @@ const InternalRemoteSelect = withDynamicSchemaProps(
         CustomDropdownRender,
         optionFilter,
         dataSource: propsDataSource,
+        toOptionsItem = (value) => value,
         ...others
       } = props;
       const dataSource = useDataSourceKey();
@@ -137,14 +139,14 @@ const InternalRemoteSelect = withDynamicSchemaProps(
 
                 if (mapOptions) {
                   return mapOptions({
-                    [fieldNames.label]: label || EMPTY,
-                    [fieldNames.value]: option[fieldNames.value],
+                    [fieldNames.label]: label || option || EMPTY,
+                    [fieldNames.value]: option[fieldNames.value] || option,
                   });
                 }
                 return {
                   ...option,
-                  [fieldNames.label]: label || EMPTY,
-                  [fieldNames.value]: option[fieldNames.value],
+                  [fieldNames.label]: label || option || EMPTY,
+                  [fieldNames.value]: option[fieldNames.value] || option,
                 };
               })
               .filter(Boolean);
@@ -250,7 +252,7 @@ const InternalRemoteSelect = withDynamicSchemaProps(
           defaultValue={defaultValue}
           {...others}
           loading={data! ? loading : true}
-          options={mapOptionsToTags(options)}
+          options={toOptionsItem(mapOptionsToTags(options))}
           rawOptions={options}
           dropdownRender={(menu) => {
             const isFullMatch = options.some((v) => v[fieldNames.label] === searchData.current);
