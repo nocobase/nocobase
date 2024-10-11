@@ -212,70 +212,75 @@ const InnerInboxContent = () => {
           loadMore={loadChannelsMore}
           style={{ paddingBottom: '20px' }}
           loading={channels.length === 0 && isFetchingChannelsObs.value}
-          renderItem={(item) => (
-            <List.Item
-              className={css`
+          renderItem={(item) => {
+            const titleColor = selectedChannelId === item.id ? '#1677ff' : 'black';
+            const textColor = selectedChannelId === item.id ? '#1677ff' : 'rgba(0, 0, 0, 0.45)';
+            return (
+              <List.Item
+                className={css`
                 &:hover {
                   background-color: #e4e5e6};
                 }
               `}
-              style={{
-                padding: '10px 10px',
-                ...(selectedChannelId === item.id ? { backgroundColor: 'rgb(230, 244, 255)' } : {}),
-                height: '70px',
-                cursor: 'pointer',
-                marginTop: '10px',
-                border: 'none',
-                borderRadius: '10px',
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'space-between',
-              }}
-              onClick={() => {
-                selectedChannelIdObs.value = item.id;
-              }}
-            >
-              <Flex justify="space-between" style={{ width: '100%' }}>
-                <div
-                  style={{
-                    width: '150px',
-                    textOverflow: 'ellipsis',
-                    overflow: 'hidden',
-                    whiteSpace: 'nowrap',
-                    fontWeight: 'bold',
-                  }}
-                >
-                  {item.title}
-                </div>
-                <div
-                  style={{
-                    width: '80px',
-                    fontWeight: 400,
-                    color: 'rgba(0, 0, 0, 0.45)',
-                    textAlign: 'right',
-                    fontFamily: 'monospace',
-                  }}
-                >
-                  {dayjs(item.latestMsgReceiveTimestamp).format('MM-DD')}
-                </div>
-              </Flex>
-              <Flex justify="space-between" style={{ width: '100%' }}>
-                <div
-                  style={{
-                    color: 'rgba(0, 0, 0, 0.45)',
-                    width: '80%',
-                    textOverflow: 'ellipsis',
-                    overflow: 'hidden',
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  {' '}
-                  {item.latestMsgTitle}
-                </div>
-                <Badge count={item.unreadMsgCnt}></Badge>
-              </Flex>
-            </List.Item>
-          )}
+                style={{
+                  padding: '10px 10px',
+                  color: titleColor,
+                  ...(selectedChannelId === item.id ? { backgroundColor: 'rgb(230, 244, 255)' } : {}),
+                  height: '70px',
+                  cursor: 'pointer',
+                  marginTop: '10px',
+                  border: 'none',
+                  borderRadius: '10px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between',
+                }}
+                onClick={() => {
+                  selectedChannelIdObs.value = item.id;
+                }}
+              >
+                <Flex justify="space-between" style={{ width: '100%' }}>
+                  <div
+                    style={{
+                      width: '150px',
+                      textOverflow: 'ellipsis',
+                      overflow: 'hidden',
+                      whiteSpace: 'nowrap',
+                      fontWeight: 'bold',
+                    }}
+                  >
+                    {item.title}
+                  </div>
+                  <div
+                    style={{
+                      width: '80px',
+                      fontWeight: 400,
+                      textAlign: 'right',
+                      fontFamily: 'monospace',
+                      color: textColor,
+                    }}
+                  >
+                    {dayjs(item.latestMsgReceiveTimestamp).format('MM-DD')}
+                  </div>
+                </Flex>
+                <Flex justify="space-between" style={{ width: '100%' }}>
+                  <div
+                    style={{
+                      width: '80%',
+                      textOverflow: 'ellipsis',
+                      overflow: 'hidden',
+                      whiteSpace: 'nowrap',
+                      color: textColor,
+                    }}
+                  >
+                    {' '}
+                    {item.latestMsgTitle}
+                  </div>
+                  <Badge count={item.unreadMsgCnt}></Badge>
+                </Flex>
+              </List.Item>
+            );
+          }}
         />
       </Layout.Sider>
       <Layout.Content style={{ padding: '0 24px 30px 24px', height: '100%', overflowY: 'auto' }}>
