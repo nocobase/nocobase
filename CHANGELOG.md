@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.3.31-beta](https://github.com/nocobase/nocobase/compare/v1.3.30-beta...v1.3.31-beta) - 2024-10-11
+
+### 🐛 Bug Fixes
+
+- **[client]** Fix the issue where using the chinaRegion field in the filter form fails to correctly filter out values ([#5390](https://github.com/nocobase/nocobase/pull/5390)) by @zhangzhonghe
+
+- **[Action: Import records]** fix import error with wps file ([#5397](https://github.com/nocobase/nocobase/pull/5397)) by @chareice
+
 ## [v1.3.30-beta](https://github.com/nocobase/nocobase/compare/v1.3.29-beta...v1.3.30-beta) - 2024-10-11
 
 ### 🐛 Bug Fixes
