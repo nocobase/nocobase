@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.3.30-beta](https://github.com/nocobase/nocobase/compare/v1.3.29-beta...v1.3.30-beta) - 2024-10-11
+
+### 🐛 Bug Fixes
+
+- **[client]**
+  - Fix the rendering error that occurs when displaying file collection relationship fields on mobile devices ([#5387](https://github.com/nocobase/nocobase/pull/5387)) by @zhangzhonghe
+
+  - Fix Create Block menu not loading more data collections ([#5388](https://github.com/nocobase/nocobase/pull/5388)) by @zhangzhonghe
+
+- **[Workflow: Custom action event]**
+  - Fix custom workflow event did not redirect after successful submission by @katherinehhh
+
+  - Fix custom workflow event did not redirect after successful submission by @katherinehhh
+
 ## [v1.3.29-beta](https://github.com/nocobase/nocobase/compare/v1.3.28-beta...v1.3.29-beta) - 2024-10-10
 
 ### 🚀 Improvements
