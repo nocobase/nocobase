@@ -15,6 +15,7 @@ import { InAppMessagesDefinition as MessagesDefinition, ChannelsDefinition as Ch
 import { parseUserSelectionConf } from './parseUserSelectionConf';
 import defineMyInAppMessages from './defineMyInAppMessages';
 import defineMyInAppChannels from './defineMyInAppChannels';
+import { MockMessages, MockChannels } from './__tests__/mockInAppData';
 
 type UserID = string;
 type ClientID = string;
@@ -101,6 +102,9 @@ export default class InAppNotificationChannel extends BaseNotificationChannel {
   send: SendFnType<InAppMessageFormValues> = async (params) => {
     const { message } = params;
     const { content, receivers: userSelectionConfig, title, senderId, senderName, options = {} } = message;
+    if (title === 'mock') {
+      this.mock();
+    }
     const userRepo = this.app.db.getRepository('users');
     const receivers = await parseUserSelectionConf(userSelectionConfig, userRepo);
 
@@ -119,6 +123,26 @@ export default class InAppNotificationChannel extends BaseNotificationChannel {
     );
     return { status: 'success', message };
   };
+  async mock() {
+    const messagesRepo = this.app.db.getRepository(MessagesDefinition.name);
+    const channelsRepo = this.app.db.getRepository(ChannelsDefinition.name);
+    const channels = await MockChannels({ channelsRepo }, { totalNum: 1, userId: 1 });
+    for (const channel of channels) {
+      await MockMessages(
+        { messagesRepo, channelsRepo },
+        { unreadNum: 50, readNum: 50, chatId: channel.id, startTimeStamp: Date.now(), userId: 1 },
+      );
+    }
+    // add 100 read channels
+    const readChannels = await MockChannels({ channelsRepo }, { totalNum: 100, userId: 1 });
+    for (const channel of channels) {
+      await MockMessages(
+        { messagesRepo, channelsRepo },
+
+        { unreadNum: 1, readNum: 1, chatId: channel.id, startTimeStamp: Date.now(), userId: 1 },
+      );
+    }
+  }
 
   defineActions() {
     defineMyInAppMessages({ app: this.app });
