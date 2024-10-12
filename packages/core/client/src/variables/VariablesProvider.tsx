@@ -50,7 +50,8 @@ const getFieldPath = (variablePath: string, variablesStore: Record<string, Varia
 };
 
 /**
- * Note: There can only be one VariablesProvider in the entire context
+ * @internal
+ * Note: There can only be one VariablesProvider in the entire context. It cannot be used in plugins.
  */
 const VariablesProvider = ({ children, filterVariables }: any) => {
   const ctxRef = useRef<Record<string, any>>({});
