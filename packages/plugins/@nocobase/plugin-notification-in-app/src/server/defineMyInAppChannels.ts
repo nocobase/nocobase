@@ -32,7 +32,6 @@ export default function defineMyInAppChannels({ app }: { app: Application }) {
             title: messagesCollection.getRealFieldName(MessagesDefinition.fieldNameMap.title, true),
           };
           const userId = ctx.state.currentUser.id;
-          const conditions: any[] = [];
           const userFilter = userId ? { userId } : null;
 
           const latestMsgReceiveTimestampSQL = `(

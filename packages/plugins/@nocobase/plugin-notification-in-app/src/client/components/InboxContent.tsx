@@ -110,58 +110,58 @@ const InnerInboxContent = () => {
           <Spin style={{ width: '100%', marginTop: '80px' }} />
         ) : (
           messages.map((message, index) => (
-            <Card
-              size={'small'}
-              bordered={false}
-              style={{ marginTop: 24, cursor: 'pointer' }}
-              title={
-                <span style={{ fontWeight: message.status === 'unread' ? 'bold' : 'normal' }}>{message.title}</span>
-              }
-              onClick={() => {
-                updateMessage({
-                  filterByTk: message.id,
-                  values: {
-                    status: 'read',
-                  },
-                });
-              }}
-              extra={
-                message.options?.url ? (
-                  <Button
-                    type="link"
-                    onClick={() => {
-                      updateMessage({
-                        filterByTk: message.id,
-                        values: {
-                          status: 'read',
-                        },
-                      });
-                      const url = message.options.url;
-                      if (url.startsWith('/')) navigate(url);
-                      else {
-                        window.location.href = url;
-                      }
-                      inboxVisible.value = false;
-                    }}
-                  >
-                    {t('View')}
-                  </Button>
-                ) : null
-              }
-              key={message.id}
-            >
-              <Descriptions key={index} column={1}>
-                <Descriptions.Item label={t('Content')}>{message.content}</Descriptions.Item>
-                <Descriptions.Item label={t('Datetime')}>
-                  {dayjs(message.receiveTimestamp).format('YYYY-MM-DD HH:mm:ss')}
-                </Descriptions.Item>
-                <Descriptions.Item label={t('Status')}>
-                  <Badge dot={message.status === 'unread'} offset={[-5, 0]}>
+            <Badge dot={message.status === 'unread'} offset={[-2, 24]} key={message.id}>
+              <Card
+                size={'small'}
+                bordered={false}
+                style={{ marginTop: 24, cursor: 'pointer' }}
+                title={
+                  <span style={{ fontWeight: message.status === 'unread' ? 'bold' : 'normal' }}>{message.title}</span>
+                }
+                onClick={() => {
+                  updateMessage({
+                    filterByTk: message.id,
+                    values: {
+                      status: 'read',
+                    },
+                  });
+                }}
+                extra={
+                  message.options?.url ? (
+                    <Button
+                      type="link"
+                      onClick={() => {
+                        updateMessage({
+                          filterByTk: message.id,
+                          values: {
+                            status: 'read',
+                          },
+                        });
+                        const url = message.options.url;
+                        if (url.startsWith('/')) navigate(url);
+                        else {
+                          window.location.href = url;
+                        }
+                        inboxVisible.value = false;
+                      }}
+                    >
+                      {t('View')}
+                    </Button>
+                  ) : null
+                }
+                key={message.id}
+              >
+                <Descriptions key={index} column={1}>
+                  <Descriptions.Item label={t('Content')}>{message.content}</Descriptions.Item>
+                  <Descriptions.Item label={t('Datetime')}>
+                    {dayjs(message.receiveTimestamp).format('YYYY-MM-DD HH:mm:ss')}
+                  </Descriptions.Item>
+                  <Descriptions.Item label={t('Status')}>
                     <Tag color={message.status === 'unread' ? 'red' : 'green'}>{msgStatusDict[message.status]}</Tag>
-                  </Badge>
-                </Descriptions.Item>
-              </Descriptions>
-            </Card>
+                  </Descriptions.Item>
+                </Descriptions>
+              </Card>
+            </Badge>
           ))
         )}
         {showMsgLoadingMoreObs.value && (
