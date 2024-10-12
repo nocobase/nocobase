@@ -42,12 +42,12 @@ export default class InAppNotificationChannel extends BaseNotificationChannel {
     });
   };
 
-  addClient(userId: UserID, clientId: ClientID, stream: PassThrough) {
+  addClient = (userId: UserID, clientId: ClientID, stream: PassThrough) => {
     if (!this.userClientsMap[userId]) {
       this.userClientsMap[userId] = {};
     }
     this.userClientsMap[userId][clientId] = stream;
-  }
+  };
   sendDataToUser(userId: UserID, message: { type: string; data: any }) {
     const clients = this.userClientsMap[userId];
     if (clients) {
@@ -102,9 +102,6 @@ export default class InAppNotificationChannel extends BaseNotificationChannel {
   send: SendFnType<InAppMessageFormValues> = async (params) => {
     const { message } = params;
     const { content, receivers: userSelectionConfig, title, senderId, senderName, options = {} } = message;
-    if (title === 'mock') {
-      this.mock();
-    }
     const userRepo = this.app.db.getRepository('users');
     const receivers = await parseUserSelectionConf(userSelectionConfig, userRepo);
 
@@ -145,7 +142,7 @@ export default class InAppNotificationChannel extends BaseNotificationChannel {
   }
 
   defineActions() {
-    defineMyInAppMessages({ app: this.app });
+    defineMyInAppMessages({ app: this.app, addClient: this.addClient });
     defineMyInAppChannels({ app: this.app });
     this.app.acl.allow('myInAppMessages', '*', 'loggedIn');
     this.app.acl.allow('myInAppChannels', '*', 'loggedIn');
