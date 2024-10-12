@@ -11,20 +11,22 @@ import {
   Action,
   AdminProvider,
   AntdAppProvider,
+  AssociationFieldMode,
   AssociationFieldModeProvider,
   BlockTemplateProvider,
   GlobalThemeProvider,
   OpenModeProvider,
+  useAssociationFieldModeContext,
   usePlugin,
 } from '@nocobase/client';
 import React from 'react';
 import { isDesktop } from 'react-device-detect';
 
-import _ from 'lodash';
 import { ActionDrawerUsedInMobile, useToAdaptActionDrawerToMobile } from '../adaptor-of-desktop/ActionDrawer';
 import { BasicZIndexProvider } from '../adaptor-of-desktop/BasicZIndexProvider';
 import { useToAdaptFilterActionToMobile } from '../adaptor-of-desktop/FilterAction';
 import { InternalPopoverNesterUsedInMobile } from '../adaptor-of-desktop/InternalPopoverNester';
+import { useToAddMobilePopupBlockInitializers } from '../adaptor-of-desktop/mobile-action-page/blockInitializers';
 import { MobileActionPage } from '../adaptor-of-desktop/mobile-action-page/MobileActionPage';
 import { ResetSchemaOptionsProvider } from '../adaptor-of-desktop/ResetSchemaOptionsProvider';
 import { PageBackgroundColor } from '../constants';
@@ -36,6 +38,7 @@ import { useStyles } from './styles';
 export const Mobile = () => {
   useToAdaptFilterActionToMobile();
   useToAdaptActionDrawerToMobile();
+  useToAddMobilePopupBlockInitializers();
 
   const { styles } = useStyles();
   const mobilePlugin = usePlugin(PluginMobileClient);
@@ -65,9 +68,11 @@ export const Mobile = () => {
   const DesktopComponent = mobilePlugin.desktopMode === false ? React.Fragment : DesktopMode;
   const modeToComponent = React.useMemo(() => {
     return {
-      PopoverNester: _.memoize((OriginComponent) => (props) => (
-        <InternalPopoverNesterUsedInMobile {...props} OriginComponent={OriginComponent} />
-      )),
+      PopoverNester: (props) => {
+        const { getDefaultComponent } = useAssociationFieldModeContext();
+        const OriginComponent = getDefaultComponent(AssociationFieldMode.PopoverNester);
+        return <InternalPopoverNesterUsedInMobile {...props} OriginComponent={OriginComponent} />;
+      },
     };
   }, []);
 
@@ -87,6 +92,7 @@ export const Mobile = () => {
           <AntdAppProvider className={`mobile-container ${styles.nbMobile}`}>
             <OpenModeProvider
               defaultOpenMode="page"
+              isMobile={true}
               hideOpenMode
               openModeToComponent={{
                 page: MobileActionPage,
@@ -99,7 +105,7 @@ export const Mobile = () => {
                   <ResetSchemaOptionsProvider>
                     <AssociationFieldModeProvider modeToComponent={modeToComponent}>
                       {/* the z-index of all popups and subpages will be based on this value */}
-                      <BasicZIndexProvider basicZIndex={1000}>
+                      <BasicZIndexProvider basicZIndex={800}>
                         <MobileRouter />
                       </BasicZIndexProvider>
                     </AssociationFieldModeProvider>

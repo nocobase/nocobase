@@ -52,6 +52,7 @@ export class Locale {
       name: 'locale',
       prefix: 'locale',
       store: 'memory',
+      max: 2000
     });
 
     await this.get(this.defaultLang);

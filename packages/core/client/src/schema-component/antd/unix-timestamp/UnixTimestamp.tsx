@@ -8,57 +8,31 @@
  */
 
 import { connect, mapReadPretty } from '@formily/react';
-import React, { useMemo } from 'react';
+import React from 'react';
 import { DatePicker } from '../date-picker';
-import dayjs from 'dayjs';
-
-const toValue = (value: any, accuracy) => {
-  if (value) {
-    return timestampToDate(value, accuracy);
-  }
-  return null;
-};
-
-function timestampToDate(timestamp, accuracy = 'millisecond') {
-  if (accuracy === 'second') {
-    timestamp *= 1000; // 如果精确度是秒级，则将时间戳乘以1000转换为毫秒级
-  }
-  return dayjs(timestamp);
-}
-
-function getTimestamp(date, accuracy = 'millisecond') {
-  if (accuracy === 'second') {
-    return dayjs(date).unix();
-  } else {
-    return dayjs(date).valueOf(); // 默认返回毫秒级时间戳
-  }
-}
 
 interface UnixTimestampProps {
-  value?: number;
-  accuracy?: 'millisecond' | 'second';
+  value?: any;
   onChange?: (value: number) => void;
 }
 
 export const UnixTimestamp = connect(
   (props: UnixTimestampProps) => {
-    const { value, onChange, accuracy = 'second' } = props;
-    const v = useMemo(() => toValue(value, accuracy), [value, accuracy]);
+    const { value, onChange } = props;
     return (
       <DatePicker
         {...props}
-        value={v}
+        value={value}
         onChange={(v: any) => {
           if (onChange) {
-            onChange(getTimestamp(v, accuracy));
+            onChange(v);
           }
         }}
       />
     );
   },
   mapReadPretty((props) => {
-    const { value, accuracy = 'second' } = props;
-    const v = useMemo(() => toValue(value, accuracy), [value, accuracy]);
-    return <DatePicker.ReadPretty {...props} value={v} />;
+    const { value } = props;
+    return <DatePicker.ReadPretty {...props} value={value} />;
   }),
 );

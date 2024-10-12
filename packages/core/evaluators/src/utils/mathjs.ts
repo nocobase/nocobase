@@ -20,6 +20,9 @@ export default evaluate.bind(
       }
       return math.round(result, 9);
     }
+    if (result instanceof math.Matrix) {
+      return result.toArray();
+    }
     return result;
   },
   { replaceKey: true },

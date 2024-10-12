@@ -32,23 +32,29 @@ import { useChartRefreshActionProps } from './initializers/RefreshAction';
 import { chartBlockActionsInitializer } from './initializers/chartBlockActions';
 import { useChartBlockRefreshActionProps } from './initializers/BlockRefreshAction';
 import { chartBlockActionRefreshSettings } from './settings/chartBlockActionRefresh';
+import { useChartBlockCardProps } from './block/ChartBlock';
+import { ChartCardItem } from './block/CardItem';
 
 class PluginDataVisualiztionClient extends Plugin {
   public charts: ChartGroup = new ChartGroup();
 
   async load() {
-    this.charts.setGroup('Built-in', [...g2plot, ...antd]);
+    this.charts.addGroup('antd', { title: 'Ant Design', charts: antd });
+    this.charts.addGroup('ant-design-charts', { title: 'Ant Design Charts', charts: g2plot });
 
     this.app.addComponents({
       ChartV2BlockInitializer,
       ChartV2BlockDesigner,
       ChartV2Block,
+      ChartCardItem,
       ChartBlockProvider,
     });
     this.app.addScopes({
+      useChartBlockCardProps,
       useChartRefreshActionProps,
       useChartBlockRefreshActionProps,
     });
+
     this.app.schemaInitializerManager.add(chartInitializers_deprecated);
     this.app.schemaInitializerManager.add(chartInitializers);
     this.app.schemaInitializerManager.add(chartFilterItemInitializers_deprecated);
@@ -69,6 +75,10 @@ class PluginDataVisualiztionClient extends Plugin {
       title: lang('Charts'),
       Component: 'ChartV2BlockInitializer',
     });
+    this.app.schemaInitializerManager.addItem('popup:common:addBlock', 'dataBlocks.charts', {
+      title: '{{t("Charts")}}',
+      Component: 'ChartV2BlockInitializer',
+    });
   }
 }
 
@@ -76,5 +86,6 @@ export default PluginDataVisualiztionClient;
 export { Chart } from './chart/chart';
 export type { ChartProps, ChartType, RenderProps } from './chart/chart';
 export { ChartConfigContext } from './configure';
+export { useSetChartSize } from './hooks';
 export type { FieldOption } from './hooks';
 export type { QueryProps } from './renderer';

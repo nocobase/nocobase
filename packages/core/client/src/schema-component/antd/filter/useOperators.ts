@@ -27,7 +27,8 @@ export const useOperatorList = (): any[] => {
       return getInterface(fieldInterface)?.filterable?.operators || [];
     }
     const field = collectionFields.find((item) => item.name === schema.name);
-    return getInterface(field?.interface)?.filterable?.operators || [];
+    const ops = getInterface(field?.interface)?.filterable?.operators || [];
+    return ops.filter((o) => typeof o.visible !== 'function' || o.visible(field));
   }, [schema.name]);
   return res;
 };

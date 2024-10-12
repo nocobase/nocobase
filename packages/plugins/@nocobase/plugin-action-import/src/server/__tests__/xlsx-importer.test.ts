@@ -12,6 +12,7 @@ import { TemplateCreator } from '../services/template-creator';
 import { XlsxImporter } from '../services/xlsx-importer';
 import XLSX from 'xlsx';
 import * as process from 'node:process';
+import moment from 'moment';
 
 describe('xlsx importer', () => {
   let app: MockServer;
@@ -23,6 +24,68 @@ describe('xlsx importer', () => {
 
   afterEach(async () => {
     await app.destroy();
+  });
+
+  describe('import with date field', () => {
+    let User;
+
+    beforeEach(async () => {
+      User = app.db.collection({
+        name: 'users',
+        fields: [
+          {
+            type: 'string',
+            name: 'name',
+          },
+          {
+            type: 'date',
+            name: 'date',
+            interface: 'datetime',
+          },
+        ],
+      });
+
+      await app.db.sync();
+    });
+
+    it('should import with date', async () => {
+      const columns = [
+        {
+          dataIndex: ['name'],
+          defaultTitle: '姓名',
+        },
+        {
+          dataIndex: ['date'],
+          defaultTitle: '日期',
+        },
+      ];
+
+      const templateCreator = new TemplateCreator({
+        collection: User,
+        columns,
+      });
+
+      const template = await templateCreator.run();
+
+      const worksheet = template.Sheets[template.SheetNames[0]];
+
+      XLSX.utils.sheet_add_aoa(worksheet, [['test', 77383]], { origin: 'A2' });
+
+      const importer = new XlsxImporter({
+        collectionManager: app.mainDataSource.collectionManager,
+        collection: User,
+        columns,
+        workbook: template,
+      });
+
+      await importer.run();
+
+      expect(await User.repository.count()).toBe(1);
+
+      const user = await User.repository.findOne();
+
+      expect(moment(user.get('date')).format('YYYY-MM-DD')).toBe('2111-11-12');
+    });
   });
 
   describe('import with select fields', () => {

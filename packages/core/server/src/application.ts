@@ -239,7 +239,6 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
    * @internal
    */
   private sqlLogger: Logger;
-  protected _logger: SystemLogger;
 
   constructor(public options: ApplicationOptions) {
     super();
@@ -258,6 +257,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   get started() {
     return this._started;
   }
+
+  protected _logger: SystemLogger;
 
   get logger() {
     return this._logger;

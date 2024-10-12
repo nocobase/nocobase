@@ -81,14 +81,14 @@ const usePaginationProps = () => {
   const field = useField<ArrayField>();
   const { service, columnCount: _columnCount = defaultColumnCount } = useGridCardBlockContext();
   const meta = service?.data?.meta;
-  const { count, pageSize, page } = meta || {};
-
+  const { count, pageSize, page, hasNext } = meta || {};
   if (count) {
     return {
       total: count || 0,
       pageSize: pageSize || 10,
       current: page || 1,
       pageSizeOptions,
+      showSizeChanger: true,
     };
   } else {
     return {
@@ -99,7 +99,7 @@ const usePaginationProps = () => {
       showTitle: false,
       showSizeChanger: true,
       hideOnSinglePage: false,
-      total: field.value?.length < pageSize ? pageSize * page : pageSize * page + 1,
+      total: field.value?.length < pageSize || !hasNext ? pageSize * page : pageSize * page + 1,
       className: css`
         .ant-pagination-simple-pager {
           display: none !important;

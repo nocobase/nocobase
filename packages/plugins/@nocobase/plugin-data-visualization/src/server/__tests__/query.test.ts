@@ -19,8 +19,7 @@ import {
   postProcess,
 } from '../actions/query';
 import { Database } from '@nocobase/database';
-
-const formatter = await import('../actions/formatter');
+import * as formatter from '../formatter';
 
 describe('query', () => {
   describe('parseBuilder', () => {
@@ -212,7 +211,12 @@ describe('query', () => {
     });
 
     it('should parse dimensions', async () => {
-      vi.spyOn(formatter, 'formatter').mockReturnValue('formatted-field');
+      vi.spyOn(formatter, 'createFormatter').mockImplementation(
+        () =>
+          ({
+            format: () => 'formatted-field' as any,
+          }) as any,
+      );
       const dimensions = [
         {
           field: ['createdAt'],

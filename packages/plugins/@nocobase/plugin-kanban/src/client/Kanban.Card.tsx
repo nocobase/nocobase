@@ -17,15 +17,20 @@ import {
   PopupContextProvider,
   useCollection,
   useCollectionRecordData,
+  usePopupSettings,
   usePopupUtils,
   VariablePopupRecordProvider,
 } from '@nocobase/client';
 import { Schema } from '@nocobase/utils';
 import { Card } from 'antd';
-import React, { useCallback, useContext, useMemo } from 'react';
+import React, { useCallback, useContext, useMemo, useState } from 'react';
 import { KanbanCardContext } from './context';
 
 const cardCss = css`
+  text-wrap: wrap;
+  word-break: break-all;
+  word-wrap: break-word;
+
   .ant-card-body {
     padding: 16px;
   }
@@ -35,16 +40,6 @@ const cardCss = css`
     &:last-child {
       margin-top: 0;
     }
-  }
-  .ant-description-input {
-    text-overflow: ellipsis;
-    width: 100%;
-    overflow: hidden;
-  }
-  .ant-description-textarea {
-    text-overflow: ellipsis;
-    width: 100%;
-    overflow: hidden;
   }
   .ant-formily-item {
     margin-bottom: 12px;
@@ -80,14 +75,20 @@ export const KanbanCard: any = observer(
     const { openPopup, getPopupSchemaFromSchema } = usePopupUtils();
     const recordData = useCollectionRecordData();
     const popupSchema = getPopupSchemaFromSchema(fieldSchema) || getPopupSchemaFromParent(fieldSchema);
+    const [visible, setVisible] = useState(false);
+    const { isPopupVisibleControlledByURL } = usePopupSettings();
     const handleCardClick = useCallback(
       (e: React.MouseEvent) => {
         const targetElement = e.target as Element; // 将事件目标转换为Element类型
         const currentTargetElement = e.currentTarget as Element;
         if (currentTargetElement.contains(targetElement)) {
-          openPopup({
-            popupUidUsedInURL: popupSchema?.['x-uid'],
-          });
+          if (!isPopupVisibleControlledByURL()) {
+            setVisible(true);
+          } else {
+            openPopup({
+              popupUidUsedInURL: popupSchema?.['x-uid'],
+            });
+          }
           e.stopPropagation();
         } else {
           e.stopPropagation();
@@ -136,7 +137,7 @@ export const KanbanCard: any = observer(
             </FormLayout>
           </DndContext>
         </Card>
-        <PopupContextProvider>
+        <PopupContextProvider visible={visible} setVisible={setVisible}>
           <VariablePopupRecordProvider recordData={recordData} collection={collection}>
             <MemorizedRecursionField schema={wrappedPopupSchema} />
           </VariablePopupRecordProvider>

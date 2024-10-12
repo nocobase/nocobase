@@ -10,21 +10,65 @@
 import { isArr, isValid, toArr as toArray } from '@formily/shared';
 import { UploadFile } from 'antd/es/upload/interface';
 import { useTranslation } from 'react-i18next';
+import mime from 'mime';
 import match from 'mime-match';
-import { useCallback } from 'react';
+import React, { useCallback } from 'react';
 import { useAPIClient } from '../../../api-client';
 import { UNKNOWN_FILE_ICON, UPLOAD_PLACEHOLDER } from './placeholder';
 import type { IUploadProps, UploadProps } from './type';
 
 export const FILE_SIZE_LIMIT_DEFAULT = 1024 * 1024 * 20;
 
-export const isImage = (file) => {
-  return match(file.mimetype || file.type, 'image/*');
-};
+export interface FileModel {
+  id: number;
+  filename: string;
+  path: string;
+  title: string;
+  url: string;
+  extname: string;
+  size: number;
+  mimetype: string;
+}
 
-export const isPdf = (file) => {
-  return match(file.mimetype || file.type, 'application/pdf');
-};
+export interface PreviewerProps {
+  index: number;
+  list: FileModel[];
+  onSwitchIndex(index): void;
+}
+
+export interface AttachmentFileType {
+  match(file: any): boolean;
+  getThumbnailURL?(file: any): string;
+  ThumbnailPreviewer?: React.ComponentType<{ file: FileModel }>;
+  Previewer?: React.ComponentType<PreviewerProps>;
+}
+
+export class AttachmentFileTypes {
+  types: AttachmentFileType[] = [];
+  add(type: AttachmentFileType) {
+    // NOTE: use unshift to make sure the custom type has higher priority
+    this.types.unshift(type);
+  }
+  getTypeByFile(file): Omit<AttachmentFileType, 'match'> {
+    return this.types.find((type) => type.match(file));
+  }
+}
+
+/**
+ * @experimental
+ */
+export const attachmentFileTypes = new AttachmentFileTypes();
+
+export function matchMimetype(file: FileModel, type: string) {
+  if (file.mimetype) {
+    return match(file.mimetype, type);
+  }
+  if (file.url) {
+    const [fileUrl] = file.url.split('?');
+    return match(mime.getType(fileUrl) || '', type);
+  }
+  return false;
+}
 
 const toArr = (value) => {
   if (!isValid(value)) {
@@ -36,7 +80,7 @@ const toArr = (value) => {
   return toArray(value);
 };
 
-export const testOpts = (ext: RegExp, options: { exclude?: string[]; include?: string[] }) => {
+const testOpts = (ext: RegExp, options: { exclude?: string[]; include?: string[] }) => {
   if (options && isArr(options.include)) {
     return options.include.some((url) => ext.test(url));
   }
@@ -48,26 +92,22 @@ export const testOpts = (ext: RegExp, options: { exclude?: string[]; include?: s
   return true;
 };
 
-export const getImageByUrl = (url: string, options: any = {}) => {
+export function getThumbnailPlaceholderURL(file, options: any = {}) {
+  if (file.url) {
+    return file.url;
+  }
   for (let i = 0; i < UPLOAD_PLACEHOLDER.length; i++) {
     // console.log(UPLOAD_PLACEHOLDER[i].ext, testOpts(UPLOAD_PLACEHOLDER[i].ext, options));
-    if (UPLOAD_PLACEHOLDER[i].ext.test(url)) {
+    if (UPLOAD_PLACEHOLDER[i].ext.test(file.extname || file.filename || file.url || file.name)) {
       if (testOpts(UPLOAD_PLACEHOLDER[i].ext, options)) {
         return UPLOAD_PLACEHOLDER[i].icon || UNKNOWN_FILE_ICON;
       } else {
-        return url;
+        return file.name;
       }
     }
   }
   return UNKNOWN_FILE_ICON;
-};
-
-export const getURL = (target: any) => {
-  return target?.['url'] || target?.['downloadURL'] || target?.['imgURL'] || target?.['name'];
-};
-export const getThumbURL = (target: any) => {
-  return target?.['thumbUrl'] || target?.['url'] || target?.['downloadURL'] || target?.['imgURL'] || target?.['name'];
-};
+}
 
 export function getResponseMessage({ error, response }: UploadFile<any>) {
   if (error instanceof Error && 'isAxiosError' in error) {
@@ -93,23 +133,13 @@ export function getResponseMessage({ error, response }: UploadFile<any>) {
 }
 
 export function normalizeFile(file: UploadFile & Record<string, any>) {
-  const imageUrl = isImage(file) ? URL.createObjectURL(file.originFileObj) : getImageByUrl(file.name);
   const response = getResponseMessage(file);
   return {
     ...file,
     title: file.name,
-    thumbUrl: imageUrl,
-    imageUrl,
     response,
   };
 }
-
-export const normalizeFileList = (fileList: UploadFile[]) => {
-  if (fileList && fileList.length) {
-    return fileList.map(normalizeFile);
-  }
-  return [];
-};
 
 export function useUploadProps<T extends IUploadProps = UploadProps>(props: T) {
   const api = useAPIClient();
@@ -151,11 +181,16 @@ export function useUploadProps<T extends IUploadProps = UploadProps>(props: T) {
   };
 }
 
-export function toValueItem(file) {
-  return file.response?.data;
+export function toValueItem(data) {
+  return data;
 }
 
 export const toItem = (file) => {
+  if (typeof file === 'string') {
+    return {
+      url: file,
+    };
+  }
   if (file?.response?.data) {
     file = {
       uid: file.uid,
@@ -166,22 +201,11 @@ export const toItem = (file) => {
     ...file,
     id: file.id || file.uid,
     title: file.title || file.name,
-    imageUrl: isImage(file)
-      ? file.url
-      : getImageByUrl(file.url, {
-          exclude: ['.png', '.jpg', '.jpeg', '.gif', '.svg', '.webp', '.bmp', '.ico'],
-        }),
   };
 };
 
 export const toFileList = (fileList: any) => {
   return toArr(fileList).filter(Boolean).map(toItem);
-};
-
-export const toValue = (fileList: any) => {
-  return toArr(fileList)
-    .filter((file) => !file.response || file.status === 'done')
-    .map((file) => file?.response?.data || file);
 };
 
 const Rules: Record<string, RuleFunction> = {

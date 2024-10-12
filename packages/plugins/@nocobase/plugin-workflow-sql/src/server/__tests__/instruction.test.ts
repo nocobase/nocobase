@@ -14,6 +14,8 @@ import { getApp, sleep } from '@nocobase/plugin-workflow-test';
 
 import Plugin from '..';
 
+const mysql = process.env.DB_DIALECT === 'mysql' ? describe : describe.skip;
+
 describe('workflow > instructions > sql', () => {
   let app: Application;
   let db: Database;
@@ -117,8 +119,6 @@ describe('workflow > instructions > sql', () => {
       const [execution] = await workflow.getExecutions();
       const [sqlJob] = await execution.getJobs({ order: [['id', 'ASC']] });
       expect(sqlJob.status).toBe(JOB_STATUS.RESOLVED);
-      // expect(queryJob.status).toBe(JOB_STATUS.RESOLVED);
-      // expect(queryJob.result.read).toBe(post.id);
     });
 
     it('update', async () => {
@@ -208,20 +208,56 @@ describe('workflow > instructions > sql', () => {
         },
       });
 
+      const CategoryCollection = db.getCollection('categories');
+
       const n1 = await w2.createNode({
         type: 'sql',
         config: {
-          sql: `select count(id) from ${PostCollection.quotedTableName()}`,
+          sql: `select count(id) as count from ${CategoryCollection.quotedTableName()}`,
         },
       });
 
-      const CategoryRepo = db.getCollection('categories').repository;
-      const category = await CategoryRepo.create({ values: { title: 't1' } });
+      const category = await CategoryCollection.repository.create({ values: { title: 't1' } });
 
       const [execution] = await w2.getExecutions();
       expect(execution.status).toBe(EXECUTION_STATUS.RESOLVED);
       const [job] = await execution.getJobs();
       expect(job.status).toBe(JOB_STATUS.RESOLVED);
+      expect(job.result.length).toBe(1);
+      expect(job.result[0].count).toBe(1);
+    });
+  });
+
+  describe('legacy', () => {
+    it('withMeta', async () => {
+      const w2 = await WorkflowModel.create({
+        enabled: true,
+        sync: true,
+        type: 'collection',
+        config: {
+          mode: 1,
+          collection: 'categories',
+        },
+      });
+
+      const CategoryCollection = db.getCollection('categories');
+
+      const n1 = await w2.createNode({
+        type: 'sql',
+        config: {
+          sql: `select count(id) as count from ${CategoryCollection.quotedTableName()}`,
+          withMeta: true,
+        },
+      });
+
+      const category = await CategoryCollection.repository.create({ values: { title: 't1' } });
+
+      const [execution] = await w2.getExecutions();
+      const [sqlJob] = await execution.getJobs({ order: [['id', 'ASC']] });
+      expect(sqlJob.status).toBe(JOB_STATUS.RESOLVED);
+      expect(sqlJob.result.length).toBe(2);
+      expect(sqlJob.result[0].length).toBe(1);
+      expect(sqlJob.result[0][0].count).toBe(1);
     });
   });
 
@@ -249,10 +285,53 @@ describe('workflow > instructions > sql', () => {
       const [execution] = await workflow.getExecutions();
       expect(execution.status).toBe(EXECUTION_STATUS.RESOLVED);
       const [job] = await execution.getJobs();
-      expect(job.result.length).toBe(2);
-      expect(job.result[0].length).toBe(1);
+      expect(job.result.length).toBe(1);
       // @ts-ignore
-      expect(job.result[0][0].id).toBe(post.id);
+      expect(job.result[0].id).toBe(post.id);
+    });
+  });
+
+  describe('dialects', () => {
+    mysql('mysql', () => {
+      it('stored procedure with result', async () => {
+        await db.sequelize.query(`DROP PROCEDURE IF EXISTS hello`);
+        await db.sequelize.query(`CREATE PROCEDURE hello(IN id INT) BEGIN select id + 1 as a; END;`);
+        const n1 = await workflow.createNode({
+          type: 'sql',
+          config: {
+            sql: 'call hello(1)',
+          },
+        });
+
+        await PostRepo.create({ values: { title: 't1' } });
+
+        await sleep(500);
+
+        const [execution] = await workflow.getExecutions();
+        const [sqlJob] = await execution.getJobs({ order: [['id', 'ASC']] });
+        expect(sqlJob.status).toBe(JOB_STATUS.RESOLVED);
+        expect(sqlJob.result).toEqual({ a: 2 });
+      });
+
+      it('stored procedure without result', async () => {
+        await db.sequelize.query(`DROP PROCEDURE IF EXISTS hello`);
+        await db.sequelize.query(`CREATE PROCEDURE hello(IN id INT) BEGIN declare i int default 0; END;`);
+        const n1 = await workflow.createNode({
+          type: 'sql',
+          config: {
+            sql: 'call hello(1)',
+          },
+        });
+
+        await PostRepo.create({ values: { title: 't1' } });
+
+        await sleep(500);
+
+        const [execution] = await workflow.getExecutions();
+        const [sqlJob] = await execution.getJobs({ order: [['id', 'ASC']] });
+        expect(sqlJob.status).toBe(JOB_STATUS.RESOLVED);
+        expect(sqlJob.result).toBe(null);
+      });
     });
   });
 });

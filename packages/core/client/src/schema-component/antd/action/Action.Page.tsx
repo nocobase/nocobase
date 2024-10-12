@@ -15,6 +15,7 @@ import { BackButtonUsedInSubPage } from '../page/BackButtonUsedInSubPage';
 import { TabsContextProvider, useTabsContext } from '../tabs/context';
 import { useActionPageStyle } from './Action.Page.style';
 import { usePopupOrSubpagesContainerDOM } from './hooks/usePopupSlotDOM';
+import { useZIndexContext, zIndexContext } from './zIndexContext';
 
 export function ActionPage({ level }) {
   const filedSchema = useFieldSchema();
@@ -22,13 +23,13 @@ export function ActionPage({ level }) {
   const { getContainerDOM } = usePopupOrSubpagesContainerDOM();
   const { styles } = useActionPageStyle();
   const tabContext = useTabsContext();
+  const parentZIndex = useZIndexContext();
 
   const style = useMemo(() => {
     return {
-      // 20 is the z-index value of the main page
-      zIndex: 20 + level,
+      zIndex: parentZIndex + (level || 0),
     };
-  }, [level]);
+  }, [parentZIndex, level]);
 
   if (!ctx.visible) {
     return null;
@@ -37,18 +38,16 @@ export function ActionPage({ level }) {
   const actionPageNode = (
     <div className={styles.container} style={style}>
       <TabsContextProvider {...tabContext} tabBarExtraContent={<BackButtonUsedInSubPage />}>
-        <RecursionField schema={filedSchema} onlyRenderProperties />
+        <zIndexContext.Provider value={style.zIndex}>
+          <RecursionField schema={filedSchema} onlyRenderProperties />
+        </zIndexContext.Provider>
       </TabsContextProvider>
     </div>
   );
 
   const container = getContainerDOM();
 
-  if (container) {
-    return createPortal(actionPageNode, container);
-  }
-
-  return actionPageNode;
+  return createPortal(actionPageNode, container || document.body);
 }
 
 ActionPage.Footer = observer(

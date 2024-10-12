@@ -48,11 +48,21 @@ import { filterFormBlockSettings } from '../modules/blocks/filter-blocks/form/fi
 import { filterFormItemFieldSettings } from '../modules/blocks/filter-blocks/form/filterFormItemFieldSettings';
 import { markdownBlockSettings } from '../modules/blocks/other-blocks/markdown/markdownBlockSettings';
 import { cascadeSelectComponentFieldSettings } from '../modules/fields/component/CascadeSelect/cascadeSelectComponentFieldSettings';
-import { datePickerComponentFieldSettings } from '../modules/fields/component/DatePicker/datePickerComponentFieldSettings';
+import {
+  datePickerComponentFieldSettings,
+  rangePickerPickerComponentFieldSettings,
+} from '../modules/fields/component/DatePicker/datePickerComponentFieldSettings';
 import { fileManagerComponentFieldSettings } from '../modules/fields/component/FileManager/fileManagerComponentFieldSettings';
 import { previewComponentFieldSettings } from '../modules/fields/component/FileManager/previewComponentFieldSettings';
 import { uploadAttachmentComponentFieldSettings } from '../modules/fields/component/FileManager/uploadAttachmentComponentFieldSettings';
+import { inputJSONSettings } from '../modules/fields/component/Input.JSON/inputJSONSettings';
 import { inputPreviewComponentFieldSettings } from '../modules/fields/component/Input.Preview/settings';
+import { inputTextAreaSettings } from '../modules/fields/component/Input.TextArea/inputTextAreaSettings';
+import { inputURLSettings } from '../modules/fields/component/Input.URL/inputURLSettings';
+import { inputComponentSettings } from '../modules/fields/component/Input/inputComponentSettings';
+import { markdownSettings } from '../modules/fields/component/Markdown/markdownSettings';
+import { markdownVditorSettings } from '../modules/fields/component/MarkdownVditor/markdownVditorSettings';
+import { richTextSettings } from '../modules/fields/component/RichText/richTextSettings';
 // import { inputURLComponentFieldSettings } from '../modules/fields/component/Input.URL/settings';
 import { inputNumberComponentFieldSettings } from '../modules/fields/component/InputNumber/inputNumberComponentFieldSettings';
 import { subformComponentFieldSettings } from '../modules/fields/component/Nester/subformComponentFieldSettings';
@@ -113,9 +123,16 @@ export class SchemaSettingsPlugin extends Plugin {
     this.schemaSettingsManager.add(subformPopoverComponentFieldSettings);
     this.schemaSettingsManager.add(subTablePopoverComponentFieldSettings);
     this.schemaSettingsManager.add(datePickerComponentFieldSettings);
+    this.schemaSettingsManager.add(rangePickerPickerComponentFieldSettings);
     this.schemaSettingsManager.add(unixTimestampComponentFieldSettings);
     this.schemaSettingsManager.add(inputNumberComponentFieldSettings);
-
+    this.schemaSettingsManager.add(inputComponentSettings);
+    this.schemaSettingsManager.add(inputURLSettings);
+    this.schemaSettingsManager.add(inputTextAreaSettings);
+    this.schemaSettingsManager.add(inputJSONSettings);
+    this.schemaSettingsManager.add(markdownSettings);
+    this.schemaSettingsManager.add(markdownVditorSettings);
+    this.schemaSettingsManager.add(richTextSettings);
     this.schemaSettingsManager.add(fileManagerComponentFieldSettings);
     this.schemaSettingsManager.add(tagComponentFieldSettings);
     this.schemaSettingsManager.add(cascadeSelectComponentFieldSettings);

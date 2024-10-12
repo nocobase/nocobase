@@ -32,6 +32,7 @@ import { markRecordAsNew } from '../../../data-source/collection-record/isNewRec
 import { FlagProvider } from '../../../flag-provider';
 import { useCompile } from '../../hooks';
 import { ActionContextProvider } from '../action';
+import { useSubTableSpecialCase } from '../form-item/hooks/useSpecialCase';
 import { Table } from '../table-v2/Table';
 import { SubFormProvider, useAssociationFieldContext, useFieldNames } from './hooks';
 import { useTableSelectorProps } from './InternalPicker';
@@ -43,9 +44,6 @@ const subTableContainer = css`
   }
   .ant-formily-item-error-help {
     display: none;
-  }
-  .ant-description-textarea {
-    line-height: 34px;
   }
   .ant-table-cell .ant-formily-item-error-help {
     display: block;
@@ -101,6 +99,9 @@ export const SubTable: any = observer(
     const labelUiSchema = useLabelUiSchema(collectionField, fieldNames?.label || 'label');
     const recordV2 = useCollectionRecord();
     const collection = useCollection();
+
+    useSubTableSpecialCase({ field });
+
     const move = (fromIndex: number, toIndex: number) => {
       if (toIndex === undefined) return;
       if (!isArr(field.value)) return;
@@ -172,7 +173,7 @@ export const SubTable: any = observer(
           <CollectionRecordProvider record={null} parentRecord={recordV2}>
             <FormActiveFieldsProvider name="nester">
               {/* 在这里加，是为了让 “当前对象” 的配置显示正确 */}
-              <SubFormProvider value={{ value: null, collection }}>
+              <SubFormProvider value={{ value: null, collection, fieldSchema: fieldSchema.parent }}>
                 <Table
                   className={tableClassName}
                   bordered

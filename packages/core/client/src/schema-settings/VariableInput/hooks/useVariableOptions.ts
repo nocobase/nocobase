@@ -9,7 +9,7 @@
 
 import { Form } from '@formily/core';
 import { ISchema, Schema } from '@formily/react';
-import { useMemo } from 'react';
+import { useContext, useMemo } from 'react';
 import { CollectionFieldOptions_deprecated } from '../../../collection-manager';
 import { useAPITokenVariable } from './useAPITokenVariable';
 import { useDatetimeVariable } from './useDateVariable';
@@ -22,6 +22,7 @@ import { useCurrentRecordVariable } from './useRecordVariable';
 import { useCurrentRoleVariable } from './useRoleVariable';
 import { useURLSearchParamsVariable } from './useURLSearchParamsVariable';
 import { useCurrentUserVariable } from './useUserVariable';
+import { VariablesContext } from '../../../';
 
 interface Props {
   /**
@@ -58,6 +59,7 @@ export const useVariableOptions = ({
   targetFieldSchema,
   record,
 }: Props) => {
+  const { filterVariables = () => true } = useContext(VariablesContext) || {};
   const blockParentCollectionName = record?.__parent?.__collectionName;
   const { currentUserSettings } = useCurrentUserVariable({
     maxDepth: 3,
@@ -73,7 +75,7 @@ export const useVariableOptions = ({
     targetFieldSchema,
   });
   const { apiTokenSettings } = useAPITokenVariable({ noDisabled });
-  const { datetimeSettings } = useDatetimeVariable({ operator, schema: uiSchema, noDisabled, targetFieldSchema });
+  const { datetimeSettings } = useDatetimeVariable({ operator, schema: uiSchema, noDisabled: true, targetFieldSchema });
   const { currentFormSettings, shouldDisplayCurrentForm } = useCurrentFormVariable({
     schema: uiSchema,
     collectionField,
@@ -113,7 +115,6 @@ export const useVariableOptions = ({
     targetFieldSchema,
   });
   const { urlSearchParamsSettings, shouldDisplay: shouldDisplayURLSearchParams } = useURLSearchParamsVariable();
-
   return useMemo(() => {
     return [
       currentUserSettings,
@@ -127,7 +128,9 @@ export const useVariableOptions = ({
       shouldDisplayPopupRecord && popupRecordSettings,
       shouldDisplayParentPopupRecord && parentPopupRecordSettings,
       shouldDisplayURLSearchParams && urlSearchParamsSettings,
-    ].filter(Boolean);
+    ]
+      .filter(Boolean)
+      .filter(filterVariables);
   }, [
     currentUserSettings,
     currentRoleSettings,

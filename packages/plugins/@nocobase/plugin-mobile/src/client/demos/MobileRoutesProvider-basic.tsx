@@ -1,12 +1,12 @@
-import React from 'react';
 import { Plugin } from '@nocobase/client';
 import { mockApp } from '@nocobase/client/demo-utils';
 import {
-  MobileTitleProvider,
-  useMobileTitle,
   MobileRoutesProvider,
+  MobileTitleProvider,
   useMobileRoutes,
+  useMobileTitle,
 } from '@nocobase/plugin-mobile/client';
+import React from 'react';
 
 const InnerPage = () => {
   const { routeList } = useMobileRoutes();
@@ -43,7 +43,7 @@ const app = mockApp({
   },
   plugins: [DemoPlugin],
   apis: {
-    'mobileRoutes:list': {
+    'mobileRoutes:listAccessible': {
       data: [
         {
           id: 10,

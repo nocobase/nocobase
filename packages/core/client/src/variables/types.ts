@@ -46,6 +46,10 @@ export interface VariablesContextType {
       appends?: string[];
       /** do not request when the association field is empty */
       doNotRequest?: boolean;
+      /**
+       * The operator related to the current field, provided when parsing the default value of the field
+       */
+      fieldOperator?: string | void;
     },
   ) => Promise<{
     value: any;
@@ -83,6 +87,7 @@ export interface VariablesContextType {
     localVariables?: VariableOption | VariableOption[],
   ) => Promise<CollectionFieldOptions_deprecated>;
   removeVariable: (variableName: string) => void;
+  filterVariables?: (params) => boolean; //自定义过滤变量
 }
 
 export interface VariableOption {

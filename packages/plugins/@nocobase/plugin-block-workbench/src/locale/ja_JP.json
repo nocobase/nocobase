@@ -1,0 +1,10 @@
+{
+  "Workbench": "作業台",
+  "Scan QR code": "QRコードをスキャン",
+  "Album": "アルバム",
+  "No camera device detected": "カメラデバイスが検出されませんでした",
+  "You have not granted permission to use the camera": "カメラの使用許可がありません",
+  "Unknown error": "不明なエラー",
+  "The image size is too large. Please compress it to below 1MB before uploading": "画像サイズが大きすぎます。アップロード前に1MB以下に圧縮してください。",
+  "QR code recognition failed, please scan again": "QRコードの認識に失敗しました。再度スキャンしてください。"
+}

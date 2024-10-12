@@ -80,7 +80,7 @@ export const useCreateGanttBlock = () => {
         };
       });
     const dateFields = collectionFields
-      ?.filter((field) => field.type === 'date')
+      ?.filter((field) => ['date', 'datetime', 'dateOnly', 'datetimeNoTz'].includes(field.type))
       ?.map((field) => {
         return {
           label: field?.uiSchema?.title,

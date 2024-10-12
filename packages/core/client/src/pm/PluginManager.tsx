@@ -100,6 +100,7 @@ const LocalPlugins = () => {
     'Workflow',
     'Users & permissions',
     'Authentication',
+    'Notification',
     'System management',
     'Logging and monitoring',
     'Others',
@@ -197,7 +198,7 @@ const LocalPlugins = () => {
           <div>
             <Space>
               <Button onClick={() => setShowAddForm(true)} type="primary">
-                {t('Add new')}
+                {t('Add & Update')}
               </Button>
             </Space>
           </div>
