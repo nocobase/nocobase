@@ -38,6 +38,13 @@ export class Locale {
       this.app.log.debug('locale resource loaded', { submodule: 'locale', method: 'onAfterLoad' });
       this.app.setMaintainingMessage('locale resource loaded');
     });
+    this.app.syncMessageManager.subscribe('localeManager', async (message) => {
+      switch (message.type) {
+        case 'reload':
+          await this.cache.reset();
+          return;
+      }
+    });
   }
 
   async load() {
@@ -52,6 +59,7 @@ export class Locale {
 
   async reload() {
     await this.cache.reset();
+    this.app.syncMessageManager.publish('localeManager', { type: 'reload' });
   }
 
   setLocaleFn(name: string, fn: (lang: string) => Promise<any>) {
