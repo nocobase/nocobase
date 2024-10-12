@@ -111,7 +111,7 @@ export const useRecordEditActionProps = () => {
   const channelType = channelTypes.find((item) => item.type === recordData.notificationType);
   const editable = channelType?.meta?.editable;
   const style: React.CSSProperties = {};
-  if (!editable) {
+  if (editable === false) {
     style.display = 'none';
   }
   return { style };
@@ -124,7 +124,7 @@ export const useRecordDeleteActionProps = () => {
   const deletable = channelType?.meta?.deletable;
   const style: React.CSSProperties = {};
   const destroyProps = useDestroyActionProps();
-  if (!deletable) {
+  if (deletable === false) {
     style.display = 'none';
   }
   return { ...destroyProps, style };

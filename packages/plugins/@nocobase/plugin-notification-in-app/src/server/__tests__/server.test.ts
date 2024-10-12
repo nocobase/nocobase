@@ -9,7 +9,7 @@
 
 import Database from '@nocobase/database';
 import { createMockServer, MockServer } from '@nocobase/test';
-import { ChannelsDefinition } from '../../types';
+import { ChannelsDefinition, InAppMessagesDefinition as MessagesDefinition } from '../../types';
 import defineMyInAppChannels from '../defineMyInAppChannels';
 
 describe('inapp message channels', () => {
@@ -19,6 +19,9 @@ describe('inapp message channels', () => {
   let users;
   let userAgents;
   let channelsRepo;
+  let messagesRepo;
+  let currUserAgent;
+  let currUserId;
 
   beforeEach(async () => {
     app = await createMockServer({
@@ -28,6 +31,8 @@ describe('inapp message channels', () => {
     db = app.db;
     UserRepo = db.getCollection('users').repository;
     channelsRepo = db.getRepository(ChannelsDefinition.name);
+    const messagesRepo = db.getRepository(MessagesDefinition.name);
+
     users = await UserRepo.create({
       values: [
         { id: 2, nickname: 'a', roles: [{ name: 'root' }] },
@@ -36,6 +41,8 @@ describe('inapp message channels', () => {
     });
 
     userAgents = users.map((user) => app.agent().login(user));
+    currUserAgent = userAgents[0];
+    currUserId = users[0].id;
   });
 
   afterEach(async () => {
@@ -43,8 +50,9 @@ describe('inapp message channels', () => {
   });
 
   describe('myInappChannels', async () => {
-    afterEach(async () => {
+    beforeEach(async () => {
       await channelsRepo.destroy({ truncate: true });
+      await messagesRepo.destroy({ truncate: true });
     });
     test('user can get own channels', async () => {
       defineMyInAppChannels({ app });
@@ -67,5 +75,7 @@ describe('inapp message channels', () => {
       const res = await userAgents[0].resource('myInAppChannels').list();
       expect(res.body.data.length).toBe(1);
     });
+
+    test('filter channels by status', async () => {});
   });
 });
