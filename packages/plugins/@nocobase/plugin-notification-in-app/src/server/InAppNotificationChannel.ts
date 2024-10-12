@@ -76,17 +76,17 @@ export default class InAppNotificationChannel extends BaseNotificationChannel {
     receiveTimestamp?: number;
     options?: Record<string, any>;
   }): Promise<any> => {
-    const chatsRepo = this.app.db.getRepository(ChannelsDefinition.name);
+    const channelsRepo = this.app.db.getRepository(ChannelsDefinition.name);
     const messagesRepo = this.app.db.getRepository(MessagesDefinition.name);
-    let chat = await chatsRepo.findOne({ filter: { senderId, userId } });
-    if (!chat) {
-      chat = await chatsRepo.create({ values: { senderId, userId, title: senderName } });
+    let channel = await channelsRepo.findOne({ filter: { senderId, userId } });
+    if (!channel) {
+      channel = await channelsRepo.create({ values: { senderId, userId, title: senderName } });
     }
     const message = await messagesRepo.create({
       values: {
         content,
         title,
-        chatId: chat.id,
+        chatId: channel.id,
         senderName,
         status,
         userId,
@@ -94,7 +94,7 @@ export default class InAppNotificationChannel extends BaseNotificationChannel {
         options,
       },
     });
-    await chatsRepo.update({ values: { latestMsgId: message.id }, filterByTk: chat.id });
+    await channelsRepo.update({ values: { latestMsgId: message.id }, filterByTk: channel.id });
     return message;
   };
 
