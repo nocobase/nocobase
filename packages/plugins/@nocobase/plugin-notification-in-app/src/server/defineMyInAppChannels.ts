@@ -33,11 +33,25 @@ export default function defineMyInAppChannels({ app }: { app: Application }) {
           };
           const userId = ctx.state.currentUser.id;
           const conditions: any[] = [];
-          if (userId) conditions.push({ userId });
-          if (filter?.latestMsgReceiveTimestamp?.$lt) {
-            conditions.push(Sequelize.literal(`latestMsgReceiveTimestamp < ${filter.latestMsgReceiveTimestamp.$lt}`));
-          }
-          if (filter?.id) conditions.push({ id: filter.id });
+          const userFilter = userId ? { userId } : null;
+
+          const latestMsgReceiveTimestampSQL = `(
+                                SELECT messages.${messagesFieldName.receiveTimestamp}
+                                FROM ${messagesTableName} AS messages
+                                WHERE
+                                    messages.${messagesFieldName.channelId} = ${channelsTableAliasName}.id
+                                ORDER BY messages.${messagesFieldName.receiveTimestamp} DESC
+                                LIMIT 1
+                            )`;
+          const latestMsgReceiveTSFilter = filter?.latestMsgReceiveTimestamp?.$lt
+            ? Sequelize.literal(`${latestMsgReceiveTimestampSQL} < ${filter.latestMsgReceiveTimestamp.$lt}`)
+            : null;
+          const channelIdFilter = filter?.id ? { id: filter.id } : null;
+          const unreadCntOptMap = {
+            all: '>=',
+            unread: '>',
+            read: '=',
+          };
 
           const filterChannelsByStatusSQL = ({ unreadCntOpt }) => {
             return Sequelize.literal(`(
@@ -49,15 +63,15 @@ export default function defineMyInAppChannels({ app }: { app: Application }) {
                   messages.${messagesFieldName.status} = 'unread'
           ) ${unreadCntOpt} 0`);
           };
-          if (filter?.status === 'read') {
-            conditions.push(filterChannelsByStatusSQL({ unreadCntOpt: '=' }));
-          } else if (filter?.status === 'unread') {
-            conditions.push(filterChannelsByStatusSQL({ unreadCntOpt: '>' }));
-          }
+          const channelStatusFilter =
+            filter.status === 'all' || !filter.status
+              ? null
+              : filterChannelsByStatusSQL({ unreadCntOpt: unreadCntOptMap[filter.status] });
 
           const channelsRepo = app.db.getRepository(ChannelsDefinition.name);
           try {
-            const [channels, count] = await channelsRepo.findAndCount({
+            const channelsRes = channelsRepo.find({
+              logging: console.log,
               limit,
               attributes: {
                 include: [
@@ -81,17 +95,7 @@ export default function defineMyInAppChannels({ app }: { app: Application }) {
                             )`),
                     'unreadMsgCnt',
                   ],
-                  [
-                    Sequelize.literal(`(
-                                SELECT messages.${messagesFieldName.receiveTimestamp}
-                                FROM ${messagesTableName} AS messages
-                                WHERE
-                                    messages.${messagesFieldName.channelId} = ${channelsTableAliasName}.id
-                                ORDER BY messages.${messagesFieldName.receiveTimestamp} DESC
-                                LIMIT 1
-                            )`),
-                    'latestMsgReceiveTimestamp',
-                  ],
+                  [Sequelize.literal(latestMsgReceiveTimestampSQL), 'latestMsgReceiveTimestamp'],
                   [
                     Sequelize.literal(`(
                       SELECT messages.${messagesFieldName.title}
@@ -108,9 +112,19 @@ export default function defineMyInAppChannels({ app }: { app: Application }) {
               sort: '-latestMsgReceiveTimestamp',
               //@ts-ignore
               where: {
-                [Op.and]: conditions,
+                [Op.and]: [userFilter, latestMsgReceiveTSFilter, channelIdFilter, channelStatusFilter].filter(Boolean),
               },
             });
+            const countRes = channelsRepo.count({
+              logging: (str) => {
+                console.log(str);
+              },
+              //@ts-ignore
+              where: {
+                [Op.and]: [userFilter, channelStatusFilter].filter(Boolean),
+              },
+            });
+            const [channels, count] = await Promise.all([channelsRes, countRes]);
             ctx.body = { rows: channels, count };
           } catch (error) {
             console.error(error);

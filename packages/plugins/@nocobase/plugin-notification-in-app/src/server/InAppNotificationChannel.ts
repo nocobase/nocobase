@@ -135,7 +135,7 @@ export default class InAppNotificationChannel extends BaseNotificationChannel {
     }
     // add 100 read channels
     const readChannels = await MockChannels({ channelsRepo }, { totalNum: 100, userId: 1 });
-    for (const channel of channels) {
+    for (const channel of readChannels) {
       await MockMessages(
         { messagesRepo, channelsRepo },
 
