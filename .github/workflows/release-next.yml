@@ -148,7 +148,7 @@ jobs:
         shell: bash
         run: |
           git fetch
-          node scripts/release/changelogAndRelease.js --ver alpha
+          node scripts/release/changelogAndRelease.js --ver alpha --cmsURL ${{ secrets.CMS_URL }} --cmsToken ${{ secrets.CMS_TOKEN }}
         env:
           PRO_PLUGIN_REPOS: ${{ vars.NEXT_PRO_PLUGIN_REPOS }}
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
