@@ -106,7 +106,7 @@ async function parsePR(number, pkgType, cwd, pkg, retries = 10) {
   // gh pr view 5112 --json author,body,files
   let res;
   try {
-    const { stdout } = await execa('gh', ['pr', 'view', number, '--json', 'author,body,files,baseRefName,link'], {
+    const { stdout } = await execa('gh', ['pr', 'view', number, '--json', 'author,body,files,baseRefName,url'], {
       cwd,
     });
     res = stdout;
@@ -119,7 +119,7 @@ async function parsePR(number, pkgType, cwd, pkg, retries = 10) {
     }
     return { number };
   }
-  const { author, body, files, baseRefName, link } = JSON.parse(res);
+  const { author, body, files, baseRefName, url } = JSON.parse(res);
   if (ver === 'alpha' && baseRefName !== 'next') {
     return { number };
   }
@@ -139,7 +139,7 @@ async function parsePR(number, pkgType, cwd, pkg, retries = 10) {
     author: author.login,
     moduleType: name?.includes('plugin-') ? 'plugin' : 'core',
     module: name,
-    link,
+    url,
     en: {
       module: displayName || pkgName,
       description,
@@ -275,13 +275,13 @@ async function generateChangelog(changelogs) {
           const moduleResults = [];
           const lists = [];
           for (const changelog of moduleChangelogs) {
-            const { number, author, pro, link } = changelog;
+            const { number, author, pro, url } = changelog;
             const { description, docTitle, docLink } = changelog[lang];
             if (!description) {
               console.warn(`PR #${number} has no ${lang} changelog`);
               continue;
             }
-            const pr = pro && !test ? '' : ` ([#${number}](${link}))`;
+            const pr = pro && !test ? '' : ` ([#${number}](${url}))`;
             const doc = docTitle && docLink ? `${referenceLocale[lang]}[${docTitle}](${docLink})` : '';
             lists.push(`${description}${pr} by @${author}\n${doc}`);
           }
