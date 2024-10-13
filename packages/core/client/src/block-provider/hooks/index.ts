@@ -1509,7 +1509,8 @@ export const useAssociationNames = (dataSource?: string) => {
         ['hasOne', 'hasMany', 'belongsTo', 'belongsToMany', 'belongsToArray'].includes(collectionField.type);
 
       // 根据联动规则中条件的字段获取一些 appends
-      if (s['x-linkage-rules']) {
+      // 需要排除掉子表格和子表单中的联动规则
+      if (s['x-linkage-rules'] && !isSubMode(s)) {
         const collectAppends = (obj) => {
           const type = Object.keys(obj)[0] || '$and';
           const list = obj[type];
