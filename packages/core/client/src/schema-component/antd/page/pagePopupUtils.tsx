@@ -11,6 +11,7 @@ import { ISchema, useFieldSchema } from '@formily/react';
 import _ from 'lodash';
 import { useCallback, useContext } from 'react';
 import { useLocationNoUpdate, useNavigateNoUpdate } from '../../../application';
+import { useTableBlockContext } from '../../../block-provider/TableBlockProvider';
 import {
   CollectionRecord,
   useAssociationName,
@@ -48,6 +49,8 @@ export interface PopupContextStorage extends PopupContext {
   /** used to refresh data for block */
   service?: any;
   sourceId?: string;
+  /** Specifically prepared for the 'Table selected records' variable */
+  tableBlockContext?: { field: any; service: any; rowKey: any; collection: string };
 }
 
 const popupsContextStorage: Record<string, PopupContextStorage> = {};
@@ -154,6 +157,7 @@ export const usePopupUtils = (
       (_parentRecordData || parentRecord?.data)?.[cm.getSourceKeyByAssociation(association)],
     [parentRecord, association],
   );
+  const tableBlockContext = useTableBlockContext();
 
   const setVisibleFromAction = options.setVisible || _setVisibleFromAction;
 
@@ -245,6 +249,7 @@ export const usePopupUtils = (
         collection: collection?.name,
         association,
         sourceId,
+        tableBlockContext,
       });
 
       updatePopupContext(getNewPopupContext(), customActionSchema);
@@ -266,19 +271,17 @@ export const usePopupUtils = (
       isPopupVisibleControlledByURL,
       getSourceId,
       getNewPopupContext,
+      tableBlockContext,
     ],
   );
 
-  const closePopup = useCallback(
-    (currentPopupUid: string) => {
-      if (!isPopupVisibleControlledByURL()) {
-        return setVisibleFromAction?.(false);
-      }
+  const closePopup = useCallback(() => {
+    if (!isPopupVisibleControlledByURL()) {
+      return setVisibleFromAction?.(false);
+    }
 
-      navigate(withSearchParams(removeLastPopupPath(location.pathname)), { replace: true });
-    },
-    [isPopupVisibleControlledByURL, setVisibleFromAction, navigate, location?.pathname],
-  );
+    navigate(withSearchParams(removeLastPopupPath(location.pathname)), { replace: true });
+  }, [isPopupVisibleControlledByURL, setVisibleFromAction, navigate, location?.pathname]);
 
   const changeTab = useCallback(
     (key: string) => {

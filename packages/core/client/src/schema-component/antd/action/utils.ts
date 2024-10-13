@@ -154,5 +154,3 @@ export const setInitialActionState = (field) => {
   field.data.hidden = false;
   field.componentProps['disabled'] = false;
 };
-
-export const antdDrawerZIndex = 1000;

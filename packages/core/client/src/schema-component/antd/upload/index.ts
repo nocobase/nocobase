@@ -8,3 +8,4 @@
  */
 
 export * from './Upload';
+export { attachmentFileTypes } from './shared';

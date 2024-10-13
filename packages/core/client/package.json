@@ -49,6 +49,7 @@
     "markdown-it-highlightjs": "3.3.1",
     "mathjs": "^10.6.0",
     "mermaid": "9.4.3",
+    "mime": "^4.0.4",
     "mime-match": "^1.0.2",
     "react-beautiful-dnd": "^13.1.0",
     "react-drag-listview": "^0.1.9",

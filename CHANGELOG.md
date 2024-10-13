@@ -5,6 +5,98 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.3.32-beta](https://github.com/nocobase/nocobase/compare/v1.3.31-beta...v1.3.32-beta) - 2024-10-13
+
+### 🐛 Bug Fixes
+
+- **[client]** required relational field still triggers validation error after selecting a value with a variable in data scope ([#5399](https://github.com/nocobase/nocobase/pull/5399)) by @katherinehhh
+
+## [v1.3.31-beta](https://github.com/nocobase/nocobase/compare/v1.3.30-beta...v1.3.31-beta) - 2024-10-11
+
+### 🐛 Bug Fixes
+
+- **[client]** Fix the issue where using the chinaRegion field in the filter form fails to correctly filter out values ([#5390](https://github.com/nocobase/nocobase/pull/5390)) by @zhangzhonghe
+
+- **[Action: Import records]** fix import error with wps file ([#5397](https://github.com/nocobase/nocobase/pull/5397)) by @chareice
+
+## [v1.3.30-beta](https://github.com/nocobase/nocobase/compare/v1.3.29-beta...v1.3.30-beta) - 2024-10-11
+
+### 🐛 Bug Fixes
+
+- **[client]**
+  - Fix the rendering error that occurs when displaying file collection relationship fields on mobile devices ([#5387](https://github.com/nocobase/nocobase/pull/5387)) by @zhangzhonghe
+
+  - Fix Create Block menu not loading more data collections ([#5388](https://github.com/nocobase/nocobase/pull/5388)) by @zhangzhonghe
+
+- **[Workflow: Custom action event]**
+  - Fix custom workflow event did not redirect after successful submission by @katherinehhh
+
+  - Fix custom workflow event did not redirect after successful submission by @katherinehhh
+
+## [v1.3.29-beta](https://github.com/nocobase/nocobase/compare/v1.3.28-beta...v1.3.29-beta) - 2024-10-10
+
+### 🚀 Improvements
+
+- **[client]** Date variables are also not prohibited in create form ([#5376](https://github.com/nocobase/nocobase/pull/5376)) by @zhangzhonghe
+
+### 🐛 Bug Fixes
+
+- **[Workflow: SQL node]** fix error when no result when calling stored procedure in SQL instruction ([#5385](https://github.com/nocobase/nocobase/pull/5385)) by @mytharcher
+
+- **[Workflow]** fix date field based schedule trigger caused app crash, and also support other data source ([#5364](https://github.com/nocobase/nocobase/pull/5364)) by @mytharcher
+
+## [v1.3.28-beta](https://github.com/nocobase/nocobase/compare/v1.3.27-beta...v1.3.28-beta) - 2024-10-09
+
+### 🚀 Improvements
+
+- **[client]** Save cdn links as local resources to prevent requesting external resources when deploying on the intranet ([#5375](https://github.com/nocobase/nocobase/pull/5375)) by @zhangzhonghe
+
+### 🐛 Bug Fixes
+
+- **[client]**
+  - Fix the issue where popups opened in the "Users & Permissions" configuration page are obscured by other popups ([#5373](https://github.com/nocobase/nocobase/pull/5373)) by @zhangzhonghe
+
+  - Fix the problem that after deleting a tab in a subpage, it does not take effect after opening it again ([#5362](https://github.com/nocobase/nocobase/pull/5362)) by @zhangzhonghe
+
+  - Fix the issue where inherited collection association fields cannot properly use variables ([#5346](https://github.com/nocobase/nocobase/pull/5346)) by @zhangzhonghe
+
+  - Fix the issue of current and association collection fields affecting each other in configuration ([#5343](https://github.com/nocobase/nocobase/pull/5343)) by @katherinehhh
+
+- **[Action: Import records]** fixed issue with incorrect results for importing large dates ([#5356](https://github.com/nocobase/nocobase/pull/5356)) by @chareice
+
+- **[Workflow]** fix switching component of association field in assigned fields caused page crash in create/update node ([#5366](https://github.com/nocobase/nocobase/pull/5366)) by @mytharcher
+
+- **[Block: Gantt]** Fix the issue where opening a popup in the Gantt block and then closing it causes the subpage to also close ([#5370](https://github.com/nocobase/nocobase/pull/5370)) by @zhangzhonghe
+
+## [v1.3.27-beta](https://github.com/nocobase/nocobase/compare/v1.3.26-beta...v1.3.27-beta) - 2024-09-30
+
+### 🐛 Bug Fixes
+
+- **[client]** Fix variable "Table selected records" ([#5337](https://github.com/nocobase/nocobase/pull/5337)) by @zhangzhonghe
+
+- **[Workflow: Custom action event]** fix custom action event not triggers in association block by @mytharcher
+
+## [v1.3.26-beta](https://github.com/nocobase/nocobase/compare/v1.3.25-beta...v1.3.26-beta) - 2024-09-29
+
+### 🚀 Improvements
+
+- **[client]** Hide scrollbars on mobile ([#5339](https://github.com/nocobase/nocobase/pull/5339)) by @zhangzhonghe
+
+### 🐛 Bug Fixes
+
+- **[client]**
+  - Fix the issue of not being able to open sub-pages in embedded pages ([#5335](https://github.com/nocobase/nocobase/pull/5335)) by @zhangzhonghe
+
+  - Fix the issue of pop-up windows being obscured ([#5338](https://github.com/nocobase/nocobase/pull/5338)) by @zhangzhonghe
+
+  - Fix the issue of abnormal style when creating blocks with data templates in mobile subpages ([#5340](https://github.com/nocobase/nocobase/pull/5340)) by @zhangzhonghe
+
+  - Fix the issue of not refreshing the page block data when closing a subpage via the page menu ([#5331](https://github.com/nocobase/nocobase/pull/5331)) by @zhangzhonghe
+
+- **[Action: Export records]** fix export format for decimal type fields ([#5316](https://github.com/nocobase/nocobase/pull/5316)) by @chareice
+
+- **[Block: Kanban]** Fix the issue that the popup window could not be opened after clicking on the Kanban card in the embedded page ([#5326](https://github.com/nocobase/nocobase/pull/5326)) by @zhangzhonghe
+
 ## [v1.3.25-beta](https://github.com/nocobase/nocobase/compare/v1.3.24-beta...v1.3.25-beta) - 2024-09-25
 
 ### 🚀 Improvements

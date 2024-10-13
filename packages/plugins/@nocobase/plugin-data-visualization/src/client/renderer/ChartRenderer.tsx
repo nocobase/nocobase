@@ -9,7 +9,7 @@
 
 import { useAPIClient } from '@nocobase/client';
 import { Empty, Result, Spin, Typography } from 'antd';
-import React, { useContext } from 'react';
+import React, { useContext, useEffect } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { useData, useFieldTransformer, useFieldsWithAssociation } from '../hooks';
 import { useChartsTranslation } from '../locale';
@@ -18,6 +18,7 @@ import { ChartRendererContext } from './ChartRendererProvider';
 import { useChart } from '../chart/group';
 import { Schema } from '@formily/react';
 import { ChartRendererDesigner } from './ChartRendererDesigner';
+import { uid } from '@formily/shared';
 const { Paragraph, Text } = Typography;
 
 const ErrorFallback = ({ error }) => {
@@ -50,7 +51,21 @@ export const ChartRenderer: React.FC & {
   const chart = useChart(config?.chartType);
   const locale = api.auth.getLocale();
   const transformers = useFieldTransformer(transform, locale);
-  const chartProps = chart?.getProps({
+  // error key is used for resetting error boundary when config changes
+  const [errorKey, setErrorKey] = React.useState(uid());
+  useEffect(() => {
+    setErrorKey(uid());
+  }, [config]);
+
+  if (!chart) {
+    return <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('Please configure chart')} />;
+  }
+
+  if (!(data && data.length) && !service.loading) {
+    return <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('No data')} />;
+  }
+
+  const chartProps = chart.getProps({
     data,
     general,
     advanced,
@@ -64,24 +79,18 @@ export const ChartRenderer: React.FC & {
     }, {}),
   });
   const compiledProps = Schema.compile(chartProps);
-  const C = chart?.Component;
-
-  if (!chart) {
-    return <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('Please configure chart')} />;
-  }
-  if (!(data && data.length) && !service.loading) {
-    return <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('No data')} />;
-  }
+  const C = chart.Component;
 
   return (
     <Spin spinning={service.loading}>
       <ErrorBoundary
+        key={errorKey}
         onError={(error) => {
           console.error(error);
         }}
         FallbackComponent={ErrorFallback}
       >
-        <C {...compiledProps} />
+        {!service.loading && <C {...compiledProps} />}
       </ErrorBoundary>
     </Spin>
   );

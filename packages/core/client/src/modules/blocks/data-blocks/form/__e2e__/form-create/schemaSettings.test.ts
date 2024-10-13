@@ -76,6 +76,10 @@ test.describe('set default value', () => {
     await expect(
       page.getByLabel('block-item-CollectionField-general-form-general.longText-longText').getByRole('textbox'),
     ).toHaveValue('new value');
+
+    // 再次打开设置默认值的弹窗，变量输入框应该显示设置的变量值
+    await openDialog('longText');
+    await expect(page.getByLabel('block-item-VariableInput-')).toHaveText(/Current form \/ singleLineText/);
   });
 
   test('subform: basic fields', async ({ page, mockPage }) => {

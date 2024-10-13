@@ -13,7 +13,7 @@ import { SchemaInitializerItem, useSchemaInitializer, useSchemaInitializerItem }
 import { useCollection_deprecated } from '../../../../collection-manager';
 import { useAssociationName, useCollectionManager } from '../../../../data-source';
 import { useRecordCollectionDataSourceItems } from '../../../../schema-initializer/utils';
-import { useSchemaTemplateManager } from '../../../../schema-templates';
+import { useBlockTemplateContext, useSchemaTemplateManager } from '../../../../schema-templates';
 import { createEditFormBlockUISchema } from './createEditFormBlockUISchema';
 
 /**
@@ -50,6 +50,7 @@ export function useCreateEditFormBlock() {
   const { insert } = useSchemaInitializer();
   const association = useAssociationName();
   const cm = useCollectionManager();
+  const { componentNamePrefix } = useBlockTemplateContext();
 
   const createEditFormBlock = useCallback(
     ({ item }) => {
@@ -76,7 +77,7 @@ export function useCreateEditFormBlock() {
 
   const templateWrap = useCallback(
     (templateSchema, { item }) => {
-      if (item.template.componentName === 'FormItem') {
+      if (item.template.componentName === `${componentNamePrefix}FormItem`) {
         const collectionName = item.collectionName || item.name;
         const collection = cm.getCollection(collectionName);
         const blockSchema = createEditFormBlockUISchema(
@@ -102,7 +103,7 @@ export function useCreateEditFormBlock() {
         return templateSchema;
       }
     },
-    [association, cm],
+    [association, cm, componentNamePrefix],
   );
 
   return { createEditFormBlock, templateWrap };

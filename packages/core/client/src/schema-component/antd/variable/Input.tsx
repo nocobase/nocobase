@@ -92,7 +92,9 @@ const ConstantTypes = {
         />
       );
     },
-    default: false,
+    default() {
+      return false;
+    },
   },
   date: {
     label: '{{t("Date")}}',

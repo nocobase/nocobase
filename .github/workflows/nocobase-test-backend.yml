@@ -1,4 +1,4 @@
-name: NocoBase Backend Test
+name: NocoBase backend test
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}

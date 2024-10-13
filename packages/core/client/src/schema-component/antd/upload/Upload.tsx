@@ -10,7 +10,7 @@
 import { DeleteOutlined, DownloadOutlined, InboxOutlined, LoadingOutlined, PlusOutlined } from '@ant-design/icons';
 import { Field } from '@formily/core';
 import { connect, mapProps, mapReadPretty, useField } from '@formily/react';
-import { Upload as AntdUpload, Button, Modal, Progress, Space, Tooltip } from 'antd';
+import { Alert, Upload as AntdUpload, Button, Modal, Progress, Space, Tooltip } from 'antd';
 import useUploadStyle from 'antd/es/upload/style';
 import cls from 'classnames';
 import { saveAs } from 'file-saver';
@@ -23,16 +23,140 @@ import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
 import { useProps } from '../../hooks/useProps';
 import {
   FILE_SIZE_LIMIT_DEFAULT,
-  isImage,
-  isPdf,
+  attachmentFileTypes,
+  getThumbnailPlaceholderURL,
+  matchMimetype,
   normalizeFile,
   toFileList,
-  toValueItem,
+  toValueItem as toValueItemDefault,
   useBeforeUpload,
   useUploadProps,
 } from './shared';
 import { useStyles } from './style';
 import type { ComposedUpload, DraggerProps, DraggerV2Props, UploadProps } from './type';
+
+attachmentFileTypes.add({
+  match(file) {
+    return matchMimetype(file, 'image/*');
+  },
+  getThumbnailURL(file) {
+    return file.url ? `${file.url}${file.thumbnailRule || ''}` : URL.createObjectURL(file.originFileObj);
+  },
+  Previewer({ index, list, onSwitchIndex }) {
+    const onDownload = useCallback(
+      (e) => {
+        e.preventDefault();
+        const file = list[index];
+        saveAs(file.url, `${file.title}${file.extname}`);
+      },
+      [index, list],
+    );
+    return (
+      <LightBox
+        // discourageDownloads={true}
+        mainSrc={list[index]?.url}
+        nextSrc={list[(index + 1) % list.length]?.url}
+        prevSrc={list[(index + list.length - 1) % list.length]?.url}
+        onCloseRequest={() => onSwitchIndex(null)}
+        onMovePrevRequest={() => onSwitchIndex((index + list.length - 1) % list.length)}
+        onMoveNextRequest={() => onSwitchIndex((index + 1) % list.length)}
+        imageTitle={list[index]?.title}
+        toolbarButtons={[
+          <button
+            key={'preview-img'}
+            style={{ fontSize: 22, background: 'none', lineHeight: 1 }}
+            type="button"
+            aria-label="Download"
+            title="Download"
+            className="ril-zoom-in ril__toolbarItemChild ril__builtinButton"
+            onClick={onDownload}
+          >
+            <DownloadOutlined />
+          </button>,
+        ]}
+      />
+    );
+  },
+});
+
+const iframePreviewSupportedTypes = ['application/pdf', 'audio/*', 'image/*', 'video/*'];
+
+function IframePreviewer({ index, list, onSwitchIndex }) {
+  const { t } = useTranslation();
+  const file = list[index];
+  const onOpen = useCallback(
+    (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      window.open(file.url);
+    },
+    [file],
+  );
+  const onDownload = useCallback(
+    (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      saveAs(file.url, `${file.title}${file.extname}`);
+    },
+    [file],
+  );
+  const onClose = useCallback(() => {
+    onSwitchIndex(null);
+  }, [onSwitchIndex]);
+  return (
+    <Modal
+      open={index != null}
+      title={file.title}
+      onCancel={onClose}
+      footer={[
+        <Button key="open" onClick={onOpen}>
+          {t('Open in new window')}
+        </Button>,
+        <Button key="download" onClick={onDownload}>
+          {t('Download')}
+        </Button>,
+        <Button key="close" onClick={onClose}>
+          {t('Close')}
+        </Button>,
+      ]}
+      width={'85vw'}
+      centered={true}
+    >
+      <div
+        style={{
+          maxWidth: '100%',
+          maxHeight: 'calc(100vh - 256px)',
+          height: '90vh',
+          width: '100%',
+          background: 'white',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          alignItems: 'center',
+          overflowY: 'auto',
+        }}
+      >
+        {iframePreviewSupportedTypes.some((type) => matchMimetype(file, type)) ? (
+          <iframe
+            src={file.url}
+            style={{
+              width: '100%',
+              maxHeight: '90vh',
+              flex: '1 1 auto',
+              border: 'none',
+            }}
+          />
+        ) : (
+          <Alert
+            type="warning"
+            description={t('File type is not supported for previewing, please download it to preview.')}
+            showIcon
+          />
+        )}
+      </div>
+    </Modal>
+  );
+}
 
 function InternalUpload(props: UploadProps) {
   const { onChange, ...rest } = props;
@@ -50,7 +174,6 @@ function ReadPretty({ value, onChange, disabled, multiple, size }: UploadProps) 
   const useUploadStyleVal = (useUploadStyle as any).default ? (useUploadStyle as any).default : useUploadStyle;
   // 加载 antd 的样式
   useUploadStyleVal(prefixCls);
-
   return wrapSSR(
     <div
       className={cls(
@@ -85,6 +208,13 @@ function useSizeHint(size: number) {
   return s !== 0 ? t('File size should not exceed {{size}}.', { size: sizeString }) : '';
 }
 
+function DefaultThumbnailPreviewer({ file }) {
+  const { componentCls: prefixCls } = useStyles();
+  const { getThumbnailURL = getThumbnailPlaceholderURL } = attachmentFileTypes.getTypeByFile(file) ?? {};
+  const imageUrl = getThumbnailURL(file);
+  return <img src={imageUrl} alt={file.title} className={`${prefixCls}-list-item-image`} />;
+}
+
 function AttachmentListItem(props) {
   const { file, disabled, onPreview, onDelete: propsOnDelete, readPretty } = props;
   const { componentCls: prefixCls } = useStyles();
@@ -104,26 +234,22 @@ function AttachmentListItem(props) {
     saveAs(file.url, `${file.title}${file.extname}`);
   }, [file]);
 
+  const { ThumbnailPreviewer = DefaultThumbnailPreviewer } = attachmentFileTypes.getTypeByFile(file) ?? {};
+
   const item = [
     <span key="thumbnail" className={`${prefixCls}-list-item-thumbnail`}>
-      {file.imageUrl && (
-        <img
-          src={`${file.imageUrl}${file.thumbnailRule || ''}`}
-          alt={file.title}
-          className={`${prefixCls}-list-item-image`}
-        />
-      )}
+      <ThumbnailPreviewer file={file} />
     </span>,
     <span key="title" className={`${prefixCls}-list-item-name`} title={file.title}>
       {file.status === 'uploading' ? t('Uploading') : file.title}
     </span>,
   ];
-  const wrappedItem = file.id ? (
+  const wrappedItem = file.url ? (
     <a target="_blank" rel="noopener noreferrer" href={file.url} onClick={handleClick}>
       {item}
     </a>
   ) : (
-    <span className={`${prefixCls}-span`}>{item}</span>
+    <span className={`${prefixCls}-span`}>{item}3</span>
   );
 
   const content = (
@@ -137,7 +263,7 @@ function AttachmentListItem(props) {
       <div className={`${prefixCls}-list-item-info`}>{wrappedItem}</div>
       <span className={`${prefixCls}-list-item-actions`}>
         <Space size={3}>
-          {!readPretty && file.id && (
+          {!readPretty && file.url && (
             <Button size={'small'} type={'text'} icon={<DownloadOutlined />} onClick={onDownload} />
           )}
           {!readPretty && !disabled && file.status !== 'uploading' && (
@@ -166,122 +292,12 @@ function AttachmentListItem(props) {
   );
 }
 
-const PreviewerTypes = [
-  {
-    matcher: isImage,
-    Component({ index, list, onSwitchIndex }) {
-      const onDownload = useCallback(
-        (e) => {
-          e.preventDefault();
-          const file = list[index];
-          saveAs(file.url, `${file.title}${file.extname}`);
-        },
-        [index, list],
-      );
-      return (
-        <LightBox
-          // discourageDownloads={true}
-          mainSrc={list[index]?.imageUrl}
-          nextSrc={list[(index + 1) % list.length]?.imageUrl}
-          prevSrc={list[(index + list.length - 1) % list.length]?.imageUrl}
-          onCloseRequest={() => onSwitchIndex(null)}
-          onMovePrevRequest={() => onSwitchIndex((index + list.length - 1) % list.length)}
-          onMoveNextRequest={() => onSwitchIndex((index + 1) % list.length)}
-          imageTitle={list[index]?.title}
-          toolbarButtons={[
-            <button
-              key={'preview-img'}
-              style={{ fontSize: 22, background: 'none', lineHeight: 1 }}
-              type="button"
-              aria-label="Download"
-              title="Download"
-              className="ril-zoom-in ril__toolbarItemChild ril__builtinButton"
-              onClick={onDownload}
-            >
-              <DownloadOutlined />
-            </button>,
-          ]}
-        />
-      );
-    },
-  },
-  {
-    matcher: isPdf,
-    Component({ index, list, onSwitchIndex }) {
-      const { t } = useTranslation();
-      const onDownload = useCallback(
-        (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          const file = list[index];
-          saveAs(file.url, `${file.title}${file.extname}`);
-        },
-        [index, list],
-      );
-      const onClose = useCallback(() => {
-        onSwitchIndex(null);
-      }, [onSwitchIndex]);
-      return (
-        <Modal
-          open={index != null}
-          title={'PDF - ' + list[index].title}
-          onCancel={onClose}
-          footer={[
-            <Button
-              key="download"
-              style={{
-                textTransform: 'capitalize',
-              }}
-              onClick={onDownload}
-            >
-              {t('Download')}
-            </Button>,
-            <Button key="close" onClick={onClose} style={{ textTransform: 'capitalize' }}>
-              {t('Close')}
-            </Button>,
-          ]}
-          width={'85vw'}
-          centered={true}
-        >
-          <div
-            style={{
-              padding: '8px',
-              maxWidth: '100%',
-              maxHeight: 'calc(100vh - 256px)',
-              height: '90vh',
-              width: '100%',
-              background: 'white',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              overflowY: 'auto',
-            }}
-          >
-            <iframe
-              src={list[index].url}
-              style={{
-                width: '100%',
-                maxHeight: '90vh',
-                flex: '1 1 auto',
-              }}
-            />
-          </div>
-        </Modal>
-      );
-    },
-  },
-];
-
 function Previewer({ index, onSwitchIndex, list }) {
   if (index == null) {
     return null;
   }
   const file = list[index];
-  const { Component } = PreviewerTypes.find((type) => type.matcher(file)) ?? {};
-  if (!Component) {
-    return null;
-  }
-
+  const { Previewer: Component = IframePreviewer } = attachmentFileTypes.getTypeByFile(file) ?? {};
   return <Component index={index} list={list} onSwitchIndex={onSwitchIndex} />;
 }
 
@@ -298,14 +314,7 @@ export function AttachmentList(props) {
   const onPreview = useCallback(
     (file) => {
       const index = fileList.findIndex((item) => item.id === file.id);
-      const previewType = PreviewerTypes.find((type) => type.matcher(file));
-      if (previewType) {
-        setPreview(index);
-      } else {
-        if (file.id) {
-          saveAs(file.url, `${file.title}${file.extname}`);
-        }
-      }
+      setPreview(index);
     },
     [fileList],
   );
@@ -320,12 +329,11 @@ export function AttachmentList(props) {
     },
     [multiple, onChange, value],
   );
-
   return (
     <>
       {fileList.map((file, index) => (
         <AttachmentListItem
-          key={file.id}
+          key={file.id || file.url}
           file={file}
           index={index}
           disabled={disabled}
@@ -340,7 +348,7 @@ export function AttachmentList(props) {
 }
 
 export function Uploader({ rules, ...props }: UploadProps) {
-  const { disabled, multiple, value, onChange } = props;
+  const { disabled, multiple, value, onChange, toValueItem = toValueItemDefault } = props;
   const [pendingList, setPendingList] = useState<any[]>([]);
   const { t } = useTranslation();
   const { componentCls: prefixCls } = useStyles();
@@ -367,7 +375,7 @@ export function Uploader({ rules, ...props }: UploadProps) {
       if (multiple) {
         const uploadedList = info.fileList.filter((file) => file.status === 'done');
         if (uploadedList.length) {
-          const valueList = [...(value ?? []), ...uploadedList.map(toValueItem)];
+          const valueList = [...(value ?? []), ...uploadedList.map((v) => toValueItem(v.response?.data))];
           onChange?.(valueList);
         }
         setPendingList(info.fileList.filter((file) => file.status !== 'done').map(normalizeFile));
@@ -375,7 +383,7 @@ export function Uploader({ rules, ...props }: UploadProps) {
         // NOTE: 用 fileList 里的才有附加的验证状态信息，file 没有（不清楚为何）
         const file = info.fileList.find((f) => f.uid === info.file.uid);
         if (file.status === 'done') {
-          onChange?.(toValueItem(file));
+          onChange?.(toValueItem(file.response?.data));
           setPendingList([]);
         } else {
           setPendingList([normalizeFile(file)]);
@@ -397,7 +405,6 @@ export function Uploader({ rules, ...props }: UploadProps) {
   const sizeHint = useSizeHint(size);
   const selectable =
     !disabled && (multiple || ((!value || (Array.isArray(value) && !value.length)) && !pendingList.length));
-
   return (
     <>
       {pendingList.map((file, index) => (
@@ -440,7 +447,6 @@ export function Uploader({ rules, ...props }: UploadProps) {
 
 function Attachment(props: UploadProps) {
   const { wrapSSR, hashId, componentCls: prefixCls } = useStyles();
-
   return wrapSSR(
     <div className={cls(`${prefixCls}-wrapper`, `${prefixCls}-picture-card-wrapper`, 'nb-upload', hashId)}>
       <div className={cls(`${prefixCls}-list`, `${prefixCls}-list-picture-card`)}>

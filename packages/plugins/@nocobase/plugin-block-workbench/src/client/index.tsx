@@ -44,6 +44,12 @@ export class PluginBlockWorkbenchClient extends Plugin {
       `otherBlocks.${workbenchBlockInitializerItem.name}`,
       workbenchBlockInitializerItem,
     );
+    // 添加到弹窗的 Add block 里
+    this.app.schemaInitializerManager.addItem(
+      'popup:common:addBlock',
+      `otherBlocks.${workbenchBlockInitializerItem.name}`,
+      workbenchBlockInitializerItem,
+    );
 
     // 添加到移动端的 Add block 里
     this.app.schemaInitializerManager.addItem(

@@ -7,11 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Modal } from 'antd';
+import { Modal, Typography } from 'antd';
 import React, { FC } from 'react';
 import { FallbackProps } from 'react-error-boundary';
 import { ErrorFallback } from './ErrorFallback';
-import { Typography } from 'antd';
 const { Paragraph, Text } = Typography;
 
 export const ErrorFallbackModal: FC<FallbackProps> = (props) => {
@@ -42,7 +41,7 @@ export const ErrorFallbackModal: FC<FallbackProps> = (props) => {
   return (
     <>
       <div onMouseOver={() => setOpen(true)}>{props.children || defaultChildren}</div>
-      <Modal open={open} footer={null} onCancel={() => setOpen(false)} width={'60%'}>
+      <Modal zIndex={10000} open={open} footer={null} onCancel={() => setOpen(false)} width={'60%'}>
         <ErrorFallback {...props} />
       </Modal>
     </>
