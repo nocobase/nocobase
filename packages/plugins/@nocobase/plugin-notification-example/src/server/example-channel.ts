@@ -9,7 +9,7 @@
 
 import { BaseNotificationChannel } from '@nocobase/plugin-notification-manager';
 
-export class ExampleSever extends BaseNotificationChannel {
+export class ExampleNotificationChannel extends BaseNotificationChannel {
   async send(args): Promise<any> {
     console.log('ExampleSever send', args);
     return { status: 'success', message: args.message };

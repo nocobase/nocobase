@@ -9,12 +9,12 @@
 
 import PluginNotificationManagerServer from '@nocobase/plugin-notification-manager';
 import { Plugin } from '@nocobase/server';
-import { ExampleSever } from './example-server';
-export class PluginNotificationExampleServer extends Plugin {
+import { ExampleNotificationChannel } from './example-channel';
+export class PluginExampleNotificationChannel extends Plugin {
   async load() {
     const notificationServer = this.pm.get(PluginNotificationManagerServer) as PluginNotificationManagerServer;
-    notificationServer.registerChannelType({ type: 'example-sms', Channel: ExampleSever });
+    notificationServer.registerChannelType({ type: 'example-sms', Channel: ExampleNotificationChannel });
   }
 }
 
-export default PluginNotificationExampleServer;
+export default PluginExampleNotificationChannel;
