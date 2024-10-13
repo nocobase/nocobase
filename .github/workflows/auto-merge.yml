@@ -45,7 +45,7 @@ jobs:
         uses: ad-m/github-push-action@master
         with:
           branch: next
-          ssh: true
+          github_token: ${{ steps.app-token.outputs.token }}
           repository: nocobase/nocobase
           tags: true
           atomic: true
