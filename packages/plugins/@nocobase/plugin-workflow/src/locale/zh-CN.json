@@ -203,5 +203,6 @@
   "End process": "结束流程",
   "End the process immediately, with set status.": "以设置的状态立即结束流程。",
   "End status": "结束状态",
-  "Succeeded": "成功"
+  "Succeeded": "成功",
+  "No variable": "无变量"
 }

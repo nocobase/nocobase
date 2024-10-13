@@ -177,4 +177,19 @@ export default class extends Instruction {
     }
     return job;
   }
+
+  async test(config: RequestConfig) {
+    try {
+      const response = await request(config);
+      return {
+        status: JOB_STATUS.RESOLVED,
+        result: responseSuccess(response, config.onlyData),
+      };
+    } catch (error) {
+      return {
+        status: config.ignoreFail ? JOB_STATUS.RESOLVED : JOB_STATUS.FAILED,
+        result: error.isAxiosError ? error.toJSON() : error.message,
+      };
+    }
+  }
 }
