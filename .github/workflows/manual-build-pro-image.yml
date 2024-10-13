@@ -1,4 +1,4 @@
-name: manual-build-pro-image
+name: Manual build pro image
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
