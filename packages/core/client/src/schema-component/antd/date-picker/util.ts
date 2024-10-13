@@ -217,9 +217,9 @@ export const getDateRanges = (props?: {
 };
 
 function withParams(value: any[], params: { fieldOperator?: string; isParsingVariable?: boolean }) {
-  if (params?.fieldOperator === '$dateBetween' || !params?.isParsingVariable) {
-    return value;
+  if (params?.isParsingVariable && params?.fieldOperator && params.fieldOperator !== '$dateBetween') {
+    return value[0];
   }
 
-  return value[0];
+  return value;
 }
