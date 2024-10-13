@@ -1,4 +1,4 @@
-name: manual-e2e
+name: Manual e2e
 
 on:
   workflow_dispatch:

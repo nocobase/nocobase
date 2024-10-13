@@ -1,4 +1,4 @@
-name: manual-release
+name: Manual release
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}

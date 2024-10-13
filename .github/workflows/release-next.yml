@@ -1,4 +1,4 @@
-name: Release Next
+name: Release next
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}

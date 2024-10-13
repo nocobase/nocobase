@@ -70,7 +70,7 @@ jobs:
       - name: Run script
         shell: bash
         run: |
-          node scripts/release/changelogAndRelease.js --ver ${{ inputs.version }}
+          node scripts/release/changelogAndRelease.js --ver ${{ inputs.version }} --cmsURL ${{ secrets.CMS_URL }} --cmsToken ${{ secrets.CMS_TOKEN }}
         env:
           PRO_PLUGIN_REPOS: ${{ vars.PRO_PLUGIN_REPOS }}
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
