@@ -335,9 +335,7 @@ async function writeChangelog(cn, en, from, to) {
 }
 
 async function createRelease(cn, en, to) {
-  const { stdout } = await execa('gh', ['release', 'list', '--json', 'tagName'], {
-    cwd,
-  });
+  const { stdout } = await execa('gh', ['release', 'list', '--json', 'tagName']);
   const releases = JSON.parse(stdout);
   const tags = releases.map((release) => release.tagName);
   if (tags.includes(to)) {
@@ -389,7 +387,8 @@ async function postCMS(title, content, contentCN) {
     console.error('No cmsToken or cmsURL provided');
     return;
   }
-  await axios.post({
+  await axios.request({
+    method: 'post',
     url: `${cmsURL}/api/articles:updateOrCreate`,
     headers: {
       Authorization: `Bearer ${cmsToken}`,
@@ -404,6 +403,7 @@ async function postCMS(title, content, contentCN) {
       content_cn: contentCN,
       tags: [4],
       status: 'drafted',
+      author: 'nocobase [bot]',
     },
   });
 }
@@ -412,7 +412,9 @@ async function writeChangelogAndCreateRelease() {
   let { ver = 'beta', test } = program.opts();
   const { from, to } = await getVersion();
   let { cn, en } = await getExistsChangelog(from, to);
+  let exists = false;
   if (cn || en) {
+    exists = true;
     console.log('Changelog already exists');
   } else {
     const { changelogs } = await collect(from, to);
@@ -429,7 +431,7 @@ async function writeChangelogAndCreateRelease() {
   if (test) {
     return;
   }
-  if (ver === 'beta') {
+  if (ver === 'beta' && !exists) {
     await writeChangelog(cn, en, from, to);
   }
   await createRelease(cn, en, to);
