@@ -414,21 +414,19 @@ async function writeChangelogAndCreateRelease() {
   let { cn, en } = await getExistsChangelog(from, to);
   if (cn || en) {
     console.log('Changelog already exists');
-    console.log(en);
-    console.log(cn);
-    return;
+  } else {
+    const { changelogs } = await collect(from, to);
+    const c = await generateChangelog(changelogs);
+    cn = c.cn;
+    en = c.en;
+    if (!cn && !en) {
+      console.error('No changelog generated');
+      return;
+    }
   }
-  const { changelogs } = await collect(from, to);
-  const c = await generateChangelog(changelogs);
-  cn = c.cn;
-  en = c.en;
-  if (!cn && !en) {
-    console.error('No changelog generated');
-    return;
-  }
+  console.log(en);
+  console.log(cn);
   if (test) {
-    console.log(en);
-    console.log(cn);
     return;
   }
   if (ver === 'beta') {
