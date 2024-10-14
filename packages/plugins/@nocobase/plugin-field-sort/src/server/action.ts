@@ -84,8 +84,8 @@ export class SortableCollection {
 
   // insert source position to target position
   async move(sourceInstanceId: TargetKey, targetInstanceId: TargetKey, options: MoveOptions = {}) {
-    const sourceInstance = await this.collection.repository.findById(sourceInstanceId);
-    const targetInstance = await this.collection.repository.findById(targetInstanceId);
+    const sourceInstance = await this.collection.repository.findByTargetKey(sourceInstanceId);
+    const targetInstance = await this.collection.repository.findByTargetKey(targetInstanceId);
 
     if (this.scopeKey && sourceInstance.get(this.scopeKey) !== targetInstance.get(this.scopeKey)) {
       await sourceInstance.update({
@@ -97,7 +97,7 @@ export class SortableCollection {
   }
 
   async changeScope(sourceInstanceId: TargetKey, targetScope: any, method?: string) {
-    const sourceInstance = await this.collection.repository.findById(sourceInstanceId);
+    const sourceInstance = await this.collection.repository.findByTargetKey(sourceInstanceId);
     const targetScopeValue = targetScope[this.scopeKey];
 
     if (targetScopeValue && sourceInstance.get(this.scopeKey) !== targetScopeValue) {
@@ -117,7 +117,7 @@ export class SortableCollection {
   }
 
   async sticky(sourceInstanceId: TargetKey) {
-    const sourceInstance = await this.collection.repository.findById(sourceInstanceId);
+    const sourceInstance = await this.collection.repository.findByTargetKey(sourceInstanceId);
     await sourceInstance.update(
       {
         [this.field.get('name')]: 0,

@@ -95,11 +95,10 @@ export const BulkEditField = (props: any) => {
   const { t } = useTranslation();
   const fieldSchema = useFieldSchema();
   const field = useField<Field>();
-  const [type, setType] = useState<number>(BulkEditFormItemValueType.ChangedTo);
+  const [type, setType] = useState<number>(BulkEditFormItemValueType.RemainsTheSame);
   const [value, setValue] = useState(null);
   const { getField } = useCollection_deprecated();
   const collectionField = getField(fieldSchema.name) || {};
-
   useEffect(() => {
     field.value = toFormFieldValue({ [type]: value });
     if (field.required) {
@@ -111,6 +110,12 @@ export const BulkEditField = (props: any) => {
       }
     }
   }, [field, type, value]);
+
+  useEffect(() => {
+    if (field.value === null) {
+      setValue(undefined);
+    }
+  }, [field.value]);
 
   const typeChangeHandler = (val) => {
     setType(val);

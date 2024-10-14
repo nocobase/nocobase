@@ -17,7 +17,7 @@ export type FormatUser = {
   email?: string;
   nickname?: string;
   phone?: string;
-  departments?: string[];
+  departments?: (string | FormatUserDepartment)[];
   isDeleted?: boolean;
   [key: string]: any;
 };
@@ -28,6 +28,12 @@ export type FormatDepartment = {
   parentUid?: string;
   isDeleted?: boolean;
   [key: string]: any;
+};
+
+export type FormatUserDepartment = {
+  uid: string;
+  isOwner?: boolean;
+  isMain?: boolean;
 };
 
 export type UserDataRecord = FormatUser | FormatDepartment;

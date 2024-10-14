@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { DEFAULT_DATA_SOURCE_KEY } from '@nocobase/client';
+import { DEFAULT_DATA_SOURCE_KEY, VariablesContextType } from '@nocobase/client';
 import { moment2str } from '@nocobase/utils/client';
 import dayjs from 'dayjs';
 import { Schema } from '@formily/react';
@@ -170,16 +170,16 @@ export const transformValue = (value: any, props: any) => {
   return value;
 };
 
-export const setDefaultValue = async (field: any, variables: any) => {
+export const setDefaultValue = async (field: any, variablesCtx: VariablesContextType, localVariables?: any) => {
   const defaultValue = field.initialValue;
   const isVariable =
     typeof defaultValue === 'string' && defaultValue?.startsWith('{{$') && defaultValue?.endsWith('}}');
-  if (!isVariable || !variables) {
+  if (!isVariable || !variablesCtx) {
     field.setValue(defaultValue);
     field.setInitialValue(defaultValue);
   } else {
     field.loading = true;
-    const value = await variables.parseVariable(defaultValue);
+    const { value } = await variablesCtx.parseVariable(defaultValue, localVariables);
     const transformedValue = transformValue(value, field.componentProps);
     field.setValue(transformedValue);
     field.setInitialValue(transformedValue);

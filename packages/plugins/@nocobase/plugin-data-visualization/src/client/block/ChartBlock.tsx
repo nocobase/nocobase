@@ -7,14 +7,27 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { SchemaComponentOptions, SchemaInitializerContext, useSchemaInitializer } from '@nocobase/client';
+import { SchemaComponentOptions, SchemaInitializerContext, useSchemaInitializer, useToken } from '@nocobase/client';
 import React, { useState } from 'react';
 import { ChartConfigProvider } from '../configure';
 import { ChartDataProvider } from './ChartDataProvider';
 import { ChartRenderer, ChartRendererProvider } from '../renderer';
 import { ChartFilterBlockProvider, ChartFilterBlockDesigner } from '../filter';
 import { ChartFilterProvider } from '../filter/FilterProvider';
+import { RefreshButton } from '../initializers/RefreshAction';
 import { css } from '@emotion/css';
+
+export const useChartBlockCardProps = (props: any) => {
+  const { token } = useToken();
+  const background = props.style?.background;
+  return {
+    ...props,
+    style: {
+      ...props.style,
+      background: background !== 'none' ? token.colorBgContainer : 'none',
+    },
+  };
+};
 
 export const ChartV2Block: React.FC = (props) => {
   const [initialVisible, setInitialVisible] = useState(false);
@@ -24,7 +37,13 @@ export const ChartV2Block: React.FC = (props) => {
       value={{ ...schemaInitializerContextData, visible: initialVisible, setVisible: setInitialVisible }}
     >
       <SchemaComponentOptions
-        components={{ ChartRenderer, ChartRendererProvider, ChartFilterBlockProvider, ChartFilterBlockDesigner }}
+        components={{
+          ChartRenderer,
+          ChartRendererProvider,
+          ChartFilterBlockProvider,
+          ChartFilterBlockDesigner,
+          RefreshButton,
+        }}
       >
         <div
           className={css`

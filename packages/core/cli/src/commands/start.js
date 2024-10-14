@@ -8,10 +8,11 @@
  */
 
 const { Command } = require('commander');
-const { isDev, run, postCheck, runInstall, promptForTs } = require('../util');
+const { isDev, run, postCheck, downloadPro, promptForTs } = require('../util');
 const { existsSync, rmSync } = require('fs');
 const { resolve } = require('path');
 const chalk = require('chalk');
+const chokidar = require('chokidar');
 
 function deleteSockFiles() {
   const { SOCKET_PATH, PM2_HOME } = process.env;
@@ -38,6 +39,23 @@ module.exports = (cli) => {
     .option('--quickstart')
     .allowUnknownOption()
     .action(async (opts) => {
+      if (opts.quickstart) {
+        await downloadPro();
+      }
+
+      const watcher = chokidar.watch('./storage/plugins/**/*', {
+        cwd: process.cwd(),
+        ignoreInitial: true,
+        ignored: /(^|[\/\\])\../, // 忽略隐藏文件
+        persistent: true,
+        depth: 1, // 只监听第一层目录
+      });
+
+      watcher.on('addDir', async (pathname) => {
+        console.log('pathname', pathname);
+        await run('yarn', ['nocobase', 'pm2-restart']);
+      });
+
       if (opts.port) {
         process.env.APP_PORT = opts.port;
       }

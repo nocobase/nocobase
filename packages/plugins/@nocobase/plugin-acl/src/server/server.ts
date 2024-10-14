@@ -406,7 +406,7 @@ export class PluginACLServer extends Plugin {
       });
     });
 
-    this.app.on('beforeSignOut', ({ userId }) => {
+    this.app.on('cache:del:roles', ({ userId }) => {
       this.app.cache.del(`roles:${userId}`);
     });
     this.app.resourcer.use(setCurrentRole, { tag: 'setCurrentRole', before: 'acl', after: 'auth' });

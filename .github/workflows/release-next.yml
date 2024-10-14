@@ -1,4 +1,4 @@
-name: Release Next
+name: Release next
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -8,26 +8,27 @@ on:
   workflow_dispatch:
 
 jobs:
-  app-token:
-    uses: nocobase/nocobase/.github/workflows/get-nocobase-app-token.yml@main
-    secrets: inherit
   publish-npm:
     runs-on: ubuntu-latest
     container: node:18
-    needs: app-token
     steps:
-      - name: Decrypt app token
+      - uses: actions/create-github-app-token@v1
         id: app-token
-        shell: bash
-        run: |
-          ENCRYPTED_SECRET=${{ needs.app-token.outputs.token }};
-          BINARY_ENCRYPTED_SECRET=$(echo -n "$ENCRYPTED_SECRET" | base64 --decode);
-          APP_TOKEN=$(echo -n "$BINARY_ENCRYPTED_SECRET" | openssl enc -aes-256-cbc -pbkdf2 -d -salt -k "${{ secrets.APP_TOKEN_ENCRYPTION_PASSWORD }}");
-          echo "token=$APP_TOKEN" >> $GITHUB_OUTPUT
+        with:
+          app-id: ${{ vars.NOCOBASE_APP_ID }}
+          private-key: ${{ secrets.NOCOBASE_APP_PRIVATE_KEY }}
+          repositories: nocobase,pro-plugins,${{ join(fromJSON(vars.NEXT_PRO_PLUGIN_REPOS), ',') }},${{ join(fromJSON(vars.CUSTOM_PRO_PLUGIN_REPOS), ',') }}
+          skip-token-revoke: true
+      - name: Get GitHub App User ID
+        id: get-user-id
+        run: echo "user-id=$(gh api "/users/${{ steps.app-token.outputs.app-slug }}[bot]" --jq .id)" >> "$GITHUB_OUTPUT"
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
       - name: Checkout
         uses: actions/checkout@v4
         with:
           ref: next
+          fetch-depth: 0
       - name: Send curl request and parse response
         env:
           PKG_USERNAME: ${{ secrets.PKG_USERNAME }}
@@ -76,8 +77,8 @@ jobs:
       - name: publish npmjs.org
         continue-on-error: true
         run: |
-          git config --global user.email "test@mail.com"
-          git config --global user.name "test"
+          git config --global user.name '${{ steps.app-token.outputs.app-slug }}[bot]'
+          git config --global user.email '${{ steps.get-user-id.outputs.user-id }}+${{ steps.app-token.outputs.app-slug }}[bot]@users.noreply.github.com>'
           git config --global --add safe.directory /__w/nocobase/nocobase
           npm config set access public
           npm config set registry https://registry.npmjs.org/
@@ -99,11 +100,12 @@ jobs:
           repository: nocobase/pro-plugins
           path: packages/pro-plugins
           ref: next
+          fetch-depth: 0
           token: ${{ steps.app-token.outputs.token }}
       - name: Clone pro repos
         shell: bash
         run: |
-          for repo in ${{ join(fromJSON(vars.PRO_PLUGIN_REPOS), ' ') }}
+          for repo in ${{ join(fromJSON(vars.NEXT_PRO_PLUGIN_REPOS), ' ') }} ${{ join(fromJSON(vars.CUSTOM_PRO_PLUGIN_REPOS), ' ') }}
           do
           git clone -b next https://x-access-token:${{ steps.app-token.outputs.token }}@github.com/nocobase/$repo.git packages/pro-plugins/@nocobase/$repo
           done
@@ -124,3 +126,29 @@ jobs:
           bash generate-npmignore.sh ignore-src
           npm config set //pkg-src.nocobase.com/:_authToken=${{ env.PKG_SRC_NOCOBASE_TOKEN }}
           yarn release:force --no-verify-access --no-git-reset --registry https://pkg-src.nocobase.com --dist-tag=next
+      - name: Tag
+        run: |
+          git reset --hard HEAD~
+          git tag v${{ env.NEWVERSION }}
+          git push origin v${{ env.NEWVERSION }}
+          cd ./packages/pro-plugins
+          git reset --hard
+          git tag v${{ env.NEWVERSION }}
+          git push origin v${{ env.NEWVERSION }}
+          cd ../../
+          for repo in ${{ join(fromJSON(vars.NEXT_PRO_PLUGIN_REPOS), ' ') }} ${{ join(fromJSON(vars.CUSTOM_PRO_PLUGIN_REPOS), ' ') }}
+          do
+            cd ./packages/pro-plugins/@nocobase/$repo
+            git reset --hard
+            git tag v${{ env.NEWVERSION }}
+            git push origin v${{ env.NEWVERSION }}
+            cd ../../../../
+          done
+      - name: Run release script
+        shell: bash
+        run: |
+          git fetch
+          node scripts/release/changelogAndRelease.js --ver alpha --cmsURL ${{ secrets.CMS_URL }} --cmsToken ${{ secrets.CMS_TOKEN }}
+        env:
+          PRO_PLUGIN_REPOS: ${{ vars.NEXT_PRO_PLUGIN_REPOS }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}

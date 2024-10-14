@@ -28,6 +28,7 @@ import {
   useCollectionRecord,
   useDataSourceHeaders,
   useFormActiveFields,
+  useParsedFilter,
   useRouterBasename,
   useTableBlockContext,
 } from '../..';
@@ -41,7 +42,7 @@ import { useTreeParentRecord } from '../../modules/blocks/data-blocks/table/Tree
 import { useRecord } from '../../record-provider';
 import { removeNullCondition, useActionContext, useCompile } from '../../schema-component';
 import { isSubMode } from '../../schema-component/antd/association-field/util';
-import { replaceVariables } from '../../schema-component/antd/form-v2/utils';
+import { replaceVariables } from '../../schema-settings/LinkageRules/bindLinkageRulesToFiled';
 import { useCurrentUserContext } from '../../user';
 import { useLocalVariables, useVariables } from '../../variables';
 import { VariableOption, VariablesContextType } from '../../variables/types';
@@ -163,9 +164,9 @@ export function useCollectValuesToSubmit() {
       }
 
       if (isVariable(value)) {
-        const result = await variables?.parseVariable(value, localVariables);
-        if (result) {
-          assignedValues[key] = transformVariableValue(result, { targetCollectionField: collectionField });
+        const { value: parsedValue } = (await variables?.parseVariable(value, localVariables)) || {};
+        if (parsedValue) {
+          assignedValues[key] = transformVariableValue(parsedValue, { targetCollectionField: collectionField });
         }
       } else if (value != null && value !== '') {
         assignedValues[key] = value;
@@ -223,7 +224,7 @@ export const useCreateActionProps = () => {
   return {
     async onClick() {
       const { onSuccess, skipValidator, triggerWorkflows } = actionSchema?.['x-action-settings'] ?? {};
-
+      const { manualClose, redirecting, redirectTo, successMessage, actionAfterSuccess } = onSuccess || {};
       if (!skipValidator) {
         await form.submit();
       }
@@ -241,39 +242,49 @@ export const useCreateActionProps = () => {
             : undefined,
           updateAssociationValues,
         });
-        setVisible?.(false);
+        if (actionAfterSuccess === 'previous' || (!actionAfterSuccess && redirecting !== true)) {
+          setVisible?.(false);
+        }
         setSubmitted?.(true);
         setFormValueChanged?.(false);
         actionField.data.loading = false;
         actionField.data.data = data;
         // __parent?.service?.refresh?.();
-        if (!onSuccess?.successMessage) {
+        if (!successMessage) {
           message.success(t('Saved successfully'));
           await resetFormCorrectly(form);
+          if (((redirecting && !actionAfterSuccess) || actionAfterSuccess === 'redirect') && redirectTo) {
+            if (isURL(redirectTo)) {
+              window.location.href = redirectTo;
+            } else {
+              navigate(redirectTo);
+            }
+          }
+
           return;
         }
-        if (onSuccess?.manualClose) {
+        if (manualClose) {
           modal.success({
-            title: compile(onSuccess?.successMessage),
+            title: compile(successMessage),
             onOk: async () => {
               await resetFormCorrectly(form);
-              if (onSuccess?.redirecting && onSuccess?.redirectTo) {
-                if (isURL(onSuccess.redirectTo)) {
-                  window.location.href = onSuccess.redirectTo;
+              if (((redirecting && !actionAfterSuccess) || actionAfterSuccess === 'redirect') && redirectTo) {
+                if (isURL(redirectTo)) {
+                  window.location.href = redirectTo;
                 } else {
-                  navigate(onSuccess.redirectTo);
+                  navigate(redirectTo);
                 }
               }
             },
           });
         } else {
-          message.success(compile(onSuccess?.successMessage));
+          message.success(compile(successMessage));
           await resetFormCorrectly(form);
-          if (onSuccess?.redirecting && onSuccess?.redirectTo) {
-            if (isURL(onSuccess.redirectTo)) {
-              window.location.href = onSuccess.redirectTo;
+          if (((redirecting && !actionAfterSuccess) || actionAfterSuccess === 'redirect') && redirectTo) {
+            if (isURL(redirectTo)) {
+              window.location.href = redirectTo;
             } else {
-              navigate(onSuccess.redirectTo);
+              navigate(redirectTo);
             }
           }
         }
@@ -311,7 +322,7 @@ export const useAssociationCreateActionProps = () => {
         triggerWorkflows,
       } = actionSchema?.['x-action-settings'] ?? {};
       const addChild = fieldSchema?.['x-component-props']?.addChild;
-
+      const { successMessage } = onSuccess || {};
       const assignedValues = {};
       const waitList = Object.keys(originalAssignedValues).map(async (key) => {
         const value = originalAssignedValues[key];
@@ -324,9 +335,9 @@ export const useAssociationCreateActionProps = () => {
         }
 
         if (isVariable(value)) {
-          const result = await variables?.parseVariable(value, localVariables);
-          if (result) {
-            assignedValues[key] = transformVariableValue(result, { targetCollectionField: collectionField });
+          const { value: parsedValue } = (await variables?.parseVariable(value, localVariables)) || {};
+          if (parsedValue) {
+            assignedValues[key] = transformVariableValue(parsedValue, { targetCollectionField: collectionField });
           }
         } else if (value != null && value !== '') {
           assignedValues[key] = value;
@@ -371,10 +382,10 @@ export const useAssociationCreateActionProps = () => {
         __parent?.service?.refresh?.();
         setVisible?.(false);
         setSubmitted?.(true);
-        if (!onSuccess?.successMessage) {
+        if (!successMessage) {
           return;
         }
-        message.success(compile(onSuccess?.successMessage));
+        message.success(compile(successMessage));
       } catch (error) {
         actionField.data.data = null;
         actionField.data.loading = false;
@@ -560,6 +571,7 @@ export const useCustomizeUpdateActionProps = () => {
   const variables = useVariables();
   const localVariables = useLocalVariables({ currentForm: form });
   const { name, getField } = useCollection_deprecated();
+  const { setVisible } = useActionContext();
 
   return {
     async onClick(e?, callBack?) {
@@ -569,7 +581,7 @@ export const useCustomizeUpdateActionProps = () => {
         skipValidator,
         triggerWorkflows,
       } = actionSchema?.['x-action-settings'] ?? {};
-
+      const { manualClose, redirecting, redirectTo, successMessage, actionAfterSuccess } = onSuccess || {};
       const assignedValues = {};
       const waitList = Object.keys(originalAssignedValues).map(async (key) => {
         const value = originalAssignedValues[key];
@@ -582,9 +594,9 @@ export const useCustomizeUpdateActionProps = () => {
         }
 
         if (isVariable(value)) {
-          const result = await variables?.parseVariable(value, localVariables);
-          if (result) {
-            assignedValues[key] = transformVariableValue(result, { targetCollectionField: collectionField });
+          const { value: parsedValue } = (await variables?.parseVariable(value, localVariables)) || {};
+          if (parsedValue) {
+            assignedValues[key] = transformVariableValue(parsedValue, { targetCollectionField: collectionField });
           }
         } else if (value != null && value !== '') {
           assignedValues[key] = value;
@@ -603,6 +615,9 @@ export const useCustomizeUpdateActionProps = () => {
           ? triggerWorkflows.map((row) => [row.workflowKey, row.context].filter(Boolean).join('!')).join(',')
           : undefined,
       });
+      if (actionAfterSuccess === 'previous' || (!actionAfterSuccess && redirecting !== true)) {
+        setVisible?.(false);
+      }
       // service?.refresh?.();
       if (callBack) {
         callBack?.();
@@ -610,29 +625,29 @@ export const useCustomizeUpdateActionProps = () => {
       if (!(resource instanceof TableFieldResource)) {
         __parent?.service?.refresh?.();
       }
-      if (!onSuccess?.successMessage) {
+      if (!successMessage) {
         return;
       }
-      if (onSuccess?.manualClose) {
+      if (manualClose) {
         modal.success({
-          title: compile(onSuccess?.successMessage),
+          title: compile(successMessage),
           onOk: async () => {
-            if (onSuccess?.redirecting && onSuccess?.redirectTo) {
-              if (isURL(onSuccess.redirectTo)) {
-                window.location.href = onSuccess.redirectTo;
+            if (((redirecting && !actionAfterSuccess) || actionAfterSuccess === 'redirect') && redirectTo) {
+              if (isURL(redirectTo)) {
+                window.location.href = redirectTo;
               } else {
-                navigate(onSuccess.redirectTo);
+                navigate(redirectTo);
               }
             }
           },
         });
       } else {
-        message.success(compile(onSuccess?.successMessage));
-        if (onSuccess?.redirecting && onSuccess?.redirectTo) {
-          if (isURL(onSuccess.redirectTo)) {
-            window.location.href = onSuccess.redirectTo;
+        message.success(compile(successMessage));
+        if (((redirecting && !actionAfterSuccess) || actionAfterSuccess === 'redirect') && redirectTo) {
+          if (isURL(redirectTo)) {
+            window.location.href = redirectTo;
           } else {
-            navigate(onSuccess.redirectTo);
+            navigate(redirectTo);
           }
         }
       }
@@ -657,6 +672,7 @@ export const useCustomizeBulkUpdateActionProps = () => {
   const record = useRecord();
   const { name, getField } = useCollection_deprecated();
   const localVariables = useLocalVariables();
+  const { setVisible } = useActionContext();
 
   return {
     async onClick() {
@@ -665,6 +681,7 @@ export const useCustomizeBulkUpdateActionProps = () => {
         onSuccess,
         updateMode,
       } = actionSchema?.['x-action-settings'] ?? {};
+      const { manualClose, redirecting, redirectTo, successMessage, actionAfterSuccess } = onSuccess || {};
       actionField.data = field.data || {};
       actionField.data.loading = true;
 
@@ -680,16 +697,18 @@ export const useCustomizeBulkUpdateActionProps = () => {
         }
 
         if (isVariable(value)) {
-          const result = await variables?.parseVariable(value, localVariables);
-          if (result) {
-            assignedValues[key] = transformVariableValue(result, { targetCollectionField: collectionField });
+          const { value: parsedValue } = (await variables?.parseVariable(value, localVariables)) || {};
+          if (parsedValue) {
+            assignedValues[key] = transformVariableValue(parsedValue, { targetCollectionField: collectionField });
           }
         } else if (value != null && value !== '') {
           assignedValues[key] = value;
         }
       });
       await Promise.all(waitList);
-
+      if (actionAfterSuccess === 'previous' || (!actionAfterSuccess && redirecting !== true)) {
+        setVisible?.(false);
+      }
       modal.confirm({
         title: t('Bulk update'),
         content: updateMode === 'selected' ? t('Update selected data?') : t('Update all data?'),
@@ -722,29 +741,29 @@ export const useCustomizeBulkUpdateActionProps = () => {
           if (!(resource instanceof TableFieldResource)) {
             __parent?.service?.refresh?.();
           }
-          if (!onSuccess?.successMessage) {
+          if (!successMessage) {
             return;
           }
-          if (onSuccess?.manualClose) {
+          if (manualClose) {
             modal.success({
-              title: compile(onSuccess?.successMessage),
+              title: compile(successMessage),
               onOk: async () => {
-                if (onSuccess?.redirecting && onSuccess?.redirectTo) {
-                  if (isURL(onSuccess.redirectTo)) {
-                    window.location.href = onSuccess.redirectTo;
+                if (((redirecting && !actionAfterSuccess) || actionAfterSuccess === 'redirect') && redirectTo) {
+                  if (isURL(redirectTo)) {
+                    window.location.href = redirectTo;
                   } else {
-                    navigate(onSuccess.redirectTo);
+                    navigate(redirectTo);
                   }
                 }
               },
             });
           } else {
-            message.success(compile(onSuccess?.successMessage));
-            if (onSuccess?.redirecting && onSuccess?.redirectTo) {
-              if (isURL(onSuccess.redirectTo)) {
-                window.location.href = onSuccess.redirectTo;
+            message.success(compile(successMessage));
+            if (((redirecting && !actionAfterSuccess) || actionAfterSuccess === 'redirect') && redirectTo) {
+              if (isURL(redirectTo)) {
+                window.location.href = redirectTo;
               } else {
-                navigate(onSuccess.redirectTo);
+                navigate(redirectTo);
               }
             }
           }
@@ -770,6 +789,7 @@ export const useCustomizeRequestActionProps = () => {
   const currentUserContext = useCurrentUserContext();
   const currentUser = currentUserContext?.data?.data;
   const actionField = useField();
+  const { t } = useTranslation();
   const { setVisible } = useActionContext();
   const { modal } = App.useApp();
   const { getActiveFieldsName } = useFormActiveFields() || {};
@@ -777,6 +797,7 @@ export const useCustomizeRequestActionProps = () => {
   return {
     async onClick() {
       const { skipValidator, onSuccess, requestSettings } = actionSchema?.['x-action-settings'] ?? {};
+      const { manualClose, redirecting, redirectTo, successMessage, actionAfterSuccess } = onSuccess || {};
       const xAction = actionSchema?.['x-action'];
       if (!requestSettings['url']) {
         return;
@@ -821,26 +842,36 @@ export const useCustomizeRequestActionProps = () => {
         }
         service?.refresh?.();
         if (xAction === 'customize:form:request') {
-          setVisible?.(false);
+          if (actionAfterSuccess === 'previous' || (!actionAfterSuccess && redirecting !== true)) {
+            setVisible?.(false);
+          }
         }
-        if (!onSuccess?.successMessage) {
-          return;
+        if (!successMessage) {
+          message.success(t('Saved successfully'));
+          await resetFormCorrectly(form);
+          if (((redirecting && !actionAfterSuccess) || actionAfterSuccess === 'redirect') && redirectTo) {
+            if (isURL(redirectTo)) {
+              window.location.href = redirectTo;
+            } else {
+              navigate(redirectTo);
+            }
+          }
         }
-        if (onSuccess?.manualClose) {
+        if (manualClose) {
           modal.success({
-            title: compile(onSuccess?.successMessage),
+            title: compile(successMessage),
             onOk: async () => {
-              if (onSuccess?.redirecting && onSuccess?.redirectTo) {
-                if (isURL(onSuccess.redirectTo)) {
-                  window.location.href = onSuccess.redirectTo;
+              if (((redirecting && !actionAfterSuccess) || actionAfterSuccess === 'redirect') && redirectTo) {
+                if (isURL(redirectTo)) {
+                  window.location.href = redirectTo;
                 } else {
-                  navigate(onSuccess.redirectTo);
+                  navigate(redirectTo);
                 }
               }
             },
           });
         } else {
-          message.success(compile(onSuccess?.successMessage));
+          message.success(compile(successMessage));
         }
       } finally {
         actionField.data.loading = false;
@@ -853,7 +884,7 @@ export const useUpdateActionProps = () => {
   const form = useForm();
   const filterByTk = useFilterByTk();
   const { field, resource, __parent } = useBlockRequestContext();
-  const { setVisible, setSubmitted, setFormValueChanged } = useActionContext();
+  const { setVisible, setFormValueChanged } = useActionContext();
   const actionSchema = useFieldSchema();
   const navigate = useNavigateNoUpdate();
   const { fields, getField, name } = useCollection_deprecated();
@@ -867,7 +898,7 @@ export const useUpdateActionProps = () => {
   const { getActiveFieldsName } = useFormActiveFields() || {};
 
   return {
-    async onClick() {
+    async onClick(e?, callBack?) {
       const {
         assignedValues: originalAssignedValues = {},
         onSuccess,
@@ -875,7 +906,7 @@ export const useUpdateActionProps = () => {
         skipValidator,
         triggerWorkflows,
       } = actionSchema?.['x-action-settings'] ?? {};
-
+      const { manualClose, redirecting, redirectTo, successMessage, actionAfterSuccess } = onSuccess || {};
       const assignedValues = {};
       const waitList = Object.keys(originalAssignedValues).map(async (key) => {
         const value = originalAssignedValues[key];
@@ -888,9 +919,9 @@ export const useUpdateActionProps = () => {
         }
 
         if (isVariable(value)) {
-          const result = await variables?.parseVariable(value, localVariables);
-          if (result) {
-            assignedValues[key] = transformVariableValue(result, { targetCollectionField: collectionField });
+          const { value: parsedValue } = (await variables?.parseVariable(value, localVariables)) || {};
+          if (parsedValue) {
+            assignedValues[key] = transformVariableValue(parsedValue, { targetCollectionField: collectionField });
           }
         } else if (value != null && value !== '') {
           assignedValues[key] = value;
@@ -930,33 +961,42 @@ export const useUpdateActionProps = () => {
         });
         actionField.data.loading = false;
         // __parent?.service?.refresh?.();
-        setVisible?.(false);
-        setSubmitted?.(true);
+        if (callBack) {
+          callBack?.();
+        }
+        if (actionAfterSuccess === 'previous' || (!actionAfterSuccess && redirecting !== true)) {
+          setVisible?.(false);
+        }
         setFormValueChanged?.(false);
-        if (!onSuccess?.successMessage) {
+        if (!successMessage) {
           return;
         }
-        if (onSuccess?.manualClose) {
+        if (manualClose) {
           modal.success({
-            title: compile(onSuccess?.successMessage),
+            title: compile(successMessage),
             onOk: async () => {
               await form.reset();
-              if (onSuccess?.redirecting && onSuccess?.redirectTo) {
-                if (isURL(onSuccess.redirectTo)) {
-                  window.location.href = onSuccess.redirectTo;
+              if (((redirecting && !actionAfterSuccess) || actionAfterSuccess === 'redirect') && redirectTo) {
+                if (isURL(redirectTo)) {
+                  window.location.href = redirectTo;
                 } else {
-                  navigate(onSuccess.redirectTo);
+                  navigate(redirectTo);
                 }
               }
             },
           });
         } else {
-          message.success(compile(onSuccess?.successMessage));
-          if (onSuccess?.redirecting && onSuccess?.redirectTo) {
-            if (isURL(onSuccess.redirectTo)) {
-              window.location.href = onSuccess.redirectTo;
+          message.success(compile(successMessage));
+          if (
+            ((redirecting && !actionAfterSuccess) ||
+              actionAfterSuccess === 'redirect' ||
+              actionAfterSuccess === 'redirect') &&
+            redirectTo
+          ) {
+            if (isURL(redirectTo)) {
+              window.location.href = redirectTo;
             } else {
-              navigate(onSuccess.redirectTo);
+              navigate(redirectTo);
             }
           }
         }
@@ -1077,13 +1117,25 @@ export const useBulkDestroyActionProps = () => {
   const { field } = useBlockRequestContext();
   const { resource, service } = useBlockRequestContext();
   const { setSubmitted } = useActionContext();
+  const collection = useCollection_deprecated();
+  const { filterTargetKey } = collection;
   return {
     async onClick(e?, callBack?) {
+      let filterByTk = field.data?.selectedRowKeys;
+      if (Array.isArray(filterTargetKey)) {
+        filterByTk = field.data.selectedRowData.map((v) => {
+          const obj = {};
+          filterTargetKey.map((j) => {
+            obj[j] = v[j];
+          });
+          return obj;
+        });
+      }
       if (!field?.data?.selectedRowKeys?.length) {
         return;
       }
       await resource.destroy({
-        filterByTk: field.data?.selectedRowKeys,
+        filterByTk,
       });
       field.data.selectedRowKeys = [];
       const currentPage = service.params[0]?.page;
@@ -1095,7 +1147,7 @@ export const useBulkDestroyActionProps = () => {
         callBack?.();
       }
       setSubmitted?.(true);
-      // service?.refresh?.();
+      service?.refresh?.();
     },
   };
 };
@@ -1245,6 +1297,7 @@ export const useAssociationFilterBlockProps = () => {
   const { props: blockProps } = useBlockRequestContext();
   const headers = useDataSourceHeaders(blockProps?.dataSource);
   const cm = useCollectionManager_deprecated();
+  const { filter, parseVariableLoading } = useParsedFilter({ filterOption: field.componentProps?.params?.filter });
 
   let list, handleSearchInput, params, run, data, valueKey, labelKey, filterKey;
 
@@ -1264,6 +1317,7 @@ export const useAssociationFilterBlockProps = () => {
         pageSize: 200,
         page: 1,
         ...field.componentProps?.params,
+        filter,
       },
     },
     {
@@ -1275,12 +1329,64 @@ export const useAssociationFilterBlockProps = () => {
 
   useEffect(() => {
     // 由于选项字段不需要触发当前请求，所以请求单独在关系字段的时候触发
-    if (!isOptionalField(collectionField)) {
+    if (!isOptionalField(collectionField) && parseVariableLoading === false) {
       run();
     }
 
     // do not format the dependencies
-  }, [collectionField, labelKey, run, valueKey, field.componentProps?.params, field.componentProps?.params?.sort]);
+  }, [
+    collectionField,
+    labelKey,
+    run,
+    valueKey,
+    field.componentProps?.params,
+    field.componentProps?.params?.sort,
+    parseVariableLoading,
+  ]);
+
+  const onSelected = useCallback(
+    (value) => {
+      const { targets, uid } = findFilterTargets(fieldSchema);
+
+      getDataBlocks().forEach((block) => {
+        const target = targets.find((target) => target.uid === block.uid);
+        if (!target) return;
+
+        const key = `${uid}${fieldSchema.name}`;
+        const param = block.service.params?.[0] || {};
+
+        if (!block.service.params?.[1]?.filters) {
+          _.set(block.service.params, '[1].filters', {});
+        }
+
+        // 保留原有的 filter
+        const storedFilter = block.service.params[1].filters;
+
+        if (value.length) {
+          storedFilter[key] = {
+            [filterKey]: value,
+          };
+        } else {
+          if (block.dataLoadingMode === 'manual') {
+            return block.clearData();
+          }
+          delete storedFilter[key];
+        }
+
+        const mergedFilter = mergeFilter([...Object.values(storedFilter), block.defaultFilter]);
+
+        return block.doFilter(
+          {
+            ...param,
+            page: 1,
+            filter: mergedFilter,
+          },
+          { filters: storedFilter },
+        );
+      });
+    },
+    [fieldSchema, filterKey, getDataBlocks],
+  );
 
   if (!collectionField) {
     return {};
@@ -1322,41 +1428,6 @@ export const useAssociationFilterBlockProps = () => {
       });
     };
   }
-
-  const onSelected = (value) => {
-    const { targets, uid } = findFilterTargets(fieldSchema);
-
-    getDataBlocks().forEach((block) => {
-      const target = targets.find((target) => target.uid === block.uid);
-      if (!target) return;
-
-      const key = `${uid}${fieldSchema.name}`;
-      const param = block.service.params?.[0] || {};
-      // 保留原有的 filter
-      const storedFilter = block.service.params?.[1]?.filters || {};
-      if (value.length) {
-        storedFilter[key] = {
-          [filterKey]: value,
-        };
-      } else {
-        if (block.dataLoadingMode === 'manual') {
-          return block.clearData();
-        }
-        delete storedFilter[key];
-      }
-
-      const mergedFilter = mergeFilter([...Object.values(storedFilter), block.defaultFilter]);
-
-      return block.doFilter(
-        {
-          ...param,
-          page: 1,
-          filter: mergedFilter,
-        },
-        { filters: storedFilter },
-      );
-    });
-  };
 
   return {
     /** 渲染 Collapse 的列表数据 */
@@ -1438,7 +1509,8 @@ export const useAssociationNames = (dataSource?: string) => {
         ['hasOne', 'hasMany', 'belongsTo', 'belongsToMany', 'belongsToArray'].includes(collectionField.type);
 
       // 根据联动规则中条件的字段获取一些 appends
-      if (s['x-linkage-rules']) {
+      // 需要排除掉子表格和子表单中的联动规则
+      if (s['x-linkage-rules'] && !isSubMode(s)) {
         const collectAppends = (obj) => {
           const type = Object.keys(obj)[0] || '$and';
           const list = obj[type];
@@ -1661,8 +1733,8 @@ export async function parseVariablesAndChangeParamsToQueryString({
     searchParams.map(async ({ name, value }) => {
       if (typeof value === 'string') {
         if (isVariable(value)) {
-          const result = await variables.parseVariable(value, localVariables);
-          return { name, value: result };
+          const { value: parsedValue } = (await variables.parseVariable(value, localVariables)) || {};
+          return { name, value: parsedValue };
         }
         const result = await replaceVariableValue(value, variables, localVariables);
         return { name, value: result };

@@ -12,7 +12,6 @@ import { action } from '@formily/reactive';
 import { uid } from '@formily/shared';
 import React, { useContext, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-// import { CollectionFieldsTable } from '.';
 import {
   useAPIClient,
   useCurrentAppInfo,
@@ -29,9 +28,8 @@ import {
   CollectionCategoriesContext,
   FieldSummary,
   TemplateSummary,
-  useRequest,
-  useCollectionRecordData,
 } from '@nocobase/client';
+import { getPickerFormat } from '@nocobase/utils/client';
 import { CollectionFields } from './CollectionFields';
 import { collectionSchema } from './schemas/collections';
 
@@ -136,6 +134,10 @@ export const ConfigurationTable = () => {
       if (isFieldInherits && item.template === 'view') {
         return false;
       }
+      //目标表不支持联合主键表
+      if (field.props.name === 'target' && Array.isArray(item.filterTargetKey) && item.filterTargetKey.length > 1) {
+        return false;
+      }
       const templateIncluded = !targetScope?.template || targetScope.template.includes(item.template);
       const nameIncluded = !targetScope?.[field.props?.name] || targetScope[field.props.name].includes(item.name);
       return templateIncluded && nameIncluded;
@@ -166,10 +168,10 @@ export const ConfigurationTable = () => {
   };
 
   const loadFilterTargetKeys = async (field) => {
-    const { name } = field.form.values;
-    const { fields } = getCollection(name);
+    const { name, fields: targetFields } = field.form.values;
+    const { fields } = getCollection(name) || {};
     return Promise.resolve({
-      data: fields,
+      data: fields || targetFields,
     }).then(({ data }) => {
       return data
         .filter((field) => {
@@ -235,6 +237,7 @@ export const ConfigurationTable = () => {
           interfaces,
           enableInherits: database?.dialect === 'postgres',
           isPG: database?.dialect === 'postgres',
+          getPickerFormat,
         }}
       />
     </SchemaComponentContext.Provider>

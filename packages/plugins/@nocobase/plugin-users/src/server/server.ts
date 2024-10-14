@@ -7,11 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Collection, Op } from '@nocobase/database';
+import { Collection, Model, Op } from '@nocobase/database';
 import { Plugin } from '@nocobase/server';
 import { parse } from '@nocobase/utils';
-import { resolve } from 'path';
-import { Cache } from '@nocobase/cache';
 import * as actions from './actions/users';
 import { UserModel } from './models/UserModel';
 import PluginUserDataSyncServer from '@nocobase/plugin-user-data-sync';
@@ -155,19 +153,9 @@ export default class PluginUsersServer extends Plugin {
   }
 
   async load() {
-    await this.importCollections(resolve(__dirname, 'collections'));
-    this.db.addMigrations({
-      namespace: 'users',
-      directory: resolve(__dirname, 'migrations'),
-      context: {
-        plugin: this,
-      },
-    });
-
-    this.app.resourcer.use(async (ctx, next) => {
+    this.app.resourceManager.use(async (ctx, next) => {
       await next();
       const { associatedName, resourceName, actionName, values } = ctx.action.params;
-      const cache = ctx.app.cache as Cache;
       if (
         associatedName === 'roles' &&
         resourceName === 'users' &&
@@ -175,16 +163,23 @@ export default class PluginUsersServer extends Plugin {
         values?.length
       ) {
         // Delete cache when the members of a role changed
-        for (const userId of values) {
-          await cache.del(`roles:${userId}`);
-        }
+        await Promise.all(values.map((userId: number) => this.app.emitAsync('cache:del:roles', { userId })));
       }
     });
 
     const userDataSyncPlugin = this.app.pm.get('user-data-sync') as PluginUserDataSyncServer;
-    if (userDataSyncPlugin) {
+    if (userDataSyncPlugin && userDataSyncPlugin.enabled) {
       userDataSyncPlugin.resourceManager.registerResource(new UserDataSyncResource(this.db, this.app.logger));
     }
+
+    this.app.db.on('users.beforeUpdate', async (model: Model) => {
+      if (!model._changed.has('password')) {
+        return;
+      }
+      model.set('passwordChangeTz', Date.now());
+      await this.app.emitAsync('cache:del:roles', { userId: model.get('id') });
+      await this.app.emitAsync('cache:del:auth', { userId: model.get('id') });
+    });
   }
 
   getInstallingData(options: any = {}) {

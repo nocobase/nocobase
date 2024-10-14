@@ -10,7 +10,7 @@
 import { css, cx } from '@emotion/css';
 import { IFormItemProps, FormItem as Item } from '@formily/antd-v5';
 import { Field } from '@formily/core';
-import { observer, useField, useFieldSchema, useForm } from '@formily/react';
+import { observer, useField, useFieldSchema } from '@formily/react';
 import React, { useEffect, useMemo } from 'react';
 import { ACLCollectionFieldProvider } from '../../../acl/ACLProvider';
 import { useApp } from '../../../application';
@@ -18,15 +18,15 @@ import { useFormActiveFields } from '../../../block-provider/hooks/useFormActive
 import { Collection_deprecated } from '../../../collection-manager';
 import { CollectionFieldProvider } from '../../../data-source/collection-field/CollectionFieldProvider';
 import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
+import { useDataFormItemProps } from '../../../modules/blocks/data-blocks/form/hooks/useDataFormItemProps';
 import { GeneralSchemaDesigner } from '../../../schema-settings';
 import { BlockItem } from '../block-item';
 import { HTMLEncode } from '../input/shared';
 import { FilterFormDesigner } from './FormItem.FilterFormDesigner';
 import { useEnsureOperatorsValid } from './SchemaSettingOptions';
 import useLazyLoadDisplayAssociationFieldsOfForm from './hooks/useLazyLoadDisplayAssociationFieldsOfForm';
+import { useLinkageRulesForSubTableOrSubForm } from './hooks/useLinkageRulesForSubTableOrSubForm';
 import useParseDefaultValue from './hooks/useParseDefaultValue';
-import { useVariables, useContextVariable } from '../../../variables';
-import { useDataFormItemProps } from '../../../modules/blocks/data-blocks/form/hooks/useDataFormItemProps';
 
 Item.displayName = 'FormilyFormItem';
 
@@ -51,16 +51,11 @@ export const FormItem: any = withDynamicSchemaProps(
     const field = useField<Field>();
     const schema = useFieldSchema();
     const { addActiveFieldName } = useFormActiveFields() || {};
-    const form = useForm();
     const { wrapperStyle } = useDataFormItemProps();
-    const variables = useVariables();
-    const contextVariable = useContextVariable();
-    useEffect(() => {
-      variables?.registerVariable(contextVariable);
-    }, [contextVariable, variables]);
-    // 需要放在注冊完变量之后
+
     useParseDefaultValue();
     useLazyLoadDisplayAssociationFieldsOfForm();
+    useLinkageRulesForSubTableOrSubForm();
 
     useEffect(() => {
       addActiveFieldName?.(schema.name as string);

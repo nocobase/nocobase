@@ -29,6 +29,7 @@ type ExportColumn = {
 type ExportOptions = {
   collectionManager: ICollectionManager;
   collection: ICollection;
+  repository?: any;
   columns: Array<ExportColumn>;
   findOptions?: FindOptions;
   chunkSize?: number;
@@ -51,7 +52,7 @@ class XlsxExporter {
   constructor(private options: ExportOptions) {}
 
   async run(ctx?): Promise<XLSX.WorkBook> {
-    const { collection, columns, chunkSize } = this.options;
+    const { collection, columns, chunkSize, repository } = this.options;
 
     const workbook = XLSX.utils.book_new();
     const worksheet = XLSX.utils.sheet_new();
@@ -63,7 +64,7 @@ class XlsxExporter {
 
     let startRowNumber = 2;
 
-    await collection.repository.chunk({
+    await (repository || collection.repository).chunk({
       ...this.getFindOptions(),
       chunkSize: chunkSize || 200,
       callback: async (rows, options) => {
@@ -95,7 +96,7 @@ class XlsxExporter {
         for (let r = 1; r <= cellRange.e.r; r++) {
           const cell = worksheet[XLSX.utils.encode_cell({ c: colIndex, r })];
           // if cell and cell.v is a number, set cell.t to 'n'
-          if (cell && typeof cell.v === 'number') {
+          if (cell && isNumeric(cell.v)) {
             cell.t = 'n';
           }
         }
@@ -151,7 +152,7 @@ class XlsxExporter {
     if (dataIndex.length > 1) {
       let targetCollection: ICollection;
 
-      for (let i = 0; i < dataIndex.length - 1; i++) {
+      for (let i = 0; i < dataIndex.length; i++) {
         const isLast = i === dataIndex.length - 1;
 
         if (isLast) {
@@ -184,43 +185,37 @@ class XlsxExporter {
     return value;
   }
 
+  private getFieldRenderer(field?: IField, ctx?): (value) => any {
+    const InterfaceClass = this.options.collectionManager.getFieldInterface(field?.options?.interface);
+    if (!InterfaceClass) {
+      return this.renderRawValue;
+    }
+    const fieldInternface = new InterfaceClass(field?.options);
+    return (value) => fieldInternface.toString(value, ctx);
+  }
+
   private renderCellValue(rowData: IModel, column: ExportColumn, ctx?) {
     const { dataIndex } = column;
     rowData = rowData.toJSON();
     const value = rowData[dataIndex[0]];
+    const field = this.findFieldByDataIndex(dataIndex);
+    const render = this.getFieldRenderer(field, ctx);
 
     if (dataIndex.length > 1) {
       const deepValue = deepGet(rowData, dataIndex);
 
       if (Array.isArray(deepValue)) {
-        return deepValue.join(',');
+        return deepValue.map(render).join(',');
       }
 
-      return deepValue;
+      return render(deepValue);
     }
-
-    const field = this.findFieldByDataIndex(dataIndex);
-
-    if (!field) {
-      return this.renderRawValue(value);
-    }
-
-    const fieldOptions = field.options;
-    const interfaceName = fieldOptions['interface'];
-
-    if (!interfaceName) {
-      return this.renderRawValue(value);
-    }
-
-    const InterfaceClass = this.options.collectionManager.getFieldInterface(interfaceName);
-
-    if (!InterfaceClass) {
-      return this.renderRawValue(value);
-    }
-
-    const interfaceInstance = new InterfaceClass(fieldOptions);
-    return interfaceInstance.toString(value, ctx);
+    return render(value);
   }
+}
+
+function isNumeric(n) {
+  return !isNaN(parseFloat(n)) && isFinite(n);
 }
 
 export default XlsxExporter;

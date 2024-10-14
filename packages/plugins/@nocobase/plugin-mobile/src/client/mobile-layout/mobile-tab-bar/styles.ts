@@ -33,6 +33,7 @@ export const useStyles = createStyles(() => ({
     justifyContent: 'space-around',
     flex: 1,
     alignItems: 'center',
+    overflowX: 'auto',
     '.adm-tab-bar-item': {
       maxWidth: '100%',
       '.adm-tab-bar-item-title': {

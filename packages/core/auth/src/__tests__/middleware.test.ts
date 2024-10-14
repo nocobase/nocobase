@@ -70,7 +70,7 @@ describe('middleware', () => {
       hasFn.mockImplementation(() => true);
       const res = await agent.resource('auth').check();
       expect(res.status).toBe(401);
-      expect(res.text).toContain('token is not available');
+      expect(res.text).toContain('Token is invalid');
     });
   });
 });

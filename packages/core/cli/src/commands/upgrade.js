@@ -10,7 +10,7 @@
 const chalk = require('chalk');
 const { Command } = require('commander');
 const { resolve } = require('path');
-const { run, promptForTs, runAppCommand, hasCorePackages, updateJsonFile, hasTsNode } = require('../util');
+const { run, promptForTs, runAppCommand, hasCorePackages, downloadPro, hasTsNode } = require('../util');
 const { existsSync, rmSync } = require('fs');
 
 /**
@@ -29,15 +29,18 @@ module.exports = (cli) => {
       if (hasTsNode()) promptForTs();
       if (hasCorePackages()) {
         // await run('yarn', ['install']);
+        await downloadPro();
         await runAppCommand('upgrade');
         return;
       }
       if (options.skipCodeUpdate) {
+        await downloadPro();
         await runAppCommand('upgrade');
         return;
       }
       // await runAppCommand('upgrade');
       if (!hasTsNode()) {
+        await downloadPro();
         await runAppCommand('upgrade');
         return;
       }
@@ -54,8 +57,9 @@ module.exports = (cli) => {
         stdio: 'pipe',
       });
       if (pkg.version === stdout) {
+        await downloadPro();
         await runAppCommand('upgrade');
-        rmAppDir();
+        await rmAppDir();
         return;
       }
       const currentY = 1 * pkg.version.split('.')[1];
@@ -66,7 +70,8 @@ module.exports = (cli) => {
         await run('yarn', ['add', '@nocobase/cli', '@nocobase/devtools', '-W']);
       }
       await run('yarn', ['install']);
+      await downloadPro();
       await runAppCommand('upgrade');
-      rmAppDir();
+      await rmAppDir();
     });
 };

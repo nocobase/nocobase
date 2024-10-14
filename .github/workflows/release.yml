@@ -10,22 +10,17 @@ on:
       - 'v*'
 
 jobs:
-  app-token:
-    uses: nocobase/nocobase/.github/workflows/get-nocobase-app-token.yml@main
-    secrets: inherit
   publish-npm:
     runs-on: ubuntu-latest
     container: node:18
-    needs: app-token
     steps:
-      - name: Decrypt app token
+      - uses: actions/create-github-app-token@v1
         id: app-token
-        shell: bash
-        run: |
-          ENCRYPTED_SECRET=${{ needs.app-token.outputs.token }};
-          BINARY_ENCRYPTED_SECRET=$(echo -n "$ENCRYPTED_SECRET" | base64 --decode);
-          APP_TOKEN=$(echo -n "$BINARY_ENCRYPTED_SECRET" | openssl enc -aes-256-cbc -pbkdf2 -d -salt -k "${{ secrets.APP_TOKEN_ENCRYPTION_PASSWORD }}");
-          echo "token=$APP_TOKEN" >> $GITHUB_OUTPUT
+        with:
+          app-id: ${{ vars.NOCOBASE_APP_ID }}
+          private-key: ${{ secrets.NOCOBASE_APP_PRIVATE_KEY }}
+          repositories: nocobase,pro-plugins,${{ join(fromJSON(vars.PRO_PLUGIN_REPOS), ',') }},${{ join(fromJSON(vars.CUSTOM_PRO_PLUGIN_REPOS), ',') }}
+          skip-token-revoke: true
       - name: Checkout
         uses: actions/checkout@v3
       - name: Send curl request and parse response
@@ -76,7 +71,7 @@ jobs:
       - name: Clone pro repos
         shell: bash
         run: |
-          for repo in ${{ join(fromJSON(vars.PRO_PLUGIN_REPOS), ' ') }}
+          for repo in ${{ join(fromJSON(vars.PRO_PLUGIN_REPOS), ' ') }} ${{ join(fromJSON(vars.CUSTOM_PRO_PLUGIN_REPOS), ' ') }}
           do
           git clone -b main https://x-access-token:${{ steps.app-token.outputs.token }}@github.com/nocobase/$repo.git packages/pro-plugins/@nocobase/$repo
           done

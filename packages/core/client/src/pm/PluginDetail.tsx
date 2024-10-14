@@ -13,7 +13,6 @@ import relativeTime from 'dayjs/plugin/relativeTime';
 import React, { FC, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useRequest } from '../api-client';
-import { PluginDocument } from './PluginDocument';
 import { useStyles } from './style';
 import { IPluginData } from './types';
 
@@ -121,7 +120,7 @@ export const PluginDetail: FC<IPluginDetail> = ({ plugin, onCancel }) => {
       children: (
         <Row gutter={20}>
           {plugin.name && (
-            <Col span={12}>
+            <Col span={24}>
               <div className={styles.PluginDetailBaseInfo}>
                 <Typography.Text type="secondary">{t('Name')}</Typography.Text>
                 <Typography.Text strong>{plugin.name}</Typography.Text>
@@ -129,7 +128,7 @@ export const PluginDetail: FC<IPluginDetail> = ({ plugin, onCancel }) => {
             </Col>
           )}
           {plugin.displayName && (
-            <Col span={12}>
+            <Col span={24}>
               <div className={styles.PluginDetailBaseInfo}>
                 <Typography.Text type="secondary">{t('DisplayName')}</Typography.Text>
                 <Typography.Text strong>{plugin.displayName}</Typography.Text>
@@ -169,7 +168,7 @@ export const PluginDetail: FC<IPluginDetail> = ({ plugin, onCancel }) => {
             </Col>
           )}
           {data?.data?.packageJson.license && (
-            <Col span={12}>
+            <Col span={24}>
               <div className={styles.PluginDetailBaseInfo}>
                 <Typography.Text type="secondary">{t('License')}</Typography.Text>
                 <Typography.Text strong>{data?.data?.packageJson.license}</Typography.Text>
@@ -177,20 +176,14 @@ export const PluginDetail: FC<IPluginDetail> = ({ plugin, onCancel }) => {
             </Col>
           )}
           {author && (
-            <Col span={12}>
+            <Col span={24}>
               <div className={styles.PluginDetailBaseInfo}>
                 <Typography.Text type="secondary">{t('Author')}</Typography.Text>
                 <Typography.Text strong>{author}</Typography.Text>
               </div>
             </Col>
           )}
-          <Col span={12}>
-            <div className={styles.PluginDetailBaseInfo}>
-              <Typography.Text type="secondary">{t('Last updated')}</Typography.Text>
-              <Typography.Text strong>{dayjs(data?.data?.lastUpdated).fromNow()}</Typography.Text>
-            </div>
-          </Col>
-          <Col span={12}>
+          <Col span={24}>
             <div className={styles.PluginDetailBaseInfo}>
               <Typography.Text type="secondary">{t('Version')}</Typography.Text>
               <Typography.Text strong>{plugin?.version}</Typography.Text>
@@ -231,11 +224,11 @@ export const PluginDetail: FC<IPluginDetail> = ({ plugin, onCancel }) => {
         </>
       ),
     },
-    {
-      key: 'changelog',
-      label: t('Changelog'),
-      children: plugin?.changelogUrl ? <PluginDocument url={plugin?.changelogUrl} /> : t('No CHANGELOG.md file'),
-    },
+    // {
+    //   key: 'changelog',
+    //   label: t('Changelog'),
+    //   children: plugin?.changelogUrl ? <PluginDocument url={plugin?.changelogUrl} /> : t('No CHANGELOG.md file'),
+    // },
   ];
 
   return (
@@ -248,9 +241,6 @@ export const PluginDetail: FC<IPluginDetail> = ({ plugin, onCancel }) => {
             <Typography.Title level={3}>{plugin.packageName}</Typography.Title>
             <Space split={<span>&nbsp;•&nbsp;</span>}>
               <span>{plugin.version}</span>
-              <span>
-                {t('Last updated')} {dayjs(data?.data?.lastUpdated).fromNow()}
-              </span>
             </Space>
             <Tabs
               style={{ minHeight: '50vh' }}

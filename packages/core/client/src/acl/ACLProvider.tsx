@@ -20,6 +20,7 @@ import { useResourceActionContext } from '../collection-manager/ResourceActionPr
 import { useDataSourceKey } from '../data-source/data-source/DataSourceProvider';
 import { useRecord } from '../record-provider';
 import { SchemaComponentOptions, useDesignable } from '../schema-component';
+import { CollectionNotAllowViewPlaceholder } from '../data-source';
 
 import { useApp } from '../application';
 
@@ -101,6 +102,13 @@ export const useACLContext = () => {
 
 export const ACLActionParamsContext = createContext<any>({});
 ACLActionParamsContext.displayName = 'ACLActionParamsContext';
+
+export const ACLCustomContext = createContext<any>({});
+ACLCustomContext.displayName = 'ACLCustomContext';
+
+const useACLCustomContext = () => {
+  return useContext(ACLCustomContext);
+};
 
 export const useACLRolesCheck = () => {
   const ctx = useContext(ACLContext);
@@ -204,11 +212,23 @@ export function useACLRoleContext() {
   };
 }
 
+/**
+ * Used to get whether the current user has permission to configure UI
+ * @returns {allowConfigUI: boolean}
+ */
+export function useUIConfigurationPermissions(): { allowConfigUI: boolean } {
+  const { allowAll, snippets } = useACLRoleContext();
+  return {
+    allowConfigUI: allowAll || snippets.includes('ui.*'),
+  };
+}
+
 export const ACLCollectionProvider = (props) => {
   const { allowAll, parseAction } = useACLRoleContext();
+  const { allowAll: customAllowAll } = useACLCustomContext();
   const app = useApp();
   const schema = useFieldSchema();
-  if (allowAll || app.disableAcl) {
+  if (allowAll || app.disableAcl || customAllowAll) {
     return props.children;
   }
   let actionPath = schema?.['x-acl-action'] || props.actionPath;
@@ -222,7 +242,7 @@ export const ACLCollectionProvider = (props) => {
   }
   const params = parseAction(actionPath, { schema });
   if (!params) {
-    return null;
+    return <CollectionNotAllowViewPlaceholder />;
   }
   const [_, actionName] = actionPath.split(':');
   params.actionName = actionName;

@@ -55,7 +55,7 @@ const useParseDataScopeFilter = ({ exclude = defaultExclude }: Props = {}) => {
           if (exclude.includes(getVariableName(value))) {
             return value;
           }
-          const result = variables?.parseVariable(value, localVariables);
+          const result = variables?.parseVariable(value, localVariables).then(({ value }) => value);
           return result;
         },
       });

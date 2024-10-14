@@ -7,7 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { assign, isValidFilter } from '@nocobase/utils';
 import { Context } from '..';
 import { getRepositoryFromParams, pageArgsToLimitArgs } from '../utils';
 import { DEFAULT_PAGE, DEFAULT_PER_PAGE } from '../constants';
@@ -49,9 +48,13 @@ async function listWithPagination(ctx: Context) {
   });
 
   if (simplePaginate) {
+    options.limit = options.limit + 1;
+
     const rows = await repository.find(options);
+
     ctx.body = {
-      rows,
+      rows: rows.slice(0, pageSize),
+      hasNext: rows.length > pageSize,
       page: Number(page),
       pageSize: Number(pageSize),
     };

@@ -13,7 +13,7 @@ import { tval } from '@nocobase/utils/client';
 import { NAMESPACE } from './locale';
 
 function getUniqueKeyFromCollection(collection: Collection) {
-  return collection?.filterTargetKey || collection?.getPrimaryKey() || 'id';
+  return collection?.filterTargetKey?.[0] || collection?.filterTargetKey || collection?.getPrimaryKey() || 'id';
 }
 
 export class MBMFieldInterface extends CollectionFieldInterface {

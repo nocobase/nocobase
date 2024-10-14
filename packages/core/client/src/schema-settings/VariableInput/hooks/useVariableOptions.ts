@@ -10,6 +10,7 @@
 import { Form } from '@formily/core';
 import { ISchema, Schema } from '@formily/react';
 import { useMemo } from 'react';
+import { useVariables } from '../../../';
 import { CollectionFieldOptions_deprecated } from '../../../collection-manager';
 import { useAPITokenVariable } from './useAPITokenVariable';
 import { useDatetimeVariable } from './useDateVariable';
@@ -58,6 +59,7 @@ export const useVariableOptions = ({
   targetFieldSchema,
   record,
 }: Props) => {
+  const { filterVariables = () => true } = useVariables() || {};
   const blockParentCollectionName = record?.__parent?.__collectionName;
   const { currentUserSettings } = useCurrentUserVariable({
     maxDepth: 3,
@@ -73,7 +75,7 @@ export const useVariableOptions = ({
     targetFieldSchema,
   });
   const { apiTokenSettings } = useAPITokenVariable({ noDisabled });
-  const { datetimeSettings } = useDatetimeVariable({ operator, schema: uiSchema, noDisabled, targetFieldSchema });
+  const { datetimeSettings } = useDatetimeVariable({ operator, schema: uiSchema, noDisabled: true, targetFieldSchema });
   const { currentFormSettings, shouldDisplayCurrentForm } = useCurrentFormVariable({
     schema: uiSchema,
     collectionField,
@@ -113,7 +115,6 @@ export const useVariableOptions = ({
     targetFieldSchema,
   });
   const { urlSearchParamsSettings, shouldDisplay: shouldDisplayURLSearchParams } = useURLSearchParamsVariable();
-
   return useMemo(() => {
     return [
       currentUserSettings,
@@ -127,7 +128,9 @@ export const useVariableOptions = ({
       shouldDisplayPopupRecord && popupRecordSettings,
       shouldDisplayParentPopupRecord && parentPopupRecordSettings,
       shouldDisplayURLSearchParams && urlSearchParamsSettings,
-    ].filter(Boolean);
+    ]
+      .filter(Boolean)
+      .filter(filterVariables);
   }, [
     currentUserSettings,
     currentRoleSettings,

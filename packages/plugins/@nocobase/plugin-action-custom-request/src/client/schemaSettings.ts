@@ -7,19 +7,20 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { useFieldSchema } from '@formily/react';
 import {
   AfterSuccess,
   ButtonEditor,
+  RefreshDataBlockRequest,
   RemoveButton,
   SchemaSettings,
   SchemaSettingsLinkageRules,
   SecondConFirm,
   useCollection,
+  useCollectionRecord,
   useSchemaToolbar,
-  RefreshDataBlockRequest,
 } from '@nocobase/client';
 import { CustomRequestACL, CustomRequestSettingsItem } from './components/CustomRequestActionDesigner';
-import { useFieldSchema } from '@formily/react';
 
 export const customizeCustomRequestActionSettings = new SchemaSettings({
   name: 'actionSettings:customRequest',
@@ -38,12 +39,16 @@ export const customizeCustomRequestActionSettings = new SchemaSettings({
       name: 'linkageRules',
       Component: SchemaSettingsLinkageRules,
       useComponentProps() {
-        const { name } = useCollection();
+        const { name } = useCollection() || {};
         const { linkageRulesProps } = useSchemaToolbar();
         return {
           ...linkageRulesProps,
           collectionName: name,
         };
+      },
+      useVisible() {
+        const record = useCollectionRecord();
+        return record && record.data && !record?.isNew;
       },
     },
     {
@@ -69,6 +74,10 @@ export const customizeCustomRequestActionSettings = new SchemaSettings({
         return {
           isPopupAction: false,
         };
+      },
+      useVisible() {
+        const collection = useCollection();
+        return !!collection;
       },
     },
     {

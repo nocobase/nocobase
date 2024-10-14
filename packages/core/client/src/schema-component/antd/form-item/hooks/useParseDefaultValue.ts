@@ -14,8 +14,12 @@ import { getValuesByPath } from '@nocobase/utils/client';
 import _ from 'lodash';
 import { useCallback, useEffect } from 'react';
 import { useRecordIndex } from '../../../../../src/record-provider';
-import { useCollection_deprecated } from '../../../../collection-manager';
+import { useOperators } from '../../../../block-provider/CollectOperators';
+import { useFormBlockContext } from '../../../../block-provider/FormBlockProvider';
+import { InheritanceCollectionMixin, useCollection_deprecated } from '../../../../collection-manager';
 import { useCollectionRecord } from '../../../../data-source/collection-record/CollectionRecordProvider';
+import { DataSourceManager } from '../../../../data-source/data-source/DataSourceManager';
+import { useDataSourceManager } from '../../../../data-source/data-source/DataSourceManagerProvider';
 import { useFlag } from '../../../../flag-provider';
 import { DEBOUNCE_WAIT, useLocalVariables, useVariables } from '../../../../variables';
 import { getPath } from '../../../../variables/utils/getPath';
@@ -39,6 +43,9 @@ const useParseDefaultValue = () => {
   const { getField } = useCollection_deprecated();
   const { isSpecialCase, setDefaultValue } = useSpecialCase();
   const index = useRecordIndex();
+  const { type, form } = useFormBlockContext();
+  const { getOperator } = useOperators();
+  const dm = useDataSourceManager();
 
   /**
    * name: 如 $user
@@ -55,6 +62,13 @@ const useParseDefaultValue = () => {
   );
 
   useEffect(() => {
+    // fix https://github.com/nocobase/nocobase/issues/4868
+    // fix https://tasks.aliyun.nocobase.com/admin/ugmnj2ycfgg/popups/1qlw5c38t3b/puid/dz42x7ffr7i/filterbytk/182
+    // to clear the default value of the field
+    if (type === 'update' && fieldSchema.default && field.form === form) {
+      field.setValue?.(record?.data?.[fieldSchema.name]);
+    }
+
     if (
       fieldSchema.default == null ||
       isInSetDefaultValueDialog ||
@@ -86,7 +100,30 @@ const useParseDefaultValue = () => {
           }
         }
 
-        const value = transformVariableValue(await variables.parseVariable(fieldSchema.default, localVariables), {
+        const {
+          value: parsedValue,
+          collectionName: collectionNameOfVariable,
+          dataSource = 'main',
+        } = await variables.parseVariable(fieldSchema.default, localVariables, {
+          fieldOperator: getOperator(fieldSchema.name),
+        });
+
+        // fix https://tasks.aliyun.nocobase.com/admin/ugmnj2ycfgg/popups/1qlw5c38t3b/puid/dz42x7ffr7i/filterbytk/199
+        if (
+          collectionField?.target &&
+          collectionField.target !== collectionNameOfVariable &&
+          !isInherit({
+            collectionName: collectionField.target,
+            targetCollectionName: collectionNameOfVariable,
+            dm,
+            dataSource,
+          })
+        ) {
+          field.loading = false;
+          return;
+        }
+
+        const value = transformVariableValue(parsedValue, {
           targetCollectionField: collectionField,
         });
 
@@ -154,7 +191,30 @@ const useParseDefaultValue = () => {
       // 解决子表格（或子表单）中新增一行数据时，默认值不生效的问题
       field.setValue(fieldSchema.default);
     }
-  }, [fieldSchema.default, localVariables]);
+  }, [fieldSchema.default, localVariables, type, getOperator, dm]);
 };
 
 export default useParseDefaultValue;
+
+/**
+ * Determine if there is an inheritance relationship between two data tables
+ * @param param0
+ * @returns
+ */
+const isInherit = ({
+  collectionName,
+  targetCollectionName,
+  dm,
+  dataSource,
+}: {
+  collectionName: string;
+  targetCollectionName: string;
+  dm: DataSourceManager;
+  dataSource: string;
+}) => {
+  const cm = dm?.getDataSource(dataSource)?.collectionManager;
+  return cm
+    ?.getCollection<InheritanceCollectionMixin>(collectionName)
+    ?.getAllCollectionsInheritChain()
+    ?.includes(targetCollectionName);
+};

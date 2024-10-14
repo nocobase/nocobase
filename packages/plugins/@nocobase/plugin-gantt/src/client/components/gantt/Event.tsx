@@ -8,11 +8,26 @@
  */
 
 import { observer } from '@formily/react';
+import {
+  PopupContextProvider,
+  useCollection,
+  useCollectionRecordData,
+  VariablePopupRecordProvider,
+} from '@nocobase/client';
 import React from 'react';
 
 export const Event = observer(
   (props) => {
-    return <>{props.children}</>;
+    const recordData = useCollectionRecordData();
+    const collection = useCollection();
+
+    return (
+      <PopupContextProvider>
+        <VariablePopupRecordProvider recordData={recordData} collection={collection}>
+          {props.children}
+        </VariablePopupRecordProvider>
+      </PopupContextProvider>
+    );
   },
   { displayName: 'Event' },
 );

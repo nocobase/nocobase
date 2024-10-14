@@ -12,6 +12,7 @@ import { SyncSourceManager } from './sync-source-manager';
 import { Context } from '@nocobase/actions';
 import { SyncSource } from './sync-source';
 import { Logger } from '@nocobase/logger';
+import { ExternalAPIError } from './error';
 
 export class UserDataSyncService {
   resourceManager: UserDataResourceManager;
@@ -105,7 +106,11 @@ export class UserDataSyncService {
         `sync task of source: ${source.instance.name} sourceType: ${source.instance.sourceType} error: ${err.message}`,
         { method: 'runSync', err: err.stack, cause: err.cause },
       );
-      await source.endTask({ taskId: task.id, success: false, message: err.message });
+      let message = err.message;
+      if (err instanceof ExternalAPIError) {
+        message = 'The sync source API call failed. Please check the logs to troubleshoot the issue.';
+      }
+      await source.endTask({ taskId: task.id, success: false, message });
     }
   }
 }

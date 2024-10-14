@@ -49,7 +49,11 @@ const getFieldPath = (variablePath: string, variablesStore: Record<string, Varia
   };
 };
 
-const VariablesProvider = ({ children }) => {
+/**
+ * @internal
+ * Note: There can only be one VariablesProvider in the entire context. It cannot be used in plugins.
+ */
+const VariablesProvider = ({ children, filterVariables }: any) => {
   const ctxRef = useRef<Record<string, any>>({});
   const api = useAPIClient();
   const { getCollectionJoinField, getCollection } = useCollectionManager_deprecated();
@@ -69,7 +73,7 @@ const VariablesProvider = ({ children }) => {
    * 2. 如果某个 `key` 不存在，且 `key` 是一个关联字段，则从 api 中获取数据，并缓存到 `ctx` 中
    * 3. 如果某个 `key` 不存在，且 `key` 不是一个关联字段，则返回当前值
    */
-  const getValue = useCallback(
+  const getResult = useCallback(
     async (
       variablePath: string,
       localVariables?: VariableOption[],
@@ -78,6 +82,10 @@ const VariablesProvider = ({ children }) => {
         appends?: string[];
         /** do not request when the association field is empty */
         doNotRequest?: boolean;
+        /**
+         * The operator related to the current field, provided when parsing the default value of the field
+         */
+        fieldOperator?: string | void;
       },
     ) => {
       const list = variablePath.split('.');
@@ -87,13 +95,23 @@ const VariablesProvider = ({ children }) => {
       const { fieldPath, dataSource, variableOption } = getFieldPath(variableName, _variableToCollectionName);
       let collectionName = fieldPath;
 
+      const { fieldPath: fieldPathOfVariable } = getFieldPath(variablePath, _variableToCollectionName);
+      const collectionNameOfVariable =
+        list.length === 1
+          ? variableOption?.collectionName
+          : getCollectionJoinField(fieldPathOfVariable, dataSource)?.target;
+
       if (!(variableName in current)) {
         throw new Error(`VariablesProvider: ${variableName} is not found`);
       }
 
       for (let index = 0; index < list.length; index++) {
         if (current == null) {
-          return current === undefined ? variableOption.defaultValue : current;
+          return {
+            value: current === undefined ? variableOption?.defaultValue : current,
+            dataSource,
+            collectionName: collectionNameOfVariable,
+          };
         }
 
         const key = list[index];
@@ -171,8 +189,14 @@ const VariablesProvider = ({ children }) => {
         }
       }
 
-      const result = compile(_.isFunction(current) ? current() : current);
-      return result === undefined ? variableOption.defaultValue : result;
+      const _value = compile(
+        _.isFunction(current) ? current({ fieldOperator: options?.fieldOperator, isParsingVariable: true }) : current,
+      );
+      return {
+        value: _value === undefined ? variableOption.defaultValue : _value,
+        dataSource,
+        collectionName: collectionNameOfVariable,
+      };
     },
     [getCollectionJoinField],
   );
@@ -237,6 +261,10 @@ const VariablesProvider = ({ children }) => {
         appends?: string[];
         /** do not request when the association field is empty */
         doNotRequest?: boolean;
+        /**
+         * The operator related to the current field, provided when parsing the default value of the field
+         */
+        fieldOperator?: string | void;
       },
     ) => {
       if (!isVariable(str)) {
@@ -248,11 +276,14 @@ const VariablesProvider = ({ children }) => {
       }
 
       const path = getPath(str);
-      const value = await getValue(path, localVariables as VariableOption[], options);
+      const result = await getResult(path, localVariables as VariableOption[], options);
 
-      return uniq(filterEmptyValues(value));
+      return {
+        ...result,
+        value: uniq(filterEmptyValues(result.value)),
+      };
     },
-    [getValue],
+    [getResult],
   );
 
   const getCollectionField = useCallback(
@@ -304,6 +335,7 @@ const VariablesProvider = ({ children }) => {
         getVariable,
         getCollectionField,
         removeVariable,
+        filterVariables,
       }) as VariablesContextType,
     [getCollectionField, getVariable, parseVariable, registerVariable, removeVariable, setCtx],
   );

@@ -12,7 +12,8 @@ import { uid } from '@formily/shared';
 import lodash from 'lodash';
 import { SelectedField } from './configure';
 import { FieldOption } from './hooks';
-import { QueryProps } from './renderer';
+import { ChartRendererContext, QueryProps } from './renderer';
+import { useContext } from 'react';
 
 export const createRendererSchema = (decoratorProps: any, componentProps = {}) => {
   const { collection, config } = decoratorProps;
@@ -31,6 +32,26 @@ export const createRendererSchema = (decoratorProps: any, componentProps = {}) =
     },
     'x-initializer': 'charts:addBlock',
     properties: {
+      actions: {
+        type: 'void',
+        'x-decorator': 'div',
+        'x-decorator-props': {
+          style: {
+            position: 'absolute',
+            top: 0,
+            right: 0,
+            zIndex: 10,
+          },
+        },
+        'x-component': 'ActionBar',
+        'x-component-props': {
+          style: {
+            marginRight: 'var(--nb-designer-offset)',
+            marginTop: 'var(--nb-designer-offset)',
+          },
+        },
+        'x-initializer': 'chart:configureActions',
+      },
       [uid()]: {
         type: 'void',
         'x-component': 'ChartRenderer',
@@ -73,6 +94,7 @@ export const getSelectedFields = (fields: FieldOption[], query: QueryProps) => {
         key: selectedField.alias || fieldProps?.key,
         label: selectedField.alias || fieldProps?.label,
         value: selectedField.alias || fieldProps?.value,
+        query: selectedField,
       };
     });
   };
@@ -84,7 +106,7 @@ export const getSelectedFields = (fields: FieldOption[], query: QueryProps) => {
   return selectedFields;
 };
 
-export const processData = (selectedFields: FieldOption[], data: any[], scope: any) => {
+export const processData = (selectedFields: (FieldOption & { query?: any })[], data: any[], scope: any) => {
   const parseEnum = (field: FieldOption, value: any) => {
     const options = field.uiSchema?.enum as { value: string; label: string }[];
     if (!options || !Array.isArray(options)) {
@@ -99,7 +121,7 @@ export const processData = (selectedFields: FieldOption[], data: any[], scope: a
   return data.map((record) => {
     const processed = {};
     Object.entries(record).forEach(([key, value]) => {
-      const field = selectedFields.find((field) => field.value === key);
+      const field = selectedFields.find((field) => field.value === key && !field?.query?.aggregation);
       if (!field) {
         processed[key] = value;
         return;

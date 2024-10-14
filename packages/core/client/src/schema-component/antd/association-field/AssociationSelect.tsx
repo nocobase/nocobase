@@ -41,7 +41,7 @@ export const filterAnalyses = (filters): any[] => {
     if (!operator) {
       return true;
     }
-    const regex = /\{\{\$(?:[a-zA-Z_]\w*)\.([a-zA-Z_]\w*)(?:\.id)?\}\}/;
+    const regex = /\{\{\$[a-zA-Z_]\w*(?:\.[a-zA-Z_]\w*)*\.(\w+)\.id\}\}/;
     const fieldName = jsonlogic?.value?.match?.(regex)?.[1];
     if (fieldName) {
       results.push(fieldName);
@@ -79,9 +79,14 @@ const InternalAssociationSelect = observer(
         //支持深层次子表单
         onFieldInputValueChange('*', (fieldPath: any) => {
           const linkageFields = filterAnalyses(field.componentProps?.service?.params?.filter) || [];
-          if (linkageFields.includes(fieldPath?.props?.name) && field.value) {
-            field.setValue(field.initialValue);
-            setInnerValue(field.initialValue);
+          if (
+            linkageFields.includes(fieldPath?.props?.name) &&
+            field.value &&
+            fieldPath?.indexes?.[0] === field?.indexes?.[0] &&
+            fieldPath?.props?.name !== field.props.name
+          ) {
+            field.setValue(undefined);
+            setInnerValue(undefined);
           }
         });
       });

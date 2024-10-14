@@ -7,6 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 export default {
   'Configure calendar': '配置日历',
   'Title field': '标题字段',
@@ -52,4 +61,8 @@ export default {
   Monthly: '每月',
   Yearly: '每年',
   Repeats: '重复',
+  'Background color field': '背景颜色字段',
+  'Not selected': '未选择',
+  "Title":"标题",
+  "{{count}} more items":"{{count}} 更多事项"
 };

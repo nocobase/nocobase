@@ -8,11 +8,34 @@
  */
 
 import { observer } from '@formily/react';
-import React from 'react';
+import {
+  PopupContextProvider,
+  useActionContext,
+  useCollection,
+  useCollectionRecordData,
+  VariablePopupRecordProvider,
+} from '@nocobase/client';
+import React, { useCallback } from 'react';
+import { DeleteEventContext } from './Calendar';
 
 export const Event = observer(
   (props) => {
-    return <>{props.children}</>;
+    const { visible, setVisible } = useActionContext();
+    const recordData = useCollectionRecordData();
+    const collection = useCollection();
+
+    const close = useCallback(() => {
+      setVisible(false);
+    }, [setVisible]);
+    return (
+      <PopupContextProvider visible={visible} setVisible={setVisible}>
+        <DeleteEventContext.Provider value={{ close, allowDeleteEvent: true }}>
+          <VariablePopupRecordProvider recordData={recordData} collection={collection}>
+            {props.children}
+          </VariablePopupRecordProvider>
+        </DeleteEventContext.Provider>
+      </PopupContextProvider>
+    );
   },
   { displayName: 'Event' },
 );
