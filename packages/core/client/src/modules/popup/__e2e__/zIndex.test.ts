@@ -87,4 +87,18 @@ test.describe('z-index of dialog', () => {
     await page.getByLabel('action-Action-Cancel').click();
     await expect(page.getByTestId('drawer-Action.Drawer-Edit profile')).not.toBeVisible();
   });
+
+  test('change password', async ({ page, mockPage }) => {
+    await mockPage(zIndexEditProfile).goto();
+
+    // open subpage, and then open the Edit Profile drawer
+    await page.getByLabel('action-Action.Link-open').click();
+    await page.getByTestId('user-center-button').hover();
+    await page.getByRole('menuitem', { name: 'Change password' }).click();
+    await expect(page.getByTestId('drawer-Action.Drawer-Change password')).toBeVisible();
+
+    // click the Cancel button to close the drawer
+    await page.getByLabel('action-Action-Cancel').click();
+    await expect(page.getByTestId('drawer-Action.Drawer-Change password')).not.toBeVisible();
+  });
 });
