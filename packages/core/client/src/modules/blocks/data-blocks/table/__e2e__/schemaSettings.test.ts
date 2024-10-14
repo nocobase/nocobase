@@ -843,7 +843,6 @@ test.describe('actions schema settings', () => {
 
       const expectNewValue = async (value: string) => {
         await page.getByLabel('action-Action.Link-Update record-customize:update-users2-table-0').click();
-        await page.getByRole('button', { name: 'OK', exact: true }).click();
         await page.getByLabel('action-Action-Refresh-refresh').click();
         await expect(page.getByLabel('block-item-CardItem-users2-').getByText(value)).toBeVisible();
       };
