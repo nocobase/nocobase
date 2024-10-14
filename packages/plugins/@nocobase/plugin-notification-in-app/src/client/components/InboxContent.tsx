@@ -14,7 +14,6 @@ import {
   List,
   Card,
   Descriptions,
-  Typography,
   Badge,
   Button,
   Flex,
@@ -22,9 +21,11 @@ import {
   Tag,
   Tabs,
   ConfigProvider,
+  Typography,
+  Tooltip,
 } from 'antd';
 import { css } from '@emotion/css';
-import { dayjs, tval } from '@nocobase/utils/client';
+import { dayjs } from '@nocobase/utils/client';
 import { useNavigate } from 'react-router-dom';
 import { useLocalTranslation } from '../../locale';
 
@@ -101,7 +102,11 @@ const InnerInboxContent = () => {
     };
     if (!selectedChannelName) return null;
     return (
-      <>
+      <ConfigProvider
+        theme={{
+          components: { Badge: { dotSize: 8 } },
+        }}
+      >
         <Typography.Title level={4} style={{ marginTop: 12 }}>
           {channelMapObs.value[selectedChannelName].title}
         </Typography.Title>
@@ -110,13 +115,15 @@ const InnerInboxContent = () => {
           <Spin style={{ width: '100%', marginTop: '80px' }} />
         ) : (
           messages.map((message, index) => (
-            <Badge dot={message.status === 'unread'} offset={[-2, 24]} key={message.id}>
+            <>
               <Card
                 size={'small'}
                 bordered={false}
                 style={{ marginTop: 24, cursor: 'pointer' }}
                 title={
-                  <span style={{ fontWeight: message.status === 'unread' ? 'bold' : 'normal' }}>{message.title}</span>
+                  <Tooltip title={message.title} mouseEnterDelay={0.5}>
+                    <span style={{ fontWeight: message.status === 'unread' ? 'bold' : 'normal' }}>{message.title}</span>
+                  </Tooltip>
                 }
                 onClick={() => {
                   updateMessage({
@@ -152,7 +159,12 @@ const InnerInboxContent = () => {
                 key={message.id}
               >
                 <Descriptions key={index} column={1}>
-                  <Descriptions.Item label={t('Content')}>{message.content}</Descriptions.Item>
+                  <Descriptions.Item label={t('Content')}>
+                    {' '}
+                    <Tooltip title={message.content.length > 100 ? message.content : ''} mouseEnterDelay={0.5}>
+                      {message.content.slice(0, 100) + (message.content.length > 100 ? '...' : '')}{' '}
+                    </Tooltip>
+                  </Descriptions.Item>
                   <Descriptions.Item label={t('Datetime')}>
                     {dayjs(message.receiveTimestamp).format('YYYY-MM-DD HH:mm:ss')}
                   </Descriptions.Item>
@@ -161,7 +173,7 @@ const InnerInboxContent = () => {
                   </Descriptions.Item>
                 </Descriptions>
               </Card>
-            </Badge>
+            </>
           ))
         )}
         {showMsgLoadingMoreObs.value && (
@@ -169,7 +181,7 @@ const InnerInboxContent = () => {
             {t('Loading more')}
           </Button>
         )}
-      </>
+      </ConfigProvider>
     );
   });
 

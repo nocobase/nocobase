@@ -6,7 +6,7 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
-
+import React from 'react';
 import { observable, autorun, reaction } from '@formily/reactive';
 import { notification } from 'antd';
 import { SSEData } from '../../types';
@@ -27,8 +27,18 @@ reaction(
       messageMapObs.value[data.id] = data;
       if (sseData.type === 'message:created') {
         notification.info({
-          message: data.title,
-          description: data.content,
+          message: (
+            <div
+              style={{
+                textOverflow: 'ellipsis',
+                overflow: 'hidden',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {data.title}
+            </div>
+          ),
+          description: data.content.slice(0, 100) + (data.content.length > 100 ? '...' : ''),
           onClick: () => {
             inboxVisible.value = true;
             selectedChannelNameObs.value = data.channelName;
