@@ -8,7 +8,7 @@
  */
 
 import { expect, test } from '@nocobase/test/e2e';
-import { T2797, T2838, zIndexOfSubpage } from './templatesOfBug';
+import { T2797, T2838, zIndexEditProfile, zIndexOfSubpage } from './templatesOfBug';
 
 test.describe('z-index of dialog', () => {
   test('edit block title', async ({ page, mockPage }) => {
@@ -72,5 +72,19 @@ test.describe('z-index of dialog', () => {
       .getByLabel('action-Action-Add new-create-')
       .click();
     await expect(page.getByText('Add condition', { exact: true })).toBeVisible();
+  });
+
+  test('edit profile', async ({ page, mockPage }) => {
+    await mockPage(zIndexEditProfile).goto();
+
+    // open subpage, and then open the Edit Profile drawer
+    await page.getByLabel('action-Action.Link-open').click();
+    await page.getByTestId('user-center-button').hover();
+    await page.getByRole('menuitem', { name: 'Edit profile' }).click();
+    await expect(page.getByTestId('drawer-Action.Drawer-Edit profile')).toBeVisible();
+
+    // click the Cancel button to close the drawer
+    await page.getByLabel('action-Action-Cancel').click();
+    await expect(page.getByTestId('drawer-Action.Drawer-Edit profile')).not.toBeVisible();
   });
 });
