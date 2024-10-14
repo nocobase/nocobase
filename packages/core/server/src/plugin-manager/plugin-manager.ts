@@ -434,6 +434,10 @@ export class PluginManager {
     current = 0;
 
     for (const [P, plugin] of this.getPlugins()) {
+      await plugin.loadCollections();
+    }
+
+    for (const [P, plugin] of this.getPlugins()) {
       if (plugin.state.loaded) {
         continue;
       }
@@ -447,7 +451,6 @@ export class PluginManager {
 
       await this.app.emitAsync('beforeLoadPlugin', plugin, options);
       this.app.logger.trace(`load plugin [${name}] `, { submodule: 'plugin-manager', method: 'load', name });
-      await plugin.loadCollections();
       await plugin.load();
       plugin.state.loaded = true;
       await this.app.emitAsync('afterLoadPlugin', plugin, options);
