@@ -8,7 +8,7 @@
  */
 
 import { Plugin } from '@nocobase/server';
-import { DataSource } from '@nocobase/data-source-manager';
+import { DataSource, SequelizeCollectionManager } from '@nocobase/data-source-manager';
 
 import { SortField } from './sort-field';
 import { move } from './action';
@@ -25,8 +25,7 @@ export class PluginFieldSortServer extends Plugin {
     });
 
     this.app.dataSourceManager.beforeAddDataSource((dataSource: DataSource) => {
-      // @ts-ignore
-      if (dataSource.collectionManager?.db) {
+      if (dataSource.collectionManager instanceof SequelizeCollectionManager) {
         dataSource.resourceManager.registerActionHandlers({ move });
       }
     });
