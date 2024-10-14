@@ -91,7 +91,7 @@ test.describe('z-index of dialog', () => {
   test('change password', async ({ page, mockPage }) => {
     await mockPage(zIndexEditProfile).goto();
 
-    // open subpage, and then open the Edit Profile drawer
+    // open subpage, and then open the Change password drawer
     await page.getByLabel('action-Action.Link-open').click();
     await page.getByTestId('user-center-button').hover();
     await page.getByRole('menuitem', { name: 'Change password' }).click();
