@@ -10,11 +10,16 @@
 import { SequelizeCollectionManager } from '@nocobase/data-source-manager';
 import { Processor, Instruction, JOB_STATUS, FlowNodeModel } from '@nocobase/plugin-workflow';
 
+export type SQLInstructionConfig = {
+  dataSource?: string;
+  sql?: string;
+  withMeta?: boolean;
+};
+
 export default class extends Instruction {
   async run(node: FlowNodeModel, input, processor: Processor) {
     const dataSourceName = node.config.dataSource || 'main';
-    // @ts-ignore
-    const { collectionManager } = this.workflow.app.dataSourceManager.dataSources.get(dataSourceName).collectionManager;
+    const { collectionManager } = this.workflow.app.dataSourceManager.dataSources.get(dataSourceName);
     if (!(collectionManager instanceof SequelizeCollectionManager)) {
       throw new Error(`type of data source "${node.config.dataSource}" is not database`);
     }
@@ -38,7 +43,7 @@ export default class extends Instruction {
     };
   }
 
-  async test({ dataSource, sql, withMeta }) {
+  async test({ dataSource, sql, withMeta }: SQLInstructionConfig = {}) {
     if (!sql) {
       return {
         result: null,

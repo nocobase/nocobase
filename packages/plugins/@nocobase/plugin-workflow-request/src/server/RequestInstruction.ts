@@ -17,10 +17,10 @@ export interface Header {
   value: string;
 }
 
-export type RequestConfig = Pick<AxiosRequestConfig, 'url' | 'method' | 'params' | 'data' | 'timeout'> & {
-  headers: Array<Header>;
+export type RequestInstructionConfig = Pick<AxiosRequestConfig, 'url' | 'method' | 'params' | 'data' | 'timeout'> & {
+  headers?: Header[];
   contentType: string;
-  ignoreFail: boolean;
+  ignoreFail?: boolean;
   onlyData?: boolean;
 };
 
@@ -103,7 +103,7 @@ function responseFailure(error) {
 
 export default class extends Instruction {
   async run(node: FlowNodeModel, prevJob, processor: Processor) {
-    const config = processor.getParsedValue(node.config, node.id) as RequestConfig;
+    const config = processor.getParsedValue(node.config, node.id) as RequestInstructionConfig;
 
     const { workflow } = processor.execution;
     const sync = this.workflow.isWorkflowSync(workflow);
@@ -171,14 +171,14 @@ export default class extends Instruction {
   }
 
   async resume(node: FlowNodeModel, job, processor: Processor) {
-    const { ignoreFail } = node.config as RequestConfig;
+    const { ignoreFail } = node.config as RequestInstructionConfig;
     if (ignoreFail) {
       job.set('status', JOB_STATUS.RESOLVED);
     }
     return job;
   }
 
-  async test(config: RequestConfig) {
+  async test(config: RequestInstructionConfig) {
     try {
       const response = await request(config);
       return {

@@ -17,6 +17,12 @@ export default {
         result: config.path == null ? result : lodash.get(result, config.path),
       };
     },
+    test(config = {}) {
+      return {
+        status: 1,
+        result: null,
+      };
+    },
   },
 
   error: {
@@ -27,6 +33,11 @@ export default {
 
   pending: {
     run(node, input, processor) {
+      return {
+        status: 0,
+      };
+    },
+    test() {
       return {
         status: 0,
       };
