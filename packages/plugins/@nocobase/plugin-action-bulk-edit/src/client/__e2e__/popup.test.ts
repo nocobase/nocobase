@@ -8,7 +8,7 @@
  */
 
 import { expect, test } from '@nocobase/test/e2e';
-import { theAddBlockButtonInDrawerShouldBeVisible } from './templatesOfBug';
+import { theAddBlockButtonInDrawerShouldBeVisible } from './utils';
 
 test.describe('popup of bulk edit', () => {
   test('the Add block button in drawer should be visible', async ({ page, mockPage }) => {
