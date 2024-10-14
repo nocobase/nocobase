@@ -130,7 +130,7 @@ export class AuditManager {
 
     if (resouceName === '*') {
       priority = priority + 25;
-    } else {
+    } else if (resouceName) {
       priority = priority + 50;
     }
 
@@ -176,7 +176,7 @@ export class AuditManager {
           body: ctx.request.body,
         },
         response: {
-          body: ctx.body
+          body: ctx.body,
         },
       };
     } else {
@@ -191,7 +191,6 @@ export class AuditManager {
     let collection = '';
     if (resourceName) {
       const resourceArray = resourceName.split('.');
-      console.log('resourceArray', resourceArray)
       if (resourceArray.length > 1) {
         association = resourceArray[1];
         collection = resourceArray[1];

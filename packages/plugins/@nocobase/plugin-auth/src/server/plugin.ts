@@ -79,6 +79,62 @@ export class PluginAuthServer extends Plugin {
     this.app.on('cache:del:auth', async ({ userId }) => {
       await this.cache.del(`auth:${userId}`);
     });
+
+    if (this.app.pm.get('audit-logger').enabled) {
+      this.app.logger.debug('start audit logger');
+
+      const getSignInMeta = (ctx) => {
+        return new Promise((resolve) => {
+          resolve({
+            request: {
+              params: ctx.request?.params,
+              body: {
+                ...ctx.request?.body,
+                password: undefined,
+              },
+            },
+            response: {
+              body: {
+                ...ctx.response?.body,
+                token: undefined,
+              },
+            },
+          });
+        });
+      };
+
+      const getSignUpMeta = (ctx) => {
+        return new Promise((resolve) => {
+          resolve({
+            request: {
+              params: ctx.request?.params,
+              body: {
+                ...ctx.request?.body,
+                password: undefined,
+              },
+            },
+            response: {
+              body: {
+                ...ctx.response?.body,
+                token: undefined,
+              },
+            },
+          });
+        });
+      };
+
+      this.app.auditManager.registerActions([
+        {
+          name: 'auth:signIn',
+          getMetaData: getSignInMeta,
+        },
+        {
+          name: 'auth:signUp',
+          getMetaData: getSignUpMeta,
+        },
+        'auth:signOut',
+      ]);
+    }
   }
 
   async install(options?: InstallOptions) {
