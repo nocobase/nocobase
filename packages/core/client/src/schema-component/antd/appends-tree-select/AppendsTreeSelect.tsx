@@ -102,7 +102,8 @@ export const AppendsTreeSelect: React.FC<TreeSelectProps & AppendsTreeSelectProp
   const { collectionManager } = app.dataSourceManager.getDataSource(dataSourceName);
   const getCollectionFields = (name, predicate) => {
     const instance = collectionManager.getCollection(name);
-    return instance.getAllFields(predicate);
+    // NOTE: condition for compatibility with hidden collections like "attachments"
+    return instance ? instance.getAllFields(predicate) : [];
   };
   const treeData = Object.values(optionsMap);
   const value: string | DefaultOptionType[] = useMemo(() => {
