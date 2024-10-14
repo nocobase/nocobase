@@ -43,23 +43,10 @@ export const Tabs: any = observer(
       return result;
     }, [fieldSchema.mapProperties((s, key) => key).join()]);
 
-    const activeKey = useMemo(() => {
-      if (!contextProps.activeKey) {
-        return;
-      }
-
-      if (items.every((item) => item.key !== contextProps.activeKey)) {
-        return;
-      }
-
-      return contextProps.activeKey;
-    }, [contextProps.activeKey, items]);
-
     return (
       <DndContext>
         <AntdTabs
           {...contextProps}
-          activeKey={activeKey}
           destroyInactiveTabPane
           tabBarExtraContent={{
             right: render(),

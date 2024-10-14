@@ -15,7 +15,7 @@ import _, { default as lodash } from 'lodash';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { useTranslation } from 'react-i18next';
-import { ErrorFallback, StablePopover, useActionContext } from '../..';
+import { ErrorFallback, StablePopover, TabsContextProvider, useActionContext } from '../..';
 import { useDesignable } from '../../';
 import { useACLActionParamsContext } from '../../../acl';
 import { useCollectionParentRecordData, useCollectionRecordData, useDataBlockRequest } from '../../../data-source';
@@ -181,7 +181,7 @@ export const Action: ComposedAction = withDynamicSchemaProps(
     //   return buttonElement;
     // }
 
-    const result = (
+    let result = (
       <PopupVisibleProvider visible={false}>
         <ActionContextProvider
           button={buttonElement}
@@ -205,6 +205,11 @@ export const Action: ComposedAction = withDynamicSchemaProps(
         </ActionContextProvider>
       </PopupVisibleProvider>
     );
+
+    if (isBulkEditAction(fieldSchema)) {
+      // Clear the context of Tabs to avoid affecting the Tabs of the upper-level popup
+      result = <TabsContextProvider>{result}</TabsContextProvider>;
+    }
 
     // fix https://nocobase.height.app/T-3235/description
     if (addChild) {
