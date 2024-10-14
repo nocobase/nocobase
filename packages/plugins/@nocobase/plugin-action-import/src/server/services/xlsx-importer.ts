@@ -172,6 +172,7 @@ export class XlsxImporter extends EventEmitter {
             };
 
             if (column.dataIndex.length > 1) {
+              ctx.associationField = field;
               ctx.targetCollection = (field as IRelationField).targetCollection();
               ctx.filterKey = column.dataIndex[1];
             }
