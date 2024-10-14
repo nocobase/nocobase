@@ -7,6 +7,3 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { channelsCollection } from '../../types/channels';
-
-export default channelsCollection;

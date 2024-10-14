@@ -38,16 +38,16 @@ export const messageCollection: CollectionOptions = {
       },
     },
     {
-      name: 'chat',
+      name: 'channel',
       type: 'belongsTo',
       interface: 'm2o',
-      target: ChannelsDefinition.name,
-      targetKey: ChannelsDefinition.fieldNameMap.id,
-      foreignKey: InAppMessagesDefinition.fieldNameMap.chatId,
+      target: 'notificationChannels',
+      targetKey: 'name',
+      foreignKey: InAppMessagesDefinition.fieldNameMap.channelName,
       uiSchema: {
         type: 'string',
         'x-component': 'AssociationField',
-        title: '{{t("Chat")}}',
+        title: '{{t("Channel")}}',
       },
     },
     {

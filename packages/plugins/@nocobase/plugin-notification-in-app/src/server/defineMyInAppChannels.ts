@@ -9,7 +9,8 @@
 
 import { Application } from '@nocobase/server';
 import { Op, Sequelize } from 'sequelize';
-import { InAppMessagesDefinition as MessagesDefinition, ChannelsDefinition as ChannelsDefinition } from '../types';
+import { ChannelsCollectionDefinition as ChannelsDefinition } from '@nocobase/plugin-notification-manager';
+import { InAppMessagesDefinition as MessagesDefinition } from '../types';
 
 export default function defineMyInAppChannels({ app }: { app: Application }) {
   app.resourceManager.define({
@@ -22,9 +23,13 @@ export default function defineMyInAppChannels({ app }: { app: Application }) {
           const messagesTableName = messagesCollection.getRealTableName(true);
           const channelsCollection = app.db.getCollection(ChannelsDefinition.name);
           const channelsTableAliasName = app.db.sequelize.getQueryInterface().quoteIdentifier(channelsCollection.name);
+          const channelsFieldName = {
+            name: channelsCollection.getRealFieldName(ChannelsDefinition.fieldNameMap.name, true),
+          };
           const messagesFieldName = {
-            channelId: messagesCollection.getRealFieldName(MessagesDefinition.fieldNameMap.chatId, true),
+            channelName: messagesCollection.getRealFieldName(MessagesDefinition.fieldNameMap.channelName, true),
             status: messagesCollection.getRealFieldName(MessagesDefinition.fieldNameMap.status, true),
+            userId: messagesCollection.getRealFieldName(MessagesDefinition.fieldNameMap.userId, true),
             receiveTimestamp: messagesCollection.getRealFieldName(
               MessagesDefinition.fieldNameMap.receiveTimestamp,
               true,
@@ -32,13 +37,24 @@ export default function defineMyInAppChannels({ app }: { app: Application }) {
             title: messagesCollection.getRealFieldName(MessagesDefinition.fieldNameMap.title, true),
           };
           const userId = ctx.state.currentUser.id;
-          const userFilter = userId ? { userId } : null;
+          const userFilter = userId
+            ? {
+                name: {
+                  [Op.in]: Sequelize.literal(`(
+                                SELECT messages.${messagesFieldName.channelName}
+                                FROM ${messagesTableName} AS messages
+                                WHERE
+                                   messages.${messagesFieldName.userId} = ${userId}
+                            )`),
+                },
+              }
+            : null;
 
           const latestMsgReceiveTimestampSQL = `(
                                 SELECT messages.${messagesFieldName.receiveTimestamp}
                                 FROM ${messagesTableName} AS messages
                                 WHERE
-                                    messages.${messagesFieldName.channelId} = ${channelsTableAliasName}.id
+                                    messages.${messagesFieldName.channelName} = ${channelsTableAliasName}.${channelsFieldName.name}
                                 ORDER BY messages.${messagesFieldName.receiveTimestamp} DESC
                                 LIMIT 1
                             )`;
@@ -57,7 +73,7 @@ export default function defineMyInAppChannels({ app }: { app: Application }) {
               SELECT COUNT(*)
               FROM ${messagesTableName} AS messages
               WHERE
-                  messages.${messagesFieldName.channelId} = ${channelsTableAliasName}.id
+                  messages.${messagesFieldName.channelName} = ${channelsTableAliasName}.${channelsFieldName.name}
                   AND
                   messages.${messagesFieldName.status} = 'unread'
           ) ${unreadCntOpt} 0`);
@@ -79,18 +95,20 @@ export default function defineMyInAppChannels({ app }: { app: Application }) {
                                 SELECT COUNT(*)
                                 FROM ${messagesTableName} AS messages
                                 WHERE
-                                    messages.${messagesFieldName.channelId} = ${channelsTableAliasName}.id
+                                    messages.${messagesFieldName.channelName} = ${channelsTableAliasName}.${channelsFieldName.name}
+                                    AND messages.${messagesFieldName.userId} = ${userId}
                             )`),
                     'totalMsgCnt',
                   ],
+                  [Sequelize.literal(`'${userId}'`), 'userId'],
                   [
                     Sequelize.literal(`(
                                 SELECT COUNT(*)
                                 FROM ${messagesTableName} AS messages
                                 WHERE
-                                    messages.${messagesFieldName.channelId} = ${channelsTableAliasName}.id
-                                    AND
-                                    messages.${messagesFieldName.status} = 'unread'
+                                    messages.${messagesFieldName.channelName} = ${channelsTableAliasName}.${channelsFieldName.name}
+                                    AND messages.${messagesFieldName.status} = 'unread'
+                                    AND messages.${messagesFieldName.userId} = ${userId}
                             )`),
                     'unreadMsgCnt',
                   ],
@@ -100,7 +118,7 @@ export default function defineMyInAppChannels({ app }: { app: Application }) {
                       SELECT messages.${messagesFieldName.title}
                               FROM ${messagesTableName} AS messages
                               WHERE
-                                  messages.${messagesFieldName.channelId} = ${channelsTableAliasName}.id
+                                  messages.${messagesFieldName.channelName} = ${channelsTableAliasName}.${channelsFieldName.name}
                               ORDER BY messages.${messagesFieldName.receiveTimestamp} DESC
                               LIMIT 1
                   )`),

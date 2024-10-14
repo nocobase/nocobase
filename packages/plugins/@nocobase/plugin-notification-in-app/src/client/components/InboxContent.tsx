@@ -30,7 +30,7 @@ import { useLocalTranslation } from '../../locale';
 
 import {
   fetchChannels,
-  selectedChannelIdObs,
+  selectedChannelNameObs,
   channelListObs,
   isFetchingChannelsObs,
   channelMapObs,
@@ -49,7 +49,7 @@ const InnerInboxContent = () => {
   const { t } = useLocalTranslation();
   const channels = channelListObs.value;
   const messages = selectedMessageListObs.value;
-  const selectedChannelId = selectedChannelIdObs.value;
+  const selectedChannelName = selectedChannelNameObs.value;
 
   const onLoadChannelsMore = () => {
     const filter: Record<string, any> = {};
@@ -70,11 +70,11 @@ const InnerInboxContent = () => {
         $lt: lastMessage.receiveTimestamp,
       };
     }
-    if (selectedChannelId) {
-      filter.chatId = selectedChannelId;
+    if (selectedChannelName) {
+      filter.channelName = selectedChannelName;
     }
     fetchMessages({ filter, limit: 30 });
-  }, [messages, selectedChannelId]);
+  }, [messages, selectedChannelName]);
 
   const loadChannelsMore = showChannelLoadingMoreObs.value ? (
     <div
@@ -99,11 +99,11 @@ const InnerInboxContent = () => {
       read: t('Read'),
       unread: t('Unread'),
     };
-    if (!selectedChannelId) return null;
+    if (!selectedChannelName) return null;
     return (
       <>
         <Typography.Title level={4} style={{ marginTop: 12 }}>
-          {channelMapObs.value[selectedChannelId].title}
+          {channelMapObs.value[selectedChannelName].title}
         </Typography.Title>
 
         {messages.length === 0 && isFecthingMessageObs.value ? (
@@ -215,8 +215,8 @@ const InnerInboxContent = () => {
           style={{ paddingBottom: '20px' }}
           loading={channels.length === 0 && isFetchingChannelsObs.value}
           renderItem={(item) => {
-            const titleColor = selectedChannelId === item.id ? '#1677ff' : 'black';
-            const textColor = selectedChannelId === item.id ? '#1677ff' : 'rgba(0, 0, 0, 0.45)';
+            const titleColor = selectedChannelName === item.name ? '#1677ff' : 'black';
+            const textColor = selectedChannelName === item.name ? '#1677ff' : 'rgba(0, 0, 0, 0.45)';
             return (
               <List.Item
                 className={css`
@@ -227,7 +227,7 @@ const InnerInboxContent = () => {
                 style={{
                   padding: '10px 10px',
                   color: titleColor,
-                  ...(selectedChannelId === item.id ? { backgroundColor: 'rgb(230, 244, 255)' } : {}),
+                  ...(selectedChannelName === item.name ? { backgroundColor: 'rgb(230, 244, 255)' } : {}),
                   height: '70px',
                   cursor: 'pointer',
                   marginTop: '10px',
@@ -238,7 +238,7 @@ const InnerInboxContent = () => {
                   justifyContent: 'space-between',
                 }}
                 onClick={() => {
-                  selectedChannelIdObs.value = item.id;
+                  selectedChannelNameObs.value = item.name;
                 }}
               >
                 <Flex justify="space-between" style={{ width: '100%' }}>
@@ -286,7 +286,7 @@ const InnerInboxContent = () => {
         />
       </Layout.Sider>
       <Layout.Content style={{ padding: '0 24px 30px 24px', height: '100%', overflowY: 'auto' }}>
-        {selectedChannelId ? <MessageList /> : null}
+        {selectedChannelName ? <MessageList /> : null}
       </Layout.Content>
     </Layout>
   );

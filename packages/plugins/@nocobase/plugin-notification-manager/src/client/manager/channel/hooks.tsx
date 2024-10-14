@@ -34,7 +34,6 @@ export const useCreateActionProps = () => {
   const form = useForm();
   const resource = useDataBlockResource();
   const { service } = useBlockRequestContext();
-  const collection = useCollection();
   return {
     type: 'primary',
     async onClick(e?, callBack?) {

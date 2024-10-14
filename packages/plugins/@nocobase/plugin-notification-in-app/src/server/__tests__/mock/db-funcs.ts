@@ -6,23 +6,19 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
-
-import { Application } from '@nocobase/server';
+import { uid } from '@nocobase/utils';
 import { randomUUID } from 'crypto';
 
-export async function MockMessages(
-  { messagesRepo, channelsRepo },
-  { unreadNum, readNum, chatId, startTimeStamp, userId },
-) {
+export async function createMessages({ messagesRepo }, { unreadNum, readNum, channelName, startTimeStamp, userId }) {
   const unreadMessages = Array.from({ length: unreadNum }, (_, idx) => {
     return {
       id: randomUUID(),
-      chatId,
+      channelName,
       userId,
       status: 'unread',
       title: `unread-${idx}`,
       content: 'unread',
-      receiveTimestamp: startTimeStamp - idx,
+      receiveTimestamp: startTimeStamp - idx * 1000,
       options: {
         url: '/admin/pages',
       },
@@ -31,12 +27,12 @@ export async function MockMessages(
   const readMessages = Array.from({ length: readNum }, (_, idx) => {
     return {
       id: randomUUID(),
-      chatId,
+      channelName,
       userId,
       status: 'read',
       title: `read-${idx}`,
       content: 'unread',
-      receiveTimestamp: startTimeStamp - idx - 100000,
+      receiveTimestamp: startTimeStamp - idx - 100000000,
       options: {
         url: '/admin/pages',
       },
@@ -46,16 +42,14 @@ export async function MockMessages(
   await messagesRepo.create({
     values: totalMessages,
   });
-  await channelsRepo.update({ values: { latestMsgId: totalMessages[0].id }, filterByTk: chatId });
 }
 
-export async function MockChannels({ channelsRepo }, { totalNum, userId }) {
+export async function createChannels({ channelsRepo }, { totalNum }) {
   const channelsData = Array.from({ length: totalNum }).map((val, idx) => {
     return {
-      id: randomUUID(),
-      senderId: randomUUID(),
-      userId,
-      title: `渠道测试-${idx}`,
+      name: `s_${uid()}`,
+      title: `站内信渠道-${idx}`,
+      notificationType: 'in-app-message',
     };
   });
   await channelsRepo.create({ values: channelsData });

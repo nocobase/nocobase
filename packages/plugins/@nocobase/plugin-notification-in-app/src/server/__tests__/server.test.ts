@@ -9,8 +9,9 @@
 
 import Database from '@nocobase/database';
 import { createMockServer, MockServer } from '@nocobase/test';
-import { ChannelsDefinition, InAppMessagesDefinition as MessagesDefinition } from '../../types';
+import { InAppMessagesDefinition as MessagesDefinition } from '../../types';
 import defineMyInAppChannels from '../defineMyInAppChannels';
+import { ChannelsCollectionDefinition as ChannelsDefinition } from '@nocobase/plugin-notification-manager';
 
 describe('inapp message channels', () => {
   let app: MockServer;

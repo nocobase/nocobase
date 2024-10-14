@@ -12,7 +12,7 @@ import { Message } from '../../types';
 import { getAPIClient } from '../utils';
 import {
   channelMapObs,
-  selectedChannelIdObs,
+  selectedChannelNameObs,
   fetchChannels,
   InappChannelStatusEnum,
   channelStatusFilterObs,
@@ -31,9 +31,9 @@ const filterMessageByStatus = (message: Message) => {
   else return true;
 };
 export const selectedMessageListObs = observable.computed(() => {
-  if (selectedChannelIdObs.value) {
+  if (selectedChannelNameObs.value) {
     const filteredMessages = messageListObs.value.filter(
-      (message) => message.chatId === selectedChannelIdObs.value && filterMessageByStatus(message),
+      (message) => message.channelName === selectedChannelNameObs.value && filterMessageByStatus(message),
     );
     return filteredMessages;
   } else {
@@ -68,13 +68,13 @@ export const updateMessage = async (params: { filterByTk: any; values: Record<an
   });
   const unupdatedMessage = messageMapObs.value[params.filterByTk];
   messageMapObs.value[params.filterByTk] = { ...unupdatedMessage, ...params.values };
-  fetchChannels({ filter: { id: unupdatedMessage.chatId, status: InappChannelStatusEnum.all } });
+  // fetchChannels({ filter: { name: unupdatedMessage.channelName, status: InappChannelStatusEnum.all } });
   updateUnreadMsgsCount();
 };
 
 autorun(() => {
-  if (selectedChannelIdObs.value) {
-    fetchMessages({ filter: { chatId: selectedChannelIdObs.value } });
+  if (selectedChannelNameObs.value) {
+    fetchMessages({ filter: { channelName: selectedChannelNameObs.value } });
   }
 });
 
@@ -90,7 +90,7 @@ export const updateUnreadMsgsCount = async () => {
 };
 
 export const showMsgLoadingMoreObs = observable.computed(() => {
-  const selectedChannelId = selectedChannelIdObs.value;
+  const selectedChannelId = selectedChannelNameObs.value;
   if (!selectedChannelId) return false;
   const selectedChannel = channelMapObs.value[selectedChannelId];
   const selectedMessageList = selectedMessageListObs.value;

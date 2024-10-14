@@ -13,3 +13,10 @@ export enum COLLECTION_NAME {
   messages = 'messages',
   logs = 'notificationSendLogs',
 }
+
+export const ChannelsCollectionDefinition = {
+  name: COLLECTION_NAME.channels,
+  fieldNameMap: {
+    name: 'name',
+  },
+};

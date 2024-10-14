@@ -31,9 +31,9 @@ export class PluginNotificationInAppClient extends Plugin {
         MessageConfigForm: MessageConfigForm,
       },
       meta: {
-        editable: false,
-        creatable: false,
-        deletable: false,
+        editable: true,
+        creatable: true,
+        deletable: true,
       },
     });
   }

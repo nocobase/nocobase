@@ -104,7 +104,7 @@ const useChats = () => {
           filter,
         },
       });
-      addMessagesToGroup(filter.chatId, res.data.data.messages);
+      addMessagesToGroup(filter.channelName, res.data.data.messages);
     },
     [apiClient, addMessagesToGroup],
   );

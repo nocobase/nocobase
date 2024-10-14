@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 export interface Channel {
-  id: string;
+  name: string;
   title: string;
   userId: string;
   unreadMsgCnt: number;
@@ -20,7 +20,7 @@ export interface Message {
   id: string;
   title: string;
   userId: string;
-  chatId: string;
+  channelName: string;
   content: string;
   receiveTimestamp: number;
   status: 'read' | 'unread';
@@ -46,7 +46,7 @@ export const InAppMessagesDefinition = {
   name: 'notificationInAppMessages',
   fieldNameMap: {
     id: 'id',
-    chatId: 'chatId',
+    channelName: 'channelName',
     userId: 'userId',
     content: 'content',
     status: 'status',

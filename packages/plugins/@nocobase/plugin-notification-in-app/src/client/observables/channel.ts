@@ -39,7 +39,7 @@ export const showChannelLoadingMoreObs = observable.computed(() => {
   if (channelListObs.value.length < channelCountObs.value) return true;
   else return false;
 }) as { value: boolean };
-export const selectedChannelIdObs = observable<{ value: string | null }>({ value: null });
+export const selectedChannelNameObs = observable<{ value: string | null }>({ value: null });
 
 export const fetchChannels = async (params: any) => {
   const apiClient = getAPIClient();
@@ -52,7 +52,7 @@ export const fetchChannels = async (params: any) => {
   const channels = res.data?.data;
   if (Array.isArray(channels)) {
     channels.forEach((channel: Channel) => {
-      channelMapObs.value[channel.id] = channel;
+      channelMapObs.value[channel.name] = channel;
     });
   }
   const count = res.data?.meta?.count;
@@ -61,23 +61,23 @@ export const fetchChannels = async (params: any) => {
 };
 
 autorun(() => {
-  if (!selectedChannelIdObs.value && channelListObs.value[0]?.id) {
-    selectedChannelIdObs.value = channelListObs.value[0].id;
+  if (!selectedChannelNameObs.value && channelListObs.value[0]?.name) {
+    selectedChannelNameObs.value = channelListObs.value[0].name;
   } else if (channelListObs.value.length === 0) {
-    selectedChannelIdObs.value = null;
+    selectedChannelNameObs.value = null;
   } else if (
     channelListObs.value.length > 0 &&
-    !channelListObs.value.find((channel) => channel.id === selectedChannelIdObs.value)
+    !channelListObs.value.find((channel) => channel.name === selectedChannelNameObs.value)
   ) {
-    selectedChannelIdObs.value = null;
+    selectedChannelNameObs.value = null;
   }
 });
 
 reaction(
   () => channelStatusFilterObs.value,
   () => {
-    if (channelListObs.value[0]?.id) {
-      selectedChannelIdObs.value = channelListObs.value[0].id;
+    if (channelListObs.value[0]?.name) {
+      selectedChannelNameObs.value = channelListObs.value[0].name;
     }
   },
   { fireImmediately: true },

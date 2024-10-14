@@ -11,7 +11,7 @@ import { observable, autorun, reaction } from '@formily/reactive';
 import { notification } from 'antd';
 import { SSEData } from '../../types';
 import { messageMapObs, updateUnreadMsgsCount } from './message';
-import { channelMapObs, fetchChannels, selectedChannelIdObs } from './channel';
+import { channelMapObs, fetchChannels, selectedChannelNameObs } from './channel';
 import { inboxVisible } from './inbox';
 import { getAPIClient } from '../utils';
 
@@ -31,12 +31,12 @@ reaction(
           description: data.content,
           onClick: () => {
             inboxVisible.value = true;
-            selectedChannelIdObs.value = data.chatId;
+            selectedChannelNameObs.value = data.channelName;
             notification.destroy();
           },
         });
       }
-      fetchChannels({ filter: { id: data.chatId } });
+      fetchChannels({ filter: { name: data.channelName } });
       updateUnreadMsgsCount();
     }
   },

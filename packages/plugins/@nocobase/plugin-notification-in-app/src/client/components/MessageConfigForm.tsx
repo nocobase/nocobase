@@ -76,17 +76,6 @@ export const MessageConfigForm = ({ variableOptions }) => {
               },
             },
           },
-          senderName: {
-            type: 'string',
-            required: true,
-            title: `{{t("Message group name")}}`,
-            'x-decorator': 'FormItem',
-            'x-component': 'Variable.TextArea',
-            'x-component-props': {
-              scope: variableOptions,
-              useTypedConstant: ['string'],
-            },
-          },
           title: {
             type: 'string',
             required: true,
@@ -130,14 +119,6 @@ export const MessageConfigForm = ({ variableOptions }) => {
                 ),
               },
             },
-          },
-
-          senderId: {
-            type: 'string',
-            default: crypto.randomUUID(),
-            'x-decorator': 'FormItem',
-            'x-component': 'Input',
-            'x-hidden': true,
           },
         },
       }}

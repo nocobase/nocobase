@@ -15,7 +15,7 @@ export type SSEData = {
     content: string;
     userId: string;
     receiveTimestamp: number;
-    chatId: string;
+    channelName: string;
     status: 'read' | 'unread';
   };
 };
