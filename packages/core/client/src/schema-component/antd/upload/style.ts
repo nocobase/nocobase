@@ -113,3 +113,5 @@ export const useStyles = genStyleHook('upload', (token) => {
     },
   } as any;
 });
+
+export const useUploadStyles = useStyles;
