@@ -325,7 +325,7 @@ const usePaginationProps = (pagination1, pagination2) => {
         },
       };
     }
-  }, [pagination, t, showTotal]);
+  }, [pagination, t, showTotal, field.value?.length]);
 
   if (pagination2 === false) {
     return false;
@@ -333,7 +333,6 @@ const usePaginationProps = (pagination1, pagination2) => {
   if (!pagination2 && pagination1 === false) {
     return false;
   }
-
   return result.total <= result.pageSize ? false : result;
 };
 
