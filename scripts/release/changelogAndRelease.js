@@ -345,10 +345,10 @@ async function createRelease(cn, en, to) {
   let { ver = 'beta' } = program.opts();
   // gh release create -t title -n note
   if (ver === 'alpha') {
-    await execa('gh', ['release', 'create', to, '-t', to, '-n', `${en}\n---\n${cn}`, '-p']);
+    await execa('gh', ['release', 'create', to, '-t', to, '-n', en, '-p']);
     return;
   }
-  await execa('gh', ['release', 'create', to, '-t', to, '-n', `${en}\n---\n${cn}`]);
+  await execa('gh', ['release', 'create', to, '-t', to, '-n', en]);
 }
 
 async function getExistsChangelog(from, to) {
