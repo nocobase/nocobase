@@ -103,6 +103,7 @@
     "@nocobase/plugin-field-china-region",
     "@nocobase/plugin-field-formula",
     "@nocobase/plugin-field-sequence",
+    "@nocobase/plugin-field-sort",
     "@nocobase/plugin-file-manager",
     "@nocobase/plugin-gantt",
     "@nocobase/plugin-kanban",
