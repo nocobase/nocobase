@@ -11,7 +11,7 @@ import { CloseOutlined, DeleteOutlined } from '@ant-design/icons';
 import { createForm, Field } from '@formily/core';
 import { toJS } from '@formily/reactive';
 import { ISchema, observer, useField, useForm } from '@formily/react';
-import { App, Button, Dropdown, Empty, Input, Space, Tag, Tooltip, message } from 'antd';
+import { Alert, App, Button, Dropdown, Empty, Input, Space, Tag, Tooltip, message } from 'antd';
 import { cloneDeep, get, set } from 'lodash';
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -335,7 +335,7 @@ const useRunAction = () => {
 
         resultField.setFeedback({
           type: data.status > 0 ? 'success' : 'error',
-          messages: data.status > 0 ? [lang('Succeeded')] : [lang('Failed')],
+          messages: data.status > 0 ? [lang('Resolved')] : [lang('Failed')],
         });
         resultField.setValue(data.result);
       } catch (err) {
@@ -394,6 +394,9 @@ function TestButton() {
     <NodeContext.Provider value={{ type: node.type, config: values }}>
       <VariableKeysContext.Provider value={keys}>
         <SchemaComponent
+          components={{
+            Alert,
+          }}
           scope={{
             useCancelAction,
             useRunAction,
@@ -415,8 +418,20 @@ function TestButton() {
                   form,
                 },
                 'x-component': 'Action.Modal',
-                title: `{{t("Node test", { ns: "workflow" })}}`,
+                title: `{{t("Test run", { ns: "workflow" })}}`,
                 properties: {
+                  alert: {
+                    type: 'void',
+                    'x-component': 'Alert',
+                    'x-component-props': {
+                      message: `{{t("Test run will do the actual data manipulating or API calling, please use with caution.", { ns: "workflow" })}}`,
+                      type: 'warning',
+                      showIcon: true,
+                      className: css`
+                        margin-bottom: 1em;
+                      `,
+                    },
+                  },
                   config: {
                     type: 'object',
                     title: '{{t("Replace variables", { ns: "workflow" })}}',
