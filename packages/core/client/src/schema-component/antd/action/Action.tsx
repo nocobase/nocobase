@@ -377,7 +377,6 @@ function RenderButton({
   if (!designable && (field?.data?.hidden || !aclCtx)) {
     return null;
   }
-
   return (
     <SortableItem
       role="button"
@@ -393,7 +392,7 @@ function RenderButton({
       className={classnames(componentCls, hashId, className, 'nb-action')}
       type={type === 'danger' ? undefined : type}
     >
-      {actionTitle}
+      {actionTitle && <span className={icon ? 'nb-action-title' : null}>{actionTitle}</span>}
       <Designer {...designerProps} />
     </SortableItem>
   );
