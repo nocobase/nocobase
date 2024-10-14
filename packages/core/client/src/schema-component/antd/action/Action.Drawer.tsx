@@ -37,7 +37,7 @@ const openSizeWidthMap = new Map<OpenSize, string>([
 ]);
 export const InternalActionDrawer: React.FC<ActionDrawerProps> = observer(
   (props) => {
-    const { footerNodeName = 'Action.Drawer.Footer', ...others } = props;
+    const { footerNodeName = 'Action.Drawer.Footer', zIndex: _zIndex, ...others } = props;
     const { visible, setVisible, openSize = 'middle', drawerProps, modalProps } = useActionContext();
     const schema = useFieldSchema();
     const field = useField();
@@ -63,7 +63,7 @@ export const InternalActionDrawer: React.FC<ActionDrawerProps> = observer(
       useSetAriaLabelForDrawer(visible);
     }
 
-    const zIndex = parentZIndex + (props.level || 0);
+    const zIndex = _zIndex || parentZIndex + (props.level || 0);
 
     return (
       <zIndexContext.Provider value={zIndex}>
