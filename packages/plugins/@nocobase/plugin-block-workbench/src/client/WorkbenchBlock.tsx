@@ -64,7 +64,7 @@ const InternalIcons = () => {
       window.removeEventListener('resize', calculateGap);
     };
   }, [Object.keys(fieldSchema?.properties || {}).length]);
-  console.log(gap);
+
   return (
     <div style={{ marginBottom: designable ? '1rem' : 0 }}>
       <DndContext>
@@ -91,7 +91,6 @@ const InternalIcons = () => {
                       text-overflow: ellipsis;
                     }
                     .ant-list-item-meta-title button {
-                      font-weight: 700;
                       font-size: 16px;
                       overflow: hidden;
                       text-overflow: ellipsis;
