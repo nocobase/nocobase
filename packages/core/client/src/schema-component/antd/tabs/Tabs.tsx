@@ -11,13 +11,13 @@ import { css } from '@emotion/css';
 import { observer, RecursionField, useField, useFieldSchema } from '@formily/react';
 import { Tabs as AntdTabs, TabPaneProps, TabsProps } from 'antd';
 import classNames from 'classnames';
-import React, { useMemo } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { useSchemaInitializerRender } from '../../../application';
 import { Icon } from '../../../icon';
 import { DndContext, SortableItem } from '../../common';
 import { SchemaComponent } from '../../core';
 import { useDesigner } from '../../hooks/useDesigner';
-import { useTabsContext } from './context';
+import { TabsContextProvider, useTabsContext } from './context';
 import { TabsDesigner } from './Tabs.Designer';
 
 export const Tabs: any = observer(
@@ -55,19 +55,31 @@ export const Tabs: any = observer(
       return contextProps.activeKey;
     }, [contextProps.activeKey, items]);
 
+    const onChange = useCallback(
+      (key: string) => {
+        if (items.some((item) => item.key === key)) {
+          contextProps.onChange?.(key);
+        }
+      },
+      [contextProps.onChange, items],
+    );
+
     return (
       <DndContext>
-        <AntdTabs
-          {...contextProps}
-          activeKey={activeKey}
-          destroyInactiveTabPane
-          tabBarExtraContent={{
-            right: render(),
-            left: contextProps?.tabBarExtraContent,
-          }}
-          style={props.style}
-          items={items}
-        />
+        <TabsContextProvider {...contextProps} onChange={onChange}>
+          <AntdTabs
+            {...contextProps}
+            activeKey={activeKey}
+            onChange={onChange}
+            destroyInactiveTabPane
+            tabBarExtraContent={{
+              right: render(),
+              left: contextProps?.tabBarExtraContent,
+            }}
+            style={props.style}
+            items={items}
+          />
+        </TabsContextProvider>
       </DndContext>
     );
   },
