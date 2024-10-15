@@ -31,7 +31,7 @@ export class IdFieldInterface extends CollectionFieldInterface {
       'x-read-pretty': true,
     },
   };
-  availableTypes = ['bigInt', 'integer', 'string'];
+  availableTypes = ['bigInt', 'integer'];
   properties = {
     'uiSchema.title': {
       type: 'string',
