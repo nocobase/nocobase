@@ -11,6 +11,19 @@ import evaluators from '@nocobase/evaluators';
 import { Processor, Instruction, JOB_STATUS, FlowNodeModel, JobModel, logicCalculate } from '@nocobase/plugin-workflow';
 import { EXIT } from '../constants';
 
+export type LoopInstructionConfig = {
+  target: any;
+  condition?:
+    | {
+        checkpoint?: number;
+        continueOnFalse?: boolean;
+        calculation?: any;
+        expression?: string;
+      }
+    | false;
+  exit?: number;
+};
+
 function getTargetLength(target) {
   let length = 0;
   if (typeof target === 'number') {
@@ -26,7 +39,7 @@ function getTargetLength(target) {
 }
 
 function calculateCondition(node: FlowNodeModel, processor: Processor) {
-  const { engine, calculation, expression } = node.config || {};
+  const { engine, calculation, expression } = node.config.condition ?? {};
   const evaluator = evaluators.get(engine);
 
   return evaluator
@@ -57,15 +70,17 @@ export default class extends Instruction {
       upstreamId: prevJob?.id ?? null,
     });
 
-    const { checkpoint, calculation, expression, continueOnFalse } = node.config;
-    if ((calculation || expression) && !checkpoint) {
-      const condition = calculateCondition(node, processor);
-      if (!condition && !continueOnFalse) {
-        job.set({
-          status: JOB_STATUS.RESOLVED,
-          result: { looped, broken: true },
-        });
-        return job;
+    if (node.config.condition) {
+      const { checkpoint, calculation, expression, continueOnFalse } = node.config.condition ?? {};
+      if ((calculation || expression) && !checkpoint) {
+        const condition = calculateCondition(node, processor);
+        if (!condition && !continueOnFalse) {
+          job.set({
+            status: JOB_STATUS.RESOLVED,
+            result: { looped, broken: true },
+          });
+          return job;
+        }
       }
     }
 
@@ -93,19 +108,20 @@ export default class extends Instruction {
       branchJob.status === JOB_STATUS.RESOLVED ||
       (branchJob.status < JOB_STATUS.PENDING && loop.config.exit === EXIT.CONTINUE)
     ) {
-      const { calculation, expression, continueOnFalse } = loop.config;
-
       job.set({ result: { looped: nextIndex } });
       await processor.saveJob(job);
 
-      if (calculation || expression) {
-        const condition = calculateCondition(loop, processor);
-        if (!condition && !continueOnFalse) {
-          job.set({
-            status: JOB_STATUS.RESOLVED,
-            result: { looped: nextIndex, broken: true },
-          });
-          return job;
+      if (loop.config.condition) {
+        const { calculation, expression, continueOnFalse } = loop.config.condition ?? {};
+        if (calculation || expression) {
+          const condition = calculateCondition(loop, processor);
+          if (!condition && !continueOnFalse) {
+            job.set({
+              status: JOB_STATUS.RESOLVED,
+              result: { looped: nextIndex, broken: true },
+            });
+            return job;
+          }
         }
       }
 
@@ -140,12 +156,13 @@ export default class extends Instruction {
     const target = processor.getParsedValue(node.config.target, node.id);
     const targets = (Array.isArray(target) ? target : [target]).filter((t) => t != null);
     const length = getTargetLength(target);
-    const index = looped + (node.config.startIndex ? 1 : 0);
+    const index = looped;
     const item = typeof target === 'number' ? index : targets[looped];
 
     const result = {
       item,
       index,
+      sequence: index + 1,
       length,
     };
 

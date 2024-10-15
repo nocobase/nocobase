@@ -7,13 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React from 'react';
+import React, { useCallback } from 'react';
 import { ArrowUpOutlined } from '@ant-design/icons';
-import { Card } from 'antd';
-import { FormLayout } from '@formily/antd-v5';
+import { Card, Checkbox } from 'antd';
+import { FormLayout, FormItem } from '@formily/antd-v5';
 import { useForm } from '@formily/react';
-import { css, cx, useCompile, Variable } from '@nocobase/client';
-import { evaluators } from '@nocobase/evaluators/client';
+import { css, cx, SchemaComponent, useCompile, Variable } from '@nocobase/client';
 import {
   NodeDefaultView,
   Branch,
@@ -37,6 +36,7 @@ import {
 } from '@nocobase/plugin-workflow/client';
 
 import { NAMESPACE, useLang } from '../locale';
+import { useTranslation } from 'react-i18next';
 
 function findOption(options: VariableOption[], paths: string[]) {
   let opts = options;
@@ -58,18 +58,94 @@ function findOption(options: VariableOption[], paths: string[]) {
   return option;
 }
 
-function CardWrapper({ children }) {
+function LoopCondition({ value, onChange }) {
+  const { t } = useTranslation();
+  const onCheckpointChange = useCallback(
+    (ev) => {
+      onChange({ ...value, checkpoint: ev.target.value });
+    },
+    [value, onChange],
+  );
+  const onContinueOnFalseChange = useCallback(
+    (ev) => {
+      onChange({ ...value, continueOnFalse: ev.target.value });
+    },
+    [value, onChange],
+  );
+  const onCalculationChange = useCallback(
+    (calculation) => {
+      onChange({ ...value, calculation });
+    },
+    [value, onChange],
+  );
   return (
-    <Card>
-      <FormLayout layout="vertical">{children}</FormLayout>
-    </Card>
+    <>
+      <Checkbox
+        checked={Boolean(value)}
+        onChange={(ev) => {
+          onChange(
+            ev.target.checked
+              ? { checkpoint: 0, continueOnFalse: false, calculation: { group: { type: 'and', calculations: [] } } }
+              : false,
+          );
+        }}
+      >
+        {t('Enable loop condition', { ns: NAMESPACE })}
+      </Checkbox>
+      {value ? (
+        <Card>
+          <FormLayout layout="vertical">
+            <FormItem label={t('When to check', { ns: NAMESPACE })}>
+              <RadioWithTooltip
+                value={value.checkpoint}
+                onChange={onCheckpointChange}
+                options={[
+                  {
+                    label: t('Before each starts', { ns: NAMESPACE }),
+                    value: 0,
+                  },
+                  {
+                    label: t('After each ends', { ns: NAMESPACE }),
+                    value: 1,
+                  },
+                ]}
+              />
+            </FormItem>
+            <FormItem label={t('When condition is not met on item', { ns: NAMESPACE })}>
+              <RadioWithTooltip
+                value={value.continueOnFalse}
+                onChange={onContinueOnFalseChange}
+                options={[
+                  {
+                    label: t('Exit loop', { ns: NAMESPACE }),
+                    value: false,
+                  },
+                  {
+                    label: t('Continue on next item', { ns: NAMESPACE }),
+                    value: true,
+                  },
+                ]}
+              />
+            </FormItem>
+            <FormItem label={t('Condition', { ns: NAMESPACE })}>
+              <CalculationConfig
+                value={value.calculation}
+                onChange={onCalculationChange}
+                useVariableHook={useVariableHook}
+              />
+            </FormItem>
+          </FormLayout>
+        </Card>
+      ) : null}
+    </>
   );
 }
 
 function useScopeVariables(node, options) {
   const compile = useCompile();
   const langLoopTarget = useLang('Loop target');
-  const langLoopIndex = useLang('Loop index');
+  const langLoopIndex = useLang('Loop index (starts from 0)');
+  const langLoopSequence = useLang('Loop sequence (starts from 1)');
   const langLoopLength = useLang('Loop length');
   const { target } = node.config;
   if (target == null) {
@@ -117,6 +193,7 @@ function useScopeVariables(node, options) {
   return [
     targetOption,
     { key: 'index', [fieldNames.value]: 'index', [fieldNames.label]: langLoopIndex },
+    { key: 'sequence', [fieldNames.value]: 'sequence', [fieldNames.label]: langLoopSequence },
     { key: 'length', [fieldNames.value]: 'length', [fieldNames.label]: langLoopLength },
   ];
 }
@@ -215,33 +292,32 @@ export default class extends Instruction {
         },
       ],
     },
-    startIndex: {
-      type: 'number',
-      title: `{{t("Start index", { ns: "${NAMESPACE}" })}}`,
-      description: `{{t("The index number used in loop scope variable.", { ns: "${NAMESPACE}" })}}`,
-      'x-decorator': 'FormItem',
-      'x-component': 'RadioWithTooltip',
-      'x-component-props': {
-        options: [
-          {
-            label: `{{t("From 0", { ns: "${NAMESPACE}" })}}`,
-            value: 0,
-            tooltip: `{{t("Follow programming language conventions.", { ns: "${NAMESPACE}" })}}`,
-          },
-          {
-            label: `{{t("From 1", { ns: "${NAMESPACE}" })}}`,
-            value: 1,
-            tooltip: `{{t("Follow natural language conventions.", { ns: "${NAMESPACE}" })}}`,
-          },
-        ],
-      },
-      default: 0,
-    },
+    // startIndex: {
+    //   type: 'number',
+    //   title: `{{t("Start index", { ns: "${NAMESPACE}" })}}`,
+    //   description: `{{t("The index number used in loop scope variable.", { ns: "${NAMESPACE}" })}}`,
+    //   'x-decorator': 'FormItem',
+    //   'x-component': 'RadioWithTooltip',
+    //   'x-component-props': {
+    //     options: [
+    //       {
+    //         label: `{{t("From 0", { ns: "${NAMESPACE}" })}}`,
+    //         value: 0,
+    //         tooltip: `{{t("Follow programming language conventions.", { ns: "${NAMESPACE}" })}}`,
+    //       },
+    //       {
+    //         label: `{{t("From 1", { ns: "${NAMESPACE}" })}}`,
+    //         value: 1,
+    //         tooltip: `{{t("Follow natural language conventions.", { ns: "${NAMESPACE}" })}}`,
+    //       },
+    //     ],
+    //   },
+    //   default: 0,
+    // },
     condition: {
-      type: 'void',
-      title: `{{t("Loop condition on each item", { ns: "${NAMESPACE}" })}}`,
+      type: 'boolean',
       'x-decorator': 'FormItem',
-      'x-component': 'CardWrapper',
+      'x-component': 'LoopCondition',
       'x-reactions': [
         {
           dependencies: ['target'],
@@ -252,110 +328,7 @@ export default class extends Instruction {
           },
         },
       ],
-      properties: {
-        checkpoint: {
-          type: 'number',
-          title: `{{t("When to check", { ns: "${NAMESPACE}" })}}`,
-          'x-decorator': 'FormItem',
-          'x-component': 'RadioWithTooltip',
-          'x-component-props': {
-            options: [
-              {
-                label: `{{t("Before each starts", { ns: "${NAMESPACE}" })}}`,
-                value: 0,
-              },
-              {
-                label: `{{t("After each ends", { ns: "${NAMESPACE}" })}}`,
-                value: 1,
-              },
-            ],
-          },
-          default: 0,
-        },
-        continueOnFalse: {
-          type: 'boolean',
-          'x-decorator': 'FormItem',
-          'x-component': 'RadioWithTooltip',
-          title: `{{t("When condition is not met on item", { ns: "${NAMESPACE}" })}}`,
-          'x-component-props': {
-            options: [
-              {
-                label: `{{t("Exit loop", { ns: "${NAMESPACE}" })}}`,
-                value: false,
-              },
-              {
-                label: `{{t("Continue on next item", { ns: "${NAMESPACE}" })}}`,
-                value: true,
-              },
-            ],
-          },
-          default: false,
-        },
-        // engine: {
-        //   type: 'string',
-        //   title: `{{t("Calculation engine", { ns: "${NAMESPACE}" })}}`,
-        //   'x-decorator': 'FormItem',
-        //   'x-component': 'RadioWithTooltip',
-        //   'x-component-props': {
-        //     options: [
-        //       ['basic', { label: `{{t("Basic", { ns: "${NAMESPACE}" })}}` }],
-        //       ...Array.from(evaluators.getEntities()).filter(([key]) => ['math.js', 'formula.js'].includes(key)),
-        //     ].reduce(
-        //       (result: RadioWithTooltipOption[], [value, options]: any) => result.concat({ value, ...options }),
-        //       [],
-        //     ),
-        //   },
-        //   default: 'basic',
-        // },
-        calculation: {
-          type: 'object',
-          title: `{{t("Condition", { ns: "${NAMESPACE}" })}}`,
-          'x-decorator': 'FormItem',
-          'x-component': 'CalculationConfig',
-          'x-component-props': {
-            useVariableHook,
-          },
-          // 'x-reactions': {
-          //   dependencies: ['engine'],
-          //   fulfill: {
-          //     state: {
-          //       visible: '{{$deps[0] === "basic"}}',
-          //     },
-          //   },
-          // },
-        },
-        // expression: {
-        //   type: 'string',
-        //   title: `{{t("Condition expression", { ns: "${NAMESPACE}" })}}`,
-        //   'x-decorator': 'FormItem',
-        //   'x-component': 'LoopVariableTextArea',
-        //   'x-component-props': {
-        //     changeOnSelect: true,
-        //   },
-        //   ['x-validator'](value, rules, { form }) {
-        //     const { values } = form;
-        //     const { evaluate } = evaluators.get(values.engine);
-        //     const exp = value.trim().replace(/{{([^{}]+)}}/g, ' "1" ');
-        //     try {
-        //       evaluate(exp);
-        //       return '';
-        //     } catch (e) {
-        //       return `Expression syntax error: ${e.message}`;
-        //     }
-        //   },
-        //   'x-reactions': {
-        //     dependencies: ['engine'],
-        //     fulfill: {
-        //       state: {
-        //         visible: '{{$deps[0] !== "basic"}}',
-        //       },
-        //       schema: {
-        //         description: '{{renderEngineReference($deps[0])}}',
-        //       },
-        //     },
-        //   },
-        // },
-      },
+      default: false,
     },
     exit: {
       type: 'number',
@@ -386,7 +359,7 @@ export default class extends Instruction {
     renderEngineReference,
   };
   components = {
-    CardWrapper,
+    LoopCondition,
     WorkflowVariableInput,
     WorkflowVariableTextArea,
     LoopVariableTextArea,

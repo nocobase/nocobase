@@ -307,7 +307,7 @@ describe('workflow > instructions > loop', () => {
       });
     });
 
-    describe('startIndex', () => {
+    describe.skip('startIndex', () => {
       it('startIndex as 0', async () => {
         const n1 = await workflow.createNode({
           type: 'loop',
@@ -404,7 +404,9 @@ describe('workflow > instructions > loop', () => {
           type: 'loop',
           config: {
             target: 2,
-            calculation: {},
+            condition: {
+              calculation: {},
+            },
           },
         });
 
@@ -434,19 +436,21 @@ describe('workflow > instructions > loop', () => {
         await n1.update({
           config: {
             target: 2,
-            calculation: {
-              group: {
-                type: 'and',
-                calculations: [
-                  {
-                    calculator: 'equal',
-                    operands: [`{{$scopes.${n1.key}.item}}`, 0],
-                  },
-                  {
-                    calculator: 'equal',
-                    operands: [`{{$scopes.${n1.key}.index}}`, 0],
-                  },
-                ],
+            condition: {
+              calculation: {
+                group: {
+                  type: 'and',
+                  calculations: [
+                    {
+                      calculator: 'equal',
+                      operands: [`{{$scopes.${n1.key}.item}}`, 0],
+                    },
+                    {
+                      calculator: 'equal',
+                      operands: [`{{$scopes.${n1.key}.index}}`, 0],
+                    },
+                  ],
+                },
               },
             },
           },
@@ -478,20 +482,22 @@ describe('workflow > instructions > loop', () => {
         await n1.update({
           config: {
             target: 2,
-            checkpoint: 1,
-            calculation: {
-              group: {
-                type: 'and',
-                calculations: [
-                  {
-                    calculator: 'equal',
-                    operands: [`{{$scopes.${n1.key}.item}}`, 0],
-                  },
-                  {
-                    calculator: 'equal',
-                    operands: [`{{$scopes.${n1.key}.index}}`, 0],
-                  },
-                ],
+            condition: {
+              checkpoint: 1,
+              calculation: {
+                group: {
+                  type: 'and',
+                  calculations: [
+                    {
+                      calculator: 'equal',
+                      operands: [`{{$scopes.${n1.key}.item}}`, 0],
+                    },
+                    {
+                      calculator: 'equal',
+                      operands: [`{{$scopes.${n1.key}.index}}`, 0],
+                    },
+                  ],
+                },
               },
             },
           },
@@ -523,15 +529,17 @@ describe('workflow > instructions > loop', () => {
         await n1.update({
           config: {
             target: 2,
-            calculation: {
-              group: {
-                type: 'and',
-                calculations: [
-                  {
-                    calculator: 'equal',
-                    operands: [1, 0],
-                  },
-                ],
+            condition: {
+              calculation: {
+                group: {
+                  type: 'and',
+                  calculations: [
+                    {
+                      calculator: 'equal',
+                      operands: [1, 0],
+                    },
+                  ],
+                },
               },
             },
           },
@@ -563,16 +571,18 @@ describe('workflow > instructions > loop', () => {
         await n1.update({
           config: {
             target: 2,
-            checkpoint: 1,
-            calculation: {
-              group: {
-                type: 'and',
-                calculations: [
-                  {
-                    calculator: 'equal',
-                    operands: [1, 0],
-                  },
-                ],
+            condition: {
+              checkpoint: 1,
+              calculation: {
+                group: {
+                  type: 'and',
+                  calculations: [
+                    {
+                      calculator: 'equal',
+                      operands: [1, 0],
+                    },
+                  ],
+                },
               },
             },
           },
