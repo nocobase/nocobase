@@ -133,6 +133,7 @@ export class PluginLocalizationServer extends Plugin {
 
     this.app.localeManager.registerResourceStorer('plugin-localization', {
       getResources: (lang: string) => this.resources.getResources(lang),
+      reset: () => this.resources.reset(),
     });
   }
 

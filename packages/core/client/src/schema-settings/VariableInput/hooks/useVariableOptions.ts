@@ -9,7 +9,8 @@
 
 import { Form } from '@formily/core';
 import { ISchema, Schema } from '@formily/react';
-import { useContext, useMemo } from 'react';
+import { useMemo } from 'react';
+import { useVariables } from '../../../';
 import { CollectionFieldOptions_deprecated } from '../../../collection-manager';
 import { useAPITokenVariable } from './useAPITokenVariable';
 import { useDatetimeVariable } from './useDateVariable';
@@ -22,7 +23,6 @@ import { useCurrentRecordVariable } from './useRecordVariable';
 import { useCurrentRoleVariable } from './useRoleVariable';
 import { useURLSearchParamsVariable } from './useURLSearchParamsVariable';
 import { useCurrentUserVariable } from './useUserVariable';
-import { VariablesContext } from '../../../';
 
 interface Props {
   /**
@@ -59,7 +59,7 @@ export const useVariableOptions = ({
   targetFieldSchema,
   record,
 }: Props) => {
-  const { filterVariables = () => true } = useContext(VariablesContext) || {};
+  const { filterVariables = () => true } = useVariables() || {};
   const blockParentCollectionName = record?.__parent?.__collectionName;
   const { currentUserSettings } = useCurrentUserVariable({
     maxDepth: 3,

@@ -1,4 +1,4 @@
-name: Build Pro Image
+name: Build pro image
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}

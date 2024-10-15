@@ -45,7 +45,7 @@ const PublicFormQRCode = () => {
       onOpenChange={handleQRCodeOpen}
       content={open ? <QRCode value={link} bordered={false} /> : ' '}
     >
-      {t('QR code', { ns: NAMESPACE })}
+      <a>{t('QR code', { ns: NAMESPACE })}</a>
     </Popover>
   );
 };
@@ -140,25 +140,22 @@ export function AdminPublicFormPage() {
                 {
                   key: 'enabled',
                   label: (
-                    <span
+                    <a
                       style={{
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'space-between',
                       }}
+                      onClick={() => handleEditPublicForm({ enabled: !enabled })}
                     >
                       <span style={{ marginRight: '10px' }}>{t('Enable form', { ns: NAMESPACE })}</span>
-                      <Switch
-                        size={'small'}
-                        checked={enabled}
-                        onChange={(checked) => handleEditPublicForm({ enabled: checked })}
-                      />
-                    </span>
+                      <Switch size={'small'} checked={enabled} />
+                    </a>
                   ),
                 },
                 {
                   key: 'password',
-                  label: <span onClick={handleSetPassword}> {t('Set password')}</span>,
+                  label: <a onClick={handleSetPassword}> {t('Set password')}</a>,
                 },
                 {
                   key: 'divider1',
@@ -166,7 +163,7 @@ export function AdminPublicFormPage() {
                 },
                 {
                   key: 'copyLink',
-                  label: <span onClick={handleCopyLink}>{t('Copy link')}</span>,
+                  label: <a onClick={handleCopyLink}>{t('Copy link')}</a>,
                 },
                 {
                   key: 'qrcode',

@@ -18,6 +18,7 @@ export interface ResourceStorer {
   getResources(lang: string): Promise<{
     [ns: string]: Record<string, string>;
   }>;
+  reset?: () => Promise<void>;
 }
 
 export class Locale {
@@ -41,7 +42,7 @@ export class Locale {
     this.app.syncMessageManager.subscribe('localeManager', async (message) => {
       switch (message.type) {
         case 'reload':
-          await this.cache.reset();
+          await this.reset();
           return;
       }
     });
@@ -52,14 +53,19 @@ export class Locale {
       name: 'locale',
       prefix: 'locale',
       store: 'memory',
-      max: 2000
     });
 
     await this.get(this.defaultLang);
   }
 
+  async reset() {
+    const storers = Array.from(this.resourceStorers.getValues());
+    const promises = storers.map((storer) => storer.reset());
+    await Promise.all([this.cache.reset(), ...promises]);
+  }
+
   async reload() {
-    await this.cache.reset();
+    await this.reset();
     this.app.syncMessageManager.publish('localeManager', { type: 'reload' });
   }
 

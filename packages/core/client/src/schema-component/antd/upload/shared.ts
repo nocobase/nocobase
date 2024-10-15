@@ -93,11 +93,7 @@ const testOpts = (ext: RegExp, options: { exclude?: string[]; include?: string[]
 };
 
 export function getThumbnailPlaceholderURL(file, options: any = {}) {
-  if (file.url) {
-    return file.url;
-  }
   for (let i = 0; i < UPLOAD_PLACEHOLDER.length; i++) {
-    // console.log(UPLOAD_PLACEHOLDER[i].ext, testOpts(UPLOAD_PLACEHOLDER[i].ext, options));
     if (UPLOAD_PLACEHOLDER[i].ext.test(file.extname || file.filename || file.url || file.name)) {
       if (testOpts(UPLOAD_PLACEHOLDER[i].ext, options)) {
         return UPLOAD_PLACEHOLDER[i].icon || UNKNOWN_FILE_ICON;

@@ -1,4 +1,4 @@
-name: Build Docker Image
+name: Build docker image
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}

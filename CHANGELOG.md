@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.3.32-beta](https://github.com/nocobase/nocobase/compare/v1.3.31-beta...v1.3.32-beta) - 2024-10-13
+
+### 🐛 Bug Fixes
+
+- **[client]** required relational field still triggers validation error after selecting a value with a variable in data scope ([#5399](https://github.com/nocobase/nocobase/pull/5399)) by @katherinehhh
+
 ## [v1.3.31-beta](https://github.com/nocobase/nocobase/compare/v1.3.30-beta...v1.3.31-beta) - 2024-10-11
 
 ### 🐛 Bug Fixes
