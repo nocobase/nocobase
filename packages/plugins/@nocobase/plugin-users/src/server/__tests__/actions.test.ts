@@ -23,7 +23,7 @@ describe('actions', () => {
     process.env.INIT_ROOT_PASSWORD = '123456';
     process.env.INIT_ROOT_NICKNAME = 'Test';
     app = await createMockServer({
-      plugins: ['auth', 'users', 'acl', 'data-source-manager'],
+      plugins: ['field-sort', 'auth', 'users', 'acl', 'data-source-manager'],
     });
     db = app.db;
 

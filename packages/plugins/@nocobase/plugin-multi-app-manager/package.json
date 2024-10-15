@@ -14,7 +14,7 @@
     "@formily/shared": "2.x",
     "antd": "5.x",
     "antd-style": "3.x",
-    "async-mutex": "^0.3.2",
+    "async-mutex": "^0.5.0",
     "mysql2": "^3.11.0",
     "pg": "^8.7.3",
     "react": "18.x",

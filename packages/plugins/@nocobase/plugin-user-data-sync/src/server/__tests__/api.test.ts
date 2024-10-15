@@ -19,7 +19,7 @@ describe('api', async () => {
 
   beforeEach(async () => {
     app = await createMockServer({
-      plugins: ['user-data-sync'],
+      plugins: ['field-sort', 'user-data-sync'],
     });
     agent = app.agent();
     const plugin = app.pm.get('user-data-sync') as PluginUserDataSyncServer;

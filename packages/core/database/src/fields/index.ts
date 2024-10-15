@@ -27,7 +27,6 @@ import {
 import { PasswordFieldOptions } from './password-field';
 import { RadioFieldOptions } from './radio-field';
 import { SetFieldOptions } from './set-field';
-import { SortFieldOptions } from './sort-field';
 import { StringFieldOptions } from './string-field';
 import { TextFieldOptions } from './text-field';
 import { TimeFieldOptions } from './time-field';
@@ -60,7 +59,6 @@ export * from './password-field';
 export * from './radio-field';
 export * from './relation-field';
 export * from './set-field';
-export * from './sort-field';
 export * from './string-field';
 export * from './text-field';
 export * from './time-field';
@@ -83,7 +81,6 @@ export type FieldOptions =
   | JsonbFieldOptions
   | BooleanFieldOptions
   | RadioFieldOptions
-  | SortFieldOptions
   | TextFieldOptions
   | VirtualFieldOptions
   | ArrayFieldOptions
