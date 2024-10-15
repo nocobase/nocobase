@@ -19,6 +19,7 @@ import {
   useActionContext,
   useCurrentUserContext,
   useRequest,
+  useSystemSettings,
 } from '../';
 import { useAPIClient } from '../api-client';
 
@@ -79,6 +80,11 @@ const schema: ISchema = {
           title: "{{t('Nickname')}}",
           'x-decorator': 'FormItem',
           'x-component': 'Input',
+          'x-reactions': (field) => {
+            if (field.initialValue) {
+              field.disabled = true;
+            }
+          },
         },
         username: {
           type: 'string',
@@ -87,6 +93,11 @@ const schema: ISchema = {
           'x-component': 'Input',
           'x-validator': { username: true },
           required: true,
+          'x-reactions': (field) => {
+            if (field.initialValue) {
+              field.disabled = true;
+            }
+          },
         },
         email: {
           type: 'string',
@@ -94,12 +105,22 @@ const schema: ISchema = {
           'x-decorator': 'FormItem',
           'x-component': 'Input',
           'x-validator': 'email',
+          'x-reactions': (field) => {
+            if (field.initialValue) {
+              field.disabled = true;
+            }
+          },
         },
         phone: {
           type: 'string',
           title: '{{t("Phone")}}',
           'x-decorator': 'FormItem',
           'x-component': 'Input',
+          'x-reactions': (field) => {
+            if (field.initialValue) {
+              field.disabled = true;
+            }
+          },
         },
         footer: {
           'x-component': 'Action.Drawer.Footer',
@@ -131,8 +152,9 @@ export const useEditProfile = () => {
   const ctx = useContext(DropdownVisibleContext);
   const [visible, setVisible] = useState(false);
   const { t } = useTranslation();
-
-  return useMemo<MenuProps['items'][0]>(() => {
+  const { data } = useSystemSettings();
+  const { enableChangePassword } = data?.data || {};
+  const result = useMemo<MenuProps['items'][0]>(() => {
     return {
       key: 'profile',
       eventKey: 'EditProfile',
@@ -155,4 +177,8 @@ export const useEditProfile = () => {
       ),
     };
   }, [visible]);
+  if (enableChangePassword === false) {
+    return null;
+  }
+  return result;
 };

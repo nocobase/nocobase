@@ -482,6 +482,61 @@ export const usersSchema: ISchema = {
   },
 };
 
+export const usersSettingsSchema: ISchema = {
+  type: 'object',
+  'x-decorator': 'UsersSettingsProvider',
+  properties: {
+    usersSettings: {
+      type: 'void',
+      'x-component': 'CardItem',
+      // 'x-decorator': 'FormBlockProvider',
+      // 'x-component-props': {
+      //   heightMode: 'fullHeight',
+      // },
+      'x-decorator': 'UsersSettingsProvider',
+      properties: {
+        form: {
+          type: 'void',
+          'x-component': 'FormV2',
+          'x-use-component-props': 'useFormBlockProps',
+          properties: {
+            enableEditProfile: {
+              type: 'string',
+              'x-component': 'Checkbox',
+              'x-decorator': 'FormItem',
+              default: true,
+              'x-content': '{{t("Allow edit profile")}}',
+            },
+            enableChangePassword: {
+              type: 'string',
+              'x-component': 'Checkbox',
+              'x-decorator': 'FormItem',
+              default: true,
+              'x-content': '{{t("Allow Change Password")}}',
+            },
+          },
+        },
+        footer: {
+          type: 'void',
+          'x-component': 'div',
+          'x-component-props': {
+            style: {
+              float: 'right',
+            },
+          },
+          properties: {
+            submit: {
+              title: 'Submit',
+              'x-component': 'Action',
+              'x-use-component-props': 'useSubmitActionProps',
+            },
+          },
+        },
+      },
+    },
+  },
+};
+
 export const getRoleUsersSchema = (): ISchema => ({
   type: 'void',
   properties: {
