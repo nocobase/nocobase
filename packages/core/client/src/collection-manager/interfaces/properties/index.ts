@@ -147,7 +147,6 @@ export const reverseFieldProperties: Record<string, ISchema> = {
   reverse: {
     type: 'void',
     'x-component': 'div',
-    'x-hidden': '{{ !showReverseFieldConfig }}',
     properties: {
       autoCreateReverseField: {
         type: 'boolean',
@@ -198,6 +197,12 @@ export const reverseFieldProperties: Record<string, ISchema> = {
               },
             },
           },
+          (field) => {
+            const values = field.form.values;
+            const { reverseField } = values;
+            field.value = !!reverseField?.key;
+            field.disabled = !!reverseField?.key;
+          },
         ],
       },
       'reverseField.type': {
@@ -211,6 +216,7 @@ export const reverseFieldProperties: Record<string, ISchema> = {
         required: true,
         'x-decorator': 'FormItem',
         'x-component': 'Input',
+        'x-disabled': '{{ !showReverseFieldConfig }}',
       },
       'reverseField.name': {
         type: 'string',
@@ -219,6 +225,7 @@ export const reverseFieldProperties: Record<string, ISchema> = {
         'x-decorator': 'FormItem',
         'x-component': 'Input',
         'x-validator': 'uid',
+        'x-disabled': '{{ !showReverseFieldConfig }}',
         description:
           "{{t('Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.')}}",
       },
