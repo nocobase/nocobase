@@ -127,7 +127,7 @@ const UsersSettingsTab: React.FC = () => {
         await form.submit();
         const values = form.values;
         await api.request({ url: 'systemSettings:update/1', data: values, method: 'POST' });
-        message.success('Submit success');
+        message.success(t('Saved successfully'));
         window.location.reload();
       },
     };
