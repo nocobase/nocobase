@@ -99,9 +99,8 @@ export const SubTable: any = observer(
     const labelUiSchema = useLabelUiSchema(collectionField, fieldNames?.label || 'label');
     const recordV2 = useCollectionRecord();
     const collection = useCollection();
-
+    const { allowSelectExistingRecord, allowAddnew, allowDisassociation } = field.componentProps;
     useSubTableSpecialCase({ field });
-
     const move = (fromIndex: number, toIndex: number) => {
       if (toIndex === undefined) return;
       if (!isArr(field.value)) return;
@@ -153,7 +152,7 @@ export const SubTable: any = observer(
       const { selectedRows, setSelectedRows } = useContext(RecordPickerContext);
       return {
         onClick() {
-          selectedRows.map((v) => field.value.push(v));
+          selectedRows.map((v) => field.value.push(markRecordAsNew(v)));
           field.onInput(field.value);
           field.initialValue = field.value;
           setSelectedRows([]);
@@ -181,13 +180,25 @@ export const SubTable: any = observer(
                   field={field}
                   showIndex
                   dragSort={false}
-                  showDel={field.editable}
+                  showDel={
+                    allowAddnew || allowSelectExistingRecord || allowDisassociation
+                      ? (record) => {
+                          if (!field.editable) {
+                            return false;
+                          }
+                          if (allowDisassociation !== false) {
+                            return true;
+                          }
+                          return record?.__isNewRecord__;
+                        }
+                      : false
+                  }
                   pagination={false}
                   rowSelection={{ type: 'none', hideSelectAll: true }}
                   footer={() =>
                     field.editable && (
                       <>
-                        {field.componentProps?.allowAddnew !== false && (
+                        {allowAddnew !== false && (
                           <Button
                             type={'text'}
                             block
@@ -200,7 +211,7 @@ export const SubTable: any = observer(
                             {t('Add new')}
                           </Button>
                         )}
-                        {field.componentProps?.allowSelectExistingRecord && (
+                        {allowSelectExistingRecord && (
                           <Button
                             type={'text'}
                             block

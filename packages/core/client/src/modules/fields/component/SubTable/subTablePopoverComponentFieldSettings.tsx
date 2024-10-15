@@ -104,6 +104,38 @@ const allowSelectExistingRecord = {
   },
 };
 
+const allowDisassociation = {
+  name: 'allowDisassociation',
+  type: 'switch',
+  useVisible() {
+    const readPretty = useIsFieldReadPretty();
+    return !readPretty;
+  },
+  useComponentProps() {
+    const { t } = useTranslation();
+    const field = useField<Field>();
+    const fieldSchema = useFieldSchema();
+    const { dn, refresh } = useDesignable();
+    return {
+      title: t('Allow disassociation'),
+      checked: fieldSchema['x-component-props']?.allowDisassociation !== false,
+      onChange(value) {
+        const schema = {
+          ['x-uid']: fieldSchema['x-uid'],
+        };
+        field.componentProps.allowDisassociation = value;
+        fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
+        fieldSchema['x-component-props'].allowDisassociation = value;
+        schema['x-component-props'] = fieldSchema['x-component-props'];
+        dn.emit('patch', {
+          schema,
+        });
+        refresh();
+      },
+    };
+  },
+};
+
 export const setDefaultSortingRules = {
   name: 'SetDefaultSortingRules',
   type: 'modal',
@@ -293,5 +325,12 @@ export const linkageRules = {
 
 export const subTablePopoverComponentFieldSettings = new SchemaSettings({
   name: 'fieldSettings:component:SubTable',
-  items: [fieldComponent, allowAddNewData, allowSelectExistingRecord, setDefaultSortingRules, linkageRules],
+  items: [
+    fieldComponent,
+    allowAddNewData,
+    allowSelectExistingRecord,
+    allowDisassociation,
+    setDefaultSortingRules,
+    linkageRules,
+  ],
 });

@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { DeleteOutlined, MenuOutlined } from '@ant-design/icons';
+import { CloseOutlined, MenuOutlined } from '@ant-design/icons';
 import { TinyColor } from '@ctrl/tinycolor';
 import { SortableContext, SortableContextProps, useSortable } from '@dnd-kit/sortable';
 import { css, cx } from '@emotion/css';
@@ -82,7 +82,7 @@ export const useColumnsDeepMemoized = (columns: any[]) => {
   return oldObj.value;
 };
 
-const useTableColumns = (props: { showDel?: boolean; isSubTable?: boolean }) => {
+const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }) => {
   const { token } = useToken();
   const field = useArrayField(props);
   const schema = useFieldSchema();
@@ -182,22 +182,25 @@ const useTableColumns = (props: { showDel?: boolean; isSubTable?: boolean }) => 
         align: 'center',
         fixed: 'right',
         render: (v, record, index) => {
-          return (
-            <DeleteOutlined
-              style={{ cursor: 'pointer' }}
-              onClick={() => {
-                action(() => {
-                  spliceArrayState(field as any, {
-                    startIndex: index,
-                    deleteCount: 1,
+          if (props.showDel(record)) {
+            return (
+              <CloseOutlined
+                style={{ cursor: 'pointer', color: 'gray' }}
+                onClick={() => {
+                  action(() => {
+                    spliceArrayState(field as any, {
+                      startIndex: index,
+                      deleteCount: 1,
+                    });
+                    field.value.splice(index, 1);
+                    field.initialValue?.splice(index, 1);
+                    return field.onInput(field.value);
                   });
-                  field.value.splice(index, 1);
-                  field.initialValue?.splice(index, 1);
-                  return field.onInput(field.value);
-                });
-              }}
-            />
-          );
+                }}
+              />
+            );
+          }
+          return;
         },
       });
     }
