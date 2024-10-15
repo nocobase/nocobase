@@ -153,7 +153,7 @@ export const useEditProfile = () => {
   const [visible, setVisible] = useState(false);
   const { t } = useTranslation();
   const { data } = useSystemSettings();
-  const { enableChangePassword } = data?.data || {};
+  const { enableEditProfile } = data?.data || {};
   const result = useMemo<MenuProps['items'][0]>(() => {
     return {
       key: 'profile',
@@ -177,7 +177,7 @@ export const useEditProfile = () => {
       ),
     };
   }, [visible]);
-  if (enableChangePassword === false) {
+  if (enableEditProfile === false) {
     return null;
   }
   return result;
