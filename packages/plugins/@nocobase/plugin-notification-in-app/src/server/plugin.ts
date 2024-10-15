@@ -8,7 +8,6 @@
  */
 
 import { Plugin } from '@nocobase/server';
-import { COLLECTION_NAME } from '@nocobase/plugin-notification-manager';
 import { inAppTypeName } from '../types';
 import NotificationsServerPlugin from '@nocobase/plugin-notification-manager';
 import InAppNotificationChannel from './InAppNotificationChannel';
@@ -26,20 +25,7 @@ export class PluginNotificationInAppServer extends Plugin {
     notificationServer.registerChannelType({ type: inAppTypeName, Channel: InAppNotificationChannel });
   }
 
-  async install() {
-    const channelsRepo = this.app.db.getRepository(COLLECTION_NAME.channels);
-    const channel = await channelsRepo.findOne({ filter: { notificationType: inAppTypeName } });
-    if (!channel) {
-      await channelsRepo.create({
-        values: {
-          name: inAppTypeName,
-          title: `{{t("In-app message", { ns: "${NAMESPACE}" })}}`,
-          notificationType: inAppTypeName,
-          description: `{{t("In-app message", { ns: "${NAMESPACE}" })}}`,
-        },
-      });
-    }
-  }
+  async install() {}
 
   async afterEnable() {}
 
