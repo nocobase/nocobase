@@ -16,6 +16,7 @@ import {
   SchemaSettingsDataTemplates,
   SchemaSettingsFormItemTemplate,
   SchemaSettingsLinkageRules,
+  schemaSettingsLabelLayout,
 } from '../../../../schema-settings';
 import { SchemaSettingsBlockHeightItem } from '../../../../schema-settings/SchemaSettingsBlockHeightItem';
 import { SchemaSettingsBlockTitleItem } from '../../../../schema-settings/SchemaSettingsBlockTitleItem';
@@ -76,6 +77,7 @@ export const createFormBlockSettings = new SchemaSettings({
         };
       },
     },
+    schemaSettingsLabelLayout,
     {
       name: 'divider2',
       type: 'divider',

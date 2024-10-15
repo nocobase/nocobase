@@ -16,7 +16,7 @@ import { useDetailsBlockContext } from '../../../../block-provider/DetailsBlockP
 import { useFormBlockContext } from '../../../../block-provider/FormBlockProvider';
 import { useCollection_deprecated, useSortFields } from '../../../../collection-manager';
 import { removeNullCondition, useDesignable } from '../../../../schema-component';
-import { SchemaSettingsLinkageRules } from '../../../../schema-settings';
+import { SchemaSettingsLinkageRules, schemaSettingsLabelLayout } from '../../../../schema-settings';
 import { SchemaSettingsBlockHeightItem } from '../../../../schema-settings/SchemaSettingsBlockHeightItem';
 import { SchemaSettingsBlockTitleItem } from '../../../../schema-settings/SchemaSettingsBlockTitleItem';
 import { SchemaSettingsDataScope } from '../../../../schema-settings/SchemaSettingsDataScope';
@@ -212,6 +212,7 @@ const commonItems: SchemaSettingsItemType[] = [
       };
     },
   },
+  schemaSettingsLabelLayout,
   {
     name: 'divider',
     type: 'divider',

@@ -15,7 +15,7 @@ import { uid } from '@formily/shared';
 import { ConfigProvider, Spin, theme } from 'antd';
 import React, { useEffect, useMemo } from 'react';
 import { useActionContext } from '..';
-import { useAttach, useComponent, useDesignable } from '../..';
+import { useAttach, useComponent } from '../..';
 import { useTemplateBlockContext } from '../../../block-provider/TemplateBlockProvider';
 import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
 import { bindLinkageRulesToFiled } from '../../../schema-settings/LinkageRules/bindLinkageRulesToFiled';
@@ -24,6 +24,7 @@ import { useToken } from '../../../style';
 import { useLocalVariables, useVariables } from '../../../variables';
 import { useProps } from '../../hooks/useProps';
 import { useFormBlockHeight } from './hook';
+import { getCardItemSchema } from '../../../block-provider';
 
 export interface FormProps extends IFormLayoutProps {
   form?: FormilyForm;
@@ -34,15 +35,16 @@ const FormComponent: React.FC<FormProps> = (props) => {
   const { form, children, ...others } = props;
   const field = useField();
   const fieldSchema = useFieldSchema();
+  const cardItemSchema = getCardItemSchema(fieldSchema);
   // TODO: component 里 useField 会与当前 field 存在偏差
   const f = useAttach(form.createVoidField({ ...field.props, basePath: '' }));
   const height = useFormBlockHeight();
   const { token } = theme.useToken();
-  const { designable } = useDesignable();
+  const { layout = 'vertical' } = cardItemSchema['x-component-props'] || {};
   return (
     <FieldContext.Provider value={undefined}>
       <FormContext.Provider value={form}>
-        <FormLayout layout={'vertical'} {...others}>
+        <FormLayout layout={layout} {...others}>
           <div
             className={css`
               .nb-grid-container {

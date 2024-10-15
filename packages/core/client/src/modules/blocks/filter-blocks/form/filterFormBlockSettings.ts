@@ -13,7 +13,11 @@ import { SchemaSettings } from '../../../../application/schema-settings/SchemaSe
 import { useCollection_deprecated } from '../../../../collection-manager';
 import { useCollection } from '../../../../data-source/collection/CollectionProvider';
 import { FilterBlockType } from '../../../../filter-provider';
-import { SchemaSettingsFormItemTemplate, SchemaSettingsLinkageRules } from '../../../../schema-settings';
+import {
+  SchemaSettingsFormItemTemplate,
+  SchemaSettingsLinkageRules,
+  schemaSettingsLabelLayout,
+} from '../../../../schema-settings';
 import { SchemaSettingsBlockHeightItem } from '../../../../schema-settings/SchemaSettingsBlockHeightItem';
 import { SchemaSettingsBlockTitleItem } from '../../../../schema-settings/SchemaSettingsBlockTitleItem';
 import { SchemaSettingsConnectDataBlocks } from '../../../../schema-settings/SchemaSettingsConnectDataBlocks';
@@ -67,6 +71,7 @@ export const filterFormBlockSettings = new SchemaSettings({
         };
       },
     },
+    schemaSettingsLabelLayout,
     {
       name: 'divider',
       type: 'divider',

@@ -17,6 +17,7 @@ export const useStyles = genStyleHook('nb-markdown', (token, { isDarkTheme }) =>
     .toHexShortString();
 
   const defaultStyle: any = {
+    lineHeight: 'inherit',
     // default style of markdown
     '&.nb-markdown-default': {
       'pre code.hljs': { display: 'block', overflowX: 'auto', padding: '1em' },
@@ -43,13 +44,15 @@ export const useStyles = genStyleHook('nb-markdown', (token, { isDarkTheme }) =>
       '.hljs-attribute,.hljs-doctag,.hljs-keyword,.hljs-meta .hljs-keyword,.hljs-name,.hljs-selector-tag': {
         fontWeight: 700,
       },
-      '.hljs-deletion,.hljs-number,.hljs-quote,.hljs-selector-class,.hljs-selector-id,.hljs-string,.hljs-template-tag,.hljs-type': {
-        color: '#800',
-      },
+      '.hljs-deletion,.hljs-number,.hljs-quote,.hljs-selector-class,.hljs-selector-id,.hljs-string,.hljs-template-tag,.hljs-type':
+        {
+          color: '#800',
+        },
       '.hljs-section,.hljs-title': { color: '#800', fontWeight: 700 },
-      '.hljs-link,.hljs-operator,.hljs-regexp,.hljs-selector-attr,.hljs-selector-pseudo,.hljs-symbol,.hljs-template-variable,.hljs-variable': {
-        color: '#ab5656',
-      },
+      '.hljs-link,.hljs-operator,.hljs-regexp,.hljs-selector-attr,.hljs-selector-pseudo,.hljs-symbol,.hljs-template-variable,.hljs-variable':
+        {
+          color: '#ab5656',
+        },
       '.hljs-literal': { color: '#695' },
       '.hljs-addition,.hljs-built_in,.hljs-bullet,.hljs-code': {
         color: '#397300',
@@ -97,15 +100,17 @@ export const useStyles = genStyleHook('nb-markdown', (token, { isDarkTheme }) =>
         borderRadius: token.borderRadiusSM,
       },
       '.hljs': { color: '#adbac7', background: '#22272e' },
-      '.hljs-doctag,.hljs-keyword,.hljs-meta .hljs-keyword,.hljs-template-tag,.hljs-template-variable,.hljs-type,.hljs-variable.language_': {
-        color: '#f47067',
-      },
+      '.hljs-doctag,.hljs-keyword,.hljs-meta .hljs-keyword,.hljs-template-tag,.hljs-template-variable,.hljs-type,.hljs-variable.language_':
+        {
+          color: '#f47067',
+        },
       '.hljs-title,.hljs-title.class_,.hljs-title.class_.inherited__,.hljs-title.function_': {
         color: '#dcbdfb',
       },
-      '.hljs-attr,.hljs-attribute,.hljs-literal,.hljs-meta,.hljs-number,.hljs-operator,.hljs-selector-attr,.hljs-selector-class,.hljs-selector-id,.hljs-variable': {
-        color: '#6cb6ff',
-      },
+      '.hljs-attr,.hljs-attribute,.hljs-literal,.hljs-meta,.hljs-number,.hljs-operator,.hljs-selector-attr,.hljs-selector-class,.hljs-selector-id,.hljs-variable':
+        {
+          color: '#6cb6ff',
+        },
       '.hljs-meta .hljs-string,.hljs-regexp,.hljs-string': { color: '#96d0ff' },
       '.hljs-built_in,.hljs-symbol': { color: '#f69d50' },
       '.hljs-code,.hljs-comment,.hljs-formula': { color: '#768390' },

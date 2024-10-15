@@ -104,6 +104,7 @@ import { ChildDynamicComponent } from './EnableChildCollections/DynamicComponent
 import { FormLinkageRules } from './LinkageRules';
 import { useLinkageCollectionFieldOptions } from './LinkageRules/action-hooks';
 import { LinkageRuleCategory, LinkageRuleDataKeyMap } from './LinkageRules/type';
+import { SchemaSettingsItemType } from '../';
 export interface SchemaSettingsProps {
   title?: any;
   dn?: Designable;
@@ -1274,6 +1275,36 @@ export const findParentFieldSchema = (fieldSchema: Schema) => {
   }
 };
 
+export const schemaSettingsLabelLayout: SchemaSettingsItemType = {
+  name: 'formLabelLayout',
+  type: 'select',
+  useComponentProps() {
+    const field = useField();
+    const fieldSchema = useFieldSchema();
+    const { t } = useTranslation();
+    const { dn } = useDesignable();
+    return {
+      title: t('Layout'),
+      value: field.componentProps?.layout || 'vertical',
+      options: [
+        { label: t('Vertical'), value: 'vertical' },
+        { label: t('Horizontal'), value: 'horizontal' },
+      ],
+      onChange: (layout) => {
+        field.componentProps = field.componentProps || {};
+        field.componentProps.layout = layout;
+        fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
+        fieldSchema['x-component-props']['layout'] = layout;
+        dn.emit('patch', {
+          schema: {
+            ['x-uid']: fieldSchema['x-uid'],
+            'x-component-props': fieldSchema['x-component-props'],
+          },
+        });
+      },
+    };
+  },
+};
 // 是否是系统字段
 export const isSystemField = (collectionField: CollectionFieldOptions_deprecated, getInterface) => {
   const i = getInterface?.(collectionField?.interface);
