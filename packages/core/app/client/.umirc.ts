@@ -62,6 +62,9 @@ export default defineConfig({
     edge: 79,
     safari: 12,
   },
+  jsMinifierOptions: {
+    target: ['chrome80', 'es2020'],
+  },
   codeSplitting: {
     jsStrategy: 'depPerChunk'
   },
