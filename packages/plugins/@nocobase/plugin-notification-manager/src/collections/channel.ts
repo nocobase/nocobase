@@ -12,8 +12,8 @@ import { CollectionOptions } from '@nocobase/client';
 
 const channelCollection: CollectionOptions = {
   name: COLLECTION_NAME.channels,
-  autoGenId: false,
   filterTargetKey: 'name',
+  prefix: 's_',
   fields: [
     {
       name: 'name',
@@ -49,6 +49,11 @@ const channelCollection: CollectionOptions = {
         type: 'object',
         'x-component': 'ConfigForm',
       },
+    },
+    {
+      name: 'meta',
+      type: 'json',
+      interface: 'json',
     },
     {
       interface: 'input',

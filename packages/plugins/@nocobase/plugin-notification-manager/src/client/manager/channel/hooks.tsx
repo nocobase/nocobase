@@ -105,10 +105,8 @@ export const useEditFormProps = () => {
   };
 };
 export const useRecordEditActionProps = () => {
-  const channelTypes = useNotificationTypes();
   const recordData = useCollectionRecordData();
-  const channelType = channelTypes.find((item) => item.type === recordData.notificationType);
-  const editable = channelType?.meta?.editable;
+  const editable = recordData?.meta?.editable;
   const style: React.CSSProperties = {};
   if (editable === false) {
     style.display = 'none';
@@ -117,10 +115,8 @@ export const useRecordEditActionProps = () => {
 };
 
 export const useRecordDeleteActionProps = () => {
-  const channelTypes = useNotificationTypes();
   const recordData = useCollectionRecordData();
-  const channelType = channelTypes.find((item) => item.type === recordData.notificationType);
-  const deletable = channelType?.meta?.deletable;
+  const deletable = recordData?.meta?.deletable;
   const style: React.CSSProperties = {};
   const destroyProps = useDestroyActionProps();
   if (deletable === false) {
