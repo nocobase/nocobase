@@ -19,7 +19,7 @@ import { useStyles } from './Action.Drawer.style';
 import { useActionContext } from './hooks';
 import { useSetAriaLabelForDrawer } from './hooks/useSetAriaLabelForDrawer';
 import { ActionDrawerProps, ComposedActionDrawer, OpenSize } from './types';
-import { antdDrawerZIndex } from './utils';
+import { useZIndexContext, zIndexContext } from './zIndexContext';
 
 const DrawerErrorFallback: React.FC<FallbackProps> = (props) => {
   const { visible, setVisible } = useActionContext();
@@ -37,12 +37,13 @@ const openSizeWidthMap = new Map<OpenSize, string>([
 ]);
 export const InternalActionDrawer: React.FC<ActionDrawerProps> = observer(
   (props) => {
-    const { footerNodeName = 'Action.Drawer.Footer', ...others } = props;
+    const { footerNodeName = 'Action.Drawer.Footer', zIndex: _zIndex, ...others } = props;
     const { visible, setVisible, openSize = 'middle', drawerProps, modalProps } = useActionContext();
     const schema = useFieldSchema();
     const field = useField();
     const { componentCls, hashId } = useStyles();
     const tabContext = useTabsContext();
+    const parentZIndex = useZIndexContext();
     const footerSchema = schema.reduceProperties((buf, s) => {
       if (s['x-component'] === footerNodeName) {
         return s;
@@ -62,44 +63,48 @@ export const InternalActionDrawer: React.FC<ActionDrawerProps> = observer(
       useSetAriaLabelForDrawer(visible);
     }
 
+    const zIndex = _zIndex || parentZIndex + (props.level || 0);
+
     return (
-      <TabsContextProvider {...tabContext} tabBarExtraContent={null}>
-        <Drawer
-          zIndex={antdDrawerZIndex + props.level}
-          width={openSizeWidthMap.get(openSize)}
-          title={field.title}
-          {...others}
-          {...drawerProps}
-          rootStyle={rootStyle}
-          destroyOnClose
-          open={visible}
-          onClose={() => setVisible(false, true)}
-          rootClassName={classNames(componentCls, hashId, drawerProps?.className, others.className, 'reset')}
-          footer={
-            footerSchema && (
-              <div className={'footer'}>
-                <RecursionField
-                  basePath={field.address}
-                  schema={schema}
-                  onlyRenderProperties
-                  filterProperties={(s) => {
-                    return s['x-component'] === footerNodeName;
-                  }}
-                />
-              </div>
-            )
-          }
-        >
-          <RecursionField
-            basePath={field.address}
-            schema={schema}
-            onlyRenderProperties
-            filterProperties={(s) => {
-              return s['x-component'] !== footerNodeName;
-            }}
-          />
-        </Drawer>
-      </TabsContextProvider>
+      <zIndexContext.Provider value={zIndex}>
+        <TabsContextProvider {...tabContext} tabBarExtraContent={null}>
+          <Drawer
+            zIndex={zIndex}
+            width={openSizeWidthMap.get(openSize)}
+            title={field.title}
+            {...others}
+            {...drawerProps}
+            rootStyle={rootStyle}
+            destroyOnClose
+            open={visible}
+            onClose={() => setVisible(false, true)}
+            rootClassName={classNames(componentCls, hashId, drawerProps?.className, others.className, 'reset')}
+            footer={
+              footerSchema && (
+                <div className={'footer'}>
+                  <RecursionField
+                    basePath={field.address}
+                    schema={schema}
+                    onlyRenderProperties
+                    filterProperties={(s) => {
+                      return s['x-component'] === footerNodeName;
+                    }}
+                  />
+                </div>
+              )
+            }
+          >
+            <RecursionField
+              basePath={field.address}
+              schema={schema}
+              onlyRenderProperties
+              filterProperties={(s) => {
+                return s['x-component'] !== footerNodeName;
+              }}
+            />
+          </Drawer>
+        </TabsContextProvider>
+      </zIndexContext.Provider>
     );
   },
   { displayName: 'ActionDrawer' },

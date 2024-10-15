@@ -13,7 +13,7 @@ import common from './common';
 export default {
   title: `{{t("Amazon S3", { ns: "${NAMESPACE}" })}}`,
   name: 's3',
-  properties: {
+  fieldset: {
     title: common.title,
     name: common.name,
     baseUrl: common.baseUrl,

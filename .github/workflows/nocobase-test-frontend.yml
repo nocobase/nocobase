@@ -1,4 +1,4 @@
-name: NocoBase FrontEnd Test
+name: NocoBase frontEnd test
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -33,7 +33,7 @@ jobs:
   frontend-test:
     strategy:
       matrix:
-        node_version: [ '18' ]
+        node_version: ['18']
     runs-on: ubuntu-latest
     container: node:${{ matrix.node_version }}
     steps:

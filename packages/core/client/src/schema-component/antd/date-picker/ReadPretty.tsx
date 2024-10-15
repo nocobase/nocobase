@@ -34,16 +34,15 @@ export interface ReadPrettyDatePickerProps extends Str2momentOptions, GetDefault
   showTime?: boolean;
 }
 
-ReadPretty.DatePicker = function DatePicker(props) {
+ReadPretty.DatePicker = function DatePicker(props: any) {
+  const { value, picker = 'date' } = props;
   const prefixCls = usePrefixCls('description-date-picker', props);
-
-  if (!props.value) {
+  if (!value) {
     return <div></div>;
   }
-
   const getLabels = () => {
     const format = getDefaultFormat(props) as string;
-    const m = str2moment(props.value, props);
+    const m = str2moment(value, props);
     const labels = dayjs.isDayjs(m) ? m.format(format) : '';
     return isArr(labels) ? labels.join('~') : labels;
   };

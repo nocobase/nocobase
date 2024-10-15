@@ -47,6 +47,13 @@ const useStyles = genStyleHook('nb-action', (token) => {
           },
         },
       },
+
+      '.ant-btn-icon': {
+        marginInlineEnd: '0px !important',
+      },
+      '.nb-action-title': {
+        marginInlineStart: '8px',
+      },
     },
   };
 });

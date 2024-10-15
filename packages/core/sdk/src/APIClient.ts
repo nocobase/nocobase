@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import axios, { AxiosInstance, AxiosRequestConfig, AxiosRequestHeaders, AxiosResponse } from 'axios';
+import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse, RawAxiosRequestHeaders } from 'axios';
 import qs from 'qs';
 
 export interface ActionParams {
@@ -267,6 +267,7 @@ export class MemoryStorage extends Storage {
 
 interface ExtendedOptions {
   authClass?: any;
+  storageType?: 'localStorage' | 'sessionStorage' | 'memory';
   storageClass?: any;
   storagePrefix?: string;
 }
@@ -300,10 +301,10 @@ export class APIClient {
     if (typeof instance === 'function') {
       this.axios = instance;
     } else {
-      const { authClass, storageClass, storagePrefix = 'NOCOBASE_', ...others } = instance || {};
+      const { authClass, storageType, storageClass, storagePrefix = 'NOCOBASE_', ...others } = instance || {};
       this.storagePrefix = storagePrefix;
       this.axios = axios.create(others);
-      this.initStorage(storageClass);
+      this.initStorage(storageClass, storageType);
       if (authClass) {
         this.auth = new authClass(this);
       }
@@ -317,14 +318,20 @@ export class APIClient {
     this.interceptors();
   }
 
-  private initStorage(storage?: any) {
+  private initStorage(storage?: any, storageType = 'localStorage') {
     if (storage) {
       this.storage = new storage(this);
-    } else if (typeof localStorage !== 'undefined') {
-      this.storage = localStorage;
-    } else {
-      this.storage = new MemoryStorage();
+      return;
     }
+    if (storageType === 'localStorage' && typeof localStorage !== 'undefined') {
+      this.storage = localStorage;
+      return;
+    }
+    if (storageType === 'sessionStorage' && typeof sessionStorage !== 'undefined') {
+      this.storage = sessionStorage;
+      return;
+    }
+    this.storage = new MemoryStorage();
   }
 
   interceptors() {
@@ -347,7 +354,7 @@ export class APIClient {
     return this.axios.request<T, R, D>(config);
   }
 
-  resource(name: string, of?: any, headers?: AxiosRequestHeaders, cancel?: boolean): IResource {
+  resource(name: string, of?: any, headers?: RawAxiosRequestHeaders, cancel?: boolean): IResource {
     const target = {};
     const handler = {
       get: (_: any, actionName: string) => {

@@ -14,6 +14,8 @@ import { getApp, sleep } from '@nocobase/plugin-workflow-test';
 
 import Plugin from '..';
 
+const mysql = process.env.DB_DIALECT === 'mysql' ? describe : describe.skip;
+
 describe('workflow > instructions > sql', () => {
   let app: Application;
   let db: Database;
@@ -286,6 +288,50 @@ describe('workflow > instructions > sql', () => {
       expect(job.result.length).toBe(1);
       // @ts-ignore
       expect(job.result[0].id).toBe(post.id);
+    });
+  });
+
+  describe('dialects', () => {
+    mysql('mysql', () => {
+      it('stored procedure with result', async () => {
+        await db.sequelize.query(`DROP PROCEDURE IF EXISTS hello`);
+        await db.sequelize.query(`CREATE PROCEDURE hello(IN id INT) BEGIN select id + 1 as a; END;`);
+        const n1 = await workflow.createNode({
+          type: 'sql',
+          config: {
+            sql: 'call hello(1)',
+          },
+        });
+
+        await PostRepo.create({ values: { title: 't1' } });
+
+        await sleep(500);
+
+        const [execution] = await workflow.getExecutions();
+        const [sqlJob] = await execution.getJobs({ order: [['id', 'ASC']] });
+        expect(sqlJob.status).toBe(JOB_STATUS.RESOLVED);
+        expect(sqlJob.result).toEqual({ a: 2 });
+      });
+
+      it('stored procedure without result', async () => {
+        await db.sequelize.query(`DROP PROCEDURE IF EXISTS hello`);
+        await db.sequelize.query(`CREATE PROCEDURE hello(IN id INT) BEGIN declare i int default 0; END;`);
+        const n1 = await workflow.createNode({
+          type: 'sql',
+          config: {
+            sql: 'call hello(1)',
+          },
+        });
+
+        await PostRepo.create({ values: { title: 't1' } });
+
+        await sleep(500);
+
+        const [execution] = await workflow.getExecutions();
+        const [sqlJob] = await execution.getJobs({ order: [['id', 'ASC']] });
+        expect(sqlJob.status).toBe(JOB_STATUS.RESOLVED);
+        expect(sqlJob.result).toBe(null);
+      });
     });
   });
 });

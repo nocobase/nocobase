@@ -503,7 +503,7 @@ export function useGetCollectionFields(dataSourceName?) {
   const app = useApp();
   const { collectionManager } = app.dataSourceManager.getDataSource(dataSourceName);
 
-  return (collectionName) => collectionManager.getCollectionFields(collectionName);
+  return useCallback((collectionName) => collectionManager.getCollectionAllFields(collectionName), [collectionManager]);
 }
 
 export function WorkflowVariableInput({ variableOptions, ...props }): JSX.Element {
