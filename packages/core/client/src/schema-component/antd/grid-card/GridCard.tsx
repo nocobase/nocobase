@@ -9,7 +9,7 @@
 
 import { css, cx } from '@emotion/css';
 import { ArrayField } from '@formily/core';
-import { FormLayout, IFormLayoutProps } from '@formily/antd-v5';
+import { FormLayout } from '@formily/antd-v5';
 import { RecursionField, Schema, useField, useFieldSchema } from '@formily/react';
 import { List as AntdList, Col, PaginationProps } from 'antd';
 import React, { useCallback, useState } from 'react';
@@ -162,7 +162,7 @@ const InternalGridCard = (props: GridCardProps) => {
     onChange: onPaginationChange,
   };
   const cardItemSchema = getCardItemSchema(fieldSchema);
-  const { layout = 'vertical' } = cardItemSchema['x-component-props'] || {};
+  const { layout = 'vertical' } = cardItemSchema?.['x-component-props'] || {};
 
   return (
     <SchemaComponentOptions

@@ -66,7 +66,7 @@ const InternalList = (props) => {
     [run, params],
   );
   const cardItemSchema = getCardItemSchema(fieldSchema);
-  const { layout = 'vertical' } = cardItemSchema['x-component-props'] || {};
+  const { layout = 'vertical' } = cardItemSchema?.['x-component-props'] || {};
 
   return wrapSSR(
     <SchemaComponentOptions

@@ -127,7 +127,7 @@ export const KanbanCard: any = observer(
       };
     }, [popupSchema]);
     const cardItemSchema = getCardItemSchema(fieldSchema);
-    const { layout = 'vertical' } = cardItemSchema['x-component-props'] || {};
+    const { layout = 'vertical' } = cardItemSchema?.['x-component-props'] || {};
 
     return (
       <>

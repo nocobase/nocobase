@@ -40,7 +40,7 @@ const FormComponent: React.FC<FormProps> = (props) => {
   const f = useAttach(form.createVoidField({ ...field.props, basePath: '' }));
   const height = useFormBlockHeight();
   const { token } = theme.useToken();
-  const { layout = 'vertical' } = cardItemSchema['x-component-props'] || {};
+  const { layout = 'vertical' } = cardItemSchema?.['x-component-props'] || {};
   return (
     <FieldContext.Provider value={undefined}>
       <FormContext.Provider value={form}>
