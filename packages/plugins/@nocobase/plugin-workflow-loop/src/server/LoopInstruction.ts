@@ -32,7 +32,7 @@ function getTargetLength(target) {
     }
     length = Math.floor(target);
   } else {
-    const targets = (Array.isArray(target) ? target : [target]).filter((t) => t != null);
+    const targets = Array.isArray(target) ? target : [target].filter((t) => t != null);
     length = targets.length;
   }
   return length;

@@ -203,6 +203,39 @@ describe('workflow > instructions > loop', () => {
         expect(jobs[0].result).toEqual({ looped: 0 });
       });
 
+      it('null value in array will not be passed', async () => {
+        const n1 = await workflow.createNode({
+          type: 'loop',
+          config: {
+            target: [null],
+          },
+        });
+
+        const n2 = await workflow.createNode({
+          type: 'echo',
+          upstreamId: n1.id,
+          branchIndex: 0,
+        });
+
+        const n3 = await workflow.createNode({
+          type: 'echo',
+          upstreamId: n1.id,
+        });
+
+        await n1.setDownstream(n3);
+
+        const post = await PostRepo.create({ values: { title: 't1' } });
+
+        await sleep(500);
+
+        const [execution] = await workflow.getExecutions();
+        expect(execution.status).toBe(EXECUTION_STATUS.RESOLVED);
+        const jobs = await execution.getJobs({ order: [['id', 'ASC']] });
+        expect(jobs.length).toBe(3);
+        expect(jobs[0].status).toBe(JOB_STATUS.RESOLVED);
+        expect(jobs[0].result).toEqual({ looped: 1 });
+      });
+
       it('target is number, cycle number times', async () => {
         const n1 = await workflow.createNode({
           type: 'loop',
