@@ -63,4 +63,6 @@ export default {
   Repeats: '重复',
   'Background color field': '背景颜色字段',
   'Not selected': '未选择',
+  "Title":"标题",
+  "{{count}} more items":"{{count}} 更多事项"
 };

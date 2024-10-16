@@ -24,12 +24,12 @@ export default class extends Instruction {
       };
     }
 
-    // @ts-ignore
-    const [result, meta] = await db.sequelize.query(sql, {
-      transaction: this.workflow.useDataSourceTransaction(dataSourceName, processor.transaction),
-      // plain: true,
-      // model: db.getCollection(node.config.collection).model
-    });
+    const [result = null, meta = null] =
+      (await db.sequelize.query(sql, {
+        transaction: this.workflow.useDataSourceTransaction(dataSourceName, processor.transaction),
+        // plain: true,
+        // model: db.getCollection(node.config.collection).model
+      })) ?? [];
 
     return {
       result: node.config.withMeta ? [result, meta] : result,

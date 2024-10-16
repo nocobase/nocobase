@@ -8,7 +8,7 @@
  */
 
 import { vi } from 'vitest';
-import { isSpecialCaseField, transformValue } from '../../hooks/useSpecialCase';
+import { isSpecialCaseField, isSubset, transformValue } from '../../hooks/useSpecialCase';
 
 describe('transformValue', () => {
   it('value is an array', () => {
@@ -126,5 +126,46 @@ describe('isSpecialCaseField', () => {
     const result = isSpecialCaseField({ collectionField, fieldSchema, getCollectionField });
 
     expect(result).toBe(true);
+  });
+});
+
+describe('isSubset', () => {
+  it('should return true when two arrays are identical', () => {
+    const arr1 = [
+      { a: 1, b: 2 },
+      { c: 3, d: 4 },
+    ];
+    const arr2 = [
+      { a: 1, b: 2 },
+      { c: 3, d: 4 },
+    ];
+    expect(isSubset(arr1, arr2)).toBe(true);
+  });
+
+  it('should return false when array lengths are different', () => {
+    const arr1 = [{ a: 1 }];
+    const arr2 = [{ a: 1 }, { b: 2 }];
+    expect(isSubset(arr1, arr2)).toBe(false);
+  });
+
+  it('should ignore null values and return true', () => {
+    const arr1 = [
+      { a: 1, b: null },
+      { c: 3, d: null },
+    ];
+    const arr2 = [{ a: 1 }, { c: 3 }];
+    expect(isSubset(arr1, arr2)).toBe(true);
+  });
+
+  it('should return false when objects do not match', () => {
+    const arr1 = [
+      { a: 1, b: 2 },
+      { c: 3, d: 4 },
+    ];
+    const arr2 = [
+      { a: 1, b: 2 },
+      { c: 3, d: 5 },
+    ];
+    expect(isSubset(arr1, arr2)).toBe(false);
   });
 });

@@ -3,8 +3,15 @@ const fs = require('fs/promises');
 const path = require('path');
 const { Command } = require('commander');
 const program = new Command();
+const axios = require('axios');
 
-program.option('-f, --from [from]').option('-t, --to [to]').option('-v, --ver [ver]', '', 'beta').option('--test');
+program
+  .option('-f, --from [from]')
+  .option('-t, --to [to]')
+  .option('-v, --ver [ver]', '', 'beta')
+  .option('--test')
+  .option('--cmsURL [url]')
+  .option('--cmsToken [token]');
 program.parse(process.argv);
 
 const header = {
@@ -99,7 +106,9 @@ async function parsePR(number, pkgType, cwd, pkg, retries = 10) {
   // gh pr view 5112 --json author,body,files
   let res;
   try {
-    const { stdout } = await execa('gh', ['pr', 'view', number, '--json', 'author,body,files,baseRefName'], { cwd });
+    const { stdout } = await execa('gh', ['pr', 'view', number, '--json', 'author,body,files,baseRefName,url'], {
+      cwd,
+    });
     res = stdout;
   } catch (error) {
     console.error(`Get PR #${number} failed, error: ${error.message}`);
@@ -110,7 +119,7 @@ async function parsePR(number, pkgType, cwd, pkg, retries = 10) {
     }
     return { number };
   }
-  const { author, body, files, baseRefName } = JSON.parse(res);
+  const { author, body, files, baseRefName, url } = JSON.parse(res);
   if (ver === 'alpha' && baseRefName !== 'next') {
     return { number };
   }
@@ -130,6 +139,7 @@ async function parsePR(number, pkgType, cwd, pkg, retries = 10) {
     author: author.login,
     moduleType: name?.includes('plugin-') ? 'plugin' : 'core',
     module: name,
+    url,
     en: {
       module: displayName || pkgName,
       description,
@@ -187,17 +197,7 @@ function arrangeChangelogs(changelogs) {
   return result;
 }
 
-async function collect() {
-  let { from, to, ver = 'beta' } = program.opts();
-  if (!from || !to) {
-    // git tag -l --sort=version:refname | grep "v*-ver" | tail -2
-    const tagPattern = `v*-${ver}`;
-    const { stdout: tags } = await execa(`git tag -l --sort=version:refname | grep "${tagPattern}" | tail -2`, {
-      shell: true,
-    });
-    [from, to] = tags.split('\n');
-  }
-  console.log(`From: ${from}, To: ${to}`);
+async function collect(from, to) {
   const changelogs = [];
   const get = async (changelogs, pkgType, cwd, pkg) => {
     const prs = await getPRList(from, to, cwd);
@@ -231,11 +231,11 @@ async function collect() {
       }
     }
   }
-  return { changelogs: arrangeChangelogs(changelogs), from, to };
+  return { changelogs: arrangeChangelogs(changelogs) };
 }
 
-async function generateChangelog() {
-  const { changelogs, from, to } = await collect();
+async function generateChangelog(changelogs) {
+  const { test } = program.opts();
   const prTypeLocale = {
     'New feature': {
       en: '🎉 New Features',
@@ -275,13 +275,13 @@ async function generateChangelog() {
           const moduleResults = [];
           const lists = [];
           for (const changelog of moduleChangelogs) {
-            const { number, author, pro } = changelog;
+            const { number, author, pro, url } = changelog;
             const { description, docTitle, docLink } = changelog[lang];
             if (!description) {
               console.warn(`PR #${number} has no ${lang} changelog`);
               continue;
             }
-            const pr = pro ? '' : ` ([#${number}](https://github.com/nocobase/nocobase/pull/${number}))`;
+            const pr = pro && !test ? '' : ` ([#${number}](${url}))`;
             const doc = docTitle && docLink ? `${referenceLocale[lang]}[${docTitle}](${docLink})` : '';
             lists.push(`${description}${pr} by @${author}\n${doc}`);
           }
@@ -314,7 +314,7 @@ async function generateChangelog() {
 
   const cn = generate(changelogs, 'cn');
   const en = generate(changelogs, 'en');
-  return { cn, en, from, to };
+  return { cn, en };
 }
 
 async function writeChangelog(cn, en, from, to) {
@@ -335,30 +335,107 @@ async function writeChangelog(cn, en, from, to) {
 }
 
 async function createRelease(cn, en, to) {
+  const { stdout } = await execa('gh', ['release', 'list', '--json', 'tagName']);
+  const releases = JSON.parse(stdout);
+  const tags = releases.map((release) => release.tagName);
+  if (tags.includes(to)) {
+    console.log(`Release ${to} already exists`);
+    return;
+  }
   let { ver = 'beta' } = program.opts();
   // gh release create -t title -n note
   if (ver === 'alpha') {
-    await execa('gh', ['release', 'create', to, '-t', to, '-n', `${en}\n---\n${cn}`, '-p']);
+    await execa('gh', ['release', 'create', to, '-t', to, '-n', en, '-p']);
     return;
   }
-  await execa('gh', ['release', 'create', to, '-t', to, '-n', `${en}\n---\n${cn}`]);
+  await execa('gh', ['release', 'create', to, '-t', to, '-n', en]);
+}
+
+async function getExistsChangelog(from, to) {
+  const get = async (lang) => {
+    const file = lang === 'cn' ? 'CHANGELOG.zh-CN.md' : 'CHANGELOG.md';
+    const oldChangelog = await fs.readFile(path.join(__dirname, `../../${file}`), 'utf8');
+    if (!oldChangelog.includes(`## [${to}]`)) {
+      return null;
+    }
+    const fromIndex = oldChangelog.indexOf(`## [${from}]`);
+    const toIndex = oldChangelog.indexOf(`## [${to}]`);
+    return oldChangelog.slice(toIndex, fromIndex);
+  };
+  const cn = await get('cn');
+  const en = await get('en');
+  return { cn, en };
+}
+
+async function getVersion() {
+  let { from, to, ver = 'beta' } = program.opts();
+  if (!from || !to) {
+    // git tag -l --sort=version:refname | grep "v*-ver" | tail -2
+    const tagPattern = `v*-${ver}`;
+    const { stdout: tags } = await execa(`git tag -l --sort=version:refname | grep "${tagPattern}" | tail -2`, {
+      shell: true,
+    });
+    [from, to] = tags.split('\n');
+  }
+  console.log(`From: ${from}, To: ${to}`);
+  return { from, to };
+}
+
+async function postCMS(title, content, contentCN) {
+  const { cmsToken, cmsURL } = program.opts();
+  if (!cmsToken || !cmsURL) {
+    console.error('No cmsToken or cmsURL provided');
+    return;
+  }
+  await axios.request({
+    method: 'post',
+    url: `${cmsURL}/api/articles:updateOrCreate`,
+    headers: {
+      Authorization: `Bearer ${cmsToken}`,
+    },
+    params: {
+      filterKeys: ['title'],
+    },
+    data: {
+      title,
+      title_cn: title,
+      content,
+      content_cn: contentCN,
+      tags: [4],
+      status: 'drafted',
+      author: 'nocobase [bot]',
+    },
+  });
 }
 
 async function writeChangelogAndCreateRelease() {
   let { ver = 'beta', test } = program.opts();
-  const { cn, en, from, to } = await generateChangelog();
-  if (!cn && !en) {
-    throw new Error('No changelog generated');
+  const { from, to } = await getVersion();
+  let { cn, en } = await getExistsChangelog(from, to);
+  let exists = false;
+  if (cn || en) {
+    exists = true;
+    console.log('Changelog already exists');
+  } else {
+    const { changelogs } = await collect(from, to);
+    const c = await generateChangelog(changelogs);
+    cn = c.cn;
+    en = c.en;
+    if (!cn && !en) {
+      console.error('No changelog generated');
+      return;
+    }
   }
+  console.log(en);
+  console.log(cn);
   if (test) {
-    console.log(en);
-    console.log(cn);
     return;
   }
-  if (ver === 'beta') {
+  if (ver === 'beta' && !exists) {
     await writeChangelog(cn, en, from, to);
   }
   await createRelease(cn, en, to);
+  await postCMS(to, en, cn);
 }
 
 writeChangelogAndCreateRelease();

@@ -11,6 +11,7 @@ export * from './utils';
 export * from './constants';
 export * from './instructions';
 export * from './functions';
+export * from './logicCalculate';
 export { Trigger } from './triggers';
 export { default as Processor } from './Processor';
 export { default } from './Plugin';

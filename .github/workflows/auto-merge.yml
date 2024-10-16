@@ -1,4 +1,4 @@
-name: auto-merge
+name: Auto merge main -> next
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -13,17 +13,29 @@ jobs:
   push-commit:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/create-github-app-token@v1
+        id: app-token
+        with:
+          app-id: ${{ vars.NOCOBASE_APP_ID }}
+          private-key: ${{ secrets.NOCOBASE_APP_PRIVATE_KEY }}
+          repositories: nocobase,pro-plugins,${{ join(fromJSON(vars.PRO_PLUGIN_REPOS), ',') }},${{ join(fromJSON(vars.CUSTOM_PRO_PLUGIN_REPOS), ',') }}
+          skip-token-revoke: true
+      - name: Get GitHub App User ID
+        id: get-user-id
+        run: echo "user-id=$(gh api "/users/${{ steps.app-token.outputs.app-slug }}[bot]" --jq .id)" >> "$GITHUB_OUTPUT"
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
       - name: Checkout
         uses: actions/checkout@v4
         with:
           repository: nocobase/nocobase
-          ssh-key: ${{ secrets.NOCOBASE_DEPLOY_KEY }}
+          token: ${{ steps.app-token.outputs.token }}
           persist-credentials: true
           fetch-depth: 0
       - name: main -> next(nocobase)
         run: |
-          git config --global user.email "actions@github.com"
-          git config --global user.name "GitHub Actions Bot"
+          git config --global user.name '${{ steps.app-token.outputs.app-slug }}[bot]'
+          git config --global user.email '${{ steps.get-user-id.outputs.user-id }}+${{ steps.app-token.outputs.app-slug }}[bot]@users.noreply.github.com>'
           git checkout main
           git pull origin main
           git checkout next
@@ -33,7 +45,7 @@ jobs:
         uses: ad-m/github-push-action@master
         with:
           branch: next
-          ssh: true
+          github_token: ${{ steps.app-token.outputs.token }}
           repository: nocobase/nocobase
           tags: true
           atomic: true

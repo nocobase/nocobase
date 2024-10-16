@@ -16,6 +16,7 @@ import { useFields } from './useFields';
 const INCLUDE_FILE_TYPE = [
   'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
   'application/vnd.ms-excel',
+  'application/wps-office.xlsx',
 ];
 
 export const useShared = () => {

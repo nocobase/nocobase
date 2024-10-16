@@ -7,5 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from './Upload';
 export { attachmentFileTypes } from './shared';
+export { useUploadStyles } from './style';
+
+export * from './Upload';
