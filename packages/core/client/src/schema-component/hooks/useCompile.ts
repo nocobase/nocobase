@@ -23,6 +23,8 @@ export const useCompile = ({ noCache }: Props = { noCache: false }) => {
   const options = useContext(SchemaOptionsContext);
   const scope = useContext(SchemaExpressionScopeContext);
   return (source: any, ext?: any) => {
+    return source;
+
     let shouldCompile = false;
     let cacheKey: string;
 

@@ -18,18 +18,18 @@ import { action } from '@formily/reactive';
 import { uid } from '@formily/shared';
 import { isPortalInBody } from '@nocobase/utils/client';
 import { useCreation, useDeepCompareEffect, useMemoizedFn } from 'ahooks';
-import { Table as AntdTable, Skeleton, TableColumnProps } from 'antd';
+import { Table as AntdTable, TableColumnProps } from 'antd';
 import { default as classNames, default as cls } from 'classnames';
 import _, { omit } from 'lodash';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useInView } from 'react-intersection-observer';
 import { DndContext, useDesignable, useTableSize } from '../..';
 import {
   RecordIndexProvider,
   RecordProvider,
   useCollection,
   useCollectionParentRecordData,
+  useDataBlockRequest,
   useSchemaInitializerRender,
   useTableSelectorContext,
 } from '../../../';
@@ -42,7 +42,6 @@ import { useToken } from '../__builtins__';
 import { SubFormProvider } from '../association-field/hooks';
 import { ColumnFieldProvider } from './components/ColumnFieldProvider';
 import { extractIndex, isCollectionFieldComponent, isColumnComponent } from './utils';
-import { useDataBlockRequest } from '../../../';
 const MemoizedAntdTable = React.memo(AntdTable);
 
 const useArrayField = (props) => {
@@ -565,58 +564,38 @@ export const Table: any = withDynamicSchemaProps(
 
     const bodyWrapperComponent = useMemo(() => {
       return (props) => {
+        const onDragEndCallback = useCallback((e) => {
+          if (!e.active || !e.over) {
+            console.warn('move cancel');
+            return;
+          }
+          const fromIndex = e.active?.data.current?.sortable?.index;
+          const toIndex = e.over?.data.current?.sortable?.index;
+          const from = field.value[fromIndex] || e.active;
+          const to = field.value[toIndex] || e.over;
+          void field.move(fromIndex, toIndex);
+          onRowDragEnd({ from, to });
+        }, []);
+
         return (
-          <DndContext
-            onDragEnd={(e) => {
-              if (!e.active || !e.over) {
-                console.warn('move cancel');
-                return;
-              }
-              const fromIndex = e.active?.data.current?.sortable?.index;
-              const toIndex = e.over?.data.current?.sortable?.index;
-              const from = field.value[fromIndex] || e.active;
-              const to = field.value[toIndex] || e.over;
-              void field.move(fromIndex, toIndex);
-              onRowDragEnd({ from, to });
-            }}
-          >
+          <DndContext onDragEnd={onDragEndCallback}>
             <tbody {...props} />
           </DndContext>
         );
       };
-    }, [onRowDragEnd, field]);
+    }, [field, onRowDragEnd]);
 
-    const BodyCellComponent = useCallback(
-      (props) => {
-        const isIndex = props.className?.includes('selection-column');
-        const { record, schema, rowIndex } = props;
-        const { ref, inView } = useInView({
-          threshold: 0,
-          triggerOnce: true,
-          initialInView: isIndex || !!process.env.__E2E__,
-          skip: isIndex || !!process.env.__E2E__,
-        });
-        const { valueMap } = useSatisfiedActionValues({ formValues: record, category: 'style', schema });
-        const style = useMemo(() => Object.assign({ ...props.style }, valueMap), [props.style, valueMap]);
+    const BodyCellComponent = useCallback((props) => {
+      const { record, schema } = props;
+      const { valueMap } = useSatisfiedActionValues({ formValues: record, category: 'style', schema });
+      const style = useMemo(() => Object.assign({ ...props.style }, valueMap), [props.style, valueMap]);
 
-        // fix the problem of blank rows at the beginning of a table block
-        if (rowIndex < 20) {
-          return (
-            <td {...props} className={classNames(props.className, cellClass)} style={style}>
-              {props.children}
-            </td>
-          );
-        }
-
-        return (
-          <td {...props} ref={ref} className={classNames(props.className, cellClass)} style={style}>
-            {/* 子表格中不能使用懒渲染。详见：https://nocobase.height.app/T-4889/description */}
-            {others.isSubTable || inView || isIndex ? props.children : <Skeleton.Button style={{ height: '100%' }} />}
-          </td>
-        );
-      },
-      [others.isSubTable],
-    );
+      return (
+        <td {...props} className={classNames(props.className, cellClass)} style={style}>
+          {props.children}
+        </td>
+      );
+    }, []);
 
     const components = useMemo(() => {
       return {

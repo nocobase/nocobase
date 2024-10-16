@@ -36,7 +36,7 @@ export const CollectionFieldInternalField: React.FC = (props: Props) => {
   const collectionField = useCollectionField();
   const { uiSchema: uiSchemaOrigin, defaultValue } = collectionField;
   const { isAllowToSetDefaultValue } = useIsAllowToSetDefaultValue();
-  const uiSchema = useMemo(() => compile(uiSchemaOrigin), [JSON.stringify(uiSchemaOrigin)]);
+  const uiSchema = useMemo(() => compile(uiSchemaOrigin), [uiSchemaOrigin]);
   const Component = useComponent(
     fieldSchema['x-component-props']?.['component'] || uiSchema?.['x-component'] || 'Input',
   );
@@ -52,7 +52,6 @@ export const CollectionFieldInternalField: React.FC = (props: Props) => {
     }
   }, [fieldSchema, uiSchema]);
   const ctx = useFormBlockContext();
-
   const dynamicProps = useDynamicComponentProps(uiSchema?.['x-use-component-props'], props);
 
   useEffect(() => {

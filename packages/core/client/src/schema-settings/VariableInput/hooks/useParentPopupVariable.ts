@@ -12,27 +12,14 @@ import { useParentPopupRecord } from '../../../modules/variable/variablesProvide
 import { useBaseVariable } from './useBaseVariable';
 
 /**
- * 变量：`Parent popup record`
- * @param props
+ * 变量：`Parent popup record`的上下文
  * @returns
  */
-export const useParentPopupVariable = (props: any = {}) => {
+export const useParentPopupVariableContext = () => {
   const { value, title, collection } = useParentPopupRecord() || {};
   const { isVariableParsedInOtherContext } = useFlag();
-  const settings = useBaseVariable({
-    collectionField: props.collectionField,
-    uiSchema: props.schema,
-    name: '$nParentPopupRecord',
-    title,
-    collectionName: collection?.name,
-    noDisabled: props.noDisabled,
-    targetFieldSchema: props.targetFieldSchema,
-    dataSource: collection?.dataSource,
-  });
 
   return {
-    /** 变量配置 */
-    settings,
     /** 变量值 */
     parentPopupRecordCtx: value,
     /** 用于判断是否需要显示配置项 */
@@ -40,6 +27,38 @@ export const useParentPopupVariable = (props: any = {}) => {
     /** 当前记录对应的 collection name */
     collectionName: collection?.name,
     dataSource: collection?.dataSource,
+    /** 不可删除 */
     defaultValue: undefined,
+    title,
+  };
+};
+
+/**
+ * 变量：`Parent popup record`
+ * @param props
+ * @returns
+ */
+export const useParentPopupVariable = (props: any = {}) => {
+  const { parentPopupRecordCtx, shouldDisplayParentPopupRecord, collectionName, dataSource, defaultValue, title } =
+    useParentPopupVariableContext();
+  const settings = useBaseVariable({
+    collectionField: props.collectionField,
+    uiSchema: props.schema,
+    name: '$nParentPopupRecord',
+    title,
+    collectionName,
+    noDisabled: props.noDisabled,
+    targetFieldSchema: props.targetFieldSchema,
+    dataSource,
+  });
+
+  return {
+    /** 变量配置 */
+    settings,
+    parentPopupRecordCtx,
+    shouldDisplayParentPopupRecord,
+    collectionName,
+    dataSource,
+    defaultValue,
   };
 };

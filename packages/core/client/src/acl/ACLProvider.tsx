@@ -15,12 +15,11 @@ import { Navigate } from 'react-router-dom';
 import { useAPIClient, useRequest } from '../api-client';
 import { useAppSpin } from '../application/hooks/useAppSpin';
 import { useBlockRequestContext } from '../block-provider/BlockProvider';
-import { useCollectionManager_deprecated, useCollection_deprecated } from '../collection-manager';
 import { useResourceActionContext } from '../collection-manager/ResourceActionProvider';
+import { CollectionNotAllowViewPlaceholder, useCollection, useCollectionManager } from '../data-source';
 import { useDataSourceKey } from '../data-source/data-source/DataSourceProvider';
 import { useRecord } from '../record-provider';
 import { SchemaComponentOptions, useDesignable } from '../schema-component';
-import { CollectionNotAllowViewPlaceholder } from '../data-source';
 
 import { useApp } from '../application';
 
@@ -179,7 +178,7 @@ const useResourceName = () => {
 export function useACLRoleContext() {
   const { data, getActionAlias, inResources, getResourceActionParams, getStrategyActionParams } = useACLRolesCheck();
   const allowedActions = useAllowedActions();
-  const { getCollectionJoinField } = useCollectionManager_deprecated();
+  const cm = useCollectionManager();
   const verifyScope = (actionName: string, recordPkValue: any) => {
     const actionAlias = getActionAlias(actionName);
     if (!Array.isArray(allowedActions?.[actionAlias])) {
@@ -191,7 +190,7 @@ export function useACLRoleContext() {
     ...data,
     parseAction: (actionPath: string, options: any = {}) => {
       const [resourceName, actionName] = actionPath.split(':');
-      const targetResource = resourceName?.includes('.') && getCollectionJoinField(resourceName)?.target;
+      const targetResource = resourceName?.includes('.') && cm.getCollectionField(resourceName)?.target;
       if (!getIgnoreScope(options)) {
         const r = verifyScope(actionName, options.recordPkValue);
         if (r !== null) {
@@ -254,14 +253,14 @@ export const useACLActionParamsContext = () => {
 };
 
 export const useRecordPkValue = () => {
-  const { getPrimaryKey } = useCollection_deprecated();
+  const collection = useCollection();
   const record = useRecord();
-  const primaryKey = getPrimaryKey();
+  const primaryKey = collection.getPrimaryKey();
   return record?.[primaryKey];
 };
 
 export const ACLActionProvider = (props) => {
-  const { template, writableView } = useCollection_deprecated();
+  const collection = useCollection();
   const recordPkValue = useRecordPkValue();
   const resource = useResourceName();
   const { parseAction } = useACLRoleContext();
@@ -286,7 +285,7 @@ export const ACLActionProvider = (props) => {
   }
   //视图表无编辑权限时不显示
   if (editablePath.includes(actionPath) || editablePath.includes(actionPath?.split(':')[1])) {
-    if (template !== 'view' || writableView) {
+    if (collection.template !== 'view' || collection.writableView) {
       return <ACLActionParamsContext.Provider value={params}>{props.children}</ACLActionParamsContext.Provider>;
     }
     return null;
