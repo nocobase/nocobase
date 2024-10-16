@@ -17,6 +17,7 @@ import {
   InappChannelStatusEnum,
   channelStatusFilterObs,
 } from './channel';
+import { userIdObs } from './user';
 import { InAppMessagesDefinition } from '../../types';
 
 export const messageMapObs = observable<{ value: Record<string, Message> }>({ value: {} });
@@ -30,10 +31,14 @@ const filterMessageByStatus = (message: Message) => {
   else if (channelStatusFilterObs.value === 'unread') return message.status === 'unread';
   else return true;
 };
+const filterMessageByUserId = (message: Message) => {
+  return message.userId == String(userIdObs.value ?? '');
+};
 export const selectedMessageListObs = observable.computed(() => {
   if (selectedChannelNameObs.value) {
     const filteredMessages = messageListObs.value.filter(
-      (message) => message.channelName === selectedChannelNameObs.value && filterMessageByStatus(message),
+      (message) =>
+        message.channelName === selectedChannelNameObs.value && filterMessageByStatus(message) && filterMessageByUserId,
     );
     return filteredMessages;
   } else {
