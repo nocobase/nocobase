@@ -62,26 +62,24 @@ export default function defineMyInAppChannels({ app }: { app: Application }) {
             ? Sequelize.literal(`${latestMsgReceiveTimestampSQL} < ${filter.latestMsgReceiveTimestamp.$lt}`)
             : null;
           const channelIdFilter = filter?.id ? { id: filter.id } : null;
-          const unreadCntOptMap = {
-            all: '>=',
-            unread: '>',
-            read: '=',
+          const statusMap = {
+            all: 'read|unread',
+            unread: 'unread',
+            read: 'read',
           };
 
-          const filterChannelsByStatusSQL = ({ unreadCntOpt }) => {
-            return Sequelize.literal(`(
-              SELECT COUNT(*)
+          const filterChannelsByStatusSQL = ({ status }) => {
+            const sql = Sequelize.literal(`(
+              SELECT  messages.${messagesFieldName.channelName}
               FROM ${messagesTableName} AS messages
-              WHERE
-                  messages.${messagesFieldName.channelName} = ${channelsTableAliasName}.${channelsFieldName.name}
-                  AND
-                  messages.${messagesFieldName.status} = 'unread'
-          ) ${unreadCntOpt} 0`);
+              WHERE messages.${messagesFieldName.status} = '${status}'
+          )`);
+            return { name: { [Op.in]: sql } };
           };
           const channelStatusFilter =
             filter.status === 'all' || !filter.status
               ? null
-              : filterChannelsByStatusSQL({ unreadCntOpt: unreadCntOptMap[filter.status] });
+              : filterChannelsByStatusSQL({ status: statusMap[filter.status] });
 
           const channelsRepo = app.db.getRepository(ChannelsDefinition.name);
           try {
@@ -133,9 +131,6 @@ export default function defineMyInAppChannels({ app }: { app: Application }) {
               },
             });
             const countRes = channelsRepo.count({
-              logging: (str) => {
-                console.log(str);
-              },
               //@ts-ignore
               where: {
                 [Op.and]: [userFilter, channelStatusFilter].filter(Boolean),

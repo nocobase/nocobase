@@ -19,6 +19,7 @@ import {
 } from './channel';
 import { userIdObs } from './user';
 import { InAppMessagesDefinition } from '../../types';
+import { merge } from '@nocobase/utils/client';
 
 export const messageMapObs = observable<{ value: Record<string, Message> }>({ value: {} });
 export const isFecthingMessageObs = observable<{ value: boolean }>({ value: false });
@@ -48,6 +49,8 @@ export const selectedMessageListObs = observable.computed(() => {
 
 export const fetchMessages = async (params: any = { limit: 30 }) => {
   isFecthingMessageObs.value = true;
+  if (channelStatusFilterObs.value !== 'all')
+    params.filter = merge(params.filter ?? {}, { status: channelStatusFilterObs.value });
   const apiClient = getAPIClient();
   const res = await apiClient.request({
     url: 'myInAppMessages:list',
@@ -99,11 +102,13 @@ export const showMsgLoadingMoreObs = observable.computed(() => {
   if (!selectedChannelId) return false;
   const selectedChannel = channelMapObs.value[selectedChannelId];
   const selectedMessageList = selectedMessageListObs.value;
-  const isMoreMessage =
-    channelStatusFilterObs.value === 'unread'
-      ? selectedChannel.unreadMsgCnt > selectedMessageList.length
-      : selectedChannel.totalMsgCnt > selectedMessageList.length;
-  if (isMoreMessage && selectedMessageList.length > 0) {
+
+  const isMoreMessageByStatus = {
+    read: selectedChannel.totalMsgCnt - selectedChannel.unreadMsgCnt > selectedMessageList.length,
+    unread: selectedChannel.unreadMsgCnt > selectedMessageList.length,
+    all: selectedChannel.totalMsgCnt > selectedMessageList.length,
+  };
+  if (isMoreMessageByStatus[channelStatusFilterObs.value] && selectedMessageList.length > 0) {
     return true;
   }
 }) as { value: boolean };
