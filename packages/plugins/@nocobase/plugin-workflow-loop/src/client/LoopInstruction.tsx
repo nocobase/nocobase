@@ -95,6 +95,13 @@ function LoopCondition({ value, onChange }) {
       {value ? (
         <Card>
           <FormLayout layout="vertical">
+            <FormItem label={t('Condition', { ns: NAMESPACE })}>
+              <CalculationConfig
+                value={value.calculation}
+                onChange={onCalculationChange}
+                useVariableHook={useVariableHook}
+              />
+            </FormItem>
             <FormItem label={t('When to check', { ns: NAMESPACE })}>
               <RadioWithTooltip
                 value={value.checkpoint}
@@ -125,13 +132,6 @@ function LoopCondition({ value, onChange }) {
                     value: true,
                   },
                 ]}
-              />
-            </FormItem>
-            <FormItem label={t('Condition', { ns: NAMESPACE })}>
-              <CalculationConfig
-                value={value.calculation}
-                onChange={onCalculationChange}
-                useVariableHook={useVariableHook}
               />
             </FormItem>
           </FormLayout>
