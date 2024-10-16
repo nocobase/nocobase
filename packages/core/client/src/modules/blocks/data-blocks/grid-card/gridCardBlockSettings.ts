@@ -23,6 +23,7 @@ import { SchemaSettingsTemplate } from '../../../../schema-settings/SchemaSettin
 import { useBlockTemplateContext } from '../../../../schema-templates/BlockTemplateProvider';
 import { setDataLoadingModeSettingsItem } from '../details-multi/setDataLoadingModeSettingsItem';
 import { SetTheCountOfColumnsDisplayedInARow } from './SetTheCountOfColumnsDisplayedInARow';
+import { schemaSettingsLabelLayout } from '../../../../schema-settings';
 
 export const gridCardBlockSettings = new SchemaSettings({
   name: 'blockSettings:gridCard',
@@ -221,6 +222,7 @@ export const gridCardBlockSettings = new SchemaSettings({
         };
       },
     },
+    schemaSettingsLabelLayout,
     {
       name: 'divider',
       type: 'divider',

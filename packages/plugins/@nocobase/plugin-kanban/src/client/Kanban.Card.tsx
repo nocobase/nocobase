@@ -20,6 +20,7 @@ import {
   usePopupSettings,
   usePopupUtils,
   VariablePopupRecordProvider,
+  getCardItemSchema,
 } from '@nocobase/client';
 import { Schema } from '@nocobase/utils';
 import { Card } from 'antd';
@@ -125,12 +126,14 @@ export const KanbanCard: any = observer(
         },
       };
     }, [popupSchema]);
+    const cardItemSchema = getCardItemSchema(fieldSchema);
+    const { layout = 'vertical' } = cardItemSchema['x-component-props'] || {};
 
     return (
       <>
         <Card onClick={handleCardClick} bordered={false} hoverable style={cardStyle} className={cardCss}>
           <DndContext onDragStart={onDragStart} onDragEnd={onDragEnd}>
-            <FormLayout layout={'vertical'}>
+            <FormLayout layout={layout}>
               <FormProvider form={form}>
                 <MemorizedRecursionField schema={fieldSchema} onlyRenderProperties />
               </FormProvider>

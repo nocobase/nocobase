@@ -9,6 +9,7 @@
 
 import { css, cx } from '@emotion/css';
 import { ArrayField } from '@formily/core';
+import { FormLayout } from '@formily/antd-v5';
 import { RecursionField, Schema, useField, useFieldSchema } from '@formily/react';
 import { List as AntdList, PaginationProps, theme } from 'antd';
 import React, { useCallback, useState } from 'react';
@@ -21,6 +22,7 @@ import { ListDesigner } from './List.Designer';
 import { ListItem } from './List.Item';
 import useStyles from './List.style';
 import { useListActionBarProps, useListBlockHeight } from './hooks';
+import { getCardItemSchema } from '../../../block-provider';
 
 const InternalList = (props) => {
   const { service } = useListBlockContext();
@@ -63,6 +65,8 @@ const InternalList = (props) => {
     },
     [run, params],
   );
+  const cardItemSchema = getCardItemSchema(fieldSchema);
+  const { layout = 'vertical' } = cardItemSchema['x-component-props'] || {};
 
   return wrapSSR(
     <SchemaComponentOptions
@@ -89,36 +93,38 @@ const InternalList = (props) => {
         )}
       >
         <div className="nb-list-container">
-          <AntdList
-            {...props}
-            pagination={
-              !meta || meta.count <= meta.pageSize
-                ? false
-                : {
-                    onChange: onPaginationChange,
-                    total: meta?.count || 0,
-                    pageSize: meta?.pageSize || 10,
-                    current: meta?.page || 1,
-                    showSizeChanger: true,
-                    pageSizeOptions,
-                  }
-            }
-            loading={service?.loading}
-          >
-            {field.value?.length
-              ? field.value.map((item, index) => {
-                  return (
-                    <RecursionField
-                      basePath={field.address}
-                      key={index}
-                      name={index}
-                      onlyRenderProperties
-                      schema={getSchema(index)}
-                    ></RecursionField>
-                  );
-                })
-              : null}
-          </AntdList>
+          <FormLayout layout={layout}>
+            <AntdList
+              {...props}
+              pagination={
+                !meta || meta.count <= meta.pageSize
+                  ? false
+                  : {
+                      onChange: onPaginationChange,
+                      total: meta?.count || 0,
+                      pageSize: meta?.pageSize || 10,
+                      current: meta?.page || 1,
+                      showSizeChanger: true,
+                      pageSizeOptions,
+                    }
+              }
+              loading={service?.loading}
+            >
+              {field.value?.length
+                ? field.value.map((item, index) => {
+                    return (
+                      <RecursionField
+                        basePath={field.address}
+                        key={index}
+                        name={index}
+                        onlyRenderProperties
+                        schema={getSchema(index)}
+                      ></RecursionField>
+                    );
+                  })
+                : null}
+            </AntdList>
+          </FormLayout>
         </div>
         <Designer />
       </SortableItem>

@@ -20,6 +20,7 @@ import {
   useCollection_deprecated,
   useDesignable,
   useFormBlockContext,
+  schemaSettingsLabelLayout,
 } from '@nocobase/client';
 import { useKanbanBlockContext } from './KanbanBlockProvider';
 export const kanbanSettings = new SchemaSettings({
@@ -76,7 +77,7 @@ export const kanbanSettings = new SchemaSettings({
         };
       },
     },
-
+    schemaSettingsLabelLayout,
     {
       name: 'divider',
       type: 'divider',
