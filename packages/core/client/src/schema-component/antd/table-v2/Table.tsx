@@ -18,7 +18,7 @@ import { action } from '@formily/reactive';
 import { uid } from '@formily/shared';
 import { isPortalInBody } from '@nocobase/utils/client';
 import { useCreation, useDeepCompareEffect, useMemoizedFn } from 'ahooks';
-import { Table as AntdTable, TableColumnProps } from 'antd';
+import { Table as AntdTable, Spin, TableColumnProps } from 'antd';
 import { default as classNames, default as cls } from 'classnames';
 import _, { omit } from 'lodash';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
@@ -42,7 +42,6 @@ import { useToken } from '../__builtins__';
 import { SubFormProvider } from '../association-field/hooks';
 import { ColumnFieldProvider } from './components/ColumnFieldProvider';
 import { extractIndex, isCollectionFieldComponent, isColumnComponent } from './utils';
-const MemoizedAntdTable = React.memo(AntdTable);
 
 const useArrayField = (props) => {
   const field = useField<ArrayField>();
@@ -433,6 +432,114 @@ interface TableProps {
   isSubTable?: boolean;
 }
 
+const InternalNocoBaseTable = React.memo(
+  (props: {
+    tableHeight: number;
+    SortableWrapper: React.FC<{}>;
+    tableSizeRefCallback: (instance: HTMLDivElement) => void;
+    defaultRowKey: (record: any) => any;
+    dataSource: any[];
+    restProps: { rowSelection: any };
+    paginationProps: any;
+    components: {
+      header: { wrapper: (props: any) => React.JSX.Element; cell: (props: any) => React.JSX.Element };
+      body: {
+        wrapper: (props: any) => React.JSX.Element;
+        row: (props: any) => React.JSX.Element;
+        cell: (props: any) => React.JSX.Element;
+      };
+    };
+    onTableChange: any;
+    onRow: (record: any) => { onClick: (e: any) => void };
+    rowClassName: (record: any) => string;
+    scroll: { x: string; y: number };
+    columns: any[];
+    expandable: { onExpand: (flag: any, record: any) => void; expandedRowKeys: any };
+    field: ArrayField<any, any>;
+  }): React.ReactElement<any, any> => {
+    const {
+      tableHeight,
+      SortableWrapper,
+      tableSizeRefCallback,
+      defaultRowKey,
+      dataSource,
+      paginationProps,
+      components,
+      onTableChange,
+      onRow,
+      rowClassName,
+      scroll,
+      columns,
+      expandable,
+      field,
+      ...others
+    } = props;
+
+    console.log('props', props);
+
+    return (
+      <div
+        className={cx(
+          css`
+            height: 100%;
+            overflow: hidden;
+            .ant-table-wrapper {
+              height: 100%;
+              .ant-spin-nested-loading {
+                height: 100%;
+                .ant-spin-container {
+                  height: 100%;
+                  display: flex;
+                  flex-direction: column;
+                  .ant-table-expanded-row-fixed {
+                    min-height: ${tableHeight}px;
+                  }
+                  .ant-table-body {
+                    min-height: ${tableHeight}px;
+                  }
+                }
+              }
+            }
+            .ant-table {
+              overflow-x: auto;
+              overflow-y: hidden;
+            }
+          `,
+          'nb-table-container',
+        )}
+      >
+        <SortableWrapper>
+          <AntdTable
+            ref={tableSizeRefCallback as any}
+            rowKey={defaultRowKey}
+            // rowKey={(record) => record.id}
+            dataSource={dataSource}
+            tableLayout="auto"
+            {...others}
+            pagination={paginationProps}
+            components={components}
+            onChange={onTableChange}
+            onRow={onRow}
+            rowClassName={rowClassName}
+            scroll={scroll}
+            columns={columns}
+            expandable={expandable}
+          />
+        </SortableWrapper>
+        {field.errors.length > 0 && (
+          <div className="ant-formily-item-error-help ant-formily-item-help ant-formily-item-help-enter ant-formily-item-help-enter-active">
+            {field.errors.map((error) => {
+              return error.messages.map((message) => <div key={message}>{message}</div>);
+            })}
+          </div>
+        )}
+      </div>
+    );
+  },
+);
+
+InternalNocoBaseTable.displayName = 'InternalNocoBaseTable';
+
 export const Table: any = withDynamicSchemaProps(
   observer((props: TableProps) => {
     const { token } = useToken();
@@ -555,12 +662,10 @@ export const Table: any = withDynamicSchemaProps(
       [JSON.stringify(rowKey), defaultRowKey],
     );
 
-    const dataSourceKeys = field?.value?.map?.(getRowKey);
-    const memoizedDataSourceKeys = useMemo(() => dataSourceKeys, [JSON.stringify(dataSourceKeys)]);
     const dataSource = useMemo(() => {
       const value = Array.isArray(field?.value) ? field.value : [];
       return value.filter(Boolean);
-    }, [field?.value, field?.value?.length, memoizedDataSourceKeys]);
+    }, [field.value]);
 
     const bodyWrapperComponent = useMemo(() => {
       return (props) => {
@@ -740,65 +845,28 @@ export const Table: any = withDynamicSchemaProps(
         expandedRowKeys: expandedKeys,
       };
     }, [expandedKeys, onExpandValue]);
+
     return (
-      <div
-        className={cx(
-          css`
-            height: 100%;
-            overflow: hidden;
-            .ant-table-wrapper {
-              height: 100%;
-              .ant-spin-nested-loading {
-                height: 100%;
-                .ant-spin-container {
-                  height: 100%;
-                  display: flex;
-                  flex-direction: column;
-                  .ant-table-expanded-row-fixed {
-                    min-height: ${tableHeight}px;
-                  }
-                  .ant-table-body {
-                    min-height: ${tableHeight}px;
-                  }
-                }
-              }
-            }
-            .ant-table {
-              overflow-x: auto;
-              overflow-y: hidden;
-            }
-          `,
-          'nb-table-container',
-        )}
-      >
-        <SortableWrapper>
-          <MemoizedAntdTable
-            ref={tableSizeRefCallback}
-            rowKey={defaultRowKey}
-            // rowKey={(record) => record.id}
-            dataSource={dataSource}
-            tableLayout="auto"
-            {...others}
-            {...restProps}
-            loading={loading}
-            pagination={paginationProps}
-            components={components}
-            onChange={onTableChange}
-            onRow={onRow}
-            rowClassName={rowClassName}
-            scroll={scroll}
-            columns={columns}
-            expandable={expandable}
-          />
-        </SortableWrapper>
-        {field.errors.length > 0 && (
-          <div className="ant-formily-item-error-help ant-formily-item-help ant-formily-item-help-enter ant-formily-item-help-enter-active">
-            {field.errors.map((error) => {
-              return error.messages.map((message) => <div key={message}>{message}</div>);
-            })}
-          </div>
-        )}
-      </div>
+      <Spin spinning={loading}>
+        <InternalNocoBaseTable
+          tableHeight={tableHeight}
+          SortableWrapper={SortableWrapper}
+          tableSizeRefCallback={tableSizeRefCallback}
+          defaultRowKey={defaultRowKey}
+          dataSource={dataSource}
+          {...others}
+          {...restProps}
+          paginationProps={paginationProps}
+          components={components}
+          onTableChange={onTableChange}
+          onRow={onRow}
+          rowClassName={rowClassName}
+          scroll={scroll}
+          columns={columns}
+          expandable={expandable}
+          field={field}
+        />
+      </Spin>
     );
   }),
   { displayName: 'NocoBaseTable' },
