@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { raw } from '@formily/reactive';
 import React, { createContext, useContext, useMemo } from 'react';
 import { CollectionRecordProvider, useCollection } from '../data-source';
 import { useCurrentUserContext } from '../user';
@@ -28,7 +29,8 @@ export const RecordProvider: React.FC<{
   const { record, children, parent, isNew } = props;
   const collection = useCollection();
   const value = useMemo(() => {
-    const res = { ...record };
+    // Directly destructuring reactive objects can cause performance issues, so we use raw to wrap it here
+    const res = { ...raw(record) };
     res['__parent'] = parent;
     res['__collectionName'] = collection?.name;
     return res;
