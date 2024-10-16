@@ -106,7 +106,7 @@ export const MessageConfigForm = ({ variableOptions }) => {
             properties: {
               url: {
                 type: 'string',
-                required: true,
+                required: false,
                 title: `{{t("Detail URL")}}`,
                 'x-decorator': 'FormItem',
                 'x-component': 'Variable.TextArea',

@@ -8,11 +8,7 @@
  */
 
 import { Application } from '@nocobase/server';
-import {
-  SendFnType,
-  BaseNotificationChannel,
-  ChannelsCollectionDefinition as ChannelsDefinition,
-} from '@nocobase/plugin-notification-manager';
+import { SendFnType, BaseNotificationChannel } from '@nocobase/plugin-notification-manager';
 import { InAppMessageFormValues } from '../types';
 import { PassThrough } from 'stream';
 import { InAppMessagesDefinition as MessagesDefinition } from '../types';
@@ -51,12 +47,26 @@ export default class InAppNotificationChannel extends BaseNotificationChannel {
     }
     this.userClientsMap[userId][clientId] = stream;
   };
+  removeClient = (userId: UserID, clientId: ClientID) => {
+    if (this.userClientsMap[userId]) {
+      delete this.userClientsMap[userId][clientId];
+    }
+  };
   sendDataToUser(userId: UserID, message: { type: string; data: any }) {
     const clients = this.userClientsMap[userId];
     if (clients) {
       for (const clientId in clients) {
         const stream = clients[clientId];
-        stream.write(`data: ${JSON.stringify(message)}\n\n`);
+        stream.write(
+          `data: ${JSON.stringify({
+            type: message.type,
+            data: {
+              ...message.data,
+              title: message.data.title.slice(0, 30),
+              content: message.data.content.slice(0, 105),
+            },
+          })}\n\n`,
+        );
       }
     }
   }
@@ -113,29 +123,29 @@ export default class InAppNotificationChannel extends BaseNotificationChannel {
     );
     return { status: 'success', message };
   };
-  async mock() {
-    const messagesRepo = this.app.db.getRepository(MessagesDefinition.name);
-    const channelsRepo = this.app.db.getRepository(ChannelsDefinition.name);
-    const channels = await MockChannels({ channelsRepo }, { totalNum: 1, userId: 1 });
-    for (const channel of channels) {
-      await MockMessages(
-        { messagesRepo, channelsRepo },
-        { unreadNum: 50, readNum: 50, chatId: channel.id, startTimeStamp: Date.now(), userId: 1 },
-      );
-    }
-    // add 100 read channels
-    const readChannels = await MockChannels({ channelsRepo }, { totalNum: 100, userId: 1 });
-    for (const channel of readChannels) {
-      await MockMessages(
-        { messagesRepo, channelsRepo },
+  // async mock() {
+  //   const messagesRepo = this.app.db.getRepository(MessagesDefinition.name);
+  //   const channelsRepo = this.app.db.getRepository(ChannelsDefinition.name);
+  //   const channels = await MockChannels({ channelsRepo }, { totalNum: 1, userId: 1 });
+  //   for (const channel of channels) {
+  //     await MockMessages(
+  //       { messagesRepo, channelsRepo },
+  //       { unreadNum: 50, readNum: 50, chatId: channel.id, startTimeStamp: Date.now(), userId: 1 },
+  //     );
+  //   }
+  //   // add 100 read channels
+  //   const readChannels = await MockChannels({ channelsRepo }, { totalNum: 100, userId: 1 });
+  //   for (const channel of readChannels) {
+  //     await MockMessages(
+  //       { messagesRepo, channelsRepo },
 
-        { unreadNum: 1, readNum: 1, chatId: channel.id, startTimeStamp: Date.now(), userId: 1 },
-      );
-    }
-  }
+  //       { unreadNum: 1, readNum: 1, chatId: channel.id, startTimeStamp: Date.now(), userId: 1 },
+  //     );
+  //   }
+  // }
 
   defineActions() {
-    defineMyInAppMessages({ app: this.app, addClient: this.addClient });
+    defineMyInAppMessages({ app: this.app, addClient: this.addClient, removeClient: this.removeClient });
     defineMyInAppChannels({ app: this.app });
     this.app.acl.allow('myInAppMessages', '*', 'loggedIn');
     this.app.acl.allow('myInAppChannels', '*', 'loggedIn');

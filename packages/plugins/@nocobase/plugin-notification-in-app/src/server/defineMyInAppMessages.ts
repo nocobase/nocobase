@@ -11,7 +11,15 @@ import { Application } from '@nocobase/server';
 import { PassThrough } from 'stream';
 import { InAppMessagesDefinition as MessagesDefinition, ChannelsDefinition as ChannelsDefinition } from '../types';
 
-export default function defineMyInAppMessages({ app, addClient }: { app: Application; addClient: any }) {
+export default function defineMyInAppMessages({
+  app,
+  addClient,
+  removeClient,
+}: {
+  app: Application;
+  addClient: any;
+  removeClient: any;
+}) {
   app.resourceManager.define({
     name: 'myInAppMessages',
     actions: {
@@ -33,6 +41,12 @@ export default function defineMyInAppMessages({ app, addClient }: { app: Applica
           const stream = new PassThrough();
           ctx.body = stream;
           addClient(userId, clientId, stream);
+          stream.on('close', () => {
+            removeClient(userId, clientId);
+          });
+          stream.on('error', () => {
+            removeClient(userId, clientId);
+          });
           await next();
         },
       },
