@@ -184,19 +184,16 @@ export function RemoveButton() {
   const current = useNodeContext();
   const { modal } = App.useApp();
 
-  if (!workflow) {
-    return null;
-  }
   const resource = api.resource('flow_nodes');
 
-  async function onRemove() {
-    async function onOk() {
-      await resource.destroy?.({
-        filterByTk: current.id,
-      });
-      refresh();
-    }
+  const onOk = useCallback(async () => {
+    await resource.destroy?.({
+      filterByTk: current.id,
+    });
+    refresh();
+  }, [current.id, refresh, resource]);
 
+  const onRemove = useCallback(async () => {
     const usingNodes = nodes.filter((node) => {
       if (node === current) {
         return false;
@@ -230,6 +227,10 @@ export function RemoveButton() {
       content: message,
       onOk,
     });
+  }, [current, modal, nodes, onOk, t]);
+
+  if (!workflow) {
+    return null;
   }
 
   return workflow.executed ? null : (
