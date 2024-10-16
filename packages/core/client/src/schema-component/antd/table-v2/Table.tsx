@@ -415,6 +415,18 @@ const BodyRowComponent = (props) => {
   return <SortableRow {...props} />;
 };
 
+const BodyCellComponent = (props) => {
+  const { record, schema } = props;
+  const { valueMap } = useSatisfiedActionValues({ formValues: record, category: 'style', schema });
+  const style = useMemo(() => Object.assign({ ...props.style }, valueMap), [props.style, valueMap]);
+
+  return (
+    <td {...props} className={classNames(props.className, cellClass)} style={style}>
+      {props.children}
+    </td>
+  );
+};
+
 interface TableProps {
   /** @deprecated */
   useProps?: () => any;
@@ -667,7 +679,7 @@ export const Table: any = withDynamicSchemaProps(
       return value.filter(Boolean);
     }, [field.value]);
 
-    const bodyWrapperComponent = useMemo(() => {
+    const BodyWrapperComponent = useMemo(() => {
       return (props) => {
         const onDragEndCallback = useCallback((e) => {
           if (!e.active || !e.over) {
@@ -690,17 +702,8 @@ export const Table: any = withDynamicSchemaProps(
       };
     }, [field, onRowDragEnd]);
 
-    const BodyCellComponent = useCallback((props) => {
-      const { record, schema } = props;
-      const { valueMap } = useSatisfiedActionValues({ formValues: record, category: 'style', schema });
-      const style = useMemo(() => Object.assign({ ...props.style }, valueMap), [props.style, valueMap]);
-
-      return (
-        <td {...props} className={classNames(props.className, cellClass)} style={style}>
-          {props.children}
-        </td>
-      );
-    }, []);
+    // @ts-ignore
+    BodyWrapperComponent.displayName = 'BodyWrapperComponent';
 
     const components = useMemo(() => {
       return {
@@ -709,12 +712,12 @@ export const Table: any = withDynamicSchemaProps(
           cell: HeaderCellComponent,
         },
         body: {
-          wrapper: bodyWrapperComponent,
+          wrapper: BodyWrapperComponent,
           row: BodyRowComponent,
           cell: BodyCellComponent,
         },
       };
-    }, [BodyCellComponent, bodyWrapperComponent]);
+    }, [BodyWrapperComponent]);
 
     const memoizedRowSelection = useMemo(() => rowSelection, [JSON.stringify(rowSelection)]);
 
