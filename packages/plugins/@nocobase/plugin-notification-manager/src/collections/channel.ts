@@ -13,11 +13,11 @@ import { CollectionOptions } from '@nocobase/client';
 const channelCollection: CollectionOptions = {
   name: COLLECTION_NAME.channels,
   filterTargetKey: 'name',
-  prefix: 's_',
   fields: [
     {
       name: 'name',
       type: 'uid',
+      prefix: 's_',
       primaryKey: true,
       interface: 'input',
       uiSchema: {
