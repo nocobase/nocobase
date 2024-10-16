@@ -73,7 +73,7 @@ export default class extends Instruction {
               {
                 label: `{{t("Update in a batch", { ns: "${NAMESPACE}" })}}`,
                 value: false,
-                tooltip: `{{t("Update all eligible data at one time, which has better performance when the amount of data is large. But the updated data will not trigger other workflows, and will not record audit logs.", { ns: "${NAMESPACE}" })}}`,
+                tooltip: `{{t("Update all eligible data at one time, which has better performance when the amount of data is large. But association fields are not supported (unless foreign key in current collection), and the updated data will not trigger other workflows.", { ns: "${NAMESPACE}" })}}`,
               },
               {
                 label: `{{t("Update one by one", { ns: "${NAMESPACE}" })}}`,
