@@ -10,7 +10,8 @@
 import { Database, Repository } from '@nocobase/database';
 import { MockServer, createMockServer } from '@nocobase/test';
 import compose from 'koa-compose';
-import { parseBuilder, parseFieldAndAssociations, queryData } from '../actions/query';
+import { parseFieldAndAssociations, queryData } from '../actions/query';
+import { createQueryParser } from '../query-parser';
 
 describe('api', () => {
   let app: MockServer;
@@ -91,7 +92,8 @@ describe('api', () => {
         },
       },
     } as any;
-    await compose([parseFieldAndAssociations, parseBuilder, queryData])(ctx, async () => {});
+    const queryParser = createQueryParser(db);
+    await compose([parseFieldAndAssociations, queryParser.parse(), queryData])(ctx, async () => {});
     expect(ctx.action.params.values.data).toBeDefined();
   });
 
@@ -125,7 +127,8 @@ describe('api', () => {
         },
       },
     } as any;
-    await compose([parseFieldAndAssociations, parseBuilder, queryData])(ctx, async () => {});
+    const queryParser = createQueryParser(db);
+    await compose([parseFieldAndAssociations, queryParser.parse(), queryData])(ctx, async () => {});
     expect(ctx.action.params.values.data).toBeDefined();
     expect(ctx.action.params.values.data).toMatchObject([{ createdAt: '2023-01' }, { createdAt: '2023-02' }]);
   });

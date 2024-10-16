@@ -10,7 +10,8 @@
 import { Database } from '@nocobase/database';
 import { MockServer, createMockServer } from '@nocobase/test';
 import compose from 'koa-compose';
-import { parseBuilder, parseFieldAndAssociations, queryData } from '../actions/query';
+import { parseFieldAndAssociations, queryData } from '../actions/query';
+import { createQueryParser } from '../query-parser';
 
 describe('formatter', () => {
   let app: MockServer;
@@ -85,7 +86,8 @@ describe('formatter', () => {
         },
       },
     } as any;
-    await compose([parseFieldAndAssociations, parseBuilder, queryData])(ctx, async () => {});
+    const queryParser = createQueryParser(db);
+    await compose([parseFieldAndAssociations, queryParser.parse(), queryData])(ctx, async () => {});
     expect(ctx.action.params.values.data).toBeDefined();
     expect(ctx.action.params.values.data).toMatchObject([{ date: '2024-05-15 01:02:30' }]);
   });
@@ -125,7 +127,8 @@ describe('formatter', () => {
         },
       },
     } as any;
-    await compose([parseFieldAndAssociations, parseBuilder, queryData])(ctx, async () => {});
+    const queryParser = createQueryParser(db);
+    await compose([parseFieldAndAssociations, queryParser.parse(), queryData])(ctx, async () => {});
     expect(ctx.action.params.values.data).toBeDefined();
     expect(ctx.action.params.values.data).toMatchObject([{ dateOnly: '2024-05-14' }]);
   });
@@ -165,7 +168,8 @@ describe('formatter', () => {
         },
       },
     } as any;
-    await compose([parseFieldAndAssociations, parseBuilder, queryData])(ctx, async () => {});
+    const queryParser = createQueryParser(db);
+    await compose([parseFieldAndAssociations, queryParser.parse(), queryData])(ctx, async () => {});
     expect(ctx.action.params.values.data).toBeDefined();
     expect(ctx.action.params.values.data).toMatchObject([{ datetimeNoTz: '2024-05-14 19:32:30' }]);
   });
@@ -213,7 +217,8 @@ describe('formatter', () => {
         },
       },
     } as any;
-    await compose([parseFieldAndAssociations, parseBuilder, queryData])(ctx, async () => {});
+    const queryParser = createQueryParser(db);
+    await compose([parseFieldAndAssociations, queryParser.parse(), queryData])(ctx, async () => {});
     expect(ctx.action.params.values.data).toBeDefined();
     expect(ctx.action.params.values.data).toMatchObject([{ unixTs: '2023-01-01 10:04:56' }]);
   });
@@ -260,7 +265,8 @@ describe('formatter', () => {
         },
       },
     } as any;
-    await compose([parseFieldAndAssociations, parseBuilder, queryData])(ctx, async () => {});
+    const queryParser = createQueryParser(db);
+    await compose([parseFieldAndAssociations, queryParser.parse(), queryData])(ctx, async () => {});
     expect(ctx.action.params.values.data).toBeDefined();
     expect(ctx.action.params.values.data).toMatchObject([{ unixTsMs: '2023-01-01 10:04:56' }]);
   });
